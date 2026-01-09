@@ -5,6 +5,12 @@
 DELETE FROM student_subjects;
 DELETE FROM students;
 DELETE FROM subjects;
+DELETE FROM student_logs;
+DELETE FROM schools;
+
+-- デフォルト教室の作成
+INSERT INTO schools (name, code) VALUES ('デフォルト教室', 'DEFAULT')
+ON CONFLICT (code) DO NOTHING;
 
 -- デフォルト科目データの挿入（重複時は無視）
 INSERT INTO subjects (name, grade_category, sort_order) VALUES
@@ -39,8 +45,9 @@ INSERT INTO subjects (name, grade_category, sort_order) VALUES
   ('漢文', 'high', 13),
   ('その他', 'high', 14);
 
--- ダミーデータの挿入
+-- ダミーデータの挿入（デフォルト教室を使用）
 INSERT INTO students (
+  school_id,
   student_code,
   last_name,
   first_name,
@@ -52,106 +59,135 @@ INSERT INTO students (
   club,
   subject_other,
   status
-) VALUES
-  (
-    'S0001',
-    '山田',
-    '太郎',
-    'ヤマダ',
-    'タロウ',
-    7,
-    '第一中学校',
-    NULL,
-    NULL,
-    NULL,
-    'active'
-  ),
-  (
-    'S0002',
-    '鈴木',
-    '花子',
-    'スズキ',
-    'ハナコ',
-    8,
-    '第一中学校',
-    NULL,
-    NULL,
-    NULL,
-    'active'
-  ),
-  (
-    'S0003',
-    '佐藤',
-    '一郎',
-    'サトウ',
-    'イチロウ',
-    9,
-    '第二中学校',
-    NULL,
-    NULL,
-    NULL,
-    'active'
-  ),
-  (
-    'S0004',
-    '田中',
-    '美咲',
-    'タナカ',
-    'ミサキ',
-    10,
-    '県立高校',
-    NULL,
-    NULL,
-    '物理',
-    'active'
-  ),
-  (
-    'S0005',
-    '高橋',
-    '健太',
-    'タカハシ',
-    'ケンタ',
-    6,
-    '中央小学校',
-    NULL,
-    NULL,
-    NULL,
-    'active'
-  )
-ON CONFLICT (student_code) DO NOTHING;
+)
+SELECT 
+  s.id,
+  'S0001',
+  '山田',
+  '太郎',
+  'ヤマダ',
+  'タロウ',
+  7,
+  '第一中学校',
+  NULL,
+  NULL,
+  NULL,
+  'active'
+FROM schools s WHERE s.code = 'DEFAULT'
+UNION ALL
+SELECT 
+  s.id,
+  'S0002',
+  '鈴木',
+  '花子',
+  'スズキ',
+  'ハナコ',
+  8,
+  '第一中学校',
+  NULL,
+  NULL,
+  NULL,
+  'active'
+FROM schools s WHERE s.code = 'DEFAULT'
+UNION ALL
+SELECT 
+  s.id,
+  'S0003',
+  '佐藤',
+  '一郎',
+  'サトウ',
+  'イチロウ',
+  9,
+  '第二中学校',
+  NULL,
+  NULL,
+  NULL,
+  'active'
+FROM schools s WHERE s.code = 'DEFAULT'
+UNION ALL
+SELECT 
+  s.id,
+  'S0004',
+  '田中',
+  '美咲',
+  'タナカ',
+  'ミサキ',
+  10,
+  '県立高校',
+  NULL,
+  NULL,
+  '物理',
+  'active'
+FROM schools s WHERE s.code = 'DEFAULT'
+UNION ALL
+SELECT 
+  s.id,
+  'S0005',
+  '高橋',
+  '健太',
+  'タカハシ',
+  'ケンタ',
+  6,
+  '中央小学校',
+  NULL,
+  NULL,
+  NULL,
+  'active'
+FROM schools s WHERE s.code = 'DEFAULT'
+ON CONFLICT (school_id, student_code) DO NOTHING;
 
 -- 生徒と科目の関連付け（重複時は無視）
 -- 山田太郎（中1）: 数学
 INSERT INTO student_subjects (student_id, subject_id)
 SELECT s.id, sub.id
-FROM students s, subjects sub
-WHERE s.student_code = 'S0001' AND sub.name = '数学' AND sub.grade_category = 'middle'
+FROM students s, subjects sub, schools sch
+WHERE s.student_code = 'S0001' 
+  AND s.school_id = sch.id 
+  AND sch.code = 'DEFAULT'
+  AND sub.name = '数学' 
+  AND sub.grade_category = 'middle'
 ON CONFLICT (student_id, subject_id) DO NOTHING;
 
 -- 鈴木花子（中2）: 英語
 INSERT INTO student_subjects (student_id, subject_id)
 SELECT s.id, sub.id
-FROM students s, subjects sub
-WHERE s.student_code = 'S0002' AND sub.name = '英語' AND sub.grade_category = 'middle'
+FROM students s, subjects sub, schools sch
+WHERE s.student_code = 'S0002' 
+  AND s.school_id = sch.id 
+  AND sch.code = 'DEFAULT'
+  AND sub.name = '英語' 
+  AND sub.grade_category = 'middle'
 ON CONFLICT (student_id, subject_id) DO NOTHING;
 
 -- 佐藤一郎（中3）: 数学
 INSERT INTO student_subjects (student_id, subject_id)
 SELECT s.id, sub.id
-FROM students s, subjects sub
-WHERE s.student_code = 'S0003' AND sub.name = '数学' AND sub.grade_category = 'middle'
+FROM students s, subjects sub, schools sch
+WHERE s.student_code = 'S0003' 
+  AND s.school_id = sch.id 
+  AND sch.code = 'DEFAULT'
+  AND sub.name = '数学' 
+  AND sub.grade_category = 'middle'
 ON CONFLICT (student_id, subject_id) DO NOTHING;
 
 -- 田中美咲（高1）: その他（物理）
 INSERT INTO student_subjects (student_id, subject_id)
 SELECT s.id, sub.id
-FROM students s, subjects sub
-WHERE s.student_code = 'S0004' AND sub.name = 'その他' AND sub.grade_category = 'high'
+FROM students s, subjects sub, schools sch
+WHERE s.student_code = 'S0004' 
+  AND s.school_id = sch.id 
+  AND sch.code = 'DEFAULT'
+  AND sub.name = 'その他' 
+  AND sub.grade_category = 'high'
 ON CONFLICT (student_id, subject_id) DO NOTHING;
 
 -- 高橋健太（小6）: 国語
 INSERT INTO student_subjects (student_id, subject_id)
 SELECT s.id, sub.id
-FROM students s, subjects sub
-WHERE s.student_code = 'S0005' AND sub.name = '国語' AND sub.grade_category = 'elementary'
+FROM students s, subjects sub, schools sch
+WHERE s.student_code = 'S0005' 
+  AND s.school_id = sch.id 
+  AND sch.code = 'DEFAULT'
+  AND sub.name = '国語' 
+  AND sub.grade_category = 'elementary'
 ON CONFLICT (student_id, subject_id) DO NOTHING;

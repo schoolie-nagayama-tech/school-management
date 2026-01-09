@@ -6,6 +6,7 @@ import type { Student, StudentInsert, StudentUpdate, Subject } from '@/types/dat
 import { GRADE_LABELS, STATUS_LABELS } from '@/types/database';
 import { getSubjects } from '@/lib/api/subjects';
 import { getStudentSubjects } from '@/lib/api/subjects';
+import { getDefaultSchoolId } from '@/lib/api/schools';
 
 interface StudentFormProps {
   student?: Student | null;
@@ -171,7 +172,12 @@ export function StudentForm({
 
     if (!validate()) return;
 
-    await onSubmit(formData as StudentInsert | StudentUpdate, selectedSubjectIds);
+    // 新規登録時はschool_idを自動設定
+    const submitData = isEdit
+      ? (formData as StudentUpdate)
+      : ({ ...formData, school_id: getDefaultSchoolId() } as StudentInsert);
+
+    await onSubmit(submitData, selectedSubjectIds);
   };
 
   return (

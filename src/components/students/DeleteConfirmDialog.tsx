@@ -51,8 +51,8 @@ export function DeleteConfirmDialog({
                 ({student.student_code})
               </span>
             </p>
-            <p className="mt-3 text-sm text-[#d9376e]">
-              この操作は取り消せません。
+            <p className="mt-3 text-sm text-[#2a2a2a]">
+              削除後もデータは保持されますが、一覧には表示されなくなります。
             </p>
           </div>
         </div>

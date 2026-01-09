@@ -2,9 +2,34 @@
 export type Database = {
   public: {
     Tables: {
+      schools: {
+        Row: {
+          id: string;
+          name: string;
+          code: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          code?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          code?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       students: {
         Row: {
           id: string;
+          school_id: string;
           student_code: string | null;
           last_name: string;
           first_name: string;
@@ -16,11 +41,13 @@ export type Database = {
           class_name: string | null;
           club: string | null;
           subject_other: string | null;
+          deleted_at: string | null;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id?: string;
+          school_id: string;
           student_code?: string | null;
           last_name: string;
           first_name: string;
@@ -32,11 +59,13 @@ export type Database = {
           class_name?: string | null;
           club?: string | null;
           subject_other?: string | null;
+          deleted_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           id?: string;
+          school_id?: string;
           student_code?: string | null;
           last_name?: string;
           first_name?: string;
@@ -48,10 +77,61 @@ export type Database = {
           class_name?: string | null;
           club?: string | null;
           subject_other?: string | null;
+          deleted_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'students_school_id_fkey';
+            columns: ['school_id'];
+            referencedRelation: 'schools';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      student_logs: {
+        Row: {
+          id: string;
+          student_id: string;
+          school_id: string;
+          action: 'created' | 'updated' | 'soft_deleted' | 'restored' | 'status_changed';
+          actor: string | null;
+          diff: Record<string, unknown> | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          student_id: string;
+          school_id: string;
+          action: 'created' | 'updated' | 'soft_deleted' | 'restored' | 'status_changed';
+          actor?: string | null;
+          diff?: Record<string, unknown> | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          student_id?: string;
+          school_id?: string;
+          action?: 'created' | 'updated' | 'soft_deleted' | 'restored' | 'status_changed';
+          actor?: string | null;
+          diff?: Record<string, unknown> | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'student_logs_student_id_fkey';
+            columns: ['student_id'];
+            referencedRelation: 'students';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'student_logs_school_id_fkey';
+            columns: ['school_id'];
+            referencedRelation: 'schools';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       subjects: {
         Row: {
@@ -119,9 +199,16 @@ export type Database = {
 };
 
 // 便利な型エイリアス
+export type School = Database['public']['Tables']['schools']['Row'];
+export type SchoolInsert = Database['public']['Tables']['schools']['Insert'];
+export type SchoolUpdate = Database['public']['Tables']['schools']['Update'];
+
 export type Student = Database['public']['Tables']['students']['Row'];
 export type StudentInsert = Database['public']['Tables']['students']['Insert'];
 export type StudentUpdate = Database['public']['Tables']['students']['Update'];
+
+export type StudentLog = Database['public']['Tables']['student_logs']['Row'];
+export type StudentLogInsert = Database['public']['Tables']['student_logs']['Insert'];
 
 export type Subject = Database['public']['Tables']['subjects']['Row'];
 export type SubjectInsert = Database['public']['Tables']['subjects']['Insert'];

@@ -175,10 +175,14 @@ export async function getStudentWithSubjects(
   student: Student;
   subjects: Subject[];
 } | null> {
+  const schoolId = getDefaultSchoolId();
+
   const { data: studentData, error: studentError } = await supabase
     .from('students')
     .select('*')
     .eq('id', studentId)
+    .eq('school_id', schoolId)
+    .is('deleted_at', null)
     .single();
 
   if (studentError) {
