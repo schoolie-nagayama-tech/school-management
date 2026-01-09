@@ -46,12 +46,8 @@ export function StudentDetailModal({
   if (!student) return null;
 
   const handleEdit = () => {
-    // 先に編集モーダルを開いてから詳細モーダルを閉じる
+    // 編集モーダルを開く（handleOpenEditModal内で詳細モーダルも閉じられる）
     onEdit(student);
-    // 少し遅延させてから閉じる（編集モーダルが開くのを待つ）
-    setTimeout(() => {
-      onClose();
-    }, 100);
   };
 
   return (

@@ -60,6 +60,25 @@ export function StudentForm({
   const [selectedSubjectIds, setSelectedSubjectIds] = useState<string[]>([]);
   const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
 
+  // studentプロップが変更された時にフォームデータを更新
+  useEffect(() => {
+    if (student) {
+      setFormData({
+        student_code: student.student_code || '',
+        last_name: student.last_name || '',
+        first_name: student.first_name || '',
+        last_name_kana: student.last_name_kana || '',
+        first_name_kana: student.first_name_kana || '',
+        grade: student.grade || 7,
+        status: student.status || 'active',
+        school_name: student.school_name || '',
+        class_name: student.class_name || '',
+        club: student.club || '',
+        subject_other: student.subject_other || '',
+      });
+    }
+  }, [student]);
+
   // 学年に応じて科目を取得
   useEffect(() => {
     const fetchSubjects = async () => {

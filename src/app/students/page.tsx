@@ -90,7 +90,13 @@ export default function StudentsPage() {
 
   // 編集モーダルを開く
   const handleOpenEditModal = (student: Student) => {
+    // まずselectedStudentを設定
     setSelectedStudent(student);
+    // 詳細モーダルが開いている場合は閉じる
+    if (isDetailModalOpen) {
+      setIsDetailModalOpen(false);
+    }
+    // 編集モーダルを開く（selectedStudentが設定された後に開く）
     setIsEditModalOpen(true);
   };
 
@@ -410,7 +416,10 @@ export default function StudentsPage() {
         student={selectedStudent}
         onClose={() => {
           setIsDetailModalOpen(false);
-          setSelectedStudent(null);
+          // 編集モーダルが開いていない場合のみselectedStudentをクリア
+          if (!isEditModalOpen) {
+            setSelectedStudent(null);
+          }
         }}
         onEdit={handleOpenEditModal}
       />
