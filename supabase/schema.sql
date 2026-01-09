@@ -352,3 +352,68 @@ CREATE POLICY "assessment_scores_allow_all_auth" ON assessment_scores
 DROP POLICY IF EXISTS "assessment_scores_allow_all_anon" ON assessment_scores;
 CREATE POLICY "assessment_scores_allow_all_anon" ON assessment_scores
   FOR ALL TO anon USING (true) WITH CHECK (true);
+-- ============================================
+-- 逕ｳ霎ｼ迥ｶ豕∫ｮ｡逅・ユ繝ｼ繝悶Ν
+-- ============================================
+-- 逕ｳ霎ｼ鬆・岼繝槭せ繧ｿ
+CREATE TABLE IF NOT EXISTS application_items (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  school_id UUID NOT NULL REFERENCES schools(id) ON DELETE RESTRICT,
+  name TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 逕溷ｾ偵・逕ｳ霎ｼ迥ｶ豕・
+CREATE TABLE IF NOT EXISTS student_applications (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  school_id UUID NOT NULL REFERENCES schools(id) ON DELETE RESTRICT,
+  student_id UUID NOT NULL REFERENCES students(id) ON DELETE RESTRICT,
+  item_id UUID NOT NULL REFERENCES application_items(id) ON DELETE CASCADE,
+  status TEXT NOT NULL CHECK (status IN ('pending', 'completed', 'not_applicable')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(student_id, item_id)
+);
+
+-- 譖ｴ譁ｰ譌･譎ゅｒ閾ｪ蜍墓峩譁ｰ縺吶ｋ繝医Μ繧ｬ繝ｼ
+DROP TRIGGER IF EXISTS update_application_items_updated_at ON application_items;
+CREATE TRIGGER update_application_items_updated_at
+  BEFORE UPDATE ON application_items
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_student_applications_updated_at ON student_applications;
+CREATE TRIGGER update_student_applications_updated_at
+  BEFORE UPDATE ON student_applications
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- 繧､繝ｳ繝・ャ繧ｯ繧ｹ
+CREATE INDEX IF NOT EXISTS idx_application_items_school_id ON application_items(school_id, is_active, sort_order);
+CREATE INDEX IF NOT EXISTS idx_student_applications_school_id ON student_applications(school_id);
+CREATE INDEX IF NOT EXISTS idx_student_applications_student_id ON student_applications(student_id);
+CREATE INDEX IF NOT EXISTS idx_student_applications_item_id ON student_applications(item_id);
+
+-- RLS (Row Level Security) 繧呈怏蜉ｹ蛹・
+ALTER TABLE application_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE student_applications ENABLE ROW LEVEL SECURITY;
+
+-- 隱崎ｨｼ貂医∩繝ｦ繝ｼ繧ｶ繝ｼ縺ｫ蜈ｨ讓ｩ髯舌ｒ莉倅ｸ弱☆繧九・繝ｪ繧ｷ繝ｼ・磯幕逋ｺ逕ｨ・・
+DROP POLICY IF EXISTS "application_items_allow_all_auth" ON application_items;
+CREATE POLICY "application_items_allow_all_auth" ON application_items
+  FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "application_items_allow_all_anon" ON application_items;
+CREATE POLICY "application_items_allow_all_anon" ON application_items
+  FOR ALL TO anon USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "student_applications_allow_all_auth" ON student_applications;
+CREATE POLICY "student_applications_allow_all_auth" ON student_applications
+  FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "student_applications_allow_all_anon" ON student_applications;
+CREATE POLICY "student_applications_allow_all_anon" ON student_applications
+  FOR ALL TO anon USING (true) WITH CHECK (true);

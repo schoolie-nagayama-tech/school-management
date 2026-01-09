@@ -18,6 +18,9 @@
   - スプレッドシート風の表形式UI
   - 行追加・セル編集機能
   - 5科合計・9科合計・平均の自動計算
+  - プルダウン選択によるテスト名・内申名・模試名の統一
+  - 年月（YYYY-MM）形式での日付管理
+  - 成績時点の学年を記録（学年跨ぎの変遷を可視化）
 
 ### v1.5
 
@@ -28,6 +31,9 @@
 - ✅ 氏名・フリガナ・コードで検索
 - ✅ 教室（schools）概念の導入
 - ✅ 作業ログ記録
+- ✅ 科目マスタ管理（学年カテゴリ別）
+- ✅ 生徒の受講科目複数選択対応
+- ✅ 生徒詳細表示モーダル
 
 ### v1.0
 
@@ -108,20 +114,28 @@ src/
 │   │   ├── Select.tsx
 │   │   ├── Modal.tsx
 │   │   └── index.ts
-│   └── students/           # 生徒関連コンポーネント
-│       ├── StudentForm.tsx
-│       ├── StudentTable.tsx
-│       ├── DeleteConfirmDialog.tsx
+│   ├── students/           # 生徒関連コンポーネント
+│   │   ├── StudentForm.tsx
+│   │   ├── StudentTable.tsx
+│   │   ├── StudentDetailModal.tsx
+│   │   ├── StudentScores.tsx
+│   │   ├── DeleteConfirmDialog.tsx
+│   │   └── index.ts
+│   └── settings/           # 設定関連コンポーネント
+│       ├── SubjectSettings.tsx
 │       └── index.ts
 ├── lib/
 │   ├── supabase.ts         # Supabaseクライアント
 │   └── api/
-│       └── students.ts     # 生徒API関数
+│       ├── students.ts     # 生徒API関数
+│       ├── subjects.ts     # 科目API関数
+│       ├── assessments.ts  # 成績API関数
+│       └── schools.ts      # 教室API関数
 └── types/
     └── database.ts         # 型定義
 ```
 
-## データベーススキーマ（v1.5）
+## データベーススキーマ
 
 ### schoolsテーブル（教室）
 
@@ -156,6 +170,27 @@ src/
 
 **制約**: `UNIQUE(school_id, student_code)` - 生徒コードは教室内でユニーク
 
+### subjectsテーブル（科目マスタ）
+
+| カラム名 | 型 | 説明 |
+|---------|-----|------|
+| id | UUID | 主キー |
+| name | VARCHAR(50) | 科目名 |
+| grade_category | VARCHAR(20) | 学年カテゴリ（elementary/middle/high） |
+| sort_order | INTEGER | 表示順 |
+| created_at | TIMESTAMP | 作成日時 |
+
+### student_subjectsテーブル（生徒と科目の中間テーブル）
+
+| カラム名 | 型 | 説明 |
+|---------|-----|------|
+| id | UUID | 主キー |
+| student_id | UUID | 生徒ID（外部キー） |
+| subject_id | UUID | 科目ID（外部キー） |
+| created_at | TIMESTAMP | 作成日時 |
+
+**制約**: `UNIQUE(student_id, subject_id)` - 1人の生徒に対して同じ科目は1回のみ
+
 ### student_logsテーブル（作業ログ）
 
 | カラム名 | 型 | 説明 |
@@ -167,6 +202,40 @@ src/
 | actor | TEXT | 実行者（現在はNULL、将来はユーザーID） |
 | diff | JSONB | 変更内容（変更前後の値） |
 | created_at | TIMESTAMP | 作成日時 |
+
+### assessmentsテーブル（成績行）
+
+| カラム名 | 型 | 説明 |
+|---------|-----|------|
+| id | UUID | 主キー |
+| school_id | UUID | 教室ID（外部キー） |
+| student_id | UUID | 生徒ID（外部キー） |
+| category | TEXT | カテゴリ（regular_test/report_card/mock） |
+| title | TEXT | タイトル（互換性のため残す） |
+| name_code | TEXT | プルダウン選択値（必須） |
+| exam_date | DATE | 試験日（互換性のため残す） |
+| exam_month | DATE | 年月（YYYY-MM-01形式） |
+| grade | INTEGER | その成績時点の学年（1-13、必須） |
+| term | TEXT | 学期（将来の拡張用） |
+| created_at | TIMESTAMP | 作成日時 |
+| updated_at | TIMESTAMP | 更新日時 |
+
+**name_codeの選択肢**:
+- `regular_test`: term1_mid, term1_final, term2_mid, term2_final, year_end, first_mid, first_final, second_mid, second_final
+- `report_card`: term1, term2, year_end, first, second
+- `mock`: venue, classroom
+
+### assessment_scoresテーブル（成績スコア）
+
+| カラム名 | 型 | 説明 |
+|---------|-----|------|
+| id | UUID | 主キー |
+| assessment_id | UUID | 成績行ID（外部キー） |
+| subject | TEXT | 科目コード（english, math, japanese, social, science, music, art, tech_home, pe, conv_5, conv_4, conv_total） |
+| value | NUMERIC | 点数 |
+| created_at | TIMESTAMP | 作成日時 |
+
+**制約**: `UNIQUE(assessment_id, subject)` - 1つの成績行に対して同じ科目は1回のみ
 
 ### 学年コード
 
@@ -213,6 +282,23 @@ src/
 4. 氏名: last_name, first_name 昇順
 5. 生徒コード: 昇順（タイブレーク）
 
+## v2.0の設計メモ
+
+### 成績管理
+
+- **カテゴリ別管理**: 定期テスト、内申、模試を分けて管理
+- **プルダウン選択**: テスト名・内申名・模試名をプルダウンで統一
+- **年月管理**: 日付ではなく年月（YYYY-MM）で管理し、学年跨ぎの変遷を可視化
+- **学年記録**: 各成績行に「その成績時点の学年」を記録（現在の学年とは別）
+- **自動計算**: 5科合計、9科合計、平均をフロントエンドで自動計算
+- **科目コード**: 固定の科目コード（english, math, japanese等）を使用
+
+### 科目管理
+
+- **学年カテゴリ別**: 小学生（elementary）、中学生（middle）、高校生（high）で科目を分類
+- **複数選択**: 1人の生徒が複数の科目を受講可能
+- **設定画面**: 科目の追加・編集・削除・並び替えが可能
+
 ## 拡張予定
 
 今後追加予定の機能:
@@ -220,7 +306,7 @@ src/
 - [ ] 講師管理
 - [ ] 授業スケジュール管理
 - [ ] 出欠管理
-- [ ] 成績管理
+- [x] 成績管理（v2.0で実装済み）
 - [ ] 請求・入金管理
 - [ ] 保護者ポータル
 - [x] 複数教室対応（v1.5で基本実装済み）

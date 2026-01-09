@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Button, Modal } from '@/components/ui';
 import {
   StudentForm,
@@ -19,6 +21,8 @@ import {
 import type { Student, StudentInsert, StudentUpdate, Subject } from '@/types/database';
 
 export default function StudentsPage() {
+  const pathname = usePathname();
+  
   // 状態管理
   const [students, setStudents] = useState<(Student & { subjects?: Subject[] })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -192,7 +196,31 @@ export default function StudentsPage() {
       <header className="bg-[#fffffe] border-b border-[#0d0d0d]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <h1 className="text-xl font-bold text-[#0d0d0d]">生徒管理</h1>
+            <div className="flex items-center gap-6">
+              <h1 className="text-xl font-bold text-[#0d0d0d]">生徒管理</h1>
+              <nav className="flex items-center gap-4">
+                <Link
+                  href="/students"
+                  className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                    pathname === '/students'
+                      ? 'bg-[#ff8e3c] text-[#0d0d0d]'
+                      : 'text-[#2a2a2a] hover:bg-[#eff0f3]'
+                  }`}
+                >
+                  生徒管理
+                </Link>
+                <Link
+                  href="/applications"
+                  className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                    pathname === '/applications'
+                      ? 'bg-[#ff8e3c] text-[#0d0d0d]'
+                      : 'text-[#2a2a2a] hover:bg-[#eff0f3]'
+                  }`}
+                >
+                  申込状況
+                </Link>
+              </nav>
+            </div>
             <button
               onClick={() => setIsSettingsModalOpen(true)}
               className="p-2 text-[#2a2a2a] hover:text-[#0d0d0d] hover:bg-[#eff0f3] rounded-lg transition-colors relative group"

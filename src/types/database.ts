@@ -246,6 +246,92 @@ export type Database = {
           },
         ];
       };
+      application_items: {
+        Row: {
+          id: string;
+          school_id: string;
+          name: string;
+          sort_order: number;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          name: string;
+          sort_order?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          name?: string;
+          sort_order?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'application_items_school_id_fkey';
+            columns: ['school_id'];
+            referencedRelation: 'schools';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      student_applications: {
+        Row: {
+          id: string;
+          school_id: string;
+          student_id: string;
+          item_id: string;
+          status: 'pending' | 'completed' | 'not_applicable';
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          student_id: string;
+          item_id: string;
+          status: 'pending' | 'completed' | 'not_applicable';
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          student_id?: string;
+          item_id?: string;
+          status?: 'pending' | 'completed' | 'not_applicable';
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'student_applications_school_id_fkey';
+            columns: ['school_id'];
+            referencedRelation: 'schools';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'student_applications_student_id_fkey';
+            columns: ['student_id'];
+            referencedRelation: 'students';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'student_applications_item_id_fkey';
+            columns: ['item_id'];
+            referencedRelation: 'application_items';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       student_subjects: {
         Row: {
           id: string;
@@ -479,4 +565,31 @@ export const STATUS_COLORS: Record<Student['status'], string> = {
   active: 'bg-[#ff8e3c]/20 text-[#0d0d0d] border border-[#0d0d0d]',
   inactive: 'bg-[#eff0f3] text-[#2a2a2a] border border-[#0d0d0d]',
   withdrawn: 'bg-[#eff0f3] text-[#2a2a2a]/60 border border-[#0d0d0d]',
+};
+
+// 申込状況管理の型定義
+export type ApplicationItem = Database['public']['Tables']['application_items']['Row'];
+export type ApplicationItemInsert = Database['public']['Tables']['application_items']['Insert'];
+export type ApplicationItemUpdate = Database['public']['Tables']['application_items']['Update'];
+
+export type StudentApplication = Database['public']['Tables']['student_applications']['Row'];
+export type StudentApplicationInsert = Database['public']['Tables']['student_applications']['Insert'];
+export type StudentApplicationUpdate = Database['public']['Tables']['student_applications']['Update'];
+
+// 申込状況のステータス
+export type ApplicationStatus = 'pending' | 'completed' | 'not_applicable';
+
+// 申込状況の表示用マッピング
+export const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
+  pending: '未申込',
+  completed: '申込済',
+  not_applicable: '対象外',
+};
+
+// 申込状況の表示記号
+export const APPLICATION_STATUS_SYMBOLS: Record<ApplicationStatus | 'empty', string> = {
+  empty: '',
+  pending: '×',
+  completed: '✓',
+  not_applicable: '-',
 };
