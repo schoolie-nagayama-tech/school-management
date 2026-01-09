@@ -1,0 +1,76 @@
+'use client';
+
+import { Button, Modal } from '@/components/ui';
+import type { Student } from '@/types/database';
+
+interface DeleteConfirmDialogProps {
+  isOpen: boolean;
+  student: Student | null;
+  onConfirm: () => void;
+  onCancel: () => void;
+  isLoading?: boolean;
+}
+
+export function DeleteConfirmDialog({
+  isOpen,
+  student,
+  onConfirm,
+  onCancel,
+  isLoading = false,
+}: DeleteConfirmDialogProps) {
+  if (!student) return null;
+
+  return (
+    <Modal isOpen={isOpen} onClose={onCancel} title="生徒の削除" size="sm">
+      <div className="space-y-4">
+        <div className="flex items-start gap-3">
+          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-[#d9376e]/20 flex items-center justify-center">
+            <svg
+              className="w-5 h-5 text-[#d9376e]"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
+          </div>
+          <div>
+            <p className="text-[#0d0d0d]">
+              以下の生徒を削除してもよろしいですか？
+            </p>
+            <p className="mt-2 text-sm text-[#2a2a2a]">
+              <span className="font-medium">
+                {student.last_name} {student.first_name}
+              </span>
+              <span className="text-[#2a2a2a]/60 ml-2">
+                ({student.student_code})
+              </span>
+            </p>
+            <p className="mt-3 text-sm text-[#d9376e]">
+              この操作は取り消せません。
+            </p>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 pt-4 border-t border-[#0d0d0d]">
+          <Button type="button" variant="secondary" onClick={onCancel}>
+            キャンセル
+          </Button>
+          <Button
+            type="button"
+            variant="danger"
+            onClick={onConfirm}
+            isLoading={isLoading}
+          >
+            削除する
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}

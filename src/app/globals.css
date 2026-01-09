@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Elements（UI要素） */
+  --background: #eff0f3;
+  --headline: #0d0d0d;
+  --paragraph: #2a2a2a;
+  --button-bg: #ff8e3c;
+  --button-text: #0d0d0d;
+  
+  /* Illustration（装飾・アクセント） */
+  --stroke: #0d0d0d;
+  --main: #eff0f3;
+  --highlight: #ff8e3c;
+  --secondary: #fffffe;
+  --tertiary: #d9376e;
+  
+  /* 互換性のための変数 */
+  --foreground: var(--paragraph);
+}
+
+body {
+  color: var(--paragraph);
+  background: var(--background);
+  font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans',
+    Meiryo, sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--headline);
+}
+
+/* フォーム入力のフォーカススタイル */
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+}
+
+/* テーブル行のホバー */
+.table-row-hover:hover {
+  background-color: var(--main);
+}
+
+/* モーダルオーバーレイ */
+.modal-overlay {
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(2px);
+}
+
+/* スクロールバー */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--main);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--stroke);
+  border-radius: 3px;
+  opacity: 0.3;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--stroke);
+  opacity: 0.5;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
