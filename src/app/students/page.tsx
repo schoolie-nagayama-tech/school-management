@@ -7,6 +7,7 @@ import {
   StudentTable,
   DeleteConfirmDialog,
   StudentDetailModal,
+  StudentScores,
 } from '@/components/students';
 import { SubjectSettings } from '@/components/settings';
 import {
@@ -31,6 +32,7 @@ export default function StudentsPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isScoresModalOpen, setIsScoresModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -155,6 +157,12 @@ export default function StudentsPage() {
   const handleOpenDetailModal = (student: Student) => {
     setSelectedStudent(student);
     setIsDetailModalOpen(true);
+  };
+
+  // 成績モーダルを開く
+  const handleOpenScoresModal = (student: Student) => {
+    setSelectedStudent(student);
+    setIsScoresModalOpen(true);
   };
 
   // 削除
@@ -359,6 +367,7 @@ export default function StudentsPage() {
           onEdit={handleOpenEditModal}
           onDelete={handleOpenDeleteDialog}
           onRowClick={handleOpenDetailModal}
+          onScores={handleOpenScoresModal}
           isLoading={isLoading}
         />
       </main>
@@ -423,6 +432,21 @@ export default function StudentsPage() {
         }}
         onEdit={handleOpenEditModal}
       />
+
+      {/* 成績モーダル */}
+      {selectedStudent && (
+        <StudentScores
+          student={selectedStudent}
+          isOpen={isScoresModalOpen}
+          onClose={() => {
+            setIsScoresModalOpen(false);
+            // 他のモーダルが開いていない場合のみselectedStudentをクリア
+            if (!isDetailModalOpen && !isEditModalOpen) {
+              setSelectedStudent(null);
+            }
+          }}
+        />
+      )}
 
       {/* 科目設定モーダル */}
       <SubjectSettings

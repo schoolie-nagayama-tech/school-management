@@ -1,0 +1,286 @@
+import { supabase } from '@/lib/supabase';
+import { getDefaultSchoolId } from '@/lib/api/schools';
+import type {
+  Assessment,
+  AssessmentInsert,
+  AssessmentWithScores,
+  AssessmentScore,
+  AssessmentScoreInsert,
+} from '@/types/database';
+import { SUBJECT_CODES, ASSESSMENT_NAME_LABELS } from '@/types/database';
+
+// 共通9科の科目コード
+const COMMON_9_SUBJECTS = [
+  'english',
+  'math',
+  'japanese',
+  'social',
+  'science',
+  'music',
+  'art',
+  'tech_home',
+  'pe',
+] as const;
+
+// 5科の科目コード（英数国社理）
+const FIVE_SUBJECTS = ['english', 'math', 'japanese', 'social', 'science'] as const;
+
+// mock用の科目コード（5科 + 換算内申）
+const MOCK_SUBJECTS = [
+  'english',
+  'math',
+  'japanese',
+  'social',
+  'science',
+  'conv_5',
+  'conv_4',
+  'conv_total',
+] as const;
+
+/**
+ * 生徒の成績一覧を取得（カテゴリ別）
+ */
+export async function listAssessments(
+  studentId: string,
+  category?: 'regular_test' | 'report_card' | 'mock'
+): Promise<AssessmentWithScores[]> {
+  const schoolId = getDefaultSchoolId();
+
+  let query = supabase
+    .from('assessments')
+    .select('*')
+    .eq('school_id', schoolId)
+    .eq('student_id', studentId)
+    .order('grade', { ascending: false }) // 学年の高い順（変遷可視化のため）
+    .order('exam_month', { ascending: false, nullsFirst: false })
+    .order('name_code', { ascending: true });
+
+  if (category) {
+    query = query.eq('category', category);
+  }
+
+  const { data: assessments, error: assessmentsError } = await query;
+
+  if (assessmentsError) {
+    console.error('Error fetching assessments:', assessmentsError);
+    throw new Error('成績データの取得に失敗しました');
+  }
+
+  if (!assessments || assessments.length === 0) {
+    return [];
+  }
+
+  // 各assessmentのスコアを取得
+  const assessmentIds = assessments.map((a) => a.id);
+  const { data: scores, error: scoresError } = await supabase
+    .from('assessment_scores')
+    .select('*')
+    .in('assessment_id', assessmentIds);
+
+  if (scoresError) {
+    console.error('Error fetching assessment scores:', scoresError);
+    throw new Error('成績スコアの取得に失敗しました');
+  }
+
+  // assessmentとscoresを結合
+  const assessmentsWithScores: AssessmentWithScores[] = assessments.map((assessment) => ({
+    ...assessment,
+    scores: (scores || []).filter((score) => score.assessment_id === assessment.id),
+  }));
+
+  return assessmentsWithScores;
+}
+
+/**
+ * 成績行を作成（必要な科目のスコア行も空で作成）
+ */
+export async function createAssessmentRow(
+  studentId: string,
+  category: 'regular_test' | 'report_card' | 'mock',
+  nameCode: string,
+  grade: number,
+  examMonth?: string | null // YYYY-MM形式
+): Promise<AssessmentWithScores> {
+  const schoolId = getDefaultSchoolId();
+
+  // YYYY-MMをYYYY-MM-01に変換
+  const examMonthDate = examMonth ? `${examMonth}-01` : null;
+  // name_codeからtitleを生成（互換性のため）
+  const title = ASSESSMENT_NAME_LABELS[nameCode] || nameCode;
+
+  // assessment行を作成
+  const assessmentData: AssessmentInsert = {
+    school_id: schoolId,
+    student_id: studentId,
+    category,
+    name_code: nameCode,
+    title,
+    exam_month: examMonthDate,
+    exam_date: examMonthDate, // 互換性のため
+    grade,
+  };
+
+  const { data: assessment, error: assessmentError } = await supabase
+    .from('assessments')
+    .insert(assessmentData)
+    .select()
+    .single();
+
+  if (assessmentError) {
+    console.error('Error creating assessment:', assessmentError);
+    throw new Error('成績行の作成に失敗しました');
+  }
+
+  // 必要な科目のスコア行を空で作成
+  let subjectsToCreate: readonly string[];
+  if (category === 'mock') {
+    subjectsToCreate = MOCK_SUBJECTS;
+  } else {
+    // regular_test と report_card は9科
+    subjectsToCreate = COMMON_9_SUBJECTS;
+  }
+
+  const scoreInserts: AssessmentScoreInsert[] = subjectsToCreate.map((subject) => ({
+    assessment_id: assessment.id,
+    subject,
+    value: null,
+  }));
+
+  const { error: scoresError } = await supabase.from('assessment_scores').insert(scoreInserts);
+
+  if (scoresError) {
+    console.error('Error creating assessment scores:', scoresError);
+    // assessmentは作成済みなので、エラーをログに記録するが、処理は続行
+    console.warn('スコア行の作成に失敗しましたが、成績行は作成されました');
+  }
+
+  // 作成したassessmentとscoresを返す
+  const { data: scores, error: fetchScoresError } = await supabase
+    .from('assessment_scores')
+    .select('*')
+    .eq('assessment_id', assessment.id);
+
+  if (fetchScoresError) {
+    console.error('Error fetching created scores:', fetchScoresError);
+  }
+
+  return {
+    ...assessment,
+    scores: scores || [],
+  };
+}
+
+/**
+ * スコアを更新（1セル更新）
+ */
+export async function updateScore(
+  assessmentId: string,
+  subject: string,
+  value: number | null
+): Promise<AssessmentScore> {
+  // 既存のスコアを確認
+  const { data: existingScore, error: fetchError } = await supabase
+    .from('assessment_scores')
+    .select('*')
+    .eq('assessment_id', assessmentId)
+    .eq('subject', subject)
+    .single();
+
+  if (fetchError && fetchError.code !== 'PGRST116') {
+    // PGRST116は「レコードが見つからない」エラー
+    console.error('Error fetching existing score:', fetchError);
+    throw new Error('スコアの取得に失敗しました');
+  }
+
+  if (existingScore) {
+    // 更新
+    const { data: updatedScore, error: updateError } = await supabase
+      .from('assessment_scores')
+      .update({ value })
+      .eq('id', existingScore.id)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('Error updating score:', updateError);
+      throw new Error('スコアの更新に失敗しました');
+    }
+
+    return updatedScore;
+  } else {
+    // 新規作成
+    const { data: newScore, error: insertError } = await supabase
+      .from('assessment_scores')
+      .insert({
+        assessment_id: assessmentId,
+        subject,
+        value,
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error('Error creating score:', insertError);
+      throw new Error('スコアの作成に失敗しました');
+    }
+
+    return newScore;
+  }
+}
+
+/**
+ * 成績行のメタ情報を更新（grade, exam_month, name_code）
+ */
+export async function updateAssessmentMeta(
+  assessmentId: string,
+  updates: {
+    grade?: number;
+    examMonth?: string | null; // YYYY-MM形式
+    nameCode?: string;
+  }
+): Promise<Assessment> {
+  const updateData: Partial<Assessment> = {};
+
+  if (updates.grade !== undefined) {
+    updateData.grade = updates.grade;
+  }
+
+  if (updates.examMonth !== undefined) {
+    const examMonthDate = updates.examMonth ? `${updates.examMonth}-01` : null;
+    updateData.exam_month = examMonthDate;
+    updateData.exam_date = examMonthDate; // 互換性のため
+  }
+
+  if (updates.nameCode !== undefined) {
+    updateData.name_code = updates.nameCode;
+    // name_codeからtitleを生成（互換性のため）
+    updateData.title = ASSESSMENT_NAME_LABELS[updates.nameCode] || updates.nameCode;
+  }
+
+  const { data: updatedAssessment, error } = await supabase
+    .from('assessments')
+    .update(updateData)
+    .eq('id', assessmentId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating assessment meta:', error);
+    throw new Error('成績行の更新に失敗しました');
+  }
+
+  return updatedAssessment;
+}
+
+/**
+ * 成績行を削除（物理削除）
+ */
+export async function deleteAssessmentRow(assessmentId: string): Promise<void> {
+  // assessmentを削除すると、CASCADEでassessment_scoresも削除される
+  const { error } = await supabase.from('assessments').delete().eq('id', assessmentId);
+
+  if (error) {
+    console.error('Error deleting assessment:', error);
+    throw new Error('成績行の削除に失敗しました');
+  }
+}
