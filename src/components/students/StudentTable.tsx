@@ -18,6 +18,7 @@ export function StudentTable({
   onDelete,
   onRowClick,
   onScores,
+  onInterviews,
   isLoading = false,
 }: StudentTableProps) {
   if (isLoading) {

@@ -2,8 +2,9 @@
 
 import type { Student, ApplicationItem, StudentApplication, ApplicationStatus } from '@/types/database';
 import { GRADE_LABELS, APPLICATION_STATUS_SYMBOLS } from '@/types/database';
-import { updateStudentApplication } from '@/lib/api/applications';
+import { updateStudentApplication, updateApplicationItem, createApplicationItem } from '@/lib/api/applications';
 import { useState } from 'react';
+import { useToast } from '@/hooks/useToast';
 
 interface ApplicationTableProps {
   students: Student[];
@@ -11,6 +12,7 @@ interface ApplicationTableProps {
   applications: StudentApplication[];
   onStatusChange: (studentId: string, itemId: string, status: ApplicationStatus | null) => void;
   onStudentClick?: (student: Student) => void;
+  onItemsChange?: () => void; // 項目が変更されたときに呼ばれるコールバック
 }
 
 // ステータスのサイクル: 空白 → pending → completed → not_applicable → 空白
@@ -43,8 +45,13 @@ export function ApplicationTable({
   applications,
   onStatusChange,
   onStudentClick,
+  onItemsChange,
 }: ApplicationTableProps) {
   const [updatingCells, setUpdatingCells] = useState<Set<string>>(new Set());
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState('');
+  const [isAddingNew, setIsAddingNew] = useState(false);
+  const { success, error: toastError } = useToast();
 
   // 申込状況をマップ化（student_id + item_id → status）
   const applicationMap = new Map<string, ApplicationStatus>();
@@ -114,13 +121,117 @@ export function ApplicationTable({
               {items.map((item) => (
                 <th
                   key={item.id}
-                  className="px-4 py-3 text-center text-[#0d0d0d] font-semibold border-r border-[#0d0d0d] min-w-[120px]"
+                  className="px-4 py-3 text-center text-[#0d0d0d] font-semibold border-r border-[#0d0d0d] min-w-[120px] relative group"
                 >
-                  <div className="flex flex-col">
-                    <span className="text-sm">{item.name}</span>
-                  </div>
+                  {editingItemId === item.id ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={editingName}
+                        onChange={(e) => setEditingName(e.target.value)}
+                        onBlur={async () => {
+                          if (editingName.trim() && editingName.trim() !== item.name) {
+                            try {
+                              await updateApplicationItem(item.id, { name: editingName.trim() });
+                              success('項目名を更新しました');
+                              onItemsChange?.();
+                            } catch (err) {
+                              toastError(
+                                err instanceof Error ? err.message : '項目名の更新に失敗しました'
+                              );
+                            }
+                          }
+                          setEditingItemId(null);
+                          setEditingName('');
+                        }}
+                        onKeyDown={async (e) => {
+                          if (e.key === 'Enter') {
+                            e.currentTarget.blur();
+                          } else if (e.key === 'Escape') {
+                            setEditingItemId(null);
+                            setEditingName('');
+                          }
+                        }}
+                        autoFocus
+                        className="flex-1 px-2 py-1 text-sm border border-[#0d0d0d] rounded bg-[#fffffe] text-[#0d0d0d] focus:outline-none focus:ring-2 focus:ring-[#ff8e3c]"
+                      />
+                    </div>
+                  ) : (
+                    <div
+                      className="flex items-center justify-center gap-1 cursor-pointer hover:bg-[#ff8e3c]/10 rounded px-2 py-1 transition-colors"
+                      onClick={() => {
+                        setEditingItemId(item.id);
+                        setEditingName(item.name);
+                      }}
+                      title="クリックして編集"
+                    >
+                      <span className="text-sm">{item.name}</span>
+                      <span className="text-xs text-[#2a2a2a]/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                        ✏️
+                      </span>
+                    </div>
+                  )}
                 </th>
               ))}
+              {/* 新規列追加ボタン */}
+              <th className="px-4 py-3 text-center text-[#0d0d0d] font-semibold border-r border-[#0d0d0d] min-w-[120px]">
+                {isAddingNew ? (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      placeholder="項目名を入力"
+                      onBlur={async () => {
+                        if (editingName.trim()) {
+                          try {
+                            await createApplicationItem({ name: editingName.trim() });
+                            success('新しい項目を追加しました');
+                            onItemsChange?.();
+                          } catch (err) {
+                            toastError(
+                              err instanceof Error ? err.message : '項目の追加に失敗しました'
+                            );
+                          }
+                        }
+                        setIsAddingNew(false);
+                        setEditingName('');
+                      }}
+                      onKeyDown={async (e) => {
+                        if (e.key === 'Enter' && editingName.trim()) {
+                          try {
+                            await createApplicationItem({ name: editingName.trim() });
+                            success('新しい項目を追加しました');
+                            onItemsChange?.();
+                            setIsAddingNew(false);
+                            setEditingName('');
+                          } catch (err) {
+                            toastError(
+                              err instanceof Error ? err.message : '項目の追加に失敗しました'
+                            );
+                          }
+                        } else if (e.key === 'Escape') {
+                          setIsAddingNew(false);
+                          setEditingName('');
+                        }
+                      }}
+                      autoFocus
+                      className="flex-1 px-2 py-1 text-sm border border-[#0d0d0d] rounded bg-[#fffffe] text-[#0d0d0d] focus:outline-none focus:ring-2 focus:ring-[#ff8e3c]"
+                    />
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setIsAddingNew(true);
+                      setEditingName('');
+                    }}
+                    className="w-full px-2 py-1 text-sm text-[#2a2a2a] hover:bg-[#ff8e3c]/10 rounded transition-colors border border-dashed border-[#0d0d0d] hover:border-[#ff8e3c]"
+                    title="新しい列を追加"
+                  >
+                    + 追加
+                  </button>
+                )}
+              </th>
             </tr>
             {/* 集計行 */}
             <tr className="bg-[#eff0f3]/50 border-b border-[#0d0d0d]">
@@ -142,6 +253,10 @@ export function ApplicationTable({
                   </div>
                 </td>
               ))}
+              {/* 新規列追加行の集計セル（空） */}
+              <td className="px-4 py-2 text-center text-[#2a2a2a] text-sm border-r border-[#0d0d0d]">
+                -
+              </td>
             </tr>
           </thead>
           <tbody>
@@ -193,6 +308,10 @@ export function ApplicationTable({
                     </td>
                   );
                 })}
+                {/* 新規列追加行のセル（空） */}
+                <td className="px-4 py-3 text-center border-r border-[#0d0d0d] bg-[#eff0f3]">
+                  -
+                </td>
               </tr>
             ))}
           </tbody>
