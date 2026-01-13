@@ -417,3 +417,43 @@ CREATE POLICY "student_applications_allow_all_auth" ON student_applications
 DROP POLICY IF EXISTS "student_applications_allow_all_anon" ON student_applications;
 CREATE POLICY "student_applications_allow_all_anon" ON student_applications
   FOR ALL TO anon USING (true) WITH CHECK (true);
+
+-- ============================================
+-- ポータルメニューテーブル
+-- ============================================
+CREATE TABLE IF NOT EXISTS portal_menu (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  school_id UUID NOT NULL REFERENCES schools(id) ON DELETE RESTRICT,
+  menu_key TEXT NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT,
+  is_visible BOOLEAN NOT NULL DEFAULT true,
+  link_url TEXT,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(school_id, menu_key)
+);
+
+-- updated_at自動更新
+DROP TRIGGER IF EXISTS update_portal_menu_updated_at ON portal_menu;
+CREATE TRIGGER update_portal_menu_updated_at
+  BEFORE UPDATE ON portal_menu
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- インデックス
+CREATE INDEX IF NOT EXISTS idx_portal_menu_school_id ON portal_menu(school_id);
+CREATE INDEX IF NOT EXISTS idx_portal_menu_school_visible_order ON portal_menu(school_id, is_visible, sort_order);
+
+-- RLS (Row Level Security) ポリシー
+ALTER TABLE portal_menu ENABLE ROW LEVEL SECURITY;
+
+-- すべてのユーザーに許可（認証・未認証問わず）
+DROP POLICY IF EXISTS "portal_menu_allow_all_auth" ON portal_menu;
+CREATE POLICY "portal_menu_allow_all_auth" ON portal_menu
+  FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "portal_menu_allow_all_anon" ON portal_menu;
+CREATE POLICY "portal_menu_allow_all_anon" ON portal_menu
+  FOR ALL TO anon USING (true) WITH CHECK (true);

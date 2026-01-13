@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react';
 import { Modal } from '@/components/ui';
 import { Button } from '@/components/ui';
 import { getStudentWithSubjects } from '@/lib/api/subjects';
+import { getDefaultSchoolId } from '@/lib/api/schools';
 import type { Student, Subject } from '@/types/database';
 import { GRADE_LABELS, STATUS_LABELS, STATUS_COLORS } from '@/types/database';
+import { InterviewList } from './InterviewList';
 
 interface StudentDetailModalProps {
   isOpen: boolean;
@@ -13,6 +15,8 @@ interface StudentDetailModalProps {
   onClose: () => void;
   onEdit: (student: Student) => void;
 }
+
+type TabType = 'basic' | 'scores' | 'interviews';
 
 export function StudentDetailModal({
   isOpen,
@@ -22,6 +26,13 @@ export function StudentDetailModal({
 }: StudentDetailModalProps) {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabType>('basic');
+  const schoolId = getDefaultSchoolId();
+
+  const tabs: { key: TabType; label: string }[] = [
+    { key: 'basic', label: '基本情報' },
+    { key: 'interviews', label: '面談記録' },
+  ];
 
   useEffect(() => {
     if (isOpen && student) {
@@ -53,7 +64,27 @@ export function StudentDetailModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="生徒詳細" size="lg">
       <div className="space-y-6">
-        {/* 基本情報 */}
+        {/* タブ */}
+        <div className="flex border-b border-[#0d0d0d] -mx-6 px-6">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === tab.key
+                  ? 'border-[#ff8e3c] text-[#ff8e3c]'
+                  : 'border-transparent text-[#2a2a2a] hover:text-[#0d0d0d]'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* タブコンテンツ */}
+        {activeTab === 'basic' && (
+          <>
+            {/* 基本情報 */}
         <div>
           <h3 className="text-sm font-semibold text-[#0d0d0d] mb-3">基本情報</h3>
           <div className="grid grid-cols-2 gap-4">
@@ -167,15 +198,34 @@ export function StudentDetailModal({
           </div>
         </div>
 
-        {/* アクションボタン */}
-        <div className="flex justify-end gap-3 pt-4 border-t border-[#0d0d0d]">
-          <Button type="button" variant="secondary" onClick={onClose}>
-            閉じる
-          </Button>
-          <Button type="button" onClick={handleEdit}>
-            編集
-          </Button>
-        </div>
+            {/* アクションボタン */}
+            <div className="flex justify-end gap-3 pt-4 border-t border-[#0d0d0d]">
+              <Button type="button" variant="secondary" onClick={onClose}>
+                閉じる
+              </Button>
+              <Button type="button" onClick={handleEdit}>
+                編集
+              </Button>
+            </div>
+          </>
+        )}
+
+        {activeTab === 'scores' && student && (
+          <div className="min-h-[400px]">
+            <p className="text-sm text-[#2a2a2a] mb-4">
+              成績管理機能は別ウィンドウで開きます。生徒一覧ページから「成績」ボタンをクリックしてください。
+            </p>
+            <Button onClick={handleEdit} variant="secondary">
+              成績を開く
+            </Button>
+          </div>
+        )}
+
+        {activeTab === 'interviews' && student && (
+          <div className="h-[60vh] overflow-y-auto pr-2">
+            <InterviewList studentId={student.id} schoolId={schoolId} />
+          </div>
+        )}
       </div>
     </Modal>
   );

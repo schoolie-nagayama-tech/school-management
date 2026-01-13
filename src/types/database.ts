@@ -568,9 +568,22 @@ export const STATUS_COLORS: Record<Student['status'], string> = {
 };
 
 // 申込状況管理の型定義
-export type ApplicationItem = Database['public']['Tables']['application_items']['Row'];
+export type ApplicationItem = Database['public']['Tables']['application_items']['Row'] & {
+  is_hidden?: boolean;
+  ended_at?: string | null;
+};
 export type ApplicationItemInsert = Database['public']['Tables']['application_items']['Insert'];
 export type ApplicationItemUpdate = Database['public']['Tables']['application_items']['Update'];
+
+// フィルター用の型
+export interface ApplicationFilters {
+  search?: string;        // 生徒名・フォーム名検索
+  grade?: number | null;  // 学年
+  itemId?: string | null; // 申込項目ID
+  dateFrom?: string;      // 日付From
+  dateTo?: string;        // 日付To
+  showHidden?: boolean;   // 非表示も含めるか
+}
 
 export type StudentApplication = Database['public']['Tables']['student_applications']['Row'];
 export type StudentApplicationInsert = Database['public']['Tables']['student_applications']['Insert'];
@@ -592,4 +605,163 @@ export const APPLICATION_STATUS_SYMBOLS: Record<ApplicationStatus | 'empty', str
   pending: '×',
   completed: '✓',
   not_applicable: '-',
+};
+
+// ============================================
+// ポータルメニュー関連
+// ============================================
+
+export type PortalMenu = {
+  id: string;
+  school_id: string;
+  menu_key: string;
+  title: string;
+  description: string | null;
+  is_visible: boolean;
+  link_type: 'internal' | 'external';
+  link_url: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type PortalMenuInsert = Omit<PortalMenu, 'id' | 'created_at' | 'updated_at'>;
+
+export type PortalMenuUpdate = Partial<Omit<PortalMenu, 'id' | 'school_id' | 'menu_key' | 'created_at' | 'updated_at'>>;
+
+// ============================================
+// フォーム回答関連
+// ============================================
+
+export type FormType = 'zoukoma' | 'moshi' | 'mogi' | 'shukaisu' | 'youbi' | 'kyozai' | 'soudan';
+
+export type FormResponse = {
+  id: string;
+  school_id: string;
+  form_type: FormType;
+  form_period: string;
+  student_name: string;
+  grade: number;
+  email: string;
+  response_data: Record<string, unknown>;
+  linked_student_id: string | null;
+  linked_at: string | null;
+  status_checks: Record<string, boolean>;
+  is_archived: boolean;
+  archived_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type FormResponseInsert = Omit<FormResponse, 'id' | 'created_at' | 'updated_at' | 'linked_student_id' | 'linked_at' | 'is_archived' | 'archived_at'>;
+
+export type FormResponseUpdate = Partial<Omit<FormResponse, 'id' | 'school_id' | 'form_type' | 'form_period' | 'created_at' | 'updated_at'>>;
+
+export type FormPeriod = {
+  id: string;
+  school_id: string;
+  form_type: FormType;
+  period_key: string;
+  title: string;
+  settings: Record<string, unknown>;
+  publish_start: string | null;
+  publish_end: string | null;
+  is_active: boolean;
+  linked_application_item_id: string | null;
+  is_archived: boolean;
+  archived_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type FormPeriodInsert = Omit<FormPeriod, 'id' | 'created_at' | 'updated_at' | 'is_archived' | 'archived_at'>;
+
+export type FormPeriodUpdate = Partial<Omit<FormPeriod, 'id' | 'school_id' | 'form_type' | 'period_key' | 'created_at' | 'updated_at'>>;
+
+// フォーム種別のラベル
+export const FORM_TYPE_LABELS: Record<FormType, string> = {
+  zoukoma: '増コマ申込',
+  moshi: '模試申込',
+  mogi: 'Vもぎ申込',
+  shukaisu: '週回数変更',
+  youbi: '曜日変更',
+  kyozai: '教材販売',
+  soudan: 'お客様相談',
+};
+
+// フォームフィールドタイプ（既存のフォーム機能用）
+export type FormFieldType = 'text' | 'textarea' | 'select' | 'radio' | 'checkbox' | 'date' | 'number';
+
+export const FORM_FIELD_TYPE_LABELS: Record<FormFieldType, string> = {
+  text: 'テキスト',
+  textarea: 'テキストエリア',
+  select: 'セレクト',
+  radio: 'ラジオボタン',
+  checkbox: 'チェックボックス',
+  date: '日付',
+  number: '数値',
+};
+
+// フォームステータス（既存のフォーム機能用）
+export type FormStatus = 'draft' | 'published' | 'closed';
+
+export const FORM_STATUS_LABELS: Record<FormStatus, string> = {
+  draft: '下書き',
+  published: '公開中',
+  closed: '終了',
+};
+
+// ============================================
+// 面談記録関連
+// ============================================
+
+export type InterviewType = 
+  | 'parent_interview' 
+  | 'phone' 
+  | 'student_interview' 
+  | 'casual' 
+  | 'enrollment' 
+  | 'other'
+  | 'task';
+
+export interface StudentInterview {
+  id: string;
+  school_id: string;
+  student_id: string;
+  interview_date: string;      // YYYY-MM-DD
+  interview_type: InterviewType;
+  content: string;
+  is_completed: boolean;       // タスク用
+  completed_at: string | null; // タスク用
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StudentInterviewInput {
+  interview_date: string;
+  interview_type: InterviewType;
+  content: string;
+}
+
+// 面談種別のラベルマッピング
+export const INTERVIEW_TYPE_LABELS: Record<InterviewType, string> = {
+  parent_interview: '保護者面談',
+  phone: '電話',
+  student_interview: '生徒面談',
+  casual: '雑談',
+  enrollment: '入会面談',
+  other: 'その他',
+  task: 'タスク',
+};
+
+// 面談種別の色マッピング（バッジ用）
+export const INTERVIEW_TYPE_COLORS: Record<InterviewType, string> = {
+  parent_interview: 'bg-blue-100 text-blue-800',
+  phone: 'bg-green-100 text-green-800',
+  student_interview: 'bg-purple-100 text-purple-800',
+  casual: 'bg-gray-100 text-gray-800',
+  enrollment: 'bg-orange-100 text-orange-800',
+  other: 'bg-gray-100 text-gray-600',
+  task: 'bg-red-100 text-red-800',
 };

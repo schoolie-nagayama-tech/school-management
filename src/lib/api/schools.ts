@@ -27,15 +27,28 @@ export async function getSchool(id: string): Promise<School | null> {
     .from('schools')
     .select('*')
     .eq('id', id)
-    .single();
+    .maybeSingle();
 
   if (error) {
-    if (error.code === 'PGRST116') {
-      return null;
-    }
     console.error('Error fetching school:', error);
     throw new Error('教室情報の取得に失敗しました');
   }
 
-  return data as School;
+  return data as School | null;
+}
+
+// 教室コードで教室を取得
+export async function getSchoolByCode(code: string): Promise<School | null> {
+  const { data, error } = await supabase
+    .from('schools')
+    .select('*')
+    .eq('code', code)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Error fetching school by code:', error);
+    throw new Error('教室情報の取得に失敗しました');
+  }
+
+  return data as School | null;
 }

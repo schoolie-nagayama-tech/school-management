@@ -1,8 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { Button, Modal } from '@/components/ui';
 import {
   StudentForm,
@@ -10,8 +8,12 @@ import {
   DeleteConfirmDialog,
   StudentDetailModal,
   StudentScores,
+  InterviewListModal,
 } from '@/components/students';
+import { TaskAlert } from '@/components/students/TaskAlert';
 import { SubjectSettings } from '@/components/settings';
+import { AppHeader } from '@/components/layout';
+import { SoudanAlert } from '@/components/soudan/SoudanAlert';
 import {
   getStudents,
   createStudent,
@@ -21,7 +23,6 @@ import {
 import type { Student, StudentInsert, StudentUpdate, Subject } from '@/types/database';
 
 export default function StudentsPage() {
-  const pathname = usePathname();
   
   // 状態管理
   const [students, setStudents] = useState<(Student & { subjects?: Subject[] })[]>([]);
@@ -37,6 +38,7 @@ export default function StudentsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isScoresModalOpen, setIsScoresModalOpen] = useState(false);
+  const [isInterviewsModalOpen, setIsInterviewsModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -169,6 +171,20 @@ export default function StudentsPage() {
     setIsScoresModalOpen(true);
   };
 
+  // 面談記録モーダルを開く
+  const handleOpenInterviewsModal = (student: Student) => {
+    setSelectedStudent(student);
+    setIsInterviewsModalOpen(true);
+  };
+
+  // タスクアラートから生徒をクリックした時
+  const handleTaskClick = (studentId: string) => {
+    const student = students.find(s => s.id === studentId);
+    if (student) {
+      handleOpenInterviewsModal(student);
+    }
+  };
+
   // 削除
   const handleDelete = async () => {
     if (!selectedStudent) return;
@@ -192,69 +208,16 @@ export default function StudentsPage() {
 
   return (
     <div className="min-h-screen bg-[#eff0f3]">
-      {/* ヘッダー */}
-      <header className="bg-[#fffffe] border-b border-[#0d0d0d]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-6">
-              <h1 className="text-xl font-bold text-[#0d0d0d]">生徒管理</h1>
-              <nav className="flex items-center gap-4">
-                <Link
-                  href="/students"
-                  className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                    pathname === '/students'
-                      ? 'bg-[#ff8e3c] text-[#0d0d0d]'
-                      : 'text-[#2a2a2a] hover:bg-[#eff0f3]'
-                  }`}
-                >
-                  生徒管理
-                </Link>
-                <Link
-                  href="/applications"
-                  className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                    pathname === '/applications'
-                      ? 'bg-[#ff8e3c] text-[#0d0d0d]'
-                      : 'text-[#2a2a2a] hover:bg-[#eff0f3]'
-                  }`}
-                >
-                  申込状況
-                </Link>
-              </nav>
-            </div>
-            <button
-              onClick={() => setIsSettingsModalOpen(true)}
-              className="p-2 text-[#2a2a2a] hover:text-[#0d0d0d] hover:bg-[#eff0f3] rounded-lg transition-colors relative group"
-              title="科目設定"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
-              <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-[#0d0d0d] rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                科目設定
-              </span>
-            </button>
-          </div>
-        </div>
-      </header>
+      <AppHeader title="生徒管理" onSettingsClick={() => setIsSettingsModalOpen(true)} />
 
       {/* メインコンテンツ */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* お客様相談アラート */}
+        <SoudanAlert />
+        
+        {/* タスクアラート */}
+        <TaskAlert onTaskClick={handleTaskClick} />
+
         {/* エラーメッセージ */}
         {errorMessage && (
           <div className="mb-6 p-4 bg-[#d9376e]/10 border border-[#d9376e] rounded-lg">
@@ -396,6 +359,7 @@ export default function StudentsPage() {
           onDelete={handleOpenDeleteDialog}
           onRowClick={handleOpenDetailModal}
           onScores={handleOpenScoresModal}
+          onInterviews={handleOpenInterviewsModal}
           isLoading={isLoading}
         />
       </main>
@@ -469,7 +433,23 @@ export default function StudentsPage() {
           onClose={() => {
             setIsScoresModalOpen(false);
             // 他のモーダルが開いていない場合のみselectedStudentをクリア
-            if (!isDetailModalOpen && !isEditModalOpen) {
+            if (!isDetailModalOpen && !isEditModalOpen && !isInterviewsModalOpen) {
+              setSelectedStudent(null);
+            }
+          }}
+        />
+      )}
+
+      {/* 面談記録モーダル */}
+      {selectedStudent && (
+        <InterviewListModal
+          student={selectedStudent}
+          schoolId={process.env.NEXT_PUBLIC_DEFAULT_SCHOOL_ID!}
+          isOpen={isInterviewsModalOpen}
+          onClose={() => {
+            setIsInterviewsModalOpen(false);
+            // 他のモーダルが開いていない場合のみselectedStudentをクリア
+            if (!isDetailModalOpen && !isEditModalOpen && !isScoresModalOpen) {
               setSelectedStudent(null);
             }
           }}

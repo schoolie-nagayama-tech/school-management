@@ -1,0 +1,326 @@
+import { supabase } from '../supabase';
+import {
+  getFormPeriods,
+  getActiveFormPeriod,
+  getFormPeriod,
+  createFormPeriod,
+  updateFormPeriod,
+  deleteFormPeriod,
+} from './form-periods';
+import { createFormResponse, getFormResponses, updateFormResponseStatus } from './form-responses';
+import { getDefaultSchoolId, getSchoolByCode } from './schools';
+import type {
+  FormPeriod,
+  FormPeriodInsert,
+  FormPeriodUpdate,
+  FormResponseInsert,
+} from '@/types/database';
+import type {
+  MogiPeriod,
+  MogiSettings,
+  MogiResponse,
+  MogiResponseData,
+  MogiResponseFilters,
+  MogiStats,
+  DateVenueSelection,
+} from '@/types/forms/mogi';
+
+// ============================================
+// Vもぎ期間管理
+// ============================================
+
+/**
+ * Vもぎ期間一覧を取得
+ */
+export async function getMogiPeriods(
+  schoolId?: string,
+  includeArchived: boolean = false
+): Promise<MogiPeriod[]> {
+  const targetSchoolId = schoolId || getDefaultSchoolId();
+  const periods = await getFormPeriods(targetSchoolId, 'mogi', includeArchived);
+  return periods.map((p) => ({
+    ...p,
+    form_type: 'mogi' as const,
+    settings: (p.settings || {}) as MogiSettings,
+  }));
+}
+
+/**
+ * 公開中のVもぎ期間を取得（ポータル用）
+ */
+export async function getActiveMogiPeriod(
+  schoolCode: string
+): Promise<MogiPeriod | null> {
+  const school = await getSchoolByCode(schoolCode);
+  if (!school) {
+    return null;
+  }
+
+  const period = await getActiveFormPeriod(school.id, 'mogi');
+  if (!period) {
+    return null;
+  }
+
+  return {
+    ...period,
+    form_type: 'mogi' as const,
+    settings: (period.settings || {}) as MogiSettings,
+  };
+}
+
+/**
+ * Vもぎ期間を1件取得
+ */
+export async function getMogiPeriod(id: string): Promise<MogiPeriod | null> {
+  const period = await getFormPeriod(id);
+  if (!period || period.form_type !== 'mogi') {
+    return null;
+  }
+
+  return {
+    ...period,
+    form_type: 'mogi' as const,
+    settings: (period.settings || {}) as MogiSettings,
+  };
+}
+
+/**
+ * Vもぎ期間を作成
+ */
+export async function createMogiPeriod(
+  data: Omit<FormPeriodInsert, 'school_id' | 'form_type'>
+): Promise<MogiPeriod> {
+  const schoolId = getDefaultSchoolId();
+
+  const periodData: FormPeriodInsert = {
+    ...data,
+    school_id: schoolId,
+    form_type: 'mogi',
+    settings: (data.settings || {}) as MogiSettings,
+  };
+
+  const period = await createFormPeriod(periodData);
+  return {
+    ...period,
+    form_type: 'mogi' as const,
+    settings: (period.settings || {}) as MogiSettings,
+  };
+}
+
+/**
+ * Vもぎ期間を更新
+ */
+export async function updateMogiPeriod(
+  id: string,
+  data: FormPeriodUpdate
+): Promise<MogiPeriod> {
+  const updateData: FormPeriodUpdate = {
+    ...data,
+    settings: data.settings ? (data.settings as MogiSettings) : undefined,
+  };
+
+  const period = await updateFormPeriod(id, updateData);
+  return {
+    ...period,
+    form_type: 'mogi' as const,
+    settings: (period.settings || {}) as MogiSettings,
+  };
+}
+
+/**
+ * 前回の期間設定をコピーして新規作成
+ */
+export async function copyMogiPeriod(sourceId: string): Promise<MogiPeriod> {
+  const source = await getMogiPeriod(sourceId);
+  if (!source) {
+    throw new Error('コピー元の期間が見つかりません');
+  }
+
+  const newPeriod: Omit<FormPeriodInsert, 'school_id' | 'form_type'> = {
+    period_key: '', // 空欄（手入力）
+    title: '', // 空欄（手入力）
+    settings: source.settings,
+    publish_start: null,
+    publish_end: null,
+    is_active: false,
+    linked_application_item_id: null,
+  };
+
+  return createMogiPeriod(newPeriod);
+}
+
+/**
+ * Vもぎ期間を削除
+ */
+export async function deleteMogiPeriod(id: string): Promise<void> {
+  await deleteFormPeriod(id);
+}
+
+// ============================================
+// Vもぎ回答送信
+// ============================================
+
+/**
+ * Vもぎ回答を送信
+ */
+export async function submitMogiResponse(
+  data: {
+    school_id: string;
+    period_key: string;
+    student_name: string;
+    grade: number;
+    email: string;
+    response_data: MogiResponseData;
+  }
+): Promise<void> {
+  const responseData: FormResponseInsert = {
+    school_id: data.school_id,
+    form_type: 'mogi',
+    form_period: data.period_key,
+    student_name: data.student_name,
+    grade: data.grade,
+    email: data.email,
+    response_data: data.response_data as never,
+    status_checks: {
+      charged: false,
+    },
+  };
+
+  await createFormResponse(responseData);
+}
+
+// ============================================
+// Vもぎ回答一覧
+// ============================================
+
+/**
+ * Vもぎ回答一覧を取得
+ */
+export async function getMogiResponses(
+  schoolId: string,
+  periodKey: string,
+  filters?: MogiResponseFilters
+): Promise<MogiResponse[]> {
+  const responses = await getFormResponses(schoolId, {
+    formType: 'mogi',
+    formPeriod: periodKey,
+    grade: filters?.grade,
+    linkedStatus: filters?.linkedStatus,
+    showArchived: filters?.showArchived,
+    chargedStatus: filters?.chargedStatus,
+  });
+
+  // フィルター適用
+  let filtered = responses.map((r) => ({
+    ...r,
+    form_type: 'mogi' as const,
+    response_data: r.response_data as MogiResponseData,
+  }));
+
+  // 日程フィルター
+  if (filters?.dateId) {
+    filtered = filtered.filter((r) =>
+      r.response_data.selections.some((s) => s.date_id === filters.dateId)
+    );
+  }
+
+  // 会場フィルター
+  if (filters?.venueId) {
+    filtered = filtered.filter((r) =>
+      r.response_data.selections.some((s) => s.venue_id === filters.venueId)
+    );
+  }
+
+  // 計上状態フィルター
+  if (filters?.chargedStatus) {
+    filtered = filtered.filter((r) => {
+      const charged = r.status_checks?.charged || false;
+      return filters.chargedStatus === 'charged' ? charged : !charged;
+    });
+  }
+
+  return filtered;
+}
+
+/**
+ * Vもぎ集計データを取得
+ */
+export async function getMogiStats(
+  schoolId: string,
+  periodKey: string
+): Promise<MogiStats> {
+  const responses = await getMogiResponses(schoolId, periodKey);
+
+  // 期間設定を取得して日程・会場のマスタを取得
+  const periods = await getMogiPeriods(schoolId);
+  const period = periods.find((p) => p.period_key === periodKey);
+
+  if (!period || !period.settings.dates) {
+    return {
+      total_responses: responses.length,
+      date_venue_counts: [],
+      charged_count: 0,
+      linked_count: 0,
+    };
+  }
+
+  // 日程・会場別の集計
+  const dateVenueCounts = period.settings.dates.map((date) => {
+    const venueCounts = date.venues.map((venue) => {
+      const count = responses.filter((r) =>
+        r.response_data.selections.some(
+          (s) => s.date_id === date.id && s.venue_id === venue.id
+        )
+      ).length;
+      return {
+        venue_id: venue.id,
+        venue_label: venue.label,
+        count,
+      };
+    });
+
+    const total = venueCounts.reduce((sum, v) => sum + v.count, 0);
+
+    return {
+      date_id: date.id,
+      date_label: date.label,
+      venue_counts: venueCounts,
+      total,
+    };
+  });
+
+  const chargedCount = responses.filter(
+    (r) => r.status_checks?.charged === true
+  ).length;
+
+  const linkedCount = responses.filter((r) => r.linked_student_id !== null)
+    .length;
+
+  return {
+    total_responses: responses.length,
+    date_venue_counts: dateVenueCounts,
+    charged_count: chargedCount,
+    linked_count: linkedCount,
+  };
+}
+
+/**
+ * Vもぎ回答の計上状態を更新
+ */
+export async function updateMogiChargedStatus(
+  responseId: string,
+  charged: boolean
+): Promise<void> {
+  await updateFormResponseStatus(responseId, { charged });
+}
+
+/**
+ * Vもぎ期間の回答数を取得
+ */
+export async function getMogiResponseCount(
+  schoolId: string,
+  periodKey: string
+): Promise<number> {
+  const responses = await getMogiResponses(schoolId, periodKey);
+  return responses.length;
+}

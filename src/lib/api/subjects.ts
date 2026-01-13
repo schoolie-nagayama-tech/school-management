@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { getDefaultSchoolId } from './schools';
 import type {
   Subject,
   SubjectInsert,

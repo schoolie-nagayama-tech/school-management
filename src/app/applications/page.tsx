@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { AppHeader } from '@/components/layout';
 import { Button } from '@/components/ui';
-import { ApplicationTable, ApplicationItemSettings } from '@/components/applications';
+import { ApplicationTable, ApplicationItemSettings, ApplicationFiltersPanel, ApplicationItemManager } from '@/components/applications';
 import { StudentDetailModal } from '@/components/students';
 import {
   getStudents,
@@ -13,15 +12,17 @@ import {
   getApplicationItems,
   getStudentApplications,
 } from '@/lib/api/applications';
+import { getDefaultSchoolId } from '@/lib/api/schools';
 import type {
   Student,
   ApplicationItem,
   StudentApplication,
   ApplicationStatus,
+  ApplicationFilters,
 } from '@/types/database';
 
 export default function ApplicationsPage() {
-  const pathname = usePathname();
+  const schoolId = getDefaultSchoolId();
   
   // 状態管理
   const [students, setStudents] = useState<Student[]>([]);
@@ -29,9 +30,18 @@ export default function ApplicationsPage() {
   const [applications, setApplications] = useState<StudentApplication[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isItemManagerOpen, setIsItemManagerOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // フィルター状態
+  const [filters, setFilters] = useState<ApplicationFilters>({
+    search: '',
+    grade: null,
+    itemId: null,
+    showHidden: false,
+  });
 
   // データを取得
   const fetchData = useCallback(async () => {
@@ -40,8 +50,8 @@ export default function ApplicationsPage() {
     try {
       const [studentsData, itemsData, applicationsData] = await Promise.all([
         getStudents(),
-        getApplicationItems(),
-        getStudentApplications(),
+        getApplicationItems(schoolId, filters.showHidden),
+        getStudentApplications(schoolId),
       ]);
       setStudents(studentsData);
       setItems(itemsData);
@@ -54,12 +64,62 @@ export default function ApplicationsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [schoolId, filters.showHidden]);
 
   // 初回読み込み
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // フィルター適用
+  const filteredStudents = useMemo(() => {
+    let result = students;
+
+    // 学年フィルター
+    if (filters.grade !== null && filters.grade !== undefined) {
+      result = result.filter((s) => s.grade === filters.grade);
+    }
+
+    // 検索フィルター
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      result = result.filter(
+        (s) =>
+          s.last_name.toLowerCase().includes(searchLower) ||
+          s.first_name.toLowerCase().includes(searchLower) ||
+          s.last_name_kana.toLowerCase().includes(searchLower) ||
+          s.first_name_kana.toLowerCase().includes(searchLower) ||
+          s.student_code?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // 申込項目フィルター（特定の項目に申込済みの生徒のみ）
+    if (filters.itemId) {
+      result = result.filter((s) => {
+        const app = applications.find(
+          (a) => a.student_id === s.id && a.item_id === filters.itemId && a.status === 'completed'
+        );
+        return !!app;
+      });
+    }
+
+    return result;
+  }, [students, applications, filters]);
+
+  // フィルター変更
+  const handleFilterChange = (newFilters: Partial<ApplicationFilters>) => {
+    setFilters((prev) => ({ ...prev, ...newFilters }));
+  };
+
+  // フィルターリセット
+  const handleResetFilters = () => {
+    setFilters({
+      search: '',
+      grade: null,
+      itemId: null,
+      showHidden: filters.showHidden, // showHiddenは保持
+    });
+  };
 
   // 申込状況が変更されたときの処理
   const handleStatusChange = useCallback(
@@ -120,66 +180,10 @@ export default function ApplicationsPage() {
 
   return (
     <div className="min-h-screen bg-[#eff0f3]">
-      {/* ヘッダー */}
-      <header className="bg-[#fffffe] border-b border-[#0d0d0d]">
-        <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-6">
-              <h1 className="text-xl font-bold text-[#0d0d0d]">申込状況管理</h1>
-              <nav className="flex items-center gap-4">
-                <Link
-                  href="/students"
-                  className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                    pathname === '/students'
-                      ? 'bg-[#ff8e3c] text-[#0d0d0d]'
-                      : 'text-[#2a2a2a] hover:bg-[#eff0f3]'
-                  }`}
-                >
-                  生徒管理
-                </Link>
-                <Link
-                  href="/applications"
-                  className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                    pathname === '/applications'
-                      ? 'bg-[#ff8e3c] text-[#0d0d0d]'
-                      : 'text-[#2a2a2a] hover:bg-[#eff0f3]'
-                  }`}
-                >
-                  申込状況
-                </Link>
-              </nav>
-            </div>
-            <button
-              onClick={() => setIsSettingsModalOpen(true)}
-              className="p-2 text-[#2a2a2a] hover:text-[#0d0d0d] hover:bg-[#eff0f3] rounded-lg transition-colors relative group"
-              title="項目設定"
-            >
-              <svg
-                className="w-6 h-6 text-[#0d0d0d]"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-              </svg>
-              <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-[#0d0d0d] rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                項目設定
-              </span>
-            </button>
-          </div>
-        </div>
-      </header>
+      <AppHeader 
+        title="申込状況管理" 
+        onSettingsClick={() => setIsItemManagerOpen(true)} 
+      />
 
       {/* メインコンテンツ */}
       <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -190,6 +194,14 @@ export default function ApplicationsPage() {
             {errorMessage}
           </div>
         )}
+
+        {/* フィルターパネル */}
+        <ApplicationFiltersPanel
+          filters={filters}
+          items={items}
+          onChange={handleFilterChange}
+          onReset={handleResetFilters}
+        />
 
         {/* 説明 */}
         <div className="mb-4 text-[#2a2a2a] text-sm">
@@ -231,18 +243,29 @@ export default function ApplicationsPage() {
           </div>
         ) : (
           <ApplicationTable
-            students={students}
-            items={items}
+            students={filteredStudents}
+            items={items.filter((i) => filters.showHidden || !i.is_hidden)}
             applications={applications}
             onStatusChange={handleStatusChange}
             onStudentClick={handleStudentClick}
+            onItemsChange={fetchData}
           />
         )}
 
-        {/* 項目設定モーダル */}
+        {/* 項目設定モーダル（既存） */}
         <ApplicationItemSettings
           isOpen={isSettingsModalOpen}
           onClose={handleSettingsClose}
+        />
+
+        {/* 項目管理モーダル（新規） */}
+        <ApplicationItemManager
+          schoolId={schoolId}
+          items={items}
+          showHidden={filters.showHidden}
+          isOpen={isItemManagerOpen}
+          onClose={() => setIsItemManagerOpen(false)}
+          onUpdated={fetchData}
         />
 
         {/* 生徒詳細モーダル */}

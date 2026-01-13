@@ -1,11 +1,40 @@
 -- 生徒管理システム - ダミーデータ
 -- Supabase SQL Editorで実行してください
 
--- 既存のデータを削除
+-- 既存のデータを削除（外部キー制約の順序に注意）
+-- フォーム関連（存在する場合のみ削除）
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'form_responses') THEN
+    DELETE FROM form_responses;
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'form_fields') THEN
+    DELETE FROM form_fields;
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'forms') THEN
+    DELETE FROM forms;
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'form_template_fields') THEN
+    DELETE FROM form_template_fields;
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'form_templates') THEN
+    DELETE FROM form_templates;
+  END IF;
+END $$;
+
+-- 成績関連（最下位から）
+DELETE FROM assessment_scores;
+DELETE FROM assessments;
+-- 申込状況関連
+DELETE FROM student_applications;
+DELETE FROM application_items;
+-- ポータルメニュー
+DELETE FROM portal_menu;
+-- 生徒関連
 DELETE FROM student_subjects;
+DELETE FROM student_logs;
 DELETE FROM students;
 DELETE FROM subjects;
-DELETE FROM student_logs;
 DELETE FROM schools;
 
 -- デフォルト教室の作成
@@ -191,3 +220,34 @@ WHERE s.student_code = 'S0005'
   AND sub.name = '国語' 
   AND sub.grade_category = 'elementary'
 ON CONFLICT (student_id, subject_id) DO NOTHING;
+
+-- ============================================
+-- ポータルメニュー初期データ
+-- ============================================
+
+DO $$
+DECLARE
+  school_id_val UUID;
+BEGIN
+  -- 学校IDを取得
+  SELECT id INTO school_id_val FROM schools WHERE code = 'DEFAULT' LIMIT 1;
+
+  IF school_id_val IS NULL THEN
+    RAISE EXCEPTION 'デフォルト教室が見つかりません';
+  END IF;
+
+  -- 既存のポータルメニューを削除（再作成のため）
+  DELETE FROM portal_menu WHERE school_id = school_id_val;
+
+  -- ポータルメニュー項目を作成
+  INSERT INTO portal_menu (school_id, menu_key, title, description, is_visible, sort_order) VALUES
+    (school_id_val, 'zoukoma', '増コマ申し込み', '追加授業のお申込みはこちら', true, 1),
+    (school_id_val, 'moshi', '模試申し込み', '模擬試験のお申込みはこちら', true, 2),
+    (school_id_val, 'mendan', '面談申し込み', '面談のご予約はこちら', true, 3),
+    (school_id_val, 'mogi', 'Vもぎ申し込み', 'Vもぎのお申込みはこちら', true, 4),
+    (school_id_val, 'shukaisu', '週回数変更', '週の授業回数変更のお申込み', true, 5),
+    (school_id_val, 'youbi', '曜日変更申し込み', '通塾曜日変更のお申込み', true, 6),
+    (school_id_val, 'kyozai', '教材販売', '教材のご購入はこちら', true, 7),
+    (school_id_val, 'soudan', 'お客様相談', 'ご相談・ご要望はこちら', true, 8);
+
+END $$;
