@@ -52,13 +52,6 @@ export function SortableMenuRow({
       style={style}
       className={`table-row-hover ${isDragging ? 'z-50' : ''}`}
     >
-      <td className="border border-[#0d0d0d] px-4 py-3 text-center">
-        {menu.is_visible ? (
-          <span className="text-[#0d0d0d] font-medium">✓</span>
-        ) : (
-          <span className="text-[#2a2a2a]/40">-</span>
-        )}
-      </td>
       <td className="border border-[#0d0d0d] px-4 py-3">
         <div>
           <div className="font-medium text-[#0d0d0d]">{menu.title}</div>
@@ -90,7 +83,16 @@ export function SortableMenuRow({
           >
             ⋮⋮
           </button>
-          {menu.link_type === 'internal' && settingsPath ? (
+          {menu.link_type === 'internal' && onEditPeriod ? (
+            <Button
+              onClick={() => onEditPeriod(menu)}
+              variant="secondary"
+              size="sm"
+              disabled={isSubmitting}
+            >
+              詳細設定
+            </Button>
+          ) : menu.link_type === 'internal' && settingsPath ? (
             <Link
               href={settingsPath}
               className="px-3 py-1 text-xs bg-[#ff8e3c] text-[#0d0d0d] font-medium rounded hover:bg-[#ff9e5c] transition-colors"

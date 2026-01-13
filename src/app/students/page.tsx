@@ -8,9 +8,12 @@ import {
   DeleteConfirmDialog,
   StudentDetailModal,
   StudentScores,
+  InterviewListModal,
 } from '@/components/students';
+import { TaskAlert } from '@/components/students/TaskAlert';
 import { SubjectSettings } from '@/components/settings';
 import { AppHeader } from '@/components/layout';
+import { SoudanAlert } from '@/components/soudan/SoudanAlert';
 import {
   getStudents,
   createStudent,
@@ -35,6 +38,7 @@ export default function StudentsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isScoresModalOpen, setIsScoresModalOpen] = useState(false);
+  const [isInterviewsModalOpen, setIsInterviewsModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -167,6 +171,20 @@ export default function StudentsPage() {
     setIsScoresModalOpen(true);
   };
 
+  // 面談記録モーダルを開く
+  const handleOpenInterviewsModal = (student: Student) => {
+    setSelectedStudent(student);
+    setIsInterviewsModalOpen(true);
+  };
+
+  // タスクアラートから生徒をクリックした時
+  const handleTaskClick = (studentId: string) => {
+    const student = students.find(s => s.id === studentId);
+    if (student) {
+      handleOpenInterviewsModal(student);
+    }
+  };
+
   // 削除
   const handleDelete = async () => {
     if (!selectedStudent) return;
@@ -194,6 +212,12 @@ export default function StudentsPage() {
 
       {/* メインコンテンツ */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* お客様相談アラート */}
+        <SoudanAlert />
+        
+        {/* タスクアラート */}
+        <TaskAlert onTaskClick={handleTaskClick} />
+
         {/* エラーメッセージ */}
         {errorMessage && (
           <div className="mb-6 p-4 bg-[#d9376e]/10 border border-[#d9376e] rounded-lg">
@@ -335,6 +359,7 @@ export default function StudentsPage() {
           onDelete={handleOpenDeleteDialog}
           onRowClick={handleOpenDetailModal}
           onScores={handleOpenScoresModal}
+          onInterviews={handleOpenInterviewsModal}
           isLoading={isLoading}
         />
       </main>
@@ -408,7 +433,23 @@ export default function StudentsPage() {
           onClose={() => {
             setIsScoresModalOpen(false);
             // 他のモーダルが開いていない場合のみselectedStudentをクリア
-            if (!isDetailModalOpen && !isEditModalOpen) {
+            if (!isDetailModalOpen && !isEditModalOpen && !isInterviewsModalOpen) {
+              setSelectedStudent(null);
+            }
+          }}
+        />
+      )}
+
+      {/* 面談記録モーダル */}
+      {selectedStudent && (
+        <InterviewListModal
+          student={selectedStudent}
+          schoolId={process.env.NEXT_PUBLIC_DEFAULT_SCHOOL_ID!}
+          isOpen={isInterviewsModalOpen}
+          onClose={() => {
+            setIsInterviewsModalOpen(false);
+            // 他のモーダルが開いていない場合のみselectedStudentをクリア
+            if (!isDetailModalOpen && !isEditModalOpen && !isScoresModalOpen) {
               setSelectedStudent(null);
             }
           }}

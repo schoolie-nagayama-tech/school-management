@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { AppHeader } from '@/components/layout';
 import { Button, ToastContainer } from '@/components/ui';
 import { getMogiPeriods, deleteMogiPeriod, getMogiResponseCount } from '@/lib/api/mogi';
+import { archivePeriod, unarchivePeriod } from '@/lib/api/form-periods';
 import { MogiPeriodEditor } from '@/components/forms/mogi/MogiPeriodEditor';
 import { useToast } from '@/hooks/useToast';
 import type { MogiPeriod } from '@/types/forms/mogi';
@@ -18,6 +19,7 @@ export default function MogiSettingsPage() {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingPeriod, setEditingPeriod] = useState<MogiPeriod | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
   const { toasts, removeToast, success, error } = useToast();
 
   const fetchPeriods = useCallback(async () => {
@@ -25,7 +27,7 @@ export default function MogiSettingsPage() {
     setErrorMessage('');
     try {
       const schoolId = getDefaultSchoolId();
-      const data = await getMogiPeriods(schoolId);
+      const data = await getMogiPeriods(schoolId, showArchived);
       setPeriods(data);
 
       // 各期間の回答数を取得
@@ -50,7 +52,7 @@ export default function MogiSettingsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [showArchived]);
 
   useEffect(() => {
     fetchPeriods();
@@ -65,21 +67,31 @@ export default function MogiSettingsPage() {
 
   // 期間ステータスの取得
   const getPeriodStatus = (period: MogiPeriod) => {
+    if (period.is_archived) {
+      return { label: 'アーカイブ', color: 'gray' };
+    }
+
     const now = new Date();
     const start = period.publish_start ? new Date(period.publish_start) : null;
     const end = period.publish_end ? new Date(period.publish_end) : null;
 
-    if (!start || !end) {
+    if (!start) {
       return { label: '未設定', color: 'gray' };
     }
     if (start > now) {
       return { label: '公開前', color: 'yellow' };
+    }
+    if (!end) {
+      return { label: '公開中（常時）', color: 'green' };
     }
     if (end < now) {
       return { label: '公開終了', color: 'gray' };
     }
     return { label: '公開中', color: 'green' };
   };
+
+  const activePeriods = periods.filter((p) => !p.is_archived);
+  const archivedPeriods = periods.filter((p) => p.is_archived);
 
   // 期間削除
   const handleDelete = async (periodId: string, periodTitle: string) => {
@@ -100,6 +112,64 @@ export default function MogiSettingsPage() {
     }
   };
 
+  // 期間アーカイブ
+  const handleArchivePeriod = async (period: MogiPeriod) => {
+    if (
+      !window.confirm(
+        `「${period.title}」をアーカイブしますか？\n\nこの期間の全ての回答もアーカイブされます。`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const schoolId = getDefaultSchoolId();
+      const result = await archivePeriod(
+        period.id,
+        schoolId,
+        'mogi',
+        period.period_key
+      );
+      await fetchPeriods();
+      success(
+        `アーカイブしました（回答${result.responsesArchived}件を含む）`
+      );
+    } catch (err) {
+      console.error('Error archiving period:', err);
+      error(
+        err instanceof Error ? err.message : 'アーカイブに失敗しました'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // 期間アーカイブ解除
+  const handleUnarchivePeriod = async (period: MogiPeriod) => {
+    try {
+      setIsSubmitting(true);
+      const schoolId = getDefaultSchoolId();
+      const result = await unarchivePeriod(
+        period.id,
+        schoolId,
+        'mogi',
+        period.period_key
+      );
+      await fetchPeriods();
+      success(
+        `アーカイブを解除しました（回答${result.responsesUnarchived}件を含む）`
+      );
+    } catch (err) {
+      console.error('Error unarchiving period:', err);
+      error(
+        err instanceof Error ? err.message : 'アーカイブ解除に失敗しました'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#eff0f3]">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
@@ -114,15 +184,33 @@ export default function MogiSettingsPage() {
         <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold text-[#0d0d0d]">期間一覧</h2>
-            <button
-              onClick={() => {
-                setEditingPeriod(null);
-                setIsEditorOpen(true);
-              }}
-              className="px-4 py-2 bg-[#ff8e3c] text-[#0d0d0d] font-medium rounded-lg hover:bg-[#ff9e5c] transition-colors"
-            >
-              新規作成
-            </button>
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showArchived}
+                  onChange={(e) => setShowArchived(e.target.checked)}
+                  className="w-4 h-4 text-[#ff8e3c] border-[#0d0d0d] rounded focus:ring-[#ff8e3c] cursor-pointer"
+                />
+                <span className="text-sm text-[#0d0d0d]">
+                  アーカイブ済みを表示
+                  {archivedPeriods.length > 0 && (
+                    <span className="ml-1 text-[#2a2a2a]/60">
+                      ({archivedPeriods.length}件)
+                    </span>
+                  )}
+                </span>
+              </label>
+              <button
+                onClick={() => {
+                  setEditingPeriod(null);
+                  setIsEditorOpen(true);
+                }}
+                className="px-4 py-2 bg-[#ff8e3c] text-[#0d0d0d] font-medium rounded-lg hover:bg-[#ff9e5c] transition-colors"
+              >
+                新規作成
+              </button>
+            </div>
           </div>
 
           {isLoading ? (
@@ -157,7 +245,7 @@ export default function MogiSettingsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {periods.map((period) => (
+                  {activePeriods.map((period) => (
                     <tr key={period.id} className="table-row-hover">
                       <td className="border border-[#0d0d0d] px-4 py-3">
                         {period.period_key}
@@ -209,6 +297,14 @@ export default function MogiSettingsPage() {
                             回答一覧
                           </Link>
                           <Button
+                            onClick={() => handleArchivePeriod(period)}
+                            variant="secondary"
+                            size="sm"
+                            disabled={isSubmitting}
+                          >
+                            アーカイブ
+                          </Button>
+                          <Button
                             onClick={() => handleDelete(period.id, period.title)}
                             variant="danger"
                             size="sm"
@@ -220,6 +316,64 @@ export default function MogiSettingsPage() {
                       </td>
                     </tr>
                   ))}
+                  {showArchived && archivedPeriods.length > 0 && (
+                    <>
+                      <tr>
+                        <td colSpan={6} className="border border-[#0d0d0d] px-4 py-2 bg-gray-50">
+                          <div className="text-sm font-medium text-gray-600">
+                            アーカイブ済み
+                          </div>
+                        </td>
+                      </tr>
+                      {archivedPeriods.map((period) => (
+                        <tr
+                          key={period.id}
+                          className="table-row-hover bg-gray-50 opacity-70"
+                        >
+                          <td className="border border-[#0d0d0d] px-4 py-3">
+                            {period.period_key}
+                          </td>
+                          <td className="border border-[#0d0d0d] px-4 py-3">
+                            {period.title}
+                          </td>
+                          <td className="border border-[#0d0d0d] px-4 py-3">
+                            {formatDateRange(period.publish_start, period.publish_end)}
+                          </td>
+                          <td className="border border-[#0d0d0d] px-4 py-3">
+                            <span className="px-2 py-1 rounded text-xs font-medium bg-gray-200 text-gray-600">
+                              アーカイブ
+                            </span>
+                            {period.archived_at && (
+                              <div className="text-xs text-gray-400 mt-1">
+                                {new Date(period.archived_at).toLocaleDateString('ja-JP')}
+                              </div>
+                            )}
+                          </td>
+                          <td className="border border-[#0d0d0d] px-4 py-3">
+                            {responseCounts[period.id] ?? '-'}件
+                          </td>
+                          <td className="border border-[#0d0d0d] px-4 py-3">
+                            <div className="flex gap-2">
+                              <Link
+                                href={`/forms/responses/mogi/${period.period_key}`}
+                                className="px-3 py-1 text-xs bg-[#eff0f3] text-[#2a2a2a] rounded hover:bg-[#0d0d0d]/10 flex items-center justify-center"
+                              >
+                                回答一覧
+                              </Link>
+                              <Button
+                                onClick={() => handleUnarchivePeriod(period)}
+                                variant="secondary"
+                                size="sm"
+                                disabled={isSubmitting}
+                              >
+                                アーカイブ解除
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </>
+                  )}
                 </tbody>
               </table>
             </div>

@@ -375,18 +375,21 @@ export function MogiPeriodEditor({
           onChange={(e) => setPublishEnd(e.target.value)}
           disabled={isSubmitting}
         />
+        <p className="text-xs text-[#2a2a2a]/60 mt-1">
+          ※空欄にすると永続的に公開されます
+        </p>
 
         <div className="p-3 bg-[#eff0f3] rounded-lg border border-[#0d0d0d]">
           <p className="text-sm text-[#2a2a2a]">
             ※ 公開状態は公開開始日時と公開終了日時に基づいて自動的に設定されます。
-            {publishStart && publishEnd && (() => {
+            {publishStart && (() => {
               const now = new Date();
               const startDate = new Date(publishStart);
-              const endDate = new Date(publishEnd);
-              const isActive = startDate <= now && endDate >= now;
+              const endDate = publishEnd ? new Date(publishEnd) : null;
+              const isActive = startDate <= now && (!endDate || endDate >= now);
               return (
                 <span className="block mt-1 font-medium">
-                  現在の状態: {isActive ? '公開中' : startDate > now ? '公開前' : '公開終了'}
+                  現在の状態: {isActive ? (endDate ? '公開中' : '公開中（永続公開）') : startDate > now ? '公開前' : '公開終了'}
                 </span>
               );
             })()}

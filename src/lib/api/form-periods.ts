@@ -16,7 +16,8 @@ import { getDefaultSchoolId } from './schools';
  */
 export async function getFormPeriods(
   schoolId?: string,
-  formType?: FormType
+  formType?: FormType,
+  includeArchived: boolean = false
 ): Promise<FormPeriod[]> {
   const targetSchoolId = schoolId || getDefaultSchoolId();
 
@@ -27,6 +28,10 @@ export async function getFormPeriods(
 
   if (formType) {
     query = query.eq('form_type', formType);
+  }
+
+  if (!includeArchived) {
+    query = query.eq('is_archived', false);
   }
 
   query = query.order('period_key', { ascending: false });
@@ -57,6 +62,7 @@ export async function getActiveFormPeriod(
     .select('*')
     .eq('school_id', schoolId)
     .eq('form_type', formType)
+    .eq('is_archived', false) // アーカイブされた期間は除外
     .order('period_key', { ascending: false });
 
   if (error) {
@@ -84,18 +90,18 @@ export async function getActiveFormPeriod(
       console.log(`[getActiveFormPeriod] Period ${period.period_key}: Not started yet`);
       return false;
     }
+    // 公開開始日が未設定の場合は除外（公開期間が設定されていない）
+    if (!start) {
+      console.log(`[getActiveFormPeriod] Period ${period.period_key}: No publish start date set`);
+      return false;
+    }
     // 公開終了日が設定されていて、現在時刻より前の場合は除外
     if (end && end < nowDate) {
       console.log(`[getActiveFormPeriod] Period ${period.period_key}: Already ended`);
       return false;
     }
-    // 公開開始日・終了日が未設定の場合は除外（公開期間が設定されていない）
-    if (!start || !end) {
-      console.log(`[getActiveFormPeriod] Period ${period.period_key}: No publish dates set`);
-      return false;
-    }
-    // 公開期間内
-    console.log(`[getActiveFormPeriod] Period ${period.period_key}: ACTIVE`);
+    // 公開開始日以降で、終了日が未設定（永続公開）または終了日以内
+    console.log(`[getActiveFormPeriod] Period ${period.period_key}: ACTIVE${!end ? ' (永続公開)' : ''}`);
     return true;
   });
 
@@ -177,4 +183,72 @@ export async function deleteFormPeriod(id: string): Promise<void> {
   if (error) {
     throw new Error(`フォーム公開期間の削除に失敗しました: ${error.message}`);
   }
+}
+
+/**
+ * 期間をアーカイブ（回答も含めて）
+ */
+export async function archivePeriod(
+  id: string,
+  schoolId: string,
+  formType: FormType,
+  periodKey: string
+): Promise<{ periodArchived: boolean; responsesArchived: number }> {
+  // 期間をアーカイブ
+  const { error: periodError } = await supabase
+    .from('form_periods')
+    .update({
+      is_archived: true,
+      archived_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id);
+
+  if (periodError) {
+    throw new Error(`期間のアーカイブに失敗しました: ${periodError.message}`);
+  }
+
+  // 期間内の回答もアーカイブ
+  const { archiveResponsesByPeriod } = await import('./form-responses');
+  const responsesArchived = await archiveResponsesByPeriod(
+    schoolId,
+    formType,
+    periodKey
+  );
+
+  return { periodArchived: true, responsesArchived };
+}
+
+/**
+ * 期間のアーカイブを解除
+ */
+export async function unarchivePeriod(
+  id: string,
+  schoolId: string,
+  formType: FormType,
+  periodKey: string
+): Promise<{ periodUnarchived: boolean; responsesUnarchived: number }> {
+  // 期間のアーカイブを解除
+  const { error: periodError } = await supabase
+    .from('form_periods')
+    .update({
+      is_archived: false,
+      archived_at: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id);
+
+  if (periodError) {
+    throw new Error(`期間のアーカイブ解除に失敗しました: ${periodError.message}`);
+  }
+
+  // 期間内の回答もアーカイブ解除
+  const { unarchiveResponsesByPeriod } = await import('./form-responses');
+  const responsesUnarchived = await unarchiveResponsesByPeriod(
+    schoolId,
+    formType,
+    periodKey
+  );
+
+  return { periodUnarchived: true, responsesUnarchived };
 }

@@ -90,74 +90,81 @@ export function InterviewModal({ studentId, schoolId, interview, onClose, onSave
       isOpen={true}
       onClose={onClose}
       title={isEditing ? '面談記録を編集' : '面談記録を追加'}
-      size="md"
+      size="lg"
+      minHeight="80vh"
     >
-      <div className="space-y-4">
-        {/* 日付 */}
-        <Input
-          label="日付"
-          type="date"
-          value={interviewDate}
-          onChange={(e) => setInterviewDate(e.target.value)}
-          required
-          disabled={isSaving}
-        />
-
-        {/* 種別 */}
-        <div>
-          <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
-            種別 <span className="text-[#d9376e]">*</span>
-          </label>
-          <div className="grid grid-cols-3 gap-2">
-            {INTERVIEW_TYPES.map((type) => (
-              <label
-                key={type}
-                className={`flex items-center justify-center px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
-                  interviewType === type
-                    ? type === 'task'
-                      ? 'bg-[#d9376e] text-white border-[#d9376e] font-medium'
-                      : 'bg-[#ff8e3c] text-[#0d0d0d] border-[#0d0d0d] font-medium'
-                    : 'bg-[#fffffe] text-[#2a2a2a] border-[#0d0d0d] hover:bg-[#eff0f3]'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="interviewType"
-                  value={type}
-                  checked={interviewType === type}
-                  onChange={(e) => setInterviewType(e.target.value as InterviewType)}
-                  className="sr-only"
-                  disabled={isSaving}
-                />
-                <span className="text-xs text-center">{INTERVIEW_TYPE_LABELS[type]}</span>
-              </label>
-            ))}
-          </div>
-          {interviewType === 'task' && (
-            <p className="text-xs text-[#d9376e] mt-2">
-              ※ タスクは生徒一覧画面のトップにアラート表示されます
-            </p>
-          )}
-        </div>
-
-        {/* 内容 */}
-        <div>
-          <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
-            内容 <span className="text-[#d9376e]">*</span>
-          </label>
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="面談・電話の内容を記録してください"
-            rows={8}
-            disabled={isSaving}
-            className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a] focus:outline-none focus:ring-2 focus:ring-[#ff8e3c] disabled:bg-[#eff0f3] disabled:cursor-not-allowed resize-none"
+      <div className="flex flex-col h-full max-h-[calc(90vh-120px)]">
+        {/* スクロール可能なコンテンツエリア */}
+        <div className="flex-1 overflow-y-auto space-y-6 pr-2 -mr-2">
+          {/* 日付 */}
+          <Input
+            label="日付"
+            type="date"
+            value={interviewDate}
+            onChange={(e) => setInterviewDate(e.target.value)}
             required
+            disabled={isSaving}
           />
+
+          {/* 種別 */}
+          <div>
+            <label className="block text-sm font-medium text-[#0d0d0d] mb-3">
+              種別 <span className="text-[#d9376e]">*</span>
+            </label>
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+              {INTERVIEW_TYPES.map((type) => (
+                <label
+                  key={type}
+                  className={`flex items-center justify-center px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
+                    interviewType === type
+                      ? type === 'task'
+                        ? 'bg-[#d9376e] text-white border-[#d9376e] font-medium'
+                        : 'bg-[#ff8e3c] text-[#0d0d0d] border-[#0d0d0d] font-medium'
+                      : 'bg-[#fffffe] text-[#2a2a2a] border-[#0d0d0d] hover:bg-[#eff0f3]'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="interviewType"
+                    value={type}
+                    checked={interviewType === type}
+                    onChange={(e) => setInterviewType(e.target.value as InterviewType)}
+                    className="sr-only"
+                    disabled={isSaving}
+                  />
+                  <span className="text-sm text-center">{INTERVIEW_TYPE_LABELS[type]}</span>
+                </label>
+              ))}
+            </div>
+            {interviewType === 'task' && (
+              <p className="text-xs text-[#d9376e] mt-2">
+                ※ タスクは生徒一覧画面のトップにアラート表示されます
+              </p>
+            )}
+          </div>
+
+          {/* 内容 */}
+          <div>
+            <label className="block text-sm font-medium text-[#0d0d0d] mb-3">
+              内容 <span className="text-[#d9376e]">*</span>
+            </label>
+            <textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="面談・電話の内容を記録してください"
+              rows={12}
+              disabled={isSaving}
+              className="w-full px-4 py-3 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a] focus:outline-none focus:ring-2 focus:ring-[#ff8e3c] disabled:bg-[#eff0f3] disabled:cursor-not-allowed resize-y min-h-[200px]"
+              required
+            />
+            <p className="text-xs text-[#2a2a2a]/60 mt-2">
+              ※ テキストエリアの右下をドラッグしてサイズを調整できます
+            </p>
+          </div>
         </div>
 
-        {/* ボタン */}
-        <div className="flex justify-end gap-3 pt-4 border-t border-[#0d0d0d]">
+        {/* 固定フッター（ボタン） */}
+        <div className="flex justify-end gap-3 pt-6 border-t border-[#0d0d0d] mt-6 shrink-0">
           <Button variant="secondary" onClick={onClose} disabled={isSaving}>
             キャンセル
           </Button>

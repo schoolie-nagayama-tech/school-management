@@ -82,6 +82,8 @@ export interface MogiPeriod {
   publish_end: string | null;
   is_active: boolean;
   linked_application_item_id: string | null;
+  is_archived: boolean;
+  archived_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -101,6 +103,8 @@ export interface MogiResponse {
   status_checks: {
     charged?: boolean;
   } | null;
+  is_archived: boolean;
+  archived_at: string | null;
   created_at: string;
   updated_at: string;
   linked_student?: {
@@ -117,6 +121,7 @@ export interface MogiResponseFilters {
   venueId?: string;
   chargedStatus?: 'charged' | 'not_charged';
   linkedStatus?: 'linked' | 'unlinked';
+  showArchived?: boolean;
 }
 
 // 集計データ

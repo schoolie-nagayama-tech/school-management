@@ -11,6 +11,10 @@ import {
 import {
   linkResponseToStudent,
   unlinkResponseFromStudent,
+  archiveResponse,
+  unarchiveResponse,
+  archiveResponses,
+  getArchivedCount,
 } from '@/lib/api/form-responses';
 import { getStudents } from '@/lib/api/students';
 import { LinkStudentModal } from '@/components/forms/LinkStudentModal';
@@ -60,6 +64,10 @@ export default function MogiResponsePage() {
   const [filterLinkedStatus, setFilterLinkedStatus] = useState<
     'all' | 'linked' | 'unlinked'
   >('all');
+  const [showArchived, setShowArchived] = useState(false);
+  const [archivedCount, setArchivedCount] = useState(0);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -72,15 +80,18 @@ export default function MogiResponsePage() {
         venueId: filterVenueId === 'all' ? undefined : filterVenueId,
         chargedStatus: filterChargedStatus === 'all' ? undefined : filterChargedStatus,
         linkedStatus: filterLinkedStatus === 'all' ? undefined : filterLinkedStatus,
+        showArchived,
       };
 
-      const [responsesData, statsData] = await Promise.all([
+      const [responsesData, statsData, archivedCountData] = await Promise.all([
         getMogiResponses(schoolId, periodKey, filters),
         getMogiStats(schoolId, periodKey),
+        getArchivedCount(schoolId, 'mogi', periodKey),
       ]);
 
       setResponses(responsesData);
       setStats(statsData);
+      setArchivedCount(archivedCountData);
     } catch (error) {
       console.error('Error fetching mogi responses:', error);
       setErrorMessage(
@@ -89,7 +100,7 @@ export default function MogiResponsePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [periodKey, filterGrade, filterDateId, filterVenueId, filterChargedStatus, filterLinkedStatus]);
+  }, [periodKey, filterGrade, filterDateId, filterVenueId, filterChargedStatus, filterLinkedStatus, showArchived]);
 
   useEffect(() => {
     if (periodKey) {
@@ -169,6 +180,81 @@ export default function MogiResponsePage() {
   );
   const uniqueVenueIds = Array.from(new Set(availableVenueIds));
 
+  // アーカイブ操作
+  const handleArchive = async (id: string) => {
+    setIsProcessing(true);
+    try {
+      await archiveResponse(id);
+      await fetchData();
+      success('アーカイブしました');
+    } catch (err) {
+      console.error('Error archiving response:', err);
+      error(err instanceof Error ? err.message : 'アーカイブに失敗しました');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleUnarchive = async (id: string) => {
+    setIsProcessing(true);
+    try {
+      await unarchiveResponse(id);
+      await fetchData();
+      success('アーカイブを解除しました');
+    } catch (err) {
+      console.error('Error unarchiving response:', err);
+      error(err instanceof Error ? err.message : 'アーカイブ解除に失敗しました');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleBulkArchive = async () => {
+    if (selectedIds.size === 0) {
+      error('アーカイブする回答を選択してください');
+      return;
+    }
+
+    if (!confirm(`${selectedIds.size}件の回答をアーカイブしますか？`)) {
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      await archiveResponses(Array.from(selectedIds));
+      setSelectedIds(new Set());
+      await fetchData();
+      success(`${selectedIds.size}件をアーカイブしました`);
+    } catch (err) {
+      console.error('Error bulk archiving:', err);
+      error(err instanceof Error ? err.message : 'アーカイブに失敗しました');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const activeResponses = responses.filter(r => !r.is_archived);
+      setSelectedIds(new Set(activeResponses.map(r => r.id)));
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const handleSelect = (id: string, checked: boolean) => {
+    const newSet = new Set(selectedIds);
+    if (checked) {
+      newSet.add(id);
+    } else {
+      newSet.delete(id);
+    }
+    setSelectedIds(newSet);
+  };
+
+  const activeResponses = responses.filter(r => !r.is_archived);
+  const allSelected = activeResponses.length > 0 && activeResponses.every(r => selectedIds.has(r.id));
+
   return (
     <div className="min-h-screen bg-[#eff0f3]">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
@@ -185,7 +271,7 @@ export default function MogiResponsePage() {
 
         {/* フィルター */}
         <div className="mb-6 bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-4">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
                 学年
@@ -287,7 +373,47 @@ export default function MogiResponsePage() {
               </select>
             </div>
           </div>
+          <div className="flex items-center justify-between pt-4 border-t border-[#0d0d0d]/20">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showArchived}
+                onChange={(e) => setShowArchived(e.target.checked)}
+                className="w-4 h-4 text-[#ff8e3c] border-[#0d0d0d] rounded focus:ring-[#ff8e3c] cursor-pointer"
+              />
+              <span className="text-sm text-[#0d0d0d]">
+                アーカイブ済みを表示
+                {archivedCount > 0 && (
+                  <span className="ml-1 text-[#2a2a2a]/60">({archivedCount}件)</span>
+                )}
+              </span>
+            </label>
+          </div>
         </div>
+
+        {/* 一括操作バー */}
+        {selectedIds.size > 0 && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
+            <span className="text-sm text-blue-800">
+              {selectedIds.size}件を選択中
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={handleBulkArchive}
+                disabled={isProcessing}
+                className="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 disabled:opacity-50"
+              >
+                一括アーカイブ
+              </button>
+              <button
+                onClick={() => setSelectedIds(new Set())}
+                className="px-3 py-1 text-gray-600 text-sm hover:underline"
+              >
+                選択解除
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* 回答一覧 */}
         <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] overflow-hidden">
@@ -304,6 +430,14 @@ export default function MogiResponsePage() {
               <table className="w-full">
                 <thead>
                   <tr className="bg-[#eff0f3] border-b border-[#0d0d0d]">
+                    <th className="px-2 py-3 text-center w-10">
+                      <input
+                        type="checkbox"
+                        checked={allSelected}
+                        onChange={(e) => handleSelectAll(e.target.checked)}
+                        className="w-4 h-4 text-[#ff8e3c] border-[#0d0d0d] rounded focus:ring-[#ff8e3c] cursor-pointer"
+                      />
+                    </th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-[#0d0d0d] uppercase">
                       回答日時
                     </th>
@@ -331,8 +465,20 @@ export default function MogiResponsePage() {
                   {responses.map((response) => (
                     <tr
                       key={response.id}
-                      className="border-b border-[#0d0d0d]/20 hover:bg-[#eff0f3]"
+                      className={`border-b border-[#0d0d0d]/20 hover:bg-[#eff0f3] ${
+                        response.is_archived ? 'bg-gray-100 opacity-60' : ''
+                      }`}
                     >
+                      <td className="px-2 py-3 text-center">
+                        {!response.is_archived && (
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(response.id)}
+                            onChange={(e) => handleSelect(response.id, e.target.checked)}
+                            className="w-4 h-4 text-[#ff8e3c] border-[#0d0d0d] rounded focus:ring-[#ff8e3c] cursor-pointer"
+                          />
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-sm text-[#2a2a2a]">
                         {formatDate(response.created_at)}
                       </td>
@@ -364,26 +510,50 @@ export default function MogiResponsePage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2">
-                          <button
-                            className="px-3 py-1 text-xs bg-[#eff0f3] text-[#2a2a2a] rounded hover:bg-[#0d0d0d]/10"
-                            onClick={() => setDetailResponse(response)}
-                          >
-                            詳細
-                          </button>
-                          {response.linked_student_id ? (
-                            <button
-                              className="px-3 py-1 text-xs bg-[#eff0f3] text-[#2a2a2a] rounded hover:bg-[#0d0d0d]/10"
-                              onClick={() => handleUnlinkStudent(response.id)}
-                            >
-                              解除
-                            </button>
+                          {response.is_archived ? (
+                            <>
+                              <span className="px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded">
+                                アーカイブ済
+                              </span>
+                              <button
+                                className="px-3 py-1 text-xs bg-[#eff0f3] text-blue-600 rounded hover:bg-blue-50"
+                                onClick={() => handleUnarchive(response.id)}
+                                disabled={isProcessing}
+                              >
+                                戻す
+                              </button>
+                            </>
                           ) : (
-                            <button
-                              className="px-3 py-1 text-xs bg-[#eff0f3] text-[#2a2a2a] rounded hover:bg-[#0d0d0d]/10"
-                              onClick={() => handleOpenLinkModal(response)}
-                            >
-                              紐付け
-                            </button>
+                            <>
+                              <button
+                                className="px-3 py-1 text-xs bg-[#eff0f3] text-[#2a2a2a] rounded hover:bg-[#0d0d0d]/10"
+                                onClick={() => setDetailResponse(response)}
+                              >
+                                詳細
+                              </button>
+                              {response.linked_student_id ? (
+                                <button
+                                  className="px-3 py-1 text-xs bg-[#eff0f3] text-[#2a2a2a] rounded hover:bg-[#0d0d0d]/10"
+                                  onClick={() => handleUnlinkStudent(response.id)}
+                                >
+                                  解除
+                                </button>
+                              ) : (
+                                <button
+                                  className="px-3 py-1 text-xs bg-[#eff0f3] text-[#2a2a2a] rounded hover:bg-[#0d0d0d]/10"
+                                  onClick={() => handleOpenLinkModal(response)}
+                                >
+                                  紐付け
+                                </button>
+                              )}
+                              <button
+                                className="px-3 py-1 text-xs bg-[#eff0f3] text-gray-500 rounded hover:bg-gray-100"
+                                onClick={() => handleArchive(response.id)}
+                                disabled={isProcessing}
+                              >
+                                アーカイブ
+                              </button>
+                            </>
                           )}
                         </div>
                       </td>

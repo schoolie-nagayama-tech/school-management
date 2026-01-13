@@ -58,22 +58,15 @@ export function PortalMenuCard({ menu, schoolCode, isFormActive = false }: Porta
 
   // 内部フォームの場合
   if (menu.link_type === 'internal') {
-    // 内部フォームのURLを生成（link_urlが未設定の場合でも）
-    // link_urlが相対パスの場合はそのまま使用、絶対パスの場合は/portal/を付ける
+    // 内部フォームのURLを生成
+    // 常に /portal/[schoolCode]/[menu_key] の形式を使用
+    // link_urlが設定されていても、menu_keyを優先して使用
     let formUrl: string;
-    if (menu.link_url) {
-      // link_urlが設定されている場合
-      if (menu.link_url.startsWith('/')) {
-        // 既に絶対パスの場合
-        formUrl = menu.link_url.startsWith('/portal/') 
-          ? menu.link_url 
-          : `/portal${menu.link_url}`;
-      } else {
-        // 相対パスの場合
-        formUrl = `/portal/${schoolCode}/${menu.link_url}`;
-      }
+    if (menu.link_url && menu.link_url.startsWith('/portal/')) {
+      // link_urlが既に /portal/ で始まる完全なURLの場合（例: /portal/DEFAULT/moshi）
+      formUrl = menu.link_url;
     } else {
-      // link_urlが未設定の場合、/portal/[schoolCode]/[menu_key]を生成
+      // link_urlが未設定、または相対パスの場合、menu_keyを使用
       formUrl = `/portal/${schoolCode}/${menu.menu_key}`;
     }
     

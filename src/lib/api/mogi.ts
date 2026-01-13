@@ -32,9 +32,12 @@ import type {
 /**
  * Vもぎ期間一覧を取得
  */
-export async function getMogiPeriods(schoolId?: string): Promise<MogiPeriod[]> {
+export async function getMogiPeriods(
+  schoolId?: string,
+  includeArchived: boolean = false
+): Promise<MogiPeriod[]> {
   const targetSchoolId = schoolId || getDefaultSchoolId();
-  const periods = await getFormPeriods(targetSchoolId, 'mogi');
+  const periods = await getFormPeriods(targetSchoolId, 'mogi', includeArchived);
   return periods.map((p) => ({
     ...p,
     form_type: 'mogi' as const,
@@ -200,9 +203,11 @@ export async function getMogiResponses(
 ): Promise<MogiResponse[]> {
   const responses = await getFormResponses(schoolId, {
     formType: 'mogi',
-    period: periodKey,
+    formPeriod: periodKey,
     grade: filters?.grade,
     linkedStatus: filters?.linkedStatus,
+    showArchived: filters?.showArchived,
+    chargedStatus: filters?.chargedStatus,
   });
 
   // フィルター適用
@@ -307,4 +312,15 @@ export async function updateMogiChargedStatus(
   charged: boolean
 ): Promise<void> {
   await updateFormResponseStatus(responseId, { charged });
+}
+
+/**
+ * Vもぎ期間の回答数を取得
+ */
+export async function getMogiResponseCount(
+  schoolId: string,
+  periodKey: string
+): Promise<number> {
+  const responses = await getMogiResponses(schoolId, periodKey);
+  return responses.length;
 }

@@ -18,6 +18,9 @@ export interface FormResponseFilters {
   formPeriod?: string;
   grade?: number;
   linkedStatus?: 'all' | 'linked' | 'unlinked';
+  showArchived?: boolean;
+  search?: string;
+  chargedStatus?: 'all' | 'charged' | 'not_charged';
 }
 
 export interface FormResponseWithStudent extends FormResponse {
@@ -54,6 +57,23 @@ export async function getFormResponses(
     query = query.not('linked_student_id', 'is', null);
   } else if (filters?.linkedStatus === 'unlinked') {
     query = query.is('linked_student_id', null);
+  }
+
+  // アーカイブフィルター
+  if (!filters?.showArchived) {
+    query = query.eq('is_archived', false);
+  }
+
+  // 生徒名検索
+  if (filters?.search) {
+    query = query.ilike('student_name', `%${filters.search}%`);
+  }
+
+  // 計上状態フィルター
+  if (filters?.chargedStatus === 'charged') {
+    query = query.eq('status_checks->charged', true);
+  } else if (filters?.chargedStatus === 'not_charged') {
+    query = query.or('status_checks->charged.is.null,status_checks->charged.eq.false');
   }
 
   query = query.order('created_at', { ascending: false });
@@ -254,4 +274,139 @@ export async function updateFormResponse(
   }
 
   return updated as FormResponse;
+}
+
+/**
+ * 回答を個別アーカイブ
+ */
+export async function archiveResponse(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('form_responses')
+    .update({
+      is_archived: true,
+      archived_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id);
+
+  if (error) {
+    throw new Error(`アーカイブに失敗しました: ${error.message}`);
+  }
+}
+
+/**
+ * 回答のアーカイブを解除
+ */
+export async function unarchiveResponse(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('form_responses')
+    .update({
+      is_archived: false,
+      archived_at: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id);
+
+  if (error) {
+    throw new Error(`アーカイブ解除に失敗しました: ${error.message}`);
+  }
+}
+
+/**
+ * 複数回答を一括アーカイブ
+ */
+export async function archiveResponses(ids: string[]): Promise<void> {
+  const { error } = await supabase
+    .from('form_responses')
+    .update({
+      is_archived: true,
+      archived_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .in('id', ids);
+
+  if (error) {
+    throw new Error(`一括アーカイブに失敗しました: ${error.message}`);
+  }
+}
+
+/**
+ * 期間内の全回答をアーカイブ
+ */
+export async function archiveResponsesByPeriod(
+  schoolId: string,
+  formType: FormType,
+  periodKey: string
+): Promise<number> {
+  const { data, error } = await supabase
+    .from('form_responses')
+    .update({
+      is_archived: true,
+      archived_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('school_id', schoolId)
+    .eq('form_type', formType)
+    .eq('form_period', periodKey)
+    .eq('is_archived', false)
+    .select('id');
+
+  if (error) {
+    throw new Error(`期間アーカイブに失敗しました: ${error.message}`);
+  }
+  return data?.length || 0;
+}
+
+/**
+ * 期間内の全回答のアーカイブを解除
+ */
+export async function unarchiveResponsesByPeriod(
+  schoolId: string,
+  formType: FormType,
+  periodKey: string
+): Promise<number> {
+  const { data, error } = await supabase
+    .from('form_responses')
+    .update({
+      is_archived: false,
+      archived_at: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('school_id', schoolId)
+    .eq('form_type', formType)
+    .eq('form_period', periodKey)
+    .eq('is_archived', true)
+    .select('id');
+
+  if (error) {
+    throw new Error(`期間アーカイブ解除に失敗しました: ${error.message}`);
+  }
+  return data?.length || 0;
+}
+
+/**
+ * アーカイブ済み回答数を取得
+ */
+export async function getArchivedCount(
+  schoolId: string,
+  formType: FormType,
+  periodKey?: string
+): Promise<number> {
+  let query = supabase
+    .from('form_responses')
+    .select('id', { count: 'exact', head: true })
+    .eq('school_id', schoolId)
+    .eq('form_type', formType)
+    .eq('is_archived', true);
+
+  if (periodKey) {
+    query = query.eq('form_period', periodKey);
+  }
+
+  const { count, error } = await query;
+
+  if (error) {
+    throw new Error(`アーカイブ数の取得に失敗しました: ${error.message}`);
+  }
+  return count || 0;
 }

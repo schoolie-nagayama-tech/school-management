@@ -170,6 +170,9 @@ export function ZoukomaPeriodEditor({
           onChange={(e) => setPublishEnd(e.target.value)}
           disabled={isSubmitting}
         />
+        <p className="text-xs text-[#2a2a2a]/60 mt-1">
+          ※空欄にすると永続的に公開されます
+        </p>
 
         <div className="flex items-center gap-3">
           <input

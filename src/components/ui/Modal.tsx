@@ -8,6 +8,7 @@ interface ModalProps {
   title: string;
   children: ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  minHeight?: string;
 }
 
 const sizeStyles = {
@@ -23,6 +24,7 @@ export function Modal({
   title,
   children,
   size = 'md',
+  minHeight,
 }: ModalProps) {
   // ESCキーで閉じる
   useEffect(() => {
@@ -60,8 +62,9 @@ export function Modal({
           relative w-full ${sizeStyles[size]}
           bg-[#fffffe] rounded-xl shadow-2xl border border-[#0d0d0d]
           transform transition-all duration-200
-          max-h-[90vh] overflow-hidden flex flex-col
+          max-h-[95vh] overflow-hidden flex flex-col
         `}
+        style={minHeight ? { minHeight } : undefined}
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
@@ -96,7 +99,7 @@ export function Modal({
         </div>
 
         {/* コンテンツ */}
-        <div className="px-6 py-4 overflow-y-auto flex-1">{children}</div>
+        <div className="px-6 py-6 flex-1 min-h-0 overflow-y-auto">{children}</div>
       </div>
     </div>
   );

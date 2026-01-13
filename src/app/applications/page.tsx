@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AppHeader } from '@/components/layout';
 import { Button } from '@/components/ui';
-import { ApplicationTable, ApplicationItemSettings } from '@/components/applications';
+import { ApplicationTable, ApplicationItemSettings, ApplicationFiltersPanel, ApplicationItemManager } from '@/components/applications';
 import { StudentDetailModal } from '@/components/students';
 import {
   getStudents,
@@ -12,23 +12,36 @@ import {
   getApplicationItems,
   getStudentApplications,
 } from '@/lib/api/applications';
+import { getDefaultSchoolId } from '@/lib/api/schools';
 import type {
   Student,
   ApplicationItem,
   StudentApplication,
   ApplicationStatus,
+  ApplicationFilters,
 } from '@/types/database';
 
 export default function ApplicationsPage() {
+  const schoolId = getDefaultSchoolId();
+  
   // 状態管理
   const [students, setStudents] = useState<Student[]>([]);
   const [items, setItems] = useState<ApplicationItem[]>([]);
   const [applications, setApplications] = useState<StudentApplication[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isItemManagerOpen, setIsItemManagerOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // フィルター状態
+  const [filters, setFilters] = useState<ApplicationFilters>({
+    search: '',
+    grade: null,
+    itemId: null,
+    showHidden: false,
+  });
 
   // データを取得
   const fetchData = useCallback(async () => {
@@ -37,8 +50,8 @@ export default function ApplicationsPage() {
     try {
       const [studentsData, itemsData, applicationsData] = await Promise.all([
         getStudents(),
-        getApplicationItems(),
-        getStudentApplications(),
+        getApplicationItems(schoolId, filters.showHidden),
+        getStudentApplications(schoolId),
       ]);
       setStudents(studentsData);
       setItems(itemsData);
@@ -51,12 +64,62 @@ export default function ApplicationsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [schoolId, filters.showHidden]);
 
   // 初回読み込み
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // フィルター適用
+  const filteredStudents = useMemo(() => {
+    let result = students;
+
+    // 学年フィルター
+    if (filters.grade !== null && filters.grade !== undefined) {
+      result = result.filter((s) => s.grade === filters.grade);
+    }
+
+    // 検索フィルター
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      result = result.filter(
+        (s) =>
+          s.last_name.toLowerCase().includes(searchLower) ||
+          s.first_name.toLowerCase().includes(searchLower) ||
+          s.last_name_kana.toLowerCase().includes(searchLower) ||
+          s.first_name_kana.toLowerCase().includes(searchLower) ||
+          s.student_code?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // 申込項目フィルター（特定の項目に申込済みの生徒のみ）
+    if (filters.itemId) {
+      result = result.filter((s) => {
+        const app = applications.find(
+          (a) => a.student_id === s.id && a.item_id === filters.itemId && a.status === 'completed'
+        );
+        return !!app;
+      });
+    }
+
+    return result;
+  }, [students, applications, filters]);
+
+  // フィルター変更
+  const handleFilterChange = (newFilters: Partial<ApplicationFilters>) => {
+    setFilters((prev) => ({ ...prev, ...newFilters }));
+  };
+
+  // フィルターリセット
+  const handleResetFilters = () => {
+    setFilters({
+      search: '',
+      grade: null,
+      itemId: null,
+      showHidden: filters.showHidden, // showHiddenは保持
+    });
+  };
 
   // 申込状況が変更されたときの処理
   const handleStatusChange = useCallback(
@@ -117,7 +180,10 @@ export default function ApplicationsPage() {
 
   return (
     <div className="min-h-screen bg-[#eff0f3]">
-      <AppHeader title="申込状況管理" onSettingsClick={() => setIsSettingsModalOpen(true)} />
+      <AppHeader 
+        title="申込状況管理" 
+        onSettingsClick={() => setIsItemManagerOpen(true)} 
+      />
 
       {/* メインコンテンツ */}
       <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -128,6 +194,14 @@ export default function ApplicationsPage() {
             {errorMessage}
           </div>
         )}
+
+        {/* フィルターパネル */}
+        <ApplicationFiltersPanel
+          filters={filters}
+          items={items}
+          onChange={handleFilterChange}
+          onReset={handleResetFilters}
+        />
 
         {/* 説明 */}
         <div className="mb-4 text-[#2a2a2a] text-sm">
@@ -169,8 +243,8 @@ export default function ApplicationsPage() {
           </div>
         ) : (
           <ApplicationTable
-            students={students}
-            items={items}
+            students={filteredStudents}
+            items={items.filter((i) => filters.showHidden || !i.is_hidden)}
             applications={applications}
             onStatusChange={handleStatusChange}
             onStudentClick={handleStudentClick}
@@ -178,10 +252,20 @@ export default function ApplicationsPage() {
           />
         )}
 
-        {/* 項目設定モーダル */}
+        {/* 項目設定モーダル（既存） */}
         <ApplicationItemSettings
           isOpen={isSettingsModalOpen}
           onClose={handleSettingsClose}
+        />
+
+        {/* 項目管理モーダル（新規） */}
+        <ApplicationItemManager
+          schoolId={schoolId}
+          items={items}
+          showHidden={filters.showHidden}
+          isOpen={isItemManagerOpen}
+          onClose={() => setIsItemManagerOpen(false)}
+          onUpdated={fetchData}
         />
 
         {/* 生徒詳細モーダル */}

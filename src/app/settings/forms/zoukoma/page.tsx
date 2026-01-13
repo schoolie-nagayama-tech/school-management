@@ -54,12 +54,16 @@ export default function ZoukomaSettingsPage() {
     const start = period.publish_start ? new Date(period.publish_start) : null;
     const end = period.publish_end ? new Date(period.publish_end) : null;
 
-    if (!start || !end) {
+    if (!start) {
       return { label: '未設定', className: 'bg-gray-100 text-gray-800' };
     }
 
     if (start > now) {
       return { label: '公開前', className: 'bg-yellow-100 text-yellow-800' };
+    }
+
+    if (!end) {
+      return { label: `公開中（常時）(${period.title || period.period_key})`, className: 'bg-emerald-500 text-white' };
     }
 
     if (end < now) {

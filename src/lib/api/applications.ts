@@ -12,21 +12,30 @@ import { getDefaultSchoolId } from './schools';
 /**
  * 申込項目一覧を取得
  */
-export async function getApplicationItems(schoolId?: string): Promise<ApplicationItem[]> {
+export async function getApplicationItems(
+  schoolId?: string,
+  includeHidden: boolean = false
+): Promise<ApplicationItem[]> {
   const targetSchoolId = schoolId || getDefaultSchoolId();
   
-  const { data, error } = await supabase
+  let query = supabase
     .from('application_items')
     .select('*')
     .eq('school_id', targetSchoolId)
-    .eq('is_active', true)
     .order('sort_order', { ascending: true });
+
+  if (!includeHidden) {
+    // is_hiddenがfalseまたはnullのものを取得
+    query = query.or('is_hidden.eq.false,is_hidden.is.null');
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     throw new Error(`申込項目の取得に失敗しました: ${error.message}`);
   }
 
-  return data || [];
+  return (data || []) as ApplicationItem[];
 }
 
 /**
@@ -85,6 +94,42 @@ export async function updateApplicationItem(
   }
 
   return data;
+}
+
+/**
+ * 申込項目を非表示にする
+ */
+export async function hideApplicationItem(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('application_items')
+    .update({
+      is_hidden: true,
+      ended_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id);
+
+  if (error) {
+    throw new Error(`申込項目の非表示に失敗しました: ${error.message}`);
+  }
+}
+
+/**
+ * 申込項目を再表示する
+ */
+export async function unhideApplicationItem(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('application_items')
+    .update({
+      is_hidden: false,
+      ended_at: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id);
+
+  if (error) {
+    throw new Error(`申込項目の再表示に失敗しました: ${error.message}`);
+  }
 }
 
 /**

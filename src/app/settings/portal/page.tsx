@@ -18,7 +18,19 @@ import {
 } from '@dnd-kit/sortable';
 import { AppHeader } from '@/components/layout';
 import { Button, ToastContainer } from '@/components/ui';
-import { PortalMenuEditModal, SortableMenuRow, PeriodPublishEditor } from '@/components/portal';
+import { PortalMenuEditModal, SortableMenuRow } from '@/components/portal';
+import { ZoukomaPeriodEditor } from '@/components/forms/zoukoma/ZoukomaPeriodEditor';
+import { MogiPeriodEditor } from '@/components/forms/mogi/MogiPeriodEditor';
+import { MoshiPeriodEditor } from '@/components/forms/moshi/MoshiPeriodEditor';
+import { SoudanPeriodEditor } from '@/components/forms/soudan/SoudanPeriodEditor';
+import { ShukaisuPeriodEditor } from '@/components/forms/shukaisu/ShukaisuPeriodEditor';
+import { YoubiPeriodEditor } from '@/components/forms/youbi/YoubiPeriodEditor';
+import { getZoukomaPeriods } from '@/lib/api/zoukoma';
+import { getMogiPeriods } from '@/lib/api/mogi';
+import { getMoshiPeriods } from '@/lib/api/moshi';
+import { getSoudanPeriods } from '@/lib/api/soudan';
+import { getShukaisuPeriods } from '@/lib/api/shukaisu';
+import { getYoubiPeriods } from '@/lib/api/youbi';
 import { useToast } from '@/hooks/useToast';
 import { getDefaultSchoolId, getSchool } from '@/lib/api/schools';
 import { initializePortalMenus, getPortalMenus, togglePortalMenuVisibility } from '@/lib/api/portal';
@@ -42,12 +54,12 @@ const MENU_KEY_TO_FORM_TYPE: Record<string, FormType | null> = {
 const FORM_TYPE_TO_SETTINGS_PATH: Partial<Record<FormType, string>> = {
   zoukoma: '/settings/forms/zoukoma',
   mogi: '/settings/forms/mogi',
+  moshi: '/settings/forms/moshi',
+  soudan: '/settings/forms/soudan',
+  shukaisu: '/settings/forms/shukaisu',
+  youbi: '/settings/forms/youbi',
   // 以下は未実装のため、設定ページへのリンクは表示しない
-  // moshi: '/settings/forms/moshi',
-  // shukaisu: '/settings/forms/shukaisu',
-  // youbi: '/settings/forms/youbi',
   // kyozai: '/settings/forms/kyozai',
-  // soudan: '/settings/forms/soudan',
 };
 
 export default function PortalSettingsPage() {
@@ -58,6 +70,7 @@ export default function PortalSettingsPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [editingMenu, setEditingMenu] = useState<PortalMenu | null>(null);
   const [editingPeriod, setEditingPeriod] = useState<FormPeriod | null>(null);
+  const [editingFormType, setEditingFormType] = useState<FormType | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toasts, removeToast, success, error } = useToast();
 
@@ -247,30 +260,62 @@ export default function PortalSettingsPage() {
     error(errorMessage);
   };
 
-  // 期間の公開設定を編集
-  const handleEditPeriod = (menu: PortalMenu) => {
+  // 期間の作成/編集（「設定」ボタンから直接開く）
+  const handleOpenPeriodEditor = async (menu: PortalMenu) => {
     const formType = MENU_KEY_TO_FORM_TYPE[menu.menu_key];
     if (!formType) return;
 
-    // 該当フォームタイプの期間を取得（最新のものを選択）
-    const periodsForForm = formPeriods.filter((p) => p.form_type === formType);
-    if (periodsForForm.length === 0) {
-      error('該当する期間が見つかりません');
+    setEditingFormType(formType);
+
+    // 該当フォームタイプの期間を取得
+    const schoolId = getDefaultSchoolId();
+    let periods: FormPeriod[] = [];
+    
+    try {
+      switch (formType) {
+        case 'zoukoma':
+          periods = await getZoukomaPeriods(schoolId, true);
+          break;
+        case 'mogi':
+          periods = await getMogiPeriods(schoolId, true);
+          break;
+        case 'moshi':
+          periods = await getMoshiPeriods(schoolId, true);
+          break;
+        case 'soudan':
+          periods = await getSoudanPeriods(schoolId, true);
+          break;
+        case 'shukaisu':
+          periods = await getShukaisuPeriods(schoolId, true);
+          break;
+        case 'youbi':
+          periods = await getYoubiPeriods(schoolId, true);
+          break;
+      }
+    } catch (err) {
+      console.error('Error fetching periods:', err);
+      error('期間の取得に失敗しました');
       return;
     }
-
-    // 最新の期間を選択（作成日時の降順）
-    const latestPeriod = periodsForForm.sort((a, b) => {
-      const aDate = a.created_at ? new Date(a.created_at).getTime() : 0;
-      const bDate = b.created_at ? new Date(b.created_at).getTime() : 0;
-      return bDate - aDate;
-    })[0];
-
-    setEditingPeriod(latestPeriod);
+    
+    // 期間が存在する場合は最新のものを編集、存在しない場合は新規作成
+    if (periods.length > 0) {
+      // 最新の期間を選択（作成日時の降順）
+      const latestPeriod = periods.sort((a, b) => {
+        const aDate = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const bDate = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return bDate - aDate;
+      })[0];
+      setEditingPeriod(latestPeriod);
+    } else {
+      // 期間が存在しない場合は新規作成モード（nullを設定）
+      setEditingPeriod(null);
+    }
   };
 
   const handleClosePeriodEditor = () => {
     setEditingPeriod(null);
+    setEditingFormType(null);
   };
 
   const handlePeriodUpdateSuccess = () => {
@@ -329,7 +374,6 @@ export default function PortalSettingsPage() {
                 <table className="w-full border-collapse border border-[#0d0d0d] text-sm">
                   <thead>
                     <tr className="bg-[#eff0f3]">
-                      <th className="border border-[#0d0d0d] px-4 py-3 text-left">表示</th>
                       <th className="border border-[#0d0d0d] px-4 py-3 text-left">タイトル</th>
                       <th className="border border-[#0d0d0d] px-4 py-3 text-left">
                         現在の公開状況
@@ -358,7 +402,7 @@ export default function PortalSettingsPage() {
                             isSubmitting={isSubmitting}
                             onToggleVisibility={handleToggleVisibility}
                             onEdit={handleEdit}
-                            onEditPeriod={formType === 'zoukoma' || formType === 'mogi' ? handleEditPeriod : undefined}
+                            onEditPeriod={formType ? handleOpenPeriodEditor : undefined}
                           />
                         );
                       })}
@@ -381,15 +425,66 @@ export default function PortalSettingsPage() {
           />
         )}
 
-        {/* 期間公開設定編集モーダル */}
-        {editingPeriod && (
-          <PeriodPublishEditor
-            isOpen={!!editingPeriod}
-            period={editingPeriod}
-            formType={editingPeriod.form_type}
-            onClose={handleClosePeriodEditor}
-            onSuccess={handlePeriodUpdateSuccess}
-          />
+        {/* 期間作成/編集モーダル */}
+        {editingFormType && (
+          <>
+            {editingFormType === 'zoukoma' && editingPeriod && (
+              <ZoukomaPeriodEditor
+                isOpen={!!editingFormType}
+                period={editingPeriod as any}
+                onClose={handleClosePeriodEditor}
+                onSuccess={handlePeriodUpdateSuccess}
+              />
+            )}
+            {editingFormType === 'zoukoma' && !editingPeriod && (
+              <ZoukomaPeriodEditor
+                isOpen={!!editingFormType}
+                period={null}
+                onClose={handleClosePeriodEditor}
+                onSuccess={handlePeriodUpdateSuccess}
+              />
+            )}
+            {editingFormType === 'mogi' && (
+              <MogiPeriodEditor
+                isOpen={!!editingFormType}
+                period={editingPeriod as any}
+                onClose={handleClosePeriodEditor}
+                onSuccess={handlePeriodUpdateSuccess}
+              />
+            )}
+            {editingFormType === 'moshi' && (
+              <MoshiPeriodEditor
+                isOpen={!!editingFormType}
+                period={editingPeriod as any}
+                onClose={handleClosePeriodEditor}
+                onSuccess={handlePeriodUpdateSuccess}
+              />
+            )}
+            {editingFormType === 'soudan' && (
+              <SoudanPeriodEditor
+                isOpen={!!editingFormType}
+                period={editingPeriod as any}
+                onClose={handleClosePeriodEditor}
+                onSuccess={handlePeriodUpdateSuccess}
+              />
+            )}
+            {editingFormType === 'shukaisu' && (
+              <ShukaisuPeriodEditor
+                isOpen={!!editingFormType}
+                period={editingPeriod as any}
+                onClose={handleClosePeriodEditor}
+                onSuccess={handlePeriodUpdateSuccess}
+              />
+            )}
+            {editingFormType === 'youbi' && (
+              <YoubiPeriodEditor
+                isOpen={!!editingFormType}
+                period={editingPeriod as any}
+                onClose={handleClosePeriodEditor}
+                onSuccess={handlePeriodUpdateSuccess}
+              />
+            )}
+          </>
         )}
       </div>
     </div>

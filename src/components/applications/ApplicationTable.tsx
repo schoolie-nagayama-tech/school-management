@@ -2,7 +2,7 @@
 
 import type { Student, ApplicationItem, StudentApplication, ApplicationStatus } from '@/types/database';
 import { GRADE_LABELS, APPLICATION_STATUS_SYMBOLS } from '@/types/database';
-import { updateStudentApplication, updateApplicationItem, createApplicationItem } from '@/lib/api/applications';
+import { updateStudentApplication, updateApplicationItem, createApplicationItem, deleteApplicationItem } from '@/lib/api/applications';
 import { useState } from 'react';
 import { useToast } from '@/hooks/useToast';
 
@@ -51,6 +51,7 @@ export function ApplicationTable({
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
   const [isAddingNew, setIsAddingNew] = useState(false);
+  const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
   const { success, error: toastError } = useToast();
 
   // 申込状況をマップ化（student_id + item_id → status）
@@ -157,18 +158,54 @@ export function ApplicationTable({
                       />
                     </div>
                   ) : (
-                    <div
-                      className="flex items-center justify-center gap-1 cursor-pointer hover:bg-[#ff8e3c]/10 rounded px-2 py-1 transition-colors"
-                      onClick={() => {
-                        setEditingItemId(item.id);
-                        setEditingName(item.name);
-                      }}
-                      title="クリックして編集"
-                    >
-                      <span className="text-sm">{item.name}</span>
-                      <span className="text-xs text-[#2a2a2a]/40 opacity-0 group-hover:opacity-100 transition-opacity">
-                        ✏️
-                      </span>
+                    <div className="flex items-center justify-center gap-1">
+                      <div
+                        className="flex-1 flex items-center justify-center gap-1 cursor-pointer hover:bg-[#ff8e3c]/10 rounded px-2 py-1 transition-colors"
+                        onClick={() => {
+                          setEditingItemId(item.id);
+                          setEditingName(item.name);
+                        }}
+                        title="クリックして編集"
+                      >
+                        <span className="text-sm">{item.name}</span>
+                        <span className="text-xs text-[#2a2a2a]/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                          ✏️
+                        </span>
+                      </div>
+                      <button
+                        className="text-xs text-[#d9376e] hover:text-[#d9376e]/80 opacity-0 group-hover:opacity-100 transition-opacity px-1 py-1 rounded hover:bg-[#d9376e]/10"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (
+                            window.confirm(
+                              `「${item.name}」を削除してもよろしいですか？\n\nこの列の全ての申込状況データも削除されます。`
+                            )
+                          ) {
+                            setDeletingItemId(item.id);
+                            try {
+                              await deleteApplicationItem(item.id);
+                              success('項目を削除しました');
+                              onItemsChange?.();
+                            } catch (err) {
+                              toastError(
+                                err instanceof Error
+                                  ? err.message
+                                  : '項目の削除に失敗しました'
+                              );
+                            } finally {
+                              setDeletingItemId(null);
+                            }
+                          }
+                        }}
+                        disabled={deletingItemId === item.id}
+                        title="削除"
+                      >
+                        {deletingItemId === item.id ? (
+                          <span className="text-xs">...</span>
+                        ) : (
+                          <span>🗑️</span>
+                        )}
+                      </button>
                     </div>
                   )}
                 </th>

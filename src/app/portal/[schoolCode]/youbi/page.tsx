@@ -1,0 +1,112 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import { getActiveYoubiPeriod } from '@/lib/api/youbi';
+import { getSchoolByCode } from '@/lib/api/schools';
+import { YoubiForm } from '@/components/forms/youbi';
+import type { YoubiPeriod } from '@/types/forms/youbi';
+import type { School } from '@/types/database';
+
+export default function YoubiPortalPage() {
+  const params = useParams();
+  const schoolCode = (params?.schoolCode as string) || '';
+
+  const [school, setSchool] = useState<School | null>(null);
+  const [period, setPeriod] = useState<YoubiPeriod | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      setErrorMessage('');
+
+      try {
+        // 学校情報を取得
+        const schoolData = await getSchoolByCode(schoolCode);
+        if (!schoolData) {
+          setErrorMessage('教室が見つかりません');
+          setIsLoading(false);
+          return;
+        }
+        setSchool(schoolData);
+
+        // 公開中の期間を取得
+        const periodData = await getActiveYoubiPeriod(schoolCode);
+        if (!periodData) {
+          setErrorMessage('現在受付していません');
+          setIsLoading(false);
+          return;
+        }
+        setPeriod(periodData);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setErrorMessage(
+          error instanceof Error ? error.message : 'データの取得に失敗しました'
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (schoolCode) {
+      fetchData();
+    }
+  }, [schoolCode]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
+        <p className="text-[#2a2a2a]">読み込み中...</p>
+      </div>
+    );
+  }
+
+  if (errorMessage || !school || !period) {
+    return (
+      <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-4">
+        <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-8 max-w-md w-full text-center">
+          <h1 className="text-2xl font-bold text-[#0d0d0d] mb-4">
+            {school?.name || '教室'}
+          </h1>
+          <p className="text-[#2a2a2a] mb-6">{errorMessage || '現在受付していません'}</p>
+          <Link
+            href={`/portal/${schoolCode}`}
+            className="inline-block px-6 py-3 bg-[#ff8e3c] text-[#0d0d0d] font-medium rounded-lg hover:bg-[#ff9e5c] transition-colors"
+          >
+            ポータルに戻る
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#f8fafc]">
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        {!period ? (
+          // 公開期間外
+          <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-8 text-center">
+            <h1 className="text-2xl font-bold text-[#0d0d0d] mb-4">
+              曜日変更
+            </h1>
+            <p className="text-[#2a2a2a] mb-6">
+              現在、曜日変更の受付は行っておりません。
+            </p>
+            <a
+              href={`/portal/${schoolCode}`}
+              className="inline-block px-6 py-3 bg-[#ff8e3c] text-[#0d0d0d] font-medium rounded-lg hover:bg-[#ff9e5c] transition-colors"
+            >
+              ポータルに戻る
+            </a>
+          </div>
+        ) : (
+          // フォーム表示
+          <YoubiForm school={school} period={period} />
+        )}
+      </div>
+    </div>
+  );
+}

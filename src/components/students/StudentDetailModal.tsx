@@ -222,7 +222,7 @@ export function StudentDetailModal({
         )}
 
         {activeTab === 'interviews' && student && (
-          <div className="min-h-[400px]">
+          <div className="h-[60vh] overflow-y-auto pr-2">
             <InterviewList studentId={student.id} schoolId={schoolId} />
           </div>
         )}

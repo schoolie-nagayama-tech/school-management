@@ -568,9 +568,22 @@ export const STATUS_COLORS: Record<Student['status'], string> = {
 };
 
 // 申込状況管理の型定義
-export type ApplicationItem = Database['public']['Tables']['application_items']['Row'];
+export type ApplicationItem = Database['public']['Tables']['application_items']['Row'] & {
+  is_hidden?: boolean;
+  ended_at?: string | null;
+};
 export type ApplicationItemInsert = Database['public']['Tables']['application_items']['Insert'];
 export type ApplicationItemUpdate = Database['public']['Tables']['application_items']['Update'];
+
+// フィルター用の型
+export interface ApplicationFilters {
+  search?: string;        // 生徒名・フォーム名検索
+  grade?: number | null;  // 学年
+  itemId?: string | null; // 申込項目ID
+  dateFrom?: string;      // 日付From
+  dateTo?: string;        // 日付To
+  showHidden?: boolean;   // 非表示も含めるか
+}
 
 export type StudentApplication = Database['public']['Tables']['student_applications']['Row'];
 export type StudentApplicationInsert = Database['public']['Tables']['student_applications']['Insert'];
@@ -634,11 +647,13 @@ export type FormResponse = {
   linked_student_id: string | null;
   linked_at: string | null;
   status_checks: Record<string, boolean>;
+  is_archived: boolean;
+  archived_at: string | null;
   created_at: string;
   updated_at: string;
 };
 
-export type FormResponseInsert = Omit<FormResponse, 'id' | 'created_at' | 'updated_at' | 'linked_student_id' | 'linked_at'>;
+export type FormResponseInsert = Omit<FormResponse, 'id' | 'created_at' | 'updated_at' | 'linked_student_id' | 'linked_at' | 'is_archived' | 'archived_at'>;
 
 export type FormResponseUpdate = Partial<Omit<FormResponse, 'id' | 'school_id' | 'form_type' | 'form_period' | 'created_at' | 'updated_at'>>;
 
@@ -653,11 +668,13 @@ export type FormPeriod = {
   publish_end: string | null;
   is_active: boolean;
   linked_application_item_id: string | null;
+  is_archived: boolean;
+  archived_at: string | null;
   created_at: string;
   updated_at: string;
 };
 
-export type FormPeriodInsert = Omit<FormPeriod, 'id' | 'created_at' | 'updated_at'>;
+export type FormPeriodInsert = Omit<FormPeriod, 'id' | 'created_at' | 'updated_at' | 'is_archived' | 'archived_at'>;
 
 export type FormPeriodUpdate = Partial<Omit<FormPeriod, 'id' | 'school_id' | 'form_type' | 'period_key' | 'created_at' | 'updated_at'>>;
 
