@@ -235,10 +235,9 @@ export default function ShukaisuResponsePage() {
   const allSelected = activeResponses.length > 0 && activeResponses.every(r => selectedIds.has(r.id));
 
   return (
-    <div className="min-h-screen bg-[#eff0f3]">
+    <>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <AppHeader title={`${periodKey} 週回数変更 回答一覧`} />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <AdminLayout headerTitle={`${periodKey} 週回数変更 回答一覧`}>
         {errorMessage && (
           <div className="mb-6 p-4 bg-[#d9376e]/10 border border-[#d9376e] rounded-lg">
             <p className="text-sm text-[#d9376e]">{errorMessage}</p>
@@ -521,7 +520,6 @@ export default function ShukaisuResponsePage() {
             </div>
           )}
         </div>
-      </main>
 
       {/* 紐付けモーダル */}
       {linkingResponse && (
