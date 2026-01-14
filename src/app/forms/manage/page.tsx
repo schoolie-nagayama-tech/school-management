@@ -47,7 +47,7 @@ export default function FormsManagePage() {
     setIsFormEditorOpen(true);
   };
 
-  const handleViewResponses = (_form: Form) => {
+  const handleViewResponses = () => {
     // Part 2で実装
     alert('回答一覧機能はPart 2で実装予定です');
   };

@@ -472,6 +472,7 @@ export function MogiPeriodEditor({
 
           <div className="space-y-4">
             {dateEntries.map((entry, index) => {
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
               const _venues = getVenuesForDate(entry, index);
               return (
                 <div

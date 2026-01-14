@@ -23,6 +23,7 @@ const COMMON_9_SUBJECTS = [
 ] as const;
 
 // 5科の科目コード（英数国社理）
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const _FIVE_SUBJECTS = ['english', 'math', 'japanese', 'social', 'science'] as const;
 
 // mock用の科目コード（5科 + 換算内申）

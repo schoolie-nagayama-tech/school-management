@@ -54,7 +54,7 @@ export function TemplateEditor({
         setTemplate(null);
       }
     }
-  }, [isOpen, templateId]);
+  }, [isOpen, templateId, loadTemplate]);
 
   const loadTemplate = useCallback(async () => {
     if (!templateId) return;

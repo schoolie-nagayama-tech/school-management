@@ -254,8 +254,7 @@ export function ShukaisuForm({ school, period }: ShukaisuFormProps) {
   // スロット入力UI（共通）
   const renderSlotInputs = (
     slots: ShukaisuSlot[],
-    updateFn: (index: number, field: keyof ShukaisuSlot, value: string) => void,
-    _label: string
+    updateFn: (index: number, field: keyof ShukaisuSlot, value: string) => void
   ) => (
     <div className="space-y-3">
       {slots.map((slot, index) => (
@@ -396,7 +395,7 @@ export function ShukaisuForm({ school, period }: ShukaisuFormProps) {
               }))}
             />
           </div>
-          {renderSlotInputs(currentSlots, updateCurrentSlot, '現状')}
+          {renderSlotInputs(currentSlots, updateCurrentSlot)}
         </section>
 
         {/* 変更希望 */}
@@ -417,7 +416,7 @@ export function ShukaisuForm({ school, period }: ShukaisuFormProps) {
               }))}
             />
           </div>
-          {renderSlotInputs(requestedSlots, updateRequestedSlot, '変更希望')}
+          {renderSlotInputs(requestedSlots, updateRequestedSlot)}
         </section>
 
         {/* 変更希望日 */}

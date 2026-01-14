@@ -1,4 +1,3 @@
-import { notFound, redirect } from 'next/navigation';
 import { getFormBySlug } from '@/lib/api/forms';
 import { PublicFormRenderer, KomaFormRenderer } from '@/components/forms';
 

@@ -89,7 +89,7 @@ export function FormEditor({
         setForm(null);
       }
     }
-  }, [isOpen, formId, template]);
+  }, [isOpen, formId, template, loadApplicationItems, loadForm]);
 
   const loadApplicationItems = useCallback(async () => {
     try {

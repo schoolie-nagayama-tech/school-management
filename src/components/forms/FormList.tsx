@@ -14,6 +14,7 @@ interface FormListProps {
   onRefresh: () => void;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefresh }: FormListProps) {
   const router = useRouter();
   const [forms, setForms] = useState<Form[]>([]);

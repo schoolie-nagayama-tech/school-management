@@ -142,6 +142,8 @@ export function SlotTable({
     onChange(newSelected);
   };
 
+  // 未使用の関数（将来の機能拡張用）
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const _handlePeriodToggle = (date: string, period: number) => {
     if (disabled) return;
 
@@ -282,6 +284,7 @@ export function SlotTable({
 
                   const isSelected = selectedSlotSet.has(slot.id);
                   const periodSlots = dateSlots.filter((s) => s.period === period);
+                  // eslint-disable-next-line @typescript-eslint/no-unused-vars
                   const _allPeriodSelected = periodSlots.every((s) =>
                     selectedSlotSet.has(s.id)
                   );

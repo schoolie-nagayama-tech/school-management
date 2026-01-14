@@ -30,7 +30,7 @@ export function ApplicationItemManager({
   onClose,
   onUpdated,
 }: ApplicationItemManagerProps) {
-  const _targetSchoolId = schoolId || getDefaultSchoolId();
+  // schoolId is used via getDefaultSchoolId() when needed
   const { success, error: toastError } = useToast();
   const [newItemName, setNewItemName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
