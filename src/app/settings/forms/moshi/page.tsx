@@ -168,9 +168,10 @@ export default function MoshiSettingsPage() {
   };
 
   return (
-    <div>
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <AdminLayout headerTitle="模試申込 設定">
+    <AdminLayout 
+      headerTitle="模試申込 設定"
+      toastContainer={<ToastContainer toasts={toasts} onRemove={removeToast} />}
+    >
         {errorMessage && (
           <div className="mb-4 p-4 bg-[#d9376e]/20 border border-[#d9376e] rounded-lg">
             <p className="text-sm text-[#d9376e]">{errorMessage}</p>
@@ -398,7 +399,6 @@ export default function MoshiSettingsPage() {
           fetchPeriods();
         }}
       />
-      </AdminLayout>
-    </div>
+    </AdminLayout>
   );
 }

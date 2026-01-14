@@ -168,9 +168,10 @@ export default function YoubiSettingsPage() {
   };
 
   return (
-    <div>
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <AdminLayout headerTitle="曜日変更 設定">
+    <AdminLayout 
+      headerTitle="曜日変更 設定"
+      toastContainer={<ToastContainer toasts={toasts} onRemove={removeToast} />}
+    >
         {errorMessage && (
           <div className="mb-4 p-4 bg-[#d9376e]/20 border border-[#d9376e] rounded-lg">
             <p className="text-sm text-[#d9376e]">{errorMessage}</p>
@@ -389,7 +390,6 @@ export default function YoubiSettingsPage() {
           fetchPeriods();
         }}
       />
-      </AdminLayout>
-    </div>
+    </AdminLayout>
   );
 }
