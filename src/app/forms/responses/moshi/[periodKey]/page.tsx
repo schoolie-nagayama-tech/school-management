@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import { AppHeader } from '@/components/layout';
+import { AdminLayout } from '@/components/layouts';
 import {
   getMoshiResponses,
   getMoshiStats,
@@ -39,6 +39,7 @@ export default function MoshiResponsePage() {
   const [linkingResponse, setLinkingResponse] = useState<MoshiResponse | null>(null);
   const [detailResponse, setDetailResponse] = useState<MoshiResponse | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
+  const [isLoadingStudents, setIsLoadingStudents] = useState(false);
   const { toasts, removeToast, success, error } = useToast();
 
   // フィルター
@@ -559,6 +560,7 @@ export default function MoshiResponsePage() {
           onClose={() => setDetailResponse(null)}
         />
       )}
-    </div>
+      </AdminLayout>
+    </>
   );
 }

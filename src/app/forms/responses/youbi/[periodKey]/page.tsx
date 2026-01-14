@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import { AppHeader } from '@/components/layout';
+import { AdminLayout } from '@/components/layouts';
 import {
   getYoubiResponses,
   getYoubiStats,
@@ -37,6 +37,7 @@ export default function YoubiResponsePage() {
   const [linkingResponse, setLinkingResponse] = useState<YoubiResponse | null>(null);
   const [detailResponse, setDetailResponse] = useState<YoubiResponse | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
+  const [isLoadingStudents, setIsLoadingStudents] = useState(false);
   const { toasts, removeToast, success, error } = useToast();
 
   // フィルター
@@ -555,6 +556,7 @@ export default function YoubiResponsePage() {
           onClose={() => setDetailResponse(null)}
         />
       )}
-    </div>
+      </AdminLayout>
+    </>
   );
 }

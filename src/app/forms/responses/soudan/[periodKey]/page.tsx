@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import { AppHeader } from '@/components/layout';
+import { AdminLayout } from '@/components/layouts';
 import {
   getSoudanResponses,
   getSoudanStats,
@@ -38,6 +38,7 @@ export default function SoudanResponsePage() {
   const [linkingResponse, setLinkingResponse] = useState<SoudanResponse | null>(null);
   const [detailResponse, setDetailResponse] = useState<SoudanResponse | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
+  const [isLoadingStudents, setIsLoadingStudents] = useState(false);
   const { toasts, removeToast, success, error } = useToast();
 
   // フィルター
@@ -590,6 +591,7 @@ export default function SoudanResponsePage() {
           onClose={() => setDetailResponse(null)}
         />
       )}
-    </div>
+      </AdminLayout>
+    </>
   );
 }

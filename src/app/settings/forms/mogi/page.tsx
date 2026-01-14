@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { AppHeader } from '@/components/layout';
+import { AdminLayout } from '@/components/layouts';
 import { Button, ToastContainer } from '@/components/ui';
 import { getMogiPeriods, deleteMogiPeriod, getMogiResponseCount } from '@/lib/api/mogi';
 import { archivePeriod, unarchivePeriod } from '@/lib/api/form-periods';
@@ -171,10 +171,9 @@ export default function MogiSettingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#eff0f3]">
+    <>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <AppHeader title="Vもぎ申込 設定" />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <AdminLayout headerTitle="Vもぎ申込 設定">
         {errorMessage && (
           <div className="mb-4 p-4 bg-[#d9376e]/20 border border-[#d9376e] rounded-lg">
             <p className="text-sm text-[#d9376e]">{errorMessage}</p>
@@ -393,6 +392,7 @@ export default function MogiSettingsPage() {
           fetchPeriods();
         }}
       />
-    </div>
+      </AdminLayout>
+    </>
   );
 }

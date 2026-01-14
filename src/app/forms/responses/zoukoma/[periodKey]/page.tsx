@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import { AppHeader } from '@/components/layout';
+import { AdminLayout } from '@/components/layouts';
 import {
   getZoukomaResponses,
   getZoukomaStats,
@@ -37,6 +37,7 @@ export default function ZoukomaResponsePage() {
   const [filters, setFilters] = useState<ZoukomaResponseFilters>({});
   const [linkingResponse, setLinkingResponse] = useState<ZoukomaResponse | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
+  const [isLoadingStudents, setIsLoadingStudents] = useState(false);
   const { toasts, removeToast, success, error } = useToast();
 
   const fetchData = useCallback(async () => {
@@ -139,9 +140,9 @@ export default function ZoukomaResponsePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#eff0f3]">
+    <>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <AppHeader title={`${periodKey} 増コマ申込 回答一覧`} />
+      <AdminLayout headerTitle={`${periodKey} 増コマ申込 回答一覧`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {errorMessage && (
           <div className="mb-4 p-4 bg-[#d9376e]/20 border border-[#d9376e] rounded-lg">
@@ -376,6 +377,7 @@ export default function ZoukomaResponsePage() {
           onSuccess={handleLinkSuccess}
         />
       )}
-    </div>
+      </AdminLayout>
+    </>
   );
 }

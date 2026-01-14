@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import { AppHeader } from '@/components/layout';
+import { AdminLayout } from '@/components/layouts';
 import {
   getShukaisuResponses,
   getShukaisuStats,
@@ -37,6 +37,7 @@ export default function ShukaisuResponsePage() {
   const [linkingResponse, setLinkingResponse] = useState<ShukaisuResponse | null>(null);
   const [detailResponse, setDetailResponse] = useState<ShukaisuResponse | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
+  const [isLoadingStudents, setIsLoadingStudents] = useState(false);
   const { toasts, removeToast, success, error } = useToast();
 
   // フィルター
@@ -555,6 +556,7 @@ export default function ShukaisuResponsePage() {
           onClose={() => setDetailResponse(null)}
         />
       )}
-    </div>
+      </AdminLayout>
+    </>
   );
 }

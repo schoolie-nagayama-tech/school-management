@@ -16,7 +16,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { AppHeader } from '@/components/layout';
+import { AdminLayout } from '@/components/layouts';
 import { Button, ToastContainer } from '@/components/ui';
 import { PortalMenuEditModal, SortableMenuRow } from '@/components/portal';
 import { ZoukomaPeriodEditor } from '@/components/forms/zoukoma/ZoukomaPeriodEditor';
@@ -330,12 +330,9 @@ export default function PortalSettingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#eff0f3]">
+    <>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <AppHeader title="ポータル設定" />
-
-      {/* メインコンテンツ */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <AdminLayout headerTitle="ポータル設定">
         {errorMessage && (
           <div className="mb-4 p-4 bg-[#d9376e]/20 border border-[#d9376e] rounded-lg">
             <p className="text-sm text-[#d9376e]">{errorMessage}</p>
@@ -492,7 +489,7 @@ export default function PortalSettingsPage() {
             )}
           </>
         )}
-      </div>
-    </div>
+      </AdminLayout>
+    </>
   );
 }

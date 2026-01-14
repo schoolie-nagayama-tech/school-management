@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { AppHeader } from '@/components/layout';
+import { AdminLayout } from '@/components/layouts';
 import { Button } from '@/components/ui';
 import { ApplicationTable, ApplicationItemSettings, ApplicationFiltersPanel, ApplicationItemManager } from '@/components/applications';
 import { StudentDetailModal } from '@/components/students';
@@ -179,37 +179,33 @@ export default function ApplicationsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#eff0f3]">
-      <AppHeader 
-        title="申込状況管理" 
-        onSettingsClick={() => setIsItemManagerOpen(true)} 
-      />
+    <AdminLayout 
+      headerTitle="申込状況管理" 
+      headerOnSettingsClick={() => setIsItemManagerOpen(true)}
+    >
 
-      {/* メインコンテンツ */}
-      <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      {/* エラーメッセージ */}
+      {errorMessage && (
+        <div className="mb-4 bg-[#d9376e]/20 text-[#d9376e] px-4 py-2 rounded border border-[#d9376e]">
+          {errorMessage}
+        </div>
+      )}
 
-        {/* エラーメッセージ */}
-        {errorMessage && (
-          <div className="mb-4 bg-[#d9376e]/20 text-[#d9376e] px-4 py-2 rounded border border-[#d9376e]">
-            {errorMessage}
-          </div>
-        )}
-
-        {/* フィルターパネル */}
-        <ApplicationFiltersPanel
+      {/* フィルターパネル */}
+      <ApplicationFiltersPanel
           filters={filters}
           items={items}
           onChange={handleFilterChange}
-          onReset={handleResetFilters}
-        />
+        onReset={handleResetFilters}
+      />
 
-        {/* 説明 */}
-        <div className="mb-4 text-[#2a2a2a] text-sm">
-          <p>セルをクリックして申込状況を切り替えます: 空白 → ×（未申込）→ ✓（申込済）→ -（対象外）→ 空白</p>
-        </div>
+      {/* 説明 */}
+      <div className="mb-4 text-[#2a2a2a] text-sm">
+        <p>セルをクリックして申込状況を切り替えます: 空白 → ×（未申込）→ ✓（申込済）→ -（対象外）→ 空白</p>
+      </div>
 
-        {/* テーブル */}
-        {isLoading ? (
+      {/* テーブル */}
+      {isLoading ? (
           <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-8">
             <div className="flex items-center justify-center">
               <svg
@@ -239,48 +235,47 @@ export default function ApplicationsPage() {
             <p className="text-[#2a2a2a] mb-4">申込項目がありません。</p>
             <Button onClick={() => setIsSettingsModalOpen(true)}>
               項目設定を開く
-            </Button>
-          </div>
-        ) : (
-          <ApplicationTable
-            students={filteredStudents}
-            items={items.filter((i) => filters.showHidden || !i.is_hidden)}
-            applications={applications}
-            onStatusChange={handleStatusChange}
-            onStudentClick={handleStudentClick}
-            onItemsChange={fetchData}
-          />
-        )}
-
-        {/* 項目設定モーダル（既存） */}
-        <ApplicationItemSettings
-          isOpen={isSettingsModalOpen}
-          onClose={handleSettingsClose}
+          </Button>
+        </div>
+      ) : (
+        <ApplicationTable
+          students={filteredStudents}
+          items={items.filter((i) => filters.showHidden || !i.is_hidden)}
+          applications={applications}
+          onStatusChange={handleStatusChange}
+          onStudentClick={handleStudentClick}
+          onItemsChange={fetchData}
         />
+      )}
 
-        {/* 項目管理モーダル（新規） */}
-        <ApplicationItemManager
-          schoolId={schoolId}
-          items={items}
-          showHidden={filters.showHidden ?? false}
-          isOpen={isItemManagerOpen}
-          onClose={() => setIsItemManagerOpen(false)}
-          onUpdated={fetchData}
+      {/* 項目設定モーダル（既存） */}
+      <ApplicationItemSettings
+        isOpen={isSettingsModalOpen}
+        onClose={handleSettingsClose}
+      />
+
+      {/* 項目管理モーダル（新規） */}
+      <ApplicationItemManager
+        schoolId={schoolId}
+        items={items}
+        showHidden={filters.showHidden ?? false}
+        isOpen={isItemManagerOpen}
+        onClose={() => setIsItemManagerOpen(false)}
+        onUpdated={fetchData}
+      />
+
+      {/* 生徒詳細モーダル */}
+      {selectedStudent && (
+        <StudentDetailModal
+          isOpen={isDetailModalOpen}
+          onClose={handleDetailClose}
+          student={selectedStudent}
+          onEdit={() => {
+            // 編集は別ページで行うため、ここでは詳細を閉じるだけ
+            handleDetailClose();
+          }}
         />
-
-        {/* 生徒詳細モーダル */}
-        {selectedStudent && (
-          <StudentDetailModal
-            isOpen={isDetailModalOpen}
-            onClose={handleDetailClose}
-            student={selectedStudent}
-            onEdit={() => {
-              // 編集は別ページで行うため、ここでは詳細を閉じるだけ
-              handleDetailClose();
-            }}
-          />
-        )}
-      </div>
-    </div>
+      )}
+    </AdminLayout>
   );
 }

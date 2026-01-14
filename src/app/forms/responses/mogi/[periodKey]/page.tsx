@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import { AppHeader } from '@/components/layout';
+import { AdminLayout } from '@/components/layouts';
 import {
   getMogiResponses,
   getMogiStats,
@@ -47,6 +47,7 @@ export default function MogiResponsePage() {
   const [linkingResponse, setLinkingResponse] = useState<MogiResponse | null>(null);
   const [detailResponse, setDetailResponse] = useState<MogiResponse | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
+  const [isLoadingStudents, setIsLoadingStudents] = useState(false);
   const { toasts, removeToast, success, error } = useToast();
 
   // フィルター
@@ -250,9 +251,9 @@ export default function MogiResponsePage() {
   const allSelected = activeResponses.length > 0 && activeResponses.every(r => selectedIds.has(r.id));
 
   return (
-    <div className="min-h-screen bg-[#eff0f3]">
+    <>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <AppHeader title={`${periodKey} Vもぎ申込 回答一覧`} />
+      <AdminLayout headerTitle={`${periodKey} Vもぎ申込 回答一覧`}>
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {errorMessage && (
           <div className="mb-6 p-4 bg-[#d9376e]/10 border border-[#d9376e] rounded-lg">
@@ -593,6 +594,7 @@ export default function MogiResponsePage() {
           onClose={() => setDetailResponse(null)}
         />
       )}
-    </div>
+      </AdminLayout>
+    </>
   );
 }

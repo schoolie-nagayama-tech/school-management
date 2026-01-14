@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { AppHeader } from '@/components/layout';
+import { AdminLayout } from '@/components/layouts';
 import { getZoukomaPeriods, deleteZoukomaPeriod } from '@/lib/api/zoukoma';
 import { ZoukomaPeriodForm } from '@/components/forms/zoukoma/ZoukomaPeriodForm';
 import type { ZoukomaPeriod } from '@/types/forms/zoukoma';
@@ -88,16 +88,14 @@ export default function ZoukomaSettingsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#eff0f3]">
-      <AppHeader title="増コマ申込 設定" />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {errorMessage && (
-          <div className="mb-4 p-4 bg-[#d9376e]/20 border border-[#d9376e] rounded-lg">
-            <p className="text-sm text-[#d9376e]">{errorMessage}</p>
-          </div>
-        )}
+    <AdminLayout headerTitle="増コマ申込 設定">
+      {errorMessage && (
+        <div className="mb-4 p-4 bg-[#d9376e]/20 border border-[#d9376e] rounded-lg">
+          <p className="text-sm text-[#d9376e]">{errorMessage}</p>
+        </div>
+      )}
 
-        <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6">
+      <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold text-[#0d0d0d]">期間一覧</h2>
             <button
@@ -202,9 +200,8 @@ export default function ZoukomaSettingsPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
-          )}
         </div>
+      )}
       </div>
 
       {/* 期間編集モーダル */}
@@ -219,6 +216,6 @@ export default function ZoukomaSettingsPage() {
           fetchPeriods();
         }}
       />
-    </div>
+    </AdminLayout>
   );
 }
