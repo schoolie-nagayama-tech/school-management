@@ -262,7 +262,7 @@ export default function ApplicationsPage() {
         <ApplicationItemManager
           schoolId={schoolId}
           items={items}
-          showHidden={filters.showHidden}
+          showHidden={filters.showHidden ?? false}
           isOpen={isItemManagerOpen}
           onClose={() => setIsItemManagerOpen(false)}
           onUpdated={fetchData}
