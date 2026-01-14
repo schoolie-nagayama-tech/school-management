@@ -10,6 +10,7 @@ import {
 } from '@/lib/api/youbi';
 import {
   unlinkResponseFromStudent,
+  getArchivedCount,
 } from '@/lib/api/form-responses';
 import { getStudents } from '@/lib/api/students';
 import { LinkStudentModal } from '@/components/forms/LinkStudentModal';
