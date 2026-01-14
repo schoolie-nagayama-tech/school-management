@@ -9,7 +9,6 @@ interface AdminLayoutProps {
   headerOnSettingsClick?: () => void;
   title?: string;
   actions?: ReactNode; // 右上のボタン類
-  toastContainer?: ReactNode; // ToastContainerを外部から渡す
 }
 
 export function AdminLayout({ 
@@ -17,12 +16,10 @@ export function AdminLayout({
   headerTitle,
   headerOnSettingsClick,
   title, 
-  actions,
-  toastContainer
+  actions
 }: AdminLayoutProps) {
   return (
     <div className="min-h-screen bg-[#eff0f3]">
-      {toastContainer}
       {headerTitle && (
         <AppHeader title={headerTitle} onSettingsClick={headerOnSettingsClick} />
       )}
