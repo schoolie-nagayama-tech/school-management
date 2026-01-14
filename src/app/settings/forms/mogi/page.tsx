@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { Button, ToastContainer } from '@/components/ui';
@@ -171,7 +171,7 @@ export default function MogiSettingsPage() {
   };
 
   return (
-    <>
+    <React.Fragment>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <AdminLayout headerTitle="Vもぎ申込 設定">
         {errorMessage && (
@@ -393,6 +393,6 @@ export default function MogiSettingsPage() {
         }}
       />
       </AdminLayout>
-    </>
+    </React.Fragment>
   );
 }
