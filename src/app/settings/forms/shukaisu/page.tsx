@@ -375,7 +375,7 @@ export default function ShukaisuSettingsPage() {
             </div>
           )}
         </div>
-      </div>
+      </AdminLayout>
 
       {/* 期間編集モーダル */}
       <ShukaisuPeriodEditor
@@ -389,7 +389,6 @@ export default function ShukaisuSettingsPage() {
           fetchPeriods();
         }}
       />
-      </AdminLayout>
     </div>
   );
 }

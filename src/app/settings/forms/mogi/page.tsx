@@ -378,7 +378,7 @@ export default function MogiSettingsPage() {
             </div>
           )}
         </div>
-      </div>
+      </AdminLayout>
 
       {/* 期間編集モーダル */}
       <MogiPeriodEditor
@@ -392,7 +392,6 @@ export default function MogiSettingsPage() {
           fetchPeriods();
         }}
       />
-      </AdminLayout>
     </div>
   );
 }

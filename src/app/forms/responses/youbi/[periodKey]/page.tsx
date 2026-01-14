@@ -11,6 +11,9 @@ import {
 import {
   unlinkResponseFromStudent,
   getArchivedCount,
+  archiveResponse,
+  unarchiveResponse,
+  archiveResponses,
 } from '@/lib/api/form-responses';
 import { getStudents } from '@/lib/api/students';
 import { LinkStudentModal } from '@/components/forms/LinkStudentModal';

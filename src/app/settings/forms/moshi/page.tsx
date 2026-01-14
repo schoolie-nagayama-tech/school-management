@@ -384,7 +384,7 @@ export default function MoshiSettingsPage() {
             </div>
           )}
         </div>
-      </div>
+      </AdminLayout>
 
       {/* 期間編集モーダル */}
       <MoshiPeriodEditor
@@ -398,7 +398,6 @@ export default function MoshiSettingsPage() {
           fetchPeriods();
         }}
       />
-      </AdminLayout>
     </div>
   );
 }

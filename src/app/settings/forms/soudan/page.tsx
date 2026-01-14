@@ -375,7 +375,7 @@ export default function SoudanSettingsPage() {
             </div>
           )}
         </div>
-      </div>
+      </AdminLayout>
 
       {/* 期間編集モーダル */}
       <SoudanPeriodEditor
@@ -389,7 +389,6 @@ export default function SoudanSettingsPage() {
           fetchPeriods();
         }}
       />
-      </AdminLayout>
     </div>
   );
 }

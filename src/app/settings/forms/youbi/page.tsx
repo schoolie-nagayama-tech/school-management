@@ -375,7 +375,7 @@ export default function YoubiSettingsPage() {
             </div>
           )}
         </div>
-      </div>
+      </AdminLayout>
 
       {/* 期間編集モーダル */}
       <YoubiPeriodEditor
@@ -389,7 +389,6 @@ export default function YoubiSettingsPage() {
           fetchPeriods();
         }}
       />
-      </AdminLayout>
     </div>
   );
 }
