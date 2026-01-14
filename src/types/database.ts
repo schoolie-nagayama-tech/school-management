@@ -711,6 +711,77 @@ export const FORM_STATUS_LABELS: Record<FormStatus, string> = {
   closed: '終了',
 };
 
+// フォームテンプレート関連（既存のフォーム機能用）
+export type FormTemplate = {
+  id: string;
+  school_id: string;
+  name: string;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type FormTemplateInsert = Omit<FormTemplate, 'id' | 'created_at' | 'updated_at'>;
+export type FormTemplateUpdate = Partial<Omit<FormTemplate, 'id' | 'school_id' | 'created_at' | 'updated_at'>>;
+
+export type FormTemplateField = {
+  id: string;
+  template_id: string;
+  label: string;
+  field_type: FormFieldType;
+  options: string[] | null;
+  is_required: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type FormTemplateFieldInsert = Omit<FormTemplateField, 'id' | 'created_at' | 'updated_at'>;
+export type FormTemplateFieldUpdate = Partial<Omit<FormTemplateField, 'id' | 'template_id' | 'created_at' | 'updated_at'>>;
+
+export type FormTemplateWithFields = FormTemplate & {
+  fields: FormTemplateField[];
+};
+
+// フォーム関連（既存のフォーム機能用）
+export type Form = {
+  id: string;
+  school_id: string;
+  template_id: string | null;
+  title: string;
+  description: string | null;
+  slug: string;
+  status: FormStatus;
+  publish_start: string | null;
+  publish_end: string | null;
+  completion_message: string | null;
+  linked_application_item_id: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type FormInsert = Omit<Form, 'id' | 'created_at' | 'updated_at'>;
+export type FormUpdate = Partial<Omit<Form, 'id' | 'school_id' | 'created_at' | 'updated_at'>>;
+
+export type FormField = {
+  id: string;
+  form_id: string;
+  label: string;
+  field_type: FormFieldType;
+  options: string[] | null;
+  is_required: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type FormFieldInsert = Omit<FormField, 'id' | 'created_at' | 'updated_at'>;
+export type FormFieldUpdate = Partial<Omit<FormField, 'id' | 'form_id' | 'created_at' | 'updated_at'>>;
+
+export type FormWithFields = Form & {
+  fields: FormField[];
+};
+
 // ============================================
 // 面談記録関連
 // ============================================
