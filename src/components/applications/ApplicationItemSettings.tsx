@@ -9,7 +9,7 @@ import {
   deleteApplicationItem,
   updateApplicationItemSortOrder,
 } from '@/lib/api/applications';
-import type { ApplicationItem, ApplicationItemInsert } from '@/types/database';
+import type { ApplicationItem } from '@/types/database';
 
 interface ApplicationItemSettingsProps {
   isOpen: boolean;

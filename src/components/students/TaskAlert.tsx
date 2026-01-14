@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { StudentInterview } from '@/types/database';
 import { getPendingTasks, completeTask } from '@/lib/api/interviews';
 import { useToast } from '@/hooks/useToast';
@@ -23,7 +23,7 @@ export function TaskAlert({ schoolId, onTaskClick }: TaskAlertProps) {
   const targetSchoolId = schoolId || getDefaultSchoolId();
 
   // タスク取得
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     setIsLoading(true);
     try {
       const data = await getPendingTasks(targetSchoolId);
@@ -34,14 +34,14 @@ export function TaskAlert({ schoolId, onTaskClick }: TaskAlertProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [targetSchoolId, toastError]);
 
   useEffect(() => {
     fetchTasks();
     // 定期的に更新（30秒ごと）
     const interval = setInterval(fetchTasks, 30000);
     return () => clearInterval(interval);
-  }, [targetSchoolId]);
+  }, [targetSchoolId, fetchTasks]);
 
   // タスク完了処理
   const handleComplete = async (taskId: string, e: React.MouseEvent) => {

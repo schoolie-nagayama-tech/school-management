@@ -20,7 +20,7 @@ export function KomaFormRenderer({
   form,
   schoolCode,
   onSuccess,
-  isReadOnly = false,
+  isReadOnly: _isReadOnly = false,
 }: KomaFormRendererProps) {
   const router = useRouter();
   const [studentName, setStudentName] = useState('');

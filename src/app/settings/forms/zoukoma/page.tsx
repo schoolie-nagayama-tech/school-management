@@ -42,11 +42,6 @@ export default function ZoukomaSettingsPage() {
     return `${startDate.getMonth() + 1}/${startDate.getDate()}〜${endDate.getMonth() + 1}/${endDate.getDate()}`;
   };
 
-  const formatDate = (date: string | null) => {
-    if (!date) return '-';
-    const d = new Date(date);
-    return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
-  };
 
   // 公開期間に基づいて状態を取得（/settings/portalと同じロジック）
   const getPeriodStatus = (period: ZoukomaPeriod) => {

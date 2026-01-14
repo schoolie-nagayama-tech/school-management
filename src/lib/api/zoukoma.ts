@@ -13,7 +13,6 @@ import {
 } from './form-responses';
 import { getDefaultSchoolId, getSchoolByCode } from './schools';
 import type {
-  FormPeriod,
   FormPeriodInsert,
   FormPeriodUpdate,
   FormResponseInsert,

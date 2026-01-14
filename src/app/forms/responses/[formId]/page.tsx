@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { getForm, getFormResponses } from '@/lib/api/forms';
@@ -16,13 +16,7 @@ export default function FormResponsesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (formId) {
-      loadData();
-    }
-  }, [formId]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setIsLoading(true);
     setError('');
     try {
@@ -40,7 +34,13 @@ export default function FormResponsesPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [formId]);
+
+  useEffect(() => {
+    if (formId) {
+      loadData();
+    }
+  }, [formId, loadData]);
 
   if (isLoading) {
     return (

@@ -25,6 +25,12 @@ import { MoshiPeriodEditor } from '@/components/forms/moshi/MoshiPeriodEditor';
 import { SoudanPeriodEditor } from '@/components/forms/soudan/SoudanPeriodEditor';
 import { ShukaisuPeriodEditor } from '@/components/forms/shukaisu/ShukaisuPeriodEditor';
 import { YoubiPeriodEditor } from '@/components/forms/youbi/YoubiPeriodEditor';
+import type { ZoukomaPeriod } from '@/types/forms/zoukoma';
+import type { MogiPeriod } from '@/types/forms/mogi';
+import type { MoshiPeriod } from '@/types/forms/moshi';
+import type { SoudanPeriod } from '@/types/forms/soudan';
+import type { ShukaisuPeriod } from '@/types/forms/shukaisu';
+import type { YoubiPeriod } from '@/types/forms/youbi';
 import { getZoukomaPeriods } from '@/lib/api/zoukoma';
 import { getMogiPeriods } from '@/lib/api/mogi';
 import { getMoshiPeriods } from '@/lib/api/moshi';
@@ -431,7 +437,7 @@ export default function PortalSettingsPage() {
             {editingFormType === 'zoukoma' && editingPeriod && (
               <ZoukomaPeriodEditor
                 isOpen={!!editingFormType}
-                period={editingPeriod as any}
+                period={editingPeriod as ZoukomaPeriod}
                 onClose={handleClosePeriodEditor}
                 onSuccess={handlePeriodUpdateSuccess}
               />
@@ -447,7 +453,7 @@ export default function PortalSettingsPage() {
             {editingFormType === 'mogi' && (
               <MogiPeriodEditor
                 isOpen={!!editingFormType}
-                period={editingPeriod as any}
+                period={editingPeriod as MogiPeriod}
                 onClose={handleClosePeriodEditor}
                 onSuccess={handlePeriodUpdateSuccess}
               />
@@ -455,7 +461,7 @@ export default function PortalSettingsPage() {
             {editingFormType === 'moshi' && (
               <MoshiPeriodEditor
                 isOpen={!!editingFormType}
-                period={editingPeriod as any}
+                period={editingPeriod as MoshiPeriod}
                 onClose={handleClosePeriodEditor}
                 onSuccess={handlePeriodUpdateSuccess}
               />
@@ -463,7 +469,7 @@ export default function PortalSettingsPage() {
             {editingFormType === 'soudan' && (
               <SoudanPeriodEditor
                 isOpen={!!editingFormType}
-                period={editingPeriod as any}
+                period={editingPeriod as SoudanPeriod}
                 onClose={handleClosePeriodEditor}
                 onSuccess={handlePeriodUpdateSuccess}
               />
@@ -471,7 +477,7 @@ export default function PortalSettingsPage() {
             {editingFormType === 'shukaisu' && (
               <ShukaisuPeriodEditor
                 isOpen={!!editingFormType}
-                period={editingPeriod as any}
+                period={editingPeriod as ShukaisuPeriod}
                 onClose={handleClosePeriodEditor}
                 onSuccess={handlePeriodUpdateSuccess}
               />
@@ -479,7 +485,7 @@ export default function PortalSettingsPage() {
             {editingFormType === 'youbi' && (
               <YoubiPeriodEditor
                 isOpen={!!editingFormType}
-                period={editingPeriod as any}
+                period={editingPeriod as YoubiPeriod}
                 onClose={handleClosePeriodEditor}
                 onSuccess={handlePeriodUpdateSuccess}
               />

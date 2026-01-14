@@ -4,7 +4,6 @@ import type {
   ApplicationItemInsert,
   ApplicationItemUpdate,
   StudentApplication,
-  StudentApplicationInsert,
   ApplicationStatus,
 } from '@/types/database';
 import { getDefaultSchoolId } from './schools';

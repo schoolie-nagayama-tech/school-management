@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Modal } from '@/components/ui';
-import { getFormResponse, getForm } from '@/lib/api/forms';
+import { getForm } from '@/lib/api/forms';
 import type { FormResponse, FormWithFields, FormField } from '@/types/database';
 import { GRADE_LABELS } from '@/types/database';
 
@@ -22,13 +22,7 @@ export function ResponseDetailModal({
   const [form, setForm] = useState<FormWithFields | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    if (isOpen && formId) {
-      loadForm();
-    }
-  }, [isOpen, formId]);
-
-  const loadForm = async () => {
+  const loadForm = useCallback(async () => {
     setIsLoading(true);
     try {
       const data = await getForm(formId);
@@ -38,7 +32,13 @@ export function ResponseDetailModal({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [formId]);
+
+  useEffect(() => {
+    if (isOpen && formId) {
+      loadForm();
+    }
+  }, [isOpen, formId, loadForm]);
 
   if (!response) return null;
 
@@ -48,11 +48,6 @@ export function ResponseDetailModal({
     return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
   };
 
-  const getFieldLabel = (fieldId: string): string => {
-    if (!form) return fieldId;
-    const field = form.fields.find((f) => f.id === fieldId);
-    return field?.label || fieldId;
-  };
 
   const formatAnswer = (field: FormField | undefined, value: unknown): string => {
     if (value === null || value === undefined) return '-';

@@ -1,7 +1,7 @@
 'use client';
 
 import { ApplicationFilters, ApplicationItem } from '@/types/database';
-import { Input, Select } from '@/components/ui';
+import { Select } from '@/components/ui';
 import { GRADE_LABELS } from '@/types/database';
 
 interface ApplicationFiltersPanelProps {

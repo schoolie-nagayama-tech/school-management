@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui';
 import { VisibilityBadge } from './VisibilityBadge';
 import type { PortalMenu } from '@/types/database';
-import type { FormType, FormPeriod } from '@/types/database';
+import type { FormType } from '@/types/database';
 
 interface SortableMenuRowProps {
   menu: PortalMenu;
@@ -22,8 +22,6 @@ interface SortableMenuRowProps {
 
 export function SortableMenuRow({
   menu,
-  index,
-  formType,
   settingsPath,
   activePeriodTitle,
   isSubmitting,

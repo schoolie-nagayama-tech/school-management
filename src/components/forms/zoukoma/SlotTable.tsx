@@ -142,7 +142,7 @@ export function SlotTable({
     onChange(newSelected);
   };
 
-  const handlePeriodToggle = (date: string, period: number) => {
+  const _handlePeriodToggle = (date: string, period: number) => {
     if (disabled) return;
 
     const dateSlots = slotsByDate[date] || [];
@@ -282,7 +282,7 @@ export function SlotTable({
 
                   const isSelected = selectedSlotSet.has(slot.id);
                   const periodSlots = dateSlots.filter((s) => s.period === period);
-                  const allPeriodSelected = periodSlots.every((s) =>
+                  const _allPeriodSelected = periodSlots.every((s) =>
                     selectedSlotSet.has(s.id)
                   );
 

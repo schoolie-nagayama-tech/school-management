@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { TemplateList, FormList, FormEditor } from '@/components/forms';
-import { Button } from '@/components/ui';
 import { getDefaultSchoolId, getSchool } from '@/lib/api/schools';
 import type { FormTemplate, Form } from '@/types/database';
 
@@ -48,7 +47,7 @@ export default function FormsManagePage() {
     setIsFormEditorOpen(true);
   };
 
-  const handleViewResponses = (form: Form) => {
+  const handleViewResponses = (_form: Form) => {
     // Part 2で実装
     alert('回答一覧機能はPart 2で実装予定です');
   };

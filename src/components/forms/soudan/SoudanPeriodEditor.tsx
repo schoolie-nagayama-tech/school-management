@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { Modal, Input, Button } from '@/components/ui';
 import { createSoudanPeriod, updateSoudanPeriod } from '@/lib/api/soudan';
-import { getDefaultSchoolId } from '@/lib/api/schools';
 import type { SoudanPeriod, SoudanSettings } from '@/types/forms/soudan';
 
 interface SoudanPeriodEditorProps {

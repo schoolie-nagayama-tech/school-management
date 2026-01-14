@@ -472,7 +472,7 @@ export function MogiPeriodEditor({
 
           <div className="space-y-4">
             {dateEntries.map((entry, index) => {
-              const venues = getVenuesForDate(entry, index);
+              const _venues = getVenuesForDate(entry, index);
               return (
                 <div
                   key={index}

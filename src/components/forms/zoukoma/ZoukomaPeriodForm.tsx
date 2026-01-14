@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Modal, Input, Button, Select } from '@/components/ui';
-import { createZoukomaPeriod, updateZoukomaPeriod, getZoukomaPeriods } from '@/lib/api/zoukoma';
+import { createZoukomaPeriod, updateZoukomaPeriod } from '@/lib/api/zoukoma';
 import { getApplicationItems } from '@/lib/api/applications';
-import { getDefaultSchoolId } from '@/lib/api/schools';
 import type { ZoukomaPeriod, ZoukomaSettings, ScheduleConfig, PeriodConfig } from '@/types/forms/zoukoma';
 import type { ApplicationItem } from '@/types/database';
 import { GradePriceEditor } from './GradePriceEditor';

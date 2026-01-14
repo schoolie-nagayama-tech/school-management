@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button, Input, Modal, Select } from '@/components/ui';
 import {
   getForm,
@@ -91,16 +91,16 @@ export function FormEditor({
     }
   }, [isOpen, formId, template]);
 
-  const loadApplicationItems = async () => {
+  const loadApplicationItems = useCallback(async () => {
     try {
       const items = await getApplicationItems();
       setApplicationItems(items);
     } catch (error) {
       console.error('Error loading application items:', error);
     }
-  };
+  }, []);
 
-  const loadForm = async () => {
+  const loadForm = useCallback(async () => {
     if (!formId) return;
     setIsLoading(true);
     setErrorMessage('');
@@ -124,7 +124,42 @@ export function FormEditor({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [formId]);
+
+  useEffect(() => {
+    if (isOpen) {
+      loadApplicationItems();
+      if (formId) {
+        loadForm();
+      } else if (template) {
+        // テンプレートから作成
+        setTitle(`${template.name}（${new Date().toLocaleDateString('ja-JP')}）`);
+        setSlug(
+          template.name
+            .toLowerCase()
+            .replace(/\s+/g, '-')
+            .replace(/[^a-z0-9-]/g, '') +
+            '-' +
+            new Date().toISOString().split('T')[0].replace(/-/g, '')
+        );
+        setDescription(template.description || '');
+        setFields([]);
+        setForm(null);
+      } else {
+        // 新規作成
+        setTitle('');
+        setDescription('');
+        setSlug('');
+        setStatus('draft');
+        setPublishStart('');
+        setPublishEnd('');
+        setCompletionMessage('');
+        setLinkedApplicationItemId('');
+        setFields([]);
+        setForm(null);
+      }
+    }
+  }, [isOpen, formId, template, loadApplicationItems, loadForm]);
 
   const handleSave = async () => {
     if (!title.trim()) {

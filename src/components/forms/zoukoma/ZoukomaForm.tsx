@@ -11,7 +11,6 @@ import type {
 import { submitZoukomaResponse } from '@/lib/api/zoukoma';
 import {
   GRADE_NAME_TO_NUMBER,
-  GRADE_NUMBER_TO_NAME,
 } from '@/types/forms/zoukoma';
 import { SubjectInput } from './SubjectInput';
 import { PriceQuote } from './PriceQuote';

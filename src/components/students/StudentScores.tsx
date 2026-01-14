@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import type { Student, AssessmentWithScores, Assessment } from '@/types/database';
+import type { Student, AssessmentWithScores } from '@/types/database';
 import {
   listAssessments,
   createAssessmentRow,
@@ -17,7 +17,6 @@ import {
   GRADE_LABELS,
 } from '@/types/database';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 
 interface StudentScoresProps {

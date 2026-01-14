@@ -9,12 +9,7 @@ import {
   updateYoubiHandledStatus,
 } from '@/lib/api/youbi';
 import {
-  linkResponseToStudent,
   unlinkResponseFromStudent,
-  archiveResponse,
-  unarchiveResponse,
-  archiveResponses,
-  getArchivedCount,
 } from '@/lib/api/form-responses';
 import { getStudents } from '@/lib/api/students';
 import { LinkStudentModal } from '@/components/forms/LinkStudentModal';
@@ -41,7 +36,6 @@ export default function YoubiResponsePage() {
   const [linkingResponse, setLinkingResponse] = useState<YoubiResponse | null>(null);
   const [detailResponse, setDetailResponse] = useState<YoubiResponse | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
-  const [isLoadingStudents, setIsLoadingStudents] = useState(false);
   const { toasts, removeToast, success, error } = useToast();
 
   // フィルター

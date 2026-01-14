@@ -1,6 +1,5 @@
 import { supabase } from '../supabase';
 import type { StudentInterview, StudentInterviewInput } from '@/types/database';
-import { getDefaultSchoolId } from './schools';
 
 /**
  * 生徒の面談記録一覧を取得（新しい順）
@@ -109,7 +108,7 @@ export async function getRecentInterviews(
     throw new Error(`面談記録の取得に失敗しました: ${error.message}`);
   }
 
-  return (data || []).map((item: any) => ({
+  return (data || []).map((item: StudentInterview & { students: { last_name: string; first_name: string } }) => ({
     ...item,
     student_name: `${item.students.last_name} ${item.students.first_name}`,
   })) as (StudentInterview & { student_name: string })[];
@@ -136,7 +135,7 @@ export async function getPendingTasks(
     throw new Error(`未完了タスクの取得に失敗しました: ${error.message}`);
   }
 
-  return (data || []).map((item: any) => ({
+  return (data || []).map((item: StudentInterview & { students: { last_name: string; first_name: string } }) => ({
     ...item,
     student: {
       last_name: item.students.last_name,

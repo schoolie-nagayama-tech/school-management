@@ -1,4 +1,3 @@
-import { supabase } from '../supabase';
 import {
   getFormPeriods,
   getActiveFormPeriod,
@@ -10,7 +9,6 @@ import {
 import { createFormResponse, getFormResponses, updateFormResponseStatus } from './form-responses';
 import { getDefaultSchoolId, getSchoolByCode } from './schools';
 import type {
-  FormPeriod,
   FormPeriodInsert,
   FormPeriodUpdate,
   FormResponseInsert,
@@ -22,7 +20,6 @@ import type {
   MogiResponseData,
   MogiResponseFilters,
   MogiStats,
-  DateVenueSelection,
 } from '@/types/forms/mogi';
 
 // ============================================

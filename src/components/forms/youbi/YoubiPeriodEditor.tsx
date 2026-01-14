@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { Modal, Input, Button } from '@/components/ui';
 import { createYoubiPeriod, updateYoubiPeriod } from '@/lib/api/youbi';
-import { getDefaultSchoolId } from '@/lib/api/schools';
 import type { YoubiPeriod, YoubiSettings } from '@/types/forms/youbi';
 
 interface YoubiPeriodEditorProps {

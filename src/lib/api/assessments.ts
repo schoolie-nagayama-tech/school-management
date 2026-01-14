@@ -7,7 +7,7 @@ import type {
   AssessmentScore,
   AssessmentScoreInsert,
 } from '@/types/database';
-import { SUBJECT_CODES, ASSESSMENT_NAME_LABELS } from '@/types/database';
+import { ASSESSMENT_NAME_LABELS } from '@/types/database';
 
 // 共通9科の科目コード
 const COMMON_9_SUBJECTS = [
@@ -23,7 +23,7 @@ const COMMON_9_SUBJECTS = [
 ] as const;
 
 // 5科の科目コード（英数国社理）
-const FIVE_SUBJECTS = ['english', 'math', 'japanese', 'social', 'science'] as const;
+const _FIVE_SUBJECTS = ['english', 'math', 'japanese', 'social', 'science'] as const;
 
 // mock用の科目コード（5科 + 換算内申）
 const MOCK_SUBJECTS = [

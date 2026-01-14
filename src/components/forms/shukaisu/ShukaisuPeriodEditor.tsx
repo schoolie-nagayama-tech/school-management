@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { Modal, Input, Button } from '@/components/ui';
 import { createShukaisuPeriod, updateShukaisuPeriod } from '@/lib/api/shukaisu';
-import { getDefaultSchoolId } from '@/lib/api/schools';
 import type { ShukaisuPeriod, ShukaisuSettings } from '@/types/forms/shukaisu';
 
 interface ShukaisuPeriodEditorProps {

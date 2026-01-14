@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button, Input, Modal } from '@/components/ui';
 import {
   getFormTemplate,
@@ -13,7 +13,6 @@ import {
 } from '@/lib/api/forms';
 import { FieldEditor } from './FieldEditor';
 import type {
-  FormTemplate,
   FormTemplateWithFields,
   FormTemplateField,
   FormFieldType,
@@ -57,7 +56,7 @@ export function TemplateEditor({
     }
   }, [isOpen, templateId]);
 
-  const loadTemplate = async () => {
+  const loadTemplate = useCallback(async () => {
     if (!templateId) return;
     setIsLoading(true);
     setErrorMessage('');
@@ -75,7 +74,21 @@ export function TemplateEditor({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [templateId]);
+
+  useEffect(() => {
+    if (isOpen) {
+      if (templateId) {
+        loadTemplate();
+      } else {
+        // 新規作成
+        setName('');
+        setDescription('');
+        setFields([]);
+        setTemplate(null);
+      }
+    }
+  }, [isOpen, templateId, loadTemplate]);
 
   const handleSave = async () => {
     if (!name.trim()) {

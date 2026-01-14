@@ -9,7 +9,6 @@ import {
   updateZoukomaResponseStatus,
 } from '@/lib/api/zoukoma';
 import {
-  linkResponseToStudent,
   unlinkResponseFromStudent,
 } from '@/lib/api/form-responses';
 import { getStudents } from '@/lib/api/students';
@@ -38,7 +37,6 @@ export default function ZoukomaResponsePage() {
   const [filters, setFilters] = useState<ZoukomaResponseFilters>({});
   const [linkingResponse, setLinkingResponse] = useState<ZoukomaResponse | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
-  const [isLoadingStudents, setIsLoadingStudents] = useState(false);
   const { toasts, removeToast, success, error } = useToast();
 
   const fetchData = useCallback(async () => {

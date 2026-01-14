@@ -2,8 +2,6 @@
  * 学年変換ユーティリティ
  */
 
-import { GRADE_LABELS } from '@/types/database';
-
 /**
  * 学年ラベル（中1, 中2, ...）から数値（7-12）に変換
  */

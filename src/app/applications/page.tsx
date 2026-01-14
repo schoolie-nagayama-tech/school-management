@@ -274,7 +274,7 @@ export default function ApplicationsPage() {
             isOpen={isDetailModalOpen}
             onClose={handleDetailClose}
             student={selectedStudent}
-            onEdit={(student) => {
+            onEdit={(_student) => {
               // 編集は別ページで行うため、ここでは詳細を閉じるだけ
               handleDetailClose();
             }}

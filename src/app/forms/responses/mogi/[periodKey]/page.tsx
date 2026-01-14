@@ -9,12 +9,7 @@ import {
   updateMogiChargedStatus,
 } from '@/lib/api/mogi';
 import {
-  linkResponseToStudent,
   unlinkResponseFromStudent,
-  archiveResponse,
-  unarchiveResponse,
-  archiveResponses,
-  getArchivedCount,
 } from '@/lib/api/form-responses';
 import { getStudents } from '@/lib/api/students';
 import { LinkStudentModal } from '@/components/forms/LinkStudentModal';
@@ -51,7 +46,6 @@ export default function MogiResponsePage() {
   const [linkingResponse, setLinkingResponse] = useState<MogiResponse | null>(null);
   const [detailResponse, setDetailResponse] = useState<MogiResponse | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
-  const [isLoadingStudents, setIsLoadingStudents] = useState(false);
   const { toasts, removeToast, success, error } = useToast();
 
   // フィルター
@@ -173,8 +167,7 @@ export default function MogiResponsePage() {
     }
   };
 
-  // 利用可能な日程IDのリストを取得（フィルター用）
-  const availableDateIds = stats.date_venue_counts.map((d) => d.date_id);
+  // 利用可能な会場IDのリストを取得（フィルター用）
   const availableVenueIds = stats.date_venue_counts.flatMap((d) =>
     d.venue_counts.map((v) => v.venue_id)
   );

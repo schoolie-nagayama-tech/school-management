@@ -613,8 +613,6 @@ export async function submitFormResponse(
     answers: Record<string, unknown>;
   }
 ): Promise<void> {
-  const schoolId = getDefaultSchoolId();
-
   // フォームを取得してschool_idを確認
   const { data: form, error: formError } = await supabase
     .from('forms')

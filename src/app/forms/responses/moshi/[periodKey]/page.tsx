@@ -9,12 +9,7 @@ import {
   updateMoshiChargedStatus,
 } from '@/lib/api/moshi';
 import {
-  linkResponseToStudent,
   unlinkResponseFromStudent,
-  archiveResponse,
-  unarchiveResponse,
-  archiveResponses,
-  getArchivedCount,
 } from '@/lib/api/form-responses';
 import { getStudents } from '@/lib/api/students';
 import { LinkStudentModal } from '@/components/forms/LinkStudentModal';
@@ -43,7 +38,6 @@ export default function MoshiResponsePage() {
   const [linkingResponse, setLinkingResponse] = useState<MoshiResponse | null>(null);
   const [detailResponse, setDetailResponse] = useState<MoshiResponse | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
-  const [isLoadingStudents, setIsLoadingStudents] = useState(false);
   const { toasts, removeToast, success, error } = useToast();
 
   // フィルター

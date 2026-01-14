@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Input, Button } from '@/components/ui';
 import type { PriceTable } from '@/types/forms/zoukoma';
 

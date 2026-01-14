@@ -1,7 +1,6 @@
 'use client';
 
 import type { PriceTable } from '@/types/forms/zoukoma';
-import { GRADE_NAME_TO_NUMBER, GRADE_NUMBER_TO_NAME } from '@/types/forms/zoukoma';
 
 interface PriceQuoteProps {
   selectedGrade: string | null;

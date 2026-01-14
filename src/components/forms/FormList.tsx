@@ -14,7 +14,7 @@ interface FormListProps {
   onRefresh: () => void;
 }
 
-export function FormList({ onEditForm, onViewResponses, onRefresh }: FormListProps) {
+export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefresh }: FormListProps) {
   const router = useRouter();
   const [forms, setForms] = useState<Form[]>([]);
   const [isLoading, setIsLoading] = useState(true);

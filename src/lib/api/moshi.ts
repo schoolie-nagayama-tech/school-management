@@ -1,4 +1,3 @@
-import { supabase } from '../supabase';
 import {
   getFormPeriods,
   getActiveFormPeriod,
@@ -9,10 +8,9 @@ import {
   archivePeriod,
   unarchivePeriod,
 } from './form-periods';
-import { createFormResponse, getFormResponses, updateFormResponseStatus, archiveResponse, unarchiveResponse, archiveResponses, getArchivedCount } from './form-responses';
+import { createFormResponse, getFormResponses, updateFormResponseStatus } from './form-responses';
 import { getDefaultSchoolId, getSchoolByCode } from './schools';
 import type {
-  FormPeriod,
   FormPeriodInsert,
   FormPeriodUpdate,
   FormResponseInsert,

@@ -92,7 +92,7 @@ export async function getFormResponses(
     .filter((id): id is string => id !== null);
 
   // 紐付け済みの生徒情報を取得
-  let studentsMap = new Map<string, Student>();
+  const studentsMap = new Map<string, Student>();
   if (linkedStudentIds.length > 0) {
     try {
       const allStudents = await getStudents();

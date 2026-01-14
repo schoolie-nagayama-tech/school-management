@@ -255,7 +255,7 @@ export function ShukaisuForm({ school, period }: ShukaisuFormProps) {
   const renderSlotInputs = (
     slots: ShukaisuSlot[],
     updateFn: (index: number, field: keyof ShukaisuSlot, value: string) => void,
-    label: string
+    _label: string
   ) => (
     <div className="space-y-3">
       {slots.map((slot, index) => (

@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { StudentInterview, InterviewType, INTERVIEW_TYPE_LABELS, INTERVIEW_TYPE_COLORS } from '@/types/database';
 import { getStudentInterviews, deleteInterview, completeTask, uncompleteTask } from '@/lib/api/interviews';
 import { InterviewModal } from './InterviewModal';
 import { Button, Select } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
-import { getDefaultSchoolId } from '@/lib/api/schools';
 
 interface InterviewListProps {
   studentId: string;
@@ -22,7 +21,7 @@ export function InterviewList({ studentId, schoolId }: InterviewListProps) {
   const { success, error: toastError } = useToast();
 
   // データ取得
-  const fetchInterviews = async () => {
+  const fetchInterviews = useCallback(async () => {
     setIsLoading(true);
     try {
       const data = await getStudentInterviews(studentId);
@@ -33,13 +32,13 @@ export function InterviewList({ studentId, schoolId }: InterviewListProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [studentId, toastError]);
 
   useEffect(() => {
     if (studentId) {
       fetchInterviews();
     }
-  }, [studentId]);
+  }, [studentId, fetchInterviews]);
 
   // フィルター適用
   const filteredInterviews = filterType === 'all'
