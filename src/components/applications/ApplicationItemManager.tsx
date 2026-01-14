@@ -11,7 +11,6 @@ import {
 } from '@/lib/api/applications';
 import { Modal, Button, Input } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
-import { getDefaultSchoolId } from '@/lib/api/schools';
 
 interface ApplicationItemManagerProps {
   schoolId?: string;
@@ -23,14 +22,15 @@ interface ApplicationItemManagerProps {
 }
 
 export function ApplicationItemManager({
-  schoolId,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  schoolId: _schoolId,
   items,
   showHidden,
   isOpen,
   onClose,
   onUpdated,
 }: ApplicationItemManagerProps) {
-  // schoolId is used via getDefaultSchoolId() when needed
+  // schoolId is available but not currently used
   const { success, error: toastError } = useToast();
   const [newItemName, setNewItemName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);

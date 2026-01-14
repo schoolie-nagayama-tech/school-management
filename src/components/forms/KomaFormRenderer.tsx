@@ -20,6 +20,7 @@ export function KomaFormRenderer({
   form,
   schoolCode,
   onSuccess,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   isReadOnly = false,
 }: KomaFormRendererProps) {
   const router = useRouter();
