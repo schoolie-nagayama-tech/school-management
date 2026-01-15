@@ -78,6 +78,16 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
               >
                 ポータル設定
               </Link>
+              <Link
+                href="/courses"
+                className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                  pathname === '/courses' || pathname?.startsWith('/courses/')
+                    ? 'bg-[#ff8e3c] text-[#0d0d0d]'
+                    : 'text-[#2a2a2a] hover:bg-[#eff0f3]'
+                }`}
+              >
+                講習管理
+              </Link>
             </nav>
           </div>
           <div className="flex items-center gap-4">

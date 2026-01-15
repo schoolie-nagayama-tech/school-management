@@ -29,8 +29,13 @@ import {
 import { getTextbooks } from '@/lib/api/textbooks';
 import { getExamTypes } from '@/lib/api/textbooks';
 import { getStudent } from '@/lib/api/students';
+import { getDefaultSchoolId } from '@/lib/api/schools';
 import { exportProgressToPDF } from '@/lib/utils/pdfExport';
 import ParentProgressTable from '@/components/students/ParentProgressTable';
+import {
+  getSeasonalCourses,
+  applyCoursesToStudents,
+} from '@/lib/api/seasonalCourses';
 import type {
   Student,
   StudentTextbookWithDetails,
@@ -44,8 +49,9 @@ import type {
   CurriculumItem,
   ProgressRowDisplay,
   StudentProgressWithDetails,
+  SeasonalCourseWithDetails,
 } from '@/types/database';
-import { GRADE_LABELS } from '@/types/database';
+import { GRADE_LABELS, SEASON_LABELS } from '@/types/database';
 
 export default function StudentProgressPage() {
   const params = useParams();
@@ -83,6 +89,10 @@ export default function StudentProgressPage() {
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [isSaving, setIsSaving] = useState(false);
   const [viewMode, setViewMode] = useState<'admin' | 'parent'>('admin');
+  const [isApplyCourseModalOpen, setIsApplyCourseModalOpen] = useState(false);
+  const [availableCourses, setAvailableCourses] = useState<SeasonalCourseWithDetails[]>([]);
+  const [selectedCourseId, setSelectedCourseId] = useState<string>('');
+  const [courseApplyMode, setCourseApplyMode] = useState<'overwrite' | 'add'>('overwrite');
 
   // 生徒情報を取得
   const fetchStudent = useCallback(async () => {
@@ -224,11 +234,50 @@ export default function StudentProgressPage() {
       const studentNameStr = student ? `${student.last_name} ${student.first_name}` : '生徒';
       const filename = `進行表_${studentNameStr}_${textbookName}_${new Date().toISOString().slice(0, 10)}.pdf`;
       
-      await exportProgressToPDF('progress-table-container', filename);
+      await exportProgressToPDF('progress-table-container', filename, {
+        fitToPage: true, // 1ページに収める
+        orientation: 'portrait', // 縦向き
+      });
       success('PDFを出力しました');
     } catch (err) {
       console.error('PDF出力エラー:', err);
       error(err instanceof Error ? err.message : 'PDF出力に失敗しました');
+    }
+  };
+
+  // 利用可能なコース一覧を取得
+  const fetchAvailableCourses = useCallback(async () => {
+    if (!student) return;
+    try {
+      const schoolId = getDefaultSchoolId();
+      const courses = await getSeasonalCourses(schoolId);
+      // 生徒の学年に対応するコースのみフィルター
+      const filtered = courses.filter(c => c.target_grades.includes(student.grade));
+      setAvailableCourses(filtered);
+    } catch (err) {
+      console.error('Error fetching courses:', err);
+    }
+  }, [student]);
+
+  // モーダルを開くときにコース一覧を取得
+  const handleOpenApplyCourseModal = () => {
+    fetchAvailableCourses();
+    setIsApplyCourseModalOpen(true);
+  };
+
+  // コースを適用
+  const handleApplyCourse = async () => {
+    if (!selectedCourseId || !studentId) return;
+    try {
+      await applyCoursesToStudents(selectedCourseId, [studentId], courseApplyMode);
+      await fetchStudentTextbooks();
+      await fetchProgress();
+      setIsApplyCourseModalOpen(false);
+      setSelectedCourseId('');
+      success('コースを適用しました');
+    } catch (err) {
+      console.error('Error applying course:', err);
+      error(err instanceof Error ? err.message : 'コースの適用に失敗しました');
     }
   };
 
@@ -475,6 +524,12 @@ export default function StudentProgressPage() {
               className="px-4 py-2 rounded-lg font-medium whitespace-nowrap bg-[#eff0f3] text-[#2a2a2a] hover:bg-[#0d0d0d]/10"
             >
               + テキスト追加
+            </button>
+            <button
+              onClick={handleOpenApplyCourseModal}
+              className="px-4 py-2 rounded-lg font-medium whitespace-nowrap bg-[#ff8e3c] text-[#0d0d0d] hover:bg-[#ff7a1f]"
+            >
+              📋 コース適用
             </button>
             {/* 非表示テキスト（アーカイブ置き場） */}
             {studentTextbooks.filter((st) => !st.is_active).length > 0 && (
@@ -1451,6 +1506,125 @@ export default function StudentProgressPage() {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+        </Modal>
+
+        {/* コース適用モーダル */}
+        <Modal
+          isOpen={isApplyCourseModalOpen}
+          onClose={() => {
+            setIsApplyCourseModalOpen(false);
+            setSelectedCourseId('');
+          }}
+          title="コースを適用"
+          size="md"
+        >
+          <div className="space-y-4">
+            {availableCourses.length === 0 ? (
+              <p className="text-[#2a2a2a] text-center py-4">
+                この学年に対応するコースがありません
+              </p>
+            ) : (
+              <>
+                {/* コース選択 */}
+                <div>
+                  <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
+                    適用するコース
+                  </label>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {availableCourses.map(course => (
+                      <label
+                        key={course.id}
+                        className={`flex items-center p-3 rounded-lg border-2 cursor-pointer transition-colors ${
+                          selectedCourseId === course.id
+                            ? 'border-[#ff8e3c] bg-[#ff8e3c]/10'
+                            : 'border-[#eff0f3] hover:border-[#ff8e3c]'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="courseSelect"
+                          value={course.id}
+                          checked={selectedCourseId === course.id}
+                          onChange={() => setSelectedCourseId(course.id)}
+                          className="hidden"
+                        />
+                        <div className="flex-1">
+                          <div className="font-medium text-[#0d0d0d]">{course.name}</div>
+                          <div className="text-sm text-[#2a2a2a]">
+                            {SEASON_LABELS[course.season]} / {course.textbooks?.length || 0}冊 / {course.total_koma}コマ
+                          </div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 適用モード */}
+                <div>
+                  <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
+                    適用モード
+                  </label>
+                  <div className="flex gap-2">
+                    <label
+                      className={`flex-1 p-3 rounded-lg border-2 cursor-pointer text-center transition-colors ${
+                        courseApplyMode === 'overwrite'
+                          ? 'border-[#ff8e3c] bg-[#ff8e3c]/10'
+                          : 'border-[#eff0f3] hover:border-[#ff8e3c]'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="applyMode"
+                        value="overwrite"
+                        checked={courseApplyMode === 'overwrite'}
+                        onChange={() => setCourseApplyMode('overwrite')}
+                        className="hidden"
+                      />
+                      <div className="font-medium text-[#0d0d0d]">上書き</div>
+                      <div className="text-xs text-[#2a2a2a]">既存を置き換え</div>
+                    </label>
+                    <label
+                      className={`flex-1 p-3 rounded-lg border-2 cursor-pointer text-center transition-colors ${
+                        courseApplyMode === 'add'
+                          ? 'border-[#ff8e3c] bg-[#ff8e3c]/10'
+                          : 'border-[#eff0f3] hover:border-[#ff8e3c]'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="applyMode"
+                        value="add"
+                        checked={courseApplyMode === 'add'}
+                        onChange={() => setCourseApplyMode('add')}
+                        className="hidden"
+                      />
+                      <div className="font-medium text-[#0d0d0d]">加算</div>
+                      <div className="text-xs text-[#2a2a2a]">既存に追加</div>
+                    </label>
+                  </div>
+                </div>
+              </>
+            )}
+
+            <div className="flex justify-end gap-2 pt-4 border-t border-[#0d0d0d]">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setIsApplyCourseModalOpen(false);
+                  setSelectedCourseId('');
+                }}
+              >
+                キャンセル
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleApplyCourse}
+                disabled={!selectedCourseId}
+              >
+                適用
+              </Button>
             </div>
           </div>
         </Modal>

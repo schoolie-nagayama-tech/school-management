@@ -1253,3 +1253,85 @@ export interface ProgressRowDisplay {
   groupProposalCount: number; // グループ全体の提案回数
   groupApplicationCount: number; // グループ全体の申込回数
 }
+
+// =====================================================
+// 講習管理 型定義
+// =====================================================
+
+// 季節タイプ
+export type SeasonType = 'spring' | 'summer' | 'winter';
+
+// 季節ラベル
+export const SEASON_LABELS: Record<SeasonType, string> = {
+  spring: '春期',
+  summer: '夏期',
+  winter: '冬期',
+};
+
+// 講習コース
+export interface SeasonalCourse {
+  id: string;
+  school_id: string;
+  name: string;
+  season: SeasonType;
+  target_grades: number[];
+  total_koma: number;
+  comment: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// コースとテキストの紐付け
+export interface SeasonalCourseTextbook {
+  id: string;
+  course_id: string;
+  textbook_id: number;
+  sort_order: number;
+  created_at: string;
+  // JOIN時
+  textbook?: Textbook;
+}
+
+// コースカリキュラム設定
+export interface SeasonalCourseCurriculum {
+  id: string;
+  course_id: string;
+  textbook_id: number;
+  curriculum_item_id: number;
+  proposal_count: number;
+  group_number: number | null;
+  created_at: string;
+  updated_at: string;
+  // JOIN時
+  curriculum_item?: CurriculumItem;
+}
+
+// コース適用履歴
+export interface SeasonalCourseApplication {
+  id: string;
+  course_id: string;
+  student_id: string;
+  applied_at: string;
+  applied_mode: 'overwrite' | 'add';
+  created_at: string;
+  // JOIN時
+  student?: Student;
+  course?: SeasonalCourse;
+}
+
+// コース詳細（JOIN済み）
+export interface SeasonalCourseWithDetails extends SeasonalCourse {
+  textbooks: SeasonalCourseTextbook[];
+  curriculum: SeasonalCourseCurriculum[];
+  application_count?: number;
+}
+
+// カリキュラム表示用（進行表風）
+export interface CourseCurriculumRow {
+  curriculumItem: CurriculumItem;
+  setting: SeasonalCourseCurriculum | null;
+  isGroupStart: boolean;
+  groupRowSpan: number;
+  groupProposalCount: number;
+}
