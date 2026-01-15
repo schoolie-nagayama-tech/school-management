@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button, Modal } from '@/components/ui';
 import {
   StudentForm,
@@ -23,6 +24,7 @@ import {
 import type { Student, StudentInsert, StudentUpdate, Subject } from '@/types/database';
 
 export default function StudentsPage() {
+  const router = useRouter();
   
   // 状態管理
   const [students, setStudents] = useState<(Student & { subjects?: Subject[] })[]>([]);
@@ -175,6 +177,11 @@ export default function StudentsPage() {
   const handleOpenInterviewsModal = (student: Student) => {
     setSelectedStudent(student);
     setIsInterviewsModalOpen(true);
+  };
+
+  // 進行表ページへ遷移
+  const handleOpenProgress = (student: Student) => {
+    router.push(`/students/${student.id}/progress`);
   };
 
   // タスクアラートから生徒をクリックした時
@@ -359,6 +366,7 @@ export default function StudentsPage() {
         onRowClick={handleOpenDetailModal}
         onScores={handleOpenScoresModal}
         onInterviews={handleOpenInterviewsModal}
+        onProgress={handleOpenProgress}
         isLoading={isLoading}
       />
 

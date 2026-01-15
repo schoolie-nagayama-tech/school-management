@@ -366,6 +366,359 @@ export type Database = {
           },
         ];
       };
+      // テキスト進行管理関連
+      exam_types: {
+        Row: {
+          id: string;
+          school_id: string;
+          name: string;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          name: string;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          name?: string;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'exam_types_school_id_fkey';
+            columns: ['school_id'];
+            referencedRelation: 'schools';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      textbooks: {
+        Row: {
+          id: number;
+          name: string;
+          publisher: string | null;
+          school_type: string | null;
+          grade: string | null;
+          subject: string | null;
+          revision_date: string | null;
+          sheet_gid: string | null;
+          grade_category: 'elementary' | 'middle' | 'high' | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: number;
+          name: string;
+          publisher?: string | null;
+          school_type?: string | null;
+          grade?: string | null;
+          subject?: string | null;
+          revision_date?: string | null;
+          sheet_gid?: string | null;
+          grade_category?: 'elementary' | 'middle' | 'high' | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: number;
+          name?: string;
+          publisher?: string | null;
+          school_type?: string | null;
+          grade?: string | null;
+          subject?: string | null;
+          revision_date?: string | null;
+          sheet_gid?: string | null;
+          grade_category?: 'elementary' | 'middle' | 'high' | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      curriculum_items: {
+        Row: {
+          id: number;
+          textbook_id: number;
+          title: string;
+          item_number: number | null;
+          item_type: string | null;
+          sort_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: number;
+          textbook_id: number;
+          title: string;
+          item_number?: number | null;
+          item_type?: string | null;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: number;
+          textbook_id?: number;
+          title?: string;
+          item_number?: number | null;
+          item_type?: string | null;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'curriculum_items_textbook_id_fkey';
+            columns: ['textbook_id'];
+            referencedRelation: 'textbooks';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      student_textbooks: {
+        Row: {
+          id: string;
+          school_id: string;
+          student_id: string;
+          textbook_id: number;
+          is_active: boolean;
+          season: 'spring' | 'summer' | 'winter' | null;
+          sort_order: number | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          student_id: string;
+          textbook_id: number;
+          is_active?: boolean;
+          season?: 'spring' | 'summer' | 'winter' | null;
+          sort_order?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          student_id?: string;
+          textbook_id?: number;
+          is_active?: boolean;
+          season?: 'spring' | 'summer' | 'winter' | null;
+          sort_order?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'student_textbooks_school_id_fkey';
+            columns: ['school_id'];
+            referencedRelation: 'schools';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'student_textbooks_student_id_fkey';
+            columns: ['student_id'];
+            referencedRelation: 'students';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'student_textbooks_textbook_id_fkey';
+            columns: ['textbook_id'];
+            referencedRelation: 'textbooks';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      student_textbook_settings: {
+        Row: {
+          id: string;
+          student_textbook_id: string;
+          goal_period: string | null;
+          goal_score: number | null;
+          approach: string | null;
+          homework_style: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          student_textbook_id: string;
+          goal_period?: string | null;
+          goal_score?: number | null;
+          approach?: string | null;
+          homework_style?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          student_textbook_id?: string;
+          goal_period?: string | null;
+          goal_score?: number | null;
+          approach?: string | null;
+          homework_style?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'student_textbook_settings_student_textbook_id_fkey';
+            columns: ['student_textbook_id'];
+            referencedRelation: 'student_textbooks';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      student_textbook_exams: {
+        Row: {
+          id: string;
+          student_textbook_id: string;
+          exam_type_id: string | null;
+          custom_exam_name: string | null;
+          exam_date: string;
+          target_score: number | null;
+          exam_range: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          student_textbook_id: string;
+          exam_type_id?: string | null;
+          custom_exam_name?: string | null;
+          exam_date: string;
+          target_score?: number | null;
+          exam_range?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          student_textbook_id?: string;
+          exam_type_id?: string | null;
+          custom_exam_name?: string | null;
+          exam_date?: string;
+          target_score?: number | null;
+          exam_range?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'student_textbook_exams_student_textbook_id_fkey';
+            columns: ['student_textbook_id'];
+            referencedRelation: 'student_textbooks';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'student_textbook_exams_exam_type_id_fkey';
+            columns: ['exam_type_id'];
+            referencedRelation: 'exam_types';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      student_progress: {
+        Row: {
+          id: string;
+          student_textbook_id: string;
+          curriculum_item_id: number;
+          proposal_count: number;
+          application_count: number;
+          exam_range_exam_type_id: string | null;
+          school_progress_date: string | null;
+          handover: string | null;
+          group_number: number | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          student_textbook_id: string;
+          curriculum_item_id: number;
+          proposal_count?: number;
+          application_count?: number;
+          exam_range_exam_type_id?: string | null;
+          school_progress_date?: string | null;
+          handover?: string | null;
+          group_number?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          student_textbook_id?: string;
+          curriculum_item_id?: number;
+          proposal_count?: number;
+          application_count?: number;
+          exam_range_exam_type_id?: string | null;
+          school_progress_date?: string | null;
+          handover?: string | null;
+          group_number?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'student_progress_student_textbook_id_fkey';
+            columns: ['student_textbook_id'];
+            referencedRelation: 'student_textbooks';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'student_progress_curriculum_item_id_fkey';
+            columns: ['curriculum_item_id'];
+            referencedRelation: 'curriculum_items';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'student_progress_exam_range_exam_type_id_fkey';
+            columns: ['exam_range_exam_type_id'];
+            referencedRelation: 'exam_types';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      student_progress_lessons: {
+        Row: {
+          id: string;
+          student_progress_id: string;
+          lesson_number: number;
+          lesson_date: string | null;
+          teacher_name: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          student_progress_id: string;
+          lesson_number: number;
+          lesson_date?: string | null;
+          teacher_name?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          student_progress_id?: string;
+          lesson_number?: number;
+          lesson_date?: string | null;
+          teacher_name?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'student_progress_lessons_student_progress_id_fkey';
+            columns: ['student_progress_id'];
+            referencedRelation: 'student_progress';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -836,3 +1189,67 @@ export const INTERVIEW_TYPE_COLORS: Record<InterviewType, string> = {
   other: 'bg-gray-100 text-gray-600',
   task: 'bg-red-100 text-red-800',
 };
+
+// ============================================
+// テキスト進行管理関連
+// ============================================
+
+export type ExamType = Database['public']['Tables']['exam_types']['Row'];
+export type ExamTypeInsert = Database['public']['Tables']['exam_types']['Insert'];
+export type ExamTypeUpdate = Database['public']['Tables']['exam_types']['Update'];
+
+export type Textbook = Database['public']['Tables']['textbooks']['Row'];
+export type TextbookInsert = Database['public']['Tables']['textbooks']['Insert'];
+export type TextbookUpdate = Database['public']['Tables']['textbooks']['Update'];
+
+export type CurriculumItem = Database['public']['Tables']['curriculum_items']['Row'];
+export type CurriculumItemInsert = Database['public']['Tables']['curriculum_items']['Insert'];
+export type CurriculumItemUpdate = Database['public']['Tables']['curriculum_items']['Update'];
+
+export type StudentTextbook = Database['public']['Tables']['student_textbooks']['Row'];
+export type StudentTextbookInsert = Database['public']['Tables']['student_textbooks']['Insert'];
+export type StudentTextbookUpdate = Database['public']['Tables']['student_textbooks']['Update'];
+
+export type StudentTextbookSetting = Database['public']['Tables']['student_textbook_settings']['Row'];
+export type StudentTextbookSettingInsert = Database['public']['Tables']['student_textbook_settings']['Insert'];
+export type StudentTextbookSettingUpdate = Database['public']['Tables']['student_textbook_settings']['Update'];
+
+export type StudentTextbookExam = Database['public']['Tables']['student_textbook_exams']['Row'];
+export type StudentTextbookExamInsert = Database['public']['Tables']['student_textbook_exams']['Insert'];
+export type StudentTextbookExamUpdate = Database['public']['Tables']['student_textbook_exams']['Update'];
+
+export type StudentProgress = Database['public']['Tables']['student_progress']['Row'];
+export type StudentProgressInsert = Database['public']['Tables']['student_progress']['Insert'];
+export type StudentProgressUpdate = Database['public']['Tables']['student_progress']['Update'];
+
+export type StudentProgressLesson = Database['public']['Tables']['student_progress_lessons']['Row'];
+export type StudentProgressLessonInsert = Database['public']['Tables']['student_progress_lessons']['Insert'];
+export type StudentProgressLessonUpdate = Database['public']['Tables']['student_progress_lessons']['Update'];
+
+// 拡張型（関連データを含む）
+export type StudentTextbookWithDetails = StudentTextbook & {
+  textbook: Textbook;
+  settings?: StudentTextbookSetting | null;
+  exams?: StudentTextbookExam[];
+};
+
+export type StudentProgressWithDetails = StudentProgress & {
+  curriculum_item: CurriculumItem;
+  exam_range_exam_type?: ExamType | null;
+  lessons?: StudentProgressLesson[];
+};
+
+export type CurriculumItemWithProgress = CurriculumItem & {
+  progress?: StudentProgressWithDetails | null;
+};
+
+// グループ化された行の表示用型
+export interface ProgressRowDisplay {
+  curriculumItem: CurriculumItem;
+  progress: StudentProgress | null;
+  // グループ表示用
+  isGroupStart: boolean;      // グループの先頭行か
+  groupRowSpan: number;       // rowspanの値（先頭行のみ1以上）
+  groupProposalCount: number; // グループ全体の提案回数
+  groupApplicationCount: number; // グループ全体の申込回数
+}

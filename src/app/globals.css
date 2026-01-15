@@ -77,3 +77,71 @@ textarea:focus {
     text-wrap: balance;
   }
 }
+
+/* 進行表のグループ化セル */
+.progress-table td[rowspan] {
+  vertical-align: middle;
+  border-left: 3px solid #ff8e3c;
+  border-right: 3px solid #ff8e3c;
+}
+
+.progress-table tr:first-child td[rowspan] {
+  border-top: 3px solid #ff8e3c;
+}
+
+.progress-table tr:last-child td[rowspan] {
+  border-bottom: 3px solid #ff8e3c;
+}
+
+/* グループの背景色 */
+.bg-blue-50 { background-color: #eff6ff; }
+.bg-green-50 { background-color: #f0fdf4; }
+.bg-yellow-50 { background-color: #fefce8; }
+.bg-purple-50 { background-color: #faf5ff; }
+.bg-pink-50 { background-color: #fdf2f8; }
+.bg-orange-50 { background-color: #fff7ed; }
+
+/* 印刷・PDF用スタイル */
+@media print {
+  body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  .print-container {
+    width: 100%;
+    padding: 20px;
+  }
+  
+  .progress-table-parent {
+    font-size: 12px;
+  }
+  
+  .progress-table-parent th,
+  .progress-table-parent td {
+    padding: 8px !important;
+  }
+  
+  /* ボタンなど非表示 */
+  button, .no-print {
+    display: none !important;
+  }
+}
+
+/* 保護者向けテーブルのスタイル */
+.progress-table-parent {
+  border: 2px solid #374151;
+}
+
+.progress-table-parent th {
+  font-weight: 600;
+}
+
+.progress-table-parent td[rowspan] {
+  border-left: 2px solid #ff8e3c;
+  border-right: 2px solid #ff8e3c;
+}
+
+.progress-table-parent tbody tr:last-child td[rowspan] {
+  border-bottom: 2px solid #ff8e3c;
+}
