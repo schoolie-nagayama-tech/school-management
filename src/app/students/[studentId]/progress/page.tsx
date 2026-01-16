@@ -227,7 +227,7 @@ export default function StudentProgressPage() {
       .reduce((sum, row) => sum + row.groupApplicationCount, 0);
   }, [displayRows]);
 
-  // PDF出力
+  // PDF出力（単一テキスト）
   const handleExportPDF = async () => {
     try {
       const textbookName = selectedTextbook?.textbook.name || 'テキスト';
@@ -243,6 +243,341 @@ export default function StudentProgressPage() {
       console.error('PDF出力エラー:', err);
       error(err instanceof Error ? err.message : 'PDF出力に失敗しました');
     }
+  };
+
+  // 講習ごとにPDF出力（テキストごとに1ページ）
+  const handleExportPDFBySeason = async () => {
+    if (!student || !selectedTextbook) {
+      error('テキストを選択してください');
+      return;
+    }
+    
+    try {
+      const studentNameStr = `${student.last_name} ${student.first_name}`;
+      
+      // 現在選択されているテキストの季節を取得
+      const currentSeason = selectedTextbook.season;
+      
+      if (!currentSeason) {
+        error('選択中のテキストに季節が設定されていません');
+        return;
+      }
+
+      // 同じ季節のテキストをフィルター
+      const textbooksInSeason = studentTextbooks
+        .filter(st => st.is_active && st.season === currentSeason);
+
+      if (textbooksInSeason.length === 0) {
+        error('同じ季節のテキストが見つかりません');
+        return;
+      }
+
+      // 季節名を取得
+      const seasonLabel = ['spring', 'summer', 'winter'].includes(currentSeason)
+        ? SEASON_LABELS[currentSeason as 'spring' | 'summer' | 'winter']
+        : currentSeason;
+
+      // html2canvas と jspdf を動的インポート
+      const [html2canvasModule, jsPDFModule] = await Promise.all([
+        import('html2canvas'),
+        import('jspdf'),
+      ]);
+      
+      const html2canvas = html2canvasModule.default;
+      const { jsPDF } = jsPDFModule;
+
+      // PDFインスタンスを作成
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = 210; // A4縦向き幅（mm）
+      const pageHeight = 297; // A4縦向き高さ（mm）
+      const imgWidth = pageWidth - 10; // マージン5mm x 2
+      let isFirstPage = true;
+
+      // 同じ季節の各テキストごとに1ページのPDFを生成して結合
+      for (const st of textbooksInSeason) {
+          // 各テキスト用の一時コンテナを作成
+          const tempContainer = document.createElement('div');
+          tempContainer.id = `temp-pdf-container-${currentSeason}-${st.id}`;
+          tempContainer.style.position = 'absolute';
+          tempContainer.style.left = '-9999px';
+          tempContainer.style.width = '800px';
+          document.body.appendChild(tempContainer);
+
+          try {
+            // 進行表データを取得
+            const progressData = await getStudentProgress(st.id);
+            const curriculumItems: CurriculumItem[] = progressData.map(item => ({
+              id: item.id,
+              textbook_id: item.textbook_id,
+              sort_order: item.sort_order,
+              item_number: item.item_number,
+              title: item.title,
+              item_type: item.item_type,
+              created_at: item.created_at,
+            }));
+            
+            // progressListを作成（lessons情報を保持）
+            const progressListWithLessons: Array<StudentProgress & { lessons?: StudentProgressLesson[] }> = progressData
+              .filter(item => item.progress)
+              .map(item => {
+                const progress = item.progress!;
+                return {
+                  id: progress.id,
+                  student_textbook_id: progress.student_textbook_id,
+                  curriculum_item_id: item.id,
+                  proposal_count: progress.proposal_count,
+                  application_count: progress.application_count,
+                  exam_range_exam_type_id: progress.exam_range_exam_type_id,
+                  school_progress_date: progress.school_progress_date,
+                  handover: progress.handover,
+                  group_number: progress.group_number,
+                  created_at: progress.created_at,
+                  updated_at: progress.updated_at,
+                  lessons: progress.lessons,
+                };
+              });
+            
+            // convertToDisplayRows用にlessonsを除外
+            const progressListForDisplay: StudentProgress[] = progressListWithLessons.map(p => {
+              const { lessons, ...withoutLessons } = p;
+              return withoutLessons;
+            });
+            
+            const displayRowsForTextbook = convertToDisplayRows(curriculumItems, progressListForDisplay);
+            
+            // lessons情報を復元
+            const progressWithLessonsMap = new Map<number, StudentProgressWithDetails>();
+            progressData.forEach(item => {
+              if (item.progress) {
+                progressWithLessonsMap.set(item.id, item.progress);
+              }
+            });
+            
+            const displayRowsWithLessons = displayRowsForTextbook.map(row => {
+              const progressWithLessons = progressWithLessonsMap.get(row.curriculumItem.id);
+              if (progressWithLessons && row.progress) {
+                return {
+                  ...row,
+                  progress: {
+                    ...row.progress,
+                    lessons: progressWithLessons.lessons,
+                  } as StudentProgress & { lessons?: StudentProgressLesson[] },
+                };
+              }
+              return row;
+            });
+            
+            // HTMLを生成（1テキスト分）
+            tempContainer.innerHTML = `
+              <div class="print-container" style="padding: 20px;">
+                <h2 style="text-align: center; font-size: 20px; font-weight: bold; margin-bottom: 20px;">
+                  学習進行表（ご提案内容）
+                </h2>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 14px;">
+                  <div>生徒名: ${studentNameStr}</div>
+                  <div>教材: ${st.textbook.name}</div>
+                </div>
+                ${renderProgressTableHTML(displayRowsWithLessons, {
+                  showProposalCount,
+                  showApplicationCount,
+                  showExamRange,
+                  showSchoolProgress,
+                  showLesson1,
+                  showLesson2,
+                  showLesson3,
+                  showHandover,
+                })}
+              </div>
+            `;
+
+            // フォントサイズを小さくして1ページに収める
+            const tables = tempContainer.querySelectorAll('table');
+            tables.forEach(table => {
+              table.style.fontSize = '10px';
+              const cells = table.querySelectorAll('th, td');
+              cells.forEach(cell => {
+                (cell as HTMLElement).style.fontSize = '10px';
+                (cell as HTMLElement).style.padding = '4px 6px';
+              });
+            });
+
+            // HTML要素をCanvasに変換
+            const canvas = await html2canvas(tempContainer, {
+              scale: 1.5,
+              useCORS: true,
+              logging: false,
+              backgroundColor: '#ffffff',
+            });
+
+            // Canvas画像のサイズを計算
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+            // 新しいページを追加（最初のページ以外）
+            if (!isFirstPage) {
+              pdf.addPage();
+            } else {
+              isFirstPage = false;
+            }
+
+            // 1ページに収まるようにスケール調整
+            let finalWidth = imgWidth;
+            let finalHeight = imgHeight;
+            let xOffset = 5;
+            let yOffset = 5;
+
+            if (imgHeight > pageHeight - 10) {
+              // 1ページに収まらない場合、スケールを調整
+              const scale = (pageHeight - 10) / imgHeight;
+              finalWidth = imgWidth * scale;
+              finalHeight = imgHeight * scale;
+              xOffset = (pageWidth - finalWidth) / 2;
+              yOffset = (pageHeight - finalHeight) / 2;
+            }
+
+            // PDFに画像を追加
+            pdf.addImage(
+              canvas.toDataURL('image/png'),
+              'PNG',
+              xOffset,
+              yOffset,
+              finalWidth,
+              finalHeight
+            );
+          } finally {
+            document.body.removeChild(tempContainer);
+          }
+        }
+
+      // 現在の季節のテキストをまとめたPDFをダウンロード
+      const filename = `進行表_${studentNameStr}_${seasonLabel}_${new Date().toISOString().slice(0, 10)}.pdf`;
+      pdf.save(filename);
+
+      success(`${seasonLabel}のPDFを出力しました`);
+    } catch (err) {
+      console.error('PDF出力エラー:', err);
+      error(err instanceof Error ? err.message : 'PDF出力に失敗しました');
+    }
+  };
+
+  // 進行表のHTMLを生成（ヘルパー関数）
+  const renderProgressTableHTML = (
+    displayRows: Array<ProgressRowDisplay & { progress?: (StudentProgress & { lessons?: StudentProgressLesson[] }) | null }>,
+    columnVisibility: {
+      showProposalCount: boolean;
+      showApplicationCount: boolean;
+      showExamRange: boolean;
+      showSchoolProgress: boolean;
+      showLesson1: boolean;
+      showLesson2: boolean;
+      showLesson3: boolean;
+      showHandover: boolean;
+    }
+  ): string => {
+    const totalProposal = displayRows
+      .filter(row => row.isGroupStart)
+      .reduce((sum, row) => sum + row.groupProposalCount, 0);
+    
+    const totalApplication = displayRows
+      .filter(row => row.isGroupStart)
+      .reduce((sum, row) => sum + row.groupApplicationCount, 0);
+
+    let html = `
+      <table style="width: 100%; border-collapse: collapse; border: 1px solid #000;">
+        <thead>
+          <tr style="background-color: #f5f5f5;">
+            <th style="border: 1px solid #000; padding: 8px; text-align: left; font-weight: bold;">単元名</th>
+            ${columnVisibility.showProposalCount ? '<th style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold;">ご提案<br/>コマ数</th>' : ''}
+            ${columnVisibility.showApplicationCount ? '<th style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold;">申込<br/>コマ数</th>' : ''}
+            ${columnVisibility.showExamRange ? '<th style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold;">試験範囲</th>' : ''}
+            ${columnVisibility.showSchoolProgress ? '<th style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold;">学校進度</th>' : ''}
+            ${columnVisibility.showLesson1 ? '<th style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold;">指導日①</th>' : ''}
+            ${columnVisibility.showLesson2 ? '<th style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold;">指導日②</th>' : ''}
+            ${columnVisibility.showLesson3 ? '<th style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold;">指導日③</th>' : ''}
+            ${columnVisibility.showHandover ? '<th style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold;">引継ぎ</th>' : ''}
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    displayRows.forEach((row, index) => {
+      const groupNumber = row.progress?.group_number;
+      const nextRow = displayRows[index + 1];
+      const isLastInGroup = groupNumber != null && (!nextRow || nextRow.progress?.group_number !== groupNumber);
+      const borderBottom = isLastInGroup || groupNumber == null ? 'border-bottom: 2px solid #000;' : 'border-bottom: 1px solid #ccc;';
+
+      html += `
+        <tr>
+          <td style="border: 1px solid #000; padding: 8px; ${borderBottom}">
+            ${groupNumber != null && row.isGroupStart ? '<div style="display: inline-block; width: 4px; height: 24px; background-color: #666; margin-right: 8px; vertical-align: middle;"></div>' : ''}
+            ${row.curriculumItem.item_number ? `<span style="color: #666; margin-right: 8px;">${row.curriculumItem.item_number}</span>` : ''}
+            ${row.curriculumItem.title}
+          </td>
+          ${columnVisibility.showProposalCount && row.isGroupStart ? `
+            <td style="border: 1px solid #000; padding: 8px; text-align: center; ${borderBottom}" rowspan="${row.groupRowSpan}">
+              ${row.groupProposalCount > 0 ? row.groupProposalCount : '-'}
+            </td>
+          ` : ''}
+          ${columnVisibility.showApplicationCount && row.isGroupStart ? `
+            <td style="border: 1px solid #000; padding: 8px; text-align: center; ${borderBottom}" rowspan="${row.groupRowSpan}">
+              ${row.groupApplicationCount > 0 ? row.groupApplicationCount : '-'}
+            </td>
+          ` : ''}
+          ${columnVisibility.showExamRange ? `
+            <td style="border: 1px solid #000; padding: 8px; text-align: center; ${borderBottom}">
+              ${(row.progress as any)?.exam_range_exam_type_id || '-'}
+            </td>
+          ` : ''}
+          ${columnVisibility.showSchoolProgress ? `
+            <td style="border: 1px solid #000; padding: 8px; text-align: center; ${borderBottom}">
+              ${row.progress?.school_progress_date || '-'}
+            </td>
+          ` : ''}
+          ${columnVisibility.showLesson1 ? `
+            <td style="border: 1px solid #000; padding: 8px; text-align: center; ${borderBottom}">
+              ${(row.progress as any)?.lessons && (row.progress as any).lessons[0]?.lesson_date || '-'}
+            </td>
+          ` : ''}
+          ${columnVisibility.showLesson2 ? `
+            <td style="border: 1px solid #000; padding: 8px; text-align: center; ${borderBottom}">
+              ${(row.progress as any)?.lessons && (row.progress as any).lessons[1]?.lesson_date || '-'}
+            </td>
+          ` : ''}
+          ${columnVisibility.showLesson3 ? `
+            <td style="border: 1px solid #000; padding: 8px; text-align: center; ${borderBottom}">
+              ${(row.progress as any)?.lessons && (row.progress as any).lessons[2]?.lesson_date || '-'}
+            </td>
+          ` : ''}
+          ${columnVisibility.showHandover ? `
+            <td style="border: 1px solid #000; padding: 8px; ${borderBottom}">
+              ${row.progress?.handover || '-'}
+            </td>
+          ` : ''}
+        </tr>
+      `;
+    });
+
+    html += `
+        </tbody>
+        <tfoot>
+          <tr style="font-weight: bold;">
+            <td style="border: 1px solid #000; padding: 8px; text-align: right;">合計</td>
+            ${columnVisibility.showProposalCount ? `<td style="border: 1px solid #000; padding: 8px; text-align: center;">${totalProposal}コマ</td>` : ''}
+            ${columnVisibility.showApplicationCount ? `<td style="border: 1px solid #000; padding: 8px; text-align: center;">${totalApplication}コマ</td>` : ''}
+            ${columnVisibility.showExamRange ? '<td style="border: 1px solid #000; padding: 8px;"></td>' : ''}
+            ${columnVisibility.showSchoolProgress ? '<td style="border: 1px solid #000; padding: 8px;"></td>' : ''}
+            ${columnVisibility.showLesson1 ? '<td style="border: 1px solid #000; padding: 8px;"></td>' : ''}
+            ${columnVisibility.showLesson2 ? '<td style="border: 1px solid #000; padding: 8px;"></td>' : ''}
+            ${columnVisibility.showLesson3 ? '<td style="border: 1px solid #000; padding: 8px;"></td>' : ''}
+            ${columnVisibility.showHandover ? '<td style="border: 1px solid #000; padding: 8px;"></td>' : ''}
+          </tr>
+        </tfoot>
+      </table>
+      <div style="margin-top: 20px; font-size: 12px; color: #666;">
+        ※ 同じ背景色でまとまっている単元は、まとめて1コマで授業を行います。
+      </div>
+    `;
+
+    return html;
   };
 
   // 利用可能なコース一覧を取得
@@ -817,17 +1152,30 @@ export default function StudentProgressPage() {
                   <div className="flex items-center gap-2">
                     {/* PDF出力ボタン（保護者向けモード時） */}
                     {viewMode === 'parent' && (
-                      <Button
-                        onClick={handleExportPDF}
-                        variant="primary"
-                        size="sm"
-                        className="flex items-center gap-2"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        PDF出力
-                      </Button>
+                      <>
+                        <Button
+                          onClick={handleExportPDF}
+                          variant="primary"
+                          size="sm"
+                          className="flex items-center gap-2"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          PDF出力
+                        </Button>
+                        <Button
+                          onClick={handleExportPDFBySeason}
+                          variant="secondary"
+                          size="sm"
+                          className="flex items-center gap-2"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          講習ごとPDF出力
+                        </Button>
+                      </>
                     )}
                     
                     {/* グループ化ボタン（管理モードのみ） */}
@@ -888,8 +1236,8 @@ export default function StudentProgressPage() {
                   </div>
                 </div>
 
-                {/* 下段: 表示列切替（管理モードのみ） */}
-                {viewMode === 'admin' && (
+                {/* 下段: 表示列切替 */}
+                {(viewMode === 'admin' || viewMode === 'parent') && (
                   <div className="flex items-center gap-4 flex-wrap pt-3 border-t border-[#eff0f3]">
                     <span className="text-sm font-medium text-[#2a2a2a]">表示列:</span>
                     <label className="flex items-center gap-1.5 cursor-pointer">
@@ -1394,6 +1742,14 @@ export default function StudentProgressPage() {
                     displayRows={displayRows}
                     studentName={student ? `${student.last_name} ${student.first_name}` : '生徒'}
                     textbookName={selectedTextbook?.textbook.name || 'テキスト'}
+                    showProposalCount={showProposalCount}
+                    showApplicationCount={showApplicationCount}
+                    showExamRange={showExamRange}
+                    showSchoolProgress={showSchoolProgress}
+                    showLesson1={showLesson1}
+                    showLesson2={showLesson2}
+                    showLesson3={showLesson3}
+                    showHandover={showHandover}
                   />
                 )}
               </div>
