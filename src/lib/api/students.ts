@@ -41,15 +41,19 @@ async function logStudentAction(
 // 生徒一覧を取得（科目情報も含む）
 // 並び順: 1) status (active → inactive → withdrawn), 2) grade, 3) kana, 4) name, 5) student_code
 export async function getStudents(
-  searchQuery?: string
+  searchQuery?: string,
+  schoolIds?: string[] // 複数教室IDを指定可能（未指定の場合はデフォルト教室）
 ): Promise<(Student & { subjects: Subject[] })[]> {
-  const schoolId = getDefaultSchoolId();
+  // schoolIdsが指定されていない場合はデフォルト教室を使用
+  const targetSchoolIds = schoolIds && schoolIds.length > 0 
+    ? schoolIds 
+    : [getDefaultSchoolId()];
 
   // 基本クエリ: school_idで絞り込み、deleted_at is nullのみ
   let query = supabase
     .from('students')
     .select('*')
-    .eq('school_id', schoolId)
+    .in('school_id', targetSchoolIds)
     .is('deleted_at', null);
 
   // 検索クエリがある場合
@@ -193,14 +197,20 @@ export async function getStudents(
 }
 
 // 生徒を1件取得（school_idとdeleted_atで絞り込み）
-export async function getStudent(id: string): Promise<Student | null> {
-  const schoolId = getDefaultSchoolId();
+export async function getStudent(
+  id: string,
+  schoolIds?: string[] // 複数教室IDを指定可能（未指定の場合はデフォルト教室）
+): Promise<Student | null> {
+  // schoolIdsが指定されていない場合はデフォルト教室を使用
+  const targetSchoolIds = schoolIds && schoolIds.length > 0 
+    ? schoolIds 
+    : [getDefaultSchoolId()];
 
   const { data, error } = await supabase
     .from('students')
     .select('*')
     .eq('id', id)
-    .eq('school_id', schoolId)
+    .in('school_id', targetSchoolIds)
     .is('deleted_at', null)
     .single();
 

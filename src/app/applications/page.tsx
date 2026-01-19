@@ -12,7 +12,6 @@ import {
   getApplicationItems,
   getStudentApplications,
 } from '@/lib/api/applications';
-import { getDefaultSchoolId } from '@/lib/api/schools';
 import type {
   Student,
   ApplicationItem,
@@ -20,9 +19,19 @@ import type {
   ApplicationStatus,
   ApplicationFilters,
 } from '@/types/database';
+import { useRequirePermission, useCanEdit } from '@/hooks/usePermissions';
+import AccessDenied from '@/components/AccessDenied';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function ApplicationsPage() {
-  const schoolId = getDefaultSchoolId();
+  // 権限チェック
+  const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
+    (p) => p.canAccessApplications
+  );
+
+  // 編集権限
+  const canEdit = useCanEdit('canEditApplications');
+  const { getSelectedSchoolIds, selectedSchoolId, permissions } = useAuth();
   
   // 状態管理
   const [students, setStudents] = useState<Student[]>([]);
@@ -48,10 +57,17 @@ export default function ApplicationsPage() {
     setIsLoading(true);
     setErrorMessage('');
     try {
+      const schoolIds = getSelectedSchoolIds();
+      // 権限のある教室のみでフィルタリング
+      if (schoolIds.length === 0) {
+        setErrorMessage('教室が選択されていません');
+        setIsLoading(false);
+        return;
+      }
       const [studentsData, itemsData, applicationsData] = await Promise.all([
-        getStudents(),
-        getApplicationItems(schoolId, filters.showHidden),
-        getStudentApplications(schoolId),
+        getStudents(undefined, schoolIds),
+        getApplicationItems(schoolIds, filters.showHidden),
+        getStudentApplications(schoolIds),
       ]);
       setStudents(studentsData);
       setItems(itemsData);
@@ -64,12 +80,14 @@ export default function ApplicationsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [schoolId, filters.showHidden]);
+  }, [getSelectedSchoolIds, filters.showHidden]);
 
-  // 初回読み込み
+  // 初回読み込みと教室選択変更時の再読み込み
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (selectedSchoolId !== null) {
+      fetchData();
+    }
+  }, [fetchData, selectedSchoolId]);
 
   // フィルター適用
   const filteredStudents = useMemo(() => {
@@ -178,10 +196,33 @@ export default function ApplicationsPage() {
     setSelectedStudent(null);
   };
 
+  // 権限チェック中
+  if (permissionLoading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-[#ff8e3c] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-[#2a2a2a]">読み込み中...</p>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  // 権限なし
+  if (!hasPermission) {
+    return (
+      <AdminLayout>
+        <AccessDenied />
+      </AdminLayout>
+    );
+  }
+
   return (
-    <AdminLayout 
-      headerTitle="申込状況管理" 
-      headerOnSettingsClick={() => setIsItemManagerOpen(true)}
+    <AdminLayout
+      headerTitle="申込状況管理"
+      headerOnSettingsClick={canEdit ? () => setIsItemManagerOpen(true) : undefined}
     >
 
       {/* エラーメッセージ */}
@@ -200,9 +241,16 @@ export default function ApplicationsPage() {
       />
 
       {/* 説明 */}
-      <div className="mb-4 text-[#2a2a2a] text-sm">
-        <p>セルをクリックして申込状況を切り替えます: 空白 → ×（未申込）→ ✓（申込済）→ -（対象外）→ 空白</p>
-      </div>
+      {canEdit && (
+        <div className="mb-4 text-[#2a2a2a] text-sm">
+          <p>セルをクリックして申込状況を切り替えます: 空白 → ×（未申込）→ ✓（申込済）→ -（対象外）→ 空白</p>
+        </div>
+      )}
+      {!canEdit && (
+        <div className="mb-4 text-[#2a2a2a] text-sm">
+          <p>申込状況を閲覧できます。編集するには編集権限が必要です。</p>
+        </div>
+      )}
 
       {/* テーブル */}
       {isLoading ? (
@@ -233,36 +281,48 @@ export default function ApplicationsPage() {
         ) : items.length === 0 ? (
           <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-8 text-center">
             <p className="text-[#2a2a2a] mb-4">申込項目がありません。</p>
-            <Button onClick={() => setIsSettingsModalOpen(true)}>
-              項目設定を開く
-          </Button>
+            {canEdit && (
+              <Button onClick={() => setIsSettingsModalOpen(true)}>
+                項目設定を開く
+              </Button>
+            )}
         </div>
       ) : (
         <ApplicationTable
           students={filteredStudents}
           items={items.filter((i) => filters.showHidden || !i.is_hidden)}
           applications={applications}
-          onStatusChange={handleStatusChange}
+          onStatusChange={canEdit ? handleStatusChange : undefined}
           onStudentClick={handleStudentClick}
           onItemsChange={fetchData}
         />
       )}
 
-      {/* 項目設定モーダル（既存） */}
-      <ApplicationItemSettings
-        isOpen={isSettingsModalOpen}
-        onClose={handleSettingsClose}
-      />
+      {/* 項目設定モーダル（既存）- 編集権限がある場合のみ表示 */}
+      {canEdit && (
+        <ApplicationItemSettings
+          isOpen={isSettingsModalOpen}
+          onClose={handleSettingsClose}
+        />
+      )}
 
-      {/* 項目管理モーダル（新規） */}
-      <ApplicationItemManager
-        schoolId={schoolId}
-        items={items}
-        showHidden={filters.showHidden ?? false}
-        isOpen={isItemManagerOpen}
-        onClose={() => setIsItemManagerOpen(false)}
-        onUpdated={fetchData}
-      />
+      {/* 項目管理モーダル（新規）- 編集権限がある場合のみ表示 */}
+      {canEdit && (() => {
+        const schoolIds = getSelectedSchoolIds();
+        // 複数教室が選択されている場合は最初の教室を使用（管理は単一教室のみ）
+        const schoolId = schoolIds.length > 0 ? schoolIds[0] : null;
+        if (!schoolId) return null;
+        return (
+          <ApplicationItemManager
+            schoolId={schoolId}
+            items={items}
+            showHidden={filters.showHidden ?? false}
+            isOpen={isItemManagerOpen}
+            onClose={() => setIsItemManagerOpen(false)}
+            onUpdated={fetchData}
+          />
+        );
+      })()}
 
       {/* 生徒詳細モーダル */}
       {selectedStudent && (

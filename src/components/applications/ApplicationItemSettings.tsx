@@ -9,6 +9,7 @@ import {
   deleteApplicationItem,
   updateApplicationItemSortOrder,
 } from '@/lib/api/applications';
+import { useAuth } from '@/contexts/AuthContext';
 import type { ApplicationItem } from '@/types/database';
 
 interface ApplicationItemSettingsProps {
@@ -17,6 +18,7 @@ interface ApplicationItemSettingsProps {
 }
 
 export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSettingsProps) {
+  const { getSelectedSchoolIds } = useAuth();
   const [items, setItems] = useState<ApplicationItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -30,7 +32,13 @@ export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSett
     setIsLoading(true);
     setErrorMessage('');
     try {
-      const data = await getApplicationItems();
+      const schoolIds = getSelectedSchoolIds();
+      if (schoolIds.length === 0) {
+        setErrorMessage('教室が選択されていません');
+        setIsLoading(false);
+        return;
+      }
+      const data = await getApplicationItems(schoolIds);
       setItems(data);
     } catch (error) {
       console.error('Error fetching application items:', error);
@@ -97,7 +105,13 @@ export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSett
     setIsSubmitting(true);
     setErrorMessage('');
     try {
-      await updateApplicationItemSortOrder(updatedItems);
+      const schoolIds = getSelectedSchoolIds();
+      if (schoolIds.length === 0) {
+        setErrorMessage('教室が選択されていません');
+        setIsSubmitting(false);
+        return;
+      }
+      await updateApplicationItemSortOrder(updatedItems, schoolIds);
       await fetchItems();
     } catch (error) {
       console.error('Error updating sort order:', error);
@@ -125,7 +139,13 @@ export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSett
     setIsSubmitting(true);
     setErrorMessage('');
     try {
-      await updateApplicationItemSortOrder(updatedItems);
+      const schoolIds = getSelectedSchoolIds();
+      if (schoolIds.length === 0) {
+        setErrorMessage('教室が選択されていません');
+        setIsSubmitting(false);
+        return;
+      }
+      await updateApplicationItemSortOrder(updatedItems, schoolIds);
       await fetchItems();
     } catch (error) {
       console.error('Error updating sort order:', error);
@@ -167,7 +187,13 @@ export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSett
       if (editingItem) {
         await updateApplicationItem(editingItem.id, { name: itemName.trim() });
       } else {
-        await createApplicationItem({ name: itemName.trim() });
+        const schoolIds = getSelectedSchoolIds();
+        if (schoolIds.length === 0) {
+          setErrorMessage('教室が選択されていません');
+          return;
+        }
+        // 複数教室が選択されている場合は最初の教室を使用
+        await createApplicationItem({ name: itemName.trim() }, schoolIds[0]);
       }
       setIsEditModalOpen(false);
       setItemName('');

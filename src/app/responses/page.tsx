@@ -1,17 +1,25 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { AppHeader } from '@/components/layout';
+import { AdminLayout } from '@/components/layouts';
 import { getFormResponses, type FormResponseWithStudent } from '@/lib/api/form-responses';
 import { getFormPeriods } from '@/lib/api/form-periods';
 import { getDefaultSchoolId } from '@/lib/api/schools';
 import type { FormType, FormPeriod } from '@/types/database';
 import { FORM_TYPE_LABELS, GRADE_LABELS } from '@/types/database';
+import { useRequirePermission } from '@/hooks/usePermissions';
+import AccessDenied from '@/components/AccessDenied';
+import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 
 // TODO: ResponseSummary, ResponseDetailModal, LinkStudentModalコンポーネントを作成
 
 export default function ResponsesPage() {
+  // 権限チェック
+  const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
+    (p) => p.canAccessApplications
+  );
+  const { getSelectedSchoolIds, selectedSchoolId } = useAuth();
   const [responses, setResponses] = useState<FormResponseWithStudent[]>([]);
   const [formPeriods, setFormPeriods] = useState<FormPeriod[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -30,7 +38,17 @@ export default function ResponsesPage() {
     setIsLoading(true);
     setErrorMessage('');
     try {
-      const schoolId = getDefaultSchoolId();
+      const schoolIds = getSelectedSchoolIds();
+      // 権限のある教室のみでフィルタリング
+      if (schoolIds.length === 0) {
+        setErrorMessage('教室が選択されていません');
+        setIsLoading(false);
+        return;
+      }
+      
+      // 複数教室が選択されている場合は最初の教室を使用（フォーム回答は単一教室のみ対応）
+      const schoolId = schoolIds[0];
+      
       const filters: Parameters<typeof getFormResponses>[1] = {};
       if (filterFormType !== 'all') {
         filters.formType = filterFormType;
@@ -62,11 +80,13 @@ export default function ResponsesPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [filterFormType, filterPeriod, filterGrade, filterLinkedStatus]);
+  }, [getSelectedSchoolIds, filterFormType, filterPeriod, filterGrade, filterLinkedStatus]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (selectedSchoolId !== null) {
+      fetchData();
+    }
+  }, [fetchData, selectedSchoolId]);
 
   const formatDateTime = (date: string) => {
     const d = new Date(date);
@@ -89,9 +109,31 @@ export default function ResponsesPage() {
     return byFormType;
   })();
 
+  // 権限チェック中
+  if (permissionLoading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-[#ff8e3c] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-[#2a2a2a]">読み込み中...</p>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  // 権限なし
+  if (!hasPermission) {
+    return (
+      <AdminLayout>
+        <AccessDenied />
+      </AdminLayout>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-[#eff0f3]">
-      <AppHeader title="回答管理" />
+    <AdminLayout headerTitle="回答管理">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {errorMessage && (
           <div className="mb-4 p-4 bg-[#d9376e]/20 border border-[#d9376e] rounded-lg">
@@ -294,6 +336,6 @@ export default function ResponsesPage() {
           )}
         </div>
       </div>
-    </div>
+    </AdminLayout>
   );
 }

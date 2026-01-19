@@ -3,434 +3,373 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
-import { Button, Modal, ToastContainer } from '@/components/ui';
-import { useToast } from '@/hooks/useToast';
-import {
-  getSeasonalCourses,
-  createSeasonalCourse,
-  deleteSeasonalCourse,
-} from '@/lib/api/seasonalCourses';
-import { getDefaultSchoolId } from '@/lib/api/schools';
+import { Button } from '@/components/ui';
+import { getSeasonalCourses, createSeasonalCourse } from '@/lib/api/seasonalCourses';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRequirePermission } from '@/hooks/usePermissions';
+import AccessDenied from '@/components/AccessDenied';
 import type { SeasonalCourseWithDetails, SeasonType } from '@/types/database';
 import { SEASON_LABELS, GRADE_LABELS } from '@/types/database';
 
 export default function CoursesPage() {
-  const { toasts, removeToast, success, error } = useToast();
+  // 権限チェック
+  const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
+    (p) => p.canAccessCourses
+  );
+  const { getSelectedSchoolIds, selectedSchoolId, schoolIds } = useAuth();
+
   const [courses, setCourses] = useState<SeasonalCourseWithDetails[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [filterSeason, setFilterSeason] = useState<SeasonType | ''>('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // 新規作成フォーム
-  const [newName, setNewName] = useState('');
-  const [newSeason, setNewSeason] = useState<SeasonType>('summer');
-  const [newTargetGrades, setNewTargetGrades] = useState<number[]>([]);
-  const [newComment, setNewComment] = useState('');
+  const [newCourseName, setNewCourseName] = useState('');
+  const [newCourseSeason, setNewCourseSeason] = useState<SeasonType>('spring');
+  const [newCourseGrades, setNewCourseGrades] = useState<number[]>([]);
+  const [newCourseTotalKoma, setNewCourseTotalKoma] = useState<number | ''>('');
+  const [newCourseComment, setNewCourseComment] = useState('');
+  const [applyToAllSchools, setApplyToAllSchools] = useState(false);
 
   // コース一覧を取得
   const fetchCourses = useCallback(async () => {
     setIsLoading(true);
+    setErrorMessage('');
     try {
-      const schoolId = getDefaultSchoolId();
+      const schoolIds = getSelectedSchoolIds();
+      if (schoolIds.length === 0) {
+        setCourses([]);
+        return;
+      }
+
+      // 複数教室が選択されている場合は最初の教室を使用（講習管理は単一教室のみ）
+      const schoolId = schoolIds[0];
       const data = await getSeasonalCourses(schoolId);
       setCourses(data);
-    } catch (err) {
-      console.error('Error fetching courses:', err);
-      error(err instanceof Error ? err.message : 'コース一覧の取得に失敗しました');
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+      setErrorMessage(
+        error instanceof Error ? error.message : '講習一覧の取得に失敗しました'
+      );
     } finally {
       setIsLoading(false);
     }
-  }, [error]);
+  }, [getSelectedSchoolIds]);
 
+  // 初回読み込みと教室選択変更時の再読み込み
   useEffect(() => {
-    fetchCourses();
-  }, [fetchCourses]);
+    if (selectedSchoolId !== null) {
+      fetchCourses();
+    }
+  }, [fetchCourses, selectedSchoolId]);
 
-  // コース作成
-  const handleCreate = async () => {
-    if (!newName.trim()) {
-      error('コース名を入力してください');
+  // 新規作成
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCourseName.trim()) {
+      setErrorMessage('コース名を入力してください');
       return;
     }
-    if (newTargetGrades.length === 0) {
-      error('対象学年を選択してください');
-      return;
-    }
 
+    setIsSubmitting(true);
+    setErrorMessage('');
     try {
-      const schoolId = getDefaultSchoolId();
-      await createSeasonalCourse(schoolId, {
-        name: newName.trim(),
-        season: newSeason,
-        target_grades: newTargetGrades,
-        comment: newComment.trim() || undefined,
-      });
-      await fetchCourses();
+      // すべての教室に適用する場合
+      const targetSchoolIds = applyToAllSchools ? schoolIds : getSelectedSchoolIds();
+      
+      if (targetSchoolIds.length === 0) {
+        setErrorMessage('教室が選択されていません');
+        return;
+      }
+
+      // 各教室に講習を作成
+      const courseData = {
+        name: newCourseName.trim(),
+        season: newCourseSeason,
+        target_grades: newCourseGrades,
+        total_koma: newCourseTotalKoma === '' ? undefined : Number(newCourseTotalKoma),
+        comment: newCourseComment.trim() || undefined,
+      };
+
+      await Promise.all(
+        targetSchoolIds.map((schoolId) => createSeasonalCourse(schoolId, courseData))
+      );
+
       setIsCreateModalOpen(false);
-      resetForm();
-      success('コースを作成しました');
-    } catch (err) {
-      console.error('Error creating course:', err);
-      error(err instanceof Error ? err.message : 'コースの作成に失敗しました');
-    }
-  };
-
-  // コース削除
-  const handleDelete = async (courseId: string, courseName: string) => {
-    if (!window.confirm(`「${courseName}」を削除しますか？\nこの操作は取り消せません。`)) {
-      return;
-    }
-
-    try {
-      await deleteSeasonalCourse(courseId);
+      setNewCourseName('');
+      setNewCourseSeason('spring');
+      setNewCourseGrades([]);
+      setNewCourseTotalKoma('');
+      setNewCourseComment('');
+      setApplyToAllSchools(false);
       await fetchCourses();
-      success('コースを削除しました');
-    } catch (err) {
-      console.error('Error deleting course:', err);
-      error(err instanceof Error ? err.message : 'コースの削除に失敗しました');
+    } catch (error) {
+      console.error('Error creating course:', error);
+      setErrorMessage(
+        error instanceof Error ? error.message : '講習の作成に失敗しました'
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // フォームリセット
-  const resetForm = () => {
-    setNewName('');
-    setNewSeason('summer');
-    setNewTargetGrades([]);
-    setNewComment('');
-  };
-
-  // 学年チェックボックスの切り替え
-  const toggleGrade = (grade: number) => {
-    setNewTargetGrades(prev =>
-      prev.includes(grade)
-        ? prev.filter(g => g !== grade)
-        : [...prev, grade].sort((a, b) => a - b)
+  // 権限チェック中
+  if (permissionLoading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-[#ff8e3c] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-[#2a2a2a]">読み込み中...</p>
+          </div>
+        </div>
+      </AdminLayout>
     );
-  };
+  }
 
-  // フィルター済みコース
-  const filteredCourses = filterSeason
-    ? courses.filter(c => c.season === filterSeason)
-    : courses;
-
-  // 季節ごとの背景色
-  const getSeasonColor = (season: SeasonType) => {
-    switch (season) {
-      case 'spring': return 'bg-[#fff9e5] border-[#ffeb3b]';
-      case 'summer': return 'bg-[#ffe5e5] border-[#ffb3b3]';
-      case 'winter': return 'bg-[#e5f3ff] border-[#bae1ff]';
-      default: return 'bg-[#eff0f3] border-[#0d0d0d]';
-    }
-  };
-
-  const getSeasonBadgeColor = (season: SeasonType) => {
-    switch (season) {
-      case 'spring': return 'bg-[#ffeb3b] text-[#0d0d0d]';
-      case 'summer': return 'bg-[#ff8e8e] text-[#0d0d0d]';
-      case 'winter': return 'bg-[#8ec5ff] text-[#0d0d0d]';
-      default: return 'bg-[#eff0f3] text-[#0d0d0d]';
-    }
-  };
+  // 権限なし
+  if (!hasPermission) {
+    return (
+      <AdminLayout>
+        <AccessDenied />
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout headerTitle="講習管理">
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
-
-      {/* ヘッダー */}
-      <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
-        <div className="flex items-center gap-4">
-          <h2 className="text-xl font-bold text-[#0d0d0d]">コース一覧</h2>
-          {/* 季節フィルター */}
+      {/* エラーメッセージ */}
+      {errorMessage && (
+        <div className="mb-6 p-4 bg-[#d9376e]/10 border border-[#d9376e] rounded-lg">
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setFilterSeason('')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                filterSeason === ''
-                  ? 'bg-[#0d0d0d] text-[#fffffe]'
-                  : 'bg-[#eff0f3] text-[#2a2a2a] hover:bg-[#0d0d0d]/10'
-              }`}
+            <svg
+              className="w-5 h-5 text-[#d9376e]"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              すべて
-            </button>
-            <button
-              onClick={() => setFilterSeason('spring')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                filterSeason === 'spring'
-                  ? 'bg-[#ffeb3b] text-[#0d0d0d] border-2 border-[#ffc107]'
-                  : 'bg-[#fff9e5] text-[#2a2a2a] hover:bg-[#ffeb3b]'
-              }`}
-            >
-              春期
-            </button>
-            <button
-              onClick={() => setFilterSeason('summer')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                filterSeason === 'summer'
-                  ? 'bg-[#ff8e8e] text-[#0d0d0d] border-2 border-[#ff6b6b]'
-                  : 'bg-[#ffe5e5] text-[#2a2a2a] hover:bg-[#ffb3b3]'
-              }`}
-            >
-              夏期
-            </button>
-            <button
-              onClick={() => setFilterSeason('winter')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                filterSeason === 'winter'
-                  ? 'bg-[#8ec5ff] text-[#0d0d0d] border-2 border-[#5aa3ff]'
-                  : 'bg-[#e5f3ff] text-[#2a2a2a] hover:bg-[#bae1ff]'
-              }`}
-            >
-              冬期
-            </button>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <p className="text-sm text-[#d9376e]">{errorMessage}</p>
           </div>
         </div>
-        <Button
-          onClick={() => setIsCreateModalOpen(true)}
-          variant="primary"
-        >
-          + 新規コース作成
+      )}
+
+      {/* ツールバー */}
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-[#0d0d0d]">講習一覧</h1>
+        <Button onClick={() => setIsCreateModalOpen(true)}>
+          + 新規講習を作成
         </Button>
       </div>
 
       {/* コース一覧 */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="text-[#2a2a2a]">読み込み中...</div>
+        <div className="flex items-center justify-center min-h-[40vh]">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-[#ff8e3c] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-[#2a2a2a]">読み込み中...</p>
+          </div>
         </div>
-      ) : filteredCourses.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 bg-[#eff0f3] rounded-xl">
-          <p className="text-[#2a2a2a] mb-4">
-            {filterSeason
-              ? `${SEASON_LABELS[filterSeason]}のコースがありません`
-              : 'コースがありません'}
-          </p>
-          <Button onClick={() => setIsCreateModalOpen(true)} variant="primary">
-            コースを作成する
+      ) : courses.length === 0 ? (
+        <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-8 text-center">
+          <p className="text-[#2a2a2a] mb-4">講習が登録されていません。</p>
+          <Button onClick={() => setIsCreateModalOpen(true)}>
+            最初の講習を作成
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredCourses.map(course => (
-            <div
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {courses.map((course) => (
+            <Link
               key={course.id}
-              className={`p-4 rounded-xl border-2 ${getSeasonColor(course.season)} transition-shadow hover:shadow-md`}
+              href={`/courses/${course.id}`}
+              className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6 hover:shadow-lg transition-shadow"
             >
-              {/* ヘッダー */}
               <div className="flex items-start justify-between mb-3">
-                <div className="flex-1">
-                  <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium mb-2 ${getSeasonBadgeColor(course.season)}`}>
-                    {SEASON_LABELS[course.season]}
-                  </span>
-                  <h3 className="text-lg font-bold text-[#0d0d0d]">{course.name}</h3>
-                </div>
+                <h3 className="text-lg font-bold text-[#0d0d0d] flex-1">
+                  {course.name}
+                </h3>
+                <span className="ml-2 px-2 py-1 text-xs font-bold bg-[#ff8e3c]/20 text-[#0d0d0d] rounded">
+                  {SEASON_LABELS[course.season]}
+                </span>
               </div>
-
-              {/* 情報 */}
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center gap-2 text-sm text-[#2a2a2a]">
-                  <span className="font-medium">対象学年:</span>
-                  <span>
-                    {course.target_grades.map(g => GRADE_LABELS[g] || g).join(', ')}
-                  </span>
+              <div className="space-y-2 text-sm text-[#2a2a2a]">
+                <div>
+                  <span className="font-medium">対象学年: </span>
+                  {course.target_grades.length > 0
+                    ? course.target_grades
+                        .map((g) => GRADE_LABELS[g])
+                        .join(', ')
+                    : '未設定'}
                 </div>
-                <div className="flex items-center gap-2 text-sm text-[#2a2a2a]">
-                  <span className="font-medium">テキスト:</span>
-                  <span>{course.textbooks?.length || 0}冊</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-[#2a2a2a]">
-                  <span className="font-medium">合計コマ数:</span>
-                  <span className="text-[#ff8e3c] font-bold">{course.total_koma}コマ</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-[#2a2a2a]">
-                  <span className="font-medium">適用済み:</span>
-                  <span>{course.application_count || 0}名</span>
-                </div>
+                {course.total_koma && (
+                  <div>
+                    <span className="font-medium">合計コマ数: </span>
+                    {course.total_koma}コマ
+                  </div>
+                )}
                 {course.comment && (
-                  <div className="text-sm text-[#2a2a2a] mt-2 p-2 bg-white/50 rounded">
+                  <div className="text-xs text-[#2a2a2a]/70 line-clamp-2">
                     {course.comment}
                   </div>
                 )}
+                <div className="pt-2 border-t border-[#0d0d0d]/10">
+                  <span className="font-medium">適用数: </span>
+                  {course.application_count || 0}件
+                </div>
               </div>
-
-              {/* アクション */}
-              <div className="flex items-center gap-2 pt-3 border-t border-[#0d0d0d]/10">
-                <Link href={`/courses/${course.id}`} className="flex-1">
-                  <Button variant="primary" size="sm" className="w-full">
-                    編集
-                  </Button>
-                </Link>
-                <Link href={`/courses/${course.id}/apply`} className="flex-1">
-                  <Button variant="secondary" size="sm" className="w-full">
-                    適用
-                  </Button>
-                </Link>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => handleDelete(course.id, course.name)}
-                >
-                  削除
-                </Button>
-              </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}
 
       {/* 新規作成モーダル */}
-      <Modal
-        isOpen={isCreateModalOpen}
-        onClose={() => {
-          setIsCreateModalOpen(false);
-          resetForm();
-        }}
-        title="新規コース作成"
-        size="md"
-      >
-        <div className="space-y-4">
-          {/* コース名 */}
-          <div>
-            <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
-              コース名 <span className="text-[#d9376e]">*</span>
-            </label>
-            <input
-              type="text"
-              value={newName}
-              onChange={e => setNewName(e.target.value)}
-              placeholder="例：中3夏期 英語基礎"
-              className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg"
-            />
-          </div>
-
-          {/* 季節 */}
-          <div>
-            <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
-              季節 <span className="text-[#d9376e]">*</span>
-            </label>
-            <div className="flex gap-2">
-              {(['spring', 'summer', 'winter'] as SeasonType[]).map(season => (
-                <button
-                  key={season}
-                  onClick={() => setNewSeason(season)}
-                  className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    newSeason === season
-                      ? season === 'spring'
-                        ? 'bg-[#ffeb3b] text-[#0d0d0d] border-2 border-[#ffc107]'
-                        : season === 'summer'
-                        ? 'bg-[#ff8e8e] text-[#0d0d0d] border-2 border-[#ff6b6b]'
-                        : 'bg-[#8ec5ff] text-[#0d0d0d] border-2 border-[#5aa3ff]'
-                      : 'bg-[#eff0f3] text-[#2a2a2a] hover:bg-[#0d0d0d]/10'
-                  }`}
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold text-[#0d0d0d] mb-4">新規講習を作成</h2>
+            <form onSubmit={handleCreate} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
+                  コース名 <span className="text-[#d9376e]">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={newCourseName}
+                  onChange={(e) => setNewCourseName(e.target.value)}
+                  required
+                  className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff8e3c]"
+                  placeholder="例: 春期講習 中1数学"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
+                  季節 <span className="text-[#d9376e]">*</span>
+                </label>
+                <select
+                  value={newCourseSeason}
+                  onChange={(e) => setNewCourseSeason(e.target.value as SeasonType)}
+                  className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff8e3c]"
                 >
-                  {SEASON_LABELS[season]}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 対象学年 */}
-          <div>
-            <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
-              対象学年 <span className="text-[#d9376e]">*</span>
-            </label>
-            <div className="space-y-2">
-              <div className="text-xs text-[#2a2a2a] mb-1">小学生</div>
-              <div className="flex flex-wrap gap-2">
-                {[1, 2, 3, 4, 5, 6].map(grade => (
-                  <label
-                    key={grade}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg cursor-pointer transition-colors ${
-                      newTargetGrades.includes(grade)
-                        ? 'bg-[#ff8e3c] text-[#0d0d0d]'
-                        : 'bg-[#eff0f3] text-[#2a2a2a] hover:bg-[#0d0d0d]/10'
-                    }`}
-                  >
+                  {Object.entries(SEASON_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
+                  対象学年
+                </label>
+                <div className="space-y-2 max-h-48 overflow-y-auto border border-[#0d0d0d] rounded-lg p-2">
+                  {Object.entries(GRADE_LABELS).map(([gradeStr, label]) => {
+                    const grade = Number(gradeStr);
+                    return (
+                      <label key={grade} className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={newCourseGrades.includes(grade)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setNewCourseGrades([...newCourseGrades, grade]);
+                            } else {
+                              setNewCourseGrades(
+                                newCourseGrades.filter((g) => g !== grade)
+                              );
+                            }
+                          }}
+                          className="rounded border-[#0d0d0d]"
+                        />
+                        <span className="text-sm text-[#0d0d0d]">{label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
+                  合計コマ数
+                </label>
+                <input
+                  type="number"
+                  value={newCourseTotalKoma}
+                  onChange={(e) =>
+                    setNewCourseTotalKoma(
+                      e.target.value === '' ? '' : Number(e.target.value)
+                    )
+                  }
+                  min="1"
+                  className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff8e3c]"
+                  placeholder="例: 10"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
+                  コメント
+                </label>
+                <textarea
+                  value={newCourseComment}
+                  onChange={(e) => setNewCourseComment(e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff8e3c]"
+                  placeholder="講習に関するメモ"
+                />
+              </div>
+              {schoolIds.length > 1 && (
+                <div>
+                  <label className="flex items-center gap-2">
                     <input
                       type="checkbox"
-                      checked={newTargetGrades.includes(grade)}
-                      onChange={() => toggleGrade(grade)}
-                      className="hidden"
+                      checked={applyToAllSchools}
+                      onChange={(e) => setApplyToAllSchools(e.target.checked)}
+                      className="rounded border-[#0d0d0d]"
                     />
-                    <span className="text-sm">{GRADE_LABELS[grade]}</span>
+                    <span className="text-sm font-medium text-[#0d0d0d]">
+                      すべての教室に適用（{schoolIds.length}教室）
+                    </span>
                   </label>
-                ))}
+                  <p className="text-xs text-[#2a2a2a] mt-1 ml-6">
+                    チェックを入れると、担当しているすべての教室に同じ講習が作成されます
+                  </p>
+                </div>
+              )}
+              <div className="flex gap-3 pt-4">
+                <Button
+                  type="button"
+                  onClick={() => {
+                    setIsCreateModalOpen(false);
+                    setNewCourseName('');
+                    setNewCourseSeason('spring');
+                    setNewCourseGrades([]);
+                    setNewCourseTotalKoma('');
+                    setNewCourseComment('');
+                    setApplyToAllSchools(false);
+                  }}
+                  variant="secondary"
+                  className="flex-1"
+                >
+                  キャンセル
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="flex-1"
+                >
+                  {isSubmitting ? '作成中...' : '作成'}
+                </Button>
               </div>
-              <div className="text-xs text-[#2a2a2a] mb-1 mt-3">中学生</div>
-              <div className="flex flex-wrap gap-2">
-                {[7, 8, 9].map(grade => (
-                  <label
-                    key={grade}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg cursor-pointer transition-colors ${
-                      newTargetGrades.includes(grade)
-                        ? 'bg-[#ff8e3c] text-[#0d0d0d]'
-                        : 'bg-[#eff0f3] text-[#2a2a2a] hover:bg-[#0d0d0d]/10'
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={newTargetGrades.includes(grade)}
-                      onChange={() => toggleGrade(grade)}
-                      className="hidden"
-                    />
-                    <span className="text-sm">{GRADE_LABELS[grade]}</span>
-                  </label>
-                ))}
-              </div>
-              <div className="text-xs text-[#2a2a2a] mb-1 mt-3">高校生</div>
-              <div className="flex flex-wrap gap-2">
-                {[10, 11, 12].map(grade => (
-                  <label
-                    key={grade}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg cursor-pointer transition-colors ${
-                      newTargetGrades.includes(grade)
-                        ? 'bg-[#ff8e3c] text-[#0d0d0d]'
-                        : 'bg-[#eff0f3] text-[#2a2a2a] hover:bg-[#0d0d0d]/10'
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={newTargetGrades.includes(grade)}
-                      onChange={() => toggleGrade(grade)}
-                      className="hidden"
-                    />
-                    <span className="text-sm">{GRADE_LABELS[grade]}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* コメント */}
-          <div>
-            <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
-              コメント
-            </label>
-            <textarea
-              value={newComment}
-              onChange={e => setNewComment(e.target.value)}
-              placeholder="コースの説明など"
-              rows={3}
-              className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg"
-            />
-          </div>
-
-          {/* ボタン */}
-          <div className="flex justify-end gap-2 pt-4 border-t border-[#0d0d0d]">
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setIsCreateModalOpen(false);
-                resetForm();
-              }}
-            >
-              キャンセル
-            </Button>
-            <Button variant="primary" onClick={handleCreate}>
-              作成
-            </Button>
+            </form>
           </div>
         </div>
-      </Modal>
+      )}
     </AdminLayout>
   );
 }

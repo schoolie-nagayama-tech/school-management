@@ -1335,3 +1335,209 @@ export interface CourseCurriculumRow {
   groupRowSpan: number;
   groupProposalCount: number;
 }
+
+// =====================================================
+// 認証・権限管理 型定義
+// =====================================================
+
+// ユーザーロール
+export type UserRole = 'admin' | 'owner' | 'manager' | 'teacher' | 'parent';
+
+// ロール表示名
+export const USER_ROLE_LABELS: Record<UserRole, string> = {
+  admin: 'システム管理者',
+  owner: 'エリアマネージャー',
+  manager: '教室長',
+  teacher: '講師',
+  parent: '保護者',
+};
+
+// ロールの階層（数値が大きいほど権限が高い）
+export const USER_ROLE_LEVELS: Record<UserRole, number> = {
+  parent: 1,
+  teacher: 2,
+  manager: 3,
+  owner: 4,
+  admin: 5,
+};
+
+// ユーザープロファイル
+export interface UserProfile {
+  id: string;
+  email: string;
+  display_name: string | null;
+  role: UserRole;
+  is_active: boolean;
+  invited_by: string | null;
+  invited_at: string | null;
+  last_login_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// ユーザーと教室の紐付け
+export interface UserSchool {
+  id: string;
+  user_id: string;
+  school_id: string;
+  created_at: string;
+  // JOIN時
+  school?: School;
+}
+
+// 招待
+export interface UserInvitation {
+  id: string;
+  email: string;
+  role: UserRole;
+  school_ids: string[];
+  token: string;
+  invited_by: string | null;
+  expires_at: string;
+  accepted_at: string | null;
+  created_at: string;
+}
+
+// ユーザー詳細（JOIN済み）
+export interface UserWithDetails extends UserProfile {
+  schools: UserSchool[];
+}
+
+// 権限チェック用の型
+export interface Permission {
+  // ページアクセス
+  canAccessStudents: boolean;
+  canAccessProgress: boolean;
+  canAccessScores: boolean;
+  canAccessInterviews: boolean;
+  canAccessApplications: boolean;
+  canAccessCourses: boolean;
+  canAccessSettings: boolean;
+  canAccessUsers: boolean;
+  canAccessPortal: boolean;
+  
+  // 編集権限
+  canEditStudentInfo: boolean;
+  canEditProposalCount: boolean;
+  canEditApplicationCount: boolean;
+  canEditLessonDate: boolean;
+  canEditHandover: boolean;
+  canEditGrouping: boolean;
+  canEditScores: boolean;
+  canEditInterviews: boolean;
+  canEditApplications: boolean;
+}
+
+// 権限定義
+export const ROLE_PERMISSIONS: Record<UserRole, Permission> = {
+  admin: {
+    canAccessStudents: true,
+    canAccessProgress: true,
+    canAccessScores: true,
+    canAccessInterviews: true,
+    canAccessApplications: true,
+    canAccessCourses: true,
+    canAccessSettings: true,
+    canAccessUsers: true,
+    canAccessPortal: true,
+    canEditStudentInfo: true,
+    canEditProposalCount: true,
+    canEditApplicationCount: true,
+    canEditLessonDate: true,
+    canEditHandover: true,
+    canEditGrouping: true,
+    canEditScores: true,
+    canEditInterviews: true,
+    canEditApplications: true,
+  },
+  owner: {
+    canAccessStudents: true,
+    canAccessProgress: true,
+    canAccessScores: true,
+    canAccessInterviews: true,
+    canAccessApplications: true,
+    canAccessCourses: true,
+    canAccessSettings: true,
+    canAccessUsers: true,
+    canAccessPortal: true,
+    canEditStudentInfo: true,
+    canEditProposalCount: true,
+    canEditApplicationCount: true,
+    canEditLessonDate: true,
+    canEditHandover: true,
+    canEditGrouping: true,
+    canEditScores: true,
+    canEditInterviews: true,
+    canEditApplications: true,
+  },
+  manager: {
+    canAccessStudents: true,
+    canAccessProgress: true,
+    canAccessScores: true,
+    canAccessInterviews: true,
+    canAccessApplications: true,
+    canAccessCourses: true,
+    canAccessSettings: true,
+    canAccessUsers: true,
+    canAccessPortal: true,
+    canEditStudentInfo: true,
+    canEditProposalCount: true,
+    canEditApplicationCount: true,
+    canEditLessonDate: true,
+    canEditHandover: true,
+    canEditGrouping: true,
+    canEditScores: true,
+    canEditInterviews: true,
+    canEditApplications: true,
+  },
+  teacher: {
+    canAccessStudents: true,
+    canAccessProgress: true,
+    canAccessScores: true,
+    canAccessInterviews: true,
+    canAccessApplications: true,
+    canAccessCourses: false,
+    canAccessSettings: false,
+    canAccessUsers: false,
+    canAccessPortal: false,
+    canEditStudentInfo: false,
+    canEditProposalCount: true,
+    canEditApplicationCount: false,
+    canEditLessonDate: true,
+    canEditHandover: true,
+    canEditGrouping: false,
+    canEditScores: true,
+    canEditInterviews: false,
+    canEditApplications: true,
+  },
+  parent: {
+    canAccessStudents: false,
+    canAccessProgress: false,
+    canAccessScores: false,
+    canAccessInterviews: false,
+    canAccessApplications: false,
+    canAccessCourses: false,
+    canAccessSettings: false,
+    canAccessUsers: false,
+    canAccessPortal: true,
+    canEditStudentInfo: false,
+    canEditProposalCount: false,
+    canEditApplicationCount: false,
+    canEditLessonDate: false,
+    canEditHandover: false,
+    canEditGrouping: false,
+    canEditScores: false,
+    canEditInterviews: false,
+    canEditApplications: false,
+  },
+};
+
+// 権限を取得する関数
+export function getPermissions(role: UserRole): Permission {
+  return ROLE_PERMISSIONS[role];
+}
+
+// 権限レベルを比較する関数
+export function hasHigherOrEqualRole(userRole: UserRole, requiredRole: UserRole): boolean {
+  return USER_ROLE_LEVELS[userRole] >= USER_ROLE_LEVELS[requiredRole];
+}

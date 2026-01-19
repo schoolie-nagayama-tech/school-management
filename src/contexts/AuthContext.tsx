@@ -1,0 +1,364 @@
+'use client';
+
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { createSupabaseBrowserClient } from '@/lib/supabase';
+import { User, Session } from '@supabase/supabase-js';
+import type { UserProfile, Permission, UserRole } from '@/types/database';
+import { getPermissions } from '@/types/database';
+import { getUserProfile, createUserProfile, updateLastLogin, getUserSchools, addUserToSchool } from '@/lib/api/auth';
+import { getSchools } from '@/lib/api/schools';
+
+interface AuthContextType {
+  user: User | null;
+  profile: UserProfile | null;
+  permissions: Permission | null;
+  schoolIds: string[];
+  selectedSchoolId: string | 'all' | null; // 選択中の教室ID、'all'はすべての教室、nullは未選択
+  isLoading: boolean;
+  signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
+  setSelectedSchoolId: (schoolId: string | 'all') => void;
+  getSelectedSchoolIds: () => string[]; // 選択された教室IDの配列を返す（'all'の場合はすべてのschoolIds）
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// 認証不要のパス
+const PUBLIC_PATHS = ['/login', '/forgot-password', '/auth/callback', '/auth/reset-password', '/portal'];
+
+// 招待からの登録パス
+const INVITE_PATH = '/invite';
+
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export function AuthProvider({ children }: AuthProviderProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [permissions, setPermissions] = useState<Permission | null>(null);
+  const [schoolIds, setSchoolIds] = useState<string[]>([]);
+  const [selectedSchoolId, setSelectedSchoolIdState] = useState<string | 'all' | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // 選択された教室IDを設定（localStorageにも保存）
+  const setSelectedSchoolId = useCallback((schoolId: string | 'all') => {
+    setSelectedSchoolIdState(schoolId);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('selectedSchoolId', schoolId);
+    }
+  }, []);
+
+  // 選択された教室IDの配列を返す
+  const getSelectedSchoolIds = useCallback((): string[] => {
+    if (selectedSchoolId === 'all') {
+      return schoolIds;
+    }
+    if (selectedSchoolId) {
+      return [selectedSchoolId];
+    }
+    return [];
+  }, [selectedSchoolId, schoolIds]);
+
+  // プロファイルを取得
+  const fetchProfile = useCallback(async (userId: string, authUser?: User | null, isMounted?: () => boolean) => {
+    try {
+      let userProfile = await getUserProfile(userId);
+      
+      // プロファイルが存在しない場合は作成（初回ログイン時）
+      if (!userProfile && authUser) {
+        if (isMounted && !isMounted()) return null;
+        
+        const supabase = createSupabaseBrowserClient();
+        // 既存のユーザーが0人の場合は管理者として作成
+        let count: number | null = null;
+        try {
+          const result = await supabase
+            .from('user_profiles')
+            .select('*', { count: 'exact', head: true });
+          count = result.count;
+        } catch (countErr: any) {
+          // AbortErrorは無視
+          if (countErr?.name === 'AbortError' || countErr?.message?.includes('aborted') || countErr?.message?.includes('signal is aborted')) {
+            return null;
+          }
+          throw countErr;
+        }
+        
+        if (isMounted && !isMounted()) return null;
+        
+        const role: UserRole = count === 0 ? 'admin' : 'teacher';
+        
+        try {
+          userProfile = await createUserProfile(
+            userId,
+            authUser.email!,
+            role,
+            authUser.user_metadata?.full_name
+          );
+        } catch (createErr: any) {
+          // AbortErrorは無視
+          if (createErr?.name === 'AbortError' || createErr?.message?.includes('aborted') || createErr?.message?.includes('signal is aborted')) {
+            return null;
+          }
+          throw createErr;
+        }
+        
+        // デフォルト教室に紐付け（teacherの場合）
+        if (role === 'teacher' && process.env.NEXT_PUBLIC_DEFAULT_SCHOOL_ID) {
+          try {
+            await addUserToSchool(userId, process.env.NEXT_PUBLIC_DEFAULT_SCHOOL_ID);
+          } catch (schoolErr: any) {
+            // AbortErrorは無視
+            if (schoolErr?.name === 'AbortError' || schoolErr?.message?.includes('aborted') || schoolErr?.message?.includes('signal is aborted')) {
+              return null;
+            }
+            // 教室紐付けのエラーは致命的ではないので、ログに記録するだけ
+            console.error('Error adding user to school:', schoolErr);
+          }
+        }
+      }
+      
+      if (isMounted && !isMounted()) return null;
+      
+      if (userProfile) {
+        if (isMounted && !isMounted()) return null;
+        setProfile(userProfile);
+        setPermissions(getPermissions(userProfile.role));
+        
+        // 教室IDを取得
+        let fetchedSchoolIds: string[] = [];
+        try {
+          // システム管理者とオーナーはすべての教室にアクセス可能
+          if (userProfile.role === 'admin' || userProfile.role === 'owner') {
+            const allSchools = await getSchools();
+            fetchedSchoolIds = allSchools.map(school => school.id);
+          } else {
+            // その他のロールは紐付けられた教室のみ
+            const userSchools = await getUserSchools(userId);
+            fetchedSchoolIds = userSchools.map(us => us.school_id);
+          }
+        } catch (schoolsErr: any) {
+          // AbortErrorは無視
+          if (schoolsErr?.name === 'AbortError' || schoolsErr?.message?.includes('aborted') || schoolsErr?.message?.includes('signal is aborted')) {
+            return null;
+          }
+          throw schoolsErr;
+        }
+        
+        if (isMounted && !isMounted()) return null;
+        setSchoolIds(fetchedSchoolIds);
+
+        // 教室選択の初期化
+        if (typeof window !== 'undefined' && fetchedSchoolIds.length > 0) {
+          const savedSchoolId = localStorage.getItem('selectedSchoolId');
+          if (savedSchoolId && (savedSchoolId === 'all' || fetchedSchoolIds.includes(savedSchoolId))) {
+            setSelectedSchoolIdState(savedSchoolId as string | 'all');
+          } else if (fetchedSchoolIds.length === 1) {
+            // 教室が1つの場合は自動選択
+            setSelectedSchoolIdState(fetchedSchoolIds[0]);
+            localStorage.setItem('selectedSchoolId', fetchedSchoolIds[0]);
+          } else {
+            // 複数教室がある場合は未選択のまま（教室選択画面を表示）
+            setSelectedSchoolIdState(null);
+          }
+        }
+
+        // 最終ログイン更新（エラーが発生しても続行）
+        try {
+          await updateLastLogin(userId);
+        } catch (loginErr: any) {
+          // AbortErrorは無視
+          if (loginErr?.name === 'AbortError' || loginErr?.message?.includes('aborted') || loginErr?.message?.includes('signal is aborted')) {
+            return userProfile;
+          }
+          // 最終ログイン更新のエラーは致命的ではないので、ログに記録するだけ
+          console.error('Error updating last login:', loginErr);
+        }
+      }
+      return userProfile;
+    } catch (err: any) {
+      // AbortErrorは無視（コンポーネントがアンマウントされた場合）
+      if (err?.name === 'AbortError' || err?.message?.includes('aborted') || err?.message?.includes('signal is aborted')) {
+        return null;
+      }
+      console.error('Error fetching profile:', err);
+      return null;
+    }
+  }, []);
+
+  // プロファイルを再取得
+  const refreshProfile = useCallback(async () => {
+    if (user) {
+      await fetchProfile(user.id, user);
+    }
+  }, [user, fetchProfile]);
+
+  // ログアウト
+  const handleSignOut = useCallback(async () => {
+    const supabase = createSupabaseBrowserClient();
+    await supabase.auth.signOut();
+    setUser(null);
+    setProfile(null);
+    setPermissions(null);
+    setSchoolIds([]);
+    router.push('/login');
+  }, [router]);
+
+  // 認証状態の監視
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    let mounted = true;
+    let subscription: { unsubscribe: () => void } | null = null;
+
+    // 初期セッション取得
+    const initializeAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (!mounted) return;
+        
+        if (error) {
+          console.error('Error getting session:', error);
+          if (mounted) {
+            setIsLoading(false);
+          }
+          return;
+        }
+        
+        if (session?.user) {
+          if (mounted) {
+            setUser(session.user);
+          }
+          await fetchProfile(session.user.id, session.user, () => mounted);
+        } else {
+          if (mounted) {
+            setUser(null);
+            setProfile(null);
+            setPermissions(null);
+            setSchoolIds([]);
+          }
+        }
+      } catch (err: any) {
+        // AbortErrorは無視（コンポーネントがアンマウントされた場合）
+        if (err?.name === 'AbortError' || err?.message?.includes('aborted') || err?.message?.includes('signal is aborted')) {
+          return;
+        }
+        console.error('Error initializing auth:', err);
+        if (mounted) {
+          setUser(null);
+          setProfile(null);
+          setPermissions(null);
+          setSchoolIds([]);
+        }
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    initializeAuth();
+
+    // 認証状態変更の監視
+    try {
+      const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
+        (event, session) => {
+          // コールバックを同期的に処理し、非同期処理は別途実行
+          if (!mounted) return;
+          
+          if (session?.user) {
+            if (mounted) {
+              setUser(session.user);
+              setIsLoading(true);
+            }
+            // 非同期処理はsetTimeoutで遅延実行して、コールバックを同期的に終了させる
+            setTimeout(async () => {
+              if (!mounted) return;
+              try {
+                await fetchProfile(session.user!.id, session.user, () => mounted);
+              } catch (profileErr: any) {
+                // AbortErrorは無視
+                if (profileErr?.name === 'AbortError' || profileErr?.message?.includes('aborted') || profileErr?.message?.includes('signal is aborted')) {
+                  return;
+                }
+                // その他のエラーはログに記録するが、処理は続行
+                console.error('Error fetching profile in auth state change:', profileErr);
+              } finally {
+                if (mounted) {
+                  setIsLoading(false);
+                }
+              }
+            }, 0);
+          } else {
+            if (mounted) {
+            setUser(null);
+            setProfile(null);
+            setPermissions(null);
+            setSchoolIds([]);
+            setSelectedSchoolIdState(null);
+            setIsLoading(false);
+            }
+          }
+        }
+      );
+      subscription = authSubscription;
+    } catch (err) {
+      console.error('Error setting up auth state change listener:', err);
+    }
+
+    return () => {
+      mounted = false;
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+    };
+  }, [fetchProfile]);
+
+  // 認証チェック & リダイレクト
+  useEffect(() => {
+    if (isLoading) return;
+
+    const isPublicPath = PUBLIC_PATHS.some(path => pathname?.startsWith(path));
+    const isInvitePath = pathname?.startsWith(INVITE_PATH);
+
+    if (!user && !isPublicPath && !isInvitePath) {
+      // 未ログインで保護されたページにアクセス → ログインへ
+      router.push(`/login?redirect=${encodeURIComponent(pathname || '/')}`);
+    } else if (user && pathname === '/login') {
+      // ログイン済みでログインページにアクセス → ダッシュボードへ
+      router.push('/students');
+    }
+  }, [user, isLoading, pathname, router]);
+
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        profile,
+        permissions,
+        schoolIds,
+        selectedSchoolId,
+        isLoading,
+        signOut: handleSignOut,
+        refreshProfile,
+        setSelectedSchoolId,
+        getSelectedSchoolIds,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+// カスタムフック
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+}

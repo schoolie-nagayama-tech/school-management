@@ -38,11 +38,14 @@ import { getSoudanPeriods } from '@/lib/api/soudan';
 import { getShukaisuPeriods } from '@/lib/api/shukaisu';
 import { getYoubiPeriods } from '@/lib/api/youbi';
 import { useToast } from '@/hooks/useToast';
-import { getDefaultSchoolId, getSchool } from '@/lib/api/schools';
+import { getDefaultSchoolId, getSchool, getSchools } from '@/lib/api/schools';
 import { initializePortalMenus, getPortalMenus, togglePortalMenuVisibility } from '@/lib/api/portal';
 import { getFormPeriods } from '@/lib/api/form-periods';
 import { reorderPortalMenus } from '@/lib/api/portal';
-import type { PortalMenu, FormType, FormPeriod } from '@/types/database';
+import type { PortalMenu, FormType, FormPeriod, School } from '@/types/database';
+import { useRequirePermission } from '@/hooks/usePermissions';
+import AccessDenied from '@/components/AccessDenied';
+import { useAuth } from '@/contexts/AuthContext';
 
 // menu_keyからform_typeへのマッピング
 const MENU_KEY_TO_FORM_TYPE: Record<string, FormType | null> = {
@@ -69,9 +72,16 @@ const FORM_TYPE_TO_SETTINGS_PATH: Partial<Record<FormType, string>> = {
 };
 
 export default function PortalSettingsPage() {
+  // 権限チェック
+  const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
+    (p) => p.canAccessSettings
+  );
+  const { getSelectedSchoolIds, selectedSchoolId, schoolIds } = useAuth();
+
   const [menus, setMenus] = useState<PortalMenu[]>([]);
   const [formPeriods, setFormPeriods] = useState<FormPeriod[]>([]);
-  const [schoolCode, setSchoolCode] = useState<string>('');
+  const [schoolCodes, setSchoolCodes] = useState<Record<string, string>>({});
+  const [allSchools, setAllSchools] = useState<School[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [editingMenu, setEditingMenu] = useState<PortalMenu | null>(null);
@@ -85,15 +95,34 @@ export default function PortalSettingsPage() {
     setIsLoading(true);
     setErrorMessage('');
     try {
-      const schoolId = getDefaultSchoolId();
-      const school = await getSchool(schoolId);
-
-      if (!school) {
-        throw new Error('教室が見つかりません。環境変数NEXT_PUBLIC_DEFAULT_SCHOOL_IDが正しいか確認してください。');
+      const selectedSchoolIds = getSelectedSchoolIds();
+      if (selectedSchoolIds.length === 0) {
+        setMenus([]);
+        setFormPeriods([]);
+        setIsLoading(false);
+        return;
       }
 
-      if (school.code) {
-        setSchoolCode(school.code);
+      // すべての教室を取得（コード表示用）
+      const allSchoolsData = await getSchools();
+      setAllSchools(allSchoolsData);
+
+      // 教室コードを取得
+      const codes: Record<string, string> = {};
+      for (const schoolId of selectedSchoolIds) {
+        const school = allSchoolsData.find(s => s.id === schoolId);
+        if (school?.code) {
+          codes[schoolId] = school.code;
+        }
+      }
+      setSchoolCodes(codes);
+
+      // 複数教室が選択されている場合は最初の教室を使用（ポータル管理は単一教室のみ）
+      const schoolId = selectedSchoolIds[0];
+      const school = allSchoolsData.find(s => s.id === schoolId);
+
+      if (!school) {
+        throw new Error('教室が見つかりません');
       }
 
       // メニューを初期化（初回のみ）
@@ -115,12 +144,14 @@ export default function PortalSettingsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [getSelectedSchoolIds]);
 
-  // 初回読み込み
+  // 初回読み込みと教室選択変更時の再読み込み
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (selectedSchoolId !== null) {
+      fetchData();
+    }
+  }, [fetchData, selectedSchoolId]);
 
   // メニュー更新時のコールバック
   const handleMenuUpdate = useCallback(() => {
@@ -184,14 +215,41 @@ export default function PortalSettingsPage() {
     }
   };
 
-  const portalUrl = schoolCode
-    ? `${typeof window !== 'undefined' ? window.location.origin : ''}/portal/${schoolCode}`
-    : '';
+  // ポータルURLを取得
+  const getPortalUrls = (): Array<{ school: School; url: string }> => {
+    const selectedSchoolIds = getSelectedSchoolIds();
+    const urls: Array<{ school: School; url: string }> = [];
 
-  const handleCopyUrl = async () => {
-    if (!portalUrl) return;
+    if (selectedSchoolId === 'all') {
+      // すべての教室を選択している場合
+      for (const schoolId of schoolIds) {
+        const school = allSchools.find(s => s.id === schoolId);
+        if (school?.code) {
+          urls.push({
+            school,
+            url: `${typeof window !== 'undefined' ? window.location.origin : ''}/portal/${school.code}`,
+          });
+        }
+      }
+    } else if (selectedSchoolId) {
+      // 特定の教室を選択している場合
+      const school = allSchools.find(s => s.id === selectedSchoolId);
+      if (school?.code) {
+        urls.push({
+          school,
+          url: `${typeof window !== 'undefined' ? window.location.origin : ''}/portal/${school.code}`,
+        });
+      }
+    }
+
+    return urls;
+  };
+
+  const portalUrls = getPortalUrls();
+
+  const handleCopyUrl = async (url: string) => {
     try {
-      await navigator.clipboard.writeText(portalUrl);
+      await navigator.clipboard.writeText(url);
       success('URLをコピーしました');
     } catch (err) {
       console.error('Failed to copy:', err);
@@ -222,27 +280,31 @@ export default function PortalSettingsPage() {
       return;
     }
 
-    // 楽観的UI更新
-    const newMenus = arrayMove(menus, oldIndex, newIndex);
-    const previousMenus = [...menus]; // エラー時の復元用
-    setMenus(newMenus);
+      // 楽観的UI更新
+      const newMenus = arrayMove(menus, oldIndex, newIndex);
+      const previousMenus = [...menus]; // エラー時の復元用
+      setMenus(newMenus);
 
-    setIsSubmitting(true);
-    try {
-      const schoolId = getDefaultSchoolId();
-      await reorderPortalMenus(
-        schoolId,
-        newMenus.map((m) => m.id)
-      );
-      success('並び順を更新しました');
-    } catch (err) {
-      console.error('Error reordering menus:', err);
-      // エラー時は元に戻す
-      setMenus(previousMenus);
-      error('並び替えに失敗しました');
-    } finally {
-      setIsSubmitting(false);
-    }
+      setIsSubmitting(true);
+      try {
+        const selectedSchoolIds = getSelectedSchoolIds();
+        if (selectedSchoolIds.length === 0) {
+          throw new Error('教室が選択されていません');
+        }
+        const schoolId = selectedSchoolIds[0];
+        await reorderPortalMenus(
+          schoolId,
+          newMenus.map((m) => m.id)
+        );
+        success('並び順を更新しました');
+      } catch (err) {
+        console.error('Error reordering menus:', err);
+        // エラー時は元に戻す
+        setMenus(previousMenus);
+        error('並び替えに失敗しました');
+      } finally {
+        setIsSubmitting(false);
+      }
   };
 
   const handleEdit = (menu: PortalMenu) => {
@@ -274,7 +336,12 @@ export default function PortalSettingsPage() {
     setEditingFormType(formType);
 
     // 該当フォームタイプの期間を取得
-    const schoolId = getDefaultSchoolId();
+    const selectedSchoolIds = getSelectedSchoolIds();
+    if (selectedSchoolIds.length === 0) {
+      error('教室が選択されていません');
+      return;
+    }
+    const schoolId = selectedSchoolIds[0];
     let periods: FormPeriod[] = [];
     
     try {
@@ -329,6 +396,29 @@ export default function PortalSettingsPage() {
     handleClosePeriodEditor();
   };
 
+  // 権限チェック中
+  if (permissionLoading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-[#ff8e3c] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-[#2a2a2a]">読み込み中...</p>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  // 権限なし
+  if (!hasPermission) {
+    return (
+      <AdminLayout>
+        <AccessDenied message="設定ページは教室長以上のみアクセス可能です" />
+      </AdminLayout>
+    );
+  }
+
   return (
     <div>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
@@ -340,23 +430,58 @@ export default function PortalSettingsPage() {
         )}
 
         {/* ポータルURL表示 */}
-        {schoolCode && (
+        {portalUrls.length > 0 && (
           <div className="mb-6 bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6">
             <h2 className="text-lg font-bold text-[#0d0d0d] mb-4">ポータルURL</h2>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={portalUrl}
-                readOnly
-                className="flex-1 px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#eff0f3] text-[#2a2a2a]"
-              />
-              <Button onClick={handleCopyUrl} className="min-w-[100px]">
-                コピー
-              </Button>
-            </div>
-            <p className="text-xs text-[#2a2a2a]/60 mt-2">
-              このURLを保護者に共有してください
-            </p>
+            {selectedSchoolId === 'all' ? (
+              <div className="space-y-4">
+                <div className="p-4 bg-[#ff8e3c]/10 border border-[#ff8e3c] rounded-lg">
+                  <p className="text-sm font-medium text-[#0d0d0d] mb-2">
+                    すべての教室を選択中
+                  </p>
+                  <p className="text-xs text-[#2a2a2a]">
+                    各教室ごとにポータルURLが異なります。保護者には各教室のURLを共有してください。
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  {portalUrls.map(({ school, url }) => (
+                    <div key={school.id} className="space-y-1">
+                      <label className="block text-sm font-medium text-[#0d0d0d]">
+                        {school.code === 'DEFAULT' ? 'デフォルト' : school.name}
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={url}
+                          readOnly
+                          className="flex-1 px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#eff0f3] text-[#2a2a2a]"
+                        />
+                        <Button onClick={() => handleCopyUrl(url)} className="min-w-[100px]">
+                          コピー
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={portalUrls[0]?.url || ''}
+                    readOnly
+                    className="flex-1 px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#eff0f3] text-[#2a2a2a]"
+                  />
+                  <Button onClick={() => handleCopyUrl(portalUrls[0]?.url || '')} className="min-w-[100px]">
+                    コピー
+                  </Button>
+                </div>
+                <p className="text-xs text-[#2a2a2a]/60">
+                  このURLを保護者に共有してください
+                </p>
+              </div>
+            )}
           </div>
         )}
 

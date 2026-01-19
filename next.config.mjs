@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  reactStrictMode: false, // ← これを追加！
+  
   // ESLintエラーをビルド時にスキップ
   eslint: {
     ignoreDuringBuilds: true,

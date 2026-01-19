@@ -44,9 +44,14 @@ export function ApplicationItemManager({
       return;
     }
 
+    if (!_schoolId) {
+      toastError('教室が選択されていません');
+      return;
+    }
+
     setIsProcessing(true);
     try {
-      await createApplicationItem({ name: newItemName.trim() });
+      await createApplicationItem({ name: newItemName.trim() }, _schoolId);
       success('項目を追加しました');
       setNewItemName('');
       onUpdated();

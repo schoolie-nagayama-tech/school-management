@@ -2,6 +2,8 @@
 
 import { ReactNode } from 'react';
 import { AppHeader } from '@/components/layout';
+import { SchoolSelector } from '@/components/SchoolSelector';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -18,6 +20,13 @@ export function AdminLayout({
   title, 
   actions
 }: AdminLayoutProps) {
+  const { schoolIds, selectedSchoolId, isLoading } = useAuth();
+
+  // ログイン済みで、複数教室があり、まだ教室が選択されていない場合は教室選択画面を表示
+  if (!isLoading && schoolIds.length > 1 && selectedSchoolId === null) {
+    return <SchoolSelector />;
+  }
+
   return (
     <div className="min-h-screen bg-[#eff0f3]">
       {headerTitle && (

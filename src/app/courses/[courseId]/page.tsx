@@ -28,8 +28,14 @@ import type {
   CourseCurriculumRow,
 } from '@/types/database';
 import { SEASON_LABELS, GRADE_LABELS } from '@/types/database';
+import { useRequirePermission } from '@/hooks/usePermissions';
+import AccessDenied from '@/components/AccessDenied';
 
 export default function CourseDetailPage() {
+  // 権限チェック
+  const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
+    (p) => p.canAccessCourses
+  );
   const params = useParams();
   const router = useRouter();
   const courseId = params?.courseId as string;
@@ -446,6 +452,29 @@ export default function CourseDetailPage() {
         <div className="flex items-center justify-center py-12">
           <div className="text-[#d9376e]">コースが見つかりません</div>
         </div>
+      </AdminLayout>
+    );
+  }
+
+  // 権限チェック中
+  if (permissionLoading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-[#ff8e3c] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-[#2a2a2a]">読み込み中...</p>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  // 権限なし
+  if (!hasPermission) {
+    return (
+      <AdminLayout>
+        <AccessDenied message="講習管理ページは教室長以上のみアクセス可能です" />
       </AdminLayout>
     );
   }

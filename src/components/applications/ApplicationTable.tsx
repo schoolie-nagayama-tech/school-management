@@ -3,6 +3,7 @@
 import type { Student, ApplicationItem, StudentApplication, ApplicationStatus } from '@/types/database';
 import { GRADE_LABELS, APPLICATION_STATUS_SYMBOLS } from '@/types/database';
 import { updateStudentApplication, updateApplicationItem, createApplicationItem, deleteApplicationItem } from '@/lib/api/applications';
+import { useAuth } from '@/contexts/AuthContext';
 import { useState } from 'react';
 import { useToast } from '@/hooks/useToast';
 
@@ -47,6 +48,7 @@ export function ApplicationTable({
   onStudentClick,
   onItemsChange,
 }: ApplicationTableProps) {
+  const { getSelectedSchoolIds } = useAuth();
   const [updatingCells, setUpdatingCells] = useState<Set<string>>(new Set());
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
@@ -86,6 +88,9 @@ export function ApplicationTable({
   });
 
   const handleCellClick = async (studentId: string, itemId: string) => {
+    // 編集権限がない場合は何もしない
+    if (!onStatusChange) return;
+
     const key = `${studentId}-${itemId}`;
     const currentStatus = applicationMap.get(key) || null;
     const nextStatus = getNextStatus(currentStatus);
@@ -124,7 +129,7 @@ export function ApplicationTable({
                   key={item.id}
                   className="px-4 py-3 text-center text-[#0d0d0d] font-semibold border-r border-[#0d0d0d] min-w-[120px] relative group"
                 >
-                  {editingItemId === item.id ? (
+                  {onStatusChange && editingItemId === item.id ? (
                     <div className="flex items-center gap-2">
                       <input
                         type="text"
@@ -159,60 +164,67 @@ export function ApplicationTable({
                     </div>
                   ) : (
                     <div className="flex items-center justify-center gap-1">
-                      <div
-                        className="flex-1 flex items-center justify-center gap-1 cursor-pointer hover:bg-[#ff8e3c]/10 rounded px-2 py-1 transition-colors"
-                        onClick={() => {
-                          setEditingItemId(item.id);
-                          setEditingName(item.name);
-                        }}
-                        title="クリックして編集"
-                      >
+                      {onStatusChange ? (
+                        <>
+                          <div
+                            className="flex-1 flex items-center justify-center gap-1 cursor-pointer hover:bg-[#ff8e3c]/10 rounded px-2 py-1 transition-colors"
+                            onClick={() => {
+                              setEditingItemId(item.id);
+                              setEditingName(item.name);
+                            }}
+                            title="クリックして編集"
+                          >
+                            <span className="text-sm">{item.name}</span>
+                            <span className="text-xs text-[#2a2a2a]/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                              ✏️
+                            </span>
+                          </div>
+                          <button
+                            className="text-xs text-[#d9376e] hover:text-[#d9376e]/80 opacity-0 group-hover:opacity-100 transition-opacity px-1 py-1 rounded hover:bg-[#d9376e]/10"
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (
+                                window.confirm(
+                                  `「${item.name}」を削除してもよろしいですか？\n\nこの列の全ての申込状況データも削除されます。`
+                                )
+                              ) {
+                                setDeletingItemId(item.id);
+                                try {
+                                  await deleteApplicationItem(item.id);
+                                  success('項目を削除しました');
+                                  onItemsChange?.();
+                                } catch (err) {
+                                  toastError(
+                                    err instanceof Error
+                                      ? err.message
+                                      : '項目の削除に失敗しました'
+                                  );
+                                } finally {
+                                  setDeletingItemId(null);
+                                }
+                              }
+                            }}
+                            disabled={deletingItemId === item.id}
+                            title="削除"
+                          >
+                            {deletingItemId === item.id ? (
+                              <span className="text-xs">...</span>
+                            ) : (
+                              <span>🗑️</span>
+                            )}
+                          </button>
+                        </>
+                      ) : (
                         <span className="text-sm">{item.name}</span>
-                        <span className="text-xs text-[#2a2a2a]/40 opacity-0 group-hover:opacity-100 transition-opacity">
-                          ✏️
-                        </span>
-                      </div>
-                      <button
-                        className="text-xs text-[#d9376e] hover:text-[#d9376e]/80 opacity-0 group-hover:opacity-100 transition-opacity px-1 py-1 rounded hover:bg-[#d9376e]/10"
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          if (
-                            window.confirm(
-                              `「${item.name}」を削除してもよろしいですか？\n\nこの列の全ての申込状況データも削除されます。`
-                            )
-                          ) {
-                            setDeletingItemId(item.id);
-                            try {
-                              await deleteApplicationItem(item.id);
-                              success('項目を削除しました');
-                              onItemsChange?.();
-                            } catch (err) {
-                              toastError(
-                                err instanceof Error
-                                  ? err.message
-                                  : '項目の削除に失敗しました'
-                              );
-                            } finally {
-                              setDeletingItemId(null);
-                            }
-                          }
-                        }}
-                        disabled={deletingItemId === item.id}
-                        title="削除"
-                      >
-                        {deletingItemId === item.id ? (
-                          <span className="text-xs">...</span>
-                        ) : (
-                          <span>🗑️</span>
-                        )}
-                      </button>
+                      )}
                     </div>
                   )}
                 </th>
               ))}
-              {/* 新規列追加ボタン */}
-              <th className="px-4 py-3 text-center text-[#0d0d0d] font-semibold border-r border-[#0d0d0d] min-w-[120px]">
-                {isAddingNew ? (
+              {/* 新規列追加ボタン（編集権限がある場合のみ表示） */}
+              {onStatusChange && (
+                <th className="px-4 py-3 text-center text-[#0d0d0d] font-semibold border-r border-[#0d0d0d] min-w-[120px]">
+                  {isAddingNew ? (
                   <div className="flex items-center gap-2">
                     <input
                       type="text"
@@ -222,7 +234,13 @@ export function ApplicationTable({
                       onBlur={async () => {
                         if (editingName.trim()) {
                           try {
-                            await createApplicationItem({ name: editingName.trim() });
+                            const schoolIds = getSelectedSchoolIds();
+                            if (schoolIds.length === 0) {
+                              toastError('教室が選択されていません');
+                              return;
+                            }
+                            // 複数教室が選択されている場合は最初の教室を使用
+                            await createApplicationItem({ name: editingName.trim() }, schoolIds[0]);
                             success('新しい項目を追加しました');
                             onItemsChange?.();
                           } catch (err) {
@@ -237,7 +255,13 @@ export function ApplicationTable({
                       onKeyDown={async (e) => {
                         if (e.key === 'Enter' && editingName.trim()) {
                           try {
-                            await createApplicationItem({ name: editingName.trim() });
+                            const schoolIds = getSelectedSchoolIds();
+                            if (schoolIds.length === 0) {
+                              toastError('教室が選択されていません');
+                              return;
+                            }
+                            // 複数教室が選択されている場合は最初の教室を使用
+                            await createApplicationItem({ name: editingName.trim() }, schoolIds[0]);
                             success('新しい項目を追加しました');
                             onItemsChange?.();
                             setIsAddingNew(false);
@@ -267,8 +291,9 @@ export function ApplicationTable({
                   >
                     + 追加
                   </button>
-                )}
-              </th>
+                  )}
+                </th>
+              )}
             </tr>
             {/* 集計行 */}
             <tr className="bg-[#eff0f3]/50 border-b border-[#0d0d0d]">
@@ -323,10 +348,10 @@ export function ApplicationTable({
                   return (
                     <td
                       key={item.id}
-                      className={`px-4 py-3 text-center border-r border-[#0d0d0d] cursor-pointer transition-colors ${style} ${
-                        isUpdating ? 'opacity-50' : 'hover:bg-[#ff8e3c]/10'
+                      className={`px-4 py-3 text-center border-r border-[#0d0d0d] transition-colors ${style} ${
+                        isUpdating ? 'opacity-50' : onStatusChange ? 'cursor-pointer hover:bg-[#ff8e3c]/10' : 'cursor-default'
                       }`}
-                      onClick={() => !isUpdating && handleCellClick(student.id, item.id)}
+                      onClick={() => onStatusChange && !isUpdating && handleCellClick(student.id, item.id)}
                       title={
                         status === null
                           ? '未確認（クリックで未申込に）'
@@ -345,10 +370,12 @@ export function ApplicationTable({
                     </td>
                   );
                 })}
-                {/* 新規列追加行のセル（空） */}
-                <td className="px-4 py-3 text-center border-r border-[#0d0d0d] bg-[#eff0f3]">
-                  -
-                </td>
+                {/* 新規列追加行のセル（空）- 編集権限がある場合のみ表示 */}
+                {onStatusChange && (
+                  <td className="px-4 py-3 text-center border-r border-[#0d0d0d] bg-[#eff0f3]">
+                    -
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
