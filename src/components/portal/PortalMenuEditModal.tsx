@@ -5,12 +5,14 @@ import { Modal, Button, Input } from '@/components/ui';
 import { updatePortalMenu } from '@/lib/api/portal';
 import { validateUrl } from '@/lib/utils/validation';
 import type { PortalMenu, PortalMenuUpdate } from '@/types/database';
+import { Trash2, Plus } from 'lucide-react';
 
 interface PortalMenuEditModalProps {
   menu: PortalMenu;
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  onError?: (error: Error) => void;
 }
 
 export function PortalMenuEditModal({
@@ -20,12 +22,14 @@ export function PortalMenuEditModal({
   onSuccess,
   onError,
 }: PortalMenuEditModalProps) {
+  const isMendan = menu.menu_key === 'mendan';
   const [formData, setFormData] = useState({
     title: menu.title,
     description: menu.description || '',
     is_visible: menu.is_visible,
     link_type: menu.link_type,
     link_url: menu.link_url || '',
+    link_urls: menu.link_urls || [],
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -46,16 +50,22 @@ export function PortalMenuEditModal({
 
   useEffect(() => {
     if (menu) {
+      // 既存のlink_urlがある場合はlink_urlsに変換（互換性のため）
+      let linkUrls = menu.link_urls || [];
+      if (isMendan && menu.link_type === 'external' && menu.link_url && !linkUrls.length) {
+        linkUrls = [{ url: menu.link_url, label: menu.title }];
+      }
       setFormData({
         title: menu.title,
         description: menu.description || '',
         is_visible: menu.is_visible,
         link_type: menu.link_type,
         link_url: menu.link_url || '',
+        link_urls: linkUrls,
       });
       setErrors({});
     }
-  }, [menu]);
+  }, [menu, isMendan]);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -65,18 +75,60 @@ export function PortalMenuEditModal({
     }
 
     if (formData.link_type === 'external') {
-      if (!formData.link_url.trim()) {
-        newErrors.link_url = '外部URLを入力してください';
+      if (isMendan) {
+        // 面談申し込みの場合は複数リンクを検証
+        if (formData.link_urls.length === 0) {
+          newErrors.link_urls = '少なくとも1つのリンクを追加してください';
+        } else {
+          formData.link_urls.forEach((link, index) => {
+            if (!link.url.trim()) {
+              newErrors[`link_url_${index}`] = 'URLを入力してください';
+            } else {
+              const urlValidation = validateUrl(link.url);
+              if (!urlValidation.isValid) {
+                newErrors[`link_url_${index}`] = urlValidation.error || '正しいURL形式を入力してください';
+              }
+            }
+            if (!link.label.trim()) {
+              newErrors[`link_label_${index}`] = 'ラベルを入力してください';
+            }
+          });
+        }
       } else {
-        const urlValidation = validateUrl(formData.link_url);
-        if (!urlValidation.isValid) {
-          newErrors.link_url = urlValidation.error || '正しいURL形式を入力してください';
+        // その他の外部リンクは単一URL
+        if (!formData.link_url.trim()) {
+          newErrors.link_url = '外部URLを入力してください';
+        } else {
+          const urlValidation = validateUrl(formData.link_url);
+          if (!urlValidation.isValid) {
+            newErrors.link_url = urlValidation.error || '正しいURL形式を入力してください';
+          }
         }
       }
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleAddLink = () => {
+    setFormData({
+      ...formData,
+      link_urls: [...formData.link_urls, { url: '', label: '' }],
+    });
+  };
+
+  const handleRemoveLink = (index: number) => {
+    setFormData({
+      ...formData,
+      link_urls: formData.link_urls.filter((_, i) => i !== index),
+    });
+  };
+
+  const handleUpdateLink = (index: number, field: 'url' | 'label', value: string) => {
+    const newLinks = [...formData.link_urls];
+    newLinks[index] = { ...newLinks[index], [field]: value };
+    setFormData({ ...formData, link_urls: newLinks });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -92,7 +144,7 @@ export function PortalMenuEditModal({
       const linkUrl =
         formData.link_type === 'internal'
           ? getLinkUrlFromMenuKey(menu.menu_key)
-          : formData.link_url.trim() || null;
+          : isMendan ? null : formData.link_url.trim() || null;
 
       const updateData: PortalMenuUpdate = {
         title: formData.title.trim(),
@@ -100,6 +152,7 @@ export function PortalMenuEditModal({
         is_visible: formData.is_visible,
         link_type: formData.link_type,
         link_url: linkUrl,
+        link_urls: isMendan && formData.link_type === 'external' ? formData.link_urls : null,
       };
 
       await updatePortalMenu(menu.id, updateData);
@@ -188,23 +241,103 @@ export function PortalMenuEditModal({
 
         {formData.link_type === 'external' && (
           <div>
-            <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
-              リンク先URL <span className="text-[#d9376e]">*</span>
-            </label>
-            <Input
-              type="text"
-              value={formData.link_url}
-              onChange={(e) =>
-                setFormData({ ...formData, link_url: e.target.value })
-              }
-              placeholder="https://example.com"
-              error={errors.link_url}
-              required
-              disabled={isSubmitting}
-            />
-            <p className="text-xs text-[#2a2a2a]/60 mt-1">
-              外部URLを入力（新しいタブで開きます）
-            </p>
+            {isMendan ? (
+              // 面談申し込みの場合は複数リンク
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-[#0d0d0d]">
+                    外部リンク <span className="text-[#d9376e]">*</span>
+                  </label>
+                  <Button
+                    type="button"
+                    onClick={handleAddLink}
+                    variant="secondary"
+                    className="text-xs py-1 px-2"
+                    disabled={isSubmitting}
+                  >
+                    <Plus className="w-3 h-3 mr-1" />
+                    リンクを追加
+                  </Button>
+                </div>
+                {errors.link_urls && (
+                  <p className="text-xs text-[#d9376e] mb-2">{errors.link_urls}</p>
+                )}
+                <div className="space-y-3">
+                  {formData.link_urls.map((link, index) => (
+                    <div key={index} className="p-3 border border-[#0d0d0d] rounded-lg space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-medium text-[#0d0d0d]">
+                          リンク {index + 1}
+                        </label>
+                        {formData.link_urls.length > 1 && (
+                          <Button
+                            type="button"
+                            onClick={() => handleRemoveLink(index)}
+                            variant="ghost"
+                            className="p-1 text-[#d9376e] hover:text-[#c02d5a]"
+                            disabled={isSubmitting}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-[#0d0d0d] mb-1">
+                          ラベル <span className="text-[#d9376e]">*</span>
+                        </label>
+                        <Input
+                          type="text"
+                          value={link.label}
+                          onChange={(e) => handleUpdateLink(index, 'label', e.target.value)}
+                          placeholder="例: 面談予約（Googleカレンダー）"
+                          error={errors[`link_label_${index}`]}
+                          required
+                          disabled={isSubmitting}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-[#0d0d0d] mb-1">
+                          URL <span className="text-[#d9376e]">*</span>
+                        </label>
+                        <Input
+                          type="text"
+                          value={link.url}
+                          onChange={(e) => handleUpdateLink(index, 'url', e.target.value)}
+                          placeholder="https://example.com"
+                          error={errors[`link_url_${index}`]}
+                          required
+                          disabled={isSubmitting}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-[#2a2a2a]/60 mt-2">
+                  複数の外部リンクを設定できます（新しいタブで開きます）
+                </p>
+              </div>
+            ) : (
+              // その他の外部リンクは単一URL
+              <div>
+                <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
+                  リンク先URL <span className="text-[#d9376e]">*</span>
+                </label>
+                <Input
+                  type="text"
+                  value={formData.link_url}
+                  onChange={(e) =>
+                    setFormData({ ...formData, link_url: e.target.value })
+                  }
+                  placeholder="https://example.com"
+                  error={errors.link_url}
+                  required
+                  disabled={isSubmitting}
+                />
+                <p className="text-xs text-[#2a2a2a]/60 mt-1">
+                  外部URLを入力（新しいタブで開きます）
+                </p>
+              </div>
+            )}
           </div>
         )}
 

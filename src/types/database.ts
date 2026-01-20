@@ -973,6 +973,7 @@ export type PortalMenu = {
   is_visible: boolean;
   link_type: 'internal' | 'external';
   link_url: string | null;
+  link_urls: Array<{ url: string; label: string }> | null; // 複数外部リンク（面談申し込みなど）
   sort_order: number;
   created_at: string;
   updated_at: string;

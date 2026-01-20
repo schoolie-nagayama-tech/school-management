@@ -1,0 +1,76 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl) {
+  throw new Error('NEXT_PUBLIC_SUPABASE_URL is not set');
+}
+
+if (!serviceRoleKey) {
+  throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set. Please restart the Next.js server after adding it to .env.local');
+}
+
+const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false,
+  },
+});
+
+export async function GET(request: NextRequest) {
+  try {
+    // まずユーザープロファイルを取得
+    const { data: profiles, error: profilesError } = await supabaseAdmin
+      .from('user_profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (profilesError) {
+      console.error('Error fetching user profiles:', profilesError);
+      throw profilesError;
+    }
+
+    if (!profiles || profiles.length === 0) {
+      return NextResponse.json({ users: [] });
+    }
+
+    // 各ユーザーの教室情報を取得
+    const usersWithSchools = await Promise.all(
+      profiles.map(async (profile) => {
+        const { data: userSchools, error: schoolsError } = await supabaseAdmin
+          .from('user_schools')
+          .select(`
+            *,
+            school:schools(*)
+          `)
+          .eq('user_id', profile.id);
+
+        if (schoolsError) {
+          console.error(`Error fetching schools for user ${profile.id}:`, schoolsError);
+          return {
+            ...profile,
+            user_schools: [],
+          };
+        }
+
+        return {
+          ...profile,
+          user_schools: userSchools || [],
+        };
+      })
+    );
+
+    return NextResponse.json({ users: usersWithSchools });
+  } catch (error: any) {
+    console.error('Failed to fetch users:', error);
+    return NextResponse.json(
+      { 
+        error: 'ユーザーの取得に失敗しました',
+        details: error?.message || 'Unknown error'
+      },
+      { status: 500 }
+    );
+  }
+}

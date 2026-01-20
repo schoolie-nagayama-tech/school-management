@@ -75,9 +75,9 @@ export interface AttendanceTypeFormData {
 // ステータスラベル
 export const ATTENDANCE_STATUS_LABELS: Record<AttendanceSheetStatus, string> = {
   draft: '入力中',
-  submitted: '承認待ち',
+  submitted: '提出済み',
   approved: '承認済み',
-  rejected: '差し戻し',
+  rejected: '修正',
 };
 
 // ステータスカラー

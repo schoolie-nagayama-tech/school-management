@@ -1,25 +1,17 @@
 'use client';
 
-import { ReactNode, createContext, useContext, useState, useRef, useEffect } from 'react';
+import { ReactNode, useState, useRef, useEffect, createContext, useContext } from 'react';
 
 interface SelectContextType {
   value?: string;
   onValueChange?: (value: string) => void;
-  isOpen: boolean;
-  setIsOpen: (open: boolean) => void;
+  open: boolean;
+  setOpen: (open: boolean) => void;
   selectedLabel?: string;
   setSelectedLabel: (label: string) => void;
 }
 
-const SelectContext = createContext<SelectContextType | undefined>(undefined);
-
-function useSelectContext() {
-  const context = useContext(SelectContext);
-  if (!context) {
-    throw new Error('Select components must be used within Select');
-  }
-  return context;
-}
+const SelectContext = createContext<SelectContextType | null>(null);
 
 interface SelectProps {
   value?: string;
@@ -28,21 +20,14 @@ interface SelectProps {
 }
 
 export function Select({ value, onValueChange, children }: SelectProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [selectedLabel, setSelectedLabel] = useState<string>('');
+  const [open, setOpen] = useState(false);
+  const [selectedLabel, setSelectedLabel] = useState<string>();
 
   return (
-    <SelectContext.Provider
-      value={{
-        value,
-        onValueChange,
-        isOpen,
-        setIsOpen,
-        selectedLabel,
-        setSelectedLabel,
-      }}
-    >
-      <div className="relative w-full">{children}</div>
+    <SelectContext.Provider value={{ value, onValueChange, open, setOpen, selectedLabel, setSelectedLabel }}>
+      <div className="relative">
+        {children}
+      </div>
     </SelectContext.Provider>
   );
 }
@@ -50,37 +35,53 @@ export function Select({ value, onValueChange, children }: SelectProps) {
 interface SelectTriggerProps {
   children: ReactNode;
   className?: string;
+  onClick?: () => void;
 }
 
-export function SelectTrigger({ children, className = '' }: SelectTriggerProps) {
-  const { isOpen, setIsOpen } = useSelectContext();
+export function SelectTrigger({ children, className = '', onClick }: SelectTriggerProps) {
+  const context = useContext(SelectContext);
+  const handleClick = () => {
+    if (onClick) {
+      onClick();
+    } else {
+      context?.setOpen(!context.open);
+    }
+  };
 
   return (
     <button
       type="button"
-      onClick={() => setIsOpen(!isOpen)}
-      className={`flex h-10 w-full items-center justify-between rounded-md border border-[#0d0d0d] bg-[#fffffe] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ff8e3c] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+      onClick={handleClick}
+      className={`
+        w-full px-3 py-2
+        border rounded-lg
+        text-[#2a2a2a]
+        bg-[#fffffe]
+        transition-colors duration-150
+        focus:ring-2 focus:ring-[#ff8e3c] focus:border-[#ff8e3c]
+        disabled:bg-[#eff0f3] disabled:text-[#2a2a2a]/50 disabled:cursor-not-allowed
+        border-[#0d0d0d]
+        flex items-center justify-between
+        ${className}
+      `}
     >
       {children}
-      <svg
-        className={`h-4 w-4 opacity-50 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-      </svg>
     </button>
   );
 }
 
 interface SelectValueProps {
   placeholder?: string;
+  children?: ReactNode;
 }
 
-export function SelectValue({ placeholder }: SelectValueProps) {
-  const { selectedLabel, value } = useSelectContext();
-  return <span className="text-[#2a2a2a]">{selectedLabel || placeholder || '選択してください'}</span>;
+export function SelectValue({ placeholder, children }: SelectValueProps) {
+  const context = useContext(SelectContext);
+  return (
+    <span className="select-value">
+      {context?.selectedLabel || children || placeholder || '選択してください'}
+    </span>
+  );
 }
 
 interface SelectContentProps {
@@ -89,31 +90,36 @@ interface SelectContentProps {
 }
 
 export function SelectContent({ children, className = '' }: SelectContentProps) {
-  const { isOpen, setIsOpen } = useSelectContext();
+  const context = useContext(SelectContext);
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (contentRef.current && !contentRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
+        context?.setOpen(false);
       }
     };
 
-    if (isOpen) {
+    if (context?.open) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen, setIsOpen]);
+  }, [context?.open]);
 
-  if (!isOpen) return null;
+  if (!context?.open) return null;
 
   return (
     <div
       ref={contentRef}
-      className={`absolute z-50 mt-1 w-full min-w-[8rem] overflow-hidden rounded-md border border-[#0d0d0d] bg-[#fffffe] text-[#0d0d0d] shadow-md ${className}`}
+      className={`
+        absolute z-50 w-full mt-1
+        bg-[#fffffe] border border-[#0d0d0d] rounded-lg shadow-lg
+        max-h-60 overflow-auto
+        ${className}
+      `}
     >
       {children}
     </div>
@@ -123,21 +129,30 @@ export function SelectContent({ children, className = '' }: SelectContentProps) 
 interface SelectItemProps {
   value: string;
   children: ReactNode;
+  onClick?: () => void;
   className?: string;
 }
 
-export function SelectItem({ value, children, className = '' }: SelectItemProps) {
-  const { onValueChange, setIsOpen, setSelectedLabel } = useSelectContext();
-
+export function SelectItem({ value, children, onClick, className = '' }: SelectItemProps) {
+  const context = useContext(SelectContext);
   const handleClick = () => {
-    onValueChange?.(value);
-    setSelectedLabel(typeof children === 'string' ? children : value);
-    setIsOpen(false);
+    if (onClick) {
+      onClick();
+    } else {
+      context?.onValueChange?.(value);
+      context?.setSelectedLabel(String(children));
+      context?.setOpen(false);
+    }
   };
 
   return (
     <div
-      className={`relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 px-2 text-sm outline-none hover:bg-[#eff0f3] focus:bg-[#eff0f3] ${className}`}
+      className={`
+        px-3 py-2 cursor-pointer hover:bg-[#eff0f3] transition-colors
+        ${context?.value === value ? 'bg-[#ff8e3c]/10' : ''}
+        ${className}
+      `}
+      data-value={value}
       onClick={handleClick}
     >
       {children}

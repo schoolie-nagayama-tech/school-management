@@ -10,8 +10,51 @@ interface PortalMenuCardProps {
 }
 
 export function PortalMenuCard({ menu, schoolCode, isFormActive = false }: PortalMenuCardProps) {
+  const isMendan = menu.menu_key === 'mendan';
+  
   // 外部リンクの場合
   if (menu.link_type === 'external') {
+    // 面談申し込みで複数リンクがある場合
+    if (isMendan && menu.link_urls && menu.link_urls.length > 0) {
+      return (
+        <div className="w-full space-y-2">
+          <div className="mb-2">
+            <h2 className="text-lg font-bold text-[#0d0d0d] mb-1">{menu.title}</h2>
+            {menu.description && (
+              <p className="text-sm text-[#2a2a2a]">{menu.description}</p>
+            )}
+          </div>
+          {menu.link_urls.map((link, index) => (
+            <a
+              key={index}
+              href={link.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block w-full min-h-[60px] p-3 bg-[#ff8e3c] rounded-lg border border-[#0d0d0d] hover:bg-[#ff9e5c] transition-colors active:bg-[#ff8e3c]"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-base font-medium text-[#0d0d0d]">{link.label}</span>
+                <svg
+                  className="w-4 h-4 text-[#2a2a2a] ml-2 flex-shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                  />
+                </svg>
+              </div>
+            </a>
+          ))}
+        </div>
+      );
+    }
+    
+    // 単一外部リンクの場合
     if (menu.link_url) {
       return (
         <a

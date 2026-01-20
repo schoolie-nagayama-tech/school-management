@@ -1,14 +1,14 @@
 'use client';
 
-import { ReactNode, useState, useEffect } from 'react';
+import { ReactNode, useEffect } from 'react';
 
-interface DialogProps {
+interface AlertDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   children: ReactNode;
 }
 
-export function Dialog({ open, onOpenChange, children }: DialogProps) {
+export function AlertDialog({ open, onOpenChange, children }: AlertDialogProps) {
   useEffect(() => {
     if (open) {
       document.body.style.overflow = 'hidden';
@@ -50,21 +50,21 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
   );
 }
 
-interface DialogContentProps {
+interface AlertDialogContentProps {
   children: ReactNode;
   className?: string;
 }
 
-export function DialogContent({ children, className = '' }: DialogContentProps) {
+export function AlertDialogContent({ children, className = '' }: AlertDialogContentProps) {
   return <div className={`px-6 py-6 flex-1 min-h-0 overflow-y-auto ${className}`}>{children}</div>;
 }
 
-interface DialogHeaderProps {
+interface AlertDialogHeaderProps {
   children: ReactNode;
   className?: string;
 }
 
-export function DialogHeader({ children, className = '' }: DialogHeaderProps) {
+export function AlertDialogHeader({ children, className = '' }: AlertDialogHeaderProps) {
   return (
     <div className={`px-6 py-4 border-b border-[#0d0d0d] ${className}`}>
       {children}
@@ -72,12 +72,12 @@ export function DialogHeader({ children, className = '' }: DialogHeaderProps) {
   );
 }
 
-interface DialogTitleProps {
+interface AlertDialogTitleProps {
   children: ReactNode;
   className?: string;
 }
 
-export function DialogTitle({ children, className = '' }: DialogTitleProps) {
+export function AlertDialogTitle({ children, className = '' }: AlertDialogTitleProps) {
   return (
     <h2 className={`text-lg font-semibold text-[#0d0d0d] ${className}`}>
       {children}
@@ -85,15 +85,62 @@ export function DialogTitle({ children, className = '' }: DialogTitleProps) {
   );
 }
 
-interface DialogFooterProps {
+interface AlertDialogDescriptionProps {
   children: ReactNode;
   className?: string;
 }
 
-export function DialogFooter({ children, className = '' }: DialogFooterProps) {
+export function AlertDialogDescription({ children, className = '' }: AlertDialogDescriptionProps) {
+  return (
+    <p className={`text-sm text-[#2a2a2a] mt-2 ${className}`}>
+      {children}
+    </p>
+  );
+}
+
+interface AlertDialogFooterProps {
+  children: ReactNode;
+  className?: string;
+}
+
+export function AlertDialogFooter({ children, className = '' }: AlertDialogFooterProps) {
   return (
     <div className={`flex items-center justify-end gap-2 px-6 py-4 border-t border-[#0d0d0d] ${className}`}>
       {children}
     </div>
+  );
+}
+
+interface AlertDialogActionProps {
+  children: ReactNode;
+  onClick?: () => void;
+  className?: string;
+}
+
+export function AlertDialogAction({ children, onClick, className = '' }: AlertDialogActionProps) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-4 py-2 bg-[#ff8e3c] text-[#0d0d0d] rounded-lg hover:bg-[#ff9e5c] transition-colors font-medium ${className}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+interface AlertDialogCancelProps {
+  children: ReactNode;
+  onClick?: () => void;
+  className?: string;
+}
+
+export function AlertDialogCancel({ children, onClick, className = '' }: AlertDialogCancelProps) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-4 py-2 bg-[#fffffe] text-[#2a2a2a] border border-[#0d0d0d] rounded-lg hover:bg-[#eff0f3] transition-colors font-medium ${className}`}
+    >
+      {children}
+    </button>
   );
 }

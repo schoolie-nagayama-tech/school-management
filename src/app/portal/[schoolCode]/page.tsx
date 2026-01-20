@@ -60,8 +60,11 @@ export default async function PortalPage({ params }: PortalPageProps) {
           }
         }
       }
-      // 外部リンクの場合は常にアクティブとみなす（link_urlが設定されている場合）
-      return { menu, isFormActive: !!menu.link_url };
+      // 外部リンクの場合は常にアクティブとみなす（link_urlまたはlink_urlsが設定されている場合）
+      const hasLinks = menu.menu_key === 'mendan' 
+        ? (menu.link_urls && menu.link_urls.length > 0)
+        : !!menu.link_url;
+      return { menu, isFormActive: hasLinks };
     })
   );
 

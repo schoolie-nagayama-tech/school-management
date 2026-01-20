@@ -129,28 +129,81 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
                   申込状況
                 </Link>
               )}
-              <Link
-                href="/responses"
-                className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
-                  pathname?.startsWith('/responses') || pathname?.startsWith('/forms/responses')
-                    ? 'bg-[#ff8e3c] text-[#0d0d0d]'
-                    : 'text-[#2a2a2a] hover:bg-[#eff0f3]'
-                }`}
-              >
-                回答管理
-              </Link>
-              {(showAllLinks || permissions?.canAccessPortal) && (
-                <Link
-                  href="/settings/portal"
-                  className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
-                    pathname === '/settings/portal'
+              {/* フォーム管理 */}
+              <div className="relative">
+                <button
+                  className={`px-2.5 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 ${
+                    pathname?.startsWith('/responses') || 
+                    pathname?.startsWith('/forms/responses') ||
+                    pathname === '/settings/portal' ||
+                    pathname?.startsWith('/settings/portal')
                       ? 'bg-[#ff8e3c] text-[#0d0d0d]'
                       : 'text-[#2a2a2a] hover:bg-[#eff0f3]'
                   }`}
+                  onMouseEnter={(e) => {
+                    const container = e.currentTarget.closest('.relative');
+                    const dropdown = container?.querySelector('.form-management-dropdown') as HTMLElement;
+                    if (dropdown) {
+                      dropdown.style.opacity = '1';
+                      dropdown.style.visibility = 'visible';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    const container = e.currentTarget.closest('.relative');
+                    const dropdown = container?.querySelector('.form-management-dropdown') as HTMLElement;
+                    if (dropdown) {
+                      dropdown.style.opacity = '0';
+                      dropdown.style.visibility = 'hidden';
+                    }
+                  }}
                 >
-                  ポータル設定
-                </Link>
-              )}
+                  フォーム管理
+                  <svg
+                    className="w-3 h-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                <div 
+                  className="form-management-dropdown absolute top-full left-0 mt-1 bg-white rounded-lg border border-[#0d0d0d] shadow-lg z-50 min-w-[150px] opacity-0 invisible transition-all"
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.opacity = '1';
+                    e.currentTarget.style.visibility = 'visible';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.opacity = '0';
+                    e.currentTarget.style.visibility = 'hidden';
+                  }}
+                >
+                  <div className="py-1">
+                    <Link
+                      href="/responses"
+                      className={`block px-3 py-2 text-xs hover:bg-[#eff0f3] transition-colors ${
+                        pathname?.startsWith('/responses') || pathname?.startsWith('/forms/responses')
+                          ? 'bg-[#ff8e3c]/10 font-bold'
+                          : ''
+                      }`}
+                    >
+                      回答
+                    </Link>
+                    {(showAllLinks || permissions?.canAccessPortal) && (
+                      <Link
+                        href="/settings/portal"
+                        className={`block px-3 py-2 text-xs hover:bg-[#eff0f3] transition-colors ${
+                          pathname === '/settings/portal' || pathname?.startsWith('/settings/portal')
+                            ? 'bg-[#ff8e3c]/10 font-bold'
+                            : ''
+                        }`}
+                      >
+                        フォーム設定
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              </div>
               {(showAllLinks || permissions?.canAccessCourses) && (
                 <Link
                   href="/courses"
@@ -163,6 +216,98 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
                   講習管理
                 </Link>
               )}
+              {/* 講師勤怠 */}
+              <div className="relative">
+                <button
+                  className={`px-2.5 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 ${
+                    pathname?.startsWith('/admin/settings/attendance-types') ||
+                    pathname?.startsWith('/admin/teachers') ||
+                    pathname?.startsWith('/admin/attendance')
+                      ? 'bg-[#ff8e3c] text-[#0d0d0d]'
+                      : 'text-[#2a2a2a] hover:bg-[#eff0f3]'
+                  }`}
+                  onMouseEnter={(e) => {
+                    const container = e.currentTarget.closest('.relative');
+                    const dropdown = container?.querySelector('.attendance-dropdown') as HTMLElement;
+                    if (dropdown) {
+                      dropdown.style.opacity = '1';
+                      dropdown.style.visibility = 'visible';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    const container = e.currentTarget.closest('.relative');
+                    const dropdown = container?.querySelector('.attendance-dropdown') as HTMLElement;
+                    if (dropdown) {
+                      dropdown.style.opacity = '0';
+                      dropdown.style.visibility = 'hidden';
+                    }
+                  }}
+                >
+                  講師勤怠
+                  <svg
+                    className="w-3 h-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                <div 
+                  className="attendance-dropdown absolute top-full left-0 mt-1 bg-white rounded-lg border border-[#0d0d0d] shadow-lg z-50 min-w-[180px] opacity-0 invisible transition-all"
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.opacity = '1';
+                    e.currentTarget.style.visibility = 'visible';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.opacity = '0';
+                    e.currentTarget.style.visibility = 'hidden';
+                  }}
+                >
+                  <div className="py-1">
+                    <Link
+                      href="/admin/attendance"
+                      className={`block px-3 py-2 text-xs hover:bg-[#eff0f3] transition-colors ${
+                        pathname === '/admin/attendance' || pathname?.startsWith('/admin/attendance')
+                          ? 'bg-[#ff8e3c]/10 font-bold'
+                          : ''
+                      }`}
+                    >
+                      出勤簿管理
+                    </Link>
+                    <Link
+                      href="/admin/attendance/summary"
+                      className={`block px-3 py-2 text-xs hover:bg-[#eff0f3] transition-colors ${
+                        pathname === '/admin/attendance/summary'
+                          ? 'bg-[#ff8e3c]/10 font-bold'
+                          : ''
+                      }`}
+                    >
+                      月次集計
+                    </Link>
+                    <Link
+                      href="/admin/attendance/late-early"
+                      className={`block px-3 py-2 text-xs hover:bg-[#eff0f3] transition-colors ${
+                        pathname === '/admin/attendance/late-early'
+                          ? 'bg-[#ff8e3c]/10 font-bold'
+                          : ''
+                      }`}
+                    >
+                      遅刻・早退一覧
+                    </Link>
+                    <Link
+                      href="/admin/settings/attendance-types"
+                      className={`block px-3 py-2 text-xs hover:bg-[#eff0f3] transition-colors ${
+                        pathname === '/admin/settings/attendance-types' || pathname?.startsWith('/admin/settings/attendance-types')
+                          ? 'bg-[#ff8e3c]/10 font-bold'
+                          : ''
+                      }`}
+                    >
+                      コマ種別設定
+                    </Link>
+                  </div>
+                </div>
+              </div>
               {(showAllLinks || permissions?.canAccessUsers) && (
                 <Link
                   href="/users"
@@ -255,11 +400,11 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
             {profile && !authLoading && (
               <button
                 onClick={signOut}
-                className="px-2 py-1.5 text-xs font-medium bg-[#d9376e] text-white rounded hover:bg-[#c02d5a] transition-colors flex items-center gap-1.5"
+                className="px-1.5 py-1 text-[11px] font-medium bg-[#d9376e] text-white rounded hover:bg-[#c02d5a] transition-colors flex items-center gap-1"
                 title="ログアウト"
               >
                 <svg
-                  className="w-3.5 h-3.5"
+                  className="w-3 h-3"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"

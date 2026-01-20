@@ -11,7 +11,29 @@
 
 ## 現在の機能
 
-### v3.0（最新）
+### v4.0（最新）
+
+- ✅ **講師出勤簿機能**
+  - 講師勤怠ポータル（`/attendance/[schoolCode]`）
+  - 講師別出勤簿入力（`/attendance/[schoolCode]/[teacherId]`）
+  - コマ種別マスタ管理（教室別・科目別・時限別）
+  - 出勤簿管理画面（教室別一覧・承認機能）
+  - 月次集計・遅刻早退一覧
+  - 講師はユーザー管理で管理（role='teacher'）
+  - 詳細は後述
+
+- ✅ **ユーザー管理機能**
+  - 直接アカウント作成（招待メールなし）
+  - 自動生成パスワード表示
+  - ユーザー一覧・編集・削除
+  - 講師・管理者・教室長などのロール管理
+  - 教室との紐付け管理
+
+- ✅ **ナビゲーション構造**
+  - 講師勤怠ドロップダウン（出勤簿管理、月次集計、遅刻早退一覧、コマ種別設定）
+  - フォーム管理ドロップダウン（回答、フォーム設定）
+
+### v3.0
 
 - ✅ **保護者向け申込ポータル**
   - スマホファーストのポータル画面（`/portal/[schoolCode]`）
@@ -103,9 +125,12 @@ cp .env.local.example .env.local
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 NEXT_PUBLIC_DEFAULT_SCHOOL_ID=your-default-school-id
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
 
-**重要（v1.5以降）**: `NEXT_PUBLIC_DEFAULT_SCHOOL_ID`には、上記手順3で取得したデフォルト教室のIDを設定してください。
+**重要**:
+- `NEXT_PUBLIC_DEFAULT_SCHOOL_ID`: 上記手順3で取得したデフォルト教室のIDを設定してください（v1.5以降）
+- `SUPABASE_SERVICE_ROLE_KEY`: Supabaseのプロジェクト設定から取得したService Role Keyを設定してください（v4.0以降、ユーザー管理・講師出勤簿機能で使用）
 
 #### 既存データがある場合の移行手順（v1.5）
 
@@ -135,34 +160,52 @@ src/
 │   ├── layout.tsx          # ルートレイアウト
 │   ├── page.tsx            # トップページ（/studentsへリダイレクト）
 │   ├── globals.css         # グローバルCSS
-│   └── students/
-│       └── page.tsx        # 生徒管理ページ
+│   ├── students/           # 生徒管理
+│   │   └── page.tsx
+│   ├── attendance/         # 講師出勤簿（講師向け）
+│   │   └── [schoolCode]/
+│   │       ├── page.tsx    # 講師勤怠ポータル
+│   │       └── [teacherId]/
+│   │           └── page.tsx # 出勤簿入力
+│   ├── admin/              # 管理画面
+│   │   ├── attendance/     # 出勤簿管理
+│   │   │   ├── page.tsx    # 出勤簿一覧
+│   │   │   ├── summary/    # 月次集計
+│   │   │   ├── late-early/ # 遅刻早退一覧
+│   │   │   └── sheets/     # 出勤簿詳細
+│   │   └── settings/
+│   │       └── attendance-types/ # コマ種別設定
+│   ├── users/              # ユーザー管理
+│   │   └── page.tsx
+│   └── api/                # API Routes
+│       └── admin/
+│           └── users/      # ユーザー管理API
 ├── components/
 │   ├── ui/                 # 共通UIコンポーネント
 │   │   ├── Button.tsx
 │   │   ├── Input.tsx
 │   │   ├── Select.tsx
-│   │   ├── Modal.tsx
+│   │   ├── Card.tsx
 │   │   └── index.ts
-│   ├── students/           # 生徒関連コンポーネント
-│   │   ├── StudentForm.tsx
-│   │   ├── StudentTable.tsx
-│   │   ├── StudentDetailModal.tsx
-│   │   ├── StudentScores.tsx
-│   │   ├── DeleteConfirmDialog.tsx
-│   │   └── index.ts
-│   └── settings/           # 設定関連コンポーネント
-│       ├── SubjectSettings.tsx
-│       └── index.ts
+│   ├── layout/             # レイアウトコンポーネント
+│   │   ├── AppHeader.tsx   # アプリケーションヘッダー
+│   │   └── AdminLayout.tsx # 管理画面レイアウト
+│   └── students/           # 生徒関連コンポーネント
+│       └── ...
 ├── lib/
 │   ├── supabase.ts         # Supabaseクライアント
+│   ├── utils/
+│   │   └── password.ts     # パスワード生成ユーティリティ
 │   └── api/
 │       ├── students.ts     # 生徒API関数
 │       ├── subjects.ts     # 科目API関数
-│       ├── assessments.ts  # 成績API関数
-│       └── schools.ts      # 教室API関数
+│       ├── assessments.ts # 成績API関数
+│       ├── schools.ts      # 教室API関数
+│       ├── auth.ts         # 認証・ユーザーAPI関数
+│       └── attendance.ts   # 出勤簿API関数
 └── types/
-    └── database.ts         # 型定義
+    ├── database.ts         # 型定義
+    └── attendance.ts       # 出勤簿型定義
 ```
 
 ## データベーススキーマ
@@ -311,6 +354,93 @@ src/
 
 **制約**: `UNIQUE(student_id, item_id)`
 
+### user_profilesテーブル（ユーザープロファイル）
+
+| カラム名 | 型 | 説明 |
+|---------|-----|------|
+| id | UUID | 主キー（Supabase AuthのユーザーID） |
+| email | TEXT | メールアドレス |
+| display_name | TEXT | 表示名（任意） |
+| role | TEXT | ロール（admin/owner/manager/teacher/parent） |
+| is_active | BOOLEAN | 有効フラグ |
+| invited_by | UUID | 招待者ID（任意） |
+| invited_at | TIMESTAMP | 招待日時（任意） |
+| last_login_at | TIMESTAMP | 最終ログイン日時（任意） |
+| created_at | TIMESTAMP | 作成日時 |
+| updated_at | TIMESTAMP | 更新日時 |
+
+### user_schoolsテーブル（ユーザーと教室の紐付け）
+
+| カラム名 | 型 | 説明 |
+|---------|-----|------|
+| id | UUID | 主キー |
+| user_id | UUID | ユーザーID（外部キー） |
+| school_id | UUID | 教室ID（外部キー） |
+| created_at | TIMESTAMP | 作成日時 |
+
+**制約**: `UNIQUE(user_id, school_id)`
+
+### attendance_sheetsテーブル（出勤簿）
+
+| カラム名 | 型 | 説明 |
+|---------|-----|------|
+| id | UUID | 主キー |
+| teacher_id | UUID | 講師ID（user_profiles.id、外部キー） |
+| school_id | UUID | 教室ID（外部キー） |
+| year_month | TEXT | 年月（YYYY-MM形式） |
+| status | TEXT | ステータス（draft/submitted/approved/rejected） |
+| submitted_at | TIMESTAMP | 提出日時（任意） |
+| approved_at | TIMESTAMP | 承認日時（任意） |
+| approved_by | UUID | 承認者ID（user_profiles.id、外部キー、任意） |
+| rejection_reason | TEXT | 修正理由（任意） |
+| created_at | TIMESTAMP | 作成日時 |
+| updated_at | TIMESTAMP | 更新日時 |
+
+**制約**: `UNIQUE(teacher_id, school_id, year_month)`
+
+### attendance_typesテーブル（コマ種別マスタ）
+
+| カラム名 | 型 | 説明 |
+|---------|-----|------|
+| id | UUID | 主キー |
+| school_id | UUID | 教室ID（外部キー） |
+| subject | TEXT | 科目名 |
+| period | TEXT | 時限（例: "4限", "5限"） |
+| unit | TEXT | 単位（例: "コマ", "時間"） |
+| unit_price | NUMERIC | 単価 |
+| is_active | BOOLEAN | 有効フラグ |
+| display_order | INTEGER | 表示順 |
+| created_at | TIMESTAMP | 作成日時 |
+| updated_at | TIMESTAMP | 更新日時 |
+
+### attendance_recordsテーブル（出勤簿明細）
+
+| カラム名 | 型 | 説明 |
+|---------|-----|------|
+| id | UUID | 主キー |
+| sheet_id | UUID | 出勤簿ID（外部キー） |
+| date | DATE | 日付 |
+| attendance_type_id | UUID | コマ種別ID（外部キー） |
+| value | NUMERIC | コマ数 |
+| created_at | TIMESTAMP | 作成日時 |
+| updated_at | TIMESTAMP | 更新日時 |
+
+**制約**: `UNIQUE(sheet_id, date, attendance_type_id)`
+
+### attendance_notesテーブル（備考・遅刻早退記録）
+
+| カラム名 | 型 | 説明 |
+|---------|-----|------|
+| id | UUID | 主キー |
+| sheet_id | UUID | 出勤簿ID（外部キー） |
+| date | DATE | 日付 |
+| late_early | TEXT | 遅刻・早退内容（任意） |
+| note | TEXT | 備考（任意） |
+| created_at | TIMESTAMP | 作成日時 |
+| updated_at | TIMESTAMP | 更新日時 |
+
+**制約**: `UNIQUE(sheet_id, date)`
+
 ### 学年コード
 
 | コード | 学年 |
@@ -423,6 +553,33 @@ src/
 - **URLバリデーション**: 外部リンクのURL形式を厳密にチェック
 - **ドラッグ&ドロップ**: 並び替え操作を直感的に改善
 - **視覚的フィードバック**: 選択状態や公開状態を色分けで表示
+
+## v4.0の設計メモ
+
+### 講師出勤簿機能
+
+- **講師データの統合**: `teachers`テーブルを廃止し、`user_profiles`（`role='teacher'`）で管理
+- **教室との紐付け**: `user_schools`テーブルで講師と教室を紐付け
+- **ワークフロー**: 下書き → 提出 → 承認/修正の3段階ステータス管理
+- **コマ種別マスタ**: 教室別・科目別・時限別のコマ種別を設定可能
+- **月次管理**: 年月（YYYY-MM）単位で出勤簿を管理
+
+### ユーザー管理機能
+
+- **直接アカウント作成**: 招待メールなしで管理者が直接アカウントを作成
+- **自動パスワード生成**: 8文字のランダムパスワードを自動生成（英大文字・小文字・数字、見間違い防止のためI/O/0/1を除外）
+- **Service Role Key**: サーバーサイドでのユーザー作成・削除に`SUPABASE_SERVICE_ROLE_KEY`を使用
+
+### ナビゲーション構造
+
+- **講師勤怠ドロップダウン**: 出勤簿管理、月次集計、遅刻早退一覧、コマ種別設定を統合
+- **フォーム管理ドロップダウン**: 回答、フォーム設定を統合
+- **統一ヘッダー**: すべてのページで`AppHeader`コンポーネントを使用
+
+### データ取得の最適化
+
+- **JOIN回避**: SupabaseのPostgRESTで直接JOINが困難な場合、別々に取得してマッピング
+- **Promise.all**: 複数の関連データを並列取得してパフォーマンス向上
 
 ## v3.0の詳細機能
 
@@ -748,18 +905,92 @@ Vもぎ模擬試験のお申込みフォームです。日程・会場選択機�
 - 紐付け状態フィルター
 - 回答一覧表示（回答日時、種別、期間、生徒名、学年、紐付け状態、操作）
 
+## v4.0の詳細機能
+
+### 講師出勤簿機能
+
+**URL（講師向けポータル）**: `/attendance/[schoolCode]`  
+**URL（講師入力）**: `/attendance/[schoolCode]/[teacherId]`  
+**URL（管理画面）**: `/admin/attendance`
+
+#### 機能概要
+
+講師の出勤簿を管理する機能です。講師が月次で出勤コマ数を入力し、管理者が承認するワークフローを実装しています。
+
+#### 講師向け機能
+
+1. **講師勤怠ポータル** (`/attendance/[schoolCode]`)
+   - 教室コードに基づく講師一覧表示
+   - 各講師の出勤簿ステータス表示（未入力、下書き、提出済み、承認済み、修正）
+   - 合計コマ数表示
+   - 年月選択機能
+
+2. **出勤簿入力** (`/attendance/[schoolCode]/[teacherId]`)
+   - 月次カレンダー形式の入力画面
+   - コマ種別ごとのコマ数入力
+   - 遅刻・早退の備考入力
+   - 下書き保存・提出機能
+   - 提出後の取り下げ機能（提出済みステータスの場合のみ）
+
+#### 管理画面機能
+
+1. **出勤簿管理** (`/admin/attendance`)
+   - 教室別・年月別の出勤簿一覧
+   - 講師名・ステータス・合計コマ数表示
+   - 一括承認機能
+   - 個別承認・修正機能
+   - 修正理由の入力
+
+2. **月次集計** (`/admin/attendance/summary`)
+   - 教室別・年月別の集計表示
+   - 講師別のコマ種別内訳
+   - 合計コマ数・合計金額の表示
+
+3. **遅刻・早退一覧** (`/admin/attendance/late-early`)
+   - 遅刻・早退の記録一覧
+   - 講師名・教室名・日付・内容表示
+   - フィルタリング機能
+
+4. **コマ種別設定** (`/admin/settings/attendance-types`)
+   - 教室別のコマ種別マスタ管理
+   - 科目・時限・単位・単価の設定
+   - 表示順の管理
+
+#### データ構造
+
+**講師データ**:
+- `user_profiles`テーブルで管理（`role='teacher'`）
+- `user_schools`テーブルで教室との紐付け
+- `display_name`または`email`を講師名として表示
+
+**出勤簿ステータス**:
+- `draft`: 下書き
+- `submitted`: 提出済み（講師から見た表示）
+- `approved`: 承認済み
+- `rejected`: 修正（管理者から見た表示）
+
+#### データベーステーブル
+
+- `attendance_sheets`: 出勤簿（講師・教室・年月ごと）
+- `attendance_types`: コマ種別マスタ（教室別）
+- `attendance_records`: 出勤簿明細（日付・コマ種別・コマ数）
+- `attendance_notes`: 備考・遅刻早退記録
+
+詳細は後述のデータベーススキーマを参照してください。
+
 ## 拡張予定
 
 今後追加予定の機能:
 
-- [ ] 講師管理
+- [x] 講師管理（v4.0で実装済み、ユーザー管理に統合）
+- [x] 講師出勤簿機能（v4.0で実装済み）
 - [ ] 授業スケジュール管理
 - [ ] 出欠管理
 - [x] 成績管理（v2.0で実装済み）
 - [ ] 請求・入金管理
 - [x] 保護者ポータル（v3.0で実装済み）
 - [x] 複数教室対応（v1.5で基本実装済み）
-- [ ] 認証機能（v1.5で設計準備済み）
+- [x] 認証機能（v1.5で設計準備済み、v4.0で実装済み）
 - [ ] 模試申込フォーム（Moshi）
 - [ ] 週回数変更フォーム（Shukaisu）
 - [ ] 曜日変更フォーム（Youbi）
