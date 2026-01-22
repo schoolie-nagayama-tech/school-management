@@ -201,12 +201,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // ログアウト
   const handleSignOut = useCallback(async () => {
     const supabase = createSupabaseBrowserClient();
-    await supabase.auth.signOut();
+    // 先にログインページにリダイレクト（アクセス拒否を表示しないため）
+    router.replace('/login');
+    // その後、認証状態をクリア（ローカルのみ）
+    try {
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch (error) {
+      // ログアウトエラーは無視（ローカル状態はクリアする）
+    }
     setUser(null);
     setProfile(null);
     setPermissions(null);
     setSchoolIds([]);
-    router.push('/login');
   }, [router]);
 
   // 認証状態の監視

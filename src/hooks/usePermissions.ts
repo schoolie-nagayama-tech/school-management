@@ -11,16 +11,20 @@ export function useRequirePermission(
   checkPermission: (permissions: Permission) => boolean,
   redirectTo: string = '/students'
 ) {
-  const { permissions, isLoading } = useAuth();
+  const { permissions, isLoading, user } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
+    // ログアウト中（userがnull）の場合は権限チェックをスキップ
+    if (!user) {
+      return;
+    }
     if (!isLoading && permissions) {
       if (!checkPermission(permissions)) {
-        router.push(redirectTo);
+        router.replace(redirectTo);
       }
     }
-  }, [permissions, isLoading, router, redirectTo, checkPermission]);
+  }, [permissions, isLoading, user, router, redirectTo, checkPermission]);
 
   return { permissions, isLoading, hasPermission: permissions ? checkPermission(permissions) : false };
 }

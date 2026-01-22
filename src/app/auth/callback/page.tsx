@@ -25,13 +25,13 @@ export default function AuthCallbackPage() {
         .maybeSingle();
 
       if (profileError || !profile) {
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: 'local' });
         router.replace('/login?error=not_registered');
         return;
       }
 
       if (!GOOGLE_AUTH_ALLOWED_ROLES.includes(profile.role)) {
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: 'local' });
         router.replace('/login?error=not_allowed');
         return;
       }

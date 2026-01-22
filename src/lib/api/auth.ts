@@ -43,7 +43,7 @@ export async function signInWithGoogle() {
 // ログアウト
 export async function signOut() {
   const supabase = createSupabaseBrowserClient();
-  const { error } = await supabase.auth.signOut();
+  const { error } = await supabase.auth.signOut({ scope: 'local' });
   if (error) throw error;
 }
 
