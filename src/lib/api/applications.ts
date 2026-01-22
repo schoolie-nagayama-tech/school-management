@@ -5,6 +5,7 @@ import type {
   ApplicationItemUpdate,
   StudentApplication,
   ApplicationStatus,
+  ApplicationColumnType,
 } from '@/types/database';
 import { getDefaultSchoolId } from './schools';
 
@@ -39,14 +40,21 @@ export async function getApplicationItems(
     throw new Error(`申込項目の取得に失敗しました: ${error.message}`);
   }
 
-  return (data || []) as ApplicationItem[];
+  return (data || []).map((item: any) => ({
+    ...item,
+    column_type: item.column_type || 'check',
+    due_date: item.due_date || null,
+  })) as ApplicationItem[];
 }
 
 /**
  * 申込項目を作成
  */
 export async function createApplicationItem(
-  item: Omit<ApplicationItemInsert, 'school_id' | 'sort_order'>,
+  item: Omit<ApplicationItemInsert, 'school_id' | 'sort_order'> & {
+    column_type?: ApplicationColumnType;
+    due_date?: string | null;
+  },
   schoolId?: string
 ): Promise<ApplicationItem> {
   const targetSchoolId = schoolId || getDefaultSchoolId();
@@ -67,6 +75,8 @@ export async function createApplicationItem(
     .from('application_items')
     .insert({
       ...item,
+      column_type: item.column_type || 'check',
+      due_date: item.due_date || null,
       school_id: targetSchoolId,
       sort_order: maxSortOrder + 1,
     })
@@ -77,7 +87,11 @@ export async function createApplicationItem(
     throw new Error(`申込項目の作成に失敗しました: ${error.message}`);
   }
 
-  return data;
+  return {
+    ...(data as any),
+    column_type: (data as any).column_type || 'check',
+    due_date: (data as any).due_date || null,
+  } as ApplicationItem;
 }
 
 /**
@@ -98,7 +112,11 @@ export async function updateApplicationItem(
     throw new Error(`申込項目の更新に失敗しました: ${error.message}`);
   }
 
-  return data;
+  return {
+    ...(data as any),
+    column_type: (data as any).column_type || 'check',
+    due_date: (data as any).due_date || null,
+  } as ApplicationItem;
 }
 
 /**
@@ -201,10 +219,19 @@ export async function getStudentApplications(
     .in('school_id', targetSchoolIds);
 
   if (error) {
+    // テーブルが存在しない、またはRLSエラーの場合は空配列を返す
+    if (error.code === 'PGRST116' || error.code === '42501' || error.message.includes('schema cache')) {
+      console.warn('student_applicationsテーブルの取得に失敗しました（無視します）:', error);
+      return [];
+    }
     throw new Error(`申込状況の取得に失敗しました: ${error.message}`);
   }
 
-  return data || [];
+  return (data || []).map((app: any) => ({
+    ...app,
+    number_value: app.number_value ?? null,
+    date_value: app.date_value ?? null,
+  })) as StudentApplication[];
 }
 
 /**
@@ -245,13 +272,18 @@ export async function updateStudentApplication(
   }
 
   // 既存レコードを確認
-  const { data: existing } = await supabase
+  const { data: existing, error: existingError } = await supabase
     .from('student_applications')
     .select('id')
     .eq('student_id', studentId)
     .eq('item_id', itemId)
     .eq('school_id', schoolId)
-    .single();
+    .maybeSingle();
+
+  // 406エラーやその他のエラーは無視（レコードが存在しない場合は新規作成）
+  if (existingError && existingError.code !== 'PGRST116' && existingError.code !== '42501' && existingError.code !== 'PGRST202') {
+    console.warn('既存レコードの確認に失敗しました（新規作成として処理します）:', existingError);
+  }
 
   if (existing) {
     // 更新
@@ -266,7 +298,11 @@ export async function updateStudentApplication(
       throw new Error(`申込状況の更新に失敗しました: ${error.message}`);
     }
 
-    return data;
+    return {
+      ...(data as any),
+      number_value: (data as any).number_value ?? null,
+      date_value: (data as any).date_value ?? null,
+    } as StudentApplication;
   } else {
     // 作成
     const { data, error } = await supabase
@@ -284,6 +320,200 @@ export async function updateStudentApplication(
       throw new Error(`申込状況の作成に失敗しました: ${error.message}`);
     }
 
-    return data;
+    return {
+      ...(data as any),
+      number_value: (data as any).number_value ?? null,
+      date_value: (data as any).date_value ?? null,
+    } as StudentApplication;
   }
+}
+
+/**
+ * 生徒の申込状況の数値を更新（または作成）
+ */
+export async function updateStudentApplicationNumber(
+  studentId: string,
+  itemId: string,
+  numberValue: number | null
+): Promise<StudentApplication | null> {
+  // 生徒IDからschool_idを取得
+  const { data: student, error: studentError } = await supabase
+    .from('students')
+    .select('school_id')
+    .eq('id', studentId)
+    .single();
+
+  if (studentError || !student) {
+    throw new Error(`生徒情報の取得に失敗しました: ${studentError?.message || '生徒が見つかりません'}`);
+  }
+
+  const schoolId = student.school_id;
+
+  if (numberValue === null) {
+    // 削除（未登録状態に戻す）
+    const { error } = await supabase
+      .from('student_applications')
+      .delete()
+      .eq('student_id', studentId)
+      .eq('item_id', itemId)
+      .eq('school_id', schoolId);
+
+    if (error) {
+      throw new Error(`申込状況の削除に失敗しました: ${error.message}`);
+    }
+
+    return null;
+  }
+
+  // 既存レコードを確認
+  const { data: existing, error: existingError } = await supabase
+    .from('student_applications')
+    .select('id')
+    .eq('student_id', studentId)
+    .eq('item_id', itemId)
+    .eq('school_id', schoolId)
+    .maybeSingle();
+
+  // 406エラーやその他のエラーは無視（レコードが存在しない場合は新規作成）
+  if (existingError && existingError.code !== 'PGRST116' && existingError.code !== '42501' && existingError.code !== 'PGRST202') {
+    console.warn('既存レコードの確認に失敗しました（新規作成として処理します）:', existingError);
+  }
+
+    if (existing) {
+      // 更新
+      const { data, error } = await supabase
+        .from('student_applications')
+        .update({ number_value: numberValue } as any)
+        .eq('id', existing.id)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`申込状況の更新に失敗しました: ${error.message}`);
+      }
+
+      return {
+        ...(data as any),
+        number_value: (data as any).number_value ?? null,
+        date_value: (data as any).date_value ?? null,
+      } as StudentApplication;
+    } else {
+      // 作成
+      const { data, error } = await supabase
+        .from('student_applications')
+        .insert({
+          school_id: schoolId,
+          student_id: studentId,
+          item_id: itemId,
+          status: null as any,
+          number_value: numberValue,
+        } as any)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`申込状況の作成に失敗しました: ${error.message}`);
+      }
+
+      return {
+        ...(data as any),
+        number_value: (data as any).number_value ?? null,
+        date_value: (data as any).date_value ?? null,
+      } as StudentApplication;
+    }
+}
+
+/**
+ * 生徒の申込状況の日付を更新（または作成）
+ */
+export async function updateStudentApplicationDate(
+  studentId: string,
+  itemId: string,
+  dateValue: string | null
+): Promise<StudentApplication | null> {
+  // 生徒IDからschool_idを取得
+  const { data: student, error: studentError } = await supabase
+    .from('students')
+    .select('school_id')
+    .eq('id', studentId)
+    .single();
+
+  if (studentError || !student) {
+    throw new Error(`生徒情報の取得に失敗しました: ${studentError?.message || '生徒が見つかりません'}`);
+  }
+
+  const schoolId = student.school_id;
+
+  if (dateValue === null) {
+    // 削除（未登録状態に戻す）
+    const { error } = await supabase
+      .from('student_applications')
+      .delete()
+      .eq('student_id', studentId)
+      .eq('item_id', itemId)
+      .eq('school_id', schoolId);
+
+    if (error) {
+      throw new Error(`申込状況の削除に失敗しました: ${error.message}`);
+    }
+
+    return null;
+  }
+
+  // 既存レコードを確認
+  const { data: existing, error: existingError } = await supabase
+    .from('student_applications')
+    .select('id')
+    .eq('student_id', studentId)
+    .eq('item_id', itemId)
+    .eq('school_id', schoolId)
+    .maybeSingle();
+
+  // 406エラーやその他のエラーは無視（レコードが存在しない場合は新規作成）
+  if (existingError && existingError.code !== 'PGRST116' && existingError.code !== '42501' && existingError.code !== 'PGRST202') {
+    console.warn('既存レコードの確認に失敗しました（新規作成として処理します）:', existingError);
+  }
+
+    if (existing) {
+      // 更新
+      const { data, error } = await supabase
+        .from('student_applications')
+        .update({ date_value: dateValue } as any)
+        .eq('id', existing.id)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`申込状況の更新に失敗しました: ${error.message}`);
+      }
+
+      return {
+        ...(data as any),
+        number_value: (data as any).number_value ?? null,
+        date_value: (data as any).date_value ?? null,
+      } as StudentApplication;
+    } else {
+      // 作成
+      const { data, error } = await supabase
+        .from('student_applications')
+        .insert({
+          school_id: schoolId,
+          student_id: studentId,
+          item_id: itemId,
+          status: null as any,
+          date_value: dateValue,
+        } as any)
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(`申込状況の作成に失敗しました: ${error.message}`);
+      }
+
+      return {
+        ...(data as any),
+        number_value: (data as any).number_value ?? null,
+        date_value: (data as any).date_value ?? null,
+      } as StudentApplication;
+    }
 }

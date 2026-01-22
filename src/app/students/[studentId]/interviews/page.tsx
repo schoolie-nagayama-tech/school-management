@@ -1,0 +1,86 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { AdminLayout } from '@/components/layouts';
+import { InterviewList } from '@/components/students/InterviewList';
+import { getStudent } from '@/lib/api/students';
+import { getDefaultSchoolId } from '@/lib/api/schools';
+import { Button } from '@/components/ui';
+import { ArrowLeft } from 'lucide-react';
+import type { Student } from '@/types/database';
+
+export default function StudentInterviewsPage() {
+  const params = useParams();
+  const router = useRouter();
+  const studentId = params.studentId as string;
+  const [student, setStudent] = useState<Student | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const schoolId = getDefaultSchoolId();
+
+  useEffect(() => {
+    async function fetchStudent() {
+      try {
+        const data = await getStudent(studentId);
+        setStudent(data);
+      } catch (error) {
+        console.error('Error fetching student:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    if (studentId) {
+      fetchStudent();
+    }
+  }, [studentId]);
+
+  if (isLoading) {
+    return (
+      <AdminLayout headerTitle="面談記録">
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-[#ff8e3c] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-[#2a2a2a]">読み込み中...</p>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  if (!student) {
+    return (
+      <AdminLayout headerTitle="面談記録">
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <p className="text-[#d9376e] text-lg mb-4">生徒が見つかりません</p>
+            <Button onClick={() => router.push('/students')}>生徒一覧に戻る</Button>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  return (
+    <AdminLayout headerTitle="面談記録">
+      <div className="max-w-4xl mx-auto">
+        {/* ヘッダー */}
+        <div className="mb-6">
+          <Button
+            variant="ghost"
+            onClick={() => router.push('/students')}
+            className="mb-4"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            生徒一覧に戻る
+          </Button>
+          <h1 className="text-2xl font-bold text-[#0d0d0d]">
+            {student.last_name} {student.first_name} の面談記録
+          </h1>
+        </div>
+
+        {/* 面談記録リスト */}
+        <InterviewList studentId={studentId} schoolId={schoolId} />
+      </div>
+    </AdminLayout>
+  );
+}

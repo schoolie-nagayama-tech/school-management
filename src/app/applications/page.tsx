@@ -166,10 +166,94 @@ export default function ApplicationsPage() {
               school_id: students.find((s) => s.id === studentId)?.school_id || '',
               student_id: studentId,
               item_id: itemId,
-              status,
+              status: status as any,
+              number_value: null as any,
+              date_value: null as any,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
-            };
+            } as StudentApplication;
+            return [...prev, newApp];
+          }
+        });
+      }
+    },
+    [students]
+  );
+
+  // 数値が変更されたときの処理
+  const handleNumberChange = useCallback(
+    (studentId: string, itemId: string, numberValue: number | null) => {
+      if (numberValue === null) {
+        // 削除
+        setApplications((prev) =>
+          prev.filter(
+            (app) => !(app.student_id === studentId && app.item_id === itemId)
+          )
+        );
+      } else {
+        // 更新または追加
+        setApplications((prev) => {
+          const existing = prev.find(
+            (app) => app.student_id === studentId && app.item_id === itemId
+          );
+          if (existing) {
+            return prev.map((app) =>
+              app.id === existing.id ? { ...app, number_value: numberValue } : app
+            );
+          } else {
+            // 新規作成
+            const newApp: StudentApplication = {
+              id: `temp-${studentId}-${itemId}`,
+              school_id: students.find((s) => s.id === studentId)?.school_id || '',
+              student_id: studentId,
+              item_id: itemId,
+              status: null as any,
+              number_value: numberValue as any,
+              date_value: null as any,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            } as StudentApplication;
+            return [...prev, newApp];
+          }
+        });
+      }
+    },
+    [students]
+  );
+
+  // 日付が変更されたときの処理
+  const handleDateChange = useCallback(
+    (studentId: string, itemId: string, dateValue: string | null) => {
+      if (dateValue === null) {
+        // 削除
+        setApplications((prev) =>
+          prev.filter(
+            (app) => !(app.student_id === studentId && app.item_id === itemId)
+          )
+        );
+      } else {
+        // 更新または追加
+        setApplications((prev) => {
+          const existing = prev.find(
+            (app) => app.student_id === studentId && app.item_id === itemId
+          );
+          if (existing) {
+            return prev.map((app) =>
+              app.id === existing.id ? { ...app, date_value: dateValue } : app
+            );
+          } else {
+            // 新規作成
+            const newApp: StudentApplication = {
+              id: `temp-${studentId}-${itemId}`,
+              school_id: students.find((s) => s.id === studentId)?.school_id || '',
+              student_id: studentId,
+              item_id: itemId,
+              status: null as any,
+              number_value: null as any,
+              date_value: dateValue as any,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            } as StudentApplication;
             return [...prev, newApp];
           }
         });
@@ -293,6 +377,8 @@ export default function ApplicationsPage() {
           items={items.filter((i) => filters.showHidden || !i.is_hidden)}
           applications={applications}
           onStatusChange={canEdit ? handleStatusChange : undefined}
+          onNumberChange={canEdit ? handleNumberChange : undefined}
+          onDateChange={canEdit ? handleDateChange : undefined}
           onStudentClick={handleStudentClick}
           onItemsChange={fetchData}
         />

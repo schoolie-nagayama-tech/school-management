@@ -253,6 +253,8 @@ export type Database = {
           name: string;
           sort_order: number;
           is_active: boolean;
+          column_type?: 'check' | 'number' | 'date';
+          due_date?: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -262,6 +264,8 @@ export type Database = {
           name: string;
           sort_order?: number;
           is_active?: boolean;
+          column_type?: 'check' | 'number' | 'date';
+          due_date?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -271,6 +275,8 @@ export type Database = {
           name?: string;
           sort_order?: number;
           is_active?: boolean;
+          column_type?: 'check' | 'number' | 'date';
+          due_date?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -289,7 +295,9 @@ export type Database = {
           school_id: string;
           student_id: string;
           item_id: string;
-          status: 'pending' | 'completed' | 'not_applicable';
+          status?: 'pending' | 'completed' | 'not_applicable' | null;
+          number_value?: number | null;
+          date_value?: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -298,7 +306,9 @@ export type Database = {
           school_id: string;
           student_id: string;
           item_id: string;
-          status: 'pending' | 'completed' | 'not_applicable';
+          status?: 'pending' | 'completed' | 'not_applicable' | null;
+          number_value?: number | null;
+          date_value?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -307,7 +317,9 @@ export type Database = {
           school_id?: string;
           student_id?: string;
           item_id?: string;
-          status?: 'pending' | 'completed' | 'not_applicable';
+          status?: 'pending' | 'completed' | 'not_applicable' | null;
+          number_value?: number | null;
+          date_value?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -487,6 +499,7 @@ export type Database = {
           student_id: string;
           textbook_id: number;
           is_active: boolean;
+          is_draft: boolean;
           season: 'spring' | 'summer' | 'winter' | null;
           sort_order: number | null;
           created_at: string;
@@ -498,6 +511,7 @@ export type Database = {
           student_id: string;
           textbook_id: number;
           is_active?: boolean;
+          is_draft?: boolean;
           season?: 'spring' | 'summer' | 'winter' | null;
           sort_order?: number | null;
           created_at?: string;
@@ -509,6 +523,7 @@ export type Database = {
           student_id?: string;
           textbook_id?: number;
           is_active?: boolean;
+          is_draft?: boolean;
           season?: 'spring' | 'summer' | 'winter' | null;
           sort_order?: number | null;
           created_at?: string;
@@ -920,10 +935,22 @@ export const STATUS_COLORS: Record<Student['status'], string> = {
   withdrawn: 'bg-[#eff0f3] text-[#2a2a2a]/60 border border-[#0d0d0d]',
 };
 
+// 列タイプ
+export type ApplicationColumnType = 'check' | 'number' | 'date';
+
+// 列タイプ表示名
+export const APPLICATION_COLUMN_TYPE_LABELS: Record<ApplicationColumnType, string> = {
+  check: 'チェック',
+  number: '数値',
+  date: '日付',
+};
+
 // 申込状況管理の型定義
 export type ApplicationItem = Database['public']['Tables']['application_items']['Row'] & {
   is_hidden?: boolean;
   ended_at?: string | null;
+  column_type: ApplicationColumnType;
+  due_date: string | null;
 };
 export type ApplicationItemInsert = Database['public']['Tables']['application_items']['Insert'];
 export type ApplicationItemUpdate = Database['public']['Tables']['application_items']['Update'];

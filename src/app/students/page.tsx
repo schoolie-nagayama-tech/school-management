@@ -17,11 +17,14 @@ import {
   deleteStudent,
 } from '@/lib/api/students';
 import type { Student, StudentInsert, StudentUpdate, Subject } from '@/types/database';
+import { GRADE_LABELS } from '@/types/database';
 import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
 import { AdminLayout } from '@/components/layouts';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import { AlertBoard } from '@/components/alerts';
+import { BulletinBoard } from '@/components/bulletin';
 
 export default function StudentsPage() {
   // 権限チェック
@@ -37,6 +40,9 @@ export default function StudentsPage() {
   
   // 在籍状況フィルター（デフォルトは在籍中のみ表示）
   const [showInactive, setShowInactive] = useState(false);
+  
+  // 学年フィルター
+  const [selectedGrade, setSelectedGrade] = useState<number | 'all'>('all');
 
   // モーダル関連
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -71,13 +77,20 @@ export default function StudentsPage() {
 
   // フィルター済みの生徒一覧
   const filteredStudents = useMemo(() => {
-    if (showInactive) {
-      // 全員表示
-      return students;
+    let filtered = students;
+    
+    // 在籍状況フィルター
+    if (!showInactive) {
+      filtered = filtered.filter((student) => student.status === 'active');
     }
-    // 在籍中のみ表示
-    return students.filter((student) => student.status === 'active');
-  }, [students, showInactive]);
+    
+    // 学年フィルター
+    if (selectedGrade !== 'all') {
+      filtered = filtered.filter((student) => student.grade === selectedGrade);
+    }
+    
+    return filtered;
+  }, [students, showInactive, selectedGrade]);
 
   // 非表示の生徒数（休塾・退塾）
   const inactiveCount = useMemo(() => {
@@ -172,11 +185,9 @@ export default function StudentsPage() {
     router.push(`/students/${student.id}/progress`);
   };
 
-  // 面談記録を開く（詳細モーダルの面談記録タブを開く）
+  // 面談記録を開く（直接面談記録ページに遷移）
   const handleOpenInterviews = (student: Student) => {
-    setSelectedStudent(student);
-    setIsDetailModalOpen(true);
-    // モーダルが開いたら面談記録タブに切り替える（StudentDetailModalで実装が必要な場合）
+    router.push(`/students/${student.id}/interviews`);
   };
 
   // 成績管理を開く
@@ -253,6 +264,12 @@ export default function StudentsPage() {
           </div>
         )}
 
+        {/* 掲示板とアラート */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+          <BulletinBoard />
+          <AlertBoard />
+        </div>
+
         {/* ツールバー */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           {/* 左側: 検索 + フィルターボタン */}
@@ -284,6 +301,20 @@ export default function StudentsPage() {
                 />
               </div>
             </div>
+
+            {/* 学年フィルター */}
+            <select
+              value={selectedGrade}
+              onChange={(e) => setSelectedGrade(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+              className="px-4 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a] focus:ring-2 focus:ring-[#ff8e3c] focus:border-[#ff8e3c]"
+            >
+              <option value="all">全学年</option>
+              {Array.from({ length: 13 }, (_, i) => i + 1).map((grade) => (
+                <option key={grade} value={grade}>
+                  {GRADE_LABELS[grade] || `学年${grade}`}
+                </option>
+              ))}
+            </select>
 
             {/* 休塾・退塾表示ボタン */}
             <button

@@ -52,12 +52,17 @@ import type {
   SeasonalCourseWithDetails,
 } from '@/types/database';
 import { GRADE_LABELS, SEASON_LABELS } from '@/types/database';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function StudentProgressPage() {
   const params = useParams();
   const router = useRouter();
   const studentId = params?.studentId as string;
   const { toasts, removeToast, success, error } = useToast();
+  const { profile } = useAuth();
+  
+  // 講師かどうかを判定（講師は下書きを見られない）
+  const isTeacher = profile?.role === 'teacher';
 
   const [student, setStudent] = useState<Student | null>(null);
   const [studentTextbooks, setStudentTextbooks] = useState<StudentTextbookWithDetails[]>([]);
@@ -115,8 +120,12 @@ export default function StudentProgressPage() {
     if (!studentId) return;
     try {
       const data = await getStudentTextbooks(studentId, true);
+      // 講師の場合は下書きを除外
+      const filtered = isTeacher 
+        ? data.filter(st => !st.is_draft)
+        : data;
       // sort_orderでソート
-      const sorted = [...data].sort((a, b) => {
+      const sorted = [...filtered].sort((a, b) => {
         const orderA = a.sort_order ?? 0;
         const orderB = b.sort_order ?? 0;
         if (orderA !== orderB) return orderA - orderB;
@@ -130,7 +139,7 @@ export default function StudentProgressPage() {
       console.error('Error fetching student textbooks:', err);
       error(err instanceof Error ? err.message : 'テキスト一覧の取得に失敗しました');
     }
-  }, [studentId, selectedTextbookId, error]);
+  }, [studentId, selectedTextbookId, error, isTeacher]);
 
   // テキストマスタを取得
   const fetchTextbooks = useCallback(async () => {
@@ -788,7 +797,7 @@ export default function StudentProgressPage() {
         <div className="mb-6">
           <div className="flex items-center gap-2 overflow-x-auto pb-2">
             {studentTextbooks
-              .filter((st) => st.is_active)
+              .filter((st) => st.is_active && (!isTeacher || !st.is_draft))
               .map((st) => {
                 const seasonColors = {
                   spring: selectedTextbookId === st.id ? 'bg-[#ffeb3b] text-[#0d0d0d] border-2 border-[#ffc107]' : 'bg-[#fff9e5] text-[#2a2a2a] hover:bg-[#ffeb3b]',
@@ -843,14 +852,30 @@ export default function StudentProgressPage() {
                       }
                     }}
                     onClick={() => setSelectedTextbookId(st.id)}
-                    className={`px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-colors cursor-move ${colorClass}`}
+                    className={`px-3 py-2 rounded-lg transition-colors cursor-move ${colorClass} ${st.is_draft ? 'opacity-60 border-dashed' : ''}`}
                   >
-                    {st.textbook.name}
-                    {st.textbook.grade && (
-                      <span className="ml-1 text-xs opacity-75">
-                        ({st.textbook.grade})
-                      </span>
-                    )}
+                    <div className="flex flex-col items-center gap-0.5">
+                      <div className="text-sm font-medium leading-tight">
+                        {st.textbook.name}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[10px] leading-tight">
+                        {st.textbook.subject && (
+                          <span className="font-normal opacity-90">
+                            [{st.textbook.subject}]
+                          </span>
+                        )}
+                        {st.textbook.grade && (
+                          <span className="opacity-75">
+                            ({st.textbook.grade})
+                          </span>
+                        )}
+                        {st.is_draft && !isTeacher && (
+                          <span className="opacity-75">
+                            (下書き)
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </button>
                 );
               })}
@@ -959,6 +984,28 @@ export default function StudentProgressPage() {
                       冬期
                     </button>
                   </div>
+                  {!isTeacher && (
+                    <Button
+                      onClick={async () => {
+                        if (window.confirm(`${selectedTextbook.textbook.name}を${selectedTextbook.is_draft ? '公開' : '下書き'}にしますか？`)) {
+                          try {
+                            await updateStudentTextbook(selectedTextbook.id, {
+                              is_draft: !selectedTextbook.is_draft,
+                            });
+                            await fetchStudentTextbooks();
+                            success(selectedTextbook.is_draft ? 'テキストを公開しました' : 'テキストを下書きにしました');
+                          } catch (err) {
+                            error(err instanceof Error ? err.message : '操作に失敗しました');
+                          }
+                        }
+                      }}
+                      variant="secondary"
+                      size="sm"
+                      className={selectedTextbook.is_draft ? 'bg-[#ff8e3c] text-[#0d0d0d]' : ''}
+                    >
+                      {selectedTextbook.is_draft ? '公開' : '下書き'}
+                    </Button>
+                  )}
                   <Button
                     onClick={async () => {
                       if (window.confirm(`${selectedTextbook.textbook.name}を${selectedTextbook.is_active ? '非表示' : '表示'}にしますか？`)) {
@@ -976,7 +1023,7 @@ export default function StudentProgressPage() {
                     variant="secondary"
                     size="sm"
                   >
-                    {selectedTextbook.is_active ? '非表示にする' : '表示する'}
+                    {selectedTextbook.is_active ? '非表示' : '表示'}
                   </Button>
                   <Button
                     onClick={async () => {

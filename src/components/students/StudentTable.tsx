@@ -150,12 +150,11 @@ export function StudentTable({
                   </span>
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex justify-end gap-3" onClick={(e) => e.stopPropagation()}>
                     {onScores && (
                       <button
                         onClick={() => onScores(student)}
-                        className="p-1.5 text-[#2a2a2a] hover:text-[#ff8e3c] hover:bg-[#ff8e3c]/10 rounded-lg transition-colors"
-                        title="成績"
+                        className="flex flex-col items-center gap-1 p-1.5 text-[#2a2a2a] hover:text-[#ff8e3c] hover:bg-[#ff8e3c]/10 rounded-lg transition-colors"
                       >
                         <svg
                           className="w-4 h-4"
@@ -170,13 +169,13 @@ export function StudentTable({
                             d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                           />
                         </svg>
+                        <span className="text-[10px] leading-tight">成績</span>
                       </button>
                     )}
                     {onInterviews && (
                       <button
                         onClick={() => onInterviews(student)}
-                        className="p-1.5 text-[#2a2a2a] hover:text-[#0d0d0d] hover:bg-[#0d0d0d]/10 rounded-lg transition-colors"
-                        title="面談記録"
+                        className="flex flex-col items-center gap-1 p-1.5 text-[#2a2a2a] hover:text-[#0d0d0d] hover:bg-[#0d0d0d]/10 rounded-lg transition-colors"
                       >
                         <svg
                           className="w-4 h-4"
@@ -191,13 +190,13 @@ export function StudentTable({
                             d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
                           />
                         </svg>
+                        <span className="text-[10px] leading-tight">面談</span>
                       </button>
                     )}
                     {onProgress && (
                       <button
                         onClick={() => onProgress(student)}
-                        className="p-1.5 text-[#2a2a2a] hover:text-[#ff8e3c] hover:bg-[#ff8e3c]/10 rounded-lg transition-colors"
-                        title="進行表"
+                        className="flex flex-col items-center gap-1 p-1.5 text-[#2a2a2a] hover:text-[#ff8e3c] hover:bg-[#ff8e3c]/10 rounded-lg transition-colors"
                       >
                         <svg
                           className="w-4 h-4"
@@ -212,12 +211,12 @@ export function StudentTable({
                             d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
                           />
                         </svg>
+                        <span className="text-[10px] leading-tight">進行表</span>
                       </button>
                     )}
                     <button
                       onClick={() => onEdit(student)}
-                      className="p-1.5 text-[#2a2a2a] hover:text-[#ff8e3c] hover:bg-[#ff8e3c]/10 rounded-lg transition-colors"
-                      title="編集"
+                      className="flex flex-col items-center gap-1 p-1.5 text-[#2a2a2a] hover:text-[#ff8e3c] hover:bg-[#ff8e3c]/10 rounded-lg transition-colors"
                     >
                       <svg
                         className="w-4 h-4"
@@ -232,14 +231,14 @@ export function StudentTable({
                           d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
                         />
                       </svg>
+                      <span className="text-[10px] leading-tight">編集</span>
                     </button>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         onDelete(student);
                       }}
-                      className="p-1.5 text-[#2a2a2a] hover:text-[#d9376e] hover:bg-[#d9376e]/10 rounded-lg transition-colors"
-                      title="削除"
+                      className="flex flex-col items-center gap-1 p-1.5 text-[#2a2a2a] hover:text-[#d9376e] hover:bg-[#d9376e]/10 rounded-lg transition-colors"
                     >
                       <svg
                         className="w-4 h-4"
@@ -254,6 +253,7 @@ export function StudentTable({
                           d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                         />
                       </svg>
+                      <span className="text-[10px] leading-tight">削除</span>
                     </button>
                   </div>
                 </td>

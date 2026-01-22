@@ -78,15 +78,15 @@ export default function LoginPage() {
           <form onSubmit={handleEmailLogin} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
-                メールアドレス
+                メールアドレスまたはユーザーID
               </label>
               <input
-                type="email"
+                type="text"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
                 className="w-full px-4 py-3 border border-[#0d0d0d] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff8e3c]"
-                placeholder="example@email.com"
+                placeholder="メールアドレスまたはユーザーID"
               />
             </div>
             <div>
