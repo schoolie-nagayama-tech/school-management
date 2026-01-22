@@ -24,8 +24,7 @@ function getSupabaseAdmin() {
 export async function GET(request: NextRequest) {
   try {
     const supabaseAdmin = getSupabaseAdmin();
-    const { searchParams } = new URL(request.url);
-    const roleParam = searchParams.get('role');
+    const roleParam = request.nextUrl.searchParams.get('role');
     
     // まずユーザープロファイルを取得
     let query = supabaseAdmin
