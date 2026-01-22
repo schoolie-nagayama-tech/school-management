@@ -24,7 +24,6 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // セッションをリフレッシュ（必要に応じて）
   await supabase.auth.getSession();
 
   return supabaseResponse;

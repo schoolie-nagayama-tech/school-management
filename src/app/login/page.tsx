@@ -46,7 +46,6 @@ export default function LoginPage() {
         setIsLoading(false);
       }
     } catch (err: any) {
-      console.error('Login error:', err);
       setIsLoading(false);
       if (err.message?.includes('Invalid login credentials')) {
         setError('メールアドレスまたはパスワードが正しくありません');
@@ -64,7 +63,6 @@ export default function LoginPage() {
     try {
       await signInWithGoogle();
     } catch (err: any) {
-      console.error('Google login error:', err);
       setError('Googleログインに失敗しました');
     }
   };

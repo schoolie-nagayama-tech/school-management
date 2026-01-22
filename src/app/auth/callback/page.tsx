@@ -4,7 +4,6 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createSupabaseBrowserClient } from '@/lib/supabase';
 
-// Google認証を許可するロール
 const GOOGLE_AUTH_ALLOWED_ROLES = ['admin', 'owner', 'manager'];
 
 export default function AuthCallbackPage() {
@@ -13,15 +12,12 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const run = async () => {
       const supabase = createSupabaseBrowserClient();
-
-      // detectSessionInUrl: true が自動処理した結果を取得
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error || !session) {
         router.replace('/login?error=auth_failed');
         return;
       }
 
-      // 権限チェック
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('id, role')

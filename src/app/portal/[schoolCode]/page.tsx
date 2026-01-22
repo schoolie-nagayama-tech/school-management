@@ -27,10 +27,8 @@ export default async function PortalPage({ params }: PortalPageProps) {
   // 教室情報を取得
   const school = await getSchoolByCode(schoolCode);
   if (!school) {
-    console.error(`[Portal] School not found for code: ${schoolCode}`);
     notFound();
   }
-  console.log(`[Portal] School found: ${school.name} (id: ${school.id}, code: ${school.code})`);
 
   // 公開メニューを取得
   let menus;
@@ -51,8 +49,6 @@ export default async function PortalPage({ params }: PortalPageProps) {
           try {
             const activePeriod = await getActiveFormPeriod(school.id, formType);
             const isFormActive = !!activePeriod;
-            // デバッグ用ログ
-            console.log(`[Portal] Menu: ${menu.menu_key}, FormType: ${formType}, SchoolId: ${school.id}, isFormActive: ${isFormActive}, link_url: ${menu.link_url}`);
             return { menu, isFormActive };
           } catch (error) {
             console.error(`Error checking form period for ${menu.menu_key}:`, error);
