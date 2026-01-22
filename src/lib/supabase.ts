@@ -18,9 +18,34 @@ export const getSupabaseBrowserClient = (): SupabaseClient<Database> => {
     return browserClient;
   }
 
-  // 新しいインスタンスを作成
+  // クッキーストレージを使用するカスタムストレージアダプター
+  const cookieStorage = {
+    getItem: (key: string): string | null => {
+      if (typeof document === 'undefined') return null;
+      const cookies = document.cookie.split(';');
+      for (const cookie of cookies) {
+        const [name, value] = cookie.trim().split('=');
+        if (name === key) {
+          return decodeURIComponent(value);
+        }
+      }
+      return null;
+    },
+    setItem: (key: string, value: string): void => {
+      if (typeof document === 'undefined') return;
+      // セキュアなクッキーとして設定（SameSite=Lax、Secure、HttpOnlyは設定できない）
+      document.cookie = `${key}=${encodeURIComponent(value)}; path=/; SameSite=Lax; max-age=31536000`;
+    },
+    removeItem: (key: string): void => {
+      if (typeof document === 'undefined') return;
+      document.cookie = `${key}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+    },
+  };
+
+  // 新しいインスタンスを作成（クッキーストレージを使用）
   browserClient = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey, {
     auth: {
+      storage: cookieStorage,
       storageKey: 'sb-auth-token',
       autoRefreshToken: true,
       persistSession: true,
