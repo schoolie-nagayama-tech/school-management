@@ -5,6 +5,8 @@ import {
   createFormPeriod,
   updateFormPeriod,
   deleteFormPeriod,
+  archivePeriod,
+  unarchivePeriod,
 } from './form-periods';
 import {
   getFormResponses,
@@ -34,13 +36,36 @@ import type {
  * 増コマ申込期間一覧を取得
  */
 export async function getZoukomaPeriods(
-  schoolId?: string
+  schoolId?: string,
+  includeArchived: boolean = false
 ): Promise<ZoukomaPeriod[]> {
-  const periods = await getFormPeriods(schoolId, 'zoukoma');
+  const periods = await getFormPeriods(schoolId, 'zoukoma', includeArchived);
   return periods.map((period) => ({
     ...period,
     settings: (period.settings as ZoukomaSettings) || {},
   }));
+}
+
+/**
+ * 増コマ申込期間をアーカイブ
+ */
+export async function archiveZoukomaPeriod(
+  id: string,
+  schoolId: string,
+  periodKey: string
+): Promise<{ periodArchived: boolean; responsesArchived: number }> {
+  return archivePeriod(id, schoolId, 'zoukoma', periodKey);
+}
+
+/**
+ * 増コマ申込期間のアーカイブを解除
+ */
+export async function unarchiveZoukomaPeriod(
+  id: string,
+  schoolId: string,
+  periodKey: string
+): Promise<{ periodUnarchived: boolean; responsesUnarchived: number }> {
+  return unarchivePeriod(id, schoolId, 'zoukoma', periodKey);
 }
 
 /**

@@ -7,9 +7,10 @@ import type { StudentAlerts, Alert } from '@/types/alerts';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
 import { GRADE_LABELS } from '@/types/database';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { dismissAlert } from '@/lib/api/alerts';
+import { ALERT_TYPE_LABELS, ALERT_TYPE_COLORS } from '@/types/alerts';
 
 interface AlertBoardProps {
   className?: string;
@@ -21,9 +22,20 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
   const [studentAlerts, setStudentAlerts] = useState<StudentAlerts[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isExpanded, setIsExpanded] = useState(true);
+  const [showInfoPopup, setShowInfoPopup] = useState(false);
   
   // 対応済み操作はmanager以上のみ
   const canDismiss = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+  
+  // アラートタイプの説明
+  const alertTypeDescriptions: Record<string, string> = {
+    score_drop: '前回と比較して10点以上低下した科目',
+    score_missing: '最新の成績で未入力の科目がある',
+    interview_overdue: '最後の面談から30日以上経過している',
+    application_overdue: '期日が過ぎている申込項目がある',
+    interview_task: '未完了の面談タスクがある',
+    exam_overdue: 'テスト日が過ぎている目標設定がある',
+  };
 
   const fetchAlerts = useCallback(async () => {
     setIsLoading(true);
@@ -113,17 +125,27 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
   return (
     <div className={`bg-[#fffffe] rounded-xl border border-[#0d0d0d] overflow-hidden ${className}`}>
       {/* ヘッダー */}
-      <div 
-        className="flex items-center justify-between p-4 bg-[#eff0f3] border-b border-[#0d0d0d] cursor-pointer hover:bg-[#0d0d0d]/5 transition-colors"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
+      <div className="flex items-center justify-between p-4 bg-[#eff0f3] border-b border-[#0d0d0d]">
         <div className="flex items-center gap-2">
           <span className="text-lg">⚠️</span>
           <span className="font-semibold text-[#0d0d0d]">
             アラート（{totalAlerts}件）
           </span>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowInfoPopup(!showInfoPopup);
+            }}
+            className="ml-2 text-[#2a2a2a] hover:text-[#0d0d0d] transition-colors"
+            title="アラート内容の説明"
+          >
+            <Info className="w-4 h-4" />
+          </button>
         </div>
-        <button className="text-[#2a2a2a] hover:text-[#0d0d0d] transition-colors">
+        <button 
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="text-[#2a2a2a] hover:text-[#0d0d0d] transition-colors"
+        >
           {isExpanded ? (
             <ChevronUp className="w-5 h-5" />
           ) : (
@@ -131,6 +153,37 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
           )}
         </button>
       </div>
+      
+      {/* アラート内容説明ポップアップ */}
+      {showInfoPopup && (
+        <div className="relative">
+          <div className="absolute top-2 left-4 z-10 bg-[#fffffe] border-2 border-[#0d0d0d] rounded-lg shadow-lg p-4 min-w-[300px]">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-[#0d0d0d]">アラート内容一覧</h3>
+              <button
+                onClick={() => setShowInfoPopup(false)}
+                className="text-[#2a2a2a] hover:text-[#0d0d0d] transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="space-y-2">
+              {Object.entries(ALERT_TYPE_LABELS).map(([type, label]) => (
+                <div key={type} className="flex items-start gap-2">
+                  <span className={`px-2 py-1 text-xs font-medium rounded ${ALERT_TYPE_COLORS[type as keyof typeof ALERT_TYPE_COLORS]}`}>
+                    {label}
+                  </span>
+                  <span className="text-sm text-[#2a2a2a] flex-1">
+                    {alertTypeDescriptions[type]}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* アラート一覧 */}
       {isExpanded && (

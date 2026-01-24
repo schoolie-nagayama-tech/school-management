@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui';
-import { getForms, deleteForm, updateFormStatus } from '@/lib/api/forms';
+import { getForms, deleteForm, updateFormStatus, archiveForm, unarchiveForm } from '@/lib/api/forms';
 import type { Form, FormStatus } from '@/types/database';
 import { FORM_STATUS_LABELS } from '@/types/database';
 import { FormLinkModal } from './FormLinkModal';
@@ -23,12 +23,13 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
   const [selectedFormForLink, setSelectedFormForLink] = useState<Form | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
 
   const fetchForms = async () => {
     setIsLoading(true);
     setErrorMessage('');
     try {
-      const data = await getForms();
+      const data = await getForms(undefined, showArchived);
       setForms(data);
     } catch (error) {
       console.error('Error fetching forms:', error);
@@ -42,7 +43,7 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
 
   useEffect(() => {
     fetchForms();
-  }, []);
+  }, [showArchived]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('このフォームを削除しますか？回答データも削除されます。')) return;
@@ -80,6 +81,44 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
     }
   };
 
+  const handleArchive = async (id: string) => {
+    if (!confirm('このフォームをアーカイブしますか？\n\nこのフォームから申し込んだ回答も自動でアーカイブされます。')) return;
+    
+    setIsSubmitting(true);
+    setErrorMessage('');
+    try {
+      const result = await archiveForm(id);
+      await fetchForms();
+      onRefresh();
+      alert(`アーカイブしました（回答${result.responsesArchived}件を含む）`);
+    } catch (error) {
+      console.error('Error archiving form:', error);
+      setErrorMessage(
+        error instanceof Error ? error.message : 'フォームのアーカイブに失敗しました'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUnarchive = async (id: string) => {
+    setIsSubmitting(true);
+    setErrorMessage('');
+    try {
+      const result = await unarchiveForm(id);
+      await fetchForms();
+      onRefresh();
+      alert(`アーカイブを解除しました（回答${result.responsesUnarchived}件を含む）`);
+    } catch (error) {
+      console.error('Error unarchiving form:', error);
+      setErrorMessage(
+        error instanceof Error ? error.message : 'フォームのアーカイブ解除に失敗しました'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const getStatusBadgeClass = (status: FormStatus) => {
     switch (status) {
       case 'draft':
@@ -107,6 +146,20 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
         </div>
       )}
 
+      {/* アーカイブ表示切り替え */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => setShowArchived(!showArchived)}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            showArchived
+              ? 'bg-[#ff8e3c]/20 text-[#0d0d0d]'
+              : 'bg-[#eff0f3] text-[#2a2a2a] hover:bg-[#fffffe]'
+          }`}
+        >
+          {showArchived ? 'アーカイブ済みを非表示' : 'アーカイブ済みを表示'}
+        </button>
+      </div>
+
       {forms.length === 0 ? (
         <div className="text-center py-8 text-[#2a2a2a]">
           フォームがありません。テンプレートから作成するか、新規作成してください。
@@ -116,7 +169,11 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
           {forms.map((form) => (
             <div
               key={form.id}
-              className="flex items-center justify-between p-4 bg-[#fffffe] rounded-lg border border-[#0d0d0d]"
+              className={`flex items-center justify-between p-4 rounded-lg border ${
+                form.is_archived
+                  ? 'bg-[#eff0f3] border-[#0d0d0d]/30 opacity-60'
+                  : 'bg-[#fffffe] border-[#0d0d0d]'
+              }`}
             >
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
@@ -193,6 +250,25 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
                     disabled={isSubmitting}
                   >
                     終了
+                  </Button>
+                )}
+                {form.is_archived ? (
+                  <Button
+                    onClick={() => handleUnarchive(form.id)}
+                    variant="secondary"
+                    size="sm"
+                    disabled={isSubmitting}
+                  >
+                    アーカイブ解除
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => handleArchive(form.id)}
+                    variant="secondary"
+                    size="sm"
+                    disabled={isSubmitting}
+                  >
+                    アーカイブ
                   </Button>
                 )}
                 <Button

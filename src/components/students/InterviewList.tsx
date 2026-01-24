@@ -6,6 +6,7 @@ import { getStudentInterviews, deleteInterview, completeTask, uncompleteTask } f
 import { InterviewModal } from './InterviewModal';
 import { Button, Select } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface InterviewListProps {
   studentId: string;
@@ -19,6 +20,10 @@ export function InterviewList({ studentId, schoolId }: InterviewListProps) {
   const [editingInterview, setEditingInterview] = useState<StudentInterview | null>(null);
   const [filterType, setFilterType] = useState<InterviewType | 'all'>('all');
   const { success, error: toastError } = useToast();
+  const { permissions } = useAuth();
+  
+  // 編集権限チェック（講師は編集・削除不可）
+  const canEdit = permissions?.canEditInterviews ?? false;
 
   // データ取得
   const fetchInterviews = useCallback(async () => {
@@ -187,20 +192,22 @@ export function InterviewList({ studentId, schoolId }: InterviewListProps) {
                             {INTERVIEW_TYPE_LABELS[interview.interview_type]}
                           </span>
                         </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleEdit(interview)}
-                            className="text-sm text-[#2a2a2a] hover:text-[#ff8e3c] transition-colors"
-                          >
-                            編集
-                          </button>
-                          <button
-                            onClick={() => handleDelete(interview.id)}
-                            className="text-sm text-[#d9376e] hover:text-[#d9376e]/80 transition-colors"
-                          >
-                            削除
-                          </button>
-                        </div>
+                        {canEdit && (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleEdit(interview)}
+                              className="text-sm text-[#2a2a2a] hover:text-[#ff8e3c] transition-colors"
+                            >
+                              編集
+                            </button>
+                            <button
+                              onClick={() => handleDelete(interview.id)}
+                              className="text-sm text-[#d9376e] hover:text-[#d9376e]/80 transition-colors"
+                            >
+                              削除
+                            </button>
+                          </div>
+                        )}
                       </div>
                       <p className={`text-[#0d0d0d] whitespace-pre-wrap text-sm leading-relaxed ${
                         interview.interview_type === 'task' && interview.is_completed

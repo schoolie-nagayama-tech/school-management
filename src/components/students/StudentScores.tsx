@@ -18,6 +18,7 @@ import {
 } from '@/types/database';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface StudentScoresProps {
   student: Student;
@@ -62,6 +63,7 @@ const MOCK_SUBJECTS = [
 ] as const;
 
 export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) {
+  const { permissions } = useAuth();
   const [assessments, setAssessments] = useState<{
     regular_test: AssessmentWithScores[];
     report_card: AssessmentWithScores[];
@@ -258,7 +260,7 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
           <h3 className="text-lg font-semibold text-[#0d0d0d]">
             {ASSESSMENT_CATEGORY_LABELS[category]}
           </h3>
-          {!isAdding && (
+          {!isAdding && permissions?.canEditScores && (
             <Button
               variant="secondary"
               size="sm"
@@ -487,15 +489,17 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
                         </td>
                       </>
                     )}
-                    <td className="border border-[#0d0d0d] px-3 py-2 text-center">
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        onClick={() => handleDeleteRow(assessment.id)}
-                      >
-                        削除
-                      </Button>
-                    </td>
+                    {permissions?.canEditScores && (
+                      <td className="border border-[#0d0d0d] px-3 py-2 text-center">
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => handleDeleteRow(assessment.id)}
+                        >
+                          削除
+                        </Button>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}

@@ -230,14 +230,21 @@ export async function reorderFormTemplateFields(
 /**
  * フォーム一覧を取得
  */
-export async function getForms(schoolId?: string): Promise<Form[]> {
+export async function getForms(schoolId?: string, includeArchived: boolean = false): Promise<Form[]> {
   const targetSchoolId = schoolId || getDefaultSchoolId();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('forms')
     .select('*')
-    .eq('school_id', targetSchoolId)
-    .order('created_at', { ascending: false });
+    .eq('school_id', targetSchoolId);
+  
+  if (!includeArchived) {
+    query = query.eq('is_archived', false);
+  }
+  
+  query = query.order('created_at', { ascending: false });
+
+  const { data, error } = await query;
 
   if (error) {
     throw new Error(`フォーム一覧の取得に失敗しました: ${error.message}`);
@@ -397,6 +404,61 @@ export async function updateFormStatus(
 }
 
 /**
+ * フォームをアーカイブ（回答も自動アーカイブ）
+ */
+export async function archiveForm(id: string): Promise<{ form: Form; responsesArchived: number }> {
+  // フォームを取得
+  const form = await getForm(id);
+  
+  // フォームをアーカイブ
+  const { data, error } = await supabase
+    .from('forms')
+    .update({
+      is_archived: true,
+      archived_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`フォームのアーカイブに失敗しました: ${error.message}`);
+  }
+
+  // このフォームに関連する回答もアーカイブ
+  const { archiveResponsesByFormId } = await import('./form-responses');
+  const responsesArchived = await archiveResponsesByFormId(id);
+
+  return { form: data, responsesArchived };
+}
+
+/**
+ * フォームのアーカイブを解除（回答も自動アーカイブ解除）
+ */
+export async function unarchiveForm(id: string): Promise<{ form: Form; responsesUnarchived: number }> {
+  // フォームのアーカイブを解除
+  const { data, error } = await supabase
+    .from('forms')
+    .update({
+      is_archived: false,
+      archived_at: null,
+    })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`フォームのアーカイブ解除に失敗しました: ${error.message}`);
+  }
+
+  // このフォームに関連する回答もアーカイブ解除
+  const { unarchiveResponsesByFormId } = await import('./form-responses');
+  const responsesUnarchived = await unarchiveResponsesByFormId(id);
+
+  return { form: data, responsesUnarchived };
+}
+
+/**
  * フォーム項目を追加
  */
 export async function createFormField(
@@ -514,6 +576,7 @@ export async function getPublishedForms(schoolCode: string): Promise<Form[]> {
     .select('*')
     .eq('school_id', school.id)
     .eq('status', 'published')
+    .eq('is_archived', false)
     .or(`publish_start.is.null,publish_start.lte.${now}`)
     .or(`publish_end.is.null,publish_end.gte.${now}`)
     .order('created_at', { ascending: false });
@@ -524,6 +587,9 @@ export async function getPublishedForms(schoolCode: string): Promise<Form[]> {
 
   // 公開期間でフィルタリング（SupabaseのOR条件が複雑なので、クライアント側でも確認）
   const filtered = (data || []).filter((form) => {
+    // アーカイブされたフォームは除外
+    if (form.is_archived) return false;
+    
     const start = form.publish_start ? new Date(form.publish_start) : null;
     const end = form.publish_end ? new Date(form.publish_end) : null;
     const nowDate = new Date();
@@ -559,6 +625,7 @@ export async function getFormBySlug(
     .select('*')
     .eq('school_id', school.id)
     .eq('slug', slug)
+    .eq('is_archived', false)
     .single();
 
   if (formError || !form) {
@@ -570,7 +637,7 @@ export async function getFormBySlug(
   const start = form.publish_start ? new Date(form.publish_start) : null;
   const end = form.publish_end ? new Date(form.publish_end) : null;
 
-  if (form.status !== 'published') {
+  if (form.status !== 'published' || form.is_archived) {
     return null;
   }
   if (start && now < start) {

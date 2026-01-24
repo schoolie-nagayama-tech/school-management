@@ -52,7 +52,8 @@ export function ApplicationTable({
   onStudentClick,
   onItemsChange,
 }: ApplicationTableProps) {
-  const { getSelectedSchoolIds } = useAuth();
+  const { getSelectedSchoolIds, profile } = useAuth();
+  const isTeacher = profile?.role === 'teacher';
   const [updatingCells, setUpdatingCells] = useState<Set<string>>(new Set());
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
@@ -457,6 +458,8 @@ export function ApplicationTable({
                     ? app?.number_value != null
                     : app?.date_value != null;
                   const isOverdueAndIncomplete = isOverdue && !hasValue;
+                  // 講師の場合、teacher_editableがfalseの列は編集不可
+                  const canEdit = !isTeacher || item.teacher_editable === true;
 
                   if (columnType === 'check') {
                     const status = app?.status || null;
@@ -469,9 +472,9 @@ export function ApplicationTable({
                         className={`px-4 py-3 text-center border-r border-[#0d0d0d] transition-colors ${style} ${
                           isOverdueAndIncomplete ? 'bg-red-100' : ''
                         } ${
-                          isUpdating ? 'opacity-50' : onStatusChange ? 'cursor-pointer hover:bg-[#ff8e3c]/10' : 'cursor-default'
+                          isUpdating ? 'opacity-50' : (onStatusChange && canEdit) ? 'cursor-pointer hover:bg-[#ff8e3c]/10' : 'cursor-default opacity-60'
                         }`}
-                        onClick={() => onStatusChange && !isUpdating && handleCellClick(student.id, item.id)}
+                        onClick={() => onStatusChange && !isUpdating && canEdit && handleCellClick(student.id, item.id)}
                         title={
                           status === null
                             ? '未確認（クリックで未申込に）'
@@ -499,10 +502,10 @@ export function ApplicationTable({
                         className={`px-4 py-3 text-center border-r border-[#0d0d0d] transition-colors ${
                           isOverdueAndIncomplete ? 'bg-red-100' : 'bg-[#fffffe]'
                         } ${
-                          isUpdating ? 'opacity-50' : onNumberChange ? 'cursor-pointer hover:bg-[#ff8e3c]/10' : 'cursor-default'
+                          isUpdating ? 'opacity-50' : (onNumberChange && canEdit) ? 'cursor-pointer hover:bg-[#ff8e3c]/10' : 'cursor-default opacity-60'
                         }`}
                         onClick={() => {
-                          if (onNumberChange && !isUpdating && !isEditing) {
+                          if (onNumberChange && !isUpdating && !isEditing && canEdit) {
                             setEditingCell({ studentId: student.id, itemId: item.id, type: 'number' });
                             setEditingValue(numberValue?.toString() || '');
                           }
@@ -563,10 +566,10 @@ export function ApplicationTable({
                         className={`px-4 py-3 text-center border-r border-[#0d0d0d] transition-colors ${
                           isOverdueAndIncomplete ? 'bg-red-100' : 'bg-[#fffffe]'
                         } ${
-                          isUpdating ? 'opacity-50' : onDateChange ? 'cursor-pointer hover:bg-[#ff8e3c]/10' : 'cursor-default'
+                          isUpdating ? 'opacity-50' : (onDateChange && canEdit) ? 'cursor-pointer hover:bg-[#ff8e3c]/10' : 'cursor-default opacity-60'
                         }`}
                         onClick={() => {
-                          if (onDateChange && !isUpdating && !isEditing) {
+                          if (onDateChange && !isUpdating && !isEditing && canEdit) {
                             setEditingCell({ studentId: student.id, itemId: item.id, type: 'date' });
                             setEditingValue(dateValue || '');
                           }

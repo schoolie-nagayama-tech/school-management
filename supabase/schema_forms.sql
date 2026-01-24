@@ -37,6 +37,8 @@ CREATE TABLE IF NOT EXISTS forms (
   publish_end TIMESTAMPTZ,
   completion_message TEXT,
   linked_application_item_id UUID REFERENCES application_items(id) ON DELETE SET NULL,
+  is_archived BOOLEAN NOT NULL DEFAULT false,
+  archived_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(school_id, slug)
@@ -89,6 +91,7 @@ CREATE INDEX IF NOT EXISTS idx_forms_school_id ON forms(school_id);
 CREATE INDEX IF NOT EXISTS idx_forms_slug ON forms(school_id, slug);
 CREATE INDEX IF NOT EXISTS idx_forms_status ON forms(status);
 CREATE INDEX IF NOT EXISTS idx_forms_publish_dates ON forms(publish_start, publish_end);
+CREATE INDEX IF NOT EXISTS idx_forms_is_archived ON forms(is_archived);
 CREATE INDEX IF NOT EXISTS idx_form_fields_form_id ON form_fields(form_id, sort_order);
 CREATE INDEX IF NOT EXISTS idx_form_responses_form_id ON form_responses(form_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_form_responses_school_id ON form_responses(school_id);

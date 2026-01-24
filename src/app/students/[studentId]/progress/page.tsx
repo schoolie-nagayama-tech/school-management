@@ -98,6 +98,28 @@ export default function StudentProgressPage() {
   const [availableCourses, setAvailableCourses] = useState<SeasonalCourseWithDetails[]>([]);
   const [selectedCourseId, setSelectedCourseId] = useState<string>('');
   const [courseApplyMode, setCourseApplyMode] = useState<'overwrite' | 'add'>('overwrite');
+  
+  // 引継ぎと講師名のローカルステート（各行ごと）
+  const [localHandoverMap, setLocalHandoverMap] = useState<Map<number, string>>(new Map());
+  const [localTeacherNameMap, setLocalTeacherNameMap] = useState<Map<number, string>>(new Map());
+  
+  // progressDataが変更されたときにローカルステートを更新
+  useEffect(() => {
+    const newHandoverMap = new Map<number, string>();
+    const newTeacherNameMap = new Map<number, string>();
+    progressData.forEach(item => {
+      if (item.progress) {
+        if (item.progress.handover) {
+          newHandoverMap.set(item.id, item.progress.handover);
+        }
+        if (item.progress.teacher_name) {
+          newTeacherNameMap.set(item.id, item.progress.teacher_name);
+        }
+      }
+    });
+    setLocalHandoverMap(newHandoverMap);
+    setLocalTeacherNameMap(newTeacherNameMap);
+  }, [progressData]);
 
   // 生徒情報を取得
   const fetchStudent = useCallback(async () => {
@@ -503,6 +525,7 @@ export default function StudentProgressPage() {
             ${columnVisibility.showLesson2 ? '<th style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold;">指導日②</th>' : ''}
             ${columnVisibility.showLesson3 ? '<th style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold;">指導日③</th>' : ''}
             ${columnVisibility.showHandover ? '<th style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold;">引継ぎ</th>' : ''}
+            ${columnVisibility.showHandover ? '<th style="border: 1px solid #000; padding: 8px; text-align: center; font-weight: bold;">講師名</th>' : ''}
           </tr>
         </thead>
         <tbody>
@@ -560,6 +583,9 @@ export default function StudentProgressPage() {
             <td style="border: 1px solid #000; padding: 8px; ${borderBottom}">
               ${row.progress?.handover || '-'}
             </td>
+            <td style="border: 1px solid #000; padding: 8px; ${borderBottom}">
+              ${row.progress?.teacher_name || '-'}
+            </td>
           ` : ''}
         </tr>
       `;
@@ -577,6 +603,7 @@ export default function StudentProgressPage() {
             ${columnVisibility.showLesson1 ? '<td style="border: 1px solid #000; padding: 8px;"></td>' : ''}
             ${columnVisibility.showLesson2 ? '<td style="border: 1px solid #000; padding: 8px;"></td>' : ''}
             ${columnVisibility.showLesson3 ? '<td style="border: 1px solid #000; padding: 8px;"></td>' : ''}
+            ${columnVisibility.showHandover ? '<td style="border: 1px solid #000; padding: 8px;"></td>' : ''}
             ${columnVisibility.showHandover ? '<td style="border: 1px solid #000; padding: 8px;"></td>' : ''}
           </tr>
         </tfoot>
@@ -984,65 +1011,67 @@ export default function StudentProgressPage() {
                       冬期
                     </button>
                   </div>
-                  {!isTeacher && (
-                    <Button
-                      onClick={async () => {
-                        if (window.confirm(`${selectedTextbook.textbook.name}を${selectedTextbook.is_draft ? '公開' : '下書き'}にしますか？`)) {
-                          try {
-                            await updateStudentTextbook(selectedTextbook.id, {
-                              is_draft: !selectedTextbook.is_draft,
-                            });
-                            await fetchStudentTextbooks();
-                            success(selectedTextbook.is_draft ? 'テキストを公開しました' : 'テキストを下書きにしました');
-                          } catch (err) {
-                            error(err instanceof Error ? err.message : '操作に失敗しました');
+                  {!isTeacher && selectedTextbook && (
+                    <>
+                      <Button
+                        onClick={async () => {
+                          if (window.confirm(`${selectedTextbook.textbook.name}を${selectedTextbook.is_draft ? '公開' : '下書き'}にしますか？`)) {
+                            try {
+                              await updateStudentTextbook(selectedTextbook.id, {
+                                is_draft: !selectedTextbook.is_draft,
+                              });
+                              await fetchStudentTextbooks();
+                              success(selectedTextbook.is_draft ? 'テキストを公開しました' : 'テキストを下書きにしました');
+                            } catch (err) {
+                              error(err instanceof Error ? err.message : '操作に失敗しました');
+                            }
                           }
-                        }
-                      }}
-                      variant="secondary"
-                      size="sm"
-                      className={selectedTextbook.is_draft ? 'bg-[#ff8e3c] text-[#0d0d0d]' : ''}
-                    >
-                      {selectedTextbook.is_draft ? '公開' : '下書き'}
-                    </Button>
+                        }}
+                        variant="secondary"
+                        size="sm"
+                        className={selectedTextbook.is_draft ? 'bg-[#ff8e3c] text-[#0d0d0d]' : ''}
+                      >
+                        {selectedTextbook.is_draft ? '公開' : '下書き'}
+                      </Button>
+                      <Button
+                        onClick={async () => {
+                          if (window.confirm(`${selectedTextbook.textbook.name}を${selectedTextbook.is_active ? '非表示' : '表示'}にしますか？`)) {
+                            try {
+                              await updateStudentTextbook(selectedTextbook.id, {
+                                is_active: !selectedTextbook.is_active,
+                              });
+                              await fetchStudentTextbooks();
+                              success(selectedTextbook.is_active ? 'テキストを非表示にしました' : 'テキストを表示しました');
+                            } catch (err) {
+                              error(err instanceof Error ? err.message : '操作に失敗しました');
+                            }
+                          }
+                        }}
+                        variant="secondary"
+                        size="sm"
+                      >
+                        {selectedTextbook.is_active ? '非表示' : '表示'}
+                      </Button>
+                      <Button
+                        onClick={async () => {
+                          if (window.confirm(`${selectedTextbook.textbook.name}を削除しますか？\nこの操作は取り消せません。`)) {
+                            try {
+                              await deleteStudentTextbook(selectedTextbook.id);
+                              await fetchStudentTextbooks();
+                              setSelectedTextbookId(null);
+                              success('テキストを削除しました');
+                            } catch (err) {
+                              error(err instanceof Error ? err.message : '削除に失敗しました');
+                            }
+                          }
+                        }}
+                        variant="danger"
+                        size="sm"
+                      >
+                        削除
+                      </Button>
+                    </>
                   )}
-                  <Button
-                    onClick={async () => {
-                      if (window.confirm(`${selectedTextbook.textbook.name}を${selectedTextbook.is_active ? '非表示' : '表示'}にしますか？`)) {
-                        try {
-                          await updateStudentTextbook(selectedTextbook.id, {
-                            is_active: !selectedTextbook.is_active,
-                          });
-                          await fetchStudentTextbooks();
-                          success(selectedTextbook.is_active ? 'テキストを非表示にしました' : 'テキストを表示しました');
-                        } catch (err) {
-                          error(err instanceof Error ? err.message : '操作に失敗しました');
-                        }
-                      }
-                    }}
-                    variant="secondary"
-                    size="sm"
-                  >
-                    {selectedTextbook.is_active ? '非表示' : '表示'}
-                  </Button>
-                  <Button
-                    onClick={async () => {
-                      if (window.confirm(`${selectedTextbook.textbook.name}を削除しますか？\nこの操作は取り消せません。`)) {
-                        try {
-                          await deleteStudentTextbook(selectedTextbook.id);
-                          await fetchStudentTextbooks();
-                          setSelectedTextbookId(null);
-                          success('テキストを削除しました');
-                        } catch (err) {
-                          error(err instanceof Error ? err.message : '削除に失敗しました');
-                        }
-                      }
-                    }}
-                    variant="danger"
-                    size="sm"
-                  >
-                    削除
-                  </Button>
                 </div>
               </div>
               {selectedTextbook.exams && selectedTextbook.exams.length > 0 ? (
@@ -1117,7 +1146,7 @@ export default function StudentProgressPage() {
                 variant="primary"
                 size="sm"
               >
-                + テスト設定を追加
+                目標を設定
               </Button>
 
               {/* 進め方・宿題の出し方 */}
@@ -1283,9 +1312,9 @@ export default function StudentProgressPage() {
                   </div>
                 </div>
 
-                {/* 下段: 表示列切替 */}
+                {/* 下段: 表示列切替（講師には非表示またはグレーアウト） */}
                 {(viewMode === 'admin' || viewMode === 'parent') && (
-                  <div className="flex items-center gap-4 flex-wrap pt-3 border-t border-[#eff0f3]">
+                  <div className={`flex items-center gap-4 flex-wrap pt-3 border-t border-[#eff0f3] ${isTeacher ? 'opacity-50 pointer-events-none' : ''}`}>
                     <span className="text-sm font-medium text-[#2a2a2a]">表示列:</span>
                     <label className="flex items-center gap-1.5 cursor-pointer">
                       <input
@@ -1429,9 +1458,14 @@ export default function StudentProgressPage() {
                         </th>
                       )}
                       {showHandover && (
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-[#0d0d0d]">
-                          引継ぎ
-                        </th>
+                        <>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-[#0d0d0d]">
+                            引継ぎ
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-[#0d0d0d]">
+                            講師名
+                          </th>
+                        </>
                       )}
                     </tr>
                   </thead>
@@ -1449,25 +1483,15 @@ export default function StudentProgressPage() {
                         // 指導日に日付が入っているかチェック
                         const hasLessonDate = lessons.some((l) => l.lesson_date);
                         const rowBgColor = hasLessonDate ? 'bg-[#d1fae5]' : 'bg-[#fffffe]';
-                        // グループの背景色を取得
-                        const getGroupColor = (groupNumber: number | null | undefined): string => {
-                          if (groupNumber == null) return '';
-                          const colors = [
-                            'bg-blue-50',
-                            'bg-green-50', 
-                            'bg-yellow-50',
-                            'bg-purple-50',
-                            'bg-pink-50',
-                            'bg-orange-50',
-                          ];
-                          return colors[(groupNumber - 1) % colors.length];
-                        };
-                        const groupColor = getGroupColor(progress?.group_number);
                         const isChecked = selectedItems.has(row.curriculumItem.id);
+                        
+                        // ローカルステートから値を取得（なければprogressから）
+                        const localHandover = localHandoverMap.get(row.curriculumItem.id) ?? (progress?.handover || '');
+                        const localTeacherName = localTeacherNameMap.get(row.curriculumItem.id) ?? (progress?.teacher_name || '');
                         return (
                           <tr
                             key={row.curriculumItem.id}
-                            className={`border-b border-[#0d0d0d] hover:bg-[#eff0f3] ${rowBgColor} ${groupColor}`}
+                            className={`border-b border-[#0d0d0d] hover:bg-[#eff0f3] ${rowBgColor}`}
                           >
                             {/* チェックボックス（管理モードのみ） */}
                             {viewMode === 'admin' && (
@@ -1724,28 +1748,63 @@ export default function StudentProgressPage() {
                             </td>
                           )}
                           {showHandover && (
-                            <td className="px-4 py-3 text-sm text-[#2a2a2a]">
-                              <textarea
-                                value={progress?.handover || ''}
-                                onChange={async (e) => {
-                                  if (selectedTextbookId && progress) {
-                                    await updateStudentProgress(progress.id, {
-                                      handover: e.target.value || null,
-                                    });
-                                    await fetchProgress();
-                                  } else if (selectedTextbookId) {
-                                    await upsertStudentProgress({
-                                      student_textbook_id: selectedTextbookId,
-                                      curriculum_item_id: row.curriculumItem.id,
-                                      handover: e.target.value || null,
-                                    });
-                                    await fetchProgress();
-                                  }
-                                }}
-                                rows={2}
-                                className="w-full px-2 py-1 border border-[#0d0d0d] rounded"
-                              />
-                            </td>
+                            <>
+                              <td className="px-4 py-3 text-sm text-[#2a2a2a]">
+                                <textarea
+                                  value={localHandover}
+                                  onChange={(e) => {
+                                    const newMap = new Map(localHandoverMap);
+                                    newMap.set(row.curriculumItem.id, e.target.value);
+                                    setLocalHandoverMap(newMap);
+                                  }}
+                                  onBlur={async (e) => {
+                                    if (selectedTextbookId && progress) {
+                                      await updateStudentProgress(progress.id, {
+                                        handover: e.target.value || null,
+                                      });
+                                      await fetchProgress();
+                                    } else if (selectedTextbookId) {
+                                      await upsertStudentProgress({
+                                        student_textbook_id: selectedTextbookId,
+                                        curriculum_item_id: row.curriculumItem.id,
+                                        handover: e.target.value || null,
+                                      });
+                                      await fetchProgress();
+                                    }
+                                  }}
+                                  rows={2}
+                                  className="w-full px-2 py-1 border border-[#0d0d0d] rounded"
+                                />
+                              </td>
+                              <td className="px-4 py-3 text-sm text-[#2a2a2a]">
+                                <input
+                                  type="text"
+                                  value={localTeacherName}
+                                  onChange={(e) => {
+                                    const newMap = new Map(localTeacherNameMap);
+                                    newMap.set(row.curriculumItem.id, e.target.value);
+                                    setLocalTeacherNameMap(newMap);
+                                  }}
+                                  onBlur={async (e) => {
+                                    if (selectedTextbookId && progress) {
+                                      await updateStudentProgress(progress.id, {
+                                        teacher_name: e.target.value || null,
+                                      });
+                                      await fetchProgress();
+                                    } else if (selectedTextbookId) {
+                                      await upsertStudentProgress({
+                                        student_textbook_id: selectedTextbookId,
+                                        curriculum_item_id: row.curriculumItem.id,
+                                        teacher_name: e.target.value || null,
+                                      });
+                                      await fetchProgress();
+                                    }
+                                  }}
+                                  placeholder="講師名"
+                                  className="w-full px-2 py-1 border border-[#0d0d0d] rounded"
+                                />
+                              </td>
+                            </>
                           )}
                         </tr>
                       );
@@ -1777,7 +1836,7 @@ export default function StudentProgressPage() {
                           (showLesson1 ? 1 : 0) + // 指導日①
                           (showLesson2 ? 1 : 0) + // 指導日②
                           (showLesson3 ? 1 : 0) + // 指導日③
-                          (showHandover ? 1 : 0) // 引継ぎ
+                          (showHandover ? 2 : 0) // 引継ぎ + 講師名
                         } className="px-4 py-3 text-sm text-[#0d0d0d]">
                         </td>
                       </tr>
@@ -2044,7 +2103,7 @@ export default function StudentProgressPage() {
             setNewCustomExamName('');
             setIsCustomExamName(false);
           }}
-          title="テスト設定を追加"
+          title="目標を設定"
           size="md"
         >
           <div className="space-y-4">
@@ -2109,18 +2168,6 @@ export default function StudentProgressPage() {
                 placeholder="例: 80"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
-                試験範囲
-              </label>
-              <textarea
-                value={newExamRange}
-                onChange={(e) => setNewExamRange(e.target.value)}
-                rows={3}
-                className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg"
-                placeholder="試験範囲を入力してください"
-              />
-            </div>
             <div className="flex justify-end gap-2 pt-4 border-t border-[#0d0d0d]">
               <Button
                 onClick={() => {
@@ -2168,7 +2215,7 @@ export default function StudentProgressPage() {
                       custom_exam_name: customExamName,
                       exam_date: newExamDate,
                       target_score: newExamTargetScore ? parseInt(newExamTargetScore, 10) : null,
-                      exam_range: newExamRange || null,
+                      exam_range: null,
                     });
                     await fetchStudentTextbooks();
                     setIsAddExamModalOpen(false);
@@ -2242,26 +2289,28 @@ export default function StudentProgressPage() {
                       >
                         表示する
                       </Button>
-                      <Button
-                        onClick={async () => {
-                          if (window.confirm(`${st.textbook.name}を削除しますか？\nこの操作は取り消せません。`)) {
-                            try {
-                              await deleteStudentTextbook(st.id);
-                              await fetchStudentTextbooks();
-                              success('テキストを削除しました');
-                              if (studentTextbooks.filter((st) => !st.is_active).length === 1) {
-                                setIsArchiveModalOpen(false);
+                      {!isTeacher && (
+                        <Button
+                          onClick={async () => {
+                            if (window.confirm(`${st.textbook.name}を削除しますか？\nこの操作は取り消せません。`)) {
+                              try {
+                                await deleteStudentTextbook(st.id);
+                                await fetchStudentTextbooks();
+                                success('テキストを削除しました');
+                                if (studentTextbooks.filter((st) => !st.is_active).length === 1) {
+                                  setIsArchiveModalOpen(false);
+                                }
+                              } catch (err) {
+                                error(err instanceof Error ? err.message : '削除に失敗しました');
                               }
-                            } catch (err) {
-                              error(err instanceof Error ? err.message : '削除に失敗しました');
                             }
-                          }
-                        }}
-                        variant="danger"
-                        size="sm"
-                      >
-                        削除
-                      </Button>
+                          }}
+                          variant="danger"
+                          size="sm"
+                        >
+                          削除
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ))

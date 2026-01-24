@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AdminLayout } from '@/components/layouts';
 import { Button } from '@/components/ui';
-import { ApplicationTable, ApplicationItemSettings, ApplicationFiltersPanel, ApplicationItemManager } from '@/components/applications';
+import { ApplicationTable, ApplicationItemSettings, ApplicationFiltersPanel, ApplicationItemManager, ApplicationItemAccordion } from '@/components/applications';
 import { StudentDetailModal } from '@/components/students';
 import {
   getStudents,
@@ -31,7 +31,10 @@ export default function ApplicationsPage() {
 
   // 編集権限
   const canEdit = useCanEdit('canEditApplications');
-  const { getSelectedSchoolIds, selectedSchoolId, permissions } = useAuth();
+  const { getSelectedSchoolIds, selectedSchoolId, permissions, profile } = useAuth();
+  
+  // 教室長以上かどうかを判定（manager, owner, admin）
+  const isManagerOrAbove = profile?.role === 'manager' || profile?.role === 'owner' || profile?.role === 'admin';
   
   // 状態管理
   const [students, setStudents] = useState<Student[]>([]);
@@ -323,6 +326,21 @@ export default function ApplicationsPage() {
           onChange={handleFilterChange}
         onReset={handleResetFilters}
       />
+
+      {/* 項目管理アコーディオン（教室長以上のみ） */}
+      {isManagerOrAbove && (() => {
+        const schoolIds = getSelectedSchoolIds();
+        const schoolId = schoolIds.length > 0 ? schoolIds[0] : null;
+        if (!schoolId) return null;
+        return (
+          <ApplicationItemAccordion
+            schoolId={schoolId}
+            items={items}
+            showHidden={filters.showHidden ?? false}
+            onUpdated={fetchData}
+          />
+        );
+      })()}
 
       {/* 説明 */}
       {canEdit && (

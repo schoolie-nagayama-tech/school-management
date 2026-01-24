@@ -24,18 +24,6 @@ export function VisibilityBadge({
       return (
         <div className="flex items-center gap-2">
           <span className="text-sm text-[#9ca3af]">公開なし</span>
-          {onEditPeriod && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onEditPeriod();
-              }}
-              className="px-2 py-1 text-xs bg-[#ff8e3c] text-[#0d0d0d] font-medium rounded hover:bg-[#ff9e5c] transition-colors"
-              title="公開期間を設定"
-            >
-              設定
-            </button>
-          )}
         </div>
       );
     }

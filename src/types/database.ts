@@ -7,6 +7,7 @@ export type Database = {
           id: string;
           name: string;
           code: string | null;
+          notification_email: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -14,6 +15,7 @@ export type Database = {
           id?: string;
           name: string;
           code?: string | null;
+          notification_email?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -21,6 +23,7 @@ export type Database = {
           id?: string;
           name?: string;
           code?: string | null;
+          notification_email?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -255,6 +258,7 @@ export type Database = {
           is_active: boolean;
           column_type?: 'check' | 'number' | 'date';
           due_date?: string | null;
+          teacher_editable?: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -266,6 +270,7 @@ export type Database = {
           is_active?: boolean;
           column_type?: 'check' | 'number' | 'date';
           due_date?: string | null;
+          teacher_editable?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -277,6 +282,7 @@ export type Database = {
           is_active?: boolean;
           column_type?: 'check' | 'number' | 'date';
           due_date?: string | null;
+          teacher_editable?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -649,6 +655,7 @@ export type Database = {
           exam_range_exam_type_id: string | null;
           school_progress_date: string | null;
           handover: string | null;
+          teacher_name: string | null;
           group_number: number | null;
           created_at: string;
           updated_at: string;
@@ -662,6 +669,7 @@ export type Database = {
           exam_range_exam_type_id?: string | null;
           school_progress_date?: string | null;
           handover?: string | null;
+          teacher_name?: string | null;
           group_number?: number | null;
           created_at?: string;
           updated_at?: string;
@@ -675,6 +683,7 @@ export type Database = {
           exam_range_exam_type_id?: string | null;
           school_progress_date?: string | null;
           handover?: string | null;
+          teacher_name?: string | null;
           group_number?: number | null;
           created_at?: string;
           updated_at?: string;
@@ -951,6 +960,7 @@ export type ApplicationItem = Database['public']['Tables']['application_items'][
   ended_at?: string | null;
   column_type: ApplicationColumnType;
   due_date: string | null;
+  teacher_editable?: boolean;
 };
 export type ApplicationItemInsert = Database['public']['Tables']['application_items']['Insert'];
 export type ApplicationItemUpdate = Database['public']['Tables']['application_items']['Update'];
@@ -1137,11 +1147,13 @@ export type Form = {
   publish_end: string | null;
   completion_message: string | null;
   linked_application_item_id: string | null;
+  is_archived: boolean;
+  archived_at: string | null;
   created_at: string;
   updated_at: string;
 };
 
-export type FormInsert = Omit<Form, 'id' | 'created_at' | 'updated_at'>;
+export type FormInsert = Omit<Form, 'id' | 'created_at' | 'updated_at' | 'is_archived' | 'archived_at'>;
 export type FormUpdate = Partial<Omit<Form, 'id' | 'school_id' | 'created_at' | 'updated_at'>>;
 
 export type FormField = {

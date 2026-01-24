@@ -2,13 +2,17 @@ export type AlertType =
   | 'score_drop'        // 成績低下
   | 'score_missing'     // 成績未入力
   | 'interview_overdue' // 面談未更新
-  | 'application_overdue'; // 申込未提出
+  | 'application_overdue' // 申込未提出
+  | 'interview_task'    // 面談タスク
+  | 'exam_overdue';     // テスト未更新
 
 export const ALERT_TYPE_LABELS: Record<AlertType, string> = {
   score_drop: '成績低下',
   score_missing: '成績未入力',
   interview_overdue: '面談未更新',
   application_overdue: '申込未提出',
+  interview_task: 'タスク',
+  exam_overdue: '目標未設定',
 };
 
 export const ALERT_TYPE_COLORS: Record<AlertType, string> = {
@@ -16,6 +20,8 @@ export const ALERT_TYPE_COLORS: Record<AlertType, string> = {
   score_missing: 'bg-yellow-100 text-yellow-800 border border-yellow-300',
   interview_overdue: 'bg-orange-100 text-orange-800 border border-orange-300',
   application_overdue: 'bg-purple-100 text-purple-800 border border-purple-300',
+  interview_task: 'bg-blue-100 text-blue-800 border border-blue-300',
+  exam_overdue: 'bg-pink-100 text-pink-800 border border-pink-300',
 };
 
 export interface Alert {

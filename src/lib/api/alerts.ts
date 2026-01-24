@@ -1,9 +1,10 @@
 import { supabase } from '../supabase';
 import { getDefaultSchoolId } from './schools';
 import { listAssessments } from './assessments';
-import { getStudentInterviews } from './interviews';
+import { getStudentInterviews, getPendingTasks } from './interviews';
 import { getApplicationItems, getStudentApplications } from './applications';
 import { getStudents } from './students';
+import { getStudentTextbooks } from './progress';
 import type { Alert, AlertDismissal, StudentAlerts, AlertType } from '@/types/alerts';
 import { SUBJECT_LABELS } from '@/types/database';
 
@@ -372,6 +373,180 @@ async function calculateApplicationOverdueAlerts(
 }
 
 /**
+ * 面談タスクアラートを計算（未完了のタスク）
+ */
+async function calculateInterviewTaskAlerts(
+  schoolIds: string[],
+  dismissedSet: Set<string>
+): Promise<Alert[]> {
+  const alerts: Alert[] = [];
+  
+  try {
+    // 各教室の未完了タスクを取得
+    for (const schoolId of schoolIds) {
+      try {
+        const pendingTasks = await getPendingTasks(schoolId);
+        
+        for (const task of pendingTasks) {
+          const alertKey = `task:${task.id}`;
+          const alertId = `${task.student_id}:interview_task:${alertKey}`;
+          
+          if (dismissedSet.has(alertId)) continue;
+          
+          // 生徒情報を取得
+          const { data: student, error: studentError } = await supabase
+            .from('students')
+            .select('last_name, first_name, grade')
+            .eq('id', task.student_id)
+            .single();
+          
+          if (studentError || !student) {
+            console.warn(`Student not found for task ${task.id}`);
+            continue;
+          }
+          
+          // タスクの日付をフォーマット
+          const taskDateStr = task.interview_date
+            ? new Date(task.interview_date).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })
+            : '';
+          
+          // タスクの内容の最初の50文字を取得
+          const contentPreview = task.content 
+            ? (task.content.length > 50 ? task.content.substring(0, 50) + '...' : task.content)
+            : '';
+          
+          alerts.push({
+            id: alertId,
+            student_id: task.student_id,
+            student_name: `${student.last_name} ${student.first_name}`,
+            grade: student.grade,
+            alert_type: 'interview_task',
+            alert_key: alertKey,
+            message: taskDateStr ? `${taskDateStr}: ${contentPreview}` : contentPreview || 'タスク',
+            details: {
+              task_id: task.id,
+              interview_date: task.interview_date,
+              content: task.content || undefined,
+            },
+          });
+        }
+      } catch (error) {
+        // テーブルが存在しない場合などは無視
+        console.warn(`Failed to get pending tasks for school ${schoolId}:`, error);
+      }
+    }
+  } catch (error) {
+    console.error('Error calculating interview task alerts:', error);
+  }
+  
+  return alerts;
+}
+
+/**
+ * テスト未更新アラートを計算（テスト日が過ぎているのに更新されていないもの）
+ */
+async function calculateExamOverdueAlerts(
+  schoolIds: string[],
+  dismissedSet: Set<string>
+): Promise<Alert[]> {
+  const alerts: Alert[] = [];
+  
+  try {
+    const students = await getStudents(undefined, schoolIds);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    for (const student of students) {
+      try {
+        // 生徒のテキスト一覧を取得
+        const studentTextbooks = await getStudentTextbooks(student.id, false);
+        
+        for (const studentTextbook of studentTextbooks) {
+          // 各テキストのテスト設定を取得
+          const { data: exams, error: examsError } = await supabase
+            .from('student_textbook_exams')
+            .select('*')
+            .eq('student_textbook_id', studentTextbook.id)
+            .order('exam_date', { ascending: true });
+          
+          if (examsError) {
+            console.warn(`Failed to get exams for student_textbook ${studentTextbook.id}:`, examsError);
+            continue;
+          }
+          
+          if (!exams || exams.length === 0) continue;
+          
+          // テスト日が過ぎているものをチェック（「次回テストまで」がマイナスになっているもの）
+          for (const exam of exams) {
+            if (!exam.exam_date) continue;
+            
+            const examDate = new Date(exam.exam_date);
+            examDate.setHours(0, 0, 0, 0);
+            
+            // 「次回テストまで」を計算（テスト日までの日数）
+            const daysUntil = Math.ceil((examDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+            
+            // 「次回テストまで」がマイナス（テスト日が過ぎている）場合のみアラート
+            if (daysUntil < 0) {
+              const alertKey = `exam:${exam.id}`;
+              const alertId = `${student.id}:exam_overdue:${alertKey}`;
+              
+              if (dismissedSet.has(alertId)) continue;
+              
+              // テスト名を取得
+              let examName = 'テスト';
+              if (exam.custom_exam_name) {
+                examName = exam.custom_exam_name;
+              } else if (exam.exam_type_id) {
+                const { data: examType } = await supabase
+                  .from('exam_types')
+                  .select('name')
+                  .eq('id', exam.exam_type_id)
+                  .single();
+                if (examType) {
+                  examName = examType.name;
+                }
+              }
+              
+              // テキスト名を取得
+              const textbookName = studentTextbook.textbook?.name || 'テキスト';
+              
+              // 日付をフォーマット
+              const examDateStr = examDate.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' });
+              const daysDiff = Math.floor((today.getTime() - examDate.getTime()) / (1000 * 60 * 60 * 24));
+              
+              alerts.push({
+                id: alertId,
+                student_id: student.id,
+                student_name: `${student.last_name} ${student.first_name}`,
+                grade: student.grade,
+                alert_type: 'exam_overdue',
+                alert_key: alertKey,
+                message: `${textbookName}: ${examName}（${examDateStr}、${daysDiff}日経過）`,
+                details: {
+                  exam_id: exam.id,
+                  exam_date: exam.exam_date,
+                  exam_name: examName,
+                  textbook_name: textbookName,
+                  days_overdue: daysDiff,
+                },
+              });
+            }
+          }
+        }
+      } catch (err) {
+        // エラーは無視（テーブルが存在しない場合など）
+        console.warn(`Failed to get exams for student ${student.id}:`, err);
+      }
+    }
+  } catch (error) {
+    console.error('Error calculating exam overdue alerts:', error);
+  }
+  
+  return alerts;
+}
+
+/**
  * 全アラートを取得（リアルタイム計算）
  */
 export async function getAlerts(schoolIds: string[]): Promise<StudentAlerts[]> {
@@ -387,11 +562,15 @@ export async function getAlerts(schoolIds: string[]): Promise<StudentAlerts[]> {
     scoreMissingAlerts,
     interviewOverdueAlerts,
     applicationOverdueAlerts,
+    interviewTaskAlerts,
+    examOverdueAlerts,
   ] = await Promise.all([
     calculateScoreDropAlerts(schoolIds, dismissedSet),
     calculateScoreMissingAlerts(schoolIds, dismissedSet),
     calculateInterviewOverdueAlerts(schoolIds, dismissedSet),
     calculateApplicationOverdueAlerts(schoolIds, dismissedSet),
+    calculateInterviewTaskAlerts(schoolIds, dismissedSet),
+    calculateExamOverdueAlerts(schoolIds, dismissedSet),
   ]);
   
   // 全アラートを結合
@@ -400,6 +579,8 @@ export async function getAlerts(schoolIds: string[]): Promise<StudentAlerts[]> {
     ...scoreMissingAlerts,
     ...interviewOverdueAlerts,
     ...applicationOverdueAlerts,
+    ...interviewTaskAlerts,
+    ...examOverdueAlerts,
   ];
   
   // 生徒ごとにグループ化

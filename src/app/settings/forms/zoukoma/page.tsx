@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { AdminLayout } from '@/components/layouts';
-import { getZoukomaPeriods, deleteZoukomaPeriod } from '@/lib/api/zoukoma';
+import { getZoukomaPeriods, deleteZoukomaPeriod, archiveZoukomaPeriod, unarchiveZoukomaPeriod } from '@/lib/api/zoukoma';
 import { ZoukomaPeriodForm } from '@/components/forms/zoukoma/ZoukomaPeriodForm';
 import type { ZoukomaPeriod } from '@/types/forms/zoukoma';
 import { getDefaultSchoolId } from '@/lib/api/schools';
+import { useToast } from '@/hooks/useToast';
+import { ToastContainer } from '@/components/ui';
 
 export default function ZoukomaSettingsPage() {
   const [periods, setPeriods] = useState<ZoukomaPeriod[]>([]);
@@ -13,13 +15,16 @@ export default function ZoukomaSettingsPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingPeriod, setEditingPeriod] = useState<ZoukomaPeriod | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
+  const { toasts, removeToast, success, error } = useToast();
 
   const fetchPeriods = useCallback(async () => {
     setIsLoading(true);
     setErrorMessage('');
     try {
       const schoolId = getDefaultSchoolId();
-      const data = await getZoukomaPeriods(schoolId);
+      const data = await getZoukomaPeriods(schoolId, showArchived);
       setPeriods(data);
     } catch (error) {
       console.error('Error fetching periods:', error);
@@ -29,7 +34,7 @@ export default function ZoukomaSettingsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [showArchived]);
 
   useEffect(() => {
     fetchPeriods();
@@ -75,38 +80,103 @@ export default function ZoukomaSettingsPage() {
     }
 
     try {
+      setIsSubmitting(true);
       await deleteZoukomaPeriod(period.id);
-      fetchPeriods();
+      await fetchPeriods();
+      success('期間を削除しました');
     } catch (error) {
       console.error('Error deleting period:', error);
-      alert(
+      error(
         error instanceof Error
           ? error.message
           : '期間の削除に失敗しました'
       );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  return (
-    <AdminLayout headerTitle="増コマ申込 設定">
-      {errorMessage && (
-        <div className="mb-4 p-4 bg-[#d9376e]/20 border border-[#d9376e] rounded-lg">
-          <p className="text-sm text-[#d9376e]">{errorMessage}</p>
-        </div>
-      )}
+  const handleArchive = async (period: ZoukomaPeriod) => {
+    if (!confirm(`「${period.title}」をアーカイブしますか？\n\nこの期間の全ての回答もアーカイブされます。`)) {
+      return;
+    }
 
-      <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6">
+    try {
+      setIsSubmitting(true);
+      const schoolId = getDefaultSchoolId();
+      const result = await archiveZoukomaPeriod(period.id, schoolId, period.period_key);
+      await fetchPeriods();
+      success(`アーカイブしました（回答${result.responsesArchived}件を含む）`);
+    } catch (err) {
+      console.error('Error archiving period:', err);
+      error(
+        err instanceof Error ? err.message : 'アーカイブに失敗しました'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUnarchive = async (period: ZoukomaPeriod) => {
+    try {
+      setIsSubmitting(true);
+      const schoolId = getDefaultSchoolId();
+      const result = await unarchiveZoukomaPeriod(period.id, schoolId, period.period_key);
+      await fetchPeriods();
+      success(`アーカイブを解除しました（回答${result.responsesUnarchived}件を含む）`);
+    } catch (err) {
+      console.error('Error unarchiving period:', err);
+      error(
+        err instanceof Error ? err.message : 'アーカイブ解除に失敗しました'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const activePeriods = periods.filter((p) => !p.is_archived);
+  const archivedPeriods = periods.filter((p) => p.is_archived);
+
+  return (
+    <div>
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
+      <AdminLayout headerTitle="増コマ申込 設定">
+        {errorMessage && (
+          <div className="mb-4 p-4 bg-[#d9376e]/20 border border-[#d9376e] rounded-lg">
+            <p className="text-sm text-[#d9376e]">{errorMessage}</p>
+          </div>
+        )}
+
+        <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold text-[#0d0d0d]">期間一覧</h2>
-            <button
-              onClick={() => {
-                setEditingPeriod(null);
-                setIsEditorOpen(true);
-              }}
-              className="px-4 py-2 bg-[#ff8e3c] text-[#0d0d0d] font-medium rounded-lg hover:bg-[#ff9e5c] transition-colors"
-            >
-              新規作成
-            </button>
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showArchived}
+                  onChange={(e) => setShowArchived(e.target.checked)}
+                  className="w-4 h-4 text-[#ff8e3c] border-[#0d0d0d] rounded focus:ring-[#ff8e3c] cursor-pointer"
+                />
+                <span className="text-sm text-[#0d0d0d]">
+                  アーカイブ済みを表示
+                  {archivedPeriods.length > 0 && (
+                    <span className="ml-1 text-[#2a2a2a]/60">
+                      ({archivedPeriods.length}件)
+                    </span>
+                  )}
+                </span>
+              </label>
+              <button
+                onClick={() => {
+                  setEditingPeriod(null);
+                  setIsEditorOpen(true);
+                }}
+                className="px-4 py-2 bg-[#ff8e3c] text-[#0d0d0d] font-medium rounded-lg hover:bg-[#ff9e5c] transition-colors"
+              >
+                新規作成
+              </button>
+            </div>
           </div>
 
           {isLoading ? (
@@ -141,7 +211,7 @@ export default function ZoukomaSettingsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {periods.map((period) => (
+                  {activePeriods.map((period) => (
                     <tr key={period.id} className="table-row-hover">
                       <td className="border border-[#0d0d0d] px-4 py-3">
                         {period.period_key}
@@ -176,12 +246,12 @@ export default function ZoukomaSettingsPage() {
                               setIsEditorOpen(true);
                             }}
                             className="px-3 py-1 text-xs bg-[#eff0f3] text-[#2a2a2a] rounded hover:bg-[#0d0d0d]/10 transition-colors"
+                            disabled={isSubmitting}
                           >
                             編集
                           </button>
                           <button
                             onClick={() => {
-                              // TODO: 回答一覧ページへのリンク
                               window.location.href = `/forms/responses/zoukoma/${period.period_key}`;
                             }}
                             className="px-3 py-1 text-xs bg-[#eff0f3] text-[#2a2a2a] rounded hover:bg-[#0d0d0d]/10 transition-colors"
@@ -189,8 +259,55 @@ export default function ZoukomaSettingsPage() {
                             回答一覧
                           </button>
                           <button
+                            onClick={() => handleArchive(period)}
+                            className="px-3 py-1 text-xs bg-[#eff0f3] text-[#2a2a2a] rounded hover:bg-[#0d0d0d]/10 transition-colors"
+                            disabled={isSubmitting}
+                          >
+                            アーカイブ
+                          </button>
+                          <button
                             onClick={() => handleDelete(period)}
                             className="px-3 py-1 text-xs bg-[#d9376e] text-white rounded hover:bg-[#c02d5a] transition-colors"
+                            disabled={isSubmitting}
+                          >
+                            削除
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {showArchived && archivedPeriods.map((period) => (
+                    <tr key={period.id} className="table-row-hover opacity-60">
+                      <td className="border border-[#0d0d0d] px-4 py-3">
+                        {period.period_key}
+                      </td>
+                      <td className="border border-[#0d0d0d] px-4 py-3">
+                        {period.title}
+                      </td>
+                      <td className="border border-[#0d0d0d] px-4 py-3">
+                        {formatDateRange(period.publish_start, period.publish_end)}
+                      </td>
+                      <td className="border border-[#0d0d0d] px-4 py-3">
+                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                          アーカイブ
+                        </span>
+                      </td>
+                      <td className="border border-[#0d0d0d] px-4 py-3">
+                        -
+                      </td>
+                      <td className="border border-[#0d0d0d] px-4 py-3">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleUnarchive(period)}
+                            className="px-3 py-1 text-xs bg-[#eff0f3] text-[#2a2a2a] rounded hover:bg-[#0d0d0d]/10 transition-colors"
+                            disabled={isSubmitting}
+                          >
+                            アーカイブ解除
+                          </button>
+                          <button
+                            onClick={() => handleDelete(period)}
+                            className="px-3 py-1 text-xs bg-[#d9376e] text-white rounded hover:bg-[#c02d5a] transition-colors"
+                            disabled={isSubmitting}
                           >
                             削除
                           </button>
@@ -216,6 +333,7 @@ export default function ZoukomaSettingsPage() {
           fetchPeriods();
         }}
       />
-    </AdminLayout>
+      </AdminLayout>
+    </div>
   );
 }

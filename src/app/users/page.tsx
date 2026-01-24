@@ -45,6 +45,9 @@ export default function UsersPage() {
   const [schools, setSchools] = useState<School[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
+  // 教室長かどうかを判定
+  const isManager = profile?.role === 'manager';
+  
   // ユーザー作成フォーム
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isResultDialogOpen, setIsResultDialogOpen] = useState(false);
@@ -101,9 +104,15 @@ export default function UsersPage() {
       const usersData = await usersResponse.json();
       
       // 講師を除外（念のため）
-      const filteredUsers = (usersData.users || []).filter((user: UserWithDetails) => 
+      let filteredUsers = (usersData.users || []).filter((user: UserWithDetails) => 
         user.role !== 'teacher'
       );
+      
+      // 教室長の場合は自分の情報のみ表示
+      if (isManager && profile?.id) {
+        filteredUsers = filteredUsers.filter((user: UserWithDetails) => user.id === profile.id);
+      }
+      
       setUsers(filteredUsers);
       setSchools(schoolsData);
       if (schoolsData.length > 0 && !formData.schoolId) {
@@ -359,7 +368,7 @@ export default function UsersPage() {
             </Link>
             <h1 className="text-2xl font-bold text-[#0d0d0d]">ユーザー管理</h1>
           </div>
-          {activeTab === 'users' && (
+          {activeTab === 'users' && !isManager && (
             <Button onClick={() => setIsCreateDialogOpen(true)}>
               + ユーザーを追加
             </Button>
@@ -468,30 +477,38 @@ export default function UsersPage() {
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              onClick={() => openEditModal(user)}
-                              className="p-2"
-                            >
-                              編集
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              onClick={() => handleToggleActive(user)}
-                              className="p-2"
-                            >
-                              {user.is_active ? '無効化' : '有効化'}
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              onClick={() => {
-                                setDeletingUser(user);
-                                setIsDeleteDialogOpen(true);
-                              }}
-                              className="p-2 text-[#d9376e] hover:text-[#d9376e]"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {/* 教室長の場合は自分の情報のみ編集可能 */}
+                            {(!isManager || user.id === profile?.id) && (
+                              <>
+                                <Button
+                                  variant="ghost"
+                                  onClick={() => openEditModal(user)}
+                                  className="p-2"
+                                >
+                                  編集
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  onClick={() => handleToggleActive(user)}
+                                  className="p-2"
+                                >
+                                  {user.is_active ? '無効化' : '有効化'}
+                                </Button>
+                                {/* 削除は自分のアカウントではできない */}
+                                {user.id !== profile?.id && (
+                                  <Button
+                                    variant="ghost"
+                                    onClick={() => {
+                                      setDeletingUser(user);
+                                      setIsDeleteDialogOpen(true);
+                                    }}
+                                    className="p-2 text-[#d9376e] hover:text-[#d9376e]"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </>
+                            )}
                           </div>
                         </td>
                       </tr>

@@ -410,3 +410,45 @@ export async function getArchivedCount(
   }
   return count || 0;
 }
+
+/**
+ * フォームIDで回答をアーカイブ（formsテーブル用）
+ */
+export async function archiveResponsesByFormId(formId: string): Promise<number> {
+  const { data, error } = await supabase
+    .from('form_responses')
+    .update({
+      is_archived: true,
+      archived_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('form_id', formId)
+    .eq('is_archived', false)
+    .select('id');
+
+  if (error) {
+    throw new Error(`フォーム回答のアーカイブに失敗しました: ${error.message}`);
+  }
+  return data?.length || 0;
+}
+
+/**
+ * フォームIDで回答のアーカイブを解除（formsテーブル用）
+ */
+export async function unarchiveResponsesByFormId(formId: string): Promise<number> {
+  const { data, error } = await supabase
+    .from('form_responses')
+    .update({
+      is_archived: false,
+      archived_at: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('form_id', formId)
+    .eq('is_archived', true)
+    .select('id');
+
+  if (error) {
+    throw new Error(`フォーム回答のアーカイブ解除に失敗しました: ${error.message}`);
+  }
+  return data?.length || 0;
+}

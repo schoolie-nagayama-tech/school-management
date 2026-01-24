@@ -31,8 +31,11 @@ export default function StudentsPage() {
   const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
     (p) => p.canAccessStudents
   );
-  const { getSelectedSchoolIds, selectedSchoolId } = useAuth();
+  const { getSelectedSchoolIds, selectedSchoolId, profile, permissions } = useAuth();
   const router = useRouter();
+  
+  // 講師かどうかを判定
+  const isTeacher = profile?.role === 'teacher';
   // 状態管理
   const [students, setStudents] = useState<(Student & { subjects?: Subject[] })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -316,18 +319,19 @@ export default function StudentsPage() {
               ))}
             </select>
 
-            {/* 休塾・退塾表示ボタン */}
-            <button
-              onClick={() => setShowInactive(!showInactive)}
-              className={`
-                inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors
-                ${
-                  showInactive
-                    ? 'bg-[#ff8e3c]/20 text-[#0d0d0d] hover:bg-[#ff8e3c]/30'
-                    : 'bg-[#eff0f3] text-[#2a2a2a] hover:bg-[#fffffe]'
-                }
-              `}
-            >
+            {/* 休塾・退塾表示ボタン（講師には非表示） */}
+            {!isTeacher && (
+              <button
+                onClick={() => setShowInactive(!showInactive)}
+                className={`
+                  inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors
+                  ${
+                    showInactive
+                      ? 'bg-[#ff8e3c]/20 text-[#0d0d0d] hover:bg-[#ff8e3c]/30'
+                      : 'bg-[#eff0f3] text-[#2a2a2a] hover:bg-[#fffffe]'
+                  }
+                `}
+              >
               {showInactive ? (
                 <>
                   <svg
@@ -374,33 +378,36 @@ export default function StudentsPage() {
                   )}
                 </>
               )}
-            </button>
+              </button>
+            )}
           </div>
 
-          {/* 新規登録ボタン */}
-          <Button onClick={handleOpenCreateModal}>
-            <svg
-              className="w-4 h-4 mr-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            新規登録
-          </Button>
+          {/* 新規登録ボタン（講師には非表示） */}
+          {!isTeacher && (
+            <Button onClick={handleOpenCreateModal}>
+              <svg
+                className="w-4 h-4 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              新規登録
+            </Button>
+          )}
         </div>
 
         {/* 生徒一覧テーブル */}
         <StudentTable
           students={filteredStudents}
-          onEdit={handleOpenEditModal}
-          onDelete={handleOpenDeleteDialog}
+          onEdit={!isTeacher ? handleOpenEditModal : undefined}
+          onDelete={!isTeacher ? handleOpenDeleteDialog : undefined}
           onRowClick={handleOpenDetailModal}
           onScores={handleOpenScores}
           onProgress={handleOpenProgress}

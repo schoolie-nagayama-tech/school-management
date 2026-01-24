@@ -8,6 +8,7 @@ import { getDefaultSchoolId } from '@/lib/api/schools';
 import type { Student, Subject } from '@/types/database';
 import { GRADE_LABELS, STATUS_LABELS, STATUS_COLORS } from '@/types/database';
 import { InterviewList } from './InterviewList';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface StudentDetailModalProps {
   isOpen: boolean;
@@ -24,6 +25,8 @@ export function StudentDetailModal({
   onClose,
   onEdit,
 }: StudentDetailModalProps) {
+  const { profile } = useAuth();
+  const isTeacher = profile?.role === 'teacher';
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('basic');
@@ -203,9 +206,11 @@ export function StudentDetailModal({
               <Button type="button" variant="secondary" onClick={onClose}>
                 閉じる
               </Button>
-              <Button type="button" onClick={handleEdit}>
-                編集
-              </Button>
+              {!isTeacher && (
+                <Button type="button" onClick={handleEdit}>
+                  編集
+                </Button>
+              )}
             </div>
           </>
         )}

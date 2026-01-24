@@ -35,11 +35,14 @@ interface TeacherWithDetails extends UserProfile {
 }
 
 export default function TeachersPage() {
-  const { profile, permissions } = useAuth();
+  const { profile, permissions, getSelectedSchoolIds } = useAuth();
   const { toasts, removeToast, success, error: toastError } = useToast();
   const [teachers, setTeachers] = useState<TeacherWithDetails[]>([]);
   const [schools, setSchools] = useState<School[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // 教室長かどうかを判定
+  const isManager = profile?.role === 'manager';
   
   // 講師作成フォーム
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -86,9 +89,17 @@ export default function TeachersPage() {
       const teachersData = await teachersResponse.json();
       
       setTeachers(teachersData.users || []);
-      setSchools(schoolsData);
-      if (schoolsData.length > 0 && !formData.schoolId) {
-        setFormData(prev => ({ ...prev, schoolId: schoolsData[0].id }));
+      
+      // 教室長の場合は自分の権限がある教室のみ表示
+      let availableSchools = schoolsData;
+      if (isManager) {
+        const userSchoolIds = getSelectedSchoolIds();
+        availableSchools = schoolsData.filter(school => userSchoolIds.includes(school.id));
+      }
+      setSchools(availableSchools);
+      
+      if (availableSchools.length > 0 && !formData.schoolId) {
+        setFormData(prev => ({ ...prev, schoolId: availableSchools[0].id }));
       }
     } catch (err) {
       console.error('Error loading data:', err);
@@ -170,7 +181,14 @@ export default function TeachersPage() {
   const openEditModal = (teacher: TeacherWithDetails) => {
     setEditingTeacher(teacher);
     setEditDisplayName(teacher.display_name || '');
-    setEditSchoolIds(teacher.user_schools?.map(us => us.school_id) || []);
+    const teacherSchoolIds = teacher.user_schools?.map(us => us.school_id) || [];
+    // 教室長の場合は自分の権限がある教室のみ選択可能
+    if (isManager) {
+      const userSchoolIds = getSelectedSchoolIds();
+      setEditSchoolIds(teacherSchoolIds.filter(id => userSchoolIds.includes(id)));
+    } else {
+      setEditSchoolIds(teacherSchoolIds);
+    }
   };
 
   // 講師編集を保存
@@ -437,11 +455,20 @@ export default function TeachersPage() {
                     <SelectValue placeholder="教室を選択" />
                   </SelectTrigger>
                   <SelectContent>
-                    {schools.map((school) => (
-                      <SelectItem key={school.id} value={school.id}>
-                        {school.name}
-                      </SelectItem>
-                    ))}
+                    {schools
+                      .filter(school => {
+                        // 教室長の場合は自分の権限がある教室のみ表示
+                        if (isManager) {
+                          const userSchoolIds = getSelectedSchoolIds();
+                          return userSchoolIds.includes(school.id);
+                        }
+                        return true;
+                      })
+                      .map((school) => (
+                        <SelectItem key={school.id} value={school.id}>
+                          {school.name}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -598,23 +625,32 @@ export default function TeachersPage() {
                     担当教室
                   </label>
                   <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {schools.map(school => (
-                      <label key={school.id} className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={editSchoolIds.includes(school.id)}
-                          onChange={e => {
-                            if (e.target.checked) {
-                              setEditSchoolIds([...editSchoolIds, school.id]);
-                            } else {
-                              setEditSchoolIds(editSchoolIds.filter(id => id !== school.id));
-                            }
-                          }}
-                          className="rounded border-[#0d0d0d]"
-                        />
-                        <span className="text-sm text-[#0d0d0d]">{school.name}</span>
-                      </label>
-                    ))}
+                    {schools
+                      .filter(school => {
+                        // 教室長の場合は自分の権限がある教室のみ表示
+                        if (isManager) {
+                          const userSchoolIds = getSelectedSchoolIds();
+                          return userSchoolIds.includes(school.id);
+                        }
+                        return true;
+                      })
+                      .map(school => (
+                        <label key={school.id} className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={editSchoolIds.includes(school.id)}
+                            onChange={e => {
+                              if (e.target.checked) {
+                                setEditSchoolIds([...editSchoolIds, school.id]);
+                              } else {
+                                setEditSchoolIds(editSchoolIds.filter(id => id !== school.id));
+                              }
+                            }}
+                            className="rounded border-[#0d0d0d]"
+                          />
+                          <span className="text-sm text-[#0d0d0d]">{school.name}</span>
+                        </label>
+                      ))}
                   </div>
                 </div>
                 <div className="flex gap-3 pt-4">

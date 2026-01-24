@@ -246,7 +246,33 @@ export function ApplicationItemManager({
                     </div>
                   ) : (
                     <>
-                      <span className="font-medium text-[#0d0d0d]">{item.name}</span>
+                      <div className="flex-1 flex items-center gap-3">
+                        <span className="font-medium text-[#0d0d0d]">{item.name}</span>
+                        <label className="flex items-center gap-2 text-sm text-[#2a2a2a]">
+                          <input
+                            type="checkbox"
+                            checked={item.teacher_editable === true}
+                            onChange={async (e) => {
+                              setIsProcessing(true);
+                              try {
+                                await updateApplicationItem(item.id, { teacher_editable: e.target.checked });
+                                success(e.target.checked ? '講師が編集可能に設定しました' : '講師の編集を無効にしました');
+                                onUpdated();
+                              } catch (error) {
+                                console.error('Failed to update teacher_editable:', error);
+                                toastError(
+                                  error instanceof Error ? error.message : '設定の更新に失敗しました'
+                                );
+                              } finally {
+                                setIsProcessing(false);
+                              }
+                            }}
+                            disabled={isProcessing}
+                            className="w-4 h-4 text-[#ff8e3c] border-[#0d0d0d] rounded focus:ring-[#ff8e3c]"
+                          />
+                          <span className="text-xs">講師が編集可能</span>
+                        </label>
+                      </div>
                       <div className="flex gap-3">
                         <button
                           onClick={() => startEditing(item)}
