@@ -85,6 +85,7 @@ export default function UsersPage() {
   const [editingSchool, setEditingSchool] = useState<School | null>(null);
   const [schoolName, setSchoolName] = useState('');
   const [schoolCode, setSchoolCode] = useState('');
+  const [notificationEmail, setNotificationEmail] = useState('');
   const [isSavingSchool, setIsSavingSchool] = useState(false);
 
   // データ取得
@@ -268,27 +269,19 @@ export default function UsersPage() {
     }
   };
 
-  // 権限チェック
-  if (!permissions?.canAccessUsers) {
-    return (
-      <AdminLayout>
-        <div className="p-6">
-          <div className="bg-[#d9376e]/10 border border-[#d9376e] rounded-lg p-4">
-            <p className="text-[#d9376e]">このページにアクセスする権限がありません</p>
-          </div>
-        </div>
-      </AdminLayout>
-    );
-  }
-
   // 教室作成
   const handleCreateSchool = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSavingSchool(true);
     try {
-      await createSchool({ name: schoolName, code: schoolCode || null });
+      await createSchool({ 
+        name: schoolName, 
+        code: schoolCode || null,
+        notification_email: notificationEmail.trim() || null,
+      });
       setSchoolName('');
       setSchoolCode('');
+      setNotificationEmail('');
       setShowSchoolForm(false);
       await loadData();
       success('教室を作成しました');
@@ -305,6 +298,7 @@ export default function UsersPage() {
     setEditingSchool(school);
     setSchoolName(school.name);
     setSchoolCode(school.code || '');
+    setNotificationEmail(school.notification_email || '');
     setShowSchoolForm(true);
   };
 
@@ -313,10 +307,15 @@ export default function UsersPage() {
     if (!editingSchool) return;
     setIsSavingSchool(true);
     try {
-      await updateSchool(editingSchool.id, { name: schoolName, code: schoolCode || null });
+      await updateSchool(editingSchool.id, { 
+        name: schoolName, 
+        code: schoolCode || null,
+        notification_email: notificationEmail.trim() || null,
+      });
       setEditingSchool(null);
       setSchoolName('');
       setSchoolCode('');
+      setNotificationEmail('');
       setShowSchoolForm(false);
       await loadData();
       success('教室を更新しました');
@@ -340,6 +339,21 @@ export default function UsersPage() {
       toastError(err.message || '教室の削除に失敗しました');
     }
   };
+
+  // 権限チェック（オーナー以上で教室設定タブにアクセス可能）
+  const canAccessSchoolSettings = profile?.role === 'admin' || profile?.role === 'owner';
+  
+  if (!permissions?.canAccessUsers) {
+    return (
+      <AdminLayout>
+        <div className="p-6">
+          <div className="bg-[#d9376e]/10 border border-[#d9376e] rounded-lg p-4">
+            <p className="text-[#d9376e]">このページにアクセスする権限がありません</p>
+          </div>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout headerTitle="ユーザー管理">
@@ -373,12 +387,13 @@ export default function UsersPage() {
               + ユーザーを追加
             </Button>
           )}
-          {activeTab === 'schools' && (
+          {activeTab === 'schools' && canAccessSchoolSettings && (
             <Button
               onClick={() => {
                 setEditingSchool(null);
                 setSchoolName('');
                 setSchoolCode('');
+                setNotificationEmail('');
                 setShowSchoolForm(true);
               }}
             >
@@ -399,16 +414,18 @@ export default function UsersPage() {
           >
             ユーザー管理
           </button>
-          <button
-            onClick={() => setActiveTab('schools')}
-            className={`px-4 py-2 font-medium transition-colors ${
-              activeTab === 'schools'
-                ? 'text-[#0d0d0d] border-b-2 border-[#ff8e3c]'
-                : 'text-[#2a2a2a] hover:text-[#0d0d0d]'
-            }`}
-          >
-            教室設定
-          </button>
+          {canAccessSchoolSettings && (
+            <button
+              onClick={() => setActiveTab('schools')}
+              className={`px-4 py-2 font-medium transition-colors ${
+                activeTab === 'schools'
+                  ? 'text-[#0d0d0d] border-b-2 border-[#ff8e3c]'
+                  : 'text-[#2a2a2a] hover:text-[#0d0d0d]'
+              }`}
+            >
+              教室設定
+            </button>
+          )}
         </div>
 
         {isLoading ? (
@@ -518,7 +535,7 @@ export default function UsersPage() {
               </div>
             </div>
           </div>
-        ) : (
+        ) : canAccessSchoolSettings ? (
           <div className="space-y-6">
             {/* 教室一覧 */}
             <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] overflow-hidden">
@@ -564,6 +581,12 @@ export default function UsersPage() {
                   </tbody>
                 </table>
               </div>
+            </div>
+          </div>
+        ) : (
+          <div className="p-6">
+            <div className="bg-[#d9376e]/10 border border-[#d9376e] rounded-lg p-4">
+              <p className="text-[#d9376e]">教室設定はオーナー権限以上のみアクセス可能です</p>
             </div>
           </div>
         )}
@@ -661,6 +684,7 @@ export default function UsersPage() {
                       setEditingSchool(null);
                       setSchoolName('');
                       setSchoolCode('');
+                      setNotificationEmail('');
                       setShowSchoolForm(true);
                     }}
                   >
@@ -824,6 +848,19 @@ export default function UsersPage() {
                   />
                   <p className="mt-1 text-xs text-[#2a2a2a]">ポータルURLで使用されます</p>
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
+                    申込通知先メールアドレス（任意）
+                  </label>
+                  <input
+                    type="email"
+                    value={notificationEmail}
+                    onChange={e => setNotificationEmail(e.target.value)}
+                    className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff8e3c]"
+                    placeholder="manager@example.com"
+                  />
+                  <p className="mt-1 text-xs text-[#2a2a2a]">フォームから申込があった際に通知を受け取るメールアドレスです</p>
+                </div>
                 <div className="flex gap-3 pt-4">
                   <button
                     type="button"
@@ -832,6 +869,7 @@ export default function UsersPage() {
                       setEditingSchool(null);
                       setSchoolName('');
                       setSchoolCode('');
+                      setNotificationEmail('');
                     }}
                     className="flex-1 px-4 py-2 bg-[#eff0f3] text-[#0d0d0d] rounded-lg hover:bg-[#0d0d0d]/10 transition-colors"
                   >
@@ -896,24 +934,9 @@ export default function UsersPage() {
                   </select>
                 </div>
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block text-sm font-medium text-[#0d0d0d]">
-                      担当教室
-                    </label>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="text-xs px-2 py-1"
-                      onClick={() => {
-                        setEditingSchool(null);
-                        setSchoolName('');
-                        setSchoolCode('');
-                        setShowSchoolForm(true);
-                      }}
-                    >
-                      + 教室を追加
-                    </Button>
-                  </div>
+                  <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
+                    担当教室
+                  </label>
                   <div className="space-y-2 max-h-48 overflow-y-auto">
                     {schools.map(school => (
                       <label key={school.id} className="flex items-center gap-2">

@@ -69,12 +69,15 @@ export async function getSchools(): Promise<School[]> {
 }
 
 // 教室を作成
-export async function createSchool(data: { name: string; code?: string | null }): Promise<School> {
+export async function createSchool(
+  data: { name: string; code?: string | null; notification_email?: string | null }
+): Promise<School> {
   const { data: school, error } = await supabase
     .from('schools')
     .insert({
       name: data.name,
       code: data.code || null,
+      notification_email: data.notification_email || null,
     })
     .select()
     .single();
