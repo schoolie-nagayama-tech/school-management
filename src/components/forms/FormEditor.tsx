@@ -11,6 +11,8 @@ import {
   updateFormField,
   deleteFormField,
   reorderFormFields,
+  archiveForm,
+  unarchiveForm,
 } from '@/lib/api/forms';
 import { getApplicationItems } from '@/lib/api/applications';
 import { FieldEditor } from './FieldEditor';
@@ -55,6 +57,7 @@ export function FormEditor({
   const [errorMessage, setErrorMessage] = useState('');
   const [isFieldEditorOpen, setIsFieldEditorOpen] = useState(false);
   const [editingField, setEditingField] = useState<FormField | null>(null);
+  const [isArchiving, setIsArchiving] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -422,6 +425,9 @@ export function FormEditor({
                     </option>
                   ))}
                 </Select>
+                <p className="mt-1 text-xs text-[#2a2a2a]/60">
+                  「下書き」は非公開、「公開済み」は公開中、「終了」は公開終了です
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -566,11 +572,77 @@ export function FormEditor({
                 </div>
               )}
 
+              {(formId || form) && (
+                <div className="pt-4 border-t border-[#0d0d0d]">
+                  <div className="mb-4">
+                    <h3 className="text-sm font-medium text-[#0d0d0d] mb-2">アーカイブ</h3>
+                    <p className="text-xs text-[#2a2a2a]/60 mb-3">
+                      フォームをアーカイブすると、ポータルから非表示になります。このフォームから申し込んだ回答も自動でアーカイブされます。
+                    </p>
+                    {form?.is_archived ? (
+                      <Button
+                        onClick={async () => {
+                          if (!formId && !form?.id) return;
+                          if (!confirm('このフォームのアーカイブを解除しますか？')) return;
+                          
+                          setIsArchiving(true);
+                          setErrorMessage('');
+                          try {
+                            const result = await unarchiveForm(formId || form!.id);
+                            await loadForm();
+                            alert(`アーカイブを解除しました（回答${result.responsesUnarchived}件を含む）`);
+                          } catch (error) {
+                            console.error('Error unarchiving form:', error);
+                            setErrorMessage(
+                              error instanceof Error ? error.message : 'アーカイブ解除に失敗しました'
+                            );
+                          } finally {
+                            setIsArchiving(false);
+                          }
+                        }}
+                        variant="secondary"
+                        size="sm"
+                        disabled={isArchiving || isSubmitting}
+                      >
+                        {isArchiving ? '処理中...' : 'アーカイブ解除'}
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={async () => {
+                          if (!formId && !form?.id) return;
+                          if (!confirm('このフォームをアーカイブしますか？\n\nこのフォームから申し込んだ回答も自動でアーカイブされます。')) return;
+                          
+                          setIsArchiving(true);
+                          setErrorMessage('');
+                          try {
+                            const result = await archiveForm(formId || form!.id);
+                            await loadForm();
+                            alert(`アーカイブしました（回答${result.responsesArchived}件を含む）`);
+                          } catch (error) {
+                            console.error('Error archiving form:', error);
+                            setErrorMessage(
+                              error instanceof Error ? error.message : 'アーカイブに失敗しました'
+                            );
+                          } finally {
+                            setIsArchiving(false);
+                          }
+                        }}
+                        variant="secondary"
+                        size="sm"
+                        disabled={isArchiving || isSubmitting}
+                      >
+                        {isArchiving ? '処理中...' : 'アーカイブ'}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="flex justify-end gap-2 pt-4 border-t border-[#0d0d0d]">
-                <Button onClick={onClose} variant="secondary" disabled={isSubmitting}>
+                <Button onClick={onClose} variant="secondary" disabled={isSubmitting || isArchiving}>
                   キャンセル
                 </Button>
-                <Button onClick={handleSave} disabled={isSubmitting || !title.trim() || !slug.trim()}>
+                <Button onClick={handleSave} disabled={isSubmitting || isArchiving || !title.trim() || !slug.trim()}>
                   保存
                 </Button>
               </div>

@@ -589,6 +589,8 @@ export async function getPublishedForms(schoolCode: string): Promise<Form[]> {
   const filtered = (data || []).filter((form) => {
     // アーカイブされたフォームは除外
     if (form.is_archived) return false;
+    // statusがpublishedでないフォームは除外
+    if (form.status !== 'published') return false;
     
     const start = form.publish_start ? new Date(form.publish_start) : null;
     const end = form.publish_end ? new Date(form.publish_end) : null;

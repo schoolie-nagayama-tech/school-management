@@ -243,13 +243,33 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
                   </Button>
                 )}
                 {form.status === 'published' && (
+                  <>
+                    <Button
+                      onClick={() => handleStatusChange(form.id, 'draft')}
+                      variant="secondary"
+                      size="sm"
+                      disabled={isSubmitting}
+                    >
+                      非公開
+                    </Button>
+                    <Button
+                      onClick={() => handleStatusChange(form.id, 'closed')}
+                      variant="secondary"
+                      size="sm"
+                      disabled={isSubmitting}
+                    >
+                      終了
+                    </Button>
+                  </>
+                )}
+                {form.status === 'closed' && (
                   <Button
-                    onClick={() => handleStatusChange(form.id, 'closed')}
+                    onClick={() => handleStatusChange(form.id, 'draft')}
                     variant="secondary"
                     size="sm"
                     disabled={isSubmitting}
                   >
-                    終了
+                    非公開に戻す
                   </Button>
                 )}
                 {form.is_archived ? (
