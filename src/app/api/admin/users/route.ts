@@ -3,6 +3,28 @@ import { createClient } from '@supabase/supabase-js';
 
 export const dynamic = 'force-dynamic';
 
+function toNumArray(v: unknown): number[] {
+  if (Array.isArray(v)) return v.map((x) => Number(x)).filter((n) => !Number.isNaN(n));
+  if (typeof v === 'string') {
+    const trimmed = v.replace(/^\{|\}$/g, '').trim();
+    if (!trimmed) return [];
+    return trimmed.split(',').map((s) => Number(s.trim())).filter((n) => !Number.isNaN(n));
+  }
+  return [];
+}
+
+function toSlotNumbersByDay(v: unknown): Record<string, number[]> {
+  if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
+    const out: Record<string, number[]> = {};
+    for (const key of Object.keys(v as object)) {
+      const arr = toNumArray((v as Record<string, unknown>)[key]);
+      if (arr.length > 0) out[key] = arr;
+    }
+    return out;
+  }
+  return {};
+}
+
 function getSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -77,6 +99,7 @@ export async function GET(request: NextRequest) {
 
         return {
           ...profile,
+          available_slot_numbers_by_day: toSlotNumbersByDay(profile.available_slot_numbers_by_day),
           user_schools: userSchools || [],
         };
       })

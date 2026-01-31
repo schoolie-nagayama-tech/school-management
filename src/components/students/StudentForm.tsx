@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Button, Input, Select } from '@/components/ui';
 import type { Student, StudentInsert, StudentUpdate, Subject } from '@/types/database';
+import { Calendar } from 'lucide-react';
 import { GRADE_LABELS, STATUS_LABELS } from '@/types/database';
 import { getSubjects } from '@/lib/api/subjects';
 import { getStudentSubjects } from '@/lib/api/subjects';
@@ -332,6 +334,22 @@ export function StudentForm({
           placeholder="例: 物理"
         />
       )}
+
+      {/* 通塾日程 */}
+      <div className="border-t border-[#0d0d0d] pt-4">
+        {isEdit && student?.id && student?.school_id ? (
+          <Link href={`/schedule/regular-patterns?studentId=${student.id}&schoolId=${student.school_id}`}>
+            <Button type="button" variant="secondary" className="w-full sm:w-auto">
+              <Calendar className="mr-2 h-4 w-4" />
+              通塾日程を管理
+            </Button>
+          </Link>
+        ) : (
+          <p className="text-sm text-[#2a2a2a]/80">
+            通塾日程は保存後、生徒詳細の「通塾日程」タブまたは座席表メニューから登録できます。
+          </p>
+        )}
+      </div>
 
       {/* ボタン */}
       <div className="flex justify-end gap-3 pt-4 border-t border-[#0d0d0d]">

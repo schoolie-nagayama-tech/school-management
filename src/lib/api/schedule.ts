@@ -1,0 +1,667 @@
+import { supabase } from '@/lib/supabase';
+import type {
+  ScheduleTimeSlot,
+  ScheduleTimeSlotFormData,
+  ScheduleClosedDay,
+  ScheduleClosedDayFormData,
+  ScheduleRegularPattern,
+  ScheduleRegularPatternFormData,
+  ScheduleEntry,
+  ScheduleEntryFormData,
+  ScheduleGenerationResult,
+} from '@/types/schedule';
+
+// 座席表テーブルは Database 型に未定義のため、any でクエリ
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const db = supabase as any;
+
+// ========================================
+// コマ時間マスタ
+// ========================================
+
+export async function getTimeSlots(schoolId: string): Promise<ScheduleTimeSlot[]> {
+  const { data, error } = await db
+    .from('schedule_time_slots')
+    .select('*')
+    .eq('school_id', schoolId)
+    .order('display_order', { ascending: true })
+    .order('slot_number', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching time slots:', error);
+    throw new Error('コマ時間の取得に失敗しました');
+  }
+  return (data || []) as ScheduleTimeSlot[];
+}
+
+export async function getActiveTimeSlots(schoolId: string): Promise<ScheduleTimeSlot[]> {
+  const { data, error } = await db
+    .from('schedule_time_slots')
+    .select('*')
+    .eq('school_id', schoolId)
+    .eq('is_active', true)
+    .order('display_order', { ascending: true })
+    .order('slot_number', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching active time slots:', error);
+    throw new Error('コマ時間の取得に失敗しました');
+  }
+  return (data || []) as ScheduleTimeSlot[];
+}
+
+export async function createTimeSlot(
+  schoolId: string,
+  form: ScheduleTimeSlotFormData
+): Promise<ScheduleTimeSlot> {
+  const { data, error } = await db
+    .from('schedule_time_slots')
+    .insert({
+      school_id: schoolId,
+      slot_number: form.slot_number,
+      start_time: form.start_time,
+      end_time: form.end_time,
+      is_active: form.is_active,
+      display_order: form.display_order,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating time slot:', error);
+    throw new Error('コマ時間の登録に失敗しました');
+  }
+  return data as ScheduleTimeSlot;
+}
+
+export async function updateTimeSlot(
+  id: string,
+  form: Partial<ScheduleTimeSlotFormData>
+): Promise<ScheduleTimeSlot> {
+  const { data, error } = await db
+    .from('schedule_time_slots')
+    .update(form)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating time slot:', error);
+    throw new Error('コマ時間の更新に失敗しました');
+  }
+  return data as ScheduleTimeSlot;
+}
+
+export async function deleteTimeSlot(id: string): Promise<void> {
+  const { error } = await db.from('schedule_time_slots').delete().eq('id', id);
+  if (error) {
+    console.error('Error deleting time slot:', error);
+    throw new Error('コマ時間の削除に失敗しました。使用中の場合は削除できません。');
+  }
+}
+
+/** コマ時間が通塾日程またはスケジュールで使用されているか */
+export async function isTimeSlotInUse(timeSlotId: string): Promise<boolean> {
+  const [p, e] = await Promise.all([
+    db.from('schedule_regular_patterns').select('id').eq('time_slot_id', timeSlotId).limit(1),
+    db.from('schedule_entries').select('id').eq('time_slot_id', timeSlotId).limit(1),
+  ]);
+  return (p.data?.length ?? 0) > 0 || (e.data?.length ?? 0) > 0;
+}
+
+// ========================================
+// 休講日
+// ========================================
+
+export async function getClosedDays(
+  schoolId: string | null,
+  options?: { from?: string; to?: string }
+): Promise<ScheduleClosedDay[]> {
+  let query = db.from('schedule_closed_days').select('*');
+
+  if (schoolId === null) {
+    query = query.is('school_id', null);
+  } else {
+    query = query.or(`school_id.eq.${schoolId},school_id.is.null`);
+  }
+
+  if (options?.from) {
+    query = query.gte('closed_date', options.from);
+  }
+  if (options?.to) {
+    query = query.lte('closed_date', options.to);
+  }
+  query = query.order('closed_date', { ascending: true });
+
+  const { data, error } = await query;
+  if (error) {
+    console.error('Error fetching closed days:', error);
+    throw new Error('休講日の取得に失敗しました');
+  }
+  return (data || []) as ScheduleClosedDay[];
+}
+
+export async function createClosedDay(
+  schoolId: string | null,
+  form: ScheduleClosedDayFormData
+): Promise<ScheduleClosedDay> {
+  const { data, error } = await db
+    .from('schedule_closed_days')
+    .insert({
+      school_id: form.is_global ? null : schoolId,
+      closed_date: form.closed_date,
+      reason: form.reason || null,
+      is_global: form.is_global,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating closed day:', error);
+    throw new Error('休講日の登録に失敗しました');
+  }
+  return data as ScheduleClosedDay;
+}
+
+export async function deleteClosedDay(id: string): Promise<void> {
+  const { error } = await db.from('schedule_closed_days').delete().eq('id', id);
+  if (error) {
+    console.error('Error deleting closed day:', error);
+    throw new Error('休講日の削除に失敗しました');
+  }
+}
+
+// ========================================
+// 通塾日程（通常授業パターン）
+// ========================================
+
+export async function getRegularPatterns(
+  schoolId: string,
+  filters?: { studentId?: string; dayOfWeek?: number; periodType?: string }
+): Promise<ScheduleRegularPattern[]> {
+  let query = db
+    .from('schedule_regular_patterns')
+    .select(
+      `
+      *,
+      time_slot:schedule_time_slots(*),
+      student:students(id, last_name, first_name, grade),
+      teacher:user_profiles(id, display_name, email)
+    `
+    )
+    .eq('school_id', schoolId)
+    .eq('is_active', true);
+
+  if (filters?.studentId) query = query.eq('student_id', filters.studentId);
+  if (filters?.dayOfWeek !== undefined) query = query.eq('day_of_week', filters.dayOfWeek);
+  if (filters?.periodType) query = query.eq('period_type', filters.periodType);
+
+  query = query.order('day_of_week').order('time_slot_id');
+
+  const { data, error } = await query;
+  if (error) {
+    console.error('Error fetching regular patterns:', error);
+    throw new Error('通塾日程の取得に失敗しました');
+  }
+
+  const rows = (data || []) as (ScheduleRegularPattern & {
+    time_slot?: ScheduleTimeSlot[];
+    student?: { id: string; last_name: string; first_name: string; grade: number }[];
+    teacher?: { id: string; display_name: string | null; email: string | null }[];
+  })[];
+  return rows.map((r) => ({
+    ...r,
+    time_slot: Array.isArray(r.time_slot) ? r.time_slot[0] : r.time_slot,
+    student: Array.isArray(r.student) ? r.student[0] : r.student,
+    teacher: Array.isArray(r.teacher) ? r.teacher[0] : r.teacher,
+  })) as ScheduleRegularPattern[];
+}
+
+export async function createRegularPattern(
+  schoolId: string,
+  form: ScheduleRegularPatternFormData
+): Promise<ScheduleRegularPattern> {
+  const { data, error } = await db
+    .from('schedule_regular_patterns')
+    .insert({
+      school_id: schoolId,
+      student_id: form.student_id,
+      day_of_week: form.day_of_week,
+      time_slot_id: form.time_slot_id,
+      teacher_id: form.teacher_id,
+      subject_ids: form.subject_ids || [],
+      seat_label: form.seat_label || null,
+      period_type: form.period_type,
+      is_active: true,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating regular pattern:', error);
+    throw new Error('通塾日程の登録に失敗しました');
+  }
+  return data as ScheduleRegularPattern;
+}
+
+export async function updateRegularPattern(
+  id: string,
+  form: Partial<ScheduleRegularPatternFormData>
+): Promise<ScheduleRegularPattern> {
+  const updatePayload: Record<string, unknown> = {};
+  if (form.student_id !== undefined) updatePayload.student_id = form.student_id;
+  if (form.day_of_week !== undefined) updatePayload.day_of_week = form.day_of_week;
+  if (form.time_slot_id !== undefined) updatePayload.time_slot_id = form.time_slot_id;
+  if (form.teacher_id !== undefined) updatePayload.teacher_id = form.teacher_id;
+  if (form.subject_ids !== undefined) updatePayload.subject_ids = form.subject_ids;
+  if (form.seat_label !== undefined) updatePayload.seat_label = form.seat_label || null;
+  if (form.period_type !== undefined) updatePayload.period_type = form.period_type;
+
+  const { data, error } = await db
+    .from('schedule_regular_patterns')
+    .update(updatePayload)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating regular pattern:', error);
+    throw new Error('通塾日程の更新に失敗しました');
+  }
+  return data as ScheduleRegularPattern;
+}
+
+/** 論理削除（is_active = false） */
+export async function deleteRegularPattern(id: string): Promise<void> {
+  const { error } = await db
+    .from('schedule_regular_patterns')
+    .update({ is_active: false })
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting regular pattern:', error);
+    throw new Error('通塾日程の削除に失敗しました');
+  }
+}
+
+// ========================================
+// スケジュールエントリ（週次）
+// ========================================
+
+export async function getScheduleEntries(
+  schoolId: string,
+  fromDate: string,
+  toDate: string
+): Promise<ScheduleEntry[]> {
+  const selectWithJoins =
+    '*, time_slot:schedule_time_slots(*), student:students(id, last_name, first_name, grade), teacher:user_profiles!schedule_entries_teacher_id_fkey(id, display_name, email)';
+  let result = await db
+    .from('schedule_entries')
+    .select(selectWithJoins)
+    .eq('school_id', schoolId)
+    .gte('entry_date', fromDate)
+    .lte('entry_date', toDate)
+    .order('entry_date')
+    .order('time_slot_id');
+
+  if (result.error) {
+    const err = result.error as { message?: string; code?: string; details?: string };
+    const msg = err.message ?? JSON.stringify(result.error);
+    const code = err.code;
+    console.error('Error fetching schedule entries:', msg, code, err.details ?? '');
+
+    const tryWithoutJoins = await db
+      .from('schedule_entries')
+      .select('*')
+      .eq('school_id', schoolId)
+      .gte('entry_date', fromDate)
+      .lte('entry_date', toDate)
+      .order('entry_date')
+      .order('time_slot_id');
+
+    if (!tryWithoutJoins.error && tryWithoutJoins.data) {
+      console.warn('Schedule entries loaded without joins (relation error). Run migrations if needed.');
+      return (tryWithoutJoins.data || []) as ScheduleEntry[];
+    }
+
+    throw new Error(
+      code === 'PGRST116'
+        ? 'スケジュールの取得に失敗しました（テーブルまたはリレーションが存在しません。マイグレーションを実行してください）'
+        : `スケジュールの取得に失敗しました: ${msg}`
+    );
+  }
+
+  const rows = (result.data || []) as (ScheduleEntry & {
+    time_slot?: ScheduleTimeSlot[] | ScheduleTimeSlot;
+    student?: { id: string; last_name: string; first_name: string; grade: number }[] | { id: string; last_name: string; first_name: string; grade: number };
+    teacher?: { id: string; display_name: string | null; email: string | null }[] | { id: string; display_name: string | null; email: string | null };
+  })[];
+  return rows.map((r) => ({
+    ...r,
+    time_slot: Array.isArray(r.time_slot) ? r.time_slot[0] : r.time_slot,
+    student: Array.isArray(r.student) ? r.student[0] : r.student,
+    teacher: Array.isArray(r.teacher) ? r.teacher[0] : r.teacher,
+  })) as ScheduleEntry[];
+}
+
+/** 指定週のスケジュールを通塾日程から一括生成。既存は上書き。 */
+export async function generateWeeklySchedule(
+  schoolId: string,
+  weekStartDate: string,
+  userId?: string
+): Promise<ScheduleGenerationResult> {
+  const weekStart = new Date(weekStartDate);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+
+  const fromStr = weekStart.toISOString().slice(0, 10);
+  const toStr = weekEnd.toISOString().slice(0, 10);
+
+  const patterns = await getRegularPatterns(schoolId);
+
+  const entries: {
+    school_id: string;
+    entry_date: string;
+    time_slot_id: string;
+    teacher_id: string;
+    student_id: string;
+    subject_ids: string[];
+    seat_label: string | null;
+    regular_pattern_id: string;
+  }[] = [];
+
+  for (const p of patterns) {
+    if (!p.time_slot) continue;
+    const dayNames = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+    for (let d = 0; d < 7; d++) {
+      const dDate = new Date(weekStart);
+      dDate.setDate(dDate.getDate() + d);
+      if (dDate.getDay() !== p.day_of_week) continue;
+      const dateStr = dDate.toISOString().slice(0, 10);
+      entries.push({
+        school_id: schoolId,
+        entry_date: dateStr,
+        time_slot_id: p.time_slot_id,
+        teacher_id: p.teacher_id,
+        student_id: p.student_id,
+        subject_ids: p.subject_ids || [],
+        seat_label: p.seat_label || null,
+        regular_pattern_id: p.id,
+      });
+    }
+  }
+
+  const { error: delError } = await db
+    .from('schedule_entries')
+    .delete()
+    .eq('school_id', schoolId)
+    .gte('entry_date', fromStr)
+    .lte('entry_date', toStr)
+    .in('status', ['scheduled', 'completed']);
+
+  if (delError) {
+    console.error('Error clearing existing entries:', delError);
+    throw new Error('既存スケジュールの削除に失敗しました');
+  }
+
+  if (entries.length > 0) {
+    const { error: insError } = await db.from('schedule_entries').insert(entries);
+    if (insError) {
+      console.error('Error inserting schedule entries:', insError);
+      throw new Error('スケジュールの生成に失敗しました');
+    }
+  }
+
+  const { error: logError } = await db.from('schedule_generation_logs').insert({
+    school_id: schoolId,
+    week_start_date: weekStartDate,
+    entries_created: entries.length,
+    created_by: userId || null,
+  });
+  if (logError) console.warn('Generation log insert failed:', logError);
+
+  return { entries_created: entries.length, week_start_date: weekStartDate };
+}
+
+/** 指定週に既にエントリが存在するか */
+export async function hasEntriesForWeek(schoolId: string, weekStartDate: string): Promise<boolean> {
+  const start = new Date(weekStartDate);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  const fromStr = start.toISOString().slice(0, 10);
+  const toStr = end.toISOString().slice(0, 10);
+  const { data, error } = await db
+    .from('schedule_entries')
+    .select('id')
+    .eq('school_id', schoolId)
+    .gte('entry_date', fromStr)
+    .lte('entry_date', toStr)
+    .limit(1);
+  if (error) return false;
+  return (data?.length ?? 0) > 0;
+}
+
+// ========================================
+// Phase 2: 授業の追加・編集・移動・出席・削除・振替
+// ========================================
+
+/** 指定コマ（日付・スロット・講師）の授業一覧（移動可否判定用） */
+export async function getSlotEntries(
+  schoolId: string,
+  date: string,
+  slotId: string,
+  teacherId: string
+): Promise<ScheduleEntry[]> {
+  const { data, error } = await db
+    .from('schedule_entries')
+    .select('*')
+    .eq('school_id', schoolId)
+    .eq('entry_date', date)
+    .eq('time_slot_id', slotId)
+    .eq('teacher_id', teacherId)
+    .in('status', ['scheduled', 'completed', 'transferred_in'])
+    .order('created_at');
+
+  if (error) {
+    console.error('Error fetching slot entries:', error);
+    throw new Error('授業の取得に失敗しました');
+  }
+  return (data || []) as ScheduleEntry[];
+}
+
+/** 授業を1件追加 */
+export async function createScheduleEntry(
+  schoolId: string,
+  date: string,
+  slotId: string,
+  form: ScheduleEntryFormData,
+  options?: { regular_pattern_id?: string | null; status?: string }
+): Promise<ScheduleEntry> {
+  const { data, error } = await db
+    .from('schedule_entries')
+    .insert({
+      school_id: schoolId,
+      entry_date: date,
+      time_slot_id: slotId,
+      teacher_id: form.teacher_id,
+      student_id: form.student_id,
+      subject_ids: form.subject_ids || [],
+      seat_label: form.seat_label || null,
+      note: form.note || null,
+      regular_pattern_id: options?.regular_pattern_id ?? null,
+      status: options?.status ?? 'scheduled',
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating schedule entry:', error);
+    throw new Error('授業の追加に失敗しました');
+  }
+  return data as ScheduleEntry;
+}
+
+/** 授業を更新（講師・科目・座席・備考） */
+export async function updateScheduleEntry(
+  id: string,
+  form: Partial<ScheduleEntryFormData>
+): Promise<ScheduleEntry> {
+  const payload: Record<string, unknown> = {};
+  if (form.teacher_id !== undefined) payload.teacher_id = form.teacher_id;
+  if (form.student_id !== undefined) payload.student_id = form.student_id;
+  if (form.subject_ids !== undefined) payload.subject_ids = form.subject_ids;
+  if (form.seat_label !== undefined) payload.seat_label = form.seat_label || null;
+  if (form.note !== undefined) payload.note = form.note || null;
+
+  const { data, error } = await db
+    .from('schedule_entries')
+    .update(payload)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating schedule entry:', error);
+    throw new Error('授業の更新に失敗しました');
+  }
+  return data as ScheduleEntry;
+}
+
+/** 授業を週内で移動（date, time_slot_id, teacher_id を更新） */
+export async function moveScheduleEntry(
+  id: string,
+  targetDate: string,
+  targetSlotId: string,
+  targetTeacherId: string
+): Promise<ScheduleEntry> {
+  const { data, error } = await db
+    .from('schedule_entries')
+    .update({
+      entry_date: targetDate,
+      time_slot_id: targetSlotId,
+      teacher_id: targetTeacherId,
+    })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error moving schedule entry:', error);
+    throw new Error('授業の移動に失敗しました');
+  }
+  return data as ScheduleEntry;
+}
+
+/** 出席を記録（attendance_status, attendance_recorded_at, attendance_recorded_by, status = 'completed'） */
+export async function recordAttendance(
+  id: string,
+  status: 'present' | 'absent' | 'late',
+  recordedBy: string
+): Promise<ScheduleEntry> {
+  const { data, error } = await db
+    .from('schedule_entries')
+    .update({
+      attendance_status: status,
+      attendance_recorded_at: new Date().toISOString(),
+      attendance_recorded_by: recordedBy,
+      status: 'completed',
+    })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error recording attendance:', error);
+    throw new Error('出席の記録に失敗しました');
+  }
+  return data as ScheduleEntry;
+}
+
+/** 授業を論理削除（status = 'cancelled'）。振替先がある場合は振替先も取消。 */
+export async function deleteScheduleEntry(id: string): Promise<void> {
+  const { data: row, error: fetchErr } = await db
+    .from('schedule_entries')
+    .select('transfer_to_id')
+    .eq('id', id)
+    .single();
+
+  if (fetchErr) {
+    console.error('Error fetching entry for delete:', fetchErr);
+    throw new Error('授業の削除に失敗しました');
+  }
+
+  const { error } = await db
+    .from('schedule_entries')
+    .update({ status: 'cancelled' })
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting schedule entry:', error);
+    throw new Error('授業の削除に失敗しました');
+  }
+
+  const transferToId = (row as { transfer_to_id?: string | null })?.transfer_to_id;
+  if (transferToId) {
+    const { error: err2 } = await db
+      .from('schedule_entries')
+      .update({ status: 'cancelled' })
+      .eq('id', transferToId);
+    if (err2) console.warn('Failed to cancel transfer target:', err2);
+  }
+}
+
+/** 振替: 元を transferred_out にし、振替先を transferred_in で作成し相互リンク */
+export async function createTransferEntry(
+  schoolId: string,
+  fromEntryId: string,
+  targetDate: string,
+  targetSlotId: string,
+  targetTeacherId: string,
+  seatLabel?: string | null
+): Promise<{ from: ScheduleEntry; to: ScheduleEntry }> {
+  const { data: fromRow, error: updateErr } = await db
+    .from('schedule_entries')
+    .update({ status: 'transferred_out' })
+    .eq('id', fromEntryId)
+    .select()
+    .single();
+
+  if (updateErr || !fromRow) {
+    console.error('Error updating transfer source:', updateErr);
+    throw new Error('振替元の更新に失敗しました');
+  }
+
+  const fromEntry = fromRow as ScheduleEntry;
+  const { data: toRow, error: insertErr } = await db
+    .from('schedule_entries')
+    .insert({
+      school_id: schoolId,
+      entry_date: targetDate,
+      time_slot_id: targetSlotId,
+      teacher_id: targetTeacherId,
+      student_id: fromEntry.student_id,
+      subject_ids: fromEntry.subject_ids || [],
+      seat_label: seatLabel ?? fromEntry.seat_label,
+      note: fromEntry.note,
+      regular_pattern_id: fromEntry.regular_pattern_id,
+      status: 'transferred_in',
+      transfer_from_id: fromEntryId,
+    })
+    .select()
+    .single();
+
+  if (insertErr || !toRow) {
+    console.error('Error creating transfer target:', insertErr);
+    throw new Error('振替先の登録に失敗しました');
+  }
+
+  const toEntry = toRow as ScheduleEntry;
+  const { error: linkErr } = await db
+    .from('schedule_entries')
+    .update({ transfer_to_id: toEntry.id })
+    .eq('id', fromEntryId);
+
+  if (linkErr) console.warn('Link transfer_to_id failed:', linkErr);
+
+  return { from: fromEntry, to: toEntry };
+}

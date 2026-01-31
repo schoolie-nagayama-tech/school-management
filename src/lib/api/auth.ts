@@ -148,7 +148,7 @@ export async function createUserProfile(
 // プロファイルを更新
 export async function updateUserProfile(
   userId: string,
-  updates: Partial<Pick<UserProfile, 'display_name' | 'role' | 'is_active'>>
+  updates: Partial<Pick<UserProfile, 'display_name' | 'role' | 'is_active' | 'teachable_subject_ids' | 'available_days_of_week'>>
 ): Promise<UserProfile> {
   const supabase = createSupabaseBrowserClient();
   const { data, error } = await supabase

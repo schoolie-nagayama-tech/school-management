@@ -1413,6 +1413,12 @@ export interface UserProfile {
   last_login_at: string | null;
   created_at: string;
   updated_at: string;
+  /** 講師の指導可能科目ID（空または未設定の場合は全科目可） */
+  teachable_subject_ids?: string[] | null;
+  /** 出勤可能曜日 0=日,1=月,...,6=土（空または未設定の場合は全曜日） */
+  available_days_of_week?: number[] | null;
+  /** 曜日ごとの出勤可能コマ。キー "0"〜"6"、値は 1〜7 限の配列。空または未設定は全コマ可 */
+  available_slot_numbers_by_day?: Record<string, number[]> | null;
 }
 
 // ユーザーと教室の紐付け

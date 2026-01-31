@@ -38,7 +38,7 @@ interface UserWithDetails extends UserProfile {
 }
 
 export default function UsersPage() {
-  const { profile, permissions } = useAuth();
+  const { profile, permissions, isLoading: authLoading } = useAuth();
   const { toasts, removeToast, success, error: toastError } = useToast();
   const [activeTab, setActiveTab] = useState<TabType>('users');
   const [users, setUsers] = useState<UserWithDetails[]>([]);
@@ -342,7 +342,17 @@ export default function UsersPage() {
 
   // 権限チェック（オーナー以上で教室設定タブにアクセス可能）
   const canAccessSchoolSettings = profile?.role === 'admin' || profile?.role === 'owner';
-  
+
+  // 認証・権限の読み込みが完了してから判定し、読み込み中はアクセス拒否を表示しない
+  if (authLoading) {
+    return (
+      <AdminLayout headerTitle="ユーザー管理">
+        <div className="p-6 flex items-center justify-center min-h-[40vh]">
+          <div className="w-10 h-10 border-4 border-[#ff8e3c] border-t-transparent rounded-full animate-spin" />
+        </div>
+      </AdminLayout>
+    );
+  }
   if (!permissions?.canAccessUsers) {
     return (
       <AdminLayout>

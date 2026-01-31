@@ -218,6 +218,19 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
                   講習管理
                 </Link>
               )}
+              {/* 座席表（管理者のみ） */}
+              {profile && (profile.role === 'admin' || profile.role === 'owner' || profile.role === 'manager') && (
+                <Link
+                  href="/schedule"
+                  className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                    pathname === '/schedule' || pathname?.startsWith('/schedule')
+                      ? 'bg-[#ff8e3c] text-[#0d0d0d]'
+                      : 'text-[#2a2a2a] hover:bg-[#eff0f3]'
+                  }`}
+                >
+                  座席表
+                </Link>
+              )}
               {/* 講師メニュー（教室長以上のみ） */}
               {!profile || profile.role !== 'teacher' ? (
                 <div className="relative">
@@ -276,7 +289,7 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
                             : ''
                         }`}
                       >
-                        講師登録
+                        講師一覧
                       </Link>
                       <Link
                         href="/admin/attendance"

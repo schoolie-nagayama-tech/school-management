@@ -4,11 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  updateUserProfile,
-  addUserToSchool,
-  removeUserFromSchool,
-} from '@/lib/api/auth';
+import { updateUserProfile } from '@/lib/api/auth';
 import { getSchools } from '@/lib/api/schools';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui';
@@ -35,7 +31,7 @@ interface TeacherWithDetails extends UserProfile {
 }
 
 export default function TeachersPage() {
-  const { profile, permissions, getSelectedSchoolIds } = useAuth();
+  const { profile, permissions, isLoading: authLoading, getSelectedSchoolIds } = useAuth();
   const { toasts, removeToast, success, error: toastError } = useToast();
   const [teachers, setTeachers] = useState<TeacherWithDetails[]>([]);
   const [schools, setSchools] = useState<School[]>([]);
@@ -62,12 +58,6 @@ export default function TeachersPage() {
     displayName: string;
   } | null>(null);
 
-  // 編集モーダル
-  const [editingTeacher, setEditingTeacher] = useState<TeacherWithDetails | null>(null);
-  const [editDisplayName, setEditDisplayName] = useState('');
-  const [editSchoolIds, setEditSchoolIds] = useState<string[]>([]);
-  const [isSaving, setIsSaving] = useState(false);
-
   // 削除確認
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletingTeacher, setDeletingTeacher] = useState<TeacherWithDetails | null>(null);
@@ -89,7 +79,7 @@ export default function TeachersPage() {
       const teachersData = await teachersResponse.json();
       
       setTeachers(teachersData.users || []);
-      
+
       // 教室長の場合は自分の権限がある教室のみ表示
       let availableSchools = schoolsData;
       if (isManager) {
@@ -177,50 +167,6 @@ export default function TeachersPage() {
     }
   };
 
-  // 講師編集モーダルを開く
-  const openEditModal = (teacher: TeacherWithDetails) => {
-    setEditingTeacher(teacher);
-    setEditDisplayName(teacher.display_name || '');
-    const teacherSchoolIds = teacher.user_schools?.map(us => us.school_id) || [];
-    // 教室長の場合は自分の権限がある教室のみ選択可能
-    if (isManager) {
-      const userSchoolIds = getSelectedSchoolIds();
-      setEditSchoolIds(teacherSchoolIds.filter(id => userSchoolIds.includes(id)));
-    } else {
-      setEditSchoolIds(teacherSchoolIds);
-    }
-  };
-
-  // 講師編集を保存
-  const handleSaveTeacher = async () => {
-    if (!editingTeacher) return;
-
-    setIsSaving(true);
-    try {
-      await updateUserProfile(editingTeacher.id, { display_name: editDisplayName });
-
-      const currentSchoolIds = editingTeacher.user_schools?.map(us => us.school_id) || [];
-      const toAdd = editSchoolIds.filter(id => !currentSchoolIds.includes(id));
-      const toRemove = currentSchoolIds.filter(id => !editSchoolIds.includes(id));
-
-      for (const schoolId of toAdd) {
-        await addUserToSchool(editingTeacher.id, schoolId);
-      }
-      for (const schoolId of toRemove) {
-        await removeUserFromSchool(editingTeacher.id, schoolId);
-      }
-
-      setEditingTeacher(null);
-      await loadData();
-      success('講師を更新しました');
-    } catch (err) {
-      console.error('Error updating teacher:', err);
-      toastError('講師の更新に失敗しました');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   // 講師削除
   const handleDelete = async () => {
     if (!deletingTeacher) return;
@@ -256,7 +202,16 @@ export default function TeachersPage() {
     }
   };
 
-  // 権限チェック
+  // 権限チェック（認証・権限の読み込みが完了してから判定し、読み込み中はアクセス拒否を表示しない）
+  if (authLoading) {
+    return (
+      <AdminLayout headerTitle="講師管理">
+        <div className="p-6 flex items-center justify-center min-h-[40vh]">
+          <div className="w-10 h-10 border-4 border-[#ff8e3c] border-t-transparent rounded-full animate-spin" />
+        </div>
+      </AdminLayout>
+    );
+  }
   if (!permissions?.canAccessUsers) {
     return (
       <AdminLayout>
@@ -361,13 +316,11 @@ export default function TeachersPage() {
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              onClick={() => openEditModal(teacher)}
-                              className="p-2"
-                            >
-                              編集
-                            </Button>
+                            <Link href={`/admin/teachers/${teacher.id}`}>
+                              <Button variant="ghost" className="p-2">
+                                編集
+                              </Button>
+                            </Link>
                             <Button
                               variant="ghost"
                               onClick={() => handleToggleActive(teacher)}
@@ -591,88 +544,6 @@ export default function TeachersPage() {
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* 講師編集モーダル */}
-        {editingTeacher && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6 max-w-md w-full">
-              <h2 className="text-xl font-bold text-[#0d0d0d] mb-4">講師編集</h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
-                    メールアドレス
-                  </label>
-                  <input
-                    type="text"
-                    value={editingTeacher.email}
-                    disabled
-                    className="w-full px-3 py-2 border border-[#0d0d0d]/30 rounded-lg bg-[#eff0f3] text-[#2a2a2a]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
-                    表示名
-                  </label>
-                  <input
-                    type="text"
-                    value={editDisplayName}
-                    onChange={e => setEditDisplayName(e.target.value)}
-                    className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff8e3c]"
-                    placeholder="山田 太郎"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
-                    担当教室
-                  </label>
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {schools
-                      .filter(school => {
-                        // 教室長の場合は自分の権限がある教室のみ表示
-                        if (isManager) {
-                          const userSchoolIds = getSelectedSchoolIds();
-                          return userSchoolIds.includes(school.id);
-                        }
-                        return true;
-                      })
-                      .map(school => (
-                        <label key={school.id} className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={editSchoolIds.includes(school.id)}
-                            onChange={e => {
-                              if (e.target.checked) {
-                                setEditSchoolIds([...editSchoolIds, school.id]);
-                              } else {
-                                setEditSchoolIds(editSchoolIds.filter(id => id !== school.id));
-                              }
-                            }}
-                            className="rounded border-[#0d0d0d]"
-                          />
-                          <span className="text-sm text-[#0d0d0d]">{school.name}</span>
-                        </label>
-                      ))}
-                  </div>
-                </div>
-                <div className="flex gap-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setEditingTeacher(null)}
-                    className="flex-1 px-4 py-2 bg-[#eff0f3] text-[#0d0d0d] rounded-lg hover:bg-[#0d0d0d]/10 transition-colors"
-                  >
-                    キャンセル
-                  </button>
-                  <button
-                    onClick={handleSaveTeacher}
-                    disabled={isSaving}
-                    className="flex-1 px-4 py-2 bg-[#ff8e3c] text-[#0d0d0d] font-bold rounded-lg hover:bg-[#ff7a1f] transition-colors disabled:opacity-50"
-                  >
-                    {isSaving ? '保存中...' : '保存'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </AdminLayout>
