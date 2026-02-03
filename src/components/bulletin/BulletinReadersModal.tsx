@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui';
@@ -88,13 +88,13 @@ export function BulletinReadersModal({
     <Modal isOpen={isOpen} onClose={onClose} title={`「${postTitle}」の既読状況`}>
       <div className="space-y-4">
         <div>
-          <h3 className="font-semibold text-[#0d0d0d] mb-2">
+          <h3 className="font-semibold text-[#1f2937] mb-2">
             既読 ({readers.length}人)
           </h3>
           {isLoading ? (
-            <div className="text-sm text-[#2a2a2a]/70">読み込み中...</div>
+            <div className="text-sm text-[#4b5563]/70">読み込み中...</div>
           ) : readers.length === 0 ? (
-            <div className="text-sm text-[#2a2a2a]/70">既読者はいません</div>
+            <div className="text-sm text-[#4b5563]/70">既読者はいません</div>
           ) : (
             <div className="space-y-1">
               {readers.map((read) => {
@@ -106,7 +106,7 @@ export function BulletinReadersModal({
                 });
                 const userName = read.user?.display_name || read.user?.email || '不明';
                 return (
-                  <div key={read.id} className="text-sm text-[#2a2a2a]">
+                  <div key={read.id} className="text-sm text-[#4b5563]">
                     {userName} - {readDate}
                   </div>
                 );
@@ -117,12 +117,12 @@ export function BulletinReadersModal({
 
         {unreadUsers.length > 0 && (
           <div>
-            <h3 className="font-semibold text-[#0d0d0d] mb-2">
+            <h3 className="font-semibold text-[#1f2937] mb-2">
               未読 ({unreadUsers.length}人)
             </h3>
             <div className="space-y-1">
               {unreadUsers.map((user) => (
-                <div key={user.id} className="text-sm text-[#2a2a2a]/70">
+                <div key={user.id} className="text-sm text-[#4b5563]/70">
                   {user.name}
                 </div>
               ))}

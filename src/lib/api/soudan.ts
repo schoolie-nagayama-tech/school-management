@@ -85,15 +85,18 @@ export async function getSoudanPeriod(id: string): Promise<SoudanPeriod | null> 
 
 /**
  * お客様相談期間を作成
+ * @param data 期間データ（school_id / form_type 除く）
+ * @param schoolId 教室ID（省略時は getDefaultSchoolId()）
  */
 export async function createSoudanPeriod(
-  data: Omit<FormPeriodInsert, 'school_id' | 'form_type'>
+  data: Omit<FormPeriodInsert, 'school_id' | 'form_type'>,
+  schoolId?: string
 ): Promise<SoudanPeriod> {
-  const schoolId = getDefaultSchoolId();
+  const targetSchoolId = schoolId ?? getDefaultSchoolId();
 
   const periodData: FormPeriodInsert = {
     ...data,
-    school_id: schoolId,
+    school_id: targetSchoolId,
     form_type: 'soudan',
     settings: (data.settings || {}) as SoudanSettings,
   };

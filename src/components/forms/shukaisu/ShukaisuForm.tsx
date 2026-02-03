@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -259,7 +259,7 @@ export function ShukaisuForm({ school, period }: ShukaisuFormProps) {
     <div className="space-y-3">
       {slots.map((slot, index) => (
         <div key={index} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-          <p className="text-sm font-medium text-[#0d0d0d] mb-2">{index + 1}コマ目</p>
+          <p className="text-sm font-medium text-[#1f2937] mb-2">{index + 1}コマ目</p>
           <div className="grid grid-cols-3 gap-2">
             <Select
               value={slot.day}
@@ -303,11 +303,11 @@ export function ShukaisuForm({ school, period }: ShukaisuFormProps) {
       <div className="flex items-center justify-between mb-6">
         <button
           onClick={() => router.push(`/portal/${school.code}`)}
-          className="text-[#2a2a2a] hover:text-[#0d0d0d]"
+          className="text-[#4b5563] hover:text-[#1f2937]"
         >
           ← 戻る
         </button>
-        <h1 className="text-xl font-bold text-[#0d0d0d]">週回数変更</h1>
+        <h1 className="text-xl font-bold text-[#1f2937]">週回数変更</h1>
         <div className="w-12"></div>
       </div>
 
@@ -323,12 +323,12 @@ export function ShukaisuForm({ school, period }: ShukaisuFormProps) {
 
         {/* 基本情報 */}
         <section>
-          <h3 className="text-sm font-semibold text-[#0d0d0d] mb-3 border-b border-[#0d0d0d] pb-1">
+          <h3 className="text-sm font-semibold text-[#1f2937] mb-3 border-b border-[#e5e7eb] pb-1">
             基本情報
           </h3>
           <div className="space-y-3">
             <div>
-              <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+              <label className="block text-sm font-medium mb-1 text-[#1f2937]">
                 生徒名 <span className="text-red-500">*</span>
               </label>
               <Input
@@ -343,7 +343,7 @@ export function ShukaisuForm({ school, period }: ShukaisuFormProps) {
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+              <label className="block text-sm font-medium mb-1 text-[#1f2937]">
                 学年 <span className="text-red-500">*</span>
               </label>
               <Select
@@ -360,7 +360,7 @@ export function ShukaisuForm({ school, period }: ShukaisuFormProps) {
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+              <label className="block text-sm font-medium mb-1 text-[#1f2937]">
                 メールアドレス <span className="text-red-500">*</span>
               </label>
               <Input
@@ -379,11 +379,11 @@ export function ShukaisuForm({ school, period }: ShukaisuFormProps) {
 
         {/* 現状 */}
         <section>
-          <h3 className="text-sm font-semibold text-[#0d0d0d] mb-3 border-b border-[#0d0d0d] pb-1">
+          <h3 className="text-sm font-semibold text-[#1f2937] mb-3 border-b border-[#e5e7eb] pb-1">
             現在の通塾状況
           </h3>
           <div className="mb-3">
-            <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+            <label className="block text-sm font-medium mb-1 text-[#1f2937]">
               週回数 <span className="text-red-500">*</span>
             </label>
             <Select
@@ -400,11 +400,11 @@ export function ShukaisuForm({ school, period }: ShukaisuFormProps) {
 
         {/* 変更希望 */}
         <section>
-          <h3 className="text-sm font-semibold text-[#0d0d0d] mb-3 border-b border-[#0d0d0d] pb-1">
+          <h3 className="text-sm font-semibold text-[#1f2937] mb-3 border-b border-[#e5e7eb] pb-1">
             変更希望
           </h3>
           <div className="mb-3">
-            <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+            <label className="block text-sm font-medium mb-1 text-[#1f2937]">
               週回数 <span className="text-red-500">*</span>
             </label>
             <Select
@@ -421,11 +421,11 @@ export function ShukaisuForm({ school, period }: ShukaisuFormProps) {
 
         {/* 変更希望日 */}
         <section>
-          <h3 className="text-sm font-semibold text-[#0d0d0d] mb-3 border-b border-[#0d0d0d] pb-1">
+          <h3 className="text-sm font-semibold text-[#1f2937] mb-3 border-b border-[#e5e7eb] pb-1">
             変更希望日
           </h3>
           <div>
-            <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+            <label className="block text-sm font-medium mb-1 text-[#1f2937]">
               いつから変更を希望しますか？ <span className="text-red-500">*</span>
             </label>
             <Input
@@ -435,7 +435,7 @@ export function ShukaisuForm({ school, period }: ShukaisuFormProps) {
               className={errors.changeFrom ? 'border-red-500' : ''}
             />
             {changeFrom && (
-              <p className="text-sm text-[#2a2a2a] mt-1">→ {formatDateLabel(changeFrom)}</p>
+              <p className="text-sm text-[#4b5563] mt-1">→ {formatDateLabel(changeFrom)}</p>
             )}
             {errors.changeFrom && (
               <p className="text-red-500 text-xs mt-1">{errors.changeFrom}</p>
@@ -445,13 +445,13 @@ export function ShukaisuForm({ school, period }: ShukaisuFormProps) {
 
         {/* 備考 */}
         <section>
-          <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">備考</label>
+          <label className="block text-sm font-medium mb-1 text-[#1f2937]">備考</label>
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="ご要望等あればご記入ください"
             rows={3}
-            className="w-full border border-[#0d0d0d] rounded-lg px-3 py-2 resize-y text-sm"
+            className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 resize-y text-sm"
           />
         </section>
 

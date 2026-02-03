@@ -43,7 +43,7 @@ export function AlertDialog({ open, onOpenChange, children }: AlertDialogProps) 
         onClick={() => onOpenChange(false)}
         aria-hidden="true"
       />
-      <div className="relative z-50 w-full max-w-lg bg-[#fffffe] rounded-xl shadow-2xl border border-[#0d0d0d] max-h-[95vh] overflow-hidden flex flex-col">
+      <div className="relative z-50 w-full max-w-lg bg-white rounded-xl shadow-2xl border border-[#e5e7eb] max-h-[95vh] overflow-hidden flex flex-col">
         {children}
       </div>
     </div>
@@ -66,7 +66,7 @@ interface AlertDialogHeaderProps {
 
 export function AlertDialogHeader({ children, className = '' }: AlertDialogHeaderProps) {
   return (
-    <div className={`px-6 py-4 border-b border-[#0d0d0d] ${className}`}>
+    <div className={`px-6 py-4 border-b border-[#e5e7eb] ${className}`}>
       {children}
     </div>
   );
@@ -79,7 +79,7 @@ interface AlertDialogTitleProps {
 
 export function AlertDialogTitle({ children, className = '' }: AlertDialogTitleProps) {
   return (
-    <h2 className={`text-lg font-semibold text-[#0d0d0d] ${className}`}>
+    <h2 className={`text-lg font-semibold text-[#1f2937] ${className}`}>
       {children}
     </h2>
   );
@@ -92,7 +92,7 @@ interface AlertDialogDescriptionProps {
 
 export function AlertDialogDescription({ children, className = '' }: AlertDialogDescriptionProps) {
   return (
-    <p className={`text-sm text-[#2a2a2a] mt-2 ${className}`}>
+    <p className={`text-sm text-[#4b5563] mt-2 ${className}`}>
       {children}
     </p>
   );
@@ -105,7 +105,7 @@ interface AlertDialogFooterProps {
 
 export function AlertDialogFooter({ children, className = '' }: AlertDialogFooterProps) {
   return (
-    <div className={`flex items-center justify-end gap-2 px-6 py-4 border-t border-[#0d0d0d] ${className}`}>
+    <div className={`flex items-center justify-end gap-2 px-6 py-4 border-t border-[#e5e7eb] ${className}`}>
       {children}
     </div>
   );
@@ -121,7 +121,7 @@ export function AlertDialogAction({ children, onClick, className = '' }: AlertDi
   return (
     <button
       onClick={onClick}
-      className={`px-4 py-2 bg-[#ff8e3c] text-[#0d0d0d] rounded-lg hover:bg-[#ff9e5c] transition-colors font-medium ${className}`}
+      className={`px-4 py-2 bg-[#3b82f6] text-white rounded-lg hover:bg-[#60a5fa] transition-colors font-medium ${className}`}
     >
       {children}
     </button>
@@ -138,7 +138,7 @@ export function AlertDialogCancel({ children, onClick, className = '' }: AlertDi
   return (
     <button
       onClick={onClick}
-      className={`px-4 py-2 bg-[#fffffe] text-[#2a2a2a] border border-[#0d0d0d] rounded-lg hover:bg-[#eff0f3] transition-colors font-medium ${className}`}
+      className={`px-4 py-2 bg-white text-[#4b5563] border border-[#e5e7eb] rounded-lg hover:bg-[#f3f4f6] transition-colors font-medium ${className}`}
     >
       {children}
     </button>

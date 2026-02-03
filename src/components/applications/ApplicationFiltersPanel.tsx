@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { ApplicationFilters, ApplicationItem } from '@/types/database';
 import { Select } from '@/components/ui';
@@ -32,11 +32,11 @@ export function ApplicationFiltersPanel({
     filters.showHidden;
 
   return (
-    <div className="bg-[#fffffe] border border-[#0d0d0d] rounded-lg p-4 mb-6">
+    <div className="bg-white border border-[#e5e7eb] rounded-lg p-4 mb-6">
       <div className="flex flex-wrap gap-4 items-end">
         {/* 生徒名検索 */}
         <div className="flex-1 min-w-[200px]">
-          <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
+          <label className="block text-sm font-medium text-[#1f2937] mb-1">
             生徒名で検索
           </label>
           <input
@@ -44,13 +44,13 @@ export function ApplicationFiltersPanel({
             value={filters.search || ''}
             onChange={(e) => onChange({ search: e.target.value })}
             placeholder="氏名・フリガナで検索"
-            className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a] focus:outline-none focus:ring-2 focus:ring-[#ff8e3c]"
+            className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
           />
         </div>
 
         {/* 学年フィルター */}
         <div className="w-32">
-          <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
+          <label className="block text-sm font-medium text-[#1f2937] mb-1">
             学年
           </label>
           <Select
@@ -64,7 +64,7 @@ export function ApplicationFiltersPanel({
 
         {/* 申込項目フィルター */}
         <div className="w-48">
-          <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
+          <label className="block text-sm font-medium text-[#1f2937] mb-1">
             申込項目
           </label>
           <Select
@@ -91,9 +91,9 @@ export function ApplicationFiltersPanel({
               type="checkbox"
               checked={filters.showHidden || false}
               onChange={(e) => onChange({ showHidden: e.target.checked })}
-              className="w-4 h-4 text-[#ff8e3c] border-[#0d0d0d] rounded focus:ring-[#ff8e3c]"
+              className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6]"
             />
-            <span className="text-sm text-[#2a2a2a]">終了した項目も表示</span>
+            <span className="text-sm text-[#4b5563]">終了した項目も表示</span>
           </label>
         </div>
 
@@ -101,7 +101,7 @@ export function ApplicationFiltersPanel({
         {hasActiveFilters && (
           <button
             onClick={onReset}
-            className="text-sm text-[#2a2a2a] hover:text-[#ff8e3c] underline transition-colors"
+            className="text-sm text-[#4b5563] hover:text-[#3b82f6] underline transition-colors"
           >
             リセット
           </button>
@@ -112,33 +112,33 @@ export function ApplicationFiltersPanel({
       {hasActiveFilters && (
         <div className="mt-3 flex flex-wrap gap-2">
           {filters.search && (
-            <span className="inline-flex items-center gap-1 px-2 py-1 bg-[#ff8e3c]/20 text-[#0d0d0d] text-sm rounded">
+            <span className="inline-flex items-center gap-1 px-2 py-1 bg-[#3b82f6]/20 text-[#1f2937] text-sm rounded">
               検索: {filters.search}
               <button
                 onClick={() => onChange({ search: '' })}
-                className="hover:text-[#ff8e3c]"
+                className="hover:text-[#3b82f6]"
               >
                 ×
               </button>
             </span>
           )}
           {filters.grade !== null && filters.grade !== undefined && (
-            <span className="inline-flex items-center gap-1 px-2 py-1 bg-[#ff8e3c]/20 text-[#0d0d0d] text-sm rounded">
+            <span className="inline-flex items-center gap-1 px-2 py-1 bg-[#3b82f6]/20 text-[#1f2937] text-sm rounded">
               学年: {GRADE_LABELS[filters.grade]}
               <button
                 onClick={() => onChange({ grade: null })}
-                className="hover:text-[#ff8e3c]"
+                className="hover:text-[#3b82f6]"
               >
                 ×
               </button>
             </span>
           )}
           {filters.itemId && (
-            <span className="inline-flex items-center gap-1 px-2 py-1 bg-[#ff8e3c]/20 text-[#0d0d0d] text-sm rounded">
+            <span className="inline-flex items-center gap-1 px-2 py-1 bg-[#3b82f6]/20 text-[#1f2937] text-sm rounded">
               項目: {items.find((i) => i.id === filters.itemId)?.name}
               <button
                 onClick={() => onChange({ itemId: null })}
-                className="hover:text-[#ff8e3c]"
+                className="hover:text-[#3b82f6]"
               >
                 ×
               </button>

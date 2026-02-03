@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import type { MogiStats as MogiStatsType } from '@/types/forms/mogi';
 
@@ -30,22 +30,22 @@ export function MogiStats({ stats }: MogiStatsProps) {
   return (
     <div className="mb-6 space-y-4">
       {/* 集計サマリー */}
-      <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-4 grid grid-cols-2 md:grid-cols-3 gap-4 text-center">
+      <div className="bg-white rounded-xl border border-[#e5e7eb] p-4 grid grid-cols-2 md:grid-cols-3 gap-4 text-center">
         <div>
-          <p className="text-sm text-[#2a2a2a]">合計回答数</p>
-          <p className="text-xl font-bold text-[#0d0d0d]">
+          <p className="text-sm text-[#4b5563]">合計回答数</p>
+          <p className="text-xl font-bold text-[#1f2937]">
             {stats.total_responses} 件
           </p>
         </div>
         <div>
-          <p className="text-sm text-[#2a2a2a]">計上済み</p>
-          <p className="text-xl font-bold text-[#0d0d0d]">
+          <p className="text-sm text-[#4b5563]">計上済み</p>
+          <p className="text-xl font-bold text-[#1f2937]">
             {stats.charged_count} 件
           </p>
         </div>
         <div>
-          <p className="text-sm text-[#2a2a2a]">紐付け済み</p>
-          <p className="text-xl font-bold text-[#0d0d0d]">
+          <p className="text-sm text-[#4b5563]">紐付け済み</p>
+          <p className="text-xl font-bold text-[#1f2937]">
             {stats.linked_count} 件
           </p>
         </div>
@@ -53,23 +53,23 @@ export function MogiStats({ stats }: MogiStatsProps) {
 
       {/* 日程・会場別集計テーブル */}
       {stats.date_venue_counts.length > 0 && (
-        <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] overflow-hidden">
+        <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
-                <tr className="bg-[#eff0f3] border-b border-[#0d0d0d]">
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-[#0d0d0d] uppercase border-r border-[#0d0d0d]">
+                <tr className="bg-[#f3f4f6] border-b border-[#e5e7eb]">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase border-r border-[#e5e7eb]">
                     日程
                   </th>
                   {venueIds.map((venueId) => (
                     <th
                       key={venueId}
-                      className="px-4 py-3 text-center text-xs font-semibold text-[#0d0d0d] uppercase border-r border-[#0d0d0d] last:border-r-0"
+                      className="px-4 py-3 text-center text-xs font-semibold text-[#1f2937] uppercase border-r border-[#e5e7eb] last:border-r-0"
                     >
                       {venueIdToLabel.get(venueId) || venueId}
                     </th>
                   ))}
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-[#0d0d0d] uppercase">
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-[#1f2937] uppercase">
                     合計
                   </th>
                 </tr>
@@ -78,9 +78,9 @@ export function MogiStats({ stats }: MogiStatsProps) {
                 {stats.date_venue_counts.map((date) => (
                   <tr
                     key={date.date_id}
-                    className="border-b border-[#0d0d0d]/20 hover:bg-[#eff0f3]"
+                    className="border-b border-[#e5e7eb]/20 hover:bg-[#f3f4f6]"
                   >
-                    <td className="px-4 py-3 text-sm font-medium text-[#0d0d0d] border-r border-[#0d0d0d]/20">
+                    <td className="px-4 py-3 text-sm font-medium text-[#1f2937] border-r border-[#e5e7eb]/20">
                       {date.date_label}
                     </td>
                     {venueIds.map((venueId) => {
@@ -90,13 +90,13 @@ export function MogiStats({ stats }: MogiStatsProps) {
                       return (
                         <td
                           key={venueId}
-                          className="px-4 py-3 text-sm text-center text-[#2a2a2a] border-r border-[#0d0d0d]/20 last:border-r-0"
+                          className="px-4 py-3 text-sm text-center text-[#4b5563] border-r border-[#e5e7eb]/20 last:border-r-0"
                         >
                           {venueCount ? venueCount.count : '-'}
                         </td>
                       );
                     })}
-                    <td className="px-4 py-3 text-sm font-medium text-center text-[#0d0d0d]">
+                    <td className="px-4 py-3 text-sm font-medium text-center text-[#1f2937]">
                       {date.total}
                     </td>
                   </tr>

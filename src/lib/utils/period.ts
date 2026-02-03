@@ -1,4 +1,4 @@
-import type { FormPeriod } from '@/types/database';
+﻿import type { FormPeriod } from '@/types/database';
 
 /**
  * 期間が現在公開中かどうか判定

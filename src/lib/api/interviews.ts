@@ -1,4 +1,4 @@
-import { supabase } from '../supabase';
+﻿import { supabase } from '../supabase';
 import type { StudentInterview, StudentInterviewInput } from '@/types/database';
 
 /**

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { Button, Input, Modal } from '@/components/ui';
@@ -232,18 +232,18 @@ export function TemplateEditor({
       >
         <div className="space-y-4">
           {errorMessage && (
-            <div className="bg-[#d9376e]/20 text-[#d9376e] px-4 py-2 rounded border border-[#d9376e]">
+            <div className="bg-[#ef4444]/20 text-[#ef4444] px-4 py-2 rounded border border-[#ef4444]">
               {errorMessage}
             </div>
           )}
 
           {isLoading ? (
-            <div className="text-center py-8 text-[#2a2a2a]">読み込み中...</div>
+            <div className="text-center py-8 text-[#4b5563]">読み込み中...</div>
           ) : (
             <>
               <div>
-                <label className="block text-sm font-medium text-[#2a2a2a] mb-2">
-                  テンプレート名 <span className="text-[#d9376e]">*</span>
+                <label className="block text-sm font-medium text-[#4b5563] mb-2">
+                  テンプレート名 <span className="text-[#ef4444]">*</span>
                 </label>
                 <Input
                   value={name}
@@ -254,7 +254,7 @@ export function TemplateEditor({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#2a2a2a] mb-2">
+                <label className="block text-sm font-medium text-[#4b5563] mb-2">
                   説明文
                 </label>
                 <textarea
@@ -263,14 +263,14 @@ export function TemplateEditor({
                   placeholder="テンプレートの説明を入力（任意）"
                   rows={3}
                   disabled={isSubmitting}
-                  className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a] focus:ring-2 focus:ring-[#ff8e3c] focus:border-[#ff8e3c] disabled:opacity-50"
+                  className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:ring-2 focus:ring-[#3b82f6] focus:border-[#3b82f6] disabled:opacity-50"
                 />
               </div>
 
               {template && (
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <label className="block text-sm font-medium text-[#2a2a2a]">
+                    <label className="block text-sm font-medium text-[#4b5563]">
                       項目一覧
                     </label>
                     <Button onClick={handleAddField} size="sm" disabled={isSubmitting}>
@@ -279,7 +279,7 @@ export function TemplateEditor({
                   </div>
 
                   {fields.length === 0 ? (
-                    <div className="text-center py-4 text-[#2a2a2a]/60 text-sm">
+                    <div className="text-center py-4 text-[#4b5563]/60 text-sm">
                       項目がありません。項目を追加してください。
                     </div>
                   ) : (
@@ -287,18 +287,18 @@ export function TemplateEditor({
                       {fields.map((field, index) => (
                         <div
                           key={field.id}
-                          className="flex items-center gap-2 p-3 bg-[#eff0f3] rounded border border-[#0d0d0d]"
+                          className="flex items-center gap-2 p-3 bg-[#f3f4f6] rounded border border-[#e5e7eb]"
                         >
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
-                              <span className="text-sm text-[#2a2a2a]/60">
+                              <span className="text-sm text-[#4b5563]/60">
                                 {FORM_FIELD_TYPE_LABELS[field.field_type]}
                               </span>
-                              <span className="text-[#2a2a2a] font-medium">
+                              <span className="text-[#4b5563] font-medium">
                                 {field.label}
                               </span>
                               {field.is_required && (
-                                <span className="text-xs text-[#d9376e]">必須</span>
+                                <span className="text-xs text-[#ef4444]">必須</span>
                               )}
                             </div>
                           </div>
@@ -306,7 +306,7 @@ export function TemplateEditor({
                             <button
                               onClick={() => handleMoveField(field, 'up')}
                               disabled={index === 0 || isSubmitting}
-                              className="p-1.5 text-[#2a2a2a] hover:text-[#0d0d0d] disabled:opacity-50"
+                              className="p-1.5 text-[#4b5563] hover:text-[#1f2937] disabled:opacity-50"
                               title="上に移動"
                             >
                               ↑
@@ -314,7 +314,7 @@ export function TemplateEditor({
                             <button
                               onClick={() => handleMoveField(field, 'down')}
                               disabled={index === fields.length - 1 || isSubmitting}
-                              className="p-1.5 text-[#2a2a2a] hover:text-[#0d0d0d] disabled:opacity-50"
+                              className="p-1.5 text-[#4b5563] hover:text-[#1f2937] disabled:opacity-50"
                               title="下に移動"
                             >
                               ↓
@@ -322,7 +322,7 @@ export function TemplateEditor({
                             <button
                               onClick={() => handleEditField(field)}
                               disabled={isSubmitting}
-                              className="p-1.5 text-[#2a2a2a] hover:text-[#ff8e3c] disabled:opacity-50"
+                              className="p-1.5 text-[#4b5563] hover:text-[#3b82f6] disabled:opacity-50"
                               title="編集"
                             >
                               ✏️
@@ -330,7 +330,7 @@ export function TemplateEditor({
                             <button
                               onClick={() => handleDeleteField(field.id)}
                               disabled={isSubmitting}
-                              className="p-1.5 text-[#2a2a2a] hover:text-[#d9376e] disabled:opacity-50"
+                              className="p-1.5 text-[#4b5563] hover:text-[#ef4444] disabled:opacity-50"
                               title="削除"
                             >
                               🗑️
@@ -343,7 +343,7 @@ export function TemplateEditor({
                 </div>
               )}
 
-              <div className="flex justify-end gap-2 pt-4 border-t border-[#0d0d0d]">
+              <div className="flex justify-end gap-2 pt-4 border-t border-[#e5e7eb]">
                 <Button onClick={onClose} variant="secondary" disabled={isSubmitting}>
                   キャンセル
                 </Button>

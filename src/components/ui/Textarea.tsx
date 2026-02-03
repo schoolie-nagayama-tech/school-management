@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { TextareaHTMLAttributes, forwardRef } from 'react';
 
@@ -17,10 +17,10 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         {label && (
           <label
             htmlFor={textareaId}
-            className="block text-sm font-medium text-[#0d0d0d] mb-1"
+            className="block text-sm font-medium text-[#1f2937] mb-1"
           >
             {label}
-            {props.required && <span className="text-[#d9376e] ml-1">*</span>}
+            {props.required && <span className="text-[#ef4444] ml-1">*</span>}
           </label>
         )}
         <textarea
@@ -29,19 +29,19 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           className={`
             w-full px-3 py-2
             border rounded-lg
-            bg-[#fffffe] text-[#2a2a2a] placeholder-[#2a2a2a]/40
+            bg-white text-[#4b5563] placeholder-[#4b5563]/40
             transition-colors duration-150
-            focus:ring-2 focus:ring-[#ff8e3c] focus:border-[#ff8e3c]
-            disabled:bg-[#eff0f3] disabled:text-[#2a2a2a]/50 disabled:cursor-not-allowed
+            focus:ring-2 focus:ring-[#3b82f6] focus:border-[#3b82f6]
+            disabled:bg-[#f3f4f6] disabled:text-[#4b5563]/50 disabled:cursor-not-allowed
             resize-y
-            ${error ? 'border-[#d9376e] focus:ring-[#d9376e] focus:border-[#d9376e]' : 'border-[#0d0d0d]'}
+            ${error ? 'border-[#ef4444] focus:ring-[#ef4444] focus:border-[#ef4444]' : 'border-[#e5e7eb]'}
             ${className}
           `}
           {...props}
         />
-        {error && <p className="mt-1 text-sm text-[#d9376e]">{error}</p>}
+        {error && <p className="mt-1 text-sm text-[#ef4444]">{error}</p>}
         {helpText && !error && (
-          <p className="mt-1 text-sm text-[#2a2a2a]">{helpText}</p>
+          <p className="mt-1 text-sm text-[#4b5563]">{helpText}</p>
         )}
       </div>
     );

@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+﻿import { supabase } from '@/lib/supabase';
 import { getDefaultSchoolId } from '@/lib/api/schools';
 import type {
   Assessment,

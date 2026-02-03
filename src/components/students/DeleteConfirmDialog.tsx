@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { Button, Modal } from '@/components/ui';
 import type { Student } from '@/types/database';
@@ -24,9 +24,9 @@ export function DeleteConfirmDialog({
     <Modal isOpen={isOpen} onClose={onCancel} title="生徒の削除" size="sm">
       <div className="space-y-4">
         <div className="flex items-start gap-3">
-          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-[#d9376e]/20 flex items-center justify-center">
+          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-[#ef4444]/20 flex items-center justify-center">
             <svg
-              className="w-5 h-5 text-[#d9376e]"
+              className="w-5 h-5 text-[#ef4444]"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -40,24 +40,24 @@ export function DeleteConfirmDialog({
             </svg>
           </div>
           <div>
-            <p className="text-[#0d0d0d]">
+            <p className="text-[#1f2937]">
               以下の生徒を削除してもよろしいですか？
             </p>
-            <p className="mt-2 text-sm text-[#2a2a2a]">
+            <p className="mt-2 text-sm text-[#4b5563]">
               <span className="font-medium">
                 {student.last_name} {student.first_name}
               </span>
-              <span className="text-[#2a2a2a]/60 ml-2">
+              <span className="text-[#4b5563]/60 ml-2">
                 ({student.student_code})
               </span>
             </p>
-            <p className="mt-3 text-sm text-[#2a2a2a]">
+            <p className="mt-3 text-sm text-[#4b5563]">
               削除後もデータは保持されますが、一覧には表示されなくなります。
             </p>
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 pt-4 border-t border-[#0d0d0d]">
+        <div className="flex justify-end gap-3 pt-4 border-t border-[#e5e7eb]">
           <Button type="button" variant="secondary" onClick={onCancel}>
             キャンセル
           </Button>

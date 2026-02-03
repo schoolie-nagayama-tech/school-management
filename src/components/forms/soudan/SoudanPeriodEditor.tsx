@@ -8,6 +8,7 @@ import type { SoudanPeriod, SoudanSettings } from '@/types/forms/soudan';
 interface SoudanPeriodEditorProps {
   isOpen: boolean;
   period: SoudanPeriod | null;
+  schoolId?: string;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -28,6 +29,7 @@ const DEFAULT_CATEGORIES = `料金について
 export function SoudanPeriodEditor({
   isOpen,
   period,
+  schoolId,
   onClose,
   onSuccess,
 }: SoudanPeriodEditorProps) {
@@ -51,6 +53,13 @@ export function SoudanPeriodEditor({
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
     return `${year}-${month}`;
+  };
+
+  // 公開開始日のデフォルト（今の日時・YYYY-MM-DDTHH:mm）
+  const getDefaultPublishStart = () => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    return now.toISOString().slice(0, 16);
   };
 
   // 相談区分をパース
@@ -83,12 +92,12 @@ export function SoudanPeriodEditor({
         );
         setCompletionMessage(settings.completion_message || 'ご相談を受け付けました。\n内容を確認の上、担当者よりご連絡させていただきます。');
       } else {
-        // 新規作成モード
+        // 新規作成モード（公開開始日はデフォルトで「今」＝保存後すぐ公開）
         setPeriodKey(generatePeriodKey());
         setTitle('お客様相談');
         setDescription(DEFAULT_DESCRIPTION);
         setCategoriesText(DEFAULT_CATEGORIES);
-        setPublishStart('');
+        setPublishStart(getDefaultPublishStart());
         setPublishEnd('');
         setCompletionMessage('ご相談を受け付けました。\n内容を確認の上、担当者よりご連絡させていただきます。');
       }
@@ -140,7 +149,7 @@ export function SoudanPeriodEditor({
       if (period) {
         await updateSoudanPeriod(period.id, data);
       } else {
-        await createSoudanPeriod(data);
+        await createSoudanPeriod(data, schoolId);
       }
 
       onSuccess();
@@ -175,13 +184,13 @@ export function SoudanPeriodEditor({
 
         {/* 基本情報 */}
         <section>
-          <h3 className="text-sm font-semibold text-[#0d0d0d] mb-3 border-b border-[#0d0d0d] pb-1">
+          <h3 className="text-sm font-semibold text-[#1f2937] mb-3 border-b border-[#e5e7eb] pb-1">
             基本情報
           </h3>
 
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+              <label className="block text-sm font-medium mb-1 text-[#1f2937]">
                 期間キー <span className="text-red-500">*</span>
               </label>
               <Input
@@ -194,7 +203,7 @@ export function SoudanPeriodEditor({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+              <label className="block text-sm font-medium mb-1 text-[#1f2937]">
                 タイトル <span className="text-red-500">*</span>
               </label>
               <Input
@@ -207,19 +216,19 @@ export function SoudanPeriodEditor({
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">説明文</label>
+            <label className="block text-sm font-medium mb-1 text-[#1f2937]">説明文</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="フォーム上部に表示される説明文"
               rows={5}
-              className="w-full border border-[#0d0d0d] rounded-lg px-3 py-2 resize-y text-sm"
+              className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 resize-y text-sm"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">公開開始</label>
+              <label className="block text-sm font-medium mb-1 text-[#1f2937]">公開開始</label>
               <Input
                 type="datetime-local"
                 value={publishStart}
@@ -227,13 +236,13 @@ export function SoudanPeriodEditor({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">公開終了</label>
+              <label className="block text-sm font-medium mb-1 text-[#1f2937]">公開終了</label>
               <Input
                 type="datetime-local"
                 value={publishEnd}
                 onChange={(e) => setPublishEnd(e.target.value)}
               />
-              <p className="text-xs text-[#2a2a2a]/60 mt-1">
+              <p className="text-xs text-[#4b5563]/60 mt-1">
                 ※空欄にすると永続的に公開されます
               </p>
             </div>
@@ -242,12 +251,12 @@ export function SoudanPeriodEditor({
 
         {/* 相談区分 */}
         <section>
-          <h3 className="text-sm font-semibold text-[#0d0d0d] mb-3 border-b border-[#0d0d0d] pb-1">
+          <h3 className="text-sm font-semibold text-[#1f2937] mb-3 border-b border-[#e5e7eb] pb-1">
             相談区分
           </h3>
 
           <div>
-            <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+            <label className="block text-sm font-medium mb-1 text-[#1f2937]">
               相談区分（改行区切り） <span className="text-red-500">*</span>
             </label>
             <textarea
@@ -255,31 +264,31 @@ export function SoudanPeriodEditor({
               onChange={(e) => setCategoriesText(e.target.value)}
               placeholder="料金について&#10;講師について&#10;..."
               rows={5}
-              className="w-full border border-[#0d0d0d] rounded-lg px-3 py-2 resize-y font-mono text-sm"
+              className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 resize-y font-mono text-sm"
             />
-            <p className="text-xs text-[#2a2a2a]/60 mt-1">1行に1項目ずつ入力してください</p>
+            <p className="text-xs text-[#4b5563]/60 mt-1">1行に1項目ずつ入力してください</p>
           </div>
         </section>
 
         {/* 完了メッセージ */}
         <section>
-          <h3 className="text-sm font-semibold text-[#0d0d0d] mb-3 border-b border-[#0d0d0d] pb-1">
+          <h3 className="text-sm font-semibold text-[#1f2937] mb-3 border-b border-[#e5e7eb] pb-1">
             完了メッセージ
           </h3>
 
           <div>
-            <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">完了メッセージ</label>
+            <label className="block text-sm font-medium mb-1 text-[#1f2937]">完了メッセージ</label>
             <textarea
               value={completionMessage}
               onChange={(e) => setCompletionMessage(e.target.value)}
               rows={3}
-              className="w-full border border-[#0d0d0d] rounded-lg px-3 py-2 resize-y text-sm"
+              className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 resize-y text-sm"
             />
           </div>
         </section>
 
         {/* フッター */}
-        <div className="flex justify-end gap-3 pt-4 border-t border-[#0d0d0d]">
+        <div className="flex justify-end gap-3 pt-4 border-t border-[#e5e7eb]">
           <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
             キャンセル
           </Button>

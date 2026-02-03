@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { Modal, Button } from '@/components/ui';
@@ -75,18 +75,18 @@ export function FormLinkModal({ isOpen, onClose, form }: FormLinkModalProps) {
     <Modal isOpen={isOpen} onClose={onClose} title="フォームリンク">
       <div className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-[#2a2a2a] mb-2">
+          <label className="block text-sm font-medium text-[#4b5563] mb-2">
             フォームタイトル
           </label>
-          <p className="text-[#0d0d0d] font-medium">{form.title}</p>
+          <p className="text-[#1f2937] font-medium">{form.title}</p>
         </div>
 
         {isLoading ? (
-          <div className="text-center py-4 text-[#2a2a2a]">読み込み中...</div>
+          <div className="text-center py-4 text-[#4b5563]">読み込み中...</div>
         ) : (
           <>
             <div>
-              <label className="block text-sm font-medium text-[#2a2a2a] mb-2">
+              <label className="block text-sm font-medium text-[#4b5563] mb-2">
                 公開URL
               </label>
               <div className="flex gap-2">
@@ -94,7 +94,7 @@ export function FormLinkModal({ isOpen, onClose, form }: FormLinkModalProps) {
                   type="text"
                   value={formUrl}
                   readOnly
-                  className="flex-1 px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#eff0f3] text-[#2a2a2a]"
+                  className="flex-1 px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-[#f3f4f6] text-[#4b5563]"
                 />
                 <Button
                   onClick={handleCopy}
@@ -104,13 +104,13 @@ export function FormLinkModal({ isOpen, onClose, form }: FormLinkModalProps) {
                   {copied ? 'コピー済み' : 'コピー'}
                 </Button>
               </div>
-              <p className="text-xs text-[#2a2a2a]/60 mt-1">
+              <p className="text-xs text-[#4b5563]/60 mt-1">
                 このURLを保護者に共有してください
               </p>
             </div>
 
             {form.status !== 'published' && (
-              <div className="bg-[#ff8e3c]/20 text-[#0d0d0d] px-4 py-2 rounded border border-[#ff8e3c]">
+              <div className="bg-[#3b82f6]/20 text-[#1f2937] px-4 py-2 rounded border border-[#3b82f6]">
                 <p className="text-sm">
                   注意: このフォームは現在「{form.status === 'draft' ? '下書き' : '終了'}」状態です。
                   公開するにはフォームを編集して状態を「公開中」に変更してください。
@@ -120,7 +120,7 @@ export function FormLinkModal({ isOpen, onClose, form }: FormLinkModalProps) {
           </>
         )}
 
-        <div className="flex justify-end gap-2 pt-4 border-t border-[#0d0d0d]">
+        <div className="flex justify-end gap-2 pt-4 border-t border-[#e5e7eb]">
           <Button onClick={onClose} variant="secondary">
             閉じる
           </Button>

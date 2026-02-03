@@ -216,8 +216,8 @@ export default function TeachersPage() {
     return (
       <AdminLayout>
         <div className="p-6">
-          <div className="bg-[#d9376e]/10 border border-[#d9376e] rounded-lg p-4">
-            <p className="text-[#d9376e]">このページにアクセスする権限がありません</p>
+          <div className="bg-[#ef4444]/10 border border-[#ef4444] rounded-lg p-4">
+            <p className="text-[#ef4444]">このページにアクセスする権限がありません</p>
           </div>
         </div>
       </AdminLayout>
@@ -232,7 +232,7 @@ export default function TeachersPage() {
           <div className="flex items-center gap-4">
             <Link
               href="/students"
-              className="flex items-center gap-2 text-[#0d0d0d] hover:text-[#ff8e3c] transition-colors"
+              className="flex items-center gap-2 text-[#1f2937] hover:text-[#3b82f6] transition-colors"
               title="ホームに戻る"
             >
               <svg
@@ -249,7 +249,7 @@ export default function TeachersPage() {
                 />
               </svg>
             </Link>
-            <h1 className="text-2xl font-bold text-[#0d0d0d]">講師管理</h1>
+            <h1 className="text-2xl font-bold text-[#1f2937]">講師管理</h1>
           </div>
           <Button onClick={() => setIsCreateDialogOpen(true)}>
             + 講師を追加
@@ -258,46 +258,46 @@ export default function TeachersPage() {
 
         {isLoading ? (
           <div className="text-center py-12">
-            <div className="w-12 h-12 border-4 border-[#ff8e3c] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-[#2a2a2a]">読み込み中...</p>
+            <div className="w-12 h-12 border-4 border-[#3b82f6] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-[#4b5563]">読み込み中...</p>
           </div>
         ) : (
           <div className="space-y-6">
             {/* 講師一覧 */}
-            <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] overflow-hidden">
-              <div className="p-4 bg-[#eff0f3] border-b border-[#0d0d0d]">
-                <h2 className="font-bold text-[#0d0d0d]">登録済み講師 ({teachers.length})</h2>
+            <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
+              <div className="p-4 bg-[#f3f4f6] border-b border-[#e5e7eb]">
+                <h2 className="font-bold text-[#1f2937]">登録済み講師 ({teachers.length})</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-[#eff0f3] border-b border-[#0d0d0d]">
+                  <thead className="bg-[#f3f4f6] border-b border-[#e5e7eb]">
                     <tr>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-[#0d0d0d]">名前</th>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-[#0d0d0d]">メール</th>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-[#0d0d0d]">担当教室</th>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-[#0d0d0d]">状態</th>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-[#0d0d0d]">最終ログイン</th>
-                      <th className="px-4 py-3 text-right text-sm font-bold text-[#0d0d0d]">操作</th>
+                      <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937]">名前</th>
+                      <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937]">メール</th>
+                      <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937]">担当教室</th>
+                      <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937]">状態</th>
+                      <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937]">最終ログイン</th>
+                      <th className="px-4 py-3 text-right text-sm font-bold text-[#1f2937]">操作</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#0d0d0d]/10">
+                  <tbody className="divide-y divide-[#e5e7eb]/10">
                     {teachers.map(teacher => (
-                      <tr key={teacher.id} className="hover:bg-[#eff0f3]/50">
-                        <td className="px-4 py-3 text-sm text-[#0d0d0d]">
+                      <tr key={teacher.id} className="hover:bg-[#f3f4f6]/50">
+                        <td className="px-4 py-3 text-sm text-[#1f2937]">
                           {teacher.display_name || '-'}
                         </td>
-                        <td className="px-4 py-3 text-sm text-[#2a2a2a]">{teacher.email}</td>
-                        <td className="px-4 py-3 text-sm text-[#2a2a2a]">
+                        <td className="px-4 py-3 text-sm text-[#4b5563]">{teacher.email}</td>
+                        <td className="px-4 py-3 text-sm text-[#4b5563]">
                           {teacher.user_schools && teacher.user_schools.length > 0 ? (
                             <div className="flex flex-wrap gap-1">
                               {teacher.user_schools.map(us => (
-                                <span key={us.id} className="inline-block px-2 py-0.5 text-xs bg-[#eff0f3] rounded">
+                                <span key={us.id} className="inline-block px-2 py-0.5 text-xs bg-[#f3f4f6] rounded">
                                   {us.school?.name || '不明'}
                                 </span>
                               ))}
                             </div>
                           ) : (
-                            <span className="text-[#2a2a2a]/50">なし</span>
+                            <span className="text-[#4b5563]/50">なし</span>
                           )}
                         </td>
                         <td className="px-4 py-3">
@@ -311,7 +311,7 @@ export default function TeachersPage() {
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-sm text-[#2a2a2a]">
+                        <td className="px-4 py-3 text-sm text-[#4b5563]">
                           {teacher.last_login_at ? new Date(teacher.last_login_at).toLocaleDateString('ja-JP') : '-'}
                         </td>
                         <td className="px-4 py-3 text-right">
@@ -334,7 +334,7 @@ export default function TeachersPage() {
                                 setDeletingTeacher(teacher);
                                 setIsDeleteDialogOpen(true);
                               }}
-                              className="p-2 text-[#d9376e] hover:text-[#d9376e]"
+                              className="p-2 text-[#ef4444] hover:text-[#ef4444]"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -356,7 +356,7 @@ export default function TeachersPage() {
           </DialogHeader>
           <DialogContent>
             <div className="space-y-4">
-              <div className="text-sm text-[#2a2a2a] mb-4">
+              <div className="text-sm text-[#4b5563] mb-4">
                 新しい講師アカウントを作成します。ユーザーID（メールアドレス）は未入力の場合、自動生成されます。
               </div>
               <div className="space-y-2">
@@ -370,7 +370,7 @@ export default function TeachersPage() {
                   }
                   placeholder="未入力の場合は自動生成されます"
                 />
-                <p className="text-xs text-[#2a2a2a]/70">ログイン時に使用するIDです。未入力の場合は自動生成されます。</p>
+                <p className="text-xs text-[#4b5563]/70">ログイン時に使用するIDです。未入力の場合は自動生成されます。</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="displayName">表示名 *</Label>
@@ -394,7 +394,7 @@ export default function TeachersPage() {
                   }
                   placeholder="4文字以上"
                 />
-                <p className="text-xs text-[#2a2a2a]/70">パスワードは4文字以上で入力してください</p>
+                <p className="text-xs text-[#4b5563]/70">パスワードは4文字以上で入力してください</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="school">所属教室 *</Label>
@@ -447,7 +447,7 @@ export default function TeachersPage() {
           </DialogHeader>
           <DialogContent>
             <div className="space-y-4">
-              <div className="text-sm text-[#2a2a2a] mb-4">
+              <div className="text-sm text-[#4b5563] mb-4">
                 以下の情報を講師に伝えてください。パスワードは後から確認できません。
               </div>
               {createdTeacher && (
@@ -536,7 +536,7 @@ export default function TeachersPage() {
               <AlertDialogCancel>キャンセル</AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDelete}
-                className="bg-[#d9376e] text-white hover:bg-[#c02d5a]"
+                className="bg-[#ef4444] text-white hover:bg-[#dc2626]"
               >
                 削除
               </AlertDialogAction>
@@ -544,6 +544,88 @@ export default function TeachersPage() {
           </AlertDialogContent>
         </AlertDialog>
 
+        {/* 講師編集モーダル */}
+        {editingTeacher && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 max-w-md w-full">
+              <h2 className="text-xl font-bold text-[#1f2937] mb-4">講師編集</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-[#1f2937] mb-1">
+                    メールアドレス
+                  </label>
+                  <input
+                    type="text"
+                    value={editingTeacher.email}
+                    disabled
+                    className="w-full px-3 py-2 border border-[#e5e7eb]/30 rounded-lg bg-[#f3f4f6] text-[#4b5563]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#1f2937] mb-1">
+                    表示名
+                  </label>
+                  <input
+                    type="text"
+                    value={editDisplayName}
+                    onChange={e => setEditDisplayName(e.target.value)}
+                    className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                    placeholder="山田 太郎"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#1f2937] mb-1">
+                    担当教室
+                  </label>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {schools
+                      .filter(school => {
+                        // 教室長の場合は自分の権限がある教室のみ表示
+                        if (isManager) {
+                          const userSchoolIds = getSelectedSchoolIds();
+                          return userSchoolIds.includes(school.id);
+                        }
+                        return true;
+                      })
+                      .map(school => (
+                        <label key={school.id} className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={editSchoolIds.includes(school.id)}
+                            onChange={e => {
+                              if (e.target.checked) {
+                                setEditSchoolIds([...editSchoolIds, school.id]);
+                              } else {
+                                setEditSchoolIds(editSchoolIds.filter(id => id !== school.id));
+                              }
+                            }}
+                            className="rounded border-[#e5e7eb]"
+                          />
+                          <span className="text-sm text-[#1f2937]">{school.name}</span>
+                        </label>
+                      ))}
+                  </div>
+                </div>
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setEditingTeacher(null)}
+                    className="flex-1 px-4 py-2 bg-[#f3f4f6] text-[#1f2937] rounded-lg hover:bg-[#e5e7eb] transition-colors"
+                  >
+                    キャンセル
+                  </button>
+                  <button
+                    onClick={handleSaveTeacher}
+                    disabled={isSaving}
+                    className="flex-1 px-4 py-2 bg-[#3b82f6] text-white font-bold rounded-lg hover:bg-[#60a5fa] transition-colors disabled:opacity-50"
+                  >
+                    {isSaving ? '保存中...' : '保存'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </AdminLayout>

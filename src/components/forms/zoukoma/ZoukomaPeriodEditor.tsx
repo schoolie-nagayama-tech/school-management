@@ -8,6 +8,7 @@ import type { ZoukomaPeriod, ZoukomaSettings } from '@/types/forms/zoukoma';
 interface ZoukomaPeriodEditorProps {
   isOpen: boolean;
   period: ZoukomaPeriod | null;
+  schoolId?: string;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -15,6 +16,7 @@ interface ZoukomaPeriodEditorProps {
 export function ZoukomaPeriodEditor({
   isOpen,
   period,
+  schoolId,
   onClose,
   onSuccess,
 }: ZoukomaPeriodEditorProps) {
@@ -99,15 +101,18 @@ export function ZoukomaPeriodEditor({
         });
       } else {
         // 新規作成
-        await createZoukomaPeriod({
-          period_key: periodKey.trim(),
-          title: title.trim(),
-          settings,
-          publish_start: publishStart ? new Date(publishStart).toISOString() : null,
-          publish_end: publishEnd ? new Date(publishEnd).toISOString() : null,
-          is_active: isActive,
-          linked_application_item_id: null,
-        });
+        await createZoukomaPeriod(
+          {
+            period_key: periodKey.trim(),
+            title: title.trim(),
+            settings,
+            publish_start: publishStart ? new Date(publishStart).toISOString() : null,
+            publish_end: publishEnd ? new Date(publishEnd).toISOString() : null,
+            is_active: isActive,
+            linked_application_item_id: null,
+          },
+          schoolId
+        );
       }
       onSuccess();
       onClose();
@@ -130,8 +135,8 @@ export function ZoukomaPeriodEditor({
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="p-3 bg-[#d9376e]/10 border border-[#d9376e] rounded-lg">
-            <p className="text-sm text-[#d9376e]">{error}</p>
+          <div className="p-3 bg-[#ef4444]/10 border border-[#ef4444] rounded-lg">
+            <p className="text-sm text-[#ef4444]">{error}</p>
           </div>
         )}
 
@@ -170,7 +175,7 @@ export function ZoukomaPeriodEditor({
           onChange={(e) => setPublishEnd(e.target.value)}
           disabled={isSubmitting}
         />
-        <p className="text-xs text-[#2a2a2a]/60 mt-1">
+        <p className="text-xs text-[#4b5563]/60 mt-1">
           ※空欄にすると永続的に公開されます
         </p>
 
@@ -181,14 +186,14 @@ export function ZoukomaPeriodEditor({
             checked={isActive}
             onChange={(e) => setIsActive(e.target.checked)}
             disabled={isSubmitting}
-            className="w-4 h-4 text-[#ff8e3c] border-[#0d0d0d] rounded focus:ring-[#ff8e3c]"
+            className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6]"
           />
-          <label htmlFor="isActive" className="text-sm text-[#0d0d0d]">
+          <label htmlFor="isActive" className="text-sm text-[#1f2937]">
             公開中にする
           </label>
         </div>
 
-        <div className="flex justify-end gap-3 pt-4 border-t border-[#0d0d0d]">
+        <div className="flex justify-end gap-3 pt-4 border-t border-[#e5e7eb]">
           <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>
             キャンセル
           </Button>

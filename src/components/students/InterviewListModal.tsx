@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { Student } from '@/types/database';
 import { Modal } from '@/components/ui';

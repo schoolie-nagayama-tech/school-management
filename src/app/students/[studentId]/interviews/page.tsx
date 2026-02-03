@@ -39,8 +39,8 @@ export default function StudentInterviewsPage() {
       <AdminLayout headerTitle="面談記録">
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="w-12 h-12 border-4 border-[#ff8e3c] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-[#2a2a2a]">読み込み中...</p>
+            <div className="w-12 h-12 border-4 border-[#3b82f6] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-[#4b5563]">読み込み中...</p>
           </div>
         </div>
       </AdminLayout>
@@ -52,7 +52,7 @@ export default function StudentInterviewsPage() {
       <AdminLayout headerTitle="面談記録">
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <p className="text-[#d9376e] text-lg mb-4">生徒が見つかりません</p>
+            <p className="text-[#ef4444] text-lg mb-4">生徒が見つかりません</p>
             <Button onClick={() => router.push('/students')}>生徒一覧に戻る</Button>
           </div>
         </div>
@@ -73,7 +73,7 @@ export default function StudentInterviewsPage() {
             <ArrowLeft className="w-4 h-4 mr-2" />
             生徒一覧に戻る
           </Button>
-          <h1 className="text-2xl font-bold text-[#0d0d0d]">
+          <h1 className="text-2xl font-bold text-[#1f2937]">
             {student.last_name} {student.first_name} の面談記録
           </h1>
         </div>

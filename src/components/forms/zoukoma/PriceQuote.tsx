@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import type { PriceTable } from '@/types/forms/zoukoma';
 
@@ -17,8 +17,8 @@ export function PriceQuote({
 }: PriceQuoteProps) {
   if (!selectedGrade) {
     return (
-      <div className="bg-[#eff0f3] rounded-lg border border-[#0d0d0d] p-4">
-        <p className="text-sm text-[#2a2a2a] text-center">
+      <div className="bg-[#f3f4f6] rounded-lg border border-[#e5e7eb] p-4">
+        <p className="text-sm text-[#4b5563] text-center">
           学年を選択すると見積金額が表示されます
         </p>
       </div>
@@ -38,17 +38,17 @@ export function PriceQuote({
     }));
 
   return (
-    <div className="bg-[#fffffe] rounded-lg border-2 border-[#ff8e3c] p-4">
-      <h3 className="text-lg font-bold text-[#0d0d0d] mb-4">料金見積</h3>
+    <div className="bg-white rounded-lg border-2 border-[#3b82f6] p-4">
+      <h3 className="text-lg font-bold text-[#1f2937] mb-4">料金見積</h3>
 
       {/* 単価表 */}
       <div className="mb-4">
-        <p className="text-sm font-medium text-[#2a2a2a] mb-2">学年別単価</p>
+        <p className="text-sm font-medium text-[#4b5563] mb-2">学年別単価</p>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="bg-[#eff0f3] border-b border-[#0d0d0d]">
-                <th className="px-3 py-2 text-left border-r border-[#0d0d0d]">
+              <tr className="bg-[#f3f4f6] border-b border-[#e5e7eb]">
+                <th className="px-3 py-2 text-left border-r border-[#e5e7eb]">
                   学年
                 </th>
                 <th className="px-3 py-2 text-right">単価（1コマ）</th>
@@ -58,11 +58,11 @@ export function PriceQuote({
               {Object.entries(priceTable).map(([grade, price]) => (
                 <tr
                   key={grade}
-                  className={`border-b border-[#0d0d0d]/20 ${
-                    grade === selectedGrade ? 'bg-[#ff8e3c]/20' : ''
+                  className={`border-b border-[#e5e7eb]/20 ${
+                    grade === selectedGrade ? 'bg-[#3b82f6]/20' : ''
                   }`}
                 >
-                  <td className="px-3 py-2 border-r border-[#0d0d0d]/20">
+                  <td className="px-3 py-2 border-r border-[#e5e7eb]/20">
                     {grade}
                   </td>
                   <td className="px-3 py-2 text-right">
@@ -77,13 +77,13 @@ export function PriceQuote({
 
       {/* 見積内訳 */}
       <div className="mb-4">
-        <p className="text-sm font-medium text-[#2a2a2a] mb-2">内訳</p>
+        <p className="text-sm font-medium text-[#4b5563] mb-2">内訳</p>
         <div className="space-y-1">
           {subjectBreakdown.length > 0 ? (
             subjectBreakdown.map(({ subject, koma, fee }) => (
               <div
                 key={subject}
-                className="flex justify-between text-sm text-[#2a2a2a]"
+                className="flex justify-between text-sm text-[#4b5563]"
               >
                 <span>
                   {subject} × {koma}コマ
@@ -92,7 +92,7 @@ export function PriceQuote({
               </div>
             ))
           ) : (
-            <p className="text-sm text-[#2a2a2a]/60 text-center py-2">
+            <p className="text-sm text-[#4b5563]/60 text-center py-2">
               科目を選択してください
             </p>
           )}
@@ -100,18 +100,18 @@ export function PriceQuote({
       </div>
 
       {/* 合計 */}
-      <div className="pt-4 border-t-2 border-[#0d0d0d]">
+      <div className="pt-4 border-t-2 border-[#e5e7eb]">
         <div className="flex justify-between items-center mb-2">
-          <span className="text-sm font-medium text-[#2a2a2a]">合計コマ数</span>
-          <span className="text-lg font-bold text-[#0d0d0d]">{totalKoma}コマ</span>
+          <span className="text-sm font-medium text-[#4b5563]">合計コマ数</span>
+          <span className="text-lg font-bold text-[#1f2937]">{totalKoma}コマ</span>
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-base font-bold text-[#0d0d0d]">概算合計金額</span>
-          <span className="text-2xl font-bold text-[#0d0d0d]">
+          <span className="text-base font-bold text-[#1f2937]">概算合計金額</span>
+          <span className="text-2xl font-bold text-[#1f2937]">
             ¥{totalFee.toLocaleString()}
           </span>
         </div>
-        <p className="text-xs text-[#2a2a2a]/60 mt-2">
+        <p className="text-xs text-[#4b5563]/60 mt-2">
           ※ 正式な金額は後日ご連絡いたします
         </p>
       </div>

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * URLバリデーション関数
  */
 export function isValidUrl(url: string): boolean {

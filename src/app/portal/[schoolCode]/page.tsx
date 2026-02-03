@@ -5,6 +5,10 @@ import { getActiveFormPeriod } from '@/lib/api/form-periods';
 import { PortalMenuList } from '@/components/portal';
 import type { FormType } from '@/types/database';
 
+// 管理画面での公開/非公開の切り替えを保護者ポータルに即反映するためキャッシュしない
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 interface PortalPageProps {
   params: Promise<{ schoolCode: string }>;
 }
@@ -69,7 +73,7 @@ export default async function PortalPage({ params }: PortalPageProps) {
       <div className="max-w-md mx-auto px-4 py-8">
         {/* ヘッダー */}
         <header className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-[#0d0d0d] mb-2">
+          <h1 className="text-2xl font-bold text-[#1f2937] mb-2">
             {school.name}
           </h1>
         </header>

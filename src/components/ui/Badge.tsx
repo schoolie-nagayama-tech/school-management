@@ -11,10 +11,10 @@ interface BadgeProps {
 }
 
 const variantStyles: Record<BadgeVariant, string> = {
-  default: 'bg-[#ff8e3c] text-[#0d0d0d]',
-  secondary: 'bg-[#eff0f3] text-[#2a2a2a]',
-  outline: 'border border-[#0d0d0d] text-[#2a2a2a] bg-transparent',
-  destructive: 'bg-[#d9376e] text-white',
+  default: 'bg-[#1e3a5f] text-white',
+  secondary: 'bg-gray-100 text-gray-700',
+  outline: 'border border-[#1e3a5f] text-[#1e3a5f] bg-transparent',
+  destructive: 'bg-[#c62828] text-white',
 };
 
 export function Badge({ children, variant = 'default', className = '' }: BadgeProps) {

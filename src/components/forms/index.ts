@@ -1,4 +1,4 @@
-export { FieldEditor } from './FieldEditor';
+﻿export { FieldEditor } from './FieldEditor';
 export { TemplateEditor } from './TemplateEditor';
 export { TemplateList } from './TemplateList';
 export { FormEditor } from './FormEditor';

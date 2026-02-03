@@ -83,15 +83,18 @@ export async function getMogiPeriod(id: string): Promise<MogiPeriod | null> {
 
 /**
  * Vもぎ期間を作成
+ * @param data 期間データ（school_id / form_type 除く）
+ * @param schoolId 教室ID（省略時は getDefaultSchoolId()）
  */
 export async function createMogiPeriod(
-  data: Omit<FormPeriodInsert, 'school_id' | 'form_type'>
+  data: Omit<FormPeriodInsert, 'school_id' | 'form_type'>,
+  schoolId?: string
 ): Promise<MogiPeriod> {
-  const schoolId = getDefaultSchoolId();
+  const targetSchoolId = schoolId ?? getDefaultSchoolId();
 
   const periodData: FormPeriodInsert = {
     ...data,
-    school_id: schoolId,
+    school_id: targetSchoolId,
     form_type: 'mogi',
     settings: (data.settings || {}) as MogiSettings,
   };
@@ -143,7 +146,7 @@ export async function copyMogiPeriod(sourceId: string): Promise<MogiPeriod> {
     linked_application_item_id: null,
   };
 
-  return createMogiPeriod(newPeriod);
+  return createMogiPeriod(newPeriod, source.school_id);
 }
 
 /**

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -119,9 +119,9 @@ export function PublicFormRenderer({
       case 'text':
         return (
           <div key={field.id}>
-            <label className="block text-sm font-medium text-[#2a2a2a] mb-2">
+            <label className="block text-sm font-medium text-[#4b5563] mb-2">
               {field.label}
-              {field.is_required && <span className="text-[#d9376e] ml-1">*</span>}
+              {field.is_required && <span className="text-[#ef4444] ml-1">*</span>}
             </label>
             <Input
               value={typeof value === 'string' ? value : ''}
@@ -130,7 +130,7 @@ export function PublicFormRenderer({
               disabled={isSubmitting}
             />
             {fieldError && (
-              <p className="text-sm text-[#d9376e] mt-1">{fieldError}</p>
+              <p className="text-sm text-[#ef4444] mt-1">{fieldError}</p>
             )}
           </div>
         );
@@ -138,9 +138,9 @@ export function PublicFormRenderer({
       case 'textarea':
         return (
           <div key={field.id}>
-            <label className="block text-sm font-medium text-[#2a2a2a] mb-2">
+            <label className="block text-sm font-medium text-[#4b5563] mb-2">
               {field.label}
-              {field.is_required && <span className="text-[#d9376e] ml-1">*</span>}
+              {field.is_required && <span className="text-[#ef4444] ml-1">*</span>}
             </label>
             <textarea
               value={typeof value === 'string' ? value : ''}
@@ -148,10 +148,10 @@ export function PublicFormRenderer({
               placeholder={field.placeholder || ''}
               rows={4}
               disabled={isSubmitting}
-              className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a] focus:ring-2 focus:ring-[#ff8e3c] focus:border-[#ff8e3c] disabled:opacity-50"
+              className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:ring-2 focus:ring-[#3b82f6] focus:border-[#3b82f6] disabled:opacity-50"
             />
             {fieldError && (
-              <p className="text-sm text-[#d9376e] mt-1">{fieldError}</p>
+              <p className="text-sm text-[#ef4444] mt-1">{fieldError}</p>
             )}
           </div>
         );
@@ -160,9 +160,9 @@ export function PublicFormRenderer({
         const options = Array.isArray(field.options) ? field.options : [];
         return (
           <div key={field.id}>
-            <label className="block text-sm font-medium text-[#2a2a2a] mb-2">
+            <label className="block text-sm font-medium text-[#4b5563] mb-2">
               {field.label}
-              {field.is_required && <span className="text-[#d9376e] ml-1">*</span>}
+              {field.is_required && <span className="text-[#ef4444] ml-1">*</span>}
             </label>
             <Select
               value={typeof value === 'string' ? value : ''}
@@ -177,7 +177,7 @@ export function PublicFormRenderer({
               ))}
             </Select>
             {fieldError && (
-              <p className="text-sm text-[#d9376e] mt-1">{fieldError}</p>
+              <p className="text-sm text-[#ef4444] mt-1">{fieldError}</p>
             )}
           </div>
         );
@@ -186,9 +186,9 @@ export function PublicFormRenderer({
         const radioOptions = Array.isArray(field.options) ? field.options : [];
         return (
           <div key={field.id}>
-            <label className="block text-sm font-medium text-[#2a2a2a] mb-2">
+            <label className="block text-sm font-medium text-[#4b5563] mb-2">
               {field.label}
-              {field.is_required && <span className="text-[#d9376e] ml-1">*</span>}
+              {field.is_required && <span className="text-[#ef4444] ml-1">*</span>}
             </label>
             <div className="space-y-2">
               {radioOptions.map((option, idx) => (
@@ -203,14 +203,14 @@ export function PublicFormRenderer({
                     checked={value === option}
                     onChange={(e) => handleFieldChange(field.id, e.target.value)}
                     disabled={isSubmitting}
-                    className="w-4 h-4 text-[#ff8e3c] border-[#0d0d0d] focus:ring-[#ff8e3c]"
+                    className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] focus:ring-[#3b82f6]"
                   />
-                  <span className="text-[#2a2a2a]">{option}</span>
+                  <span className="text-[#4b5563]">{option}</span>
                 </label>
               ))}
             </div>
             {fieldError && (
-              <p className="text-sm text-[#d9376e] mt-1">{fieldError}</p>
+              <p className="text-sm text-[#ef4444] mt-1">{fieldError}</p>
             )}
           </div>
         );
@@ -220,9 +220,9 @@ export function PublicFormRenderer({
         const checkboxValue = Array.isArray(value) ? value : [];
         return (
           <div key={field.id}>
-            <label className="block text-sm font-medium text-[#2a2a2a] mb-2">
+            <label className="block text-sm font-medium text-[#4b5563] mb-2">
               {field.label}
-              {field.is_required && <span className="text-[#d9376e] ml-1">*</span>}
+              {field.is_required && <span className="text-[#ef4444] ml-1">*</span>}
             </label>
             <div className="space-y-2">
               {checkboxOptions.map((option, idx) => (
@@ -241,14 +241,14 @@ export function PublicFormRenderer({
                       handleFieldChange(field.id, newValue);
                     }}
                     disabled={isSubmitting}
-                    className="w-4 h-4 text-[#ff8e3c] border-[#0d0d0d] rounded focus:ring-[#ff8e3c]"
+                    className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6]"
                   />
-                  <span className="text-[#2a2a2a]">{option}</span>
+                  <span className="text-[#4b5563]">{option}</span>
                 </label>
               ))}
             </div>
             {fieldError && (
-              <p className="text-sm text-[#d9376e] mt-1">{fieldError}</p>
+              <p className="text-sm text-[#ef4444] mt-1">{fieldError}</p>
             )}
           </div>
         );
@@ -256,9 +256,9 @@ export function PublicFormRenderer({
       case 'date':
         return (
           <div key={field.id}>
-            <label className="block text-sm font-medium text-[#2a2a2a] mb-2">
+            <label className="block text-sm font-medium text-[#4b5563] mb-2">
               {field.label}
-              {field.is_required && <span className="text-[#d9376e] ml-1">*</span>}
+              {field.is_required && <span className="text-[#ef4444] ml-1">*</span>}
             </label>
             <Input
               type="date"
@@ -267,7 +267,7 @@ export function PublicFormRenderer({
               disabled={isSubmitting}
             />
             {fieldError && (
-              <p className="text-sm text-[#d9376e] mt-1">{fieldError}</p>
+              <p className="text-sm text-[#ef4444] mt-1">{fieldError}</p>
             )}
           </div>
         );
@@ -275,9 +275,9 @@ export function PublicFormRenderer({
       case 'number':
         return (
           <div key={field.id}>
-            <label className="block text-sm font-medium text-[#2a2a2a] mb-2">
+            <label className="block text-sm font-medium text-[#4b5563] mb-2">
               {field.label}
-              {field.is_required && <span className="text-[#d9376e] ml-1">*</span>}
+              {field.is_required && <span className="text-[#ef4444] ml-1">*</span>}
             </label>
             <Input
               type="number"
@@ -287,7 +287,7 @@ export function PublicFormRenderer({
               disabled={isSubmitting}
             />
             {fieldError && (
-              <p className="text-sm text-[#d9376e] mt-1">{fieldError}</p>
+              <p className="text-sm text-[#ef4444] mt-1">{fieldError}</p>
             )}
           </div>
         );
@@ -300,12 +300,12 @@ export function PublicFormRenderer({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* 共通項目 */}
-      <div className="space-y-4 bg-[#eff0f3] p-4 rounded-lg border border-[#0d0d0d]">
-        <h3 className="text-lg font-semibold text-[#0d0d0d] mb-4">基本情報</h3>
+      <div className="space-y-4 bg-[#f3f4f6] p-4 rounded-lg border border-[#e5e7eb]">
+        <h3 className="text-lg font-semibold text-[#1f2937] mb-4">基本情報</h3>
 
         <div>
-          <label className="block text-sm font-medium text-[#2a2a2a] mb-2">
-            生徒名 <span className="text-[#d9376e]">*</span>
+          <label className="block text-sm font-medium text-[#4b5563] mb-2">
+            生徒名 <span className="text-[#ef4444]">*</span>
           </label>
           <Input
             value={studentName}
@@ -323,13 +323,13 @@ export function PublicFormRenderer({
             disabled={isSubmitting}
           />
           {errors.studentName && (
-            <p className="text-sm text-[#d9376e] mt-1">{errors.studentName}</p>
+            <p className="text-sm text-[#ef4444] mt-1">{errors.studentName}</p>
           )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#2a2a2a] mb-2">
-            学年 <span className="text-[#d9376e]">*</span>
+          <label className="block text-sm font-medium text-[#4b5563] mb-2">
+            学年 <span className="text-[#ef4444]">*</span>
           </label>
           <Select
             value={grade === '' ? '' : String(grade)}
@@ -353,13 +353,13 @@ export function PublicFormRenderer({
             ))}
           </Select>
           {errors.grade && (
-            <p className="text-sm text-[#d9376e] mt-1">{errors.grade}</p>
+            <p className="text-sm text-[#ef4444] mt-1">{errors.grade}</p>
           )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#2a2a2a] mb-2">
-            メールアドレス <span className="text-[#d9376e]">*</span>
+          <label className="block text-sm font-medium text-[#4b5563] mb-2">
+            メールアドレス <span className="text-[#ef4444]">*</span>
           </label>
           <Input
             type="email"
@@ -378,7 +378,7 @@ export function PublicFormRenderer({
             disabled={isSubmitting}
           />
           {errors.email && (
-            <p className="text-sm text-[#d9376e] mt-1">{errors.email}</p>
+            <p className="text-sm text-[#ef4444] mt-1">{errors.email}</p>
           )}
         </div>
       </div>
@@ -386,7 +386,7 @@ export function PublicFormRenderer({
       {/* フォーム固有の項目 */}
       {form.fields.length > 0 && (
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-[#0d0d0d]">回答項目</h3>
+          <h3 className="text-lg font-semibold text-[#1f2937]">回答項目</h3>
           {form.fields.map((field) => renderField(field))}
         </div>
       )}

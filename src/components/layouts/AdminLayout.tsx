@@ -28,7 +28,7 @@ export function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen bg-[#eff0f3]">
+    <div className="min-h-screen bg-white">
       {headerTitle && (
         <AppHeader title={headerTitle} onSettingsClick={headerOnSettingsClick} />
       )}
@@ -36,7 +36,7 @@ export function AdminLayout({
         {/* ページヘッダー */}
         {(title || actions) && (
           <div className="flex justify-between items-center mb-6">
-            {title && <h1 className="text-2xl font-bold text-[#0d0d0d]">{title}</h1>}
+            {title && <h1 className="text-2xl font-bold text-[#1a1a1a]">{title}</h1>}
             {actions && <div className="flex gap-2">{actions}</div>}
           </div>
         )}

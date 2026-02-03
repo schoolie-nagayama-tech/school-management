@@ -60,7 +60,7 @@ export function Modal({
       <div
         className={`
           relative w-full ${sizeStyles[size]}
-          bg-[#fffffe] rounded-xl shadow-2xl border border-[#0d0d0d]
+          bg-white rounded-xl shadow-2xl border border-gray-200 ring-1 ring-black/5
           transform transition-all duration-200
           max-h-[95vh] overflow-hidden flex flex-col
         `}
@@ -70,16 +70,16 @@ export function Modal({
         aria-labelledby="modal-title"
       >
         {/* ヘッダー */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#0d0d0d]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
           <h2
             id="modal-title"
-            className="text-lg font-semibold text-[#0d0d0d]"
+            className="text-lg font-bold text-[#1a1a1a]"
           >
             {title}
           </h2>
           <button
             onClick={onClose}
-            className="p-1 text-[#2a2a2a] hover:text-[#0d0d0d] rounded-lg hover:bg-[#eff0f3] transition-colors"
+            className="p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
             aria-label="閉じる"
           >
             <svg

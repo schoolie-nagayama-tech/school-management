@@ -1,2 +1,2 @@
-export { AlertBoard } from './AlertBoard';
+﻿export { AlertBoard } from './AlertBoard';
 export { AlertItem } from './AlertItem';

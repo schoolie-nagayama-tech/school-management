@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { AdminLayout } from '@/components/layouts';
@@ -91,7 +91,7 @@ export default function AccountSettingsPage() {
     return (
       <AdminLayout headerTitle="アカウント設定">
         <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-4 border-[#ff8e3c] border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-8 h-8 border-4 border-[#3b82f6] border-t-transparent rounded-full animate-spin"></div>
         </div>
       </AdminLayout>
     );
@@ -108,12 +108,12 @@ export default function AccountSettingsPage() {
           <CardContent>
             <div className="space-y-4">
               {/* メール/パスワード */}
-              <div className="flex items-center justify-between p-4 bg-[#eff0f3] rounded-lg">
+              <div className="flex items-center justify-between p-4 bg-[#f3f4f6] rounded-lg">
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">📧</span>
                   <div>
-                    <p className="font-medium text-[#0d0d0d]">メール/パスワード</p>
-                    <p className="text-sm text-[#2a2a2a]">{user?.email || '未設定'}</p>
+                    <p className="font-medium text-[#1f2937]">メール/パスワード</p>
+                    <p className="text-sm text-[#4b5563]">{user?.email || '未設定'}</p>
                   </div>
                 </div>
                 <span className="text-green-600 text-sm font-medium">有効</span>
@@ -121,7 +121,7 @@ export default function AccountSettingsPage() {
 
               {/* Google（教室長以上のみ表示） */}
               {canUseGoogleAuth && (
-                <div className="flex items-center justify-between p-4 bg-[#eff0f3] rounded-lg">
+                <div className="flex items-center justify-between p-4 bg-[#f3f4f6] rounded-lg">
                   <div className="flex items-center gap-3">
                     <svg className="w-6 h-6" viewBox="0 0 24 24">
                       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -130,8 +130,8 @@ export default function AccountSettingsPage() {
                       <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                     </svg>
                     <div>
-                      <p className="font-medium text-[#0d0d0d]">Googleアカウント</p>
-                      <p className="text-sm text-[#2a2a2a]">
+                      <p className="font-medium text-[#1f2937]">Googleアカウント</p>
+                      <p className="text-sm text-[#4b5563]">
                         {isGoogleLinked ? '紐付け済み' : '未紐付け'}
                       </p>
                     </div>
@@ -149,8 +149,8 @@ export default function AccountSettingsPage() {
               )}
 
               {!canUseGoogleAuth && (
-                <div className="p-4 bg-[#eff0f3] rounded-lg">
-                  <p className="text-sm text-[#2a2a2a]">
+                <div className="p-4 bg-[#f3f4f6] rounded-lg">
+                  <p className="text-sm text-[#4b5563]">
                     Googleログインは教室長以上のアカウントのみ利用可能です。
                   </p>
                 </div>

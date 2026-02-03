@@ -1,4 +1,4 @@
-// ランダムパスワードを生成（8文字、英大文字・小文字・数字を含む）
+﻿// ランダムパスワードを生成（8文字、英大文字・小文字・数字を含む）
 export function generatePassword(length: number = 8): string {
   const uppercase = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // I, O を除外（見間違い防止）
   const lowercase = 'abcdefghjkmnpqrstuvwxyz'; // i, l, o を除外

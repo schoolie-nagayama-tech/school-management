@@ -108,8 +108,8 @@ export function InterviewModal({ studentId, schoolId, interview, onClose, onSave
 
           {/* 種別 */}
           <div>
-            <label className="block text-sm font-medium text-[#0d0d0d] mb-3">
-              種別 <span className="text-[#d9376e]">*</span>
+            <label className="block text-sm font-medium text-[#1f2937] mb-3">
+              種別 <span className="text-[#ef4444]">*</span>
             </label>
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
               {INTERVIEW_TYPES.map((type) => (
@@ -118,9 +118,9 @@ export function InterviewModal({ studentId, schoolId, interview, onClose, onSave
                   className={`flex items-center justify-center px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
                     interviewType === type
                       ? type === 'task'
-                        ? 'bg-[#d9376e] text-white border-[#d9376e] font-medium'
-                        : 'bg-[#ff8e3c] text-[#0d0d0d] border-[#0d0d0d] font-medium'
-                      : 'bg-[#fffffe] text-[#2a2a2a] border-[#0d0d0d] hover:bg-[#eff0f3]'
+                        ? 'bg-[#ef4444] text-white border-[#ef4444] font-medium'
+                        : 'bg-[#3b82f6] text-white border-[#e5e7eb] font-medium'
+                      : 'bg-white text-[#4b5563] border-[#e5e7eb] hover:bg-[#f3f4f6]'
                   }`}
                 >
                   <input
@@ -137,7 +137,7 @@ export function InterviewModal({ studentId, schoolId, interview, onClose, onSave
               ))}
             </div>
             {interviewType === 'task' && (
-              <p className="text-xs text-[#d9376e] mt-2">
+              <p className="text-xs text-[#ef4444] mt-2">
                 ※ タスクは生徒一覧画面のトップにアラート表示されます
               </p>
             )}
@@ -145,8 +145,8 @@ export function InterviewModal({ studentId, schoolId, interview, onClose, onSave
 
           {/* 内容 */}
           <div>
-            <label className="block text-sm font-medium text-[#0d0d0d] mb-3">
-              内容 <span className="text-[#d9376e]">*</span>
+            <label className="block text-sm font-medium text-[#1f2937] mb-3">
+              内容 <span className="text-[#ef4444]">*</span>
             </label>
             <textarea
               value={content}
@@ -154,17 +154,17 @@ export function InterviewModal({ studentId, schoolId, interview, onClose, onSave
               placeholder="面談・電話の内容を記録してください"
               rows={12}
               disabled={isSaving}
-              className="w-full px-4 py-3 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a] focus:outline-none focus:ring-2 focus:ring-[#ff8e3c] disabled:bg-[#eff0f3] disabled:cursor-not-allowed resize-y min-h-[200px]"
+              className="w-full px-4 py-3 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6] disabled:bg-[#f3f4f6] disabled:cursor-not-allowed resize-y min-h-[200px]"
               required
             />
-            <p className="text-xs text-[#2a2a2a]/60 mt-2">
+            <p className="text-xs text-[#4b5563]/60 mt-2">
               ※ テキストエリアの右下をドラッグしてサイズを調整できます
             </p>
           </div>
         </div>
 
         {/* 固定フッター（ボタン） */}
-        <div className="flex justify-end gap-3 pt-6 border-t border-[#0d0d0d] mt-6 shrink-0">
+        <div className="flex justify-end gap-3 pt-6 border-t border-[#e5e7eb] mt-6 shrink-0">
           <Button variant="secondary" onClick={onClose} disabled={isSaving}>
             キャンセル
           </Button>

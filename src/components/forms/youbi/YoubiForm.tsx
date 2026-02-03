@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -241,10 +241,10 @@ export function YoubiForm({ school, period }: YoubiFormProps) {
         highlight || 'border-gray-200 bg-gray-50'
       }`}
     >
-      <p className="text-sm font-medium text-[#0d0d0d] mb-3">{label}</p>
+      <p className="text-sm font-medium text-[#1f2937] mb-3">{label}</p>
       <div className="grid grid-cols-3 gap-2">
         <div>
-          <label className="block text-xs text-[#2a2a2a]/60 mb-1">曜日</label>
+          <label className="block text-xs text-[#4b5563]/60 mb-1">曜日</label>
           <Select
             value={slot.day}
             onChange={(e) => updateSlot(slot, setSlot, 'day', e.target.value)}
@@ -256,7 +256,7 @@ export function YoubiForm({ school, period }: YoubiFormProps) {
           />
         </div>
         <div>
-          <label className="block text-xs text-[#2a2a2a]/60 mb-1">時限</label>
+          <label className="block text-xs text-[#4b5563]/60 mb-1">時限</label>
           <Select
             value={slot.period}
             onChange={(e) => updateSlot(slot, setSlot, 'period', e.target.value)}
@@ -271,7 +271,7 @@ export function YoubiForm({ school, period }: YoubiFormProps) {
           />
         </div>
         <div>
-          <label className="block text-xs text-[#2a2a2a]/60 mb-1">科目</label>
+          <label className="block text-xs text-[#4b5563]/60 mb-1">科目</label>
           <Select
             value={slot.subject}
             onChange={(e) => updateSlot(slot, setSlot, 'subject', e.target.value)}
@@ -292,11 +292,11 @@ export function YoubiForm({ school, period }: YoubiFormProps) {
       <div className="flex items-center justify-between mb-6">
         <button
           onClick={() => router.push(`/portal/${school.code}`)}
-          className="text-[#2a2a2a] hover:text-[#0d0d0d]"
+          className="text-[#4b5563] hover:text-[#1f2937]"
         >
           ← 戻る
         </button>
-        <h1 className="text-xl font-bold text-[#0d0d0d]">曜日変更</h1>
+        <h1 className="text-xl font-bold text-[#1f2937]">曜日変更</h1>
         <div className="w-12"></div>
       </div>
 
@@ -312,12 +312,12 @@ export function YoubiForm({ school, period }: YoubiFormProps) {
 
         {/* 基本情報 */}
         <section>
-          <h3 className="text-sm font-semibold text-[#0d0d0d] mb-3 border-b border-[#0d0d0d] pb-1">
+          <h3 className="text-sm font-semibold text-[#1f2937] mb-3 border-b border-[#e5e7eb] pb-1">
             基本情報
           </h3>
           <div className="space-y-3">
             <div>
-              <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+              <label className="block text-sm font-medium mb-1 text-[#1f2937]">
                 生徒名 <span className="text-red-500">*</span>
               </label>
               <Input
@@ -332,7 +332,7 @@ export function YoubiForm({ school, period }: YoubiFormProps) {
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+              <label className="block text-sm font-medium mb-1 text-[#1f2937]">
                 学年 <span className="text-red-500">*</span>
               </label>
               <Select
@@ -349,7 +349,7 @@ export function YoubiForm({ school, period }: YoubiFormProps) {
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+              <label className="block text-sm font-medium mb-1 text-[#1f2937]">
                 メールアドレス <span className="text-red-500">*</span>
               </label>
               <Input
@@ -368,7 +368,7 @@ export function YoubiForm({ school, period }: YoubiFormProps) {
 
         {/* 現状 */}
         <section>
-          <h3 className="text-sm font-semibold text-[#0d0d0d] mb-3 border-b border-[#0d0d0d] pb-1">
+          <h3 className="text-sm font-semibold text-[#1f2937] mb-3 border-b border-[#e5e7eb] pb-1">
             現在の通塾情報 <span className="text-red-500">*</span>
           </h3>
           {renderSlotInput(current, setCurrent, '現在通っている曜日・時間・科目')}
@@ -376,7 +376,7 @@ export function YoubiForm({ school, period }: YoubiFormProps) {
 
         {/* 変更希望 */}
         <section>
-          <h3 className="text-sm font-semibold text-[#0d0d0d] mb-3 border-b border-[#0d0d0d] pb-1">
+          <h3 className="text-sm font-semibold text-[#1f2937] mb-3 border-b border-[#e5e7eb] pb-1">
             変更希望 <span className="text-red-500">*</span>
           </h3>
           <div className="space-y-3">
@@ -384,7 +384,7 @@ export function YoubiForm({ school, period }: YoubiFormProps) {
               request1,
               setRequest1,
               '第1希望',
-              'border-[#ff8e3c] bg-orange-50'
+              'border-[#3b82f6] bg-orange-50'
             )}
             {renderSlotInput(request2, setRequest2, '第2希望', 'border-gray-300 bg-white')}
           </div>
@@ -392,11 +392,11 @@ export function YoubiForm({ school, period }: YoubiFormProps) {
 
         {/* 変更希望日 */}
         <section>
-          <h3 className="text-sm font-semibold text-[#0d0d0d] mb-3 border-b border-[#0d0d0d] pb-1">
+          <h3 className="text-sm font-semibold text-[#1f2937] mb-3 border-b border-[#e5e7eb] pb-1">
             変更希望日 <span className="text-red-500">*</span>
           </h3>
           <div>
-            <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+            <label className="block text-sm font-medium mb-1 text-[#1f2937]">
               いつから変更を希望しますか？
             </label>
             <Input
@@ -406,7 +406,7 @@ export function YoubiForm({ school, period }: YoubiFormProps) {
               className={errors.changeFrom ? 'border-red-500' : ''}
             />
             {changeFrom && (
-              <p className="text-sm text-[#2a2a2a] mt-1">→ {formatDateLabel(changeFrom)}</p>
+              <p className="text-sm text-[#4b5563] mt-1">→ {formatDateLabel(changeFrom)}</p>
             )}
             {errors.changeFrom && (
               <p className="text-red-500 text-xs mt-1">{errors.changeFrom}</p>
@@ -416,13 +416,13 @@ export function YoubiForm({ school, period }: YoubiFormProps) {
 
         {/* 備考 */}
         <section>
-          <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">備考</label>
+          <label className="block text-sm font-medium mb-1 text-[#1f2937]">備考</label>
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="ご要望等あればご記入ください"
             rows={3}
-            className="w-full border border-[#0d0d0d] rounded-lg px-3 py-2 resize-y text-sm"
+            className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 resize-y text-sm"
           />
         </section>
 

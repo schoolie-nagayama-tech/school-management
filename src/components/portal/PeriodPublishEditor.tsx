@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { Modal, Input, Button } from '@/components/ui';
@@ -112,17 +112,17 @@ export function PeriodPublishEditor({
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="p-3 bg-[#d9376e]/10 border border-[#d9376e] rounded-lg">
-            <p className="text-sm text-[#d9376e]">{error}</p>
+          <div className="p-3 bg-[#ef4444]/10 border border-[#ef4444] rounded-lg">
+            <p className="text-sm text-[#ef4444]">{error}</p>
           </div>
         )}
 
         {period && (
-          <div className="p-3 bg-[#eff0f3] rounded-lg border border-[#0d0d0d]">
-            <p className="text-sm font-medium text-[#0d0d0d] mb-1">
+          <div className="p-3 bg-[#f3f4f6] rounded-lg border border-[#e5e7eb]">
+            <p className="text-sm font-medium text-[#1f2937] mb-1">
               {period.title || period.period_key}
             </p>
-            <p className="text-xs text-[#2a2a2a]">
+            <p className="text-xs text-[#4b5563]">
               フォーム種別: {formType === 'zoukoma' ? '増コマ申込' : formType === 'mogi' ? 'Vもぎ申込' : formType}
             </p>
           </div>
@@ -163,15 +163,15 @@ export function PeriodPublishEditor({
             : '公開終了';
 
           return (
-            <div className="p-3 bg-[#eff0f3] rounded-lg border border-[#0d0d0d]">
-              <p className="text-sm text-[#2a2a2a]">
+            <div className="p-3 bg-[#f3f4f6] rounded-lg border border-[#e5e7eb]">
+              <p className="text-sm text-[#4b5563]">
                 現在の状態: <span className={`font-medium ${statusColor}`}>{statusText}</span>
               </p>
             </div>
           );
         })()}
 
-        <div className="flex justify-end gap-2 pt-4 border-t border-[#0d0d0d]">
+        <div className="flex justify-end gap-2 pt-4 border-t border-[#e5e7eb]">
           <Button
             type="button"
             onClick={onClose}

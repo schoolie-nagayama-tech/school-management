@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 interface CancelAgreementProps {
   agreed: boolean;
@@ -16,8 +16,8 @@ export function CancelAgreement({
   return (
     <div className="space-y-4">
       {/* 注意書きボックス */}
-      <div className="bg-[#ffeb3b]/20 border border-[#ff8e3c] rounded-lg p-4">
-        <p className="text-sm text-[#0d0d0d] leading-relaxed">
+      <div className="bg-[#ffeb3b]/20 border border-[#3b82f6] rounded-lg p-4">
+        <p className="text-sm text-[#1f2937] leading-relaxed">
           <strong className="font-semibold">重要:</strong>
           <br />
           Vもぎは申込後のキャンセル・返金ができません。日程・会場をよくご確認の上、お申し込みください。
@@ -32,20 +32,20 @@ export function CancelAgreement({
           checked={agreed}
           onChange={(e) => onChange(e.target.checked)}
           disabled={disabled}
-          className="w-5 h-5 mt-0.5 text-[#ff8e3c] border-[#0d0d0d] rounded focus:ring-[#ff8e3c] cursor-pointer flex-shrink-0"
+          className="w-5 h-5 mt-0.5 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6] cursor-pointer flex-shrink-0"
         />
         <label
           htmlFor="cancel-agreement"
-          className="text-sm text-[#0d0d0d] cursor-pointer flex-1"
+          className="text-sm text-[#1f2937] cursor-pointer flex-1"
         >
           上記の内容を理解し、キャンセルできないことに同意します
-          <span className="text-[#d9376e] ml-1">*</span>
+          <span className="text-[#ef4444] ml-1">*</span>
         </label>
       </div>
 
       {/* エラーメッセージ */}
       {error && (
-        <p className="text-sm text-[#d9376e] ml-8">{error}</p>
+        <p className="text-sm text-[#ef4444] ml-8">{error}</p>
       )}
     </div>
   );

@@ -13,13 +13,13 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    'bg-[#ff8e3c] text-[#0d0d0d] hover:bg-[#ff9e5c] focus:ring-[#ff8e3c] disabled:bg-[#ffb380] disabled:text-[#666]',
+    'bg-[#1e3a5f] text-white hover:bg-[#152a45] focus:ring-[#1e3a5f]/40 disabled:bg-[#1e3a5f]/50 disabled:text-white/70',
   secondary:
-    'bg-[#fffffe] text-[#2a2a2a] border border-[#0d0d0d] hover:bg-[#eff0f3] focus:ring-[#0d0d0d] disabled:bg-[#f5f5f5] disabled:text-[#999]',
+    'bg-transparent text-[#1e3a5f] border border-[#1e3a5f] hover:bg-[#1e3a5f]/10 focus:ring-[#1e3a5f]/30 disabled:border-gray-300 disabled:text-gray-400',
   danger:
-    'bg-[#d9376e] text-white hover:bg-[#e04d7e] focus:ring-[#d9376e] disabled:bg-[#f5a3b8]',
+    'bg-transparent text-[#c62828] border border-[#c62828] hover:bg-[#c62828]/10 focus:ring-[#c62828]/30 disabled:border-gray-300 disabled:text-gray-400',
   ghost:
-    'bg-transparent text-[#2a2a2a] hover:bg-[#eff0f3] focus:ring-[#0d0d0d] disabled:text-[#999]',
+    'bg-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-800 focus:ring-gray-200 disabled:text-gray-400',
 };
 
 const sizeStyles: Record<ButtonSize, string> = {

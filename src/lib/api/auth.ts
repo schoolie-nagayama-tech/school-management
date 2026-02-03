@@ -1,4 +1,4 @@
-import { createSupabaseBrowserClient } from '@/lib/supabase';
+﻿import { createSupabaseBrowserClient } from '@/lib/supabase';
 import type { UserProfile, UserSchool, UserInvitation, UserWithDetails, UserRole } from '@/types/database';
 
 // =====================================================

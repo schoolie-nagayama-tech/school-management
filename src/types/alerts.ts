@@ -15,13 +15,14 @@ export const ALERT_TYPE_LABELS: Record<AlertType, string> = {
   exam_overdue: '目標未設定',
 };
 
+/** アラートラベル用：明るいトーンに統一 */
 export const ALERT_TYPE_COLORS: Record<AlertType, string> = {
-  score_drop: 'bg-red-100 text-red-800 border border-red-300',
-  score_missing: 'bg-yellow-100 text-yellow-800 border border-yellow-300',
-  interview_overdue: 'bg-orange-100 text-orange-800 border border-orange-300',
-  application_overdue: 'bg-purple-100 text-purple-800 border border-purple-300',
-  interview_task: 'bg-blue-100 text-blue-800 border border-blue-300',
-  exam_overdue: 'bg-pink-100 text-pink-800 border border-pink-300',
+  score_drop: 'bg-red-100 text-red-700',
+  score_missing: 'bg-amber-100 text-amber-700',
+  interview_overdue: 'bg-orange-100 text-orange-700',
+  application_overdue: 'bg-purple-100 text-purple-700',
+  interview_task: 'bg-blue-100 text-blue-700',
+  exam_overdue: 'bg-rose-100 text-rose-700',
 };
 
 export interface Alert {

@@ -35,11 +35,11 @@ function getStatusSymbol(status: ApplicationStatus | null): string {
 
 // ステータスのスタイルを取得
 function getStatusStyle(status: ApplicationStatus | null): string {
-  if (status === null) return 'bg-[#fffffe] text-[#2a2a2a]';
-  if (status === 'pending') return 'bg-[#eff0f3] text-[#2a2a2a]';
-  if (status === 'completed') return 'bg-[#ff8e3c]/20 text-[#0d0d0d] font-semibold';
-  if (status === 'not_applicable') return 'bg-[#eff0f3] text-[#2a2a2a]/60';
-  return 'bg-[#fffffe] text-[#2a2a2a]';
+  if (status === null) return 'bg-white text-[#4b5563]';
+  if (status === 'pending') return 'bg-[#f3f4f6] text-[#4b5563]';
+  if (status === 'completed') return 'bg-[#3b82f6]/20 text-[#1f2937] font-semibold';
+  if (status === 'not_applicable') return 'bg-[#f3f4f6] text-[#4b5563]/60';
+  return 'bg-white text-[#4b5563]';
 }
 
 export function ApplicationTable({
@@ -165,15 +165,15 @@ export function ApplicationTable({
   };
 
   return (
-    <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] overflow-hidden">
+    <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full border-collapse">
           <thead>
-            <tr className="bg-[#eff0f3] border-b border-[#0d0d0d]">
-              <th className="px-4 py-3 text-left text-[#0d0d0d] font-semibold border-r border-[#0d0d0d] sticky left-0 bg-[#eff0f3] z-10">
+            <tr className="bg-[#f3f4f6] border-b border-[#e5e7eb]">
+              <th className="px-4 py-3 text-left text-[#1f2937] font-semibold border-r border-[#e5e7eb] sticky left-0 bg-[#f3f4f6] z-10">
                 学年
               </th>
-              <th className="px-4 py-3 text-left text-[#0d0d0d] font-semibold border-r border-[#0d0d0d] sticky left-[80px] bg-[#eff0f3] z-10">
+              <th className="px-4 py-3 text-left text-[#1f2937] font-semibold border-r border-[#e5e7eb] sticky left-[80px] bg-[#f3f4f6] z-10">
                 名前
               </th>
               {items.map((item) => {
@@ -186,7 +186,7 @@ export function ApplicationTable({
                 return (
                   <th
                     key={item.id}
-                    className={`px-4 py-3 text-center text-[#0d0d0d] font-semibold border-r border-[#0d0d0d] min-w-[120px] relative group ${isOverdue ? 'bg-red-100' : ''}`}
+                    className={`px-4 py-3 text-center text-[#1f2937] font-semibold border-r border-[#e5e7eb] min-w-[120px] relative group ${isOverdue ? 'bg-red-100' : ''}`}
                   >
                     {onStatusChange && editingItemId === item.id ? (
                       <div className="flex items-center gap-2">
@@ -218,7 +218,7 @@ export function ApplicationTable({
                             }
                           }}
                           autoFocus
-                          className="flex-1 px-2 py-1 text-sm border border-[#0d0d0d] rounded bg-[#fffffe] text-[#0d0d0d] focus:outline-none focus:ring-2 focus:ring-[#ff8e3c]"
+                          className="flex-1 px-2 py-1 text-sm border border-[#e5e7eb] rounded bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
                         />
                       </div>
                     ) : (
@@ -227,7 +227,7 @@ export function ApplicationTable({
                           {onStatusChange ? (
                             <>
                               <div
-                                className="flex-1 flex items-center justify-center gap-1 cursor-pointer hover:bg-[#ff8e3c]/10 rounded px-2 py-1 transition-colors"
+                                className="flex-1 flex items-center justify-center gap-1 cursor-pointer hover:bg-[#3b82f6]/10 rounded px-2 py-1 transition-colors"
                                 onClick={() => {
                                   setEditingItemId(item.id);
                                   setEditingName(item.name);
@@ -235,12 +235,12 @@ export function ApplicationTable({
                                 title="クリックして編集"
                               >
                                 <span className="text-sm">{item.name}</span>
-                                <span className="text-xs text-[#2a2a2a]/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <span className="text-xs text-[#4b5563]/40 opacity-0 group-hover:opacity-100 transition-opacity">
                                   ✏️
                                 </span>
                               </div>
                               <button
-                                className="text-xs text-[#d9376e] hover:text-[#d9376e]/80 opacity-0 group-hover:opacity-100 transition-opacity px-1 py-1 rounded hover:bg-[#d9376e]/10"
+                                className="text-xs text-[#ef4444] hover:text-[#ef4444]/80 opacity-0 group-hover:opacity-100 transition-opacity px-1 py-1 rounded hover:bg-[#ef4444]/10"
                                 onClick={async (e) => {
                                   e.stopPropagation();
                                   if (
@@ -278,11 +278,11 @@ export function ApplicationTable({
                             <span className="text-sm">{item.name}</span>
                           )}
                         </div>
-                        <div className="text-[10px] text-[#2a2a2a]/70">
+                        <div className="text-[10px] text-[#4b5563]/70">
                           [{APPLICATION_COLUMN_TYPE_LABELS[columnType]}]
                         </div>
                         {dueDateStr && (
-                          <div className={`text-[10px] ${isOverdue ? 'text-red-600 font-semibold' : 'text-[#2a2a2a]/70'}`}>
+                          <div className={`text-[10px] ${isOverdue ? 'text-red-600 font-semibold' : 'text-[#4b5563]/70'}`}>
                             〆 {dueDateStr}
                           </div>
                         )}
@@ -293,7 +293,7 @@ export function ApplicationTable({
               })}
               {/* 新規列追加ボタン（編集権限がある場合のみ表示） */}
               {onStatusChange && (
-                <th className="px-4 py-3 text-center text-[#0d0d0d] font-semibold border-r border-[#0d0d0d] min-w-[120px]">
+                <th className="px-4 py-3 text-center text-[#1f2937] font-semibold border-r border-[#e5e7eb] min-w-[120px]">
                   {isAddingNew ? (
                   <div className="flex flex-col gap-2">
                     <input
@@ -301,12 +301,12 @@ export function ApplicationTable({
                       value={editingName}
                       onChange={(e) => setEditingName(e.target.value)}
                       placeholder="項目名を入力"
-                      className="w-full px-2 py-1 text-sm border border-[#0d0d0d] rounded bg-[#fffffe] text-[#0d0d0d] focus:outline-none focus:ring-2 focus:ring-[#ff8e3c]"
+                      className="w-full px-2 py-1 text-sm border border-[#e5e7eb] rounded bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
                     />
                     <select
                       value={newItemColumnType}
                       onChange={(e) => setNewItemColumnType(e.target.value as ApplicationColumnType)}
-                      className="w-full px-2 py-1 text-sm border border-[#0d0d0d] rounded bg-[#fffffe] text-[#0d0d0d] focus:outline-none focus:ring-2 focus:ring-[#ff8e3c]"
+                      className="w-full px-2 py-1 text-sm border border-[#e5e7eb] rounded bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
                     >
                       <option value="check">チェック</option>
                       <option value="number">数値</option>
@@ -317,7 +317,7 @@ export function ApplicationTable({
                       value={newItemDueDate}
                       onChange={(e) => setNewItemDueDate(e.target.value)}
                       placeholder="期日（任意）"
-                      className="w-full px-2 py-1 text-sm border border-[#0d0d0d] rounded bg-[#fffffe] text-[#0d0d0d] focus:outline-none focus:ring-2 focus:ring-[#ff8e3c]"
+                      className="w-full px-2 py-1 text-sm border border-[#e5e7eb] rounded bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
                     />
                     <div className="flex gap-2">
                       <button
@@ -350,7 +350,7 @@ export function ApplicationTable({
                             }
                           }
                         }}
-                        className="flex-1 px-2 py-1 text-xs bg-[#ff8e3c] text-[#0d0d0d] rounded hover:bg-[#ff7a1f] transition-colors"
+                        className="flex-1 px-2 py-1 text-xs bg-[#3b82f6] text-white rounded hover:bg-[#60a5fa] transition-colors"
                       >
                         追加
                       </button>
@@ -361,7 +361,7 @@ export function ApplicationTable({
                           setNewItemColumnType('check');
                           setNewItemDueDate('');
                         }}
-                        className="flex-1 px-2 py-1 text-xs bg-[#eff0f3] text-[#2a2a2a] rounded hover:bg-[#0d0d0d]/10 transition-colors"
+                        className="flex-1 px-2 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] transition-colors"
                       >
                         キャンセル
                       </button>
@@ -375,7 +375,7 @@ export function ApplicationTable({
                       setNewItemColumnType('check');
                       setNewItemDueDate('');
                     }}
-                    className="w-full px-2 py-1 text-sm text-[#2a2a2a] hover:bg-[#ff8e3c]/10 rounded transition-colors border border-dashed border-[#0d0d0d] hover:border-[#ff8e3c]"
+                    className="w-full px-2 py-1 text-sm text-[#4b5563] hover:bg-[#3b82f6]/10 rounded transition-colors border border-dashed border-[#e5e7eb] hover:border-[#3b82f6]"
                     title="新しい列を追加"
                   >
                     + 追加
@@ -385,14 +385,14 @@ export function ApplicationTable({
               )}
             </tr>
             {/* 集計行 */}
-            <tr className="bg-[#eff0f3]/50 border-b border-[#0d0d0d]">
-              <td colSpan={2} className="px-4 py-2 text-left text-[#2a2a2a] text-sm border-r border-[#0d0d0d] sticky left-0 bg-[#eff0f3]/50 z-10">
+            <tr className="bg-[#f3f4f6]/50 border-b border-[#e5e7eb]">
+              <td colSpan={2} className="px-4 py-2 text-left text-[#4b5563] text-sm border-r border-[#e5e7eb] sticky left-0 bg-[#f3f4f6]/50 z-10">
                 集計
               </td>
               {summaryData.map((summary) => (
                 <td
                   key={summary.itemId}
-                  className="px-4 py-2 text-center text-[#2a2a2a] text-sm border-r border-[#0d0d0d]"
+                  className="px-4 py-2 text-center text-[#4b5563] text-sm border-r border-[#e5e7eb]"
                 >
                   {summary.columnType === 'check' && (
                     <div className="flex flex-col gap-1">
@@ -424,7 +424,7 @@ export function ApplicationTable({
                 </td>
               ))}
               {/* 新規列追加行の集計セル（空） */}
-              <td className="px-4 py-2 text-center text-[#2a2a2a] text-sm border-r border-[#0d0d0d]">
+              <td className="px-4 py-2 text-center text-[#4b5563] text-sm border-r border-[#e5e7eb]">
                 -
               </td>
             </tr>
@@ -433,14 +433,14 @@ export function ApplicationTable({
             {students.map((student) => (
               <tr
                 key={student.id}
-                className="border-b border-[#0d0d0d] hover:bg-[#eff0f3]/30"
+                className="border-b border-[#e5e7eb] hover:bg-[#f3f4f6]/30"
               >
-                <td className="px-4 py-3 text-[#2a2a2a] border-r border-[#0d0d0d] sticky left-0 bg-[#fffffe] z-10">
+                <td className="px-4 py-3 text-[#4b5563] border-r border-[#e5e7eb] sticky left-0 bg-white z-10">
                   {GRADE_LABELS[student.grade] || student.grade}
                 </td>
                 <td
-                  className={`px-4 py-3 text-[#2a2a2a] border-r border-[#0d0d0d] sticky left-[80px] bg-[#fffffe] z-10 ${
-                    onStudentClick ? 'cursor-pointer hover:text-[#ff8e3c]' : ''
+                  className={`px-4 py-3 text-[#4b5563] border-r border-[#e5e7eb] sticky left-[80px] bg-white z-10 ${
+                    onStudentClick ? 'cursor-pointer hover:text-[#3b82f6]' : ''
                   }`}
                   onClick={() => onStudentClick?.(student)}
                 >
@@ -469,10 +469,10 @@ export function ApplicationTable({
                     return (
                       <td
                         key={item.id}
-                        className={`px-4 py-3 text-center border-r border-[#0d0d0d] transition-colors ${style} ${
+                        className={`px-4 py-3 text-center border-r border-[#e5e7eb] transition-colors ${style} ${
                           isOverdueAndIncomplete ? 'bg-red-100' : ''
                         } ${
-                          isUpdating ? 'opacity-50' : (onStatusChange && canEdit) ? 'cursor-pointer hover:bg-[#ff8e3c]/10' : 'cursor-default opacity-60'
+                          isUpdating ? 'opacity-50' : (onStatusChange && canEdit) ? 'cursor-pointer hover:bg-[#3b82f6]/10' : 'cursor-default opacity-60'
                         }`}
                         onClick={() => onStatusChange && !isUpdating && canEdit && handleCellClick(student.id, item.id)}
                         title={
@@ -486,7 +486,7 @@ export function ApplicationTable({
                         }
                       >
                         {isUpdating ? (
-                          <span className="text-[#2a2a2a]">...</span>
+                          <span className="text-[#4b5563]">...</span>
                         ) : (
                           <span className="text-lg font-semibold">{symbol}</span>
                         )}
@@ -499,10 +499,10 @@ export function ApplicationTable({
                     return (
                       <td
                         key={item.id}
-                        className={`px-4 py-3 text-center border-r border-[#0d0d0d] transition-colors ${
-                          isOverdueAndIncomplete ? 'bg-red-100' : 'bg-[#fffffe]'
+                        className={`px-4 py-3 text-center border-r border-[#e5e7eb] transition-colors ${
+                          isOverdueAndIncomplete ? 'bg-red-100' : 'bg-white'
                         } ${
-                          isUpdating ? 'opacity-50' : (onNumberChange && canEdit) ? 'cursor-pointer hover:bg-[#ff8e3c]/10' : 'cursor-default opacity-60'
+                          isUpdating ? 'opacity-50' : (onNumberChange && canEdit) ? 'cursor-pointer hover:bg-[#3b82f6]/10' : 'cursor-default opacity-60'
                         }`}
                         onClick={() => {
                           if (onNumberChange && !isUpdating && !isEditing && canEdit) {
@@ -544,10 +544,10 @@ export function ApplicationTable({
                               }
                             }}
                             autoFocus
-                            className="w-full px-2 py-1 text-sm border border-[#0d0d0d] rounded bg-[#fffffe] text-[#0d0d0d] focus:outline-none focus:ring-2 focus:ring-[#ff8e3c]"
+                            className="w-full px-2 py-1 text-sm border border-[#e5e7eb] rounded bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
                           />
                         ) : isUpdating ? (
-                          <span className="text-[#2a2a2a]">...</span>
+                          <span className="text-[#4b5563]">...</span>
                         ) : (
                           <span className="text-sm">{numberValue != null ? numberValue : '-'}</span>
                         )}
@@ -563,10 +563,10 @@ export function ApplicationTable({
                     return (
                       <td
                         key={item.id}
-                        className={`px-4 py-3 text-center border-r border-[#0d0d0d] transition-colors ${
-                          isOverdueAndIncomplete ? 'bg-red-100' : 'bg-[#fffffe]'
+                        className={`px-4 py-3 text-center border-r border-[#e5e7eb] transition-colors ${
+                          isOverdueAndIncomplete ? 'bg-red-100' : 'bg-white'
                         } ${
-                          isUpdating ? 'opacity-50' : (onDateChange && canEdit) ? 'cursor-pointer hover:bg-[#ff8e3c]/10' : 'cursor-default opacity-60'
+                          isUpdating ? 'opacity-50' : (onDateChange && canEdit) ? 'cursor-pointer hover:bg-[#3b82f6]/10' : 'cursor-default opacity-60'
                         }`}
                         onClick={() => {
                           if (onDateChange && !isUpdating && !isEditing && canEdit) {
@@ -608,10 +608,10 @@ export function ApplicationTable({
                               }
                             }}
                             autoFocus
-                            className="w-full px-2 py-1 text-sm border border-[#0d0d0d] rounded bg-[#fffffe] text-[#0d0d0d] focus:outline-none focus:ring-2 focus:ring-[#ff8e3c]"
+                            className="w-full px-2 py-1 text-sm border border-[#e5e7eb] rounded bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
                           />
                         ) : isUpdating ? (
-                          <span className="text-[#2a2a2a]">...</span>
+                          <span className="text-[#4b5563]">...</span>
                         ) : (
                           <span className="text-sm">{displayDate}</span>
                         )}
@@ -621,7 +621,7 @@ export function ApplicationTable({
                 })}
                 {/* 新規列追加行のセル（空）- 編集権限がある場合のみ表示 */}
                 {onStatusChange && (
-                  <td className="px-4 py-3 text-center border-r border-[#0d0d0d] bg-[#eff0f3]">
+                  <td className="px-4 py-3 text-center border-r border-[#e5e7eb] bg-[#f3f4f6]">
                     -
                   </td>
                 )}

@@ -103,10 +103,10 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
 
   if (isLoading) {
     return (
-      <div className={`bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-4 ${className}`}>
+      <div className={`bg-[#f8f8f8] rounded-xl border border-gray-200 p-4 ${className}`}>
         <div className="flex items-center justify-center">
-          <div className="w-6 h-6 border-2 border-[#ff8e3c] border-t-transparent rounded-full animate-spin"></div>
-          <span className="ml-2 text-sm text-[#2a2a2a]">アラートを読み込み中...</span>
+          <div className="w-6 h-6 border-2 border-[#1e3a5f] border-t-transparent rounded-full animate-spin"></div>
+          <span className="ml-2 text-sm text-gray-500">アラートを読み込み中...</span>
         </div>
       </div>
     );
@@ -114,8 +114,8 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
 
   if (totalAlerts === 0) {
     return (
-      <div className={`bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-4 ${className}`}>
-        <div className="text-center text-sm text-[#2a2a2a]">
+      <div className={`bg-[#f8f8f8] rounded-xl border border-gray-200 p-4 ${className}`}>
+        <div className="text-center text-sm text-gray-500">
           対応が必要な項目はありません
         </div>
       </div>
@@ -123,12 +123,12 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
   }
 
   return (
-    <div className={`bg-[#fffffe] rounded-xl border border-[#0d0d0d] overflow-hidden ${className}`}>
+    <div className={`bg-[#f8f8f8] rounded-xl border border-gray-200 overflow-hidden ${className}`}>
       {/* ヘッダー */}
-      <div className="flex items-center justify-between p-4 bg-[#eff0f3] border-b border-[#0d0d0d]">
+      <div className="flex items-center justify-between p-4 bg-[#ffebee] border-b border-[#ffcdd2]">
         <div className="flex items-center gap-2">
           <span className="text-lg">⚠️</span>
-          <span className="font-semibold text-[#0d0d0d]">
+          <span className="font-bold text-[#1a1a1a]">
             アラート（{totalAlerts}件）
           </span>
           <button
@@ -136,7 +136,7 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
               e.stopPropagation();
               setShowInfoPopup(!showInfoPopup);
             }}
-            className="ml-2 text-[#2a2a2a] hover:text-[#0d0d0d] transition-colors"
+            className="ml-2 text-gray-500 hover:text-gray-700 transition-colors"
             title="アラート内容の説明"
           >
             <Info className="w-4 h-4" />
@@ -144,7 +144,7 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
         </div>
         <button 
           onClick={() => setIsExpanded(!isExpanded)}
-          className="text-[#2a2a2a] hover:text-[#0d0d0d] transition-colors"
+          className="text-gray-400 hover:text-gray-600 transition-colors"
         >
           {isExpanded ? (
             <ChevronUp className="w-5 h-5" />
@@ -157,12 +157,12 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
       {/* アラート内容説明ポップアップ */}
       {showInfoPopup && (
         <div className="relative">
-          <div className="absolute top-2 left-4 z-10 bg-[#fffffe] border-2 border-[#0d0d0d] rounded-lg shadow-lg p-4 min-w-[300px]">
+          <div className="absolute top-2 left-4 z-10 bg-white border border-gray-200 rounded-xl shadow-xl p-4 min-w-[300px]">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-semibold text-[#0d0d0d]">アラート内容一覧</h3>
+              <h3 className="font-semibold text-[#1a1a1a]">アラート内容一覧</h3>
               <button
                 onClick={() => setShowInfoPopup(false)}
-                className="text-[#2a2a2a] hover:text-[#0d0d0d] transition-colors"
+                className="text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -175,7 +175,7 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
                   <span className={`px-2 py-1 text-xs font-medium rounded ${ALERT_TYPE_COLORS[type as keyof typeof ALERT_TYPE_COLORS]}`}>
                     {label}
                   </span>
-                  <span className="text-sm text-[#2a2a2a] flex-1">
+                  <span className="text-sm text-[#4b5563] flex-1">
                     {alertTypeDescriptions[type]}
                   </span>
                 </div>
@@ -185,20 +185,21 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
         </div>
       )}
 
-      {/* アラート一覧 */}
+      {/* アラート一覧（生徒ごとにカードヘッダーで区切り） */}
       {isExpanded && (
         <div className="p-4 space-y-4">
           {studentAlerts.map((studentAlert) => (
-            <div key={studentAlert.student_id} className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-[#0d0d0d]">
+            <div key={studentAlert.student_id} className="rounded-lg border border-gray-200 overflow-hidden bg-white">
+              {/* カードヘッダー：生徒名・学年（統一感のあるセクション区切り） */}
+              <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 border-b border-gray-200">
+                <span className="font-semibold text-[#1a1a1a]">
                   {studentAlert.student_name}
                 </span>
-                <span className="text-xs text-[#2a2a2a]/70">
+                <span className="text-xs text-gray-500">
                   （{GRADE_LABELS[studentAlert.grade] || studentAlert.grade}）
                 </span>
               </div>
-              <div className="space-y-2 ml-4">
+              <div className="p-3 space-y-2">
                 {studentAlert.alerts.map((alert) => (
                   <AlertItem
                     key={alert.id}

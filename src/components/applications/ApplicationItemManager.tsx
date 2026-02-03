@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { ApplicationItem } from '@/types/database';
@@ -183,7 +183,7 @@ export function ApplicationItemManager({
       <div className="space-y-6">
         {/* 新規追加 */}
         <div>
-          <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
+          <label className="block text-sm font-medium text-[#1f2937] mb-2">
             新しい項目を追加
           </label>
           <div className="flex gap-2">
@@ -205,7 +205,7 @@ export function ApplicationItemManager({
 
         {/* 表示中の項目 */}
         <div>
-          <h3 className="text-sm font-medium text-[#0d0d0d] mb-3">
+          <h3 className="text-sm font-medium text-[#1f2937] mb-3">
             表示中の項目（{visibleItems.filter((i) => !i.is_hidden).length}件）
           </h3>
           <div className="space-y-2">
@@ -214,7 +214,7 @@ export function ApplicationItemManager({
               .map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between p-3 bg-[#eff0f3] rounded-lg border border-[#0d0d0d]"
+                  className="flex items-center justify-between p-3 bg-[#f3f4f6] rounded-lg border border-[#e5e7eb]"
                 >
                   {editingId === item.id ? (
                     <div className="flex-1 flex gap-2">
@@ -247,8 +247,8 @@ export function ApplicationItemManager({
                   ) : (
                     <>
                       <div className="flex-1 flex items-center gap-3">
-                        <span className="font-medium text-[#0d0d0d]">{item.name}</span>
-                        <label className="flex items-center gap-2 text-sm text-[#2a2a2a]">
+                        <span className="font-medium text-[#1f2937]">{item.name}</span>
+                        <label className="flex items-center gap-2 text-sm text-[#4b5563]">
                           <input
                             type="checkbox"
                             checked={item.teacher_editable === true}
@@ -268,7 +268,7 @@ export function ApplicationItemManager({
                               }
                             }}
                             disabled={isProcessing}
-                            className="w-4 h-4 text-[#ff8e3c] border-[#0d0d0d] rounded focus:ring-[#ff8e3c]"
+                            className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6]"
                           />
                           <span className="text-xs">講師が編集可能</span>
                         </label>
@@ -276,21 +276,21 @@ export function ApplicationItemManager({
                       <div className="flex gap-3">
                         <button
                           onClick={() => startEditing(item)}
-                          className="text-sm text-[#2a2a2a] hover:text-[#ff8e3c] transition-colors"
+                          className="text-sm text-[#4b5563] hover:text-[#3b82f6] transition-colors"
                           disabled={isProcessing}
                         >
                           名前変更
                         </button>
                         <button
                           onClick={() => handleHide(item.id)}
-                          className="text-sm text-[#2a2a2a] hover:text-[#2a2a2a]/60 transition-colors"
+                          className="text-sm text-[#4b5563] hover:text-[#4b5563]/60 transition-colors"
                           disabled={isProcessing}
                         >
                           非表示
                         </button>
                         <button
                           onClick={() => handleDelete(item.id, item.name)}
-                          className="text-sm text-[#d9376e] hover:text-[#d9376e]/80 transition-colors"
+                          className="text-sm text-[#ef4444] hover:text-[#ef4444]/80 transition-colors"
                           disabled={isProcessing}
                         >
                           削除
@@ -301,7 +301,7 @@ export function ApplicationItemManager({
                 </div>
               ))}
             {visibleItems.filter((i) => !i.is_hidden).length === 0 && (
-              <p className="text-[#2a2a2a]/60 text-sm py-4 text-center">
+              <p className="text-[#4b5563]/60 text-sm py-4 text-center">
                 表示中の項目がありません
               </p>
             )}
@@ -311,27 +311,27 @@ export function ApplicationItemManager({
         {/* 非表示の項目 */}
         {hiddenItems.length > 0 && (
           <div>
-            <h3 className="text-sm font-medium text-[#0d0d0d] mb-3">
+            <h3 className="text-sm font-medium text-[#1f2937] mb-3">
               非表示の項目（{hiddenItems.length}件）
             </h3>
             <div className="space-y-2">
               {hiddenItems.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between p-3 bg-[#eff0f3] rounded-lg border border-[#0d0d0d] opacity-60"
+                  className="flex items-center justify-between p-3 bg-[#f3f4f6] rounded-lg border border-[#e5e7eb] opacity-60"
                 >
-                  <span className="text-[#2a2a2a]">{item.name}</span>
+                  <span className="text-[#4b5563]">{item.name}</span>
                   <div className="flex gap-3">
                     <button
                       onClick={() => handleUnhide(item.id)}
-                      className="text-sm text-[#2a2a2a] hover:text-[#ff8e3c] transition-colors"
+                      className="text-sm text-[#4b5563] hover:text-[#3b82f6] transition-colors"
                       disabled={isProcessing}
                     >
                       再表示
                     </button>
                     <button
                       onClick={() => handleDelete(item.id, item.name)}
-                      className="text-sm text-[#d9376e] hover:text-[#d9376e]/80 transition-colors"
+                      className="text-sm text-[#ef4444] hover:text-[#ef4444]/80 transition-colors"
                       disabled={isProcessing}
                     >
                       削除

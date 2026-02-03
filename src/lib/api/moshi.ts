@@ -85,15 +85,18 @@ export async function getMoshiPeriod(id: string): Promise<MoshiPeriod | null> {
 
 /**
  * 模試期間を作成
+ * @param data 期間データ（school_id / form_type 除く）
+ * @param schoolId 教室ID（省略時は getDefaultSchoolId()）
  */
 export async function createMoshiPeriod(
-  data: Omit<FormPeriodInsert, 'school_id' | 'form_type'>
+  data: Omit<FormPeriodInsert, 'school_id' | 'form_type'>,
+  schoolId?: string
 ): Promise<MoshiPeriod> {
-  const schoolId = getDefaultSchoolId();
+  const targetSchoolId = schoolId ?? getDefaultSchoolId();
 
   const periodData: FormPeriodInsert = {
     ...data,
-    school_id: schoolId,
+    school_id: targetSchoolId,
     form_type: 'moshi',
     settings: (data.settings || {}) as MoshiSettings,
   };

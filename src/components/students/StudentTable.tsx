@@ -26,28 +26,10 @@ export function StudentTable({
 }: StudentTableProps) {
   if (isLoading) {
     return (
-      <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-8">
+      <div className="bg-[#f8f8f8] rounded-xl border border-gray-200 p-8">
         <div className="flex items-center justify-center">
-          <svg
-            className="animate-spin h-8 w-8 text-blue-600"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            />
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            />
-          </svg>
-          <span className="ml-3 text-[#2a2a2a]">読み込み中...</span>
+          <div className="w-8 h-8 border-2 border-[#1e3a5f] border-t-transparent rounded-full animate-spin"></div>
+          <span className="ml-3 text-gray-500">読み込み中...</span>
         </div>
       </div>
     );
@@ -55,10 +37,10 @@ export function StudentTable({
 
   if (students.length === 0) {
     return (
-      <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-8">
+      <div className="bg-[#f8f8f8] rounded-xl border border-gray-200 p-8">
         <div className="text-center">
           <svg
-            className="mx-auto h-12 w-12 text-[#2a2a2a]/30"
+            className="mx-auto h-12 w-12 text-gray-300"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -70,8 +52,8 @@ export function StudentTable({
               d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
             />
           </svg>
-          <p className="mt-4 text-[#2a2a2a]">生徒が登録されていません</p>
-          <p className="text-sm text-[#2a2a2a]/60">
+          <p className="mt-4 text-gray-600">生徒が登録されていません</p>
+          <p className="text-sm text-gray-400">
             「新規登録」ボタンから生徒を追加してください
           </p>
         </div>
@@ -80,12 +62,12 @@ export function StudentTable({
   }
 
   return (
-    <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] overflow-hidden">
+    <div className="bg-[#f8f8f8] rounded-xl border border-gray-200 overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="bg-[#eff0f3] border-b border-[#0d0d0d]">
-              <th className="px-4 py-3 text-left text-xs font-semibold text-[#0d0d0d] uppercase tracking-wider">
+            <tr className="bg-gray-50 border-b border-gray-200">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-[#1a1a1a] uppercase tracking-wider">
                 コード
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
@@ -118,29 +100,29 @@ export function StudentTable({
                 <tr
                   key={student.id}
                   className={`transition-colors duration-150 ${
-                    onRowClick ? 'cursor-pointer hover:bg-[#eff0f3]' : ''
+                    onRowClick ? 'cursor-pointer hover:bg-gray-50' : ''
                   }`}
                   onClick={() => onRowClick?.(student)}
                 >
-                <td className="px-4 py-3 text-sm font-mono text-[#2a2a2a]">
-                  {student.student_code || <span className="text-[#2a2a2a]/30">-</span>}
+                <td className="px-4 py-3 text-sm font-mono text-[#4b5563]">
+                  {student.student_code || <span className="text-[#4b5563]/30">-</span>}
                 </td>
                 <td className="px-4 py-3">
-                  <span className="text-sm font-medium text-[#0d0d0d]">
+                    <span className="text-sm font-medium text-[#1a1a1a]">
                     {student.last_name} {student.first_name}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-sm text-[#2a2a2a]">
+                <td className="px-4 py-3 text-sm text-[#4b5563]">
                   {student.last_name_kana} {student.first_name_kana}
                 </td>
-                <td className="px-4 py-3 text-sm text-[#2a2a2a]">
+                <td className="px-4 py-3 text-sm text-[#4b5563]">
                   {GRADE_LABELS[student.grade] || student.grade}
                 </td>
-                <td className="px-4 py-3 text-sm text-[#2a2a2a]">
-                  {student.school_name || <span className="text-[#2a2a2a]/30">-</span>}
+                <td className="px-4 py-3 text-sm text-[#4b5563]">
+                  {student.school_name || <span className="text-[#4b5563]/30">-</span>}
                 </td>
-                <td className="px-4 py-3 text-sm text-[#2a2a2a]">
-                  {subjectNames || <span className="text-[#2a2a2a]/30">-</span>}
+                <td className="px-4 py-3 text-sm text-[#4b5563]">
+                  {subjectNames || <span className="text-[#4b5563]/30">-</span>}
                 </td>
                 <td className="px-4 py-3">
                   <span
@@ -154,7 +136,7 @@ export function StudentTable({
                     {onScores && (
                       <button
                         onClick={() => onScores(student)}
-                        className="flex flex-col items-center gap-1 p-1.5 text-[#2a2a2a] hover:text-[#ff8e3c] hover:bg-[#ff8e3c]/10 rounded-lg transition-colors"
+                        className="flex flex-col items-center gap-1 p-1.5 text-gray-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/10 rounded-lg transition-colors"
                       >
                         <svg
                           className="w-4 h-4"
@@ -175,7 +157,7 @@ export function StudentTable({
                     {onInterviews && (
                       <button
                         onClick={() => onInterviews(student)}
-                        className="flex flex-col items-center gap-1 p-1.5 text-[#2a2a2a] hover:text-[#0d0d0d] hover:bg-[#0d0d0d]/10 rounded-lg transition-colors"
+                        className="flex flex-col items-center gap-1 p-1.5 text-[#4b5563] hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
                       >
                         <svg
                           className="w-4 h-4"
@@ -196,7 +178,7 @@ export function StudentTable({
                     {onProgress && (
                       <button
                         onClick={() => onProgress(student)}
-                        className="flex flex-col items-center gap-1 p-1.5 text-[#2a2a2a] hover:text-[#ff8e3c] hover:bg-[#ff8e3c]/10 rounded-lg transition-colors"
+                        className="flex flex-col items-center gap-1 p-1.5 text-gray-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/10 rounded-lg transition-colors"
                       >
                         <svg
                           className="w-4 h-4"
@@ -217,7 +199,7 @@ export function StudentTable({
                     {onEdit && (
                       <button
                         onClick={() => onEdit(student)}
-                        className="flex flex-col items-center gap-1 p-1.5 text-[#2a2a2a] hover:text-[#ff8e3c] hover:bg-[#ff8e3c]/10 rounded-lg transition-colors"
+                        className="flex flex-col items-center gap-1 p-1.5 text-gray-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/10 rounded-lg transition-colors"
                       >
                         <svg
                           className="w-4 h-4"
@@ -241,7 +223,7 @@ export function StudentTable({
                           e.stopPropagation();
                           onDelete(student);
                         }}
-                        className="flex flex-col items-center gap-1 p-1.5 text-[#2a2a2a] hover:text-[#d9376e] hover:bg-[#d9376e]/10 rounded-lg transition-colors"
+                        className="flex flex-col items-center gap-1 p-1.5 text-[#4b5563] hover:text-[#ef4444] hover:bg-[#ef4444]/10 rounded-lg transition-colors"
                       >
                         <svg
                           className="w-4 h-4"
@@ -269,8 +251,8 @@ export function StudentTable({
       </div>
       
       {/* フッター：件数表示 */}
-      <div className="px-4 py-3 bg-[#eff0f3] border-t border-[#0d0d0d]">
-        <p className="text-sm text-[#2a2a2a]">
+      <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
+        <p className="text-sm text-[#4b5563]">
           全 <span className="font-semibold">{students.length}</span> 件
         </p>
       </div>

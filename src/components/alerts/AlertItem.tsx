@@ -12,19 +12,19 @@ interface AlertItemProps {
 
 export function AlertItem({ alert, onDismiss, canDismiss = false }: AlertItemProps) {
   return (
-    <div className="flex items-center justify-between gap-3 py-2 px-3 rounded-lg border border-[#0d0d0d] bg-[#fffffe]">
-      <div className="flex items-center gap-2 flex-1">
-        <span className={`px-2 py-1 rounded text-xs font-medium ${ALERT_TYPE_COLORS[alert.alert_type]}`}>
+    <div className="flex items-center justify-between gap-3 py-2 px-3 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition-colors">
+      <div className="flex items-center gap-2 flex-1 min-w-0">
+        <span className={`shrink-0 px-2 py-1 rounded text-xs font-medium ${ALERT_TYPE_COLORS[alert.alert_type]}`}>
           {ALERT_TYPE_LABELS[alert.alert_type]}
         </span>
-        <span className="text-sm text-[#2a2a2a]">{alert.message}</span>
+        <span className="text-sm text-gray-700 truncate">{alert.message}</span>
       </div>
       {canDismiss && onDismiss && (
         <Button
           onClick={() => onDismiss(alert)}
-          variant="secondary"
+          variant="primary"
           size="sm"
-          className="text-xs px-2 py-1"
+          className="shrink-0 text-xs px-3 py-1.5"
         >
           対応済み
         </Button>

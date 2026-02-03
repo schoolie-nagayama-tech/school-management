@@ -44,20 +44,20 @@ export default function FormResponsesPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#eff0f3] flex items-center justify-center">
-        <div className="text-[#2a2a2a]">読み込み中...</div>
+      <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center">
+        <div className="text-[#4b5563]">読み込み中...</div>
       </div>
     );
   }
 
   if (error || !form) {
     return (
-      <div className="min-h-screen bg-[#eff0f3] flex items-center justify-center">
+      <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center">
         <div className="text-center">
-          <p className="text-[#d9376e] mb-4">{error || 'フォームが見つかりません'}</p>
+          <p className="text-[#ef4444] mb-4">{error || 'フォームが見つかりません'}</p>
           <Link
             href="/forms/manage"
-            className="text-[#ff8e3c] hover:underline"
+            className="text-[#3b82f6] hover:underline"
           >
             フォーム管理に戻る
           </Link>
@@ -67,20 +67,20 @@ export default function FormResponsesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#eff0f3]">
+    <div className="min-h-screen bg-[#f3f4f6]">
       {/* ヘッダー */}
-      <header className="bg-[#fffffe] border-b border-[#0d0d0d]">
+      <header className="bg-white border-b border-[#e5e7eb]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
-              <h1 className="text-xl font-bold text-[#0d0d0d]">{form.title}</h1>
-              <span className="text-sm text-[#2a2a2a]">
+              <h1 className="text-xl font-bold text-[#1f2937]">{form.title}</h1>
+              <span className="text-sm text-[#4b5563]">
                 回答数: {responses.length}件
               </span>
             </div>
             <Link
               href="/forms/manage"
-              className="px-4 py-2 text-[#2a2a2a] hover:text-[#0d0d0d] hover:bg-[#eff0f3] rounded-lg transition-colors"
+              className="px-4 py-2 text-[#4b5563] hover:text-[#1f2937] hover:bg-[#f3f4f6] rounded-lg transition-colors"
             >
               フォーム管理に戻る
             </Link>
@@ -90,7 +90,7 @@ export default function FormResponsesPage() {
 
       {/* メインコンテンツ */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6">
+        <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
           <ResponseList
             responses={responses}
             formId={formId}

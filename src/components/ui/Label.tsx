@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { LabelHTMLAttributes, forwardRef } from 'react';
 
@@ -9,7 +9,7 @@ export const Label = forwardRef<HTMLLabelElement, LabelProps>(
     return (
       <label
         ref={ref}
-        className={`block text-sm font-medium text-[#0d0d0d] ${className}`}
+        className={`block text-sm font-medium text-[#1f2937] ${className}`}
         {...props}
       >
         {children}

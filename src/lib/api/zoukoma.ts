@@ -109,15 +109,18 @@ export async function getZoukomaPeriod(
 
 /**
  * 増コマ申込期間を作成
+ * @param data 期間データ（school_id / form_type 除く）
+ * @param schoolId 教室ID（省略時は getDefaultSchoolId()）
  */
 export async function createZoukomaPeriod(
   data: Omit<FormPeriodInsert, 'school_id' | 'form_type'> & {
     settings: ZoukomaSettings;
-  }
+  },
+  schoolId?: string
 ): Promise<ZoukomaPeriod> {
-  let schoolId: string;
+  let targetSchoolId: string;
   try {
-    schoolId = getDefaultSchoolId();
+    targetSchoolId = schoolId ?? getDefaultSchoolId();
   } catch (error) {
     console.error('Error getting default school ID:', error);
     throw new Error(
@@ -125,7 +128,7 @@ export async function createZoukomaPeriod(
     );
   }
 
-  if (!schoolId || schoolId.trim() === '') {
+  if (!targetSchoolId || targetSchoolId.trim() === '') {
     throw new Error(
       'school_idが空です。環境変数NEXT_PUBLIC_DEFAULT_SCHOOL_IDが正しく設定されているか確認してください。'
     );
@@ -133,19 +136,10 @@ export async function createZoukomaPeriod(
 
   const periodData: FormPeriodInsert = {
     ...data,
-    school_id: schoolId,
+    school_id: targetSchoolId,
     form_type: 'zoukoma',
     settings: data.settings as Record<string, unknown>,
   };
-
-  // デバッグ用: school_idが正しく設定されているか確認
-  if (!periodData.school_id || periodData.school_id.trim() === '') {
-    console.error('periodData:', periodData);
-    console.error('schoolId:', schoolId);
-    throw new Error(
-      `school_idが設定されていません。schoolId: "${schoolId}", periodData.school_id: "${periodData.school_id}"`
-    );
-  }
 
   const period = await createFormPeriod(periodData);
   return {

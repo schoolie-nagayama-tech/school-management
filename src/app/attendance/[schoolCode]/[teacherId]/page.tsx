@@ -273,7 +273,7 @@ export default function TeacherAttendancePage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-[#2a2a2a]">読み込み中...</div>
+        <div className="text-[#4b5563]">読み込み中...</div>
       </div>
     );
   }
@@ -282,7 +282,7 @@ export default function TeacherAttendancePage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-[#d9376e] text-lg">{error}</p>
+          <p className="text-[#ef4444] text-lg">{error}</p>
           <Button
             variant="secondary"
             className="mt-4"
@@ -311,7 +311,7 @@ export default function TeacherAttendancePage() {
               戻る
             </Button>
             <div className="text-center">
-              <p className="text-sm text-[#2a2a2a]">{school?.name}</p>
+              <p className="text-sm text-[#4b5563]">{school?.name}</p>
               <p className="font-bold">{teacher?.name}</p>
             </div>
             <Badge className={ATTENDANCE_STATUS_COLORS[status]}>
@@ -370,7 +370,7 @@ export default function TeacherAttendancePage() {
                     className="px-2 py-2 text-center font-medium border-b min-w-[70px]"
                   >
                     {type.name}
-                    <span className="block text-xs text-[#2a2a2a] font-normal">
+                    <span className="block text-xs text-[#4b5563] font-normal">
                       {type.unit === 'hours' ? '(h)' : ''}
                     </span>
                   </th>
@@ -490,7 +490,7 @@ export default function TeacherAttendancePage() {
             </Button>
           )}
           {status === 'approved' && (
-            <p className="text-[#2a2a2a]">承認済みのため編集できません</p>
+            <p className="text-[#4b5563]">承認済みのため編集できません</p>
           )}
         </div>
       </main>

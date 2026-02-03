@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -189,11 +189,11 @@ export function MoshiForm({ school, period }: MoshiFormProps) {
       <div className="flex items-center justify-between mb-6">
         <button
           onClick={() => router.push(`/portal/${school.code}`)}
-          className="text-[#2a2a2a] hover:text-[#0d0d0d]"
+          className="text-[#4b5563] hover:text-[#1f2937]"
         >
           ← 戻る
         </button>
-        <h1 className="text-xl font-bold text-[#0d0d0d]">模試申込</h1>
+        <h1 className="text-xl font-bold text-[#1f2937]">模試申込</h1>
         <div className="w-12"></div>
       </div>
 
@@ -211,7 +211,7 @@ export function MoshiForm({ school, period }: MoshiFormProps) {
         <div className="space-y-4">
           {/* 生徒名 */}
           <div>
-            <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+            <label className="block text-sm font-medium mb-1 text-[#1f2937]">
               生徒名 <span className="text-red-500">*</span>
             </label>
             <Input
@@ -228,7 +228,7 @@ export function MoshiForm({ school, period }: MoshiFormProps) {
 
           {/* 学年 */}
           <div>
-            <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+            <label className="block text-sm font-medium mb-1 text-[#1f2937]">
               学年 <span className="text-red-500">*</span>
             </label>
             <Select
@@ -247,7 +247,7 @@ export function MoshiForm({ school, period }: MoshiFormProps) {
 
           {/* メールアドレス */}
           <div>
-            <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+            <label className="block text-sm font-medium mb-1 text-[#1f2937]">
               メールアドレス <span className="text-red-500">*</span>
             </label>
             <Input
@@ -265,7 +265,7 @@ export function MoshiForm({ school, period }: MoshiFormProps) {
 
         {/* 受験方法選択 */}
         <div>
-          <label className="block text-sm font-medium mb-3 text-[#0d0d0d]">
+          <label className="block text-sm font-medium mb-3 text-[#1f2937]">
             受験方法 <span className="text-red-500">*</span>
           </label>
 
@@ -273,7 +273,7 @@ export function MoshiForm({ school, period }: MoshiFormProps) {
           <label
             className={`block p-4 border rounded-lg mb-3 cursor-pointer transition-colors ${
               examType === 'regular'
-                ? 'border-[#ff8e3c] bg-orange-50'
+                ? 'border-[#3b82f6] bg-orange-50'
                 : 'border-gray-300 hover:bg-gray-50'
             }`}
           >
@@ -287,10 +287,10 @@ export function MoshiForm({ school, period }: MoshiFormProps) {
                 className="mt-1"
               />
               <div>
-                <span className="font-medium text-[#0d0d0d]">
+                <span className="font-medium text-[#1f2937]">
                   {settings.exam_date_label} {settings.exam_time}
                 </span>
-                <span className="block text-sm text-[#2a2a2a] mt-1">
+                <span className="block text-sm text-[#4b5563] mt-1">
                   の模試に参加します
                 </span>
               </div>
@@ -302,7 +302,7 @@ export function MoshiForm({ school, period }: MoshiFormProps) {
             <label
               className={`block p-4 border rounded-lg cursor-pointer transition-colors ${
                 examType === 'furikae'
-                  ? 'border-[#ff8e3c] bg-orange-50'
+                  ? 'border-[#3b82f6] bg-orange-50'
                   : 'border-gray-300 hover:bg-gray-50'
               }`}
             >
@@ -315,7 +315,7 @@ export function MoshiForm({ school, period }: MoshiFormProps) {
                   onChange={(e) => setExamType(e.target.value as ExamType)}
                   className="mt-1"
                 />
-                <span className="font-medium text-[#0d0d0d]">振替受験を希望します</span>
+                <span className="font-medium text-[#1f2937]">振替受験を希望します</span>
               </div>
             </label>
           )}
@@ -328,7 +328,7 @@ export function MoshiForm({ school, period }: MoshiFormProps) {
           {examType === 'furikae' && (
             <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
               {/* 注意事項 */}
-              <div className="mb-4 text-sm text-[#2a2a2a]">
+              <div className="mb-4 text-sm text-[#4b5563]">
                 <p className="font-medium mb-2">振替受験について</p>
                 <ul className="list-disc list-inside space-y-1">
                   {settings.furikae?.note && (
@@ -349,7 +349,7 @@ export function MoshiForm({ school, period }: MoshiFormProps) {
 
               {/* 希望日 */}
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+                <label className="block text-sm font-medium mb-1 text-[#1f2937]">
                   希望日 <span className="text-red-500">*</span>
                 </label>
                 <Input
@@ -360,7 +360,7 @@ export function MoshiForm({ school, period }: MoshiFormProps) {
                 />
                 {furikaeDate && (
                   <p className={`text-sm mt-1 ${
-                    isWeekday(furikaeDate) ? 'text-[#2a2a2a]' : 'text-red-600'
+                    isWeekday(furikaeDate) ? 'text-[#4b5563]' : 'text-red-600'
                   }`}>
                     → {formatDateLabel(furikaeDate)}
                     {!isWeekday(furikaeDate) && '（平日を選択してください）'}
@@ -373,7 +373,7 @@ export function MoshiForm({ school, period }: MoshiFormProps) {
 
               {/* 希望時間 */}
               <div>
-                <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+                <label className="block text-sm font-medium mb-1 text-[#1f2937]">
                   希望時間 <span className="text-red-500">*</span>
                 </label>
                 <Select
@@ -395,13 +395,13 @@ export function MoshiForm({ school, period }: MoshiFormProps) {
 
         {/* 備考 */}
         <div>
-          <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">備考</label>
+          <label className="block text-sm font-medium mb-1 text-[#1f2937]">備考</label>
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="ご要望等あればご記入ください"
             rows={3}
-            className="w-full border border-[#0d0d0d] rounded-lg px-3 py-2 resize-y text-sm"
+            className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 resize-y text-sm"
           />
         </div>
 

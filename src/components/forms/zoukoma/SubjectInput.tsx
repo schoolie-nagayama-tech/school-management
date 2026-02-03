@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { Input } from '@/components/ui';
 
@@ -32,7 +32,7 @@ export function SubjectInput({
     <div className="space-y-3">
       {subjects.map((subject) => (
         <div key={subject} className="flex items-center gap-4">
-          <label className="w-24 text-sm font-medium text-[#0d0d0d] flex-shrink-0">
+          <label className="w-24 text-sm font-medium text-[#1f2937] flex-shrink-0">
             {subject}
           </label>
           <div className="flex-1 flex items-center gap-2">
@@ -45,7 +45,7 @@ export function SubjectInput({
               disabled={disabled}
               className="w-24"
             />
-            <span className="text-sm text-[#2a2a2a]">コマ</span>
+            <span className="text-sm text-[#4b5563]">コマ</span>
           </div>
         </div>
       ))}

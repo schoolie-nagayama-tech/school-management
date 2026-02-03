@@ -208,7 +208,7 @@ export function ZoukomaForm({ school, period }: ZoukomaFormProps) {
 
   if (isSubmitted) {
     return (
-      <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-8 text-center">
+      <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 text-center">
         <div className="mb-6">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg
@@ -225,15 +225,15 @@ export function ZoukomaForm({ school, period }: ZoukomaFormProps) {
               />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-[#0d0d0d] mb-4">
+          <h2 className="text-2xl font-bold text-[#1f2937] mb-4">
             お申込みありがとうございます
           </h2>
-          <p className="text-[#2a2a2a] mb-4">
+          <p className="text-[#4b5563] mb-4">
             受付完了メールを保護者様宛にお送りしました。
           </p>
           {settings.completion_message && (
-            <div className="mt-6 p-4 bg-[#eff0f3] rounded-lg text-left">
-              <p className="text-sm text-[#2a2a2a] whitespace-pre-line">
+            <div className="mt-6 p-4 bg-[#f3f4f6] rounded-lg text-left">
+              <p className="text-sm text-[#4b5563] whitespace-pre-line">
                 {settings.completion_message}
               </p>
             </div>
@@ -241,7 +241,7 @@ export function ZoukomaForm({ school, period }: ZoukomaFormProps) {
         </div>
         <a
           href={`/portal/${school.code}`}
-          className="inline-block px-6 py-3 bg-[#ff8e3c] text-[#0d0d0d] font-medium rounded-lg hover:bg-[#ff9e5c] transition-colors"
+          className="inline-block px-6 py-3 bg-[#3b82f6] text-white font-medium rounded-lg hover:bg-[#60a5fa] transition-colors"
         >
           ポータルに戻る
         </a>
@@ -252,20 +252,20 @@ export function ZoukomaForm({ school, period }: ZoukomaFormProps) {
   return (
     <div className="space-y-6">
       {/* ヒーローセクション */}
-      <div className="bg-gradient-to-r from-[#ff8e3c] to-[#ff9e5c] rounded-xl border border-[#0d0d0d] p-8 text-center">
-        <h1 className="text-3xl font-bold text-[#0d0d0d] mb-4">
+      <div className="bg-gradient-to-r from-[#3b82f6] to-[#60a5fa] rounded-xl border border-[#e5e7eb] p-8 text-center">
+        <h1 className="text-3xl font-bold text-[#1f2937] mb-4">
           {period.title}
         </h1>
         {settings.description && (
-          <p className="text-[#2a2a2a] text-lg">{settings.description}</p>
+          <p className="text-[#4b5563] text-lg">{settings.description}</p>
         )}
       </div>
 
       {/* フォーム */}
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* セクション1: 基本情報 */}
-        <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6 space-y-4">
-          <h2 className="text-xl font-bold text-[#0d0d0d] mb-4">基本情報</h2>
+        <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 space-y-4">
+          <h2 className="text-xl font-bold text-[#1f2937] mb-4">基本情報</h2>
 
           <Input
             label="生徒名"
@@ -302,17 +302,17 @@ export function ZoukomaForm({ school, period }: ZoukomaFormProps) {
         </div>
 
         {/* セクション2: 申込科目とコマ数 */}
-        <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6 space-y-4">
-          <h2 className="text-xl font-bold text-[#0d0d0d] mb-2">
+        <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 space-y-4">
+          <h2 className="text-xl font-bold text-[#1f2937] mb-2">
             申込科目とコマ数
           </h2>
-          <p className="text-sm text-[#2a2a2a] mb-4">
+          <p className="text-sm text-[#4b5563] mb-4">
             必要な科目に必要なコマ数を入力してください
           </p>
 
           {errors.subjects && (
-            <div className="p-3 bg-[#d9376e]/10 border border-[#d9376e] rounded-lg">
-              <p className="text-sm text-[#d9376e]">{errors.subjects}</p>
+            <div className="p-3 bg-[#ef4444]/10 border border-[#ef4444] rounded-lg">
+              <p className="text-sm text-[#ef4444]">{errors.subjects}</p>
             </div>
           )}
 
@@ -337,23 +337,23 @@ export function ZoukomaForm({ school, period }: ZoukomaFormProps) {
         </div>
 
         {/* セクション3: 出席可能日程 */}
-        <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6 space-y-4">
-          <h2 className="text-xl font-bold text-[#0d0d0d] mb-2">
+        <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 space-y-4">
+          <h2 className="text-xl font-bold text-[#1f2937] mb-2">
             出席可能日程
           </h2>
-          <p className="text-sm text-[#2a2a2a] mb-4">
+          <p className="text-sm text-[#4b5563] mb-4">
             出席できる日程を選んでください
           </p>
 
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-            <p className="text-sm text-[#2a2a2a]">
+            <p className="text-sm text-[#4b5563]">
               出席可能な日程は多めに選択してください。申込コマ数と同じ数だけ日程をお選びいただいた場合、他の生徒さんとの調整ができず授業を組めない場合があります。
             </p>
           </div>
 
           {errors.slots && (
-            <div className="p-3 bg-[#d9376e]/10 border border-[#d9376e] rounded-lg mb-4">
-              <p className="text-sm text-[#d9376e]">{errors.slots}</p>
+            <div className="p-3 bg-[#ef4444]/10 border border-[#ef4444] rounded-lg mb-4">
+              <p className="text-sm text-[#ef4444]">{errors.slots}</p>
             </div>
           )}
 
@@ -366,21 +366,21 @@ export function ZoukomaForm({ school, period }: ZoukomaFormProps) {
         </div>
 
         {/* セクション4: 備考 */}
-        <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6 space-y-4">
-          <h2 className="text-xl font-bold text-[#0d0d0d] mb-2">備考</h2>
+        <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 space-y-4">
+          <h2 className="text-xl font-bold text-[#1f2937] mb-2">備考</h2>
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="例：部活の都合で土日は夕方のみ希望"
-            className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a] focus:ring-2 focus:ring-[#ff8e3c] focus:border-[#ff8e3c] disabled:opacity-50"
+            className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:ring-2 focus:ring-[#3b82f6] focus:border-[#3b82f6] disabled:opacity-50"
             rows={4}
             disabled={isSubmitting}
           />
         </div>
 
         {errorMessage && (
-          <div className="bg-[#d9376e]/10 border border-[#d9376e] rounded-lg p-4">
-            <p className="text-sm text-[#d9376e]">{errorMessage}</p>
+          <div className="bg-[#ef4444]/10 border border-[#ef4444] rounded-lg p-4">
+            <p className="text-sm text-[#ef4444]">{errorMessage}</p>
           </div>
         )}
 
@@ -390,14 +390,14 @@ export function ZoukomaForm({ school, period }: ZoukomaFormProps) {
             type="button"
             onClick={handleReset}
             disabled={isSubmitting}
-            className="px-6 py-3 bg-[#fffffe] text-[#2a2a2a] font-medium rounded-lg border border-[#0d0d0d] hover:bg-[#eff0f3] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-3 bg-white text-[#4b5563] font-medium rounded-lg border border-[#e5e7eb] hover:bg-[#f3f4f6] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             リセット
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-6 py-3 bg-[#ff8e3c] text-[#0d0d0d] font-medium rounded-lg hover:bg-[#ff9e5c] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-6 py-3 bg-[#3b82f6] text-white font-medium rounded-lg hover:bg-[#60a5fa] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? '送信中...' : '申し込む'}
           </button>

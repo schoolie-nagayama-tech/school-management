@@ -85,24 +85,24 @@ export function SlotPreview({ schedule }: SlotPreviewProps) {
 
   if (!schedule?.start_date) {
     return (
-      <div className="bg-[#eff0f3] rounded-lg border border-[#0d0d0d] p-4 text-center">
-        <p className="text-sm text-[#2a2a2a]">開始日を設定するとプレビューが表示されます</p>
+      <div className="bg-[#f3f4f6] rounded-lg border border-[#e5e7eb] p-4 text-center">
+        <p className="text-sm text-[#4b5563]">開始日を設定するとプレビューが表示されます</p>
       </div>
     );
   }
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full border-collapse border border-[#0d0d0d] bg-[#fffffe] text-sm">
+      <table className="w-full border-collapse border border-[#e5e7eb] bg-white text-sm">
         <thead>
-          <tr className="bg-[#eff0f3]">
-            <th className="border border-[#0d0d0d] px-3 py-2 text-left sticky left-0 z-10 bg-[#eff0f3]">
+          <tr className="bg-[#f3f4f6]">
+            <th className="border border-[#e5e7eb] px-3 py-2 text-left sticky left-0 z-10 bg-[#f3f4f6]">
               日付
             </th>
-            <th className="border border-[#0d0d0d] px-3 py-2 text-center">4限</th>
-            <th className="border border-[#0d0d0d] px-3 py-2 text-center">5限</th>
-            <th className="border border-[#0d0d0d] px-3 py-2 text-center">6限</th>
-            <th className="border border-[#0d0d0d] px-3 py-2 text-center">7限</th>
+            <th className="border border-[#e5e7eb] px-3 py-2 text-center">4限</th>
+            <th className="border border-[#e5e7eb] px-3 py-2 text-center">5限</th>
+            <th className="border border-[#e5e7eb] px-3 py-2 text-center">6限</th>
+            <th className="border border-[#e5e7eb] px-3 py-2 text-center">7限</th>
           </tr>
         </thead>
         <tbody>
@@ -113,8 +113,8 @@ export function SlotPreview({ schedule }: SlotPreviewProps) {
 
             return (
               <tr key={date}>
-                <td className="border border-[#0d0d0d] px-3 py-2 sticky left-0 z-10 bg-[#fffffe]">
-                  <span className="text-sm font-medium text-[#0d0d0d]">
+                <td className="border border-[#e5e7eb] px-3 py-2 sticky left-0 z-10 bg-white">
+                  <span className="text-sm font-medium text-[#1f2937]">
                     {dateStr}
                   </span>
                 </td>
@@ -124,7 +124,7 @@ export function SlotPreview({ schedule }: SlotPreviewProps) {
                     return (
                       <td
                         key={period}
-                        className="border border-[#0d0d0d] px-3 py-2 text-center bg-[#eff0f3]"
+                        className="border border-[#e5e7eb] px-3 py-2 text-center bg-[#f3f4f6]"
                       ></td>
                     );
                   }
@@ -132,13 +132,13 @@ export function SlotPreview({ schedule }: SlotPreviewProps) {
                   return (
                     <td
                       key={period}
-                      className="border border-[#0d0d0d] px-3 py-2 text-center"
+                      className="border border-[#e5e7eb] px-3 py-2 text-center"
                     >
                       <div
                         className={`inline-block px-2 py-1 rounded text-xs ${
                           slot.isAvailable
-                            ? 'bg-[#ff8e3c] text-[#0d0d0d]'
-                            : 'bg-[#eff0f3] text-[#2a2a2a] opacity-50'
+                            ? 'bg-[#3b82f6] text-white'
+                            : 'bg-[#f3f4f6] text-[#4b5563] opacity-50'
                         }`}
                         title={slot.label}
                       >

@@ -85,15 +85,18 @@ export async function getYoubiPeriod(id: string): Promise<YoubiPeriod | null> {
 
 /**
  * 曜日変更期間を作成
+ * @param data 期間データ（school_id / form_type 除く）
+ * @param schoolId 教室ID（省略時は getDefaultSchoolId()）
  */
 export async function createYoubiPeriod(
-  data: Omit<FormPeriodInsert, 'school_id' | 'form_type'>
+  data: Omit<FormPeriodInsert, 'school_id' | 'form_type'>,
+  schoolId?: string
 ): Promise<YoubiPeriod> {
-  const schoolId = getDefaultSchoolId();
+  const targetSchoolId = schoolId ?? getDefaultSchoolId();
 
   const periodData: FormPeriodInsert = {
     ...data,
-    school_id: schoolId,
+    school_id: targetSchoolId,
     form_type: 'youbi',
     settings: (data.settings || {}) as YoubiSettings,
   };

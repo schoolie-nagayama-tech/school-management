@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { AdminLayout } from '@/components/layouts';
@@ -127,7 +127,7 @@ export default function LateEarlyListPage() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <CardTitle>
                 {records.length > 0 && (
-                  <span className="text-[#2a2a2a] font-normal text-sm ml-2">
+                  <span className="text-[#4b5563] font-normal text-sm ml-2">
                     （{records.length}件）
                   </span>
                 )}
@@ -175,10 +175,10 @@ export default function LateEarlyListPage() {
           <CardContent>
             {isLoading ? (
               <div className="flex justify-center py-8">
-                <div className="text-[#2a2a2a]">読み込み中...</div>
+                <div className="text-[#4b5563]">読み込み中...</div>
               </div>
             ) : records.length === 0 ? (
-              <div className="text-center py-8 text-[#2a2a2a]">
+              <div className="text-center py-8 text-[#4b5563]">
                 遅刻・早退のデータがありません
               </div>
             ) : (
@@ -203,7 +203,7 @@ export default function LateEarlyListPage() {
                       <TableCell className="text-red-600 font-medium">
                         {record.late_early}
                       </TableCell>
-                      <TableCell className="text-[#2a2a2a]">
+                      <TableCell className="text-[#4b5563]">
                         {record.note || '-'}
                       </TableCell>
                     </TableRow>

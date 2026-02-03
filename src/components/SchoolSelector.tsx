@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -38,10 +38,10 @@ export function SchoolSelector() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#fffffe]">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#ff8e3c] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-[#2a2a2a]">読み込み中...</p>
+          <div className="w-12 h-12 border-4 border-[#3b82f6] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-[#4b5563]">読み込み中...</p>
         </div>
       </div>
     );
@@ -52,9 +52,9 @@ export function SchoolSelector() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#fffffe] p-4">
-      <div className="max-w-md w-full bg-white rounded-xl border border-[#0d0d0d] p-6 shadow-lg">
-        <h2 className="text-xl font-bold text-[#0d0d0d] mb-6 text-center">
+    <div className="min-h-screen flex items-center justify-center bg-white p-4">
+      <div className="max-w-md w-full bg-white rounded-xl border border-[#e5e7eb] p-6 shadow-lg">
+        <h2 className="text-xl font-bold text-[#1f2937] mb-6 text-center">
           教室を選択してください
         </h2>
         
@@ -65,12 +65,12 @@ export function SchoolSelector() {
               onClick={() => handleSelect('all')}
               className={`w-full px-4 py-3 rounded-lg border-2 transition-colors text-left ${
                 selectedSchoolId === 'all'
-                  ? 'border-[#ff8e3c] bg-[#ff8e3c]/10'
-                  : 'border-[#0d0d0d] hover:bg-[#eff0f3]'
+                  ? 'border-[#3b82f6] bg-[#3b82f6]/10'
+                  : 'border-[#e5e7eb] hover:bg-[#f3f4f6]'
               }`}
             >
-              <div className="font-bold text-[#0d0d0d]">すべての教室</div>
-              <div className="text-sm text-[#2a2a2a] mt-1">
+              <div className="font-bold text-[#1f2937]">すべての教室</div>
+              <div className="text-sm text-[#4b5563] mt-1">
                 担当しているすべての教室の情報を表示します
               </div>
             </button>
@@ -83,15 +83,15 @@ export function SchoolSelector() {
               onClick={() => handleSelect(school.id)}
               className={`w-full px-4 py-3 rounded-lg border-2 transition-colors text-left ${
                 selectedSchoolId === school.id
-                  ? 'border-[#ff8e3c] bg-[#ff8e3c]/10'
-                  : 'border-[#0d0d0d] hover:bg-[#eff0f3]'
+                  ? 'border-[#3b82f6] bg-[#3b82f6]/10'
+                  : 'border-[#e5e7eb] hover:bg-[#f3f4f6]'
               }`}
             >
-              <div className="font-bold text-[#0d0d0d]">
+              <div className="font-bold text-[#1f2937]">
                 {school.code === 'DEFAULT' ? 'デフォルト' : school.name}
               </div>
               {school.code && school.code !== 'DEFAULT' && (
-                <div className="text-sm text-[#2a2a2a] mt-1">コード: {school.code}</div>
+                <div className="text-sm text-[#4b5563] mt-1">コード: {school.code}</div>
               )}
             </button>
           ))}

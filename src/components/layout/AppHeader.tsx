@@ -78,14 +78,14 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
   }, [showSchoolDropdown]);
 
   return (
-    <header className="bg-[#fffffe] border-b border-[#0d0d0d]">
+    <header className="bg-[#d32f2f] shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14">
           <div className="flex items-center gap-4">
             {/* ホームリンク */}
             <Link
               href="/students"
-              className="flex items-center gap-2 text-[#0d0d0d] hover:text-[#ff8e3c] transition-colors"
+              className="flex items-center gap-2 text-white/90 hover:text-white transition-colors"
               title="ホームに戻る"
             >
               <svg
@@ -102,16 +102,16 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
                 />
               </svg>
             </Link>
-            <div className="h-6 w-px bg-[#0d0d0d]/20"></div>
-            <h1 className="text-base font-semibold text-[#0d0d0d]">{title}</h1>
+            <div className="h-6 w-px bg-white/30"></div>
+            <h1 className="text-base font-bold text-white">{title}</h1>
             <nav className="flex items-center gap-3 ml-2">
               {(showAllLinks || permissions?.canAccessStudents) && (
                 <Link
                   href="/students"
                   className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
                     pathname === '/students'
-                      ? 'bg-[#ff8e3c] text-[#0d0d0d]'
-                      : 'text-[#2a2a2a] hover:bg-[#eff0f3]'
+                      ? 'bg-white text-[#d32f2f] font-semibold'
+                      : 'text-white/90 hover:bg-white/10 hover:text-white'
                   }`}
                 >
                   生徒管理
@@ -122,8 +122,8 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
                   href="/applications"
                   className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
                     pathname === '/applications'
-                      ? 'bg-[#ff8e3c] text-[#0d0d0d]'
-                      : 'text-[#2a2a2a] hover:bg-[#eff0f3]'
+                      ? 'bg-white text-[#d32f2f] font-semibold'
+                      : 'text-white/90 hover:bg-white/10 hover:text-white'
                   }`}
                 >
                   申込状況
@@ -138,8 +138,8 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
                       pathname?.startsWith('/forms/responses') ||
                       pathname === '/settings/portal' ||
                       pathname?.startsWith('/settings/portal')
-                        ? 'bg-[#ff8e3c] text-[#0d0d0d]'
-                        : 'text-[#2a2a2a] hover:bg-[#eff0f3]'
+                        ? 'bg-white text-[#d32f2f] font-semibold'
+                        : 'text-white/90 hover:bg-white/10 hover:text-white'
                     }`}
                   onMouseEnter={(e) => {
                     const container = e.currentTarget.closest('.relative');
@@ -169,7 +169,7 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
                   </svg>
                 </button>
                 <div 
-                  className="form-management-dropdown absolute top-full left-0 mt-1 bg-white rounded-lg border border-[#0d0d0d] shadow-lg z-50 min-w-[150px] opacity-0 invisible transition-all"
+                  className="form-management-dropdown absolute top-full left-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-xl z-50 min-w-[150px] opacity-0 invisible transition-all"
                   onMouseEnter={(e) => {
                     e.currentTarget.style.opacity = '1';
                     e.currentTarget.style.visibility = 'visible';
@@ -182,9 +182,9 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
                   <div className="py-1">
                     <Link
                       href="/responses"
-                      className={`block px-3 py-2 text-xs hover:bg-[#eff0f3] transition-colors ${
+                      className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                         pathname?.startsWith('/responses') || pathname?.startsWith('/forms/responses')
-                          ? 'bg-[#ff8e3c]/10 font-bold'
+                          ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
                           : ''
                       }`}
                     >
@@ -193,9 +193,9 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
                     {(showAllLinks || permissions?.canAccessPortal) && (
                       <Link
                         href="/settings/portal"
-                        className={`block px-3 py-2 text-xs hover:bg-[#eff0f3] transition-colors ${
+                        className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                           pathname === '/settings/portal' || pathname?.startsWith('/settings/portal')
-                            ? 'bg-[#ff8e3c]/10 font-bold'
+                            ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
                             : ''
                         }`}
                       >
@@ -211,8 +211,8 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
                   href="/courses"
                   className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
                     pathname === '/courses' || pathname?.startsWith('/courses/')
-                      ? 'bg-[#ff8e3c] text-[#0d0d0d]'
-                      : 'text-[#2a2a2a] hover:bg-[#eff0f3]'
+                      ? 'bg-white text-[#d32f2f] font-semibold'
+                      : 'text-white/90 hover:bg-white/10 hover:text-white'
                   }`}
                 >
                   講習管理
@@ -239,8 +239,8 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
                       pathname?.startsWith('/admin/settings/attendance-types') ||
                       pathname?.startsWith('/admin/teachers') ||
                       pathname?.startsWith('/admin/attendance')
-                        ? 'bg-[#ff8e3c] text-[#0d0d0d]'
-                        : 'text-[#2a2a2a] hover:bg-[#eff0f3]'
+                        ? 'bg-white text-[#d32f2f] font-semibold'
+                        : 'text-white/90 hover:bg-white/10 hover:text-white'
                     }`}
                     onMouseEnter={(e) => {
                       const container = e.currentTarget.closest('.relative');
@@ -270,7 +270,7 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
                     </svg>
                   </button>
                   <div 
-                    className="teacher-dropdown absolute top-full left-0 mt-1 bg-white rounded-lg border border-[#0d0d0d] shadow-lg z-50 min-w-[180px] opacity-0 invisible transition-all"
+                    className="teacher-dropdown absolute top-full left-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-xl z-50 min-w-[180px] opacity-0 invisible transition-all"
                     onMouseEnter={(e) => {
                       e.currentTarget.style.opacity = '1';
                       e.currentTarget.style.visibility = 'visible';
@@ -283,9 +283,9 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
                     <div className="py-1">
                       <Link
                         href="/admin/teachers"
-                        className={`block px-3 py-2 text-xs hover:bg-[#eff0f3] transition-colors ${
+                        className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                           pathname === '/admin/teachers' || pathname?.startsWith('/admin/teachers')
-                            ? 'bg-[#ff8e3c]/10 font-bold'
+                            ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
                             : ''
                         }`}
                       >
@@ -293,9 +293,9 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
                       </Link>
                       <Link
                         href="/admin/attendance"
-                        className={`block px-3 py-2 text-xs hover:bg-[#eff0f3] transition-colors ${
+                        className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                           pathname === '/admin/attendance' || pathname?.startsWith('/admin/attendance')
-                            ? 'bg-[#ff8e3c]/10 font-bold'
+                            ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
                             : ''
                         }`}
                       >
@@ -303,9 +303,9 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
                       </Link>
                       <Link
                         href="/admin/attendance/summary"
-                        className={`block px-3 py-2 text-xs hover:bg-[#eff0f3] transition-colors ${
+                        className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                           pathname === '/admin/attendance/summary'
-                            ? 'bg-[#ff8e3c]/10 font-bold'
+                            ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
                             : ''
                         }`}
                       >
@@ -313,9 +313,9 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
                       </Link>
                       <Link
                         href="/admin/attendance/late-early"
-                        className={`block px-3 py-2 text-xs hover:bg-[#eff0f3] transition-colors ${
+                        className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                           pathname === '/admin/attendance/late-early'
-                            ? 'bg-[#ff8e3c]/10 font-bold'
+                            ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
                             : ''
                         }`}
                       >
@@ -323,9 +323,9 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
                       </Link>
                       <Link
                         href="/admin/settings/attendance-types"
-                        className={`block px-3 py-2 text-xs hover:bg-[#eff0f3] transition-colors ${
+                        className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                           pathname === '/admin/settings/attendance-types' || pathname?.startsWith('/admin/settings/attendance-types')
-                            ? 'bg-[#ff8e3c]/10 font-bold'
+                            ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
                             : ''
                         }`}
                       >
@@ -341,8 +341,8 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
                     href={`/attendance/${schools[0].code}/${profile.id}`}
                     className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
                       pathname?.startsWith('/attendance/')
-                        ? 'bg-[#ff8e3c] text-[#0d0d0d]'
-                        : 'text-[#2a2a2a] hover:bg-[#eff0f3]'
+                        ? 'bg-white text-[#d32f2f] font-semibold'
+                        : 'text-white/90 hover:bg-white/10 hover:text-white'
                     }`}
                   >
                     出勤簿
@@ -354,8 +354,8 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
                   href="/users"
                   className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
                     pathname === '/users' || pathname?.startsWith('/users/')
-                      ? 'bg-[#ff8e3c] text-[#0d0d0d]'
-                      : 'text-[#2a2a2a] hover:bg-[#eff0f3]'
+                      ? 'bg-white text-[#d32f2f] font-semibold'
+                      : 'text-white/90 hover:bg-white/10 hover:text-white'
                   }`}
                 >
                   ユーザー管理
@@ -371,7 +371,7 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
                     e.stopPropagation();
                     setShowSchoolDropdown(!showSchoolDropdown);
                   }}
-                  className="text-xs font-medium text-[#2a2a2a] px-2 py-1 bg-[#eff0f3] rounded hover:bg-[#0d0d0d]/10 transition-colors flex items-center gap-1"
+                  className="text-white px-3 py-1.5 bg-white/20 rounded-lg hover:bg-white/30 transition-colors flex items-center gap-1 text-xs font-medium"
                 >
                   <span>{schoolDisplayName}</span>
                   <svg
@@ -385,7 +385,7 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
                 </button>
                 {showSchoolDropdown && (
                   <div 
-                    className="absolute right-0 mt-1 bg-white rounded-lg border border-[#0d0d0d] shadow-lg z-50 min-w-[200px]"
+                    className="absolute right-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-xl ring-1 ring-black/5 z-50 min-w-[200px]"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="py-1">
@@ -395,8 +395,8 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
                           setSelectedSchoolId('all');
                           setShowSchoolDropdown(false);
                         }}
-                        className={`w-full text-left px-3 py-2 text-xs hover:bg-[#eff0f3] transition-colors ${
-                          selectedSchoolId === 'all' ? 'bg-[#ff8e3c]/10 font-bold' : ''
+                        className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
+                          selectedSchoolId === 'all' ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold' : ''
                         }`}
                       >
                         すべての教室
@@ -409,8 +409,8 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
                             setSelectedSchoolId(school.id);
                             setShowSchoolDropdown(false);
                           }}
-                          className={`w-full text-left px-3 py-2 text-xs hover:bg-[#eff0f3] transition-colors ${
-                            selectedSchoolId === school.id ? 'bg-[#ff8e3c]/10 font-bold' : ''
+                          className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
+                            selectedSchoolId === school.id ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold' : ''
                           }`}
                         >
                           {school.code === 'DEFAULT' ? 'デフォルト' : school.name}
@@ -422,17 +422,17 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
               </div>
             )}
             {schools.length === 1 && schoolDisplayName && (
-              <div className="text-xs font-medium text-[#2a2a2a] px-2 py-1 bg-[#eff0f3] rounded">
+              <div className="text-xs font-medium text-gray-700 px-3 py-1.5 bg-gray-100 rounded-lg">
                 {schoolDisplayName}
               </div>
             )}
             {profile && !authLoading && (
               <div className="flex items-center gap-2 text-right">
                 <div>
-                  <div className="text-xs font-medium text-[#0d0d0d] leading-tight">
+                  <div className="text-xs font-semibold text-white leading-tight">
                     {profile.display_name || profile.email}
                   </div>
-                  <div className="text-[10px] text-[#2a2a2a] leading-tight">
+                  <div className="text-[10px] text-white/70 leading-tight">
                     {USER_ROLE_LABELS[profile.role]}
                   </div>
                 </div>
@@ -441,11 +441,11 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
             {profile && !authLoading && (
               <button
                 onClick={signOut}
-                className="px-1.5 py-1 text-[11px] font-medium bg-[#d9376e] text-white rounded hover:bg-[#c02d5a] transition-colors flex items-center gap-1"
+                className="p-1 text-[10px] font-medium bg-white/20 text-white border border-white/30 rounded hover:bg-white/30 transition-colors flex items-center gap-0.5"
                 title="ログアウト"
               >
                 <svg
-                  className="w-3 h-3"
+                  className="w-2.5 h-2.5"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -463,7 +463,7 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
             {onSettingsClick && (showAllLinks || permissions?.canAccessSettings) && (
               <button
                 onClick={onSettingsClick}
-                className="p-1.5 text-[#2a2a2a] hover:text-[#0d0d0d] hover:bg-[#eff0f3] rounded-lg transition-colors"
+                className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
                 title="設定"
               >
                 <svg

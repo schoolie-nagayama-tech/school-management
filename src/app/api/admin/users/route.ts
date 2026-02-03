@@ -50,23 +50,10 @@ export async function GET(request: NextRequest) {
     const supabaseAdmin = getSupabaseAdmin();
     const roleParam = request.nextUrl.searchParams.get('role');
     
-    // まずユーザープロファイルを取得
-    let query = supabaseAdmin
+    // 全ユーザープロファイルを取得（roleは取得後にフィルタ）
+    const { data: profiles, error: profilesError } = await supabaseAdmin
       .from('user_profiles')
-      .select('*');
-    
-    // roleパラメータがある場合はフィルタリング
-    if (roleParam) {
-      // カンマ区切りの場合は複数のroleをフィルタリング
-      const roles = roleParam.split(',').map(r => r.trim());
-      if (roles.length === 1) {
-        query = query.eq('role', roles[0]);
-      } else if (roles.length > 1) {
-        query = query.in('role', roles);
-      }
-    }
-    
-    const { data: profiles, error: profilesError } = await query
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (profilesError) {
@@ -78,9 +65,24 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ users: [] });
     }
 
+    // roleパラメータがある場合はメモリ上でフィルタ（DBのenum/大文字小文字の差で漏れないようにする）
+    const allowedRoles = roleParam
+      ? roleParam.split(',').map((r: string) => r.trim().toLowerCase())
+      : null;
+    const filteredProfiles = allowedRoles
+      ? profiles.filter(
+          (p: { role?: string | null }) =>
+            p.role != null && allowedRoles.includes(String(p.role).toLowerCase())
+        )
+      : profiles;
+
+    if (filteredProfiles.length === 0) {
+      return NextResponse.json({ users: [] });
+    }
+
     // 各ユーザーの教室情報を取得
     const usersWithSchools = await Promise.all(
-      profiles.map(async (profile) => {
+      filteredProfiles.map(async (profile: Record<string, unknown>) => {
         const { data: userSchools, error: schoolsError } = await supabaseAdmin
           .from('user_schools')
           .select(`

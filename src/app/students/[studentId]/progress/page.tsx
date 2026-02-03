@@ -773,7 +773,7 @@ export default function StudentProgressPage() {
     return (
       <AdminLayout headerTitle="進行表">
         <div className="flex items-center justify-center py-12">
-          <div className="text-[#2a2a2a]">読み込み中...</div>
+          <div className="text-[#4b5563]">読み込み中...</div>
         </div>
       </AdminLayout>
     );
@@ -783,7 +783,7 @@ export default function StudentProgressPage() {
     return (
       <AdminLayout headerTitle="進行表">
         <div className="flex items-center justify-center py-12">
-          <div className="text-[#d9376e]">生徒が見つかりません</div>
+          <div className="text-[#ef4444]">生徒が見つかりません</div>
         </div>
       </AdminLayout>
     );
@@ -794,20 +794,20 @@ export default function StudentProgressPage() {
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <AdminLayout headerTitle={`進行表 - ${student.last_name} ${student.first_name}`}>
         {errorMessage && (
-          <div className="mb-4 p-4 bg-[#d9376e]/20 border border-[#d9376e] rounded-lg">
-            <p className="text-sm text-[#d9376e]">{errorMessage}</p>
+          <div className="mb-4 p-4 bg-[#ef4444]/20 border border-[#ef4444] rounded-lg">
+            <p className="text-sm text-[#ef4444]">{errorMessage}</p>
           </div>
         )}
 
         {/* 生徒情報 */}
-        <div className="mb-6 p-4 bg-[#fffffe] rounded-xl border border-[#0d0d0d]">
+        <div className="mb-6 p-4 bg-white rounded-xl border border-[#e5e7eb]">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-bold text-[#0d0d0d]">
+              <h2 className="text-lg font-bold text-[#1f2937]">
                 {student.last_name} {student.first_name} ({GRADE_LABELS[student.grade] || student.grade})
               </h2>
               {student.school_name && (
-                <p className="text-sm text-[#2a2a2a] mt-1">{student.school_name}</p>
+                <p className="text-sm text-[#4b5563] mt-1">{student.school_name}</p>
               )}
             </div>
             <Button
@@ -827,10 +827,10 @@ export default function StudentProgressPage() {
               .filter((st) => st.is_active && (!isTeacher || !st.is_draft))
               .map((st) => {
                 const seasonColors = {
-                  spring: selectedTextbookId === st.id ? 'bg-[#ffeb3b] text-[#0d0d0d] border-2 border-[#ffc107]' : 'bg-[#fff9e5] text-[#2a2a2a] hover:bg-[#ffeb3b]',
-                  summer: selectedTextbookId === st.id ? 'bg-[#ffb3b3] text-[#0d0d0d] border-2 border-[#ff8e8e]' : 'bg-[#ffe5e5] text-[#2a2a2a] hover:bg-[#ffb3b3]',
-                  winter: selectedTextbookId === st.id ? 'bg-[#bae1ff] text-[#0d0d0d] border-2 border-[#8ec5ff]' : 'bg-[#e5f3ff] text-[#2a2a2a] hover:bg-[#bae1ff]',
-                  default: selectedTextbookId === st.id ? 'bg-[#ff8e3c] text-[#0d0d0d]' : 'bg-[#eff0f3] text-[#2a2a2a] hover:bg-[#0d0d0d]/10',
+                  spring: selectedTextbookId === st.id ? 'bg-[#ffeb3b] text-[#1f2937] border-2 border-[#ffc107]' : 'bg-[#fff9e5] text-[#4b5563] hover:bg-[#ffeb3b]',
+                  summer: selectedTextbookId === st.id ? 'bg-[#ffb3b3] text-[#1f2937] border-2 border-[#ff8e8e]' : 'bg-[#ffe5e5] text-[#4b5563] hover:bg-[#ffb3b3]',
+                  winter: selectedTextbookId === st.id ? 'bg-[#bae1ff] text-[#1f2937] border-2 border-[#8ec5ff]' : 'bg-[#e5f3ff] text-[#4b5563] hover:bg-[#bae1ff]',
+                  default: selectedTextbookId === st.id ? 'bg-[#3b82f6] text-white' : 'bg-[#f3f4f6] text-[#4b5563] hover:bg-[#e5e7eb]',
                 };
                 const colorClass = st.season ? seasonColors[st.season] : seasonColors.default;
                 return (
@@ -908,13 +908,13 @@ export default function StudentProgressPage() {
               })}
             <button
               onClick={() => setIsAddTextbookModalOpen(true)}
-              className="px-4 py-2 rounded-lg font-medium whitespace-nowrap bg-[#eff0f3] text-[#2a2a2a] hover:bg-[#0d0d0d]/10"
+              className="px-4 py-2 rounded-lg font-medium whitespace-nowrap bg-[#f3f4f6] text-[#4b5563] hover:bg-[#e5e7eb]"
             >
               + テキスト追加
             </button>
             <button
               onClick={handleOpenApplyCourseModal}
-              className="px-4 py-2 rounded-lg font-medium whitespace-nowrap bg-[#ff8e3c] text-[#0d0d0d] hover:bg-[#ff7a1f]"
+              className="px-4 py-2 rounded-lg font-medium whitespace-nowrap bg-[#3b82f6] text-white hover:bg-[#60a5fa]"
             >
               📋 コース適用
             </button>
@@ -922,7 +922,7 @@ export default function StudentProgressPage() {
             {studentTextbooks.filter((st) => !st.is_active).length > 0 && (
               <button
                 onClick={() => setIsArchiveModalOpen(true)}
-                className="ml-auto px-3 py-2 rounded text-sm text-[#2a2a2a]/40 hover:text-[#2a2a2a] hover:bg-[#eff0f3] transition-colors flex items-center gap-1"
+                className="ml-auto px-3 py-2 rounded text-sm text-[#4b5563]/40 hover:text-[#4b5563] hover:bg-[#f3f4f6] transition-colors flex items-center gap-1"
                 title={`アーカイブ (${studentTextbooks.filter((st) => !st.is_active).length}件)`}
               >
                 <span>📦</span>
@@ -943,11 +943,11 @@ export default function StudentProgressPage() {
                   ? 'bg-[#ffe5e5] border-[#ffb3b3]'
                   : selectedTextbook.season === 'winter'
                   ? 'bg-[#e5f3ff] border-[#bae1ff]'
-                  : 'bg-[#fffffe] border-[#ff8e3c]'
+                  : 'bg-white border-[#3b82f6]'
               }`}
             >
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-[#0d0d0d]">授業の進め方</h3>
+                <h3 className="text-xl font-bold text-[#1f2937]">授業の進め方</h3>
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1">
                     <button
@@ -964,8 +964,8 @@ export default function StudentProgressPage() {
                       }}
                       className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                         selectedTextbook.season === 'spring'
-                          ? 'bg-[#ffeb3b] text-[#0d0d0d] border-2 border-[#ffc107]'
-                          : 'bg-[#eff0f3] text-[#2a2a2a] hover:bg-[#ffeb3b]'
+                          ? 'bg-[#ffeb3b] text-[#1f2937] border-2 border-[#ffc107]'
+                          : 'bg-[#f3f4f6] text-[#4b5563] hover:bg-[#ffeb3b]'
                       }`}
                     >
                       春期
@@ -984,8 +984,8 @@ export default function StudentProgressPage() {
                       }}
                       className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                         selectedTextbook.season === 'summer'
-                          ? 'bg-[#ffb3b3] text-[#0d0d0d] border-2 border-[#ff8e8e]'
-                          : 'bg-[#eff0f3] text-[#2a2a2a] hover:bg-[#ffb3b3]'
+                          ? 'bg-[#ffb3b3] text-[#1f2937] border-2 border-[#ff8e8e]'
+                          : 'bg-[#f3f4f6] text-[#4b5563] hover:bg-[#ffb3b3]'
                       }`}
                     >
                       夏期
@@ -1004,8 +1004,8 @@ export default function StudentProgressPage() {
                       }}
                       className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                         selectedTextbook.season === 'winter'
-                          ? 'bg-[#bae1ff] text-[#0d0d0d] border-2 border-[#8ec5ff]'
-                          : 'bg-[#eff0f3] text-[#2a2a2a] hover:bg-[#bae1ff]'
+                          ? 'bg-[#bae1ff] text-[#1f2937] border-2 border-[#8ec5ff]'
+                          : 'bg-[#f3f4f6] text-[#4b5563] hover:bg-[#bae1ff]'
                       }`}
                     >
                       冬期
@@ -1029,7 +1029,7 @@ export default function StudentProgressPage() {
                         }}
                         variant="secondary"
                         size="sm"
-                        className={selectedTextbook.is_draft ? 'bg-[#ff8e3c] text-[#0d0d0d]' : ''}
+                        className={selectedTextbook.is_draft ? 'bg-[#3b82f6] text-white' : ''}
                       >
                         {selectedTextbook.is_draft ? '公開' : '下書き'}
                       </Button>
@@ -1088,29 +1088,29 @@ export default function StudentProgressPage() {
                     return (
                       <div
                         key={exam.id}
-                        className="p-6 bg-[#eff0f3] rounded-lg border-2 border-[#0d0d0d]"
+                        className="p-6 bg-[#f3f4f6] rounded-lg border-2 border-[#e5e7eb]"
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
-                            <div className="font-bold text-[#0d0d0d] text-2xl mb-3">
+                            <div className="font-bold text-[#1f2937] text-2xl mb-3">
                               {examName}
                             </div>
                             <div className="flex items-center gap-6 mb-2">
                               <div className="flex items-center gap-2">
-                                <span className="text-lg font-semibold text-[#2a2a2a]">テスト日:</span>
-                                <span className="text-2xl font-bold text-[#ff8e3c]">{formattedDate}</span>
+                                <span className="text-lg font-semibold text-[#4b5563]">テスト日:</span>
+                                <span className="text-2xl font-bold text-[#3b82f6]">{formattedDate}</span>
                               </div>
                               <div className="flex items-center gap-2">
-                                <span className="text-lg font-semibold text-[#2a2a2a]">目標点:</span>
-                                <span className="text-2xl font-bold text-[#ff8e3c]">{exam.target_score || '-'}点</span>
+                                <span className="text-lg font-semibold text-[#4b5563]">目標点:</span>
+                                <span className="text-2xl font-bold text-[#3b82f6]">{exam.target_score || '-'}点</span>
                               </div>
                               <div className="flex items-center gap-2">
-                                <span className="text-lg font-semibold text-[#2a2a2a]">次回テストまで:</span>
-                                <span className="text-2xl font-bold text-[#ff8e3c]">{daysUntil}日</span>
+                                <span className="text-lg font-semibold text-[#4b5563]">次回テストまで:</span>
+                                <span className="text-2xl font-bold text-[#3b82f6]">{daysUntil}日</span>
                               </div>
                             </div>
                             {exam.exam_range && (
-                              <div className="text-sm text-[#2a2a2a] mt-2">
+                              <div className="text-sm text-[#4b5563] mt-2">
                                 試験範囲: {exam.exam_range}
                               </div>
                             )}
@@ -1132,7 +1132,7 @@ export default function StudentProgressPage() {
                   })}
                 </div>
               ) : (
-                <p className="text-sm text-[#2a2a2a] mb-4">テスト設定がありません</p>
+                <p className="text-sm text-[#4b5563] mb-4">テスト設定がありません</p>
               )}
               <Button
                 onClick={() => {
@@ -1150,10 +1150,10 @@ export default function StudentProgressPage() {
               </Button>
 
               {/* 進め方・宿題の出し方 */}
-              <div className="mt-6 pt-6 border-t border-[#0d0d0d]">
+              <div className="mt-6 pt-6 border-t border-[#e5e7eb]">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-[#2a2a2a] mb-1">
+                    <label className="block text-sm font-medium text-[#4b5563] mb-1">
                       進め方
                     </label>
                     <textarea
@@ -1167,11 +1167,11 @@ export default function StudentProgressPage() {
                         }
                       }}
                       rows={3}
-                      className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg"
+                      className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg"
                     />
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-[#2a2a2a] mb-1">
+                    <label className="block text-sm font-medium text-[#4b5563] mb-1">
                       宿題の出し方
                     </label>
                     <textarea
@@ -1185,7 +1185,7 @@ export default function StudentProgressPage() {
                         }
                       }}
                       rows={3}
-                      className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg"
+                      className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg"
                     />
                   </div>
                 </div>
@@ -1193,20 +1193,20 @@ export default function StudentProgressPage() {
             </div>
 
             {/* コントロールパネル */}
-            <div className="mb-6 p-4 bg-[#fffffe] rounded-xl border border-[#0d0d0d]">
+            <div className="mb-6 p-4 bg-white rounded-xl border border-[#e5e7eb]">
               <div className="flex flex-col gap-4">
                 {/* 上段: モード切替とアクションボタン */}
                 <div className="flex items-center justify-between flex-wrap gap-4">
                   {/* 左側: 表示モード切替 */}
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-[#2a2a2a]">表示:</span>
-                    <div className="flex rounded-lg overflow-hidden border border-[#0d0d0d]">
+                    <span className="text-sm font-medium text-[#4b5563]">表示:</span>
+                    <div className="flex rounded-lg overflow-hidden border border-[#e5e7eb]">
                       <button
                         onClick={() => setViewMode('admin')}
                         className={`px-4 py-2 text-sm font-medium transition-colors ${
                           viewMode === 'admin'
-                            ? 'bg-[#ff8e3c] text-[#0d0d0d]'
-                            : 'bg-[#fffffe] text-[#2a2a2a] hover:bg-[#eff0f3]'
+                            ? 'bg-[#3b82f6] text-white'
+                            : 'bg-white text-[#4b5563] hover:bg-[#f3f4f6]'
                         }`}
                       >
                         管理モード
@@ -1215,8 +1215,8 @@ export default function StudentProgressPage() {
                         onClick={() => setViewMode('parent')}
                         className={`px-4 py-2 text-sm font-medium transition-colors ${
                           viewMode === 'parent'
-                            ? 'bg-[#ff8e3c] text-[#0d0d0d]'
-                            : 'bg-[#fffffe] text-[#2a2a2a] hover:bg-[#eff0f3]'
+                            ? 'bg-[#3b82f6] text-white'
+                            : 'bg-white text-[#4b5563] hover:bg-[#f3f4f6]'
                         }`}
                       >
                         保護者向け
@@ -1314,79 +1314,79 @@ export default function StudentProgressPage() {
 
                 {/* 下段: 表示列切替（講師には非表示またはグレーアウト） */}
                 {(viewMode === 'admin' || viewMode === 'parent') && (
-                  <div className={`flex items-center gap-4 flex-wrap pt-3 border-t border-[#eff0f3] ${isTeacher ? 'opacity-50 pointer-events-none' : ''}`}>
-                    <span className="text-sm font-medium text-[#2a2a2a]">表示列:</span>
+                  <div className={`flex items-center gap-4 flex-wrap pt-3 border-t border-[#f3f4f6] ${isTeacher ? 'opacity-50 pointer-events-none' : ''}`}>
+                    <span className="text-sm font-medium text-[#4b5563]">表示列:</span>
                     <label className="flex items-center gap-1.5 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={showProposalCount}
                         onChange={(e) => setShowProposalCount(e.target.checked)}
-                        className="w-4 h-4 rounded border-[#0d0d0d]"
+                        className="w-4 h-4 rounded border-[#e5e7eb]"
                       />
-                      <span className="text-sm text-[#2a2a2a]">提案回数</span>
+                      <span className="text-sm text-[#4b5563]">提案回数</span>
                     </label>
                     <label className="flex items-center gap-1.5 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={showApplicationCount}
                         onChange={(e) => setShowApplicationCount(e.target.checked)}
-                        className="w-4 h-4 rounded border-[#0d0d0d]"
+                        className="w-4 h-4 rounded border-[#e5e7eb]"
                       />
-                      <span className="text-sm text-[#2a2a2a]">申込回数</span>
+                      <span className="text-sm text-[#4b5563]">申込回数</span>
                     </label>
                     <label className="flex items-center gap-1.5 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={showExamRange}
                         onChange={(e) => setShowExamRange(e.target.checked)}
-                        className="w-4 h-4 rounded border-[#0d0d0d]"
+                        className="w-4 h-4 rounded border-[#e5e7eb]"
                       />
-                      <span className="text-sm text-[#2a2a2a]">試験範囲</span>
+                      <span className="text-sm text-[#4b5563]">試験範囲</span>
                     </label>
                     <label className="flex items-center gap-1.5 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={showSchoolProgress}
                         onChange={(e) => setShowSchoolProgress(e.target.checked)}
-                        className="w-4 h-4 rounded border-[#0d0d0d]"
+                        className="w-4 h-4 rounded border-[#e5e7eb]"
                       />
-                      <span className="text-sm text-[#2a2a2a]">学校進度</span>
+                      <span className="text-sm text-[#4b5563]">学校進度</span>
                     </label>
                     <label className="flex items-center gap-1.5 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={showLesson1}
                         onChange={(e) => setShowLesson1(e.target.checked)}
-                        className="w-4 h-4 rounded border-[#0d0d0d]"
+                        className="w-4 h-4 rounded border-[#e5e7eb]"
                       />
-                      <span className="text-sm text-[#2a2a2a]">指導日①</span>
+                      <span className="text-sm text-[#4b5563]">指導日①</span>
                     </label>
                     <label className="flex items-center gap-1.5 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={showLesson2}
                         onChange={(e) => setShowLesson2(e.target.checked)}
-                        className="w-4 h-4 rounded border-[#0d0d0d]"
+                        className="w-4 h-4 rounded border-[#e5e7eb]"
                       />
-                      <span className="text-sm text-[#2a2a2a]">指導日②</span>
+                      <span className="text-sm text-[#4b5563]">指導日②</span>
                     </label>
                     <label className="flex items-center gap-1.5 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={showLesson3}
                         onChange={(e) => setShowLesson3(e.target.checked)}
-                        className="w-4 h-4 rounded border-[#0d0d0d]"
+                        className="w-4 h-4 rounded border-[#e5e7eb]"
                       />
-                      <span className="text-sm text-[#2a2a2a]">指導日③</span>
+                      <span className="text-sm text-[#4b5563]">指導日③</span>
                     </label>
                     <label className="flex items-center gap-1.5 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={showHandover}
                         onChange={(e) => setShowHandover(e.target.checked)}
-                        className="w-4 h-4 rounded border-[#0d0d0d]"
+                        className="w-4 h-4 rounded border-[#e5e7eb]"
                       />
-                      <span className="text-sm text-[#2a2a2a]">引継ぎ</span>
+                      <span className="text-sm text-[#4b5563]">引継ぎ</span>
                     </label>
                   </div>
                 )}
@@ -1394,17 +1394,17 @@ export default function StudentProgressPage() {
             </div>
 
             {/* 進行表 */}
-            <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] overflow-hidden">
-              <div className="p-4 bg-[#eff0f3] border-b border-[#0d0d0d]">
-                <h3 className="text-lg font-bold text-[#0d0d0d]">進行表</h3>
+            <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
+              <div className="p-4 bg-[#f3f4f6] border-b border-[#e5e7eb]">
+                <h3 className="text-lg font-bold text-[#1f2937]">進行表</h3>
               </div>
               <div id="progress-table-container" className="overflow-x-auto">
                 {viewMode === 'admin' ? (
                   <table className="w-full border-collapse progress-table">
                     <thead>
-                      <tr className="bg-[#eff0f3] border-b border-[#0d0d0d]">
+                      <tr className="bg-[#f3f4f6] border-b border-[#e5e7eb]">
                         {viewMode === 'admin' && (
-                          <th className="px-4 py-3 text-center text-xs font-semibold text-[#0d0d0d] border-r border-[#0d0d0d] w-10">
+                          <th className="px-4 py-3 text-center text-xs font-semibold text-[#1f2937] border-r border-[#e5e7eb] w-10">
                             <input
                               type="checkbox"
                               checked={progressData.length > 0 && selectedItems.size === progressData.length}
@@ -1419,50 +1419,50 @@ export default function StudentProgressPage() {
                             />
                           </th>
                         )}
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-[#0d0d0d] border-r border-[#0d0d0d]">
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] border-r border-[#e5e7eb]">
                           単元名
                         </th>
                       {showProposalCount && (
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-[#0d0d0d] border-r border-[#0d0d0d]">
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] border-r border-[#e5e7eb]">
                           提案回数
                         </th>
                       )}
                       {showApplicationCount && (
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-[#0d0d0d] border-r border-[#0d0d0d]">
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] border-r border-[#e5e7eb]">
                           申込回数
                         </th>
                       )}
                       {showExamRange && (
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-[#0d0d0d] border-r border-[#0d0d0d]">
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] border-r border-[#e5e7eb]">
                           試験範囲
                         </th>
                       )}
                       {showSchoolProgress && (
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-[#0d0d0d] border-r border-[#0d0d0d]">
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] border-r border-[#e5e7eb]">
                           学校進度
                         </th>
                       )}
                       {showLesson1 && (
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-[#0d0d0d] border-r border-[#0d0d0d]">
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] border-r border-[#e5e7eb]">
                           指導日①
                         </th>
                       )}
                       {showLesson2 && (
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-[#0d0d0d] border-r border-[#0d0d0d]">
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] border-r border-[#e5e7eb]">
                           指導日②
                         </th>
                       )}
                       {showLesson3 && (
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-[#0d0d0d] border-r border-[#0d0d0d]">
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] border-r border-[#e5e7eb]">
                           指導日③
                         </th>
                       )}
                       {showHandover && (
                         <>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-[#0d0d0d]">
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937]">
                             引継ぎ
                           </th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-[#0d0d0d]">
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937]">
                             講師名
                           </th>
                         </>
@@ -1472,7 +1472,7 @@ export default function StudentProgressPage() {
                   <tbody>
                     {displayRows.length === 0 ? (
                       <tr>
-                        <td colSpan={viewMode === 'admin' ? 10 : 3} className="px-4 py-8 text-center text-sm text-[#2a2a2a]">
+                        <td colSpan={viewMode === 'admin' ? 10 : 3} className="px-4 py-8 text-center text-sm text-[#4b5563]">
                           目次項目が登録されていません
                         </td>
                       </tr>
@@ -1482,7 +1482,7 @@ export default function StudentProgressPage() {
                         const lessons = progress?.lessons || [];
                         // 指導日に日付が入っているかチェック
                         const hasLessonDate = lessons.some((l) => l.lesson_date);
-                        const rowBgColor = hasLessonDate ? 'bg-[#d1fae5]' : 'bg-[#fffffe]';
+                        const rowBgColor = hasLessonDate ? 'bg-[#d1fae5]' : 'bg-white';
                         const isChecked = selectedItems.has(row.curriculumItem.id);
                         
                         // ローカルステートから値を取得（なければprogressから）
@@ -1491,11 +1491,11 @@ export default function StudentProgressPage() {
                         return (
                           <tr
                             key={row.curriculumItem.id}
-                            className={`border-b border-[#0d0d0d] hover:bg-[#eff0f3] ${rowBgColor}`}
+                            className={`border-b border-[#e5e7eb] hover:bg-[#f3f4f6] ${rowBgColor}`}
                           >
                             {/* チェックボックス（管理モードのみ） */}
                             {viewMode === 'admin' && (
-                              <td className="px-4 py-3 text-center border-r border-[#0d0d0d]">
+                              <td className="px-4 py-3 text-center border-r border-[#e5e7eb]">
                                 <input
                                   type="checkbox"
                                   checked={isChecked}
@@ -1513,13 +1513,13 @@ export default function StudentProgressPage() {
                               </td>
                             )}
                             {/* 単元名 */}
-                            <td className="px-4 py-3 text-sm text-[#0d0d0d] border-r border-[#0d0d0d] font-medium">
+                            <td className="px-4 py-3 text-sm text-[#1f2937] border-r border-[#e5e7eb] font-medium">
                               {row.curriculumItem.title || `単元ID: ${row.curriculumItem.id}`}
                             </td>
                           {/* 提案回数（セル結合） */}
                           {showProposalCount && row.isGroupStart && (
                             <td 
-                              className="px-4 py-3 text-sm text-[#2a2a2a] border-r border-[#0d0d0d]"
+                              className="px-4 py-3 text-sm text-[#4b5563] border-r border-[#e5e7eb]"
                               rowSpan={row.groupRowSpan}
                             >
                               <input
@@ -1558,14 +1558,14 @@ export default function StudentProgressPage() {
                                   }
                                   await fetchProgress();
                                 }}
-                                className="w-16 px-2 py-1 border border-[#0d0d0d] rounded"
+                                className="w-16 px-2 py-1 border border-[#e5e7eb] rounded"
                               />
                             </td>
                           )}
                           {/* 申込回数（セル結合） */}
                           {showApplicationCount && row.isGroupStart && (
                             <td 
-                              className="px-4 py-3 text-sm text-[#2a2a2a] border-r border-[#0d0d0d]"
+                              className="px-4 py-3 text-sm text-[#4b5563] border-r border-[#e5e7eb]"
                               rowSpan={row.groupRowSpan}
                             >
                               <input
@@ -1602,12 +1602,12 @@ export default function StudentProgressPage() {
                                   }
                                   await fetchProgress();
                                 }}
-                                className="w-16 px-2 py-1 border border-[#0d0d0d] rounded"
+                                className="w-16 px-2 py-1 border border-[#e5e7eb] rounded"
                               />
                             </td>
                           )}
                           {showExamRange && (
-                            <td className="px-4 py-3 text-sm text-[#2a2a2a] border-r border-[#0d0d0d]">
+                            <td className="px-4 py-3 text-sm text-[#4b5563] border-r border-[#e5e7eb]">
                               <select
                                 value={progress?.exam_range_exam_type_id || ''}
                                 onChange={async (e) => {
@@ -1625,7 +1625,7 @@ export default function StudentProgressPage() {
                                     await fetchProgress();
                                   }
                                 }}
-                                className="w-full px-2 py-1 border border-[#0d0d0d] rounded"
+                                className="w-full px-2 py-1 border border-[#e5e7eb] rounded"
                               >
                                 <option value="">-</option>
                                 {examTypes.map((et) => (
@@ -1637,7 +1637,7 @@ export default function StudentProgressPage() {
                             </td>
                           )}
                           {showSchoolProgress && (
-                            <td className="px-4 py-3 text-sm text-[#2a2a2a] border-r border-[#0d0d0d]">
+                            <td className="px-4 py-3 text-sm text-[#4b5563] border-r border-[#e5e7eb]">
                               <input
                                 type="date"
                                 value={progress?.school_progress_date || ''}
@@ -1656,12 +1656,12 @@ export default function StudentProgressPage() {
                                     await fetchProgress();
                                   }
                                 }}
-                                className="w-32 px-2 py-1 border border-[#0d0d0d] rounded text-xs"
+                                className="w-32 px-2 py-1 border border-[#e5e7eb] rounded text-xs"
                               />
                             </td>
                           )}
                           {showLesson1 && (
-                            <td className="px-4 py-3 text-sm text-[#2a2a2a] border-r border-[#0d0d0d]">
+                            <td className="px-4 py-3 text-sm text-[#4b5563] border-r border-[#e5e7eb]">
                               <input
                                 type="date"
                                 value={lessons.find((l) => l.lesson_number === 1)?.lesson_date || ''}
@@ -1685,12 +1685,12 @@ export default function StudentProgressPage() {
                                     await fetchProgress();
                                   }
                                 }}
-                                className="w-32 px-2 py-1 border border-[#0d0d0d] rounded text-xs"
+                                className="w-32 px-2 py-1 border border-[#e5e7eb] rounded text-xs"
                               />
                             </td>
                           )}
                           {showLesson2 && (
-                            <td className="px-4 py-3 text-sm text-[#2a2a2a] border-r border-[#0d0d0d]">
+                            <td className="px-4 py-3 text-sm text-[#4b5563] border-r border-[#e5e7eb]">
                               <input
                                 type="date"
                                 value={lessons.find((l) => l.lesson_number === 2)?.lesson_date || ''}
@@ -1714,12 +1714,12 @@ export default function StudentProgressPage() {
                                     await fetchProgress();
                                   }
                                 }}
-                                className="w-32 px-2 py-1 border border-[#0d0d0d] rounded text-xs"
+                                className="w-32 px-2 py-1 border border-[#e5e7eb] rounded text-xs"
                               />
                             </td>
                           )}
                           {showLesson3 && (
-                            <td className="px-4 py-3 text-sm text-[#2a2a2a] border-r border-[#0d0d0d]">
+                            <td className="px-4 py-3 text-sm text-[#4b5563] border-r border-[#e5e7eb]">
                               <input
                                 type="date"
                                 value={lessons.find((l) => l.lesson_number === 3)?.lesson_date || ''}
@@ -1743,13 +1743,13 @@ export default function StudentProgressPage() {
                                     await fetchProgress();
                                   }
                                 }}
-                                className="w-32 px-2 py-1 border border-[#0d0d0d] rounded text-xs"
+                                className="w-32 px-2 py-1 border border-[#e5e7eb] rounded text-xs"
                               />
                             </td>
                           )}
                           {showHandover && (
                             <>
-                              <td className="px-4 py-3 text-sm text-[#2a2a2a]">
+                              <td className="px-4 py-3 text-sm text-[#4b5563]">
                                 <textarea
                                   value={localHandover}
                                   onChange={(e) => {
@@ -1773,10 +1773,10 @@ export default function StudentProgressPage() {
                                     }
                                   }}
                                   rows={2}
-                                  className="w-full px-2 py-1 border border-[#0d0d0d] rounded"
+                                  className="w-full px-2 py-1 border border-[#e5e7eb] rounded"
                                 />
                               </td>
-                              <td className="px-4 py-3 text-sm text-[#2a2a2a]">
+                              <td className="px-4 py-3 text-sm text-[#4b5563]">
                                 <input
                                   type="text"
                                   value={localTeacherName}
@@ -1801,7 +1801,7 @@ export default function StudentProgressPage() {
                                     }
                                   }}
                                   placeholder="講師名"
-                                  className="w-full px-2 py-1 border border-[#0d0d0d] rounded"
+                                  className="w-full px-2 py-1 border border-[#e5e7eb] rounded"
                                 />
                               </td>
                             </>
@@ -1812,19 +1812,19 @@ export default function StudentProgressPage() {
                     )}
                     {/* 合計行 */}
                     {displayRows.length > 0 && (showProposalCount || showApplicationCount) && (
-                      <tr className="border-t-2 border-[#0d0d0d] bg-[#eff0f3] font-bold">
-                        <td colSpan={2} className="px-4 py-3 text-sm text-[#0d0d0d] border-r border-[#0d0d0d]">
+                      <tr className="border-t-2 border-[#e5e7eb] bg-[#f3f4f6] font-bold">
+                        <td colSpan={2} className="px-4 py-3 text-sm text-[#1f2937] border-r border-[#e5e7eb]">
                           合計
                         </td>
                         {showProposalCount && (
-                          <td className="px-4 py-3 text-sm text-[#0d0d0d] border-r border-[#0d0d0d]">
+                          <td className="px-4 py-3 text-sm text-[#1f2937] border-r border-[#e5e7eb]">
                             {displayRows
                               .filter(row => row.isGroupStart)
                               .reduce((sum, row) => sum + row.groupProposalCount, 0)}
                           </td>
                         )}
                         {showApplicationCount && (
-                          <td className="px-4 py-3 text-sm text-[#0d0d0d] border-r border-[#0d0d0d]">
+                          <td className="px-4 py-3 text-sm text-[#1f2937] border-r border-[#e5e7eb]">
                             {displayRows
                               .filter(row => row.isGroupStart)
                               .reduce((sum, row) => sum + row.groupApplicationCount, 0)}
@@ -1837,7 +1837,7 @@ export default function StudentProgressPage() {
                           (showLesson2 ? 1 : 0) + // 指導日②
                           (showLesson3 ? 1 : 0) + // 指導日③
                           (showHandover ? 2 : 0) // 引継ぎ + 講師名
-                        } className="px-4 py-3 text-sm text-[#0d0d0d]">
+                        } className="px-4 py-3 text-sm text-[#1f2937]">
                         </td>
                       </tr>
                     )}
@@ -1861,10 +1861,10 @@ export default function StudentProgressPage() {
               </div>
               {/* 合計表示（保護者モードのみ） */}
               {viewMode === 'parent' && (
-                <div className="p-4 bg-[#eff0f3] border-t border-[#0d0d0d]">
+                <div className="p-4 bg-[#f3f4f6] border-t border-[#e5e7eb]">
                   <div className="flex justify-end text-lg font-medium">
                     <div>
-                      提案コマ数合計: <span className="text-[#ff8e3c]">{totalProposalCount}コマ</span>
+                      提案コマ数合計: <span className="text-[#3b82f6]">{totalProposalCount}コマ</span>
                     </div>
                   </div>
                 </div>
@@ -1915,10 +1915,10 @@ export default function StudentProgressPage() {
               />
             </div>
 
-            <div className="border-t border-[#0d0d0d] pt-4">
-              <h4 className="text-sm font-semibold text-[#0d0d0d] mb-3">テキスト一覧</h4>
+            <div className="border-t border-[#e5e7eb] pt-4">
+              <h4 className="text-sm font-semibold text-[#1f2937] mb-3">テキスト一覧</h4>
               {filteredTextbooks.length === 0 ? (
-                <p className="text-sm text-[#2a2a2a] py-4 text-center">
+                <p className="text-sm text-[#4b5563] py-4 text-center">
                   {selectedGradeCategory || selectedSubject
                     ? '条件に一致するテキストがありません'
                     : '学年カテゴリまたは科目を選択してください'}
@@ -1928,12 +1928,12 @@ export default function StudentProgressPage() {
                   {filteredTextbooks.map((textbook) => (
                     <div
                       key={textbook.id}
-                      className="p-3 bg-[#eff0f3] rounded-lg border border-[#0d0d0d] hover:bg-[#0d0d0d]/5 transition-colors"
+                      className="p-3 bg-[#f3f4f6] rounded-lg border border-[#e5e7eb] hover:bg-[#e5e7eb] transition-colors"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
-                          <div className="font-medium text-[#0d0d0d]">{textbook.name}</div>
-                          <div className="text-sm text-[#2a2a2a] mt-1">
+                          <div className="font-medium text-[#1f2937]">{textbook.name}</div>
+                          <div className="text-sm text-[#4b5563] mt-1">
                             {textbook.publisher && <span>出版社: {textbook.publisher}</span>}
                             {textbook.subject && (
                               <span className={textbook.publisher ? ' ml-2' : ''}>
@@ -1984,14 +1984,14 @@ export default function StudentProgressPage() {
         >
           <div className="space-y-4">
             {availableCourses.length === 0 ? (
-              <p className="text-[#2a2a2a] text-center py-4">
+              <p className="text-[#4b5563] text-center py-4">
                 この学年に対応するコースがありません
               </p>
             ) : (
               <>
                 {/* コース選択 */}
                 <div>
-                  <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
+                  <label className="block text-sm font-medium text-[#1f2937] mb-2">
                     適用するコース
                   </label>
                   <div className="space-y-2 max-h-48 overflow-y-auto">
@@ -2000,8 +2000,8 @@ export default function StudentProgressPage() {
                         key={course.id}
                         className={`flex items-center p-3 rounded-lg border-2 cursor-pointer transition-colors ${
                           selectedCourseId === course.id
-                            ? 'border-[#ff8e3c] bg-[#ff8e3c]/10'
-                            : 'border-[#eff0f3] hover:border-[#ff8e3c]'
+                            ? 'border-[#3b82f6] bg-[#3b82f6]/10'
+                            : 'border-[#f3f4f6] hover:border-[#3b82f6]'
                         }`}
                       >
                         <input
@@ -2013,8 +2013,8 @@ export default function StudentProgressPage() {
                           className="hidden"
                         />
                         <div className="flex-1">
-                          <div className="font-medium text-[#0d0d0d]">{course.name}</div>
-                          <div className="text-sm text-[#2a2a2a]">
+                          <div className="font-medium text-[#1f2937]">{course.name}</div>
+                          <div className="text-sm text-[#4b5563]">
                             {SEASON_LABELS[course.season]} / {course.textbooks?.length || 0}冊 / {course.total_koma}コマ
                           </div>
                         </div>
@@ -2025,15 +2025,15 @@ export default function StudentProgressPage() {
 
                 {/* 適用モード */}
                 <div>
-                  <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
+                  <label className="block text-sm font-medium text-[#1f2937] mb-2">
                     適用モード
                   </label>
                   <div className="flex gap-2">
                     <label
                       className={`flex-1 p-3 rounded-lg border-2 cursor-pointer text-center transition-colors ${
                         courseApplyMode === 'overwrite'
-                          ? 'border-[#ff8e3c] bg-[#ff8e3c]/10'
-                          : 'border-[#eff0f3] hover:border-[#ff8e3c]'
+                          ? 'border-[#3b82f6] bg-[#3b82f6]/10'
+                          : 'border-[#f3f4f6] hover:border-[#3b82f6]'
                       }`}
                     >
                       <input
@@ -2044,14 +2044,14 @@ export default function StudentProgressPage() {
                         onChange={() => setCourseApplyMode('overwrite')}
                         className="hidden"
                       />
-                      <div className="font-medium text-[#0d0d0d]">上書き</div>
-                      <div className="text-xs text-[#2a2a2a]">既存を置き換え</div>
+                      <div className="font-medium text-[#1f2937]">上書き</div>
+                      <div className="text-xs text-[#4b5563]">既存を置き換え</div>
                     </label>
                     <label
                       className={`flex-1 p-3 rounded-lg border-2 cursor-pointer text-center transition-colors ${
                         courseApplyMode === 'add'
-                          ? 'border-[#ff8e3c] bg-[#ff8e3c]/10'
-                          : 'border-[#eff0f3] hover:border-[#ff8e3c]'
+                          ? 'border-[#3b82f6] bg-[#3b82f6]/10'
+                          : 'border-[#f3f4f6] hover:border-[#3b82f6]'
                       }`}
                     >
                       <input
@@ -2062,15 +2062,15 @@ export default function StudentProgressPage() {
                         onChange={() => setCourseApplyMode('add')}
                         className="hidden"
                       />
-                      <div className="font-medium text-[#0d0d0d]">加算</div>
-                      <div className="text-xs text-[#2a2a2a]">既存に追加</div>
+                      <div className="font-medium text-[#1f2937]">加算</div>
+                      <div className="text-xs text-[#4b5563]">既存に追加</div>
                     </label>
                   </div>
                 </div>
               </>
             )}
 
-            <div className="flex justify-end gap-2 pt-4 border-t border-[#0d0d0d]">
+            <div className="flex justify-end gap-2 pt-4 border-t border-[#e5e7eb]">
               <Button
                 variant="secondary"
                 onClick={() => {
@@ -2108,8 +2108,8 @@ export default function StudentProgressPage() {
         >
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
-                テスト名 <span className="text-[#d9376e]">*</span>
+              <label className="block text-sm font-medium text-[#1f2937] mb-2">
+                テスト名 <span className="text-[#ef4444]">*</span>
               </label>
               <Select
                 value={isCustomExamName ? 'custom' : newExamTypeId}
@@ -2139,36 +2139,36 @@ export default function StudentProgressPage() {
                   value={newCustomExamName}
                   onChange={(e) => setNewCustomExamName(e.target.value)}
                   placeholder="テスト名を入力してください"
-                  className="w-full mt-2 px-3 py-2 border border-[#0d0d0d] rounded-lg"
+                  className="w-full mt-2 px-3 py-2 border border-[#e5e7eb] rounded-lg"
                   required
                 />
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
-                テスト日 <span className="text-[#d9376e]">*</span>
+              <label className="block text-sm font-medium text-[#1f2937] mb-1">
+                テスト日 <span className="text-[#ef4444]">*</span>
               </label>
               <input
                 type="date"
                 value={newExamDate}
                 onChange={(e) => setNewExamDate(e.target.value)}
-                className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg"
+                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
+              <label className="block text-sm font-medium text-[#1f2937] mb-1">
                 目標点
               </label>
               <input
                 type="number"
                 value={newExamTargetScore}
                 onChange={(e) => setNewExamTargetScore(e.target.value)}
-                className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg"
+                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg"
                 placeholder="例: 80"
               />
             </div>
-            <div className="flex justify-end gap-2 pt-4 border-t border-[#0d0d0d]">
+            <div className="flex justify-end gap-2 pt-4 border-t border-[#e5e7eb]">
               <Button
                 onClick={() => {
                   setIsAddExamModalOpen(false);
@@ -2249,7 +2249,7 @@ export default function StudentProgressPage() {
         >
           <div className="space-y-3">
             {studentTextbooks.filter((st) => !st.is_active).length === 0 ? (
-              <p className="text-sm text-[#2a2a2a] py-4 text-center">
+              <p className="text-sm text-[#4b5563] py-4 text-center">
                 非表示のテキストはありません
               </p>
             ) : (
@@ -2258,12 +2258,12 @@ export default function StudentProgressPage() {
                 .map((st) => (
                   <div
                     key={st.id}
-                    className="flex items-center justify-between p-3 border border-[#0d0d0d] rounded-lg"
+                    className="flex items-center justify-between p-3 border border-[#e5e7eb] rounded-lg"
                   >
                     <div className="flex-1">
-                      <div className="font-medium text-[#0d0d0d]">{st.textbook.name}</div>
+                      <div className="font-medium text-[#1f2937]">{st.textbook.name}</div>
                       {st.textbook.publisher && (
-                        <div className="text-xs text-[#2a2a2a] mt-1">
+                        <div className="text-xs text-[#4b5563] mt-1">
                           出版社: {st.textbook.publisher}
                         </div>
                       )}

@@ -1,4 +1,4 @@
-// Vもぎ申込フォーム関連の型定義
+﻿// Vもぎ申込フォーム関連の型定義
 
 // 学年名と数値のマッピング
 export const GRADE_NAME_TO_NUMBER: Record<string, number> = {

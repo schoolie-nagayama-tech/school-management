@@ -60,20 +60,20 @@ export default function FormsManagePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#eff0f3]">
+    <div className="min-h-screen bg-[#f3f4f6]">
       {/* ヘッダー */}
-      <header className="bg-[#fffffe] border-b border-[#0d0d0d]">
+      <header className="bg-white border-b border-[#e5e7eb]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-6">
-              <h1 className="text-xl font-bold text-[#0d0d0d]">フォーム管理</h1>
+              <h1 className="text-xl font-bold text-[#1f2937]">フォーム管理</h1>
               <nav className="flex items-center gap-4">
                 <Link
                   href="/students"
                   className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                     pathname === '/students'
-                      ? 'bg-[#ff8e3c] text-[#0d0d0d]'
-                      : 'text-[#2a2a2a] hover:bg-[#eff0f3]'
+                      ? 'bg-[#3b82f6] text-white'
+                      : 'text-[#4b5563] hover:bg-[#f3f4f6]'
                   }`}
                 >
                   生徒管理
@@ -82,8 +82,8 @@ export default function FormsManagePage() {
                   href="/applications"
                   className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                     pathname === '/applications'
-                      ? 'bg-[#ff8e3c] text-[#0d0d0d]'
-                      : 'text-[#2a2a2a] hover:bg-[#eff0f3]'
+                      ? 'bg-[#3b82f6] text-white'
+                      : 'text-[#4b5563] hover:bg-[#f3f4f6]'
                   }`}
                 >
                   申込状況
@@ -92,8 +92,8 @@ export default function FormsManagePage() {
                   href="/forms/manage"
                   className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                     pathname === '/forms/manage'
-                      ? 'bg-[#ff8e3c] text-[#0d0d0d]'
-                      : 'text-[#2a2a2a] hover:bg-[#eff0f3]'
+                      ? 'bg-[#3b82f6] text-white'
+                      : 'text-[#4b5563] hover:bg-[#f3f4f6]'
                   }`}
                 >
                   フォーム管理
@@ -109,13 +109,13 @@ export default function FormsManagePage() {
         {/* ヘッダーアクション */}
         <div className="flex items-center justify-between mb-6">
           {/* タブ */}
-          <div className="flex gap-2 border-b border-[#0d0d0d]">
+          <div className="flex gap-2 border-b border-[#e5e7eb]">
             <button
               onClick={() => setActiveTab('forms')}
               className={`px-4 py-2 text-sm font-medium transition-colors ${
                 activeTab === 'forms'
-                  ? 'bg-[#ff8e3c] text-[#0d0d0d] border-b-2 border-[#0d0d0d]'
-                  : 'text-[#2a2a2a] hover:text-[#0d0d0d]'
+                  ? 'bg-[#3b82f6] text-white border-b-2 border-[#e5e7eb]'
+                  : 'text-[#4b5563] hover:text-[#1f2937]'
               }`}
             >
               フォーム
@@ -124,8 +124,8 @@ export default function FormsManagePage() {
               onClick={() => setActiveTab('templates')}
               className={`px-4 py-2 text-sm font-medium transition-colors ${
                 activeTab === 'templates'
-                  ? 'bg-[#ff8e3c] text-[#0d0d0d] border-b-2 border-[#0d0d0d]'
-                  : 'text-[#2a2a2a] hover:text-[#0d0d0d]'
+                  ? 'bg-[#3b82f6] text-white border-b-2 border-[#e5e7eb]'
+                  : 'text-[#4b5563] hover:text-[#1f2937]'
               }`}
             >
               テンプレート
@@ -137,7 +137,7 @@ export default function FormsManagePage() {
               href={`/portal/${schoolCode}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-4 py-2 bg-[#ff8e3c] text-[#0d0d0d] rounded-lg hover:bg-[#ff9e5c] font-medium transition-colors"
+              className="px-4 py-2 bg-[#3b82f6] text-white rounded-lg hover:bg-[#60a5fa] font-medium transition-colors"
             >
               保護者向けポータルを開く
             </a>
@@ -145,7 +145,7 @@ export default function FormsManagePage() {
         </div>
 
         {/* コンテンツ */}
-        <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6">
+        <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
           {activeTab === 'forms' ? (
             <>
               <div className="mb-4 flex justify-end">
@@ -155,7 +155,7 @@ export default function FormsManagePage() {
                     setEditingFormId(null);
                     setIsFormEditorOpen(true);
                   }}
-                  className="px-4 py-2 bg-[#ff8e3c] text-[#0d0d0d] rounded-lg hover:bg-[#ff9e5c] font-medium"
+                  className="px-4 py-2 bg-[#3b82f6] text-white rounded-lg hover:bg-[#60a5fa] font-medium"
                 >
                   新規作成
                 </button>

@@ -226,8 +226,8 @@ export default function StudentsPage() {
       <AdminLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="w-12 h-12 border-4 border-[#ff8e3c] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-[#2a2a2a]">読み込み中...</p>
+            <div className="w-12 h-12 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-500">読み込み中...</p>
           </div>
         </div>
       </AdminLayout>
@@ -247,10 +247,10 @@ export default function StudentsPage() {
     <AdminLayout headerTitle="生徒管理" headerOnSettingsClick={() => setIsSettingsModalOpen(true)}>
       {/* エラーメッセージ */}
         {errorMessage && (
-          <div className="mb-6 p-4 bg-[#d9376e]/10 border border-[#d9376e] rounded-lg">
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
             <div className="flex items-center gap-2">
               <svg
-                className="w-5 h-5 text-[#d9376e]"
+                className="w-5 h-5 text-[#c62828]"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -262,7 +262,7 @@ export default function StudentsPage() {
                   d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <p className="text-sm text-[#d9376e]">{errorMessage}</p>
+              <p className="text-sm text-[#c62828]">{errorMessage}</p>
             </div>
           </div>
         )}
@@ -300,7 +300,7 @@ export default function StudentsPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="氏名・フリガナ・コードで検索..."
-                  className="w-full pl-10 pr-4 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a] focus:ring-2 focus:ring-[#ff8e3c] focus:border-[#ff8e3c]"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm bg-white text-[#1a1a1a] focus:ring-2 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f] placeholder:text-gray-400"
                 />
               </div>
             </div>
@@ -309,7 +309,7 @@ export default function StudentsPage() {
             <select
               value={selectedGrade}
               onChange={(e) => setSelectedGrade(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-              className="px-4 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a] focus:ring-2 focus:ring-[#ff8e3c] focus:border-[#ff8e3c]"
+              className="px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white text-[#1a1a1a] focus:ring-2 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f]"
             >
               <option value="all">全学年</option>
               {Array.from({ length: 13 }, (_, i) => i + 1).map((grade) => (
@@ -327,8 +327,8 @@ export default function StudentsPage() {
                   inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors
                   ${
                     showInactive
-                      ? 'bg-[#ff8e3c]/20 text-[#0d0d0d] hover:bg-[#ff8e3c]/30'
-                      : 'bg-[#eff0f3] text-[#2a2a2a] hover:bg-[#fffffe]'
+                      ? 'bg-[#1e3a5f]/10 text-[#1e3a5f] hover:bg-[#1e3a5f]/20 border border-[#1e3a5f]/20'
+                      : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
                   }
                 `}
               >
@@ -372,7 +372,7 @@ export default function StudentsPage() {
                   </svg>
                   休塾・退塾を表示
                   {inactiveCount > 0 && (
-                    <span className="bg-[#0d0d0d] text-[#fffffe] px-1.5 py-0.5 rounded text-xs">
+                    <span className="bg-[#1e3a5f] text-white px-1.5 py-0.5 rounded text-xs">
                       {inactiveCount}
                     </span>
                   )}

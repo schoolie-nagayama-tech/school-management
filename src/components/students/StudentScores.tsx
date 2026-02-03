@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import type { Student, AssessmentWithScores } from '@/types/database';
@@ -257,7 +257,7 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
     return (
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-[#0d0d0d]">
+          <h3 className="text-lg font-semibold text-[#1f2937]">
             {ASSESSMENT_CATEGORY_LABELS[category]}
           </h3>
           {!isAdding && permissions?.canEditScores && (
@@ -277,21 +277,21 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
         </div>
 
         {isAdding && (
-          <div className="mb-4 p-4 bg-[#eff0f3] rounded-lg border border-[#0d0d0d]">
+          <div className="mb-4 p-4 bg-[#f3f4f6] rounded-lg border border-[#e5e7eb]">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
               <div className="md:col-span-1">
-                <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
+                <label className="block text-sm font-medium text-[#1f2937] mb-1">
                   {category === 'regular_test'
                     ? 'テスト名'
                     : category === 'report_card'
                     ? '内申名'
                     : '模試名'}
-                  <span className="text-[#d9376e] ml-1">*</span>
+                  <span className="text-[#ef4444] ml-1">*</span>
                 </label>
                 <select
                   value={newRowNameCode}
                   onChange={(e) => setNewRowNameCode(e.target.value)}
-                  className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a] focus:ring-2 focus:ring-[#ff8e3c] focus:border-[#ff8e3c]"
+                  className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:ring-2 focus:ring-[#3b82f6] focus:border-[#3b82f6]"
                   autoFocus
                 >
                   <option value="">選択してください</option>
@@ -303,14 +303,14 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
                 </select>
               </div>
               <div className="md:col-span-1">
-                <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
+                <label className="block text-sm font-medium text-[#1f2937] mb-1">
                   学年
-                  <span className="text-[#d9376e] ml-1">*</span>
+                  <span className="text-[#ef4444] ml-1">*</span>
                 </label>
                 <select
                   value={newRowGrade}
                   onChange={(e) => setNewRowGrade(parseInt(e.target.value))}
-                  className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a] focus:ring-2 focus:ring-[#ff8e3c] focus:border-[#ff8e3c]"
+                  className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:ring-2 focus:ring-[#3b82f6] focus:border-[#3b82f6]"
                 >
                   {Array.from({ length: 13 }, (_, i) => i + 1).map((grade) => (
                     <option key={grade} value={grade}>
@@ -320,14 +320,14 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
                 </select>
               </div>
               <div className="md:col-span-1">
-                <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
+                <label className="block text-sm font-medium text-[#1f2937] mb-1">
                   年月
                 </label>
                 <input
                   type="month"
                   value={newRowMonth}
                   onChange={(e) => setNewRowMonth(e.target.value)}
-                  className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a] focus:ring-2 focus:ring-[#ff8e3c] focus:border-[#ff8e3c]"
+                  className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:ring-2 focus:ring-[#3b82f6] focus:border-[#3b82f6]"
                 />
               </div>
               <div className="md:col-span-1 flex gap-2">
@@ -357,50 +357,50 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
         )}
 
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse border border-[#0d0d0d] bg-[#fffffe]">
+          <table className="w-full border-collapse border border-[#e5e7eb] bg-white">
             <thead>
-              <tr className="bg-[#eff0f3]">
-                <th className="border border-[#0d0d0d] px-3 py-2 text-left text-sm font-semibold text-[#0d0d0d] sticky left-0 z-10 bg-[#eff0f3]">
+              <tr className="bg-[#f3f4f6]">
+                <th className="border border-[#e5e7eb] px-3 py-2 text-left text-sm font-semibold text-[#1f2937] sticky left-0 z-10 bg-[#f3f4f6]">
                   {category === 'regular_test'
                     ? 'テスト名'
                     : category === 'report_card'
                     ? '内申名'
                     : '模試名'}
                 </th>
-                <th className="border border-[#0d0d0d] px-3 py-2 text-left text-sm font-semibold text-[#0d0d0d]">
+                <th className="border border-[#e5e7eb] px-3 py-2 text-left text-sm font-semibold text-[#1f2937]">
                   学年
                 </th>
-                <th className="border border-[#0d0d0d] px-3 py-2 text-left text-sm font-semibold text-[#0d0d0d]">
+                <th className="border border-[#e5e7eb] px-3 py-2 text-left text-sm font-semibold text-[#1f2937]">
                   年月
                 </th>
                 {subjects.map((subj) => (
                   <th
                     key={subj}
-                    className="border border-[#0d0d0d] px-3 py-2 text-center text-sm font-semibold text-[#0d0d0d] min-w-[80px]"
+                    className="border border-[#e5e7eb] px-3 py-2 text-center text-sm font-semibold text-[#1f2937] min-w-[80px]"
                   >
                     {SUBJECT_LABELS[subj]}
                   </th>
                 ))}
                 {category === 'mock' ? (
                   <>
-                    <th className="border border-[#0d0d0d] px-3 py-2 text-center text-sm font-semibold text-[#0d0d0d]">
+                    <th className="border border-[#e5e7eb] px-3 py-2 text-center text-sm font-semibold text-[#1f2937]">
                       3科平均
                     </th>
-                    <th className="border border-[#0d0d0d] px-3 py-2 text-center text-sm font-semibold text-[#0d0d0d]">
+                    <th className="border border-[#e5e7eb] px-3 py-2 text-center text-sm font-semibold text-[#1f2937]">
                       5科平均
                     </th>
                   </>
                 ) : (
                   <>
-                    <th className="border border-[#0d0d0d] px-3 py-2 text-center text-sm font-semibold text-[#0d0d0d]">
+                    <th className="border border-[#e5e7eb] px-3 py-2 text-center text-sm font-semibold text-[#1f2937]">
                       5科合計
                     </th>
-                    <th className="border border-[#0d0d0d] px-3 py-2 text-center text-sm font-semibold text-[#0d0d0d]">
+                    <th className="border border-[#e5e7eb] px-3 py-2 text-center text-sm font-semibold text-[#1f2937]">
                       9科合計
                     </th>
                   </>
                 )}
-                <th className="border border-[#0d0d0d] px-3 py-2 text-center text-sm font-semibold text-[#0d0d0d]">
+                <th className="border border-[#e5e7eb] px-3 py-2 text-center text-sm font-semibold text-[#1f2937]">
                   操作
                 </th>
               </tr>
@@ -412,21 +412,21 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
                     colSpan={
                       subjects.length + (category === 'mock' ? 6 : 6)
                     }
-                    className="border border-[#0d0d0d] px-3 py-4 text-center text-[#2a2a2a]"
+                    className="border border-[#e5e7eb] px-3 py-4 text-center text-[#4b5563]"
                   >
                     データがありません
                   </td>
                 </tr>
               ) : (
                 assessments.map((assessment) => (
-                  <tr key={assessment.id} className="hover:bg-[#eff0f3]">
-                    <td className="border border-[#0d0d0d] px-3 py-2 text-sm text-[#0d0d0d] sticky left-0 z-10 bg-[#fffffe]">
+                  <tr key={assessment.id} className="hover:bg-[#f3f4f6]">
+                    <td className="border border-[#e5e7eb] px-3 py-2 text-sm text-[#1f2937] sticky left-0 z-10 bg-white">
                       {ASSESSMENT_NAME_LABELS[assessment.name_code] || assessment.name_code}
                     </td>
-                    <td className="border border-[#0d0d0d] px-3 py-2 text-sm text-[#2a2a2a]">
+                    <td className="border border-[#e5e7eb] px-3 py-2 text-sm text-[#4b5563]">
                       {GRADE_LABELS[assessment.grade] || assessment.grade}
                     </td>
-                    <td className="border border-[#0d0d0d] px-3 py-2 text-sm text-[#2a2a2a]">
+                    <td className="border border-[#e5e7eb] px-3 py-2 text-sm text-[#4b5563]">
                       {assessment.exam_month
                         ? `${new Date(assessment.exam_month).getFullYear()}-${String(new Date(assessment.exam_month).getMonth() + 1).padStart(2, '0')}`
                         : '-'}
@@ -441,7 +441,7 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
                       return (
                         <td
                           key={subj}
-                          className="border border-[#0d0d0d] px-3 py-2 text-center"
+                          className="border border-[#e5e7eb] px-3 py-2 text-center"
                         >
                           {isEditing ? (
                             <input
@@ -456,12 +456,12 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
                                   setEditingCell(null);
                                 }
                               }}
-                              className="w-full px-2 py-1 text-center border border-[#0d0d0d] rounded focus:outline-none focus:ring-2 focus:ring-[#ff8e3c]"
+                              className="w-full px-2 py-1 text-center border border-[#e5e7eb] rounded focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
                               autoFocus
                             />
                           ) : (
                             <div
-                              className="px-2 py-1 cursor-pointer hover:bg-[#eff0f3] rounded min-h-[32px] flex items-center justify-center"
+                              className="px-2 py-1 cursor-pointer hover:bg-[#f3f4f6] rounded min-h-[32px] flex items-center justify-center"
                               onClick={() => handleCellClick(assessment.id, subj, value)}
                             >
                               {value !== null ? value.toString() : '-'}
@@ -472,25 +472,25 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
                     })}
                     {category === 'mock' ? (
                       <>
-                        <td className="border border-[#0d0d0d] px-3 py-2 text-center text-sm text-[#2a2a2a] font-medium">
+                        <td className="border border-[#e5e7eb] px-3 py-2 text-center text-sm text-[#4b5563] font-medium">
                           {getCalculatedValue(assessment, 'three_avg')}
                         </td>
-                        <td className="border border-[#0d0d0d] px-3 py-2 text-center text-sm text-[#2a2a2a] font-medium">
+                        <td className="border border-[#e5e7eb] px-3 py-2 text-center text-sm text-[#4b5563] font-medium">
                           {getCalculatedValue(assessment, 'five_avg')}
                         </td>
                       </>
                     ) : (
                       <>
-                        <td className="border border-[#0d0d0d] px-3 py-2 text-center text-sm text-[#2a2a2a] font-medium">
+                        <td className="border border-[#e5e7eb] px-3 py-2 text-center text-sm text-[#4b5563] font-medium">
                           {getCalculatedValue(assessment, 'five_sum')}
                         </td>
-                        <td className="border border-[#0d0d0d] px-3 py-2 text-center text-sm text-[#2a2a2a] font-medium">
+                        <td className="border border-[#e5e7eb] px-3 py-2 text-center text-sm text-[#4b5563] font-medium">
                           {getCalculatedValue(assessment, 'nine_sum')}
                         </td>
                       </>
                     )}
                     {permissions?.canEditScores && (
-                      <td className="border border-[#0d0d0d] px-3 py-2 text-center">
+                      <td className="border border-[#e5e7eb] px-3 py-2 text-center">
                         <Button
                           variant="danger"
                           size="sm"
@@ -513,14 +513,14 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`成績管理 - ${student.last_name} ${student.first_name}`} size="xl">
       {errorMessage && (
-        <div className="mb-4 p-3 bg-[#d9376e]/10 border border-[#d9376e] rounded-lg text-sm text-[#d9376e]">
+        <div className="mb-4 p-3 bg-[#ef4444]/10 border border-[#ef4444] rounded-lg text-sm text-[#ef4444]">
           {errorMessage}
         </div>
       )}
 
       {isLoading ? (
         <div className="flex items-center justify-center py-8">
-          <span className="text-[#2a2a2a]">読み込み中...</span>
+          <span className="text-[#4b5563]">読み込み中...</span>
         </div>
       ) : (
         <div>

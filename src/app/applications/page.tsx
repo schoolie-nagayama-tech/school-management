@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AdminLayout } from '@/components/layouts';
@@ -289,8 +289,8 @@ export default function ApplicationsPage() {
       <AdminLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="w-12 h-12 border-4 border-[#ff8e3c] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-[#2a2a2a]">読み込み中...</p>
+            <div className="w-12 h-12 border-4 border-[#3b82f6] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-[#4b5563]">読み込み中...</p>
           </div>
         </div>
       </AdminLayout>
@@ -314,7 +314,7 @@ export default function ApplicationsPage() {
 
       {/* エラーメッセージ */}
       {errorMessage && (
-        <div className="mb-4 bg-[#d9376e]/20 text-[#d9376e] px-4 py-2 rounded border border-[#d9376e]">
+        <div className="mb-4 bg-[#ef4444]/20 text-[#ef4444] px-4 py-2 rounded border border-[#ef4444]">
           {errorMessage}
         </div>
       )}
@@ -344,22 +344,22 @@ export default function ApplicationsPage() {
 
       {/* 説明 */}
       {canEdit && (
-        <div className="mb-4 text-[#2a2a2a] text-sm">
+        <div className="mb-4 text-[#4b5563] text-sm">
           <p>セルをクリックして申込状況を切り替えます: 空白 → ×（未申込）→ ✓（申込済）→ -（対象外）→ 空白</p>
         </div>
       )}
       {!canEdit && (
-        <div className="mb-4 text-[#2a2a2a] text-sm">
+        <div className="mb-4 text-[#4b5563] text-sm">
           <p>申込状況を閲覧できます。編集するには編集権限が必要です。</p>
         </div>
       )}
 
       {/* テーブル */}
       {isLoading ? (
-          <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-8">
+          <div className="bg-white rounded-xl border border-[#e5e7eb] p-8">
             <div className="flex items-center justify-center">
               <svg
-                className="animate-spin h-8 w-8 text-[#ff8e3c]"
+                className="animate-spin h-8 w-8 text-[#3b82f6]"
                 fill="none"
                 viewBox="0 0 24 24"
               >
@@ -377,12 +377,12 @@ export default function ApplicationsPage() {
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                 />
               </svg>
-              <span className="ml-3 text-[#2a2a2a]">読み込み中...</span>
+              <span className="ml-3 text-[#4b5563]">読み込み中...</span>
             </div>
           </div>
         ) : items.length === 0 ? (
-          <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-8 text-center">
-            <p className="text-[#2a2a2a] mb-4">申込項目がありません。</p>
+          <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 text-center">
+            <p className="text-[#4b5563] mb-4">申込項目がありません。</p>
             {canEdit && (
               <Button onClick={() => setIsSettingsModalOpen(true)}>
                 項目設定を開く

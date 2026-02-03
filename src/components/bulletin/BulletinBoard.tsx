@@ -11,7 +11,9 @@ import {
   archiveBulletinPost,
   getUnreadCount,
 } from '@/lib/api/bulletin';
+import { getSchools } from '@/lib/api/schools';
 import type { BulletinPost, BulletinLabel } from '@/types/bulletin';
+import type { School } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
 import { Button } from '@/components/ui';
@@ -26,13 +28,17 @@ export function BulletinBoard({ className = '' }: BulletinBoardProps) {
   const { getSelectedSchoolIds, profile } = useAuth();
   const { success, error: toastError } = useToast();
   const [posts, setPosts] = useState<BulletinPost[]>([]);
-  const [labels, setLabels] = useState<BulletinLabel[]>([]);
+  /** 教室IDごとのラベル一覧（複数教室対応） */
+  const [labelsBySchool, setLabelsBySchool] = useState<Record<string, BulletinLabel[]>>({});
+  const [schools, setSchools] = useState<School[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isExpanded, setIsExpanded] = useState(true);
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<BulletinPost | null>(null);
   const [readersModalPost, setReadersModalPost] = useState<BulletinPost | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  /** 新規投稿で選択中の教室ID（複数選択可） */
+  const [postingSchoolIds, setPostingSchoolIds] = useState<string[]>([]);
 
   // 編集権限はmanager以上のみ
   const canEdit = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
@@ -46,48 +52,82 @@ export function BulletinBoard({ className = '' }: BulletinBoardProps) {
       const schoolIds = getSelectedSchoolIds();
       if (schoolIds.length === 0) {
         setPosts([]);
-        setLabels([]);
+        setLabelsBySchool({});
+        setSchools([]);
         return;
       }
 
-      const schoolId = schoolIds[0]; // 最初の教室を使用
+      const schoolIdSet = new Set(schoolIds);
 
       try {
-        const [postsData, labelsData] = await Promise.all([
-          getBulletinPosts(schoolId, {
-            includeArchived: false,
-            userId: userId,
+        const [allSchoolsData, ...postsAndLabelsPerSchool] = await Promise.all([
+          getSchools(),
+          ...schoolIds.map(async (schoolId) => {
+            const [postsData, labelsData] = await Promise.all([
+              getBulletinPosts(schoolId, {
+                includeArchived: false,
+                userId: userId,
+              }),
+              getBulletinLabels(schoolId),
+            ]);
+            return { schoolId, posts: postsData, labels: labelsData };
           }),
-          getBulletinLabels(schoolId),
         ]);
 
-        setPosts(postsData);
-        setLabels(labelsData);
+        const schoolsList = (allSchoolsData || []).filter((s) => schoolIdSet.has(s.id));
+        setSchools(schoolsList);
+
+        const schoolNameById = Object.fromEntries(schoolsList.map((s) => [s.id, s.name]));
+        const labelsBySchoolMap: Record<string, BulletinLabel[]> = {};
+        const allPosts: BulletinPost[] = [];
+
+        for (const { schoolId, posts: postsData, labels: labelsData } of postsAndLabelsPerSchool) {
+          labelsBySchoolMap[schoolId] = labelsData;
+          const name = schoolNameById[schoolId] ?? null;
+          for (const post of postsData) {
+            allPosts.push({ ...post, school_name: name });
+          }
+        }
+
+        allPosts.sort((a, b) => {
+          if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
+
+        setLabelsBySchool(labelsBySchoolMap);
+        setPosts(allPosts);
       } catch (error: any) {
-        // テーブルが存在しない場合は空配列を設定
         if (error?.message?.includes('schema cache') || error?.message?.includes('not found')) {
           console.warn('掲示板テーブルが見つかりません。マイグレーションを実行してください:', error);
           setPosts([]);
-          setLabels([]);
+          setLabelsBySchool({});
           return;
         }
         throw error;
       }
 
-      // 未読件数を取得（講師のみ）
       if (userId && canRead) {
-        const count = await getUnreadCount(schoolId, userId);
-        setUnreadCount(count);
+        let total = 0;
+        for (const schoolId of schoolIds) {
+          total += await getUnreadCount(schoolId, userId);
+        }
+        setUnreadCount(total);
       } else {
         setUnreadCount(0);
       }
+
+      setPostingSchoolIds((prev) => {
+        const valid = prev.filter((id) => schoolIdSet.has(id));
+        if (valid.length === prev.length && prev.length > 0) return prev;
+        return [...schoolIds];
+      });
     } catch (error) {
       console.error('Error fetching bulletin data:', error);
       toastError('掲示板の取得に失敗しました');
     } finally {
       setIsLoading(false);
     }
-  }, [getSelectedSchoolIds, userId, toastError]);
+  }, [getSelectedSchoolIds, userId, toastError, canRead]);
 
   useEffect(() => {
     fetchData();
@@ -132,8 +172,9 @@ export function BulletinBoard({ className = '' }: BulletinBoardProps) {
 
   const handleNewPost = useCallback(() => {
     setEditingPost(null);
+    setPostingSchoolIds(getSelectedSchoolIds());
     setIsPostModalOpen(true);
-  }, []);
+  }, [getSelectedSchoolIds]);
 
   const handlePostSaved = useCallback(() => {
     fetchData();
@@ -141,10 +182,10 @@ export function BulletinBoard({ className = '' }: BulletinBoardProps) {
 
   if (isLoading) {
     return (
-      <div className={`bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-4 ${className}`}>
+      <div className={`bg-[#f8f8f8] rounded-xl border border-gray-200 p-4 ${className}`}>
         <div className="flex items-center justify-center">
-          <div className="w-6 h-6 border-2 border-[#ff8e3c] border-t-transparent rounded-full animate-spin"></div>
-          <span className="ml-2 text-sm text-[#2a2a2a]">掲示板を読み込み中...</span>
+          <div className="w-6 h-6 border-2 border-[#1e3a5f] border-t-transparent rounded-full animate-spin"></div>
+          <span className="ml-2 text-sm text-gray-500">掲示板を読み込み中...</span>
         </div>
       </div>
     );
@@ -152,18 +193,18 @@ export function BulletinBoard({ className = '' }: BulletinBoardProps) {
 
   return (
     <>
-      <div className={`bg-[#fffffe] rounded-xl border border-[#0d0d0d] overflow-hidden ${className}`}>
+      <div className={`bg-[#f8f8f8] rounded-xl border border-gray-200 overflow-hidden ${className}`}>
         {/* ヘッダー */}
         <div
-          className="flex items-center justify-between p-4 bg-[#eff0f3] border-b border-[#0d0d0d] cursor-pointer hover:bg-[#0d0d0d]/5 transition-colors"
+          className="flex items-center justify-between p-4 bg-[#ffebee] border-b border-[#ffcdd2] cursor-pointer hover:bg-[#ffcdd2]/40 transition-colors"
           onClick={() => setIsExpanded(!isExpanded)}
         >
           <div className="flex items-center gap-2">
             <span className="text-lg">📢</span>
-            <span className="font-semibold text-[#0d0d0d]">
+            <span className="font-bold text-[#1a1a1a]">
               連絡掲示板
               {canRead && unreadCount > 0 && (
-                <span className="ml-2 text-sm text-[#d9376e]">
+                <span className="ml-2 text-sm text-[#d32f2f] font-semibold">
                   （未読{unreadCount}件）
                 </span>
               )}
@@ -183,7 +224,7 @@ export function BulletinBoard({ className = '' }: BulletinBoardProps) {
                 新規投稿
               </Button>
             )}
-            <button className="text-[#2a2a2a] hover:text-[#0d0d0d] transition-colors">
+            <button className="text-gray-500 hover:text-gray-700 transition-colors">
               {isExpanded ? (
                 <ChevronUp className="w-5 h-5" />
               ) : (
@@ -197,7 +238,7 @@ export function BulletinBoard({ className = '' }: BulletinBoardProps) {
         {isExpanded && (
           <div className="p-4 space-y-3">
             {posts.length === 0 ? (
-              <div className="text-center text-sm text-[#2a2a2a]/70 py-8">
+              <div className="text-center text-sm text-gray-400 py-8">
                 投稿はありません
               </div>
             ) : (
@@ -205,6 +246,7 @@ export function BulletinBoard({ className = '' }: BulletinBoardProps) {
                 <BulletinPostCard
                   key={post.id}
                   post={post}
+                  schoolName={post.school_name}
                   canEdit={canEdit}
                   canRead={canRead}
                   onRead={() => handleRead(post)}
@@ -227,8 +269,16 @@ export function BulletinBoard({ className = '' }: BulletinBoardProps) {
             setEditingPost(null);
           }}
           post={editingPost}
-          labels={labels}
-          schoolId={getSelectedSchoolIds()[0]}
+          labels={
+            editingPost
+              ? labelsBySchool[editingPost.school_id] ?? []
+              : labelsBySchool[postingSchoolIds[0] ?? getSelectedSchoolIds()[0]] ?? []
+          }
+          schoolId={editingPost ? editingPost.school_id : postingSchoolIds[0] ?? getSelectedSchoolIds()[0]}
+          schoolIds={getSelectedSchoolIds().length > 1 ? getSelectedSchoolIds() : undefined}
+          schools={schools}
+          selectedSchoolIds={editingPost ? [editingPost.school_id] : postingSchoolIds}
+          onSelectedSchoolIdsChange={setPostingSchoolIds}
           onSaved={handlePostSaved}
         />
       )}

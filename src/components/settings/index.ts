@@ -1,1 +1,1 @@
-export { SubjectSettings } from './SubjectSettings';
+﻿export { SubjectSettings } from './SubjectSettings';

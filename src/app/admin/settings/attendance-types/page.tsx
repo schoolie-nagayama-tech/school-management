@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { AdminLayout } from '@/components/layouts';
@@ -221,11 +221,11 @@ export default function AttendanceTypesPage() {
           <CardContent>
             {isLoading ? (
               <div className="flex justify-center py-8">
-                <div className="text-[#2a2a2a]">読み込み中...</div>
+                <div className="text-[#4b5563]">読み込み中...</div>
               </div>
             ) : attendanceTypes.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
-                <p className="text-[#2a2a2a] mb-4">
+                <p className="text-[#4b5563] mb-4">
                   コマ種別が登録されていません
                 </p>
                 <Button onClick={handleCreate}>
@@ -249,7 +249,7 @@ export default function AttendanceTypesPage() {
                   {attendanceTypes.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell>
-                        <GripVertical className="h-4 w-4 text-[#2a2a2a] cursor-grab" />
+                        <GripVertical className="h-4 w-4 text-[#4b5563] cursor-grab" />
                       </TableCell>
                       <TableCell className="font-medium">{item.name}</TableCell>
                       <TableCell>
@@ -281,7 +281,7 @@ export default function AttendanceTypesPage() {
                             onClick={() => handleDeleteClick(item)}
                             className="p-2"
                           >
-                            <Trash2 className="h-4 w-4 text-[#d9376e]" />
+                            <Trash2 className="h-4 w-4 text-[#ef4444]" />
                           </Button>
                         </div>
                       </TableCell>
@@ -388,7 +388,7 @@ export default function AttendanceTypesPage() {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              className="bg-[#d9376e] text-white hover:bg-[#c02d5a]"
+              className="bg-[#ef4444] text-white hover:bg-[#dc2626]"
             >
               削除
             </AlertDialogAction>

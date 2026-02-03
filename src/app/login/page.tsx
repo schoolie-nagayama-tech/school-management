@@ -68,27 +68,27 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#eff0f3] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* ロゴ・タイトル */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-[#0d0d0d]">生徒管理システム</h1>
-          <p className="text-[#2a2a2a] mt-2">ログイン</p>
+          <h1 className="text-3xl font-bold text-[#1f2937]">生徒管理システム</h1>
+          <p className="text-[#4b5563] mt-2">ログイン</p>
         </div>
 
         {/* ログインフォーム */}
-        <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-8 shadow-lg">
+        <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 shadow-lg">
           {/* エラー表示 */}
           {error && (
-            <div className="mb-6 p-4 bg-[#d9376e]/10 border border-[#d9376e] rounded-lg">
-              <p className="text-sm text-[#d9376e] whitespace-pre-line">{error}</p>
+            <div className="mb-6 p-4 bg-[#ef4444]/10 border border-[#ef4444] rounded-lg">
+              <p className="text-sm text-[#ef4444] whitespace-pre-line">{error}</p>
             </div>
           )}
 
           {/* メール+パスワードフォーム */}
           <form onSubmit={handleEmailLogin} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
+              <label className="block text-sm font-medium text-[#1f2937] mb-1">
                 メールアドレスまたはユーザーID
               </label>
               <input
@@ -96,12 +96,12 @@ export default function LoginPage() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
-                className="w-full px-4 py-3 border border-[#0d0d0d] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff8e3c]"
+                className="w-full px-4 py-3 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
                 placeholder="メールアドレスまたはユーザーID"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
+              <label className="block text-sm font-medium text-[#1f2937] mb-1">
                 パスワード
               </label>
               <div className="relative">
@@ -110,13 +110,13 @@ export default function LoginPage() {
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   required
-                  className="w-full px-4 py-3 pr-12 border border-[#0d0d0d] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff8e3c]"
+                  className="w-full px-4 py-3 pr-12 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#2a2a2a] hover:text-[#0d0d0d] focus:outline-none"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4b5563] hover:text-[#1f2937] focus:outline-none"
                   aria-label={showPassword ? 'パスワードを非表示' : 'パスワードを表示'}
                 >
                   {showPassword ? (
@@ -135,7 +135,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 bg-[#ff8e3c] text-[#0d0d0d] font-bold rounded-lg hover:bg-[#ff7a1f] transition-colors disabled:opacity-50"
+              className="w-full py-3 bg-[#3b82f6] text-white font-bold rounded-lg hover:bg-[#60a5fa] transition-colors disabled:opacity-50"
             >
               {isLoading ? 'ログイン中...' : 'ログイン'}
             </button>
@@ -143,15 +143,15 @@ export default function LoginPage() {
 
           {/* 区切り線 */}
           <div className="flex items-center my-6">
-            <div className="flex-1 border-t border-[#0d0d0d]/20"></div>
-            <span className="px-4 text-sm text-[#2a2a2a]">または</span>
-            <div className="flex-1 border-t border-[#0d0d0d]/20"></div>
+            <div className="flex-1 border-t border-[#e5e7eb]/20"></div>
+            <span className="px-4 text-sm text-[#4b5563]">または</span>
+            <div className="flex-1 border-t border-[#e5e7eb]/20"></div>
           </div>
 
           {/* Googleログイン */}
           <button
             onClick={handleGoogleLogin}
-            className="w-full py-3 bg-white border border-[#0d0d0d] rounded-lg hover:bg-[#eff0f3] transition-colors flex items-center justify-center gap-3"
+            className="w-full py-3 bg-white border border-[#e5e7eb] rounded-lg hover:bg-[#f3f4f6] transition-colors flex items-center justify-center gap-3"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
@@ -171,9 +171,9 @@ export default function LoginPage() {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            <span className="font-medium text-[#0d0d0d]">Googleでログイン（教室長以上）</span>
+            <span className="font-medium text-[#1f2937]">Googleでログイン（教室長以上）</span>
           </button>
-          <p className="mt-2 text-xs text-[#2a2a2a]/70 text-center">
+          <p className="mt-2 text-xs text-[#4b5563]/70 text-center">
             ※ 講師の方はメール/パスワードでログインしてください
           </p>
 
@@ -181,7 +181,7 @@ export default function LoginPage() {
           <div className="mt-6 text-center">
             <Link
               href="/forgot-password"
-              className="text-sm text-[#ff8e3c] hover:underline"
+              className="text-sm text-[#3b82f6] hover:underline"
             >
               パスワードをお忘れですか？
             </Link>
