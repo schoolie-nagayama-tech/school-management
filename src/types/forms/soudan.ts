@@ -1,4 +1,4 @@
-// お客様相談フォーム関連の型定義
+﻿// お客様相談フォーム関連の型定義
 
 // 学年名と数値のマッピング
 export const SOUDAN_GRADE_NAME_TO_NUMBER: Record<string, number> = {

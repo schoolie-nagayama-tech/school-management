@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -122,26 +122,26 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
   const getStatusBadgeClass = (status: FormStatus) => {
     switch (status) {
       case 'draft':
-        return 'bg-[#eff0f3] text-[#2a2a2a]';
+        return 'bg-[#f3f4f6] text-[#4b5563]';
       case 'published':
-        return 'bg-[#ff8e3c]/20 text-[#0d0d0d]';
+        return 'bg-[#3b82f6]/20 text-[#1f2937]';
       case 'closed':
-        return 'bg-[#eff0f3] text-[#2a2a2a]/60';
+        return 'bg-[#f3f4f6] text-[#4b5563]/60';
       default:
-        return 'bg-[#eff0f3] text-[#2a2a2a]';
+        return 'bg-[#f3f4f6] text-[#4b5563]';
     }
   };
 
   if (isLoading) {
     return (
-      <div className="text-center py-8 text-[#2a2a2a]">読み込み中...</div>
+      <div className="text-center py-8 text-[#4b5563]">読み込み中...</div>
     );
   }
 
   return (
     <div className="space-y-4">
       {errorMessage && (
-        <div className="bg-[#d9376e]/20 text-[#d9376e] px-4 py-2 rounded border border-[#d9376e]">
+        <div className="bg-[#ef4444]/20 text-[#ef4444] px-4 py-2 rounded border border-[#ef4444]">
           {errorMessage}
         </div>
       )}
@@ -152,8 +152,8 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
           onClick={() => setShowArchived(!showArchived)}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
             showArchived
-              ? 'bg-[#ff8e3c]/20 text-[#0d0d0d]'
-              : 'bg-[#eff0f3] text-[#2a2a2a] hover:bg-[#fffffe]'
+              ? 'bg-[#3b82f6]/20 text-[#1f2937]'
+              : 'bg-[#f3f4f6] text-[#4b5563] hover:bg-white'
           }`}
         >
           {showArchived ? 'アーカイブ済みを非表示' : 'アーカイブ済みを表示'}
@@ -161,7 +161,7 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
       </div>
 
       {forms.length === 0 ? (
-        <div className="text-center py-8 text-[#2a2a2a]">
+        <div className="text-center py-8 text-[#4b5563]">
           フォームがありません。テンプレートから作成するか、新規作成してください。
         </div>
       ) : (
@@ -171,13 +171,13 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
               key={form.id}
               className={`flex items-center justify-between p-4 rounded-lg border ${
                 form.is_archived
-                  ? 'bg-[#eff0f3] border-[#0d0d0d]/30 opacity-60'
-                  : 'bg-[#fffffe] border-[#0d0d0d]'
+                  ? 'bg-[#f3f4f6] border-[#e5e7eb]/30 opacity-60'
+                  : 'bg-white border-[#e5e7eb]'
               }`}
             >
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium text-[#0d0d0d]">{form.title}</span>
+                  <span className="font-medium text-[#1f2937]">{form.title}</span>
                   <span
                     className={`px-2 py-1 text-xs rounded ${getStatusBadgeClass(form.status)}`}
                   >
@@ -185,11 +185,11 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
                   </span>
                 </div>
                 {form.description && (
-                  <div className="text-sm text-[#2a2a2a]/60 mb-1">
+                  <div className="text-sm text-[#4b5563]/60 mb-1">
                     {form.description}
                   </div>
                 )}
-                <div className="text-xs text-[#2a2a2a]/60">
+                <div className="text-xs text-[#4b5563]/60">
                   {form.publish_start && form.publish_end
                     ? `公開期間: ${new Date(form.publish_start).toLocaleDateString('ja-JP')} ～ ${new Date(form.publish_end).toLocaleDateString('ja-JP')}`
                     : form.publish_start

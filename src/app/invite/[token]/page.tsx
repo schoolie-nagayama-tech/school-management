@@ -97,10 +97,10 @@ export default function InvitePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#eff0f3] flex items-center justify-center">
+      <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#ff8e3c] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-[#2a2a2a]">読み込み中...</p>
+          <div className="w-12 h-12 border-4 border-[#3b82f6] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-[#4b5563]">読み込み中...</p>
         </div>
       </div>
     );
@@ -108,16 +108,16 @@ export default function InvitePage() {
 
   if (error && !invitation) {
     return (
-      <div className="min-h-screen bg-[#eff0f3] flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-8">
+      <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-xl border border-[#e5e7eb] p-8">
           <div className="text-center">
-            <div className="w-16 h-16 bg-[#d9376e]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-[#d9376e]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-16 h-16 bg-[#ef4444]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-[#ef4444]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </div>
-            <h2 className="text-xl font-bold text-[#0d0d0d] mb-2">招待が無効です</h2>
-            <p className="text-[#2a2a2a] mb-6">{error}</p>
+            <h2 className="text-xl font-bold text-[#1f2937] mb-2">招待が無効です</h2>
+            <p className="text-[#4b5563] mb-6">{error}</p>
           </div>
         </div>
       </div>
@@ -125,44 +125,44 @@ export default function InvitePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#eff0f3] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-[#0d0d0d]">アカウント作成</h1>
-          <p className="text-[#2a2a2a] mt-2">生徒管理システムへようこそ</p>
+          <h1 className="text-3xl font-bold text-[#1f2937]">アカウント作成</h1>
+          <p className="text-[#4b5563] mt-2">生徒管理システムへようこそ</p>
         </div>
 
-        <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-8 shadow-lg">
+        <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 shadow-lg">
           {invitation && (
             <>
-              <div className="mb-6 p-4 bg-[#ff8e3c]/10 rounded-lg">
-                <p className="text-sm text-[#0d0d0d]">
+              <div className="mb-6 p-4 bg-[#3b82f6]/10 rounded-lg">
+                <p className="text-sm text-[#1f2937]">
                   <span className="font-bold">{invitation.email}</span> として<br />
                   <span className="font-bold">{USER_ROLE_LABELS[invitation.role]}</span> 権限で招待されています
                 </p>
               </div>
 
               {error && (
-                <div className="mb-6 p-4 bg-[#d9376e]/10 border border-[#d9376e] rounded-lg">
-                  <p className="text-sm text-[#d9376e]">{error}</p>
+                <div className="mb-6 p-4 bg-[#ef4444]/10 border border-[#ef4444] rounded-lg">
+                  <p className="text-sm text-[#ef4444]">{error}</p>
                 </div>
               )}
 
               <form onSubmit={handleAccept} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
+                  <label className="block text-sm font-medium text-[#1f2937] mb-1">
                     表示名（任意）
                   </label>
                   <input
                     type="text"
                     value={displayName}
                     onChange={e => setDisplayName(e.target.value)}
-                    className="w-full px-4 py-3 border border-[#0d0d0d] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff8e3c]"
+                    className="w-full px-4 py-3 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
                     placeholder="山田太郎"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
+                  <label className="block text-sm font-medium text-[#1f2937] mb-1">
                     パスワード
                   </label>
                   <input
@@ -171,12 +171,12 @@ export default function InvitePage() {
                     onChange={e => setPassword(e.target.value)}
                     required
                     minLength={8}
-                    className="w-full px-4 py-3 border border-[#0d0d0d] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff8e3c]"
+                    className="w-full px-4 py-3 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
                     placeholder="8文字以上"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
+                  <label className="block text-sm font-medium text-[#1f2937] mb-1">
                     パスワード（確認）
                   </label>
                   <input
@@ -184,14 +184,14 @@ export default function InvitePage() {
                     value={confirmPassword}
                     onChange={e => setConfirmPassword(e.target.value)}
                     required
-                    className="w-full px-4 py-3 border border-[#0d0d0d] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff8e3c]"
+                    className="w-full px-4 py-3 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
                     placeholder="もう一度入力"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full py-3 bg-[#ff8e3c] text-[#0d0d0d] font-bold rounded-lg hover:bg-[#ff7a1f] transition-colors disabled:opacity-50"
+                  className="w-full py-3 bg-[#3b82f6] text-white font-bold rounded-lg hover:bg-[#60a5fa] transition-colors disabled:opacity-50"
                 >
                   {isSubmitting ? 'アカウント作成中...' : 'アカウントを作成'}
                 </button>

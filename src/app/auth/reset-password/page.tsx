@@ -44,14 +44,14 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#eff0f3] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-[#0d0d0d]">新しいパスワード設定</h1>
-          <p className="text-[#2a2a2a] mt-2">新しいパスワードを入力してください</p>
+          <h1 className="text-3xl font-bold text-[#1f2937]">新しいパスワード設定</h1>
+          <p className="text-[#4b5563] mt-2">新しいパスワードを入力してください</p>
         </div>
 
-        <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-8 shadow-lg">
+        <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 shadow-lg">
           {isSuccess ? (
             <div className="text-center">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -59,22 +59,22 @@ export default function ResetPasswordPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h2 className="text-xl font-bold text-[#0d0d0d] mb-2">パスワードを更新しました</h2>
-              <p className="text-[#2a2a2a]">
+              <h2 className="text-xl font-bold text-[#1f2937] mb-2">パスワードを更新しました</h2>
+              <p className="text-[#4b5563]">
                 3秒後にログイン画面に移動します...
               </p>
             </div>
           ) : (
             <>
               {error && (
-                <div className="mb-6 p-4 bg-[#d9376e]/10 border border-[#d9376e] rounded-lg">
-                  <p className="text-sm text-[#d9376e]">{error}</p>
+                <div className="mb-6 p-4 bg-[#ef4444]/10 border border-[#ef4444] rounded-lg">
+                  <p className="text-sm text-[#ef4444]">{error}</p>
                 </div>
               )}
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
+                  <label className="block text-sm font-medium text-[#1f2937] mb-1">
                     新しいパスワード
                   </label>
                   <input
@@ -83,12 +83,12 @@ export default function ResetPasswordPage() {
                     onChange={e => setPassword(e.target.value)}
                     required
                     minLength={8}
-                    className="w-full px-4 py-3 border border-[#0d0d0d] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff8e3c]"
+                    className="w-full px-4 py-3 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
                     placeholder="8文字以上"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
+                  <label className="block text-sm font-medium text-[#1f2937] mb-1">
                     パスワード（確認）
                   </label>
                   <input
@@ -96,14 +96,14 @@ export default function ResetPasswordPage() {
                     value={confirmPassword}
                     onChange={e => setConfirmPassword(e.target.value)}
                     required
-                    className="w-full px-4 py-3 border border-[#0d0d0d] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff8e3c]"
+                    className="w-full px-4 py-3 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
                     placeholder="もう一度入力"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-3 bg-[#ff8e3c] text-[#0d0d0d] font-bold rounded-lg hover:bg-[#ff7a1f] transition-colors disabled:opacity-50"
+                  className="w-full py-3 bg-[#3b82f6] text-white font-bold rounded-lg hover:bg-[#60a5fa] transition-colors disabled:opacity-50"
                 >
                   {isLoading ? '更新中...' : 'パスワードを更新'}
                 </button>

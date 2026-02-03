@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -43,10 +43,10 @@ export default function AuthCallbackPage() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-[#eff0f3] flex items-center justify-center">
+    <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center">
       <div className="text-center">
-        <div className="w-12 h-12 border-4 border-[#ff8e3c] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <p className="text-[#2a2a2a]">認証中...</p>
+        <div className="w-12 h-12 border-4 border-[#3b82f6] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-[#4b5563]">認証中...</p>
       </div>
     </div>
   );

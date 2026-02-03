@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { Modal, Button } from '@/components/ui';
@@ -56,16 +56,16 @@ export function LinkStudentModal({
     >
       <div className="space-y-4">
         {/* 回答者情報 */}
-        <div className="bg-[#eff0f3] p-4 rounded-lg border border-[#0d0d0d]">
-          <h3 className="font-semibold text-[#0d0d0d] mb-2">回答者情報</h3>
-          <div className="text-sm text-[#2a2a2a] space-y-1">
+        <div className="bg-[#f3f4f6] p-4 rounded-lg border border-[#e5e7eb]">
+          <h3 className="font-semibold text-[#1f2937] mb-2">回答者情報</h3>
+          <div className="text-sm text-[#4b5563] space-y-1">
             <div>
-              <span className="text-[#2a2a2a]/60">生徒名:</span>{' '}
-              <span className="text-[#2a2a2a]">{response.student_name}</span>
+              <span className="text-[#4b5563]/60">生徒名:</span>{' '}
+              <span className="text-[#4b5563]">{response.student_name}</span>
             </div>
             <div>
-              <span className="text-[#2a2a2a]/60">学年:</span>{' '}
-              <span className="text-[#2a2a2a]">
+              <span className="text-[#4b5563]/60">学年:</span>{' '}
+              <span className="text-[#4b5563]">
                 {response.grade ? GRADE_LABELS[response.grade] : '-'}
               </span>
             </div>
@@ -74,26 +74,26 @@ export function LinkStudentModal({
 
         {/* エラー表示 */}
         {error && (
-          <div className="bg-[#d9376e]/20 text-[#d9376e] px-4 py-2 rounded border border-[#d9376e]">
+          <div className="bg-[#ef4444]/20 text-[#ef4444] px-4 py-2 rounded border border-[#ef4444]">
             {error}
           </div>
         )}
 
         {/* 生徒選択 */}
         <div>
-          <label className="block text-sm font-medium text-[#2a2a2a] mb-2">
-            同じ学年の生徒を選択 <span className="text-[#d9376e]">*</span>
+          <label className="block text-sm font-medium text-[#4b5563] mb-2">
+            同じ学年の生徒を選択 <span className="text-[#ef4444]">*</span>
           </label>
           {students.length === 0 ? (
-            <div className="text-center py-8 text-[#2a2a2a]/60">
+            <div className="text-center py-8 text-[#4b5563]/60">
               同じ学年の生徒が登録されていません
             </div>
           ) : (
-            <div className="space-y-2 max-h-64 overflow-y-auto border border-[#0d0d0d] rounded-lg p-2">
+            <div className="space-y-2 max-h-64 overflow-y-auto border border-[#e5e7eb] rounded-lg p-2">
               {students.map((student) => (
                 <label
                   key={student.id}
-                  className="flex items-center gap-3 p-3 hover:bg-[#eff0f3] rounded cursor-pointer"
+                  className="flex items-center gap-3 p-3 hover:bg-[#f3f4f6] rounded cursor-pointer"
                 >
                   <input
                     type="radio"
@@ -105,13 +105,13 @@ export function LinkStudentModal({
                       setError('');
                     }}
                     disabled={isSubmitting}
-                    className="w-4 h-4 text-[#ff8e3c] border-[#0d0d0d] focus:ring-[#ff8e3c]"
+                    className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] focus:ring-[#3b82f6]"
                   />
                   <div className="flex-1">
-                    <div className="text-[#0d0d0d] font-medium">
+                    <div className="text-[#1f2937] font-medium">
                       {student.last_name} {student.first_name}
                     </div>
-                    <div className="text-sm text-[#2a2a2a]/60">
+                    <div className="text-sm text-[#4b5563]/60">
                       {student.student_code || 'コード未設定'}
                     </div>
                   </div>
@@ -122,7 +122,7 @@ export function LinkStudentModal({
         </div>
 
         {/* ボタン */}
-        <div className="flex justify-end gap-2 pt-4 border-t border-[#0d0d0d]">
+        <div className="flex justify-end gap-2 pt-4 border-t border-[#e5e7eb]">
           <Button onClick={onClose} variant="secondary" disabled={isSubmitting}>
             キャンセル
           </Button>

@@ -1,4 +1,4 @@
-// PDF出力用のユーティリティ関数
+﻿// PDF出力用のユーティリティ関数
 
 export async function exportProgressToPDF(
   elementId: string,

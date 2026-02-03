@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { StudentInterview } from '@/types/database';
@@ -80,30 +80,30 @@ export function TaskAlert({ schoolId, onTaskClick }: TaskAlertProps) {
   }
 
   return (
-    <div className="mb-6 bg-[#d9376e]/10 border border-[#d9376e] rounded-lg overflow-hidden">
+    <div className="mb-6 bg-[#ef4444]/10 border border-[#ef4444] rounded-lg overflow-hidden">
       {/* ヘッダー（クリックで展開/折りたたみ） */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full px-4 py-3 flex items-center justify-between hover:bg-[#d9376e]/20 transition-colors"
+        className="w-full px-4 py-3 flex items-center justify-between hover:bg-[#ef4444]/20 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <span className="text-[#d9376e] text-xl">⚠️</span>
-          <span className="font-medium text-[#d9376e]">
+          <span className="text-[#ef4444] text-xl">⚠️</span>
+          <span className="font-medium text-[#ef4444]">
             未完了のタスクが {tasks.length} 件あります
           </span>
         </div>
-        <span className="text-[#d9376e]/60">
+        <span className="text-[#ef4444]/60">
           {expanded ? '▲' : '▼'}
         </span>
       </button>
 
       {/* タスクリスト（展開時） */}
       {expanded && (
-        <div className="border-t border-[#d9376e] divide-y divide-[#d9376e]/20">
+        <div className="border-t border-[#ef4444] divide-y divide-[#ef4444]/20">
           {tasks.map((task) => (
             <div
               key={task.id}
-              className="px-4 py-3 flex items-start justify-between gap-4 hover:bg-[#d9376e]/10 cursor-pointer transition-colors"
+              className="px-4 py-3 flex items-start justify-between gap-4 hover:bg-[#ef4444]/10 cursor-pointer transition-colors"
               onClick={() => onTaskClick?.(task.student_id)}
             >
               <div className="flex-1 min-w-0">
@@ -112,27 +112,27 @@ export function TaskAlert({ schoolId, onTaskClick }: TaskAlertProps) {
                   <span
                     className={`text-sm font-medium ${
                       isOverdue(task.interview_date)
-                        ? 'text-[#d9376e]'
-                        : 'text-[#2a2a2a]'
+                        ? 'text-[#ef4444]'
+                        : 'text-[#4b5563]'
                     }`}
                   >
                     {formatDate(task.interview_date)}
                     {isOverdue(task.interview_date) && ' (期限切れ)'}
                   </span>
                   {/* 生徒名 */}
-                  <span className="text-sm text-[#0d0d0d] font-medium">
+                  <span className="text-sm text-[#1f2937] font-medium">
                     {task.student.last_name} {task.student.first_name}
                   </span>
                 </div>
                 {/* 内容 */}
-                <p className="text-sm text-[#2a2a2a] line-clamp-2">
+                <p className="text-sm text-[#4b5563] line-clamp-2">
                   {task.content}
                 </p>
               </div>
               {/* 完了ボタン */}
               <button
                 onClick={(e) => handleComplete(task.id, e)}
-                className="px-3 py-1 bg-[#fffffe] border border-[#d9376e] text-[#d9376e] text-sm rounded hover:bg-[#d9376e] hover:text-white transition-colors whitespace-nowrap"
+                className="px-3 py-1 bg-white border border-[#ef4444] text-[#ef4444] text-sm rounded hover:bg-[#ef4444] hover:text-white transition-colors whitespace-nowrap"
               >
                 完了
               </button>

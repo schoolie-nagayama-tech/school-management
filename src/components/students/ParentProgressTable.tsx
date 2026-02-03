@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import type { ProgressRowDisplay } from '@/types/database';
@@ -60,7 +60,7 @@ export default function ParentProgressTable({
       {/* ヘッダー（PDF用） */}
       <div className="mb-8 print:mb-6">
         <h2 className="text-2xl font-bold text-center mb-4">学習進行表（ご提案内容）</h2>
-        <div className="flex justify-between text-base text-[#2a2a2a]">
+        <div className="flex justify-between text-base text-[#4b5563]">
           <div>生徒名: {studentName}</div>
           <div>教材: {textbookName}</div>
         </div>
@@ -244,7 +244,7 @@ export default function ParentProgressTable({
       </table>
 
       {/* 注意書き */}
-      <div className="mt-8 text-sm text-[#2a2a2a] print:mt-4">
+      <div className="mt-8 text-sm text-[#4b5563] print:mt-4">
         <p>※ 同じ背景色でまとまっている単元は、まとめて1コマで授業を行います。</p>
       </div>
     </div>

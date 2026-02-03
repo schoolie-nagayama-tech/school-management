@@ -32,31 +32,31 @@ export default async function FormPreviewPage({ params }: FormPreviewPageProps) 
   }
 
   return (
-    <div className="min-h-screen bg-[#eff0f3]">
+    <div className="min-h-screen bg-[#f3f4f6]">
       <div className="max-w-2xl mx-auto px-4 py-8">
         {/* ヘッダー */}
         <header className="mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-[#0d0d0d]">{form.title}</h1>
+            <h1 className="text-2xl font-bold text-[#1f2937]">{form.title}</h1>
             <a
               href="/forms/manage"
-              className="px-4 py-2 text-sm text-[#2a2a2a] hover:text-[#0d0d0d] hover:bg-[#eff0f3] rounded-lg transition-colors"
+              className="px-4 py-2 text-sm text-[#4b5563] hover:text-[#1f2937] hover:bg-[#f3f4f6] rounded-lg transition-colors"
             >
               フォーム管理に戻る
             </a>
           </div>
           {form.description && (
-            <p className="text-[#2a2a2a] whitespace-pre-line">{form.description}</p>
+            <p className="text-[#4b5563] whitespace-pre-line">{form.description}</p>
           )}
-          <div className="mt-4 p-3 bg-[#ff8e3c]/20 border border-[#ff8e3c] rounded-lg">
-            <p className="text-sm text-[#0d0d0d]">
+          <div className="mt-4 p-3 bg-[#3b82f6]/20 border border-[#3b82f6] rounded-lg">
+            <p className="text-sm text-[#1f2937]">
               <strong>プレビューモード</strong> - このページは管理者確認用です。実際の回答は送信されません。
             </p>
           </div>
         </header>
 
         {/* フォーム */}
-        <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6">
+        <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
           {form.slug === 'test-koma' ? (
             <KomaFormRenderer
               form={form}

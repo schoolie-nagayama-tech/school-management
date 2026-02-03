@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { ReactNode, useState, useRef, useEffect, createContext, useContext } from 'react';
 
@@ -55,12 +55,12 @@ export function SelectTrigger({ children, className = '', onClick }: SelectTrigg
       className={`
         w-full px-3 py-2
         border rounded-lg
-        text-[#2a2a2a]
-        bg-[#fffffe]
+        text-[#4b5563]
+        bg-white
         transition-colors duration-150
-        focus:ring-2 focus:ring-[#ff8e3c] focus:border-[#ff8e3c]
-        disabled:bg-[#eff0f3] disabled:text-[#2a2a2a]/50 disabled:cursor-not-allowed
-        border-[#0d0d0d]
+        focus:ring-2 focus:ring-[#3b82f6] focus:border-[#3b82f6]
+        disabled:bg-[#f3f4f6] disabled:text-[#4b5563]/50 disabled:cursor-not-allowed
+        border-[#e5e7eb]
         flex items-center justify-between
         ${className}
       `}
@@ -116,7 +116,7 @@ export function SelectContent({ children, className = '' }: SelectContentProps) 
       ref={contentRef}
       className={`
         absolute z-50 w-full mt-1
-        bg-[#fffffe] border border-[#0d0d0d] rounded-lg shadow-lg
+        bg-white border border-[#e5e7eb] rounded-lg shadow-lg
         max-h-60 overflow-auto
         ${className}
       `}
@@ -148,8 +148,8 @@ export function SelectItem({ value, children, onClick, className = '' }: SelectI
   return (
     <div
       className={`
-        px-3 py-2 cursor-pointer hover:bg-[#eff0f3] transition-colors
-        ${context?.value === value ? 'bg-[#ff8e3c]/10' : ''}
+        px-3 py-2 cursor-pointer hover:bg-[#f3f4f6] transition-colors
+        ${context?.value === value ? 'bg-[#3b82f6]/10' : ''}
         ${className}
       `}
       data-value={value}

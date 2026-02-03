@@ -145,35 +145,35 @@ export default function ZoukomaResponsePage() {
       <AdminLayout headerTitle={`${periodKey} 増コマ申込 回答一覧`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {errorMessage && (
-          <div className="mb-4 p-4 bg-[#d9376e]/20 border border-[#d9376e] rounded-lg">
-            <p className="text-sm text-[#d9376e]">{errorMessage}</p>
+          <div className="mb-4 p-4 bg-[#ef4444]/20 border border-[#ef4444] rounded-lg">
+            <p className="text-sm text-[#ef4444]">{errorMessage}</p>
           </div>
         )}
 
         {/* 集計表示 */}
-        <div className="mb-6 bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6">
+        <div className="mb-6 bg-white rounded-xl border border-[#e5e7eb] p-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <div className="text-sm text-[#2a2a2a]">合計コマ数</div>
-              <div className="text-2xl font-bold text-[#0d0d0d]">
+              <div className="text-sm text-[#4b5563]">合計コマ数</div>
+              <div className="text-2xl font-bold text-[#1f2937]">
                 {stats.total_koma}コマ
               </div>
             </div>
             <div>
-              <div className="text-sm text-[#2a2a2a]">合計金額</div>
-              <div className="text-2xl font-bold text-[#0d0d0d]">
+              <div className="text-sm text-[#4b5563]">合計金額</div>
+              <div className="text-2xl font-bold text-[#1f2937]">
                 ¥{stats.total_fee.toLocaleString()}
               </div>
             </div>
             <div>
-              <div className="text-sm text-[#2a2a2a]">計上済み</div>
-              <div className="text-2xl font-bold text-[#0d0d0d]">
+              <div className="text-sm text-[#4b5563]">計上済み</div>
+              <div className="text-2xl font-bold text-[#1f2937]">
                 {stats.charged_count}件
               </div>
             </div>
             <div>
-              <div className="text-sm text-[#2a2a2a]">座席落とし込み済み</div>
-              <div className="text-2xl font-bold text-[#0d0d0d]">
+              <div className="text-sm text-[#4b5563]">座席落とし込み済み</div>
+              <div className="text-2xl font-bold text-[#1f2937]">
                 {stats.seated_count}件
               </div>
             </div>
@@ -181,7 +181,7 @@ export default function ZoukomaResponsePage() {
         </div>
 
         {/* フィルター */}
-        <div className="mb-6 bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-4">
+        <div className="mb-6 bg-white rounded-xl border border-[#e5e7eb] p-4">
           <div className="flex gap-4">
             <select
               value={filters.grade || 'all'}
@@ -191,7 +191,7 @@ export default function ZoukomaResponsePage() {
                   grade: e.target.value === 'all' ? undefined : parseInt(e.target.value, 10),
                 })
               }
-              className="px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm"
+              className="px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
             >
               <option value="all">全学年</option>
               {[7, 8, 9, 10, 11, 12].map((grade) => (
@@ -208,7 +208,7 @@ export default function ZoukomaResponsePage() {
                   chargedStatus: e.target.value === 'all' ? undefined : e.target.value as 'charged' | 'not_charged',
                 })
               }
-              className="px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm"
+              className="px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
             >
               <option value="all">計上状態: 全て</option>
               <option value="charged">計上済み</option>
@@ -222,7 +222,7 @@ export default function ZoukomaResponsePage() {
                   seatedStatus: e.target.value === 'all' ? undefined : e.target.value as 'seated' | 'not_seated',
                 })
               }
-              className="px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm"
+              className="px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
             >
               <option value="all">座席状態: 全て</option>
               <option value="seated">座席落とし込み済み</option>
@@ -232,44 +232,44 @@ export default function ZoukomaResponsePage() {
         </div>
 
         {/* 回答一覧 */}
-        <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6">
+        <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
           {isLoading ? (
-            <div className="text-center py-8 text-[#2a2a2a]">読み込み中...</div>
+            <div className="text-center py-8 text-[#4b5563]">読み込み中...</div>
           ) : responses.length === 0 ? (
-            <div className="text-center py-8 text-[#2a2a2a]">回答がありません</div>
+            <div className="text-center py-8 text-[#4b5563]">回答がありません</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse border border-[#0d0d0d] text-sm">
+              <table className="w-full border-collapse border border-[#e5e7eb] text-sm">
                 <thead>
-                  <tr className="bg-[#eff0f3]">
-                    <th className="border border-[#0d0d0d] px-4 py-3 text-left">
+                  <tr className="bg-[#f3f4f6]">
+                    <th className="border border-[#e5e7eb] px-4 py-3 text-left">
                       回答日時
                     </th>
-                    <th className="border border-[#0d0d0d] px-4 py-3 text-left">
+                    <th className="border border-[#e5e7eb] px-4 py-3 text-left">
                       生徒名
                     </th>
-                    <th className="border border-[#0d0d0d] px-4 py-3 text-left">
+                    <th className="border border-[#e5e7eb] px-4 py-3 text-left">
                       学年
                     </th>
-                    <th className="border border-[#0d0d0d] px-4 py-3 text-left">
+                    <th className="border border-[#e5e7eb] px-4 py-3 text-left">
                       科目内訳
                     </th>
-                    <th className="border border-[#0d0d0d] px-4 py-3 text-right">
+                    <th className="border border-[#e5e7eb] px-4 py-3 text-right">
                       コマ数
                     </th>
-                    <th className="border border-[#0d0d0d] px-4 py-3 text-right">
+                    <th className="border border-[#e5e7eb] px-4 py-3 text-right">
                       金額
                     </th>
-                    <th className="border border-[#0d0d0d] px-4 py-3 text-center">
+                    <th className="border border-[#e5e7eb] px-4 py-3 text-center">
                       計上
                     </th>
-                    <th className="border border-[#0d0d0d] px-4 py-3 text-center">
+                    <th className="border border-[#e5e7eb] px-4 py-3 text-center">
                       座席
                     </th>
-                    <th className="border border-[#0d0d0d] px-4 py-3 text-center">
+                    <th className="border border-[#e5e7eb] px-4 py-3 text-center">
                       紐付け
                     </th>
-                    <th className="border border-[#0d0d0d] px-4 py-3 text-left">
+                    <th className="border border-[#e5e7eb] px-4 py-3 text-left">
                       操作
                     </th>
                   </tr>
@@ -277,67 +277,67 @@ export default function ZoukomaResponsePage() {
                 <tbody>
                   {responses.map((response) => (
                     <tr key={response.id} className="table-row-hover">
-                      <td className="border border-[#0d0d0d] px-4 py-3">
+                      <td className="border border-[#e5e7eb] px-4 py-3">
                         {formatDateTime(response.created_at)}
                       </td>
-                      <td className="border border-[#0d0d0d] px-4 py-3">
+                      <td className="border border-[#e5e7eb] px-4 py-3">
                         {response.student_name}
                       </td>
-                      <td className="border border-[#0d0d0d] px-4 py-3">
+                      <td className="border border-[#e5e7eb] px-4 py-3">
                         {GRADE_NUMBER_TO_NAME[response.grade] || response.grade}
                       </td>
-                      <td className="border border-[#0d0d0d] px-4 py-3">
+                      <td className="border border-[#e5e7eb] px-4 py-3">
                         {formatSubjectBreakdown(response.response_data.subjects)}
                       </td>
-                      <td className="border border-[#0d0d0d] px-4 py-3 text-right">
+                      <td className="border border-[#e5e7eb] px-4 py-3 text-right">
                         {response.response_data.total_koma}コマ
                       </td>
-                      <td className="border border-[#0d0d0d] px-4 py-3 text-right">
+                      <td className="border border-[#e5e7eb] px-4 py-3 text-right">
                         ¥{response.response_data.total_fee.toLocaleString()}
                       </td>
-                      <td className="border border-[#0d0d0d] px-4 py-3 text-center">
+                      <td className="border border-[#e5e7eb] px-4 py-3 text-center">
                         <input
                           type="checkbox"
                           checked={response.status_checks?.charged === true}
                           onChange={(e) => {
                             handleStatusCheck(response.id, 'charged', e.target.checked);
                           }}
-                          className="w-4 h-4 text-[#ff8e3c] border-[#0d0d0d] rounded focus:ring-[#ff8e3c] cursor-pointer"
+                          className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6] cursor-pointer"
                         />
                       </td>
-                      <td className="border border-[#0d0d0d] px-4 py-3 text-center">
+                      <td className="border border-[#e5e7eb] px-4 py-3 text-center">
                         <input
                           type="checkbox"
                           checked={response.status_checks?.seated === true}
                           onChange={(e) => {
                             handleStatusCheck(response.id, 'seated', e.target.checked);
                           }}
-                          className="w-4 h-4 text-[#ff8e3c] border-[#0d0d0d] rounded focus:ring-[#ff8e3c] cursor-pointer"
+                          className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6] cursor-pointer"
                         />
                       </td>
-                      <td className="border border-[#0d0d0d] px-4 py-3 text-center">
+                      <td className="border border-[#e5e7eb] px-4 py-3 text-center">
                         {response.linked_student_id ? (
                           <span className="text-green-600">済</span>
                         ) : (
                           <span className="text-gray-400">未</span>
                         )}
                       </td>
-                      <td className="border border-[#0d0d0d] px-4 py-3">
+                      <td className="border border-[#e5e7eb] px-4 py-3">
                         <div className="flex gap-2">
-                          <button className="text-sm text-[#2a2a2a] hover:text-[#0d0d0d]">
+                          <button className="text-sm text-[#4b5563] hover:text-[#1f2937]">
                             詳細
                           </button>
                           {response.linked_student_id ? (
                             <button
                               onClick={() => handleUnlinkStudent(response.id)}
-                              className="text-sm text-[#d9376e] hover:text-[#c02d5a]"
+                              className="text-sm text-[#ef4444] hover:text-[#dc2626]"
                             >
                               解除
                             </button>
                           ) : (
                             <button
                               onClick={() => handleOpenLinkModal(response)}
-                              className="text-sm text-[#2a2a2a] hover:text-[#0d0d0d]"
+                              className="text-sm text-[#4b5563] hover:text-[#1f2937]"
                             >
                               紐付け
                             </button>

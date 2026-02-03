@@ -11,6 +11,7 @@ import type { ApplicationItem } from '@/types/database';
 interface MoshiPeriodEditorProps {
   isOpen: boolean;
   period: MoshiPeriod | null;
+  schoolId?: string;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -20,6 +21,7 @@ const ALL_GRADES = ['小4', '小5', '小6', '中1', '中2', '中3'];
 export function MoshiPeriodEditor({
   isOpen,
   period,
+  schoolId,
   onClose,
   onSuccess,
 }: MoshiPeriodEditorProps) {
@@ -187,7 +189,7 @@ export function MoshiPeriodEditor({
       if (period) {
         await updateMoshiPeriod(period.id, data);
       } else {
-        await createMoshiPeriod(data);
+        await createMoshiPeriod(data, schoolId);
       }
 
       onSuccess();
@@ -222,13 +224,13 @@ export function MoshiPeriodEditor({
 
         {/* 基本情報 */}
         <section>
-          <h3 className="text-sm font-semibold text-[#0d0d0d] mb-3 border-b border-[#0d0d0d] pb-1">
+          <h3 className="text-sm font-semibold text-[#1f2937] mb-3 border-b border-[#e5e7eb] pb-1">
             基本情報
           </h3>
 
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+              <label className="block text-sm font-medium mb-1 text-[#1f2937]">
                 期間キー <span className="text-red-500">*</span>
               </label>
               <Input
@@ -241,7 +243,7 @@ export function MoshiPeriodEditor({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+              <label className="block text-sm font-medium mb-1 text-[#1f2937]">
                 タイトル <span className="text-red-500">*</span>
               </label>
               <Input
@@ -254,19 +256,19 @@ export function MoshiPeriodEditor({
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">説明文</label>
+            <label className="block text-sm font-medium mb-1 text-[#1f2937]">説明文</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="フォーム上部に表示される説明文"
               rows={3}
-              className="w-full border border-[#0d0d0d] rounded-lg px-3 py-2 resize-y text-sm"
+              className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 resize-y text-sm"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">公開開始</label>
+              <label className="block text-sm font-medium mb-1 text-[#1f2937]">公開開始</label>
               <Input
                 type="datetime-local"
                 value={publishStart}
@@ -274,13 +276,13 @@ export function MoshiPeriodEditor({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">公開終了</label>
+              <label className="block text-sm font-medium mb-1 text-[#1f2937]">公開終了</label>
               <Input
                 type="datetime-local"
                 value={publishEnd}
                 onChange={(e) => setPublishEnd(e.target.value)}
               />
-              <p className="text-xs text-[#2a2a2a]/60 mt-1">
+              <p className="text-xs text-[#4b5563]/60 mt-1">
                 ※空欄にすると永続的に公開されます
               </p>
             </div>
@@ -289,13 +291,13 @@ export function MoshiPeriodEditor({
 
         {/* 受験日時 */}
         <section>
-          <h3 className="text-sm font-semibold text-[#0d0d0d] mb-3 border-b border-[#0d0d0d] pb-1">
+          <h3 className="text-sm font-semibold text-[#1f2937] mb-3 border-b border-[#e5e7eb] pb-1">
             受験日時
           </h3>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+              <label className="block text-sm font-medium mb-1 text-[#1f2937]">
                 受験日 <span className="text-red-500">*</span>
               </label>
               <Input
@@ -304,13 +306,13 @@ export function MoshiPeriodEditor({
                 onChange={(e) => setExamDate(e.target.value)}
               />
               {examDate && (
-                <p className="text-sm text-[#2a2a2a] mt-1">
+                <p className="text-sm text-[#4b5563] mt-1">
                   → {formatDateLabel(examDate)}
                 </p>
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+              <label className="block text-sm font-medium mb-1 text-[#1f2937]">
                 受験時間 <span className="text-red-500">*</span>
               </label>
               <Input
@@ -325,7 +327,7 @@ export function MoshiPeriodEditor({
 
         {/* 対象学年 */}
         <section>
-          <h3 className="text-sm font-semibold text-[#0d0d0d] mb-3 border-b border-[#0d0d0d] pb-1">
+          <h3 className="text-sm font-semibold text-[#1f2937] mb-3 border-b border-[#e5e7eb] pb-1">
             対象学年
           </h3>
 
@@ -335,7 +337,7 @@ export function MoshiPeriodEditor({
                 key={grade}
                 className={`px-4 py-2 rounded-lg border cursor-pointer transition-colors ${
                   selectedGrades.includes(grade)
-                    ? 'bg-[#ff8e3c] text-white border-[#ff8e3c]'
+                    ? 'bg-[#3b82f6] text-white border-[#3b82f6]'
                     : 'bg-white hover:bg-gray-50 border-gray-300'
                 }`}
               >
@@ -353,7 +355,7 @@ export function MoshiPeriodEditor({
 
         {/* 振替設定 */}
         <section>
-          <h3 className="text-sm font-semibold text-[#0d0d0d] mb-3 border-b border-[#0d0d0d] pb-1">
+          <h3 className="text-sm font-semibold text-[#1f2937] mb-3 border-b border-[#e5e7eb] pb-1">
             振替受験設定
           </h3>
 
@@ -364,13 +366,13 @@ export function MoshiPeriodEditor({
               onChange={(e) => setFurikaeEnabled(e.target.checked)}
               className="rounded border-gray-300"
             />
-            <span className="text-sm text-[#0d0d0d]">振替受験を許可する</span>
+            <span className="text-sm text-[#1f2937]">振替受験を許可する</span>
           </label>
 
           {furikaeEnabled && (
             <div className="pl-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">注意事項</label>
+                <label className="block text-sm font-medium mb-1 text-[#1f2937]">注意事項</label>
                 <Input
                   type="text"
                   value={furikaeNote}
@@ -380,7 +382,7 @@ export function MoshiPeriodEditor({
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+                  <label className="block text-sm font-medium mb-1 text-[#1f2937]">
                     小学生の目安時間
                   </label>
                   <Input
@@ -391,7 +393,7 @@ export function MoshiPeriodEditor({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+                  <label className="block text-sm font-medium mb-1 text-[#1f2937]">
                     中学生の目安時間
                   </label>
                   <Input
@@ -408,22 +410,22 @@ export function MoshiPeriodEditor({
 
         {/* 完了メッセージ・紐付け */}
         <section>
-          <h3 className="text-sm font-semibold text-[#0d0d0d] mb-3 border-b border-[#0d0d0d] pb-1">
+          <h3 className="text-sm font-semibold text-[#1f2937] mb-3 border-b border-[#e5e7eb] pb-1">
             その他
           </h3>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">完了メッセージ</label>
+            <label className="block text-sm font-medium mb-1 text-[#1f2937]">完了メッセージ</label>
             <textarea
               value={completionMessage}
               onChange={(e) => setCompletionMessage(e.target.value)}
               rows={2}
-              className="w-full border border-[#0d0d0d] rounded-lg px-3 py-2 resize-y text-sm"
+              className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 resize-y text-sm"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+            <label className="block text-sm font-medium mb-1 text-[#1f2937]">
               申込状況項目との紐付け
             </label>
             <Select
@@ -441,7 +443,7 @@ export function MoshiPeriodEditor({
         </section>
 
         {/* フッター */}
-        <div className="flex justify-end gap-3 pt-4 border-t border-[#0d0d0d]">
+        <div className="flex justify-end gap-3 pt-4 border-t border-[#e5e7eb]">
           <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
             キャンセル
           </Button>

@@ -1,4 +1,4 @@
-// 増コマ申込フォームの型定義
+﻿// 増コマ申込フォームの型定義
 
 import type { FormPeriod, FormResponse } from '@/types/database';
 

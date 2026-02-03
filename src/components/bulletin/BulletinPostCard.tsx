@@ -6,6 +6,8 @@ import { Edit2, Archive, Users, Check } from 'lucide-react';
 
 interface BulletinPostCardProps {
   post: BulletinPost;
+  /** 投稿先の教室名（複数教室表示時に表示） */
+  schoolName?: string | null;
   canEdit: boolean;
   canRead: boolean; // 講師のみが既読機能を使える
   onRead: () => void;
@@ -16,6 +18,7 @@ interface BulletinPostCardProps {
 
 export function BulletinPostCard({
   post,
+  schoolName,
   canEdit,
   canRead,
   onRead,
@@ -34,36 +37,48 @@ export function BulletinPostCard({
     <div
       className={`p-3 rounded-lg border ${
         canRead && post.is_read
-          ? 'bg-[#fffffe] border-[#0d0d0d]'
+          ? 'bg-white border border-gray-200'
           : canRead && !post.is_read
-          ? 'bg-[#eff0f3] border-[#0d0d0d] border-2'
-          : 'bg-[#fffffe] border-[#0d0d0d]'
+          ? 'bg-white border border-gray-200 border-l-4 border-l-[#d32f2f] shadow-sm'
+          : 'bg-white border border-gray-200'
       }`}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="flex items-center gap-2 flex-1">
-          {post.is_pinned && <span className="text-sm">📌</span>}
-          {canRead && !post.is_read && <span className="text-sm">●</span>}
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          {post.is_pinned && <span className="text-sm shrink-0">📌</span>}
+          {canRead && !post.is_read && <span className="text-sm shrink-0">●</span>}
           {post.label && (
             <span
-              className="px-2 py-0.5 rounded text-xs font-medium text-white"
+              className="shrink-0 px-2 py-0.5 rounded text-xs font-medium text-white"
               style={{ backgroundColor: post.label.color }}
             >
               {post.label.name}
             </span>
           )}
-          <span className="font-semibold text-[#0d0d0d]">{post.title}</span>
+          <span className="font-semibold text-[#1a1a1a] truncate">{post.title}</span>
         </div>
+        {schoolName && (
+          <span className="shrink-0 text-xs text-gray-400 ml-2">
+            {schoolName}
+          </span>
+        )}
       </div>
 
-      <div className="flex items-center justify-between text-xs text-[#2a2a2a]/70 mb-2">
+      {/* 本文を表示 */}
+      {post.content && (
+        <div className="text-sm text-[var(--text)] whitespace-pre-wrap break-words mb-2 pl-0">
+          {post.content}
+        </div>
+      )}
+
+      <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
         <span>
           {createdDate} {creatorName}
         </span>
         {canEdit && (
           <button
             onClick={onShowReaders}
-            className="flex items-center gap-1 hover:text-[#0d0d0d] transition-colors"
+            className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors"
           >
             <Users className="w-3 h-3" />
             <span>既読: {post.read_count}人</span>
@@ -84,7 +99,7 @@ export function BulletinPostCard({
           </Button>
         )}
         {canRead && post.is_read && (
-          <span className="text-xs text-[#2a2a2a]/70">✓既読</span>
+          <span className="text-xs text-gray-400">✓既読</span>
         )}
         {canEdit && (
           <>

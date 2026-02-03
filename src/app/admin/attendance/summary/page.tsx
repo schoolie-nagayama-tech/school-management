@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { AdminLayout } from '@/components/layouts';
@@ -215,10 +215,10 @@ export default function AttendanceSummaryPage() {
           <CardContent>
             {isLoading ? (
               <div className="flex justify-center py-8">
-                <div className="text-[#2a2a2a]">読み込み中...</div>
+                <div className="text-[#4b5563]">読み込み中...</div>
               </div>
             ) : summaryData.length === 0 ? (
-              <div className="text-center py-8 text-[#2a2a2a]">
+              <div className="text-center py-8 text-[#4b5563]">
                 データがありません
               </div>
             ) : (

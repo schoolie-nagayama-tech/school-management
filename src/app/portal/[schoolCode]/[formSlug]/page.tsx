@@ -15,14 +15,14 @@ export default async function FormPage({ params, searchParams }: FormPageProps) 
 
   if (!form) {
     return (
-      <div className="min-h-screen bg-[#eff0f3] flex items-center justify-center">
+      <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center">
         <div className="max-w-2xl mx-auto px-4 text-center">
-          <h1 className="text-2xl font-bold text-[#0d0d0d] mb-4">
+          <h1 className="text-2xl font-bold text-[#1f2937] mb-4">
             このフォームは現在受付していません
           </h1>
           <a
             href={`/portal/${schoolCode}`}
-            className="text-[#ff8e3c] hover:underline"
+            className="text-[#3b82f6] hover:underline"
           >
             お申込みページに戻る
           </a>
@@ -34,12 +34,12 @@ export default async function FormPage({ params, searchParams }: FormPageProps) 
   // 送信完了画面
   if (submitted === 'true') {
     return (
-      <div className="min-h-screen bg-[#eff0f3]">
+      <div className="min-h-screen bg-[#f3f4f6]">
         <div className="max-w-2xl mx-auto px-4 py-8">
-          <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-8 text-center">
+          <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 text-center">
             <div className="mb-6">
               <svg
-                className="w-16 h-16 mx-auto text-[#ff8e3c]"
+                className="w-16 h-16 mx-auto text-[#3b82f6]"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -52,15 +52,15 @@ export default async function FormPage({ params, searchParams }: FormPageProps) 
                 />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-[#0d0d0d] mb-4">送信完了</h2>
+            <h2 className="text-2xl font-bold text-[#1f2937] mb-4">送信完了</h2>
             {form.completion_message && (
-              <p className="text-[#2a2a2a] mb-6 whitespace-pre-line">
+              <p className="text-[#4b5563] mb-6 whitespace-pre-line">
                 {form.completion_message}
               </p>
             )}
             <a
               href={`/portal/${schoolCode}`}
-              className="inline-block px-6 py-3 bg-[#ff8e3c] text-[#0d0d0d] font-semibold rounded-lg hover:bg-[#ff9e5c] transition-colors"
+              className="inline-block px-6 py-3 bg-[#3b82f6] text-white font-semibold rounded-lg hover:bg-[#60a5fa] transition-colors"
             >
               戻る
             </a>
@@ -71,18 +71,18 @@ export default async function FormPage({ params, searchParams }: FormPageProps) 
   }
 
   return (
-    <div className="min-h-screen bg-[#eff0f3]">
+    <div className="min-h-screen bg-[#f3f4f6]">
       <div className="max-w-2xl mx-auto px-4 py-8">
         {/* ヘッダー */}
         <header className="mb-6">
-          <h1 className="text-2xl font-bold text-[#0d0d0d] mb-2">{form.title}</h1>
+          <h1 className="text-2xl font-bold text-[#1f2937] mb-2">{form.title}</h1>
           {form.description && (
-            <p className="text-[#2a2a2a] whitespace-pre-line">{form.description}</p>
+            <p className="text-[#4b5563] whitespace-pre-line">{form.description}</p>
           )}
         </header>
 
         {/* フォーム */}
-        <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6">
+        <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
           {form.slug === 'test-koma' ? (
             <KomaFormRenderer
               form={form}

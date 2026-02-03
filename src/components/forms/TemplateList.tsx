@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui';
@@ -93,7 +93,7 @@ export function TemplateList({ onSelectTemplate, onRefresh }: TemplateListProps)
 
   if (isLoading) {
     return (
-      <div className="text-center py-8 text-[#2a2a2a]">読み込み中...</div>
+      <div className="text-center py-8 text-[#4b5563]">読み込み中...</div>
     );
   }
 
@@ -101,20 +101,20 @@ export function TemplateList({ onSelectTemplate, onRefresh }: TemplateListProps)
     <>
       <div className="space-y-4">
         {errorMessage && (
-          <div className="bg-[#d9376e]/20 text-[#d9376e] px-4 py-2 rounded border border-[#d9376e]">
+          <div className="bg-[#ef4444]/20 text-[#ef4444] px-4 py-2 rounded border border-[#ef4444]">
             {errorMessage}
           </div>
         )}
 
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold text-[#0d0d0d]">テンプレート一覧</h3>
+          <h3 className="text-lg font-semibold text-[#1f2937]">テンプレート一覧</h3>
           <Button onClick={handleCreate} disabled={isSubmitting}>
             新規作成
           </Button>
         </div>
 
         {templates.length === 0 ? (
-          <div className="text-center py-8 text-[#2a2a2a]">
+          <div className="text-center py-8 text-[#4b5563]">
             テンプレートがありません。新規作成ボタンからテンプレートを作成してください。
           </div>
         ) : (
@@ -122,16 +122,16 @@ export function TemplateList({ onSelectTemplate, onRefresh }: TemplateListProps)
             {templates.map((template) => (
               <div
                 key={template.id}
-                className="flex items-center justify-between p-4 bg-[#fffffe] rounded-lg border border-[#0d0d0d]"
+                className="flex items-center justify-between p-4 bg-white rounded-lg border border-[#e5e7eb]"
               >
                 <div className="flex-1">
-                  <div className="font-medium text-[#0d0d0d]">{template.name}</div>
+                  <div className="font-medium text-[#1f2937]">{template.name}</div>
                   {template.description && (
-                    <div className="text-sm text-[#2a2a2a]/60 mt-1">
+                    <div className="text-sm text-[#4b5563]/60 mt-1">
                       {template.description}
                     </div>
                   )}
-                  <div className="text-xs text-[#2a2a2a]/60 mt-1">
+                  <div className="text-xs text-[#4b5563]/60 mt-1">
                     作成日: {new Date(template.created_at).toLocaleDateString('ja-JP')}
                   </div>
                 </div>

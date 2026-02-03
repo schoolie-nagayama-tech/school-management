@@ -59,7 +59,7 @@ export default function MogiPortalPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
-        <p className="text-[#2a2a2a]">読み込み中...</p>
+        <p className="text-[#4b5563]">読み込み中...</p>
       </div>
     );
   }
@@ -67,14 +67,14 @@ export default function MogiPortalPage() {
   if (errorMessage || !school || !period) {
     return (
       <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-4">
-        <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-8 max-w-md w-full text-center">
-          <h1 className="text-2xl font-bold text-[#0d0d0d] mb-4">
+        <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 max-w-md w-full text-center">
+          <h1 className="text-2xl font-bold text-[#1f2937] mb-4">
             {school?.name || '教室'}
           </h1>
-          <p className="text-[#2a2a2a] mb-6">{errorMessage || '現在受付していません'}</p>
+          <p className="text-[#4b5563] mb-6">{errorMessage || '現在受付していません'}</p>
           <Link
             href={`/portal/${schoolCode}`}
-            className="inline-block px-6 py-3 bg-[#ff8e3c] text-[#0d0d0d] font-medium rounded-lg hover:bg-[#ff9e5c] transition-colors"
+            className="inline-block px-6 py-3 bg-[#3b82f6] text-white font-medium rounded-lg hover:bg-[#60a5fa] transition-colors"
           >
             ポータルに戻る
           </Link>
@@ -88,16 +88,16 @@ export default function MogiPortalPage() {
       <div className="max-w-2xl mx-auto px-4 py-8">
         {!period ? (
           // 公開期間外
-          <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-8 text-center">
-            <h1 className="text-2xl font-bold text-[#0d0d0d] mb-4">
+          <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 text-center">
+            <h1 className="text-2xl font-bold text-[#1f2937] mb-4">
               Vもぎ申込
             </h1>
-            <p className="text-[#2a2a2a] mb-6">
+            <p className="text-[#4b5563] mb-6">
               現在、Vもぎ申込の受付は行っておりません。
             </p>
             <a
               href={`/portal/${schoolCode}`}
-              className="inline-block px-6 py-3 bg-[#ff8e3c] text-[#0d0d0d] font-medium rounded-lg hover:bg-[#ff9e5c] transition-colors"
+              className="inline-block px-6 py-3 bg-[#3b82f6] text-white font-medium rounded-lg hover:bg-[#60a5fa] transition-colors"
             >
               ポータルに戻る
             </a>

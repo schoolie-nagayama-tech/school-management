@@ -1,4 +1,4 @@
-// 模試申込フォーム関連の型定義
+﻿// 模試申込フォーム関連の型定義
 
 // 学年名と数値のマッピング（模試用）
 export const MOSHI_GRADE_NAME_TO_NUMBER: Record<string, number> = {

@@ -87,6 +87,7 @@ export default function PortalSettingsPage() {
   const [editingMenu, setEditingMenu] = useState<PortalMenu | null>(null);
   const [editingPeriod, setEditingPeriod] = useState<FormPeriod | null>(null);
   const [editingFormType, setEditingFormType] = useState<FormType | null>(null);
+  const [editingSchoolId, setEditingSchoolId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toasts, removeToast, success, error } = useToast();
 
@@ -169,10 +170,13 @@ export default function PortalSettingsPage() {
       return null;
     }
 
-    // 該当フォームタイプの公開中期間を検索
+    // 該当フォームタイプの公開中期間を検索（公開開始日未設定＝制限なし、is_active 未設定＝有効とみなす）
     const now = new Date();
     const activePeriod = formPeriods.find((period) => {
-      if (period.form_type !== formType || !period.is_active) {
+      if (period.form_type !== formType) {
+        return false;
+      }
+      if (period.is_active === false) {
         return false;
       }
 
@@ -194,6 +198,14 @@ export default function PortalSettingsPage() {
     }
 
     return null;
+  };
+
+  // 登録済み期間一覧（フォーム作成有無の確認用）
+  const getRegisteredPeriodsForMenu = (menu: PortalMenu): FormPeriod[] => {
+    if (menu.link_type !== 'internal') return [];
+    const formType = MENU_KEY_TO_FORM_TYPE[menu.menu_key];
+    if (!formType) return [];
+    return formPeriods.filter((p) => p.form_type === formType);
   };
 
   // 表示/非表示のトグル
@@ -342,6 +354,7 @@ export default function PortalSettingsPage() {
       return;
     }
     const schoolId = selectedSchoolIds[0];
+    setEditingSchoolId(schoolId);
     let periods: FormPeriod[] = [];
     
     try {
@@ -389,6 +402,7 @@ export default function PortalSettingsPage() {
   const handleClosePeriodEditor = () => {
     setEditingPeriod(null);
     setEditingFormType(null);
+    setEditingSchoolId(null);
   };
 
   const handlePeriodUpdateSuccess = () => {
@@ -402,8 +416,8 @@ export default function PortalSettingsPage() {
       <AdminLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="w-12 h-12 border-4 border-[#ff8e3c] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-[#2a2a2a]">読み込み中...</p>
+            <div className="w-12 h-12 border-4 border-[#3b82f6] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-[#4b5563]">読み込み中...</p>
           </div>
         </div>
       </AdminLayout>
@@ -424,29 +438,29 @@ export default function PortalSettingsPage() {
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <AdminLayout headerTitle="ポータル設定">
         {errorMessage && (
-          <div className="mb-4 p-4 bg-[#d9376e]/20 border border-[#d9376e] rounded-lg">
-            <p className="text-sm text-[#d9376e]">{errorMessage}</p>
+          <div className="mb-4 p-4 bg-[#ef4444]/20 border border-[#ef4444] rounded-lg">
+            <p className="text-sm text-[#ef4444]">{errorMessage}</p>
           </div>
         )}
 
         {/* ポータルURL表示 */}
         {portalUrls.length > 0 && (
-          <div className="mb-6 bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6">
-            <h2 className="text-lg font-bold text-[#0d0d0d] mb-4">ポータルURL</h2>
+          <div className="mb-6 bg-white rounded-xl border border-[#e5e7eb] p-6">
+            <h2 className="text-lg font-bold text-[#1f2937] mb-4">ポータルURL</h2>
             {selectedSchoolId === 'all' ? (
               <div className="space-y-4">
-                <div className="p-4 bg-[#ff8e3c]/10 border border-[#ff8e3c] rounded-lg">
-                  <p className="text-sm font-medium text-[#0d0d0d] mb-2">
+                <div className="p-4 bg-[#3b82f6]/10 border border-[#3b82f6] rounded-lg">
+                  <p className="text-sm font-medium text-[#1f2937] mb-2">
                     すべての教室を選択中
                   </p>
-                  <p className="text-xs text-[#2a2a2a]">
+                  <p className="text-xs text-[#4b5563]">
                     各教室ごとにポータルURLが異なります。保護者には各教室のURLを共有してください。
                   </p>
                 </div>
                 <div className="space-y-3">
                   {portalUrls.map(({ school, url }) => (
                     <div key={school.id} className="space-y-1">
-                      <label className="block text-sm font-medium text-[#0d0d0d]">
+                      <label className="block text-sm font-medium text-[#1f2937]">
                         {school.code === 'DEFAULT' ? 'デフォルト' : school.name}
                       </label>
                       <div className="flex gap-2">
@@ -454,7 +468,7 @@ export default function PortalSettingsPage() {
                           type="text"
                           value={url}
                           readOnly
-                          className="flex-1 px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#eff0f3] text-[#2a2a2a]"
+                          className="flex-1 px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-[#f3f4f6] text-[#4b5563]"
                         />
                         <Button onClick={() => handleCopyUrl(url)} className="min-w-[100px]">
                           コピー
@@ -471,13 +485,13 @@ export default function PortalSettingsPage() {
                     type="text"
                     value={portalUrls[0]?.url || ''}
                     readOnly
-                    className="flex-1 px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#eff0f3] text-[#2a2a2a]"
+                    className="flex-1 px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-[#f3f4f6] text-[#4b5563]"
                   />
                   <Button onClick={() => handleCopyUrl(portalUrls[0]?.url || '')} className="min-w-[100px]">
                     コピー
                   </Button>
                 </div>
-                <p className="text-xs text-[#2a2a2a]/60">
+                <p className="text-xs text-[#4b5563]/60">
                   このURLを保護者に共有してください
                 </p>
               </div>
@@ -487,26 +501,26 @@ export default function PortalSettingsPage() {
 
         {/* フォーム一覧（統合版） */}
         {isLoading ? (
-          <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-8 text-center">
-            <p className="text-[#2a2a2a]">読み込み中...</p>
+          <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 text-center">
+            <p className="text-[#4b5563]">読み込み中...</p>
           </div>
         ) : (
-          <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6">
-            <h2 className="text-lg font-bold text-[#0d0d0d] mb-4">フォーム一覧</h2>
+          <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
+            <h2 className="text-lg font-bold text-[#1f2937] mb-4">フォーム一覧</h2>
             <div className="overflow-x-auto">
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
                 onDragEnd={handleDragEnd}
               >
-                <table className="w-full border-collapse border border-[#0d0d0d] text-sm">
+                <table className="w-full border-collapse border border-[#e5e7eb] text-sm">
                   <thead>
-                    <tr className="bg-[#eff0f3]">
-                      <th className="border border-[#0d0d0d] px-4 py-3 text-left">タイトル</th>
-                      <th className="border border-[#0d0d0d] px-4 py-3 text-left">
+                    <tr className="bg-[#f3f4f6]">
+                      <th className="border border-[#e5e7eb] px-4 py-3 text-left">タイトル</th>
+                      <th className="border border-[#e5e7eb] px-4 py-3 text-left">
                         現在の公開状況
                       </th>
-                      <th className="border border-[#0d0d0d] px-4 py-3 text-left">操作</th>
+                      <th className="border border-[#e5e7eb] px-4 py-3 text-left">操作</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -527,6 +541,7 @@ export default function PortalSettingsPage() {
                             formType={formType}
                             settingsPath={settingsPath}
                             activePeriodTitle={getActivePeriodTitle(menu)}
+                            registeredPeriods={getRegisteredPeriodsForMenu(menu)}
                             isSubmitting={isSubmitting}
                             onToggleVisibility={handleToggleVisibility}
                             onEdit={handleEdit}
@@ -560,6 +575,7 @@ export default function PortalSettingsPage() {
               <ZoukomaPeriodEditor
                 isOpen={!!editingFormType}
                 period={editingPeriod as ZoukomaPeriod}
+                schoolId={editingSchoolId ?? undefined}
                 onClose={handleClosePeriodEditor}
                 onSuccess={handlePeriodUpdateSuccess}
               />
@@ -568,6 +584,7 @@ export default function PortalSettingsPage() {
               <ZoukomaPeriodEditor
                 isOpen={!!editingFormType}
                 period={null}
+                schoolId={editingSchoolId ?? undefined}
                 onClose={handleClosePeriodEditor}
                 onSuccess={handlePeriodUpdateSuccess}
               />
@@ -576,6 +593,7 @@ export default function PortalSettingsPage() {
               <MogiPeriodEditor
                 isOpen={!!editingFormType}
                 period={editingPeriod as MogiPeriod}
+                schoolId={editingSchoolId ?? undefined}
                 onClose={handleClosePeriodEditor}
                 onSuccess={handlePeriodUpdateSuccess}
               />
@@ -584,6 +602,7 @@ export default function PortalSettingsPage() {
               <MoshiPeriodEditor
                 isOpen={!!editingFormType}
                 period={editingPeriod as MoshiPeriod}
+                schoolId={editingSchoolId ?? undefined}
                 onClose={handleClosePeriodEditor}
                 onSuccess={handlePeriodUpdateSuccess}
               />
@@ -592,6 +611,7 @@ export default function PortalSettingsPage() {
               <SoudanPeriodEditor
                 isOpen={!!editingFormType}
                 period={editingPeriod as SoudanPeriod}
+                schoolId={editingSchoolId ?? undefined}
                 onClose={handleClosePeriodEditor}
                 onSuccess={handlePeriodUpdateSuccess}
               />
@@ -600,6 +620,7 @@ export default function PortalSettingsPage() {
               <ShukaisuPeriodEditor
                 isOpen={!!editingFormType}
                 period={editingPeriod as ShukaisuPeriod}
+                schoolId={editingSchoolId ?? undefined}
                 onClose={handleClosePeriodEditor}
                 onSuccess={handlePeriodUpdateSuccess}
               />
@@ -608,6 +629,7 @@ export default function PortalSettingsPage() {
               <YoubiPeriodEditor
                 isOpen={!!editingFormType}
                 period={editingPeriod as YoubiPeriod}
+                schoolId={editingSchoolId ?? undefined}
                 onClose={handleClosePeriodEditor}
                 onSuccess={handlePeriodUpdateSuccess}
               />

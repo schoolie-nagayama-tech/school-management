@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { BulletinPost, BulletinLabel } from '@/types/bulletin';
+import type { School } from '@/types/database';
 import { Modal } from '@/components/ui';
 import { Button, Input } from '@/components/ui';
 
@@ -10,6 +11,13 @@ interface BulletinPostModalProps {
   onClose: () => void;
   post?: BulletinPost | null;
   labels: BulletinLabel[];
+  schoolId: string;
+  /** 複数教室時に投稿先を選択するための教室一覧 */
+  schoolIds?: string[];
+  schools?: School[];
+  /** 新規投稿時の投稿先（複数選択可） */
+  selectedSchoolIds?: string[];
+  onSelectedSchoolIdsChange?: (ids: string[]) => void;
   onSaved: () => void;
 }
 
@@ -19,6 +27,10 @@ export function BulletinPostModal({
   post,
   labels,
   schoolId,
+  schoolIds,
+  schools = [],
+  selectedSchoolIds = [],
+  onSelectedSchoolIdsChange,
   onSaved,
 }: BulletinPostModalProps) {
   const [title, setTitle] = useState('');
@@ -26,6 +38,9 @@ export function BulletinPostModal({
   const [labelId, setLabelId] = useState<string | null>(null);
   const [isPinned, setIsPinned] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const availableSchools = schools.filter((s) => schoolIds?.includes(s.id)) ?? [];
+  const allSelected = availableSchools.length > 0 && selectedSchoolIds.length >= availableSchools.length;
 
   useEffect(() => {
     if (post) {
@@ -46,17 +61,21 @@ export function BulletinPostModal({
       return;
     }
 
+    const targetSchoolIds = post ? [post.school_id] : (selectedSchoolIds.length > 0 ? selectedSchoolIds : [schoolId]);
+    if (targetSchoolIds.length === 0) {
+      alert('投稿先の教室を1つ以上選択してください');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const { createBulletinPost, updateBulletinPost } = await import('@/lib/api/bulletin');
       const { supabase } = await import('@/lib/supabase');
 
-      // 現在のユーザーIDを取得
       const { data: { user } } = await supabase.auth.getUser();
       const userId = user?.id;
 
       if (post) {
-        // 更新
         await updateBulletinPost(post.id, {
           title: title.trim(),
           content: content.trim(),
@@ -64,17 +83,15 @@ export function BulletinPostModal({
           is_pinned: isPinned,
         }, userId);
       } else {
-        // 作成
-        await createBulletinPost(
-          schoolId,
-          {
-            title: title.trim(),
-            content: content.trim(),
-            label_id: labelId,
-            is_pinned: isPinned,
-          },
-          userId
-        );
+        const payload = {
+          title: title.trim(),
+          content: content.trim(),
+          label_id: targetSchoolIds.length === 1 ? labelId : null,
+          is_pinned: isPinned,
+        };
+        for (const sid of targetSchoolIds) {
+          await createBulletinPost(sid, payload, userId);
+        }
       }
 
       onSaved();
@@ -87,12 +104,62 @@ export function BulletinPostModal({
     }
   };
 
+  const showSchoolSelector = !post && schoolIds && schoolIds.length > 1 && availableSchools.length > 0;
+
+  const toggleSchool = (id: string) => {
+    if (selectedSchoolIds.includes(id)) {
+      onSelectedSchoolIdsChange?.(selectedSchoolIds.filter((s) => s !== id));
+    } else {
+      onSelectedSchoolIdsChange?.([...selectedSchoolIds, id]);
+    }
+  };
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      onSelectedSchoolIdsChange?.([]);
+    } else {
+      onSelectedSchoolIdsChange?.(availableSchools.map((s) => s.id));
+    }
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={post ? '投稿を編集' : '新規投稿'}>
       <div className="space-y-4">
+        {showSchoolSelector && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-[#1f2937]">投稿先の教室</label>
+              <button
+                type="button"
+                onClick={toggleSelectAll}
+                className="text-xs text-[#1e3a5f] hover:underline"
+              >
+                {allSelected ? 'すべて解除' : 'すべて選択'}
+              </button>
+            </div>
+            <div className="space-y-1.5 max-h-40 overflow-y-auto border border-gray-200 rounded-lg p-2 bg-white">
+              {availableSchools.map((s) => (
+                <label
+                  key={s.id}
+                  className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded px-2 py-1.5"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedSchoolIds.includes(s.id)}
+                    onChange={() => toggleSchool(s.id)}
+                    className="w-4 h-4 rounded border-gray-300 text-[#1e3a5f] focus:ring-[#1e3a5f]"
+                  />
+                  <span className="text-sm text-[#1f2937]">
+                    {s.code === 'DEFAULT' ? 'デフォルト' : s.name}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
         <div>
-          <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
-            タイトル <span className="text-[#d9376e]">*</span>
+          <label className="block text-sm font-medium text-[#1f2937] mb-1">
+            タイトル <span className="text-[#ef4444]">*</span>
           </label>
           <Input
             value={title}
@@ -102,34 +169,39 @@ export function BulletinPostModal({
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
-            ラベル
-          </label>
-          <select
-            value={labelId || ''}
-            onChange={(e) => setLabelId(e.target.value || null)}
-            className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a] focus:ring-2 focus:ring-[#ff8e3c] focus:border-[#ff8e3c]"
-          >
-            <option value="">ラベルなし</option>
-            {labels.map((label) => (
-              <option key={label.id} value={label.id}>
-                {label.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        {(!showSchoolSelector || selectedSchoolIds.length <= 1) && (
+          <div>
+            <label className="block text-sm font-medium text-[#1f2937] mb-1">
+              ラベル
+            </label>
+            <select
+              value={labelId || ''}
+              onChange={(e) => setLabelId(e.target.value || null)}
+              className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:ring-2 focus:ring-[#3b82f6] focus:border-[#3b82f6]"
+            >
+              <option value="">ラベルなし</option>
+              {labels.map((label) => (
+                <option key={label.id} value={label.id}>
+                  {label.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        {showSchoolSelector && selectedSchoolIds.length > 1 && (
+          <p className="text-xs text-gray-500">複数教室への投稿のため、ラベルは付きません。</p>
+        )}
 
         <div>
-          <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
-            本文 <span className="text-[#d9376e]">*</span>
+          <label className="block text-sm font-medium text-[#1f2937] mb-1">
+            本文 <span className="text-[#ef4444]">*</span>
           </label>
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="本文を入力"
             rows={8}
-            className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff8e3c] resize-none"
+            className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6] resize-none"
           />
         </div>
 
@@ -141,7 +213,7 @@ export function BulletinPostModal({
             onChange={(e) => setIsPinned(e.target.checked)}
             className="w-4 h-4"
           />
-          <label htmlFor="isPinned" className="text-sm text-[#0d0d0d]">
+          <label htmlFor="isPinned" className="text-sm text-[#1f2937]">
             ピン留めする
           </label>
         </div>
@@ -152,7 +224,12 @@ export function BulletinPostModal({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!title.trim() || !content.trim() || isSubmitting}
+            disabled={
+              !title.trim() ||
+              !content.trim() ||
+              isSubmitting ||
+              (!post && showSchoolSelector && selectedSchoolIds.length === 0)
+            }
           >
             {isSubmitting ? '保存中...' : '保存'}
           </Button>

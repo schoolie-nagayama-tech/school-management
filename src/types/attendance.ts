@@ -1,4 +1,4 @@
-// コマ種別
+﻿// コマ種別
 export interface AttendanceType {
   id: string;
   school_id: string;

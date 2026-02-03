@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -268,7 +268,7 @@ export default function AttendanceManagementPage() {
             {/* 一括承認ボタン */}
             {submittedCount > 0 && (
               <div className="mb-4 flex items-center gap-4">
-                <span className="text-sm text-[#2a2a2a]">
+                <span className="text-sm text-[#4b5563]">
                   提出済み: {submittedCount}件
                 </span>
                 {selectedIds.size > 0 && (
@@ -282,10 +282,10 @@ export default function AttendanceManagementPage() {
 
             {isLoading ? (
               <div className="flex justify-center py-8">
-                <div className="text-[#2a2a2a]">読み込み中...</div>
+                <div className="text-[#4b5563]">読み込み中...</div>
               </div>
             ) : sheets.length === 0 ? (
-              <div className="text-center py-8 text-[#2a2a2a]">
+              <div className="text-center py-8 text-[#4b5563]">
                 出勤簿がありません
               </div>
             ) : (
@@ -390,7 +390,7 @@ export default function AttendanceManagementPage() {
             <DialogTitle>出勤簿を修正</DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <p className="text-sm text-[#2a2a2a] mb-4">
+            <p className="text-sm text-[#4b5563] mb-4">
               {rejectingSheet?.teacher.name}の出勤簿を修正します。
             </p>
             <div className="space-y-2">

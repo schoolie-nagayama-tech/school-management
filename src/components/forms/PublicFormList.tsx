@@ -12,7 +12,7 @@ export function PublicFormList({ forms, schoolCode }: PublicFormListProps) {
   if (forms.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-[#2a2a2a] text-lg">現在受付中のお申込みはありません</p>
+        <p className="text-[#4b5563] text-lg">現在受付中のお申込みはありません</p>
       </div>
     );
   }
@@ -30,19 +30,19 @@ export function PublicFormList({ forms, schoolCode }: PublicFormListProps) {
         return (
           <div
             key={form.id}
-            className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6 hover:shadow-lg transition-shadow"
+            className="bg-white rounded-xl border border-[#e5e7eb] p-6 hover:shadow-lg transition-shadow"
           >
-            <h3 className="text-xl font-bold text-[#0d0d0d] mb-2">{form.title}</h3>
+            <h3 className="text-xl font-bold text-[#1f2937] mb-2">{form.title}</h3>
             {form.description && (
-              <p className="text-[#2a2a2a] mb-4 line-clamp-2">{form.description}</p>
+              <p className="text-[#4b5563] mb-4 line-clamp-2">{form.description}</p>
             )}
             <div className="flex items-center justify-between">
               {endDate && (
-                <p className="text-sm text-[#2a2a2a]/60">{endDate}まで</p>
+                <p className="text-sm text-[#4b5563]/60">{endDate}まで</p>
               )}
               <Link
                 href={`/portal/${schoolCode}/${form.slug}`}
-                className="px-6 py-3 bg-[#ff8e3c] text-[#0d0d0d] font-semibold rounded-lg hover:bg-[#ff9e5c] transition-colors min-h-[44px] flex items-center justify-center"
+                className="px-6 py-3 bg-[#3b82f6] text-white font-semibold rounded-lg hover:bg-[#60a5fa] transition-colors min-h-[44px] flex items-center justify-center"
               >
                 回答する
               </Link>

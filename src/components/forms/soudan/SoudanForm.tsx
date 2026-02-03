@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -148,11 +148,11 @@ export function SoudanForm({ school, period }: SoudanFormProps) {
       <div className="flex items-center justify-between mb-6">
         <button
           onClick={() => router.push(`/portal/${school.code}`)}
-          className="text-[#2a2a2a] hover:text-[#0d0d0d]"
+          className="text-[#4b5563] hover:text-[#1f2937]"
         >
           ← 戻る
         </button>
-        <h1 className="text-xl font-bold text-[#0d0d0d]">お客様相談</h1>
+        <h1 className="text-xl font-bold text-[#1f2937]">お客様相談</h1>
         <div className="w-12"></div>
       </div>
 
@@ -170,7 +170,7 @@ export function SoudanForm({ school, period }: SoudanFormProps) {
         <div className="space-y-4">
           {/* 生徒名 */}
           <div>
-            <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+            <label className="block text-sm font-medium mb-1 text-[#1f2937]">
               生徒名
             </label>
             <Input
@@ -183,7 +183,7 @@ export function SoudanForm({ school, period }: SoudanFormProps) {
 
           {/* 学年 */}
           <div>
-            <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+            <label className="block text-sm font-medium mb-1 text-[#1f2937]">
               学年
             </label>
             <Select
@@ -198,7 +198,7 @@ export function SoudanForm({ school, period }: SoudanFormProps) {
 
           {/* メールアドレス */}
           <div>
-            <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+            <label className="block text-sm font-medium mb-1 text-[#1f2937]">
               メールアドレス
             </label>
             <Input
@@ -215,7 +215,7 @@ export function SoudanForm({ school, period }: SoudanFormProps) {
 
           {/* 電話番号 */}
           <div>
-            <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+            <label className="block text-sm font-medium mb-1 text-[#1f2937]">
               電話番号
             </label>
             <Input
@@ -229,7 +229,7 @@ export function SoudanForm({ school, period }: SoudanFormProps) {
 
         {/* 相談区分 */}
         <div>
-          <label className="block text-sm font-medium mb-2 text-[#0d0d0d]">
+          <label className="block text-sm font-medium mb-2 text-[#1f2937]">
             相談区分 <span className="text-red-500">*</span>
           </label>
           <div className="space-y-2">
@@ -238,7 +238,7 @@ export function SoudanForm({ school, period }: SoudanFormProps) {
                 key={cat}
                 className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
                   selectedCategories.includes(cat)
-                    ? 'border-[#ff8e3c] bg-orange-50'
+                    ? 'border-[#3b82f6] bg-orange-50'
                     : 'border-gray-300 hover:bg-gray-50'
                 }`}
               >
@@ -248,7 +248,7 @@ export function SoudanForm({ school, period }: SoudanFormProps) {
                   onChange={() => toggleCategory(cat)}
                   className="mr-3"
                 />
-                <span className="text-[#0d0d0d]">{cat}</span>
+                <span className="text-[#1f2937]">{cat}</span>
               </label>
             ))}
           </div>
@@ -259,7 +259,7 @@ export function SoudanForm({ school, period }: SoudanFormProps) {
 
         {/* 相談内容 */}
         <div>
-          <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+          <label className="block text-sm font-medium mb-1 text-[#1f2937]">
             相談内容 <span className="text-red-500">*</span>
           </label>
           <textarea
@@ -267,12 +267,12 @@ export function SoudanForm({ school, period }: SoudanFormProps) {
             onChange={(e) => setContent(e.target.value)}
             placeholder="ご相談内容をご記入ください"
             rows={6}
-            className={`w-full border border-[#0d0d0d] rounded-lg px-3 py-2 resize-y min-h-[120px] text-sm ${
+            className={`w-full border border-[#e5e7eb] rounded-lg px-3 py-2 resize-y min-h-[120px] text-sm ${
               errors.content ? 'border-red-500' : ''
             }`}
           />
           <p className={`text-xs mt-1 ${
-            content.length < 10 ? 'text-red-500' : 'text-[#2a2a2a]/60'
+            content.length < 10 ? 'text-red-500' : 'text-[#4b5563]/60'
           }`}>
             {content.length}文字（10文字以上）
           </p>

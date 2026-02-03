@@ -1,4 +1,4 @@
-import { supabase } from '../supabase';
+﻿import { supabase } from '../supabase';
 import type { PortalMenu, PortalMenuInsert, PortalMenuUpdate } from '@/types/database';
 import { getDefaultSchoolId, getSchoolByCode } from './schools';
 

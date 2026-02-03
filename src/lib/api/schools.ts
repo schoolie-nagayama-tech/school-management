@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+﻿import { supabase } from '@/lib/supabase';
 import type { School } from '@/types/database';
 
 // デフォルト教室IDを取得（環境変数から）

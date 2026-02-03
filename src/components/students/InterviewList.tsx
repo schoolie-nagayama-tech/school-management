@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { StudentInterview, InterviewType, INTERVIEW_TYPE_LABELS, INTERVIEW_TYPE_COLORS } from '@/types/database';
@@ -107,14 +107,14 @@ export function InterviewList({ studentId, schoolId }: InterviewListProps) {
   };
 
   if (isLoading) {
-    return <div className="p-4 text-center text-[#2a2a2a]">読み込み中...</div>;
+    return <div className="p-4 text-center text-[#4b5563]">読み込み中...</div>;
   }
 
   return (
     <div>
       {/* ヘッダー */}
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold text-[#0d0d0d]">面談記録</h3>
+        <h3 className="text-lg font-semibold text-[#1f2937]">面談記録</h3>
         <Button onClick={handleAdd} size="sm">+ 記録を追加</Button>
       </div>
 
@@ -136,8 +136,8 @@ export function InterviewList({ studentId, schoolId }: InterviewListProps) {
 
       {/* 記録一覧 */}
       {filteredInterviews.length === 0 ? (
-        <div className="text-center py-12 bg-[#eff0f3] rounded-lg border border-[#0d0d0d]">
-          <p className="text-[#2a2a2a] mb-4">まだ面談記録がありません</p>
+        <div className="text-center py-12 bg-[#f3f4f6] rounded-lg border border-[#e5e7eb]">
+          <p className="text-[#4b5563] mb-4">まだ面談記録がありません</p>
           <Button onClick={handleAdd}>+ 最初の記録を追加</Button>
         </div>
       ) : (
@@ -146,14 +146,14 @@ export function InterviewList({ studentId, schoolId }: InterviewListProps) {
             .sort(([a], [b]) => b.localeCompare(a))
             .map(([date, dateInterviews]) => (
               <div key={date}>
-                <div className="text-sm font-medium text-[#2a2a2a] mb-2">
+                <div className="text-sm font-medium text-[#4b5563] mb-2">
                   {formatDate(date)}
                 </div>
                 <div className="space-y-3">
                   {dateInterviews.map((interview) => (
                     <div
                       key={interview.id}
-                      className={`bg-[#fffffe] border border-[#0d0d0d] rounded-lg p-4 ${
+                      className={`bg-white border border-[#e5e7eb] rounded-lg p-4 ${
                         interview.interview_type === 'task' && interview.is_completed
                           ? 'opacity-50'
                           : ''
@@ -181,7 +181,7 @@ export function InterviewList({ studentId, schoolId }: InterviewListProps) {
                                   toastError('更新に失敗しました');
                                 }
                               }}
-                              className="w-5 h-5 rounded border-[#0d0d0d] text-[#ff8e3c] focus:ring-[#ff8e3c] cursor-pointer"
+                              className="w-5 h-5 rounded border-[#e5e7eb] text-[#3b82f6] focus:ring-[#3b82f6] cursor-pointer"
                             />
                           )}
                           <span
@@ -196,20 +196,20 @@ export function InterviewList({ studentId, schoolId }: InterviewListProps) {
                           <div className="flex gap-2">
                             <button
                               onClick={() => handleEdit(interview)}
-                              className="text-sm text-[#2a2a2a] hover:text-[#ff8e3c] transition-colors"
+                              className="text-sm text-[#4b5563] hover:text-[#3b82f6] transition-colors"
                             >
                               編集
                             </button>
                             <button
                               onClick={() => handleDelete(interview.id)}
-                              className="text-sm text-[#d9376e] hover:text-[#d9376e]/80 transition-colors"
+                              className="text-sm text-[#ef4444] hover:text-[#ef4444]/80 transition-colors"
                             >
                               削除
                             </button>
                           </div>
                         )}
                       </div>
-                      <p className={`text-[#0d0d0d] whitespace-pre-wrap text-sm leading-relaxed ${
+                      <p className={`text-[#1f2937] whitespace-pre-wrap text-sm leading-relaxed ${
                         interview.interview_type === 'task' && interview.is_completed
                           ? 'line-through'
                           : ''
@@ -218,7 +218,7 @@ export function InterviewList({ studentId, schoolId }: InterviewListProps) {
                       </p>
                       {/* 完了日時表示（タスクの場合） */}
                       {interview.interview_type === 'task' && interview.is_completed && interview.completed_at && (
-                        <p className="text-xs text-[#2a2a2a]/60 mt-2">
+                        <p className="text-xs text-[#4b5563]/60 mt-2">
                           完了: {new Date(interview.completed_at).toLocaleString('ja-JP')}
                         </p>
                       )}

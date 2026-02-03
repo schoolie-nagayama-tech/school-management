@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { Modal, Button, Input } from '@/components/ui';
@@ -177,8 +177,8 @@ export function PortalMenuEditModal({
     <Modal isOpen={isOpen} onClose={onClose} title="メニュー編集">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
-            タイトル <span className="text-[#d9376e]">*</span>
+          <label className="block text-sm font-medium text-[#1f2937] mb-2">
+            タイトル <span className="text-[#ef4444]">*</span>
           </label>
           <Input
             type="text"
@@ -193,7 +193,7 @@ export function PortalMenuEditModal({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
+          <label className="block text-sm font-medium text-[#1f2937] mb-2">
             説明文
           </label>
           <textarea
@@ -201,15 +201,15 @@ export function PortalMenuEditModal({
             onChange={(e) =>
               setFormData({ ...formData, description: e.target.value })
             }
-            className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a] focus:ring-2 focus:ring-[#ff8e3c] focus:border-[#ff8e3c] disabled:opacity-50"
+            className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:ring-2 focus:ring-[#3b82f6] focus:border-[#3b82f6] disabled:opacity-50"
             rows={3}
             disabled={isSubmitting}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
-            リンク種別 <span className="text-[#d9376e]">*</span>
+          <label className="block text-sm font-medium text-[#1f2937] mb-2">
+            リンク種別 <span className="text-[#ef4444]">*</span>
           </label>
           <select
             value={formData.link_type}
@@ -226,13 +226,13 @@ export function PortalMenuEditModal({
                 link_url: newLinkUrl,
               });
             }}
-            className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a] focus:ring-2 focus:ring-[#ff8e3c] focus:border-[#ff8e3c] disabled:opacity-50"
+            className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:ring-2 focus:ring-[#3b82f6] focus:border-[#3b82f6] disabled:opacity-50"
             disabled={isSubmitting}
           >
             <option value="internal">内部フォーム</option>
             <option value="external">外部URL</option>
           </select>
-          <p className="text-xs text-[#2a2a2a]/60 mt-1">
+          <p className="text-xs text-[#4b5563]/60 mt-1">
             {formData.link_type === 'internal'
               ? '内部フォームの場合はリンク先パスが自動設定されます'
               : '外部URLへのリンク（例: https://calendar.google.com）'}
@@ -245,8 +245,8 @@ export function PortalMenuEditModal({
               // 面談申し込みの場合は複数リンク
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-[#0d0d0d]">
-                    外部リンク <span className="text-[#d9376e]">*</span>
+                  <label className="block text-sm font-medium text-[#1f2937]">
+                    外部リンク <span className="text-[#ef4444]">*</span>
                   </label>
                   <Button
                     type="button"
@@ -260,13 +260,13 @@ export function PortalMenuEditModal({
                   </Button>
                 </div>
                 {errors.link_urls && (
-                  <p className="text-xs text-[#d9376e] mb-2">{errors.link_urls}</p>
+                  <p className="text-xs text-[#ef4444] mb-2">{errors.link_urls}</p>
                 )}
                 <div className="space-y-3">
                   {formData.link_urls.map((link, index) => (
-                    <div key={index} className="p-3 border border-[#0d0d0d] rounded-lg space-y-2">
+                    <div key={index} className="p-3 border border-[#e5e7eb] rounded-lg space-y-2">
                       <div className="flex items-center justify-between">
-                        <label className="text-xs font-medium text-[#0d0d0d]">
+                        <label className="text-xs font-medium text-[#1f2937]">
                           リンク {index + 1}
                         </label>
                         {formData.link_urls.length > 1 && (
@@ -274,7 +274,7 @@ export function PortalMenuEditModal({
                             type="button"
                             onClick={() => handleRemoveLink(index)}
                             variant="ghost"
-                            className="p-1 text-[#d9376e] hover:text-[#c02d5a]"
+                            className="p-1 text-[#ef4444] hover:text-[#dc2626]"
                             disabled={isSubmitting}
                           >
                             <Trash2 className="w-4 h-4" />
@@ -282,8 +282,8 @@ export function PortalMenuEditModal({
                         )}
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-[#0d0d0d] mb-1">
-                          ラベル <span className="text-[#d9376e]">*</span>
+                        <label className="block text-xs font-medium text-[#1f2937] mb-1">
+                          ラベル <span className="text-[#ef4444]">*</span>
                         </label>
                         <Input
                           type="text"
@@ -296,8 +296,8 @@ export function PortalMenuEditModal({
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-[#0d0d0d] mb-1">
-                          URL <span className="text-[#d9376e]">*</span>
+                        <label className="block text-xs font-medium text-[#1f2937] mb-1">
+                          URL <span className="text-[#ef4444]">*</span>
                         </label>
                         <Input
                           type="text"
@@ -312,15 +312,15 @@ export function PortalMenuEditModal({
                     </div>
                   ))}
                 </div>
-                <p className="text-xs text-[#2a2a2a]/60 mt-2">
+                <p className="text-xs text-[#4b5563]/60 mt-2">
                   複数の外部リンクを設定できます（新しいタブで開きます）
                 </p>
               </div>
             ) : (
               // その他の外部リンクは単一URL
               <div>
-                <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
-                  リンク先URL <span className="text-[#d9376e]">*</span>
+                <label className="block text-sm font-medium text-[#1f2937] mb-2">
+                  リンク先URL <span className="text-[#ef4444]">*</span>
                 </label>
                 <Input
                   type="text"
@@ -333,7 +333,7 @@ export function PortalMenuEditModal({
                   required
                   disabled={isSubmitting}
                 />
-                <p className="text-xs text-[#2a2a2a]/60 mt-1">
+                <p className="text-xs text-[#4b5563]/60 mt-1">
                   外部URLを入力（新しいタブで開きます）
                 </p>
               </div>
@@ -343,13 +343,13 @@ export function PortalMenuEditModal({
 
         {formData.link_type === 'internal' && (
           <div>
-            <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
+            <label className="block text-sm font-medium text-[#1f2937] mb-2">
               リンク先パス（自動設定）
             </label>
-            <div className="px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#eff0f3] text-[#2a2a2a]">
+            <div className="px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-[#f3f4f6] text-[#4b5563]">
               {getLinkUrlFromMenuKey(menu.menu_key) || '(未設定)'}
             </div>
-            <p className="text-xs text-[#2a2a2a]/60 mt-1">
+            <p className="text-xs text-[#4b5563]/60 mt-1">
               内部フォームのパスは自動設定されます（公開期間が設定されている必要があります）
             </p>
           </div>
@@ -363,18 +363,18 @@ export function PortalMenuEditModal({
             onChange={(e) =>
               setFormData({ ...formData, is_visible: e.target.checked })
             }
-            className="w-4 h-4 text-[#ff8e3c] border-[#0d0d0d] rounded focus:ring-[#ff8e3c]"
+            className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6]"
             disabled={isSubmitting}
           />
           <label
             htmlFor="is_visible"
-            className="ml-2 text-sm font-medium text-[#0d0d0d]"
+            className="ml-2 text-sm font-medium text-[#1f2937]"
           >
             表示する
           </label>
         </div>
 
-        <div className="flex justify-end gap-2 pt-4 border-t border-[#0d0d0d]">
+        <div className="flex justify-end gap-2 pt-4 border-t border-[#e5e7eb]">
           <Button
             type="button"
             onClick={onClose}

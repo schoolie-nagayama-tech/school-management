@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { Button, Input, Select } from '@/components/ui';
@@ -292,29 +292,29 @@ export function StudentForm({
 
       {/* 受講科目 */}
       <div>
-        <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
+        <label className="block text-sm font-medium text-[#1f2937] mb-2">
           受講科目
         </label>
         {isLoadingSubjects ? (
-          <p className="text-sm text-[#2a2a2a]">読み込み中...</p>
+          <p className="text-sm text-[#4b5563]">読み込み中...</p>
         ) : availableSubjects.length === 0 ? (
-          <p className="text-sm text-[#2a2a2a]">
+          <p className="text-sm text-[#4b5563]">
             この学年カテゴリには科目が登録されていません
           </p>
         ) : (
-          <div className="space-y-2 border border-[#0d0d0d] rounded-lg p-3 max-h-48 overflow-y-auto bg-[#fffffe]">
+          <div className="space-y-2 border border-[#e5e7eb] rounded-lg p-3 max-h-48 overflow-y-auto bg-white">
             {availableSubjects.map((subject) => (
               <label
                 key={subject.id}
-                className="flex items-center gap-2 cursor-pointer hover:bg-[#eff0f3] p-2 rounded"
+                className="flex items-center gap-2 cursor-pointer hover:bg-[#f3f4f6] p-2 rounded"
               >
                 <input
                   type="checkbox"
                   checked={selectedSubjectIds.includes(subject.id)}
                   onChange={() => handleSubjectToggle(subject.id)}
-                  className="w-4 h-4 text-[#ff8e3c] border-[#0d0d0d] rounded focus:ring-[#ff8e3c]"
+                  className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6]"
                 />
-                <span className="text-sm text-[#0d0d0d]">{subject.name}</span>
+                <span className="text-sm text-[#1f2937]">{subject.name}</span>
               </label>
             ))}
           </div>
@@ -334,7 +334,7 @@ export function StudentForm({
       )}
 
       {/* ボタン */}
-      <div className="flex justify-end gap-3 pt-4 border-t border-[#0d0d0d]">
+      <div className="flex justify-end gap-3 pt-4 border-t border-[#e5e7eb]">
         <Button type="button" variant="secondary" onClick={onCancel}>
           キャンセル
         </Button>

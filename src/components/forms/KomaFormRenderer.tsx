@@ -189,7 +189,7 @@ export function KomaFormRenderer({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Heroセクション */}
-      <div className="bg-gradient-to-r from-[#ff8e3c] to-[#ff9e5c] rounded-xl p-8 text-center text-white">
+      <div className="bg-gradient-to-r from-[#3b82f6] to-[#60a5fa] rounded-xl p-8 text-center text-white">
         <h2 className="text-3xl font-bold mb-2">{form.title}</h2>
         <p className="text-lg opacity-90 mb-4">{form.description}</p>
         <span className="inline-block bg-white/20 px-4 py-1 rounded-full text-sm">
@@ -198,12 +198,12 @@ export function KomaFormRenderer({
       </div>
 
       {/* 基本情報 */}
-      <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6">
-        <h3 className="text-lg font-semibold text-[#0d0d0d] mb-4">基本情報</h3>
+      <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
+        <h3 className="text-lg font-semibold text-[#1f2937] mb-4">基本情報</h3>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-[#2a2a2a] mb-2">
-              生徒名 <span className="text-[#d9376e]">*</span>
+            <label className="block text-sm font-medium text-[#4b5563] mb-2">
+              生徒名 <span className="text-[#ef4444]">*</span>
             </label>
             <Input
               value={studentName}
@@ -221,13 +221,13 @@ export function KomaFormRenderer({
               disabled={isSubmitting}
             />
             {errors.studentName && (
-              <p className="text-sm text-[#d9376e] mt-1">{errors.studentName}</p>
+              <p className="text-sm text-[#ef4444] mt-1">{errors.studentName}</p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-[#2a2a2a] mb-2">
-              学年 <span className="text-[#d9376e]">*</span>
+            <label className="block text-sm font-medium text-[#4b5563] mb-2">
+              学年 <span className="text-[#ef4444]">*</span>
             </label>
             <Select
               value={grade === '' ? '' : String(grade)}
@@ -251,13 +251,13 @@ export function KomaFormRenderer({
               ))}
             </Select>
             {errors.grade && (
-              <p className="text-sm text-[#d9376e] mt-1">{errors.grade}</p>
+              <p className="text-sm text-[#ef4444] mt-1">{errors.grade}</p>
             )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-[#2a2a2a] mb-2">
-              メールアドレス <span className="text-[#d9376e]">*</span>
+            <label className="block text-sm font-medium text-[#4b5563] mb-2">
+              メールアドレス <span className="text-[#ef4444]">*</span>
             </label>
             <Input
               type="email"
@@ -276,22 +276,22 @@ export function KomaFormRenderer({
               disabled={isSubmitting}
             />
             {errors.email && (
-              <p className="text-sm text-[#d9376e] mt-1">{errors.email}</p>
+              <p className="text-sm text-[#ef4444] mt-1">{errors.email}</p>
             )}
           </div>
         </div>
       </div>
 
       {/* 科目入力 */}
-      <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6">
-        <h3 className="text-lg font-semibold text-[#0d0d0d] mb-4">科目別コマ数</h3>
+      <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
+        <h3 className="text-lg font-semibold text-[#1f2937] mb-4">科目別コマ数</h3>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {subjectFields.map((field) => {
             const subjectName = field.label.replace('（コマ）', '');
             const options = (field.options as { min?: number; max?: number; step?: number }) || {};
             return (
               <div key={field.id}>
-                <label className="block text-sm font-medium text-[#2a2a2a] mb-2">
+                <label className="block text-sm font-medium text-[#4b5563] mb-2">
                   {subjectName}
                 </label>
                 <Input
@@ -314,30 +314,30 @@ export function KomaFormRenderer({
             );
           })}
         </div>
-        <div className="mt-4 text-sm text-[#2a2a2a]">
-          合計: <span className="font-semibold text-[#0d0d0d]">{totalKomas}コマ</span>
+        <div className="mt-4 text-sm text-[#4b5563]">
+          合計: <span className="font-semibold text-[#1f2937]">{totalKomas}コマ</span>
         </div>
       </div>
 
       {/* 料金表と見積 */}
       {grade && grade !== '' && (
-        <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6">
-          <h3 className="text-lg font-semibold text-[#0d0d0d] mb-4">料金</h3>
+        <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
+          <h3 className="text-lg font-semibold text-[#1f2937] mb-4">料金</h3>
           <div className="space-y-4">
             <div>
-              <p className="text-sm text-[#2a2a2a] mb-2">単価（{gradeLabel}）</p>
-              <p className="text-xl font-bold text-[#0d0d0d]">
+              <p className="text-sm text-[#4b5563] mb-2">単価（{gradeLabel}）</p>
+              <p className="text-xl font-bold text-[#1f2937]">
                 ¥{getPriceByGradeNumber(Number(grade)).toLocaleString()} / コマ
               </p>
             </div>
-            <div className="border-t border-[#0d0d0d] pt-4">
+            <div className="border-t border-[#e5e7eb] pt-4">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-[#2a2a2a]">見積金額</span>
-                <span className="text-2xl font-bold text-[#0d0d0d]">
+                <span className="text-[#4b5563]">見積金額</span>
+                <span className="text-2xl font-bold text-[#1f2937]">
                   ¥{estimatedPrice.toLocaleString()}
                 </span>
               </div>
-              <p className="text-xs text-[#2a2a2a]/60">
+              <p className="text-xs text-[#4b5563]/60">
                 {totalKomas}コマ × ¥{getPriceByGradeNumber(Number(grade)).toLocaleString()}
               </p>
             </div>
@@ -346,8 +346,8 @@ export function KomaFormRenderer({
       )}
 
       {/* スロット選択 */}
-      <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6">
-        <h3 className="text-lg font-semibold text-[#0d0d0d] mb-4">出席可能日程</h3>
+      <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
+        <h3 className="text-lg font-semibold text-[#1f2937] mb-4">出席可能日程</h3>
         
         {/* 時限全選択ボタン */}
         <div className="mb-4 flex gap-2 flex-wrap">
@@ -361,8 +361,8 @@ export function KomaFormRenderer({
                 onClick={() => handlePeriodToggle(period)}
                 className={`px-3 py-1 text-sm rounded border ${
                   allSelected
-                    ? 'bg-[#ff8e3c] text-[#0d0d0d] border-[#0d0d0d]'
-                    : 'bg-[#eff0f3] text-[#2a2a2a] border-[#0d0d0d]'
+                    ? 'bg-[#3b82f6] text-white border-[#e5e7eb]'
+                    : 'bg-[#f3f4f6] text-[#4b5563] border-[#e5e7eb]'
                 }`}
                 disabled={isSubmitting}
               >
@@ -376,14 +376,14 @@ export function KomaFormRenderer({
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="bg-[#eff0f3] border-b border-[#0d0d0d]">
-                <th className="px-3 py-2 text-left text-sm font-semibold text-[#0d0d0d] border-r border-[#0d0d0d]">
+              <tr className="bg-[#f3f4f6] border-b border-[#e5e7eb]">
+                <th className="px-3 py-2 text-left text-sm font-semibold text-[#1f2937] border-r border-[#e5e7eb]">
                   日付
                 </th>
                 {[4, 5, 6, 7].map((period) => (
                   <th
                     key={period}
-                    className="px-3 py-2 text-center text-sm font-semibold text-[#0d0d0d] border-r border-[#0d0d0d] last:border-r-0"
+                    className="px-3 py-2 text-center text-sm font-semibold text-[#1f2937] border-r border-[#e5e7eb] last:border-r-0"
                   >
                     {period}限
                   </th>
@@ -396,13 +396,13 @@ export function KomaFormRenderer({
                 const dateLabel = `${date.getMonth() + 1}/${date.getDate()}(${['日', '月', '火', '水', '木', '金', '土'][date.getDay()]})`;
                 const allDateSelected = dateSlots.every((s) => selectedSlots.includes(s.id));
                 return (
-                  <tr key={dateKey} className="border-b border-[#0d0d0d]">
-                    <td className="px-3 py-2 text-sm text-[#2a2a2a] border-r border-[#0d0d0d]">
+                  <tr key={dateKey} className="border-b border-[#e5e7eb]">
+                    <td className="px-3 py-2 text-sm text-[#4b5563] border-r border-[#e5e7eb]">
                       <button
                         type="button"
                         onClick={() => handleDateToggle(dateKey)}
                         className={`font-medium ${
-                          allDateSelected ? 'text-[#ff8e3c]' : 'text-[#2a2a2a]'
+                          allDateSelected ? 'text-[#3b82f6]' : 'text-[#4b5563]'
                         }`}
                         disabled={isSubmitting}
                       >
@@ -415,7 +415,7 @@ export function KomaFormRenderer({
                       return (
                         <td
                           key={period}
-                          className="px-3 py-2 text-center border-r border-[#0d0d0d] last:border-r-0"
+                          className="px-3 py-2 text-center border-r border-[#e5e7eb] last:border-r-0"
                         >
                           {slot ? (
                             <label className="cursor-pointer">
@@ -430,11 +430,11 @@ export function KomaFormRenderer({
                                   }
                                 }}
                                 disabled={isSubmitting}
-                                className="w-4 h-4 text-[#ff8e3c] border-[#0d0d0d] rounded focus:ring-[#ff8e3c]"
+                                className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6]"
                               />
                             </label>
                           ) : (
-                            <span className="text-[#2a2a2a]/30">-</span>
+                            <span className="text-[#4b5563]/30">-</span>
                           )}
                         </td>
                       );
@@ -449,22 +449,22 @@ export function KomaFormRenderer({
 
       {/* 備考 */}
       {notesField && (
-        <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6">
-          <h3 className="text-lg font-semibold text-[#0d0d0d] mb-4">{notesField.label}</h3>
+        <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
+          <h3 className="text-lg font-semibold text-[#1f2937] mb-4">{notesField.label}</h3>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder={notesField.placeholder || ''}
             rows={4}
             disabled={isSubmitting}
-            className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a] focus:ring-2 focus:ring-[#ff8e3c] focus:border-[#ff8e3c] disabled:opacity-50"
+            className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:ring-2 focus:ring-[#3b82f6] focus:border-[#3b82f6] disabled:opacity-50"
           />
         </div>
       )}
 
       {/* 注意ボックス */}
-      <div className="bg-[#ff8e3c]/20 border border-[#ff8e3c] rounded-xl p-4">
-        <p className="text-sm text-[#0d0d0d]">
+      <div className="bg-[#3b82f6]/20 border border-[#3b82f6] rounded-xl p-4">
+        <p className="text-sm text-[#1f2937]">
           <strong>ご注意:</strong> 送信後、担当者よりご連絡いたします。
         </p>
       </div>

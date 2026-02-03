@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
       .from('user_profiles')
       .select('id')
       .eq('id', authData.user.id)
-      .single();
+      .maybeSingle();
 
     if (!existingProfileAfterAuth) {
       const { error: profileError } = await supabaseAdmin

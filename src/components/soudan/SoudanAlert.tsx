@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -52,7 +52,7 @@ export function SoudanAlert() {
     : '/forms/responses';
 
   return (
-    <div className="mb-6 bg-[#d9376e] border-2 border-[#0d0d0d] rounded-lg p-4 shadow-lg animate-pulse">
+    <div className="mb-6 bg-[#ef4444] border-2 border-[#e5e7eb] rounded-lg p-4 shadow-lg animate-pulse">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="text-2xl">⚠️</div>
@@ -67,7 +67,7 @@ export function SoudanAlert() {
         </div>
         <Link
           href={linkHref}
-          className="px-4 py-2 bg-white text-[#d9376e] font-bold rounded-lg hover:bg-gray-100 transition-colors whitespace-nowrap"
+          className="px-4 py-2 bg-white text-[#ef4444] font-bold rounded-lg hover:bg-gray-100 transition-colors whitespace-nowrap"
         >
           確認する →
         </Link>

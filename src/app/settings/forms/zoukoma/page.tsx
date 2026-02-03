@@ -142,26 +142,26 @@ export default function ZoukomaSettingsPage() {
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <AdminLayout headerTitle="増コマ申込 設定">
         {errorMessage && (
-          <div className="mb-4 p-4 bg-[#d9376e]/20 border border-[#d9376e] rounded-lg">
-            <p className="text-sm text-[#d9376e]">{errorMessage}</p>
+          <div className="mb-4 p-4 bg-[#ef4444]/20 border border-[#ef4444] rounded-lg">
+            <p className="text-sm text-[#ef4444]">{errorMessage}</p>
           </div>
         )}
 
-        <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6">
+        <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-bold text-[#0d0d0d]">期間一覧</h2>
+            <h2 className="text-lg font-bold text-[#1f2937]">期間一覧</h2>
             <div className="flex items-center gap-4">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={showArchived}
                   onChange={(e) => setShowArchived(e.target.checked)}
-                  className="w-4 h-4 text-[#ff8e3c] border-[#0d0d0d] rounded focus:ring-[#ff8e3c] cursor-pointer"
+                  className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6] cursor-pointer"
                 />
-                <span className="text-sm text-[#0d0d0d]">
+                <span className="text-sm text-[#1f2937]">
                   アーカイブ済みを表示
                   {archivedPeriods.length > 0 && (
-                    <span className="ml-1 text-[#2a2a2a]/60">
+                    <span className="ml-1 text-[#4b5563]/60">
                       ({archivedPeriods.length}件)
                     </span>
                   )}
@@ -172,7 +172,7 @@ export default function ZoukomaSettingsPage() {
                   setEditingPeriod(null);
                   setIsEditorOpen(true);
                 }}
-                className="px-4 py-2 bg-[#ff8e3c] text-[#0d0d0d] font-medium rounded-lg hover:bg-[#ff9e5c] transition-colors"
+                className="px-4 py-2 bg-[#3b82f6] text-white font-medium rounded-lg hover:bg-[#60a5fa] transition-colors"
               >
                 新規作成
               </button>
@@ -180,32 +180,32 @@ export default function ZoukomaSettingsPage() {
           </div>
 
           {isLoading ? (
-            <div className="text-center py-8 text-[#2a2a2a]">読み込み中...</div>
+            <div className="text-center py-8 text-[#4b5563]">読み込み中...</div>
           ) : periods.length === 0 ? (
-            <div className="text-center py-8 text-[#2a2a2a]">
+            <div className="text-center py-8 text-[#4b5563]">
               期間がありません
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse border border-[#0d0d0d] text-sm">
+              <table className="w-full border-collapse border border-[#e5e7eb] text-sm">
                 <thead>
-                  <tr className="bg-[#eff0f3]">
-                    <th className="border border-[#0d0d0d] px-4 py-3 text-left">
+                  <tr className="bg-[#f3f4f6]">
+                    <th className="border border-[#e5e7eb] px-4 py-3 text-left">
                       期間
                     </th>
-                    <th className="border border-[#0d0d0d] px-4 py-3 text-left">
+                    <th className="border border-[#e5e7eb] px-4 py-3 text-left">
                       タイトル
                     </th>
-                    <th className="border border-[#0d0d0d] px-4 py-3 text-left">
+                    <th className="border border-[#e5e7eb] px-4 py-3 text-left">
                       公開期間
                     </th>
-                    <th className="border border-[#0d0d0d] px-4 py-3 text-left">
+                    <th className="border border-[#e5e7eb] px-4 py-3 text-left">
                       状態
                     </th>
-                    <th className="border border-[#0d0d0d] px-4 py-3 text-left">
+                    <th className="border border-[#e5e7eb] px-4 py-3 text-left">
                       回答数
                     </th>
-                    <th className="border border-[#0d0d0d] px-4 py-3 text-left">
+                    <th className="border border-[#e5e7eb] px-4 py-3 text-left">
                       操作
                     </th>
                   </tr>
@@ -213,16 +213,16 @@ export default function ZoukomaSettingsPage() {
                 <tbody>
                   {activePeriods.map((period) => (
                     <tr key={period.id} className="table-row-hover">
-                      <td className="border border-[#0d0d0d] px-4 py-3">
+                      <td className="border border-[#e5e7eb] px-4 py-3">
                         {period.period_key}
                       </td>
-                      <td className="border border-[#0d0d0d] px-4 py-3">
+                      <td className="border border-[#e5e7eb] px-4 py-3">
                         {period.title}
                       </td>
-                      <td className="border border-[#0d0d0d] px-4 py-3">
+                      <td className="border border-[#e5e7eb] px-4 py-3">
                         {formatDateRange(period.publish_start, period.publish_end)}
                       </td>
-                      <td className="border border-[#0d0d0d] px-4 py-3">
+                      <td className="border border-[#e5e7eb] px-4 py-3">
                         {(() => {
                           const status = getPeriodStatus(period);
                           return (
@@ -234,18 +234,18 @@ export default function ZoukomaSettingsPage() {
                           );
                         })()}
                       </td>
-                      <td className="border border-[#0d0d0d] px-4 py-3">
+                      <td className="border border-[#e5e7eb] px-4 py-3">
                         {/* TODO: 回答数を取得して表示 */}
                         -
                       </td>
-                      <td className="border border-[#0d0d0d] px-4 py-3">
+                      <td className="border border-[#e5e7eb] px-4 py-3">
                         <div className="flex gap-2">
                           <button
                             onClick={() => {
                               setEditingPeriod(period);
                               setIsEditorOpen(true);
                             }}
-                            className="px-3 py-1 text-xs bg-[#eff0f3] text-[#2a2a2a] rounded hover:bg-[#0d0d0d]/10 transition-colors"
+                            className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] transition-colors"
                             disabled={isSubmitting}
                           >
                             編集
@@ -254,20 +254,20 @@ export default function ZoukomaSettingsPage() {
                             onClick={() => {
                               window.location.href = `/forms/responses/zoukoma/${period.period_key}`;
                             }}
-                            className="px-3 py-1 text-xs bg-[#eff0f3] text-[#2a2a2a] rounded hover:bg-[#0d0d0d]/10 transition-colors"
+                            className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] transition-colors"
                           >
                             回答一覧
                           </button>
                           <button
                             onClick={() => handleArchive(period)}
-                            className="px-3 py-1 text-xs bg-[#eff0f3] text-[#2a2a2a] rounded hover:bg-[#0d0d0d]/10 transition-colors"
+                            className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] transition-colors"
                             disabled={isSubmitting}
                           >
                             アーカイブ
                           </button>
                           <button
                             onClick={() => handleDelete(period)}
-                            className="px-3 py-1 text-xs bg-[#d9376e] text-white rounded hover:bg-[#c02d5a] transition-colors"
+                            className="px-3 py-1 text-xs bg-[#ef4444] text-white rounded hover:bg-[#dc2626] transition-colors"
                             disabled={isSubmitting}
                           >
                             削除
@@ -278,35 +278,35 @@ export default function ZoukomaSettingsPage() {
                   ))}
                   {showArchived && archivedPeriods.map((period) => (
                     <tr key={period.id} className="table-row-hover opacity-60">
-                      <td className="border border-[#0d0d0d] px-4 py-3">
+                      <td className="border border-[#e5e7eb] px-4 py-3">
                         {period.period_key}
                       </td>
-                      <td className="border border-[#0d0d0d] px-4 py-3">
+                      <td className="border border-[#e5e7eb] px-4 py-3">
                         {period.title}
                       </td>
-                      <td className="border border-[#0d0d0d] px-4 py-3">
+                      <td className="border border-[#e5e7eb] px-4 py-3">
                         {formatDateRange(period.publish_start, period.publish_end)}
                       </td>
-                      <td className="border border-[#0d0d0d] px-4 py-3">
+                      <td className="border border-[#e5e7eb] px-4 py-3">
                         <span className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                           アーカイブ
                         </span>
                       </td>
-                      <td className="border border-[#0d0d0d] px-4 py-3">
+                      <td className="border border-[#e5e7eb] px-4 py-3">
                         -
                       </td>
-                      <td className="border border-[#0d0d0d] px-4 py-3">
+                      <td className="border border-[#e5e7eb] px-4 py-3">
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleUnarchive(period)}
-                            className="px-3 py-1 text-xs bg-[#eff0f3] text-[#2a2a2a] rounded hover:bg-[#0d0d0d]/10 transition-colors"
+                            className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] transition-colors"
                             disabled={isSubmitting}
                           >
                             アーカイブ解除
                           </button>
                           <button
                             onClick={() => handleDelete(period)}
-                            className="px-3 py-1 text-xs bg-[#d9376e] text-white rounded hover:bg-[#c02d5a] transition-colors"
+                            className="px-3 py-1 text-xs bg-[#ef4444] text-white rounded hover:bg-[#dc2626] transition-colors"
                             disabled={isSubmitting}
                           >
                             削除

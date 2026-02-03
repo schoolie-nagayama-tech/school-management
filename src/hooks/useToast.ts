@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useCallback } from 'react';
 import type { Toast, ToastType } from '@/components/ui/Toast';

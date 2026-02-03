@@ -27,6 +27,8 @@ export interface BulletinPost {
   creator?: { display_name: string | null; email: string } | null;
   read_count?: number;
   is_read?: boolean;  // 現在のユーザーが既読か
+  /** 表示用：複数教室一覧時に設定される教室名 */
+  school_name?: string | null;
 }
 
 export interface BulletinRead {
@@ -40,6 +42,6 @@ export interface BulletinRead {
 
 // デフォルトラベル
 export const DEFAULT_LABELS = [
-  { name: '重要', color: '#d9376e', is_system: true },
-  { name: '通常', color: '#2a2a2a', is_system: true },
+  { name: '重要', color: '#ef4444', is_system: true },
+  { name: '通常', color: '#4b5563', is_system: true },
 ];

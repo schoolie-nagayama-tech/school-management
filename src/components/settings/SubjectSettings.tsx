@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { Button, Input, Modal } from '@/components/ui';
@@ -150,13 +150,13 @@ export function SubjectSettings({ isOpen, onClose }: SubjectSettingsProps) {
         <div className="space-y-6">
           {/* エラーメッセージ */}
           {errorMessage && (
-            <div className="p-4 bg-[#d9376e]/10 border border-[#d9376e] rounded-lg">
-              <p className="text-sm text-[#d9376e]">{errorMessage}</p>
+            <div className="p-4 bg-[#ef4444]/10 border border-[#ef4444] rounded-lg">
+              <p className="text-sm text-[#ef4444]">{errorMessage}</p>
             </div>
           )}
 
           {/* タブ */}
-          <div className="border-b border-[#0d0d0d]">
+          <div className="border-b border-[#e5e7eb]">
             <nav className="flex space-x-4">
               {(['elementary', 'middle', 'high'] as GradeCategory[]).map((category) => (
                 <button
@@ -166,8 +166,8 @@ export function SubjectSettings({ isOpen, onClose }: SubjectSettingsProps) {
                     py-2 px-4 text-sm font-medium border-b-2 transition-colors
                     ${
                       activeTab === category
-                        ? 'border-[#ff8e3c] text-[#0d0d0d]'
-                        : 'border-transparent text-[#2a2a2a] hover:text-[#0d0d0d] hover:border-[#0d0d0d]'
+                        ? 'border-[#3b82f6] text-[#1f2937]'
+                        : 'border-transparent text-[#4b5563] hover:text-[#1f2937] hover:border-[#e5e7eb]'
                     }
                   `}
                 >
@@ -180,28 +180,28 @@ export function SubjectSettings({ isOpen, onClose }: SubjectSettingsProps) {
           {/* 科目一覧 */}
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="animate-spin h-8 w-8 border-4 border-[#ff8e3c] border-t-transparent rounded-full"></div>
+              <div className="animate-spin h-8 w-8 border-4 border-[#3b82f6] border-t-transparent rounded-full"></div>
             </div>
           ) : (
             <div className="space-y-2">
               {currentSubjects.length === 0 ? (
-                <p className="text-sm text-[#2a2a2a] text-center py-8">
+                <p className="text-sm text-[#4b5563] text-center py-8">
                   科目が登録されていません
                 </p>
               ) : (
                 currentSubjects.map((subject, index) => (
                   <div
                     key={subject.id}
-                    className="flex items-center gap-3 p-3 bg-[#eff0f3] rounded-lg hover:bg-[#fffffe] transition-colors border border-[#0d0d0d]"
+                    className="flex items-center gap-3 p-3 bg-[#f3f4f6] rounded-lg hover:bg-white transition-colors border border-[#e5e7eb]"
                   >
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-[#0d0d0d]">{subject.name}</p>
+                      <p className="text-sm font-medium text-[#1f2937]">{subject.name}</p>
                     </div>
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => handleMoveUp(subject)}
                         disabled={index === 0 || isSubmitting}
-                        className="p-1.5 text-[#2a2a2a] hover:text-[#0d0d0d] disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="p-1.5 text-[#4b5563] hover:text-[#1f2937] disabled:opacity-50 disabled:cursor-not-allowed"
                         title="上に移動"
                       >
                         <svg
@@ -221,7 +221,7 @@ export function SubjectSettings({ isOpen, onClose }: SubjectSettingsProps) {
                       <button
                         onClick={() => handleMoveDown(subject)}
                         disabled={index === currentSubjects.length - 1 || isSubmitting}
-                        className="p-1.5 text-[#2a2a2a] hover:text-[#0d0d0d] disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="p-1.5 text-[#4b5563] hover:text-[#1f2937] disabled:opacity-50 disabled:cursor-not-allowed"
                         title="下に移動"
                       >
                         <svg
@@ -241,7 +241,7 @@ export function SubjectSettings({ isOpen, onClose }: SubjectSettingsProps) {
                       <button
                         onClick={() => handleEdit(subject)}
                         disabled={isSubmitting}
-                        className="p-1.5 text-[#2a2a2a] hover:text-[#ff8e3c] disabled:opacity-50"
+                        className="p-1.5 text-[#4b5563] hover:text-[#3b82f6] disabled:opacity-50"
                         title="編集"
                       >
                         <svg
@@ -261,7 +261,7 @@ export function SubjectSettings({ isOpen, onClose }: SubjectSettingsProps) {
                       <button
                         onClick={() => handleDelete(subject.id)}
                         disabled={isSubmitting}
-                        className="p-1.5 text-[#2a2a2a] hover:text-[#d9376e] disabled:opacity-50"
+                        className="p-1.5 text-[#4b5563] hover:text-[#ef4444] disabled:opacity-50"
                         title="削除"
                       >
                         <svg
@@ -286,7 +286,7 @@ export function SubjectSettings({ isOpen, onClose }: SubjectSettingsProps) {
           )}
 
           {/* 追加ボタン */}
-          <div className="flex justify-end pt-4 border-t border-[#0d0d0d]">
+          <div className="flex justify-end pt-4 border-t border-[#e5e7eb]">
             <Button onClick={handleAdd} disabled={isSubmitting}>
               <svg
                 className="w-4 h-4 mr-2"
@@ -397,8 +397,8 @@ function SubjectEditModal({
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="p-3 bg-[#d9376e]/10 border border-[#d9376e] rounded-lg">
-            <p className="text-sm text-[#d9376e]">{error}</p>
+          <div className="p-3 bg-[#ef4444]/10 border border-[#ef4444] rounded-lg">
+            <p className="text-sm text-[#ef4444]">{error}</p>
           </div>
         )}
 
@@ -413,7 +413,7 @@ function SubjectEditModal({
           autoFocus
         />
 
-        <div className="flex justify-end gap-3 pt-4 border-t border-[#0d0d0d]">
+        <div className="flex justify-end gap-3 pt-4 border-t border-[#e5e7eb]">
           <Button type="button" variant="secondary" onClick={onClose}>
             キャンセル
           </Button>

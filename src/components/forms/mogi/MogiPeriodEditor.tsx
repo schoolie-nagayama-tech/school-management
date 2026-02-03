@@ -10,6 +10,7 @@ import type { ApplicationItem } from '@/types/database';
 interface MogiPeriodEditorProps {
   isOpen: boolean;
   period: MogiPeriod | null;
+  schoolId?: string;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -17,6 +18,7 @@ interface MogiPeriodEditorProps {
 export function MogiPeriodEditor({
   isOpen,
   period,
+  schoolId,
   onClose,
   onSuccess,
 }: MogiPeriodEditorProps) {
@@ -250,15 +252,18 @@ export function MogiPeriodEditor({
         });
       } else {
         // 新規作成
-        await createMogiPeriod({
-          period_key: periodKey.trim(),
-          title: title.trim(),
-          settings,
-          publish_start: publishStart ? new Date(publishStart).toISOString() : null,
-          publish_end: publishEnd ? new Date(publishEnd).toISOString() : null,
-          is_active: shouldBeActive,
-          linked_application_item_id: linkedApplicationItemId || null,
-        });
+        await createMogiPeriod(
+          {
+            period_key: periodKey.trim(),
+            title: title.trim(),
+            settings,
+            publish_start: publishStart ? new Date(publishStart).toISOString() : null,
+            publish_end: publishEnd ? new Date(publishEnd).toISOString() : null,
+            is_active: shouldBeActive,
+            linked_application_item_id: linkedApplicationItemId || null,
+          },
+          schoolId
+        );
       }
       onSuccess();
       onClose();
@@ -324,8 +329,8 @@ export function MogiPeriodEditor({
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="p-3 bg-[#d9376e]/10 border border-[#d9376e] rounded-lg">
-            <p className="text-sm text-[#d9376e]">{error}</p>
+          <div className="p-3 bg-[#ef4444]/10 border border-[#ef4444] rounded-lg">
+            <p className="text-sm text-[#ef4444]">{error}</p>
           </div>
         )}
 
@@ -337,15 +342,15 @@ export function MogiPeriodEditor({
           placeholder="例: 2024-10"
           required
           disabled={isSubmitting || !!period} // 編集時は読み取り専用
-          className={period ? 'bg-[#eff0f3] cursor-not-allowed' : ''}
+          className={period ? 'bg-[#f3f4f6] cursor-not-allowed' : ''}
         />
         {period && (
-          <p className="text-xs text-[#2a2a2a]/60 mt-1">
+          <p className="text-xs text-[#4b5563]/60 mt-1">
             ※ 期間キーは変更できません
           </p>
         )}
         {!period && (
-          <p className="text-xs text-[#2a2a2a]/60 mt-1">
+          <p className="text-xs text-[#4b5563]/60 mt-1">
             ※ 期間キーは自動生成されます（YYYY-MM形式）。必要に応じて変更できます。
           </p>
         )}
@@ -375,12 +380,12 @@ export function MogiPeriodEditor({
           onChange={(e) => setPublishEnd(e.target.value)}
           disabled={isSubmitting}
         />
-        <p className="text-xs text-[#2a2a2a]/60 mt-1">
+        <p className="text-xs text-[#4b5563]/60 mt-1">
           ※空欄にすると永続的に公開されます
         </p>
 
-        <div className="p-3 bg-[#eff0f3] rounded-lg border border-[#0d0d0d]">
-          <p className="text-sm text-[#2a2a2a]">
+        <div className="p-3 bg-[#f3f4f6] rounded-lg border border-[#e5e7eb]">
+          <p className="text-sm text-[#4b5563]">
             ※ 公開状態は公開開始日時と公開終了日時に基づいて自動的に設定されます。
             {publishStart && (() => {
               const now = new Date();
@@ -398,8 +403,8 @@ export function MogiPeriodEditor({
 
         {/* 対象学年 */}
         <div>
-          <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
-            対象学年 <span className="text-[#d9376e]">*</span>
+          <label className="block text-sm font-medium text-[#1f2937] mb-2">
+            対象学年 <span className="text-[#ef4444]">*</span>
           </label>
           <div className="space-y-2">
             {availableGrades.map((grade) => (
@@ -415,9 +420,9 @@ export function MogiPeriodEditor({
                     }
                   }}
                   disabled={isSubmitting}
-                  className="w-4 h-4 text-[#ff8e3c] border-[#0d0d0d] rounded focus:ring-[#ff8e3c]"
+                  className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6]"
                 />
-                <span className="text-sm text-[#2a2a2a]">{grade}</span>
+                <span className="text-sm text-[#4b5563]">{grade}</span>
               </label>
             ))}
           </div>
@@ -425,7 +430,7 @@ export function MogiPeriodEditor({
 
         {/* 説明文 */}
         <div>
-          <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
+          <label className="block text-sm font-medium text-[#1f2937] mb-2">
             説明文
           </label>
           <textarea
@@ -433,31 +438,31 @@ export function MogiPeriodEditor({
             onChange={(e) => setDescription(e.target.value)}
             disabled={isSubmitting}
             rows={4}
-            className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a] focus:outline-none focus:ring-2 focus:ring-[#ff8e3c] disabled:bg-[#eff0f3] disabled:cursor-not-allowed"
+            className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6] disabled:bg-[#f3f4f6] disabled:cursor-not-allowed"
             placeholder="Vもぎのお申し込みです。&#10;受験料：4,400円（税込）&#10;※申込後のキャンセルはできません。"
           />
         </div>
 
         {/* 日程・会場設定 */}
         <div>
-          <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
-            共通会場（全日程で使用） <span className="text-[#d9376e]">*</span>
+          <label className="block text-sm font-medium text-[#1f2937] mb-2">
+            共通会場（全日程で使用） <span className="text-[#ef4444]">*</span>
           </label>
           <textarea
             value={venueText}
             onChange={(e) => setVenueText(e.target.value)}
             disabled={isSubmitting}
             rows={4}
-            className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a] focus:outline-none focus:ring-2 focus:ring-[#ff8e3c] disabled:bg-[#eff0f3] disabled:cursor-not-allowed"
+            className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6] disabled:bg-[#f3f4f6] disabled:cursor-not-allowed"
             placeholder="本会場（八王子）&#10;本会場（立川）&#10;塾内受験"
           />
-          <p className="text-xs text-[#2a2a2a]/60 mt-1">
+          <p className="text-xs text-[#4b5563]/60 mt-1">
             ※改行で区切って入力。日程ごとに会場を選択できます。
           </p>
 
           <div className="flex items-center justify-between my-4">
-            <span className="block text-sm font-medium text-[#0d0d0d]">
-              日程・会場設定 <span className="text-[#d9376e]">*</span>
+            <span className="block text-sm font-medium text-[#1f2937]">
+              日程・会場設定 <span className="text-[#ef4444]">*</span>
             </span>
             <Button
               type="button"
@@ -477,10 +482,10 @@ export function MogiPeriodEditor({
               return (
                 <div
                   key={index}
-                  className="border border-[#0d0d0d] rounded-lg p-4 bg-[#eff0f3]"
+                  className="border border-[#e5e7eb] rounded-lg p-4 bg-[#f3f4f6]"
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-medium text-[#0d0d0d]">
+                    <span className="text-sm font-medium text-[#1f2937]">
                       日程{index + 1}
                     </span>
                     <Button
@@ -504,33 +509,33 @@ export function MogiPeriodEditor({
                       required
                     />
                     {entry.date && (
-                      <p className="text-sm text-[#2a2a2a]">
+                      <p className="text-sm text-[#4b5563]">
                         → 表示: {formatDateLabel(entry.date)}
                       </p>
                     )}
 
                     <div>
-                      <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
-                        使用する会場 <span className="text-[#d9376e]">*</span>
+                      <label className="block text-sm font-medium text-[#1f2937] mb-2">
+                        使用する会場 <span className="text-[#ef4444]">*</span>
                       </label>
                       {(() => {
                         const commonVenues = parseVenues(venueText);
                         if (commonVenues.length === 0) {
                           return (
-                            <p className="text-sm text-[#2a2a2a]/60 p-3 bg-[#eff0f3] rounded-lg border border-[#0d0d0d]">
+                            <p className="text-sm text-[#4b5563]/60 p-3 bg-[#f3f4f6] rounded-lg border border-[#e5e7eb]">
                               上の「共通会場」に会場を入力してください
                             </p>
                           );
                         }
                         return (
-                          <div className="space-y-2 bg-[#fffffe] border border-[#0d0d0d] rounded-lg p-3">
-                            <p className="text-xs text-[#2a2a2a]/60 mb-2">
+                          <div className="space-y-2 bg-white border border-[#e5e7eb] rounded-lg p-3">
+                            <p className="text-xs text-[#4b5563]/60 mb-2">
                               共通会場から選択してください
                             </p>
                             {commonVenues.map((venue) => (
                               <label
                                 key={venue.id}
-                                className="flex items-center gap-2 p-2 hover:bg-[#eff0f3] rounded cursor-pointer transition-colors"
+                                className="flex items-center gap-2 p-2 hover:bg-[#f3f4f6] rounded cursor-pointer transition-colors"
                               >
                                 <input
                                   type="checkbox"
@@ -539,18 +544,18 @@ export function MogiPeriodEditor({
                                     handleToggleVenue(index, venue.id, e.target.checked)
                                   }
                                   disabled={isSubmitting}
-                                  className="w-4 h-4 text-[#ff8e3c] border-[#0d0d0d] rounded focus:ring-[#ff8e3c] cursor-pointer"
+                                  className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6] cursor-pointer"
                                 />
-                                <span className="text-sm text-[#2a2a2a] flex-1">
+                                <span className="text-sm text-[#4b5563] flex-1">
                                   {venue.label}
                                 </span>
                                 {entry.selectedVenueIds.includes(venue.id) && (
-                                  <span className="text-xs text-[#ff8e3c] font-medium">✓</span>
+                                  <span className="text-xs text-[#3b82f6] font-medium">✓</span>
                                 )}
                               </label>
                             ))}
                             {entry.selectedVenueIds.length === 0 && (
-                              <p className="text-xs text-[#d9376e] mt-2 p-2 bg-[#d9376e]/10 rounded">
+                              <p className="text-xs text-[#ef4444] mt-2 p-2 bg-[#ef4444]/10 rounded">
                                 ※ 最低1つの会場を選択してください
                               </p>
                             )}
@@ -561,7 +566,7 @@ export function MogiPeriodEditor({
 
                     {/* 日程固有の会場入力（オプション） */}
                     <div>
-                      <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
+                      <label className="block text-sm font-medium text-[#1f2937] mb-2">
                         この日程でのみ使う会場（任意）
                       </label>
                       <textarea
@@ -571,16 +576,16 @@ export function MogiPeriodEditor({
                         }
                         disabled={isSubmitting}
                         rows={2}
-                        className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a] focus:outline-none focus:ring-2 focus:ring-[#ff8e3c] disabled:bg-[#eff0f3] disabled:cursor-not-allowed"
+                        className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6] disabled:bg-[#f3f4f6] disabled:cursor-not-allowed"
                         placeholder="この日程のみ使用する会場があれば入力（改行区切り）"
                       />
                       {entry.extraVenueText && (
-                        <div className="mt-2 space-y-1 bg-[#eff0f3] border border-[#0d0d0d] rounded-lg p-2">
-                          <p className="text-xs text-[#2a2a2a]/60 mb-2">追加会場から選択</p>
+                        <div className="mt-2 space-y-1 bg-[#f3f4f6] border border-[#e5e7eb] rounded-lg p-2">
+                          <p className="text-xs text-[#4b5563]/60 mb-2">追加会場から選択</p>
                           {parseExtraVenues(entry.extraVenueText, index).map((venue) => (
                             <label
                               key={venue.id}
-                              className="flex items-center gap-2 p-2 hover:bg-[#fffffe] rounded cursor-pointer"
+                              className="flex items-center gap-2 p-2 hover:bg-white rounded cursor-pointer"
                             >
                               <input
                                 type="checkbox"
@@ -589,9 +594,9 @@ export function MogiPeriodEditor({
                                   handleToggleVenue(index, venue.id, e.target.checked)
                                 }
                                 disabled={isSubmitting}
-                                className="w-4 h-4 text-[#ff8e3c] border-[#0d0d0d] rounded focus:ring-[#ff8e3c] cursor-pointer"
+                                className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6] cursor-pointer"
                               />
-                              <span className="text-sm text-[#2a2a2a]">{venue.label}</span>
+                              <span className="text-sm text-[#4b5563]">{venue.label}</span>
                             </label>
                           ))}
                         </div>
@@ -606,7 +611,7 @@ export function MogiPeriodEditor({
 
         {/* 完了メッセージ */}
         <div>
-          <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
+          <label className="block text-sm font-medium text-[#1f2937] mb-2">
             完了メッセージ
           </label>
           <textarea
@@ -614,7 +619,7 @@ export function MogiPeriodEditor({
             onChange={(e) => setCompletionMessage(e.target.value)}
             disabled={isSubmitting}
             rows={3}
-            className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a] focus:outline-none focus:ring-2 focus:ring-[#ff8e3c] disabled:bg-[#eff0f3] disabled:cursor-not-allowed"
+            className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6] disabled:bg-[#f3f4f6] disabled:cursor-not-allowed"
             placeholder="お申し込みありがとうございます。&#10;受験票は試験日の1週間前までにお届けします。"
           />
         </div>
@@ -634,7 +639,7 @@ export function MogiPeriodEditor({
           disabled={isSubmitting}
         />
 
-        <div className="flex justify-end gap-3 pt-4 border-t border-[#0d0d0d]">
+        <div className="flex justify-end gap-3 pt-4 border-t border-[#e5e7eb]">
           <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>
             キャンセル
           </Button>

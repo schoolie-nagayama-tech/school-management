@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { AppHeader } from '@/components/layout';
@@ -71,23 +71,23 @@ export default function FormResponsesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#eff0f3]">
+    <div className="min-h-screen bg-[#f3f4f6]">
       <AppHeader title="フォーム回答" />
 
       {/* メインコンテンツ */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* エラーメッセージ */}
         {errorMessage && (
-          <div className="mb-6 p-4 bg-[#d9376e]/10 border border-[#d9376e] rounded-lg">
-            <p className="text-sm text-[#d9376e]">{errorMessage}</p>
+          <div className="mb-6 p-4 bg-[#ef4444]/10 border border-[#ef4444] rounded-lg">
+            <p className="text-sm text-[#ef4444]">{errorMessage}</p>
           </div>
         )}
 
         {/* フィルター */}
-        <div className="mb-6 bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-4">
+        <div className="mb-6 bg-white rounded-xl border border-[#e5e7eb] p-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
+              <label className="block text-sm font-medium text-[#1f2937] mb-2">
                 フォーム種別
               </label>
               <select
@@ -96,7 +96,7 @@ export default function FormResponsesPage() {
                   setFilterFormType(e.target.value as FormType | 'all');
                   setFilterPeriod('all'); // 期間もリセット
                 }}
-                className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a]"
+                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563]"
               >
                 <option value="all">全て</option>
                 {Object.entries(FORM_TYPE_LABELS).map(([key, label]) => (
@@ -108,13 +108,13 @@ export default function FormResponsesPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
+              <label className="block text-sm font-medium text-[#1f2937] mb-2">
                 期間
               </label>
               <select
                 value={filterPeriod}
                 onChange={(e) => setFilterPeriod(e.target.value)}
-                className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a]"
+                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563]"
                 disabled={filterFormType === 'all'}
               >
                 <option value="all">全て</option>
@@ -127,7 +127,7 @@ export default function FormResponsesPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
+              <label className="block text-sm font-medium text-[#1f2937] mb-2">
                 学年
               </label>
               <select
@@ -137,7 +137,7 @@ export default function FormResponsesPage() {
                     e.target.value === 'all' ? 'all' : Number(e.target.value)
                   )
                 }
-                className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a]"
+                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563]"
               >
                 <option value="all">全て</option>
                 {Array.from({ length: 13 }, (_, i) => i + 1).map((grade) => (
@@ -149,7 +149,7 @@ export default function FormResponsesPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
+              <label className="block text-sm font-medium text-[#1f2937] mb-2">
                 紐付け状態
               </label>
               <select
@@ -159,7 +159,7 @@ export default function FormResponsesPage() {
                     e.target.value as 'all' | 'linked' | 'unlinked'
                   )
                 }
-                className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a]"
+                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563]"
               >
                 <option value="all">全て</option>
                 <option value="linked">紐付け済み</option>
@@ -170,39 +170,39 @@ export default function FormResponsesPage() {
         </div>
 
         {/* 回答一覧 */}
-        <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] overflow-hidden">
+        <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
           {isLoading ? (
             <div className="p-8 text-center">
-              <p className="text-[#2a2a2a]">読み込み中...</p>
+              <p className="text-[#4b5563]">読み込み中...</p>
             </div>
           ) : responses.length === 0 ? (
             <div className="p-8 text-center">
-              <p className="text-[#2a2a2a]">回答がありません</p>
+              <p className="text-[#4b5563]">回答がありません</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-[#eff0f3] border-b border-[#0d0d0d]">
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#0d0d0d] uppercase">
+                  <tr className="bg-[#f3f4f6] border-b border-[#e5e7eb]">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
                       回答日時
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#0d0d0d] uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
                       種別
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#0d0d0d] uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
                       期間
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#0d0d0d] uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
                       生徒名
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#0d0d0d] uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
                       学年
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#0d0d0d] uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
                       紐付け
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#0d0d0d] uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
                       操作
                     </th>
                   </tr>
@@ -211,36 +211,36 @@ export default function FormResponsesPage() {
                   {responses.map((response) => (
                     <tr
                       key={response.id}
-                      className="border-b border-[#0d0d0d]/20 hover:bg-[#eff0f3]"
+                      className="border-b border-[#e5e7eb]/20 hover:bg-[#f3f4f6]"
                     >
-                      <td className="px-4 py-3 text-sm text-[#2a2a2a]">
+                      <td className="px-4 py-3 text-sm text-[#4b5563]">
                         {formatDate(response.created_at)}
                       </td>
-                      <td className="px-4 py-3 text-sm text-[#2a2a2a]">
+                      <td className="px-4 py-3 text-sm text-[#4b5563]">
                         {FORM_TYPE_LABELS[response.form_type]}
                       </td>
-                      <td className="px-4 py-3 text-sm text-[#2a2a2a]">
+                      <td className="px-4 py-3 text-sm text-[#4b5563]">
                         {response.form_period}
                       </td>
-                      <td className="px-4 py-3 text-sm text-[#0d0d0d] font-medium">
+                      <td className="px-4 py-3 text-sm text-[#1f2937] font-medium">
                         {response.linked_student
                           ? `${response.linked_student.last_name} ${response.linked_student.first_name}`
                           : response.student_name}
                       </td>
-                      <td className="px-4 py-3 text-sm text-[#2a2a2a]">
+                      <td className="px-4 py-3 text-sm text-[#4b5563]">
                         {GRADE_LABELS[response.grade] || response.grade}
                       </td>
-                      <td className="px-4 py-3 text-sm text-[#2a2a2a]">
+                      <td className="px-4 py-3 text-sm text-[#4b5563]">
                         {response.linked_student_id ? (
-                          <span className="text-[#0d0d0d] font-medium">済</span>
+                          <span className="text-[#1f2937] font-medium">済</span>
                         ) : (
-                          <span className="text-[#2a2a2a]/60">未</span>
+                          <span className="text-[#4b5563]/60">未</span>
                         )}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2">
                           <button
-                            className="px-3 py-1 text-xs bg-[#eff0f3] text-[#2a2a2a] rounded hover:bg-[#0d0d0d]/10"
+                            className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb]"
                             onClick={() => {
                               // TODO: 詳細モーダルを開く
                               alert('詳細機能は実装中です');
@@ -249,7 +249,7 @@ export default function FormResponsesPage() {
                             詳細
                           </button>
                           <button
-                            className="px-3 py-1 text-xs bg-[#eff0f3] text-[#2a2a2a] rounded hover:bg-[#0d0d0d]/10"
+                            className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb]"
                             onClick={() => {
                               // TODO: 紐付けモーダルを開く
                               alert('紐付け機能は実装中です');

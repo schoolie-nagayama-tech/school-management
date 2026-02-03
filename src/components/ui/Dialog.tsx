@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { ReactNode, useState, useEffect } from 'react';
 
@@ -43,7 +43,7 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
         onClick={() => onOpenChange(false)}
         aria-hidden="true"
       />
-      <div className="relative z-50 w-full max-w-lg bg-[#fffffe] rounded-xl shadow-2xl border border-[#0d0d0d] max-h-[95vh] overflow-hidden flex flex-col">
+      <div className="relative z-50 w-full max-w-lg bg-white rounded-xl shadow-2xl border border-[#e5e7eb] max-h-[95vh] overflow-hidden flex flex-col">
         {children}
       </div>
     </div>
@@ -66,7 +66,7 @@ interface DialogHeaderProps {
 
 export function DialogHeader({ children, className = '' }: DialogHeaderProps) {
   return (
-    <div className={`px-6 py-4 border-b border-[#0d0d0d] ${className}`}>
+    <div className={`px-6 py-4 border-b border-[#e5e7eb] ${className}`}>
       {children}
     </div>
   );
@@ -79,7 +79,7 @@ interface DialogTitleProps {
 
 export function DialogTitle({ children, className = '' }: DialogTitleProps) {
   return (
-    <h2 className={`text-lg font-semibold text-[#0d0d0d] ${className}`}>
+    <h2 className={`text-lg font-semibold text-[#1f2937] ${className}`}>
       {children}
     </h2>
   );
@@ -92,7 +92,7 @@ interface DialogFooterProps {
 
 export function DialogFooter({ children, className = '' }: DialogFooterProps) {
   return (
-    <div className={`flex items-center justify-end gap-2 px-6 py-4 border-t border-[#0d0d0d] ${className}`}>
+    <div className={`flex items-center justify-end gap-2 px-6 py-4 border-t border-[#e5e7eb] ${className}`}>
       {children}
     </div>
   );

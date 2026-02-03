@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { Button, Input, Modal } from '@/components/ui';
@@ -214,22 +214,22 @@ export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSett
       <Modal isOpen={isOpen} onClose={onClose} title="申込項目設定">
         <div className="space-y-4">
           {errorMessage && (
-            <div className="bg-[#d9376e]/20 text-[#d9376e] px-4 py-2 rounded border border-[#d9376e]">
+            <div className="bg-[#ef4444]/20 text-[#ef4444] px-4 py-2 rounded border border-[#ef4444]">
               {errorMessage}
             </div>
           )}
 
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold text-[#0d0d0d]">項目一覧</h3>
+            <h3 className="text-lg font-semibold text-[#1f2937]">項目一覧</h3>
             <Button onClick={handleAdd} disabled={isSubmitting}>
               新規追加
             </Button>
           </div>
 
           {isLoading ? (
-            <div className="text-center py-8 text-[#2a2a2a]">読み込み中...</div>
+            <div className="text-center py-8 text-[#4b5563]">読み込み中...</div>
           ) : items.length === 0 ? (
-            <div className="text-center py-8 text-[#2a2a2a]">
+            <div className="text-center py-8 text-[#4b5563]">
               項目がありません。新規追加ボタンから項目を追加してください。
             </div>
           ) : (
@@ -237,12 +237,12 @@ export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSett
               {items.map((item, index) => (
                 <div
                   key={item.id}
-                  className="flex items-center gap-2 p-3 bg-[#eff0f3] rounded border border-[#0d0d0d]"
+                  className="flex items-center gap-2 p-3 bg-[#f3f4f6] rounded border border-[#e5e7eb]"
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span
-                        className={`text-[#2a2a2a] cursor-pointer hover:text-[#ff8e3c] ${
+                        className={`text-[#4b5563] cursor-pointer hover:text-[#3b82f6] ${
                           !item.is_active ? 'line-through opacity-50' : ''
                         }`}
                         onClick={() => handleEdit(item)}
@@ -250,7 +250,7 @@ export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSett
                         {item.name}
                       </span>
                       {!item.is_active && (
-                        <span className="text-xs text-[#2a2a2a]/60">(非表示)</span>
+                        <span className="text-xs text-[#4b5563]/60">(非表示)</span>
                       )}
                     </div>
                   </div>
@@ -258,7 +258,7 @@ export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSett
                     <button
                       onClick={() => handleMoveUp(item)}
                       disabled={index === 0 || isSubmitting}
-                      className="px-2 py-1 text-[#2a2a2a] hover:bg-[#ff8e3c]/20 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-2 py-1 text-[#4b5563] hover:bg-[#3b82f6]/20 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                       title="上に移動"
                     >
                       ↑
@@ -266,7 +266,7 @@ export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSett
                     <button
                       onClick={() => handleMoveDown(item)}
                       disabled={index === items.length - 1 || isSubmitting}
-                      className="px-2 py-1 text-[#2a2a2a] hover:bg-[#ff8e3c]/20 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-2 py-1 text-[#4b5563] hover:bg-[#3b82f6]/20 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                       title="下に移動"
                     >
                       ↓
@@ -276,8 +276,8 @@ export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSett
                       disabled={isSubmitting}
                       className={`px-3 py-1 text-sm rounded border ${
                         item.is_active
-                          ? 'bg-[#ff8e3c]/20 text-[#0d0d0d] border-[#0d0d0d]'
-                          : 'bg-[#eff0f3] text-[#2a2a2a] border-[#0d0d0d]'
+                          ? 'bg-[#3b82f6]/20 text-[#1f2937] border-[#e5e7eb]'
+                          : 'bg-[#f3f4f6] text-[#4b5563] border-[#e5e7eb]'
                       }`}
                       title={item.is_active ? '非表示にする' : '表示する'}
                     >
@@ -286,7 +286,7 @@ export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSett
                     <button
                       onClick={() => handleDelete(item.id)}
                       disabled={isSubmitting}
-                      className="px-3 py-1 text-sm bg-[#d9376e] text-white rounded hover:bg-[#d9376e]/80 disabled:opacity-50"
+                      className="px-3 py-1 text-sm bg-[#ef4444] text-white rounded hover:bg-[#ef4444]/80 disabled:opacity-50"
                       title="削除"
                     >
                       削除
@@ -297,7 +297,7 @@ export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSett
             </div>
           )}
 
-          <div className="flex justify-end gap-2 pt-4 border-t border-[#0d0d0d]">
+          <div className="flex justify-end gap-2 pt-4 border-t border-[#e5e7eb]">
             <Button onClick={onClose} variant="secondary" disabled={isSubmitting}>
               閉じる
             </Button>
@@ -317,7 +317,7 @@ export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSett
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-[#2a2a2a] mb-2">
+            <label className="block text-sm font-medium text-[#4b5563] mb-2">
               項目名
             </label>
             <Input
@@ -329,12 +329,12 @@ export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSett
           </div>
 
           {errorMessage && (
-            <div className="bg-[#d9376e]/20 text-[#d9376e] px-4 py-2 rounded border border-[#d9376e]">
+            <div className="bg-[#ef4444]/20 text-[#ef4444] px-4 py-2 rounded border border-[#ef4444]">
               {errorMessage}
             </div>
           )}
 
-          <div className="flex justify-end gap-2 pt-4 border-t border-[#0d0d0d]">
+          <div className="flex justify-end gap-2 pt-4 border-t border-[#e5e7eb]">
             <Button
               onClick={() => {
                 setIsEditModalOpen(false);

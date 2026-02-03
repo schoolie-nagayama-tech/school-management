@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { Modal } from '@/components/ui';
@@ -68,15 +68,15 @@ export function StudentDetailModal({
     <Modal isOpen={isOpen} onClose={onClose} title="生徒詳細" size="lg">
       <div className="space-y-6">
         {/* タブ */}
-        <div className="flex border-b border-[#0d0d0d] -mx-6 px-6">
+        <div className="flex border-b border-[#e5e7eb] -mx-6 px-6">
           {tabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === tab.key
-                  ? 'border-[#ff8e3c] text-[#ff8e3c]'
-                  : 'border-transparent text-[#2a2a2a] hover:text-[#0d0d0d]'
+                  ? 'border-[#3b82f6] text-[#3b82f6]'
+                  : 'border-transparent text-[#4b5563] hover:text-[#1f2937]'
               }`}
             >
               {tab.label}
@@ -89,16 +89,16 @@ export function StudentDetailModal({
           <>
             {/* 基本情報 */}
         <div>
-          <h3 className="text-sm font-semibold text-[#0d0d0d] mb-3">基本情報</h3>
+          <h3 className="text-sm font-semibold text-[#1f2937] mb-3">基本情報</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs text-[#2a2a2a]">生徒コード</label>
-              <p className="mt-1 text-sm font-mono text-[#0d0d0d]">
-                {student.student_code || <span className="text-[#2a2a2a]/40">未設定</span>}
+              <label className="text-xs text-[#4b5563]">生徒コード</label>
+              <p className="mt-1 text-sm font-mono text-[#1f2937]">
+                {student.student_code || <span className="text-[#4b5563]/40">未設定</span>}
               </p>
             </div>
             <div>
-              <label className="text-xs text-[#2a2a2a]">在籍状況</label>
+              <label className="text-xs text-[#4b5563]">在籍状況</label>
               <p className="mt-1">
                 <span
                   className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${STATUS_COLORS[student.status]}`}
@@ -108,20 +108,20 @@ export function StudentDetailModal({
               </p>
             </div>
             <div>
-              <label className="text-xs text-[#2a2a2a]">氏名</label>
-              <p className="mt-1 text-sm text-[#0d0d0d]">
+              <label className="text-xs text-[#4b5563]">氏名</label>
+              <p className="mt-1 text-sm text-[#1f2937]">
                 {student.last_name} {student.first_name}
               </p>
             </div>
             <div>
-              <label className="text-xs text-[#2a2a2a]">フリガナ</label>
-              <p className="mt-1 text-sm text-[#2a2a2a]">
+              <label className="text-xs text-[#4b5563]">フリガナ</label>
+              <p className="mt-1 text-sm text-[#4b5563]">
                 {student.last_name_kana} {student.first_name_kana}
               </p>
             </div>
             <div>
-              <label className="text-xs text-[#2a2a2a]">学年</label>
-              <p className="mt-1 text-sm text-[#0d0d0d]">
+              <label className="text-xs text-[#4b5563]">学年</label>
+              <p className="mt-1 text-sm text-[#1f2937]">
                 {GRADE_LABELS[student.grade] || student.grade}
               </p>
             </div>
@@ -131,24 +131,24 @@ export function StudentDetailModal({
         {/* 学校情報 */}
         {(student.school_name || student.class_name || student.club) && (
           <div>
-            <h3 className="text-sm font-semibold text-[#0d0d0d] mb-3">学校情報</h3>
+            <h3 className="text-sm font-semibold text-[#1f2937] mb-3">学校情報</h3>
             <div className="grid grid-cols-2 gap-4">
               {student.school_name && (
                 <div>
-                  <label className="text-xs text-[#2a2a2a]">学校名</label>
-                  <p className="mt-1 text-sm text-[#0d0d0d]">{student.school_name}</p>
+                  <label className="text-xs text-[#4b5563]">学校名</label>
+                  <p className="mt-1 text-sm text-[#1f2937]">{student.school_name}</p>
                 </div>
               )}
               {student.class_name && (
                 <div>
-                  <label className="text-xs text-[#2a2a2a]">クラス</label>
-                  <p className="mt-1 text-sm text-[#0d0d0d]">{student.class_name}</p>
+                  <label className="text-xs text-[#4b5563]">クラス</label>
+                  <p className="mt-1 text-sm text-[#1f2937]">{student.class_name}</p>
                 </div>
               )}
               {student.club && (
                 <div className="col-span-2">
-                  <label className="text-xs text-[#2a2a2a]">部活</label>
-                  <p className="mt-1 text-sm text-[#0d0d0d]">{student.club}</p>
+                  <label className="text-xs text-[#4b5563]">部活</label>
+                  <p className="mt-1 text-sm text-[#1f2937]">{student.club}</p>
                 </div>
               )}
             </div>
@@ -157,44 +157,44 @@ export function StudentDetailModal({
 
         {/* 受講科目 */}
         <div>
-          <h3 className="text-sm font-semibold text-[#0d0d0d] mb-3">受講科目</h3>
+          <h3 className="text-sm font-semibold text-[#1f2937] mb-3">受講科目</h3>
           {isLoading ? (
-            <p className="text-sm text-[#2a2a2a]">読み込み中...</p>
+            <p className="text-sm text-[#4b5563]">読み込み中...</p>
           ) : subjects.length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {subjects.map((subject) => (
                 <span
                   key={subject.id}
-                  className="inline-flex px-3 py-1 text-sm bg-[#ff8e3c]/20 text-[#0d0d0d] rounded-full border border-[#0d0d0d]"
+                  className="inline-flex px-3 py-1 text-sm bg-[#3b82f6]/20 text-[#1f2937] rounded-full border border-[#e5e7eb]"
                 >
                   {subject.name}
                 </span>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-[#2a2a2a]/60">受講科目が設定されていません</p>
+            <p className="text-sm text-[#4b5563]/60">受講科目が設定されていません</p>
           )}
           {student.subject_other && (
             <div className="mt-2">
-              <label className="text-xs text-[#2a2a2a]">その他</label>
-              <p className="mt-1 text-sm text-[#0d0d0d]">{student.subject_other}</p>
+              <label className="text-xs text-[#4b5563]">その他</label>
+              <p className="mt-1 text-sm text-[#1f2937]">{student.subject_other}</p>
             </div>
           )}
         </div>
 
         {/* 登録・更新日時 */}
         <div>
-          <h3 className="text-sm font-semibold text-[#0d0d0d] mb-3">登録情報</h3>
+          <h3 className="text-sm font-semibold text-[#1f2937] mb-3">登録情報</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs text-[#2a2a2a]">登録日時</label>
-              <p className="mt-1 text-sm text-[#0d0d0d]">
+              <label className="text-xs text-[#4b5563]">登録日時</label>
+              <p className="mt-1 text-sm text-[#1f2937]">
                 {new Date(student.created_at).toLocaleString('ja-JP')}
               </p>
             </div>
             <div>
-              <label className="text-xs text-[#2a2a2a]">更新日時</label>
-              <p className="mt-1 text-sm text-[#0d0d0d]">
+              <label className="text-xs text-[#4b5563]">更新日時</label>
+              <p className="mt-1 text-sm text-[#1f2937]">
                 {new Date(student.updated_at).toLocaleString('ja-JP')}
               </p>
             </div>
@@ -202,7 +202,7 @@ export function StudentDetailModal({
         </div>
 
             {/* アクションボタン */}
-            <div className="flex justify-end gap-3 pt-4 border-t border-[#0d0d0d]">
+            <div className="flex justify-end gap-3 pt-4 border-t border-[#e5e7eb]">
               <Button type="button" variant="secondary" onClick={onClose}>
                 閉じる
               </Button>
@@ -217,7 +217,7 @@ export function StudentDetailModal({
 
         {activeTab === 'scores' && student && (
           <div className="min-h-[400px]">
-            <p className="text-sm text-[#2a2a2a] mb-4">
+            <p className="text-sm text-[#4b5563] mb-4">
               成績管理機能は別ウィンドウで開きます。生徒一覧ページから「成績」ボタンをクリックしてください。
             </p>
             <Button onClick={handleEdit} variant="secondary">

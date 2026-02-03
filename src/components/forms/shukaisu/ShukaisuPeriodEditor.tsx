@@ -8,6 +8,7 @@ import type { ShukaisuPeriod, ShukaisuSettings } from '@/types/forms/shukaisu';
 interface ShukaisuPeriodEditorProps {
   isOpen: boolean;
   period: ShukaisuPeriod | null;
+  schoolId?: string;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -26,6 +27,7 @@ const DEFAULT_PERIODS = [
 export function ShukaisuPeriodEditor({
   isOpen,
   period,
+  schoolId,
   onClose,
   onSuccess,
 }: ShukaisuPeriodEditorProps) {
@@ -183,7 +185,7 @@ export function ShukaisuPeriodEditor({
       if (period) {
         await updateShukaisuPeriod(period.id, data);
       } else {
-        await createShukaisuPeriod(data);
+        await createShukaisuPeriod(data, schoolId);
       }
 
       onSuccess();
@@ -218,13 +220,13 @@ export function ShukaisuPeriodEditor({
 
         {/* 基本情報 */}
         <section>
-          <h3 className="text-sm font-semibold text-[#0d0d0d] mb-3 border-b border-[#0d0d0d] pb-1">
+          <h3 className="text-sm font-semibold text-[#1f2937] mb-3 border-b border-[#e5e7eb] pb-1">
             基本情報
           </h3>
 
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+              <label className="block text-sm font-medium mb-1 text-[#1f2937]">
                 期間キー <span className="text-red-500">*</span>
               </label>
               <Input
@@ -237,7 +239,7 @@ export function ShukaisuPeriodEditor({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+              <label className="block text-sm font-medium mb-1 text-[#1f2937]">
                 タイトル <span className="text-red-500">*</span>
               </label>
               <Input
@@ -250,19 +252,19 @@ export function ShukaisuPeriodEditor({
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">説明文</label>
+            <label className="block text-sm font-medium mb-1 text-[#1f2937]">説明文</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="フォーム上部に表示される説明文"
               rows={4}
-              className="w-full border border-[#0d0d0d] rounded-lg px-3 py-2 resize-y text-sm"
+              className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 resize-y text-sm"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">公開開始</label>
+              <label className="block text-sm font-medium mb-1 text-[#1f2937]">公開開始</label>
               <Input
                 type="datetime-local"
                 value={publishStart}
@@ -270,13 +272,13 @@ export function ShukaisuPeriodEditor({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">公開終了</label>
+              <label className="block text-sm font-medium mb-1 text-[#1f2937]">公開終了</label>
               <Input
                 type="datetime-local"
                 value={publishEnd}
                 onChange={(e) => setPublishEnd(e.target.value)}
               />
-              <p className="text-xs text-[#2a2a2a]/60 mt-1">
+              <p className="text-xs text-[#4b5563]/60 mt-1">
                 ※空欄にすると永続的に公開されます
               </p>
             </div>
@@ -285,37 +287,37 @@ export function ShukaisuPeriodEditor({
 
         {/* 選択肢設定 */}
         <section>
-          <h3 className="text-sm font-semibold text-[#0d0d0d] mb-3 border-b border-[#0d0d0d] pb-1">
+          <h3 className="text-sm font-semibold text-[#1f2937] mb-3 border-b border-[#e5e7eb] pb-1">
             選択肢設定
           </h3>
 
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+              <label className="block text-sm font-medium mb-1 text-[#1f2937]">
                 曜日（改行区切り） <span className="text-red-500">*</span>
               </label>
               <textarea
                 value={daysText}
                 onChange={(e) => setDaysText(e.target.value)}
                 rows={6}
-                className="w-full border border-[#0d0d0d] rounded-lg px-3 py-2 font-mono text-sm resize-y"
+                className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 font-mono text-sm resize-y"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+              <label className="block text-sm font-medium mb-1 text-[#1f2937]">
                 科目（改行区切り） <span className="text-red-500">*</span>
               </label>
               <textarea
                 value={subjectsText}
                 onChange={(e) => setSubjectsText(e.target.value)}
                 rows={6}
-                className="w-full border border-[#0d0d0d] rounded-lg px-3 py-2 font-mono text-sm resize-y"
+                className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 font-mono text-sm resize-y"
               />
             </div>
           </div>
 
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+            <label className="block text-sm font-medium mb-1 text-[#1f2937]">
               時限（1行1時限: コード,ラベル） <span className="text-red-500">*</span>
             </label>
             <textarea
@@ -323,15 +325,15 @@ export function ShukaisuPeriodEditor({
               onChange={(e) => setPeriodsText(e.target.value)}
               placeholder="4,4限(14:25-15:55)&#10;5,5限(16:20-17:50)"
               rows={4}
-              className="w-full border border-[#0d0d0d] rounded-lg px-3 py-2 font-mono text-sm resize-y"
+              className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 font-mono text-sm resize-y"
             />
-            <p className="text-xs text-[#2a2a2a]/60 mt-1">
+            <p className="text-xs text-[#4b5563]/60 mt-1">
               例: 4,4限(14:25-15:55) のように「コード,ラベル」の形式で1行に1時限ずつ入力
             </p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">
+            <label className="block text-sm font-medium mb-1 text-[#1f2937]">
               週回数選択肢（カンマ区切り） <span className="text-red-500">*</span>
             </label>
             <Input
@@ -345,23 +347,23 @@ export function ShukaisuPeriodEditor({
 
         {/* 完了メッセージ */}
         <section>
-          <h3 className="text-sm font-semibold text-[#0d0d0d] mb-3 border-b border-[#0d0d0d] pb-1">
+          <h3 className="text-sm font-semibold text-[#1f2937] mb-3 border-b border-[#e5e7eb] pb-1">
             完了メッセージ
           </h3>
 
           <div>
-            <label className="block text-sm font-medium mb-1 text-[#0d0d0d]">完了メッセージ</label>
+            <label className="block text-sm font-medium mb-1 text-[#1f2937]">完了メッセージ</label>
             <textarea
               value={completionMessage}
               onChange={(e) => setCompletionMessage(e.target.value)}
               rows={2}
-              className="w-full border border-[#0d0d0d] rounded-lg px-3 py-2 resize-y text-sm"
+              className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 resize-y text-sm"
             />
           </div>
         </section>
 
         {/* フッター */}
-        <div className="flex justify-end gap-3 pt-4 border-t border-[#0d0d0d]">
+        <div className="flex justify-end gap-3 pt-4 border-t border-[#e5e7eb]">
           <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
             キャンセル
           </Button>

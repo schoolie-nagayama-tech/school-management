@@ -1,4 +1,4 @@
-export { PortalMenuCard } from './PortalMenuCard';
+﻿export { PortalMenuCard } from './PortalMenuCard';
 export { PortalMenuList } from './PortalMenuList';
 export { PortalMenuSettings } from './PortalMenuSettings';
 export { PortalMenuEditModal } from './PortalMenuEditModal';

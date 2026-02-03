@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { ReactNode } from 'react';
 
@@ -52,7 +52,7 @@ interface TableRowProps {
 export function TableRow({ children, className = '', onClick }: TableRowProps) {
   return (
     <tr
-      className={`border-b border-[#0d0d0d]/20 ${onClick ? 'cursor-pointer hover:bg-[#eff0f3]' : ''} ${className}`}
+      className={`border-b border-[#e5e7eb]/20 ${onClick ? 'cursor-pointer hover:bg-[#f3f4f6]' : ''} ${className}`}
       onClick={onClick}
     >
       {children}
@@ -67,7 +67,7 @@ interface TableHeadProps {
 
 export function TableHead({ children, className = '' }: TableHeadProps) {
   return (
-    <th className={`px-4 py-3 text-left text-sm font-semibold text-[#0d0d0d] bg-[#eff0f3] ${className}`}>
+    <th className={`px-4 py-3 text-left text-sm font-semibold text-[#1f2937] bg-[#f3f4f6] ${className}`}>
       {children}
     </th>
   );
@@ -80,7 +80,7 @@ interface TableCellProps {
 
 export function TableCell({ children, className = '' }: TableCellProps) {
   return (
-    <td className={`px-4 py-3 text-sm text-[#2a2a2a] ${className}`}>
+    <td className={`px-4 py-3 text-sm text-[#4b5563] ${className}`}>
       {children}
     </td>
   );

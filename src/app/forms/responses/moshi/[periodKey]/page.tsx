@@ -248,8 +248,8 @@ export default function MoshiResponsePage() {
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <AdminLayout headerTitle={`${periodKey} 模試申込 回答一覧`}>
         {errorMessage && (
-          <div className="mb-6 p-4 bg-[#d9376e]/10 border border-[#d9376e] rounded-lg">
-            <p className="text-sm text-[#d9376e]">{errorMessage}</p>
+          <div className="mb-6 p-4 bg-[#ef4444]/10 border border-[#ef4444] rounded-lg">
+            <p className="text-sm text-[#ef4444]">{errorMessage}</p>
           </div>
         )}
 
@@ -257,10 +257,10 @@ export default function MoshiResponsePage() {
         <MoshiStats stats={stats} />
 
         {/* フィルター */}
-        <div className="mb-6 bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-4">
+        <div className="mb-6 bg-white rounded-xl border border-[#e5e7eb] p-4">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
             <div>
-              <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
+              <label className="block text-sm font-medium text-[#1f2937] mb-2">
                 学年
               </label>
               <select
@@ -270,7 +270,7 @@ export default function MoshiResponsePage() {
                     e.target.value === 'all' ? 'all' : Number(e.target.value)
                   )
                 }
-                className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a]"
+                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563]"
               >
                 <option value="all">全て</option>
                 {[4, 5, 6, 7, 8, 9].map((grade) => (
@@ -282,7 +282,7 @@ export default function MoshiResponsePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
+              <label className="block text-sm font-medium text-[#1f2937] mb-2">
                 受験方法
               </label>
               <select
@@ -290,7 +290,7 @@ export default function MoshiResponsePage() {
                 onChange={(e) =>
                   setFilterExamType(e.target.value as 'all' | 'regular' | 'furikae')
                 }
-                className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a]"
+                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563]"
               >
                 <option value="all">全て</option>
                 <option value="regular">通常受験</option>
@@ -299,7 +299,7 @@ export default function MoshiResponsePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
+              <label className="block text-sm font-medium text-[#1f2937] mb-2">
                 計上状態
               </label>
               <select
@@ -309,7 +309,7 @@ export default function MoshiResponsePage() {
                     e.target.value as 'all' | 'charged' | 'not_charged'
                   )
                 }
-                className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a]"
+                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563]"
               >
                 <option value="all">全て</option>
                 <option value="charged">計上済み</option>
@@ -318,7 +318,7 @@ export default function MoshiResponsePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
+              <label className="block text-sm font-medium text-[#1f2937] mb-2">
                 紐付け状態
               </label>
               <select
@@ -328,7 +328,7 @@ export default function MoshiResponsePage() {
                     e.target.value as 'all' | 'linked' | 'unlinked'
                   )
                 }
-                className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a]"
+                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563]"
               >
                 <option value="all">全て</option>
                 <option value="linked">紐付け済み</option>
@@ -336,18 +336,18 @@ export default function MoshiResponsePage() {
               </select>
             </div>
           </div>
-          <div className="flex items-center justify-between pt-4 border-t border-[#0d0d0d]/20">
+          <div className="flex items-center justify-between pt-4 border-t border-[#e5e7eb]/20">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
                 checked={showArchived}
                 onChange={(e) => setShowArchived(e.target.checked)}
-                className="w-4 h-4 text-[#ff8e3c] border-[#0d0d0d] rounded focus:ring-[#ff8e3c] cursor-pointer"
+                className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6] cursor-pointer"
               />
-              <span className="text-sm text-[#0d0d0d]">
+              <span className="text-sm text-[#1f2937]">
                 アーカイブ済みを表示
                 {archivedCount > 0 && (
-                  <span className="ml-1 text-[#2a2a2a]/60">({archivedCount}件)</span>
+                  <span className="ml-1 text-[#4b5563]/60">({archivedCount}件)</span>
                 )}
               </span>
             </label>
@@ -379,47 +379,47 @@ export default function MoshiResponsePage() {
         )}
 
         {/* 回答一覧 */}
-        <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] overflow-hidden">
+        <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
           {isLoading ? (
             <div className="p-8 text-center">
-              <p className="text-[#2a2a2a]">読み込み中...</p>
+              <p className="text-[#4b5563]">読み込み中...</p>
             </div>
           ) : responses.length === 0 ? (
             <div className="p-8 text-center">
-              <p className="text-[#2a2a2a]">回答がありません</p>
+              <p className="text-[#4b5563]">回答がありません</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-[#eff0f3] border-b border-[#0d0d0d]">
+                  <tr className="bg-[#f3f4f6] border-b border-[#e5e7eb]">
                     <th className="px-2 py-3 text-center w-10">
                       <input
                         type="checkbox"
                         checked={allSelected}
                         onChange={(e) => handleSelectAll(e.target.checked)}
-                        className="w-4 h-4 text-[#ff8e3c] border-[#0d0d0d] rounded focus:ring-[#ff8e3c] cursor-pointer"
+                        className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6] cursor-pointer"
                       />
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#0d0d0d] uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
                       回答日時
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#0d0d0d] uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
                       生徒名
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#0d0d0d] uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
                       学年
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#0d0d0d] uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
                       受験方法
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#0d0d0d] uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
                       計上
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#0d0d0d] uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
                       紐付け
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#0d0d0d] uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
                       操作
                     </th>
                   </tr>
@@ -428,7 +428,7 @@ export default function MoshiResponsePage() {
                   {responses.map((response) => (
                     <tr
                       key={response.id}
-                      className={`border-b border-[#0d0d0d]/20 hover:bg-[#eff0f3] ${
+                      className={`border-b border-[#e5e7eb]/20 hover:bg-[#f3f4f6] ${
                         response.is_archived ? 'bg-gray-100 opacity-60' : ''
                       }`}
                     >
@@ -438,37 +438,37 @@ export default function MoshiResponsePage() {
                             type="checkbox"
                             checked={selectedIds.has(response.id)}
                             onChange={(e) => handleSelect(response.id, e.target.checked)}
-                            className="w-4 h-4 text-[#ff8e3c] border-[#0d0d0d] rounded focus:ring-[#ff8e3c] cursor-pointer"
+                            className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6] cursor-pointer"
                           />
                         )}
                       </td>
-                      <td className="px-4 py-3 text-sm text-[#2a2a2a]">
+                      <td className="px-4 py-3 text-sm text-[#4b5563]">
                         {formatDate(response.created_at)}
                       </td>
-                      <td className="px-4 py-3 text-sm text-[#0d0d0d] font-medium">
+                      <td className="px-4 py-3 text-sm text-[#1f2937] font-medium">
                         {response.linked_student
                           ? `${response.linked_student.last_name} ${response.linked_student.first_name}`
                           : response.student_name}
                       </td>
-                      <td className="px-4 py-3 text-sm text-[#2a2a2a]">
+                      <td className="px-4 py-3 text-sm text-[#4b5563]">
                         {MOSHI_GRADE_NUMBER_TO_NAME[response.grade] || response.grade}
                       </td>
-                      <td className="px-4 py-3 text-sm text-[#2a2a2a]">
+                      <td className="px-4 py-3 text-sm text-[#4b5563]">
                         {formatExamType(response)}
                       </td>
-                      <td className="px-4 py-3 text-sm text-[#2a2a2a]">
+                      <td className="px-4 py-3 text-sm text-[#4b5563]">
                         <input
                           type="checkbox"
                           checked={response.status_checks?.charged || false}
                           onChange={(e) => handleChargedToggle(response.id, e.target.checked)}
-                          className="w-4 h-4 text-[#ff8e3c] border-[#0d0d0d] rounded focus:ring-[#ff8e3c] cursor-pointer"
+                          className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6] cursor-pointer"
                         />
                       </td>
-                      <td className="px-4 py-3 text-sm text-[#2a2a2a]">
+                      <td className="px-4 py-3 text-sm text-[#4b5563]">
                         {response.linked_student_id ? (
-                          <span className="text-[#0d0d0d] font-medium">済</span>
+                          <span className="text-[#1f2937] font-medium">済</span>
                         ) : (
-                          <span className="text-[#2a2a2a]/60">未</span>
+                          <span className="text-[#4b5563]/60">未</span>
                         )}
                       </td>
                       <td className="px-4 py-3">
@@ -479,7 +479,7 @@ export default function MoshiResponsePage() {
                                 アーカイブ済
                               </span>
                               <button
-                                className="px-3 py-1 text-xs bg-[#eff0f3] text-blue-600 rounded hover:bg-blue-50"
+                                className="px-3 py-1 text-xs bg-[#f3f4f6] text-blue-600 rounded hover:bg-blue-50"
                                 onClick={() => handleUnarchive(response.id)}
                                 disabled={isProcessing}
                               >
@@ -489,28 +489,28 @@ export default function MoshiResponsePage() {
                           ) : (
                             <>
                               <button
-                                className="px-3 py-1 text-xs bg-[#eff0f3] text-[#2a2a2a] rounded hover:bg-[#0d0d0d]/10"
+                                className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb]"
                                 onClick={() => setDetailResponse(response)}
                               >
                                 詳細
                               </button>
                               {response.linked_student_id ? (
                                 <button
-                                  className="px-3 py-1 text-xs bg-[#eff0f3] text-[#2a2a2a] rounded hover:bg-[#0d0d0d]/10"
+                                  className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb]"
                                   onClick={() => handleUnlinkStudent(response.id)}
                                 >
                                   解除
                                 </button>
                               ) : (
                                 <button
-                                  className="px-3 py-1 text-xs bg-[#eff0f3] text-[#2a2a2a] rounded hover:bg-[#0d0d0d]/10"
+                                  className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb]"
                                   onClick={() => handleOpenLinkModal(response)}
                                 >
                                   紐付け
                                 </button>
                               )}
                               <button
-                                className="px-3 py-1 text-xs bg-[#eff0f3] text-gray-500 rounded hover:bg-gray-100"
+                                className="px-3 py-1 text-xs bg-[#f3f4f6] text-gray-500 rounded hover:bg-gray-100"
                                 onClick={() => handleArchive(response.id)}
                                 disabled={isProcessing}
                               >

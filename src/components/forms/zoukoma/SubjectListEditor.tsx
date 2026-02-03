@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { Input, Button } from '@/components/ui';
@@ -60,7 +60,7 @@ export function SubjectListEditor({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <label className="block text-sm font-medium text-[#0d0d0d]">
+        <label className="block text-sm font-medium text-[#1f2937]">
           科目リスト
         </label>
         <Button
@@ -75,16 +75,16 @@ export function SubjectListEditor({
       </div>
 
       {/* 科目一覧 */}
-      <div className="border border-[#0d0d0d] rounded-lg overflow-hidden">
-        <div className="divide-y divide-[#0d0d0d]/20">
+      <div className="border border-[#e5e7eb] rounded-lg overflow-hidden">
+        <div className="divide-y divide-[#e5e7eb]/20">
           {subjects.map((subject, index) => (
             <div
               key={index}
-              className="flex items-center gap-3 px-4 py-3 bg-[#fffffe] hover:bg-[#eff0f3] transition-colors"
+              className="flex items-center gap-3 px-4 py-3 bg-white hover:bg-[#f3f4f6] transition-colors"
             >
               <div className="flex items-center gap-2 flex-1">
-                <span className="text-sm text-[#2a2a2a] w-6">{index + 1}.</span>
-                <span className="text-sm font-medium text-[#0d0d0d] flex-1">
+                <span className="text-sm text-[#4b5563] w-6">{index + 1}.</span>
+                <span className="text-sm font-medium text-[#1f2937] flex-1">
                   {subject}
                 </span>
               </div>
@@ -93,7 +93,7 @@ export function SubjectListEditor({
                   type="button"
                   onClick={() => handleMoveUp(index)}
                   disabled={disabled || index === 0}
-                  className="p-1 text-[#2a2a2a] hover:text-[#0d0d0d] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-1 text-[#4b5563] hover:text-[#1f2937] disabled:opacity-50 disabled:cursor-not-allowed"
                   title="上へ"
                 >
                   <svg
@@ -114,7 +114,7 @@ export function SubjectListEditor({
                   type="button"
                   onClick={() => handleMoveDown(index)}
                   disabled={disabled || index === subjects.length - 1}
-                  className="p-1 text-[#2a2a2a] hover:text-[#0d0d0d] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-1 text-[#4b5563] hover:text-[#1f2937] disabled:opacity-50 disabled:cursor-not-allowed"
                   title="下へ"
                 >
                   <svg
@@ -135,7 +135,7 @@ export function SubjectListEditor({
                   type="button"
                   onClick={() => handleDelete(index)}
                   disabled={disabled}
-                  className="p-1 text-[#d9376e] hover:text-[#c02650] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="p-1 text-[#ef4444] hover:text-[#c02650] disabled:opacity-50 disabled:cursor-not-allowed"
                   title="削除"
                 >
                   <svg

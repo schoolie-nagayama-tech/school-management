@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import type { PortalMenu } from '@/types/database';
@@ -19,9 +19,9 @@ export function PortalMenuCard({ menu, schoolCode, isFormActive = false }: Porta
       return (
         <div className="w-full space-y-2">
           <div className="mb-2">
-            <h2 className="text-lg font-bold text-[#0d0d0d] mb-1">{menu.title}</h2>
+            <h2 className="text-lg font-bold text-[#1f2937] mb-1">{menu.title}</h2>
             {menu.description && (
-              <p className="text-sm text-[#2a2a2a]">{menu.description}</p>
+              <p className="text-sm text-[#4b5563]">{menu.description}</p>
             )}
           </div>
           {menu.link_urls.map((link, index) => (
@@ -30,12 +30,12 @@ export function PortalMenuCard({ menu, schoolCode, isFormActive = false }: Porta
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="block w-full min-h-[60px] p-3 bg-[#ff8e3c] rounded-lg border border-[#0d0d0d] hover:bg-[#ff9e5c] transition-colors active:bg-[#ff8e3c]"
+              className="block w-full min-h-[60px] p-3 bg-[#3b82f6] rounded-lg border border-[#e5e7eb] hover:bg-[#60a5fa] transition-colors active:bg-[#3b82f6]"
             >
               <div className="flex items-center justify-between">
-                <span className="text-base font-medium text-[#0d0d0d]">{link.label}</span>
+                <span className="text-base font-medium text-[#1f2937]">{link.label}</span>
                 <svg
-                  className="w-4 h-4 text-[#2a2a2a] ml-2 flex-shrink-0"
+                  className="w-4 h-4 text-[#4b5563] ml-2 flex-shrink-0"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -61,17 +61,17 @@ export function PortalMenuCard({ menu, schoolCode, isFormActive = false }: Porta
           href={menu.link_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="block w-full min-h-[80px] p-4 bg-[#ff8e3c] rounded-lg border border-[#0d0d0d] hover:bg-[#ff9e5c] transition-colors active:bg-[#ff8e3c]"
+          className="block w-full min-h-[80px] p-4 bg-[#3b82f6] rounded-lg border border-[#e5e7eb] hover:bg-[#60a5fa] transition-colors active:bg-[#3b82f6]"
         >
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <h2 className="text-lg font-bold text-[#0d0d0d] mb-1">{menu.title}</h2>
+              <h2 className="text-lg font-bold text-[#1f2937] mb-1">{menu.title}</h2>
               {menu.description && (
-                <p className="text-sm text-[#2a2a2a]">{menu.description}</p>
+                <p className="text-sm text-[#4b5563]">{menu.description}</p>
               )}
             </div>
             <svg
-              className="w-5 h-5 text-[#2a2a2a] ml-2 flex-shrink-0"
+              className="w-5 h-5 text-[#4b5563] ml-2 flex-shrink-0"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -89,12 +89,12 @@ export function PortalMenuCard({ menu, schoolCode, isFormActive = false }: Porta
     }
     // 外部リンクが未設定
     return (
-      <div className="block w-full min-h-[80px] p-4 bg-[#eff0f3] rounded-lg border border-[#0d0d0d] opacity-60 cursor-not-allowed">
-        <h2 className="text-lg font-bold text-[#2a2a2a] mb-1">{menu.title}</h2>
+      <div className="block w-full min-h-[80px] p-4 bg-[#f3f4f6] rounded-lg border border-[#e5e7eb] opacity-60 cursor-not-allowed">
+        <h2 className="text-lg font-bold text-[#4b5563] mb-1">{menu.title}</h2>
         {menu.description && (
-          <p className="text-sm text-[#2a2a2a]">{menu.description}</p>
+          <p className="text-sm text-[#4b5563]">{menu.description}</p>
         )}
-        <p className="text-xs text-[#2a2a2a] mt-2 font-medium">準備中</p>
+        <p className="text-xs text-[#4b5563] mt-2 font-medium">準備中</p>
       </div>
     );
   }
@@ -118,35 +118,35 @@ export function PortalMenuCard({ menu, schoolCode, isFormActive = false }: Porta
       return (
         <Link
           href={formUrl}
-          className="block w-full min-h-[80px] p-4 bg-[#ff8e3c] rounded-lg border border-[#0d0d0d] hover:bg-[#ff9e5c] transition-colors active:bg-[#ff8e3c]"
+          className="block w-full min-h-[80px] p-4 bg-[#3b82f6] rounded-lg border border-[#e5e7eb] hover:bg-[#60a5fa] transition-colors active:bg-[#3b82f6]"
         >
-          <h2 className="text-lg font-bold text-[#0d0d0d] mb-1">{menu.title}</h2>
+          <h2 className="text-lg font-bold text-[#1f2937] mb-1">{menu.title}</h2>
           {menu.description && (
-            <p className="text-sm text-[#2a2a2a]">{menu.description}</p>
+            <p className="text-sm text-[#4b5563]">{menu.description}</p>
           )}
         </Link>
       );
     }
     // 公開期間外
     return (
-      <div className="block w-full min-h-[80px] p-4 bg-[#eff0f3] rounded-lg border border-[#0d0d0d] opacity-60 cursor-not-allowed">
-        <h2 className="text-lg font-bold text-[#2a2a2a] mb-1">{menu.title}</h2>
+      <div className="block w-full min-h-[80px] p-4 bg-[#f3f4f6] rounded-lg border border-[#e5e7eb] opacity-60 cursor-not-allowed">
+        <h2 className="text-lg font-bold text-[#4b5563] mb-1">{menu.title}</h2>
         {menu.description && (
-          <p className="text-sm text-[#2a2a2a]">{menu.description}</p>
+          <p className="text-sm text-[#4b5563]">{menu.description}</p>
         )}
-        <p className="text-xs text-[#2a2a2a] mt-2 font-medium">準備中</p>
+        <p className="text-xs text-[#4b5563] mt-2 font-medium">準備中</p>
       </div>
     );
   }
 
   // フォールバック
   return (
-    <div className="block w-full min-h-[80px] p-4 bg-[#eff0f3] rounded-lg border border-[#0d0d0d] opacity-60 cursor-not-allowed">
-      <h2 className="text-lg font-bold text-[#2a2a2a] mb-1">{menu.title}</h2>
+    <div className="block w-full min-h-[80px] p-4 bg-[#f3f4f6] rounded-lg border border-[#e5e7eb] opacity-60 cursor-not-allowed">
+      <h2 className="text-lg font-bold text-[#4b5563] mb-1">{menu.title}</h2>
       {menu.description && (
-        <p className="text-sm text-[#2a2a2a]">{menu.description}</p>
+        <p className="text-sm text-[#4b5563]">{menu.description}</p>
       )}
-      <p className="text-xs text-[#2a2a2a] mt-2 font-medium">準備中</p>
+      <p className="text-xs text-[#4b5563] mt-2 font-medium">準備中</p>
     </div>
   );
 }

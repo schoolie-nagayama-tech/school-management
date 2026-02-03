@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { Select } from '@/components/ui';
 import type { MogiDate, DateVenueSelection } from '@/types/forms/mogi';
@@ -74,7 +74,7 @@ export function DateVenueSelector({
         return (
           <div
             key={date.id}
-            className="border border-[#0d0d0d] rounded-lg p-4 bg-[#fffffe]"
+            className="border border-[#e5e7eb] rounded-lg p-4 bg-white"
           >
             <div className="flex items-center gap-3 mb-3">
               <input
@@ -83,11 +83,11 @@ export function DateVenueSelector({
                 checked={isSelected}
                 onChange={(e) => handleDateToggle(date, e.target.checked)}
                 disabled={disabled}
-                className="w-5 h-5 text-[#ff8e3c] border-[#0d0d0d] rounded focus:ring-[#ff8e3c] cursor-pointer"
+                className="w-5 h-5 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6] cursor-pointer"
               />
               <label
                 htmlFor={`date-${date.id}`}
-                className="text-base font-medium text-[#0d0d0d] cursor-pointer flex-1"
+                className="text-base font-medium text-[#1f2937] cursor-pointer flex-1"
               >
                 {date.label}
               </label>

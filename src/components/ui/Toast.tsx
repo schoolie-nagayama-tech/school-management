@@ -48,10 +48,10 @@ function ToastItem({ toast, onRemove }: ToastItemProps) {
   }, [toast.id, toast.duration, onRemove]);
 
   const typeStyles = {
-    success: 'bg-emerald-500 text-white border-emerald-600',
-    error: 'bg-[#d9376e] text-white border-[#c02d5a]',
-    info: 'bg-blue-500 text-white border-blue-600',
-    warning: 'bg-yellow-500 text-black border-yellow-600',
+    success: 'bg-[#2e7d32] text-white border-[#1b5e20]',
+    error: 'bg-[#c62828] text-white border-[#b71c1c]',
+    info: 'bg-[#1976d2] text-white border-[#1565c0]',
+    warning: 'bg-[#f9a825] text-[#1a1a1a] border-[#f57f17]',
   };
 
   const iconStyles = {

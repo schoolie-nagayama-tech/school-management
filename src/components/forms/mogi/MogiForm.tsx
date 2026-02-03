@@ -137,7 +137,7 @@ export function MogiForm({ school, period }: MogiFormProps) {
   // 送信完了画面
   if (isSubmitted) {
     return (
-      <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-8 text-center">
+      <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 text-center">
         <div className="mb-6">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg
@@ -154,15 +154,15 @@ export function MogiForm({ school, period }: MogiFormProps) {
               />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-[#0d0d0d] mb-4">
+          <h2 className="text-2xl font-bold text-[#1f2937] mb-4">
             お申込みありがとうございます
           </h2>
-          <p className="text-[#2a2a2a] mb-4">
+          <p className="text-[#4b5563] mb-4">
             受付完了メールを保護者様宛にお送りしました。
           </p>
           {settings.completion_message && (
-            <div className="mt-6 p-4 bg-[#eff0f3] rounded-lg text-left">
-              <p className="text-sm text-[#2a2a2a] whitespace-pre-line">
+            <div className="mt-6 p-4 bg-[#f3f4f6] rounded-lg text-left">
+              <p className="text-sm text-[#4b5563] whitespace-pre-line">
                 {settings.completion_message}
               </p>
             </div>
@@ -170,7 +170,7 @@ export function MogiForm({ school, period }: MogiFormProps) {
         </div>
         <a
           href={`/portal/${school.code}`}
-          className="inline-block px-6 py-3 bg-[#ff8e3c] text-[#0d0d0d] font-medium rounded-lg hover:bg-[#ff9e5c] transition-colors"
+          className="inline-block px-6 py-3 bg-[#3b82f6] text-white font-medium rounded-lg hover:bg-[#60a5fa] transition-colors"
         >
           ポータルに戻る
         </a>
@@ -181,12 +181,12 @@ export function MogiForm({ school, period }: MogiFormProps) {
   return (
     <div className="space-y-6">
       {/* ヒーローセクション */}
-      <div className="bg-gradient-to-r from-[#ff8e3c] to-[#ff9e5c] rounded-xl border border-[#0d0d0d] p-8 text-center">
-        <h1 className="text-3xl font-bold text-[#0d0d0d] mb-4">
+      <div className="bg-gradient-to-r from-[#3b82f6] to-[#60a5fa] rounded-xl border border-[#e5e7eb] p-8 text-center">
+        <h1 className="text-3xl font-bold text-[#1f2937] mb-4">
           {period.title}
         </h1>
         {settings.description && (
-          <p className="text-[#2a2a2a] text-lg whitespace-pre-line">
+          <p className="text-[#4b5563] text-lg whitespace-pre-line">
             {settings.description}
           </p>
         )}
@@ -196,20 +196,20 @@ export function MogiForm({ school, period }: MogiFormProps) {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* エラーメッセージ */}
         {errorMessage && (
-          <div className="bg-[#d9376e]/10 border border-[#d9376e] rounded-lg p-4">
-            <p className="text-sm text-[#d9376e]">{errorMessage}</p>
+          <div className="bg-[#ef4444]/10 border border-[#ef4444] rounded-lg p-4">
+            <p className="text-sm text-[#ef4444]">{errorMessage}</p>
           </div>
         )}
 
         {/* セクション1: 基本情報 */}
-        <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6">
-          <h2 className="text-lg font-bold text-[#0d0d0d] mb-4">基本情報</h2>
+        <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
+          <h2 className="text-lg font-bold text-[#1f2937] mb-4">基本情報</h2>
           <div className="space-y-4">
             {/* 生徒名 */}
             <div>
-              <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
+              <label className="block text-sm font-medium text-[#1f2937] mb-2">
                 生徒名
-                <span className="text-[#d9376e] ml-1">*</span>
+                <span className="text-[#ef4444] ml-1">*</span>
               </label>
               <Input
                 type="text"
@@ -217,10 +217,10 @@ export function MogiForm({ school, period }: MogiFormProps) {
                 onChange={(e) => setStudentName(e.target.value)}
                 disabled={isSubmitting}
                 placeholder="山田太郎"
-                className={errors.studentName ? 'border-[#d9376e]' : ''}
+                className={errors.studentName ? 'border-[#ef4444]' : ''}
               />
               {errors.studentName && (
-                <p className="text-sm text-[#d9376e] mt-1">
+                <p className="text-sm text-[#ef4444] mt-1">
                   {errors.studentName}
                 </p>
               )}
@@ -244,9 +244,9 @@ export function MogiForm({ school, period }: MogiFormProps) {
 
             {/* メールアドレス */}
             <div>
-              <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
+              <label className="block text-sm font-medium text-[#1f2937] mb-2">
                 保護者メールアドレス
-                <span className="text-[#d9376e] ml-1">*</span>
+                <span className="text-[#ef4444] ml-1">*</span>
               </label>
               <Input
                 type="email"
@@ -254,21 +254,21 @@ export function MogiForm({ school, period }: MogiFormProps) {
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isSubmitting}
                 placeholder="parent@example.com"
-                className={errors.email ? 'border-[#d9376e]' : ''}
+                className={errors.email ? 'border-[#ef4444]' : ''}
               />
               {errors.email && (
-                <p className="text-sm text-[#d9376e] mt-1">{errors.email}</p>
+                <p className="text-sm text-[#ef4444] mt-1">{errors.email}</p>
               )}
             </div>
           </div>
         </div>
 
         {/* セクション2: 受験日程・会場選択 */}
-        <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6">
-          <h2 className="text-lg font-bold text-[#0d0d0d] mb-4">
+        <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
+          <h2 className="text-lg font-bold text-[#1f2937] mb-4">
             受験日程・会場選択
           </h2>
-          <p className="text-sm text-[#2a2a2a] mb-4">
+          <p className="text-sm text-[#4b5563] mb-4">
             受験する日程と会場を選択してください（複数選択可）
           </p>
           <DateVenueSelector
@@ -278,13 +278,13 @@ export function MogiForm({ school, period }: MogiFormProps) {
             disabled={isSubmitting}
           />
           {errors.selections && (
-            <p className="text-sm text-[#d9376e] mt-2">{errors.selections}</p>
+            <p className="text-sm text-[#ef4444] mt-2">{errors.selections}</p>
           )}
         </div>
 
         {/* セクション3: キャンセル不可の同意 */}
-        <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6">
-          <h2 className="text-lg font-bold text-[#0d0d0d] mb-4">
+        <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
+          <h2 className="text-lg font-bold text-[#1f2937] mb-4">
             キャンセル不可の同意
           </h2>
           <CancelAgreement
@@ -296,15 +296,15 @@ export function MogiForm({ school, period }: MogiFormProps) {
         </div>
 
         {/* セクション4: 備考 */}
-        <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6">
-          <h2 className="text-lg font-bold text-[#0d0d0d] mb-4">備考</h2>
+        <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
+          <h2 className="text-lg font-bold text-[#1f2937] mb-4">備考</h2>
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
             disabled={isSubmitting}
             placeholder="例：特別な配慮が必要な場合など"
             rows={4}
-            className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a] focus:outline-none focus:ring-2 focus:ring-[#ff8e3c] disabled:bg-[#eff0f3] disabled:cursor-not-allowed"
+            className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6] disabled:bg-[#f3f4f6] disabled:cursor-not-allowed"
           />
         </div>
 
@@ -314,14 +314,14 @@ export function MogiForm({ school, period }: MogiFormProps) {
             type="button"
             onClick={handleReset}
             disabled={isSubmitting}
-            className="flex-1 px-6 py-3 bg-[#eff0f3] text-[#2a2a2a] font-medium rounded-lg hover:bg-[#0d0d0d]/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 px-6 py-3 bg-[#f3f4f6] text-[#4b5563] font-medium rounded-lg hover:bg-[#e5e7eb] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             リセット
           </button>
           <button
             type="submit"
             disabled={isSubmitting || !cancelAgreed}
-            className="flex-1 px-6 py-3 bg-[#ff8e3c] text-[#0d0d0d] font-medium rounded-lg hover:bg-[#ff9e5c] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 px-6 py-3 bg-[#3b82f6] text-white font-medium rounded-lg hover:bg-[#60a5fa] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? '送信中...' : '申し込む'}
           </button>

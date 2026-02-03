@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+﻿import { supabase } from '@/lib/supabase';
 import { getSchoolByCode } from '@/lib/api/schools';
 import type { AttendanceType, AttendanceTypeFormData, AttendanceSheet } from '@/types/attendance';
 

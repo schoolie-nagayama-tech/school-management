@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { PortalMenuCard } from './PortalMenuCard';
 import type { PortalMenu } from '@/types/database';
@@ -16,8 +16,8 @@ interface PortalMenuListProps {
 export function PortalMenuList({ menus, schoolCode }: PortalMenuListProps) {
   if (menus.length === 0) {
     return (
-      <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-8 text-center">
-        <p className="text-[#2a2a2a]">現在利用可能なメニューはありません</p>
+      <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 text-center">
+        <p className="text-[#4b5563]">現在利用可能なメニューはありません</p>
       </div>
     );
   }

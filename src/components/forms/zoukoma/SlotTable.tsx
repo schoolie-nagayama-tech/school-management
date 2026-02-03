@@ -199,18 +199,18 @@ export function SlotTable({
   const startDateStr = settings.schedule?.start_date || settings.start_date;
   if (!startDateStr) {
     return (
-      <div className="bg-[#eff0f3] rounded-lg border border-[#0d0d0d] p-4 text-center">
-        <p className="text-sm text-[#2a2a2a]">日程が設定されていません</p>
+      <div className="bg-[#f3f4f6] rounded-lg border border-[#e5e7eb] p-4 text-center">
+        <p className="text-sm text-[#4b5563]">日程が設定されていません</p>
       </div>
     );
   }
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full border-collapse border border-[#0d0d0d] bg-[#fffffe] text-sm">
+      <table className="w-full border-collapse border border-[#e5e7eb] bg-white text-sm">
         <thead>
-          <tr className="bg-[#eff0f3]">
-            <th className="border border-[#0d0d0d] px-3 py-2 text-left sticky left-0 z-10 bg-[#eff0f3]">
+          <tr className="bg-[#f3f4f6]">
+            <th className="border border-[#e5e7eb] px-3 py-2 text-left sticky left-0 z-10 bg-[#f3f4f6]">
               日付
             </th>
             {[4, 5, 6, 7].map((period) => {
@@ -218,17 +218,17 @@ export function SlotTable({
               const hasSlots = slots.some((s) => s.period === period);
               
               return (
-                <th key={period} className="border border-[#0d0d0d] px-3 py-2 text-center">
+                <th key={period} className="border border-[#e5e7eb] px-3 py-2 text-center">
                   {hasSlots ? (
                     <button
                       type="button"
                       onClick={() => handlePeriodToggleAll(period)}
                       className={`text-xs font-medium px-2 py-1 rounded transition-colors ${
                         periodState.allSelected
-                          ? 'bg-[#ff8e3c] text-[#0d0d0d]'
+                          ? 'bg-[#3b82f6] text-white'
                           : periodState.someSelected
-                          ? 'bg-[#ff8e3c]/50 text-[#0d0d0d]'
-                          : 'text-[#2a2a2a] hover:bg-[#0d0d0d]/10'
+                          ? 'bg-[#3b82f6]/50 text-[#1f2937]'
+                          : 'text-[#4b5563] hover:bg-[#e5e7eb]'
                       }`}
                       disabled={disabled}
                       title={`${period}限を全て${periodState.allSelected ? '解除' : '選択'}`}
@@ -237,7 +237,7 @@ export function SlotTable({
                       {periodState.allSelected && ' ✓'}
                     </button>
                   ) : (
-                    <span className="text-xs text-[#2a2a2a]/40">{period}限</span>
+                    <span className="text-xs text-[#4b5563]/40">{period}限</span>
                   )}
                 </th>
               );
@@ -255,14 +255,14 @@ export function SlotTable({
 
             return (
               <tr key={date}>
-                <td className="border border-[#0d0d0d] px-3 py-2 sticky left-0 z-10 bg-[#fffffe]">
+                <td className="border border-[#e5e7eb] px-3 py-2 sticky left-0 z-10 bg-white">
                   <button
                     type="button"
                     onClick={() => handleDateToggle(date)}
                     className={`text-left font-medium px-2 py-1 rounded transition-colors ${
                       allDateSelected
-                        ? 'bg-[#ff8e3c] text-[#0d0d0d]'
-                        : 'text-[#2a2a2a] hover:bg-[#0d0d0d]/10'
+                        ? 'bg-[#3b82f6] text-white'
+                        : 'text-[#4b5563] hover:bg-[#e5e7eb]'
                     }`}
                     disabled={disabled}
                     title={`この日の全てを${allDateSelected ? '解除' : '選択'}`}
@@ -277,7 +277,7 @@ export function SlotTable({
                     return (
                       <td
                         key={period}
-                        className="border border-[#0d0d0d] px-3 py-2 text-center bg-[#eff0f3]"
+                        className="border border-[#e5e7eb] px-3 py-2 text-center bg-[#f3f4f6]"
                       ></td>
                     );
                   }
@@ -292,7 +292,7 @@ export function SlotTable({
                   return (
                     <td
                       key={period}
-                      className="border border-[#0d0d0d] px-3 py-2 text-center"
+                      className="border border-[#e5e7eb] px-3 py-2 text-center"
                     >
                       <button
                         type="button"
@@ -300,8 +300,8 @@ export function SlotTable({
                         disabled={disabled}
                         className={`w-8 h-8 rounded border-2 transition-colors ${
                           isSelected
-                            ? 'bg-[#ff8e3c] border-[#0d0d0d]'
-                            : 'bg-[#fffffe] border-[#0d0d0d] hover:bg-[#eff0f3]'
+                            ? 'bg-[#3b82f6] border-[#e5e7eb]'
+                            : 'bg-white border-[#e5e7eb] hover:bg-[#f3f4f6]'
                         }`}
                         title={slot.label}
                       >

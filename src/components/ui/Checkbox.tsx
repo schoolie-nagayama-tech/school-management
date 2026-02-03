@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { InputHTMLAttributes, forwardRef } from 'react';
 
@@ -17,9 +17,9 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
         onChange={(e) => onCheckedChange?.(e.target.checked)}
         className={`
           w-4 h-4
-          text-[#ff8e3c]
-          border-[#0d0d0d] rounded
-          focus:ring-2 focus:ring-[#ff8e3c] focus:ring-offset-2
+          text-[#3b82f6]
+          border-[#e5e7eb] rounded
+          focus:ring-2 focus:ring-[#3b82f6] focus:ring-offset-2
           disabled:opacity-50 disabled:cursor-not-allowed
           ${className}
         `}

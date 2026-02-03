@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { AdminLayout } from '@/components/layouts';
@@ -115,8 +115,8 @@ export default function ResponsesPage() {
       <AdminLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="w-12 h-12 border-4 border-[#ff8e3c] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-[#2a2a2a]">読み込み中...</p>
+            <div className="w-12 h-12 border-4 border-[#3b82f6] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-[#4b5563]">読み込み中...</p>
           </div>
         </div>
       </AdminLayout>
@@ -136,16 +136,16 @@ export default function ResponsesPage() {
     <AdminLayout headerTitle="回答管理">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {errorMessage && (
-          <div className="mb-4 p-4 bg-[#d9376e]/20 border border-[#d9376e] rounded-lg">
-            <p className="text-sm text-[#d9376e]">{errorMessage}</p>
+          <div className="mb-4 p-4 bg-[#ef4444]/20 border border-[#ef4444] rounded-lg">
+            <p className="text-sm text-[#ef4444]">{errorMessage}</p>
           </div>
         )}
 
         {/* フィルター */}
-        <div className="mb-6 bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-4">
+        <div className="mb-6 bg-white rounded-xl border border-[#e5e7eb] p-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
+              <label className="block text-sm font-medium text-[#1f2937] mb-2">
                 フォーム種別
               </label>
               <select
@@ -154,7 +154,7 @@ export default function ResponsesPage() {
                   setFilterFormType(e.target.value as FormType | 'all');
                   setFilterPeriod('all');
                 }}
-                className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a] focus:outline-none focus:ring-2 focus:ring-[#ff8e3c]"
+                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
               >
                 <option value="all">すべて</option>
                 {Object.entries(FORM_TYPE_LABELS).map(([key, label]) => (
@@ -166,14 +166,14 @@ export default function ResponsesPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
+              <label className="block text-sm font-medium text-[#1f2937] mb-2">
                 期間
               </label>
               <select
                 value={filterPeriod}
                 onChange={(e) => setFilterPeriod(e.target.value)}
                 disabled={filterFormType === 'all' || formPeriods.length === 0}
-                className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a] focus:outline-none focus:ring-2 focus:ring-[#ff8e3c] disabled:bg-[#eff0f3] disabled:cursor-not-allowed"
+                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6] disabled:bg-[#f3f4f6] disabled:cursor-not-allowed"
               >
                 <option value="all">すべて</option>
                 {formPeriods.map((period) => (
@@ -185,7 +185,7 @@ export default function ResponsesPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
+              <label className="block text-sm font-medium text-[#1f2937] mb-2">
                 学年
               </label>
               <select
@@ -195,7 +195,7 @@ export default function ResponsesPage() {
                     e.target.value === 'all' ? 'all' : parseInt(e.target.value, 10)
                   )
                 }
-                className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a] focus:outline-none focus:ring-2 focus:ring-[#ff8e3c]"
+                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
               >
                 <option value="all">すべて</option>
                 {Object.entries(GRADE_LABELS).map(([key, label]) => (
@@ -207,7 +207,7 @@ export default function ResponsesPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
+              <label className="block text-sm font-medium text-[#1f2937] mb-2">
                 処理状態
               </label>
               <select
@@ -215,7 +215,7 @@ export default function ResponsesPage() {
                 onChange={(e) =>
                   setFilterLinkedStatus(e.target.value as 'all' | 'linked' | 'unlinked')
                 }
-                className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a] focus:outline-none focus:ring-2 focus:ring-[#ff8e3c]"
+                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
               >
                 <option value="all">すべて</option>
                 <option value="linked">紐付け済み</option>
@@ -227,8 +227,8 @@ export default function ResponsesPage() {
 
         {/* サマリー */}
         {Object.keys(summary).length > 0 && (
-          <div className="mb-6 bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-4">
-            <h2 className="text-lg font-bold text-[#0d0d0d] mb-3">サマリー</h2>
+          <div className="mb-6 bg-white rounded-xl border border-[#e5e7eb] p-4">
+            <h2 className="text-lg font-bold text-[#1f2937] mb-3">サマリー</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {Object.entries(summary).map(([key, stats]) => {
                 const [formType, periodKey] = key.split('_');
@@ -236,13 +236,13 @@ export default function ResponsesPage() {
                 return (
                   <div
                     key={key}
-                    className="p-3 bg-[#eff0f3] rounded-lg border border-[#0d0d0d]"
+                    className="p-3 bg-[#f3f4f6] rounded-lg border border-[#e5e7eb]"
                   >
-                    <div className="text-sm font-medium text-[#0d0d0d]">
+                    <div className="text-sm font-medium text-[#1f2937]">
                       {FORM_TYPE_LABELS[formType as FormType]} ({periodKey}
                       {period ? ` ${period.title}` : ''})
                     </div>
-                    <div className="text-xs text-[#2a2a2a] mt-1">
+                    <div className="text-xs text-[#4b5563] mt-1">
                       {stats.total}件（未処理: {stats.unprocessed}件）
                     </div>
                   </div>
@@ -253,36 +253,36 @@ export default function ResponsesPage() {
         )}
 
         {/* 回答一覧 */}
-        <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6">
-          <h2 className="text-lg font-bold text-[#0d0d0d] mb-4">回答一覧</h2>
+        <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
+          <h2 className="text-lg font-bold text-[#1f2937] mb-4">回答一覧</h2>
           {isLoading ? (
-            <div className="text-center py-8 text-[#2a2a2a]">読み込み中...</div>
+            <div className="text-center py-8 text-[#4b5563]">読み込み中...</div>
           ) : responses.length === 0 ? (
-            <div className="text-center py-8 text-[#2a2a2a]">回答がありません</div>
+            <div className="text-center py-8 text-[#4b5563]">回答がありません</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse border border-[#0d0d0d] text-sm">
+              <table className="w-full border-collapse border border-[#e5e7eb] text-sm">
                 <thead>
-                  <tr className="bg-[#eff0f3]">
-                    <th className="border border-[#0d0d0d] px-4 py-3 text-left">
+                  <tr className="bg-[#f3f4f6]">
+                    <th className="border border-[#e5e7eb] px-4 py-3 text-left">
                       日時
                     </th>
-                    <th className="border border-[#0d0d0d] px-4 py-3 text-left">
+                    <th className="border border-[#e5e7eb] px-4 py-3 text-left">
                       種別
                     </th>
-                    <th className="border border-[#0d0d0d] px-4 py-3 text-left">
+                    <th className="border border-[#e5e7eb] px-4 py-3 text-left">
                       期間
                     </th>
-                    <th className="border border-[#0d0d0d] px-4 py-3 text-left">
+                    <th className="border border-[#e5e7eb] px-4 py-3 text-left">
                       生徒名
                     </th>
-                    <th className="border border-[#0d0d0d] px-4 py-3 text-left">
+                    <th className="border border-[#e5e7eb] px-4 py-3 text-left">
                       学年
                     </th>
-                    <th className="border border-[#0d0d0d] px-4 py-3 text-center">
+                    <th className="border border-[#e5e7eb] px-4 py-3 text-center">
                       処理状態
                     </th>
-                    <th className="border border-[#0d0d0d] px-4 py-3 text-left">
+                    <th className="border border-[#e5e7eb] px-4 py-3 text-left">
                       操作
                     </th>
                   </tr>
@@ -290,24 +290,24 @@ export default function ResponsesPage() {
                 <tbody>
                   {responses.map((response) => (
                     <tr key={response.id} className="table-row-hover">
-                      <td className="border border-[#0d0d0d] px-4 py-3">
+                      <td className="border border-[#e5e7eb] px-4 py-3">
                         {formatDateTime(response.created_at)}
                       </td>
-                      <td className="border border-[#0d0d0d] px-4 py-3">
+                      <td className="border border-[#e5e7eb] px-4 py-3">
                         {FORM_TYPE_LABELS[response.form_type]}
                       </td>
-                      <td className="border border-[#0d0d0d] px-4 py-3">
+                      <td className="border border-[#e5e7eb] px-4 py-3">
                         {response.form_period}
                       </td>
-                      <td className="border border-[#0d0d0d] px-4 py-3">
+                      <td className="border border-[#e5e7eb] px-4 py-3">
                         {response.linked_student
                           ? `${response.linked_student.last_name} ${response.linked_student.first_name}`
                           : response.student_name}
                       </td>
-                      <td className="border border-[#0d0d0d] px-4 py-3">
+                      <td className="border border-[#e5e7eb] px-4 py-3">
                         {GRADE_LABELS[response.grade] || response.grade}
                       </td>
-                      <td className="border border-[#0d0d0d] px-4 py-3 text-center">
+                      <td className="border border-[#e5e7eb] px-4 py-3 text-center">
                         {response.linked_student_id ? (
                           <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">
                             紐付け済み
@@ -318,11 +318,11 @@ export default function ResponsesPage() {
                           </span>
                         )}
                       </td>
-                      <td className="border border-[#0d0d0d] px-4 py-3">
+                      <td className="border border-[#e5e7eb] px-4 py-3">
                         <div className="flex gap-2">
                           <Link
                             href={`/forms/responses/${response.form_type}/${response.form_period}`}
-                            className="text-sm text-[#2a2a2a] hover:text-[#0d0d0d]"
+                            className="text-sm text-[#4b5563] hover:text-[#1f2937]"
                           >
                             詳細
                           </Link>

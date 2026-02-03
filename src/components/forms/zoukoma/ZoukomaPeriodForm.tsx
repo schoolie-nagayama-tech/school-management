@@ -14,6 +14,7 @@ import { SlotPreview } from './SlotPreview';
 interface ZoukomaPeriodFormProps {
   isOpen: boolean;
   period: ZoukomaPeriod | null;
+  schoolId?: string;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -21,6 +22,7 @@ interface ZoukomaPeriodFormProps {
 export function ZoukomaPeriodForm({
   isOpen,
   period,
+  schoolId,
   onClose,
   onSuccess,
 }: ZoukomaPeriodFormProps) {
@@ -222,15 +224,18 @@ export function ZoukomaPeriodForm({
         const finalPublishStart = startDate ? startDate.toISOString() : null;
         const finalPublishEnd = endDate ? endDate.toISOString() : null;
         
-        await createZoukomaPeriod({
-          period_key: periodKey.trim(),
-          title: title.trim(),
-          settings,
-          publish_start: finalPublishStart,
-          publish_end: finalPublishEnd,
-          is_active: shouldBeActive,
-          linked_application_item_id: linkedApplicationItemId || null,
-        });
+        await createZoukomaPeriod(
+          {
+            period_key: periodKey.trim(),
+            title: title.trim(),
+            settings,
+            publish_start: finalPublishStart,
+            publish_end: finalPublishEnd,
+            is_active: shouldBeActive,
+            linked_application_item_id: linkedApplicationItemId || null,
+          },
+          schoolId
+        );
       }
       onSuccess();
       onClose();
@@ -255,8 +260,8 @@ export function ZoukomaPeriodForm({
     >
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
-          <div className="p-3 bg-[#d9376e]/10 border border-[#d9376e] rounded-lg">
-            <p className="text-sm text-[#d9376e]">{error}</p>
+          <div className="p-3 bg-[#ef4444]/10 border border-[#ef4444] rounded-lg">
+            <p className="text-sm text-[#ef4444]">{error}</p>
           </div>
         )}
 
@@ -267,10 +272,10 @@ export function ZoukomaPeriodForm({
               <div
                 className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${
                   step === currentStep
-                    ? 'bg-[#ff8e3c] border-[#0d0d0d] text-[#0d0d0d]'
+                    ? 'bg-[#3b82f6] border-[#e5e7eb] text-white'
                     : step < currentStep
-                    ? 'bg-[#0d0d0d] border-[#0d0d0d] text-[#fffffe]'
-                    : 'bg-[#fffffe] border-[#0d0d0d] text-[#2a2a2a]'
+                    ? 'bg-[#1f2937] border-[#e5e7eb] text-white'
+                    : 'bg-white border-[#e5e7eb] text-[#4b5563]'
                 }`}
               >
                 {step}
@@ -278,7 +283,7 @@ export function ZoukomaPeriodForm({
               {step < totalSteps && (
                 <div
                   className={`flex-1 h-0.5 mx-2 ${
-                    step < currentStep ? 'bg-[#0d0d0d]' : 'bg-[#eff0f3]'
+                    step < currentStep ? 'bg-[#1f2937]' : 'bg-[#f3f4f6]'
                   }`}
                 />
               )}
@@ -322,7 +327,7 @@ export function ZoukomaPeriodForm({
             />
 
             <div>
-              <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
+              <label className="block text-sm font-medium text-[#1f2937] mb-2">
                 説明文
               </label>
               <textarea
@@ -331,7 +336,7 @@ export function ZoukomaPeriodForm({
                 disabled={isSubmitting}
                 placeholder="ヒーローセクションに表示する説明文"
                 rows={4}
-                className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a] focus:outline-none focus:ring-2 focus:ring-[#ff8e3c] disabled:bg-[#eff0f3] disabled:cursor-not-allowed"
+                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6] disabled:bg-[#f3f4f6] disabled:cursor-not-allowed"
               />
             </div>
 
@@ -352,7 +357,7 @@ export function ZoukomaPeriodForm({
             />
 
             <div>
-              <label className="block text-sm font-medium text-[#0d0d0d] mb-2">
+              <label className="block text-sm font-medium text-[#1f2937] mb-2">
                 完了メッセージ
               </label>
               <textarea
@@ -361,7 +366,7 @@ export function ZoukomaPeriodForm({
                 disabled={isSubmitting}
                 placeholder="送信完了後に表示するメッセージ"
                 rows={3}
-                className="w-full px-3 py-2 border border-[#0d0d0d] rounded-lg text-sm bg-[#fffffe] text-[#2a2a2a] focus:outline-none focus:ring-2 focus:ring-[#ff8e3c] disabled:bg-[#eff0f3] disabled:cursor-not-allowed"
+                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6] disabled:bg-[#f3f4f6] disabled:cursor-not-allowed"
               />
             </div>
 
@@ -411,7 +416,7 @@ export function ZoukomaPeriodForm({
             />
             {schedule && (
               <div>
-                <label className="block text-sm font-medium text-[#0d0d0d] mb-3">
+                <label className="block text-sm font-medium text-[#1f2937] mb-3">
                   プレビュー
                 </label>
                 <SlotPreview schedule={schedule} />
@@ -423,11 +428,11 @@ export function ZoukomaPeriodForm({
         {/* ステップ5: 確認と保存 */}
         {currentStep === 5 && (
           <div className="space-y-4">
-            <div className="bg-[#eff0f3] rounded-lg border border-[#0d0d0d] p-4">
-              <h3 className="text-sm font-semibold text-[#0d0d0d] mb-3">
+            <div className="bg-[#f3f4f6] rounded-lg border border-[#e5e7eb] p-4">
+              <h3 className="text-sm font-semibold text-[#1f2937] mb-3">
                 基本情報
               </h3>
-              <div className="space-y-2 text-sm text-[#2a2a2a]">
+              <div className="space-y-2 text-sm text-[#4b5563]">
                 <p>
                   <span className="font-medium">期間キー:</span> {periodKey}
                 </p>
@@ -443,11 +448,11 @@ export function ZoukomaPeriodForm({
               </div>
             </div>
 
-            <div className="bg-[#eff0f3] rounded-lg border border-[#0d0d0d] p-4">
-              <h3 className="text-sm font-semibold text-[#0d0d0d] mb-3">
+            <div className="bg-[#f3f4f6] rounded-lg border border-[#e5e7eb] p-4">
+              <h3 className="text-sm font-semibold text-[#1f2937] mb-3">
                 対象学年・料金
               </h3>
-              <div className="space-y-2 text-sm text-[#2a2a2a]">
+              <div className="space-y-2 text-sm text-[#4b5563]">
                 <p>
                   <span className="font-medium">対象学年:</span>{' '}
                   {selectedGrades.join(', ')}
@@ -465,18 +470,18 @@ export function ZoukomaPeriodForm({
               </div>
             </div>
 
-            <div className="bg-[#eff0f3] rounded-lg border border-[#0d0d0d] p-4">
-              <h3 className="text-sm font-semibold text-[#0d0d0d] mb-3">
+            <div className="bg-[#f3f4f6] rounded-lg border border-[#e5e7eb] p-4">
+              <h3 className="text-sm font-semibold text-[#1f2937] mb-3">
                 科目
               </h3>
-              <p className="text-sm text-[#2a2a2a]">
+              <p className="text-sm text-[#4b5563]">
                 {subjects.join(', ')}
               </p>
             </div>
 
             {schedule && (
-              <div className="bg-[#eff0f3] rounded-lg border border-[#0d0d0d] p-4">
-                <h3 className="text-sm font-semibold text-[#0d0d0d] mb-3">
+              <div className="bg-[#f3f4f6] rounded-lg border border-[#e5e7eb] p-4">
+                <h3 className="text-sm font-semibold text-[#1f2937] mb-3">
                   日程スロット
                 </h3>
                 <SlotPreview schedule={schedule} />
@@ -486,7 +491,7 @@ export function ZoukomaPeriodForm({
         )}
 
         {/* ナビゲーションボタン */}
-        <div className="flex justify-between pt-4 border-t border-[#0d0d0d]">
+        <div className="flex justify-between pt-4 border-t border-[#e5e7eb]">
           <div>
             {currentStep > 1 && (
               <Button

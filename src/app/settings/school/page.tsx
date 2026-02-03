@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { AdminLayout } from '@/components/layouts';
@@ -76,7 +76,7 @@ export default function SchoolSettingsPage() {
     return (
       <AdminLayout headerTitle="教室設定">
         <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-4 border-[#ff8e3c] border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-8 h-8 border-4 border-[#3b82f6] border-t-transparent rounded-full animate-spin"></div>
         </div>
       </AdminLayout>
     );
@@ -95,7 +95,7 @@ export default function SchoolSettingsPage() {
     return (
       <AdminLayout headerTitle="教室設定">
         <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-4 border-[#ff8e3c] border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-8 h-8 border-4 border-[#3b82f6] border-t-transparent rounded-full animate-spin"></div>
         </div>
       </AdminLayout>
     );
@@ -112,7 +112,7 @@ export default function SchoolSettingsPage() {
           <CardContent>
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-[#0d0d0d] mb-1">
+                <label className="block text-sm font-medium text-[#1f2937] mb-1">
                   申込通知先メールアドレス
                 </label>
                 <Input
@@ -122,7 +122,7 @@ export default function SchoolSettingsPage() {
                   placeholder="manager@example.com"
                   className="w-full"
                 />
-                <p className="mt-1 text-sm text-[#2a2a2a]">
+                <p className="mt-1 text-sm text-[#4b5563]">
                   フォームから申込があった際に通知を受け取るメールアドレスです
                 </p>
               </div>

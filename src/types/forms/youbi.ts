@@ -1,4 +1,4 @@
-// 曜日変更フォーム関連の型定義
+﻿// 曜日変更フォーム関連の型定義
 
 // 学年名と数値のマッピング
 export const YOUBI_GRADE_NAME_TO_NUMBER: Record<string, number> = {

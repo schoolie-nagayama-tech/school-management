@@ -1,4 +1,4 @@
-// Supabaseのデータベース型定義
+﻿// Supabaseのデータベース型定義
 export type Database = {
   public: {
     Tables: {
@@ -939,9 +939,9 @@ export const STATUS_LABELS: Record<Student['status'], string> = {
 
 // 在籍状況の色マッピング
 export const STATUS_COLORS: Record<Student['status'], string> = {
-  active: 'bg-[#ff8e3c]/20 text-[#0d0d0d] border border-[#0d0d0d]',
-  inactive: 'bg-[#eff0f3] text-[#2a2a2a] border border-[#0d0d0d]',
-  withdrawn: 'bg-[#eff0f3] text-[#2a2a2a]/60 border border-[#0d0d0d]',
+  active: 'bg-[#3b82f6]/20 text-[#1f2937] border border-[#e5e7eb]',
+  inactive: 'bg-[#f3f4f6] text-[#4b5563] border border-[#e5e7eb]',
+  withdrawn: 'bg-[#f3f4f6] text-[#4b5563]/60 border border-[#e5e7eb]',
 };
 
 // 列タイプ

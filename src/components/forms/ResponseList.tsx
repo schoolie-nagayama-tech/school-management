@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { Button, Select } from '@/components/ui';
@@ -68,7 +68,7 @@ export function ResponseList({ responses, formId, onRefresh }: ResponseListProps
         {/* フィルター */}
         <div className="flex gap-4 items-center">
           <div className="flex items-center gap-2">
-            <label className="text-sm text-[#2a2a2a]">学年:</label>
+            <label className="text-sm text-[#4b5563]">学年:</label>
             <Select
               value={gradeFilter === '' ? '' : String(gradeFilter)}
               onChange={(e) => setGradeFilter(e.target.value === '' ? '' : Number(e.target.value))}
@@ -83,7 +83,7 @@ export function ResponseList({ responses, formId, onRefresh }: ResponseListProps
             </Select>
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-sm text-[#2a2a2a]">紐付け状態:</label>
+            <label className="text-sm text-[#4b5563]">紐付け状態:</label>
             <Select
               value={linkedFilter}
               onChange={(e) => setLinkedFilter(e.target.value as typeof linkedFilter)}
@@ -96,27 +96,27 @@ export function ResponseList({ responses, formId, onRefresh }: ResponseListProps
         </div>
 
         {/* テーブル */}
-        <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] overflow-hidden">
+        <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
-                <tr className="bg-[#eff0f3] border-b border-[#0d0d0d]">
-                  <th className="px-4 py-3 text-left text-[#0d0d0d] font-semibold border-r border-[#0d0d0d]">
+                <tr className="bg-[#f3f4f6] border-b border-[#e5e7eb]">
+                  <th className="px-4 py-3 text-left text-[#1f2937] font-semibold border-r border-[#e5e7eb]">
                     回答日時
                   </th>
-                  <th className="px-4 py-3 text-left text-[#0d0d0d] font-semibold border-r border-[#0d0d0d]">
+                  <th className="px-4 py-3 text-left text-[#1f2937] font-semibold border-r border-[#e5e7eb]">
                     生徒名
                   </th>
-                  <th className="px-4 py-3 text-left text-[#0d0d0d] font-semibold border-r border-[#0d0d0d]">
+                  <th className="px-4 py-3 text-left text-[#1f2937] font-semibold border-r border-[#e5e7eb]">
                     学年
                   </th>
-                  <th className="px-4 py-3 text-left text-[#0d0d0d] font-semibold border-r border-[#0d0d0d]">
+                  <th className="px-4 py-3 text-left text-[#1f2937] font-semibold border-r border-[#e5e7eb]">
                     メール
                   </th>
-                  <th className="px-4 py-3 text-left text-[#0d0d0d] font-semibold border-r border-[#0d0d0d]">
+                  <th className="px-4 py-3 text-left text-[#1f2937] font-semibold border-r border-[#e5e7eb]">
                     紐付け状態
                   </th>
-                  <th className="px-4 py-3 text-center text-[#0d0d0d] font-semibold">
+                  <th className="px-4 py-3 text-center text-[#1f2937] font-semibold">
                     操作
                   </th>
                 </tr>
@@ -124,7 +124,7 @@ export function ResponseList({ responses, formId, onRefresh }: ResponseListProps
               <tbody>
                 {filteredResponses.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-[#2a2a2a]">
+                    <td colSpan={6} className="px-4 py-8 text-center text-[#4b5563]">
                       回答がありません
                     </td>
                   </tr>
@@ -132,27 +132,27 @@ export function ResponseList({ responses, formId, onRefresh }: ResponseListProps
                   filteredResponses.map((response) => (
                     <tr
                       key={response.id}
-                      className="border-b border-[#0d0d0d] hover:bg-[#eff0f3]/30"
+                      className="border-b border-[#e5e7eb] hover:bg-[#f3f4f6]/30"
                     >
-                      <td className="px-4 py-3 text-[#2a2a2a] border-r border-[#0d0d0d]">
+                      <td className="px-4 py-3 text-[#4b5563] border-r border-[#e5e7eb]">
                         {formatDateTime(response.created_at)}
                       </td>
-                      <td className="px-4 py-3 text-[#2a2a2a] border-r border-[#0d0d0d]">
+                      <td className="px-4 py-3 text-[#4b5563] border-r border-[#e5e7eb]">
                         {response.student_name}
                       </td>
-                      <td className="px-4 py-3 text-[#2a2a2a] border-r border-[#0d0d0d]">
+                      <td className="px-4 py-3 text-[#4b5563] border-r border-[#e5e7eb]">
                         {response.grade ? GRADE_LABELS[response.grade] : '-'}
                       </td>
-                      <td className="px-4 py-3 text-[#2a2a2a] border-r border-[#0d0d0d]">
+                      <td className="px-4 py-3 text-[#4b5563] border-r border-[#e5e7eb]">
                         {response.email || '-'}
                       </td>
-                      <td className="px-4 py-3 text-[#2a2a2a] border-r border-[#0d0d0d]">
+                      <td className="px-4 py-3 text-[#4b5563] border-r border-[#e5e7eb]">
                         {response.linked_student_id ? (
-                          <span className="text-sm bg-[#ff8e3c]/20 text-[#0d0d0d] px-2 py-1 rounded">
+                          <span className="text-sm bg-[#3b82f6]/20 text-[#1f2937] px-2 py-1 rounded">
                             紐付け済み
                           </span>
                         ) : (
-                          <span className="text-sm text-[#2a2a2a]/60">未紐付け</span>
+                          <span className="text-sm text-[#4b5563]/60">未紐付け</span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-center">

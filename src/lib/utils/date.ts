@@ -1,4 +1,4 @@
-// 年月から日数を取得
+﻿// 年月から日数を取得
 export function getDaysInMonth(yearMonth: string): number {
   const [year, month] = yearMonth.split('-').map(Number);
   return new Date(year, month, 0).getDate();
