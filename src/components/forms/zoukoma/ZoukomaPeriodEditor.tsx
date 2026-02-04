@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Modal, Input, Button } from '@/components/ui';
+import { Modal, Input, Button, Select } from '@/components/ui';
 import { createZoukomaPeriod, updateZoukomaPeriod } from '@/lib/api/zoukoma';
+import { getApplicationItems } from '@/lib/api/applications';
 import type { ZoukomaPeriod, ZoukomaSettings } from '@/types/forms/zoukoma';
+import type { ApplicationItem } from '@/types/database';
 
 interface ZoukomaPeriodEditorProps {
   isOpen: boolean;
@@ -29,10 +31,13 @@ export function ZoukomaPeriodEditor({
   const [publishStart, setPublishStart] = useState('');
   const [publishEnd, setPublishEnd] = useState('');
   const [isActive, setIsActive] = useState(false);
+  const [linkedApplicationItemId, setLinkedApplicationItemId] = useState<string>('');
+  const [applicationItems, setApplicationItems] = useState<ApplicationItem[]>([]);
 
   // 初期値の設定
   useEffect(() => {
     if (isOpen) {
+      getApplicationItems(schoolId, true).then(setApplicationItems).catch(console.error);
       if (period) {
         // 編集モード
         setPeriodKey(period.period_key);
@@ -48,6 +53,7 @@ export function ZoukomaPeriodEditor({
             : ''
         );
         setIsActive(period.is_active);
+        setLinkedApplicationItemId(period.linked_application_item_id || '');
       } else {
         // 新規作成モード
         setPeriodKey('');
@@ -55,10 +61,11 @@ export function ZoukomaPeriodEditor({
         setPublishStart('');
         setPublishEnd('');
         setIsActive(false);
+        setLinkedApplicationItemId('');
       }
       setError('');
     }
-  }, [isOpen, period]);
+  }, [isOpen, period, schoolId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,6 +105,7 @@ export function ZoukomaPeriodEditor({
           publish_end: publishEnd ? new Date(publishEnd).toISOString() : null,
           is_active: isActive,
           settings,
+          linked_application_item_id: linkedApplicationItemId || null,
         });
       } else {
         // 新規作成
@@ -109,7 +117,7 @@ export function ZoukomaPeriodEditor({
             publish_start: publishStart ? new Date(publishStart).toISOString() : null,
             publish_end: publishEnd ? new Date(publishEnd).toISOString() : null,
             is_active: isActive,
-            linked_application_item_id: null,
+            linked_application_item_id: linkedApplicationItemId || null,
           },
           schoolId
         );
@@ -192,6 +200,20 @@ export function ZoukomaPeriodEditor({
             公開中にする
           </label>
         </div>
+
+        <Select
+          label="申込状況項目との紐付け"
+          value={linkedApplicationItemId}
+          onChange={(e) => setLinkedApplicationItemId(e.target.value)}
+          options={[
+            { value: '', label: '選択してください' },
+            ...applicationItems.map((item) => ({
+              value: item.id,
+              label: item.name,
+            })),
+          ]}
+          disabled={isSubmitting}
+        />
 
         <div className="flex justify-end gap-3 pt-4 border-t border-[#e5e7eb]">
           <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>

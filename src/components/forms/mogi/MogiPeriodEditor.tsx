@@ -38,15 +38,18 @@ export function MogiPeriodEditor({
   const [description, setDescription] = useState('');
   const [publishStart, setPublishStart] = useState('');
   const [publishEnd, setPublishEnd] = useState('');
-  const [selectedGrades, setSelectedGrades] = useState<string[]>(['中3']);
   const [venueText, setVenueText] = useState('');
   const [dateEntries, setDateEntries] = useState<DateEntry[]>([]);
   const [completionMessage, setCompletionMessage] = useState('');
   const [linkedApplicationItemId, setLinkedApplicationItemId] = useState<string>('');
   const [applicationItems, setApplicationItems] = useState<ApplicationItem[]>([]);
+  const [useDefaultInsert, setUseDefaultInsert] = useState(false);
 
-  // 利用可能な学年リスト
-  const availableGrades = ['小1', '小2', '小3', '小4', '小5', '小6', '中1', '中2', '中3', '高1', '高2', '高3', '既卒'];
+  // Vもぎは中3のみ
+  const MOGI_GRADES = ['中3'] as const;
+
+  const MOGI_DEFAULTS_KEY = (id: string) => `mogi_defaults_${id}`;
+  const MOGI_USE_DEFAULTS_KEY = (id: string) => `mogi_use_defaults_${id}`;
 
   // 期間キーの自動生成（YYYY-MM形式）
   const generatePeriodKey = () => {
@@ -113,6 +116,10 @@ export function MogiPeriodEditor({
     if (isOpen) {
       // 申込項目を取得
       getApplicationItems().then(setApplicationItems).catch(console.error);
+      // デフォルト自動挿入の設定を読み込み
+      if (typeof window !== 'undefined' && schoolId) {
+        setUseDefaultInsert(window.localStorage.getItem(MOGI_USE_DEFAULTS_KEY(schoolId)) === 'true');
+      }
 
       if (period) {
         // 編集モード
@@ -130,7 +137,6 @@ export function MogiPeriodEditor({
             ? new Date(period.publish_end).toISOString().slice(0, 16)
             : ''
         );
-        setSelectedGrades(settings.grades || ['中3']);
         // 会場テキスト復元（全日程の会場を集約してユニーク化）
         const venueMap = new Map<string, string>();
         settings.dates?.forEach((d) => {
@@ -161,15 +167,31 @@ export function MogiPeriodEditor({
         endDate.setDate(endDate.getDate() + 30);
         setPublishStart(now.toISOString().slice(0, 16));
         setPublishEnd(endDate.toISOString().slice(0, 16));
-        setSelectedGrades(['中3']);
         setVenueText('');
         setDateEntries([]);
         setCompletionMessage('');
         setLinkedApplicationItemId('');
+        // デフォルト自動挿入がONなら保存済みデフォルトを挿入
+        if (typeof window !== 'undefined' && schoolId) {
+          const useDefaults = window.localStorage.getItem(MOGI_USE_DEFAULTS_KEY(schoolId)) === 'true';
+          if (useDefaults) {
+            try {
+              const saved = window.localStorage.getItem(MOGI_DEFAULTS_KEY(schoolId));
+              if (saved) {
+                const def = JSON.parse(saved) as { description?: string; venueText?: string; completionMessage?: string };
+                if (def.description != null) setDescription(def.description);
+                if (def.venueText != null) setVenueText(def.venueText);
+                if (def.completionMessage != null) setCompletionMessage(def.completionMessage);
+              }
+            } catch {
+              // ignore
+            }
+          }
+        }
       }
       setError('');
     }
-  }, [isOpen, period]);
+  }, [isOpen, period, schoolId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -218,7 +240,7 @@ export function MogiPeriodEditor({
 
     const settings: MogiSettings = {
         description: description.trim() || undefined,
-        grades: selectedGrades,
+        grades: [...MOGI_GRADES],
         dates: cleanedEntries.map((entry, idx) => {
           const venuesForDate = getVenuesForDate(entry, idx);
           return {
@@ -311,6 +333,27 @@ export function MogiPeriodEditor({
     setDateEntries(updated);
   };
 
+  // 現在の説明文・会場・完了メッセージをデフォルトに保存
+  const handleSaveDefaults = () => {
+    if (!schoolId || typeof window === 'undefined') return;
+    window.localStorage.setItem(
+      MOGI_DEFAULTS_KEY(schoolId),
+      JSON.stringify({
+        description,
+        venueText,
+        completionMessage,
+      })
+    );
+    window.localStorage.setItem(MOGI_USE_DEFAULTS_KEY(schoolId), 'true');
+    setUseDefaultInsert(true);
+  };
+
+  const handleUseDefaultsChange = (checked: boolean) => {
+    if (!schoolId || typeof window === 'undefined') return;
+    setUseDefaultInsert(checked);
+    window.localStorage.setItem(MOGI_USE_DEFAULTS_KEY(schoolId), checked ? 'true' : 'false');
+  };
+
   // 日程固有会場テキスト更新
   const handleUpdateExtraVenueText = (index: number, value: string) => {
     const updated = [...dateEntries];
@@ -401,31 +444,31 @@ export function MogiPeriodEditor({
           </p>
         </div>
 
-        {/* 対象学年 */}
-        <div>
-          <label className="block text-sm font-medium text-[#1f2937] mb-2">
-            対象学年 <span className="text-[#ef4444]">*</span>
+        {/* デフォルト設定 */}
+        <div className="p-4 bg-[#f0f9ff] rounded-lg border border-[#bae6fd]">
+          <p className="text-sm font-medium text-[#1f2937] mb-3">デフォルト設定</p>
+          <p className="text-xs text-[#4b5563] mb-3">
+            説明文・会場・完了メッセージをデフォルトに保存し、新規作成時に自動で挿入できます。
+          </p>
+          <label className="flex items-center gap-2 mb-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={useDefaultInsert}
+              onChange={(e) => handleUseDefaultsChange(e.target.checked)}
+              disabled={isSubmitting}
+              className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6]"
+            />
+            <span className="text-sm text-[#1f2937]">新規作成時にデフォルトを自動挿入する</span>
           </label>
-          <div className="space-y-2">
-            {availableGrades.map((grade) => (
-              <label key={grade} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={selectedGrades.includes(grade)}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedGrades([...selectedGrades, grade]);
-                    } else {
-                      setSelectedGrades(selectedGrades.filter((g) => g !== grade));
-                    }
-                  }}
-                  disabled={isSubmitting}
-                  className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6]"
-                />
-                <span className="text-sm text-[#4b5563]">{grade}</span>
-              </label>
-            ))}
-          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={handleSaveDefaults}
+            disabled={isSubmitting}
+          >
+            現在の説明文・会場・完了メッセージをデフォルトに保存
+          </Button>
         </div>
 
         {/* 説明文 */}
@@ -508,11 +551,6 @@ export function MogiPeriodEditor({
                       disabled={isSubmitting}
                       required
                     />
-                    {entry.date && (
-                      <p className="text-sm text-[#4b5563]">
-                        → 表示: {formatDateLabel(entry.date)}
-                      </p>
-                    )}
 
                     <div>
                       <label className="block text-sm font-medium text-[#1f2937] mb-2">

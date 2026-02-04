@@ -29,7 +29,6 @@ export function MogiForm({ school, period }: MogiFormProps) {
   const [email, setEmail] = useState('');
   const [selections, setSelections] = useState<DateVenueSelection[]>([]);
   const [cancelAgreed, setCancelAgreed] = useState(false);
-  const [note, setNote] = useState('');
 
   // バリデーションエラー
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -97,7 +96,6 @@ export function MogiForm({ school, period }: MogiFormProps) {
         selections,
         selection_count: selections.length,
         cancel_agreed: cancelAgreed,
-        note: note.trim() || undefined,
       };
 
       await submitMogiResponse({
@@ -129,7 +127,6 @@ export function MogiForm({ school, period }: MogiFormProps) {
     setEmail('');
     setSelections([]);
     setCancelAgreed(false);
-    setNote('');
     setErrors({});
     setErrorMessage('');
   };
@@ -292,19 +289,6 @@ export function MogiForm({ school, period }: MogiFormProps) {
             onChange={setCancelAgreed}
             disabled={isSubmitting}
             error={errors.cancelAgreed}
-          />
-        </div>
-
-        {/* セクション4: 備考 */}
-        <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
-          <h2 className="text-lg font-bold text-[#1f2937] mb-4">備考</h2>
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            disabled={isSubmitting}
-            placeholder="例：特別な配慮が必要な場合など"
-            rows={4}
-            className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6] disabled:bg-[#f3f4f6] disabled:cursor-not-allowed"
           />
         </div>
 

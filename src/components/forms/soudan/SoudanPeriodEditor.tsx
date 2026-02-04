@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Modal, Input, Button } from '@/components/ui';
+import { Modal, Input, Button, Select } from '@/components/ui';
 import { createSoudanPeriod, updateSoudanPeriod } from '@/lib/api/soudan';
+import { getApplicationItems } from '@/lib/api/applications';
 import type { SoudanPeriod, SoudanSettings } from '@/types/forms/soudan';
+import type { ApplicationItem } from '@/types/database';
 
 interface SoudanPeriodEditorProps {
   isOpen: boolean;
@@ -46,6 +48,8 @@ export function SoudanPeriodEditor({
   const [completionMessage, setCompletionMessage] = useState(
     'ご相談を受け付けました。\n内容を確認の上、担当者よりご連絡させていただきます。'
   );
+  const [linkedApplicationItemId, setLinkedApplicationItemId] = useState<string>('');
+  const [applicationItems, setApplicationItems] = useState<ApplicationItem[]>([]);
 
   // 期間キーの自動生成（YYYY-MM形式）
   const generatePeriodKey = () => {
@@ -73,6 +77,7 @@ export function SoudanPeriodEditor({
   // 初期値の設定
   useEffect(() => {
     if (isOpen) {
+      getApplicationItems(schoolId, true).then(setApplicationItems).catch(console.error);
       if (period) {
         // 編集モード
         const settings = period.settings;
@@ -91,6 +96,7 @@ export function SoudanPeriodEditor({
             : ''
         );
         setCompletionMessage(settings.completion_message || 'ご相談を受け付けました。\n内容を確認の上、担当者よりご連絡させていただきます。');
+        setLinkedApplicationItemId(period.linked_application_item_id || '');
       } else {
         // 新規作成モード（公開開始日はデフォルトで「今」＝保存後すぐ公開）
         setPeriodKey(generatePeriodKey());
@@ -100,10 +106,11 @@ export function SoudanPeriodEditor({
         setPublishStart(getDefaultPublishStart());
         setPublishEnd('');
         setCompletionMessage('ご相談を受け付けました。\n内容を確認の上、担当者よりご連絡させていただきます。');
+        setLinkedApplicationItemId('');
       }
       setError('');
     }
-  }, [isOpen, period]);
+  }, [isOpen, period, schoolId]);
 
   // バリデーション
   const validate = (): boolean => {
@@ -144,6 +151,7 @@ export function SoudanPeriodEditor({
         settings,
         publish_start: publishStart || null,
         publish_end: publishEnd || null,
+        linked_application_item_id: linkedApplicationItemId || null,
       };
 
       if (period) {
@@ -285,6 +293,26 @@ export function SoudanPeriodEditor({
               className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 resize-y text-sm"
             />
           </div>
+        </section>
+
+        {/* 申込状況との紐付け */}
+        <section>
+          <h3 className="text-sm font-semibold text-[#1f2937] mb-3 border-b border-[#e5e7eb] pb-1">
+            申込状況との紐付け
+          </h3>
+          <Select
+            label="申込状況項目との紐付け"
+            value={linkedApplicationItemId}
+            onChange={(e) => setLinkedApplicationItemId(e.target.value)}
+            options={[
+              { value: '', label: '選択してください' },
+              ...applicationItems.map((item) => ({
+                value: item.id,
+                label: item.name,
+              })),
+            ]}
+            disabled={isSubmitting}
+          />
         </section>
 
         {/* フッター */}

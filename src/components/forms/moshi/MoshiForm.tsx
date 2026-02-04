@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -31,7 +31,6 @@ export function MoshiForm({ school, period }: MoshiFormProps) {
   const [examType, setExamType] = useState<ExamType | ''>('');
   const [furikaeDate, setFurikaeDate] = useState('');
   const [furikaeTime, setFurikaeTime] = useState('');
-  const [note, setNote] = useState('');
 
   // バリデーションエラー
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -135,7 +134,6 @@ export function MoshiForm({ school, period }: MoshiFormProps) {
               furikae_date_label: formatDateLabel(furikaeDate),
               furikae_time: furikaeTime,
             }),
-        note: note.trim() || undefined,
       };
 
       await submitMoshiResponse({
@@ -183,18 +181,32 @@ export function MoshiForm({ school, period }: MoshiFormProps) {
     );
   }
 
+  // 学年を昇順でソート（小4→中3）
+  const sortedGrades = [...(settings.grades || [])].sort((a, b) => {
+    const numA = MOSHI_GRADE_NAME_TO_NUMBER[a] ?? 99;
+    const numB = MOSHI_GRADE_NAME_TO_NUMBER[b] ?? 99;
+    return numA - numB;
+  });
+
   return (
     <div className="max-w-md mx-auto p-4">
       {/* ヘッダー */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <button
           onClick={() => router.push(`/portal/${school.code}`)}
           className="text-[#4b5563] hover:text-[#1f2937]"
         >
           ← 戻る
         </button>
-        <h1 className="text-xl font-bold text-[#1f2937]">模試申込</h1>
         <div className="w-12"></div>
+      </div>
+
+      {/* タイトルカード */}
+      <div className="bg-white rounded-xl border-2 border-[#e5e7eb] shadow-sm p-6 mb-6">
+        <h1 className="text-xl font-bold text-[#1f2937] text-center">模試申込</h1>
+        {period.title && (
+          <p className="text-sm text-[#4b5563] text-center mt-1">{period.title}</p>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -236,7 +248,7 @@ export function MoshiForm({ school, period }: MoshiFormProps) {
               onChange={(e) => setSelectedGrade(e.target.value)}
               options={[
                 { value: '', label: '選択してください' },
-                ...settings.grades.map((g) => ({ value: g, label: g })),
+                ...sortedGrades.map((g) => ({ value: g, label: g })),
               ]}
               className={errors.grade ? 'border-red-500' : ''}
             />
@@ -315,7 +327,12 @@ export function MoshiForm({ school, period }: MoshiFormProps) {
                   onChange={(e) => setExamType(e.target.value as ExamType)}
                   className="mt-1"
                 />
-                <span className="font-medium text-[#1f2937]">振替受験を希望します</span>
+                <div>
+                  <span className="font-medium text-[#1f2937]">振替受験を希望します</span>
+                  <span className="block text-sm text-[#4b5563] mt-1">
+                    当日の時間変更を希望の場合もこちら
+                  </span>
+                </div>
               </div>
             </label>
           )}
@@ -334,16 +351,12 @@ export function MoshiForm({ school, period }: MoshiFormProps) {
                   {settings.furikae?.note && (
                     <li>{settings.furikae.note}</li>
                   )}
-                  {selectedGrade && (
-                    <li>
-                      {isElementary(selectedGrade) ? '小学生' : '中学生'}の目安時間：
-                      <strong>
-                        {isElementary(selectedGrade)
-                          ? settings.furikae?.time_guide?.elementary
-                          : settings.furikae?.time_guide?.middle}
-                      </strong>
-                    </li>
-                  )}
+                  <li>
+                    小学生の目安時間：<strong>{settings.furikae?.time_guide?.elementary ?? '約2時間'}</strong>
+                  </li>
+                  <li>
+                    中学生の目安時間：<strong>{settings.furikae?.time_guide?.middle ?? '約3時間'}</strong>
+                  </li>
                 </ul>
               </div>
 
@@ -358,14 +371,6 @@ export function MoshiForm({ school, period }: MoshiFormProps) {
                   onChange={(e) => setFurikaeDate(e.target.value)}
                   className={errors.furikaeDate ? 'border-red-500' : ''}
                 />
-                {furikaeDate && (
-                  <p className={`text-sm mt-1 ${
-                    isWeekday(furikaeDate) ? 'text-[#4b5563]' : 'text-red-600'
-                  }`}>
-                    → {formatDateLabel(furikaeDate)}
-                    {!isWeekday(furikaeDate) && '（平日を選択してください）'}
-                  </p>
-                )}
                 {errors.furikaeDate && (
                   <p className="text-red-500 text-xs mt-1">{errors.furikaeDate}</p>
                 )}
@@ -391,18 +396,6 @@ export function MoshiForm({ school, period }: MoshiFormProps) {
               </div>
             </div>
           )}
-        </div>
-
-        {/* 備考 */}
-        <div>
-          <label className="block text-sm font-medium mb-1 text-[#1f2937]">備考</label>
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder="ご要望等あればご記入ください"
-            rows={3}
-            className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 resize-y text-sm"
-          />
         </div>
 
         {/* エラーメッセージ */}

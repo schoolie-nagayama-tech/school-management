@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 interface CancelAgreementProps {
   agreed: boolean;
@@ -16,11 +16,17 @@ export function CancelAgreement({
   return (
     <div className="space-y-4">
       {/* 注意書きボックス */}
-      <div className="bg-[#ffeb3b]/20 border border-[#3b82f6] rounded-lg p-4">
+      <div className="bg-[#ffeb3b]/20 border border-[#3b82f6] rounded-lg p-4 space-y-2">
         <p className="text-sm text-[#1f2937] leading-relaxed">
           <strong className="font-semibold">重要:</strong>
           <br />
           Vもぎは申込後のキャンセル・返金ができません。日程・会場をよくご確認の上、お申し込みください。
+        </p>
+        <p className="text-sm text-[#1f2937] leading-relaxed">
+          申込後受験票はご家庭で印刷をお願いいたします。
+        </p>
+        <p className="text-sm text-[#1f2937] leading-relaxed">
+          ご不明点はVもぎまでご連絡をお願いします。
         </p>
       </div>
 
