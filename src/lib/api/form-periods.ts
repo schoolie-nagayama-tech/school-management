@@ -13,11 +13,13 @@ import { getDefaultSchoolId } from './schools';
 
 /**
  * フォーム公開期間一覧を取得
+ * @param orderByCreatedAt true のとき created_at 降順（期間管理ページ用）
  */
 export async function getFormPeriods(
   schoolId?: string,
   formType?: FormType,
-  includeArchived: boolean = false
+  includeArchived: boolean = false,
+  orderByCreatedAt: boolean = false
 ): Promise<FormPeriod[]> {
   const targetSchoolId = schoolId || getDefaultSchoolId();
 
@@ -34,7 +36,10 @@ export async function getFormPeriods(
     query = query.or('is_archived.eq.false,is_archived.is.null');
   }
 
-  query = query.order('period_key', { ascending: false });
+  query = query.order(
+    orderByCreatedAt ? 'created_at' : 'period_key',
+    { ascending: false }
+  );
 
   const { data, error } = await query;
 
@@ -156,9 +161,13 @@ export async function createFormPeriod(
     return updateFormPeriod(existing.id, updateData);
   }
 
+  const insertData = {
+    ...data,
+    is_active: data.is_active ?? false, // 新規作成時は非公開
+  };
   const { data: created, error } = await supabase
     .from('form_periods')
-    .insert(data)
+    .insert(insertData)
     .select()
     .single();
 
@@ -219,6 +228,117 @@ export async function deleteFormPeriod(id: string): Promise<void> {
   if (error) {
     throw new Error(`フォーム公開期間の削除に失敗しました: ${error.message}`);
   }
+}
+
+/**
+ * is_active が true の公開中期間を1件取得（同一 form_type で1つのみ想定）
+ */
+export async function getActivePeriodByFlag(
+  schoolId: string,
+  formType: FormType
+): Promise<FormPeriod | null> {
+  const { data, error } = await supabase
+    .from('form_periods')
+    .select('*')
+    .eq('school_id', schoolId)
+    .eq('form_type', formType)
+    .eq('is_active', true)
+    .or('is_archived.eq.false,is_archived.is.null')
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`公開中期間の取得に失敗しました: ${error.message}`);
+  }
+  return data as FormPeriod | null;
+}
+
+/**
+ * 期間を公開する（同一 form_type の他期間は自動で非公開に）
+ */
+export async function publishPeriod(
+  periodId: string,
+  schoolId: string,
+  formType: FormType
+): Promise<void> {
+  const period = await getFormPeriod(periodId);
+  if (!period || period.form_type !== formType || period.school_id !== schoolId) {
+    throw new Error('指定した期間が見つかりません');
+  }
+
+  // 同一 form_type の他期間を非公開に
+  const { error: updateOthersError } = await supabase
+    .from('form_periods')
+    .update({ is_active: false, updated_at: new Date().toISOString() })
+    .eq('school_id', schoolId)
+    .eq('form_type', formType)
+    .neq('id', periodId);
+
+  if (updateOthersError) {
+    throw new Error(`他期間の非公開処理に失敗しました: ${updateOthersError.message}`);
+  }
+
+  // 指定期間を公開に
+  const { error: updateError } = await supabase
+    .from('form_periods')
+    .update({ is_active: true, updated_at: new Date().toISOString() })
+    .eq('id', periodId);
+
+  if (updateError) {
+    throw new Error(`期間の公開に失敗しました: ${updateError.message}`);
+  }
+}
+
+/**
+ * 期間を非公開にする
+ */
+export async function unpublishPeriod(periodId: string): Promise<void> {
+  const { error } = await supabase
+    .from('form_periods')
+    .update({ is_active: false, updated_at: new Date().toISOString() })
+    .eq('id', periodId);
+
+  if (error) {
+    throw new Error(`期間の非公開に失敗しました: ${error.message}`);
+  }
+}
+
+/**
+ * 指定期間の回答件数を取得
+ */
+export async function getResponseCountByPeriod(
+  schoolId: string,
+  formType: FormType,
+  periodKey: string
+): Promise<number> {
+  const { count, error } = await supabase
+    .from('form_responses')
+    .select('*', { count: 'exact', head: true })
+    .eq('school_id', schoolId)
+    .eq('form_type', formType)
+    .eq('form_period', periodKey);
+
+  if (error) {
+    throw new Error(`回答件数の取得に失敗しました: ${error.message}`);
+  }
+  return count ?? 0;
+}
+
+/**
+ * 期間を削除（回答が1件以上ある場合はエラー。その場合はアーカイブを推奨）
+ */
+export async function deletePeriodWithCheck(
+  periodId: string,
+  periodKey: string,
+  formType: FormType,
+  schoolId: string
+): Promise<void> {
+  const count = await getResponseCountByPeriod(schoolId, formType, periodKey);
+  if (count > 0) {
+    throw new Error(
+      'この期間には回答があるため削除できません。アーカイブしてください。'
+    );
+  }
+  await deleteFormPeriod(periodId);
 }
 
 /**

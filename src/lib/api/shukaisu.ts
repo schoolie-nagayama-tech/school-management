@@ -1,6 +1,6 @@
 import {
   getFormPeriods,
-  getActiveFormPeriod,
+  getActivePeriodByFlag,
   getFormPeriod,
   createFormPeriod,
   updateFormPeriod,
@@ -55,7 +55,7 @@ export async function getActiveShukaisuPeriod(
     return null;
   }
 
-  const period = await getActiveFormPeriod(school.id, 'shukaisu');
+  const period = await getActivePeriodByFlag(school.id, 'shukaisu');
   if (!period) {
     return null;
   }

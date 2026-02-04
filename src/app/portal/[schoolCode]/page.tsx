@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation';
 import { getSchoolByCode } from '@/lib/api/schools';
 import { getVisiblePortalMenus } from '@/lib/api/portal';
-import { getActiveFormPeriod } from '@/lib/api/form-periods';
+import { getActivePeriodByFlag } from '@/lib/api/form-periods';
 import { PortalMenuList } from '@/components/portal';
-import type { FormType } from '@/types/database';
+import type { FormType, PortalMenu } from '@/types/database';
 
 // 管理画面での公開/非公開の切り替えを保護者ポータルに即反映するためキャッシュしない
 export const dynamic = 'force-dynamic';
@@ -35,7 +35,7 @@ export default async function PortalPage({ params }: PortalPageProps) {
   }
 
   // 公開メニューを取得
-  let menus;
+  let menus: PortalMenu[];
   try {
     menus = await getVisiblePortalMenus(schoolCode);
   } catch (error) {
@@ -51,7 +51,7 @@ export default async function PortalPage({ params }: PortalPageProps) {
         const formType = MENU_KEY_TO_FORM_TYPE[menu.menu_key];
         if (formType) {
           try {
-            const activePeriod = await getActiveFormPeriod(school.id, formType);
+            const activePeriod = await getActivePeriodByFlag(school.id, formType);
             const isFormActive = !!activePeriod;
             return { menu, isFormActive };
           } catch (error) {
@@ -61,8 +61,8 @@ export default async function PortalPage({ params }: PortalPageProps) {
         }
       }
       // 外部リンクの場合は常にアクティブとみなす（link_urlまたはlink_urlsが設定されている場合）
-      const hasLinks = menu.menu_key === 'mendan' 
-        ? (menu.link_urls && menu.link_urls.length > 0)
+      const hasLinks: boolean = menu.menu_key === 'mendan'
+        ? !!(menu.link_urls && menu.link_urls.length > 0)
         : !!menu.link_url;
       return { menu, isFormActive: hasLinks };
     })

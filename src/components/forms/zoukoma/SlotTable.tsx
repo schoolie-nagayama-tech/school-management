@@ -1,7 +1,14 @@
 'use client';
 
 import { useMemo } from 'react';
-import type { TimeSlot, ZoukomaSettings } from '@/types/forms/zoukoma';
+import type { TimeSlot, ZoukomaSettings, PeriodConfig } from '@/types/forms/zoukoma';
+
+/** 期間設定が未登録のときに使うデフォルト時限（平日のみ・土日なし） */
+const DEFAULT_PERIODS_FALLBACK: PeriodConfig[] = [
+  { code: '5', start_time: '16:20', end_time: '17:50', available_saturday: false, available_sunday: false, available_weekday: true },
+  { code: '6', start_time: '17:55', end_time: '19:25', available_saturday: false, available_sunday: false, available_weekday: true },
+  { code: '7', start_time: '19:30', end_time: '21:00', available_saturday: false, available_sunday: false, available_weekday: true },
+];
 
 interface SlotTableProps {
   settings: ZoukomaSettings;
@@ -18,104 +25,65 @@ export function SlotTable({
 }: SlotTableProps) {
   const selectedSlotSet = useMemo(() => new Set(selectedSlots), [selectedSlots]);
 
-  // 3週間分の日程スロットを生成
+  // 入力日から3週間分の日程スロットを常に生成（期間設定がなくてもデフォルト時限で表示）
   const slots = useMemo(() => {
-    // 新形式（schedule）または旧形式（start_date, time_slots）に対応
-    const startDateStr = settings.schedule?.start_date || settings.start_date;
-    if (!startDateStr) {
-      return [];
-    }
-
-    const startDate = new Date(startDateStr);
-    const slots: TimeSlot[] = [];
     const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const minDaysAhead = settings.schedule?.min_days_ahead ?? 2;
+    const minDaysAhead = settings.schedule?.min_days_ahead ?? 0;
     const minDate = new Date(today);
     minDate.setDate(today.getDate() + minDaysAhead);
 
-    // 新形式の場合
-    if (settings.schedule?.periods) {
-      // 3週間分（21日間）を生成
-      for (let day = 0; day < 21; day++) {
-        const date = new Date(startDate);
-        date.setDate(startDate.getDate() + day);
-        const dayOfWeek = date.getDay();
-        const dayName = dayNames[dayOfWeek];
+    // 入力している日から3週間（21日間）を常に使用
+    const startDate = new Date(today);
+    const slots: TimeSlot[] = [];
 
-        // 日曜は除外
-        if (dayOfWeek === 0) {
-          continue;
+    // 新形式（schedule.periods）があればそれを使用、なければデフォルト時限
+    const periodsToUse: PeriodConfig[] =
+      settings.schedule?.periods?.length
+        ? settings.schedule.periods
+        : DEFAULT_PERIODS_FALLBACK;
+
+    for (let day = 0; day < 21; day++) {
+      const date = new Date(startDate);
+      date.setDate(startDate.getDate() + day);
+      const dayOfWeek = date.getDay();
+      const dayName = dayNames[dayOfWeek];
+
+      const isSunday = dayOfWeek === 0;
+      const isSaturday = dayOfWeek === 6;
+      const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
+      const isBeforeMinDate = date < minDate;
+
+      periodsToUse.forEach((periodConfig) => {
+        const period = parseInt(periodConfig.code, 10);
+        const satOk = periodConfig.available_saturday ?? false;
+        const sunOk = periodConfig.available_sunday ?? false;
+        const weekdayOk = periodConfig.available_weekday ?? false;
+        const shouldShow =
+          (isSunday && sunOk) ||
+          (isSaturday && satOk) ||
+          (isWeekday && weekdayOk);
+
+        if (!shouldShow) {
+          return;
         }
 
-        const isSaturday = dayOfWeek === 6;
-        const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
-        const isBeforeMinDate = date < minDate;
+        const slotId = `${date.toISOString().split('T')[0]}_${period}`;
+        const timeRange = `${periodConfig.start_time}–${periodConfig.end_time}`;
+        const dateStr = `${date.getMonth() + 1}/${date.getDate()}`;
+        const label = `${dateStr}(${dayName}) ${period}限 ${timeRange}`;
 
-        // 各時限をチェック
-        settings.schedule.periods.forEach((periodConfig) => {
-          const period = parseInt(periodConfig.code, 10);
-          const shouldShow =
-            (isSaturday && periodConfig.available_saturday) ||
-            (isWeekday && periodConfig.available_weekday);
-
-          if (!shouldShow) {
-            return;
-          }
-
-          const slotId = `${date.toISOString().split('T')[0]}_${period}`;
-          const timeRange = `${periodConfig.start_time}–${periodConfig.end_time}`;
-          const dateStr = `${date.getMonth() + 1}/${date.getDate()}`;
-          const label = `${dateStr}(${dayName}) ${period}限 ${timeRange}`;
-
-          slots.push({
-            id: slotId,
-            date: date.toISOString().split('T')[0],
-            dayOfWeek: dayName,
-            period,
-            label,
-            timeRange,
-            isAvailable: !isBeforeMinDate,
-          });
+        slots.push({
+          id: slotId,
+          date: date.toISOString().split('T')[0],
+          dayOfWeek: dayName,
+          period,
+          label,
+          timeRange,
+          isAvailable: !isBeforeMinDate,
         });
-      }
-    } else {
-      // 旧形式（後方互換性のため）
-      // 3週間分（21日間）を生成
-      for (let day = 0; day < 21; day++) {
-        const date = new Date(startDate);
-        date.setDate(startDate.getDate() + day);
-        const dayOfWeek = date.getDay();
-        const dayName = dayNames[dayOfWeek];
-
-        // 日曜は除外
-        if (dayOfWeek === 0) {
-          continue;
-        }
-
-        // 土曜は4〜7限、平日は5〜7限
-        const periods = dayOfWeek === 6 ? [4, 5, 6, 7] : [5, 6, 7];
-
-        periods.forEach((period) => {
-          const slotId = `${date.toISOString().split('T')[0]}_${period}`;
-          const timeRange =
-            settings.time_slots?.[period.toString() as '4' | '5' | '6' | '7'] ||
-            '';
-          const dateStr = `${date.getMonth() + 1}/${date.getDate()}`;
-          const label = `${dateStr}(${dayName}) ${period}限${timeRange ? ' ' + timeRange : ''}`;
-
-          slots.push({
-            id: slotId,
-            date: date.toISOString().split('T')[0],
-            dayOfWeek: dayName,
-            period,
-            label,
-            timeRange,
-            isAvailable: true,
-          });
-        });
-      }
+      });
     }
 
     return slots;
@@ -195,15 +163,6 @@ export function SlotTable({
     const someSelected = periodSlotIds.some((id) => selectedSlotSet.has(id));
     return { allSelected, someSelected };
   };
-
-  const startDateStr = settings.schedule?.start_date || settings.start_date;
-  if (!startDateStr) {
-    return (
-      <div className="bg-[#f3f4f6] rounded-lg border border-[#e5e7eb] p-4 text-center">
-        <p className="text-sm text-[#4b5563]">日程が設定されていません</p>
-      </div>
-    );
-  }
 
   return (
     <div className="overflow-x-auto">

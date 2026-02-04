@@ -323,7 +323,7 @@ export function ZoukomaForm({ school, period }: ZoukomaFormProps) {
             disabled={isSubmitting}
           />
 
-          {/* 料金見積 */}
+          {/* 料金 */}
           {selectedGrade && (
             <div className="mt-6">
               <PriceQuote
@@ -334,6 +334,10 @@ export function ZoukomaForm({ school, period }: ZoukomaFormProps) {
               />
             </div>
           )}
+
+          <p className="text-sm text-[#4b5563] mt-4">
+            テスト対策の日程が決まりましたら、Growより保護者様へご連絡いたします。
+          </p>
         </div>
 
         {/* セクション3: 出席可能日程 */}
@@ -363,6 +367,9 @@ export function ZoukomaForm({ school, period }: ZoukomaFormProps) {
             onChange={setSelectedSlots}
             disabled={isSubmitting}
           />
+          <p className="text-sm text-[#4b5563] mt-4">
+            日程が決まりましたら、Growよりご連絡いたします。
+          </p>
         </div>
 
         {/* セクション4: 備考 */}

@@ -1,4 +1,4 @@
-﻿// 増コマ申込フォームの型定義
+// 増コマ申込フォームの型定義
 
 import type { FormPeriod, FormResponse } from '@/types/database';
 
@@ -7,14 +7,15 @@ export interface PeriodConfig {
   code: string; // '4', '5', '6', '7'
   start_time: string; // 例: "14:25"
   end_time: string; // 例: "15:55"
-  available_saturday: boolean; // 土曜日に表示するか
+  available_saturday: boolean; // 土曜日に表示するか（デフォルト: false）
+  available_sunday: boolean; // 日曜日に表示するか（デフォルト: false）
   available_weekday: boolean; // 平日（月〜金）に表示するか
 }
 
 // 日程スケジュール設定
 export interface ScheduleConfig {
-  start_date: string; // 開始日（YYYY-MM-DD形式、この日から3週間分を表示）
-  min_days_ahead: number; // 申込可能な最短日（本日から何日後、デフォルト: 2）
+  start_date?: string; // 旧仕様用（未使用時は入力日から3週間）
+  min_days_ahead: number; // 申込可能な最短日（入力日から何日後、デフォルト: 0）
   periods: PeriodConfig[]; // 時限設定のリスト
 }
 

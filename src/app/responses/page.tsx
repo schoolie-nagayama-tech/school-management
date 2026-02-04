@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { AdminLayout } from '@/components/layouts';
@@ -11,6 +11,51 @@ import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
+
+// フォーム種別 → フォーム詳細URLパス（/forms/responses/[path]/[period]）
+const FORM_TYPE_TO_PATH: Record<string, string> = {
+  mogi: 'mogi',       // Vもぎ申込
+  moshi: 'moshi',     // 模試申込
+  zoukoma: 'zoukoma', // 増コマ申込
+  youbi: 'youbi',     // 曜日変更
+  shukaisu: 'shukaisu', // 週回数変更
+  soudan: 'soudan',   // お客様相談
+  kyozai: 'kyozai',   // 教材販売
+};
+
+interface SummaryCardProps {
+  formType: string;
+  formTypeLabel: string;
+  periodKey: string;
+  periodLabel: string;
+  totalCount: number;
+  unprocessedCount: number;
+}
+
+function SummaryCard({
+  formType,
+  formTypeLabel,
+  periodKey,
+  periodLabel,
+  totalCount,
+  unprocessedCount,
+}: SummaryCardProps) {
+  const path = FORM_TYPE_TO_PATH[formType] ?? formType;
+  const href = `/forms/responses/${path}/${periodKey}`;
+
+  return (
+    <Link href={href}>
+      <div className="p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 cursor-pointer transition-colors">
+        <h3 className="font-semibold text-gray-900">
+          {formTypeLabel} ({periodLabel})
+        </h3>
+        <p className="text-sm text-gray-600">
+          {totalCount}件（未処理: {unprocessedCount}件）
+        </p>
+      </div>
+    </Link>
+  );
+}
 
 // TODO: ResponseSummary, ResponseDetailModal, LinkStudentModalコンポーネントを作成
 
@@ -225,27 +270,26 @@ export default function ResponsesPage() {
           </div>
         </div>
 
-        {/* サマリー */}
+        {/* サマリーセクション */}
         {Object.keys(summary).length > 0 && (
-          <div className="mb-6 bg-white rounded-xl border border-[#e5e7eb] p-4">
-            <h2 className="text-lg font-bold text-[#1f2937] mb-3">サマリー</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="mb-6 bg-white rounded-xl border border-gray-200 p-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">サマリー</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {Object.entries(summary).map(([key, stats]) => {
                 const [formType, periodKey] = key.split('_');
                 const period = formPeriods.find((p) => p.period_key === periodKey);
+                const formTypeLabel = FORM_TYPE_LABELS[formType as FormType] ?? formType;
+                const periodLabel = period ? `${periodKey} ${period.title}` : periodKey;
                 return (
-                  <div
+                  <SummaryCard
                     key={key}
-                    className="p-3 bg-[#f3f4f6] rounded-lg border border-[#e5e7eb]"
-                  >
-                    <div className="text-sm font-medium text-[#1f2937]">
-                      {FORM_TYPE_LABELS[formType as FormType]} ({periodKey}
-                      {period ? ` ${period.title}` : ''})
-                    </div>
-                    <div className="text-xs text-[#4b5563] mt-1">
-                      {stats.total}件（未処理: {stats.unprocessed}件）
-                    </div>
-                  </div>
+                    formType={formType}
+                    formTypeLabel={formTypeLabel}
+                    periodKey={periodKey}
+                    periodLabel={periodLabel}
+                    totalCount={stats.total}
+                    unprocessedCount={stats.unprocessed}
+                  />
                 );
               })}
             </div>

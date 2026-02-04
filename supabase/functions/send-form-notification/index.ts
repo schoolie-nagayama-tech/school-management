@@ -202,6 +202,7 @@ function createApplicantEmail(
         ${formatResponseDetails(formType, responseData)}
       </div>
       <p>ご不明点がございましたら、教室までお問い合わせください。</p>
+      <p>日程が決まりましたらGrowから確認してください。</p>
       <p style="margin-top: 30px; color: #666;">${schoolName}</p>
     </div>
   `
