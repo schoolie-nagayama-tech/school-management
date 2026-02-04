@@ -1,4 +1,4 @@
-﻿import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { getDefaultSchoolId } from '@/lib/api/schools';
 import type {
   Assessment,
@@ -26,16 +26,15 @@ const COMMON_9_SUBJECTS = [
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const _FIVE_SUBJECTS = ['english', 'math', 'japanese', 'social', 'science'] as const;
 
-// mock用の科目コード（5科 + 換算内申）
+// mock用の科目コード（5科偏差値 + 3科・5科手入力）
 const MOCK_SUBJECTS = [
   'english',
   'math',
   'japanese',
   'social',
   'science',
-  'conv_5',
-  'conv_4',
-  'conv_total',
+  'hensa_3',
+  'hensa_5',
 ] as const;
 
 /**

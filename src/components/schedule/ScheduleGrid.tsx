@@ -152,15 +152,15 @@ export function ScheduleGrid({
   return (
     <>
       <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        <div className="overflow-x-auto border border-[#eff0f3] rounded-lg">
+        <div className="overflow-x-auto border border-[var(--surface)] rounded-lg">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-28 bg-[#eff0f3] font-medium">コマ</TableHead>
+                <TableHead className="w-28 bg-[var(--surface)] font-medium">コマ</TableHead>
                 {teachersForSchool.map((t) => (
                   <TableHead
                     key={t.id}
-                    className="min-w-[120px] bg-[#eff0f3] font-medium text-center"
+                    className="min-w-[120px] bg-[var(--surface)] font-medium text-center"
                   >
                     {onTeacherClick ? (
                       <button
@@ -169,7 +169,7 @@ export function ScheduleGrid({
                           e.stopPropagation();
                           onTeacherClick(t);
                         }}
-                        className="w-full py-1 text-[#0d0d0d] hover:text-[#ff8e3c] hover:underline focus:outline-none focus:ring-2 focus:ring-[#ff8e3c] rounded"
+                        className="w-full py-1 text-[var(--headline)] hover:text-[var(--primary)] hover:underline focus:outline-none focus:ring-2 focus:ring-[var(--primary)] rounded"
                       >
                         {t.display_name || t.email || '—'}
                       </button>
@@ -185,7 +185,7 @@ export function ScheduleGrid({
                 <TableRow key={slot.id}>
                   <TableCell className="w-28 align-top bg-[#f9f9f9] text-xs py-2">
                     <div className="font-medium">{slot.slot_number}限</div>
-                    <div className="text-[10px] text-[#666]">
+                    <div className="text-[10px] text-[var(--paragraph-light)]">
                       {slot.start_time?.slice(0, 5)}-{slot.end_time?.slice(0, 5)}
                     </div>
                   </TableCell>
@@ -228,7 +228,7 @@ export function ScheduleGrid({
 
         <DragOverlay>
           {activeEntry ? (
-            <div className="opacity-90 shadow-lg rounded p-2 bg-white border border-[#0d0d0d] min-w-[100px]">
+            <div className="opacity-90 shadow-lg rounded p-2 bg-white border border-[var(--headline)] min-w-[100px]">
               <DraggableEntry entry={activeEntry} isDragging />
             </div>
           ) : null}

@@ -69,18 +69,34 @@ export default async function PortalPage({ params }: PortalPageProps) {
   );
 
   return (
-    <div className="min-h-screen bg-[#f8fafc]">
-      <div className="max-w-md mx-auto px-4 py-8">
-        {/* ヘッダー */}
-        <header className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-[#1f2937] mb-2">
+    <div className="min-h-[100dvh] flex flex-col bg-gradient-to-b from-emerald-50/90 via-white to-teal-50/50">
+      {/* ヘッダー：柔らかい緑・白文字・スマホのノッチ対応 */}
+      <header
+        className="bg-emerald-500/95 text-white shadow-sm backdrop-blur-sm"
+        style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
+      >
+        <div className="max-w-lg mx-auto px-4 py-4 sm:py-5">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white drop-shadow-sm">
             {school.name}
           </h1>
-        </header>
+          <p className="text-sm sm:text-base text-emerald-50 mt-1">
+            各種お申し込みページ
+          </p>
+        </div>
+      </header>
+
+      {/* 本文 */}
+      <main className="flex-1 max-w-lg mx-auto w-full px-4 py-6 sm:py-8 pb-[env(safe-area-inset-bottom)]">
+        {/* 案内文：透明感のある白オーバーレイ */}
+        <div className="bg-white/75 backdrop-blur-md border border-emerald-200/60 rounded-2xl p-4 sm:p-5 mb-6 shadow-sm text-slate-600">
+          <p className="text-sm sm:text-base leading-relaxed">
+            こちらは各種お申し込みページです。お申し込み内容の確認メールが届きますので、ご記入のうえ送信してください。
+          </p>
+        </div>
 
         {/* メニュー一覧 */}
         <PortalMenuList menus={menusWithActiveStatus} schoolCode={schoolCode} />
-      </div>
+      </main>
     </div>
   );
 }

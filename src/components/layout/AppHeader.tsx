@@ -218,19 +218,6 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
                   講習管理
                 </Link>
               )}
-              {/* 座席表（管理者のみ） */}
-              {profile && (profile.role === 'admin' || profile.role === 'owner' || profile.role === 'manager') && (
-                <Link
-                  href="/schedule"
-                  className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
-                    pathname === '/schedule' || pathname?.startsWith('/schedule')
-                      ? 'bg-[#ff8e3c] text-[#0d0d0d]'
-                      : 'text-[#2a2a2a] hover:bg-[#eff0f3]'
-                  }`}
-                >
-                  座席表
-                </Link>
-              )}
               {/* 講師メニュー（教室長以上のみ） */}
               {!profile || profile.role !== 'teacher' ? (
                 <div className="relative">
@@ -486,6 +473,22 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
                   />
                 </svg>
               </button>
+            )}
+            {/* 座席表（開発中）・管理者のみ・歯車の右からのみ入場 */}
+            {profile && (profile.role === 'admin' || profile.role === 'owner' || profile.role === 'manager') && (
+              <Link
+                href="/schedule"
+                className={`p-1.5 rounded-lg transition-colors ${
+                  pathname === '/schedule' || pathname?.startsWith('/schedule')
+                    ? 'bg-white text-[#d32f2f]'
+                    : 'text-white/80 hover:text-white hover:bg-white/10'
+                }`}
+                title="座席表（開発中）"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                </svg>
+              </Link>
             )}
           </div>
         </div>

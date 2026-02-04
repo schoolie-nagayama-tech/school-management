@@ -101,11 +101,11 @@ export function ScheduleEntryForm({
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>日付</Label>
-          <Input value={dateLabel} disabled className="bg-[#eff0f3]" />
+          <Input value={dateLabel} disabled className="bg-[var(--surface)]" />
         </div>
         <div className="space-y-2">
           <Label>コマ</Label>
-          <Input value={slotLabel} disabled className="bg-[#eff0f3]" />
+          <Input value={slotLabel} disabled className="bg-[var(--surface)]" />
         </div>
       </div>
       <div className="space-y-2">
@@ -136,7 +136,7 @@ export function ScheduleEntryForm({
                 : '—'
             }
             disabled
-            className="bg-[#eff0f3]"
+            className="bg-[var(--surface)]"
           />
         ) : (
           <>
@@ -169,7 +169,7 @@ export function ScheduleEntryForm({
         <div className="space-y-3 border rounded-md p-2">
           {groupSubjectsByGradeCategory(subjects).map(({ label, items }) => (
             <div key={label}>
-              <p className="text-xs font-medium text-[#2a2a2a] mb-1.5">{label}</p>
+              <p className="text-xs font-medium text-[var(--paragraph)] mb-1.5">{label}</p>
               <div className="flex flex-wrap gap-2">
                 {items.map((s) => (
                   <label key={s.id} className="flex items-center gap-1.5 cursor-pointer">

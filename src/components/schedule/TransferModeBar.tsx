@@ -33,13 +33,13 @@ export function TransferModeBar({ entry, slotLabel, onCancel }: TransferModeBarP
     <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 mb-4 flex flex-wrap justify-between items-center gap-2">
       <div className="flex items-center gap-2">
         <span className="text-blue-600 text-lg">🔄</span>
-        <span className="text-sm text-[#0d0d0d]">
+        <span className="text-sm text-[var(--headline)]">
           <strong>振替モード:</strong>{' '}
           {studentName} {dateLabel} {slot} を振替先に移動
         </span>
       </div>
       <div className="flex items-center gap-2">
-        <span className="text-xs text-[#2a2a2a]">振替先のセルをクリックして講師を選択</span>
+        <span className="text-xs text-[var(--paragraph)]">振替先のセルをクリックして講師を選択</span>
         <Button variant="secondary" size="sm" onClick={onCancel}>
           キャンセル
         </Button>

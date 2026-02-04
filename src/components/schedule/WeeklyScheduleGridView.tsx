@@ -62,17 +62,17 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
 
   return (
     <DndContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
-      <div className="overflow-x-auto border border-[#eff0f3] rounded-lg">
+      <div className="overflow-x-auto border border-[var(--surface)] rounded-lg">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-24 bg-[#eff0f3] font-medium text-[#0d0d0d]">
+              <TableHead className="w-24 bg-[var(--surface)] font-medium text-[var(--headline)]">
                 コマ
               </TableHead>
               {weekDates.map((dateStr) => (
                 <TableHead
                   key={dateStr}
-                  className="min-w-[160px] max-w-[200px] bg-[#eff0f3] font-medium text-center text-[#0d0d0d]"
+                  className="min-w-[160px] max-w-[200px] bg-[var(--surface)] font-medium text-center text-[var(--headline)]"
                 >
                   {formatDayHeader(dateStr)}
                 </TableHead>
@@ -82,9 +82,9 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
           <TableBody>
             {timeSlots.map((slot) => (
               <TableRow key={slot.id}>
-                <TableCell className="w-24 align-top bg-[#f9f9f9] text-xs py-2 border border-[#eff0f3]">
-                  <div className="font-medium text-[#0d0d0d]">{slot.slot_number}限</div>
-                  <div className="text-[10px] text-[#666]">
+                <TableCell className="w-24 align-top bg-[var(--surface)] text-xs py-2 border border-[var(--surface)]">
+                  <div className="font-medium text-[var(--headline)]">{slot.slot_number}限</div>
+                  <div className="text-[10px] text-[var(--paragraph-light)]">
                     {slot.start_time?.slice(0, 5)}-{slot.end_time?.slice(0, 5)}
                   </div>
                 </TableCell>
@@ -139,8 +139,8 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
 
       <DragOverlay>
         {activeTeacherGroup ? (
-          <div className="bg-white border border-[#0d0d0d]/20 rounded-lg shadow-lg p-2 min-w-[160px] opacity-95">
-            <div className="font-medium text-sm text-[#0d0d0d] mb-2 border-b border-[#eff0f3] pb-1.5">
+          <div className="bg-white border border-[var(--headline)]/20 rounded-lg shadow-lg p-2 min-w-[160px] opacity-95">
+            <div className="font-medium text-sm text-[var(--headline)] mb-2 border-b border-[var(--surface)] pb-1.5">
               {activeTeacherGroup.teacher.display_name ||
                 activeTeacherGroup.teacher.email ||
                 '—'}
@@ -157,7 +157,7 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
                 );
               })}
               {activeTeacherGroup.entries.length > 3 && (
-                <div className="text-xs text-[#666]">
+                <div className="text-xs text-[var(--paragraph-light)]">
                   他{activeTeacherGroup.entries.length - 3}名
                 </div>
               )}

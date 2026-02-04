@@ -193,10 +193,9 @@ export default function StudentsPage() {
     router.push(`/students/${student.id}/interviews`);
   };
 
-  // 成績管理を開く
+  // 成績推移ページへ遷移
   const handleOpenScores = (student: Student) => {
-    setSelectedStudent(student);
-    setIsScoresModalOpen(true);
+    router.push(`/students/${student.id}/scores`);
   };
 
   // 削除

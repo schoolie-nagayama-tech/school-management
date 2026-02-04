@@ -20,7 +20,7 @@ interface ClosedDayListProps {
 export function ClosedDayList({ closedDays, onDelete, onAdd, isLoading }: ClosedDayListProps) {
   if (isLoading) {
     return (
-      <div className="py-8 text-center text-[#2a2a2a]">読み込み中...</div>
+      <div className="py-8 text-center text-[var(--paragraph)]">読み込み中...</div>
     );
   }
   return (
@@ -32,7 +32,7 @@ export function ClosedDayList({ closedDays, onDelete, onAdd, isLoading }: Closed
         </Button>
       </div>
       {closedDays.length === 0 ? (
-        <div className="py-8 text-center text-[#2a2a2a]">
+        <div className="py-8 text-center text-[var(--paragraph)]">
           休講日が登録されていません
         </div>
       ) : (

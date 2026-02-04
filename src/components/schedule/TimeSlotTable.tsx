@@ -20,13 +20,13 @@ interface TimeSlotTableProps {
 export function TimeSlotTable({ slots, onEdit, onDelete, onAdd, isLoading }: TimeSlotTableProps) {
   if (isLoading) {
     return (
-      <div className="py-8 text-center text-[#2a2a2a]">読み込み中...</div>
+      <div className="py-8 text-center text-[var(--paragraph)]">読み込み中...</div>
     );
   }
   if (slots.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-8 text-center">
-        <p className="text-[#2a2a2a] mb-4">コマ時間が登録されていません</p>
+        <p className="text-[var(--paragraph)] mb-4">コマ時間が登録されていません</p>
         <Button onClick={onAdd}>最初のコマを追加</Button>
       </div>
     );

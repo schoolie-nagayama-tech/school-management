@@ -63,7 +63,7 @@ export const DayCell = React.memo(function DayCell({
   if (isClosed) {
     return (
       <td
-        className="border border-[#eff0f3] p-2 align-top bg-[#eff0f3] text-center text-[#666] text-sm min-w-[160px] max-w-[200px]"
+        className="border border-[var(--surface)] p-2 align-top bg-[var(--surface)] text-center text-[var(--paragraph-light)] text-sm min-w-[160px] max-w-[200px]"
         ref={setNodeRef}
       >
         休講日
@@ -74,7 +74,7 @@ export const DayCell = React.memo(function DayCell({
   return (
     <td
       ref={setNodeRef}
-      className={`border border-[#eff0f3] p-2 align-top min-w-[160px] max-w-[200px] ${
+      className={`border border-[var(--surface)] p-2 align-top min-w-[160px] max-w-[200px] ${
         isOver ? 'ring-2 ring-green-500 bg-green-50' : ''
       } ${isTransferTarget ? 'ring-2 ring-blue-400 bg-blue-50 cursor-pointer' : ''}`}
       onClick={isTransferTarget ? onCellClickForTransfer : undefined}
@@ -127,7 +127,7 @@ export const DayCell = React.memo(function DayCell({
             e.stopPropagation();
             onAddTeacher();
           }}
-          className="w-full py-2 text-xs text-[#666] hover:bg-[#eff0f3] rounded border border-dashed border-[#ccc]"
+          className="w-full py-2 text-xs text-[var(--paragraph-light)] hover:bg-[var(--surface)] rounded border border-dashed border-[var(--stroke)]"
         >
           + 講師追加
         </button>

@@ -483,7 +483,7 @@ export default function SchedulePage() {
   if (!profile) {
     return (
       <AdminLayout headerTitle="座席表">
-        <div className="py-8 text-center text-[#2a2a2a]">読み込み中...</div>
+        <div className="py-8 text-center text-[var(--paragraph)]">読み込み中...</div>
       </AdminLayout>
     );
   }
@@ -499,7 +499,7 @@ export default function SchedulePage() {
     <AdminLayout headerTitle="座席表">
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <h1 className="text-2xl font-bold text-[#0d0d0d]">座席表</h1>
+          <h1 className="text-2xl font-bold text-[var(--headline)]">座席表</h1>
           <div className="flex flex-wrap items-center gap-3">
             <Select value={schoolId || ''} onValueChange={(v) => setSelectedSchoolIdLocal(v)}>
               <SelectTrigger className="w-48">
@@ -527,7 +527,7 @@ export default function SchedulePage() {
               >
                 前週
               </Button>
-              <span className="text-sm text-[#2a2a2a] min-w-[140px] text-center">
+              <span className="text-sm text-[var(--paragraph)] min-w-[140px] text-center">
                 {formatWeekLabel(weekStart)}
               </span>
               <Button
@@ -555,7 +555,7 @@ export default function SchedulePage() {
               />
             )}
             {schoolId && (
-              <span className="text-sm text-[#2a2a2a]">設定:</span>
+              <span className="text-sm text-[var(--paragraph)]">設定:</span>
             )}
             {schoolId && (
               <>
@@ -570,7 +570,7 @@ export default function SchedulePage() {
                     休講日設定
                   </Button>
                 </Link>
-                <span className="text-sm text-[#2a2a2a] ml-1">表示曜日:</span>
+                <span className="text-sm text-[var(--paragraph)] ml-1">表示曜日:</span>
                 <div className="flex flex-wrap items-center gap-1">
                   {DAY_LABELS.map((d) => (
                     <label
@@ -587,9 +587,9 @@ export default function SchedulePage() {
                             setVisibleDaysPersist(visibleDaysOfWeek.filter((x) => x !== d.value));
                           }
                         }}
-                        className="rounded border-[#0d0d0d]"
+                        className="rounded border-[var(--stroke)]"
                       />
-                      <span className="text-[#0d0d0d]">{d.label}</span>
+                      <span className="text-[var(--headline)]">{d.label}</span>
                     </label>
                   ))}
                 </div>
@@ -600,22 +600,22 @@ export default function SchedulePage() {
 
         {!schoolId ? (
           <Card>
-            <CardContent className="py-8 text-center text-[#2a2a2a]">
+            <CardContent className="py-8 text-center text-[var(--paragraph)]">
               教室を選択してください。
             </CardContent>
           </Card>
         ) : (
           <>
             {timeSlotsCount === 0 && (
-              <Card className="border-[#ff8e3c]/40 bg-[#ff8e3c]/5">
+              <Card className="border-[var(--primary)]/40 bg-[var(--primary-subtle)]">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-[#0d0d0d]">
+                  <CardTitle className="flex items-center gap-2 text-[var(--headline)]">
                     <Clock className="h-5 w-5" />
                     コマ時間が未設定です
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-[#2a2a2a] mb-4">
+                  <p className="text-[var(--paragraph)] mb-4">
                     座席表を利用するには、まずコマ時間を設定してください。
                   </p>
                   <Link href="/schedule/settings/time-slots">
@@ -626,15 +626,15 @@ export default function SchedulePage() {
             )}
 
             {timeSlotsCount > 0 && patternsCount === 0 && (
-              <Card className="border-[#ff8e3c]/40 bg-[#ff8e3c]/5">
+              <Card className="border-[var(--primary)]/40 bg-[var(--primary-subtle)]">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-[#0d0d0d]">
+                  <CardTitle className="flex items-center gap-2 text-[var(--headline)]">
                     <BookOpen className="h-5 w-5" />
                     通塾日程が未登録です
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-[#2a2a2a] mb-4">
+                  <p className="text-[var(--paragraph)] mb-4">
                     スケジュールを生成するには、通塾日程を登録してください。
                   </p>
                   <Link href="/schedule/regular-patterns">
@@ -651,7 +651,7 @@ export default function SchedulePage() {
                     <CardTitle>
                       週間座席表
                       {selectedSchool && (
-                        <span className="text-base font-normal text-[#2a2a2a] ml-2">
+                        <span className="text-base font-normal text-[var(--paragraph)] ml-2">
                           {selectedSchool.name} 通常期
                         </span>
                       )}
@@ -678,7 +678,7 @@ export default function SchedulePage() {
                     />
                   )}
                   {entriesLoading ? (
-                    <div className="py-8 text-center text-[#2a2a2a]">読み込み中...</div>
+                    <div className="py-8 text-center text-[var(--paragraph)]">読み込み中...</div>
                   ) : (
                     <WeeklyScheduleGrid
                       schoolId={schoolId ?? ''}

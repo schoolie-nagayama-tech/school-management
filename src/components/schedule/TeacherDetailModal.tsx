@@ -59,37 +59,37 @@ export function TeacherDetailModal({
     <Modal isOpen={open} onClose={onClose} title="講師詳細" size="md">
       <div className="space-y-4">
         <div>
-          <label className="text-xs text-[#2a2a2a]">表示名</label>
-          <p className="mt-1 text-sm font-medium text-[#0d0d0d]">
+          <label className="text-xs text-[var(--paragraph)]">表示名</label>
+          <p className="mt-1 text-sm font-medium text-[var(--headline)]">
             {teacher.display_name || '—'}
           </p>
         </div>
         <div>
-          <label className="text-xs text-[#2a2a2a]">メール</label>
-          <p className="mt-1 text-sm text-[#0d0d0d]">{teacher.email || '—'}</p>
+          <label className="text-xs text-[var(--paragraph)]">メール</label>
+          <p className="mt-1 text-sm text-[var(--headline)]">{teacher.email || '—'}</p>
         </div>
         <div>
-          <label className="text-xs text-[#2a2a2a]">担当教室</label>
-          <p className="mt-1 text-sm text-[#0d0d0d]">
+          <label className="text-xs text-[var(--paragraph)]">担当教室</label>
+          <p className="mt-1 text-sm text-[var(--headline)]">
             {schoolNames.length > 0 ? schoolNames.join('、') : '—'}
           </p>
         </div>
         <div>
-          <label className="text-xs text-[#2a2a2a]">指導可能科目</label>
-          <p className="mt-1 text-sm text-[#0d0d0d]">
+          <label className="text-xs text-[var(--paragraph)]">指導可能科目</label>
+          <p className="mt-1 text-sm text-[var(--headline)]">
             {subjectNames.length > 0 ? subjectNames.join('、') : '全科目'}
           </p>
         </div>
         <div>
-          <label className="text-xs text-[#2a2a2a]">出勤可能曜日</label>
-          <p className="mt-1 text-sm text-[#0d0d0d]">
+          <label className="text-xs text-[var(--paragraph)]">出勤可能曜日</label>
+          <p className="mt-1 text-sm text-[var(--headline)]">
             {dayLabels.length > 0 ? dayLabels.join('、') : '—'}
           </p>
         </div>
         {slotByDayLines.length > 0 && (
           <div>
-            <label className="text-xs text-[#2a2a2a]">曜日ごとの出勤可能コマ</label>
-            <p className="mt-1 text-sm text-[#0d0d0d]">
+            <label className="text-xs text-[var(--paragraph)]">曜日ごとの出勤可能コマ</label>
+            <p className="mt-1 text-sm text-[var(--headline)]">
               {slotByDayLines.join(' / ')}
             </p>
           </div>

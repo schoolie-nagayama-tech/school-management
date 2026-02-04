@@ -58,21 +58,21 @@ export function StudentCardMenu({
   return (
     <div
       ref={ref}
-      className="fixed z-50 min-w-[200px] rounded-lg border border-[#0d0d0d] bg-white shadow-lg p-2"
+      className="fixed z-50 min-w-[200px] rounded-lg border border-[var(--headline)] bg-white shadow-lg p-2"
       style={{ left: position.x, top: position.y }}
     >
-      <div className="text-xs font-medium text-[#0d0d0d] mb-2 border-b border-[#eff0f3] pb-2">
+      <div className="text-xs font-medium text-[var(--headline)] mb-2 border-b border-[var(--surface)] pb-2">
         {studentName}
-        <div className="text-[#2a2a2a] font-normal mt-0.5">{subjectNames}</div>
+        <div className="text-[var(--paragraph)] font-normal mt-0.5">{subjectNames}</div>
       </div>
 
       {canAct && (
         <>
           <div className="mb-2">
-            <div className="text-[10px] text-[#2a2a2a] mb-1">出席を記録</div>
+            <div className="text-[10px] text-[var(--paragraph)] mb-1">出席を記録</div>
             <AttendanceButtons current={entry.attendance_status} onSelect={onAttendance} />
           </div>
-          <div className="border-t border-[#eff0f3] pt-2 space-y-1">
+          <div className="border-t border-[var(--surface)] pt-2 space-y-1">
             <Button
               variant="ghost"
               size="sm"
@@ -104,7 +104,7 @@ export function StudentCardMenu({
         </>
       )}
       {(isTransferredOut || isCancelled) && (
-        <p className="text-xs text-[#2a2a2a]">
+        <p className="text-xs text-[var(--paragraph)]">
           {isCancelled ? '取消済み' : '振替元のため操作できません'}
         </p>
       )}

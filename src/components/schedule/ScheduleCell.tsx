@@ -41,7 +41,7 @@ export const ScheduleCell = React.memo(function ScheduleCell({
   if (isClosed) {
     return (
       <td
-        className="border border-[#eff0f3] p-1 bg-[#eff0f3] text-[#999] text-center min-w-[120px]"
+        className="border border-[var(--surface)] p-1 bg-[var(--surface)] text-[var(--paragraph-light)] text-center min-w-[120px]"
         onClick={onClick}
       >
         休講
@@ -51,7 +51,7 @@ export const ScheduleCell = React.memo(function ScheduleCell({
 
   return (
     <td
-      className={`border border-[#eff0f3] p-1 min-w-[120px] align-top ${
+      className={`border border-[var(--surface)] p-1 min-w-[120px] align-top ${
         isDragging ? 'opacity-50' : ''
       }`}
       onClick={(e) => {
@@ -69,7 +69,7 @@ export const ScheduleCell = React.memo(function ScheduleCell({
           return (
             <div
               key={entry.id}
-              className="rounded px-2 py-1 text-xs bg-[#e5e5e5] text-[#666] line-through"
+              className="rounded px-2 py-1 text-xs bg-[var(--stroke)] text-[var(--paragraph-light)] line-through"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="truncate">{studentName}</div>
@@ -93,7 +93,7 @@ export const ScheduleCell = React.memo(function ScheduleCell({
           return (
             <div
               key={entry.id}
-              className={`rounded px-2 py-1 text-xs cursor-pointer ${bg} border border-transparent hover:border-[#ff8e3c]`}
+              className={`rounded px-2 py-1 text-xs cursor-pointer ${bg} border border-transparent hover:border-[var(--primary)]`}
               onClick={(e) => {
                 e.stopPropagation();
                 onEntryClick?.(entry, e);
@@ -109,14 +109,14 @@ export const ScheduleCell = React.memo(function ScheduleCell({
               </div>
               <div className="text-[10px] text-[#2a2a2a] truncate">{subjectNames}</div>
               {entry.seat_label && (
-                <div className="text-[10px] text-[#666]">[{entry.seat_label}]</div>
+                <div className="text-[10px] text-[var(--paragraph-light)]">[{entry.seat_label}]</div>
               )}
             </div>
           );
         })}
         {activeEntries.length === 0 && (
           <div
-            className="min-h-[40px] rounded border border-dashed border-[#ccc] flex items-center justify-center text-[#999] text-xs hover:border-[#ff8e3c] hover:text-[#ff8e3c] cursor-pointer"
+            className="min-h-[40px] rounded border border-dashed border-[var(--stroke)] flex items-center justify-center text-[var(--paragraph-light)] text-xs hover:border-[var(--primary)] hover:text-[var(--primary)] cursor-pointer"
             onClick={onClick}
           >
             ＋ 追加

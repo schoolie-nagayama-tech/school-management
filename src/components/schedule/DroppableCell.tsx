@@ -46,9 +46,9 @@ export const DroppableCell = React.memo(function DroppableCell({
   return (
     <td
       ref={setNodeRef}
-      className={`border border-[#eff0f3] p-1 min-w-[120px] align-top ${
+      className={`border border-[var(--surface)] p-1 min-w-[120px] align-top ${
         isOver ? (canDrop ? 'ring-2 ring-green-500 bg-green-50' : 'ring-2 ring-red-500 bg-red-50') : ''
-      } ${isClosed ? 'bg-[#eff0f3]' : ''} ${!isSlotAvailable && !isClosed ? 'bg-[#f5f5f5]' : ''}`}
+      } ${isClosed ? 'bg-[var(--surface)]' : ''} ${!isSlotAvailable && !isClosed ? 'bg-[var(--surface)]' : ''}`}
       onClick={canAdd ? onCellClick : undefined}
     >
       <div className="min-h-[44px] space-y-1">
@@ -59,7 +59,7 @@ export const DroppableCell = React.memo(function DroppableCell({
           return (
             <div
               key={entry.id}
-              className="rounded px-2 py-1 text-xs bg-[#e5e5e5] text-[#666] line-through"
+              className="rounded px-2 py-1 text-xs bg-[var(--stroke)] text-[#666] line-through"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="truncate">{studentName}</div>
@@ -74,14 +74,14 @@ export const DroppableCell = React.memo(function DroppableCell({
         ))}
         {activeEntries.length === 0 && !isClosed && isSlotAvailable && (
           <div
-            className="min-h-[40px] rounded border border-dashed border-[#ccc] flex items-center justify-center text-[#999] text-xs hover:border-[#ff8e3c] hover:text-[#ff8e3c] cursor-pointer"
+            className="min-h-[40px] rounded border border-dashed border-[var(--stroke)] flex items-center justify-center text-[var(--paragraph-light)] text-xs hover:border-[var(--primary)] hover:text-[var(--primary)] cursor-pointer"
             onClick={onCellClick}
           >
             ＋ 追加
           </div>
         )}
         {activeEntries.length === 0 && !isClosed && !isSlotAvailable && (
-          <div className="min-h-[40px] flex items-center justify-center text-[#999] text-[10px]">
+          <div className="min-h-[40px] flex items-center justify-center text-[var(--paragraph-light)] text-[10px]">
             —
           </div>
         )}

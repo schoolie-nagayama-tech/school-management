@@ -243,7 +243,7 @@ export function RegularPatternForm({
             <div className="space-y-3 border rounded-md p-2">
               {groupSubjectsByGradeCategory(subjects).map(({ label, items }) => (
                 <div key={label}>
-                  <p className="text-xs font-medium text-[#2a2a2a] mb-1.5">{label}</p>
+                  <p className="text-xs font-medium text-[var(--paragraph)] mb-1.5">{label}</p>
                   <div className="flex flex-wrap gap-2">
                     {items.map((s) => (
                       <label key={s.id} className="flex items-center gap-1.5 cursor-pointer">

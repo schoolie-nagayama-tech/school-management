@@ -54,7 +54,7 @@ export function AddTeacherModal({
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-[#0d0d0d]">講師</label>
+            <label className="text-sm font-medium text-[var(--headline)]">講師</label>
             <Select value={teacherId} onValueChange={setTeacherId}>
               <SelectTrigger>
                 <SelectValue placeholder="講師を選択" />

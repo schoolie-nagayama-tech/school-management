@@ -20,7 +20,7 @@ const STATUS_COLOR: Record<string, string> = {
   present: 'bg-green-50 border-green-200 text-green-800',
   absent: 'bg-red-50 border-red-200 text-red-800',
   late: 'bg-yellow-50 border-yellow-200 text-yellow-800',
-  null: 'bg-white border-[#eff0f3] text-[#0d0d0d]',
+  null: 'bg-white border-[var(--surface)] text-[var(--headline)]',
 };
 
 export interface StudentCardProps {
@@ -66,7 +66,7 @@ export const StudentCard = React.memo(function StudentCard({ entry, onClick }: S
       <div className="flex justify-between items-center gap-1">
         <span className="font-medium truncate">
           {studentName}
-          <span className="text-[#2a2a2a] font-normal ml-1">({grade})</span>
+          <span className="text-[var(--paragraph)] font-normal ml-1">({grade})</span>
         </span>
         <span
           className={`flex-shrink-0 ${
@@ -76,18 +76,18 @@ export const StudentCard = React.memo(function StudentCard({ entry, onClick }: S
                 ? 'text-red-600'
                 : statusKey === 'late'
                   ? 'text-yellow-600'
-                  : 'text-[#999]'
+                  : 'text-[var(--paragraph-light)]'
           }`}
         >
           {icon}
         </span>
       </div>
-      <div className="text-[#2a2a2a] mt-0.5 truncate">{subjectNames || '—'}</div>
+      <div className="text-[var(--paragraph)] mt-0.5 truncate">{subjectNames || '—'}</div>
       {isTransferredIn && (
         <div className="text-blue-600 text-[10px] mt-0.5">振替</div>
       )}
       {isTransferredOut && (
-        <div className="text-[#666] text-[10px] mt-0.5">→ 振替済</div>
+        <div className="text-[var(--paragraph-light)] text-[10px] mt-0.5">→ 振替済</div>
       )}
     </div>
   );

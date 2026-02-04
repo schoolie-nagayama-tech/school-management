@@ -67,24 +67,24 @@ export const TeacherCard = React.memo(function TeacherCard({
   return (
     <div
       ref={setNodeRef}
-      className={`bg-white border border-[#0d0d0d]/20 rounded-lg shadow-sm p-2 mb-2 hover:shadow-md transition-shadow ${
-        isDragging ? 'opacity-70 shadow-lg ring-2 ring-[#ff8e3c]' : ''
+      className={`bg-white border border-[var(--headline)]/20 rounded-lg shadow-sm p-2 mb-2 hover:shadow-md transition-shadow ${
+        isDragging ? 'opacity-70 shadow-lg ring-2 ring-[var(--primary)]' : ''
       }`}
     >
       <div
-        className={`flex justify-between items-center mb-2 border-b border-[#eff0f3] pb-1.5 ${
+        className={`flex justify-between items-center mb-2 border-b border-[var(--surface)] pb-1.5 ${
           isDragging ? '' : 'cursor-grab active:cursor-grabbing'
         }`}
         {...(activeDragId === dragId ? {} : { ...listeners, ...attributes })}
       >
-        <span className="font-medium text-sm text-[#0d0d0d] truncate">{displayName}</span>
+        <span className="font-medium text-sm text-[var(--headline)] truncate">{displayName}</span>
         <button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
             onRemoveTeacher();
           }}
-          className="flex-shrink-0 ml-1 w-6 h-6 flex items-center justify-center rounded text-[#666] hover:text-[#d9376e] hover:bg-red-50"
+          className="flex-shrink-0 ml-1 w-6 h-6 flex items-center justify-center rounded text-[var(--paragraph-light)] hover:text-[#d9376e] hover:bg-red-50"
           aria-label="講師カードを削除"
         >
           ×
@@ -111,7 +111,7 @@ export const TeacherCard = React.memo(function TeacherCard({
             e.stopPropagation();
             onAddStudent();
           }}
-          className="w-full mt-2 py-1.5 text-xs text-[#666] hover:bg-[#eff0f3] rounded border border-dashed border-[#ccc]"
+          className="w-full mt-2 py-1.5 text-xs text-[var(--paragraph-light)] hover:bg-[var(--surface)] rounded border border-dashed border-[var(--stroke)]"
         >
           + 生徒追加
         </button>

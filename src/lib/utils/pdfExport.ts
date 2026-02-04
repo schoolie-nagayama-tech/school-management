@@ -1,4 +1,4 @@
-﻿// PDF出力用のユーティリティ関数
+// PDF出力用のユーティリティ関数
 
 export async function exportProgressToPDF(
   elementId: string,
@@ -33,18 +33,23 @@ export async function exportProgressToPDF(
 
   try {
     if (fitToPage) {
-      // 1ページに収める場合：フォントサイズ縮小
-      // 縦向きの場合は幅を適切に設定
-      element.style.width = orientation === 'landscape' ? '1200px' : '800px';
-      // テーブル内のフォントサイズを小さくする
+      // 1ページに収める場合：フォントサイズ縮小・表が切れないよう体裁を整える
+      element.style.width = orientation === 'landscape' ? '1400px' : '800px';
       const tables = element.querySelectorAll('table');
       tables.forEach(table => {
-        table.style.fontSize = '10px';
+        (table as HTMLElement).style.fontSize = '9px';
+        (table as HTMLElement).style.pageBreakInside = 'avoid';
         const cells = table.querySelectorAll('th, td');
         cells.forEach(cell => {
-          (cell as HTMLElement).style.fontSize = '10px';
-          (cell as HTMLElement).style.padding = '4px 6px';
+          (cell as HTMLElement).style.fontSize = '9px';
+          (cell as HTMLElement).style.padding = '2px 4px';
         });
+      });
+      // セクション・見出しもコンパクトに
+      const sections = element.querySelectorAll('section');
+      sections.forEach(sec => {
+        (sec as HTMLElement).style.pageBreakInside = 'avoid';
+        (sec as HTMLElement).style.padding = '8px';
       });
     } else {
       // 通常モード：幅を固定
@@ -127,15 +132,21 @@ export async function exportProgressToPDF(
     element.style.fontSize = originalStyles.fontSize;
     element.style.transform = originalStyles.transform;
     
-    // テーブルのスタイルも元に戻す
+    // テーブル・セクションのスタイルを元に戻す
     const tables = element.querySelectorAll('table');
     tables.forEach(table => {
-      table.style.fontSize = '';
+      (table as HTMLElement).style.fontSize = '';
+      (table as HTMLElement).style.pageBreakInside = '';
       const cells = table.querySelectorAll('th, td');
       cells.forEach(cell => {
         (cell as HTMLElement).style.fontSize = '';
         (cell as HTMLElement).style.padding = '';
       });
+    });
+    const sections = element.querySelectorAll('section');
+    sections.forEach(sec => {
+      (sec as HTMLElement).style.pageBreakInside = '';
+      (sec as HTMLElement).style.padding = '';
     });
   }
 }

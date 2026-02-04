@@ -110,7 +110,7 @@ export default function TimeSlotsPage() {
   if (!profile) {
     return (
       <AdminLayout headerTitle="座席表">
-        <div className="py-8 text-center text-[#2a2a2a]">読み込み中...</div>
+        <div className="py-8 text-center text-[var(--paragraph)]">読み込み中...</div>
       </AdminLayout>
     );
   }
@@ -127,10 +127,10 @@ export default function TimeSlotsPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/schedule" className="text-sm text-[#2a2a2a] hover:text-[#ff8e3c]">
+            <Link href="/schedule" className="text-sm text-[var(--paragraph)] hover:text-[var(--primary)]">
               ← 座席表に戻る
             </Link>
-            <h1 className="text-2xl font-bold text-[#0d0d0d]">コマ時間設定</h1>
+            <h1 className="text-2xl font-bold text-[var(--headline)]">コマ時間設定</h1>
           </div>
           <div className="flex items-center gap-4">
             <Select value={selectedSchoolId} onValueChange={setSelectedSchoolId}>

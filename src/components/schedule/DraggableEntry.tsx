@@ -59,9 +59,9 @@ export const DraggableEntry = React.memo(function DraggableEntry({
         </Badge>
       )}
       <div className="font-medium truncate">{studentName}</div>
-      <div className="text-[10px] text-[#2a2a2a] truncate">{subjectNames}</div>
+      <div className="text-[10px] text-[var(--paragraph)] truncate">{subjectNames}</div>
       {entry.seat_label && (
-        <div className="text-[10px] text-[#666]">[{entry.seat_label}]</div>
+        <div className="text-[10px] text-[var(--paragraph-light)]">[{entry.seat_label}]</div>
       )}
     </div>
   );
