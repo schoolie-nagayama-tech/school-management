@@ -114,6 +114,83 @@ export async function PATCH(
     const body = await request.json();
     const supabaseAdmin = getSupabaseAdmin();
 
+    // ユーザー管理からの編集（school_ids が渡された場合は profile + user_schools をサービスロールで更新）
+    const rawSchoolIds = body.school_ids;
+    const wantIds: string[] = Array.isArray(rawSchoolIds)
+      ? rawSchoolIds.map((id: unknown) => String(id).trim()).filter(Boolean)
+      : typeof rawSchoolIds === 'string'
+        ? rawSchoolIds.split(',').map((s: string) => s.trim()).filter(Boolean)
+        : [];
+    const isUserManagementEdit = 'school_ids' in body && (Array.isArray(rawSchoolIds) || typeof rawSchoolIds === 'string');
+
+    if (isUserManagementEdit) {
+      const { display_name, role, default_school_id } = body;
+      const profileUpdates: Record<string, unknown> = {
+        updated_at: new Date().toISOString(),
+      };
+      if (display_name !== undefined) profileUpdates.display_name = display_name;
+      if (role !== undefined) profileUpdates.role = role;
+      if (default_school_id !== undefined) profileUpdates.default_school_id = default_school_id || null;
+
+      const { error: profileError } = await supabaseAdmin
+        .from('user_profiles')
+        .update(profileUpdates)
+        .eq('id', userId);
+
+      if (profileError) throw profileError;
+
+      const { data: currentRows } = await supabaseAdmin
+        .from('user_schools')
+        .select('school_id')
+        .eq('user_id', userId);
+      const currentIds = (currentRows || []).map((r: { school_id: string }) => String(r.school_id).trim());
+
+      const toAdd = wantIds.filter((sid) => !currentIds.includes(sid));
+      const toRemove = currentIds.filter((sid) => !wantIds.includes(sid));
+
+      console.log('[PATCH user]', { userId, bodySchoolIds: body.school_ids, wantIds, currentIds, toAdd, toRemove });
+
+      for (const school_id of toAdd) {
+        const { error: insertError } = await supabaseAdmin
+          .from('user_schools')
+          .insert({ user_id: userId, school_id });
+
+        if (insertError) {
+          console.error('user_schools insert error:', insertError);
+          throw insertError;
+        }
+      }
+
+      for (const sid of toRemove) {
+        const { error: deleteError } = await supabaseAdmin
+          .from('user_schools')
+          .delete()
+          .eq('user_id', userId)
+          .eq('school_id', sid);
+        if (deleteError) {
+          console.error('user_schools delete error:', deleteError);
+          throw deleteError;
+        }
+      }
+
+      const { data: afterRows } = await supabaseAdmin
+        .from('user_schools')
+        .select('school_id')
+        .eq('user_id', userId);
+      console.log('[PATCH user] after sync:', { count: afterRows?.length ?? 0, school_ids: (afterRows || []).map((r: { school_id: string }) => r.school_id) });
+
+      // 一覧の即時反映用に、更新後の user_schools（教室名付き）を返す
+      const { data: userSchoolsWithSchool } = await supabaseAdmin
+        .from('user_schools')
+        .select('id, user_id, school_id, school:schools(id, name, code)')
+        .eq('user_id', userId);
+
+      return NextResponse.json({
+        success: true,
+        user_schools: userSchoolsWithSchool ?? [],
+      });
+    }
+
     const slotNumbersByDay =
       body.available_slot_numbers_by_day != null &&
       typeof body.available_slot_numbers_by_day === 'object' &&

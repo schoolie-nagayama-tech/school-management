@@ -85,7 +85,7 @@ export default function ShukaisuPortalPage() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
-      <div className="max-w-2xl mx-auto px-4 py-8">
+      <div className="max-w-lg mx-auto px-4 py-8 w-full">
         {!period ? (
           // 公開期間外
           <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 text-center">

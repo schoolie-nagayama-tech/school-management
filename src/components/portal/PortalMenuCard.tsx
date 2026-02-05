@@ -39,7 +39,7 @@ export function PortalMenuCard({ menu, schoolCode, isFormActive = false }: Porta
                 rel="noopener noreferrer"
                 className={`${cardActive} flex items-center justify-between`}
               >
-                <span className="text-base font-medium">{link.label}</span>
+                <span className="text-base font-medium text-white">{link.label}</span>
                 <svg className="w-5 h-5 flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
@@ -60,7 +60,7 @@ export function PortalMenuCard({ menu, schoolCode, isFormActive = false }: Porta
           className={`${cardActive} flex items-start sm:items-center justify-between gap-3`}
         >
           <div className="flex-1 min-w-0">
-            <h2 className="text-base sm:text-lg font-bold mb-0.5">{menu.title}</h2>
+            <h2 className="text-base sm:text-lg font-bold text-white mb-0.5">{menu.title}</h2>
             {menu.description && <p className="text-sm text-white/90">{menu.description}</p>}
           </div>
           <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -91,7 +91,7 @@ export function PortalMenuCard({ menu, schoolCode, isFormActive = false }: Porta
     if (isFormActive) {
       return (
         <Link href={formUrl} className={cardActive}>
-          <h2 className="text-base sm:text-lg font-bold mb-0.5">{menu.title}</h2>
+          <h2 className="text-base sm:text-lg font-bold text-white mb-0.5">{menu.title}</h2>
           {menu.description && <p className="text-sm text-white/90">{menu.description}</p>}
           <span className="sr-only">お申し込みはこちら</span>
         </Link>

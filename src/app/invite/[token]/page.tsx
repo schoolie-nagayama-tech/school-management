@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { getInvitationByToken, acceptInvitation, signUpWithEmail, createUserProfile, addUserToSchool } from '@/lib/api/auth';
+import { getInvitationByToken, signUpWithEmail } from '@/lib/api/auth';
 import type { UserInvitation } from '@/types/database';
 import { USER_ROLE_LABELS } from '@/types/database';
 
@@ -62,24 +62,23 @@ export default function InvitePage() {
     try {
       // アカウント作成
       const { user } = await signUpWithEmail(invitation.email, password);
-      
+
       if (user) {
-        // プロファイル作成
-        await createUserProfile(
-          user.id,
-          invitation.email,
-          invitation.role,
-          displayName || undefined,
-          invitation.invited_by || undefined
-        );
+        // プロファイル・教室紐付け・招待承諾をサーバー側で実行（RLSを避けユーザー管理に表示されるようにする）
+        const res = await fetch('/api/invite/complete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            token,
+            displayName: displayName || undefined,
+            userId: user.id,
+          }),
+        });
 
-        // 教室に紐付け
-        for (const schoolId of invitation.school_ids) {
-          await addUserToSchool(user.id, schoolId);
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.error || '招待の完了に失敗しました');
         }
-
-        // 招待を承諾済みにする
-        await acceptInvitation(token);
 
         router.push('/students');
       }

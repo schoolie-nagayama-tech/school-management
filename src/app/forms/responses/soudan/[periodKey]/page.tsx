@@ -22,6 +22,7 @@ import { ToastContainer } from '@/components/ui';
 import type { SoudanResponse, SoudanResponseFilters } from '@/types/forms/soudan';
 import type { Student } from '@/types/database';
 import { getDefaultSchoolId } from '@/lib/api/schools';
+import { useAuth } from '@/contexts/AuthContext';
 import { SOUDAN_GRADE_NUMBER_TO_NAME } from '@/types/forms/soudan';
 import { SoudanStats } from '@/components/forms/soudan/SoudanStats';
 import { SoudanResponseDetailModal } from '@/components/forms/soudan/SoudanResponseDetailModal';
@@ -29,6 +30,7 @@ import { SoudanResponseDetailModal } from '@/components/forms/soudan/SoudanRespo
 export default function SoudanResponsePage() {
   const params = useParams();
   const periodKey = (params?.periodKey as string) || '';
+  const { getSelectedSchoolIds } = useAuth();
   const [responses, setResponses] = useState<SoudanResponse[]>([]);
   const [stats, setStats] = useState({
     total_responses: 0,
@@ -63,7 +65,8 @@ export default function SoudanResponsePage() {
     setIsLoading(true);
     setErrorMessage('');
     try {
-      const schoolId = getDefaultSchoolId();
+      const schoolIds = getSelectedSchoolIds();
+      const schoolId = schoolIds.length > 0 ? schoolIds[0] : getDefaultSchoolId();
       const filters: SoudanResponseFilters = {
         grade: filterGrade === 'all' ? undefined : filterGrade,
         category: filterCategory === 'all' ? null : filterCategory,
@@ -90,7 +93,7 @@ export default function SoudanResponsePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [periodKey, filterGrade, filterCategory, filterHandledStatus, filterLinkedStatus, searchQuery, showArchived]);
+  }, [getSelectedSchoolIds, periodKey, filterGrade, filterCategory, filterHandledStatus, filterLinkedStatus, searchQuery, showArchived]);
 
   useEffect(() => {
     if (periodKey) {

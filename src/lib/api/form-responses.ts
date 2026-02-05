@@ -1,4 +1,4 @@
-﻿import { supabase } from '../supabase';
+import { supabase } from '../supabase';
 import type {
   FormResponse,
   FormResponseInsert,
@@ -139,7 +139,7 @@ export async function getFormResponse(id: string): Promise<FormResponse | null> 
 }
 
 /**
- * フォーム回答を作成
+ * フォーム回答を作成（申込者・教室への通知メールは Edge Function で送信）
  */
 export async function createFormResponse(
   data: FormResponseInsert
@@ -154,7 +154,20 @@ export async function createFormResponse(
     throw new Error(`フォーム回答の作成に失敗しました: ${error.message}`);
   }
 
-  return created as FormResponse;
+  const record = created as FormResponse;
+  // 申込通知メール（申込者・教室）を Edge Function で送信（失敗しても回答は成功扱い）
+  try {
+    const { error: invokeError } = await supabase.functions.invoke('send-form-notification', {
+      body: { record },
+    });
+    if (invokeError) {
+      console.warn('申込通知メールの送信に失敗しました:', invokeError);
+    }
+  } catch (e) {
+    console.warn('申込通知メールの送信に失敗しました:', e);
+  }
+
+  return record;
 }
 
 /**

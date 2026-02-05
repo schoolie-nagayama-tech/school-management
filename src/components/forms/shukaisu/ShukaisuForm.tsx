@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -440,6 +440,11 @@ export function ShukaisuForm({ school, period }: ShukaisuFormProps) {
             {errors.changeFrom && (
               <p className="text-red-500 text-xs mt-1">{errors.changeFrom}</p>
             )}
+          </div>
+          <div className="mt-4 p-4 bg-amber-50 border-2 border-amber-400 rounded-lg">
+            <p className="text-sm font-semibold text-amber-900 leading-relaxed">
+              ご希望の時間帯が満席の場合もございます。決まり次第Growからご連絡、ご相談させていただきます。
+            </p>
           </div>
         </section>
 

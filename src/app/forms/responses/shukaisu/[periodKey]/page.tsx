@@ -22,6 +22,7 @@ import { ToastContainer } from '@/components/ui';
 import type { ShukaisuResponse, ShukaisuResponseFilters } from '@/types/forms/shukaisu';
 import type { Student } from '@/types/database';
 import { getDefaultSchoolId } from '@/lib/api/schools';
+import { useAuth } from '@/contexts/AuthContext';
 import { SHUKAISU_GRADE_NUMBER_TO_NAME } from '@/types/forms/shukaisu';
 import { ShukaisuStats } from '@/components/forms/shukaisu/ShukaisuStats';
 import { ShukaisuResponseDetailModal } from '@/components/forms/shukaisu/ShukaisuResponseDetailModal';
@@ -29,6 +30,7 @@ import { ShukaisuResponseDetailModal } from '@/components/forms/shukaisu/Shukais
 export default function ShukaisuResponsePage() {
   const params = useParams();
   const periodKey = (params?.periodKey as string) || '';
+  const { getSelectedSchoolIds } = useAuth();
   const [responses, setResponses] = useState<ShukaisuResponse[]>([]);
   const [stats, setStats] = useState({
     total_responses: 0,
@@ -61,7 +63,8 @@ export default function ShukaisuResponsePage() {
     setIsLoading(true);
     setErrorMessage('');
     try {
-      const schoolId = getDefaultSchoolId();
+      const schoolIds = getSelectedSchoolIds();
+      const schoolId = schoolIds.length > 0 ? schoolIds[0] : getDefaultSchoolId();
       const filters: ShukaisuResponseFilters = {
         grade: filterGrade === 'all' ? undefined : filterGrade,
         handledStatus: filterHandledStatus === 'all' ? undefined : filterHandledStatus,
@@ -87,7 +90,7 @@ export default function ShukaisuResponsePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [periodKey, filterGrade, filterHandledStatus, filterLinkedStatus, searchQuery, showArchived]);
+  }, [getSelectedSchoolIds, periodKey, filterGrade, filterHandledStatus, filterLinkedStatus, searchQuery, showArchived]);
 
   useEffect(() => {
     if (periodKey) {

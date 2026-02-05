@@ -1,4 +1,4 @@
-﻿// Supabaseのデータベース型定義
+// Supabaseのデータベース型定義
 export type Database = {
   public: {
     Tables: {
@@ -1419,6 +1419,8 @@ export interface UserProfile {
   available_days_of_week?: number[] | null;
   /** 曜日ごとの出勤可能コマ。キー "0"〜"6"、値は 1〜7 限の配列。空または未設定は全コマ可 */
   available_slot_numbers_by_day?: Record<string, number[]> | null;
+  /** 複数教室権限があるときのデフォルト教室ID（ログイン時の初期選択） */
+  default_school_id?: string | null;
 }
 
 // ユーザーと教室の紐付け

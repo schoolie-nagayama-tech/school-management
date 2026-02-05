@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { useAuth } from '@/contexts/AuthContext';
-import { updateUserProfile } from '@/lib/api/auth';
+import { updateUserProfile, addUserToSchool, removeUserFromSchool } from '@/lib/api/auth';
 import { getSchools } from '@/lib/api/schools';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui';
@@ -58,6 +58,12 @@ export default function TeachersPage() {
     displayName: string;
   } | null>(null);
 
+  // 編集モーダル
+  const [editingTeacher, setEditingTeacher] = useState<TeacherWithDetails | null>(null);
+  const [editDisplayName, setEditDisplayName] = useState('');
+  const [editSchoolIds, setEditSchoolIds] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+
   // 削除確認
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletingTeacher, setDeletingTeacher] = useState<TeacherWithDetails | null>(null);
@@ -77,8 +83,17 @@ export default function TeachersPage() {
       
       if (!teachersResponse.ok) throw new Error('Failed to fetch teachers');
       const teachersData = await teachersResponse.json();
-      
-      setTeachers(teachersData.users || []);
+      let teachersList: TeacherWithDetails[] = teachersData.users || [];
+
+      // 権限が講師かつ、その教室に所属する人のみ表示（選択中の教室に紐づく講師に絞る）
+      const userSchoolIds = getSelectedSchoolIds();
+      if (userSchoolIds.length > 0) {
+        teachersList = teachersList.filter(
+          (t: TeacherWithDetails) =>
+            (t.user_schools || []).some((us: { school_id: string }) => userSchoolIds.includes(us.school_id))
+        );
+      }
+      setTeachers(teachersList);
 
       // 教室長の場合は自分の権限がある教室のみ表示
       let availableSchools = schoolsData;
@@ -202,6 +217,39 @@ export default function TeachersPage() {
     }
   };
 
+  // 講師編集モーダルを開く
+  const openEditModal = (teacher: TeacherWithDetails) => {
+    setEditingTeacher(teacher);
+    setEditDisplayName(teacher.display_name || '');
+    setEditSchoolIds(teacher.user_schools?.map(us => us.school_id) || []);
+  };
+
+  // 講師編集を保存
+  const handleSaveTeacher = async () => {
+    if (!editingTeacher) return;
+    setIsSaving(true);
+    try {
+      await updateUserProfile(editingTeacher.id, { display_name: editDisplayName });
+      const currentSchoolIds = editingTeacher.user_schools?.map(us => us.school_id) || [];
+      const toAdd = editSchoolIds.filter(id => !currentSchoolIds.includes(id));
+      const toRemove = currentSchoolIds.filter(id => !editSchoolIds.includes(id));
+      for (const schoolId of toAdd) {
+        await addUserToSchool(editingTeacher.id, schoolId);
+      }
+      for (const schoolId of toRemove) {
+        await removeUserFromSchool(editingTeacher.id, schoolId);
+      }
+      setEditingTeacher(null);
+      await loadData();
+      success('講師を更新しました');
+    } catch (err) {
+      console.error('Error updating teacher:', err);
+      toastError('講師の更新に失敗しました');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   // 権限チェック（認証・権限の読み込みが完了してから判定し、読み込み中はアクセス拒否を表示しない）
   if (authLoading) {
     return (
@@ -316,9 +364,16 @@ export default function TeachersPage() {
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              className="p-2"
+                              onClick={() => openEditModal(teacher)}
+                            >
+                              編集
+                            </Button>
                             <Link href={`/admin/teachers/${teacher.id}`}>
                               <Button variant="ghost" className="p-2">
-                                編集
+                                詳細
                               </Button>
                             </Link>
                             <Button

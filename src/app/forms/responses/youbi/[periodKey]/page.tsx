@@ -22,6 +22,7 @@ import { ToastContainer } from '@/components/ui';
 import type { YoubiResponse, YoubiResponseFilters } from '@/types/forms/youbi';
 import type { Student } from '@/types/database';
 import { getDefaultSchoolId } from '@/lib/api/schools';
+import { useAuth } from '@/contexts/AuthContext';
 import { YOUBI_GRADE_NUMBER_TO_NAME } from '@/types/forms/youbi';
 import { YoubiStats } from '@/components/forms/youbi/YoubiStats';
 import { YoubiResponseDetailModal } from '@/components/forms/youbi/YoubiResponseDetailModal';
@@ -29,6 +30,7 @@ import { YoubiResponseDetailModal } from '@/components/forms/youbi/YoubiResponse
 export default function YoubiResponsePage() {
   const params = useParams();
   const periodKey = (params?.periodKey as string) || '';
+  const { getSelectedSchoolIds } = useAuth();
   const [responses, setResponses] = useState<YoubiResponse[]>([]);
   const [stats, setStats] = useState({
     total_responses: 0,
@@ -61,7 +63,8 @@ export default function YoubiResponsePage() {
     setIsLoading(true);
     setErrorMessage('');
     try {
-      const schoolId = getDefaultSchoolId();
+      const schoolIds = getSelectedSchoolIds();
+      const schoolId = schoolIds.length > 0 ? schoolIds[0] : getDefaultSchoolId();
       const filters: YoubiResponseFilters = {
         grade: filterGrade === 'all' ? undefined : filterGrade,
         handledStatus: filterHandledStatus === 'all' ? undefined : filterHandledStatus,
@@ -87,7 +90,7 @@ export default function YoubiResponsePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [periodKey, filterGrade, filterHandledStatus, filterLinkedStatus, searchQuery, showArchived]);
+  }, [getSelectedSchoolIds, periodKey, filterGrade, filterHandledStatus, filterLinkedStatus, searchQuery, showArchived]);
 
   useEffect(() => {
     if (periodKey) {

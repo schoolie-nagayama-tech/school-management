@@ -16,7 +16,7 @@ export default async function FormPage({ params, searchParams }: FormPageProps) 
   if (!form) {
     return (
       <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center">
-        <div className="max-w-2xl mx-auto px-4 text-center">
+        <div className="max-w-lg mx-auto px-4 text-center w-full">
           <h1 className="text-2xl font-bold text-[#1f2937] mb-4">
             このフォームは現在受付していません
           </h1>
@@ -35,7 +35,7 @@ export default async function FormPage({ params, searchParams }: FormPageProps) 
   if (submitted === 'true') {
     return (
       <div className="min-h-screen bg-[#f3f4f6]">
-        <div className="max-w-2xl mx-auto px-4 py-8">
+        <div className="max-w-lg mx-auto px-4 py-8 w-full">
           <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 text-center">
             <div className="mb-6">
               <svg
@@ -72,7 +72,7 @@ export default async function FormPage({ params, searchParams }: FormPageProps) 
 
   return (
     <div className="min-h-screen bg-[#f3f4f6]">
-      <div className="max-w-2xl mx-auto px-4 py-8">
+      <div className="max-w-lg mx-auto px-4 py-8 w-full">
         {/* ヘッダー */}
         <header className="mb-6">
           <h1 className="text-2xl font-bold text-[#1f2937] mb-2">{form.title}</h1>

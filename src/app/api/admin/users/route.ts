@@ -34,13 +34,21 @@ function getSupabaseAdmin() {
   }
 
   if (!serviceRoleKey) {
-    throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set. Please restart the Next.js server after adding it to .env.local');
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set');
   }
 
   return createClient(supabaseUrl, serviceRoleKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
+    },
+    db: {
+      schema: 'public',
+    },
+    global: {
+      headers: {
+        Authorization: `Bearer ${serviceRoleKey}`,
+      },
     },
   });
 }
@@ -49,12 +57,22 @@ export async function GET(request: NextRequest) {
   try {
     const supabaseAdmin = getSupabaseAdmin();
     const roleParam = request.nextUrl.searchParams.get('role');
-    
-    // 全ユーザープロファイルを取得（roleは取得後にフィルタ）
-    const { data: profiles, error: profilesError } = await supabaseAdmin
-      .from('user_profiles')
-      .select('*')
-      .order('created_at', { ascending: false });
+
+    // 全ユーザープロファイルを取得（RPC があれば使用、なければ直接 SELECT）
+    let profiles: Record<string, unknown>[] | null = null;
+    let profilesError: Error | null = null;
+
+    const { data: rpcData, error: rpcError } = await supabaseAdmin.rpc('get_all_user_profiles');
+    if (!rpcError && Array.isArray(rpcData)) {
+      profiles = rpcData as Record<string, unknown>[];
+    } else {
+      const result = await supabaseAdmin
+        .from('user_profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+      profiles = result.data;
+      profilesError = result.error;
+    }
 
     if (profilesError) {
       console.error('Error fetching user profiles:', profilesError);
@@ -65,47 +83,45 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ users: [] });
     }
 
-    // roleパラメータがある場合はメモリ上でフィルタ（DBのenum/大文字小文字の差で漏れないようにする）
-    const allowedRoles = roleParam
-      ? roleParam.split(',').map((r: string) => r.trim().toLowerCase())
-      : null;
-    const filteredProfiles = allowedRoles
-      ? profiles.filter(
-          (p: { role?: string | null }) =>
-            p.role != null && allowedRoles.includes(String(p.role).toLowerCase())
-        )
-      : profiles;
+    // role=teacher のときは講師のみ返す（講師一覧用）。それ以外は講師以外を返す（ユーザー管理用：admin, owner, manager など）
+    const wantTeachers = roleParam?.toLowerCase().trim() === 'teacher';
+    const filteredProfiles = profiles.filter((p: { role?: string | null }) => {
+      const r = String(p.role || '').toLowerCase();
+      if (wantTeachers) return r === 'teacher';
+      return r !== 'teacher';
+    });
 
     if (filteredProfiles.length === 0) {
       return NextResponse.json({ users: [] });
     }
 
-    // 各ユーザーの教室情報を取得
-    const usersWithSchools = await Promise.all(
-      filteredProfiles.map(async (profile: Record<string, unknown>) => {
-        const { data: userSchools, error: schoolsError } = await supabaseAdmin
-          .from('user_schools')
-          .select(`
-            *,
-            school:schools(*)
-          `)
-          .eq('user_id', profile.id);
+    // 全ユーザー分の user_schools を1回で取得（複数教室が1件にまとまらないようにする）
+    const userIds = filteredProfiles.map((p: Record<string, unknown>) => String(p.id)).filter(Boolean);
+    const { data: allUserSchools, error: schoolsError } = await supabaseAdmin
+      .from('user_schools')
+      .select('*, school:schools(*)')
+      .in('user_id', userIds)
+      .order('user_id')
+      .order('school_id');
 
-        if (schoolsError) {
-          console.error(`Error fetching schools for user ${profile.id}:`, schoolsError);
-          return {
-            ...profile,
-            user_schools: [],
-          };
-        }
+    if (schoolsError) {
+      console.error('Error fetching user_schools:', schoolsError);
+      throw schoolsError;
+    }
 
-        return {
-          ...profile,
-          available_slot_numbers_by_day: toSlotNumbersByDay(profile.available_slot_numbers_by_day),
-          user_schools: userSchools || [],
-        };
-      })
-    );
+    // user_id ごとにグループ化
+    const userSchoolsByUserId: Record<string, typeof allUserSchools> = {};
+    for (const row of allUserSchools || []) {
+      const uid = String(row.user_id);
+      if (!userSchoolsByUserId[uid]) userSchoolsByUserId[uid] = [];
+      userSchoolsByUserId[uid].push(row);
+    }
+
+    const usersWithSchools = filteredProfiles.map((profile: Record<string, unknown>) => ({
+      ...profile,
+      available_slot_numbers_by_day: toSlotNumbersByDay(profile.available_slot_numbers_by_day),
+      user_schools: userSchoolsByUserId[String(profile.id)] || [],
+    }));
 
     return NextResponse.json({ users: usersWithSchools });
   } catch (error: any) {

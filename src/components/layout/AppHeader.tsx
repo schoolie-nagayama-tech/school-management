@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { getSchools } from '@/lib/api/schools';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,7 +15,14 @@ interface AppHeaderProps {
 
 export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { profile, permissions, signOut, isLoading: authLoading, schoolIds, selectedSchoolId, setSelectedSchoolId } = useAuth();
+
+  const handleSchoolChange = (schoolId: string | 'all') => {
+    setSelectedSchoolId(schoolId);
+    setShowSchoolDropdown(false);
+    router.refresh();
+  };
   const [schools, setSchools] = useState<School[]>([]);
   const [showSchoolDropdown, setShowSchoolDropdown] = useState(false);
 
@@ -379,8 +386,7 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          setSelectedSchoolId('all');
-                          setShowSchoolDropdown(false);
+                          handleSchoolChange('all');
                         }}
                         className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                           selectedSchoolId === 'all' ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold' : ''
@@ -393,8 +399,7 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
                           key={school.id}
                           onClick={(e) => {
                             e.stopPropagation();
-                            setSelectedSchoolId(school.id);
-                            setShowSchoolDropdown(false);
+                            handleSchoolChange(school.id);
                           }}
                           className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                             selectedSchoolId === school.id ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold' : ''
@@ -474,8 +479,8 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
                 </svg>
               </button>
             )}
-            {/* 座席表（開発中）・管理者のみ・歯車の右からのみ入場 */}
-            {profile && (profile.role === 'admin' || profile.role === 'owner' || profile.role === 'manager') && (
+            {/* 座席表：システム管理者のみ表示 */}
+            {profile && String(profile.role ?? '').toLowerCase() === 'admin' && (
               <Link
                 href="/schedule"
                 className={`p-1.5 rounded-lg transition-colors ${

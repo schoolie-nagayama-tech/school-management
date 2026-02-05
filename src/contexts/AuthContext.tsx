@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -153,17 +153,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (isMounted && !isMounted()) return null;
         setSchoolIds(fetchedSchoolIds);
 
-        // 教室選択の初期化
+        // 教室選択の初期化（複数教室のときは default_school_id を優先）
         if (typeof window !== 'undefined' && fetchedSchoolIds.length > 0) {
           const savedSchoolId = localStorage.getItem('selectedSchoolId');
-          if (savedSchoolId && (savedSchoolId === 'all' || fetchedSchoolIds.includes(savedSchoolId))) {
-            setSelectedSchoolIdState(savedSchoolId as string | 'all');
-          } else if (fetchedSchoolIds.length === 1) {
-            // 教室が1つの場合は自動選択
+          const defaultSchoolId = userProfile.default_school_id ?? null;
+          const hasValidDefault = defaultSchoolId && fetchedSchoolIds.includes(defaultSchoolId);
+
+          if (fetchedSchoolIds.length === 1) {
             setSelectedSchoolIdState(fetchedSchoolIds[0]);
             localStorage.setItem('selectedSchoolId', fetchedSchoolIds[0]);
+          } else if (hasValidDefault) {
+            // 複数教室でデフォルト教室が設定されている場合はそれを初期選択
+            setSelectedSchoolIdState(defaultSchoolId);
+            localStorage.setItem('selectedSchoolId', defaultSchoolId);
+          } else if (savedSchoolId && (savedSchoolId === 'all' || fetchedSchoolIds.includes(savedSchoolId))) {
+            setSelectedSchoolIdState(savedSchoolId as string | 'all');
           } else {
-            // 複数教室がある場合は未選択のまま（教室選択画面を表示）
             setSelectedSchoolIdState(null);
           }
         }

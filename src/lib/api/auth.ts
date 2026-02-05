@@ -1,4 +1,4 @@
-﻿import { createSupabaseBrowserClient } from '@/lib/supabase';
+import { createSupabaseBrowserClient } from '@/lib/supabase';
 import type { UserProfile, UserSchool, UserInvitation, UserWithDetails, UserRole } from '@/types/database';
 
 // =====================================================
@@ -148,7 +148,7 @@ export async function createUserProfile(
 // プロファイルを更新
 export async function updateUserProfile(
   userId: string,
-  updates: Partial<Pick<UserProfile, 'display_name' | 'role' | 'is_active' | 'teachable_subject_ids' | 'available_days_of_week'>>
+  updates: Partial<Pick<UserProfile, 'display_name' | 'role' | 'is_active' | 'teachable_subject_ids' | 'available_days_of_week' | 'default_school_id'>>
 ): Promise<UserProfile> {
   const supabase = createSupabaseBrowserClient();
   const { data, error } = await supabase
@@ -246,9 +246,19 @@ export async function getUserSchools(userId: string): Promise<UserSchool[]> {
   }
 }
 
-// ユーザーを教室に紐付け
-export async function addUserToSchool(userId: string, schoolId: string): Promise<UserSchool> {
+// ユーザーを教室に紐付け（既に紐づいている場合はスキップして 409 を防ぐ）
+export async function addUserToSchool(userId: string, schoolId: string): Promise<UserSchool | null> {
   const supabase = createSupabaseBrowserClient();
+
+  const { data: existing } = await supabase
+    .from('user_schools')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('school_id', schoolId)
+    .maybeSingle();
+
+  if (existing) return existing;
+
   const { data, error } = await supabase
     .from('user_schools')
     .insert({ user_id: userId, school_id: schoolId })

@@ -22,6 +22,7 @@ import { ToastContainer } from '@/components/ui';
 import type { MoshiResponse, MoshiResponseFilters } from '@/types/forms/moshi';
 import type { Student } from '@/types/database';
 import { getDefaultSchoolId } from '@/lib/api/schools';
+import { useAuth } from '@/contexts/AuthContext';
 import { MOSHI_GRADE_NUMBER_TO_NAME } from '@/types/forms/moshi';
 import { MoshiStats } from '@/components/forms/moshi/MoshiStats';
 import { MoshiResponseDetailModal } from '@/components/forms/moshi/MoshiResponseDetailModal';
@@ -29,6 +30,7 @@ import { MoshiResponseDetailModal } from '@/components/forms/moshi/MoshiResponse
 export default function MoshiResponsePage() {
   const params = useParams();
   const periodKey = (params?.periodKey as string) || '';
+  const { getSelectedSchoolIds } = useAuth();
   const [responses, setResponses] = useState<MoshiResponse[]>([]);
   const [stats, setStats] = useState({
     total_responses: 0,
@@ -63,7 +65,8 @@ export default function MoshiResponsePage() {
     setIsLoading(true);
     setErrorMessage('');
     try {
-      const schoolId = getDefaultSchoolId();
+      const schoolIds = getSelectedSchoolIds();
+      const schoolId = schoolIds.length > 0 ? schoolIds[0] : getDefaultSchoolId();
       const filters: MoshiResponseFilters = {
         grade: filterGrade === 'all' ? undefined : filterGrade,
         examType: filterExamType === 'all' ? undefined : filterExamType,
@@ -89,7 +92,7 @@ export default function MoshiResponsePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [periodKey, filterGrade, filterExamType, filterChargedStatus, filterLinkedStatus, showArchived]);
+  }, [getSelectedSchoolIds, periodKey, filterGrade, filterExamType, filterChargedStatus, filterLinkedStatus, showArchived]);
 
   useEffect(() => {
     if (periodKey) {

@@ -22,6 +22,7 @@ import { ToastContainer } from '@/components/ui';
 import type { MogiResponse, MogiResponseFilters } from '@/types/forms/mogi';
 import type { Student } from '@/types/database';
 import { getDefaultSchoolId } from '@/lib/api/schools';
+import { useAuth } from '@/contexts/AuthContext';
 import { GRADE_NUMBER_TO_NAME } from '@/types/forms/mogi';
 import { MogiStats } from '@/components/forms/mogi/MogiStats';
 import { MogiResponseDetailModal } from '@/components/forms/mogi/MogiResponseDetailModal';
@@ -29,6 +30,7 @@ import { MogiResponseDetailModal } from '@/components/forms/mogi/MogiResponseDet
 export default function MogiResponsePage() {
   const params = useParams();
   const periodKey = (params?.periodKey as string) || '';
+  const { getSelectedSchoolIds } = useAuth();
   const [responses, setResponses] = useState<MogiResponse[]>([]);
   const [stats, setStats] = useState({
     total_responses: 0,
@@ -72,7 +74,8 @@ export default function MogiResponsePage() {
     setIsLoading(true);
     setErrorMessage('');
     try {
-      const schoolId = getDefaultSchoolId();
+      const schoolIds = getSelectedSchoolIds();
+      const schoolId = schoolIds.length > 0 ? schoolIds[0] : getDefaultSchoolId();
       const filters: MogiResponseFilters = {
         grade: filterGrade === 'all' ? undefined : filterGrade,
         dateId: filterDateId === 'all' ? undefined : filterDateId,
@@ -99,7 +102,7 @@ export default function MogiResponsePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [periodKey, filterGrade, filterDateId, filterVenueId, filterChargedStatus, filterLinkedStatus, showArchived]);
+  }, [getSelectedSchoolIds, periodKey, filterGrade, filterDateId, filterVenueId, filterChargedStatus, filterLinkedStatus, showArchived]);
 
   useEffect(() => {
     if (periodKey) {

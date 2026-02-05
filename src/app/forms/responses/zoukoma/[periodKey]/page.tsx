@@ -18,11 +18,13 @@ import { ToastContainer } from '@/components/ui';
 import type { ZoukomaResponse, ZoukomaResponseFilters } from '@/types/forms/zoukoma';
 import type { Student } from '@/types/database';
 import { getDefaultSchoolId } from '@/lib/api/schools';
+import { useAuth } from '@/contexts/AuthContext';
 import { GRADE_NUMBER_TO_NAME } from '@/types/forms/zoukoma';
 
 export default function ZoukomaResponsePage() {
   const params = useParams();
   const periodKey = (params?.periodKey as string) || '';
+  const { getSelectedSchoolIds } = useAuth();
   const [responses, setResponses] = useState<ZoukomaResponse[]>([]);
   const [stats, setStats] = useState({
     total_responses: 0,
@@ -44,7 +46,8 @@ export default function ZoukomaResponsePage() {
     setIsLoading(true);
     setErrorMessage('');
     try {
-      const schoolId = getDefaultSchoolId();
+      const schoolIds = getSelectedSchoolIds();
+      const schoolId = schoolIds.length > 0 ? schoolIds[0] : getDefaultSchoolId();
       const [responsesData, statsData] = await Promise.all([
         getZoukomaResponses(schoolId, periodKey, filters),
         getZoukomaStats(schoolId, periodKey),
@@ -59,7 +62,7 @@ export default function ZoukomaResponsePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [periodKey, filters]);
+  }, [getSelectedSchoolIds, periodKey, filters]);
 
   useEffect(() => {
     if (periodKey) {

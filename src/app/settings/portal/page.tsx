@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import {
   DndContext,
   closestCenter,
@@ -392,7 +393,16 @@ export default function PortalSettingsPage() {
           </div>
         ) : (
           <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
-            <h2 className="text-lg font-bold text-[#1f2937] mb-4">フォーム一覧</h2>
+            <div className="flex items-center justify-between gap-4 mb-4">
+              <h2 className="text-lg font-bold text-[#1f2937]">フォーム一覧</h2>
+              <Link
+                href="/settings/forms/class-periods"
+                className="text-xs text-[#6b7280] hover:text-[#374151] hover:underline"
+                title="週回数・曜日変更などのフォームで使う時限の共通設定"
+              >
+                授業の時間帯
+              </Link>
+            </div>
             <div className="overflow-x-auto">
               <DndContext
                 sensors={sensors}

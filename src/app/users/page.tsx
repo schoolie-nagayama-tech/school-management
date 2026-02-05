@@ -4,11 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  updateUserProfile,
-  addUserToSchool,
-  removeUserFromSchool,
-} from '@/lib/api/auth';
+import { updateUserProfile } from '@/lib/api/auth';
 import { getSchools, createSchool, updateSchool, deleteSchool } from '@/lib/api/schools';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui';
@@ -38,15 +34,17 @@ interface UserWithDetails extends UserProfile {
 }
 
 export default function UsersPage() {
-  const { profile, permissions, isLoading: authLoading } = useAuth();
+  const { profile, permissions, isLoading: authLoading, schoolIds: mySchoolIds } = useAuth();
   const { toasts, removeToast, success, error: toastError } = useToast();
   const [activeTab, setActiveTab] = useState<TabType>('users');
   const [users, setUsers] = useState<UserWithDetails[]>([]);
   const [schools, setSchools] = useState<School[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // 教室長かどうかを判定
-  const isManager = profile?.role === 'manager';
+  const roleLower = String(profile?.role ?? '').toLowerCase();
+  const isManager = roleLower === 'manager';
+  const isOwner = roleLower === 'owner';
+  const isAdmin = roleLower === 'admin';
   
   // ユーザー作成フォーム
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -75,6 +73,7 @@ export default function UsersPage() {
   const [editDisplayName, setEditDisplayName] = useState('');
   const [editRole, setEditRole] = useState<UserRole>('manager');
   const [editSchoolIds, setEditSchoolIds] = useState<string[]>([]);
+  const [editDefaultSchoolId, setEditDefaultSchoolId] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
 
   // 削除確認
@@ -88,29 +87,48 @@ export default function UsersPage() {
   const [notificationEmail, setNotificationEmail] = useState('');
   const [isSavingSchool, setIsSavingSchool] = useState(false);
 
-  // データ取得
+  // データ取得（認証完了後および権限が決まったあとで実行）
   useEffect(() => {
+    if (authLoading) return;
     loadData();
-  }, []);
+  }, [authLoading, profile?.role, profile?.id]);
 
   const loadData = async () => {
     setIsLoading(true);
     try {
       const [usersResponse, schoolsData] = await Promise.all([
-        fetch('/api/admin/users?role=admin,owner,manager', { cache: 'no-store' }), // 講師を除外・キャッシュ無効
+        fetch('/api/admin/users', { cache: 'no-store', credentials: 'same-origin' }),
         getSchools(),
       ]);
       
-      if (!usersResponse.ok) throw new Error('Failed to fetch users');
+      if (!usersResponse.ok) {
+        const errBody = await usersResponse.json().catch(() => ({}));
+        const msg = errBody.details || errBody.error || 'データの取得に失敗しました';
+        throw new Error(msg);
+      }
       const usersData = await usersResponse.json();
+      const list = Array.isArray(usersData?.users) ? usersData.users : [];
       
       // 講師を除外（念のため）
-      let filteredUsers = (usersData.users || []).filter((user: UserWithDetails) => 
-        user.role !== 'teacher'
+      let filteredUsers = list.filter((user: UserWithDetails) =>
+        String(user?.role ?? '').toLowerCase() !== 'teacher'
       );
       
-      // 教室長の場合は自分の情報のみ表示
-      if (isManager && profile?.id) {
+      // 権限ごとに表示するユーザーを分ける
+      if (isAdmin) {
+        // システム管理者：全ユーザー表示
+        // そのまま
+      } else if (isOwner) {
+        // エリアマネージャー：担当教室に紐づくユーザーのみ表示（自分の担当教室と共通の教室を持つユーザー）
+        const myIds = Array.isArray(mySchoolIds) ? mySchoolIds : [];
+        if (myIds.length > 0) {
+          filteredUsers = filteredUsers.filter((user: UserWithDetails) => {
+            const userSchoolIds = (user.user_schools || []).map((us: { school_id: string }) => us.school_id);
+            return userSchoolIds.some((sid: string) => myIds.includes(sid));
+          });
+        }
+      } else if (isManager && profile?.id) {
+        // 教室長：自分の情報のみ表示
         filteredUsers = filteredUsers.filter((user: UserWithDetails) => user.id === profile.id);
       }
       
@@ -121,7 +139,7 @@ export default function UsersPage() {
       }
     } catch (err) {
       console.error('Error loading data:', err);
-      toastError('データの取得に失敗しました');
+      toastError(err instanceof Error ? err.message : 'データの取得に失敗しました');
     } finally {
       setIsLoading(false);
     }
@@ -196,39 +214,68 @@ export default function UsersPage() {
     }
   };
 
-  // ユーザー編集モーダルを開く
+  // ユーザー編集モーダルを開く（講師以外のロールのみ選択可能）
   const openEditModal = (user: UserWithDetails) => {
     setEditingUser(user);
     setEditDisplayName(user.display_name || '');
-    setEditRole(user.role);
-    setEditSchoolIds(user.user_schools?.map(us => us.school_id) || []);
+    setEditRole(user.role === 'teacher' ? 'manager' : (user.role || 'manager'));
+    const ids = user.user_schools?.map(us => us.school_id) || [];
+    setEditSchoolIds(ids);
+    const profileWithDefault = user as UserWithDetails & { default_school_id?: string | null };
+    const defaultId = profileWithDefault.default_school_id && ids.includes(profileWithDefault.default_school_id)
+      ? profileWithDefault.default_school_id
+      : ids[0] || '';
+    setEditDefaultSchoolId(defaultId);
   };
 
-  // ユーザー編集を保存
+  // ユーザー編集を保存（API 経由でサービスロールで保存し、RLS の影響を受けないようにする）
   const handleSaveUser = async () => {
     if (!editingUser) return;
 
     setIsSaving(true);
     try {
-      await updateUserProfile(editingUser.id, { role: editRole, display_name: editDisplayName });
+      const defaultSchoolId = editSchoolIds.length > 0 && editSchoolIds.includes(editDefaultSchoolId)
+        ? editDefaultSchoolId
+        : null;
 
-      const currentSchoolIds = editingUser.user_schools?.map(us => us.school_id) || [];
-      const toAdd = editSchoolIds.filter(id => !currentSchoolIds.includes(id));
-      const toRemove = currentSchoolIds.filter(id => !editSchoolIds.includes(id));
+      const res = await fetch(`/api/admin/users/${editingUser.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          display_name: editDisplayName,
+          role: editRole,
+          default_school_id: defaultSchoolId,
+          school_ids: editSchoolIds,
+        }),
+      });
 
-      for (const schoolId of toAdd) {
-        await addUserToSchool(editingUser.id, schoolId);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const msg = data.details || data.error || '更新に失敗しました';
+        throw new Error(msg);
       }
-      for (const schoolId of toRemove) {
-        await removeUserFromSchool(editingUser.id, schoolId);
-      }
+
+      const data = await res.json().catch(() => ({}));
+      const updatedUserSchools = Array.isArray(data?.user_schools) ? data.user_schools : undefined;
 
       setEditingUser(null);
+
+      // 返却された user_schools で一覧を即時更新（登録が確実に反映されるように）
+      if (updatedUserSchools && editingUser) {
+        setUsers((prev) =>
+          prev.map((u) =>
+            u.id === editingUser.id
+              ? { ...u, user_schools: updatedUserSchools }
+              : u
+          )
+        );
+      }
+
       await loadData();
       success('ユーザーを更新しました');
     } catch (err) {
       console.error('Error updating user:', err);
-      toastError('ユーザーの更新に失敗しました');
+      toastError(err instanceof Error ? err.message : 'ユーザーの更新に失敗しました');
     } finally {
       setIsSaving(false);
     }
@@ -472,17 +519,25 @@ export default function UsersPage() {
                         <td className="px-4 py-3 text-sm text-[#4b5563]">{user.email}</td>
                         <td className="px-4 py-3">
                           <span className="inline-block px-2 py-1 text-xs font-bold bg-[#3b82f6]/20 text-[#1f2937] rounded">
-                            {USER_ROLE_LABELS[user.role]}
+                            {USER_ROLE_LABELS[user.role as UserRole] ?? '未設定'}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-sm text-[#4b5563]">
                           {user.user_schools && user.user_schools.length > 0 ? (
                             <div className="flex flex-wrap gap-1">
-                              {user.user_schools.map(us => (
-                                <span key={us.id} className="inline-block px-2 py-0.5 text-xs bg-[#f3f4f6] rounded">
-                                  {us.school?.name || '不明'}
-                                </span>
-                              ))}
+                              {user.user_schools.map(us => {
+                                const profileWithDefault = user as UserWithDetails & { default_school_id?: string | null };
+                                const isDefault = profileWithDefault.default_school_id === us.school_id;
+                                return (
+                                  <span
+                                    key={us.id}
+                                    className={`inline-block px-2 py-0.5 text-xs rounded ${isDefault ? 'bg-[#e5e7eb] text-[#4b5563]' : 'bg-[#f3f4f6]'}`}
+                                  >
+                                    {us.school?.name || '不明'}
+                                    {isDefault && <span className="ml-1 text-[#6b7280]">(デフォルト)</span>}
+                                  </span>
+                                );
+                              })}
                             </div>
                           ) : (
                             <span className="text-[#4b5563]/50">なし</span>
@@ -953,7 +1008,11 @@ export default function UsersPage() {
                             if (e.target.checked) {
                               setEditSchoolIds([...editSchoolIds, school.id]);
                             } else {
-                              setEditSchoolIds(editSchoolIds.filter(id => id !== school.id));
+                              const next = editSchoolIds.filter(id => id !== school.id);
+                              setEditSchoolIds(next);
+                              if (editDefaultSchoolId === school.id) {
+                                setEditDefaultSchoolId(next[0] || '');
+                              }
                             }
                           }}
                           className="rounded border-[#e5e7eb]"
@@ -963,6 +1022,25 @@ export default function UsersPage() {
                     ))}
                   </div>
                 </div>
+                {editSchoolIds.length > 1 && (
+                  <div>
+                    <label className="block text-sm font-medium text-[#1f2937] mb-1">
+                      デフォルトの教室
+                    </label>
+                    <p className="text-xs text-[#4b5563]/70 mb-2">複数教室のとき、ログイン時に最初に選択される教室です。</p>
+                    <select
+                      value={editDefaultSchoolId}
+                      onChange={e => setEditDefaultSchoolId(e.target.value)}
+                      className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                    >
+                      {schools.filter(s => editSchoolIds.includes(s.id)).map(school => (
+                        <option key={school.id} value={school.id}>
+                          {school.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div className="flex gap-3 pt-4">
                   <button
                     type="button"

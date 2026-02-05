@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Modal, Input, Button, Select } from '@/components/ui';
 import { createYoubiPeriod, updateYoubiPeriod } from '@/lib/api/youbi';
 import { getApplicationItems } from '@/lib/api/applications';
+import { getClassPeriods, formatPeriodsToText } from '@/lib/api/class-periods';
 import type { YoubiPeriod, YoubiSettings } from '@/types/forms/youbi';
 import type { ApplicationItem } from '@/types/database';
 
@@ -109,12 +110,12 @@ export function YoubiPeriodEditor({
         );
         setLinkedApplicationItemId(period.linked_application_item_id || '');
       } else {
-        // 新規作成モード
+        // 新規作成モード（共通設定の授業の時間帯を初期値に）
         setPeriodKey(generatePeriodKey());
         setTitle('曜日変更');
         setDescription(DEFAULT_DESCRIPTION);
         setDaysText('月\n火\n水\n木\n金\n土');
-        setPeriodsText(DEFAULT_PERIODS.map((p) => `${p.code},${p.label}`).join('\n'));
+        setPeriodsText(formatPeriodsToText(getClassPeriods(schoolId)));
         setSubjectsText('英語\n数学\n国語\n理科\n社会');
         setPublishStart('');
         setPublishEnd('');
