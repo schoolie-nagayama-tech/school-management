@@ -8,6 +8,7 @@ import {
   DeleteConfirmDialog,
   StudentDetailModal,
   StudentScores,
+  StudentRegularScheduleList,
 } from '@/components/students';
 import { SubjectSettings } from '@/components/settings';
 import {
@@ -54,6 +55,8 @@ export default function StudentsPage() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isScoresModalOpen, setIsScoresModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [scheduleModalStudent, setScheduleModalStudent] = useState<Student | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -120,9 +123,10 @@ export default function StudentsPage() {
     setIsCreateModalOpen(true);
   };
 
-  // 編集モーダルを開く
+  // 編集モーダルを開く（詳細モーダルから開く場合は詳細を閉じて前面に表示）
   const handleOpenEditModal = (student: Student) => {
     setSelectedStudent(student);
+    setIsDetailModalOpen(false);
     setIsEditModalOpen(true);
   };
 
@@ -196,6 +200,14 @@ export default function StudentsPage() {
   // 成績推移ページへ遷移
   const handleOpenScores = (student: Student) => {
     router.push(`/students/${student.id}/scores`);
+  };
+
+  // 通塾日程モーダルを直接開く（その生徒の授業設定）
+  const handleOpenSchedule = (student: Student) => {
+    setScheduleModalStudent(student);
+    setIsScheduleModalOpen(true);
+    setIsDetailModalOpen(false);
+    setSelectedStudent(null);
   };
 
   // 削除
@@ -411,6 +423,7 @@ export default function StudentsPage() {
           onScores={handleOpenScores}
           onProgress={handleOpenProgress}
           onInterviews={handleOpenInterviews}
+          onSchedule={handleOpenSchedule}
           isLoading={isLoading}
         />
 
@@ -470,7 +483,28 @@ export default function StudentsPage() {
           setSelectedStudent(null);
         }}
         onEdit={handleOpenEditModal}
+        onOpenSchedule={handleOpenSchedule}
       />
+
+      {/* 通塾日程モーダル（生徒の授業設定を直接編集） */}
+      <Modal
+        isOpen={isScheduleModalOpen}
+        onClose={() => {
+          setIsScheduleModalOpen(false);
+          setScheduleModalStudent(null);
+        }}
+        title={scheduleModalStudent ? `${scheduleModalStudent.last_name} ${scheduleModalStudent.first_name} の通塾日程` : '通塾日程'}
+        size="lg"
+      >
+        {scheduleModalStudent && (
+          <StudentRegularScheduleList
+            studentId={scheduleModalStudent.id}
+            schoolId={scheduleModalStudent.school_id ?? ''}
+            studentName={`${scheduleModalStudent.last_name} ${scheduleModalStudent.first_name}`}
+            onRefresh={() => fetchStudents(searchQuery)}
+          />
+        )}
+      </Modal>
 
       {/* 成績管理モーダル */}
       {selectedStudent && (

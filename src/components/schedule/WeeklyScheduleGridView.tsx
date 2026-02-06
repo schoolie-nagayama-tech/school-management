@@ -1,16 +1,27 @@
 'use client';
 
 import React from 'react';
-import { DndContext, DragOverlay } from '@dnd-kit/core';
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui';
 import { DayCell } from './DayCell';
+import { StudentCard } from './StudentCard';
 import type { ScheduleEntry, ScheduleTimeSlot } from '@/types/schedule';
 import type { TeacherGroup } from './DayCell';
+import { Printer } from 'lucide-react';
 
-function formatDayHeader(dateStr: string): string {
+function formatDayHeader(dateStr: string): { date: string; weekday: string } {
   const d = new Date(dateStr + 'Z');
   const week = ['日', '月', '火', '水', '木', '金', '土'][d.getUTCDay()];
-  return `${d.getUTCMonth() + 1}/${d.getUTCDate()}(${week})`;
+  return {
+    date: `${d.getUTCMonth() + 1}/${d.getUTCDate()}`,
+    weekday: `(${week})`,
+  };
 }
 
 export interface WeeklyScheduleGridViewProps {
@@ -24,7 +35,7 @@ export interface WeeklyScheduleGridViewProps {
   transferMode: { sourceEntry: ScheduleEntry } | null;
   teachersMap: Map<string, { id: string; display_name: string | null; email: string | null }>;
   activeId: string | null;
-  activeTeacherGroup: { teacher: { id: string; display_name: string | null; email: string | null }; entries: ScheduleEntry[] } | null;
+  activeEntry: ScheduleEntry | null;
   groupEntriesByTeacher: (entries: ScheduleEntry[], date: string, slotId: string) => TeacherGroup[];
   getTeacherGroupsForCell: (dateStr: string, slotId: string, slotNumber: number) => TeacherGroup[];
   onDragStart: (e: { active: { id: unknown } }) => void;
@@ -33,7 +44,9 @@ export interface WeeklyScheduleGridViewProps {
   onAddStudent: (date: string, slotId: string, teacherId: string) => void;
   onRemoveTeacher: (date: string, slotId: string, teacherId: string, entryCount: number) => void;
   onStudentClick: (entry: ScheduleEntry, e: React.MouseEvent) => void;
-  onTransferTargetSelect: (date: string, slotId: string) => void;
+  onTransferClick?: (entry: ScheduleEntry) => void;
+  onTransferTargetClick?: (date: string, slotId: string, teacherId: string) => void;
+  onPrintDay?: (date: string) => void;
 }
 
 export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
@@ -48,7 +61,7 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
     transferMode,
     teachersMap,
     activeId,
-    activeTeacherGroup,
+    activeEntry,
     groupEntriesByTeacher,
     getTeacherGroupsForCell,
     onDragStart,
@@ -57,35 +70,67 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
     onAddStudent,
     onRemoveTeacher,
     onStudentClick,
-    onTransferTargetSelect,
+    onTransferClick,
+    onTransferTargetClick,
+    onPrintDay,
   } = props;
 
+  // クリックでドラッグが始まらないよう、一定距離動いてからドラッグ開始
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
+
   return (
-    <DndContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
+    <DndContext
+      sensors={sensors}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+    >
       <div className="overflow-x-auto border border-[var(--surface)] rounded-lg">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-24 bg-[var(--surface)] font-medium text-[var(--headline)]">
-                コマ
+              <TableHead className="w-16 bg-[var(--surface)] font-medium text-[var(--headline)] text-center align-middle py-1">
+                <div className="text-[10px] text-[var(--paragraph-light)]">コマ</div>
+                <div className="text-[9px] mt-0.5">/ 時間</div>
               </TableHead>
-              {weekDates.map((dateStr) => (
-                <TableHead
-                  key={dateStr}
-                  className="min-w-[160px] max-w-[200px] bg-[var(--surface)] font-medium text-center text-[var(--headline)]"
-                >
-                  {formatDayHeader(dateStr)}
-                </TableHead>
-              ))}
+              {weekDates.map((dateStr) => {
+                const { date, weekday } = formatDayHeader(dateStr);
+                return (
+                  <TableHead
+                    key={dateStr}
+                    className="min-w-[120px] max-w-[160px] bg-[var(--surface)] font-medium text-center text-[var(--headline)] border-l border-[var(--stroke)] first:border-l-0 py-1"
+                  >
+                    <div className="flex items-center justify-center gap-1">
+                      <span className="text-xs">{date}</span>
+                      {onPrintDay && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onPrintDay(dateStr);
+                          }}
+                          className="p-0.5 rounded hover:bg-[var(--surface)] text-[var(--paragraph-light)] hover:text-[var(--primary)] no-print"
+                          title={`${dateStr} を印刷`}
+                          aria-label={`${dateStr} を印刷`}
+                        >
+                          <Printer className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                    <div className="text-[10px] text-[var(--paragraph)] mt-0.5">{weekday}</div>
+                  </TableHead>
+                );
+              })}
             </TableRow>
           </TableHeader>
           <TableBody>
             {timeSlots.map((slot) => (
-              <TableRow key={slot.id}>
-                <TableCell className="w-24 align-top bg-[var(--surface)] text-xs py-2 border border-[var(--surface)]">
-                  <div className="font-medium text-[var(--headline)]">{slot.slot_number}限</div>
-                  <div className="text-[10px] text-[var(--paragraph-light)]">
-                    {slot.start_time?.slice(0, 5)}-{slot.end_time?.slice(0, 5)}
+              <TableRow key={slot.id} className="border-b border-[var(--surface)]">
+                <TableCell className="w-16 align-top bg-[var(--surface)] text-[10px] py-1 border border-[var(--surface)]">
+                  <div className="font-semibold text-[var(--headline)]">{slot.slot_number}限</div>
+                  <div className="text-[9px] text-[var(--paragraph-light)] mt-0.5">
+                    {slot.start_time?.slice(0, 5)}〜{slot.end_time?.slice(0, 5)}
                   </div>
                 </TableCell>
                 {weekDates.map((dateStr) => {
@@ -97,13 +142,6 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
                   );
                   const cellKey = `${dateStr}-${slot.id}`;
                   const emptyIds = emptyTeacherSlots[cellKey] ?? [];
-                  const isTransferTarget = !!(
-                    transferMode &&
-                    !(
-                      transferMode.sourceEntry.entry_date === dateStr &&
-                      transferMode.sourceEntry.time_slot_id === slot.id
-                    )
-                  );
 
                   return (
                     <DayCell
@@ -116,16 +154,19 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
                       teachersMap={teachersMap}
                       maxStudentsPerTeacher={maxStudentsPerTeacher}
                       activeDragId={activeId}
-                      isTransferTarget={isTransferTarget}
+                      activeDragEntry={activeEntry}
+                      transferMode={!!transferMode}
                       onAddTeacher={() => onAddTeacher(dateStr, slot.id)}
                       onAddStudent={(teacherId) => onAddStudent(dateStr, slot.id, teacherId)}
                       onRemoveTeacher={(teacherId, entryCount) =>
                         onRemoveTeacher(dateStr, slot.id, teacherId, entryCount)
                       }
                       onStudentClick={onStudentClick}
-                      onCellClickForTransfer={
-                        isTransferTarget
-                          ? () => onTransferTargetSelect(dateStr, slot.id)
+                      onTransferClick={onTransferClick}
+                      onTransferTargetClick={
+                        onTransferTargetClick
+                          ? (_, slotId, teacherId) =>
+                              onTransferTargetClick(dateStr, slotId, teacherId)
                           : undefined
                       }
                     />
@@ -138,33 +179,18 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
       </div>
 
       <DragOverlay>
-        {activeTeacherGroup ? (
-          <div className="bg-white border border-[var(--headline)]/20 rounded-lg shadow-lg p-2 min-w-[160px] opacity-95">
-            <div className="font-medium text-sm text-[var(--headline)] mb-2 border-b border-[var(--surface)] pb-1.5">
-              {activeTeacherGroup.teacher.display_name ||
-                activeTeacherGroup.teacher.email ||
-                '—'}
-            </div>
-            <div className="space-y-1">
-              {activeTeacherGroup.entries.slice(0, 3).map((entry) => {
-                const name = entry.student
-                  ? `${entry.student.last_name}${entry.student.first_name}`
-                  : entry.student_id;
-                return (
-                  <div key={entry.id} className="text-xs py-1 px-2 bg-[#f5f5f5] rounded">
-                    {name}
-                  </div>
-                );
-              })}
-              {activeTeacherGroup.entries.length > 3 && (
-                <div className="text-xs text-[var(--paragraph-light)]">
-                  他{activeTeacherGroup.entries.length - 3}名
-                </div>
-              )}
-            </div>
+        {activeEntry ? (
+          <div className="opacity-95 shadow-lg cursor-grabbing">
+            <StudentCard
+              entry={activeEntry}
+              onClick={() => {}}
+            />
           </div>
         ) : null}
       </DragOverlay>
+      <p className="text-[10px] text-[var(--paragraph-light)] mt-1 text-center">
+        横＝日付・縦＝コマ
+      </p>
     </DndContext>
   );
 }

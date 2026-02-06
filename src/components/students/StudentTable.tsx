@@ -11,6 +11,7 @@ interface StudentTableProps {
   onScores?: (student: Student) => void;
   onInterviews?: (student: Student) => void;
   onProgress?: (student: Student) => void;
+  onSchedule?: (student: Student) => void;
   isLoading?: boolean;
 }
 
@@ -22,6 +23,7 @@ export function StudentTable({
   onScores,
   onInterviews,
   onProgress,
+  onSchedule,
   isLoading = false,
 }: StudentTableProps) {
   if (isLoading) {
@@ -194,6 +196,27 @@ export function StudentTable({
                           />
                         </svg>
                         <span className="text-[10px] leading-tight">進行表</span>
+                      </button>
+                    )}
+                    {onSchedule && (
+                      <button
+                        onClick={() => onSchedule(student)}
+                        className="flex flex-col items-center gap-1 p-1.5 text-gray-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/10 rounded-lg transition-colors"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                          />
+                        </svg>
+                        <span className="text-[10px] leading-tight">通塾日程</span>
                       </button>
                     )}
                     {onEdit && (

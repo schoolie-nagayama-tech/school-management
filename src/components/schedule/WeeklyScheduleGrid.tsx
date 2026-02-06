@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useCallback, useMemo, useState } from 'react';
-import { DayCell, parseDayCellId } from './DayCell';
-import { parseTeacherCardId } from './TeacherCard';
+import { DayCell } from './DayCell';
+import { parseTeacherSlotId } from './TeacherCard';
 import { WeeklyScheduleGridView } from './WeeklyScheduleGridView';
 import type { ScheduleEntry, ScheduleTimeSlot } from '@/types/schedule';
 import type { TeacherGroup } from './DayCell';
@@ -68,11 +68,19 @@ export interface WeeklyScheduleGridProps {
   onAddStudent: (date: string, slotId: string, teacherId: string) => void;
   onRemoveTeacher: (date: string, slotId: string, teacherId: string, entryCount: number) => void;
   onStudentClick: (entry: ScheduleEntry, e: React.MouseEvent) => void;
+  onTransferClick?: (entry: ScheduleEntry) => void;
   onTeacherCardMove: (
     source: { date: string; slotId: string; teacherId: string },
     target: { date: string; slotId: string }
   ) => Promise<void>;
-  onTransferTargetSelect: (date: string, slotId: string) => void;
+  onStudentEntryDrop?: (
+    entryId: string,
+    targetDate: string,
+    targetSlotId: string,
+    targetTeacherId: string
+  ) => void;
+  onTransferTargetClick?: (date: string, slotId: string, teacherId: string) => void;
+  onPrintDay?: (date: string) => void;
   onTransferCancel: () => void;
 }
 
@@ -91,8 +99,11 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
     onAddStudent,
     onRemoveTeacher,
     onStudentClick,
+    onTransferClick,
     onTeacherCardMove,
-    onTransferTargetSelect,
+    onStudentEntryDrop,
+    onTransferTargetClick,
+    onPrintDay,
   } = props;
 
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -105,6 +116,12 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
     [teachers]
   );
 
+  const activeEntry = useMemo(() => {
+    if (!activeId || activeId.startsWith('teacher-card-') || activeId.startsWith('teacher-slot-'))
+      return null;
+    return entries.find((e) => e.id === activeId) ?? null;
+  }, [activeId, entries]);
+
   const handleDragEnd = async (event: {
     active: { id: string; data: { current?: unknown } };
     over: { id: string } | null;
@@ -113,46 +130,30 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
     setActiveId(null);
     if (!over || over.id === active.id) return;
 
-    const parsed = parseTeacherCardId(String(active.id));
-    const overParsed = parseDayCellId(String(over.id));
-    if (!parsed || !overParsed) return;
-
-    const { date: srcDate, slotId: srcSlotId, teacherId } = parsed;
-    const { date: tgtDate, slotId: tgtSlotId } = overParsed;
-
-    if (srcDate === tgtDate && srcSlotId === tgtSlotId) return;
-    if (closedDates.includes(tgtDate)) return;
-
-    try {
-      await onTeacherCardMove(
-        { date: srcDate, slotId: srcSlotId, teacherId },
-        { date: tgtDate, slotId: tgtSlotId }
+    // 生徒カードのドロップ → 講師ブロックに振替
+    const overSlot = parseTeacherSlotId(String(over.id));
+    if (overSlot && onStudentEntryDrop) {
+      const entry = entries.find((e) => e.id === active.id);
+      if (!entry || closedDates.includes(overSlot.date)) return;
+      const isSourceBlock =
+        entry.entry_date === overSlot.date &&
+        entry.time_slot_id === overSlot.slotId &&
+        entry.teacher_id === overSlot.teacherId;
+      if (isSourceBlock) return;
+      const targetEntries = entries.filter(
+        (e) =>
+          e.entry_date === overSlot.date &&
+          e.time_slot_id === overSlot.slotId &&
+          e.teacher_id === overSlot.teacherId &&
+          e.status !== 'cancelled' &&
+          e.status !== 'transferred_out'
       );
-    } catch {
-      // 親で toast
+      if (targetEntries.some((e) => e.student_id === entry.student_id)) return;
+      if (targetEntries.length >= maxStudentsPerTeacher) return;
+      onStudentEntryDrop(active.id, overSlot.date, overSlot.slotId, overSlot.teacherId);
+      return;
     }
   };
-
-  const activeDragData = useMemo(() => {
-    if (!activeId || !activeId.startsWith('teacher-card-')) return null;
-    return parseTeacherCardId(activeId);
-  }, [activeId]);
-
-  const activeTeacherGroup = useMemo(() => {
-    if (!activeDragData) return null;
-    const { date, slotId, teacherId } = activeDragData;
-    const teacher = teachersMap.get(teacherId);
-    if (!teacher) return null;
-    const entriesForCell = entries.filter(
-      (e) =>
-        e.entry_date === date &&
-        e.time_slot_id === slotId &&
-        e.teacher_id === teacherId &&
-        e.status !== 'cancelled' &&
-        e.status !== 'transferred_out'
-    );
-    return { teacher, entries: entriesForCell };
-  }, [activeDragData, entries, teachersMap]);
 
   const teachersForSchool = useMemo(
     () =>
@@ -203,7 +204,7 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
       transferMode={transferMode}
       teachersMap={teachersMap}
       activeId={activeId}
-      activeTeacherGroup={activeTeacherGroup}
+      activeEntry={activeEntry}
       groupEntriesByTeacher={groupEntriesByTeacher}
       getTeacherGroupsForCell={getTeacherGroupsForCell}
       onDragStart={(e) => setActiveId(String(e.active.id))}
@@ -212,7 +213,9 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
       onAddStudent={onAddStudent}
       onRemoveTeacher={onRemoveTeacher}
       onStudentClick={onStudentClick}
-      onTransferTargetSelect={onTransferTargetSelect}
+      onTransferClick={onTransferClick}
+      onTransferTargetClick={onTransferTargetClick}
+      onPrintDay={onPrintDay}
     />
   );
 }

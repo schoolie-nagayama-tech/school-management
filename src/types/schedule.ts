@@ -145,3 +145,18 @@ export interface ScheduleGenerationResult {
   entries_created: number;
   week_start_date: string;
 }
+
+// 時間重複チェック結果
+export interface TimeConflictResult {
+  type: 'regular_pattern' | 'schedule_entry';
+  conflictWith: {
+    id: string;
+    dayOfWeek?: number;
+    date?: string;
+    startTime: string;
+    endTime: string;
+    teacherName: string;
+    subjectName: string;
+  };
+  message: string;
+}

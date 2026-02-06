@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { useDroppable } from '@dnd-kit/core';
 import { TeacherCard } from './TeacherCard';
 import type { ScheduleEntry, ScheduleTimeSlot } from '@/types/schedule';
 
@@ -33,12 +32,14 @@ export interface DayCellProps {
   teachersMap: Map<string, { id: string; display_name: string | null; email: string | null }>;
   maxStudentsPerTeacher: number;
   activeDragId: string | null;
-  isTransferTarget?: boolean;
+  activeDragEntry: ScheduleEntry | null;
+  transferMode: boolean;
   onAddTeacher: () => void;
   onAddStudent: (teacherId: string) => void;
   onRemoveTeacher: (teacherId: string, entryCount: number) => void;
   onStudentClick: (entry: ScheduleEntry, e: React.MouseEvent) => void;
-  onCellClickForTransfer?: () => void;
+  onTransferClick?: (entry: ScheduleEntry) => void;
+  onTransferTargetClick?: (date: string, slotId: string, teacherId: string) => void;
 }
 
 export const DayCell = React.memo(function DayCell({
@@ -50,36 +51,26 @@ export const DayCell = React.memo(function DayCell({
   teachersMap,
   maxStudentsPerTeacher,
   activeDragId,
-  isTransferTarget,
+  activeDragEntry,
+  transferMode,
   onAddTeacher,
   onAddStudent,
   onRemoveTeacher,
   onStudentClick,
-  onCellClickForTransfer,
+  onTransferClick,
+  onTransferTargetClick,
 }: DayCellProps) {
-  const dropId = getDayCellId(date, timeSlot.id);
-  const { isOver, setNodeRef } = useDroppable({ id: dropId });
-
   if (isClosed) {
     return (
-      <td
-        className="border border-[var(--surface)] p-2 align-top bg-[var(--surface)] text-center text-[var(--paragraph-light)] text-sm min-w-[160px] max-w-[200px]"
-        ref={setNodeRef}
-      >
+      <td className="border border-[var(--surface)] p-1 align-top bg-[var(--surface)] text-center text-[var(--paragraph-light)] text-xs min-w-[120px] max-w-[160px]">
         休講日
       </td>
     );
   }
 
   return (
-    <td
-      ref={setNodeRef}
-      className={`border border-[var(--surface)] p-2 align-top min-w-[160px] max-w-[200px] ${
-        isOver ? 'ring-2 ring-green-500 bg-green-50' : ''
-      } ${isTransferTarget ? 'ring-2 ring-blue-400 bg-blue-50 cursor-pointer' : ''}`}
-      onClick={isTransferTarget ? onCellClickForTransfer : undefined}
-    >
-      <div className="space-y-2 min-h-[80px]">
+    <td className="border border-[var(--surface)] border-l-[var(--stroke)] p-1 align-top min-w-[120px] max-w-[160px]">
+      <div className="space-y-1 min-h-[48px]">
         {teacherGroups.map((group) => (
           <TeacherCard
             key={group.teacher.id}
@@ -99,7 +90,11 @@ export const DayCell = React.memo(function DayCell({
               )
             }
             onStudentClick={onStudentClick}
+            onTransferClick={onTransferClick}
             activeDragId={activeDragId}
+            activeDragEntry={activeDragEntry}
+            transferMode={transferMode}
+            onTransferTargetClick={onTransferTargetClick}
           />
         ))}
         {emptyTeacherIds.map((teacherId) => {
@@ -117,7 +112,11 @@ export const DayCell = React.memo(function DayCell({
               onAddStudent={() => onAddStudent(teacherId)}
               onRemoveTeacher={() => onRemoveTeacher(teacherId, 0)}
               onStudentClick={onStudentClick}
+              onTransferClick={onTransferClick}
               activeDragId={activeDragId}
+              activeDragEntry={activeDragEntry}
+              transferMode={transferMode}
+              onTransferTargetClick={onTransferTargetClick}
             />
           );
         })}
@@ -127,7 +126,7 @@ export const DayCell = React.memo(function DayCell({
             e.stopPropagation();
             onAddTeacher();
           }}
-          className="w-full py-2 text-xs text-[var(--paragraph-light)] hover:bg-[var(--surface)] rounded border border-dashed border-[var(--stroke)]"
+          className="w-full py-1 text-[10px] text-[var(--paragraph-light)] hover:bg-[var(--surface)] rounded border border-dashed border-[var(--stroke)]"
         >
           + 講師追加
         </button>

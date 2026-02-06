@@ -15,9 +15,12 @@ import {
   TransferModal,
   TeacherDetailModal,
   WeeklyScheduleGrid,
-  StudentCardMenu,
+  StudentActionModal,
   AddTeacherModal,
+  AddStudentToSlotModal,
+  DeleteScheduleEntryModal,
   TransferModeBar,
+  ScheduleDailyPrintView,
 } from '@/components/schedule';
 import { getSchools } from '@/lib/api/schools';
 import { getSubjects } from '@/lib/api/subjects';
@@ -34,6 +37,8 @@ import {
   recordAttendance,
   deleteScheduleEntry,
   createTransferEntry,
+  deleteRegularPattern,
+  cancelFutureEntriesByRegularPatternId,
 } from '@/lib/api/schedule';
 import type { ScheduleEntry, ScheduleEntryFormData, ScheduleTimeSlot } from '@/types/schedule';
 import type { School } from '@/types/database';
@@ -111,8 +116,7 @@ export default function SchedulePage() {
   const [students, setStudents] = useState<Awaited<ReturnType<typeof getStudents>>>([]);
   const [entriesLoading, setEntriesLoading] = useState(false);
 
-  const [menuEntry, setMenuEntry] = useState<ScheduleEntry | null>(null);
-  const [menuPosition, setMenuPosition] = useState<{ x: number; y: number } | null>(null);
+  const [actionModalEntry, setActionModalEntry] = useState<ScheduleEntry | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<ScheduleEntry | null>(null);
   const [addModalOpen, setAddModalOpen] = useState(false);
@@ -134,6 +138,7 @@ export default function SchedulePage() {
   } | null>(null);
   const [teacherDetailOpen, setTeacherDetailOpen] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState<typeof teachers[0] | null>(null);
+  const [printDay, setPrintDay] = useState<string | null>(null);
 
   const MAX_STUDENTS_PER_TEACHER = 2;
 
@@ -250,8 +255,7 @@ export default function SchedulePage() {
 
   const handleEntryClick = (entry: ScheduleEntry, e: React.MouseEvent) => {
     e.stopPropagation();
-    setMenuEntry(entry);
-    setMenuPosition({ x: e.clientX, y: e.clientY });
+    setActionModalEntry(entry);
   };
 
   const handleAddTeacher = (date: string, slotId: string) => {
@@ -272,7 +276,6 @@ export default function SchedulePage() {
 
   const handleAddStudent = (date: string, slotId: string, teacherId: string) => {
     setAddTarget({ date, slotId, teacherId });
-    setAddModalOpen(true);
   };
 
   const handleRemoveTeacher = (
@@ -314,45 +317,117 @@ export default function SchedulePage() {
     refreshEntries();
   };
 
-  const handleTransferTargetSelect = (date: string, slotId: string) => {
-    if (!transferMode) return;
-    setTransferringEntry(transferMode.sourceEntry);
-    setInitialTransferTarget({ date, slotId });
-    setTransferModalOpen(true);
-    setTransferMode(null);
-  };
-
-
-  const handleAttendance = async (status: 'present' | 'absent' | 'late') => {
-    if (!menuEntry || !profile) return;
+  /** 振替モード時: 座席表の講師ブロックをクリックで振替先に選び、即実行 */
+  const handleTransferTargetClick = async (
+    targetDate: string,
+    targetSlotId: string,
+    targetTeacherId: string
+  ) => {
+    if (!transferMode || !schoolId) return;
+    const entry = transferMode.sourceEntry;
     try {
-      await recordAttendance(menuEntry.id, status, profile.id);
-      success('出席を記録しました');
-      setMenuEntry(null);
+      await createTransferEntry(
+        schoolId,
+        entry.id,
+        targetDate,
+        targetSlotId,
+        targetTeacherId,
+        null
+      );
+      success('振替を登録しました');
+      setTransferMode(null);
       refreshEntries();
     } catch (e) {
       toastError((e as Error).message);
     }
   };
 
-  const handleEditClick = () => {
-    if (!menuEntry) return;
-    setEditingEntry(menuEntry);
-    setEditModalOpen(true);
-    setMenuEntry(null);
+  /** 日付横の印刷アイコン: その日だけ印刷用ビューを表示して印刷 */
+  const handlePrintDay = (dateStr: string) => {
+    setPrintDay(dateStr);
   };
 
-  const handleTransferClick = () => {
-    if (!menuEntry) return;
-    setTransferMode({ sourceEntry: menuEntry });
-    setMenuEntry(null);
+  useEffect(() => {
+    if (!printDay) return;
+    const doPrint = () => {
+      window.print();
+    };
+    const onAfterPrint = () => {
+      setPrintDay(null);
+    };
+    const t = setTimeout(doPrint, 150);
+    window.addEventListener('afterprint', onAfterPrint);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('afterprint', onAfterPrint);
+    };
+  }, [printDay]);
+
+  const handleEditClick = () => {
+    if (!actionModalEntry) return;
+    setEditingEntry(actionModalEntry);
+    setEditModalOpen(true);
+    setActionModalEntry(null);
+  };
+
+  /** 振替モードに切り替え（座席表の講師ブロックをクリックで振替先を選ぶ） */
+  const handleTransferFromAction = () => {
+    if (!actionModalEntry) return;
+    setTransferMode({ sourceEntry: actionModalEntry });
+    setActionModalEntry(null);
+  };
+
+  const handleAbsentFromAction = async () => {
+    const entry = actionModalEntry;
+    if (!entry || !profile) return;
+    if (!window.confirm('この授業を欠席にしますか？')) return;
+    try {
+      await recordAttendance(entry.id, 'absent', profile.id);
+      success('欠席を記録しました');
+      setActionModalEntry(null);
+      refreshEntries();
+    } catch (e) {
+      toastError((e as Error).message);
+    }
   };
 
   const handleDeleteClick = () => {
-    if (!menuEntry) return;
-    setDeletingEntry(menuEntry);
+    if (!actionModalEntry) return;
+    setDeletingEntry(actionModalEntry);
     setDeleteDialogOpen(true);
-    setMenuEntry(null);
+    setActionModalEntry(null);
+  };
+
+  /** 生徒カードの振替アイコンまたはクリックで振替モードを開始 */
+  const handleTransferClickFromCard = (entry: ScheduleEntry) => {
+    setTransferringEntry(entry);
+    setTransferModalOpen(true);
+    setActionModalEntry(null);
+  };
+
+  const handleStudentEntryDrop = async (
+    entryId: string,
+    targetDate: string,
+    targetSlotId: string,
+    targetTeacherId: string
+  ) => {
+    const entry = entriesWithSubjects.find((e) => e.id === entryId);
+    if (!entry || !schoolId) return;
+    if (entry.status === 'cancelled' || entry.status === 'transferred_out') return;
+    try {
+      await createTransferEntry(
+        schoolId,
+        entry.id,
+        targetDate,
+        targetSlotId,
+        targetTeacherId,
+        null
+      );
+      success('振替を登録しました');
+      refreshEntries();
+    } catch (e) {
+      toastError((e as Error).message);
+    }
   };
 
   const handleEditSave = async (form: ScheduleEntryFormData) => {
@@ -422,11 +497,23 @@ export default function SchedulePage() {
     }
   };
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = async (deleteType: 'single' | 'regular') => {
     if (!deletingEntry) return;
     try {
-      await deleteScheduleEntry(deletingEntry.id);
-      success('授業を削除しました');
+      if (deleteType === 'single') {
+        await deleteScheduleEntry(deletingEntry.id);
+        success('この日の授業を削除しました');
+      } else if (deletingEntry.regular_pattern_id) {
+        await cancelFutureEntriesByRegularPatternId(
+          deletingEntry.regular_pattern_id,
+          deletingEntry.entry_date
+        );
+        await deleteRegularPattern(deletingEntry.regular_pattern_id);
+        success('通常授業から削除し、今後の授業も取消しました');
+      } else {
+        await deleteScheduleEntry(deletingEntry.id);
+        success('授業を削除しました');
+      }
       setDeleteDialogOpen(false);
       setDeletingEntry(null);
       refreshEntries();
@@ -658,14 +745,26 @@ export default function SchedulePage() {
                     </CardTitle>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-4 mb-4">
+                <CardContent className="schedule-print">
+                  <div className="flex flex-wrap gap-4 mb-4 no-print">
                     <Link href="/schedule/regular-patterns">
                       <Button variant="secondary" size="sm">
                         通塾日程
                       </Button>
                     </Link>
                   </div>
+                  {/* 日付横の印刷アイコンで指定した日だけ印刷時表示 */}
+                  {printDay && timeSlotsCount > 0 && patternsCount > 0 && (
+                    <div className="hidden print:block">
+                      <ScheduleDailyPrintView
+                        weekDates={[printDay]}
+                        timeSlots={timeSlots}
+                        entries={entriesWithSubjects}
+                        schoolName={selectedSchool?.name}
+                        singleDate={printDay}
+                      />
+                    </div>
+                  )}
                   {transferMode && (
                     <TransferModeBar
                       entry={transferMode.sourceEntry}
@@ -680,6 +779,7 @@ export default function SchedulePage() {
                   {entriesLoading ? (
                     <div className="py-8 text-center text-[var(--paragraph)]">読み込み中...</div>
                   ) : (
+                    <div className="print:hidden">
                     <WeeklyScheduleGrid
                       schoolId={schoolId ?? ''}
                       weekDates={weekDates}
@@ -695,10 +795,14 @@ export default function SchedulePage() {
                       onAddStudent={handleAddStudent}
                       onRemoveTeacher={handleRemoveTeacher}
                       onStudentClick={handleEntryClick}
+                      onTransferClick={handleTransferClickFromCard}
                       onTeacherCardMove={handleTeacherCardMove}
-                      onTransferTargetSelect={handleTransferTargetSelect}
+                      onStudentEntryDrop={handleStudentEntryDrop}
+                      onTransferTargetClick={handleTransferTargetClick}
+                      onPrintDay={handlePrintDay}
                       onTransferCancel={() => setTransferMode(null)}
                     />
+                    </div>
                   )}
                 </CardContent>
               </Card>
@@ -707,17 +811,20 @@ export default function SchedulePage() {
         )}
       </div>
 
-      {menuEntry && menuPosition && (
-        <StudentCardMenu
-          entry={menuEntry}
-          position={menuPosition}
-          onClose={() => setMenuEntry(null)}
-          onAttendance={handleAttendance}
-          onTransfer={handleTransferClick}
-          onEdit={handleEditClick}
-          onDelete={handleDeleteClick}
-        />
-      )}
+      <StudentActionModal
+        open={!!actionModalEntry}
+        onClose={() => setActionModalEntry(null)}
+        entry={actionModalEntry}
+        timeSlot={
+          actionModalEntry
+            ? timeSlots.find((s) => s.id === actionModalEntry.time_slot_id) ?? null
+            : null
+        }
+        onTransfer={handleTransferFromAction}
+        onAbsent={handleAbsentFromAction}
+        onEdit={handleEditClick}
+        onDelete={handleDeleteClick}
+      />
 
       <AddTeacherModal
         open={addTeacherModalOpen}
@@ -747,22 +854,38 @@ export default function SchedulePage() {
         onSave={handleEditSave}
       />
 
-      <ScheduleEntryModal
-        open={addModalOpen}
+      <AddStudentToSlotModal
+        isOpen={!!addTarget}
         onClose={() => {
           setAddModalOpen(false);
           setAddTarget(null);
         }}
-        mode="add"
         date={addTarget?.date ?? ''}
-        slot={slotForAdd ?? null}
-        entry={null}
-        initialTeacherId={addTarget?.teacherId}
-        teachers={teachers}
-        students={students}
-        subjects={subjects}
+        dayOfWeek={
+          addTarget?.date
+            ? new Date(addTarget.date + 'Z').getUTCDay()
+            : 0
+        }
+        timeSlot={
+          addTarget
+            ? timeSlots.find((s) => s.id === addTarget.slotId) ?? ({} as ScheduleTimeSlot)
+            : ({} as ScheduleTimeSlot)
+        }
+        teacherId={addTarget?.teacherId ?? ''}
+        teacherName={
+          addTarget
+            ? teachers.find((t) => t.id === addTarget.teacherId)?.display_name ||
+              teachers.find((t) => t.id === addTarget.teacherId)?.email ||
+              '—'
+            : '—'
+        }
         schoolId={schoolId ?? ''}
-        onSave={handleAddSave}
+        subjects={subjects}
+        onSuccess={() => {
+          refreshEntries();
+          setAddTarget(null);
+          setAddModalOpen(false);
+        }}
       />
 
       <TransferModal
@@ -794,33 +917,25 @@ export default function SchedulePage() {
         subjects={subjects}
       />
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>授業を削除しますか？</AlertDialogTitle>
-            <AlertDialogDescription>
-              {deletingEntry?.transfer_to_id
-                ? '振替先の授業も削除されます。'
-                : 'この授業を取消します。'}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setDeleteDialogOpen(false)}>
-              キャンセル
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteConfirm}
-              className="bg-[#d9376e] text-white hover:bg-[#c02d5a]"
-            >
-              削除
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteScheduleEntryModal
+        open={deleteDialogOpen}
+        onClose={() => {
+          setDeleteDialogOpen(false);
+          setDeletingEntry(null);
+        }}
+        entry={deletingEntry}
+        timeSlot={
+          deletingEntry
+            ? timeSlots.find((s) => s.id === deletingEntry.time_slot_id) ?? null
+            : null
+        }
+        onConfirm={handleDeleteConfirm}
+      />
 
       <AlertDialog
         open={!!removeTeacherConfirm}
         onOpenChange={(open) => !open && setRemoveTeacherConfirm(null)}
+        overlayClassName="z-[100]"
       >
         <AlertDialogContent>
           <AlertDialogHeader>

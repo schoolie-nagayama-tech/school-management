@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { ArrowRightLeft } from 'lucide-react';
 import type { ScheduleEntry } from '@/types/schedule';
 
 function gradeLabel(grade: number): string {
@@ -26,9 +27,14 @@ const STATUS_COLOR: Record<string, string> = {
 export interface StudentCardProps {
   entry: ScheduleEntry;
   onClick: (e: React.MouseEvent) => void;
+  onTransferClick?: (entry: ScheduleEntry) => void;
 }
 
-export const StudentCard = React.memo(function StudentCard({ entry, onClick }: StudentCardProps) {
+export const StudentCard = React.memo(function StudentCard({
+  entry,
+  onClick,
+  onTransferClick,
+}: StudentCardProps) {
   const status = entry.attendance_status ?? null;
   const statusKey = status === null ? 'null' : status;
   const icon = STATUS_ICON[statusKey] ?? '□';
@@ -45,6 +51,7 @@ export const StudentCard = React.memo(function StudentCard({ entry, onClick }: S
 
   const isTransferredOut = entry.status === 'transferred_out';
   const isTransferredIn = entry.status === 'transferred_in';
+  const canTransfer = onTransferClick && !isTransferredOut && entry.status !== 'cancelled';
 
   return (
     <div
@@ -58,29 +65,45 @@ export const StudentCard = React.memo(function StudentCard({ entry, onClick }: S
         }
       }}
       className={`
-        p-2 rounded border text-xs cursor-pointer hover:shadow-md transition-shadow
+        px-1.5 py-1 rounded border text-[10px] cursor-pointer hover:shadow transition-shadow
         ${colorClass}
         ${isTransferredOut ? 'opacity-50 line-through' : ''}
       `}
     >
       <div className="flex justify-between items-center gap-1">
-        <span className="font-medium truncate">
+        <span className="font-medium truncate min-w-0">
           {studentName}
           <span className="text-[var(--paragraph)] font-normal ml-1">({grade})</span>
         </span>
-        <span
-          className={`flex-shrink-0 ${
-            statusKey === 'present'
-              ? 'text-green-600'
-              : statusKey === 'absent'
-                ? 'text-red-600'
-                : statusKey === 'late'
-                  ? 'text-yellow-600'
-                  : 'text-[var(--paragraph-light)]'
-          }`}
-        >
-          {icon}
-        </span>
+        <div className="flex items-center gap-0.5 flex-shrink-0">
+          {canTransfer && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onTransferClick(entry);
+              }}
+              className="p-0.5 rounded hover:bg-[var(--surface)] text-[var(--paragraph-light)] hover:text-[var(--primary)]"
+              title="振替"
+              aria-label="振替"
+            >
+              <ArrowRightLeft className="w-3.5 h-3.5" />
+            </button>
+          )}
+          <span
+            className={`${
+              statusKey === 'present'
+                ? 'text-green-600'
+                : statusKey === 'absent'
+                  ? 'text-red-600'
+                  : statusKey === 'late'
+                    ? 'text-yellow-600'
+                    : 'text-[var(--paragraph-light)]'
+            }`}
+          >
+            {icon}
+          </span>
+        </div>
       </div>
       <div className="text-[var(--paragraph)] mt-0.5 truncate">{subjectNames || '—'}</div>
       {isTransferredIn && (

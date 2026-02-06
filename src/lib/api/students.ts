@@ -1,4 +1,4 @@
-﻿import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import type {
   Student,
   StudentInsert,
@@ -194,6 +194,27 @@ export async function getStudents(
         .filter((s): s is Subject => s !== undefined),
     };
   });
+}
+
+/**
+ * 生徒を検索（名前・かな・コードで部分一致、active のみ）
+ * 座席表の「生徒追加」などで利用
+ */
+export async function searchStudents(
+  schoolId: string,
+  query: string,
+  options?: { excludeIds?: string[]; limit?: number }
+): Promise<(Student & { subjects: Subject[] })[]> {
+  const all = await getStudents(query.trim() || undefined, [schoolId]);
+  let list = all.filter((s) => s.status === 'active');
+  if (options?.excludeIds?.length) {
+    const set = new Set(options.excludeIds);
+    list = list.filter((s) => !set.has(s.id));
+  }
+  if (options?.limit && options.limit > 0) {
+    list = list.slice(0, options.limit);
+  }
+  return list;
 }
 
 // 生徒を1件取得（school_idとdeleted_atで絞り込み）

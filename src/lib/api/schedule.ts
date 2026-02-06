@@ -9,6 +9,7 @@ import type {
   ScheduleEntry,
   ScheduleEntryFormData,
   ScheduleGenerationResult,
+  TimeConflictResult,
 } from '@/types/schedule';
 
 // 座席表テーブルは Database 型に未定義のため、any でクエリ
@@ -48,6 +49,20 @@ export async function getActiveTimeSlots(schoolId: string): Promise<ScheduleTime
     throw new Error('コマ時間の取得に失敗しました');
   }
   return (data || []) as ScheduleTimeSlot[];
+}
+
+export async function getTimeSlotById(id: string): Promise<ScheduleTimeSlot | null> {
+  const { data, error } = await db
+    .from('schedule_time_slots')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Error fetching time slot:', error);
+    throw new Error('コマ時間の取得に失敗しました');
+  }
+  return (data as ScheduleTimeSlot) ?? null;
 }
 
 export async function createTimeSlot(
@@ -172,6 +187,149 @@ export async function deleteClosedDay(id: string): Promise<void> {
 }
 
 // ========================================
+// 時間重複チェック
+// ========================================
+
+/** 時間帯が重複するか（endA > startB && endB > startA） */
+function timeRangesOverlap(
+  startA: string,
+  endA: string,
+  startB: string,
+  endB: string
+): boolean {
+  const sA = startA.slice(0, 8);
+  const eA = endA.slice(0, 8);
+  const sB = startB.slice(0, 8);
+  const eB = endB.slice(0, 8);
+  return eA > sB && eB > sA;
+}
+
+/**
+ * 生徒の時間重複をチェック
+ * @returns 重複がある場合は重複情報、なければ null
+ */
+export async function checkStudentTimeConflict(
+  studentId: string,
+  dayOfWeek: number,
+  startTime: string,
+  endTime: string,
+  options?: {
+    excludeRegularPatternId?: string;
+    excludeScheduleEntryId?: string;
+    specificDate?: string;
+  }
+): Promise<TimeConflictResult | null> {
+  const excludePatternId = options?.excludeRegularPatternId;
+  const excludeEntryId = options?.excludeScheduleEntryId;
+  const specificDate = options?.specificDate;
+
+  if (specificDate) {
+    // 特定日の schedule_entries をチェック
+    const { data: entries, error } = await db
+      .from('schedule_entries')
+      .select(
+        'id, entry_date, time_slot_id, teacher_id, subject_ids, time_slot:schedule_time_slots(start_time, end_time), teacher:user_profiles(display_name, email)'
+      )
+      .eq('student_id', studentId)
+      .eq('entry_date', specificDate)
+      .in('status', ['scheduled', 'completed', 'transferred_in']);
+
+    if (error || !entries?.length) return null;
+
+    const timeSlotsMap = new Map<string, { start_time: string; end_time: string }>();
+    const teachersMap = new Map<string, string>();
+
+    for (const row of entries as (ScheduleEntry & {
+      time_slot?: { start_time: string; end_time: string }[] | { start_time: string; end_time: string };
+      teacher?: { display_name: string | null; email: string | null }[] | { display_name: string | null; email: string | null };
+    })[]) {
+      if (row.id === excludeEntryId) continue;
+      const slot = Array.isArray(row.time_slot) ? row.time_slot[0] : row.time_slot;
+      const teacher = Array.isArray(row.teacher) ? row.teacher[0] : row.teacher;
+      if (slot) {
+        timeSlotsMap.set(row.time_slot_id, slot);
+        if (teacher)
+          teachersMap.set(row.teacher_id, teacher.display_name || teacher.email || '—');
+      }
+    }
+
+    for (const row of entries as (ScheduleEntry & {
+      time_slot?: { start_time: string; end_time: string }[] | { start_time: string; end_time: string };
+    })[]) {
+      if (row.id === excludeEntryId) continue;
+      const slot = timeSlotsMap.get(row.time_slot_id);
+      if (!slot) continue;
+      const st = slot.start_time ?? '';
+      const et = slot.end_time ?? '';
+      if (timeRangesOverlap(startTime, endTime, st, et)) {
+        const teacherName = teachersMap.get(row.teacher_id) ?? '—';
+        const subjectName = (row.subject_ids?.length ? '科目' : '—') as string;
+        return {
+          type: 'schedule_entry',
+          conflictWith: {
+            id: row.id,
+            date: row.entry_date,
+            startTime: st,
+            endTime: et,
+            teacherName,
+            subjectName,
+          },
+          message: `${specificDate} ${st.slice(0, 5)}-${et.slice(0, 5)}（${teacherName}）と重複しています`,
+        };
+      }
+    }
+    return null;
+  }
+
+  // 通常授業パターンをチェック（同じ曜日）
+  const { data: patternRows, error: patError } = await db
+    .from('schedule_regular_patterns')
+    .select(
+      'id, day_of_week, time_slot_id, teacher_id, time_slot:schedule_time_slots(start_time, end_time), teacher:user_profiles(display_name, email)'
+    )
+    .eq('student_id', studentId)
+    .eq('day_of_week', dayOfWeek)
+    .eq('is_active', true);
+
+  if (patError || !patternRows?.length) return null;
+
+  const DAY_NAMES = ['日', '月', '火', '水', '木', '金', '土'];
+  const dayLabel = DAY_NAMES[dayOfWeek] ?? '';
+
+  for (const row of patternRows as {
+    id: string;
+    day_of_week: number;
+    time_slot_id: string;
+    teacher_id: string;
+    time_slot?: { start_time: string; end_time: string }[] | { start_time: string; end_time: string };
+    teacher?: { display_name: string | null; email: string | null }[] | { display_name: string | null; email: string | null };
+  }[]) {
+    if (row.id === excludePatternId) continue;
+    const slot = Array.isArray(row.time_slot) ? row.time_slot[0] : row.time_slot;
+    const teacher = Array.isArray(row.teacher) ? row.teacher[0] : row.teacher;
+    if (!slot) continue;
+    const st = slot.start_time ?? '';
+    const et = slot.end_time ?? '';
+    if (timeRangesOverlap(startTime, endTime, st, et)) {
+      const teacherName = teacher?.display_name || teacher?.email || '—';
+      return {
+        type: 'regular_pattern',
+        conflictWith: {
+          id: row.id,
+          dayOfWeek: row.day_of_week,
+          startTime: st,
+          endTime: et,
+          teacherName,
+          subjectName: '科目',
+        },
+        message: `${dayLabel}曜 ${st.slice(0, 5)}-${et.slice(0, 5)}（${teacherName}）と重複しています`,
+      };
+    }
+  }
+  return null;
+}
+
+// ========================================
 // 通塾日程（通常授業パターン）
 // ========================================
 
@@ -221,6 +379,17 @@ export async function createRegularPattern(
   schoolId: string,
   form: ScheduleRegularPatternFormData
 ): Promise<ScheduleRegularPattern> {
+  const timeSlot = await getTimeSlotById(form.time_slot_id);
+  if (timeSlot) {
+    const conflict = await checkStudentTimeConflict(
+      form.student_id,
+      form.day_of_week,
+      timeSlot.start_time,
+      timeSlot.end_time
+    );
+    if (conflict) throw new Error(conflict.message);
+  }
+
   const { data, error } = await db
     .from('schedule_regular_patterns')
     .insert({
@@ -248,6 +417,30 @@ export async function updateRegularPattern(
   id: string,
   form: Partial<ScheduleRegularPatternFormData>
 ): Promise<ScheduleRegularPattern> {
+  if (form.day_of_week !== undefined || form.time_slot_id !== undefined || form.student_id !== undefined) {
+    const existing = await db
+      .from('schedule_regular_patterns')
+      .select('student_id, day_of_week, time_slot_id')
+      .eq('id', id)
+      .single();
+    if (!existing.error && existing.data) {
+      const studentId = form.student_id ?? (existing.data as { student_id: string }).student_id;
+      const dayOfWeek = form.day_of_week ?? (existing.data as { day_of_week: number }).day_of_week;
+      const timeSlotId = form.time_slot_id ?? (existing.data as { time_slot_id: string }).time_slot_id;
+      const timeSlot = await getTimeSlotById(timeSlotId);
+      if (timeSlot) {
+        const conflict = await checkStudentTimeConflict(
+          studentId,
+          dayOfWeek,
+          timeSlot.start_time,
+          timeSlot.end_time,
+          { excludeRegularPatternId: id }
+        );
+        if (conflict) throw new Error(conflict.message);
+      }
+    }
+  }
+
   const updatePayload: Record<string, unknown> = {};
   if (form.student_id !== undefined) updatePayload.student_id = form.student_id;
   if (form.day_of_week !== undefined) updatePayload.day_of_week = form.day_of_week;
@@ -282,6 +475,26 @@ export async function deleteRegularPattern(id: string): Promise<void> {
     console.error('Error deleting regular pattern:', error);
     throw new Error('通塾日程の削除に失敗しました');
   }
+}
+
+/** 指定日以降の、指定通常パターンに紐づくスケジュールエントリを一括取消 */
+export async function cancelFutureEntriesByRegularPatternId(
+  regularPatternId: string,
+  fromDate: string
+): Promise<number> {
+  const { data, error } = await db
+    .from('schedule_entries')
+    .update({ status: 'cancelled' })
+    .eq('regular_pattern_id', regularPatternId)
+    .gte('entry_date', fromDate)
+    .in('status', ['scheduled', 'completed', 'transferred_in'])
+    .select('id');
+
+  if (error) {
+    console.error('Error cancelling future entries:', error);
+    throw new Error('今後の授業の取消に失敗しました');
+  }
+  return data?.length ?? 0;
 }
 
 // ========================================
@@ -368,15 +581,15 @@ export async function generateWeeklySchedule(
     subject_ids: string[];
     seat_label: string | null;
     regular_pattern_id: string;
+    status: string;
   }[] = [];
 
   for (const p of patterns) {
     if (!p.time_slot) continue;
-    const dayNames = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
     for (let d = 0; d < 7; d++) {
       const dDate = new Date(weekStart);
-      dDate.setDate(dDate.getDate() + d);
-      if (dDate.getDay() !== p.day_of_week) continue;
+      dDate.setUTCDate(weekStart.getUTCDate() + d);
+      if (dDate.getUTCDay() !== p.day_of_week) continue;
       const dateStr = dDate.toISOString().slice(0, 10);
       entries.push({
         school_id: schoolId,
@@ -387,6 +600,7 @@ export async function generateWeeklySchedule(
         subject_ids: p.subject_ids || [],
         seat_label: p.seat_label || null,
         regular_pattern_id: p.id,
+        status: 'scheduled',
       });
     }
   }
@@ -408,7 +622,11 @@ export async function generateWeeklySchedule(
     const { error: insError } = await db.from('schedule_entries').insert(entries);
     if (insError) {
       console.error('Error inserting schedule entries:', insError);
-      throw new Error('スケジュールの生成に失敗しました');
+      const msg =
+        insError && typeof insError === 'object' && 'message' in insError
+          ? String((insError as { message: string }).message)
+          : '';
+      throw new Error(msg ? `スケジュールの生成に失敗しました: ${msg}` : 'スケジュールの生成に失敗しました');
     }
   }
 

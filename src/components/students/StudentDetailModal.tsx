@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -19,6 +19,8 @@ interface StudentDetailModalProps {
   student: Student | null;
   onClose: () => void;
   onEdit: (student: Student) => void;
+  /** 通塾日程をモーダルで直接開く（未指定の場合は従来のリンク） */
+  onOpenSchedule?: (student: Student) => void;
 }
 
 type TabType = 'basic' | 'scores' | 'interviews' | 'schedule';
@@ -28,6 +30,7 @@ export function StudentDetailModal({
   student,
   onClose,
   onEdit,
+  onOpenSchedule,
 }: StudentDetailModalProps) {
   const { profile } = useAuth();
   const isTeacher = profile?.role === 'teacher';
@@ -238,14 +241,25 @@ export function StudentDetailModal({
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-[#0d0d0d]">通塾日程</h3>
-              <Link
-                href={`/schedule/regular-patterns?studentId=${student.id}&schoolId=${student.school_id ?? schoolId}`}
-              >
-                <Button variant="secondary" size="sm">
+              {onOpenSchedule ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => onOpenSchedule(student)}
+                >
                   <Calendar className="mr-2 h-4 w-4" />
                   通塾日程を編集
                 </Button>
-              </Link>
+              ) : (
+                <Link
+                  href={`/schedule/regular-patterns?studentId=${student.id}&schoolId=${student.school_id ?? schoolId}`}
+                >
+                  <Button variant="secondary" size="sm">
+                    <Calendar className="mr-2 h-4 w-4" />
+                    通塾日程を編集
+                  </Button>
+                </Link>
+              )}
             </div>
             {scheduleLoading ? (
               <p className="text-sm text-[#2a2a2a]">読み込み中...</p>

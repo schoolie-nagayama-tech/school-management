@@ -30,20 +30,16 @@ export function TransferModeBar({ entry, slotLabel, onCancel }: TransferModeBarP
   const slot = slotLabel ?? (entry.time_slot ? `${entry.time_slot.slot_number}限` : '');
 
   return (
-    <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 mb-4 flex flex-wrap justify-between items-center gap-2">
-      <div className="flex items-center gap-2">
-        <span className="text-blue-600 text-lg">🔄</span>
-        <span className="text-sm text-[var(--headline)]">
-          <strong>振替モード:</strong>{' '}
-          {studentName} {dateLabel} {slot} を振替先に移動
+    <div className="bg-blue-50 border border-blue-200 rounded px-2 py-1.5 mb-2 flex flex-wrap justify-between items-center gap-2">
+      <div className="flex items-center gap-1.5">
+        <span className="text-blue-600 text-sm">🔄</span>
+        <span className="text-xs text-[var(--headline)]">
+          <strong>振替モード:</strong> {studentName} {dateLabel} {slot} → 振替先の講師ブロックをクリック
         </span>
       </div>
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-[var(--paragraph)]">振替先のセルをクリックして講師を選択</span>
-        <Button variant="secondary" size="sm" onClick={onCancel}>
-          キャンセル
-        </Button>
-      </div>
+      <Button variant="secondary" size="sm" className="text-xs h-7" onClick={onCancel}>
+        キャンセル
+      </Button>
     </div>
   );
 }
