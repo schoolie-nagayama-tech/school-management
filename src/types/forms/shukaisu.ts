@@ -1,4 +1,4 @@
-﻿// 週回数変更フォーム関連の型定義
+// 週回数変更フォーム関連の型定義
 
 // 学年名と数値のマッピング
 export const SHUKAISU_GRADE_NAME_TO_NUMBER: Record<string, number> = {
@@ -98,7 +98,8 @@ export interface ShukaisuResponse {
   linked_student_id: string | null;
   linked_at: string | null;
   status_checks: {
-    handled?: boolean;
+    charged?: boolean;
+    seated?: boolean;
   } | null;
   is_archived: boolean;
   archived_at: string | null;

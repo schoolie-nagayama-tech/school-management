@@ -8,7 +8,7 @@ import {
   archivePeriod,
   unarchivePeriod,
 } from './form-periods';
-import { createFormResponse, getFormResponses, updateFormResponseStatus } from './form-responses';
+import { createFormResponse, getFormResponses, getFormResponse, updateFormResponseStatus } from './form-responses';
 import { getDefaultSchoolId, getSchoolByCode } from './schools';
 import type {
   FormPeriodInsert,
@@ -184,7 +184,8 @@ export async function submitYoubiResponse(
     email: data.email,
     response_data: data.response_data as never,
     status_checks: {
-      handled: false,
+      charged: false,
+      seated: false,
     },
   };
 
@@ -219,12 +220,16 @@ export async function getYoubiResponses(
     response_data: r.response_data as YoubiResponseData,
   }));
 
-  // 対応状況フィルター
+  // 対応状況フィルター（計上・座席の両方済みを「対応済み」とする）
   if (filters?.handledStatus && filters.handledStatus !== 'all') {
     if (filters.handledStatus === 'handled') {
-      filtered = filtered.filter((r) => r.status_checks?.handled === true);
+      filtered = filtered.filter(
+        (r) => r.status_checks?.charged === true && r.status_checks?.seated === true
+      );
     } else {
-      filtered = filtered.filter((r) => !r.status_checks?.handled);
+      filtered = filtered.filter(
+        (r) => !(r.status_checks?.charged === true && r.status_checks?.seated === true)
+      );
     }
   }
 
@@ -241,7 +246,7 @@ export async function getYoubiStats(
   const responses = await getYoubiResponses(schoolId, periodKey);
 
   const handledCount = responses.filter(
-    (r) => r.status_checks?.handled === true
+    (r) => r.status_checks?.charged === true && r.status_checks?.seated === true
   ).length;
   const linkedCount = responses.filter((r) => r.linked_student_id !== null).length;
 
@@ -253,13 +258,16 @@ export async function getYoubiStats(
 }
 
 /**
- * 曜日変更回答の対応状況を更新
+ * 曜日変更回答の計上・座席状態を更新（既存の status_checks とマージ）
  */
-export async function updateYoubiHandledStatus(
+export async function updateYoubiStatusCheck(
   responseId: string,
-  handled: boolean
+  statusChecks: { charged?: boolean; seated?: boolean }
 ): Promise<void> {
-  await updateFormResponseStatus(responseId, { handled });
+  const response = await getFormResponse(responseId);
+  if (!response) throw new Error('回答が見つかりません');
+  const current = (response.status_checks || {}) as Record<string, boolean>;
+  await updateFormResponseStatus(responseId, { ...current, ...statusChecks });
 }
 
 /**

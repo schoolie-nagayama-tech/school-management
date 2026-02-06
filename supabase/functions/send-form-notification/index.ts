@@ -26,6 +26,11 @@ const GRADE_LABELS: Record<number, string> = {
   10: '高1', 11: '高2', 12: '高3', 13: '既卒',
 }
 
+// 送信者（スクールIE）
+const EMAIL_FROM = 'スクールIE <noreply@school-ie.com>'
+// 全メールの末尾に付ける共通フッター
+const EMAIL_FOOTER = '<p style="margin-top: 24px; font-size: 12px; color: #888;">送信専用です。このメールに返信いただいてもお答えできません。</p>'
+
 // メール送信
 async function sendEmail(to: string, subject: string, html: string) {
   const res = await fetch('https://api.resend.com/emails', {
@@ -35,7 +40,7 @@ async function sendEmail(to: string, subject: string, html: string) {
       'Authorization': `Bearer ${RESEND_API_KEY}`,
     },
     body: JSON.stringify({
-      from: 'スクールIE <noreply@school-ie.com>',
+      from: EMAIL_FROM,
       to: [to],
       subject,
       html,
@@ -204,6 +209,7 @@ function createApplicantEmail(
       <p>ご不明点がございましたら、教室までお問い合わせください。</p>
       <p>日程が決まりましたらGrowから確認してください。</p>
       <p style="margin-top: 30px; color: #666;">${schoolName}</p>
+      ${EMAIL_FOOTER}
     </div>
   `
 
@@ -246,15 +252,185 @@ function createManagerEmail(
           管理画面で確認
         </a>
       </p>
+      ${EMAIL_FOOTER}
     </div>
   `
 
   return { subject, html }
 }
 
+// ===== シフト提出メール処理 =====
+async function handleSeasonalShiftNotification(type: string, submissionId: string) {
+  const { data: submission, error: submissionError } = await supabase
+    .from('seasonal_shift_submissions')
+    .select('id, teacher_name, teacher_email, submitted_at, notes, setting_id, school_id, edit_token')
+    .eq('id', submissionId)
+    .single()
+
+  if (submissionError || !submission) {
+    console.error('提出データ取得エラー:', submissionError)
+    throw new Error('Submission not found')
+  }
+
+  const { data: setting, error: settingError } = await supabase
+    .from('seasonal_shift_settings')
+    .select('id, name')
+    .eq('id', submission.setting_id)
+    .single()
+
+  if (settingError || !setting) {
+    throw new Error('シフト設定の取得に失敗')
+  }
+
+  const { data: school, error: schoolError } = await supabase
+    .from('schools')
+    .select('name, notification_email')
+    .eq('id', submission.school_id)
+    .single()
+
+  if (schoolError || !school) {
+    throw new Error('教室情報の取得に失敗')
+  }
+
+  const { data: slotsData } = await supabase
+    .from('seasonal_shift_submission_slots')
+    .select('shift_date, time_slot')
+    .eq('submission_id', submissionId)
+    .eq('available', true)
+    .order('shift_date', { ascending: true })
+    .order('time_slot', { ascending: true })
+
+  const submissionSlots = slotsData ?? []
+  const availableSlots = submissionSlots.length
+
+  // 出勤可能日時を日付ごとにまとめて表示用テキストにする
+  const dayNames = ['日', '月', '火', '水', '木', '金', '土']
+  const slotsByDate: Record<string, string[]> = {}
+  for (const row of submissionSlots) {
+    const d = row.shift_date
+    if (!slotsByDate[d]) slotsByDate[d] = []
+    slotsByDate[d].push(row.time_slot)
+  }
+  const slotsListHtml = Object.keys(slotsByDate)
+    .sort()
+    .map((dateStr) => {
+      const d = new Date(dateStr + 'T12:00:00')
+      const dateLabel = `${d.getMonth() + 1}/${d.getDate()}(${dayNames[d.getDay()]})`
+      const times = slotsByDate[dateStr].join('、')
+      return `<tr><td style="padding: 4px 8px; border-bottom: 1px solid #eee;">${dateLabel}</td><td style="padding: 4px 8px; border-bottom: 1px solid #eee;">${times}</td></tr>`
+    })
+    .join('')
+  const slotsTableHtml =
+    slotsListHtml &&
+    `<p><strong>■ 出勤可能日時</strong></p>
+     <table style="border-collapse: collapse; width: 100%; margin: 8px 0; font-size: 14px;">
+       <thead><tr><th style="text-align: left; padding: 6px 8px; background: #eee;">日付</th><th style="text-align: left; padding: 6px 8px; background: #eee;">時間帯</th></tr></thead>
+       <tbody>${slotsListHtml}</tbody>
+     </table>`
+
+  const schoolName = school.name || '教室'
+  const settingName = setting.name
+  const teacherName = submission.teacher_name
+  const teacherEmail = submission.teacher_email ?? ''
+  const submittedAt = new Date(submission.submitted_at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })
+
+  if (type === 'submitted') {
+    if (teacherEmail) {
+      const teacherSubject = `【${schoolName}】シフト提出完了のお知らせ`
+      const teacherHtml = `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #d32f2f;">シフト提出を受け付けました</h2>
+          <p>${teacherName} 様</p>
+          <p>シフトのご提出ありがとうございます。<br>以下の内容で受け付けました。</p>
+          <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <p><strong>■ 講習期間：</strong>${settingName}</p>
+            <p><strong>■ 提出日時：</strong>${submittedAt}</p>
+            <p><strong>■ 出勤可能コマ数：</strong>${availableSlots}コマ</p>
+            ${slotsTableHtml || ''}
+            ${submission.notes ? `<p style="margin-top: 12px;"><strong>■ 備考</strong></p><p style="white-space: pre-wrap;">${submission.notes}</p>` : ''}
+          </div>
+          <p>内容に修正が必要な場合は、教室までご連絡ください。</p>
+          <p style="margin-top: 30px; color: #666;">${schoolName}</p>
+          ${EMAIL_FOOTER}
+        </div>
+      `
+      await sendEmail(teacherEmail, teacherSubject, teacherHtml)
+      console.log('講師への提出完了メール送信完了:', teacherEmail)
+    }
+
+    if (school.notification_email) {
+      const submissionsUrl = `${SITE_URL.replace(/\/$/, '')}/settings/seasonal-shifts/${submission.setting_id}/submissions`
+      const adminSubject = `【シフト提出】${teacherName}さんが提出しました`
+      const adminHtml = `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #d32f2f;">新しいシフト提出がありました</h2>
+          <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <p><strong>■ 講習期間：</strong>${settingName}</p>
+            <p><strong>■ 講師名：</strong>${teacherName}</p>
+            <p><strong>■ メールアドレス：</strong>${teacherEmail}</p>
+            <p><strong>■ 提出日時：</strong>${submittedAt}</p>
+            <p><strong>■ 出勤可能コマ数：</strong>${availableSlots}コマ</p>
+          </div>
+          <p><a href="${submissionsUrl}" style="display: inline-block; background: #1e3a5f; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">提出一覧を確認</a></p>
+          <p style="margin-top: 30px; color: #666;">${schoolName}</p>
+          ${EMAIL_FOOTER}
+        </div>
+      `
+      await sendEmail(school.notification_email, adminSubject, adminHtml)
+      console.log('管理者への通知メール送信完了:', school.notification_email)
+    } else {
+      console.warn(`教室 ${schoolName} に通知先メールが設定されていません`)
+    }
+  } else if (type === 'allow_edit') {
+    const editToken = submission.edit_token
+    if (!editToken) {
+      throw new Error('修正用トークンが取得できません')
+    }
+    const editUrl = `${SITE_URL.replace(/\/$/, '')}/seasonal-shift/${submission.setting_id}/edit/${editToken}`
+    if (teacherEmail) {
+      const subject = `【${schoolName}】シフト修正のお願い`
+      const html = `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #d32f2f;">シフトの修正について</h2>
+          <p>${teacherName} 様</p>
+          <p>${settingName} のシフト内容を修正する必要があるため、下記URLより修正をお願いします。</p>
+          <p><a href="${editUrl}" style="display: inline-block; background: #1e3a5f; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">シフト修正フォームを開く</a></p>
+          <p style="word-break: break-all; font-size: 12px; color: #666;">${editUrl}</p>
+          <p>※このURLは修正完了後、無効になります。</p>
+          <p style="margin-top: 30px; color: #666;">${schoolName}</p>
+          ${EMAIL_FOOTER}
+        </div>
+      `
+      await sendEmail(teacherEmail, subject, html)
+      console.log('修正許可メール送信完了:', teacherEmail)
+    }
+  } else {
+    throw new Error(`不明な type: ${type}`)
+  }
+}
+
 serve(async (req) => {
   try {
-    const { record } = await req.json()
+    const body = await req.json()
+
+    // シフト提出通知の場合
+    if (body.notificationType === 'seasonal-shift') {
+      const { type, submissionId } = body
+      if (!type || !submissionId) {
+        return new Response(
+          JSON.stringify({ error: 'type と submissionId が必要です' }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        )
+      }
+      await handleSeasonalShiftNotification(type, submissionId)
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
+    // 既存のフォーム通知処理（増コマ申込、模試申込など）
+    const { record } = body
 
     const {
       school_id,
@@ -314,7 +490,7 @@ serve(async (req) => {
     })
   } catch (error) {
     console.error('メール送信エラー:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: (error as Error).message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     })

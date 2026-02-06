@@ -6,7 +6,7 @@ import { AdminLayout } from '@/components/layouts';
 import {
   getShukaisuResponses,
   getShukaisuStats,
-  updateShukaisuHandledStatus,
+  updateShukaisuStatusCheck,
 } from '@/lib/api/shukaisu';
 import {
   unlinkResponseFromStudent,
@@ -109,18 +109,22 @@ export default function ShukaisuResponsePage() {
     return `週${current.weekly_count}回→週${requested.weekly_count}回`;
   };
 
-  // 対応状況の更新
-  const handleHandledToggle = async (responseId: string, handled: boolean) => {
+  // 計上・座席の更新
+  const handleStatusCheck = async (
+    responseId: string,
+    checkType: 'charged' | 'seated',
+    checked: boolean
+  ) => {
     try {
-      await updateShukaisuHandledStatus(responseId, handled);
+      await updateShukaisuStatusCheck(responseId, { [checkType]: checked });
       await fetchData();
-      success(`${handled ? '対応済み' : '未対応'}に更新しました`);
+      success(`${checkType === 'charged' ? '計上' : '座席'}状態を更新しました`);
     } catch (err) {
-      console.error('Error updating handled status:', err);
+      console.error('Error updating status:', err);
       error(
         err instanceof Error
           ? err.message
-          : '対応状況の更新に失敗しました'
+          : 'ステータスの更新に失敗しました'
       );
     }
   };
@@ -409,8 +413,11 @@ export default function ShukaisuResponsePage() {
                     <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
                       変更希望日
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
-                      対応
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-[#1f2937] uppercase">
+                      計上
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-[#1f2937] uppercase">
+                      座席
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
                       紐付け
@@ -455,11 +462,19 @@ export default function ShukaisuResponsePage() {
                       <td className="px-4 py-3 text-sm text-[#4b5563]">
                         {response.response_data.change_from_label || response.response_data.change_from}
                       </td>
-                      <td className="px-4 py-3 text-sm text-[#4b5563]">
+                      <td className="px-4 py-3 text-center">
                         <input
                           type="checkbox"
-                          checked={response.status_checks?.handled || false}
-                          onChange={(e) => handleHandledToggle(response.id, e.target.checked)}
+                          checked={response.status_checks?.charged === true}
+                          onChange={(e) => handleStatusCheck(response.id, 'charged', e.target.checked)}
+                          className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6] cursor-pointer"
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <input
+                          type="checkbox"
+                          checked={response.status_checks?.seated === true}
+                          onChange={(e) => handleStatusCheck(response.id, 'seated', e.target.checked)}
                           className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6] cursor-pointer"
                         />
                       </td>

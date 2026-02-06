@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { AdminLayout } from '@/components/layouts';
@@ -103,7 +103,7 @@ export default function SchoolSettingsPage() {
 
   return (
     <AdminLayout headerTitle="教室設定">
-      <ToastContainer toasts={toasts} removeToast={removeToast} />
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="max-w-2xl mx-auto">
         <Card>
           <CardHeader>

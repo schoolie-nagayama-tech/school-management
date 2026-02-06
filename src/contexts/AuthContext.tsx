@@ -162,14 +162,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
           if (fetchedSchoolIds.length === 1) {
             setSelectedSchoolIdState(fetchedSchoolIds[0]);
             localStorage.setItem('selectedSchoolId', fetchedSchoolIds[0]);
-          } else if (hasValidDefault) {
-            // 複数教室でデフォルト教室が設定されている場合はそれを初期選択
-            setSelectedSchoolIdState(defaultSchoolId);
-            localStorage.setItem('selectedSchoolId', defaultSchoolId);
-          } else if (savedSchoolId && (savedSchoolId === 'all' || fetchedSchoolIds.includes(savedSchoolId))) {
-            setSelectedSchoolIdState(savedSchoolId as string | 'all');
           } else {
-            setSelectedSchoolIdState(null);
+            // 複数教室：選択画面を出さず、デフォルト教室（または保存値・先頭）に直接設定
+            if (hasValidDefault) {
+              setSelectedSchoolIdState(defaultSchoolId!);
+              localStorage.setItem('selectedSchoolId', defaultSchoolId!);
+            } else if (savedSchoolId && (savedSchoolId === 'all' || fetchedSchoolIds.includes(savedSchoolId))) {
+              setSelectedSchoolIdState(savedSchoolId as string | 'all');
+            } else {
+              setSelectedSchoolIdState(fetchedSchoolIds[0]);
+              localStorage.setItem('selectedSchoolId', fetchedSchoolIds[0]);
+            }
           }
         }
 
