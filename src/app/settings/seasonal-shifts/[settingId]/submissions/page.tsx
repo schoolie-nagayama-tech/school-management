@@ -29,9 +29,8 @@ export default function SeasonalShiftSubmissionsPage() {
   const params = useParams();
   const settingId = params.settingId as string;
   const { toasts, removeToast, success, error } = useToast();
-  const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
-    (p) => p.canAccessPortal ?? false
-  );
+  // 申込画面（提出一覧）はログイン済みなら誰でもアクセス可能
+  const { hasPermission, isLoading: permissionLoading } = useRequirePermission(() => true);
   const [setting, setSetting] = useState<SeasonalShiftSetting | null>(null);
   const [submissions, setSubmissions] = useState<SeasonalShiftSubmission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
