@@ -230,76 +230,80 @@ export default function SeasonalShiftFormPage() {
           <div>
             <h2 className="text-lg font-semibold text-[#1f2937] mb-2">出勤可能日時</h2>
             <p className="text-sm text-[#4b5563] mb-3">
-              出勤可能なコマにチェックを入れてください。丸ボタンで列・行を一括トグルできます。
+              出勤可能なコマにチェックを入れてください。丸ボタンで日付・時間帯を一括で選択できます。
             </p>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-sm">
-                <thead>
-                  <tr className="border-b border-[#e5e7eb]">
-                    <th className="px-2 py-2 text-left font-medium text-[#1f2937] w-24">日付</th>
-                    {uniqueSlots.map((slot) => (
-                      <th key={slot} className="px-2 py-2 text-center font-medium text-[#1f2937] min-w-[100px]">
-                        <div className="flex flex-col items-center gap-1">
-                          <span className="text-xs">{slot}</span>
-                          <button
-                            type="button"
-                            onClick={() => toggleColumn(slot)}
-                            title="一括選択"
-                            className="w-5 h-5 rounded-full bg-gray-300 hover:bg-gray-400 transition-colors shrink-0"
-                          />
-                        </div>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {uniqueDates.map((dateStr) => {
-                    const dayLabel = new Date(dateStr + 'T12:00:00').toLocaleDateString('ja-JP', {
-                      month: 'numeric',
-                      day: 'numeric',
-                      weekday: 'short',
-                    });
-                    const hasOpenInRow = slotMatrix.some((c) => c.date === dateStr && c.available);
-                    return (
-                      <tr key={dateStr} className="border-b border-[#e5e7eb]/60">
-                        <td className="px-2 py-2 text-[#1f2937]">
-                          <div className="flex items-center gap-1">
-                            {hasOpenInRow && (
-                              <button
-                                type="button"
-                                onClick={() => toggleRow(dateStr)}
-                                title="一括選択"
-                                className="w-5 h-5 rounded-full bg-gray-300 hover:bg-gray-400 transition-colors shrink-0"
-                              />
-                            )}
-                            <span>{dayLabel}</span>
-                          </div>
-                        </td>
-                        {uniqueSlots.map((slot) => {
-                          const key: SlotKey = `${dateStr}|${slot}`;
-                          const cell = slotMatrix.find((c) => c.key === key);
-                          const available = cell?.available ?? false;
-                          const checked = selected.has(key);
-                          return (
-                            <td key={key} className="px-2 py-2 text-center">
-                              {available ? (
-                                <input
-                                  type="checkbox"
-                                  checked={checked}
-                                  onChange={() => toggle(key)}
-                                  className="w-4 h-4 text-[#3b82f6] rounded cursor-pointer"
-                                />
-                              ) : (
-                                <span className="text-[#9ca3af] text-xs">休校</span>
-                              )}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            {/* 時間帯で一括選択（横スクロールなし・折り返し） */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {uniqueSlots.map((slot) => (
+                <button
+                  key={slot}
+                  type="button"
+                  onClick={() => toggleColumn(slot)}
+                  title={`${slot}を一括選択`}
+                  className="px-2 py-1.5 text-xs font-medium rounded-lg border border-[#e5e7eb] bg-white text-[#1f2937] hover:bg-[#f3f4f6] active:bg-[#e5e7eb] transition-colors"
+                >
+                  {slot}
+                </button>
+              ))}
+            </div>
+            {/* 日付ごとのブロック（1列表示で時間は1行・区切りとタップ領域を強化） */}
+            <div className="space-y-4">
+              {uniqueDates.map((dateStr) => {
+                const dayLabel = new Date(dateStr + 'T12:00:00').toLocaleDateString('ja-JP', {
+                  month: 'numeric',
+                  day: 'numeric',
+                  weekday: 'short',
+                });
+                const hasOpenInRow = slotMatrix.some((c) => c.date === dateStr && c.available);
+                return (
+                  <div
+                    key={dateStr}
+                    className="rounded-xl border-2 border-[#e5e7eb] bg-[#f9fafb] overflow-hidden shadow-sm"
+                  >
+                    <div className="flex items-center gap-2 px-4 py-3 border-b border-[#e5e7eb] bg-white">
+                      {hasOpenInRow && (
+                        <button
+                          type="button"
+                          onClick={() => toggleRow(dateStr)}
+                          title="この日を一括選択"
+                          className="w-7 h-7 rounded-full bg-gray-300 hover:bg-gray-400 active:bg-gray-500 transition-colors shrink-0 flex items-center justify-center"
+                          aria-label="この日を一括選択"
+                        >
+                          <span className="text-xs text-gray-600 font-medium">全</span>
+                        </button>
+                      )}
+                      <span className="text-sm font-semibold text-[#1f2937]">{dayLabel}</span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-1 p-3">
+                      {uniqueSlots.map((slot) => {
+                        const key: SlotKey = `${dateStr}|${slot}`;
+                        const cell = slotMatrix.find((c) => c.key === key);
+                        const available = cell?.available ?? false;
+                        if (!available) return null;
+                        const checked = selected.has(key);
+                        return (
+                          <label
+                            key={key}
+                            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer min-h-[2.75rem] transition-colors ${
+                              checked
+                                ? 'bg-blue-100 border-2 border-blue-200 hover:bg-blue-100'
+                                : 'bg-white border-2 border-transparent hover:bg-white/90'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => toggle(key)}
+                              className="w-5 h-5 text-[#3b82f6] rounded cursor-pointer shrink-0"
+                            />
+                            <span className="text-[#1f2937] font-medium">{slot}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
