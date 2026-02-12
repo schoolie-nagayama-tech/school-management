@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { useAuth } from '@/contexts/AuthContext';
-import { updateUserProfile, addUserToSchool, removeUserFromSchool } from '@/lib/api/auth';
+import { updateUserProfile } from '@/lib/api/auth';
 import { getSchools } from '@/lib/api/schools';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui';
@@ -57,12 +57,6 @@ export default function TeachersPage() {
     password: string;
     displayName: string;
   } | null>(null);
-
-  // 編集モーダル
-  const [editingTeacher, setEditingTeacher] = useState<TeacherWithDetails | null>(null);
-  const [editDisplayName, setEditDisplayName] = useState('');
-  const [editSchoolIds, setEditSchoolIds] = useState<string[]>([]);
-  const [isSaving, setIsSaving] = useState(false);
 
   // 削除確認
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -217,39 +211,6 @@ export default function TeachersPage() {
     }
   };
 
-  // 講師編集モーダルを開く
-  const openEditModal = (teacher: TeacherWithDetails) => {
-    setEditingTeacher(teacher);
-    setEditDisplayName(teacher.display_name || '');
-    setEditSchoolIds(teacher.user_schools?.map(us => us.school_id) || []);
-  };
-
-  // 講師編集を保存
-  const handleSaveTeacher = async () => {
-    if (!editingTeacher) return;
-    setIsSaving(true);
-    try {
-      await updateUserProfile(editingTeacher.id, { display_name: editDisplayName });
-      const currentSchoolIds = editingTeacher.user_schools?.map(us => us.school_id) || [];
-      const toAdd = editSchoolIds.filter(id => !currentSchoolIds.includes(id));
-      const toRemove = currentSchoolIds.filter(id => !editSchoolIds.includes(id));
-      for (const schoolId of toAdd) {
-        await addUserToSchool(editingTeacher.id, schoolId);
-      }
-      for (const schoolId of toRemove) {
-        await removeUserFromSchool(editingTeacher.id, schoolId);
-      }
-      setEditingTeacher(null);
-      await loadData();
-      success('講師を更新しました');
-    } catch (err) {
-      console.error('Error updating teacher:', err);
-      toastError('講師の更新に失敗しました');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   // 権限チェック（認証・権限の読み込みが完了してから判定し、読み込み中はアクセス拒否を表示しない）
   if (authLoading) {
     return (
@@ -364,13 +325,6 @@ export default function TeachersPage() {
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <Button
-                              variant="ghost"
-                              className="p-2"
-                              onClick={() => openEditModal(teacher)}
-                            >
-                              編集
-                            </Button>
                             <Link href={`/admin/teachers/${teacher.id}`}>
                               <Button variant="ghost" className="p-2">
                                 詳細
@@ -599,88 +553,6 @@ export default function TeachersPage() {
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* 講師編集モーダル */}
-        {editingTeacher && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 max-w-md w-full">
-              <h2 className="text-xl font-bold text-[#1f2937] mb-4">講師編集</h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-[#1f2937] mb-1">
-                    メールアドレス
-                  </label>
-                  <input
-                    type="text"
-                    value={editingTeacher.email}
-                    disabled
-                    className="w-full px-3 py-2 border border-[#e5e7eb]/30 rounded-lg bg-[#f3f4f6] text-[#4b5563]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#1f2937] mb-1">
-                    表示名
-                  </label>
-                  <input
-                    type="text"
-                    value={editDisplayName}
-                    onChange={e => setEditDisplayName(e.target.value)}
-                    className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
-                    placeholder="山田 太郎"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#1f2937] mb-1">
-                    担当教室
-                  </label>
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {schools
-                      .filter(school => {
-                        // 教室長の場合は自分の権限がある教室のみ表示
-                        if (isManager) {
-                          const userSchoolIds = getSelectedSchoolIds();
-                          return userSchoolIds.includes(school.id);
-                        }
-                        return true;
-                      })
-                      .map(school => (
-                        <label key={school.id} className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={editSchoolIds.includes(school.id)}
-                            onChange={e => {
-                              if (e.target.checked) {
-                                setEditSchoolIds([...editSchoolIds, school.id]);
-                              } else {
-                                setEditSchoolIds(editSchoolIds.filter(id => id !== school.id));
-                              }
-                            }}
-                            className="rounded border-[#e5e7eb]"
-                          />
-                          <span className="text-sm text-[#1f2937]">{school.name}</span>
-                        </label>
-                      ))}
-                  </div>
-                </div>
-                <div className="flex gap-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setEditingTeacher(null)}
-                    className="flex-1 px-4 py-2 bg-[#f3f4f6] text-[#1f2937] rounded-lg hover:bg-[#e5e7eb] transition-colors"
-                  >
-                    キャンセル
-                  </button>
-                  <button
-                    onClick={handleSaveTeacher}
-                    disabled={isSaving}
-                    className="flex-1 px-4 py-2 bg-[#3b82f6] text-white font-bold rounded-lg hover:bg-[#60a5fa] transition-colors disabled:opacity-50"
-                  >
-                    {isSaving ? '保存中...' : '保存'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </AdminLayout>

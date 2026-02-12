@@ -86,6 +86,7 @@ export default function StudentSchedulePage() {
               studentId={studentId}
               schoolId={schoolId}
               studentName={studentName}
+              studentGrade={student.grade}
               onRefresh={loadStudent}
             />
           </CardContent>

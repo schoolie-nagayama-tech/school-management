@@ -933,8 +933,8 @@ export const GRADE_LABELS: Record<number, string> = {
 // 在籍状況の表示用マッピング
 export const STATUS_LABELS: Record<Student['status'], string> = {
   active: '在籍中',
-  inactive: '休塾中',
-  withdrawn: '退塾',
+  inactive: '休会',
+  withdrawn: '退会',
 };
 
 // 在籍状況の色マッピング

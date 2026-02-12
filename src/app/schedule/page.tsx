@@ -1,15 +1,14 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
-import { SelectShadcn as Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui';
 import { Button } from '@/components/ui';
 import { ToastContainer } from '@/components/ui';
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui';
 import {
-  ScheduleGenerateButton,
   ScheduleCellMenu,
   ScheduleEntryModal,
   TransferModal,
@@ -31,12 +30,14 @@ import {
   getScheduleEntries,
   getClosedDays,
   generateWeeklySchedule,
+  hasEntriesForWeek,
   createScheduleEntry,
   updateScheduleEntry,
   moveScheduleEntry,
   recordAttendance,
   deleteScheduleEntry,
   createTransferEntry,
+  revertTransferEntry,
   deleteRegularPattern,
   cancelFutureEntriesByRegularPatternId,
 } from '@/lib/api/schedule';
@@ -45,7 +46,7 @@ import type { School } from '@/types/database';
 import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
-import { Calendar, Settings, Clock, BookOpen } from 'lucide-react';
+import { Calendar, Settings, Clock, BookOpen, Loader2, ChevronDown } from 'lucide-react';
 
 const DAY_LABELS: { value: number; label: string }[] = [
   { value: 0, label: '日' },
@@ -66,10 +67,23 @@ function getWeekStart(d: Date): Date {
   return start;
 }
 
+/** ローカル日付で YYYY-MM-DD を返す（API・表示の週範囲をタイムゾーンでずらさないため） */
+function toLocalDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 function formatWeekLabel(start: Date): string {
   const end = new Date(start);
   end.setDate(end.getDate() + 6);
-  return `${start.getMonth() + 1}/${start.getDate()}〜${end.getMonth() + 1}/${end.getDate()}`;
+  const sameMonth =
+    start.getFullYear() === end.getFullYear() && start.getMonth() === end.getMonth();
+  if (sameMonth) {
+    return `${start.getFullYear()}年${start.getMonth() + 1}月 ${start.getDate()}〜${end.getDate()}日`;
+  }
+  return `${start.getFullYear()}年${start.getMonth() + 1}月${start.getDate()}日〜${end.getFullYear()}年${end.getMonth() + 1}月${end.getDate()}日`;
 }
 
 function getWeekDates(weekStart: Date): string[] {
@@ -77,7 +91,7 @@ function getWeekDates(weekStart: Date): string[] {
   for (let i = 0; i < 7; i++) {
     const d = new Date(weekStart);
     d.setDate(weekStart.getDate() + i);
-    dates.push(d.toISOString().slice(0, 10));
+    dates.push(toLocalDateStr(d));
   }
   return dates;
 }
@@ -89,7 +103,7 @@ function formatDayLabel(dateStr: string): string {
 }
 
 export default function SchedulePage() {
-  const { profile, selectedSchoolId, getSelectedSchoolIds } = useAuth();
+  const { profile, isLoading: authLoading, selectedSchoolId, getSelectedSchoolIds } = useAuth();
   const { toasts, removeToast, success, error: toastError } = useToast();
   const [schools, setSchools] = useState<School[]>([]);
   const [selectedSchoolIdLocal, setSelectedSchoolIdLocal] = useState<string>('');
@@ -139,6 +153,20 @@ export default function SchedulePage() {
   const [teacherDetailOpen, setTeacherDetailOpen] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState<typeof teachers[0] | null>(null);
   const [printDay, setPrintDay] = useState<string | null>(null);
+  const [scheduleSettingsOpen, setScheduleSettingsOpen] = useState(false);
+  const [weekPickerOpen, setWeekPickerOpen] = useState(false);
+  const weekPickerInputRef = useRef<HTMLInputElement>(null);
+  const [scheduleGenerateConfirmOpen, setScheduleGenerateConfirmOpen] = useState(false);
+
+  useEffect(() => {
+    if (weekPickerOpen && weekPickerInputRef.current?.showPicker) {
+      weekPickerInputRef.current.showPicker();
+    }
+  }, [weekPickerOpen]);
+  const [scheduleGenerateHasExisting, setScheduleGenerateHasExisting] = useState(false);
+  const [scheduleGenerateLoading, setScheduleGenerateLoading] = useState(false);
+
+  const router = useRouter();
 
   const MAX_STUDENTS_PER_TEACHER = 2;
 
@@ -176,10 +204,10 @@ export default function SchedulePage() {
       // ignore
     }
   }, []);
-  const weekStartStr = weekStart.toISOString().slice(0, 10);
+  const weekStartStr = toLocalDateStr(weekStart);
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekEnd.getDate() + 6);
-  const weekEndStr = weekEnd.toISOString().slice(0, 10);
+  const weekEndStr = toLocalDateStr(weekEnd);
 
   const refreshEntries = useCallback(async () => {
     if (!schoolId) return;
@@ -317,7 +345,7 @@ export default function SchedulePage() {
     refreshEntries();
   };
 
-  /** 振替モード時: 座席表の講師ブロックをクリックで振替先に選び、即実行 */
+  /** 振替モード時: 座席表の講師ブロックをクリックで振替先に選び、即実行。同日同時間帯は移動として扱う */
   const handleTransferTargetClick = async (
     targetDate: string,
     targetSlotId: string,
@@ -326,15 +354,22 @@ export default function SchedulePage() {
     if (!transferMode || !schoolId) return;
     const entry = transferMode.sourceEntry;
     try {
-      await createTransferEntry(
-        schoolId,
-        entry.id,
-        targetDate,
-        targetSlotId,
-        targetTeacherId,
-        null
-      );
-      success('振替を登録しました');
+      const isSameSlot =
+        entry.entry_date === targetDate && entry.time_slot_id === targetSlotId;
+      if (isSameSlot) {
+        await moveScheduleEntry(entry.id, targetDate, targetSlotId, targetTeacherId);
+        success('授業を移動しました');
+      } else {
+        await createTransferEntry(
+          schoolId,
+          entry.id,
+          targetDate,
+          targetSlotId,
+          targetTeacherId,
+          null
+        );
+        success('振替を登録しました');
+      }
       setTransferMode(null);
       refreshEntries();
     } catch (e) {
@@ -362,6 +397,36 @@ export default function SchedulePage() {
       window.removeEventListener('afterprint', onAfterPrint);
     };
   }, [printDay]);
+
+  useEffect(() => {
+    if (!scheduleGenerateConfirmOpen || !schoolId || !weekStartStr) return;
+    let cancelled = false;
+    setScheduleGenerateLoading(true);
+    hasEntriesForWeek(schoolId, weekStartStr)
+      .then((exists) => {
+        if (!cancelled) setScheduleGenerateHasExisting(exists);
+      })
+      .finally(() => {
+        if (!cancelled) setScheduleGenerateLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [scheduleGenerateConfirmOpen, schoolId, weekStartStr]);
+
+  const handleScheduleGenerateConfirm = async () => {
+    if (!schoolId || !weekStartStr) return;
+    setScheduleGenerateLoading(true);
+    try {
+      const result = await generateWeeklySchedule(schoolId, weekStartStr, profile?.id ?? undefined);
+      setScheduleGenerateConfirmOpen(false);
+      setGeneratedCount(result.entries_created);
+      success(`スケジュールを生成しました（${result.entries_created}件）`);
+      refreshEntries();
+    } finally {
+      setScheduleGenerateLoading(false);
+    }
+  };
 
   const handleEditClick = () => {
     if (!actionModalEntry) return;
@@ -398,6 +463,21 @@ export default function SchedulePage() {
     setActionModalEntry(null);
   };
 
+  /** 振替先授業を通常の授業に戻す（振替取り消し） */
+  const handleRevertTransfer = async () => {
+    const entry = actionModalEntry;
+    if (!entry || entry.status !== 'transferred_in') return;
+    if (!window.confirm('この振替を元に戻し、通常の授業に戻しますか？')) return;
+    try {
+      await revertTransferEntry(entry.id);
+      success('通常の授業に戻しました');
+      setActionModalEntry(null);
+      refreshEntries();
+    } catch (e) {
+      toastError((e as Error).message);
+    }
+  };
+
   /** 生徒カードの振替アイコンまたはクリックで振替モードを開始 */
   const handleTransferClickFromCard = (entry: ScheduleEntry) => {
     setTransferringEntry(entry);
@@ -415,6 +495,31 @@ export default function SchedulePage() {
     if (!entry || !schoolId) return;
     if (entry.status === 'cancelled' || entry.status === 'transferred_out') return;
     try {
+      // 振替先を元のセル（振替元）にドロップ → 振替取り消し
+      if (entry.status === 'transferred_in' && entry.transfer_from_id) {
+        const fromEntry = entries.find((e) => e.id === entry.transfer_from_id);
+        if (
+          fromEntry &&
+          fromEntry.entry_date === targetDate &&
+          fromEntry.time_slot_id === targetSlotId &&
+          fromEntry.teacher_id === targetTeacherId
+        ) {
+          await revertTransferEntry(entry.id);
+          success('元の授業に戻しました');
+          refreshEntries();
+          return;
+        }
+      }
+      // 同日・同時間帯 → 移動（振替ではない）
+      const isSameSlot =
+        entry.entry_date === targetDate && entry.time_slot_id === targetSlotId;
+      if (isSameSlot) {
+        await moveScheduleEntry(entry.id, targetDate, targetSlotId, targetTeacherId);
+        success('授業を移動しました');
+        refreshEntries();
+        return;
+      }
+      // 別日または別コマ → 振替
       await createTransferEntry(
         schoolId,
         entry.id,
@@ -567,7 +672,7 @@ export default function SchedulePage() {
   };
 
   const isAdmin = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
-  if (!profile) {
+  if (authLoading || !profile) {
     return (
       <AdminLayout headerTitle="座席表">
         <div className="py-8 text-center text-[var(--paragraph)]">読み込み中...</div>
@@ -586,22 +691,7 @@ export default function SchedulePage() {
     <AdminLayout headerTitle="座席表">
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <h1 className="text-2xl font-bold text-[var(--headline)]">座席表</h1>
           <div className="flex flex-wrap items-center gap-3">
-            <Select value={schoolId || ''} onValueChange={(v) => setSelectedSchoolIdLocal(v)}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="教室を選択">
-                  {selectedSchool?.name}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {schools.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
             <div className="flex items-center gap-2">
               <Button
                 variant="secondary"
@@ -614,9 +704,36 @@ export default function SchedulePage() {
               >
                 前週
               </Button>
-              <span className="text-sm text-[var(--paragraph)] min-w-[140px] text-center">
-                {formatWeekLabel(weekStart)}
-              </span>
+              {weekPickerOpen ? (
+                <input
+                  ref={weekPickerInputRef}
+                  type="date"
+                  value={toLocalDateStr(weekStart)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val) {
+                      setWeekStart(getWeekStart(new Date(val + 'T12:00:00')));
+                      setWeekPickerOpen(false);
+                    }
+                  }}
+                  onBlur={() => setWeekPickerOpen(false)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') setWeekPickerOpen(false);
+                  }}
+                  autoFocus
+                  className="min-w-[180px] py-1 px-2 text-sm border border-gray-200 rounded-lg text-[var(--paragraph)] focus:ring-2 focus:ring-gray-300 focus:border-gray-300 focus:outline-none"
+                  title="週を選択"
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setWeekPickerOpen(true)}
+                  className="text-sm text-[var(--paragraph)] min-w-[180px] py-1 px-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                  title="クリックで週を選択"
+                >
+                  {formatWeekLabel(weekStart)}
+                </button>
+              )}
               <Button
                 variant="secondary"
                 size="sm"
@@ -628,35 +745,30 @@ export default function SchedulePage() {
               >
                 次週
               </Button>
+              {weekStartStr !== toLocalDateStr(getWeekStart(new Date())) && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setWeekStart(getWeekStart(new Date()))}
+                >
+                  今週
+                </Button>
+              )}
             </div>
             {schoolId && (
-              <ScheduleGenerateButton
-                schoolId={schoolId}
-                weekStartDate={weekStartStr}
-                userId={profile.id}
-                onGenerated={(count) => {
-                  setGeneratedCount(count);
-                  success(`スケジュールを生成しました（${count}件）`);
-                  refreshEntries();
-                }}
-              />
-            )}
-            {schoolId && (
-              <span className="text-sm text-[var(--paragraph)]">設定:</span>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setScheduleSettingsOpen(true)}
+                className="flex items-center gap-1"
+              >
+                <Settings className="h-4 w-4" />
+                座席表の設定
+                <ChevronDown className="h-4 w-4 opacity-70" />
+              </Button>
             )}
             {schoolId && (
               <>
-                <Link href="/schedule/settings/time-slots">
-                  <Button variant="secondary" size="sm">
-                    <Settings className="mr-2 h-4 w-4" />
-                    コマ時間設定
-                  </Button>
-                </Link>
-                <Link href="/schedule/settings/closed-days">
-                  <Button variant="secondary" size="sm">
-                    休講日設定
-                  </Button>
-                </Link>
                 <span className="text-sm text-[var(--paragraph)] ml-1">表示曜日:</span>
                 <div className="flex flex-wrap items-center gap-1">
                   {DAY_LABELS.map((d) => (
@@ -683,6 +795,15 @@ export default function SchedulePage() {
               </>
             )}
           </div>
+          {schoolId && (
+            <div className="flex items-center gap-2">
+              <Link href="/schedule/regular-patterns">
+                <Button variant="secondary" size="sm">
+                  通塾日程
+                </Button>
+              </Link>
+            </div>
+          )}
         </div>
 
         {!schoolId ? (
@@ -733,26 +854,7 @@ export default function SchedulePage() {
 
             {timeSlotsCount > 0 && patternsCount > 0 && (
               <Card>
-                <CardHeader>
-                  <div className="flex flex-wrap items-center justify-between gap-4">
-                    <CardTitle>
-                      週間座席表
-                      {selectedSchool && (
-                        <span className="text-base font-normal text-[var(--paragraph)] ml-2">
-                          {selectedSchool.name} 通常期
-                        </span>
-                      )}
-                    </CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="schedule-print">
-                  <div className="flex flex-wrap gap-4 mb-4 no-print">
-                    <Link href="/schedule/regular-patterns">
-                      <Button variant="secondary" size="sm">
-                        通塾日程
-                      </Button>
-                    </Link>
-                  </div>
+                <CardContent className="schedule-print pt-6">
                   {/* 日付横の印刷アイコンで指定した日だけ印刷時表示 */}
                   {printDay && timeSlotsCount > 0 && patternsCount > 0 && (
                     <div className="hidden print:block">
@@ -811,6 +913,81 @@ export default function SchedulePage() {
         )}
       </div>
 
+      <Dialog open={scheduleSettingsOpen} onOpenChange={setScheduleSettingsOpen}>
+        <DialogContent className="max-w-sm bg-white border border-gray-200">
+          <DialogHeader>
+            <DialogTitle>座席表の設定</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-2 py-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="justify-start"
+              onClick={() => {
+                setScheduleSettingsOpen(false);
+                setScheduleGenerateConfirmOpen(true);
+              }}
+            >
+              <Calendar className="mr-2 h-4 w-4" />
+              スケジュール生成
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="justify-start"
+              onClick={() => {
+                setScheduleSettingsOpen(false);
+                router.push('/schedule/settings/time-slots');
+              }}
+            >
+              <Settings className="mr-2 h-4 w-4" />
+              コマ時間設定
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="justify-start"
+              onClick={() => {
+                setScheduleSettingsOpen(false);
+                router.push('/schedule/settings/closed-days');
+              }}
+            >
+              休講日設定
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={scheduleGenerateConfirmOpen} onOpenChange={setScheduleGenerateConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>スケジュールを生成しますか？</AlertDialogTitle>
+            <AlertDialogDescription>
+              {scheduleGenerateLoading
+                ? '確認中...'
+                : scheduleGenerateHasExisting
+                  ? 'この週には既にスケジュールが登録されています。上書きしますか？'
+                  : '通塾日程から、選択中の週のスケジュールを一括生成します。'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setScheduleGenerateConfirmOpen(false)}>
+              キャンセル
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleScheduleGenerateConfirm}>
+              {scheduleGenerateLoading ? (
+                <>
+                  <Loader2 className="inline h-4 w-4 animate-spin mr-2" />
+                  生成中...
+                </>
+              ) : (
+                '生成する'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <StudentActionModal
         open={!!actionModalEntry}
         onClose={() => setActionModalEntry(null)}
@@ -821,6 +998,7 @@ export default function SchedulePage() {
             : null
         }
         onTransfer={handleTransferFromAction}
+        onRevertTransfer={handleRevertTransfer}
         onAbsent={handleAbsentFromAction}
         onEdit={handleEditClick}
         onDelete={handleDeleteClick}

@@ -11,7 +11,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { addUserToSchool, removeUserFromSchool } from '@/lib/api/auth';
 import { getSchools } from '@/lib/api/schools';
 import { getSubjects } from '@/lib/api/subjects';
+import { getActiveTimeSlots } from '@/lib/api/schedule';
 import type { School, UserProfile, Subject } from '@/types/database';
+import type { ScheduleTimeSlot } from '@/types/schedule';
 
 const DAY_LABELS: { value: number; label: string }[] = [
   { value: 0, label: '日' },
@@ -98,6 +100,7 @@ export default function TeacherEditPage() {
   const [teacher, setTeacher] = useState<TeacherWithDetails | null>(null);
   const [schools, setSchools] = useState<School[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [scheduleTimeSlots, setScheduleTimeSlots] = useState<ScheduleTimeSlot[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [notFound, setNotFound] = useState(false);
@@ -160,6 +163,34 @@ export default function TeacherEditPage() {
     load();
   }, [teacherId, isManager, getSelectedSchoolIds, toastError]);
 
+  // 担当教室の座席表コマ時間を取得（講師の出勤可能コマ選択用）
+  useEffect(() => {
+    if (editSchoolIds.length === 0) {
+      setScheduleTimeSlots([]);
+      return;
+    }
+    const load = async () => {
+      try {
+        const allSlots: ScheduleTimeSlot[] = [];
+        const seen = new Set<number>();
+        for (const schoolId of editSchoolIds) {
+          const slots = await getActiveTimeSlots(schoolId);
+          for (const s of slots) {
+            if (!seen.has(s.slot_number)) {
+              seen.add(s.slot_number);
+              allSlots.push(s);
+            }
+          }
+        }
+        allSlots.sort((a, b) => a.slot_number - b.slot_number);
+        setScheduleTimeSlots(allSlots);
+      } catch {
+        setScheduleTimeSlots([]);
+      }
+    };
+    load();
+  }, [editSchoolIds]);
+
   const handleSave = async () => {
     if (!teacher) return;
     setIsSaving(true);
@@ -208,7 +239,7 @@ export default function TeacherEditPage() {
 
   if (!teacherId) {
     return (
-      <AdminLayout headerTitle="講師編集">
+      <AdminLayout headerTitle="講師詳細">
         <div className="p-6">
           <p className="text-[#2a2a2a]">講師IDが指定されていません。</p>
           <Link href="/admin/teachers">
@@ -223,7 +254,7 @@ export default function TeacherEditPage() {
 
   if (isLoading) {
     return (
-      <AdminLayout headerTitle="講師編集">
+      <AdminLayout headerTitle="講師詳細">
         <div className="p-6 text-center text-[#2a2a2a]">読み込み中...</div>
       </AdminLayout>
     );
@@ -231,7 +262,7 @@ export default function TeacherEditPage() {
 
   if (notFound || !teacher) {
     return (
-      <AdminLayout headerTitle="講師編集">
+      <AdminLayout headerTitle="講師詳細">
         <div className="p-6">
           <p className="text-[#2a2a2a]">講師が見つかりません。</p>
           <Link href="/admin/teachers">
@@ -245,173 +276,217 @@ export default function TeacherEditPage() {
   }
 
   return (
-    <AdminLayout headerTitle="講師編集">
-      <div className="p-6 max-w-2xl mx-auto">
-        <div className="mb-6 flex items-center gap-4">
-          <Link href="/admin/teachers" className="text-sm text-[#2a2a2a] hover:text-[#ff8e3c]">
-            ← 講師一覧に戻る
-          </Link>
-          <h1 className="text-2xl font-bold text-[#0d0d0d]">講師編集</h1>
-        </div>
-
-        <div className="bg-[#fffffe] rounded-xl border border-[#0d0d0d] p-6 space-y-6">
-          <div>
-            <Label className="block text-sm font-medium text-[#0d0d0d] mb-1">メールアドレス</Label>
-            <Input
-              value={teacher.email}
-              disabled
-              className="w-full bg-[#eff0f3] text-[#2a2a2a]"
-            />
+    <AdminLayout headerTitle="講師詳細">
+      <div className="p-6 max-w-6xl mx-auto">
+        {/* ヘッダー */}
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Link
+              href="/admin/teachers"
+              className="flex items-center gap-2 text-[#4b5563] hover:text-[#ff8e3c] transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              講師一覧に戻る
+            </Link>
+            <h1 className="text-2xl font-bold text-[#1f2937]">講師詳細</h1>
           </div>
-
-          <div>
-            <Label className="block text-sm font-medium text-[#0d0d0d] mb-1">表示名</Label>
-            <Input
-              value={editDisplayName}
-              onChange={(e) => setEditDisplayName(e.target.value)}
-              placeholder="山田 太郎"
-              className="w-full"
-            />
-          </div>
-
-          <div>
-            <Label className="block text-sm font-medium text-[#0d0d0d] mb-1">担当教室</Label>
-            <div className="space-y-2 max-h-48 overflow-y-auto border border-[#0d0d0d]/20 rounded-lg p-3">
-              {availableSchools.map((school) => (
-                <label key={school.id} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={editSchoolIds.includes(school.id)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setEditSchoolIds([...editSchoolIds, school.id]);
-                      } else {
-                        setEditSchoolIds(editSchoolIds.filter((id) => id !== school.id));
-                      }
-                    }}
-                    className="rounded border-[#0d0d0d]"
-                  />
-                  <span className="text-sm text-[#0d0d0d]">{school.name}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <Label className="block text-sm font-medium text-[#0d0d0d] mb-1">指導可能科目</Label>
-            <p className="text-xs text-[#2a2a2a]/70 mb-2">
-              空の場合は全科目を指導可能として扱います。
-            </p>
-            <div className="space-y-3 max-h-48 overflow-y-auto border border-[#0d0d0d]/20 rounded-lg p-3">
-              {subjects.length === 0 ? (
-                <p className="text-sm text-[#2a2a2a]/60">科目が登録されていません</p>
-              ) : (
-              groupSubjectsByGradeCategory(subjects).map(({ label, items }) => (
-                <div key={label}>
-                  <p className="text-xs font-medium text-[#2a2a2a] mb-1.5">{label}</p>
-                  <div className="space-y-2 pl-1">
-                    {items.map((subject) => (
-                      <label key={subject.id} className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={editTeachableSubjectIds.includes(subject.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setEditTeachableSubjectIds([...editTeachableSubjectIds, subject.id]);
-                            } else {
-                              setEditTeachableSubjectIds(
-                                editTeachableSubjectIds.filter((id) => id !== subject.id)
-                              );
-                            }
-                          }}
-                          className="rounded border-[#0d0d0d]"
-                        />
-                        <span className="text-sm text-[#0d0d0d]">{subject.name}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              ))
-              )}
-            </div>
-          </div>
-
-          <div>
-            <Label className="block text-sm font-medium text-[#0d0d0d] mb-1">出勤可能曜日</Label>
-            <p className="text-xs text-[#2a2a2a]/70 mb-2">
-              選択した曜日のみ座席表に表示されます。未選択の場合は全曜日表示です。
-            </p>
-            <div className="flex flex-wrap gap-3">
-              {DAY_LABELS.map((d) => (
-                <label key={d.value} className="flex items-center gap-1.5">
-                  <input
-                    type="checkbox"
-                    checked={editAvailableDaysOfWeek.includes(d.value)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setEditAvailableDaysOfWeek([...editAvailableDaysOfWeek, d.value]);
-                      } else {
-                        setEditAvailableDaysOfWeek(
-                          editAvailableDaysOfWeek.filter((x) => x !== d.value)
-                        );
-                      }
-                    }}
-                    className="rounded border-[#0d0d0d]"
-                  />
-                  <span className="text-sm text-[#0d0d0d]">{d.label}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <Label className="block text-sm font-medium text-[#0d0d0d] mb-1">
-              曜日ごとの出勤可能コマ
-            </Label>
-            <p className="text-xs text-[#2a2a2a]/70 mb-2">
-              各曜日で出勤可能なコマ（1限〜7限）を選択してください。未設定の曜日は全コマ出勤可です。
-            </p>
-            <div className="space-y-3 max-h-64 overflow-y-auto border border-[#0d0d0d]/20 rounded-lg p-3">
-              {DAY_LABELS.map((d) => {
-                const dayKey = String(d.value);
-                const slotNums = editAvailableSlotNumbersByDay[dayKey] ?? [];
-                const toggleSlot = (n: number) => {
-                  setEditAvailableSlotNumbersByDay((prev) => {
-                    const arr = prev[dayKey] ?? [];
-                    const next = arr.includes(n) ? arr.filter((x) => x !== n) : [...arr, n].sort((a, b) => a - b);
-                    const nextMap = { ...prev };
-                    if (next.length === 0) delete nextMap[dayKey];
-                    else nextMap[dayKey] = next;
-                    return nextMap;
-                  });
-                };
-                return (
-                  <div key={d.value} className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-medium text-[#0d0d0d] w-6">{d.label}</span>
-                    {[1, 2, 3, 4, 5, 6, 7].map((n) => (
-                      <label key={n} className="flex items-center gap-1">
-                        <input
-                          type="checkbox"
-                          checked={slotNums.includes(n)}
-                          onChange={() => toggleSlot(n)}
-                          className="rounded border-[#0d0d0d]"
-                        />
-                        <span className="text-xs text-[#0d0d0d]">{n}限</span>
-                      </label>
-                    ))}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-3">
             <Link href="/admin/teachers">
               <Button variant="secondary">キャンセル</Button>
             </Link>
             <Button onClick={handleSave} disabled={isSaving}>
               {isSaving ? '保存中...' : '保存'}
             </Button>
+          </div>
+        </div>
+
+        {/* 2カラムレイアウト */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* 左カラム: 基本情報 */}
+          <div className="lg:col-span-1 space-y-6">
+            <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 shadow-sm">
+              <h2 className="text-base font-semibold text-[#1f2937] mb-4 pb-2 border-b border-[#e5e7eb]">
+                基本情報
+              </h2>
+              <div className="space-y-4">
+                <div>
+                  <Label className="block text-sm font-medium text-[#6b7280] mb-1.5">メールアドレス</Label>
+                  <Input
+                    value={teacher.email}
+                    disabled
+                    className="w-full bg-[#f9fafb] text-[#4b5563]"
+                  />
+                </div>
+                <div>
+                  <Label className="block text-sm font-medium text-[#6b7280] mb-1.5">表示名</Label>
+                  <Input
+                    value={editDisplayName}
+                    onChange={(e) => setEditDisplayName(e.target.value)}
+                    placeholder="山田 太郎"
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <Label className="block text-sm font-medium text-[#6b7280] mb-1.5">担当教室</Label>
+                  <div className="space-y-2 max-h-40 overflow-y-auto border border-[#e5e7eb] rounded-lg p-3 bg-[#fafafa]">
+                    {availableSchools.map((school) => (
+                      <label key={school.id} className="flex items-center gap-2 cursor-pointer hover:bg-[#f3f4f6] rounded px-2 py-1 -mx-2 -my-1">
+                        <input
+                          type="checkbox"
+                          checked={editSchoolIds.includes(school.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setEditSchoolIds([...editSchoolIds, school.id]);
+                            } else {
+                              setEditSchoolIds(editSchoolIds.filter((id) => id !== school.id));
+                            }
+                          }}
+                          className="rounded border-[#9ca3af] text-[#ff8e3c] focus:ring-[#ff8e3c]"
+                        />
+                        <span className="text-sm text-[#1f2937]">{school.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 右カラム: 指導・勤務設定 */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 shadow-sm">
+              <h2 className="text-base font-semibold text-[#1f2937] mb-4 pb-2 border-b border-[#e5e7eb]">
+                指導可能科目
+              </h2>
+              <p className="text-xs text-[#6b7280] mb-3">空の場合は全科目を指導可能として扱います。</p>
+              <div className="space-y-4 max-h-56 overflow-y-auto">
+                {subjects.length === 0 ? (
+                  <p className="text-sm text-[#9ca3af]">科目が登録されていません</p>
+                ) : (
+                  groupSubjectsByGradeCategory(subjects).map(({ label, items }) => (
+                    <div key={label}>
+                      <p className="text-xs font-semibold text-[#6b7280] uppercase tracking-wide mb-2">{label}</p>
+                      <div className="flex flex-wrap gap-x-4 gap-y-2">
+                        {items.map((subject) => (
+                          <label key={subject.id} className="flex items-center gap-2 cursor-pointer hover:text-[#ff8e3c]">
+                            <input
+                              type="checkbox"
+                              checked={editTeachableSubjectIds.includes(subject.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setEditTeachableSubjectIds([...editTeachableSubjectIds, subject.id]);
+                                } else {
+                                  setEditTeachableSubjectIds(
+                                    editTeachableSubjectIds.filter((id) => id !== subject.id)
+                                  );
+                                }
+                              }}
+                              className="rounded border-[#9ca3af] text-[#ff8e3c] focus:ring-[#ff8e3c]"
+                            />
+                            <span className="text-sm">{subject.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 shadow-sm">
+              <h2 className="text-base font-semibold text-[#1f2937] mb-4 pb-2 border-b border-[#e5e7eb]">
+                出勤可能曜日
+              </h2>
+              <p className="text-xs text-[#6b7280] mb-4">選択した曜日のみ座席表に表示されます。未選択の場合は全曜日表示です。</p>
+              <div className="flex flex-wrap gap-4">
+                {DAY_LABELS.map((d) => (
+                  <label key={d.value} className="flex items-center gap-2 cursor-pointer min-w-[4rem] px-3 py-2 rounded-lg border border-[#e5e7eb] hover:bg-[#f9fafb] hover:border-[#ff8e3c]/50 transition-colors has-[:checked]:border-[#ff8e3c] has-[:checked]:bg-orange-50">
+                    <input
+                      type="checkbox"
+                      checked={editAvailableDaysOfWeek.includes(d.value)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setEditAvailableDaysOfWeek([...editAvailableDaysOfWeek, d.value]);
+                        } else {
+                          setEditAvailableDaysOfWeek(
+                            editAvailableDaysOfWeek.filter((x) => x !== d.value)
+                          );
+                        }
+                      }}
+                      className="rounded border-[#9ca3af] text-[#ff8e3c] focus:ring-[#ff8e3c]"
+                    />
+                    <span className="text-sm font-medium text-[#1f2937]">{d.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 shadow-sm">
+              <h2 className="text-base font-semibold text-[#1f2937] mb-4 pb-2 border-b border-[#e5e7eb]">
+                曜日ごとの出勤可能コマ
+              </h2>
+              <p className="text-xs text-[#6b7280] mb-4">
+                担当教室の座席表に設定されているコマのみ表示されます。各曜日で出勤可能なコマを選択してください。未設定の曜日は全コマ出勤可です。
+              </p>
+              {scheduleTimeSlots.length === 0 ? (
+                <p className="text-sm text-[#9ca3af] py-4">
+                  担当教室を選択するか、担当教室の座席表でコマ時間を設定すると表示されます。
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[360px] text-sm">
+                    <thead>
+                      <tr className="border-b border-[#e5e7eb]">
+                        <th className="text-left py-2 pr-4 font-medium text-[#6b7280] w-10">曜日</th>
+                        {scheduleTimeSlots.map((slot) => (
+                          <th key={slot.id} className="text-center py-2 px-1 font-medium text-[#6b7280] min-w-[5rem]">
+                            <div>{slot.slot_number}限</div>
+                            <div className="text-[10px] font-normal text-[#9ca3af] tabular-nums mt-0.5">
+                              {slot.start_time?.slice(0, 5)}〜{slot.end_time?.slice(0, 5)}
+                            </div>
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {DAY_LABELS.map((d) => {
+                        const dayKey = String(d.value);
+                        const slotNums = editAvailableSlotNumbersByDay[dayKey] ?? [];
+                        const toggleSlot = (n: number) => {
+                          setEditAvailableSlotNumbersByDay((prev) => {
+                            const arr = prev[dayKey] ?? [];
+                            const next = arr.includes(n) ? arr.filter((x) => x !== n) : [...arr, n].sort((a, b) => a - b);
+                            const nextMap = { ...prev };
+                            if (next.length === 0) delete nextMap[dayKey];
+                            else nextMap[dayKey] = next;
+                            return nextMap;
+                          });
+                        };
+                        return (
+                          <tr key={d.value} className="border-b border-[#e5e7eb]/50 hover:bg-[#f9fafb]">
+                            <td className="py-2 pr-4 font-medium text-[#1f2937]">{d.label}</td>
+                            {scheduleTimeSlots.map((slot) => (
+                              <td key={slot.id} className="py-2 px-1 text-center">
+                                <label className="flex items-center justify-center cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={slotNums.includes(slot.slot_number)}
+                                    onChange={() => toggleSlot(slot.slot_number)}
+                                    className="rounded border-[#9ca3af] text-[#ff8e3c] focus:ring-[#ff8e3c] w-4 h-4"
+                                  />
+                                </label>
+                              </td>
+                            ))}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

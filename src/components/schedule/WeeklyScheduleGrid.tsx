@@ -82,6 +82,8 @@ export interface WeeklyScheduleGridProps {
   onTransferTargetClick?: (date: string, slotId: string, teacherId: string) => void;
   onPrintDay?: (date: string) => void;
   onTransferCancel: () => void;
+  /** 曜日ヘッダー行の一番右に表示する要素（例: 通塾日程ボタン） */
+  headerRightContent?: React.ReactNode;
 }
 
 export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
@@ -104,6 +106,7 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
     onStudentEntryDrop,
     onTransferTargetClick,
     onPrintDay,
+    headerRightContent,
   } = props;
 
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -216,6 +219,7 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
       onTransferClick={onTransferClick}
       onTransferTargetClick={onTransferTargetClick}
       onPrintDay={onPrintDay}
+      headerRightContent={headerRightContent}
     />
   );
 }

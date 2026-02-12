@@ -9,6 +9,7 @@ import {
   StudentDetailModal,
   StudentScores,
   StudentRegularScheduleList,
+  RegularScheduleFormModal,
 } from '@/components/students';
 import { SubjectSettings } from '@/components/settings';
 import {
@@ -57,6 +58,12 @@ export default function StudentsPage() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [scheduleModalStudent, setScheduleModalStudent] = useState<Student | null>(null);
+  const [addScheduleFormContext, setAddScheduleFormContext] = useState<{
+    student: Student;
+    timeSlots: { id: string; slot_number: number; start_time: string; end_time: string }[];
+    teachers: { id: string; display_name: string | null; email: string | null }[];
+    subjects: Subject[];
+  } | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -97,11 +104,6 @@ export default function StudentsPage() {
     
     return filtered;
   }, [students, showInactive, selectedGrade]);
-
-  // 非表示の生徒数（休塾・退塾）
-  const inactiveCount = useMemo(() => {
-    return students.filter((student) => student.status !== 'active').length;
-  }, [students]);
 
   // 初回読み込みと教室選択変更時の再読み込み
   useEffect(() => {
@@ -154,6 +156,22 @@ export default function StudentsPage() {
       );
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // 状況変更（詳細モーダルから直接変更）
+  const handleStatusChange = async (student: Student, status: Student['status']) => {
+    setErrorMessage('');
+    try {
+      await updateStudent(student.id, { status });
+      setSelectedStudent((prev) => (prev?.id === student.id ? { ...prev, status } : prev));
+      await fetchStudents(searchQuery);
+    } catch (error) {
+      console.error('Error updating student status:', error);
+      setErrorMessage(
+        error instanceof Error ? error.message : '状況の更新に失敗しました'
+      );
+      throw error;
     }
   };
 
@@ -210,7 +228,7 @@ export default function StudentsPage() {
     setSelectedStudent(null);
   };
 
-  // 削除
+  // 削除（論理削除、詳細モーダルから呼ばれる場合もある）
   const handleDelete = async () => {
     if (!selectedStudent) return;
 
@@ -330,7 +348,7 @@ export default function StudentsPage() {
               ))}
             </select>
 
-            {/* 休塾・退塾表示ボタン（講師には非表示） */}
+            {/* 休会・退会表示ボタン（講師には非表示） */}
             {!isTeacher && (
               <button
                 onClick={() => setShowInactive(!showInactive)}
@@ -381,12 +399,7 @@ export default function StudentsPage() {
                       d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
                     />
                   </svg>
-                  休塾・退塾を表示
-                  {inactiveCount > 0 && (
-                    <span className="bg-[#1e3a5f] text-white px-1.5 py-0.5 rounded text-xs">
-                      {inactiveCount}
-                    </span>
-                  )}
+                  休会・退会を表示
                 </>
               )}
               </button>
@@ -484,7 +497,37 @@ export default function StudentsPage() {
         }}
         onEdit={handleOpenEditModal}
         onOpenSchedule={handleOpenSchedule}
+        onStatusChange={!isTeacher ? handleStatusChange : undefined}
+        onDelete={
+          !isTeacher
+            ? async (student) => {
+                await deleteStudent(student.id);
+                setSelectedStudent(null);
+                setIsDetailModalOpen(false);
+                await fetchStudents(searchQuery);
+              }
+            : undefined
+        }
       />
+
+      {/* 通塾日程追加フォーム（モーダル外で表示・重なり防止） */}
+      {addScheduleFormContext && (
+        <RegularScheduleFormModal
+          open={true}
+          onClose={() => setAddScheduleFormContext(null)}
+          studentId={addScheduleFormContext.student.id}
+          schoolId={addScheduleFormContext.student.school_id ?? ''}
+          studentGrade={addScheduleFormContext.student.grade}
+          pattern={null}
+          timeSlots={addScheduleFormContext.timeSlots}
+          teachers={addScheduleFormContext.teachers}
+          subjects={addScheduleFormContext.subjects}
+          onSuccess={() => {
+            fetchStudents(searchQuery);
+            setAddScheduleFormContext(null);
+          }}
+        />
+      )}
 
       {/* 通塾日程モーダル（生徒の授業設定を直接編集） */}
       <Modal
@@ -501,7 +544,17 @@ export default function StudentsPage() {
             studentId={scheduleModalStudent.id}
             schoolId={scheduleModalStudent.school_id ?? ''}
             studentName={`${scheduleModalStudent.last_name} ${scheduleModalStudent.first_name}`}
+            studentGrade={scheduleModalStudent.grade}
             onRefresh={() => fetchStudents(searchQuery)}
+            onOpenAddForm={(ctx) => {
+              setIsScheduleModalOpen(false);
+              setAddScheduleFormContext({
+                student: scheduleModalStudent,
+                timeSlots: ctx.timeSlots,
+                teachers: ctx.teachers,
+                subjects: ctx.subjects,
+              });
+            }}
           />
         )}
       </Modal>

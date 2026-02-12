@@ -7,7 +7,7 @@ import {
   DialogTitle,
 } from '@/components/ui';
 import { Button } from '@/components/ui';
-import { Calendar, XCircle, Pencil, Trash2 } from 'lucide-react';
+import { Calendar, XCircle, Pencil, Trash2, RotateCcw } from 'lucide-react';
 import type { ScheduleEntry, ScheduleTimeSlot } from '@/types/schedule';
 
 function gradeLabel(g: number): string {
@@ -28,6 +28,7 @@ export interface StudentActionModalProps {
   entry: ScheduleEntry | null;
   timeSlot: ScheduleTimeSlot | null;
   onTransfer: () => void;
+  onRevertTransfer?: () => void;
   onAbsent: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -39,6 +40,7 @@ export function StudentActionModal({
   entry,
   timeSlot,
   onTransfer,
+  onRevertTransfer,
   onAbsent,
   onEdit,
   onDelete,
@@ -59,6 +61,7 @@ export function StudentActionModal({
     : '—';
 
   const isTransferredOut = entry.status === 'transferred_out';
+  const isTransferredIn = entry.status === 'transferred_in';
   const isCancelled = entry.status === 'cancelled';
   const canAct = !isTransferredOut && !isCancelled;
 
@@ -77,6 +80,19 @@ export function StudentActionModal({
             <div>科目: {subjectNames}</div>
           </div>
 
+          {isTransferredIn && onRevertTransfer && (
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onRevertTransfer()}
+                className="border-[var(--primary)] text-[var(--primary)] hover:bg-[var(--primary-subtle)]"
+              >
+                <RotateCcw className="h-4 w-4 mr-2" />
+                通常の授業に戻す
+              </Button>
+            </div>
+          )}
           {canAct && (
             <>
               <div className="flex flex-wrap gap-2">

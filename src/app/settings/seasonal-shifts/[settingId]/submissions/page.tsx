@@ -11,6 +11,8 @@ import {
   getSeasonalShiftSubmissions,
   getSeasonalShiftSubmissionWithSlots,
   getSeasonalShiftSlotSettings,
+  getSeasonalShiftAttendanceCounts,
+  getSeasonalShiftTeacherSlotCounts,
   allowSeasonalShiftEdit,
   deleteSeasonalShiftSubmission,
 } from '@/lib/api/seasonal-shift';
@@ -21,6 +23,7 @@ import type {
   SlotSetting,
 } from '@/types/seasonal-shift';
 import { SubmissionDetailMatrix } from '@/components/seasonal-shift/SubmissionDetailMatrix';
+import { OperationsDashboard } from '@/components/seasonal-shift/OperationsDashboard';
 import { exportProgressToPDF } from '@/lib/utils/pdfExport';
 import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
@@ -33,6 +36,11 @@ export default function SeasonalShiftSubmissionsPage() {
   const { hasPermission, isLoading: permissionLoading } = useRequirePermission(() => true);
   const [setting, setSetting] = useState<SeasonalShiftSetting | null>(null);
   const [submissions, setSubmissions] = useState<SeasonalShiftSubmission[]>([]);
+  const [attendanceCounts, setAttendanceCounts] = useState<Record<string, number>>({});
+  const [slotSettings, setSlotSettings] = useState<SlotSetting[]>([]);
+  const [teacherSlotCounts, setTeacherSlotCounts] = useState<
+    { teacher_name: string; teacher_email: string; count: number }[]
+  >([]);
   const [isLoading, setIsLoading] = useState(true);
   const [allowingId, setAllowingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -53,12 +61,18 @@ export default function SeasonalShiftSubmissionsPage() {
     if (!settingId) return;
     setIsLoading(true);
     try {
-      const [s, list] = await Promise.all([
+      const [s, list, counts, slots, teachers] = await Promise.all([
         getSeasonalShiftSetting(settingId),
         getSeasonalShiftSubmissions(settingId),
+        getSeasonalShiftAttendanceCounts(settingId),
+        getSeasonalShiftSlotSettings(settingId),
+        getSeasonalShiftTeacherSlotCounts(settingId),
       ]);
       setSetting(s ?? null);
       setSubmissions(list);
+      setAttendanceCounts(counts);
+      setSlotSettings(slots);
+      setTeacherSlotCounts(teachers);
     } catch (err) {
       console.error(err);
       error(err instanceof Error ? err.message : '取得に失敗しました');
@@ -204,7 +218,7 @@ export default function SeasonalShiftSubmissionsPage() {
   return (
     <AdminLayout headerTitle="講習シフト 提出一覧">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <div className="max-w-4xl">
+      <div className="max-w-6xl">
         <Link
           href={`/settings/seasonal-shifts/${settingId}`}
           className="text-sm text-[#3b82f6] hover:underline mb-4 inline-block"
@@ -213,6 +227,18 @@ export default function SeasonalShiftSubmissionsPage() {
         </Link>
         {setting && (
           <h1 className="text-xl font-bold text-[#1f2937] mb-4">{setting.name} 提出一覧</h1>
+        )}
+
+        {/* 運営判断用ダッシュボード（アコーディオン） */}
+        {setting && (
+          <div className="mb-6">
+            <OperationsDashboard
+              setting={setting}
+              slotSettings={slotSettings}
+              counts={attendanceCounts}
+              teacherSlotCounts={teacherSlotCounts}
+            />
+          </div>
         )}
 
         {isLoading ? (

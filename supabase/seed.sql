@@ -2,7 +2,7 @@
 -- Supabase SQL Editorで実行してください
 
 -- 既存のデータを削除（外部キー制約の順序に注意）
--- フォーム関連（存在する場合のみ削除）
+-- フォーム関連（存在する場合のみ削除。form_periods は schools を参照するため先に削除）
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'form_responses') THEN
@@ -13,6 +13,9 @@ BEGIN
   END IF;
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'forms') THEN
     DELETE FROM forms;
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'form_periods') THEN
+    DELETE FROM form_periods;
   END IF;
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'form_template_fields') THEN
     DELETE FROM form_template_fields;
@@ -30,6 +33,31 @@ DELETE FROM student_applications;
 DELETE FROM application_items;
 -- ポータルメニュー
 DELETE FROM portal_menu;
+-- 座席表関連（生徒より先に削除）
+DELETE FROM schedule_entries;
+DELETE FROM schedule_regular_patterns;
+-- exam_types 参照元（テキスト進行）→ exam_types（schools 参照のため schools より先に削除）
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'student_progress_lessons') THEN
+    DELETE FROM student_progress_lessons;
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'student_progress') THEN
+    DELETE FROM student_progress;
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'student_textbook_exams') THEN
+    DELETE FROM student_textbook_exams;
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'exam_types') THEN
+    DELETE FROM exam_types;
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'student_textbook_settings') THEN
+    DELETE FROM student_textbook_settings;
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'student_textbooks') THEN
+    DELETE FROM student_textbooks;
+  END IF;
+END $$;
 -- 生徒関連
 DELETE FROM student_subjects;
 DELETE FROM student_logs;
@@ -220,6 +248,116 @@ WHERE s.student_code = 'S0005'
   AND sub.name = '国語' 
   AND sub.grade_category = 'elementary'
 ON CONFLICT (student_id, subject_id) DO NOTHING;
+
+-- ============================================
+-- 授業登録サンプル: コマ時間（座席表用）
+-- ============================================
+INSERT INTO schedule_time_slots (school_id, slot_number, start_time, end_time, is_active, display_order)
+SELECT s.id, 1, '17:00'::time, '17:50'::time, true, 0 FROM schools s WHERE s.code = 'DEFAULT' LIMIT 1
+ON CONFLICT (school_id, slot_number) DO NOTHING;
+INSERT INTO schedule_time_slots (school_id, slot_number, start_time, end_time, is_active, display_order)
+SELECT s.id, 2, '18:00'::time, '18:50'::time, true, 1 FROM schools s WHERE s.code = 'DEFAULT' LIMIT 1
+ON CONFLICT (school_id, slot_number) DO NOTHING;
+INSERT INTO schedule_time_slots (school_id, slot_number, start_time, end_time, is_active, display_order)
+SELECT s.id, 3, '19:00'::time, '19:50'::time, true, 2 FROM schools s WHERE s.code = 'DEFAULT' LIMIT 1
+ON CONFLICT (school_id, slot_number) DO NOTHING;
+
+-- ============================================
+-- 授業登録サンプル: 通塾日程（講師が1人以上いる場合のみ登録）
+-- 月〜金の1限に、生徒ごとに1コマずつ割り当て
+-- ============================================
+DO $$
+DECLARE
+  school_id_val UUID;
+  teacher_id_val UUID;
+  slot_id_val UUID;
+  dow smallint := 1;
+  stu RECORD;
+  subj_ids UUID[];
+BEGIN
+  SELECT id INTO school_id_val FROM schools WHERE code = 'DEFAULT' LIMIT 1;
+  IF school_id_val IS NULL THEN RETURN; END IF;
+  SELECT id INTO teacher_id_val FROM user_profiles LIMIT 1;
+  IF teacher_id_val IS NULL THEN RETURN; END IF;
+  SELECT id INTO slot_id_val FROM schedule_time_slots WHERE school_id = school_id_val ORDER BY display_order LIMIT 1;
+  IF slot_id_val IS NULL THEN RETURN; END IF;
+
+  FOR stu IN
+    SELECT s.id AS student_id
+    FROM students s
+    WHERE s.school_id = school_id_val
+    ORDER BY s.student_code
+    LIMIT 5
+  LOOP
+    SELECT array_agg(ss.subject_id) INTO subj_ids FROM student_subjects ss WHERE ss.student_id = stu.student_id;
+    subj_ids := COALESCE(subj_ids, '{}');
+
+    INSERT INTO schedule_regular_patterns (
+      school_id, student_id, day_of_week, time_slot_id, teacher_id, subject_ids, period_type, is_active
+    ) VALUES (
+      school_id_val, stu.student_id, dow, slot_id_val, teacher_id_val, subj_ids, 'regular', true
+    );
+
+    dow := dow + 1;
+    IF dow > 5 THEN dow := 1; END IF;
+  END LOOP;
+END $$;
+
+-- ============================================
+-- 座席表ダミー: 指定週の schedule_entries（生徒が座席表に表示される用）
+-- 2025-02-10（月）〜 2025-02-16（日）の週に、通塾日程に沿った授業を挿入
+-- ============================================
+DO $$
+DECLARE
+  school_id_val UUID;
+  teacher_id_val UUID;
+  slot1_id_val UUID;
+  slot2_id_val UUID;
+  pat RECORD;
+  entry_date_val DATE;
+  week_start DATE := '2025-02-10';
+BEGIN
+  SELECT id INTO school_id_val FROM schools WHERE code = 'DEFAULT' LIMIT 1;
+  IF school_id_val IS NULL THEN RETURN; END IF;
+  SELECT id INTO teacher_id_val FROM user_profiles LIMIT 1;
+  IF teacher_id_val IS NULL THEN RETURN; END IF;
+  SELECT id INTO slot1_id_val FROM schedule_time_slots WHERE school_id = school_id_val AND slot_number = 1 LIMIT 1;
+  SELECT id INTO slot2_id_val FROM schedule_time_slots WHERE school_id = school_id_val AND slot_number = 2 LIMIT 1;
+  IF slot1_id_val IS NULL THEN RETURN; END IF;
+
+  -- 通塾日程1件ごとに、その週の該当曜日で schedule_entry を1件作成
+  FOR pat IN
+    SELECT id AS pattern_id, student_id, day_of_week, time_slot_id, subject_ids
+    FROM schedule_regular_patterns
+    WHERE school_id = school_id_val AND is_active = true
+  LOOP
+    entry_date_val := week_start + (pat.day_of_week - 1);
+    INSERT INTO schedule_entries (
+      school_id, entry_date, time_slot_id, teacher_id, student_id,
+      subject_ids, seat_label, regular_pattern_id, status
+    ) VALUES (
+      school_id_val, entry_date_val, pat.time_slot_id, teacher_id_val, pat.student_id,
+      COALESCE(pat.subject_ids, '{}'), NULL, pat.pattern_id, 'scheduled'
+    )
+    ON CONFLICT (school_id, entry_date, time_slot_id, teacher_id, student_id) DO NOTHING;
+  END LOOP;
+
+  -- 2限にも数件追加して座席表を少し埋める（同じ講師・別生徒）
+  IF slot2_id_val IS NOT NULL THEN
+    INSERT INTO schedule_entries (school_id, entry_date, time_slot_id, teacher_id, student_id, subject_ids, status)
+    SELECT school_id_val, week_start + 0, slot2_id_val, teacher_id_val, s.id, '{}', 'scheduled'
+    FROM students s WHERE s.school_id = school_id_val AND s.student_code = 'S0002' LIMIT 1
+    ON CONFLICT (school_id, entry_date, time_slot_id, teacher_id, student_id) DO NOTHING;
+    INSERT INTO schedule_entries (school_id, entry_date, time_slot_id, teacher_id, student_id, subject_ids, status)
+    SELECT school_id_val, week_start + 1, slot2_id_val, teacher_id_val, s.id, '{}', 'scheduled'
+    FROM students s WHERE s.school_id = school_id_val AND s.student_code = 'S0003' LIMIT 1
+    ON CONFLICT (school_id, entry_date, time_slot_id, teacher_id, student_id) DO NOTHING;
+    INSERT INTO schedule_entries (school_id, entry_date, time_slot_id, teacher_id, student_id, subject_ids, status)
+    SELECT school_id_val, week_start + 2, slot2_id_val, teacher_id_val, s.id, '{}', 'scheduled'
+    FROM students s WHERE s.school_id = school_id_val AND s.student_code = 'S0004' LIMIT 1
+    ON CONFLICT (school_id, entry_date, time_slot_id, teacher_id, student_id) DO NOTHING;
+  END IF;
+END $$;
 
 -- ============================================
 -- ポータルメニュー初期データ

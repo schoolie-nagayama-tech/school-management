@@ -357,6 +357,13 @@ export default function PortalSettingsPage() {
                           readOnly
                           className="flex-1 px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-[#f3f4f6] text-[#4b5563]"
                         />
+                        <Button
+                          variant="outline"
+                          onClick={() => window.open(url, '_blank')}
+                          className="min-w-[80px]"
+                        >
+                          開く
+                        </Button>
                         <Button onClick={() => handleCopyUrl(url)} className="min-w-[100px]">
                           コピー
                         </Button>
@@ -374,6 +381,13 @@ export default function PortalSettingsPage() {
                     readOnly
                     className="flex-1 px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-[#f3f4f6] text-[#4b5563]"
                   />
+                  <Button
+                    variant="outline"
+                    onClick={() => window.open(portalUrls[0]?.url || '', '_blank')}
+                    className="min-w-[80px]"
+                  >
+                    開く
+                  </Button>
                   <Button onClick={() => handleCopyUrl(portalUrls[0]?.url || '')} className="min-w-[100px]">
                     コピー
                   </Button>

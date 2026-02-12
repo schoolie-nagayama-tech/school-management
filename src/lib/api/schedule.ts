@@ -883,3 +883,42 @@ export async function createTransferEntry(
 
   return { from: fromEntry, to: toEntry };
 }
+
+/** 振替を元に戻す: 振替先(transferred_in)を削除し、振替元を通常(scheduled)に戻す */
+export async function revertTransferEntry(transferredInEntryId: string): Promise<void> {
+  const { data: toRow, error: fetchErr } = await db
+    .from('schedule_entries')
+    .select('id, transfer_from_id')
+    .eq('id', transferredInEntryId)
+    .single();
+
+  if (fetchErr || !toRow) {
+    console.error('Error fetching transfer target:', fetchErr);
+    throw new Error('振替先の授業が見つかりません');
+  }
+
+  const fromId = (toRow as { transfer_from_id?: string | null }).transfer_from_id;
+  if (!fromId) {
+    throw new Error('振替元が紐づいていません');
+  }
+
+  const { error: updateErr } = await db
+    .from('schedule_entries')
+    .update({ status: 'scheduled', transfer_to_id: null })
+    .eq('id', fromId);
+
+  if (updateErr) {
+    console.error('Error reverting transfer source:', updateErr);
+    throw new Error('振替元の復元に失敗しました');
+  }
+
+  const { error: deleteErr } = await db
+    .from('schedule_entries')
+    .delete()
+    .eq('id', transferredInEntryId);
+
+  if (deleteErr) {
+    console.error('Error deleting transfer target:', deleteErr);
+    throw new Error('振替先の削除に失敗しました');
+  }
+}

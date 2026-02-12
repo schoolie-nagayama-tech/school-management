@@ -29,6 +29,14 @@ interface TeacherOption {
   id: string;
   display_name: string | null;
   email: string | null;
+  teachable_subject_ids?: string[] | null;
+}
+
+/** 学年(1-12)から科目のgrade_categoryへ */
+function gradeToCategory(grade: number): 'elementary' | 'middle' | 'high' {
+  if (grade <= 6) return 'elementary';
+  if (grade <= 9) return 'middle';
+  return 'high';
 }
 
 export interface RegularScheduleFormModalProps {
@@ -36,6 +44,8 @@ export interface RegularScheduleFormModalProps {
   onClose: () => void;
   studentId: string;
   schoolId: string;
+  /** 該当学年の科目だけ表示するため（1-6: 小学生, 7-9: 中学生, 10-12: 高校生） */
+  studentGrade?: number;
   pattern: ScheduleRegularPattern | null;
   timeSlots: ScheduleTimeSlot[];
   teachers: TeacherOption[];
@@ -48,6 +58,7 @@ export function RegularScheduleFormModal({
   onClose,
   studentId,
   schoolId,
+  studentGrade,
   pattern,
   timeSlots,
   teachers,
@@ -64,6 +75,12 @@ export function RegularScheduleFormModal({
 
   const isEdit = !!pattern;
 
+  /** 該当学年の科目のみ（studentGrade 未指定時は全件） */
+  const subjectsForGrade =
+    studentGrade != null
+      ? subjects.filter((s) => s.grade_category === gradeToCategory(studentGrade))
+      : subjects;
+
   useEffect(() => {
     if (open) {
       setErrorMessage(null);
@@ -76,12 +93,35 @@ export function RegularScheduleFormModal({
       } else {
         setDayOfWeek(1);
         setTimeSlotId(timeSlots[0]?.id ?? '');
-        setTeacherId(teachers[0]?.id ?? '');
-        setSubjectIds(subjects[0] ? [subjects[0].id] : []);
+        const initSubs = subjectsForGrade[0] ? [subjectsForGrade[0].id] : [];
+        setSubjectIds(initSubs);
+        setTeacherId('');
         setPeriodType('regular');
       }
     }
-  }, [open, pattern, timeSlots, teachers, subjects]);
+  }, [open, pattern, timeSlots, teachers, subjects, subjectsForGrade]);
+
+  /** 選択科目を指導可能な講師のみ（teachable_subject_ids が空/未設定は全科目可） */
+  const teachersForSubject = subjectIds.length > 0
+    ? teachers.filter((t) => {
+        const allowed = t.teachable_subject_ids;
+        if (!allowed || allowed.length === 0) return true;
+        return subjectIds.some((id) => allowed.includes(id));
+      })
+    : teachers;
+
+  const validTeacherId =
+    teacherId === ''
+      ? ''
+      : teachersForSubject.some((t) => t.id === teacherId)
+        ? teacherId
+        : (teachersForSubject[0]?.id ?? '');
+
+  useEffect(() => {
+    if (teacherId !== '' && validTeacherId !== teacherId) {
+      setTeacherId(validTeacherId);
+    }
+  }, [validTeacherId, teacherId]);
 
   const handleSubmit = async () => {
     if (!schoolId || !timeSlotId || !teacherId) return;
@@ -118,7 +158,7 @@ export function RegularScheduleFormModal({
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md bg-white border border-gray-200">
+      <DialogContent className="max-w-md bg-white">
         <DialogHeader>
           <DialogTitle>
             {isEdit ? '通塾日程を編集' : '通塾日程を追加'}
@@ -167,16 +207,30 @@ export function RegularScheduleFormModal({
 
           <div>
             <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">
-              講師
+              科目
             </label>
             <select
-              value={teacherId}
-              onChange={(e) => setTeacherId(e.target.value)}
+              value={subjectIds[0] ?? ''}
+              onChange={(e) => {
+                const next = e.target.value ? [e.target.value] : [];
+                setSubjectIds(next);
+                if (next.length === 0) {
+                  setTeacherId('');
+                } else {
+                  const nextTeacherIds = teachers.filter((t) => {
+                    const allowed = t.teachable_subject_ids;
+                    if (!allowed || allowed.length === 0) return true;
+                    return next.some((id) => allowed.includes(id));
+                  }).map((t) => t.id);
+                  if (!nextTeacherIds.includes(teacherId)) setTeacherId(nextTeacherIds[0] ?? '');
+                }
+              }}
               className="w-full px-3 py-2 border border-[var(--stroke)] rounded-md text-sm bg-white"
             >
-              {teachers.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.display_name || t.email || '—'}
+              <option value="">選択してください</option>
+              {subjectsForGrade.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
                 </option>
               ))}
             </select>
@@ -184,16 +238,17 @@ export function RegularScheduleFormModal({
 
           <div>
             <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">
-              科目
+              講師
             </label>
             <select
-              value={subjectIds[0] ?? ''}
-              onChange={(e) => setSubjectIds(e.target.value ? [e.target.value] : [])}
+              value={validTeacherId}
+              onChange={(e) => setTeacherId(e.target.value)}
               className="w-full px-3 py-2 border border-[var(--stroke)] rounded-md text-sm bg-white"
             >
-              {subjects.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
+              <option value="">選択してください</option>
+              {teachersForSubject.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.display_name || t.email || '—'}
                 </option>
               ))}
             </select>

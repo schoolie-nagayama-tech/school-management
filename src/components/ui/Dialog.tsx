@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { ReactNode, useState, useEffect } from 'react';
 
@@ -43,7 +43,7 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
         onClick={() => onOpenChange(false)}
         aria-hidden="true"
       />
-      <div className="relative z-50 w-full max-w-lg bg-white rounded-xl shadow-2xl border border-[#e5e7eb] max-h-[95vh] overflow-hidden flex flex-col">
+      <div className="relative z-50 w-full max-w-lg bg-white rounded-xl shadow-2xl max-h-[95vh] overflow-hidden flex flex-col">
         {children}
       </div>
     </div>

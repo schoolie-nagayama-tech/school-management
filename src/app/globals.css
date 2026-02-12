@@ -89,6 +89,22 @@ textarea:focus {
   background: #aaa;
 }
 
+/* 座席表グリッド: 横スクロールバーを薄く */
+.schedule-scrollbar::-webkit-scrollbar {
+  height: 6px;
+}
+.schedule-scrollbar::-webkit-scrollbar-track {
+  background: #f5f5f5;
+  border-radius: 3px;
+}
+.schedule-scrollbar::-webkit-scrollbar-thumb {
+  background: #d0d0d0;
+  border-radius: 3px;
+}
+.schedule-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #b0b0b0;
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Modal, Button } from '@/components/ui';
+import { Modal, Button, Select } from '@/components/ui';
 import { getStudentWithSubjects } from '@/lib/api/subjects';
 import { getDefaultSchoolId } from '@/lib/api/schools';
 import { getRegularPatterns } from '@/lib/api/schedule';
@@ -14,6 +14,8 @@ import { InterviewList } from './InterviewList';
 import { useAuth } from '@/contexts/AuthContext';
 import { Calendar } from 'lucide-react';
 
+type StudentStatus = Student['status'];
+
 interface StudentDetailModalProps {
   isOpen: boolean;
   student: Student | null;
@@ -21,6 +23,10 @@ interface StudentDetailModalProps {
   onEdit: (student: Student) => void;
   /** 通塾日程をモーダルで直接開く（未指定の場合は従来のリンク） */
   onOpenSchedule?: (student: Student) => void;
+  /** 状況変更（詳細から直接変更する場合） */
+  onStatusChange?: (student: Student, status: StudentStatus) => Promise<void>;
+  /** 削除（論理削除） */
+  onDelete?: (student: Student) => Promise<void>;
 }
 
 type TabType = 'basic' | 'scores' | 'interviews' | 'schedule';
@@ -31,9 +37,12 @@ export function StudentDetailModal({
   onClose,
   onEdit,
   onOpenSchedule,
+  onStatusChange,
+  onDelete,
 }: StudentDetailModalProps) {
   const { profile } = useAuth();
   const isTeacher = profile?.role === 'teacher';
+  const [statusUpdating, setStatusUpdating] = useState(false);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [schedulePatterns, setSchedulePatterns] = useState<ScheduleRegularPattern[]>([]);
   const [scheduleLoading, setScheduleLoading] = useState(false);
@@ -121,13 +130,36 @@ export function StudentDetailModal({
             </div>
             <div>
               <label className="text-xs text-[#4b5563]">在籍状況</label>
-              <p className="mt-1">
-                <span
-                  className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${STATUS_COLORS[student.status]}`}
-                >
-                  {STATUS_LABELS[student.status]}
-                </span>
-              </p>
+              <div className="mt-1">
+                {!isTeacher && onStatusChange ? (
+                  <Select
+                    value={student.status}
+                    onChange={async (e) => {
+                      const newStatus = e.target.value as StudentStatus;
+                      if (newStatus === student.status) return;
+                      setStatusUpdating(true);
+                      try {
+                        await onStatusChange(student, newStatus);
+                      } finally {
+                        setStatusUpdating(false);
+                      }
+                    }}
+                    options={[
+                      { value: 'active', label: '在籍中' },
+                      { value: 'inactive', label: '休会' },
+                      { value: 'withdrawn', label: '退会' },
+                    ]}
+                    disabled={statusUpdating}
+                    className="max-w-[140px]"
+                  />
+                ) : (
+                  <span
+                    className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${STATUS_COLORS[student.status]}`}
+                  >
+                    {STATUS_LABELS[student.status]}
+                  </span>
+                )}
+              </div>
             </div>
             <div>
               <label className="text-xs text-[#4b5563]">氏名</label>
@@ -224,15 +256,33 @@ export function StudentDetailModal({
         </div>
 
             {/* アクションボタン */}
-            <div className="flex justify-end gap-3 pt-4 border-t border-[#e5e7eb]">
-              <Button type="button" variant="secondary" onClick={onClose}>
-                閉じる
-              </Button>
-              {!isTeacher && (
-                <Button type="button" onClick={handleEdit}>
-                  編集
+            <div className="flex justify-between pt-4 border-t border-[#e5e7eb]">
+              <div>
+                {!isTeacher && onDelete && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="text-red-600 border-red-200 hover:bg-red-50"
+                    onClick={async () => {
+                      if (!window.confirm(`${student.last_name} ${student.first_name} を削除しますか？\n論理削除され、一覧から非表示になります。`)) return;
+                      await onDelete(student);
+                      onClose();
+                    }}
+                  >
+                    削除
+                  </Button>
+                )}
+              </div>
+              <div className="flex gap-3">
+                <Button type="button" variant="secondary" onClick={onClose}>
+                  閉じる
                 </Button>
-              )}
+                {!isTeacher && (
+                  <Button type="button" onClick={handleEdit}>
+                    編集
+                  </Button>
+                )}
+              </div>
             </div>
           </>
         )}

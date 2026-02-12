@@ -62,33 +62,54 @@ export const DayCell = React.memo(function DayCell({
 }: DayCellProps) {
   if (isClosed) {
     return (
-      <td className="border border-[var(--surface)] p-1 align-top bg-[var(--surface)] text-center text-[var(--paragraph-light)] text-xs min-w-[120px] max-w-[160px]">
+      <div className="py-3 rounded-xl bg-gray-100 text-gray-400 text-sm text-center flex items-center justify-center min-h-[80px]">
         休講日
-      </td>
+      </div>
     );
   }
 
   return (
-    <td className="border border-[var(--surface)] border-l-[var(--stroke)] p-1 align-top min-w-[120px] max-w-[160px]">
-      <div className="space-y-1 min-h-[48px]">
-        {teacherGroups.map((group) => (
+    <div className="py-3 space-y-3 min-h-[80px]">
+      {teacherGroups.map((group) => (
+        <TeacherCard
+          key={group.teacher.id}
+          teacher={group.teacher}
+          entries={group.entries}
+          date={date}
+          timeSlotId={timeSlot.id}
+          maxStudents={maxStudentsPerTeacher}
+          isClosed={false}
+          onAddStudent={() => onAddStudent(group.teacher.id)}
+          onRemoveTeacher={() =>
+            onRemoveTeacher(
+              group.teacher.id,
+              group.entries.filter(
+                (e) => e.status !== 'cancelled' && e.status !== 'transferred_out'
+              ).length
+            )
+          }
+          onStudentClick={onStudentClick}
+          onTransferClick={onTransferClick}
+          activeDragId={activeDragId}
+          activeDragEntry={activeDragEntry}
+          transferMode={transferMode}
+          onTransferTargetClick={onTransferTargetClick}
+        />
+      ))}
+      {emptyTeacherIds.map((teacherId) => {
+        const teacher = teachersMap.get(teacherId);
+        if (!teacher) return null;
+        return (
           <TeacherCard
-            key={group.teacher.id}
-            teacher={group.teacher}
-            entries={group.entries}
+            key={`empty-${teacherId}`}
+            teacher={teacher}
+            entries={[]}
             date={date}
             timeSlotId={timeSlot.id}
             maxStudents={maxStudentsPerTeacher}
             isClosed={false}
-            onAddStudent={() => onAddStudent(group.teacher.id)}
-            onRemoveTeacher={() =>
-              onRemoveTeacher(
-                group.teacher.id,
-                group.entries.filter(
-                  (e) => e.status !== 'cancelled' && e.status !== 'transferred_out'
-                ).length
-              )
-            }
+            onAddStudent={() => onAddStudent(teacherId)}
+            onRemoveTeacher={() => onRemoveTeacher(teacherId, 0)}
             onStudentClick={onStudentClick}
             onTransferClick={onTransferClick}
             activeDragId={activeDragId}
@@ -96,41 +117,18 @@ export const DayCell = React.memo(function DayCell({
             transferMode={transferMode}
             onTransferTargetClick={onTransferTargetClick}
           />
-        ))}
-        {emptyTeacherIds.map((teacherId) => {
-          const teacher = teachersMap.get(teacherId);
-          if (!teacher) return null;
-          return (
-            <TeacherCard
-              key={`empty-${teacherId}`}
-              teacher={teacher}
-              entries={[]}
-              date={date}
-              timeSlotId={timeSlot.id}
-              maxStudents={maxStudentsPerTeacher}
-              isClosed={false}
-              onAddStudent={() => onAddStudent(teacherId)}
-              onRemoveTeacher={() => onRemoveTeacher(teacherId, 0)}
-              onStudentClick={onStudentClick}
-              onTransferClick={onTransferClick}
-              activeDragId={activeDragId}
-              activeDragEntry={activeDragEntry}
-              transferMode={transferMode}
-              onTransferTargetClick={onTransferTargetClick}
-            />
-          );
-        })}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onAddTeacher();
-          }}
-          className="w-full py-1 text-[10px] text-[var(--paragraph-light)] hover:bg-[var(--surface)] rounded border border-dashed border-[var(--stroke)]"
-        >
-          + 講師追加
-        </button>
-      </div>
-    </td>
+        );
+      })}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onAddTeacher();
+        }}
+        className="w-full py-2 text-xs text-gray-400 hover:text-gray-600 rounded-xl transition-colors duration-200"
+      >
+        + 講師追加
+      </button>
+    </div>
   );
 });

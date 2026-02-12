@@ -198,6 +198,60 @@ export async function getSeasonalShiftSubmissionByEditToken(
   };
 }
 
+/** 運営ダッシュボード用：日付×コマごとの出勤可能人数を集計 */
+export async function getSeasonalShiftAttendanceCounts(
+  settingId: string
+): Promise<Record<string, number>> {
+  const submissions = await getSeasonalShiftSubmissions(settingId);
+  const ids = submissions.map((s) => s.id);
+  if (ids.length === 0) return {};
+
+  const { data: slots, error } = await supabase
+    .from('seasonal_shift_submission_slots')
+    .select('shift_date, time_slot')
+    .in('submission_id', ids)
+    .eq('available', true);
+
+  if (error) throw new Error(`出勤状況の集計に失敗しました: ${error.message}`);
+
+  const counts: Record<string, number> = {};
+  for (const s of slots || []) {
+    const key = `${s.shift_date}|${s.time_slot}`;
+    counts[key] = (counts[key] || 0) + 1;
+  }
+  return counts;
+}
+
+/** 講師別コマ数（多い順） */
+export async function getSeasonalShiftTeacherSlotCounts(
+  settingId: string
+): Promise<{ teacher_name: string; teacher_email: string; count: number }[]> {
+  const submissions = await getSeasonalShiftSubmissions(settingId);
+  const ids = submissions.map((s) => s.id);
+  if (ids.length === 0) return [];
+
+  const { data: slots, error } = await supabase
+    .from('seasonal_shift_submission_slots')
+    .select('submission_id')
+    .in('submission_id', ids)
+    .eq('available', true);
+
+  if (error) throw new Error(`講師別コマ数の取得に失敗しました: ${error.message}`);
+
+  const countBySubId: Record<string, number> = {};
+  for (const s of slots || []) {
+    countBySubId[s.submission_id] = (countBySubId[s.submission_id] || 0) + 1;
+  }
+
+  return submissions
+    .map((sub) => ({
+      teacher_name: sub.teacher_name,
+      teacher_email: sub.teacher_email,
+      count: countBySubId[sub.id] ?? 0,
+    }))
+    .sort((a, b) => b.count - a.count);
+}
+
 /** 提出を削除（スロットは CASCADE で自動削除） */
 export async function deleteSeasonalShiftSubmission(submissionId: string): Promise<void> {
   const { error } = await supabase

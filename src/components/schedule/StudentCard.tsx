@@ -21,7 +21,7 @@ const STATUS_COLOR: Record<string, string> = {
   present: 'bg-green-50 border-green-200 text-green-800',
   absent: 'bg-red-50 border-red-200 text-red-800',
   late: 'bg-yellow-50 border-yellow-200 text-yellow-800',
-  null: 'bg-white border-[var(--surface)] text-[var(--headline)]',
+  null: 'bg-white border-gray-200 text-gray-900',
 };
 
 export interface StudentCardProps {
@@ -41,13 +41,13 @@ export const StudentCard = React.memo(function StudentCard({
   const colorClass = STATUS_COLOR[statusKey] ?? STATUS_COLOR.null;
 
   const studentName = entry.student
-    ? `${entry.student.last_name}${entry.student.first_name}`
+    ? `${entry.student.last_name} ${entry.student.first_name}`
     : entry.student_id;
   const grade = entry.student ? gradeLabel(entry.student.grade) : '—';
   const subjectNames = (entry.subjects ?? [])
     .map((s) => (typeof s === 'object' && s && 'name' in s ? s.name : String(s)))
     .filter(Boolean)
-    .join('/') || (entry.subject_ids?.length ? '—' : '—');
+    .join(' / ') || (entry.subject_ids?.length ? '—' : '—');
 
   const isTransferredOut = entry.status === 'transferred_out';
   const isTransferredIn = entry.status === 'transferred_in';
@@ -65,16 +65,17 @@ export const StudentCard = React.memo(function StudentCard({
         }
       }}
       className={`
-        px-1.5 py-1 rounded border text-[10px] cursor-pointer hover:shadow transition-shadow
+        px-2 py-1.5 rounded-lg border text-left shadow-sm
+        cursor-pointer hover:bg-gray-50 hover:shadow-md transition-all duration-150
         ${colorClass}
-        ${isTransferredOut ? 'opacity-50 line-through' : ''}
+        ${isTransferredOut ? 'opacity-60 line-through' : ''}
       `}
     >
-      <div className="flex justify-between items-center gap-1">
-        <span className="font-medium truncate min-w-0">
+      {/* 生徒名（最優先・強） */}
+      <div className="flex justify-between items-start gap-2">
+        <p className="text-base font-semibold text-gray-900 leading-relaxed break-words min-w-0">
           {studentName}
-          <span className="text-[var(--paragraph)] font-normal ml-1">({grade})</span>
-        </span>
+        </p>
         <div className="flex items-center gap-0.5 flex-shrink-0">
           {canTransfer && (
             <button
@@ -83,7 +84,7 @@ export const StudentCard = React.memo(function StudentCard({
                 e.stopPropagation();
                 onTransferClick(entry);
               }}
-              className="p-0.5 rounded hover:bg-[var(--surface)] text-[var(--paragraph-light)] hover:text-[var(--primary)]"
+              className="p-0.5 rounded hover:bg-gray-100 text-gray-400 hover:text-[var(--primary)]"
               title="振替"
               aria-label="振替"
             >
@@ -91,26 +92,31 @@ export const StudentCard = React.memo(function StudentCard({
             </button>
           )}
           <span
-            className={`${
+            className={
               statusKey === 'present'
                 ? 'text-green-600'
                 : statusKey === 'absent'
                   ? 'text-red-600'
                   : statusKey === 'late'
                     ? 'text-yellow-600'
-                    : 'text-[var(--paragraph-light)]'
-            }`}
+                    : 'text-gray-400'
+            }
           >
             {icon}
           </span>
         </div>
       </div>
-      <div className="text-[var(--paragraph)] mt-0.5 truncate">{subjectNames || '—'}</div>
+      {/* 学年（中） */}
+      <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{grade}</p>
+      {/* 科目（弱） */}
+      <p className="text-xs text-gray-400 mt-0.5 leading-relaxed break-words">
+        {subjectNames || '—'}
+      </p>
       {isTransferredIn && (
-        <div className="text-blue-600 text-[10px] mt-0.5">振替</div>
+        <p className="text-xs text-blue-600 mt-0.5">振替</p>
       )}
       {isTransferredOut && (
-        <div className="text-[var(--paragraph-light)] text-[10px] mt-0.5">→ 振替済</div>
+        <p className="text-xs text-gray-400 mt-0.5">→ 振替済</p>
       )}
     </div>
   );

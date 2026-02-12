@@ -23,7 +23,15 @@ export interface StudentRegularScheduleListProps {
   studentId: string;
   schoolId: string;
   studentName: string;
+  /** 該当学年の科目だけ表示するため（1-12） */
+  studentGrade?: number;
   onRefresh?: () => void;
+  /** モーダル内で使用する場合: 追加クリック時に親がフォームを表示し、その前に外側モーダルを閉じる */
+  onOpenAddForm?: (context: {
+    timeSlots: ScheduleTimeSlot[];
+    teachers: TeacherOption[];
+    subjects: Awaited<ReturnType<typeof getSubjects>>;
+  }) => void;
 }
 
 function slotLabel(slot: ScheduleTimeSlot | undefined): string {
@@ -35,7 +43,9 @@ export function StudentRegularScheduleList({
   studentId,
   schoolId,
   studentName,
+  studentGrade,
   onRefresh,
+  onOpenAddForm,
 }: StudentRegularScheduleListProps) {
   const { success, error: toastError } = useToast();
   const [patterns, setPatterns] = useState<ScheduleRegularPattern[]>([]);
@@ -75,7 +85,11 @@ export function StudentRegularScheduleList({
 
   const handleAdd = () => {
     setEditingPattern(null);
-    setFormOpen(true);
+    if (onOpenAddForm) {
+      onOpenAddForm({ timeSlots, teachers, subjects });
+    } else {
+      setFormOpen(true);
+    }
   };
 
   const handleEdit = (pattern: ScheduleRegularPattern) => {
@@ -205,20 +219,23 @@ export function StudentRegularScheduleList({
         </p>
       )}
 
-      <RegularScheduleFormModal
-        open={formOpen}
-        onClose={() => {
-          setFormOpen(false);
-          setEditingPattern(null);
-        }}
-        studentId={studentId}
-        schoolId={schoolId}
-        pattern={editingPattern}
-        timeSlots={timeSlots}
-        teachers={teachers}
-        subjects={subjects}
-        onSuccess={handleFormSuccess}
-      />
+      {!onOpenAddForm && (
+        <RegularScheduleFormModal
+          open={formOpen}
+          onClose={() => {
+            setFormOpen(false);
+            setEditingPattern(null);
+          }}
+          studentId={studentId}
+          schoolId={schoolId}
+          studentGrade={studentGrade}
+          pattern={editingPattern}
+          timeSlots={timeSlots}
+          teachers={teachers}
+          subjects={subjects}
+          onSuccess={handleFormSuccess}
+        />
+      )}
     </div>
   );
 }
