@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { AlertItem } from './AlertItem';
-import { getAlerts } from '@/lib/api/alerts';
+import { getAlertsLight, getAlertsHeavy, mergeStudentAlerts, invalidateAlertCache } from '@/lib/api/alerts';
 import type { StudentAlerts, Alert } from '@/types/alerts';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
@@ -37,20 +37,33 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
     exam_overdue: 'テスト日が過ぎている目標設定がある',
   };
 
-  const fetchAlerts = useCallback(async () => {
+  const fetchAlerts = useCallback(async (skipCache = false) => {
     setIsLoading(true);
     try {
       const schoolIds = getSelectedSchoolIds();
       if (schoolIds.length === 0) {
         setStudentAlerts([]);
+        setIsLoading(false);
         return;
       }
-      const alerts = await getAlerts(schoolIds);
-      setStudentAlerts(alerts);
+      if (skipCache) invalidateAlertCache(schoolIds);
+      // Phase 2: Light を先に表示し、Heavy は裏で取得
+      const lightAlerts = await getAlertsLight(schoolIds, { skipCache });
+      setStudentAlerts(lightAlerts);
+      setIsLoading(false);
+
+      // Heavy を非同期で取得してマージ
+      getAlertsHeavy(schoolIds, { skipCache })
+        .then((heavyAlerts) => {
+          setStudentAlerts((prev) => mergeStudentAlerts(prev, heavyAlerts));
+        })
+        .catch((err) => {
+          console.error('Error fetching heavy alerts:', err);
+          toastError('一部のアラートの取得に失敗しました');
+        });
     } catch (error) {
       console.error('Error fetching alerts:', error);
       toastError('アラートの取得に失敗しました');
-    } finally {
       setIsLoading(false);
     }
   }, [getSelectedSchoolIds, toastError]);
@@ -91,8 +104,8 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
       );
       
       success('対応済みにしました');
-      // アラートを再取得
-      await fetchAlerts();
+      // アラートを再取得（キャッシュをスキップ）
+      await fetchAlerts(true);
     } catch (error) {
       console.error('Error dismissing alert:', error);
       toastError('対応済みの記録に失敗しました');

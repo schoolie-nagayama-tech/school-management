@@ -1,5 +1,34 @@
-﻿import { supabase } from '../supabase';
+import { supabase } from '../supabase';
 import type { StudentInterview, StudentInterviewInput } from '@/types/database';
+
+/**
+ * 教室単位で面談記録をバッチ取得（アラート用）
+ * student_id でグルーピングした Map を返す（各生徒の最新順）
+ */
+export async function getInterviewsBySchool(
+  schoolIds: string[]
+): Promise<Map<string, StudentInterview[]>> {
+  if (schoolIds.length === 0) return new Map();
+
+  const { data, error } = await supabase
+    .from('student_interviews')
+    .select('*')
+    .in('school_id', schoolIds)
+    .order('interview_date', { ascending: false })
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throw new Error(`面談記録の取得に失敗しました: ${error.message}`);
+  }
+
+  const byStudent = new Map<string, StudentInterview[]>();
+  for (const interview of (data || []) as StudentInterview[]) {
+    const list = byStudent.get(interview.student_id) || [];
+    list.push(interview);
+    byStudent.set(interview.student_id, list);
+  }
+  return byStudent;
+}
 
 /**
  * 生徒の面談記録一覧を取得（新しい順）

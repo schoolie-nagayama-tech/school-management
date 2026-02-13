@@ -1,12 +1,439 @@
-﻿import { supabase } from '../supabase';
-import { getDefaultSchoolId } from './schools';
-import { listAssessments } from './assessments';
-import { getStudentInterviews, getPendingTasks } from './interviews';
+import { supabase } from '../supabase';
+import { listAssessmentsBySchool } from './assessments';
+import { getInterviewsBySchool, getPendingTasks } from './interviews';
 import { getApplicationItems, getStudentApplications } from './applications';
 import { getStudents } from './students';
-import { getStudentTextbooks } from './progress';
-import type { Alert, AlertDismissal, StudentAlerts, AlertType } from '@/types/alerts';
+import { getStudentTextbooksExamsBySchool } from './progress';
+import type {
+  Alert,
+  AlertDismissal,
+  StudentAlerts,
+  AlertType,
+} from '@/types/alerts';
 import { SUBJECT_LABELS } from '@/types/database';
+import type { AssessmentWithScores } from '@/types/database';
+import type { StudentInterview } from '@/types/database';
+import type { StudentTextbookWithDetails } from '@/types/database';
+
+// ============================================
+// 型定義
+// ============================================
+
+export interface AlertSources {
+  students: Awaited<ReturnType<typeof getStudents>>;
+  assessmentsByStudent: Map<string, AssessmentWithScores[]>;
+  interviewsByStudent: Map<string, StudentInterview[]>;
+  applicationItems: Awaited<ReturnType<typeof getApplicationItems>>;
+  applications: Awaited<ReturnType<typeof getStudentApplications>>;
+  pendingTasks: Array<StudentInterview & { student: { last_name: string; first_name: string } }>;
+  textbooksByStudent: Map<string, StudentTextbookWithDetails[]>;
+  examTypeNames: Map<string, string>;
+}
+
+// ============================================
+// Phase 1: fetchAlertSources（DBアクセス専用）
+// ============================================
+
+/**
+ * アラート計算に必要な全データをバッチ取得
+ */
+export async function fetchAlertSources(schoolIds: string[]): Promise<AlertSources> {
+  if (schoolIds.length === 0) {
+    return {
+      students: [],
+      assessmentsByStudent: new Map(),
+      interviewsByStudent: new Map(),
+      applicationItems: [],
+      applications: [],
+      pendingTasks: [],
+      textbooksByStudent: new Map(),
+      examTypeNames: new Map(),
+    };
+  }
+
+  const [
+    students,
+    assessmentsByStudent,
+    interviewsByStudent,
+    applicationItems,
+    applicationsResult,
+    pendingTasksResult,
+    textbooksResult,
+  ] = await Promise.all([
+    getStudents(undefined, schoolIds),
+    listAssessmentsBySchool(schoolIds), // 全カテゴリ一括
+    getInterviewsBySchool(schoolIds),
+    getApplicationItems(schoolIds, false),
+    getStudentApplications(schoolIds).catch(() => []),
+    Promise.all(schoolIds.map((sid) => getPendingTasks(sid).catch(() => []))).then((arr) => arr.flat()),
+    getStudentTextbooksExamsBySchool(schoolIds),
+  ]);
+
+  const applications = applicationsResult ?? [];
+  const pendingTasks = pendingTasksResult ?? [];
+  const { byStudent: textbooksByStudent, examTypeNames } = textbooksResult;
+
+  return {
+    students,
+    assessmentsByStudent,
+    interviewsByStudent,
+    applicationItems,
+    applications,
+    pendingTasks,
+    textbooksByStudent,
+    examTypeNames,
+  };
+}
+
+// ============================================
+// Phase 2: buildAlertCandidates（pure function、dismiss未考慮）
+// ============================================
+
+/** 成績スコアは subject / value（DBスキーマ準拠） */
+function getScoreMap(scores: { subject: string; value: number | null }[]) {
+  return new Map(scores.map((s) => [s.subject, s.value]));
+}
+
+function buildScoreDropCandidates(sources: AlertSources): Alert[] {
+  const alerts: Alert[] = [];
+  const categories: Array<'regular_test' | 'report_card' | 'mock'> = ['regular_test', 'report_card', 'mock'];
+
+  for (const student of sources.students) {
+    const allAssessments = sources.assessmentsByStudent.get(student.id) ?? [];
+    for (const category of categories) {
+      const assessments = allAssessments
+        .filter((a) => a.category === category)
+        .sort((a, b) => {
+          if (!a.exam_month || !b.exam_month) return 0;
+          return b.exam_month.localeCompare(a.exam_month);
+        });
+      if (assessments.length < 2) continue;
+
+      const latest = assessments[0];
+      const previous = assessments[1];
+      const latestScores = getScoreMap(latest.scores);
+      const previousScores = getScoreMap(previous.scores);
+
+      for (const [subjectCode, latestScore] of latestScores.entries()) {
+        if (latestScore == null) continue;
+        const previousScore = previousScores.get(subjectCode);
+        if (previousScore == null) continue;
+        const diff = latestScore - previousScore;
+        if (diff <= -10) {
+          const alertKey = `${category}:${subjectCode}:${latest.exam_month || latest.id}`;
+          alerts.push({
+            id: `${student.id}:score_drop:${alertKey}`,
+            student_id: student.id,
+            student_name: `${student.last_name} ${student.first_name}`,
+            grade: student.grade,
+            alert_type: 'score_drop',
+            alert_key: alertKey,
+            message: `${SUBJECT_LABELS[subjectCode] || subjectCode} ${diff}点`,
+            details: { subject: subjectCode, previous_value: previousScore, current_value: latestScore, diff },
+          });
+        }
+      }
+    }
+  }
+  return alerts;
+}
+
+function buildScoreMissingCandidates(sources: AlertSources): Alert[] {
+  const alerts: Alert[] = [];
+  const categories: Array<'regular_test' | 'report_card' | 'mock'> = ['regular_test', 'report_card', 'mock'];
+
+  for (const student of sources.students) {
+    const allAssessments = sources.assessmentsByStudent.get(student.id) ?? [];
+    for (const category of categories) {
+      const assessments = allAssessments
+        .filter((a) => a.category === category)
+        .sort((a, b) => {
+          if (!a.exam_month || !b.exam_month) return 0;
+          return b.exam_month.localeCompare(a.exam_month);
+        });
+      if (assessments.length === 0) continue;
+
+      const latest = assessments[0];
+      const expectedSubjects =
+        category === 'mock'
+          ? ['english', 'math', 'japanese', 'social', 'science', 'conv_5', 'conv_4', 'conv_total']
+          : ['english', 'math', 'japanese', 'social', 'science', 'music', 'art', 'tech_home', 'pe'];
+
+      const missingSubjects: string[] = [];
+      for (const subj of expectedSubjects) {
+        const score = latest.scores.find((s) => s.subject === subj);
+        if (!score || score.value == null) missingSubjects.push(subj);
+      }
+      if (missingSubjects.length > 0) {
+        const examMonthStr = latest.exam_month
+          ? new Date(latest.exam_month).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long' })
+          : '最新';
+        const alertKey = `${category}:${latest.exam_month || latest.id}`;
+        alerts.push({
+          id: `${student.id}:score_missing:${alertKey}`,
+          student_id: student.id,
+          student_name: `${student.last_name} ${student.first_name}`,
+          grade: student.grade,
+          alert_type: 'score_missing',
+          alert_key: alertKey,
+          message: `${examMonthStr} ${missingSubjects.map((s) => SUBJECT_LABELS[s] || s).join('・')}`,
+          details: { subject: missingSubjects.join(',') },
+        });
+      }
+    }
+  }
+  return alerts;
+}
+
+function buildInterviewOverdueCandidates(sources: AlertSources): Alert[] {
+  const alerts: Alert[] = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  for (const student of sources.students) {
+    const interviews = sources.interviewsByStudent.get(student.id) ?? [];
+    const lastInterviewDate =
+      interviews.length > 0 ? (() => { const d = new Date(interviews[0].interview_date); d.setHours(0, 0, 0, 0); return d; })() : null;
+    const daysDiff = lastInterviewDate
+      ? Math.floor((today.getTime() - lastInterviewDate.getTime()) / (1000 * 60 * 60 * 24))
+      : Infinity;
+
+    if (daysDiff > 30) {
+      const alertKey = `interview:${lastInterviewDate ? lastInterviewDate.toISOString().split('T')[0] : 'never'}`;
+      alerts.push({
+        id: `${student.id}:interview_overdue:${alertKey}`,
+        student_id: student.id,
+        student_name: `${student.last_name} ${student.first_name}`,
+        grade: student.grade,
+        alert_type: 'interview_overdue',
+        alert_key: alertKey,
+        message: lastInterviewDate ? `${daysDiff}日経過` : '面談記録なし',
+        details: { days_overdue: daysDiff },
+      });
+    }
+  }
+  return alerts;
+}
+
+function buildApplicationOverdueCandidates(sources: AlertSources): Alert[] {
+  const alerts: Alert[] = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const overdueItems = sources.applicationItems.filter((item) => {
+    if (item.column_type !== 'check') return false;
+    if (!item.due_date) return false;
+    const dueDate = new Date(item.due_date);
+    dueDate.setHours(0, 0, 0, 0);
+    return dueDate < today;
+  });
+
+  for (const student of sources.students) {
+    for (const item of overdueItems) {
+      const app = sources.applications.find((a) => a.student_id === student.id && a.item_id === item.id);
+      if (app?.status === 'completed' || app?.status === 'not_applicable') continue;
+
+      const alertKey = `application:${item.id}:${item.due_date}`;
+      const dueDateStr = item.due_date
+        ? new Date(item.due_date).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })
+        : '';
+      alerts.push({
+        id: `${student.id}:application_overdue:${alertKey}`,
+        student_id: student.id,
+        student_name: `${student.last_name} ${student.first_name}`,
+        grade: student.grade,
+        alert_type: 'application_overdue',
+        alert_key: alertKey,
+        message: `${item.name}（期日: ${dueDateStr}）`,
+        details: { item_name: item.name, due_date: item.due_date ?? undefined },
+      });
+    }
+  }
+  return alerts;
+}
+
+function buildInterviewTaskCandidates(sources: AlertSources): Alert[] {
+  const alerts: Alert[] = [];
+  const studentMap = new Map(sources.students.map((s) => [s.id, s]));
+
+  for (const task of sources.pendingTasks) {
+    const studentId = task.student_id;
+    const student = studentMap.get(studentId);
+    const studentName = student
+      ? `${student.last_name} ${student.first_name}`
+      : `${task.student?.last_name ?? ''} ${task.student?.first_name ?? ''}`.trim() || '（不明）';
+    const grade = student?.grade ?? 0;
+
+    const alertKey = `task:${task.id}`;
+    const taskDateStr = task.interview_date
+      ? new Date(task.interview_date).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })
+      : '';
+    const contentPreview = task.content
+      ? (task.content.length > 50 ? task.content.substring(0, 50) + '...' : task.content)
+      : '';
+
+    alerts.push({
+      id: `${studentId}:interview_task:${alertKey}`,
+      student_id: studentId,
+      student_name: studentName,
+      grade,
+      alert_type: 'interview_task',
+      alert_key: alertKey,
+      message: taskDateStr ? `${taskDateStr}: ${contentPreview}` : contentPreview || 'タスク',
+      details: { task_id: task.id, interview_date: task.interview_date, content: task.content ?? undefined },
+    });
+  }
+  return alerts;
+}
+
+function buildExamOverdueCandidates(sources: AlertSources): Alert[] {
+  const alerts: Alert[] = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  for (const student of sources.students) {
+    const textbooks = sources.textbooksByStudent.get(student.id) ?? [];
+    for (const st of textbooks) {
+      for (const exam of st.exams ?? []) {
+        if (!exam.exam_date) continue;
+        const examDate = new Date(exam.exam_date);
+        examDate.setHours(0, 0, 0, 0);
+        const daysUntil = Math.ceil((examDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        if (daysUntil >= 0) continue;
+
+        const examName = exam.custom_exam_name ?? sources.examTypeNames.get(exam.exam_type_id ?? '') ?? 'テスト';
+        const textbookName = (st as { textbook?: { name: string } }).textbook?.name ?? 'テキスト';
+        const examDateStr = examDate.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' });
+        const daysDiff = Math.floor((today.getTime() - examDate.getTime()) / (1000 * 60 * 60 * 24));
+
+        const alertKey = `exam:${exam.id}`;
+        alerts.push({
+          id: `${student.id}:exam_overdue:${alertKey}`,
+          student_id: student.id,
+          student_name: `${student.last_name} ${student.first_name}`,
+          grade: student.grade,
+          alert_type: 'exam_overdue',
+          alert_key: alertKey,
+          message: `${textbookName}: ${examName}（${examDateStr}、${daysDiff}日経過）`,
+          details: {
+            exam_id: exam.id,
+            exam_date: exam.exam_date,
+            exam_name: examName,
+            textbook_name: textbookName,
+            days_overdue: daysDiff,
+          },
+        });
+      }
+    }
+  }
+  return alerts;
+}
+
+export type AlertLevel = 'warning' | 'info';
+
+/** Phase 3: アラート定義のデータ駆動化（追加・表示制御を一元管理） */
+export const ALERT_DEFINITIONS: Record<
+  AlertType,
+  { level: AlertLevel; evaluator: (sources: AlertSources) => Alert[] }
+> = {
+  score_drop: { level: 'warning', evaluator: buildScoreDropCandidates },
+  score_missing: { level: 'warning', evaluator: buildScoreMissingCandidates },
+  interview_overdue: { level: 'info', evaluator: buildInterviewOverdueCandidates },
+  application_overdue: { level: 'info', evaluator: buildApplicationOverdueCandidates },
+  interview_task: { level: 'info', evaluator: buildInterviewTaskCandidates },
+  exam_overdue: { level: 'warning', evaluator: buildExamOverdueCandidates },
+};
+
+/** Light 用の alert types */
+const LIGHT_ALERT_TYPES: AlertType[] = ['interview_overdue', 'application_overdue', 'interview_task'];
+
+/** Heavy 用の alert types */
+const HEAVY_ALERT_TYPES: AlertType[] = ['score_drop', 'score_missing', 'exam_overdue'];
+
+/**
+ * 全アラート候補を生成（pure、dismiss 未考慮、ALERT_DEFINITIONS 駆動）
+ */
+export function buildAlertCandidates(sources: AlertSources): Alert[] {
+  return (Object.keys(ALERT_DEFINITIONS) as AlertType[]).flatMap((type) =>
+    ALERT_DEFINITIONS[type].evaluator(sources)
+  );
+}
+
+// ============================================
+// Phase 3: school 単位短期キャッシュ（TTL 15秒）
+// ============================================
+
+const ALERT_CACHE_TTL_MS = 15_000;
+
+interface CacheEntry<T> {
+  data: T;
+  expiresAt: number;
+}
+
+const cacheLight = new Map<string, CacheEntry<StudentAlerts[]>>();
+const cacheHeavy = new Map<string, CacheEntry<StudentAlerts[]>>();
+
+function cacheKey(schoolIds: string[]): string {
+  return [...schoolIds].sort().join(',');
+}
+
+function getCached<T>(cache: Map<string, CacheEntry<T>>, key: string): T | null {
+  const entry = cache.get(key);
+  if (!entry || Date.now() > entry.expiresAt) {
+    if (entry) cache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
+function setCached<T>(cache: Map<string, CacheEntry<T>>, key: string, data: T): void {
+  cache.set(key, { data, expiresAt: Date.now() + ALERT_CACHE_TTL_MS });
+}
+
+/**
+ * アラートキャッシュを無効化（dismiss 後などに呼び出す）
+ */
+export function invalidateAlertCache(schoolIds: string[]): void {
+  const key = cacheKey(schoolIds);
+  cacheLight.delete(key);
+  cacheHeavy.delete(key);
+}
+
+// ============================================
+// applyDismissAndSort（UI都合処理）
+// ============================================
+
+/**
+ * dismiss でフィルタし、生徒ごとにグループ化・ソート
+ */
+export function applyDismissAndSort(
+  candidates: Alert[],
+  dismissedSet: Set<string>
+): StudentAlerts[] {
+  const filtered = candidates.filter((a) => !dismissedSet.has(a.id));
+  const studentAlertsMap = new Map<string, StudentAlerts>();
+
+  for (const alert of filtered) {
+    if (!studentAlertsMap.has(alert.student_id)) {
+      studentAlertsMap.set(alert.student_id, {
+        student_id: alert.student_id,
+        student_name: alert.student_name,
+        grade: alert.grade,
+        alerts: [],
+      });
+    }
+    studentAlertsMap.get(alert.student_id)!.alerts.push(alert);
+  }
+
+  return Array.from(studentAlertsMap.values()).sort((a, b) => {
+    if (a.grade !== b.grade) return a.grade - b.grade;
+    return a.student_name.localeCompare(b.student_name, 'ja');
+  });
+}
+
+// ============================================
+// 公開API
+// ============================================
 
 /**
  * 対応済み記録を取得
@@ -17,7 +444,6 @@ export async function getAlertDismissals(schoolIds: string[]): Promise<AlertDism
     .select('*')
     .in('school_id', schoolIds);
 
-  // テーブルが存在しない場合は空配列を返す（マイグレーション未実行）
   if (error) {
     if (error.code === 'PGRST116' || error.message.includes('schema cache')) {
       console.warn('alert_dismissalsテーブルが見つかりません。マイグレーションを実行してください:', error);
@@ -54,7 +480,6 @@ export async function dismissAlert(
     .single();
 
   if (error) {
-    // RLSエラーの場合は詳細なメッセージを表示
     if (error.code === '42501') {
       throw new Error(`対応済み記録の作成に失敗しました: RLSポリシー違反。マイグレーションを確認してください。${error.message}`);
     }
@@ -87,520 +512,175 @@ export async function undismissAlert(
 }
 
 /**
- * 成績低下アラートを計算
+ * Light アラート用ソースのみ取得（interview, application, task）
  */
-async function calculateScoreDropAlerts(
-  schoolIds: string[],
-  dismissedSet: Set<string>
-): Promise<Alert[]> {
-  const alerts: Alert[] = [];
-  
-  try {
-    // 全生徒を取得
-    const students = await getStudents(undefined, schoolIds);
-    
-    for (const student of students) {
-      // 各カテゴリ（regular_test, report_card, mock）ごとに判定
-      const categories: Array<'regular_test' | 'report_card' | 'mock'> = ['regular_test', 'report_card', 'mock'];
-      
-      for (const category of categories) {
-        const assessments = await listAssessments(student.id, category);
-        
-        // exam_month降順でソート
-        const sorted = assessments.sort((a, b) => {
-          if (!a.exam_month || !b.exam_month) return 0;
-          return b.exam_month.localeCompare(a.exam_month);
-        });
-        
-        if (sorted.length < 2) continue; // 2件以上ないと比較できない
-        
-        const latest = sorted[0];
-        const previous = sorted[1];
-        
-        // 各科目を比較
-        const latestScores = new Map(
-          latest.scores.map(s => [s.subject_code, s.score])
-        );
-        const previousScores = new Map(
-          previous.scores.map(s => [s.subject_code, s.score])
-        );
-        
-        for (const [subjectCode, latestScore] of latestScores.entries()) {
-          if (latestScore == null) continue;
-          
-          const previousScore = previousScores.get(subjectCode);
-          if (previousScore == null) continue;
-          
-          const diff = latestScore - previousScore;
-          if (diff <= -10) {
-            const alertKey = `${category}:${subjectCode}:${latest.exam_month || latest.id}`;
-            const alertId = `${student.id}:score_drop:${alertKey}`;
-            
-            if (dismissedSet.has(alertId)) continue;
-            
-            alerts.push({
-              id: alertId,
-              student_id: student.id,
-              student_name: `${student.last_name} ${student.first_name}`,
-              grade: student.grade,
-              alert_type: 'score_drop',
-              alert_key: alertKey,
-              message: `${SUBJECT_LABELS[subjectCode] || subjectCode} ${diff}点`,
-              details: {
-                subject: subjectCode,
-                previous_value: previousScore,
-                current_value: latestScore,
-                diff,
-              },
-            });
-          }
-        }
-      }
-    }
-  } catch (error) {
-    console.error('Error calculating score drop alerts:', error);
+async function fetchAlertSourcesLight(schoolIds: string[]): Promise<Partial<AlertSources>> {
+  if (schoolIds.length === 0) {
+    return {
+      students: [],
+      interviewsByStudent: new Map(),
+      applicationItems: [],
+      applications: [],
+      pendingTasks: [],
+    };
   }
-  
-  return alerts;
+
+  const [students, interviewsByStudent, applicationItems, applicationsResult, pendingTasksResult] =
+    await Promise.all([
+      getStudents(undefined, schoolIds),
+      getInterviewsBySchool(schoolIds),
+      getApplicationItems(schoolIds, false),
+      getStudentApplications(schoolIds).catch(() => []),
+      Promise.all(schoolIds.map((sid) => getPendingTasks(sid).catch(() => []))).then((arr) => arr.flat()),
+    ]);
+
+  return {
+    students,
+    interviewsByStudent,
+    applicationItems,
+    applications: applicationsResult ?? [],
+    pendingTasks: pendingTasksResult ?? [],
+  };
 }
 
 /**
- * 成績未入力アラートを計算
+ * Heavy アラート用ソースのみ取得（assessments, textbooks/exams）
  */
-async function calculateScoreMissingAlerts(
-  schoolIds: string[],
-  dismissedSet: Set<string>
-): Promise<Alert[]> {
-  const alerts: Alert[] = [];
-  
-  try {
-    const students = await getStudents(undefined, schoolIds);
-    
-    for (const student of students) {
-      const categories: Array<'regular_test' | 'report_card' | 'mock'> = ['regular_test', 'report_card', 'mock'];
-      
-      for (const category of categories) {
-        const assessments = await listAssessments(student.id, category);
-        
-        if (assessments.length === 0) continue;
-        
-        // 最新のassessmentを取得
-        const sorted = assessments.sort((a, b) => {
-          if (!a.exam_month || !b.exam_month) return 0;
-          return b.exam_month.localeCompare(a.exam_month);
-        });
-        
-        const latest = sorted[0];
-        
-        // 期待される科目リストを取得
-        const expectedSubjects = category === 'mock'
-          ? ['english', 'math', 'japanese', 'social', 'science', 'conv_5', 'conv_4', 'conv_total']
-          : ['english', 'math', 'japanese', 'social', 'science', 'music', 'art', 'tech_home', 'pe'];
-        
-        // 空欄科目をチェック
-        const missingSubjects: string[] = [];
-        for (const subjectCode of expectedSubjects) {
-          const score = latest.scores.find(s => s.subject_code === subjectCode);
-          if (!score || score.score == null) {
-            missingSubjects.push(subjectCode);
-          }
-        }
-        
-        if (missingSubjects.length > 0) {
-          const examMonthStr = latest.exam_month 
-            ? new Date(latest.exam_month).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long' })
-            : '最新';
-          const alertKey = `${category}:${latest.exam_month || latest.id}`;
-          const alertId = `${student.id}:score_missing:${alertKey}`;
-          
-          if (dismissedSet.has(alertId)) continue;
-          
-          alerts.push({
-            id: alertId,
-            student_id: student.id,
-            student_name: `${student.last_name} ${student.first_name}`,
-            grade: student.grade,
-            alert_type: 'score_missing',
-            alert_key: alertKey,
-            message: `${examMonthStr} ${missingSubjects.map(s => SUBJECT_LABELS[s] || s).join('・')}`,
-            details: {
-              subject: missingSubjects.join(','),
-            },
-          });
-        }
-      }
-    }
-  } catch (error) {
-    console.error('Error calculating score missing alerts:', error);
+async function fetchAlertSourcesHeavy(schoolIds: string[]): Promise<Partial<AlertSources>> {
+  if (schoolIds.length === 0) {
+    return {
+      students: [],
+      assessmentsByStudent: new Map(),
+      textbooksByStudent: new Map(),
+      examTypeNames: new Map(),
+    };
   }
-  
-  return alerts;
+
+  const [students, assessmentsByStudent, textbooksResult] = await Promise.all([
+    getStudents(undefined, schoolIds),
+    listAssessmentsBySchool(schoolIds),
+    getStudentTextbooksExamsBySchool(schoolIds),
+  ]);
+
+  const { byStudent: textbooksByStudent, examTypeNames } = textbooksResult;
+
+  return {
+    students,
+    assessmentsByStudent,
+    textbooksByStudent,
+    examTypeNames,
+  };
+}
+
+function toFullSources(partial: Partial<AlertSources>): AlertSources {
+  return {
+    students: partial.students ?? [],
+    assessmentsByStudent: partial.assessmentsByStudent ?? new Map(),
+    interviewsByStudent: partial.interviewsByStudent ?? new Map(),
+    applicationItems: partial.applicationItems ?? [],
+    applications: partial.applications ?? [],
+    pendingTasks: partial.pendingTasks ?? [],
+    textbooksByStudent: partial.textbooksByStudent ?? new Map(),
+    examTypeNames: partial.examTypeNames ?? new Map(),
+  };
+}
+
+/** Light アラートの candidates を構築（3タイプのみ、ALERT_DEFINITIONS 駆動） */
+function buildAlertCandidatesLight(sources: Partial<AlertSources>): Alert[] {
+  if (!sources.students?.length) return [];
+  const full = toFullSources(sources);
+  return LIGHT_ALERT_TYPES.flatMap((type) => ALERT_DEFINITIONS[type].evaluator(full));
+}
+
+/** Heavy アラートの candidates を構築（3タイプのみ、ALERT_DEFINITIONS 駆動） */
+function buildAlertCandidatesHeavy(sources: Partial<AlertSources>): Alert[] {
+  if (!sources.students?.length) return [];
+  const full = toFullSources(sources);
+  return HEAVY_ALERT_TYPES.flatMap((type) => ALERT_DEFINITIONS[type].evaluator(full));
+}
+
+export interface GetAlertsOptions {
+  /** キャッシュをスキップして再取得（dismiss 後の再取得など） */
+  skipCache?: boolean;
 }
 
 /**
- * 面談未更新アラートを計算
+ * Light アラートのみ取得（速い：interview_overdue, application_overdue, interview_task）
  */
-async function calculateInterviewOverdueAlerts(
+export async function getAlertsLight(
   schoolIds: string[],
-  dismissedSet: Set<string>
-): Promise<Alert[]> {
-  const alerts: Alert[] = [];
-  
-  try {
-    const students = await getStudents(undefined, schoolIds);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    for (const student of students) {
-      try {
-        const interviews = await getStudentInterviews(student.id);
-        
-        let lastInterviewDate: Date | null = null;
-        if (interviews.length > 0) {
-          lastInterviewDate = new Date(interviews[0].interview_date);
-          lastInterviewDate.setHours(0, 0, 0, 0);
-        }
-        
-        const daysDiff = lastInterviewDate
-          ? Math.floor((today.getTime() - lastInterviewDate.getTime()) / (1000 * 60 * 60 * 24))
-          : Infinity;
-        
-        if (daysDiff > 30) {
-          const alertKey = `interview:${lastInterviewDate ? lastInterviewDate.toISOString().split('T')[0] : 'never'}`;
-          const alertId = `${student.id}:interview_overdue:${alertKey}`;
-          
-          if (dismissedSet.has(alertId)) continue;
-          
-          alerts.push({
-            id: alertId,
-            student_id: student.id,
-            student_name: `${student.last_name} ${student.first_name}`,
-            grade: student.grade,
-            alert_type: 'interview_overdue',
-            alert_key: alertKey,
-            message: lastInterviewDate ? `${daysDiff}日経過` : '面談記録なし',
-            details: {
-              days_overdue: daysDiff,
-            },
-          });
-        }
-      } catch (err) {
-        // 面談記録取得エラーは無視（テーブルが存在しない場合など）
-        console.warn(`Failed to get interviews for student ${student.id}:`, err);
-      }
-    }
-  } catch (error) {
-    console.error('Error calculating interview overdue alerts:', error);
+  opts: GetAlertsOptions = {}
+): Promise<StudentAlerts[]> {
+  const key = cacheKey(schoolIds);
+  if (!opts.skipCache) {
+    const cached = getCached(cacheLight, key);
+    if (cached) return cached;
   }
-  
-  return alerts;
+
+  const [sources, dismissals] = await Promise.all([
+    fetchAlertSourcesLight(schoolIds),
+    getAlertDismissals(schoolIds),
+  ]);
+  const dismissedSet = new Set(dismissals.map((d) => `${d.student_id}:${d.alert_type}:${d.alert_key}`));
+  const candidates = buildAlertCandidatesLight(sources);
+  const result = applyDismissAndSort(candidates, dismissedSet);
+  setCached(cacheLight, key, result);
+  return result;
 }
 
 /**
- * 申込未提出アラートを計算
+ * Heavy アラートのみ取得（重い：score_drop, score_missing, exam_overdue）
  */
-async function calculateApplicationOverdueAlerts(
+export async function getAlertsHeavy(
   schoolIds: string[],
-  dismissedSet: Set<string>
-): Promise<Alert[]> {
-  const alerts: Alert[] = [];
-  
-  try {
-    const items = await getApplicationItems(schoolIds, false);
-    let applications: any[] = [];
-    try {
-      applications = await getStudentApplications(schoolIds);
-    } catch (error: any) {
-      // student_applicationsテーブルが存在しない、またはRLSエラーの場合は空配列を返す
-      console.warn('申込状況の取得に失敗しました（無視します）:', error);
-      applications = [];
-    }
-    const students = await getStudents(undefined, schoolIds);
-    
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    // 期日が過ぎているcheckタイプの項目を取得
-    const overdueItems = items.filter(item => {
-      if (item.column_type !== 'check') return false;
-      if (!item.due_date) return false;
-      const dueDate = new Date(item.due_date);
-      dueDate.setHours(0, 0, 0, 0);
-      return dueDate < today;
-    });
-    
-    // 生徒ごとにチェック
-    for (const student of students) {
-      for (const item of overdueItems) {
-        const app = applications.find(
-          a => a.student_id === student.id && a.item_id === item.id
-        );
-        
-        // statusが'completed'または'not_applicable'の場合は対象外
-        if (app?.status === 'completed' || app?.status === 'not_applicable') {
-          continue;
-        }
-        
-        const alertKey = `application:${item.id}:${item.due_date}`;
-        const alertId = `${student.id}:application_overdue:${alertKey}`;
-        
-        if (dismissedSet.has(alertId)) continue;
-        
-        const dueDateStr = item.due_date 
-          ? new Date(item.due_date).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })
-          : '';
-        
-        alerts.push({
-          id: alertId,
-          student_id: student.id,
-          student_name: `${student.last_name} ${student.first_name}`,
-          grade: student.grade,
-          alert_type: 'application_overdue',
-          alert_key: alertKey,
-          message: `${item.name}（期日: ${dueDateStr}）`,
-          details: {
-            item_name: item.name,
-            due_date: item.due_date || undefined,
-          },
-        });
-      }
-    }
-  } catch (error) {
-    console.error('Error calculating application overdue alerts:', error);
+  opts: GetAlertsOptions = {}
+): Promise<StudentAlerts[]> {
+  const key = cacheKey(schoolIds);
+  if (!opts.skipCache) {
+    const cached = getCached(cacheHeavy, key);
+    if (cached) return cached;
   }
-  
-  return alerts;
+
+  const [sources, dismissals] = await Promise.all([
+    fetchAlertSourcesHeavy(schoolIds),
+    getAlertDismissals(schoolIds),
+  ]);
+  const dismissedSet = new Set(dismissals.map((d) => `${d.student_id}:${d.alert_type}:${d.alert_key}`));
+  const candidates = buildAlertCandidatesHeavy(sources);
+  const result = applyDismissAndSort(candidates, dismissedSet);
+  setCached(cacheHeavy, key, result);
+  return result;
 }
 
 /**
- * 面談タスクアラートを計算（未完了のタスク）
+ * 2つの StudentAlerts[] をマージ（同一生徒のアラートを結合）
  */
-async function calculateInterviewTaskAlerts(
-  schoolIds: string[],
-  dismissedSet: Set<string>
-): Promise<Alert[]> {
-  const alerts: Alert[] = [];
-  
-  try {
-    // 各教室の未完了タスクを取得
-    for (const schoolId of schoolIds) {
-      try {
-        const pendingTasks = await getPendingTasks(schoolId);
-        
-        for (const task of pendingTasks) {
-          const alertKey = `task:${task.id}`;
-          const alertId = `${task.student_id}:interview_task:${alertKey}`;
-          
-          if (dismissedSet.has(alertId)) continue;
-          
-          // 生徒情報を取得
-          const { data: student, error: studentError } = await supabase
-            .from('students')
-            .select('last_name, first_name, grade')
-            .eq('id', task.student_id)
-            .single();
-          
-          if (studentError || !student) {
-            console.warn(`Student not found for task ${task.id}`);
-            continue;
-          }
-          
-          // タスクの日付をフォーマット
-          const taskDateStr = task.interview_date
-            ? new Date(task.interview_date).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })
-            : '';
-          
-          // タスクの内容の最初の50文字を取得
-          const contentPreview = task.content 
-            ? (task.content.length > 50 ? task.content.substring(0, 50) + '...' : task.content)
-            : '';
-          
-          alerts.push({
-            id: alertId,
-            student_id: task.student_id,
-            student_name: `${student.last_name} ${student.first_name}`,
-            grade: student.grade,
-            alert_type: 'interview_task',
-            alert_key: alertKey,
-            message: taskDateStr ? `${taskDateStr}: ${contentPreview}` : contentPreview || 'タスク',
-            details: {
-              task_id: task.id,
-              interview_date: task.interview_date,
-              content: task.content || undefined,
-            },
-          });
-        }
-      } catch (error) {
-        // テーブルが存在しない場合などは無視
-        console.warn(`Failed to get pending tasks for school ${schoolId}:`, error);
-      }
+export function mergeStudentAlerts(a: StudentAlerts[], b: StudentAlerts[]): StudentAlerts[] {
+  const map = new Map<string, StudentAlerts>();
+  for (const sa of [...a, ...b]) {
+    const existing = map.get(sa.student_id);
+    if (existing) {
+      existing.alerts.push(...sa.alerts);
+    } else {
+      map.set(sa.student_id, { ...sa, alerts: [...sa.alerts] });
     }
-  } catch (error) {
-    console.error('Error calculating interview task alerts:', error);
   }
-  
-  return alerts;
+  return Array.from(map.values()).sort((x, y) => {
+    if (x.grade !== y.grade) return x.grade - y.grade;
+    return x.student_name.localeCompare(y.student_name, 'ja');
+  });
 }
 
 /**
- * テスト未更新アラートを計算（テスト日が過ぎているのに更新されていないもの）
- */
-async function calculateExamOverdueAlerts(
-  schoolIds: string[],
-  dismissedSet: Set<string>
-): Promise<Alert[]> {
-  const alerts: Alert[] = [];
-  
-  try {
-    const students = await getStudents(undefined, schoolIds);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    for (const student of students) {
-      try {
-        // 生徒のテキスト一覧を取得
-        const studentTextbooks = await getStudentTextbooks(student.id, false);
-        
-        for (const studentTextbook of studentTextbooks) {
-          // 各テキストのテスト設定を取得
-          const { data: exams, error: examsError } = await supabase
-            .from('student_textbook_exams')
-            .select('*')
-            .eq('student_textbook_id', studentTextbook.id)
-            .order('exam_date', { ascending: true });
-          
-          if (examsError) {
-            console.warn(`Failed to get exams for student_textbook ${studentTextbook.id}:`, examsError);
-            continue;
-          }
-          
-          if (!exams || exams.length === 0) continue;
-          
-          // テスト日が過ぎているものをチェック（「次回テストまで」がマイナスになっているもの）
-          for (const exam of exams) {
-            if (!exam.exam_date) continue;
-            
-            const examDate = new Date(exam.exam_date);
-            examDate.setHours(0, 0, 0, 0);
-            
-            // 「次回テストまで」を計算（テスト日までの日数）
-            const daysUntil = Math.ceil((examDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-            
-            // 「次回テストまで」がマイナス（テスト日が過ぎている）場合のみアラート
-            if (daysUntil < 0) {
-              const alertKey = `exam:${exam.id}`;
-              const alertId = `${student.id}:exam_overdue:${alertKey}`;
-              
-              if (dismissedSet.has(alertId)) continue;
-              
-              // テスト名を取得
-              let examName = 'テスト';
-              if (exam.custom_exam_name) {
-                examName = exam.custom_exam_name;
-              } else if (exam.exam_type_id) {
-                const { data: examType } = await supabase
-                  .from('exam_types')
-                  .select('name')
-                  .eq('id', exam.exam_type_id)
-                  .single();
-                if (examType) {
-                  examName = examType.name;
-                }
-              }
-              
-              // テキスト名を取得
-              const textbookName = studentTextbook.textbook?.name || 'テキスト';
-              
-              // 日付をフォーマット
-              const examDateStr = examDate.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' });
-              const daysDiff = Math.floor((today.getTime() - examDate.getTime()) / (1000 * 60 * 60 * 24));
-              
-              alerts.push({
-                id: alertId,
-                student_id: student.id,
-                student_name: `${student.last_name} ${student.first_name}`,
-                grade: student.grade,
-                alert_type: 'exam_overdue',
-                alert_key: alertKey,
-                message: `${textbookName}: ${examName}（${examDateStr}、${daysDiff}日経過）`,
-                details: {
-                  exam_id: exam.id,
-                  exam_date: exam.exam_date,
-                  exam_name: examName,
-                  textbook_name: textbookName,
-                  days_overdue: daysDiff,
-                },
-              });
-            }
-          }
-        }
-      } catch (err) {
-        // エラーは無視（テーブルが存在しない場合など）
-        console.warn(`Failed to get exams for student ${student.id}:`, err);
-      }
-    }
-  } catch (error) {
-    console.error('Error calculating exam overdue alerts:', error);
-  }
-  
-  return alerts;
-}
-
-/**
- * 全アラートを取得（リアルタイム計算）
+ * 全アラートを取得（集計エンジン化済み）
  */
 export async function getAlerts(schoolIds: string[]): Promise<StudentAlerts[]> {
-  // 対応済み記録を取得
-  const dismissals = await getAlertDismissals(schoolIds);
-  const dismissedSet = new Set(
-    dismissals.map(d => `${d.student_id}:${d.alert_type}:${d.alert_key}`)
-  );
-  
-  // 各アラートタイプを計算
-  const [
-    scoreDropAlerts,
-    scoreMissingAlerts,
-    interviewOverdueAlerts,
-    applicationOverdueAlerts,
-    interviewTaskAlerts,
-    examOverdueAlerts,
-  ] = await Promise.all([
-    calculateScoreDropAlerts(schoolIds, dismissedSet),
-    calculateScoreMissingAlerts(schoolIds, dismissedSet),
-    calculateInterviewOverdueAlerts(schoolIds, dismissedSet),
-    calculateApplicationOverdueAlerts(schoolIds, dismissedSet),
-    calculateInterviewTaskAlerts(schoolIds, dismissedSet),
-    calculateExamOverdueAlerts(schoolIds, dismissedSet),
+  const [sources, dismissals] = await Promise.all([
+    fetchAlertSources(schoolIds),
+    getAlertDismissals(schoolIds),
   ]);
-  
-  // 全アラートを結合
-  const allAlerts = [
-    ...scoreDropAlerts,
-    ...scoreMissingAlerts,
-    ...interviewOverdueAlerts,
-    ...applicationOverdueAlerts,
-    ...interviewTaskAlerts,
-    ...examOverdueAlerts,
-  ];
-  
-  // 生徒ごとにグループ化
-  const studentAlertsMap = new Map<string, StudentAlerts>();
-  
-  for (const alert of allAlerts) {
-    if (!studentAlertsMap.has(alert.student_id)) {
-      studentAlertsMap.set(alert.student_id, {
-        student_id: alert.student_id,
-        student_name: alert.student_name,
-        grade: alert.grade,
-        alerts: [],
-      });
-    }
-    studentAlertsMap.get(alert.student_id)!.alerts.push(alert);
-  }
-  
-  // 配列に変換してソート（学年順、名前順）
-  return Array.from(studentAlertsMap.values()).sort((a, b) => {
-    if (a.grade !== b.grade) return a.grade - b.grade;
-    return a.student_name.localeCompare(b.student_name, 'ja');
-  });
+
+  const dismissedSet = new Set(dismissals.map((d) => `${d.student_id}:${d.alert_type}:${d.alert_key}`));
+  const candidates = buildAlertCandidates(sources);
+  return applyDismissAndSort(candidates, dismissedSet);
 }

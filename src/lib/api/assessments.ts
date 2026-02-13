@@ -38,6 +38,65 @@ const MOCK_SUBJECTS = [
 ] as const;
 
 /**
+ * 教室単位で成績一覧をバッチ取得（アラート用）
+ * student_id でグルーピングした Map を返す
+ */
+export async function listAssessmentsBySchool(
+  schoolIds: string[],
+  category?: 'regular_test' | 'report_card' | 'mock'
+): Promise<Map<string, AssessmentWithScores[]>> {
+  if (schoolIds.length === 0) return new Map();
+
+  let query = supabase
+    .from('assessments')
+    .select('*')
+    .in('school_id', schoolIds)
+    .order('grade', { ascending: false })
+    .order('exam_month', { ascending: false, nullsFirst: false })
+    .order('name_code', { ascending: true });
+
+  if (category) {
+    query = query.eq('category', category);
+  }
+
+  const { data: assessments, error: assessmentsError } = await query;
+
+  if (assessmentsError) {
+    console.error('Error fetching assessments:', assessmentsError);
+    throw new Error('成績データの取得に失敗しました');
+  }
+
+  if (!assessments || assessments.length === 0) {
+    return new Map();
+  }
+
+  const assessmentIds = assessments.map((a) => a.id);
+  const { data: scores, error: scoresError } = await supabase
+    .from('assessment_scores')
+    .select('*')
+    .in('assessment_id', assessmentIds);
+
+  if (scoresError) {
+    console.error('Error fetching assessment scores:', scoresError);
+    throw new Error('成績スコアの取得に失敗しました');
+  }
+
+  const assessmentsWithScores: AssessmentWithScores[] = (assessments as Assessment[]).map((assessment) => ({
+    ...assessment,
+    scores: (scores || []).filter((score) => score.assessment_id === assessment.id),
+  }));
+
+  const byStudent = new Map<string, AssessmentWithScores[]>();
+  for (const a of assessmentsWithScores) {
+    const list = byStudent.get(a.student_id) || [];
+    list.push(a);
+    byStudent.set(a.student_id, list);
+  }
+
+  return byStudent;
+}
+
+/**
  * 生徒の成績一覧を取得（カテゴリ別）
  */
 export async function listAssessments(

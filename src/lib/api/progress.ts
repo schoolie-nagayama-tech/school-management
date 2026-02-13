@@ -1,4 +1,4 @@
-﻿import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import type {
   StudentTextbook,
   StudentTextbookInsert,
@@ -30,6 +30,89 @@ import { getExamTypes } from './textbooks';
 // ============================================
 // 生徒×テキスト紐付け（student_textbooks）
 // ============================================
+
+export interface AlertTextbooksResult {
+  byStudent: Map<string, StudentTextbookWithDetails[]>;
+  examTypeNames: Map<string, string>;
+}
+
+/**
+ * 教室単位で生徒テキスト＋テスト設定をバッチ取得（アラート用）
+ */
+export async function getStudentTextbooksExamsBySchool(
+  schoolIds: string[]
+): Promise<AlertTextbooksResult> {
+  const empty: AlertTextbooksResult = { byStudent: new Map(), examTypeNames: new Map() };
+  if (schoolIds.length === 0) return empty;
+
+  const { data: studentTextbooks, error: stError } = await supabase
+    .from('student_textbooks')
+    .select('*, textbook:textbooks(*)')
+    .in('school_id', schoolIds)
+    .eq('is_active', true)
+    .order('created_at', { ascending: false });
+
+  if (stError) {
+    throw new Error(`生徒テキストの取得に失敗しました: ${stError.message}`);
+  }
+
+  const stList = (studentTextbooks || []) as (StudentTextbook & { textbook: Textbook })[];
+  if (stList.length === 0) return empty;
+
+  const stIds = stList.map((st) => st.id);
+  const { data: exams, error: examsError } = await supabase
+    .from('student_textbook_exams')
+    .select('*')
+    .in('student_textbook_id', stIds)
+    .order('exam_date', { ascending: true });
+
+  if (examsError) {
+    throw new Error(`テスト設定の取得に失敗しました: ${examsError.message}`);
+  }
+
+  const examTypeNames = new Map<string, string>();
+  const examTypeIds = [...new Set((exams || []).map((e: { exam_type_id?: string }) => e.exam_type_id).filter(Boolean))];
+  if (examTypeIds.length > 0) {
+    const { data: examTypes } = await supabase
+      .from('exam_types')
+      .select('id, name')
+      .in('id', examTypeIds);
+    for (const et of examTypes || []) {
+      examTypeNames.set(et.id, et.name);
+    }
+  }
+
+  const examsByStId = new Map<string, StudentTextbookExam[]>();
+  for (const exam of (exams || []) as StudentTextbookExam[]) {
+    const list = examsByStId.get(exam.student_textbook_id) || [];
+    list.push(exam);
+    examsByStId.set(exam.student_textbook_id, list);
+  }
+
+  const settingsByStId = new Map<string, StudentTextbookSetting | null>();
+  const { data: settings } = await supabase
+    .from('student_textbook_settings')
+    .select('*')
+    .in('student_textbook_id', stIds);
+  for (const st of stList) {
+    const s = (settings || []).find((x: { student_textbook_id: string }) => x.student_textbook_id === st.id);
+    settingsByStId.set(st.id, s || null);
+  }
+
+  const result: StudentTextbookWithDetails[] = stList.map((st) => ({
+    ...st,
+    settings: settingsByStId.get(st.id) || null,
+    exams: (examsByStId.get(st.id) || []),
+  }));
+
+  const byStudent = new Map<string, StudentTextbookWithDetails[]>();
+  for (const st of result) {
+    const list = byStudent.get(st.student_id) || [];
+    list.push(st);
+    byStudent.set(st.student_id, list);
+  }
+  return { byStudent, examTypeNames };
+}
 
 /**
  * 生徒のテキスト一覧を取得
