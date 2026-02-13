@@ -7,11 +7,13 @@ import { AdminLayout } from '@/components/layouts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { StudentRegularScheduleList } from '@/components/students/StudentRegularScheduleList';
 import { getStudent } from '@/lib/api/students';
+import { useAuth } from '@/contexts/AuthContext';
 import type { Student } from '@/types/database';
 
 export default function StudentSchedulePage() {
   const params = useParams();
   const router = useRouter();
+  const { getSelectedSchoolIds } = useAuth();
   const studentId = params?.studentId as string;
   const [student, setStudent] = useState<Student | null>(null);
   const [loading, setLoading] = useState(true);
@@ -20,14 +22,15 @@ export default function StudentSchedulePage() {
     if (!studentId) return;
     setLoading(true);
     try {
-      const s = await getStudent(studentId);
+      const schoolIds = getSelectedSchoolIds();
+      const s = await getStudent(studentId, schoolIds.length > 0 ? schoolIds : undefined);
       setStudent(s);
     } catch {
       setStudent(null);
     } finally {
       setLoading(false);
     }
-  }, [studentId]);
+  }, [studentId, getSelectedSchoolIds]);
 
   useEffect(() => {
     loadStudent();

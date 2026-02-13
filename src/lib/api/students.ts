@@ -233,17 +233,14 @@ export async function getStudent(
     .eq('id', id)
     .in('school_id', targetSchoolIds)
     .is('deleted_at', null)
-    .single();
+    .maybeSingle();
 
   if (error) {
-    if (error.code === 'PGRST116') {
-      return null;
-    }
     console.error('Error fetching student:', error);
     throw new Error('生徒情報の取得に失敗しました');
   }
 
-  return data as Student;
+  return data as Student | null;
 }
 
 // 生徒を新規登録

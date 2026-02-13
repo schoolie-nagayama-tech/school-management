@@ -59,7 +59,7 @@ export default function StudentProgressPage() {
   const router = useRouter();
   const studentId = params?.studentId as string;
   const { toasts, removeToast, success, error } = useToast();
-  const { profile } = useAuth();
+  const { profile, getSelectedSchoolIds } = useAuth();
   
   // 講師かどうかを判定（講師は下書きを見られない）
   const isTeacher = profile?.role === 'teacher';
@@ -125,7 +125,8 @@ export default function StudentProgressPage() {
   const fetchStudent = useCallback(async () => {
     if (!studentId) return;
     try {
-      const data = await getStudent(studentId);
+      const schoolIds = getSelectedSchoolIds();
+      const data = await getStudent(studentId, schoolIds.length > 0 ? schoolIds : undefined);
       if (data) {
         setStudent(data);
       } else {
@@ -135,7 +136,7 @@ export default function StudentProgressPage() {
       console.error('Error fetching student:', err);
       setErrorMessage(err instanceof Error ? err.message : '生徒情報の取得に失敗しました');
     }
-  }, [studentId]);
+  }, [studentId, getSelectedSchoolIds]);
 
   // 生徒テキスト一覧を取得
   const fetchStudentTextbooks = useCallback(async () => {

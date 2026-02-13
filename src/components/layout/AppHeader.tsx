@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { getSchools } from '@/lib/api/schools';
+import { getUnreadCount } from '@/lib/api/bulletin';
 import { useAuth } from '@/contexts/AuthContext';
 import { USER_ROLE_LABELS } from '@/types/database';
 import type { School } from '@/types/database';
@@ -16,7 +17,7 @@ interface AppHeaderProps {
 export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { profile, permissions, signOut, isLoading: authLoading, schoolIds, selectedSchoolId, setSelectedSchoolId } = useAuth();
+  const { profile, permissions, signOut, isLoading: authLoading, schoolIds, selectedSchoolId, setSelectedSchoolId, getSelectedSchoolIds } = useAuth();
 
   const handleSchoolChange = (schoolId: string | 'all') => {
     setSelectedSchoolId(schoolId);
@@ -25,6 +26,8 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
   };
   const [schools, setSchools] = useState<School[]>([]);
   const [showSchoolDropdown, setShowSchoolDropdown] = useState(false);
+  const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
+  const [bulletinUnreadCount, setBulletinUnreadCount] = useState(0);
 
   // permissionsがnullの場合は、すべてのリンクを表示（ローディング中の場合）
   const showAllLinks = !permissions || authLoading;
@@ -47,6 +50,49 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
     }
   }, [schoolIds]);
 
+  // 連絡掲示板未読件数（講師のみ）
+  useEffect(() => {
+    const schoolIdsList = getSelectedSchoolIds();
+    if (profile?.role !== 'teacher' || !profile?.id || schoolIdsList.length === 0) {
+      setBulletinUnreadCount(0);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        let total = 0;
+        for (const schoolId of schoolIdsList) {
+          total += await getUnreadCount(schoolId, profile.id);
+        }
+        if (!cancelled) setBulletinUnreadCount(total);
+      } catch {
+        if (!cancelled) setBulletinUnreadCount(0);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [getSelectedSchoolIds, profile?.id, profile?.role, selectedSchoolId, schoolIds]);
+
+  useEffect(() => {
+    if (profile?.role !== 'teacher') return;
+    const refetch = () => {
+      const schoolIdsList = getSelectedSchoolIds();
+      if (!profile?.id || schoolIdsList.length === 0) return;
+      (async () => {
+        try {
+          let total = 0;
+          for (const schoolId of schoolIdsList) {
+            total += await getUnreadCount(schoolId, profile!.id);
+          }
+          setBulletinUnreadCount(total);
+        } catch {
+          setBulletinUnreadCount(0);
+        }
+      })();
+    };
+    window.addEventListener('bulletin-unread-changed', refetch);
+    return () => window.removeEventListener('bulletin-unread-changed', refetch);
+  }, [getSelectedSchoolIds, profile?.id, profile?.role]);
+
   // 現在選択中の教室名を取得
   const getCurrentSchoolDisplayName = (): string => {
     if (selectedSchoolId === 'all') {
@@ -65,16 +111,18 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
 
   // クリック外でドロップダウンを閉じる
   useEffect(() => {
-    if (!showSchoolDropdown) return;
+    if (!showSchoolDropdown && !showSettingsDropdown) return;
     
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (!target.closest('.school-dropdown-container')) {
         setShowSchoolDropdown(false);
       }
+      if (!target.closest('.settings-dropdown-container')) {
+        setShowSettingsDropdown(false);
+      }
     };
     
-    // 少し遅延させて、現在のクリックイベントが処理されるのを待つ
     setTimeout(() => {
       document.addEventListener('click', handleClickOutside);
     }, 0);
@@ -82,7 +130,7 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
     return () => {
       document.removeEventListener('click', handleClickOutside);
     };
-  }, [showSchoolDropdown]);
+  }, [showSchoolDropdown, showSettingsDropdown]);
 
   return (
     <header className="bg-[#d32f2f] shadow-md">
@@ -464,32 +512,70 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
                 <span className="hidden sm:inline">ログアウト</span>
               </button>
             )}
-            {onSettingsClick && (showAllLinks || permissions?.canAccessSettings) && (
-              <button
-                onClick={onSettingsClick}
-                className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
-                title="設定"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+            {(onSettingsClick || profile?.role === 'admin') && (showAllLinks || permissions?.canAccessSettings || profile?.role === 'admin') && (
+              <div className="relative settings-dropdown-container">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowSettingsDropdown(!showSettingsDropdown);
+                  }}
+                  className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                  title="設定"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                </svg>
-              </button>
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                </button>
+                {showSettingsDropdown && (
+                  <div
+                    className="absolute right-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-xl z-50 min-w-[160px]"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="py-1">
+                      {onSettingsClick && (
+                        <button
+                          onClick={() => {
+                            onSettingsClick();
+                            setShowSettingsDropdown(false);
+                          }}
+                          className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors"
+                        >
+                          科目設定
+                        </button>
+                      )}
+                      {profile?.role === 'admin' && (
+                        <Link
+                          href="/admin/settings/security"
+                          className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
+                            pathname === '/admin/settings/security' || pathname?.startsWith('/admin/settings/security')
+                              ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
+                              : ''
+                          }`}
+                          onClick={() => setShowSettingsDropdown(false)}
+                        >
+                          セキュリティ設定
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
             {/* 座席表：システム管理者のみ表示 */}
             {profile && String(profile.role ?? '').toLowerCase() === 'admin' && (
@@ -509,6 +595,15 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
             )}
           </div>
         </div>
+        {/* 連絡掲示板未読アラート（講師のみ） */}
+        {bulletinUnreadCount > 0 && (
+          <Link
+            href="/students"
+            className="block py-2 px-4 bg-amber-400 text-amber-950 font-bold text-sm text-center hover:bg-amber-500 transition-colors"
+          >
+            📢 連絡掲示板に未読が{bulletinUnreadCount}件あります
+          </Link>
+        )}
       </div>
     </header>
   );

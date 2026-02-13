@@ -67,7 +67,7 @@ export default function StudentScoresPage() {
   const params = useParams();
   const studentId = params.studentId as string;
   const { hasPermission, isLoading: permissionLoading } = useRequirePermission((p) => p.canAccessStudents);
-  const { permissions } = useAuth();
+  const { permissions, getSelectedSchoolIds } = useAuth();
   const canEditScores = !!permissions?.canEditScores;
   const { toasts, removeToast, success, error: toastError } = useToast();
 
@@ -93,14 +93,15 @@ export default function StudentScoresPage() {
   const fetchStudent = useCallback(async () => {
     if (!studentId) return;
     try {
-      const s = await getStudent(studentId);
+      const schoolIds = getSelectedSchoolIds();
+      const s = await getStudent(studentId, schoolIds.length > 0 ? schoolIds : undefined);
       setStudent(s);
       if (s?.grade) setNewRowGrade(s.grade);
     } catch (e) {
       console.error(e);
       setErrorMessage('生徒の取得に失敗しました');
     }
-  }, [studentId]);
+  }, [studentId, getSelectedSchoolIds]);
 
   const fetchAllAssessments = useCallback(async () => {
     if (!studentId) return;

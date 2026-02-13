@@ -2,6 +2,7 @@
 
 import { ReactNode } from 'react';
 import { AppHeader } from '@/components/layout';
+import { PrivacyScreen } from '@/components/privacy-screen';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface AdminLayoutProps {
@@ -38,6 +39,7 @@ export function AdminLayout({
         {/* コンテンツ */}
         {children}
       </div>
+      <PrivacyScreen />
     </div>
   );
 }

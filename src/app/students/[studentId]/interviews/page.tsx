@@ -8,20 +8,23 @@ import { getStudent } from '@/lib/api/students';
 import { getDefaultSchoolId } from '@/lib/api/schools';
 import { Button } from '@/components/ui';
 import { ArrowLeft } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import type { Student } from '@/types/database';
 
 export default function StudentInterviewsPage() {
   const params = useParams();
   const router = useRouter();
+  const { getSelectedSchoolIds } = useAuth();
   const studentId = params.studentId as string;
   const [student, setStudent] = useState<Student | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const schoolId = getDefaultSchoolId();
+  const schoolId = student?.school_id ?? getSelectedSchoolIds()[0] ?? getDefaultSchoolId();
 
   useEffect(() => {
     async function fetchStudent() {
       try {
-        const data = await getStudent(studentId);
+        const schoolIds = getSelectedSchoolIds();
+        const data = await getStudent(studentId, schoolIds.length > 0 ? schoolIds : undefined);
         setStudent(data);
       } catch (error) {
         console.error('Error fetching student:', error);
@@ -32,7 +35,7 @@ export default function StudentInterviewsPage() {
     if (studentId) {
       fetchStudent();
     }
-  }, [studentId]);
+  }, [studentId, getSelectedSchoolIds]);
 
   if (isLoading) {
     return (

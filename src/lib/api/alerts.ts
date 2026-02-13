@@ -404,7 +404,7 @@ export function invalidateAlertCache(schoolIds: string[]): void {
 // ============================================
 
 /**
- * dismiss でフィルタし、生徒ごとにグループ化・ソート
+ * dismiss でフィルタし、生徒ごとにグループ化・ソート（同一 id は重複除去）
  */
 export function applyDismissAndSort(
   candidates: Alert[],
@@ -412,8 +412,12 @@ export function applyDismissAndSort(
 ): StudentAlerts[] {
   const filtered = candidates.filter((a) => !dismissedSet.has(a.id));
   const studentAlertsMap = new Map<string, StudentAlerts>();
+  const seenAlertIds = new Set<string>();
 
   for (const alert of filtered) {
+    if (seenAlertIds.has(alert.id)) continue;
+    seenAlertIds.add(alert.id);
+
     if (!studentAlertsMap.has(alert.student_id)) {
       studentAlertsMap.set(alert.student_id, {
         student_id: alert.student_id,
@@ -564,6 +568,11 @@ async function fetchAlertSourcesHeavy(schoolIds: string[]): Promise<Partial<Aler
 
   const { byStudent: textbooksByStudent, examTypeNames } = textbooksResult;
 
+  if (process.env.NODE_ENV === 'development') {
+    const assessmentCount = Array.from(assessmentsByStudent.values()).reduce((n, arr) => n + arr.length, 0);
+    console.debug('[Heavy] schoolIds:', schoolIds.length, 'students:', students.length, 'assessments:', assessmentCount, 'textbooksByStudent:', textbooksByStudent.size);
+  }
+
   return {
     students,
     assessmentsByStudent,
@@ -653,14 +662,20 @@ export async function getAlertsHeavy(
 }
 
 /**
- * 2つの StudentAlerts[] をマージ（同一生徒のアラートを結合）
+ * 2つの StudentAlerts[] をマージ（同一生徒のアラートを結合、同一 id は重複除去）
  */
 export function mergeStudentAlerts(a: StudentAlerts[], b: StudentAlerts[]): StudentAlerts[] {
   const map = new Map<string, StudentAlerts>();
   for (const sa of [...a, ...b]) {
     const existing = map.get(sa.student_id);
     if (existing) {
-      existing.alerts.push(...sa.alerts);
+      const seenIds = new Set(existing.alerts.map((x) => x.id));
+      for (const alert of sa.alerts) {
+        if (!seenIds.has(alert.id)) {
+          seenIds.add(alert.id);
+          existing.alerts.push(alert);
+        }
+      }
     } else {
       map.set(sa.student_id, { ...sa, alerts: [...sa.alerts] });
     }

@@ -140,6 +140,9 @@ export function BulletinBoard({ className = '' }: BulletinBoardProps) {
       await markAsRead(post.id, userId);
       success('既読にしました');
       await fetchData();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('bulletin-unread-changed'));
+      }
     } catch (error) {
       console.error('Error marking as read:', error);
       toastError('既読の記録に失敗しました');
