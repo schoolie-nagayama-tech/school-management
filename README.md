@@ -13,6 +13,15 @@
 
 ### v4.0（最新）
 
+- ✅ **座席表機能**
+  - 週次スケジュール表示（`/schedule`）
+  - 通塾日程（通常授業パターン）の管理
+  - スケジュール一括生成（通塾日程から週次授業を自動作成）
+  - 授業の追加・編集・移動・出席・取消・振替
+  - 休講日管理・コマ時間マスタ・曜日表示制御
+  - 印刷用の日別表示
+  - 詳細は後述「座席表のデータ参照」を参照
+
 - ✅ **講師出勤簿機能**
   - 講師勤怠ポータル（`/attendance/[schoolCode]`）
   - 講師別出勤簿入力（`/attendance/[schoolCode]/[teacherId]`）
@@ -162,6 +171,10 @@ src/
 │   ├── globals.css         # グローバルCSS
 │   ├── students/           # 生徒管理
 │   │   └── page.tsx
+│   ├── schedule/           # 座席表
+│   │   ├── page.tsx        # 週次座席表
+│   │   ├── settings/       # コマ時間・休講日・通塾日程などの設定
+│   │   └── regular-patterns/
 │   ├── attendance/         # 講師出勤簿（講師向け）
 │   │   └── [schoolCode]/
 │   │       ├── page.tsx    # 講師勤怠ポータル
@@ -190,7 +203,13 @@ src/
 │   ├── layout/             # レイアウトコンポーネント
 │   │   ├── AppHeader.tsx   # アプリケーションヘッダー
 │   │   └── AdminLayout.tsx # 管理画面レイアウト
-│   └── students/           # 生徒関連コンポーネント
+│   ├── students/           # 生徒関連コンポーネント
+│   │   └── ...
+│   └── schedule/           # 座席表コンポーネント
+│       ├── WeeklyScheduleGrid.tsx
+│       ├── DayCell.tsx
+│       ├── TeacherCard.tsx
+│       ├── StudentCard.tsx
 │       └── ...
 ├── lib/
 │   ├── supabase.ts         # Supabaseクライアント
@@ -202,9 +221,11 @@ src/
 │       ├── assessments.ts # 成績API関数
 │       ├── schools.ts      # 教室API関数
 │       ├── auth.ts         # 認証・ユーザーAPI関数
+│       ├── schedule.ts    # 座席表API関数（コマ時間・休講日・通塾日程・スケジュール）
 │       └── attendance.ts   # 出勤簿API関数
 └── types/
     ├── database.ts         # 型定義
+    ├── schedule.ts         # 座席表型定義（ScheduleEntry, ScheduleTimeSlot など）
     └── attendance.ts       # 出勤簿型定義
 ```
 
@@ -441,6 +462,95 @@ src/
 
 **制約**: `UNIQUE(sheet_id, date)`
 
+### 座席表関連テーブル
+
+#### schedule_time_slotsテーブル（コマ時間マスタ）
+
+| カラム名 | 型 | 説明 |
+|---------|-----|------|
+| id | UUID | 主キー |
+| school_id | UUID | 教室ID（外部キー） |
+| slot_number | INTEGER | コマ番号（1〜7） |
+| start_time | TIME | 開始時刻 |
+| end_time | TIME | 終了時刻 |
+| is_active | BOOLEAN | 有効フラグ |
+| display_order | INTEGER | 表示順 |
+| created_at | TIMESTAMPTZ | 作成日時 |
+| updated_at | TIMESTAMPTZ | 更新日時 |
+
+**制約**: `UNIQUE(school_id, slot_number)`
+
+#### schedule_closed_daysテーブル（休講日）
+
+| カラム名 | 型 | 説明 |
+|---------|-----|------|
+| id | UUID | 主キー |
+| school_id | UUID | 教室ID（NULL=全教室共通） |
+| closed_date | DATE | 休講日 |
+| reason | TEXT | 理由（任意） |
+| is_global | BOOLEAN | 全教室共通フラグ |
+| created_at | TIMESTAMPTZ | 作成日時 |
+
+#### schedule_regular_patternsテーブル（通塾日程・通常授業パターン）
+
+| カラム名 | 型 | 説明 |
+|---------|-----|------|
+| id | UUID | 主キー |
+| school_id | UUID | 教室ID（外部キー） |
+| student_id | UUID | 生徒ID（外部キー） |
+| day_of_week | SMALLINT | 曜日（0=日〜6=土） |
+| time_slot_id | UUID | コマID（外部キー） |
+| teacher_id | UUID | 講師ID（user_profiles.id、外部キー） |
+| subject_ids | UUID[] | 科目ID配列 |
+| seat_label | TEXT | 座席ラベル（任意） |
+| period_type | TEXT | 期間タイプ（regular/spring/summer/winter） |
+| is_active | BOOLEAN | 有効フラグ |
+| created_at | TIMESTAMPTZ | 作成日時 |
+| updated_at | TIMESTAMPTZ | 更新日時 |
+
+#### schedule_entriesテーブル（週次スケジュール＝授業）
+
+| カラム名 | 型 | 説明 |
+|---------|-----|------|
+| id | UUID | 主キー |
+| school_id | UUID | 教室ID（外部キー） |
+| entry_date | DATE | 授業日 |
+| time_slot_id | UUID | コマID（外部キー） |
+| teacher_id | UUID | 講師ID（外部キー） |
+| student_id | UUID | 生徒ID（外部キー） |
+| subject_ids | UUID[] | 科目ID配列 |
+| seat_label | TEXT | 座席ラベル（任意） |
+| note | TEXT | 備考（任意） |
+| regular_pattern_id | UUID | 元の通塾日程ID（生成元、任意） |
+| status | TEXT | ステータス（後述） |
+| attendance_status | TEXT | 出席状況（present/absent/late、任意） |
+| attendance_recorded_at | TIMESTAMPTZ | 出席記録日時 |
+| attendance_recorded_by | UUID | 出席記録者ID |
+| transfer_from_id | UUID | 振替元エントリID（任意） |
+| transfer_to_id | UUID | 振替先エントリID（任意） |
+| created_at | TIMESTAMPTZ | 作成日時 |
+| updated_at | TIMESTAMPTZ | 更新日時 |
+
+**制約**: `UNIQUE(school_id, entry_date, time_slot_id, teacher_id, student_id)`
+
+**statusの値**:
+- `scheduled`: 予定
+- `completed`: 出席済
+- `cancelled`: 取消
+- `transferred_out`: 振替元
+- `transferred_in`: 振替先
+
+#### schedule_generation_logsテーブル（スケジュール生成ログ）
+
+| カラム名 | 型 | 説明 |
+|---------|-----|------|
+| id | UUID | 主キー |
+| school_id | UUID | 教室ID（外部キー） |
+| week_start_date | DATE | 週開始日 |
+| entries_created | INTEGER | 生成件数 |
+| created_by | UUID | 実行者ID（任意） |
+| created_at | TIMESTAMPTZ | 作成日時 |
+
 ### 学年コード
 
 | コード | 学年 |
@@ -469,6 +579,87 @@ src/
 | youbi | 曜日変更 |
 | kyozai | 教材販売 |
 | soudan | お客様相談 |
+
+## 座席表のデータ参照
+
+座席表（`/schedule`）で表示するデータの取得フローと参照関係をまとめます。
+
+### 概要
+
+座席表は「**日付 × コマ × 講師**」のセル単位で、各セル内に生徒（授業）を表示します。表示されるデータは主に `schedule_entries` から取得し、通塾日程（`schedule_regular_patterns`）から一括生成されます。
+
+### データ取得フロー
+
+```
+1. schedule/time-slots, schedule/closed-days, schedule/regular-patterns
+2. schedule/entries（週の日付範囲で取得）
+3. students, subjects, user_profiles（講師）
+```
+
+#### 主要API（`src/lib/api/schedule.ts`）
+
+| 関数 | テーブル | 用途 |
+|------|----------|------|
+| `getActiveTimeSlots(schoolId)` | schedule_time_slots | 表示するコマ一覧（縦軸） |
+| `getClosedDays(schoolId, { from, to })` | schedule_closed_days | 休講日判定 |
+| `getRegularPatterns(schoolId)` | schedule_regular_patterns | 通塾日程一覧・スケジュール生成元 |
+| `getScheduleEntries(schoolId, fromDate, toDate)` | schedule_entries | 週次授業一覧（表示のメインデータ） |
+| `generateWeeklySchedule(schoolId, weekStartDate)` | schedule_regular_patterns + schedule_entries | 通塾日程から週次授業を一括生成 |
+| `createScheduleEntry` / `updateScheduleEntry` / `moveScheduleEntry` | schedule_entries | 授業の追加・編集・移動 |
+| `recordAttendance` | schedule_entries | 出席記録 |
+| `deleteScheduleEntry` | schedule_entries | 授業取消 |
+| `createTransferEntry` / `revertTransferEntry` | schedule_entries | 振替の作成・取り消し |
+
+### 表示ロジック（座席表グリッド）
+
+1. **セルのキー**: `(entry_date, time_slot_id)` の組み合わせで、グリッドの1セルを特定
+
+2. **講師グループ**: 同じセル内の `schedule_entries` を `teacher_id` でグルーピング
+   - `groupEntriesByTeacher(entries, date, slotId)`（`WeeklyScheduleGrid.tsx`）
+   - 各講師ごとに `TeacherCard` が表示され、その中に `StudentCard` が並ぶ
+
+3. **表示対象のエントリ**: `status` が `scheduled`, `completed`, `transferred_in` のもの
+   - `cancelled`, `transferred_out` は座席表には表示しない
+
+4. **休講日**: `schedule_closed_days` に登録された日付のセルは「休講日」表示
+
+5. **講師の出勤可否**: `user_profiles` の `available_days_of_week`, `available_slot_numbers_by_day` により、講師追加時に候補を絞り込み
+
+### リレーション（JOIN）の参照先
+
+`getScheduleEntries` は以下のリレーションを取得します。
+
+```
+schedule_entries
+  ├─ time_slot → schedule_time_slots (*)
+  ├─ student   → students (id, last_name, first_name, grade)
+  └─ teacher   → user_profiles (id, display_name, email)
+```
+
+- **time_slot**: コマの開始・終了時刻、表示順の取得
+- **student**: 生徒名・学年の表示
+- **teacher**: 講師名の表示
+
+### 通塾日程とスケジュールの関係
+
+| 概念 | テーブル | 役割 |
+|------|----------|------|
+| 通塾日程 | schedule_regular_patterns | 「毎週○曜日の○限に、生徒Aが講師Bの授業」という定期的パターン |
+| 週次スケジュール | schedule_entries | 実際の日付ごとの授業（通塾日程から生成 or 手動追加） |
+
+- **一括生成**: `generateWeeklySchedule` が通塾日程を展開し、指定週の日付ごとに `schedule_entries` を作成
+- **regular_pattern_id**: 生成されたエントリは元の通塾日程を `regular_pattern_id` で参照
+- **手動追加**: 通塾日程に含まれない授業も `schedule_entries` に直接追加可能
+
+### 関連ファイル
+
+| 種別 | パス |
+|------|------|
+| ページ | `src/app/schedule/page.tsx` |
+| API | `src/lib/api/schedule.ts` |
+| 型定義 | `src/types/schedule.ts` |
+| コンポーネント | `src/components/schedule/*`（WeeklyScheduleGrid, DayCell, TeacherCard, StudentCard など） |
+| マイグレーション | `supabase/migrations/xxx_seat_chart_system.sql`, `xxx_seat_chart_entries_phase2.sql` |
 
 ## v1.5の設計メモ
 
@@ -984,18 +1175,14 @@ Vもぎ模擬試験のお申込みフォームです。日程・会場選択機�
 
 - [x] 講師管理（v4.0で実装済み、ユーザー管理に統合）
 - [x] 講師出勤簿機能（v4.0で実装済み）
-- [ ] 授業スケジュール管理
+- [x] 授業スケジュール管理（座席表として実装済み）
 - [ ] 出欠管理
 - [x] 成績管理（v2.0で実装済み）
 - [ ] 請求・入金管理
 - [x] 保護者ポータル（v3.0で実装済み）
 - [x] 複数教室対応（v1.5で基本実装済み）
 - [x] 認証機能（v1.5で設計準備済み、v4.0で実装済み）
-- [ ] 模試申込フォーム（Moshi）
-- [ ] 週回数変更フォーム（Shukaisu）
-- [ ] 曜日変更フォーム（Youbi）
-- [ ] 教材販売フォーム（Kyozai）
-- [ ] お客様相談フォーム（Soudan）
+- [x] 保護者ポータル内の各フォーム（模試Moshi、週回数Shukaisu、曜日Youbi、教材Kyozai、相談Soudan など、v3.0で実装済み）
 
 ## ライセンス
 

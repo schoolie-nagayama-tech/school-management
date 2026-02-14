@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Search } from 'lucide-react';
 import { searchStudents } from '@/lib/api/students';
 import type { Student } from '@/types/database';
@@ -24,11 +24,12 @@ export interface StudentSearchInputProps {
 
 const SEARCH_DEBOUNCE_MS = 300;
 const LIMIT = 20;
+const DEFAULT_EXCLUDE: string[] = [];
 
 export function StudentSearchInput({
   schoolId,
   onSelect,
-  excludeStudentIds = [],
+  excludeStudentIds = DEFAULT_EXCLUDE,
   placeholder = '生徒を検索...',
   disabled = false,
 }: StudentSearchInputProps) {
@@ -36,6 +37,9 @@ export function StudentSearchInput({
   const [results, setResults] = useState<StudentWithSubjects[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+
+  const excludeRef = useRef(excludeStudentIds);
+  excludeRef.current = excludeStudentIds;
 
   const runSearch = useCallback(
     async (q: string) => {
@@ -46,7 +50,7 @@ export function StudentSearchInput({
       setLoading(true);
       try {
         const list = await searchStudents(schoolId, q, {
-          excludeIds: excludeStudentIds,
+          excludeIds: excludeRef.current,
           limit: LIMIT,
         });
         setResults(list);
@@ -56,7 +60,7 @@ export function StudentSearchInput({
         setLoading(false);
       }
     },
-    [schoolId, excludeStudentIds]
+    [schoolId]
   );
 
   useEffect(() => {

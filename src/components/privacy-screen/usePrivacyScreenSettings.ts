@@ -65,8 +65,8 @@ export function usePrivacyScreenSettings(): PrivacyScreenSettings {
       }
 
       setTimeoutByRole(byRole);
-    } catch (err) {
-      console.error('Error fetching privacy screen settings:', err);
+    } catch {
+      // サーバー停止・ネットワークエラー時はデフォルト値で静かにフォールバック
     } finally {
       setIsFetching(false);
     }
