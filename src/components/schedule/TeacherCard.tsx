@@ -41,6 +41,8 @@ export function parseTeacherCardId(
 export interface TeacherCardProps {
   teacher: { id: string; display_name: string | null; email: string | null };
   entries: ScheduleEntry[];
+  /** true = 出勤可能だが授業なし */
+  isAvailableOnly?: boolean;
   date: string;
   timeSlotId: string;
   maxStudents: number;
@@ -60,6 +62,7 @@ export interface TeacherCardProps {
 export const TeacherCard = React.memo(function TeacherCard({
   teacher,
   entries,
+  isAvailableOnly = false,
   date,
   timeSlotId,
   maxStudents,
@@ -110,10 +113,12 @@ export const TeacherCard = React.memo(function TeacherCard({
   return (
     <div
       className={`
-        group relative min-h-[72px] rounded-xl border border-gray-200 bg-white
-        shadow-sm hover:shadow-md hover:bg-gray-50 transition-all duration-150
+        group relative min-h-[72px] rounded-xl border transition-all duration-150
+        ${isAvailableOnly
+          ? 'border-dashed border-gray-100 bg-gray-50/30 opacity-75 hover:opacity-90'
+          : 'border border-gray-200 bg-white shadow-sm hover:shadow-md hover:bg-gray-50'}
         ${isOnDuty ? 'border-l-2 border-l-[var(--primary)]' : ''}
-        ${!isOnDuty ? 'bg-gray-50/30' : ''}
+        ${!isOnDuty && !isAvailableOnly ? 'bg-gray-50/30' : ''}
         ${transferMode ? 'cursor-pointer hover:border-[var(--primary)]/40 hover:bg-gray-50/50' : ''}
         ${isOverAndCanDrop ? 'ring-2 ring-green-400 bg-green-50/50' : ''}
         ${isOverAndCannotDrop ? 'ring-2 ring-red-200 bg-red-50/50 cursor-not-allowed' : ''}
@@ -125,10 +130,14 @@ export const TeacherCard = React.memo(function TeacherCard({
         className="flex justify-between items-center px-2.5 py-2 border-b border-gray-100"
         onClick={(e) => transferMode && e.stopPropagation()}
       >
-        <span className="font-medium text-base text-gray-700 min-w-0 truncate flex-1">
+        <span
+          className={`min-w-0 truncate flex-1 ${isAvailableOnly ? 'text-sm font-normal text-gray-400' : 'text-base font-medium text-gray-700'}`}
+        >
           {displayName}
         </span>
-        <span className="text-xs text-gray-400 flex-shrink-0 ml-2 text-right tabular-nums">
+        <span
+          className={`flex-shrink-0 ml-2 text-right tabular-nums ${isAvailableOnly ? 'text-[10px] text-gray-300' : 'text-xs text-gray-400'}`}
+        >
           {slotLabel}
         </span>
         <button

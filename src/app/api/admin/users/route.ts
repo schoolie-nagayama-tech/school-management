@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireManager } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,44 +56,42 @@ function getSupabaseAdmin() {
 
 export async function GET(request: NextRequest) {
   try {
+    const authError = await requireManager(request);
+    if (authError) return authError;
     const supabaseAdmin = getSupabaseAdmin();
     const roleParam = request.nextUrl.searchParams.get('role');
 
-    // 全ユーザープロファイルを取得（RPC があれば使用、なければ直接 SELECT）
-    let profiles: Record<string, unknown>[] | null = null;
-    let profilesError: Error | null = null;
-
-    const { data: rpcData, error: rpcError } = await supabaseAdmin.rpc('get_all_user_profiles');
-    if (!rpcError && Array.isArray(rpcData)) {
-      profiles = rpcData as Record<string, unknown>[];
-    } else {
-      const result = await supabaseAdmin
-        .from('user_profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-      profiles = result.data;
-      profilesError = result.error;
-    }
+    // 全ユーザープロファイルを取得（直接 SELECT で確実に全件取得。RPC はレプリケーション遅延等で抜けがある場合がある）
+    const { data: profiles, error: profilesError } = await supabaseAdmin
+      .from('user_profiles')
+      .select('*')
+      .order('created_at', { ascending: false });
 
     if (profilesError) {
       console.error('Error fetching user profiles:', profilesError);
       throw profilesError;
     }
 
-    if (!profiles || profiles.length === 0) {
-      return NextResponse.json({ users: [] });
+    const profileList = profiles ?? [];
+    const noCacheHeaders = {
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+    };
+    if (profileList.length === 0) {
+      return NextResponse.json({ users: [] }, { headers: noCacheHeaders });
     }
 
     // role=teacher のときは講師のみ返す（講師一覧用）。それ以外は講師以外を返す（ユーザー管理用：admin, owner, manager など）
     const wantTeachers = roleParam?.toLowerCase().trim() === 'teacher';
-    const filteredProfiles = profiles.filter((p: { role?: string | null }) => {
+    const filteredProfiles = profileList.filter((p: { role?: string | null }) => {
       const r = String(p.role || '').toLowerCase();
       if (wantTeachers) return r === 'teacher';
       return r !== 'teacher';
     });
 
     if (filteredProfiles.length === 0) {
-      return NextResponse.json({ users: [] });
+      return NextResponse.json({ users: [] }, { headers: noCacheHeaders });
     }
 
     // 全ユーザー分の user_schools を1回で取得（複数教室が1件にまとまらないようにする）
@@ -123,7 +122,7 @@ export async function GET(request: NextRequest) {
       user_schools: userSchoolsByUserId[String(profile.id)] || [],
     }));
 
-    return NextResponse.json({ users: usersWithSchools });
+    return NextResponse.json({ users: usersWithSchools }, { headers: noCacheHeaders });
   } catch (error: any) {
     console.error('Failed to fetch users:', error);
     return NextResponse.json(

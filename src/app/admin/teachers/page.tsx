@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { useAuth } from '@/contexts/AuthContext';
-import { updateUserProfile } from '@/lib/api/auth';
+import { updateUserProfile, fetchWithAuth } from '@/lib/api/auth';
 import { getSchools } from '@/lib/api/schools';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui';
@@ -31,7 +31,7 @@ interface TeacherWithDetails extends UserProfile {
 }
 
 export default function TeachersPage() {
-  const { profile, permissions, isLoading: authLoading, getSelectedSchoolIds } = useAuth();
+  const { user, profile, permissions, isLoading: authLoading, getSelectedSchoolIds } = useAuth();
   const { toasts, removeToast, success, error: toastError } = useToast();
   const [teachers, setTeachers] = useState<TeacherWithDetails[]>([]);
   const [schools, setSchools] = useState<School[]>([]);
@@ -71,7 +71,7 @@ export default function TeachersPage() {
     setIsLoading(true);
     try {
       const [teachersResponse, schoolsData] = await Promise.all([
-        fetch('/api/admin/users?role=teacher'),
+        fetchWithAuth(`/api/admin/users?role=teacher&t=${Date.now()}`),
         getSchools(),
       ]);
       
@@ -123,7 +123,7 @@ export default function TeachersPage() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('/api/admin/users/create', {
+      const response = await fetchWithAuth('/api/admin/users/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -179,44 +179,69 @@ export default function TeachersPage() {
   // 講師削除
   const handleDelete = async () => {
     if (!deletingTeacher) return;
+    const teacherIdToDelete = deletingTeacher.id;
 
     try {
-      const response = await fetch(`/api/admin/users/${deletingTeacher.id}`, {
+      const response = await fetchWithAuth(`/api/admin/users/${teacherIdToDelete}`, {
         method: 'DELETE',
       });
 
       if (!response.ok) {
-        throw new Error('削除に失敗しました');
+        // 404 = 既に削除済み → 一覧から除外して成功扱い
+        if (response.status === 404) {
+          setTeachers((prev) => prev.filter((t) => t.id !== teacherIdToDelete));
+          success('講師を削除しました');
+          return;
+        }
+        let msg = '削除に失敗しました';
+        try {
+          const body = await response.json();
+          if (body?.details) msg = body.details;
+          else if (body?.error) msg = body.error;
+        } catch (_) {}
+        throw new Error(msg);
       }
 
+      setTeachers((prev) => prev.filter((t) => t.id !== teacherIdToDelete));
       success('講師を削除しました');
-      setIsDeleteDialogOpen(false);
-      setDeletingTeacher(null);
       await loadData();
     } catch (error) {
       console.error('Failed to delete teacher:', error);
-      toastError('削除に失敗しました');
+      toastError(error instanceof Error ? error.message : '削除に失敗しました');
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setDeletingTeacher(null);
     }
   };
 
-  // 講師有効/無効切り替え
+  // 講師有効/無効切り替え（楽観的更新で即座にUI反映）
   const handleToggleActive = async (teacher: TeacherWithDetails) => {
+    const newIsActive = !teacher.is_active;
+    setTeachers((prev) =>
+      prev.map((t) =>
+        t.id === teacher.id ? { ...t, is_active: newIsActive } : t
+      )
+    );
     try {
-      await updateUserProfile(teacher.id, { is_active: !teacher.is_active });
-      await loadData();
+      await updateUserProfile(teacher.id, { is_active: newIsActive });
       success('講師の状態を更新しました');
     } catch (err) {
       console.error('Error toggling teacher:', err);
+      setTeachers((prev) =>
+        prev.map((t) =>
+          t.id === teacher.id ? { ...t, is_active: teacher.is_active } : t
+        )
+      );
       toastError('講師の更新に失敗しました');
     }
   };
 
-  // 権限チェック（認証・権限の読み込みが完了してから判定し、読み込み中はアクセス拒否を表示しない）
-  if (authLoading) {
+  // 未ログイン時は権限画面ではなくローディング（AuthContext がログインへリダイレクトするまでの間）
+  if (!user || authLoading) {
     return (
       <AdminLayout headerTitle="講師管理">
         <div className="p-6 flex items-center justify-center min-h-[40vh]">
-          <div className="w-10 h-10 border-4 border-[#ff8e3c] border-t-transparent rounded-full animate-spin" />
+          <div className="w-10 h-10 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin" />
         </div>
       </AdminLayout>
     );
@@ -267,7 +292,7 @@ export default function TeachersPage() {
 
         {isLoading ? (
           <div className="text-center py-12">
-            <div className="w-12 h-12 border-4 border-[#3b82f6] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <div className="w-12 h-12 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-[#4b5563]">読み込み中...</p>
           </div>
         ) : (
@@ -542,7 +567,7 @@ export default function TeachersPage() {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>キャンセル</AlertDialogCancel>
+              <AlertDialogCancel onClick={() => { setIsDeleteDialogOpen(false); setDeletingTeacher(null); }}>キャンセル</AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDelete}
                 className="bg-[#ef4444] text-white hover:bg-[#dc2626]"

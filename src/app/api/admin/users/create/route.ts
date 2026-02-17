@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { randomUUID } from 'crypto';
+import { requireAdmin } from '@/lib/api-auth';
 
 function getSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -24,6 +25,8 @@ function getSupabaseAdmin() {
 
 export async function POST(request: NextRequest) {
   try {
+    const authGuardError = await requireAdmin(request);
+    if (authGuardError) return authGuardError;
     const supabaseAdmin = getSupabaseAdmin();
     const body = await request.json();
     const { email, password, displayName, role, schoolId } = body;

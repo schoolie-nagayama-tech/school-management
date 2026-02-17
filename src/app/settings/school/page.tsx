@@ -76,7 +76,7 @@ export default function SchoolSettingsPage() {
     return (
       <AdminLayout headerTitle="教室設定">
         <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-4 border-[#3b82f6] border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-8 h-8 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin"></div>
         </div>
       </AdminLayout>
     );
@@ -95,7 +95,7 @@ export default function SchoolSettingsPage() {
     return (
       <AdminLayout headerTitle="教室設定">
         <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-4 border-[#3b82f6] border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-8 h-8 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin"></div>
         </div>
       </AdminLayout>
     );

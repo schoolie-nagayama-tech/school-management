@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireAdmin } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +22,8 @@ function getSupabaseAdmin() {
  */
 export async function POST(request: NextRequest) {
   try {
+    const authError = await requireAdmin(request);
+    if (authError) return authError;
     const body = await request.json();
     const { type, submissionId } = body as {
       type?: 'submitted' | 'allow_edit';

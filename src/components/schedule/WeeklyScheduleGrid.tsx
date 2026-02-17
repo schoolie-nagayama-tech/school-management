@@ -10,7 +10,8 @@ import type { TeacherGroup } from './DayCell';
 function groupEntriesByTeacher(
   entries: ScheduleEntry[],
   date: string,
-  slotId: string
+  slotId: string,
+  teachersMap: Map<string, { id: string; display_name: string | null; email: string | null }>
 ): TeacherGroup[] {
   const filtered = entries.filter(
     (e) => e.entry_date === date && e.time_slot_id === slotId
@@ -18,9 +19,20 @@ function groupEntriesByTeacher(
   const byTeacher = new Map<string, TeacherGroup>();
   for (const entry of filtered) {
     const tid = entry.teacher_id;
-    const teacher = entry.teacher ?? { id: tid, display_name: null, email: null };
+    const fromList = teachersMap.get(tid);
+    const fromEntry = entry.teacher ?? { id: tid, display_name: null, email: null };
+    // 講師一覧にいない場合：schedule_entries.teacher_id が user_profiles の誰かを指しているが、
+    // role=teacher ではない可能性。JOIN で取得した名前を表示し、未登録であることを示す
+    const teacher =
+      fromList ??
+      {
+        ...fromEntry,
+        display_name: fromEntry.display_name
+          ? `${fromEntry.display_name}（講師未登録）`
+          : '講師未登録',
+      };
     if (!byTeacher.has(tid)) {
-      byTeacher.set(tid, { teacher, entries: [] });
+      byTeacher.set(tid, { teacher, entries: [], isAvailableOnly: false });
     }
     byTeacher.get(tid)!.entries.push(entry);
   }
@@ -31,12 +43,13 @@ export interface TeacherOption {
   id: string;
   display_name: string | null;
   email: string | null;
+  is_active?: boolean;
   user_schools?: Array<{ school_id: string }>;
   available_days_of_week?: number[] | null;
   available_slot_numbers_by_day?: Record<string, number[]> | null;
 }
 
-/** その曜日・そのコマで講師が出勤可能か */
+/** その曜日・そのコマで講師が出勤可能か（空 or null = すべてなし） */
 function isTeacherAvailableForSlot(
   teacher: TeacherOption,
   dateStr: string,
@@ -44,12 +57,13 @@ function isTeacherAvailableForSlot(
 ): boolean {
   const dayOfWeek = new Date(dateStr + 'Z').getUTCDay();
   const days = teacher.available_days_of_week;
-  if (days && days.length > 0 && !days.includes(dayOfWeek)) return false;
+  if (!days || days.length === 0) return false;
+  if (!days.includes(dayOfWeek)) return false;
   const byDay = teacher.available_slot_numbers_by_day;
-  if (!byDay || Object.keys(byDay).length === 0) return true;
+  if (!byDay || Object.keys(byDay).length === 0) return false;
   const dayKey = String(dayOfWeek);
   const slotNums = byDay[dayKey];
-  if (!slotNums || slotNums.length === 0) return true;
+  if (!slotNums || slotNums.length === 0) return false;
   return slotNums.includes(slotNumber);
 }
 
@@ -160,8 +174,10 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
 
   const teachersForSchool = useMemo(
     () =>
-      teachers.filter((t) =>
-        t.user_schools?.some((us) => us.school_id === schoolId)
+      teachers.filter(
+        (t) =>
+          t.is_active !== false &&
+          t.user_schools?.some((us) => us.school_id === schoolId)
       ),
     [teachers, schoolId]
   );
@@ -169,30 +185,46 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
   /** セル (dateStr, slotId) に出勤可能な講師を全員含む teacherGroups */
   const getTeacherGroupsForCell = useCallback(
     (dateStr: string, slotId: string, slotNumber: number) => {
-      const fromEntries = groupEntriesByTeacher(entries, dateStr, slotId);
+      const fromEntries = groupEntriesByTeacher(
+        entries,
+        dateStr,
+        slotId,
+        teachersMap
+      );
       const availableTeachers = teachersForSchool.filter((t) =>
         isTeacherAvailableForSlot(t, dateStr, slotNumber)
       );
       const cellKey = `${dateStr}-${slotId}`;
       const emptyIds = emptyTeacherSlots[cellKey] ?? [];
       const fromEntryIds = new Set(fromEntries.map((g) => g.teacher.id));
-      const fromEmptyIds = new Set(emptyIds);
       const merged: TeacherGroup[] = [];
+
+      // (A) エントリがある講師を先に追加（授業あり）
+      for (const group of fromEntries) {
+        merged.push({ ...group, isAvailableOnly: false });
+      }
+
+      // (B) 出勤可能だがエントリがない講師を追加（出勤可能のみ）
       for (const t of availableTeachers) {
-        const group = fromEntries.find((g) => g.teacher.id === t.id);
+        if (fromEntryIds.has(t.id)) continue;
         merged.push({
           teacher: { id: t.id, display_name: t.display_name, email: t.email },
-          entries: group?.entries ?? [],
+          entries: [],
+          isAvailableOnly: true,
         });
       }
+
+      // (C) 手動追加した講師（生徒なし＝出勤可能として控えめに表示）
       for (const tid of emptyIds) {
-        if (fromEntryIds.has(tid) || merged.some((m) => m.teacher.id === tid)) continue;
+        if (merged.some((m) => m.teacher.id === tid)) continue;
         const teacher = teachersMap.get(tid);
-        if (teacher) merged.push({ teacher, entries: [] });
+        if (teacher)
+          merged.push({ teacher, entries: [], isAvailableOnly: true });
       }
+
       return merged;
     },
-    [entries, teachersForSchool, emptyTeacherSlots, groupEntriesByTeacher, teachersMap]
+    [entries, teachersForSchool, emptyTeacherSlots, teachersMap]
   );
 
   return (
@@ -205,10 +237,11 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
       emptyTeacherSlots={emptyTeacherSlots}
       maxStudentsPerTeacher={maxStudentsPerTeacher}
       transferMode={transferMode}
-      teachersMap={teachersMap}
       activeId={activeId}
       activeEntry={activeEntry}
-      groupEntriesByTeacher={groupEntriesByTeacher}
+      groupEntriesByTeacher={(e, d, s) =>
+        groupEntriesByTeacher(e, d, s, teachersMap)
+      }
       getTeacherGroupsForCell={getTeacherGroupsForCell}
       onDragStart={(e) => setActiveId(String(e.active.id))}
       onDragEnd={handleDragEnd}

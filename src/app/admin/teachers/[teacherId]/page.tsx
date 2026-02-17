@@ -8,7 +8,7 @@ import { Button, Input, Label } from '@/components/ui';
 import { ToastContainer } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import { useAuth } from '@/contexts/AuthContext';
-import { addUserToSchool, removeUserFromSchool } from '@/lib/api/auth';
+import { addUserToSchool, removeUserFromSchool, fetchWithAuth } from '@/lib/api/auth';
 import { getSchools } from '@/lib/api/schools';
 import { getSubjects } from '@/lib/api/subjects';
 import { getActiveTimeSlots } from '@/lib/api/schedule';
@@ -108,7 +108,6 @@ export default function TeacherEditPage() {
   const [editDisplayName, setEditDisplayName] = useState('');
   const [editSchoolIds, setEditSchoolIds] = useState<string[]>([]);
   const [editTeachableSubjectIds, setEditTeachableSubjectIds] = useState<string[]>([]);
-  const [editAvailableDaysOfWeek, setEditAvailableDaysOfWeek] = useState<number[]>([]);
   const [editAvailableSlotNumbersByDay, setEditAvailableSlotNumbersByDay] = useState<
     Record<string, number[]>
   >({});
@@ -121,7 +120,7 @@ export default function TeacherEditPage() {
       try {
         // 講師1件だけ取得（teachable_subject_ids, available_days_of_week を含む最新の状態）
         const [teacherRes, schoolsData, subjectsData] = await Promise.all([
-          fetch(`/api/admin/users/${teacherId}`, { cache: 'no-store' }),
+          fetchWithAuth(`/api/admin/users/${teacherId}`),
           getSchools(),
           getSubjects(),
         ]);
@@ -148,9 +147,7 @@ export default function TeacherEditPage() {
         }
         // 保存済みの値を表示（API は配列で返すが、文字列等で返る場合にも正規化）
         const subjectIds = normalizeToStrArray(found.teachable_subject_ids);
-        const days = normalizeToNumArray(found.available_days_of_week);
         setEditTeachableSubjectIds(subjectIds);
-        setEditAvailableDaysOfWeek(days.length > 0 ? days : [0, 1, 2, 3, 4, 5, 6]);
         setEditAvailableSlotNumbersByDay(
           normalizeToSlotNumbersByDay(found.available_slot_numbers_by_day)
         );
@@ -195,21 +192,34 @@ export default function TeacherEditPage() {
     if (!teacher) return;
     setIsSaving(true);
     try {
-      // プロファイル（表示名・指導可能科目・出勤可能曜日）は API 経由で RPC 更新
-      const profileRes = await fetch(`/api/admin/users/${teacher.id}`, {
+      // 出勤可能曜日はグリッドから自動導出（選択したコマがある曜日）
+      const derivedDays = new Set<number>();
+      for (const [dayKey, slotNums] of Object.entries(editAvailableSlotNumbersByDay)) {
+        if (slotNums?.length) derivedDays.add(parseInt(dayKey, 10));
+      }
+      const available_days_of_week = Array.from(derivedDays).sort((a, b) => a - b);
+
+      // プロファイル（表示名・指導可能科目・出勤可能曜日・出勤可能コマ）は API 経由で RPC 更新
+      const profileRes = await fetchWithAuth(`/api/admin/users/${teacher.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         cache: 'no-store',
         body: JSON.stringify({
           display_name: editDisplayName,
           teachable_subject_ids: editTeachableSubjectIds,
-          available_days_of_week: editAvailableDaysOfWeek,
+          available_days_of_week,
           available_slot_numbers_by_day: editAvailableSlotNumbersByDay,
         }),
       });
-      const errBody = await profileRes.json().catch(() => ({}));
+      const errBody = (await profileRes.json().catch(() => ({}))) as {
+        error?: string;
+        details?: string;
+      };
       if (!profileRes.ok) {
-        throw new Error((errBody as { error?: string }).error || 'プロファイルの更新に失敗しました');
+        const msg = errBody.details
+          ? `${errBody.error ?? 'プロファイルの更新に失敗しました'}（${errBody.details}）`
+          : errBody.error || 'プロファイルの更新に失敗しました';
+        throw new Error(msg);
       }
 
       const currentSchoolIds = teacher.user_schools?.map((us) => us.school_id) || [];
@@ -357,17 +367,64 @@ export default function TeacherEditPage() {
           {/* 右カラム: 指導・勤務設定 */}
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 shadow-sm">
-              <h2 className="text-base font-semibold text-[#1f2937] mb-4 pb-2 border-b border-[#e5e7eb]">
+              <h2 className="text-base font-semibold text-[#1f2937] mb-2 pb-2 border-b border-[#e5e7eb]">
                 指導可能科目
               </h2>
-              <p className="text-xs text-[#6b7280] mb-3">空の場合は全科目を指導可能として扱います。</p>
+              <p className="text-xs text-[#6b7280] mb-3">
+                選択した科目のみ指導可能です。未選択の科目は指導できません。
+              </p>
+              {subjects.length > 0 && (
+                <div className="flex gap-2 mb-3">
+                  <button
+                    type="button"
+                    onClick={() => setEditTeachableSubjectIds(subjects.map((s) => s.id))}
+                    className="text-xs px-3 py-1.5 rounded-md border border-[#e5e7eb] hover:bg-[#f9fafb] hover:border-[#ff8e3c]/50 text-[#6b7280]"
+                  >
+                    全科目選択
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditTeachableSubjectIds([])}
+                    className="text-xs px-3 py-1.5 rounded-md border border-[#e5e7eb] hover:bg-[#f9fafb] hover:border-[#ff8e3c]/50 text-[#6b7280]"
+                  >
+                    全科目解除
+                  </button>
+                </div>
+              )}
               <div className="space-y-4 max-h-56 overflow-y-auto">
                 {subjects.length === 0 ? (
                   <p className="text-sm text-[#9ca3af]">科目が登録されていません</p>
                 ) : (
                   groupSubjectsByGradeCategory(subjects).map(({ label, items }) => (
                     <div key={label}>
-                      <p className="text-xs font-semibold text-[#6b7280] uppercase tracking-wide mb-2">{label}</p>
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-xs font-semibold text-[#6b7280] uppercase tracking-wide">{label}</p>
+                        <div className="flex gap-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const ids = items.map((s) => s.id);
+                              setEditTeachableSubjectIds((prev) =>
+                                [...prev.filter((id) => !ids.includes(id)), ...ids]
+                              );
+                            }}
+                            className="text-[10px] px-2 py-0.5 rounded border border-[#e5e7eb] hover:bg-[#f9fafb] text-[#6b7280]"
+                          >
+                            全選択
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setEditTeachableSubjectIds((prev) =>
+                                prev.filter((id) => !items.some((s) => s.id === id))
+                              )
+                            }
+                            className="text-[10px] px-2 py-0.5 rounded border border-[#e5e7eb] hover:bg-[#f9fafb] text-[#6b7280]"
+                          >
+                            全解除
+                          </button>
+                        </div>
+                      </div>
                       <div className="flex flex-wrap gap-x-4 gap-y-2">
                         {items.map((subject) => (
                           <label key={subject.id} className="flex items-center gap-2 cursor-pointer hover:text-[#ff8e3c]">
@@ -397,38 +454,10 @@ export default function TeacherEditPage() {
 
             <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 shadow-sm">
               <h2 className="text-base font-semibold text-[#1f2937] mb-4 pb-2 border-b border-[#e5e7eb]">
-                出勤可能曜日
-              </h2>
-              <p className="text-xs text-[#6b7280] mb-4">選択した曜日のみ座席表に表示されます。未選択の場合は全曜日表示です。</p>
-              <div className="flex flex-wrap gap-4">
-                {DAY_LABELS.map((d) => (
-                  <label key={d.value} className="flex items-center gap-2 cursor-pointer min-w-[4rem] px-3 py-2 rounded-lg border border-[#e5e7eb] hover:bg-[#f9fafb] hover:border-[#ff8e3c]/50 transition-colors has-[:checked]:border-[#ff8e3c] has-[:checked]:bg-orange-50">
-                    <input
-                      type="checkbox"
-                      checked={editAvailableDaysOfWeek.includes(d.value)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setEditAvailableDaysOfWeek([...editAvailableDaysOfWeek, d.value]);
-                        } else {
-                          setEditAvailableDaysOfWeek(
-                            editAvailableDaysOfWeek.filter((x) => x !== d.value)
-                          );
-                        }
-                      }}
-                      className="rounded border-[#9ca3af] text-[#ff8e3c] focus:ring-[#ff8e3c]"
-                    />
-                    <span className="text-sm font-medium text-[#1f2937]">{d.label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 shadow-sm">
-              <h2 className="text-base font-semibold text-[#1f2937] mb-4 pb-2 border-b border-[#e5e7eb]">
-                曜日ごとの出勤可能コマ
+                出勤可能コマ
               </h2>
               <p className="text-xs text-[#6b7280] mb-4">
-                担当教室の座席表に設定されているコマのみ表示されます。各曜日で出勤可能なコマを選択してください。未設定の曜日は全コマ出勤可です。
+                担当教室の座席表に設定されているコマのみ表示されます。各曜日で出勤可能なコマを選択してください。選択した曜日・コマのみ座席表に表示され、未選択の曜日・コマは表示されません。
               </p>
               {scheduleTimeSlots.length === 0 ? (
                 <p className="text-sm text-[#9ca3af] py-4">

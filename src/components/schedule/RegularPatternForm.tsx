@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui';
 import { Button, Input, Label } from '@/components/ui';
 import { SelectShadcn as Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui';
@@ -15,6 +15,12 @@ const GRADE_CATEGORY_LABELS: Record<string, string> = {
   middle: '中学',
   high: '高校',
 };
+
+function gradeToCategory(grade: number): 'elementary' | 'middle' | 'high' {
+  if (grade <= 6) return 'elementary';
+  if (grade <= 9) return 'middle';
+  return 'high';
+}
 
 function groupSubjectsByGradeCategory(subjects: Subject[]): { category: string; label: string; items: Subject[] }[] {
   const order: ('elementary' | 'middle' | 'high')[] = ['elementary', 'middle', 'high'];
@@ -34,6 +40,9 @@ interface TeacherOption {
   display_name: string | null;
   email: string | null;
   user_schools?: Array<{ school_id: string }>;
+  teachable_subject_ids?: string[] | null;
+  available_days_of_week?: number[] | null;
+  available_slot_numbers_by_day?: Record<string, number[]> | null;
 }
 
 interface StudentOption {
@@ -89,6 +98,57 @@ export function RegularPatternForm({
     (t) => t.user_schools?.some((us) => us.school_id === selectedSchoolId)
   );
 
+  const selectedSlotNumber = timeSlots.find((s) => s.id === form.time_slot_id)
+    ?.slot_number;
+  const filteredTeachers = useMemo(() => {
+    // 科目未選択時は講師を表示しない（科目→講師の順で選択させる）
+    if (form.subject_ids.length === 0) return [];
+
+    return teachersForSchool.filter((t) => {
+      // (a) 出勤可能曜日チェック（空 or null = 該当なし）
+      const days = t.available_days_of_week;
+      if (!days || days.length === 0) return false;
+      if (!days.includes(form.day_of_week)) return false;
+
+      // (b) 出勤可能コマチェック（空 or null = 該当なし）
+      if (selectedSlotNumber !== undefined) {
+        const byDay = t.available_slot_numbers_by_day;
+        if (!byDay || Object.keys(byDay).length === 0) return false;
+        const dayKey = String(form.day_of_week);
+        const slotNums = byDay[dayKey];
+        if (!slotNums || slotNums.length === 0) return false;
+        if (!slotNums.includes(selectedSlotNumber)) return false;
+      }
+
+      // (c) 指導可能科目チェック（選択科目を担当可能な講師のみ）
+      const allowed = t.teachable_subject_ids;
+      if (!allowed || allowed.length === 0) return false;
+      return form.subject_ids.some((id) => allowed.includes(id));
+    });
+  }, [
+    teachersForSchool,
+    form.day_of_week,
+    form.time_slot_id,
+    form.subject_ids,
+    selectedSlotNumber,
+  ]);
+
+  useEffect(() => {
+    if (
+      form.teacher_id &&
+      filteredTeachers.length > 0 &&
+      !filteredTeachers.some((t) => t.id === form.teacher_id)
+    ) {
+      setForm((f) => ({ ...f, teacher_id: '' }));
+    }
+  }, [
+    form.teacher_id,
+    form.day_of_week,
+    form.time_slot_id,
+    form.subject_ids,
+    filteredTeachers,
+  ]);
+
   const searchLower = studentSearch.trim().toLowerCase();
   const filteredStudents = searchLower
     ? students.filter(
@@ -97,6 +157,41 @@ export function RegularPatternForm({
           `${s.last_name_kana || ''}${s.first_name_kana || ''}`.toLowerCase().includes(searchLower)
       )
     : students;
+
+  /** 選択生徒の学年に応じた科目のみ（生徒未選択時は全件表示） */
+  const selectedStudent = form.student_id ? students.find((s) => s.id === form.student_id) : null;
+  const allowedGradeCategory = selectedStudent ? gradeToCategory(selectedStudent.grade) : null;
+  const subjectsForStudent = allowedGradeCategory
+    ? subjects.filter((s) => (s.grade_category ?? 'middle') === allowedGradeCategory)
+    : subjects;
+
+  /** 科目セクション：生徒選択時は該当学年のみ表示 */
+  const subjectGroupsForDisplay = useMemo(() => {
+    if (allowedGradeCategory) {
+      const items = subjectsForStudent;
+      return items.length > 0
+        ? [{ category: allowedGradeCategory, label: GRADE_CATEGORY_LABELS[allowedGradeCategory], items }]
+        : [];
+    }
+    return groupSubjectsByGradeCategory(subjects);
+  }, [allowedGradeCategory, subjectsForStudent, subjects]);
+
+  const validSubjectIdsForStudent = useMemo(
+    () => new Set(subjectsForStudent.map((s) => s.id)),
+    [subjectsForStudent]
+  );
+
+  /** 生徒変更時：該当学年外の科目選択をクリア */
+  useEffect(() => {
+    if (!form.student_id || form.subject_ids.length === 0) return;
+    const hasInvalid = form.subject_ids.some((id) => !validSubjectIdsForStudent.has(id));
+    if (hasInvalid) {
+      setForm((f) => ({
+        ...f,
+        subject_ids: f.subject_ids.filter((id) => validSubjectIdsForStudent.has(id)),
+      }));
+    }
+  }, [form.student_id, validSubjectIdsForStudent]);
 
   useEffect(() => {
     if (open) {
@@ -221,27 +316,12 @@ export function RegularPatternForm({
             </div>
           </div>
           <div className="space-y-2">
-            <Label>講師</Label>
-            <Select
-              value={form.teacher_id}
-              onValueChange={(v) => setForm({ ...form, teacher_id: v })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="講師を選択" />
-              </SelectTrigger>
-              <SelectContent>
-                {teachersForSchool.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.display_name || t.email || t.id}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
             <Label>科目（複数可）</Label>
+            {!form.student_id ? (
+              <p className="text-xs text-[var(--paragraph-light)]">生徒を選択すると、該当学年の科目のみ表示されます</p>
+            ) : null}
             <div className="space-y-3 border rounded-md p-2">
-              {groupSubjectsByGradeCategory(subjects).map(({ label, items }) => (
+              {subjectGroupsForDisplay.map(({ label, items }) => (
                 <div key={label}>
                   <p className="text-xs font-medium text-[var(--paragraph)] mb-1.5">{label}</p>
                   <div className="flex flex-wrap gap-2">
@@ -258,6 +338,33 @@ export function RegularPatternForm({
                 </div>
               ))}
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label>講師</Label>
+            {form.subject_ids.length === 0 ? (
+              <p className="text-xs text-[var(--paragraph-light)]">科目を選択すると、担当可能な講師のみ表示されます</p>
+            ) : null}
+            <Select
+              value={form.teacher_id}
+              onValueChange={(v) => setForm({ ...form, teacher_id: v })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="講師を選択" />
+              </SelectTrigger>
+              <SelectContent>
+                {filteredTeachers.length === 0 ? (
+                  <div className="px-3 py-2 text-sm text-gray-500">
+                    {form.subject_ids.length > 0 ? '選択した科目を担当できる講師がいません' : '科目を選択してください'}
+                  </div>
+                ) : (
+                  filteredTeachers.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.display_name || t.email || t.id}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <Label htmlFor="seat_label">座席番号（任意）</Label>

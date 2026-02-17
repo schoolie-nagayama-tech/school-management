@@ -7,6 +7,7 @@ import type { ScheduleEntry, ScheduleTimeSlot } from '@/types/schedule';
 export interface TeacherGroup {
   teacher: { id: string; display_name: string | null; email: string | null };
   entries: ScheduleEntry[];
+  isAvailableOnly: boolean; // true = 出勤可能だが授業なし
 }
 
 const DAY_CELL_DROP_PREFIX = 'day-cell-';
@@ -28,8 +29,6 @@ export interface DayCellProps {
   timeSlot: ScheduleTimeSlot;
   isClosed: boolean;
   teacherGroups: TeacherGroup[];
-  emptyTeacherIds: string[];
-  teachersMap: Map<string, { id: string; display_name: string | null; email: string | null }>;
   maxStudentsPerTeacher: number;
   activeDragId: string | null;
   activeDragEntry: ScheduleEntry | null;
@@ -47,8 +46,6 @@ export const DayCell = React.memo(function DayCell({
   timeSlot,
   isClosed,
   teacherGroups,
-  emptyTeacherIds,
-  teachersMap,
   maxStudentsPerTeacher,
   activeDragId,
   activeDragEntry,
@@ -75,6 +72,7 @@ export const DayCell = React.memo(function DayCell({
           key={group.teacher.id}
           teacher={group.teacher}
           entries={group.entries}
+          isAvailableOnly={group.isAvailableOnly}
           date={date}
           timeSlotId={timeSlot.id}
           maxStudents={maxStudentsPerTeacher}
@@ -96,29 +94,6 @@ export const DayCell = React.memo(function DayCell({
           onTransferTargetClick={onTransferTargetClick}
         />
       ))}
-      {emptyTeacherIds.map((teacherId) => {
-        const teacher = teachersMap.get(teacherId);
-        if (!teacher) return null;
-        return (
-          <TeacherCard
-            key={`empty-${teacherId}`}
-            teacher={teacher}
-            entries={[]}
-            date={date}
-            timeSlotId={timeSlot.id}
-            maxStudents={maxStudentsPerTeacher}
-            isClosed={false}
-            onAddStudent={() => onAddStudent(teacherId)}
-            onRemoveTeacher={() => onRemoveTeacher(teacherId, 0)}
-            onStudentClick={onStudentClick}
-            onTransferClick={onTransferClick}
-            activeDragId={activeDragId}
-            activeDragEntry={activeDragEntry}
-            transferMode={transferMode}
-            onTransferTargetClick={onTransferTargetClick}
-          />
-        );
-      })}
       <button
         type="button"
         onClick={(e) => {

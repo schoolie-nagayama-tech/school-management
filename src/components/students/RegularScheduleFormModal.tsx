@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Dialog,
   DialogContent,
@@ -12,6 +13,7 @@ import { Button } from '@/components/ui';
 import {
   createRegularPattern,
   updateRegularPattern,
+  regenerateCurrentWeekIfNeeded,
 } from '@/lib/api/schedule';
 import { DAY_OF_WEEK_LABELS, SCHEDULE_PERIOD_LABELS } from '@/types/schedule';
 import type {
@@ -65,6 +67,7 @@ export function RegularScheduleFormModal({
   subjects,
   onSuccess,
 }: RegularScheduleFormModalProps) {
+  const { profile } = useAuth();
   const [dayOfWeek, setDayOfWeek] = useState(1);
   const [timeSlotId, setTimeSlotId] = useState('');
   const [teacherId, setTeacherId] = useState('');
@@ -82,24 +85,27 @@ export function RegularScheduleFormModal({
       : subjects;
 
   useEffect(() => {
-    if (open) {
-      setErrorMessage(null);
-      if (pattern) {
-        setDayOfWeek(pattern.day_of_week);
-        setTimeSlotId(pattern.time_slot_id);
-        setTeacherId(pattern.teacher_id);
-        setSubjectIds(pattern.subject_ids ?? []);
-        setPeriodType(pattern.period_type ?? 'regular');
-      } else {
-        setDayOfWeek(1);
-        setTimeSlotId(timeSlots[0]?.id ?? '');
-        const initSubs = subjectsForGrade[0] ? [subjectsForGrade[0].id] : [];
-        setSubjectIds(initSubs);
-        setTeacherId('');
-        setPeriodType('regular');
-      }
+    if (!open) return;
+    setErrorMessage(null);
+    const subsForGrade =
+      studentGrade != null
+        ? subjects.filter((s) => s.grade_category === gradeToCategory(studentGrade))
+        : subjects;
+    if (pattern) {
+      setDayOfWeek(pattern.day_of_week);
+      setTimeSlotId(pattern.time_slot_id);
+      setTeacherId(pattern.teacher_id);
+      setSubjectIds(pattern.subject_ids ?? []);
+      setPeriodType(pattern.period_type ?? 'regular');
+    } else {
+      setDayOfWeek(1);
+      setTimeSlotId(timeSlots[0]?.id ?? '');
+      const initSubs = subsForGrade[0] ? [subsForGrade[0].id] : [];
+      setSubjectIds(initSubs);
+      setTeacherId('');
+      setPeriodType('regular');
     }
-  }, [open, pattern, timeSlots, teachers, subjects, subjectsForGrade]);
+  }, [open, pattern, timeSlots, subjects, studentGrade]);
 
   /** 選択科目を指導可能な講師のみ（teachable_subject_ids が空/未設定は全科目可） */
   const teachersForSubject = subjectIds.length > 0
@@ -139,10 +145,12 @@ export function RegularScheduleFormModal({
       };
       if (isEdit && pattern) {
         await updateRegularPattern(pattern.id, form);
+        await regenerateCurrentWeekIfNeeded(schoolId, profile?.id);
         onSuccess();
         onClose();
       } else {
         await createRegularPattern(schoolId, form);
+        await regenerateCurrentWeekIfNeeded(schoolId, profile?.id);
         onSuccess();
         onClose();
       }

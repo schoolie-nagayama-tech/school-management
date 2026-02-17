@@ -9,6 +9,7 @@ export interface TeacherOption {
   id: string;
   display_name: string | null;
   email: string | null;
+  is_active?: boolean;
   user_schools?: Array<{ school_id: string }>;
 }
 
@@ -30,7 +31,9 @@ export function AddTeacherModal({
   const [teacherId, setTeacherId] = useState('');
 
   const teachersForSchool = teachers.filter(
-    (t) => t.user_schools?.some((us) => us.school_id === schoolId)
+    (t) =>
+      t.is_active !== false &&
+      t.user_schools?.some((us) => us.school_id === schoolId)
   );
 
   useEffect(() => {

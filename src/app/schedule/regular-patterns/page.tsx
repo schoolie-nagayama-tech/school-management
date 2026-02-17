@@ -10,6 +10,7 @@ import { ToastContainer } from '@/components/ui';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui';
 import { RegularPatternForm, RegularPatternTable } from '@/components/schedule';
 import { useToast } from '@/hooks/useToast';
+import { fetchWithAuth } from '@/lib/api/auth';
 import { getSchools } from '@/lib/api/schools';
 import { getSubjects } from '@/lib/api/subjects';
 import { getStudents } from '@/lib/api/students';
@@ -19,6 +20,7 @@ import {
   createRegularPattern,
   updateRegularPattern,
   deleteRegularPattern,
+  regenerateCurrentWeekIfNeeded,
 } from '@/lib/api/schedule';
 import type { ScheduleRegularPattern, ScheduleRegularPatternFormData } from '@/types/schedule';
 import type { School } from '@/types/database';
@@ -38,7 +40,17 @@ export default function RegularPatternsPage() {
   const [timeSlots, setTimeSlots] = useState<Awaited<ReturnType<typeof getTimeSlots>>>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [students, setStudents] = useState<Awaited<ReturnType<typeof getStudents>>>([]);
-  const [teachers, setTeachers] = useState<Array<{ id: string; display_name: string | null; email: string | null; user_schools?: Array<{ school_id: string }> }>>([]);
+  const [teachers, setTeachers] = useState<
+    Array<{
+      id: string;
+      display_name: string | null;
+      email: string | null;
+      user_schools?: Array<{ school_id: string }>;
+      teachable_subject_ids?: string[] | null;
+      available_days_of_week?: number[] | null;
+      available_slot_numbers_by_day?: Record<string, number[]> | null;
+    }>
+  >([]);
   const [isLoading, setIsLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
   const [editingPattern, setEditingPattern] = useState<ScheduleRegularPattern | null>(null);
@@ -90,7 +102,7 @@ export default function RegularPatternsPage() {
       }),
       getTimeSlots(selectedSchoolId),
       getStudents(undefined, [selectedSchoolId]),
-      fetch('/api/admin/users?role=teacher').then((r) => r.json()).then((d) => d.users || []),
+      fetchWithAuth('/api/admin/users?role=teacher').then((r) => r.json()).then((d) => d.users || []),
     ])
       .then(([p, t, s, users]) => {
         setPatterns(p);
@@ -110,8 +122,8 @@ export default function RegularPatternsPage() {
   const canTeacherTeachSubjects = (teacherId: string, subjectIds: string[]) => {
     if (subjectIds.length === 0) return true;
     const teacher = teachers.find((t) => t.id === teacherId);
-    const allowed = (teacher as { teachable_subject_ids?: string[] | null })?.teachable_subject_ids;
-    if (!allowed || allowed.length === 0) return true;
+    const allowed = teacher?.teachable_subject_ids;
+    if (!allowed || allowed.length === 0) return false; // 空 or null = 指導可能科目なし
     return subjectIds.every((id) => allowed.includes(id));
   };
 
@@ -124,9 +136,11 @@ export default function RegularPatternsPage() {
     try {
       if (editingPattern) {
         await updateRegularPattern(editingPattern.id, form);
+        await regenerateCurrentWeekIfNeeded(selectedSchoolId, profile?.id);
         success('通塾日程を更新しました');
       } else {
         await createRegularPattern(selectedSchoolId, form);
+        await regenerateCurrentWeekIfNeeded(selectedSchoolId, profile?.id);
         success('通塾日程を追加しました');
       }
       const p = await getRegularPatterns(selectedSchoolId, {
@@ -151,6 +165,7 @@ export default function RegularPatternsPage() {
     if (!deletingPattern) return;
     try {
       await deleteRegularPattern(deletingPattern.id);
+      await regenerateCurrentWeekIfNeeded(selectedSchoolId!, profile?.id);
       success('通塾日程を削除しました');
       const data = await getRegularPatterns(selectedSchoolId!, {
         studentId: studentIdFromUrl,
@@ -239,6 +254,9 @@ export default function RegularPatternsPage() {
         <Card>
           <CardHeader>
             <CardTitle>通塾日程一覧</CardTitle>
+            <p className="text-sm text-[var(--paragraph-light)] mt-1">
+              通塾日程の変更は座席表に自動で反映されます。手動での生成は不要です。
+            </p>
           </CardHeader>
           <CardContent>
             <RegularPatternTable

@@ -44,8 +44,6 @@ export function TeacherDetailModal({
   const schoolNames = (teacher.user_schools ?? [])
     .map((us) => us.school?.name)
     .filter(Boolean) as string[];
-  const availableDays = teacher.available_days_of_week ?? [];
-  const dayLabels = DAY_LABELS.filter((d) => availableDays.includes(d.value)).map((d) => d.label);
   const slotByDay = teacher.available_slot_numbers_by_day ?? {};
   const slotByDayLines = DAY_LABELS.filter((d) => {
     const arr = slotByDay[String(d.value)];
@@ -77,23 +75,15 @@ export function TeacherDetailModal({
         <div>
           <label className="text-xs text-[var(--paragraph)]">指導可能科目</label>
           <p className="mt-1 text-sm text-[var(--headline)]">
-            {subjectNames.length > 0 ? subjectNames.join('、') : '全科目'}
+            {subjectNames.length > 0 ? subjectNames.join('、') : '—'}
           </p>
         </div>
         <div>
-          <label className="text-xs text-[var(--paragraph)]">出勤可能曜日</label>
+          <label className="text-xs text-[var(--paragraph)]">出勤可能コマ</label>
           <p className="mt-1 text-sm text-[var(--headline)]">
-            {dayLabels.length > 0 ? dayLabels.join('、') : '—'}
+            {slotByDayLines.length > 0 ? slotByDayLines.join(' / ') : '—'}
           </p>
         </div>
-        {slotByDayLines.length > 0 && (
-          <div>
-            <label className="text-xs text-[var(--paragraph)]">曜日ごとの出勤可能コマ</label>
-            <p className="mt-1 text-sm text-[var(--headline)]">
-              {slotByDayLines.join(' / ')}
-            </p>
-          </div>
-        )}
         <div className="flex justify-end pt-2">
           <Button type="button" variant="secondary" onClick={onClose}>
             閉じる

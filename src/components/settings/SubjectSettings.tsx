@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { Button, Input, Modal } from '@/components/ui';
@@ -180,7 +180,7 @@ export function SubjectSettings({ isOpen, onClose }: SubjectSettingsProps) {
           {/* 科目一覧 */}
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="animate-spin h-8 w-8 border-4 border-[#3b82f6] border-t-transparent rounded-full"></div>
+              <div className="animate-spin h-8 w-8 border-4 border-[#1e3a5f] border-t-transparent rounded-full"></div>
             </div>
           ) : (
             <div className="space-y-2">

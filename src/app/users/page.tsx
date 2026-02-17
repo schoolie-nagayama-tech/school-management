@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { useAuth } from '@/contexts/AuthContext';
-import { updateUserProfile } from '@/lib/api/auth';
+import { updateUserProfile, fetchWithAuth } from '@/lib/api/auth';
 import { getSchools, createSchool, updateSchool, deleteSchool } from '@/lib/api/schools';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui';
@@ -34,7 +34,7 @@ interface UserWithDetails extends UserProfile {
 }
 
 export default function UsersPage() {
-  const { profile, permissions, isLoading: authLoading, schoolIds: mySchoolIds } = useAuth();
+  const { user, profile, permissions, isLoading: authLoading, schoolIds: mySchoolIds } = useAuth();
   const { toasts, removeToast, success, error: toastError } = useToast();
   const [activeTab, setActiveTab] = useState<TabType>('users');
   const [users, setUsers] = useState<UserWithDetails[]>([]);
@@ -97,7 +97,7 @@ export default function UsersPage() {
     setIsLoading(true);
     try {
       const [usersResponse, schoolsData] = await Promise.all([
-        fetch('/api/admin/users', { cache: 'no-store', credentials: 'same-origin' }),
+        fetchWithAuth(`/api/admin/users?t=${Date.now()}`),
         getSchools(),
       ]);
       
@@ -160,7 +160,7 @@ export default function UsersPage() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('/api/admin/users/create', {
+      const response = await fetchWithAuth('/api/admin/users/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -238,7 +238,7 @@ export default function UsersPage() {
         ? editDefaultSchoolId
         : null;
 
-      const res = await fetch(`/api/admin/users/${editingUser.id}`, {
+      const res = await fetchWithAuth(`/api/admin/users/${editingUser.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -284,23 +284,39 @@ export default function UsersPage() {
   // ユーザー削除
   const handleDelete = async () => {
     if (!deletingUser) return;
+    const userIdToDelete = deletingUser.id;
 
     try {
-      const response = await fetch(`/api/admin/users/${deletingUser.id}`, {
+      const response = await fetchWithAuth(`/api/admin/users/${userIdToDelete}`, {
         method: 'DELETE',
       });
 
       if (!response.ok) {
-        throw new Error('削除に失敗しました');
+        // 404 = 既に削除済み → 一覧から除外して成功扱い
+        if (response.status === 404) {
+          setUsers((prev) => prev.filter((u) => u.id !== userIdToDelete));
+          success('ユーザーを削除しました');
+          return;
+        }
+        let msg = '削除に失敗しました';
+        try {
+          const body = await response.json();
+          if (body?.details) msg = body.details;
+          else if (body?.error) msg = body.error;
+        } catch (_) {}
+        throw new Error(msg);
       }
 
+      // 楽観的更新：一覧から即時削除（キャッシュ対策）
+      setUsers((prev) => prev.filter((u) => u.id !== userIdToDelete));
       success('ユーザーを削除しました');
-      setIsDeleteDialogOpen(false);
-      setDeletingUser(null);
       await loadData();
     } catch (error) {
       console.error('Failed to delete user:', error);
-      toastError('削除に失敗しました');
+      toastError(error instanceof Error ? error.message : '削除に失敗しました');
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setDeletingUser(null);
     }
   };
 
@@ -390,12 +406,12 @@ export default function UsersPage() {
   // 権限チェック（オーナー以上で教室設定タブにアクセス可能）
   const canAccessSchoolSettings = profile?.role === 'admin' || profile?.role === 'owner';
 
-  // 認証・権限の読み込みが完了してから判定し、読み込み中はアクセス拒否を表示しない
-  if (authLoading) {
+  // 未ログイン時は権限画面ではなくローディング（AuthContext がログインへリダイレクトするまでの間）
+  if (!user || authLoading) {
     return (
       <AdminLayout headerTitle="ユーザー管理">
         <div className="p-6 flex items-center justify-center min-h-[40vh]">
-          <div className="w-10 h-10 border-4 border-[#ff8e3c] border-t-transparent rounded-full animate-spin" />
+          <div className="w-10 h-10 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin" />
         </div>
       </AdminLayout>
     );
@@ -487,7 +503,7 @@ export default function UsersPage() {
 
         {isLoading ? (
           <div className="text-center py-12">
-            <div className="w-12 h-12 border-4 border-[#3b82f6] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <div className="w-12 h-12 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-[#4b5563]">読み込み中...</p>
           </div>
         ) : activeTab === 'users' ? (
@@ -525,12 +541,12 @@ export default function UsersPage() {
                         <td className="px-4 py-3 text-sm text-[#4b5563]">
                           {user.user_schools && user.user_schools.length > 0 ? (
                             <div className="flex flex-wrap gap-1">
-                              {user.user_schools.map(us => {
+                              {user.user_schools.map((us, idx) => {
                                 const profileWithDefault = user as UserWithDetails & { default_school_id?: string | null };
                                 const isDefault = profileWithDefault.default_school_id === us.school_id;
                                 return (
                                   <span
-                                    key={us.id}
+                                    key={us.id || `${us.user_id}-${us.school_id}-${idx}`}
                                     className={`inline-block px-2 py-0.5 text-xs rounded ${isDefault ? 'bg-[#e5e7eb] text-[#4b5563]' : 'bg-[#f3f4f6]'}`}
                                   >
                                     {us.school?.name || '不明'}
@@ -861,7 +877,7 @@ export default function UsersPage() {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>キャンセル</AlertDialogCancel>
+              <AlertDialogCancel onClick={() => { setIsDeleteDialogOpen(false); setDeletingUser(null); }}>キャンセル</AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDelete}
                 className="bg-[#ef4444] text-white hover:bg-[#dc2626]"

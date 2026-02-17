@@ -21,6 +21,7 @@ import {
   TransferModeBar,
   ScheduleDailyPrintView,
 } from '@/components/schedule';
+import { fetchWithAuth } from '@/lib/api/auth';
 import { getSchools } from '@/lib/api/schools';
 import { getSubjects } from '@/lib/api/subjects';
 import { getStudents } from '@/lib/api/students';
@@ -31,6 +32,7 @@ import {
   getClosedDays,
   generateWeeklySchedule,
   hasEntriesForWeek,
+  getExpectedEntryKeysFromPatterns,
   createScheduleEntry,
   updateScheduleEntry,
   moveScheduleEntry,
@@ -42,7 +44,8 @@ import {
   cancelFutureEntriesByRegularPatternId,
 } from '@/lib/api/schedule';
 import type { ScheduleEntry, ScheduleEntryFormData, ScheduleTimeSlot } from '@/types/schedule';
-import type { School } from '@/types/database';
+import type { School, Student } from '@/types/database';
+import { StudentDetailModal } from '@/components/students';
 import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
@@ -131,6 +134,7 @@ export default function SchedulePage() {
   const [entriesLoading, setEntriesLoading] = useState(false);
 
   const [actionModalEntry, setActionModalEntry] = useState<ScheduleEntry | null>(null);
+  const [studentDetailStudent, setStudentDetailStudent] = useState<Student | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<ScheduleEntry | null>(null);
   const [addModalOpen, setAddModalOpen] = useState(false);
@@ -217,16 +221,32 @@ export default function SchedulePage() {
         getScheduleEntries(schoolId, weekStartStr, weekEndStr),
         getClosedDays(schoolId, { from: weekStartStr, to: weekEndStr }),
       ]);
+      const patterns = await getRegularPatterns(schoolId);
       // 通塾日程に登録したコマを週スケジュールにデフォルト表示：エントリが0件かつ通塾日程がある場合は自動生成
-      if (list.length === 0) {
-        const patterns = await getRegularPatterns(schoolId);
-        if (patterns.length > 0) {
-          await generateWeeklySchedule(schoolId, weekStartStr, profile?.id ?? undefined);
-          list = await getScheduleEntries(schoolId, weekStartStr, weekEndStr);
-        }
+      if (list.length === 0 && patterns.length > 0) {
+        await generateWeeklySchedule(schoolId, weekStartStr, profile?.id ?? undefined);
+        list = await getScheduleEntries(schoolId, weekStartStr, weekEndStr);
       }
       setEntries(list);
       setClosedDates(closed.map((c) => c.closed_date));
+
+      // 通塾日程と座席表の同期チェック：不一致なら自動で再生成（手動作業不要）
+      if (patterns.length > 0) {
+        const expected = await getExpectedEntryKeysFromPatterns(schoolId, weekStartStr);
+        const actual = new Set(
+          list
+            .filter((e) => e.status === 'scheduled' || e.status === 'completed')
+            .map((e) => `${e.entry_date}-${e.time_slot_id}-${e.student_id}`)
+        );
+        const outOfSync =
+          expected.size !== actual.size ||
+          [...expected].some((k) => !actual.has(k));
+        if (outOfSync) {
+          await generateWeeklySchedule(schoolId, weekStartStr, profile?.id ?? undefined);
+          list = await getScheduleEntries(schoolId, weekStartStr, weekEndStr);
+          setEntries(list);
+        }
+      }
     } catch {
       toastError('スケジュールの取得に失敗しました');
     } finally {
@@ -257,7 +277,7 @@ export default function SchedulePage() {
       getActiveTimeSlots(schoolId),
       getRegularPatterns(schoolId),
       getSubjects(),
-      fetch('/api/admin/users?role=teacher').then((r) => r.json()).then((d) => d.users || []),
+      fetchWithAuth('/api/admin/users?role=teacher').then((r) => r.json()).then((d) => d.users || []),
     ])
       .then(([slots, patterns, subj, users]) => {
         setTimeSlots(slots);
@@ -284,6 +304,25 @@ export default function SchedulePage() {
   const handleEntryClick = (entry: ScheduleEntry, e: React.MouseEvent) => {
     e.stopPropagation();
     setActionModalEntry(entry);
+  };
+
+  const handleStudentClickFromAction = () => {
+    const entry = actionModalEntry;
+    if (!entry) return;
+    setActionModalEntry(null);
+    const found = students.find((s) => s.id === entry.student_id);
+    if (found) {
+      setStudentDetailStudent(found);
+    } else {
+      toastError('生徒情報の取得に失敗しました');
+    }
+  };
+
+  const handleTeacherClickFromAction = () => {
+    const entry = actionModalEntry;
+    if (!entry) return;
+    setActionModalEntry(null);
+    router.push(`/admin/teachers/${entry.teacher_id}`);
   };
 
   const handleAddTeacher = (date: string, slotId: string) => {
@@ -961,13 +1000,13 @@ export default function SchedulePage() {
       <AlertDialog open={scheduleGenerateConfirmOpen} onOpenChange={setScheduleGenerateConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>スケジュールを生成しますか？</AlertDialogTitle>
+            <AlertDialogTitle>スケジュールを強制再生成しますか？</AlertDialogTitle>
             <AlertDialogDescription>
               {scheduleGenerateLoading
                 ? '確認中...'
                 : scheduleGenerateHasExisting
-                  ? 'この週には既にスケジュールが登録されています。上書きしますか？'
-                  : '通塾日程から、選択中の週のスケジュールを一括生成します。'}
+                  ? 'この週には既にスケジュールが登録されています。強制的に上書きしますか？'
+                  : '通塾日程から、選択中の週のスケジュールを一括生成します。（通常は自動で反映されます）'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1002,6 +1041,18 @@ export default function SchedulePage() {
         onAbsent={handleAbsentFromAction}
         onEdit={handleEditClick}
         onDelete={handleDeleteClick}
+        onStudentClick={handleStudentClickFromAction}
+        onTeacherClick={handleTeacherClickFromAction}
+      />
+
+      <StudentDetailModal
+        isOpen={!!studentDetailStudent}
+        student={studentDetailStudent}
+        onClose={() => setStudentDetailStudent(null)}
+        onEdit={(student) => {
+          setStudentDetailStudent(null);
+          router.push('/students');
+        }}
       />
 
       <AddTeacherModal
@@ -1059,6 +1110,12 @@ export default function SchedulePage() {
         }
         schoolId={schoolId ?? ''}
         subjects={subjects}
+        teacherTeachableSubjectIds={
+          addTarget
+            ? teachers.find((t) => t.id === addTarget.teacherId)
+                ?.teachable_subject_ids
+            : undefined
+        }
         onSuccess={() => {
           refreshEntries();
           setAddTarget(null);

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireAdmin, requireManager } from '@/lib/api-auth';
 
 function getSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -57,10 +58,12 @@ function toSlotNumbersByDay(v: unknown): Record<string, number[]> {
 
 /** 講師1件取得（編集画面用。teachable_subject_ids, available_days_of_week を必ず配列で返す） */
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { userId: string } }
 ) {
   try {
+    const authError = await requireManager(request);
+    if (authError) return authError;
     const userId = params.userId;
     if (!userId) {
       return NextResponse.json({ error: 'userId が必要です' }, { status: 400 });
@@ -107,6 +110,8 @@ export async function PATCH(
   { params }: { params: { userId: string } }
 ) {
   try {
+    const authError = await requireAdmin(request);
+    if (authError) return authError;
     const userId = params.userId;
     if (!userId) {
       return NextResponse.json({ error: 'userId が必要です' }, { status: 400 });
@@ -196,33 +201,43 @@ export async function PATCH(
       typeof body.available_slot_numbers_by_day === 'object' &&
       !Array.isArray(body.available_slot_numbers_by_day)
         ? body.available_slot_numbers_by_day
-        : null;
+        : {};
 
-    // RPC で更新（列が存在しない場合はエラーになる）
-    const { data, error } = await supabaseAdmin.rpc('update_teacher_profile', {
-      p_user_id: userId,
-      p_display_name: body.display_name ?? null,
-      p_teachable_subject_ids: Array.isArray(body.teachable_subject_ids) ? body.teachable_subject_ids : null,
-      p_available_days_of_week: Array.isArray(body.available_days_of_week) ? body.available_days_of_week : null,
-      p_available_slot_numbers_by_day: slotNumbersByDay,
-    });
+    const profileUpdates: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+    };
+    if (body.display_name !== undefined) profileUpdates.display_name = body.display_name ?? null;
+    if (Array.isArray(body.teachable_subject_ids)) {
+      profileUpdates.teachable_subject_ids = body.teachable_subject_ids;
+    }
+    if (Array.isArray(body.available_days_of_week)) {
+      profileUpdates.available_days_of_week = body.available_days_of_week;
+    }
+    profileUpdates.available_slot_numbers_by_day = slotNumbersByDay;
+
+    const { data, error } = await supabaseAdmin
+      .from('user_profiles')
+      .update(profileUpdates)
+      .eq('id', userId)
+      .select()
+      .single();
 
     if (error) {
-      // 関数が存在しない or 列がない場合はマイグレーション未実行の可能性
-      const msg = error.message || '';
-      if (msg.includes('function') && msg.includes('does not exist')) {
-        return NextResponse.json(
-          { error: '講師プロファイル更新の準備ができていません。Supabase でマイグレーション（xxx_teacher_teachable_subjects_and_available_days.sql、xxx_teacher_available_slots_by_day.sql、xxx_teacher_profile_update_rpc_slots.sql）を実行してください。' },
-          { status: 503 }
-        );
-      }
-      throw error;
+      console.error('user_profiles update error:', error);
+      return NextResponse.json(
+        { error: 'プロファイルの更新に失敗しました', details: error.message },
+        { status: 500 }
+      );
     }
     return NextResponse.json(data);
   } catch (error) {
+    const err = error as { message?: string };
     console.error('Failed to update user profile:', error);
     return NextResponse.json(
-      { error: 'プロファイルの更新に失敗しました' },
+      {
+        error: 'プロファイルの更新に失敗しました',
+        details: err?.message || String(error),
+      },
       { status: 500 }
     );
   }
@@ -233,31 +248,126 @@ export async function DELETE(
   { params }: { params: { userId: string } }
 ) {
   try {
+    const authError = await requireAdmin(request);
+    if (authError) return authError;
     const supabaseAdmin = getSupabaseAdmin();
     const userId = params.userId;
 
+    // 外部キー参照を解除（ON DELETE RESTRICT のため事前に削除・更新が必要）
+    const steps = [
+      { name: 'schedule_entries.attendance_recorded_by', fn: () => supabaseAdmin.from('schedule_entries').update({ attendance_recorded_by: null }).eq('attendance_recorded_by', userId) },
+      { name: 'schedule_entries.teacher_id', fn: () => supabaseAdmin.from('schedule_entries').delete().eq('teacher_id', userId) },
+      { name: 'schedule_regular_patterns', fn: () => supabaseAdmin.from('schedule_regular_patterns').delete().eq('teacher_id', userId) },
+      { name: 'schedule_generation_logs', fn: () => supabaseAdmin.from('schedule_generation_logs').update({ created_by: null }).eq('created_by', userId) },
+      { name: 'bulletin_posts.created_by', fn: () => supabaseAdmin.from('bulletin_posts').update({ created_by: null }).eq('created_by', userId) },
+      { name: 'bulletin_posts.updated_by', fn: () => supabaseAdmin.from('bulletin_posts').update({ updated_by: null }).eq('updated_by', userId) },
+      { name: 'bulletin_reads', fn: () => supabaseAdmin.from('bulletin_reads').delete().eq('user_id', userId) },
+      { name: 'alert_dismissals', fn: () => supabaseAdmin.from('alert_dismissals').update({ dismissed_by: null }).eq('dismissed_by', userId) },
+    ];
+
+    for (const step of steps) {
+      const { error } = await step.fn();
+      if (error) {
+        console.error(`[DELETE user] Failed at step "${step.name}":`, error);
+        throw new Error(`${step.name}: ${error.message}`);
+      }
+    }
+
+    // attendance_sheets（出勤簿）: teacher_id / approved_by が user_profiles を参照（テーブル未実装の場合はスキップ）
+    const isTableMissing = (e: { code?: string; message?: string } | null) =>
+      e && (e.code === '42P01' || /relation .* does not exist/i.test(e?.message || ''));
+    const { data: teacherSheetIds, error: sheetsSelErr } = await supabaseAdmin
+      .from('attendance_sheets')
+      .select('id')
+      .eq('teacher_id', userId);
+    if (sheetsSelErr && !isTableMissing(sheetsSelErr)) {
+      console.error('[DELETE user] attendance_sheets select:', sheetsSelErr);
+      throw new Error(`attendance_sheets: ${sheetsSelErr.message}`);
+    }
+    if (sheetsSelErr) {
+      // テーブルなし → 出勤簿の処理をスキップ
+    } else {
+      const sheetIds = (teacherSheetIds || []).map((r: { id: string }) => r.id);
+      if (sheetIds.length > 0) {
+        const { error: delRecErr } = await supabaseAdmin
+          .from('attendance_records')
+          .delete()
+          .in('sheet_id', sheetIds);
+        if (delRecErr && !isTableMissing(delRecErr)) {
+          console.error('[DELETE user] attendance_records:', delRecErr);
+          throw new Error(`attendance_records: ${delRecErr.message}`);
+        }
+        const { error: delNotesErr } = await supabaseAdmin
+          .from('attendance_notes')
+          .delete()
+          .in('sheet_id', sheetIds);
+        if (delNotesErr && !isTableMissing(delNotesErr)) {
+          console.error('[DELETE user] attendance_notes:', delNotesErr);
+          throw new Error(`attendance_notes: ${delNotesErr.message}`);
+        }
+      }
+      const { error: updApprovedErr } = await supabaseAdmin
+        .from('attendance_sheets')
+        .update({ approved_by: null })
+        .eq('approved_by', userId);
+      if (updApprovedErr && !isTableMissing(updApprovedErr)) {
+        console.error('[DELETE user] attendance_sheets.approved_by:', updApprovedErr);
+        throw new Error(`attendance_sheets.approved_by: ${updApprovedErr.message}`);
+      }
+      const { error: delSheetsErr } = await supabaseAdmin
+        .from('attendance_sheets')
+        .delete()
+        .eq('teacher_id', userId);
+      if (delSheetsErr && !isTableMissing(delSheetsErr)) {
+        console.error('[DELETE user] attendance_sheets:', delSheetsErr);
+        throw new Error(`attendance_sheets: ${delSheetsErr.message}`);
+      }
+    }
+
     // user_schoolsを削除
-    await supabaseAdmin
-      .from('user_schools')
-      .delete()
-      .eq('user_id', userId);
+    const { error: usErr } = await supabaseAdmin.from('user_schools').delete().eq('user_id', userId);
+    if (usErr) {
+      console.error('[DELETE user] user_schools:', usErr);
+      throw new Error(`user_schools: ${usErr.message}`);
+    }
 
     // user_profilesを削除
-    await supabaseAdmin
+    const { data: deletedProfiles, error: upErr } = await supabaseAdmin
       .from('user_profiles')
       .delete()
-      .eq('id', userId);
+      .eq('id', userId)
+      .select('id');
+    if (upErr) {
+      console.error('[DELETE user] user_profiles:', upErr);
+      throw new Error(`user_profiles: ${upErr.message}`);
+    }
+    if (!deletedProfiles?.length) {
+      console.error('[DELETE user] user_profiles: no row deleted for userId=', userId);
+      return NextResponse.json(
+        { error: 'ユーザーが見つかりません', details: '指定されたユーザーは存在しないか、既に削除されています' },
+        { status: 404 }
+      );
+    }
 
-    // Authユーザーを削除
-    const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
-
-    if (error) throw error;
+    // Authユーザーを削除（既に存在しない場合は成功扱い）
+    const { error: authErr } = await supabaseAdmin.auth.admin.deleteUser(userId);
+    if (authErr) {
+      const msg = authErr?.message?.toLowerCase() ?? '';
+      if (msg.includes('user not found') || msg.includes('ユーザーが見つかりません')) {
+        // Auth に既に存在しない = プロファイルは削除済みなので成功
+      } else {
+        console.error('[DELETE user] auth.admin.deleteUser:', authErr);
+        throw authErr;
+      }
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    const err = error as { message?: string; code?: string };
     console.error('Failed to delete user:', error);
+    const detail = err?.message || String(error);
     return NextResponse.json(
-      { error: 'ユーザーの削除に失敗しました' },
+      { error: 'ユーザーの削除に失敗しました', details: detail },
       { status: 500 }
     );
   }

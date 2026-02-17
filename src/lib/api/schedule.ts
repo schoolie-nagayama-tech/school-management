@@ -16,6 +16,22 @@ import type {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
 
+/** teacherロール以外は授業登録不可。teacher_id が user_profiles で role='teacher' であることを確認 */
+async function ensureUserIsTeacher(teacherId: string): Promise<void> {
+  const { data, error } = await db
+    .from('user_profiles')
+    .select('role')
+    .eq('id', teacherId)
+    .single();
+  if (error || !data) {
+    throw new Error('講師の確認に失敗しました');
+  }
+  const role = String((data as { role?: string }).role ?? '').toLowerCase();
+  if (role !== 'teacher') {
+    throw new Error('授業を担当できるのは講師ロールのユーザーのみです');
+  }
+}
+
 // ========================================
 // コマ時間マスタ
 // ========================================
@@ -379,6 +395,7 @@ export async function createRegularPattern(
   schoolId: string,
   form: ScheduleRegularPatternFormData
 ): Promise<ScheduleRegularPattern> {
+  await ensureUserIsTeacher(form.teacher_id);
   const timeSlot = await getTimeSlotById(form.time_slot_id);
   if (timeSlot) {
     const conflict = await checkStudentTimeConflict(
@@ -441,6 +458,9 @@ export async function updateRegularPattern(
     }
   }
 
+  if (form.teacher_id !== undefined) {
+    await ensureUserIsTeacher(form.teacher_id);
+  }
   const updatePayload: Record<string, unknown> = {};
   if (form.student_id !== undefined) updatePayload.student_id = form.student_id;
   if (form.day_of_week !== undefined) updatePayload.day_of_week = form.day_of_week;
@@ -572,7 +592,7 @@ export async function generateWeeklySchedule(
 
   const patterns = await getRegularPatterns(schoolId);
 
-  const entries: {
+  type EntryRow = {
     school_id: string;
     entry_date: string;
     time_slot_id: string;
@@ -582,7 +602,10 @@ export async function generateWeeklySchedule(
     seat_label: string | null;
     regular_pattern_id: string;
     status: string;
-  }[] = [];
+  };
+  const entryKey = (e: { entry_date: string; time_slot_id: string; teacher_id: string; student_id: string }) =>
+    `${e.entry_date}-${e.time_slot_id}-${e.teacher_id}-${e.student_id}`;
+  const entriesMap = new Map<string, EntryRow>();
 
   for (const p of patterns) {
     if (!p.time_slot) continue;
@@ -591,7 +614,7 @@ export async function generateWeeklySchedule(
       dDate.setUTCDate(weekStart.getUTCDate() + d);
       if (dDate.getUTCDay() !== p.day_of_week) continue;
       const dateStr = dDate.toISOString().slice(0, 10);
-      entries.push({
+      const e = {
         school_id: schoolId,
         entry_date: dateStr,
         time_slot_id: p.time_slot_id,
@@ -601,9 +624,11 @@ export async function generateWeeklySchedule(
         seat_label: p.seat_label || null,
         regular_pattern_id: p.id,
         status: 'scheduled',
-      });
+      };
+      entriesMap.set(entryKey(e), e);
     }
   }
+  const entries: EntryRow[] = Array.from(entriesMap.values());
 
   const { error: delError } = await db
     .from('schedule_entries')
@@ -616,6 +641,11 @@ export async function generateWeeklySchedule(
   if (delError) {
     console.error('Error clearing existing entries:', delError);
     throw new Error('既存スケジュールの削除に失敗しました');
+  }
+
+  const uniqueTeacherIds = [...new Set(entries.map((e) => e.teacher_id))];
+  for (const tid of uniqueTeacherIds) {
+    await ensureUserIsTeacher(tid);
   }
 
   if (entries.length > 0) {
@@ -639,6 +669,80 @@ export async function generateWeeklySchedule(
   if (logError) console.warn('Generation log insert failed:', logError);
 
   return { entries_created: entries.length, week_start_date: weekStartDate };
+}
+
+/** 通塾日程から指定週に生成されるエントリのキー一覧を取得（同期チェック用）。generateWeeklySchedule と同一ロジック。 */
+export async function getExpectedEntryKeysFromPatterns(
+  schoolId: string,
+  weekStartDate: string
+): Promise<Set<string>> {
+  const weekStart = new Date(weekStartDate);
+  const keys = new Set<string>();
+  const patterns = await getRegularPatterns(schoolId);
+  for (const p of patterns) {
+    if (!p.time_slot) continue;
+    for (let d = 0; d < 7; d++) {
+      const dDate = new Date(weekStart);
+      dDate.setUTCDate(weekStart.getUTCDate() + d);
+      if (dDate.getUTCDay() !== p.day_of_week) continue;
+      const dateStr = dDate.toISOString().slice(0, 10);
+      keys.add(`${dateStr}-${p.time_slot_id}-${p.student_id}`);
+    }
+  }
+  return keys;
+}
+
+/** 今日を含む週の月曜日を YYYY-MM-DD で返す（通塾日程変更時の自動反映用） */
+export function getCurrentWeekStartDateStr(): string {
+  const d = new Date();
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  const start = new Date(d);
+  start.setDate(d.getDate() + diff);
+  const y = start.getFullYear();
+  const m = String(start.getMonth() + 1).padStart(2, '0');
+  const dayNum = String(start.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dayNum}`;
+}
+
+/** 指定日を含む週の月曜日を YYYY-MM-DD で返す */
+export function getWeekStartForDate(dateStr: string): string {
+  const d = new Date(dateStr + 'T12:00:00');
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  const start = new Date(d);
+  start.setDate(d.getDate() + diff);
+  const y = start.getFullYear();
+  const m = String(start.getMonth() + 1).padStart(2, '0');
+  const dayNum = String(start.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dayNum}`;
+}
+
+/** 通塾日程変更後に今週の座席表を自動再生成。失敗時は無視（ユーザーは手動で再生成可能） */
+export async function regenerateCurrentWeekIfNeeded(
+  schoolId: string,
+  userId?: string
+): Promise<void> {
+  try {
+    const weekStart = getCurrentWeekStartDateStr();
+    await generateWeeklySchedule(schoolId, weekStart, userId);
+  } catch (e) {
+    console.warn('通塾日程の自動反映に失敗しました:', e);
+  }
+}
+
+/** 指定日を含む週の座席表を通塾日程から再生成。失敗時は無視 */
+export async function regenerateWeekForDate(
+  schoolId: string,
+  dateStr: string,
+  userId?: string
+): Promise<void> {
+  try {
+    const weekStart = getWeekStartForDate(dateStr);
+    await generateWeeklySchedule(schoolId, weekStart, userId);
+  } catch (e) {
+    console.warn('通塾日程の自動反映に失敗しました:', e);
+  }
 }
 
 /** 指定週に既にエントリが存在するか */
@@ -695,6 +799,7 @@ export async function createScheduleEntry(
   form: ScheduleEntryFormData,
   options?: { regular_pattern_id?: string | null; status?: string }
 ): Promise<ScheduleEntry> {
+  await ensureUserIsTeacher(form.teacher_id);
   const { data, error } = await db
     .from('schedule_entries')
     .insert({
@@ -714,6 +819,10 @@ export async function createScheduleEntry(
 
   if (error) {
     console.error('Error creating schedule entry:', error);
+    const code = error && typeof error === 'object' && 'code' in error ? String((error as { code: string }).code) : '';
+    if (code === '23505') {
+      throw new Error('この日時・講師・生徒の組み合わせで既に授業が登録されています');
+    }
     throw new Error('授業の追加に失敗しました');
   }
   return data as ScheduleEntry;
@@ -724,6 +833,9 @@ export async function updateScheduleEntry(
   id: string,
   form: Partial<ScheduleEntryFormData>
 ): Promise<ScheduleEntry> {
+  if (form.teacher_id !== undefined) {
+    await ensureUserIsTeacher(form.teacher_id);
+  }
   const payload: Record<string, unknown> = {};
   if (form.teacher_id !== undefined) payload.teacher_id = form.teacher_id;
   if (form.student_id !== undefined) payload.student_id = form.student_id;
@@ -752,6 +864,7 @@ export async function moveScheduleEntry(
   targetSlotId: string,
   targetTeacherId: string
 ): Promise<ScheduleEntry> {
+  await ensureUserIsTeacher(targetTeacherId);
   const { data, error } = await db
     .from('schedule_entries')
     .update({
@@ -837,6 +950,7 @@ export async function createTransferEntry(
   targetTeacherId: string,
   seatLabel?: string | null
 ): Promise<{ from: ScheduleEntry; to: ScheduleEntry }> {
+  await ensureUserIsTeacher(targetTeacherId);
   const { data: fromRow, error: updateErr } = await db
     .from('schedule_entries')
     .update({ status: 'transferred_out' })

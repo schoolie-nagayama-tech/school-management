@@ -32,6 +32,10 @@ export interface StudentActionModalProps {
   onAbsent: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  /** 生徒名クリック時（親で授業操作モーダルを閉じてから開くこと） */
+  onStudentClick?: () => void;
+  /** 講師名クリック時（親で授業操作モーダルを閉じてから開くこと） */
+  onTeacherClick?: () => void;
 }
 
 export function StudentActionModal({
@@ -44,6 +48,8 @@ export function StudentActionModal({
   onAbsent,
   onEdit,
   onDelete,
+  onStudentClick,
+  onTeacherClick,
 }: StudentActionModalProps) {
   if (!entry) return null;
 
@@ -74,9 +80,35 @@ export function StudentActionModal({
 
         <div className="space-y-4 py-2">
           <div className="text-sm">
-            <div>生徒: {studentName}</div>
+            <div>
+              生徒:{' '}
+              {onStudentClick ? (
+                <button
+                  type="button"
+                  onClick={onStudentClick}
+                  className="text-[var(--primary)] hover:underline font-medium cursor-pointer border-0 bg-transparent p-0"
+                >
+                  {studentName}
+                </button>
+              ) : (
+                studentName
+              )}
+            </div>
             <div>日時: {formatDay(entry.entry_date)} {slotLabel}</div>
-            <div>講師: {teacherName}</div>
+            <div>
+              講師:{' '}
+              {onTeacherClick ? (
+                <button
+                  type="button"
+                  onClick={onTeacherClick}
+                  className="text-[var(--primary)] hover:underline font-medium cursor-pointer border-0 bg-transparent p-0"
+                >
+                  {teacherName}
+                </button>
+              ) : (
+                teacherName
+              )}
+            </div>
             <div>科目: {subjectNames}</div>
           </div>
 

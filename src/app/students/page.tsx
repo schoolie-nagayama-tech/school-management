@@ -19,6 +19,7 @@ import {
   deleteStudent,
 } from '@/lib/api/students';
 import type { Student, StudentInsert, StudentUpdate, Subject } from '@/types/database';
+import type { ScheduleRegularPattern } from '@/types/schedule';
 import { GRADE_LABELS } from '@/types/database';
 import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
@@ -63,6 +64,7 @@ export default function StudentsPage() {
     timeSlots: { id: string; slot_number: number; start_time: string; end_time: string }[];
     teachers: { id: string; display_name: string | null; email: string | null }[];
     subjects: Subject[];
+    pattern?: ScheduleRegularPattern | null;
   } | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -510,7 +512,7 @@ export default function StudentsPage() {
         }
       />
 
-      {/* 通塾日程追加フォーム（モーダル外で表示・重なり防止） */}
+      {/* 通塾日程 追加/編集フォーム（モーダル外で表示・重なり防止） */}
       {addScheduleFormContext && (
         <RegularScheduleFormModal
           open={true}
@@ -518,7 +520,7 @@ export default function StudentsPage() {
           studentId={addScheduleFormContext.student.id}
           schoolId={addScheduleFormContext.student.school_id ?? ''}
           studentGrade={addScheduleFormContext.student.grade}
-          pattern={null}
+          pattern={addScheduleFormContext.pattern ?? null}
           timeSlots={addScheduleFormContext.timeSlots}
           teachers={addScheduleFormContext.teachers}
           subjects={addScheduleFormContext.subjects}
@@ -553,6 +555,16 @@ export default function StudentsPage() {
                 timeSlots: ctx.timeSlots,
                 teachers: ctx.teachers,
                 subjects: ctx.subjects,
+              });
+            }}
+            onOpenEditForm={(ctx) => {
+              setIsScheduleModalOpen(false);
+              setAddScheduleFormContext({
+                student: scheduleModalStudent,
+                timeSlots: ctx.timeSlots,
+                teachers: ctx.teachers,
+                subjects: ctx.subjects,
+                pattern: ctx.pattern,
               });
             }}
           />

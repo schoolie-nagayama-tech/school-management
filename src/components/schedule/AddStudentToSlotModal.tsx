@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Dialog,
   DialogContent,
@@ -14,6 +15,7 @@ import {
   createRegularPattern,
   createScheduleEntry,
   checkStudentTimeConflict,
+  regenerateWeekForDate,
 } from '@/lib/api/schedule';
 import type { ScheduleTimeSlot } from '@/types/schedule';
 import type { ScheduleEntryFormData } from '@/types/schedule';
@@ -30,6 +32,8 @@ export interface AddStudentToSlotModalProps {
   teacherName: string;
   schoolId: string;
   subjects: Subject[];
+  /** 講師の指導可能科目ID。空 or null = 指導可能科目なし */
+  teacherTeachableSubjectIds?: string[] | null;
   onSuccess: () => void;
 }
 
@@ -45,22 +49,31 @@ export function AddStudentToSlotModal({
   teacherName,
   schoolId,
   subjects,
+  teacherTeachableSubjectIds,
   onSuccess,
 }: AddStudentToSlotModalProps) {
+  const { profile } = useAuth();
   const [selectedStudent, setSelectedStudent] = useState<StudentWithSubjects | null>(null);
   const [subjectId, setSubjectId] = useState<string>('');
   const [registerType, setRegisterType] = useState<RegisterType>('regular');
   const [saving, setSaving] = useState(false);
   const [conflictError, setConflictError] = useState<string | null>(null);
 
+  const availableSubjects = useMemo(() => {
+    if (!teacherTeachableSubjectIds || teacherTeachableSubjectIds.length === 0) {
+      return []; // 空 or null = 指導可能科目なし（すべてなし）
+    }
+    return subjects.filter((s) => teacherTeachableSubjectIds.includes(s.id));
+  }, [subjects, teacherTeachableSubjectIds]);
+
   useEffect(() => {
     if (isOpen) {
       setSelectedStudent(null);
-      setSubjectId(subjects[0]?.id ?? '');
+      setSubjectId(availableSubjects[0]?.id ?? '');
       setRegisterType('regular');
       setConflictError(null);
     }
-  }, [isOpen, subjects]);
+  }, [isOpen, availableSubjects]);
 
   const slotLabel = `${DAY_OF_WEEK_LABELS[dayOfWeek] ?? ''}曜日 ${timeSlot.slot_number}限 ${timeSlot.start_time?.slice(0, 5) ?? ''}-${timeSlot.end_time?.slice(0, 5) ?? ''}`;
 
@@ -104,6 +117,7 @@ export function AddStudentToSlotModal({
           regular_pattern_id: pattern.id,
           status: 'scheduled',
         });
+        await regenerateWeekForDate(schoolId, date, profile?.id);
       } else {
         const conflict = await checkStudentTimeConflict(
           selectedStudent.id,
@@ -171,11 +185,17 @@ export function AddStudentToSlotModal({
               onChange={(e) => setSubjectId(e.target.value)}
               className="w-full px-3 py-2 border border-[var(--stroke)] rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
             >
-              {subjects.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
+              {availableSubjects.length === 0 ? (
+                <option value="">
+                  この講師の指導可能科目が設定されていません
                 </option>
-              ))}
+              ) : (
+                availableSubjects.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))
+              )}
             </select>
           </div>
 

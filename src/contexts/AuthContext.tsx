@@ -209,18 +209,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // ログアウト
   const handleSignOut = useCallback(async () => {
     const supabase = createSupabaseBrowserClient();
-    // 先にログインページにリダイレクト（アクセス拒否を表示しないため）
-    router.replace('/login');
-    // その後、認証状態をクリア（ローカルのみ）
     try {
       await supabase.auth.signOut({ scope: 'local' });
     } catch (error) {
-      // ログアウトエラーは無視（ローカル状態はクリアする）
+      // ログアウトエラーは無視
+    }
+    // 即時リダイレクトで、状態クリア後の「権限がありません」画面を経由せずログインへ
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login';
+      return;
     }
     setUser(null);
     setProfile(null);
     setPermissions(null);
     setSchoolIds([]);
+    setSelectedSchoolIdState(null);
+    router.replace('/login');
   }, [router]);
 
   // 認証状態の監視
@@ -348,6 +352,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [user, isLoading, pathname, router]);
 
+  // 未ログインで保護ページにいる間は子を描画しない（権限画面の一瞬表示を防ぐ）
+  const isPublicPath = PUBLIC_PATHS.some(path => pathname?.startsWith(path));
+  const isInvitePath = pathname?.startsWith(INVITE_PATH);
+  const shouldShowLoadingInsteadOfChildren = !isLoading && !user && !isPublicPath && !isInvitePath;
+
   return (
     <AuthContext.Provider
       value={{
@@ -363,7 +372,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         getSelectedSchoolIds,
       }}
     >
-      {children}
+      {shouldShowLoadingInsteadOfChildren ? (
+        <div className="min-h-screen flex items-center justify-center bg-[#f3f4f6]">
+          <div className="w-10 h-10 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : (
+        children
+      )}
     </AuthContext.Provider>
   );
 }

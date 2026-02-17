@@ -46,7 +46,6 @@ export interface WeeklyScheduleGridViewProps {
   emptyTeacherSlots: Record<string, string[]>;
   maxStudentsPerTeacher: number;
   transferMode: { sourceEntry: ScheduleEntry } | null;
-  teachersMap: Map<string, { id: string; display_name: string | null; email: string | null }>;
   activeId: string | null;
   activeEntry: ScheduleEntry | null;
   groupEntriesByTeacher: (entries: ScheduleEntry[], date: string, slotId: string) => TeacherGroup[];
@@ -74,7 +73,6 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
     emptyTeacherSlots,
     maxStudentsPerTeacher,
     transferMode,
-    teachersMap,
     activeId,
     activeEntry,
     groupEntriesByTeacher,
@@ -187,7 +185,6 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
                   slot.slot_number
                 );
                 const cellKey = `${dateStr}-${slot.id}`;
-                const emptyIds = emptyTeacherSlots[cellKey] ?? [];
 
                 return (
                   <div key={cellKey} className={`min-w-0 ${SLOT_ROW_MIN_H}`}>
@@ -196,8 +193,6 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
                       timeSlot={slot}
                       isClosed={isClosed}
                       teacherGroups={teacherGroups}
-                      emptyTeacherIds={emptyIds}
-                      teachersMap={teachersMap}
                       maxStudentsPerTeacher={maxStudentsPerTeacher}
                       activeDragId={activeId}
                       activeDragEntry={activeEntry}

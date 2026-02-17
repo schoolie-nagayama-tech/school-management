@@ -1,12 +1,15 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui';
 import { RegularScheduleFormModal } from './RegularScheduleFormModal';
+import { fetchWithAuth } from '@/lib/api/auth';
 import {
   getRegularPatterns,
   getActiveTimeSlots,
   deleteRegularPattern,
+  regenerateCurrentWeekIfNeeded,
 } from '@/lib/api/schedule';
 import { getSubjects } from '@/lib/api/subjects';
 import type { ScheduleRegularPattern, ScheduleTimeSlot } from '@/types/schedule';
@@ -32,6 +35,13 @@ export interface StudentRegularScheduleListProps {
     teachers: TeacherOption[];
     subjects: Awaited<ReturnType<typeof getSubjects>>;
   }) => void;
+  /** モーダル内で使用する場合: 編集クリック時に親がフォームを表示し、その前に外側モーダルを閉じる */
+  onOpenEditForm?: (context: {
+    pattern: ScheduleRegularPattern;
+    timeSlots: ScheduleTimeSlot[];
+    teachers: TeacherOption[];
+    subjects: Awaited<ReturnType<typeof getSubjects>>;
+  }) => void;
 }
 
 function slotLabel(slot: ScheduleTimeSlot | undefined): string {
@@ -46,7 +56,9 @@ export function StudentRegularScheduleList({
   studentGrade,
   onRefresh,
   onOpenAddForm,
+  onOpenEditForm,
 }: StudentRegularScheduleListProps) {
+  const { profile } = useAuth();
   const { success, error: toastError } = useToast();
   const [patterns, setPatterns] = useState<ScheduleRegularPattern[]>([]);
   const [timeSlots, setTimeSlots] = useState<ScheduleTimeSlot[]>([]);
@@ -68,7 +80,7 @@ export function StudentRegularScheduleList({
       setPatterns(pats);
       setTimeSlots(slots);
       setSubjects(subj);
-      const usersRes = await fetch('/api/admin/users?role=teacher');
+      const usersRes = await fetchWithAuth('/api/admin/users?role=teacher');
       const usersData = await usersRes.json();
       const users = usersData.users ?? [];
       setTeachers(users);
@@ -93,14 +105,19 @@ export function StudentRegularScheduleList({
   };
 
   const handleEdit = (pattern: ScheduleRegularPattern) => {
-    setEditingPattern(pattern);
-    setFormOpen(true);
+    if (onOpenEditForm) {
+      onOpenEditForm({ pattern, timeSlots, teachers, subjects });
+    } else {
+      setEditingPattern(pattern);
+      setFormOpen(true);
+    }
   };
 
   const handleDelete = async (pattern: ScheduleRegularPattern) => {
     if (!confirm('この通塾日程を削除しますか？')) return;
     try {
       await deleteRegularPattern(pattern.id);
+      await regenerateCurrentWeekIfNeeded(schoolId, profile?.id);
       success('通塾日程を削除しました');
       fetchData();
       onRefresh?.();
@@ -219,7 +236,7 @@ export function StudentRegularScheduleList({
         </p>
       )}
 
-      {!onOpenAddForm && (
+      {(!onOpenAddForm || !onOpenEditForm) && (
         <RegularScheduleFormModal
           open={formOpen}
           onClose={() => {

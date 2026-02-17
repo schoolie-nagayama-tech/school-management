@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AdminLayout } from '@/components/layouts';
@@ -289,7 +289,7 @@ export default function ApplicationsPage() {
       <AdminLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="w-12 h-12 border-4 border-[#3b82f6] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <div className="w-12 h-12 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-[#4b5563]">読み込み中...</p>
           </div>
         </div>
@@ -359,7 +359,7 @@ export default function ApplicationsPage() {
           <div className="bg-white rounded-xl border border-[#e5e7eb] p-8">
             <div className="flex items-center justify-center">
               <svg
-                className="animate-spin h-8 w-8 text-[#3b82f6]"
+                className="animate-spin h-8 w-8 text-[#1e3a5f]"
                 fill="none"
                 viewBox="0 0 24 24"
               >

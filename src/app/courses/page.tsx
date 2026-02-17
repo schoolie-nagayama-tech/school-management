@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
@@ -120,7 +120,7 @@ export default function CoursesPage() {
       <AdminLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="w-12 h-12 border-4 border-[#3b82f6] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <div className="w-12 h-12 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-[#4b5563]">読み込み中...</p>
           </div>
         </div>
@@ -173,7 +173,7 @@ export default function CoursesPage() {
       {isLoading ? (
         <div className="flex items-center justify-center min-h-[40vh]">
           <div className="text-center">
-            <div className="w-12 h-12 border-4 border-[#3b82f6] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <div className="w-12 h-12 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
             <p className="text-[#4b5563]">読み込み中...</p>
           </div>
         </div>
