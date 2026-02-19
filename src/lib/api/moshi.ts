@@ -1,6 +1,6 @@
 import {
   getFormPeriods,
-  getActivePeriodByFlag,
+  getActiveFormPeriod,
   getFormPeriod,
   createFormPeriod,
   updateFormPeriod,
@@ -55,7 +55,7 @@ export async function getActiveMoshiPeriod(
     return null;
   }
 
-  const period = await getActivePeriodByFlag(school.id, 'moshi');
+  const period = await getActiveFormPeriod(school.id, 'moshi');
   if (!period) {
     return null;
   }

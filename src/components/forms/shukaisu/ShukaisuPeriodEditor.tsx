@@ -186,8 +186,8 @@ export function ShukaisuPeriodEditor({
         period_key: periodKey.trim(),
         title: title.trim(),
         settings,
-        publish_start: publishStart || null,
-        publish_end: publishEnd || null,
+        publish_start: publishStart ? new Date(publishStart).toISOString() : null,
+        publish_end: publishEnd ? new Date(publishEnd).toISOString() : null,
         linked_application_item_id: linkedApplicationItemId || null,
       };
 

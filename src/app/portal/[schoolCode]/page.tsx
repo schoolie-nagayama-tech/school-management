@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { getSchoolByCode } from '@/lib/api/schools';
 import { getVisiblePortalMenus } from '@/lib/api/portal';
-import { getActivePeriodByFlag } from '@/lib/api/form-periods';
+import { getActiveFormPeriod } from '@/lib/api/form-periods';
 import { PortalMenuList } from '@/components/portal';
 import type { FormType, PortalMenu } from '@/types/database';
 
@@ -51,7 +51,7 @@ export default async function PortalPage({ params }: PortalPageProps) {
         const formType = MENU_KEY_TO_FORM_TYPE[menu.menu_key];
         if (formType) {
           try {
-            const activePeriod = await getActivePeriodByFlag(school.id, formType);
+            const activePeriod = await getActiveFormPeriod(school.id, formType);
             const isFormActive = !!activePeriod;
             return { menu, isFormActive };
           } catch (error) {

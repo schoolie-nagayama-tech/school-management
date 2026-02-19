@@ -1,6 +1,6 @@
 import {
   getFormPeriods,
-  getActivePeriodByFlag,
+  getActiveFormPeriod,
   getFormPeriod,
   createFormPeriod,
   updateFormPeriod,
@@ -55,7 +55,7 @@ export async function getActiveSoudanPeriod(
     return null;
   }
 
-  const period = await getActivePeriodByFlag(school.id, 'soudan');
+  const period = await getActiveFormPeriod(school.id, 'soudan');
   if (!period) {
     return null;
   }
