@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { AdminLayout } from '@/components/layouts';
 import { getFormResponses, type FormResponseWithStudent } from '@/lib/api/form-responses';
 import { getFormPeriods } from '@/lib/api/form-periods';
-import { getDefaultSchoolId } from '@/lib/api/schools';
 import type { FormType, FormPeriod } from '@/types/database';
 import { FORM_TYPE_LABELS, GRADE_LABELS } from '@/types/database';
 import { useRequirePermission } from '@/hooks/usePermissions';

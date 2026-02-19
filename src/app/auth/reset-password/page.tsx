@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { updatePassword } from '@/lib/api/auth';
 
 export default function ResetPasswordPage() {

@@ -10,17 +10,13 @@ import {
   createStudentTextbook,
   updateStudentTextbook,
   deleteStudentTextbook,
-  getStudentTextbookSettings,
   upsertStudentTextbookSettings,
-  getStudentTextbookExams,
   createStudentTextbookExam,
-  updateStudentTextbookExam,
   deleteStudentTextbookExam,
   getStudentProgress,
   upsertStudentProgress,
   updateStudentProgress,
   upsertStudentProgressLesson,
-  deleteStudentProgressLesson,
   groupProgressItems,
   ungroupProgressItems,
   updateGroupCounts,
@@ -42,7 +38,6 @@ import type {
   CurriculumItemWithProgress,
   Textbook,
   ExamType,
-  StudentTextbookSetting,
   StudentTextbookExam,
   StudentProgress,
   StudentProgressLesson,
@@ -87,7 +82,7 @@ export default function StudentProgressPage() {
   const [newExamTypeId, setNewExamTypeId] = useState<string>('');
   const [newExamDate, setNewExamDate] = useState<string>('');
   const [newExamTargetScore, setNewExamTargetScore] = useState<string>('');
-  const [newExamRange, setNewExamRange] = useState<string>('');
+  const [, setNewExamRange] = useState<string>('');
   const [newCustomExamName, setNewCustomExamName] = useState<string>('');
   const [isCustomExamName, setIsCustomExamName] = useState(false);
   const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
@@ -214,7 +209,7 @@ export default function StudentProgressPage() {
     const progressList: StudentProgress[] = progressData
       .filter(item => item.progress)
       .map(item => {
-        const { lessons, ...progressWithoutLessons } = item.progress!;
+        const { lessons: _lessons, ...progressWithoutLessons } = item.progress!;
         return {
           ...progressWithoutLessons,
           curriculum_item_id: item.id,
@@ -253,7 +248,7 @@ export default function StudentProgressPage() {
       .reduce((sum, row) => sum + row.groupProposalCount, 0);
   }, [displayRows]);
 
-  const totalApplicationCount = useMemo(() => {
+  const _totalApplicationCount = useMemo(() => {
     return displayRows
       .filter(row => row.isGroupStart)
       .reduce((sum, row) => sum + row.groupApplicationCount, 0);
@@ -371,7 +366,7 @@ export default function StudentProgressPage() {
             
             // convertToDisplayRows用にlessonsを除外
             const progressListForDisplay: StudentProgress[] = progressListWithLessons.map(p => {
-              const { lessons, ...withoutLessons } = p;
+              const { lessons: _lessons2, ...withoutLessons } = p;
               return withoutLessons;
             });
             
@@ -739,7 +734,7 @@ export default function StudentProgressPage() {
   };
 
   // 次回テストまでの日数を計算
-  const getDaysUntilNextExam = (exams: StudentTextbookExam[]): number | null => {
+  const _getDaysUntilNextExam = (exams: StudentTextbookExam[]): number | null => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const futureExams = exams

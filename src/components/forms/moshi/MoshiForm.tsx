@@ -38,11 +38,6 @@ export function MoshiForm({ school, period }: MoshiFormProps) {
   // 設定を取得
   const settings = period.settings;
 
-  // 学年が小学生かどうか判定
-  const isElementary = (gradeStr: string): boolean => {
-    return gradeStr.startsWith('小');
-  };
-
   // 日付から曜日を取得
   const getDayOfWeek = (dateStr: string): string => {
     if (!dateStr) return '';

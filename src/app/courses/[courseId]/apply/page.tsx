@@ -12,7 +12,6 @@ import {
   getCourseApplications,
 } from '@/lib/api/seasonalCourses';
 import { getStudents } from '@/lib/api/students';
-import { getDefaultSchoolId } from '@/lib/api/schools';
 import type {
   SeasonalCourseWithDetails,
   SeasonalCourseApplication,

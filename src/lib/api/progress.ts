@@ -5,7 +5,6 @@ import type {
   StudentTextbookUpdate,
   StudentTextbookSetting,
   StudentTextbookSettingInsert,
-  StudentTextbookSettingUpdate,
   StudentTextbookExam,
   StudentTextbookExamInsert,
   StudentTextbookExamUpdate,
@@ -14,18 +13,14 @@ import type {
   StudentProgressUpdate,
   StudentProgressLesson,
   StudentProgressLessonInsert,
-  StudentProgressLessonUpdate,
   StudentTextbookWithDetails,
   StudentProgressWithDetails,
   CurriculumItemWithProgress,
   Textbook,
   CurriculumItem,
-  ExamType,
   ProgressRowDisplay,
 } from '@/types/database';
-import { getDefaultSchoolId } from './schools';
-import { getTextbooks, getCurriculumItems } from './textbooks';
-import { getExamTypes } from './textbooks';
+import { getCurriculumItems } from './textbooks';
 
 // ============================================
 // 生徒×テキスト紐付け（student_textbooks）

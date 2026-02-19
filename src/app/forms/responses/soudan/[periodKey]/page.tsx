@@ -43,7 +43,7 @@ export default function SoudanResponsePage() {
   const [linkingResponse, setLinkingResponse] = useState<SoudanResponse | null>(null);
   const [detailResponse, setDetailResponse] = useState<SoudanResponse | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
-  const [isLoadingStudents, setIsLoadingStudents] = useState(false);
+  const [, setIsLoadingStudents] = useState(false);
   const { toasts, removeToast, success, error } = useToast();
 
   // フィルター

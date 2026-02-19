@@ -43,8 +43,8 @@ export interface PeriodListTableProps {
 
 export function PeriodListTable({
   periods,
-  formType,
-  schoolId,
+  formType: _formType,
+  schoolId: _schoolId,
   onEdit,
   onPublish,
   onUnpublish,
@@ -108,7 +108,7 @@ export function PeriodListTable({
           </thead>
           <tbody>
             {periods.map((period) => {
-              const status = getPeriodStatus(period);
+              const _status = getPeriodStatus(period);
               const isActive = period.is_active && !period.is_archived;
               return (
                 <tr key={period.id} className="table-row-hover">

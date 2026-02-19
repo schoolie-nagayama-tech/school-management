@@ -52,7 +52,7 @@ function slotLabel(slot: ScheduleTimeSlot | undefined): string {
 export function StudentRegularScheduleList({
   studentId,
   schoolId,
-  studentName,
+  studentName: _studentName,
   studentGrade,
   onRefresh,
   onOpenAddForm,

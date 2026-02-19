@@ -12,7 +12,7 @@ import type { Student } from '@/types/database';
 
 export default function StudentSchedulePage() {
   const params = useParams();
-  const router = useRouter();
+  const _router = useRouter();
   const { getSelectedSchoolIds } = useAuth();
   const studentId = params?.studentId as string;
   const [student, setStudent] = useState<Student | null>(null);

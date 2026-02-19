@@ -1,5 +1,4 @@
-﻿import { supabase } from '@/lib/supabase';
-import { getSchoolByCode } from '@/lib/api/schools';
+import { supabase } from '@/lib/supabase';
 import type { AttendanceType, AttendanceTypeFormData, AttendanceSheet } from '@/types/attendance';
 
 // ========================================
@@ -162,7 +161,7 @@ export async function getTeachersWithAttendance(
   }
 
   // コマ種別を取得
-  const { data: types, error: typesError } = await supabase
+  const { data: _types, error: typesError } = await supabase
     .from('attendance_types')
     .select('id')
     .eq('school_id', schoolId)

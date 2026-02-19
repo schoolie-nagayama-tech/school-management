@@ -1,4 +1,4 @@
-﻿import { supabase } from '../supabase';
+import { supabase } from '../supabase';
 import type {
   FormTemplate,
   FormTemplateInsert,
@@ -407,9 +407,9 @@ export async function updateFormStatus(
  * フォームをアーカイブ（回答も自動アーカイブ）
  */
 export async function archiveForm(id: string): Promise<{ form: Form; responsesArchived: number }> {
-  // フォームを取得
-  const form = await getForm(id);
-  
+  // フォームを取得（存在確認）
+  await getForm(id);
+
   // フォームをアーカイブ
   const { data, error } = await supabase
     .from('forms')

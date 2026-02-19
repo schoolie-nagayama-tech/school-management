@@ -1,6 +1,5 @@
-﻿'use client';
+'use client';
 
-import { useState } from 'react';
 import type { ProgressRowDisplay } from '@/types/database';
 
 interface Props {
@@ -30,7 +29,7 @@ export default function ParentProgressTable({
   showLesson2 = false,
   showLesson3 = false,
   showHandover = false,
-  onColumnVisibilityChange,
+  onColumnVisibilityChange: _onColumnVisibilityChange,
 }: Props) {
   // 合計計算
   const totalProposal = displayRows

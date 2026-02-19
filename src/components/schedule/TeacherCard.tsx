@@ -71,7 +71,7 @@ export const TeacherCard = React.memo(function TeacherCard({
   onRemoveTeacher,
   onStudentClick,
   onTransferClick,
-  activeDragId,
+  activeDragId: _activeDragId,
   activeDragEntry,
   transferMode,
   onTransferTargetClick,

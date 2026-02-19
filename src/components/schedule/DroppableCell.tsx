@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
-import { ScheduleCell } from './ScheduleCell';
 import { DraggableEntry } from './DraggableEntry';
 import type { ScheduleEntry, ScheduleTimeSlot } from '@/types/schedule';
 
@@ -27,7 +26,7 @@ interface DroppableCellProps {
 export const DroppableCell = React.memo(function DroppableCell({
   id,
   entries,
-  timeSlot,
+  timeSlot: _timeSlot,
   isClosed,
   canDrop,
   isSlotAvailable = true,

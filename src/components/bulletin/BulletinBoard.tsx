@@ -18,7 +18,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
 import { Button } from '@/components/ui';
 import { ChevronDown, ChevronUp, Plus } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 
 interface BulletinBoardProps {
   className?: string;

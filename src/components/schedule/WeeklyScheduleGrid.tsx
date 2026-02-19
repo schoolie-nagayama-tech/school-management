@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useCallback, useMemo, useState } from 'react';
-import { DayCell } from './DayCell';
 import { parseTeacherSlotId } from './TeacherCard';
 import { WeeklyScheduleGridView } from './WeeklyScheduleGridView';
 import type { ScheduleEntry, ScheduleTimeSlot } from '@/types/schedule';
@@ -116,7 +115,7 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
     onRemoveTeacher,
     onStudentClick,
     onTransferClick,
-    onTeacherCardMove,
+    onTeacherCardMove: _onTeacherCardMove,
     onStudentEntryDrop,
     onTransferTargetClick,
     onPrintDay,

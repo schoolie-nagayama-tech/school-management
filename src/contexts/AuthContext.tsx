@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { createSupabaseBrowserClient } from '@/lib/supabase';
-import { User, Session } from '@supabase/supabase-js';
+import { User } from '@supabase/supabase-js';
 import type { UserProfile, Permission, UserRole } from '@/types/database';
 import { getPermissions } from '@/types/database';
 import { getUserProfile, createUserProfile, updateLastLogin, getUserSchools, addUserToSchool } from '@/lib/api/auth';
@@ -211,7 +211,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const supabase = createSupabaseBrowserClient();
     try {
       await supabase.auth.signOut({ scope: 'local' });
-    } catch (error) {
+    } catch (_error) {
       // ログアウトエラーは無視
     }
     // 即時リダイレクトで、状態クリア後の「権限がありません」画面を経由せずログインへ

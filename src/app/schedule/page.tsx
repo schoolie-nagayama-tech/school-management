@@ -9,7 +9,6 @@ import { Button } from '@/components/ui';
 import { ToastContainer } from '@/components/ui';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui';
 import {
-  ScheduleCellMenu,
   ScheduleEntryModal,
   TransferModal,
   TeacherDetailModal,
@@ -99,12 +98,6 @@ function getWeekDates(weekStart: Date): string[] {
   return dates;
 }
 
-function formatDayLabel(dateStr: string): string {
-  const d = new Date(dateStr + 'Z');
-  const week = ['日', '月', '火', '水', '木', '金', '土'][d.getUTCDay()];
-  return `${d.getUTCMonth() + 1}/${d.getUTCDate()}(${week})`;
-}
-
 export default function SchedulePage() {
   const { profile, isLoading: authLoading, selectedSchoolId, getSelectedSchoolIds } = useAuth();
   const { toasts, removeToast, success, error: toastError } = useToast();
@@ -113,7 +106,7 @@ export default function SchedulePage() {
   const [weekStart, setWeekStart] = useState<Date>(() => getWeekStart(new Date()));
   const [timeSlotsCount, setTimeSlotsCount] = useState(0);
   const [patternsCount, setPatternsCount] = useState(0);
-  const [generatedCount, setGeneratedCount] = useState<number | null>(null);
+  const [, setGeneratedCount] = useState<number | null>(null);
 
   const [timeSlots, setTimeSlots] = useState<ScheduleTimeSlot[]>([]);
   const [entries, setEntries] = useState<ScheduleEntry[]>([]);
@@ -137,7 +130,7 @@ export default function SchedulePage() {
   const [studentDetailStudent, setStudentDetailStudent] = useState<Student | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<ScheduleEntry | null>(null);
-  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [, setAddModalOpen] = useState(false);
   const [addTarget, setAddTarget] = useState<{ date: string; slotId: string; teacherId: string } | null>(null);
   const [addTeacherModalOpen, setAddTeacherModalOpen] = useState(false);
   const [addTeacherTarget, setAddTeacherTarget] = useState<{ date: string; slotId: string } | null>(null);
@@ -217,10 +210,11 @@ export default function SchedulePage() {
     if (!schoolId) return;
     setEntriesLoading(true);
     try {
-      let [list, closed] = await Promise.all([
+      const [initialList, closed] = await Promise.all([
         getScheduleEntries(schoolId, weekStartStr, weekEndStr),
         getClosedDays(schoolId, { from: weekStartStr, to: weekEndStr }),
       ]);
+      let list = initialList;
       const patterns = await getRegularPatterns(schoolId);
       // 通塾日程に登録したコマを週スケジュールにデフォルト表示：エントリが0件かつ通塾日程がある場合は自動生成
       if (list.length === 0 && patterns.length > 0) {
@@ -591,7 +585,7 @@ export default function SchedulePage() {
     }
   };
 
-  const handleAddSave = async (form: ScheduleEntryFormData) => {
+  const _handleAddSave = async (form: ScheduleEntryFormData) => {
     if (!schoolId || !addTarget) return;
     if (!canTeacherTeachSubjects(form.teacher_id, form.subject_ids)) {
       toastError('この講師は選択した科目を指導できません。');
@@ -699,7 +693,7 @@ export default function SchedulePage() {
   }, [entries, subjects]);
 
   const selectedSchool = schools.find((s) => s.id === schoolId);
-  const slotForAdd = addTarget ? timeSlots.find((s) => s.id === addTarget.slotId) : null;
+  const _slotForAdd = addTarget ? timeSlots.find((s) => s.id === addTarget.slotId) : null;
 
   /** 講師が選択科目を指導可能か。teachable_subject_ids が空/未設定の講師は全科目可 */
   const canTeacherTeachSubjects = (teacherId: string, subjectIds: string[]) => {
@@ -1049,7 +1043,7 @@ export default function SchedulePage() {
         isOpen={!!studentDetailStudent}
         student={studentDetailStudent}
         onClose={() => setStudentDetailStudent(null)}
-        onEdit={(student) => {
+        onEdit={() => {
           setStudentDetailStudent(null);
           router.push('/students');
         }}

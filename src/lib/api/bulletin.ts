@@ -1,5 +1,4 @@
-﻿import { supabase } from '../supabase';
-import { getDefaultSchoolId } from './schools';
+import { supabase } from '../supabase';
 import type { BulletinLabel, BulletinPost, BulletinRead } from '@/types/bulletin';
 import { DEFAULT_LABELS } from '@/types/bulletin';
 

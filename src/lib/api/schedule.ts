@@ -528,7 +528,7 @@ export async function getScheduleEntries(
 ): Promise<ScheduleEntry[]> {
   const selectWithJoins =
     '*, time_slot:schedule_time_slots(*), student:students(id, last_name, first_name, grade), teacher:user_profiles!schedule_entries_teacher_id_fkey(id, display_name, email)';
-  let result = await db
+  const result = await db
     .from('schedule_entries')
     .select(selectWithJoins)
     .eq('school_id', schoolId)

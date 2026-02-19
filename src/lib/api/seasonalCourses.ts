@@ -1,4 +1,4 @@
-﻿import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import type {
   SeasonalCourse,
   SeasonalCourseTextbook,
@@ -333,7 +333,7 @@ export async function applyCoursesToStudents(
       const textbookId = courseTextbook.textbook_id;
 
       // 生徒のstudent_textbooksを取得または作成
-      let { data: studentTextbook, error: fetchError } = await supabase
+      const { data: initialStudentTextbook, error: fetchError } = await supabase
         .from('student_textbooks')
         .select('id')
         .eq('student_id', studentId)
@@ -344,6 +344,7 @@ export async function applyCoursesToStudents(
         throw fetchError;
       }
 
+      let studentTextbook = initialStudentTextbook;
       if (!studentTextbook) {
         // テキスト紐付けを作成
         const { data: newSt, error: stError } = await supabase

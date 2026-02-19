@@ -62,7 +62,7 @@ export default function LoginPage() {
     setError('');
     try {
       await signInWithGoogle();
-    } catch (err: any) {
+    } catch {
       setError('Googleログインに失敗しました');
     }
   };

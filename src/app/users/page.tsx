@@ -15,7 +15,7 @@ import { Input } from '@/components/ui';
 import { Label } from '@/components/ui';
 import { SelectShadcn as Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui';
 import { Copy, Check, Eye, EyeOff, Trash2 } from 'lucide-react';
-import type { School, UserRole, UserProfile, UserSchool } from '@/types/database';
+import type { School, UserRole, UserProfile } from '@/types/database';
 import { USER_ROLE_LABELS } from '@/types/database';
 
 type TabType = 'users' | 'schools';
@@ -209,7 +209,7 @@ export default function UsersPage() {
       setCopiedField(field);
       setTimeout(() => setCopiedField(null), 2000);
       success('コピーしました');
-    } catch (error) {
+    } catch (_error) {
       toastError('コピーに失敗しました');
     }
   };
@@ -303,7 +303,7 @@ export default function UsersPage() {
           const body = await response.json();
           if (body?.details) msg = body.details;
           else if (body?.error) msg = body.error;
-        } catch (_) {}
+        } catch {}
         throw new Error(msg);
       }
 

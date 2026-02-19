@@ -1,12 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: false, // ← これを追加！
-  
-  // ESLintエラーをビルド時にスキップ
+  reactStrictMode: false, // 開発時のダブルレンダリングを防止
+
+  // ESLintエラーでビルドを失敗させる（品質ゲート）
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
-  // TypeScriptエラーをビルド時にスキップ
+  // TypeScriptエラーはDB型定義修正後に有効化予定
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -19,14 +19,10 @@ const nextConfig = {
       },
     ],
   },
-  // webpackの設定をカスタマイズ（構文エラーを無視）
   webpack: (config, { isServer }) => {
-    // 構文エラーを警告に変更（ビルドを続行）
     config.ignoreWarnings = [
       { module: /node_modules/ },
       { message: /Failed to parse source map/ },
-      { message: /Unexpected token/ },
-      { message: /Expected/ },
     ];
     
     // エラーハンドリングを緩和

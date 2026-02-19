@@ -12,7 +12,6 @@ import {
   addTextbookToCourse,
   removeTextbookFromCourse,
   getCourseCurriculum,
-  saveCourseCurriculum,
   saveBulkCourseCurriculum,
   groupCourseCurriculumItems,
   ungroupCourseCurriculumItems,
@@ -331,7 +330,7 @@ export default function CourseDetailPage() {
       // 合計コマ数を再計算して更新
       const { items: newItems, settings: newSettings } = await getCourseCurriculum(courseId, selectedTextbookId);
       const newDisplayRows = convertToCourseCurriculumRows(newItems, newSettings);
-      const newTotalKoma = newDisplayRows
+      const _newTotalKoma = newDisplayRows
         .filter(r => r.isGroupStart)
         .reduce((sum, r) => sum + r.groupProposalCount, 0);
       

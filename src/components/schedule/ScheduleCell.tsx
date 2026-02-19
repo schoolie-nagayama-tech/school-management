@@ -28,7 +28,7 @@ interface ScheduleCellProps {
 
 export const ScheduleCell = React.memo(function ScheduleCell({
   entries,
-  timeSlot,
+  timeSlot: _timeSlot,
   isDragging,
   onClick,
   onEntryClick,
@@ -63,7 +63,7 @@ export const ScheduleCell = React.memo(function ScheduleCell({
           const studentName = entry.student
             ? `${entry.student.last_name} ${entry.student.first_name}（${gradeLabel(entry.student.grade)}）`
             : entry.student_id;
-          const transferToDate = entry.transfer_to_id
+          const _transferToDate = entry.transfer_to_id
             ? '' // 振替先日付は必要なら entry に含める
             : '';
           return (

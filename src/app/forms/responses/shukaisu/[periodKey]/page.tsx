@@ -42,7 +42,7 @@ export default function ShukaisuResponsePage() {
   const [linkingResponse, setLinkingResponse] = useState<ShukaisuResponse | null>(null);
   const [detailResponse, setDetailResponse] = useState<ShukaisuResponse | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
-  const [isLoadingStudents, setIsLoadingStudents] = useState(false);
+  const [, setIsLoadingStudents] = useState(false);
   const { toasts, removeToast, success, error } = useToast();
 
   // フィルター

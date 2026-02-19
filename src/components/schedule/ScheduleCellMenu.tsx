@@ -4,7 +4,7 @@ import { useRef, useEffect } from 'react';
 import { Button } from '@/components/ui';
 import { AttendanceButtons } from './AttendanceButtons';
 import { Pencil, ArrowRightLeft, Trash2 } from 'lucide-react';
-import type { ScheduleEntry, AttendanceStatusType } from '@/types/schedule';
+import type { ScheduleEntry } from '@/types/schedule';
 
 function gradeLabel(g: number): string {
   if (g <= 6) return `小${g}`;

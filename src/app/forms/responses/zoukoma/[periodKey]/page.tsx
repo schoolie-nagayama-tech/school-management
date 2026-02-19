@@ -39,7 +39,7 @@ export default function ZoukomaResponsePage() {
   const [filters, setFilters] = useState<ZoukomaResponseFilters>({});
   const [linkingResponse, setLinkingResponse] = useState<ZoukomaResponse | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
-  const [isLoadingStudents, setIsLoadingStudents] = useState(false);
+  const [, setIsLoadingStudents] = useState(false);
   const { toasts, removeToast, success, error } = useToast();
 
   const fetchData = useCallback(async () => {

@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui';
 import type { AssessmentWithScores } from '@/types/database';
-import { SUBJECT_LABELS, ASSESSMENT_NAME_LABELS, GRADE_LABELS } from '@/types/database';
+import { ASSESSMENT_NAME_LABELS, GRADE_LABELS } from '@/types/database';
 import { SUBJECT_CODES } from '@/types/database';
 
 const FIVE_SUBJECTS = [

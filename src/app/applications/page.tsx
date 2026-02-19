@@ -31,7 +31,7 @@ export default function ApplicationsPage() {
 
   // 編集権限
   const canEdit = useCanEdit('canEditApplications');
-  const { getSelectedSchoolIds, selectedSchoolId, permissions, profile } = useAuth();
+  const { getSelectedSchoolIds, selectedSchoolId, profile } = useAuth();
   
   // 教室長以上かどうかを判定（manager, owner, admin）
   const isManagerOrAbove = profile?.role === 'manager' || profile?.role === 'owner' || profile?.role === 'admin';

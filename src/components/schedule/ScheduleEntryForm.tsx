@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Input, Label } from '@/components/ui';
 import { SelectShadcn as Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui';
 import { Checkbox } from '@/components/ui';
 import { Textarea } from '@/components/ui';
 import type { ScheduleEntryFormData, ScheduleEntry } from '@/types/schedule';
-import type { ScheduleTimeSlot } from '@/types/schedule';
 import type { Subject } from '@/types/database';
 
 const GRADE_CATEGORY_LABELS: Record<string, string> = {

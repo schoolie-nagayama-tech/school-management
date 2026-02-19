@@ -20,7 +20,7 @@ export function AdminLayout({
   title, 
   actions
 }: AdminLayoutProps) {
-  const { isLoading } = useAuth();
+  useAuth();
 
   return (
     <div className="min-h-screen bg-white">

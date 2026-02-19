@@ -171,7 +171,7 @@ export default function TeachersPage() {
       setCopiedField(field);
       setTimeout(() => setCopiedField(null), 2000);
       success('コピーしました');
-    } catch (error) {
+    } catch (_error) {
       toastError('コピーに失敗しました');
     }
   };
@@ -198,7 +198,7 @@ export default function TeachersPage() {
           const body = await response.json();
           if (body?.details) msg = body.details;
           else if (body?.error) msg = body.error;
-        } catch (_) {}
+        } catch {}
         throw new Error(msg);
       }
 

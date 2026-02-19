@@ -34,7 +34,7 @@ export default function StudentsPage() {
   const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
     (p) => p.canAccessStudents
   );
-  const { getSelectedSchoolIds, selectedSchoolId, profile, permissions } = useAuth();
+  const { getSelectedSchoolIds, selectedSchoolId, profile } = useAuth();
   const router = useRouter();
   
   // 講師かどうかを判定

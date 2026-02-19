@@ -21,7 +21,7 @@ import { AdminLayout } from '@/components/layouts';
 import { Button, ToastContainer } from '@/components/ui';
 import { PortalMenuEditModal, SortableMenuRow } from '@/components/portal';
 import { useToast } from '@/hooks/useToast';
-import { getDefaultSchoolId, getSchool, getSchools } from '@/lib/api/schools';
+import { getSchools } from '@/lib/api/schools';
 import { initializePortalMenus, getPortalMenus, togglePortalMenuVisibility } from '@/lib/api/portal';
 import { getFormPeriods } from '@/lib/api/form-periods';
 import { reorderPortalMenus } from '@/lib/api/portal';
@@ -61,7 +61,7 @@ export default function PortalSettingsPage() {
 
   const [menus, setMenus] = useState<PortalMenu[]>([]);
   const [formPeriods, setFormPeriods] = useState<FormPeriod[]>([]);
-  const [schoolCodes, setSchoolCodes] = useState<Record<string, string>>({});
+  const [, setSchoolCodes] = useState<Record<string, string>>({});
   const [allSchools, setAllSchools] = useState<School[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
@@ -186,7 +186,6 @@ export default function PortalSettingsPage() {
 
   // ポータルURLを取得
   const getPortalUrls = (): Array<{ school: School; url: string }> => {
-    const selectedSchoolIds = getSelectedSchoolIds();
     const urls: Array<{ school: School; url: string }> = [];
 
     if (selectedSchoolId === 'all') {

@@ -52,7 +52,7 @@ export default function MogiResponsePage() {
   const [linkingResponse, setLinkingResponse] = useState<MogiResponse | null>(null);
   const [detailResponse, setDetailResponse] = useState<MogiResponse | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
-  const [isLoadingStudents, setIsLoadingStudents] = useState(false);
+  const [, setIsLoadingStudents] = useState(false);
   const { toasts, removeToast, success, error } = useToast();
 
   // フィルター
