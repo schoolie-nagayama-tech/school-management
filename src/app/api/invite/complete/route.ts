@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       if (profileError) {
         console.error('Invite complete: user_profiles insert error', profileError);
         return NextResponse.json(
-          { error: 'プロファイルの作成に失敗しました: ' + profileError.message },
+          { error: 'プロファイルの作成に失敗しました' },
           { status: 500 }
         );
       }

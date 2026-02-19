@@ -126,10 +126,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Failed to fetch users:', error);
     return NextResponse.json(
-      { 
-        error: 'ユーザーの取得に失敗しました',
-        details: error?.message || 'Unknown error'
-      },
+      { error: 'ユーザーの取得に失敗しました' },
       { status: 500 }
     );
   }

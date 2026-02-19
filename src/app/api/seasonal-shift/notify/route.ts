@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error('[seasonal-shift/notify] Edge Function error:', error);
       return NextResponse.json(
-        { error: error.message, details: data },
+        { error: '通知の送信に失敗しました' },
         { status: 500 }
       );
     }
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
   } catch (e) {
     console.error('[seasonal-shift/notify]', e);
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : '通知の送信に失敗しました' },
+      { error: '通知の送信に失敗しました' },
       { status: 500 }
     );
   }

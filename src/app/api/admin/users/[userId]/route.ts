@@ -237,19 +237,15 @@ export async function PATCH(
     if (error) {
       console.error('user_profiles update error:', error);
       return NextResponse.json(
-        { error: 'プロファイルの更新に失敗しました', details: error.message },
+        { error: 'プロファイルの更新に失敗しました' },
         { status: 500 }
       );
     }
     return NextResponse.json(data);
   } catch (error) {
-    const err = error as { message?: string };
     console.error('Failed to update user profile:', error);
     return NextResponse.json(
-      {
-        error: 'プロファイルの更新に失敗しました',
-        details: err?.message || String(error),
-      },
+      { error: 'プロファイルの更新に失敗しました' },
       { status: 500 }
     );
   }
@@ -365,7 +361,7 @@ export async function DELETE(
     if (!deletedProfiles?.length) {
       console.error('[DELETE user] user_profiles: no row deleted for userId=', userId);
       return NextResponse.json(
-        { error: 'ユーザーが見つかりません', details: '指定されたユーザーは存在しないか、既に削除されています' },
+        { error: 'ユーザーが見つかりません' },
         { status: 404 }
       );
     }
@@ -384,11 +380,9 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    const err = error as { message?: string; code?: string };
     console.error('Failed to delete user:', error);
-    const detail = err?.message || String(error);
     return NextResponse.json(
-      { error: 'ユーザーの削除に失敗しました', details: detail },
+      { error: 'ユーザーの削除に失敗しました' },
       { status: 500 }
     );
   }

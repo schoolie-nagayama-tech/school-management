@@ -65,8 +65,9 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
 
       if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Email check error:', checkError);
         return NextResponse.json(
-          { error: `メールアドレスの重複チェックに失敗しました: ${checkError.message}` },
+          { error: 'メールアドレスの重複チェックに失敗しました' },
           { status: 500 }
         );
       }
@@ -90,10 +91,12 @@ export async function POST(request: NextRequest) {
     });
 
     if (authError) {
-      return NextResponse.json(
-        { error: authError.message },
-        { status: 400 }
-      );
+      let userMessage = 'ユーザーの作成に失敗しました';
+      if (authError.message?.includes('already registered')) {
+        userMessage = 'このメールアドレスは既に登録されています';
+      }
+      console.error('Auth user creation error:', authError);
+      return NextResponse.json({ error: userMessage }, { status: 400 });
     }
 
     // 2. user_profilesに登録（既に存在する場合はスキップ）
@@ -118,7 +121,7 @@ export async function POST(request: NextRequest) {
         // ロールバック
         await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
         return NextResponse.json(
-          { error: profileError.message },
+          { error: 'ユーザープロファイルの作成に失敗しました' },
           { status: 400 }
         );
       }
@@ -136,7 +139,7 @@ export async function POST(request: NextRequest) {
 
       if (updateError) {
         return NextResponse.json(
-          { error: updateError.message },
+          { error: 'ユーザープロファイルの更新に失敗しました' },
           { status: 400 }
         );
       }
@@ -165,7 +168,7 @@ export async function POST(request: NextRequest) {
           await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
         }
         return NextResponse.json(
-          { error: schoolError.message },
+          { error: '教室の紐付けに失敗しました' },
           { status: 400 }
         );
       }
