@@ -307,10 +307,9 @@ export default function UsersPage() {
         throw new Error(msg);
       }
 
-      // 楽観的更新：一覧から即時削除（キャッシュ対策）
+      // 楽観的更新：一覧から即時削除（loadData は呼ばない＝古いキャッシュで上書きされない）
       setUsers((prev) => prev.filter((u) => u.id !== userIdToDelete));
       success('ユーザーを削除しました');
-      await loadData();
     } catch (error) {
       console.error('Failed to delete user:', error);
       toastError(error instanceof Error ? error.message : '削除に失敗しました');

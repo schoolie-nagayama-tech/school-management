@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { randomUUID } from 'crypto';
-import { requireAdmin } from '@/lib/api-auth';
+import { requireAdmin, getApiAuth, isSchoolInScope } from '@/lib/api-auth';
 
 function getSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -27,6 +27,8 @@ export async function POST(request: NextRequest) {
   try {
     const authGuardError = await requireAdmin(request);
     if (authGuardError) return authGuardError;
+    const { auth } = await getApiAuth(request);
+    if (!auth) return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
     const supabaseAdmin = getSupabaseAdmin();
     const body = await request.json();
     const { email, password, displayName, role, schoolId } = body;
@@ -36,6 +38,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: '必須項目が入力されていません' },
         { status: 400 }
+      );
+    }
+
+    if (!isSchoolInScope(schoolId, auth.schoolIds)) {
+      return NextResponse.json(
+        { error: '指定された教室への操作権限がありません' },
+        { status: 403 }
       );
     }
 

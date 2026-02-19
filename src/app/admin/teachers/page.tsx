@@ -204,7 +204,6 @@ export default function TeachersPage() {
 
       setTeachers((prev) => prev.filter((t) => t.id !== teacherIdToDelete));
       success('講師を削除しました');
-      await loadData();
     } catch (error) {
       console.error('Failed to delete teacher:', error);
       toastError(error instanceof Error ? error.message : '削除に失敗しました');

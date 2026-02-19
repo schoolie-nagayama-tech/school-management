@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { requireAdmin, requireManager } from '@/lib/api-auth';
+import { requireAdmin, requireManager, getApiAuth, isUserInScope } from '@/lib/api-auth';
 
 function getSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -69,6 +69,12 @@ export async function GET(
       return NextResponse.json({ error: 'userId が必要です' }, { status: 400 });
     }
     const supabaseAdmin = getSupabaseAdmin();
+    const { auth } = await getApiAuth(request);
+    if (!auth) return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
+    const inScope = await isUserInScope(userId, auth.schoolIds, supabaseAdmin);
+    if (!inScope) {
+      return NextResponse.json({ error: 'ユーザーが見つかりません' }, { status: 404 });
+    }
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('user_profiles')
       .select('*')
@@ -116,8 +122,14 @@ export async function PATCH(
     if (!userId) {
       return NextResponse.json({ error: 'userId が必要です' }, { status: 400 });
     }
-    const body = await request.json();
     const supabaseAdmin = getSupabaseAdmin();
+    const { auth } = await getApiAuth(request);
+    if (!auth) return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
+    const inScope = await isUserInScope(userId, auth.schoolIds, supabaseAdmin);
+    if (!inScope) {
+      return NextResponse.json({ error: 'ユーザーが見つかりません' }, { status: 404 });
+    }
+    const body = await request.json();
 
     // ユーザー管理からの編集（school_ids が渡された場合は profile + user_schools をサービスロールで更新）
     const rawSchoolIds = body.school_ids;
@@ -250,8 +262,17 @@ export async function DELETE(
   try {
     const authError = await requireAdmin(request);
     if (authError) return authError;
-    const supabaseAdmin = getSupabaseAdmin();
     const userId = params.userId;
+    if (!userId) {
+      return NextResponse.json({ error: 'userId が必要です' }, { status: 400 });
+    }
+    const supabaseAdmin = getSupabaseAdmin();
+    const { auth } = await getApiAuth(request);
+    if (!auth) return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
+    const inScope = await isUserInScope(userId, auth.schoolIds, supabaseAdmin);
+    if (!inScope) {
+      return NextResponse.json({ error: 'ユーザーが見つかりません' }, { status: 404 });
+    }
 
     // 外部キー参照を解除（ON DELETE RESTRICT のため事前に削除・更新が必要）
     const steps = [

@@ -3,13 +3,13 @@ import { createServerClient } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
- * リクエストから認証情報（userId と role）を取得する。
+ * リクエストから認証情報（userId, role, schoolIds）を取得する。
  * 1) Authorization: Bearer <token> ヘッダーがあればそちらを優先（クライアントからの fetch 用）
  * 2) なければ Cookie から getSession()
- * @returns 認証済みなら { userId, role }、失敗時は null
+ * @returns 認証済みなら { userId, role, schoolIds }、失敗時は null
  */
 export async function getApiAuth(request: NextRequest): Promise<{
-  auth: { userId: string; role: string } | null;
+  auth: { userId: string; role: string; schoolIds: string[] } | null;
   cookieResponse: NextResponse;
 }> {
   const cookieResponse = NextResponse.next();
@@ -32,7 +32,18 @@ export async function getApiAuth(request: NextRequest): Promise<{
           .eq('id', user.id)
           .maybeSingle();
         const role = (profile?.role as string) ?? '';
-        return { auth: { userId: user.id, role }, cookieResponse };
+        let schoolIds: string[] = [];
+        if (role === 'admin' || role === 'owner') {
+          const { data: allSchools } = await supabase.from('schools').select('id');
+          schoolIds = (allSchools || []).map((s: { id: string }) => s.id);
+        } else {
+          const { data: userSchools } = await supabase
+            .from('user_schools')
+            .select('school_id')
+            .eq('user_id', user.id);
+          schoolIds = (userSchools || []).map((s: { school_id: string }) => s.school_id);
+        }
+        return { auth: { userId: user.id, role, schoolIds }, cookieResponse };
       }
     } catch {
       // フォールバックで Cookie を試す
@@ -76,7 +87,18 @@ export async function getApiAuth(request: NextRequest): Promise<{
       .maybeSingle();
 
     const role = (profile?.role as string) ?? '';
-    return { auth: { userId: user.id, role }, cookieResponse };
+    let schoolIds: string[] = [];
+    if (role === 'admin' || role === 'owner') {
+      const { data: allSchools } = await supabase.from('schools').select('id');
+      schoolIds = (allSchools || []).map((s: { id: string }) => s.id);
+    } else {
+      const { data: userSchools } = await supabase
+        .from('user_schools')
+        .select('school_id')
+        .eq('user_id', user.id);
+      schoolIds = (userSchools || []).map((s: { school_id: string }) => s.school_id);
+    }
+    return { auth: { userId: user.id, role, schoolIds }, cookieResponse };
   } catch {
     return { auth: null, cookieResponse };
   }
@@ -124,4 +146,40 @@ export async function requireManager(request: NextRequest): Promise<NextResponse
     return res;
   }
   return null;
+}
+
+/**
+ * 対象ユーザーが操作者の教室スコープ内にいるか検証する。
+ * admin/owner はバイパス（schoolIds に全教室が入っているため常に true）。
+ * @param targetUserId - 操作対象のユーザーID
+ * @param callerSchoolIds - 操作者の所属教室ID配列
+ * @param supabaseAdmin - Service Role の Supabase クライアント
+ * @returns true=スコープ内, false=スコープ外
+ */
+export async function isUserInScope(
+  targetUserId: string,
+  callerSchoolIds: string[],
+  supabaseAdmin: ReturnType<typeof createClient>
+): Promise<boolean> {
+  if (callerSchoolIds.length === 0) return false;
+  const { data: targetSchools } = await supabaseAdmin
+    .from('user_schools')
+    .select('school_id')
+    .eq('user_id', targetUserId);
+  if (!targetSchools || targetSchools.length === 0) return false;
+  // 対象ユーザーの教室のうち1つでも操作者の教室に含まれていればOK
+  return targetSchools.some(
+    (s: { school_id: string }) => callerSchoolIds.includes(s.school_id)
+  );
+}
+
+/**
+ * 指定した schoolId が操作者の教室スコープ内にあるか検証する。
+ * ユーザー作成時の作成先教室チェックに使う。
+ */
+export function isSchoolInScope(
+  targetSchoolId: string,
+  callerSchoolIds: string[]
+): boolean {
+  return callerSchoolIds.includes(targetSchoolId);
 }
