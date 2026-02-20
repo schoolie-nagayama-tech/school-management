@@ -276,7 +276,12 @@ export async function createSeasonalShiftSubmission(
     })
     .select()
     .single();
-  if (subError) throw new Error(`提出の保存に失敗しました: ${subError.message}`);
+  if (subError) {
+    if (subError.code === '23505') {
+      throw new Error('この内容は既に送信されています。');
+    }
+    throw new Error(`提出の保存に失敗しました: ${subError.message}`);
+  }
 
   if (slots.length > 0) {
     const slotRows = slots.map((s) => ({

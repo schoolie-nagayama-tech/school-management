@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { randomUUID } from 'crypto';
 import { requireAdmin, getApiAuth, isSchoolInScope } from '@/lib/api-auth';
+import { writeAuditLog } from '@/lib/audit-log';
 
 function getSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -173,6 +174,16 @@ export async function POST(request: NextRequest) {
         );
       }
     }
+
+    await writeAuditLog({
+      actorId: auth.userId,
+      actorRole: auth.role,
+      action: 'user.create',
+      targetType: 'user_profile',
+      targetId: authData.user.id,
+      detail: { email: finalEmail, role, schoolId },
+      request,
+    });
 
     return NextResponse.json({
       success: true,

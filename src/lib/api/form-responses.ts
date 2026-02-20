@@ -151,6 +151,9 @@ export async function createFormResponse(
     .single();
 
   if (error) {
+    if (error.code === '23505') {
+      throw new Error('この内容は既に送信されています。');
+    }
     throw new Error(`フォーム回答の作成に失敗しました: ${error.message}`);
   }
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { requireAdmin, requireManager, getApiAuth, isUserInScope } from '@/lib/api-auth';
+import { writeAuditLog } from '@/lib/audit-log';
 
 function getSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -202,6 +203,16 @@ export async function PATCH(
         .select('id, user_id, school_id, school:schools(id, name, code)')
         .eq('user_id', userId);
 
+      await writeAuditLog({
+        actorId: auth.userId,
+        actorRole: auth.role,
+        action: 'user.update',
+        targetType: 'user_profile',
+        targetId: userId,
+        detail: { changes: body },
+        request,
+      });
+
       return NextResponse.json({
         success: true,
         user_schools: userSchoolsWithSchool ?? [],
@@ -241,6 +252,17 @@ export async function PATCH(
         { status: 500 }
       );
     }
+
+    await writeAuditLog({
+      actorId: auth.userId,
+      actorRole: auth.role,
+      action: 'user.update',
+      targetType: 'user_profile',
+      targetId: userId,
+      detail: { changes: body },
+      request,
+    });
+
     return NextResponse.json(data);
   } catch (error) {
     console.error('Failed to update user profile:', error);
@@ -377,6 +399,15 @@ export async function DELETE(
         throw authErr;
       }
     }
+
+    await writeAuditLog({
+      actorId: auth.userId,
+      actorRole: auth.role,
+      action: 'user.delete',
+      targetType: 'user_profile',
+      targetId: userId,
+      request,
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {
