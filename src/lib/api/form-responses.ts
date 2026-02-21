@@ -203,6 +203,9 @@ export async function linkResponseToStudent(
 ): Promise<FormResponse> {
   // 回答を取得
   const response = await getFormResponse(responseId);
+  if (!response) {
+    throw new Error('フォーム回答が見つかりません');
+  }
 
   // フォーム回答を更新
   const { data: updated, error } = await supabase

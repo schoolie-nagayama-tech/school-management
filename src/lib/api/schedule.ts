@@ -643,7 +643,7 @@ export async function generateWeeklySchedule(
     throw new Error('既存スケジュールの削除に失敗しました');
   }
 
-  const uniqueTeacherIds = [...new Set(entries.map((e) => e.teacher_id))];
+  const uniqueTeacherIds = Array.from(new Set(entries.map((e) => e.teacher_id)));
   for (const tid of uniqueTeacherIds) {
     await ensureUserIsTeacher(tid);
   }

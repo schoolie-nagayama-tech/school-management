@@ -830,6 +830,848 @@ export type Database = {
         };
         Relationships: [];
       };
+      portal_menu: {
+        Row: {
+          id: string;
+          school_id: string;
+          menu_key: string;
+          title: string;
+          description: string | null;
+          is_visible: boolean;
+          link_type: 'internal' | 'external';
+          link_url: string | null;
+          link_urls: Array<{ url: string; label: string }> | null;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          menu_key: string;
+          title: string;
+          description?: string | null;
+          is_visible?: boolean;
+          link_type?: 'internal' | 'external';
+          link_url?: string | null;
+          link_urls?: Array<{ url: string; label: string }> | null;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          menu_key?: string;
+          title?: string;
+          description?: string | null;
+          is_visible?: boolean;
+          link_type?: 'internal' | 'external';
+          link_url?: string | null;
+          link_urls?: Array<{ url: string; label: string }> | null;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [{ foreignKeyName: 'portal_menu_school_id_fkey'; columns: ['school_id']; referencedRelation: 'schools'; referencedColumns: ['id'] }];
+      };
+      form_periods: {
+        Row: {
+          id: string;
+          school_id: string;
+          form_type: string;
+          period_key: string;
+          title: string;
+          settings: Record<string, unknown>;
+          publish_start: string | null;
+          publish_end: string | null;
+          is_active: boolean;
+          linked_application_item_id: string | null;
+          is_archived: boolean;
+          archived_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          form_type: string;
+          period_key: string;
+          title: string;
+          settings?: Record<string, unknown>;
+          publish_start?: string | null;
+          publish_end?: string | null;
+          is_active?: boolean;
+          linked_application_item_id?: string | null;
+          is_archived?: boolean;
+          archived_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          form_type?: string;
+          period_key?: string;
+          title?: string;
+          settings?: Record<string, unknown>;
+          publish_start?: string | null;
+          publish_end?: string | null;
+          is_active?: boolean;
+          linked_application_item_id?: string | null;
+          is_archived?: boolean;
+          archived_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      form_responses: {
+        Row: {
+          id: string;
+          school_id: string;
+          form_id: string | null;
+          form_type: string;
+          form_period: string;
+          student_name: string;
+          grade: number;
+          email: string;
+          response_data: Record<string, unknown>;
+          linked_student_id: string | null;
+          linked_at: string | null;
+          status_checks: Record<string, unknown>;
+          is_archived: boolean;
+          archived_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          form_id?: string | null;
+          form_type: string;
+          form_period: string;
+          student_name: string;
+          grade: number;
+          email: string;
+          response_data?: Record<string, unknown>;
+          linked_student_id?: string | null;
+          linked_at?: string | null;
+          status_checks?: Record<string, unknown>;
+          is_archived?: boolean;
+          archived_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          form_type?: string;
+          form_period?: string;
+          student_name?: string;
+          grade?: number;
+          email?: string;
+          response_data?: Record<string, unknown>;
+          linked_student_id?: string | null;
+          linked_at?: string | null;
+          status_checks?: Record<string, unknown>;
+          is_archived?: boolean;
+          archived_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      attendance_types: {
+        Row: {
+          id: string;
+          school_id: string;
+          name: string;
+          unit: 'count' | 'hours';
+          unit_price: number;
+          display_order: number;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          name: string;
+          unit: 'count' | 'hours';
+          unit_price: number;
+          display_order?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          name?: string;
+          unit?: 'count' | 'hours';
+          unit_price?: number;
+          display_order?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      attendance_sheets: {
+        Row: {
+          id: string;
+          teacher_id: string;
+          school_id: string;
+          year_month: string;
+          status: 'draft' | 'submitted' | 'approved' | 'rejected';
+          submitted_at: string | null;
+          approved_at: string | null;
+          approved_by: string | null;
+          rejection_reason: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          teacher_id: string;
+          school_id: string;
+          year_month: string;
+          status?: 'draft' | 'submitted' | 'approved' | 'rejected';
+          submitted_at?: string | null;
+          approved_at?: string | null;
+          approved_by?: string | null;
+          rejection_reason?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          teacher_id?: string;
+          school_id?: string;
+          year_month?: string;
+          status?: 'draft' | 'submitted' | 'approved' | 'rejected';
+          submitted_at?: string | null;
+          approved_at?: string | null;
+          approved_by?: string | null;
+          rejection_reason?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      attendance_records: {
+        Row: {
+          id: string;
+          sheet_id: string;
+          date: string;
+          attendance_type_id: string;
+          value: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          sheet_id: string;
+          date: string;
+          attendance_type_id: string;
+          value: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          sheet_id?: string;
+          date?: string;
+          attendance_type_id?: string;
+          value?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      attendance_notes: {
+        Row: {
+          id: string;
+          sheet_id: string;
+          date: string;
+          late_early: string | null;
+          note: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          sheet_id: string;
+          date: string;
+          late_early?: string | null;
+          note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          sheet_id?: string;
+          date?: string;
+          late_early?: string | null;
+          note?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      user_schools: {
+        Row: {
+          id: string;
+          user_id: string;
+          school_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          school_id: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          school_id?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      schedule_time_slots: {
+        Row: {
+          id: string;
+          school_id: string;
+          slot_number: number;
+          start_time: string;
+          end_time: string;
+          is_active: boolean;
+          display_order: number;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          slot_number: number;
+          start_time: string;
+          end_time: string;
+          is_active?: boolean;
+          display_order?: number;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          slot_number?: number;
+          start_time?: string;
+          end_time?: string;
+          is_active?: boolean;
+          display_order?: number;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      schedule_closed_days: {
+        Row: {
+          id: string;
+          school_id: string | null;
+          closed_date: string;
+          reason: string | null;
+          is_global: boolean;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          school_id?: string | null;
+          closed_date: string;
+          reason?: string | null;
+          is_global?: boolean;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          school_id?: string | null;
+          closed_date?: string;
+          reason?: string | null;
+          is_global?: boolean;
+          created_at?: string | null;
+        };
+        Relationships: [];
+      };
+      schedule_regular_patterns: {
+        Row: {
+          id: string;
+          school_id: string;
+          student_id: string;
+          day_of_week: number;
+          time_slot_id: string;
+          teacher_id: string;
+          subject_ids: string[];
+          seat_label: string | null;
+          period_type: string;
+          is_active: boolean;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          student_id: string;
+          day_of_week: number;
+          time_slot_id: string;
+          teacher_id: string;
+          subject_ids?: string[];
+          seat_label?: string | null;
+          period_type?: string;
+          is_active?: boolean;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          student_id?: string;
+          day_of_week?: number;
+          time_slot_id?: string;
+          teacher_id?: string;
+          subject_ids?: string[];
+          seat_label?: string | null;
+          period_type?: string;
+          is_active?: boolean;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      schedule_entries: {
+        Row: {
+          id: string;
+          school_id: string;
+          entry_date: string;
+          time_slot_id: string;
+          teacher_id: string;
+          student_id: string;
+          subject_ids: string[];
+          seat_label: string | null;
+          regular_pattern_id: string | null;
+          status: 'scheduled' | 'completed' | 'cancelled' | 'transferred_out' | 'transferred_in';
+          attendance_status: string | null;
+          attendance_recorded_at: string | null;
+          attendance_recorded_by: string | null;
+          note: string | null;
+          transfer_from_id: string | null;
+          transfer_to_id: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          entry_date: string;
+          time_slot_id: string;
+          teacher_id: string;
+          student_id: string;
+          subject_ids?: string[];
+          seat_label?: string | null;
+          regular_pattern_id?: string | null;
+          status?: 'scheduled' | 'completed' | 'cancelled' | 'transferred_out' | 'transferred_in';
+          attendance_status?: string | null;
+          attendance_recorded_at?: string | null;
+          attendance_recorded_by?: string | null;
+          note?: string | null;
+          transfer_from_id?: string | null;
+          transfer_to_id?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          entry_date?: string;
+          time_slot_id?: string;
+          teacher_id?: string;
+          student_id?: string;
+          subject_ids?: string[];
+          seat_label?: string | null;
+          regular_pattern_id?: string | null;
+          status?: 'scheduled' | 'completed' | 'cancelled' | 'transferred_out' | 'transferred_in';
+          attendance_status?: string | null;
+          attendance_recorded_at?: string | null;
+          attendance_recorded_by?: string | null;
+          note?: string | null;
+          transfer_from_id?: string | null;
+          transfer_to_id?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      schedule_generation_logs: {
+        Row: {
+          id: string;
+          school_id: string;
+          week_start_date: string;
+          entries_created: number;
+          created_by: string | null;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          week_start_date: string;
+          entries_created?: number;
+          created_by?: string | null;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          week_start_date?: string;
+          entries_created?: number;
+          created_by?: string | null;
+          created_at?: string | null;
+        };
+        Relationships: [];
+      };
+      bulletin_labels: {
+        Row: {
+          id: string;
+          school_id: string;
+          name: string;
+          color: string;
+          is_system: boolean;
+          sort_order: number;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          name: string;
+          color?: string;
+          is_system?: boolean;
+          sort_order?: number;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          name?: string;
+          color?: string;
+          is_system?: boolean;
+          sort_order?: number;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      bulletin_posts: {
+        Row: {
+          id: string;
+          school_id: string;
+          label_id: string | null;
+          title: string;
+          content: string;
+          is_pinned: boolean;
+          is_archived: boolean;
+          archived_at: string | null;
+          created_by: string | null;
+          updated_by: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          label_id?: string | null;
+          title: string;
+          content: string;
+          is_pinned?: boolean;
+          is_archived?: boolean;
+          archived_at?: string | null;
+          created_by?: string | null;
+          updated_by?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          label_id?: string | null;
+          title?: string;
+          content?: string;
+          is_pinned?: boolean;
+          is_archived?: boolean;
+          archived_at?: string | null;
+          created_by?: string | null;
+          updated_by?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      bulletin_reads: {
+        Row: {
+          id: string;
+          post_id: string;
+          user_id: string;
+          read_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          post_id: string;
+          user_id: string;
+          read_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          post_id?: string;
+          user_id?: string;
+          read_at?: string | null;
+        };
+        Relationships: [];
+      };
+      form_templates: {
+        Row: {
+          id: string;
+          school_id: string;
+          name: string;
+          description: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          name: string;
+          description?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          name?: string;
+          description?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      form_template_fields: {
+        Row: {
+          id: string;
+          template_id: string;
+          field_type: string;
+          label: string;
+          placeholder: string | null;
+          options: Record<string, unknown> | string[] | null;
+          is_required: boolean;
+          sort_order: number;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          template_id: string;
+          field_type: string;
+          label: string;
+          placeholder?: string | null;
+          options?: Record<string, unknown> | string[] | null;
+          is_required?: boolean;
+          sort_order?: number;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          template_id?: string;
+          field_type?: string;
+          label?: string;
+          placeholder?: string | null;
+          options?: Record<string, unknown> | string[] | null;
+          is_required?: boolean;
+          sort_order?: number;
+          created_at?: string | null;
+        };
+        Relationships: [];
+      };
+      forms: {
+        Row: {
+          id: string;
+          school_id: string;
+          template_id: string | null;
+          title: string;
+          description: string | null;
+          slug: string;
+          status: string;
+          publish_start: string | null;
+          publish_end: string | null;
+          completion_message: string | null;
+          linked_application_item_id: string | null;
+          is_archived: boolean;
+          archived_at: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          template_id?: string | null;
+          title: string;
+          description?: string | null;
+          slug: string;
+          status?: string;
+          publish_start?: string | null;
+          publish_end?: string | null;
+          completion_message?: string | null;
+          linked_application_item_id?: string | null;
+          is_archived?: boolean;
+          archived_at?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          template_id?: string | null;
+          title?: string;
+          description?: string | null;
+          slug?: string;
+          status?: string;
+          publish_start?: string | null;
+          publish_end?: string | null;
+          completion_message?: string | null;
+          linked_application_item_id?: string | null;
+          is_archived?: boolean;
+          archived_at?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      form_fields: {
+        Row: {
+          id: string;
+          form_id: string;
+          field_type: string;
+          label: string;
+          placeholder: string | null;
+          options: Record<string, unknown> | string[] | null;
+          is_required: boolean;
+          sort_order: number;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          form_id: string;
+          field_type: string;
+          label: string;
+          placeholder?: string | null;
+          options?: Record<string, unknown> | string[] | null;
+          is_required?: boolean;
+          sort_order?: number;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          form_id?: string;
+          field_type?: string;
+          label?: string;
+          placeholder?: string | null;
+          options?: Record<string, unknown> | string[] | null;
+          is_required?: boolean;
+          sort_order?: number;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      student_interviews: {
+        Row: {
+          id: string;
+          school_id: string;
+          student_id: string;
+          interview_date: string;
+          interview_type: string;
+          content: string;
+          is_completed: boolean;
+          completed_at: string | null;
+          created_by: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          student_id: string;
+          interview_date: string;
+          interview_type: string;
+          content: string;
+          is_completed?: boolean;
+          completed_at?: string | null;
+          created_by?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          student_id?: string;
+          interview_date?: string;
+          interview_type?: string;
+          content?: string;
+          is_completed?: boolean;
+          completed_at?: string | null;
+          created_by?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Relationships: [];
+      };
+      user_invitations: {
+        Row: {
+          id: string;
+          email: string;
+          role: string;
+          school_ids: string[];
+          token: string;
+          invited_by: string;
+          expires_at: string;
+          accepted_at: string | null;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          email: string;
+          role: string;
+          school_ids: string[];
+          token: string;
+          invited_by: string;
+          expires_at: string;
+          accepted_at?: string | null;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          email?: string;
+          role?: string;
+          school_ids?: string[];
+          token?: string;
+          invited_by?: string;
+          expires_at?: string;
+          accepted_at?: string | null;
+          created_at?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -1103,7 +1945,7 @@ export type PortalMenu = {
   updated_at: string;
 };
 
-export type PortalMenuInsert = Omit<PortalMenu, 'id' | 'created_at' | 'updated_at'>;
+export type PortalMenuInsert = Partial<Pick<PortalMenu, 'link_urls'>> & Omit<PortalMenu, 'id' | 'created_at' | 'updated_at' | 'link_urls'>;
 
 export type PortalMenuUpdate = Partial<Omit<PortalMenu, 'id' | 'school_id' | 'menu_key' | 'created_at' | 'updated_at'>>;
 
@@ -1207,6 +2049,7 @@ export type FormTemplateField = {
   template_id: string;
   label: string;
   field_type: FormFieldType;
+  placeholder?: string | null;
   options: string[] | null;
   is_required: boolean;
   sort_order: number;

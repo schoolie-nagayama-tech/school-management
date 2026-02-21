@@ -26,8 +26,8 @@ import type { School } from '@/types/database';
 
 interface SummaryRow {
   id: string;
-  school: { id: string; name: string };
-  teacher: { id: string; name: string };
+  school: { id: string; name: string; code?: string | null } | null;
+  teacher: { id: string; name: string } | null;
   status: string;
   type_totals: Record<string, {
     name: string;

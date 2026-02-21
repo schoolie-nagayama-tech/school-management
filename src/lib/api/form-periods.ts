@@ -84,7 +84,8 @@ export async function getActiveFormPeriod(
   console.log(`[getActiveFormPeriod] Current time: ${nowDate.toISOString()}`);
 
   // JavaScript側で公開期間をフィルタリング（日付ベース）
-  const activePeriods = data.filter((period) => {
+  const typedData = data as FormPeriod[];
+  const activePeriods = typedData.filter((period) => {
     const start = period.publish_start ? new Date(period.publish_start) : null;
     const end = period.publish_end ? new Date(period.publish_end) : null;
 
@@ -152,7 +153,7 @@ export async function createFormPeriod(
   if (existing) {
     const updateData: FormPeriodUpdate = {
       title: data.title,
-      settings: data.settings,
+      settings: data.settings as unknown as Record<string, unknown>,
       publish_start: data.publish_start,
       publish_end: data.publish_end,
       is_active: data.is_active ?? true,
@@ -163,6 +164,7 @@ export async function createFormPeriod(
 
   const insertData = {
     ...data,
+    settings: data.settings != null ? (data.settings as unknown as Record<string, unknown>) : undefined,
     is_active: data.is_active ?? false, // 新規作成時は非公開
   };
   const { data: created, error } = await supabase

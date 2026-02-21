@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { AdminLayout } from '@/components/layouts';
@@ -19,12 +19,12 @@ import type { School } from '@/types/database';
 interface LateEarlyRecord {
   id: string;
   date: string;
-  late_early: string;
+  late_early: string | null;
   note: string | null;
   sheet: {
     id: string;
-    teacher: { id: string; name: string };
-    school: { id: string; name: string };
+    teacher: { id: string; name: string } | null;
+    school: { id: string; name: string } | null;
   };
 }
 

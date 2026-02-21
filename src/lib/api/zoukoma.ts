@@ -42,7 +42,7 @@ export async function getZoukomaPeriods(
   const periods = await getFormPeriods(schoolId, 'zoukoma', includeArchived);
   return periods.map((period) => ({
     ...period,
-    settings: (period.settings as ZoukomaSettings) || {},
+    settings: (period.settings as unknown as ZoukomaSettings) || {},
   }));
 }
 
@@ -86,7 +86,7 @@ export async function getActiveZoukomaPeriod(
 
   return {
     ...period,
-    settings: (period.settings as ZoukomaSettings) || {},
+    settings: (period.settings as unknown as ZoukomaSettings) || {},
   };
 }
 
@@ -103,7 +103,7 @@ export async function getZoukomaPeriod(
 
   return {
     ...period,
-    settings: (period.settings as ZoukomaSettings) || {},
+    settings: (period.settings as unknown as ZoukomaSettings) || {},
   };
 }
 
@@ -136,13 +136,13 @@ export async function createZoukomaPeriod(
     ...data,
     school_id: targetSchoolId,
     form_type: 'zoukoma',
-    settings: data.settings as Record<string, unknown>,
+    settings: data.settings != null ? (data.settings as unknown as Record<string, unknown>) : undefined,
   };
 
   const period = await createFormPeriod(periodData);
   return {
     ...period,
-    settings: (period.settings as ZoukomaSettings) || {},
+    settings: (period.settings as unknown as ZoukomaSettings) || {},
   };
 }
 
@@ -157,13 +157,13 @@ export async function updateZoukomaPeriod(
 ): Promise<ZoukomaPeriod> {
   const updateData: FormPeriodUpdate = {
     ...data,
-    settings: data.settings ? (data.settings as Record<string, unknown>) : undefined,
+    settings: data.settings ? (data.settings as unknown as Record<string, unknown>) : undefined,
   };
 
   const period = await updateFormPeriod(id, updateData);
   return {
     ...period,
-    settings: (period.settings as ZoukomaSettings) || {},
+    settings: (period.settings as unknown as ZoukomaSettings) || {},
   };
 }
 

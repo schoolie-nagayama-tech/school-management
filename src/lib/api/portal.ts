@@ -1,4 +1,4 @@
-﻿import { supabase } from '../supabase';
+import { supabase } from '../supabase';
 import type { PortalMenu, PortalMenuInsert, PortalMenuUpdate } from '@/types/database';
 import { getDefaultSchoolId, getSchoolByCode } from './schools';
 
@@ -22,7 +22,7 @@ export async function getPortalMenus(schoolId?: string): Promise<PortalMenu[]> {
     throw new Error(`ポータルメニュー一覧の取得に失敗しました: ${error.message}`);
   }
 
-  return data || [];
+  return (data || []) as PortalMenu[];
 }
 
 /**
@@ -46,7 +46,7 @@ export async function getVisiblePortalMenus(schoolCode: string): Promise<PortalM
     throw new Error(`公開メニュー一覧の取得に失敗しました: ${error.message}`);
   }
 
-  return data || [];
+  return (data || []) as PortalMenu[];
 }
 
 /**
@@ -67,7 +67,7 @@ export async function updatePortalMenu(
     throw new Error(`ポータルメニューの更新に失敗しました: ${error.message}`);
   }
 
-  return updated;
+  return updated as PortalMenu;
 }
 
 /**
@@ -125,7 +125,7 @@ export async function togglePortalMenuVisibility(id: string): Promise<PortalMenu
     throw new Error(`ポータルメニューの更新に失敗しました: ${updateError.message}`);
   }
 
-  return updated;
+  return updated as PortalMenu;
 }
 
 /**
@@ -168,6 +168,7 @@ export async function initializePortalMenus(schoolId: string): Promise<void> {
       is_visible: true,
       link_type: 'internal',
       link_url: getLinkUrl('zoukoma'),
+      link_urls: null,
       sort_order: 1,
     },
     {
@@ -178,6 +179,7 @@ export async function initializePortalMenus(schoolId: string): Promise<void> {
       is_visible: true,
       link_type: 'internal',
       link_url: getLinkUrl('moshi'),
+      link_urls: null,
       sort_order: 2,
     },
     {
@@ -188,6 +190,7 @@ export async function initializePortalMenus(schoolId: string): Promise<void> {
       is_visible: true,
       link_type: 'external',
       link_url: null,
+      link_urls: null,
       sort_order: 3,
     },
     {
@@ -198,6 +201,7 @@ export async function initializePortalMenus(schoolId: string): Promise<void> {
       is_visible: true,
       link_type: 'internal',
       link_url: getLinkUrl('mogi'),
+      link_urls: null,
       sort_order: 4,
     },
     {
@@ -208,6 +212,7 @@ export async function initializePortalMenus(schoolId: string): Promise<void> {
       is_visible: true,
       link_type: 'internal',
       link_url: getLinkUrl('shukaisu'),
+      link_urls: null,
       sort_order: 5,
     },
     {
@@ -218,6 +223,7 @@ export async function initializePortalMenus(schoolId: string): Promise<void> {
       is_visible: true,
       link_type: 'internal',
       link_url: getLinkUrl('youbi'),
+      link_urls: null,
       sort_order: 6,
     },
     {
@@ -228,6 +234,7 @@ export async function initializePortalMenus(schoolId: string): Promise<void> {
       is_visible: true,
       link_type: 'internal',
       link_url: getLinkUrl('kyozai'),
+      link_urls: null,
       sort_order: 7,
     },
     {
@@ -238,6 +245,7 @@ export async function initializePortalMenus(schoolId: string): Promise<void> {
       is_visible: true,
       link_type: 'internal',
       link_url: getLinkUrl('soudan'),
+      link_urls: null,
       sort_order: 8,
     },
   ];

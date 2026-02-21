@@ -125,7 +125,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
       if (error.code === 'PGRST116') return null;
       throw error;
     }
-    return data;
+    return data as UserProfile;
   } catch (err: any) {
     // AbortErrorは無視
     if (err?.name === 'AbortError' || err?.message?.includes('aborted') || err?.message?.includes('signal is aborted')) {
@@ -158,7 +158,7 @@ export async function createUserProfile(
     .single();
 
   if (error) throw error;
-  return data;
+  return data as UserProfile;
 }
 
 // プロファイルを更新
@@ -178,7 +178,7 @@ export async function updateUserProfile(
     .single();
 
   if (error) throw error;
-  return data;
+  return data as UserProfile;
 }
 
 // 最終ログイン日時を更新
@@ -211,7 +211,7 @@ export async function getUsers(): Promise<UserWithDetails[]> {
 
   // 各ユーザーの教室情報を取得
   const usersWithSchools = await Promise.all(
-    profiles.map(async (profile) => {
+    (profiles as UserProfile[]).map(async (profile) => {
       const { data: userSchools, error: schoolsError } = await supabase
         .from('user_schools')
         .select(`
@@ -273,7 +273,7 @@ export async function addUserToSchool(userId: string, schoolId: string): Promise
     .eq('school_id', schoolId)
     .maybeSingle();
 
-  if (existing) return existing;
+  if (existing) return existing as UserSchool;
 
   const { data, error } = await supabase
     .from('user_schools')
@@ -282,7 +282,7 @@ export async function addUserToSchool(userId: string, schoolId: string): Promise
     .single();
 
   if (error) throw error;
-  return data;
+  return data as UserSchool;
 }
 
 // ユーザーを教室から削除
@@ -334,7 +334,7 @@ export async function createInvitation(
     .single();
 
   if (error) throw error;
-  return data;
+  return data as UserInvitation;
 }
 
 // 招待をトークンで取得
@@ -353,11 +353,11 @@ export async function getInvitationByToken(token: string): Promise<UserInvitatio
   }
 
   // 有効期限チェック
-  if (new Date(data.expires_at) < new Date()) {
+  if (new Date((data as UserInvitation).expires_at) < new Date()) {
     return null;
   }
 
-  return data;
+  return data as UserInvitation;
 }
 
 // 招待を承諾
@@ -380,7 +380,7 @@ export async function getInvitations(): Promise<UserInvitation[]> {
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return data || [];
+  return (data || []) as UserInvitation[];
 }
 
 // 招待を削除

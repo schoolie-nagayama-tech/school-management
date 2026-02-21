@@ -70,7 +70,8 @@ export async function listAssessmentsBySchool(
     return new Map();
   }
 
-  const assessmentIds = assessments.map((a) => a.id);
+  const assessmentsTyped = assessments as Assessment[];
+  const assessmentIds = assessmentsTyped.map((a) => a.id);
   const { data: scores, error: scoresError } = await supabase
     .from('assessment_scores')
     .select('*')
@@ -82,7 +83,7 @@ export async function listAssessmentsBySchool(
   }
 
   const scoresTyped = (scores || []) as AssessmentScore[];
-  const assessmentsWithScores: AssessmentWithScores[] = (assessments as Assessment[]).map((assessment) => ({
+  const assessmentsWithScores: AssessmentWithScores[] = assessmentsTyped.map((assessment) => ({
     ...assessment,
     scores: scoresTyped.filter((score) => score.assessment_id === assessment.id),
   }));
@@ -130,8 +131,9 @@ export async function listAssessments(
     return [];
   }
 
+  const assessmentsList = assessments as Assessment[];
   // 各assessmentのスコアを取得
-  const assessmentIds = assessments.map((a) => a.id);
+  const assessmentIds = assessmentsList.map((a) => a.id);
   const { data: scores, error: scoresError } = await supabase
     .from('assessment_scores')
     .select('*')
@@ -144,8 +146,7 @@ export async function listAssessments(
 
   // assessmentとscoresを結合
   const scoresTyped = (scores || []) as AssessmentScore[];
-  const assessmentsTyped = assessments as Assessment[];
-  const assessmentsWithScores: AssessmentWithScores[] = assessmentsTyped.map((assessment) => ({
+  const assessmentsWithScores: AssessmentWithScores[] = assessmentsList.map((assessment) => ({
     ...assessment,
     scores: scoresTyped.filter((score) => score.assessment_id === assessment.id),
   }));

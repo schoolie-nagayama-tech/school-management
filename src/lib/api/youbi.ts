@@ -40,7 +40,7 @@ export async function getYoubiPeriods(
   return periods.map((p) => ({
     ...p,
     form_type: 'youbi' as const,
-    settings: (p.settings || {}) as YoubiSettings,
+    settings: (p.settings || {}) as unknown as YoubiSettings,
   }));
 }
 
@@ -63,7 +63,7 @@ export async function getActiveYoubiPeriod(
   return {
     ...period,
     form_type: 'youbi' as const,
-    settings: (period.settings || {}) as YoubiSettings,
+    settings: (period.settings || {}) as unknown as YoubiSettings,
   };
 }
 
@@ -79,7 +79,7 @@ export async function getYoubiPeriod(id: string): Promise<YoubiPeriod | null> {
   return {
     ...period,
     form_type: 'youbi' as const,
-    settings: (period.settings || {}) as YoubiSettings,
+    settings: (period.settings || {}) as unknown as YoubiSettings,
   };
 }
 
@@ -98,14 +98,14 @@ export async function createYoubiPeriod(
     ...data,
     school_id: targetSchoolId,
     form_type: 'youbi',
-    settings: (data.settings || {}) as YoubiSettings,
+    settings: (data.settings || {}) as unknown as Record<string, unknown>,
   };
 
   const period = await createFormPeriod(periodData);
   return {
     ...period,
     form_type: 'youbi' as const,
-    settings: (period.settings || {}) as YoubiSettings,
+    settings: (period.settings || {}) as unknown as YoubiSettings,
   };
 }
 
@@ -118,14 +118,14 @@ export async function updateYoubiPeriod(
 ): Promise<YoubiPeriod> {
   const updateData: FormPeriodUpdate = {
     ...data,
-    settings: data.settings ? (data.settings as YoubiSettings) : undefined,
+    settings: data.settings ? (data.settings as unknown as Record<string, unknown>) : undefined,
   };
 
   const period = await updateFormPeriod(id, updateData);
   return {
     ...period,
     form_type: 'youbi' as const,
-    settings: (period.settings || {}) as YoubiSettings,
+    settings: (period.settings || {}) as unknown as YoubiSettings,
   };
 }
 

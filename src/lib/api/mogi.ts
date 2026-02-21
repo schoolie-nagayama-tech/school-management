@@ -38,7 +38,7 @@ export async function getMogiPeriods(
   return periods.map((p) => ({
     ...p,
     form_type: 'mogi' as const,
-    settings: (p.settings || {}) as MogiSettings,
+    settings: (p.settings || {}) as unknown as MogiSettings,
   }));
 }
 
@@ -61,7 +61,7 @@ export async function getActiveMogiPeriod(
   return {
     ...period,
     form_type: 'mogi' as const,
-    settings: (period.settings || {}) as MogiSettings,
+    settings: (period.settings || {}) as unknown as MogiSettings,
   };
 }
 
@@ -77,7 +77,7 @@ export async function getMogiPeriod(id: string): Promise<MogiPeriod | null> {
   return {
     ...period,
     form_type: 'mogi' as const,
-    settings: (period.settings || {}) as MogiSettings,
+    settings: (period.settings || {}) as unknown as MogiSettings,
   };
 }
 
@@ -96,14 +96,14 @@ export async function createMogiPeriod(
     ...data,
     school_id: targetSchoolId,
     form_type: 'mogi',
-    settings: (data.settings || {}) as MogiSettings,
+    settings: (data.settings || {}) as unknown as Record<string, unknown>,
   };
 
   const period = await createFormPeriod(periodData);
   return {
     ...period,
     form_type: 'mogi' as const,
-    settings: (period.settings || {}) as MogiSettings,
+    settings: (period.settings || {}) as unknown as MogiSettings,
   };
 }
 
@@ -116,14 +116,14 @@ export async function updateMogiPeriod(
 ): Promise<MogiPeriod> {
   const updateData: FormPeriodUpdate = {
     ...data,
-    settings: data.settings ? (data.settings as MogiSettings) : undefined,
+    settings: data.settings ? (data.settings as unknown as Record<string, unknown>) : undefined,
   };
 
   const period = await updateFormPeriod(id, updateData);
   return {
     ...period,
     form_type: 'mogi' as const,
-    settings: (period.settings || {}) as MogiSettings,
+    settings: (period.settings || {}) as unknown as MogiSettings,
   };
 }
 
@@ -214,7 +214,7 @@ export async function getMogiResponses(
   let filtered = responses.map((r) => ({
     ...r,
     form_type: 'mogi' as const,
-    response_data: r.response_data as MogiResponseData,
+    response_data: r.response_data as unknown as MogiResponseData,
   }));
 
   // 日程フィルター

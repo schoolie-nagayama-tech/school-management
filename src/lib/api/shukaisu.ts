@@ -40,7 +40,7 @@ export async function getShukaisuPeriods(
   return periods.map((p) => ({
     ...p,
     form_type: 'shukaisu' as const,
-    settings: (p.settings || {}) as ShukaisuSettings,
+    settings: (p.settings || {}) as unknown as ShukaisuSettings,
   }));
 }
 
@@ -63,7 +63,7 @@ export async function getActiveShukaisuPeriod(
   return {
     ...period,
     form_type: 'shukaisu' as const,
-    settings: (period.settings || {}) as ShukaisuSettings,
+    settings: (period.settings || {}) as unknown as ShukaisuSettings,
   };
 }
 
@@ -79,7 +79,7 @@ export async function getShukaisuPeriod(id: string): Promise<ShukaisuPeriod | nu
   return {
     ...period,
     form_type: 'shukaisu' as const,
-    settings: (period.settings || {}) as ShukaisuSettings,
+    settings: (period.settings || {}) as unknown as ShukaisuSettings,
   };
 }
 
@@ -98,14 +98,14 @@ export async function createShukaisuPeriod(
     ...data,
     school_id: targetSchoolId,
     form_type: 'shukaisu',
-    settings: (data.settings || {}) as ShukaisuSettings,
+    settings: (data.settings || {}) as unknown as Record<string, unknown>,
   };
 
   const period = await createFormPeriod(periodData);
   return {
     ...period,
     form_type: 'shukaisu' as const,
-    settings: (period.settings || {}) as ShukaisuSettings,
+    settings: (period.settings || {}) as unknown as ShukaisuSettings,
   };
 }
 
@@ -118,14 +118,14 @@ export async function updateShukaisuPeriod(
 ): Promise<ShukaisuPeriod> {
   const updateData: FormPeriodUpdate = {
     ...data,
-    settings: data.settings ? (data.settings as ShukaisuSettings) : undefined,
+    settings: data.settings ? (data.settings as unknown as Record<string, unknown>) : undefined,
   };
 
   const period = await updateFormPeriod(id, updateData);
   return {
     ...period,
     form_type: 'shukaisu' as const,
-    settings: (period.settings || {}) as ShukaisuSettings,
+    settings: (period.settings || {}) as unknown as ShukaisuSettings,
   };
 }
 

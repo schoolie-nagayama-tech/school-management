@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -40,7 +40,7 @@ interface SheetWithTotals {
   approved_at: string | null;
   rejection_reason: string | null;
   teacher: { id: string; name: string };
-  approved_by_user: { id: string; display_name: string } | null;
+  approved_by_user: { id: string; display_name: string | null } | null;
   type_totals: Record<string, { name: string; unit: string; total: number }>;
   grand_total: number;
 }

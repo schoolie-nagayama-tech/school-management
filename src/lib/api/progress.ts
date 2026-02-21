@@ -21,6 +21,7 @@ import type {
   ProgressRowDisplay,
 } from '@/types/database';
 import { getCurriculumItems } from './textbooks';
+import { getDefaultSchoolId } from './schools';
 
 // ============================================
 // 生徒×テキスト紐付け（student_textbooks）
@@ -66,7 +67,7 @@ export async function getStudentTextbooksExamsBySchool(
   }
 
   const examTypeNames = new Map<string, string>();
-  const examTypeIds = [...new Set((exams || []).map((e: { exam_type_id?: string }) => e.exam_type_id).filter(Boolean))];
+  const examTypeIds = Array.from(new Set((exams || []).map((e: { exam_type_id?: string }) => e.exam_type_id).filter((id): id is string => Boolean(id))));
   if (examTypeIds.length > 0) {
     const { data: examTypes } = await supabase
       .from('exam_types')
@@ -90,7 +91,7 @@ export async function getStudentTextbooksExamsBySchool(
     .select('*')
     .in('student_textbook_id', stIds);
   for (const st of stList) {
-    const s = (settings || []).find((x: { student_textbook_id: string }) => x.student_textbook_id === st.id);
+    const s = (settings || []).find((x: { student_textbook_id?: string }) => x.student_textbook_id === st.id) as StudentTextbookSetting | undefined;
     settingsByStId.set(st.id, s || null);
   }
 

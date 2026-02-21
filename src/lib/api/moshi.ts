@@ -40,7 +40,7 @@ export async function getMoshiPeriods(
   return periods.map((p) => ({
     ...p,
     form_type: 'moshi' as const,
-    settings: (p.settings || {}) as MoshiSettings,
+    settings: (p.settings || {}) as unknown as MoshiSettings,
   }));
 }
 
@@ -63,7 +63,7 @@ export async function getActiveMoshiPeriod(
   return {
     ...period,
     form_type: 'moshi' as const,
-    settings: (period.settings || {}) as MoshiSettings,
+    settings: (period.settings || {}) as unknown as MoshiSettings,
   };
 }
 
@@ -79,7 +79,7 @@ export async function getMoshiPeriod(id: string): Promise<MoshiPeriod | null> {
   return {
     ...period,
     form_type: 'moshi' as const,
-    settings: (period.settings || {}) as MoshiSettings,
+    settings: (period.settings || {}) as unknown as MoshiSettings,
   };
 }
 
@@ -98,14 +98,14 @@ export async function createMoshiPeriod(
     ...data,
     school_id: targetSchoolId,
     form_type: 'moshi',
-    settings: (data.settings || {}) as MoshiSettings,
+    settings: (data.settings || {}) as unknown as Record<string, unknown>,
   };
 
   const period = await createFormPeriod(periodData);
   return {
     ...period,
     form_type: 'moshi' as const,
-    settings: (period.settings || {}) as MoshiSettings,
+    settings: (period.settings || {}) as unknown as MoshiSettings,
   };
 }
 
@@ -118,14 +118,14 @@ export async function updateMoshiPeriod(
 ): Promise<MoshiPeriod> {
   const updateData: FormPeriodUpdate = {
     ...data,
-    settings: data.settings ? (data.settings as MoshiSettings) : undefined,
+    settings: data.settings ? (data.settings as unknown as Record<string, unknown>) : undefined,
   };
 
   const period = await updateFormPeriod(id, updateData);
   return {
     ...period,
     form_type: 'moshi' as const,
-    settings: (period.settings || {}) as MoshiSettings,
+    settings: (period.settings || {}) as unknown as MoshiSettings,
   };
 }
 
@@ -217,7 +217,7 @@ export async function getMoshiResponses(
   let filtered = responses.map((r) => ({
     ...r,
     form_type: 'moshi' as const,
-    response_data: r.response_data as MoshiResponseData,
+    response_data: r.response_data as unknown as MoshiResponseData,
   }));
 
   // 受験方法フィルター

@@ -40,7 +40,7 @@ export async function getSoudanPeriods(
   return periods.map((p) => ({
     ...p,
     form_type: 'soudan' as const,
-    settings: (p.settings || {}) as SoudanSettings,
+    settings: (p.settings || {}) as unknown as SoudanSettings,
   }));
 }
 
@@ -63,7 +63,7 @@ export async function getActiveSoudanPeriod(
   return {
     ...period,
     form_type: 'soudan' as const,
-    settings: (period.settings || {}) as SoudanSettings,
+    settings: (period.settings || {}) as unknown as SoudanSettings,
   };
 }
 
@@ -79,7 +79,7 @@ export async function getSoudanPeriod(id: string): Promise<SoudanPeriod | null> 
   return {
     ...period,
     form_type: 'soudan' as const,
-    settings: (period.settings || {}) as SoudanSettings,
+    settings: (period.settings || {}) as unknown as SoudanSettings,
   };
 }
 
@@ -98,14 +98,14 @@ export async function createSoudanPeriod(
     ...data,
     school_id: targetSchoolId,
     form_type: 'soudan',
-    settings: (data.settings || {}) as SoudanSettings,
+    settings: (data.settings || {}) as unknown as Record<string, unknown>,
   };
 
   const period = await createFormPeriod(periodData);
   return {
     ...period,
     form_type: 'soudan' as const,
-    settings: (period.settings || {}) as SoudanSettings,
+    settings: (period.settings || {}) as unknown as SoudanSettings,
   };
 }
 
@@ -118,14 +118,14 @@ export async function updateSoudanPeriod(
 ): Promise<SoudanPeriod> {
   const updateData: FormPeriodUpdate = {
     ...data,
-    settings: data.settings ? (data.settings as SoudanSettings) : undefined,
+    settings: data.settings ? (data.settings as unknown as Record<string, unknown>) : undefined,
   };
 
   const period = await updateFormPeriod(id, updateData);
   return {
     ...period,
     form_type: 'soudan' as const,
-    settings: (period.settings || {}) as SoudanSettings,
+    settings: (period.settings || {}) as unknown as SoudanSettings,
   };
 }
 

@@ -39,7 +39,7 @@ export async function getFormTemplates(schoolId?: string): Promise<FormTemplate[
     throw new Error(`テンプレート一覧の取得に失敗しました: ${error.message}`);
   }
 
-  return data || [];
+  return (data || []) as FormTemplate[];
 }
 
 /**
@@ -67,8 +67,8 @@ export async function getFormTemplate(id: string): Promise<FormTemplateWithField
   }
 
   return {
-    ...template,
-    fields: fields || [],
+    ...(template as FormTemplate),
+    fields: (fields || []) as FormTemplateField[],
   };
 }
 
@@ -93,7 +93,7 @@ export async function createFormTemplate(
     throw new Error(`テンプレートの作成に失敗しました: ${error.message}`);
   }
 
-  return data;
+  return data as FormTemplate;
 }
 
 /**
@@ -114,7 +114,7 @@ export async function updateFormTemplate(
     throw new Error(`テンプレートの更新に失敗しました: ${error.message}`);
   }
 
-  return data;
+  return data as FormTemplate;
 }
 
 /**
@@ -153,6 +153,7 @@ export async function createFormTemplateField(
     .from('form_template_fields')
     .insert({
       ...field,
+      options: field.options != null ? (field.options as Record<string, unknown> | string[]) : undefined,
       sort_order: maxSortOrder + 1,
     })
     .select()
@@ -162,7 +163,7 @@ export async function createFormTemplateField(
     throw new Error(`テンプレート項目の追加に失敗しました: ${error.message}`);
   }
 
-  return data;
+  return data as FormTemplateField;
 }
 
 /**
@@ -183,7 +184,7 @@ export async function updateFormTemplateField(
     throw new Error(`テンプレート項目の更新に失敗しました: ${error.message}`);
   }
 
-  return data;
+  return data as FormTemplateField;
 }
 
 /**
@@ -250,7 +251,7 @@ export async function getForms(schoolId?: string, includeArchived: boolean = fal
     throw new Error(`フォーム一覧の取得に失敗しました: ${error.message}`);
   }
 
-  return data || [];
+  return (data || []) as Form[];
 }
 
 /**
@@ -278,8 +279,8 @@ export async function getForm(id: string): Promise<FormWithFields> {
   }
 
   return {
-    ...form,
-    fields: fields || [],
+    ...(form as Form),
+    fields: (fields || []) as FormField[],
   };
 }
 
@@ -311,9 +312,10 @@ export async function createFormFromTemplate(
   }
 
   // テンプレート項目をフォーム項目にコピー
+  const formTyped = form as Form;
   if (template.fields.length > 0) {
     const fieldInserts: FormFieldInsert[] = template.fields.map((field) => ({
-      form_id: form.id,
+      form_id: formTyped.id,
       field_type: field.field_type,
       label: field.label,
       placeholder: field.placeholder,
@@ -331,7 +333,7 @@ export async function createFormFromTemplate(
     }
   }
 
-  return getForm(form.id);
+  return getForm(formTyped.id);
 }
 
 /**
@@ -355,7 +357,7 @@ export async function createForm(
     throw new Error(`フォームの作成に失敗しました: ${error.message}`);
   }
 
-  return data;
+  return data as Form;
 }
 
 /**
@@ -376,7 +378,7 @@ export async function updateForm(
     throw new Error(`フォームの更新に失敗しました: ${error.message}`);
   }
 
-  return data;
+  return data as Form;
 }
 
 /**
@@ -429,7 +431,7 @@ export async function archiveForm(id: string): Promise<{ form: Form; responsesAr
   const { archiveResponsesByFormId } = await import('./form-responses');
   const responsesArchived = await archiveResponsesByFormId(id);
 
-  return { form: data, responsesArchived };
+  return { form: data as Form, responsesArchived };
 }
 
 /**
@@ -455,7 +457,7 @@ export async function unarchiveForm(id: string): Promise<{ form: Form; responses
   const { unarchiveResponsesByFormId } = await import('./form-responses');
   const responsesUnarchived = await unarchiveResponsesByFormId(id);
 
-  return { form: data, responsesUnarchived };
+  return { form: data as Form, responsesUnarchived };
 }
 
 /**
@@ -489,7 +491,7 @@ export async function createFormField(
     throw new Error(`フォーム項目の追加に失敗しました: ${error.message}`);
   }
 
-  return data;
+  return data as FormField;
 }
 
 /**
@@ -510,7 +512,7 @@ export async function updateFormField(
     throw new Error(`フォーム項目の更新に失敗しました: ${error.message}`);
   }
 
-  return data;
+  return data as FormField;
 }
 
 /**
@@ -586,7 +588,8 @@ export async function getPublishedForms(schoolCode: string): Promise<Form[]> {
   }
 
   // 公開期間でフィルタリング（SupabaseのOR条件が複雑なので、クライアント側でも確認）
-  const filtered = (data || []).filter((form) => {
+  const typedData = (data || []) as Form[];
+  const filtered = typedData.filter((form) => {
     // アーカイブされたフォームは除外
     if (form.is_archived) return false;
     // statusがpublishedでないフォームは除外
@@ -634,12 +637,13 @@ export async function getFormBySlug(
     return null;
   }
 
+  const formTyped = form as Form;
   // 公開チェック
   const now = new Date();
-  const start = form.publish_start ? new Date(form.publish_start) : null;
-  const end = form.publish_end ? new Date(form.publish_end) : null;
+  const start = formTyped.publish_start ? new Date(formTyped.publish_start) : null;
+  const end = formTyped.publish_end ? new Date(formTyped.publish_end) : null;
 
-  if (form.status !== 'published' || form.is_archived) {
+  if (formTyped.status !== 'published' || formTyped.is_archived) {
     return null;
   }
   if (start && now < start) {
@@ -653,7 +657,7 @@ export async function getFormBySlug(
   const { data: fields, error: fieldsError } = await supabase
     .from('form_fields')
     .select('*')
-    .eq('form_id', form.id)
+    .eq('form_id', formTyped.id)
     .order('sort_order', { ascending: true });
 
   if (fieldsError) {
@@ -661,8 +665,8 @@ export async function getFormBySlug(
   }
 
   return {
-    ...form,
-    fields: fields || [],
+    ...(formTyped as Form),
+    fields: (fields || []) as FormField[],
   };
 }
 
@@ -693,21 +697,27 @@ export async function submitFormResponse(
     throw new Error(`フォームが見つかりません`);
   }
 
+  const formRow = form as { school_id: string };
   const { error } = await supabase
     .from('form_responses')
     .insert({
       form_id: formId,
-      school_id: form.school_id,
+      school_id: formRow.school_id,
+      form_type: 'kyozai', // フォーム機能用のプレースホルダ
+      form_period: 'n/a',
       student_name: response.student_name,
-      grade: response.grade,
-      email: response.email,
-      answers: response.answers,
-    });
+      grade: response.grade ?? 0,
+      email: response.email ?? '',
+      response_data: response.answers,
+    } as unknown as Record<string, unknown>);
 
   if (error) {
     throw new Error(`回答の送信に失敗しました: ${error.message}`);
   }
 }
+
+// フォーム回答型（form_idベースのフォーム用）
+type FormResponseRow = FormResponse & { form_id?: string | null };
 
 /**
  * 回答一覧を取得（フィルター対応）
@@ -741,7 +751,7 @@ export async function getFormResponses(
     throw new Error(`回答一覧の取得に失敗しました: ${error.message}`);
   }
 
-  return data || [];
+  return (data || []) as FormResponse[];
 }
 
 /**
@@ -758,7 +768,7 @@ export async function getFormResponse(id: string): Promise<FormResponse> {
     throw new Error(`回答の取得に失敗しました: ${error.message}`);
   }
 
-  return data;
+  return data as FormResponse;
 }
 
 /**
@@ -769,9 +779,12 @@ export async function linkResponseToStudent(
   studentId: string
 ): Promise<void> {
   // 回答を取得
-  const response = await getFormResponse(responseId);
+  const response = await getFormResponse(responseId) as FormResponseRow;
 
-  // フォームを取得
+  // フォームを取得（form_idがあれば）
+  if (!response.form_id) {
+    throw new Error('この回答にはフォームが紐付いていません');
+  }
   const form = await getForm(response.form_id);
 
   // 回答を更新

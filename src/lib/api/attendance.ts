@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import type { AttendanceType, AttendanceTypeFormData, AttendanceSheet } from '@/types/attendance';
+import type { AttendanceType, AttendanceTypeFormData, AttendanceSheet, AttendanceRecord, AttendanceNote } from '@/types/attendance';
 
 // ========================================
 // コマ種別マスタ API
@@ -127,7 +127,7 @@ export async function getTeachersWithAttendance(
     throw new Error('講師一覧の取得に失敗しました');
   }
 
-  const teacherIds = Array.from(new Set((userSchools || []).map((u) => u.user_id).filter(Boolean)));
+  const teacherIds = Array.from(new Set((userSchools || []).map((u: { user_id?: string }) => u.user_id).filter((id): id is string => Boolean(id))));
   if (teacherIds.length === 0) return [];
 
   const { data: teacherProfiles, error: teachersError } = await supabase
@@ -149,11 +149,12 @@ export async function getTeachersWithAttendance(
     })) || [];
 
   // 出勤簿を取得
-  const { data: sheets, error: sheetsError } = await supabase
+  const { data: sheetsData, error: sheetsError } = await supabase
     .from('attendance_sheets')
     .select('*')
     .eq('school_id', schoolId)
     .eq('year_month', yearMonth);
+  const sheets = (sheetsData || []) as AttendanceSheet[];
 
   if (sheetsError) {
     console.error('Error fetching attendance sheets:', sheetsError);
@@ -244,16 +245,17 @@ export async function getOrCreateAttendanceSheet(
 
 // 出勤簿の詳細を取得（明細・備考含む）
 export async function getAttendanceSheetDetail(sheetId: string) {
-  const { data: sheet, error: sheetError } = await supabase
+  const { data: sheetData, error: sheetError } = await supabase
     .from('attendance_sheets')
     .select('*')
     .eq('id', sheetId)
     .single();
 
-  if (sheetError) {
+  if (sheetError || !sheetData) {
     console.error('Error fetching attendance sheet:', sheetError);
     throw new Error('出勤簿の取得に失敗しました');
   }
+  const sheet = sheetData as AttendanceSheet;
 
   // 講師情報
   let teacher: { id: string; name: string } | null = null;
@@ -319,8 +321,8 @@ export async function getAttendanceSheetDetail(sheetId: string) {
       teacher,
       school,
     },
-    records: records || [],
-    notes: notes || [],
+    records: (records || []) as AttendanceRecord[],
+    notes: (notes || []) as AttendanceNote[],
   };
 }
 
@@ -459,8 +461,9 @@ export async function getAttendanceSheetList(
     throw new Error('出勤簿一覧の取得に失敗しました');
   }
 
+  const sheets = (data || []) as AttendanceSheet[];
   // 講師情報をまとめて取得
-  const teacherIds = Array.from(new Set((data || []).map((s) => s.teacher_id).filter(Boolean)));
+  const teacherIds = Array.from(new Set(sheets.map((s) => s.teacher_id).filter(Boolean)));
   let teacherMap: Record<string, { id: string; name: string }> = {};
   if (teacherIds.length > 0) {
     const { data: teacherData, error: teacherError } = await supabase
@@ -480,7 +483,7 @@ export async function getAttendanceSheetList(
   }
 
   // 承認者情報をまとめて取得
-  const approverIds = Array.from(new Set((data || []).map((s: any) => s.approved_by).filter(Boolean)));
+  const approverIds = Array.from(new Set(sheets.map((s) => s.approved_by).filter((id): id is string => Boolean(id))));
   let approverMap: Record<string, { id: string; display_name: string | null }> = {};
   if (approverIds.length > 0) {
     const { data: approverData, error: approverError } = await supabase
@@ -496,7 +499,7 @@ export async function getAttendanceSheetList(
 
   // 各シートの合計を計算
   const result = await Promise.all(
-    (data || []).map(async (sheet) => {
+    sheets.map(async (sheet) => {
       const { data: records } = await supabase
         .from('attendance_records')
         .select(`
@@ -649,14 +652,15 @@ export async function getAttendanceSummary(
     query = query.eq('school_id', schoolId);
   }
 
-  const { data: sheets, error: sheetsError } = await query;
+  const { data: sheetsData, error: sheetsError } = await query;
   if (sheetsError) {
     console.error('Error fetching attendance sheets:', sheetsError);
     throw new Error('出勤簿の取得に失敗しました');
   }
+  const sheets = (sheetsData || []) as AttendanceSheet[];
 
   // 講師情報をまとめて取得
-  const teacherIds = Array.from(new Set((sheets || []).map((s: any) => s.teacher_id).filter(Boolean)));
+  const teacherIds = Array.from(new Set(sheets.map((s) => s.teacher_id).filter(Boolean)));
   let teacherMap: Record<string, { id: string; name: string }> = {};
   if (teacherIds.length > 0) {
     const { data: teacherData, error: teacherError } = await supabase
@@ -676,7 +680,7 @@ export async function getAttendanceSummary(
   }
 
   // 教室情報をまとめて取得
-  const schoolIds = Array.from(new Set((sheets || []).map((s: any) => s.school_id).filter(Boolean)));
+  const schoolIds = Array.from(new Set(sheets.map((s) => s.school_id).filter(Boolean)));
   let schoolMap: Record<string, { id: string; name: string; code: string | null }> = {};
   if (schoolIds.length > 0) {
     const { data: schoolData, error: schoolError } = await supabase
@@ -692,7 +696,7 @@ export async function getAttendanceSummary(
 
   // 各シートの詳細を取得
   const result = await Promise.all(
-    (sheets || []).map(async (sheet) => {
+    sheets.map(async (sheet) => {
       // 明細を取得
       const { data: records } = await supabase
         .from('attendance_records')
@@ -761,18 +765,19 @@ export async function getLateEarlyList(
     sheetsQuery = sheetsQuery.eq('school_id', schoolId);
   }
 
-  const { data: sheets, error: sheetsError } = await sheetsQuery;
+  const { data: sheetsData, error: sheetsError } = await sheetsQuery;
   if (sheetsError) {
     console.error('Error fetching attendance sheets:', sheetsError);
     throw new Error('出勤簿の取得に失敗しました');
   }
+  const sheets = (sheetsData || []) as Pick<AttendanceSheet, 'id' | 'teacher_id' | 'school_id'>[];
 
-  if (!sheets || sheets.length === 0) return [];
+  if (sheets.length === 0) return [];
 
   const sheetIds = sheets.map((s) => s.id);
 
   // 講師と教室のマップを作成
-  const teacherIds = Array.from(new Set(sheets.map((s: any) => s.teacher_id).filter(Boolean)));
+  const teacherIds = Array.from(new Set(sheets.map((s) => s.teacher_id).filter(Boolean)));
   let teacherMap: Record<string, { id: string; name: string }> = {};
   if (teacherIds.length > 0) {
     const { data: teachers, error: teacherError } = await supabase
@@ -791,7 +796,7 @@ export async function getLateEarlyList(
     }
   }
 
-  const schoolIds = Array.from(new Set(sheets.map((s: any) => s.school_id).filter(Boolean)));
+  const schoolIds = Array.from(new Set(sheets.map((s) => s.school_id).filter(Boolean)));
   let schoolMap: Record<string, { id: string; name: string }> = {};
   if (schoolIds.length > 0) {
     const { data: schoolsData, error: schoolError } = await supabase
@@ -820,7 +825,8 @@ export async function getLateEarlyList(
   }
 
   // ノートにシート・講師・教室情報を付与
-  return (notes || []).map((note) => {
+  const typedNotes = (notes || []) as AttendanceNote[];
+  return typedNotes.map((note) => {
     const sheet = sheets.find((s) => s.id === note.sheet_id);
     const teacher = sheet?.teacher_id ? teacherMap[sheet.teacher_id] || null : null;
     const school = sheet?.school_id ? schoolMap[sheet.school_id] || null : null;
