@@ -89,7 +89,7 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
       setStudentAlerts((prev) => {
         const withoutHeavy = prev.map((sa) => ({
           ...sa,
-          alerts: sa.alerts.filter((a) => !HEAVY_ALERT_TYPES.includes(a.alert_type)),
+          alerts: sa.alerts.filter((a) => !(HEAVY_ALERT_TYPES as readonly string[]).includes(a.alert_type)),
         })).filter((sa) => sa.alerts.length > 0);
         return mergeStudentAlerts(withoutHeavy, heavyAlerts);
       });

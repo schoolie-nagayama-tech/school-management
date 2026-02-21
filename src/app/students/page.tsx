@@ -19,7 +19,7 @@ import {
   deleteStudent,
 } from '@/lib/api/students';
 import type { Student, StudentInsert, StudentUpdate, Subject } from '@/types/database';
-import type { ScheduleRegularPattern } from '@/types/schedule';
+import type { ScheduleRegularPattern, ScheduleTimeSlot } from '@/types/schedule';
 import { GRADE_LABELS } from '@/types/database';
 import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
@@ -521,7 +521,7 @@ export default function StudentsPage() {
           schoolId={addScheduleFormContext.student.school_id ?? ''}
           studentGrade={addScheduleFormContext.student.grade}
           pattern={addScheduleFormContext.pattern ?? null}
-          timeSlots={addScheduleFormContext.timeSlots}
+          timeSlots={addScheduleFormContext.timeSlots as ScheduleTimeSlot[]}
           teachers={addScheduleFormContext.teachers}
           subjects={addScheduleFormContext.subjects}
           onSuccess={() => {

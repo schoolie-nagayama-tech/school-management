@@ -5,8 +5,8 @@ import { GRADE_LABELS, STATUS_LABELS, STATUS_COLORS } from '@/types/database';
 
 interface StudentTableProps {
   students: (Student & { subjects?: Subject[] })[];
-  onEdit: (student: Student) => void;
-  onDelete: (student: Student) => void;
+  onEdit?: (student: Student) => void;
+  onDelete?: (student: Student) => void;
   onRowClick?: (student: Student) => void;
   onScores?: (student: Student) => void;
   onInterviews?: (student: Student) => void;

@@ -82,8 +82,11 @@ export default function NewSeasonalShiftPage() {
       });
       const slotsToSave =
         slotSettings.length > 0
-          ? slotSettings
-          : generateDefaultSlotSettings(form.start_date, form.end_date, timeSlotsArray);
+          ? slotSettings.map((s) => ({ ...s, setting_id: created.id }))
+          : generateDefaultSlotSettings(form.start_date, form.end_date, timeSlotsArray).map((s) => ({
+              ...s,
+              setting_id: created.id,
+            }));
       if (slotsToSave.length > 0) {
         await setSeasonalShiftSlotSettings(created.id, slotsToSave);
       }

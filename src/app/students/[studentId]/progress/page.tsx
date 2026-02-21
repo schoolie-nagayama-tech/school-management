@@ -357,6 +357,7 @@ export default function StudentProgressPage() {
                   exam_range_exam_type_id: progress.exam_range_exam_type_id,
                   school_progress_date: progress.school_progress_date,
                   handover: progress.handover,
+                  teacher_name: progress.teacher_name ?? null,
                   group_number: progress.group_number,
                   created_at: progress.created_at,
                   updated_at: progress.updated_at,

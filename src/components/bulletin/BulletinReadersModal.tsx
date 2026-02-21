@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui';
@@ -55,7 +55,7 @@ export function BulletinReadersModal({
       }
 
       // user_profilesから情報を取得（講師のみ）
-      const userIds = userSchools.map(us => us.user_id).filter(Boolean);
+      const userIds = (userSchools || []).map((us: { user_id: string }) => us.user_id).filter(Boolean);
       const { data: userProfiles } = await supabase
         .from('user_profiles')
         .select('id, display_name, email, role')

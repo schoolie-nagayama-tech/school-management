@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { Button, Input, Modal, Select } from '@/components/ui';
@@ -33,7 +33,7 @@ export function FieldEditor({ isOpen, onClose, onSave, field }: FieldEditorProps
     if (field) {
       setFieldType(field.field_type);
       setLabel(field.label);
-      setPlaceholder(field.placeholder || '');
+      setPlaceholder(('placeholder' in field && field.placeholder) ? String(field.placeholder) : '');
       setIsRequired(field.is_required);
       if (field.options && Array.isArray(field.options)) {
         setOptionsText((field.options as string[]).join('\n'));
@@ -101,13 +101,11 @@ export function FieldEditor({ isOpen, onClose, onSave, field }: FieldEditorProps
             value={fieldType}
             onChange={(e) => setFieldType(e.target.value as FormFieldType)}
             disabled={isSubmitting}
-          >
-            {Object.entries(FORM_FIELD_TYPE_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </Select>
+            options={Object.entries(FORM_FIELD_TYPE_LABELS).map(([value, label]) => ({
+              value,
+              label,
+            }))}
+          />
         </div>
 
         <div>
