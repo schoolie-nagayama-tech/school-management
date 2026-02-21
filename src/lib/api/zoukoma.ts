@@ -113,9 +113,7 @@ export async function getZoukomaPeriod(
  * @param schoolId 教室ID（省略時は getDefaultSchoolId()）
  */
 export async function createZoukomaPeriod(
-  data: Omit<FormPeriodInsert, 'school_id' | 'form_type'> & {
-    settings: ZoukomaSettings;
-  },
+  data: Omit<FormPeriodInsert, 'school_id' | 'form_type'>,
   schoolId?: string
 ): Promise<ZoukomaPeriod> {
   let targetSchoolId: string;
@@ -184,12 +182,10 @@ export async function copyZoukomaPeriod(
   const now = new Date();
   const newPeriodKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-  const newPeriodData: Omit<FormPeriodInsert, 'school_id' | 'form_type'> & {
-    settings: ZoukomaSettings;
-  } = {
+  const newPeriodData = {
     period_key: newPeriodKey,
     title: '',
-    settings: sourcePeriod.settings,
+    settings: sourcePeriod.settings as unknown as Record<string, unknown>,
     publish_start: null,
     publish_end: null,
     is_active: false,

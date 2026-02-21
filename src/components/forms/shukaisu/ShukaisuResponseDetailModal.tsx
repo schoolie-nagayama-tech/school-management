@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { Modal } from '@/components/ui';
 import type { ShukaisuResponse } from '@/types/forms/shukaisu';
@@ -125,7 +125,7 @@ export function ShukaisuResponseDetailModal({
             対応状況
           </label>
           <p className="text-sm text-[#4b5563]">
-            {response.status_checks?.handled ? '対応済み' : '未対応'}
+            {(response.status_checks as Record<string, boolean> | null)?.handled ? '対応済み' : '未対応'}
           </p>
         </div>
 

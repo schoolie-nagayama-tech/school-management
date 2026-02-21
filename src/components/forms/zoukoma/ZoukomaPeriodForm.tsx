@@ -93,6 +93,7 @@ export function ZoukomaPeriodForm({
                 start_time: start || '',
                 end_time: end || '',
                 available_saturday: code === '4' ? false : true,
+                available_sunday: false,
                 available_weekday: code !== '4',
               });
             });
@@ -202,33 +203,37 @@ export function ZoukomaPeriodForm({
       const now = new Date();
       const startDate = publishStart ? new Date(publishStart) : null;
       const endDate = publishEnd ? new Date(publishEnd) : null;
-      
-      // 公開開始日が現在時刻以降または未設定の場合、公開期間内であればtrue
-      const shouldBeActive = 
-        startDate && endDate && startDate <= now && endDate >= now;
+
+      // 公開期間内であればtrue
+      const shouldBeActive = !!(
+        startDate &&
+        endDate &&
+        startDate <= now &&
+        endDate >= now
+      );
+
+      const settingsForApi = settings as unknown as Record<string, unknown>;
 
       if (period) {
-        // 更新
+        // 更新（FormPeriodUpdate は period_key を除外）
         await updateZoukomaPeriod(period.id, {
-          period_key: periodKey.trim(),
           title: title.trim(),
           publish_start: publishStart ? new Date(publishStart).toISOString() : null,
           publish_end: publishEnd ? new Date(publishEnd).toISOString() : null,
           is_active: shouldBeActive,
           linked_application_item_id: linkedApplicationItemId || null,
-          settings,
+          settings: settingsForApi,
         });
       } else {
         // 新規作成
-        // 公開期間が未設定の場合は自動設定（上記でstartDate/endDateに値が入っている）
         const finalPublishStart = startDate ? startDate.toISOString() : null;
         const finalPublishEnd = endDate ? endDate.toISOString() : null;
-        
+
         await createZoukomaPeriod(
           {
             period_key: periodKey.trim(),
             title: title.trim(),
-            settings,
+            settings: settingsForApi,
             publish_start: finalPublishStart,
             publish_end: finalPublishEnd,
             is_active: shouldBeActive,

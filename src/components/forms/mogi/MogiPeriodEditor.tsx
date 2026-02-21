@@ -268,9 +268,8 @@ export function MogiPeriodEditor({
       const settingsForApi = settings as unknown as Record<string, unknown>;
 
       if (period) {
-        // 更新
+        // 更新（FormPeriodUpdate は period_key を除外）
         await updateMogiPeriod(period.id, {
-          period_key: periodKey.trim(),
           title: title.trim(),
           publish_start: publishStart ? new Date(publishStart).toISOString() : null,
           publish_end: publishEnd ? new Date(publishEnd).toISOString() : null,

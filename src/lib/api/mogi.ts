@@ -139,7 +139,7 @@ export async function copyMogiPeriod(sourceId: string): Promise<MogiPeriod> {
   const newPeriod: Omit<FormPeriodInsert, 'school_id' | 'form_type'> = {
     period_key: '', // 空欄（手入力）
     title: '', // 空欄（手入力）
-    settings: source.settings,
+    settings: source.settings as unknown as Record<string, unknown>,
     publish_start: null,
     publish_end: null,
     is_active: false,

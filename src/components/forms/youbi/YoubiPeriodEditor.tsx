@@ -168,19 +168,23 @@ export function YoubiPeriodEditor({
         completion_message: completionMessage.trim(),
       };
 
-      const data = {
-        period_key: periodKey.trim(),
+      const settingsForApi = settings as unknown as Record<string, unknown>;
+      const baseData = {
         title: title.trim(),
-        settings,
+        settings: settingsForApi,
         publish_start: publishStart ? new Date(publishStart).toISOString() : null,
         publish_end: publishEnd ? new Date(publishEnd).toISOString() : null,
+        is_active: true,
         linked_application_item_id: linkedApplicationItemId || null,
       };
 
       if (period) {
-        await updateYoubiPeriod(period.id, data);
+        await updateYoubiPeriod(period.id, baseData);
       } else {
-        await createYoubiPeriod(data, schoolId);
+        await createYoubiPeriod(
+          { ...baseData, period_key: periodKey.trim() },
+          schoolId
+        );
       }
 
       onSuccess();

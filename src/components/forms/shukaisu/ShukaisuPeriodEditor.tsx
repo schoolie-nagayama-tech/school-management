@@ -182,10 +182,10 @@ export function ShukaisuPeriodEditor({
         completion_message: completionMessage.trim(),
       };
 
-      const data = {
-        period_key: periodKey.trim(),
+      const settingsForApi = settings as unknown as Record<string, unknown>;
+      const baseData = {
         title: title.trim(),
-        settings: settings as unknown as Record<string, unknown>,
+        settings: settingsForApi,
         publish_start: publishStart ? new Date(publishStart).toISOString() : null,
         publish_end: publishEnd ? new Date(publishEnd).toISOString() : null,
         is_active: true,
@@ -193,9 +193,12 @@ export function ShukaisuPeriodEditor({
       };
 
       if (period) {
-        await updateShukaisuPeriod(period.id, data);
+        await updateShukaisuPeriod(period.id, baseData);
       } else {
-        await createShukaisuPeriod(data, schoolId);
+        await createShukaisuPeriod(
+          { ...baseData, period_key: periodKey.trim() },
+          schoolId
+        );
       }
 
       onSuccess();

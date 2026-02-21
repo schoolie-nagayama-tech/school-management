@@ -145,19 +145,23 @@ export function SoudanPeriodEditor({
         completion_message: completionMessage.trim(),
       };
 
-      const data = {
-        period_key: periodKey.trim(),
+      const settingsForApi = settings as unknown as Record<string, unknown>;
+      const baseData = {
         title: title.trim(),
-        settings,
+        settings: settingsForApi,
         publish_start: publishStart ? new Date(publishStart).toISOString() : null,
         publish_end: publishEnd ? new Date(publishEnd).toISOString() : null,
+        is_active: true,
         linked_application_item_id: linkedApplicationItemId || null,
       };
 
       if (period) {
-        await updateSoudanPeriod(period.id, data);
+        await updateSoudanPeriod(period.id, baseData);
       } else {
-        await createSoudanPeriod(data, schoolId);
+        await createSoudanPeriod(
+          { ...baseData, period_key: periodKey.trim() },
+          schoolId
+        );
       }
 
       onSuccess();

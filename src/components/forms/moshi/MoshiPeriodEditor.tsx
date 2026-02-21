@@ -177,10 +177,10 @@ export function MoshiPeriodEditor({
         completion_message: completionMessage.trim(),
       };
 
-      const data = {
-        period_key: periodKey.trim(),
+      const settingsForApi = settings as unknown as Record<string, unknown>;
+      const baseData = {
         title: title.trim(),
-        settings: settings as unknown as Record<string, unknown>,
+        settings: settingsForApi,
         publish_start: publishStart ? new Date(publishStart).toISOString() : null,
         publish_end: publishEnd ? new Date(publishEnd).toISOString() : null,
         is_active: true,
@@ -188,9 +188,12 @@ export function MoshiPeriodEditor({
       };
 
       if (period) {
-        await updateMoshiPeriod(period.id, data);
+        await updateMoshiPeriod(period.id, baseData);
       } else {
-        await createMoshiPeriod(data, schoolId);
+        await createMoshiPeriod(
+          { ...baseData, period_key: periodKey.trim() },
+          schoolId
+        );
       }
 
       onSuccess();

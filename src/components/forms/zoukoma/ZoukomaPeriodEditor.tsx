@@ -96,15 +96,16 @@ export function ZoukomaPeriodEditor({
         subjects: ['英語', '数学', '国語', '理科', '社会'],
       };
 
+      const settingsForApi = settings as unknown as Record<string, unknown>;
+
       if (period) {
-        // 更新
+        // 更新（FormPeriodUpdate は period_key を除外）
         await updateZoukomaPeriod(period.id, {
-          period_key: periodKey.trim(),
           title: title.trim(),
           publish_start: publishStart ? new Date(publishStart).toISOString() : null,
           publish_end: publishEnd ? new Date(publishEnd).toISOString() : null,
           is_active: isActive,
-          settings,
+          settings: settingsForApi,
           linked_application_item_id: linkedApplicationItemId || null,
         });
       } else {
@@ -113,7 +114,7 @@ export function ZoukomaPeriodEditor({
           {
             period_key: periodKey.trim(),
             title: title.trim(),
-            settings,
+            settings: settingsForApi,
             publish_start: publishStart ? new Date(publishStart).toISOString() : null,
             publish_end: publishEnd ? new Date(publishEnd).toISOString() : null,
             is_active: isActive,

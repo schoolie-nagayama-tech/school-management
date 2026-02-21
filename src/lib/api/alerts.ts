@@ -114,7 +114,7 @@ function buildScoreDropCandidates(sources: AlertSources): Alert[] {
       const latestScores = getScoreMap(latest.scores);
       const previousScores = getScoreMap(previous.scores);
 
-      for (const [subjectCode, latestScore] of latestScores.entries()) {
+      for (const [subjectCode, latestScore] of Array.from(latestScores.entries())) {
         if (latestScore == null) continue;
         const previousScore = previousScores.get(subjectCode);
         if (previousScore == null) continue;
