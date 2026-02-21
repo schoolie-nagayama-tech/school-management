@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useMemo, useState } from 'react';
+import type { DragEndEvent } from '@dnd-kit/core';
 import { parseTeacherSlotId } from './TeacherCard';
 import { WeeklyScheduleGridView } from './WeeklyScheduleGridView';
 import type { ScheduleEntry, ScheduleTimeSlot } from '@/types/schedule';
@@ -138,10 +139,7 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
     return entries.find((e) => e.id === activeId) ?? null;
   }, [activeId, entries]);
 
-  const handleDragEnd = async (event: {
-    active: { id: string; data: { current?: unknown } };
-    over: { id: string } | null;
-  }) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
     if (!over || over.id === active.id) return;
@@ -149,7 +147,7 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
     // 生徒カードのドロップ → 講師ブロックに振替
     const overSlot = parseTeacherSlotId(String(over.id));
     if (overSlot && onStudentEntryDrop) {
-      const entry = entries.find((e) => e.id === active.id);
+      const entry = entries.find((e) => e.id === String(active.id));
       if (!entry || closedDates.includes(overSlot.date)) return;
       const isSourceBlock =
         entry.entry_date === overSlot.date &&
@@ -166,7 +164,7 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
       );
       if (targetEntries.some((e) => e.student_id === entry.student_id)) return;
       if (targetEntries.length >= maxStudentsPerTeacher) return;
-      onStudentEntryDrop(active.id, overSlot.date, overSlot.slotId, overSlot.teacherId);
+      onStudentEntryDrop(String(active.id), overSlot.date, overSlot.slotId, overSlot.teacherId);
       return;
     }
   };

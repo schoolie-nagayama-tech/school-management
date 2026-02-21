@@ -1337,7 +1337,7 @@ export type CurriculumItemWithProgress = CurriculumItem & {
 // グループ化された行の表示用型
 export interface ProgressRowDisplay {
   curriculumItem: CurriculumItem;
-  progress: StudentProgress | null;
+  progress: StudentProgressWithDetails | null;
   // グループ表示用
   isGroupStart: boolean;      // グループの先頭行か
   groupRowSpan: number;       // rowspanの値（先頭行のみ1以上）

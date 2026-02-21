@@ -364,10 +364,14 @@ export async function getStudentProgress(
   // 目次項目を取得
   const curriculumItems = await getCurriculumItems(stData.textbook_id);
 
-  // 進行記録を取得
+  // 進行記録を取得（exam_range_exam_type, lessons をJOIN）
   const { data: progressData, error: progressError } = await supabase
     .from('student_progress')
-    .select('*, lessons:student_progress_lessons(*)')
+    .select(`
+      *,
+      lessons:student_progress_lessons(*),
+      exam_range_exam_type:exam_types(*)
+    `)
     .eq('student_textbook_id', studentTextbookId);
 
   if (progressError) {
@@ -633,10 +637,10 @@ export async function updateGroupCounts(
  */
 export function convertToDisplayRows(
   items: CurriculumItem[],
-  progressList: StudentProgress[]
+  progressList: (StudentProgress | StudentProgressWithDetails)[]
 ): ProgressRowDisplay[] {
   // curriculum_item_idでProgressを引けるMapを作成
-  const progressMap = new Map<number, StudentProgress>();
+  const progressMap = new Map<number, StudentProgress | StudentProgressWithDetails>();
   for (const p of progressList) {
     progressMap.set(p.curriculum_item_id, p);
   }
@@ -657,7 +661,7 @@ export function convertToDisplayRows(
   const processedGroups = new Set<number>();
 
   for (const item of items) {
-    const progress = progressMap.get(item.id) || null;
+    const progress = (progressMap.get(item.id) || null) as StudentProgressWithDetails | null;
     const groupNumber = progress?.group_number;
 
     if (groupNumber != null) {

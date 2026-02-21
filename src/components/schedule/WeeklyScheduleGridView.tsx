@@ -7,6 +7,8 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  type DragStartEvent,
+  type DragEndEvent,
 } from '@dnd-kit/core';
 import { DayCell } from './DayCell';
 import { StudentCard } from './StudentCard';
@@ -50,8 +52,8 @@ export interface WeeklyScheduleGridViewProps {
   activeEntry: ScheduleEntry | null;
   groupEntriesByTeacher: (entries: ScheduleEntry[], date: string, slotId: string) => TeacherGroup[];
   getTeacherGroupsForCell: (dateStr: string, slotId: string, slotNumber: number) => TeacherGroup[];
-  onDragStart: (e: { active: { id: unknown } }) => void;
-  onDragEnd: (event: { active: { id: string }; over: { id: string } | null }) => Promise<void>;
+  onDragStart: (e: DragStartEvent) => void;
+  onDragEnd: (event: DragEndEvent) => void;
   onAddTeacher: (date: string, slotId: string) => void;
   onAddStudent: (date: string, slotId: string, teacherId: string) => void;
   onRemoveTeacher: (date: string, slotId: string, teacherId: string, entryCount: number) => void;

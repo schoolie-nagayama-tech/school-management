@@ -43,7 +43,6 @@ import type {
   StudentProgressLesson,
   CurriculumItem,
   ProgressRowDisplay,
-  StudentProgressWithDetails,
   SeasonalCourseWithDetails,
 } from '@/types/database';
 import { GRADE_LABELS, SEASON_LABELS } from '@/types/database';
@@ -206,39 +205,11 @@ export default function StudentProgressPage() {
       created_at: item.created_at,
     }));
     
-    const progressList: StudentProgress[] = progressData
-      .filter(item => item.progress)
-      .map(item => {
-        const { lessons: _lessons, ...progressWithoutLessons } = item.progress!;
-        return {
-          ...progressWithoutLessons,
-          curriculum_item_id: item.id,
-        } as StudentProgress;
-      });
-    
-    const displayRowsResult = convertToDisplayRows(curriculumItems, progressList);
-    
-    // lessonsを復元
-    const progressWithLessonsMap = new Map<number, StudentProgressWithDetails>();
-    progressData.forEach(item => {
-      if (item.progress) {
-        progressWithLessonsMap.set(item.id, item.progress);
-      }
-    });
-    
-    return displayRowsResult.map(row => {
-      const progressWithLessons = progressWithLessonsMap.get(row.curriculumItem.id);
-      if (progressWithLessons && row.progress) {
-        return {
-          ...row,
-          progress: {
-            ...row.progress,
-            lessons: progressWithLessons.lessons,
-          } as StudentProgress & { lessons?: StudentProgressLesson[] },
-        };
-      }
-      return row;
-    });
+    const progressList = progressData
+      .filter((item): item is typeof item & { progress: NonNullable<typeof item.progress> } => !!item.progress)
+      .map(item => ({ ...item.progress, curriculum_item_id: item.id }));
+
+    return convertToDisplayRows(curriculumItems, progressList);
   }, [progressData]);
 
   // 合計計算
@@ -343,57 +314,11 @@ export default function StudentProgressPage() {
               created_at: item.created_at,
             }));
             
-            // progressListを作成（lessons情報を保持）
-            const progressListWithLessons: Array<StudentProgress & { lessons?: StudentProgressLesson[] }> = progressData
-              .filter(item => item.progress)
-              .map(item => {
-                const progress = item.progress!;
-                return {
-                  id: progress.id,
-                  student_textbook_id: progress.student_textbook_id,
-                  curriculum_item_id: item.id,
-                  proposal_count: progress.proposal_count,
-                  application_count: progress.application_count,
-                  exam_range_exam_type_id: progress.exam_range_exam_type_id,
-                  school_progress_date: progress.school_progress_date,
-                  handover: progress.handover,
-                  teacher_name: progress.teacher_name ?? null,
-                  group_number: progress.group_number,
-                  created_at: progress.created_at,
-                  updated_at: progress.updated_at,
-                  lessons: progress.lessons,
-                };
-              });
-            
-            // convertToDisplayRows用にlessonsを除外
-            const progressListForDisplay: StudentProgress[] = progressListWithLessons.map(p => {
-              const { lessons: _lessons2, ...withoutLessons } = p;
-              return withoutLessons;
-            });
-            
-            const displayRowsForTextbook = convertToDisplayRows(curriculumItems, progressListForDisplay);
-            
-            // lessons情報を復元
-            const progressWithLessonsMap = new Map<number, StudentProgressWithDetails>();
-            progressData.forEach(item => {
-              if (item.progress) {
-                progressWithLessonsMap.set(item.id, item.progress);
-              }
-            });
-            
-            const displayRowsWithLessons = displayRowsForTextbook.map(row => {
-              const progressWithLessons = progressWithLessonsMap.get(row.curriculumItem.id);
-              if (progressWithLessons && row.progress) {
-                return {
-                  ...row,
-                  progress: {
-                    ...row.progress,
-                    lessons: progressWithLessons.lessons,
-                  } as StudentProgress & { lessons?: StudentProgressLesson[] },
-                };
-              }
-              return row;
-            });
+            const progressListForTextbook = progressData
+              .filter((item): item is typeof item & { progress: NonNullable<typeof item.progress> } => !!item.progress)
+              .map(item => ({ ...item.progress, curriculum_item_id: item.id }));
+
+            const displayRowsWithLessons = convertToDisplayRows(curriculumItems, progressListForTextbook);
             
             // HTMLを生成（1テキスト分）
             tempContainer.innerHTML = `
@@ -489,7 +414,7 @@ export default function StudentProgressPage() {
 
   // 進行表のHTMLを生成（ヘルパー関数）
   const renderProgressTableHTML = (
-    displayRows: Array<ProgressRowDisplay & { progress?: (StudentProgress & { lessons?: StudentProgressLesson[] }) | null }>,
+    displayRows: ProgressRowDisplay[],
     columnVisibility: {
       showProposalCount: boolean;
       showApplicationCount: boolean;
@@ -553,7 +478,7 @@ export default function StudentProgressPage() {
           ` : ''}
           ${columnVisibility.showExamRange ? `
             <td style="border: 1px solid #000; padding: 8px; text-align: center; ${borderBottom}">
-              ${(row.progress as any)?.exam_range_exam_type_id || '-'}
+              ${(row.progress as { exam_range_exam_type?: { name?: string } | null })?.exam_range_exam_type?.name ?? '-'}
             </td>
           ` : ''}
           ${columnVisibility.showSchoolProgress ? `
@@ -563,17 +488,17 @@ export default function StudentProgressPage() {
           ` : ''}
           ${columnVisibility.showLesson1 ? `
             <td style="border: 1px solid #000; padding: 8px; text-align: center; ${borderBottom}">
-              ${(row.progress as any)?.lessons && (row.progress as any).lessons[0]?.lesson_date || '-'}
+              ${row.progress?.lessons?.[0]?.lesson_date ?? '-'}
             </td>
           ` : ''}
           ${columnVisibility.showLesson2 ? `
             <td style="border: 1px solid #000; padding: 8px; text-align: center; ${borderBottom}">
-              ${(row.progress as any)?.lessons && (row.progress as any).lessons[1]?.lesson_date || '-'}
+              ${row.progress?.lessons?.[1]?.lesson_date ?? '-'}
             </td>
           ` : ''}
           ${columnVisibility.showLesson3 ? `
             <td style="border: 1px solid #000; padding: 8px; text-align: center; ${borderBottom}">
-              ${(row.progress as any)?.lessons && (row.progress as any).lessons[2]?.lesson_date || '-'}
+              ${row.progress?.lessons?.[2]?.lesson_date ?? '-'}
             </td>
           ` : ''}
           ${columnVisibility.showHandover ? `

@@ -2,6 +2,9 @@
 
 import type { ProgressRowDisplay } from '@/types/database';
 
+/** 表示用の拡張進捗（exam_range_exam_type, lessons を含む） */
+type ProgressForDisplay = { exam_range_exam_type?: { name?: string } | null; lessons?: Array<{ lesson_date?: string }> };
+
 interface Props {
   displayRows: ProgressRowDisplay[];
   studentName: string;
@@ -158,8 +161,8 @@ export default function ParentProgressTable({
                 {/* 試験範囲 */}
                 {showExamRange && (
                   <td className="border-x border-gray-400 p-4 text-center text-sm">
-                    {row.progress?.exam_range_exam_type ? (
-                      <span>{row.progress.exam_range_exam_type}</span>
+                    {(row.progress as unknown as ProgressForDisplay | null)?.exam_range_exam_type ? (
+                      <span>{(row.progress as unknown as ProgressForDisplay).exam_range_exam_type?.name ?? '-'}</span>
                     ) : (
                       <span className="text-gray-400">-</span>
                     )}
@@ -178,8 +181,8 @@ export default function ParentProgressTable({
                 {/* 指導日① */}
                 {showLesson1 && (
                   <td className="border-x border-gray-400 p-4 text-center text-sm">
-                    {row.progress?.lessons && row.progress.lessons[0]?.lesson_date ? (
-                      <span>{row.progress.lessons[0].lesson_date}</span>
+                    {(row.progress as unknown as ProgressForDisplay | null)?.lessons?.[0]?.lesson_date ? (
+                      <span>{(row.progress as unknown as ProgressForDisplay).lessons?.[0]?.lesson_date}</span>
                     ) : (
                       <span className="text-gray-400">-</span>
                     )}
@@ -188,8 +191,8 @@ export default function ParentProgressTable({
                 {/* 指導日② */}
                 {showLesson2 && (
                   <td className="border-x border-gray-400 p-4 text-center text-sm">
-                    {row.progress?.lessons && row.progress.lessons[1]?.lesson_date ? (
-                      <span>{row.progress.lessons[1].lesson_date}</span>
+                    {(row.progress as unknown as ProgressForDisplay | null)?.lessons?.[1]?.lesson_date ? (
+                      <span>{(row.progress as unknown as ProgressForDisplay).lessons?.[1]?.lesson_date}</span>
                     ) : (
                       <span className="text-gray-400">-</span>
                     )}
@@ -198,8 +201,8 @@ export default function ParentProgressTable({
                 {/* 指導日③ */}
                 {showLesson3 && (
                   <td className="border-x border-gray-400 p-4 text-center text-sm">
-                    {row.progress?.lessons && row.progress.lessons[2]?.lesson_date ? (
-                      <span>{row.progress.lessons[2].lesson_date}</span>
+                    {(row.progress as unknown as ProgressForDisplay | null)?.lessons?.[2]?.lesson_date ? (
+                      <span>{(row.progress as unknown as ProgressForDisplay).lessons?.[2]?.lesson_date}</span>
                     ) : (
                       <span className="text-gray-400">-</span>
                     )}

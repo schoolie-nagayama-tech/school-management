@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { DndContext, DragOverlay } from '@dnd-kit/core';
+import { DndContext, DragOverlay, type DragStartEvent, type DragEndEvent } from '@dnd-kit/core';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui';
 import {
   DroppableCell,
@@ -109,11 +109,11 @@ export function ScheduleGrid({
 
   const isClosed = closedDates.includes(date);
 
-  const handleDragStart = (event: { active: { id: string } }) => {
-    setActiveId(event.active.id as string);
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(String(event.active.id));
   };
 
-  const handleDragEnd = async (event: { active: { id: string }; over: { id: string } | null }) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
     if (!over || over.id === active.id) return;
@@ -137,11 +137,7 @@ export function ScheduleGrid({
         (e) => e.status !== 'cancelled' && e.status !== 'transferred_out'
       ).length < MAX_STUDENTS_PER_TEACHER;
     if (!canDrop) return;
-    try {
-      await onMove(entryId, targetDate, targetSlotId, targetTeacherId);
-    } catch {
-      // 親で toast 表示される
-    }
+    void onMove(entryId, targetDate, targetSlotId, targetTeacherId);
   };
 
   const activeEntry = useMemo(
