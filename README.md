@@ -161,6 +161,18 @@ npm run dev
 
 http://localhost:3000 でアクセス
 
+## テスト
+
+```bash
+# 開発サーバーを起動した状態で
+npm run dev
+
+# 別ターミナルで
+npm test
+```
+
+⚠️ テストは `npm run dev` でローカルサーバーが起動していないと失敗します。
+
 ## 開発用ダミーデータ
 
 - `supabase/seed.dev.sql` — 全テーブルを初期化してダミーデータを投入（本番実行禁止）

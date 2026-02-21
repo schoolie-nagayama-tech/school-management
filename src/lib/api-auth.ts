@@ -115,12 +115,24 @@ function mergeCookiesIntoResponse(source: NextResponse, target: NextResponse): v
 export async function requireAdmin(request: NextRequest): Promise<NextResponse | null> {
   const { auth, cookieResponse } = await getApiAuth(request);
   if (!auth) {
+    console.error(JSON.stringify({
+      type: 'AUTH_FAILURE',
+      path: request.nextUrl.pathname,
+      ip: request.headers.get('x-forwarded-for'),
+      timestamp: new Date().toISOString(),
+    }));
     const res = NextResponse.json({ error: '認証が必要です' }, { status: 401 });
     mergeCookiesIntoResponse(cookieResponse, res);
     return res;
   }
   const roleLower = auth.role.toLowerCase();
   if (roleLower !== 'admin' && roleLower !== 'owner') {
+    console.error(JSON.stringify({
+      type: 'AUTH_FAILURE',
+      path: request.nextUrl.pathname,
+      ip: request.headers.get('x-forwarded-for'),
+      timestamp: new Date().toISOString(),
+    }));
     const res = NextResponse.json({ error: '管理者権限が必要です' }, { status: 403 });
     mergeCookiesIntoResponse(cookieResponse, res);
     return res;
@@ -135,12 +147,24 @@ export async function requireAdmin(request: NextRequest): Promise<NextResponse |
 export async function requireManager(request: NextRequest): Promise<NextResponse | null> {
   const { auth, cookieResponse } = await getApiAuth(request);
   if (!auth) {
+    console.error(JSON.stringify({
+      type: 'AUTH_FAILURE',
+      path: request.nextUrl.pathname,
+      ip: request.headers.get('x-forwarded-for'),
+      timestamp: new Date().toISOString(),
+    }));
     const res = NextResponse.json({ error: '認証が必要です' }, { status: 401 });
     mergeCookiesIntoResponse(cookieResponse, res);
     return res;
   }
   const roleLower = auth.role.toLowerCase();
   if (roleLower !== 'admin' && roleLower !== 'owner' && roleLower !== 'manager') {
+    console.error(JSON.stringify({
+      type: 'AUTH_FAILURE',
+      path: request.nextUrl.pathname,
+      ip: request.headers.get('x-forwarded-for'),
+      timestamp: new Date().toISOString(),
+    }));
     const res = NextResponse.json({ error: '権限がありません' }, { status: 403 });
     mergeCookiesIntoResponse(cookieResponse, res);
     return res;

@@ -513,40 +513,40 @@ export default function UsersPage() {
                 <h2 className="font-bold text-[#1f2937]">登録済みユーザー ({users.length})</h2>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full min-w-[900px]">
                   <thead className="bg-[#f3f4f6] border-b border-[#e5e7eb]">
                     <tr>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937]">名前</th>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937]">メール</th>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937]">権限</th>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937]">担当教室</th>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937]">状態</th>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937]">最終ログイン</th>
-                      <th className="px-4 py-3 text-right text-sm font-bold text-[#1f2937]">操作</th>
+                      <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937] whitespace-nowrap min-w-[100px]">名前</th>
+                      <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937] whitespace-nowrap min-w-[180px]">メール</th>
+                      <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937] whitespace-nowrap min-w-[100px]">権限</th>
+                      <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937] whitespace-nowrap min-w-[260px]">担当教室</th>
+                      <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937] whitespace-nowrap min-w-[70px]">状態</th>
+                      <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937] whitespace-nowrap min-w-[95px]">最終ログイン</th>
+                      <th className="px-4 py-3 text-right text-sm font-bold text-[#1f2937] whitespace-nowrap min-w-[160px]">操作</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#e5e7eb]/10">
                     {users.map(user => (
                       <tr key={user.id} className="hover:bg-[#f3f4f6]/50">
-                        <td className="px-4 py-3 text-sm text-[#1f2937]">
+                        <td className="px-4 py-3 text-sm text-[#1f2937] whitespace-nowrap">
                           {user.display_name || '-'}
                         </td>
-                        <td className="px-4 py-3 text-sm text-[#4b5563]">{user.email}</td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 text-sm text-[#4b5563] whitespace-nowrap">{user.email}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">
                           <span className="inline-block px-2 py-1 text-xs font-bold bg-[#3b82f6]/20 text-[#1f2937] rounded">
                             {USER_ROLE_LABELS[user.role as UserRole] ?? '未設定'}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-sm text-[#4b5563]">
                           {user.user_schools && user.user_schools.length > 0 ? (
-                            <div className="flex flex-wrap gap-1">
+                            <div className="flex flex-nowrap gap-1 overflow-x-auto">
                               {user.user_schools.map((us, idx) => {
                                 const profileWithDefault = user as UserWithDetails & { default_school_id?: string | null };
                                 const isDefault = profileWithDefault.default_school_id === us.school_id;
                                 return (
                                   <span
                                     key={us.id || `${us.user_id}-${us.school_id}-${idx}`}
-                                    className={`inline-block px-2 py-0.5 text-xs rounded ${isDefault ? 'bg-[#e5e7eb] text-[#4b5563]' : 'bg-[#f3f4f6]'}`}
+                                    className={`inline-flex items-center shrink-0 px-2 py-0.5 text-xs rounded whitespace-nowrap ${isDefault ? 'bg-[#e5e7eb] text-[#4b5563]' : 'bg-[#f3f4f6]'}`}
                                   >
                                     {us.school?.name || '不明'}
                                     {isDefault && <span className="ml-1 text-[#6b7280]">(デフォルト)</span>}
@@ -558,7 +558,7 @@ export default function UsersPage() {
                             <span className="text-[#4b5563]/50">なし</span>
                           )}
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 whitespace-nowrap">
                           {user.is_active ? (
                             <span className="inline-block px-2 py-1 text-xs font-bold bg-green-100 text-green-700 rounded">
                               有効
@@ -569,10 +569,10 @@ export default function UsersPage() {
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-sm text-[#4b5563]">
+                        <td className="px-4 py-3 text-sm text-[#4b5563] whitespace-nowrap">
                           {user.last_login_at ? new Date(user.last_login_at).toLocaleDateString('ja-JP') : '-'}
                         </td>
-                        <td className="px-4 py-3 text-right">
+                        <td className="px-4 py-3 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-2">
                             {/* 教室長の場合は自分の情報のみ編集可能 */}
                             {(!isManager || user.id === profile?.id) && (

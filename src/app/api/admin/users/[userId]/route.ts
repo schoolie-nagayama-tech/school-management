@@ -74,6 +74,13 @@ export async function GET(
     if (!auth) return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
     const inScope = await isUserInScope(userId, auth.schoolIds, supabaseAdmin);
     if (!inScope) {
+      console.error(JSON.stringify({
+        type: 'SCOPE_VIOLATION',
+        actorId: auth.userId,
+        targetUserId: userId,
+        path: request.nextUrl.pathname,
+        timestamp: new Date().toISOString(),
+      }));
       return NextResponse.json({ error: 'ユーザーが見つかりません' }, { status: 404 });
     }
     const { data: profile, error: profileError } = await supabaseAdmin
@@ -128,6 +135,13 @@ export async function PATCH(
     if (!auth) return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
     const inScope = await isUserInScope(userId, auth.schoolIds, supabaseAdmin);
     if (!inScope) {
+      console.error(JSON.stringify({
+        type: 'SCOPE_VIOLATION',
+        actorId: auth.userId,
+        targetUserId: userId,
+        path: request.nextUrl.pathname,
+        timestamp: new Date().toISOString(),
+      }));
       return NextResponse.json({ error: 'ユーザーが見つかりません' }, { status: 404 });
     }
     const body = await request.json();
@@ -289,6 +303,13 @@ export async function DELETE(
     if (!auth) return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
     const inScope = await isUserInScope(userId, auth.schoolIds, supabaseAdmin);
     if (!inScope) {
+      console.error(JSON.stringify({
+        type: 'SCOPE_VIOLATION',
+        actorId: auth.userId,
+        targetUserId: userId,
+        path: request.nextUrl.pathname,
+        timestamp: new Date().toISOString(),
+      }));
       return NextResponse.json({ error: 'ユーザーが見つかりません' }, { status: 404 });
     }
 
