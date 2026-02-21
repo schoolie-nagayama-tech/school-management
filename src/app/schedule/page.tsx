@@ -234,7 +234,7 @@ export default function SchedulePage() {
         );
         const outOfSync =
           expected.size !== actual.size ||
-          [...expected].some((k) => !actual.has(k));
+          Array.from(expected).some((k) => !actual.has(k));
         if (outOfSync) {
           await generateWeeklySchedule(schoolId, weekStartStr, profile?.id ?? undefined);
           list = await getScheduleEntries(schoolId, weekStartStr, weekEndStr);

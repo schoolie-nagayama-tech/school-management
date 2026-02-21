@@ -271,7 +271,7 @@ export default function FormPeriodsPage() {
       {formType === 'moshi' && (editingPeriod === 'new' || editingPeriod) && (
         <MoshiPeriodEditor
           isOpen
-          period={editingPeriod === 'new' ? null : (editingPeriod as MoshiPeriod)}
+          period={editingPeriod === 'new' ? null : (editingPeriod as unknown as MoshiPeriod)}
           schoolId={schoolId}
           onClose={() => setEditingPeriod(null)}
           onSuccess={handleEditSuccess}
@@ -280,7 +280,7 @@ export default function FormPeriodsPage() {
       {formType === 'soudan' && (editingPeriod === 'new' || editingPeriod) && (
         <SoudanPeriodEditor
           isOpen
-          period={editingPeriod === 'new' ? null : (editingPeriod as SoudanPeriod)}
+          period={editingPeriod === 'new' ? null : (editingPeriod as unknown as SoudanPeriod)}
           schoolId={schoolId}
           onClose={() => setEditingPeriod(null)}
           onSuccess={handleEditSuccess}
@@ -289,7 +289,7 @@ export default function FormPeriodsPage() {
       {formType === 'shukaisu' && (editingPeriod === 'new' || editingPeriod) && (
         <ShukaisuPeriodEditor
           isOpen
-          period={editingPeriod === 'new' ? null : (editingPeriod as ShukaisuPeriod)}
+          period={editingPeriod === 'new' ? null : (editingPeriod as unknown as ShukaisuPeriod)}
           schoolId={schoolId}
           onClose={() => setEditingPeriod(null)}
           onSuccess={handleEditSuccess}
@@ -298,7 +298,7 @@ export default function FormPeriodsPage() {
       {formType === 'youbi' && (editingPeriod === 'new' || editingPeriod) && (
         <YoubiPeriodEditor
           isOpen
-          period={editingPeriod === 'new' ? null : (editingPeriod as YoubiPeriod)}
+          period={editingPeriod === 'new' ? null : (editingPeriod as unknown as YoubiPeriod)}
           schoolId={schoolId}
           onClose={() => setEditingPeriod(null)}
           onSuccess={handleEditSuccess}

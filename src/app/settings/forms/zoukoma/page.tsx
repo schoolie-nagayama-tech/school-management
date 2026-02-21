@@ -84,11 +84,11 @@ export default function ZoukomaSettingsPage() {
       await deleteZoukomaPeriod(period.id);
       await fetchPeriods();
       success('期間を削除しました');
-    } catch (error) {
-      console.error('Error deleting period:', error);
+    } catch (err) {
+      console.error('Error deleting period:', err);
       error(
-        error instanceof Error
-          ? error.message
+        err instanceof Error
+          ? err.message
           : '期間の削除に失敗しました'
       );
     } finally {
