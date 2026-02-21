@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { Button, Input, Modal } from '@/components/ui';
@@ -41,20 +41,6 @@ export function TemplateEditor({
   const [errorMessage, setErrorMessage] = useState('');
   const [isFieldEditorOpen, setIsFieldEditorOpen] = useState(false);
   const [editingField, setEditingField] = useState<FormTemplateField | null>(null);
-
-  useEffect(() => {
-    if (isOpen) {
-      if (templateId) {
-        loadTemplate();
-      } else {
-        // 新規作成
-        setName('');
-        setDescription('');
-        setFields([]);
-        setTemplate(null);
-      }
-    }
-  }, [isOpen, templateId, loadTemplate]);
 
   const loadTemplate = useCallback(async () => {
     if (!templateId) return;
@@ -109,11 +95,10 @@ export function TemplateEditor({
           name: name.trim(),
           description: description.trim() || null,
         });
-        setTemplate(newTemplate);
-        // 新規作成後は編集モードに
+        // 新規作成後はフィールド付きで取得してセット
         if (newTemplate.id) {
-          // リロードしてフィールドも取得
-          await loadTemplate();
+          const data = await getFormTemplate(newTemplate.id);
+          setTemplate(data);
         }
       }
       onSuccess();

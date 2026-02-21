@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -40,7 +40,7 @@ export function PublicFormRenderer({
       newErrors.studentName = '生徒名を入力してください';
     }
 
-    if (!grade || grade === '') {
+    if (grade === '' || typeof grade !== 'number') {
       newErrors.grade = '学年を選択してください';
     }
 
@@ -126,7 +126,7 @@ export function PublicFormRenderer({
             <Input
               value={typeof value === 'string' ? value : ''}
               onChange={(e) => handleFieldChange(field.id, e.target.value)}
-              placeholder={field.placeholder || ''}
+              placeholder={('placeholder' in field && field.placeholder) ? String(field.placeholder) : ''}
               disabled={isSubmitting}
             />
             {fieldError && (
@@ -145,7 +145,7 @@ export function PublicFormRenderer({
             <textarea
               value={typeof value === 'string' ? value : ''}
               onChange={(e) => handleFieldChange(field.id, e.target.value)}
-              placeholder={field.placeholder || ''}
+              placeholder={('placeholder' in field && field.placeholder) ? String(field.placeholder) : ''}
               rows={4}
               disabled={isSubmitting}
               className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:ring-2 focus:ring-[#3b82f6] focus:border-[#3b82f6] disabled:opacity-50"
@@ -168,14 +168,11 @@ export function PublicFormRenderer({
               value={typeof value === 'string' ? value : ''}
               onChange={(e) => handleFieldChange(field.id, e.target.value)}
               disabled={isSubmitting}
-            >
-              <option value="">選択してください</option>
-              {options.map((option, idx) => (
-                <option key={idx} value={option}>
-                  {option}
-                </option>
-              ))}
-            </Select>
+              options={[
+                { value: '', label: '選択してください' },
+                ...options.map((opt) => ({ value: opt, label: opt })),
+              ]}
+            />
             {fieldError && (
               <p className="text-sm text-[#ef4444] mt-1">{fieldError}</p>
             )}
@@ -283,7 +280,7 @@ export function PublicFormRenderer({
               type="number"
               value={typeof value === 'string' ? value : ''}
               onChange={(e) => handleFieldChange(field.id, e.target.value)}
-              placeholder={field.placeholder || ''}
+              placeholder={('placeholder' in field && field.placeholder) ? String(field.placeholder) : ''}
               disabled={isSubmitting}
             />
             {fieldError && (
@@ -344,14 +341,11 @@ export function PublicFormRenderer({
               }
             }}
             disabled={isSubmitting}
-          >
-            <option value="">選択してください</option>
-            {Object.entries(GRADE_LABELS).map(([key, label]) => (
-              <option key={key} value={key}>
-                {label}
-              </option>
-            ))}
-          </Select>
+            options={[
+              { value: '', label: '選択してください' },
+              ...Object.entries(GRADE_LABELS).map(([key, label]) => ({ value: key, label })),
+            ]}
+          />
           {errors.grade && (
             <p className="text-sm text-[#ef4444] mt-1">{errors.grade}</p>
           )}

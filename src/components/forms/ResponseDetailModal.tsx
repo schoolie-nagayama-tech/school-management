@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { Modal } from '@/components/ui';
@@ -42,7 +42,7 @@ export function ResponseDetailModal({
 
   if (!response) return null;
 
-  const answers = (response.answers as Record<string, unknown>) || {};
+  const answers = (response.response_data as Record<string, unknown>) || {};
   const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
     return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日 ${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { Button, Select } from '@/components/ui';
@@ -73,25 +73,23 @@ export function ResponseList({ responses, formId, onRefresh }: ResponseListProps
               value={gradeFilter === '' ? '' : String(gradeFilter)}
               onChange={(e) => setGradeFilter(e.target.value === '' ? '' : Number(e.target.value))}
               className="w-32"
-            >
-              <option value="">全て</option>
-              {Object.entries(GRADE_LABELS).map(([key, label]) => (
-                <option key={key} value={key}>
-                  {label}
-                </option>
-              ))}
-            </Select>
+              options={[
+                { value: '', label: '全て' },
+                ...Object.entries(GRADE_LABELS).map(([key, label]) => ({ value: key, label })),
+              ]}
+            />
           </div>
           <div className="flex items-center gap-2">
             <label className="text-sm text-[#4b5563]">紐付け状態:</label>
             <Select
               value={linkedFilter}
               onChange={(e) => setLinkedFilter(e.target.value as typeof linkedFilter)}
-            >
-              <option value="all">全て</option>
-              <option value="unlinked">未紐付け</option>
-              <option value="linked">紐付け済み</option>
-            </Select>
+              options={[
+                { value: 'all', label: '全て' },
+                { value: 'unlinked', label: '未紐付け' },
+                { value: 'linked', label: '紐付け済み' },
+              ]}
+            />
           </div>
         </div>
 
