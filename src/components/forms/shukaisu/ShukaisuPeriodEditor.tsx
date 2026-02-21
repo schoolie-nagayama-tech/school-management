@@ -185,9 +185,10 @@ export function ShukaisuPeriodEditor({
       const data = {
         period_key: periodKey.trim(),
         title: title.trim(),
-        settings,
+        settings: settings as unknown as Record<string, unknown>,
         publish_start: publishStart ? new Date(publishStart).toISOString() : null,
         publish_end: publishEnd ? new Date(publishEnd).toISOString() : null,
+        is_active: true,
         linked_application_item_id: linkedApplicationItemId || null,
       };
 

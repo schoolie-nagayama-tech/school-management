@@ -221,7 +221,7 @@ export function MogiPeriodEditor({
     }
 
     // 各日程に日付と最低1つの会場が必要
-    for (const [idx, entry] of dateEntries.entries()) {
+    for (const [idx, entry] of Array.from(dateEntries.entries())) {
       if (!entry.date) {
         setError(`日程${idx + 1}の日付を入力してください`);
         return;
@@ -256,10 +256,16 @@ export function MogiPeriodEditor({
       const now = new Date();
       const startDate = publishStart ? new Date(publishStart) : null;
       const endDate = publishEnd ? new Date(publishEnd) : null;
-      
+
       // 公開開始日が現在時刻以降または未設定の場合、公開期間内であればtrue
-      const shouldBeActive = 
-        startDate && endDate && startDate <= now && endDate >= now;
+      const shouldBeActive = !!(
+        startDate &&
+        endDate &&
+        startDate <= now &&
+        endDate >= now
+      );
+
+      const settingsForApi = settings as unknown as Record<string, unknown>;
 
       if (period) {
         // 更新
@@ -269,7 +275,7 @@ export function MogiPeriodEditor({
           publish_start: publishStart ? new Date(publishStart).toISOString() : null,
           publish_end: publishEnd ? new Date(publishEnd).toISOString() : null,
           is_active: shouldBeActive,
-          settings,
+          settings: settingsForApi,
           linked_application_item_id: linkedApplicationItemId || null,
         });
       } else {
@@ -278,7 +284,7 @@ export function MogiPeriodEditor({
           {
             period_key: periodKey.trim(),
             title: title.trim(),
-            settings,
+            settings: settingsForApi,
             publish_start: publishStart ? new Date(publishStart).toISOString() : null,
             publish_end: publishEnd ? new Date(publishEnd).toISOString() : null,
             is_active: shouldBeActive,

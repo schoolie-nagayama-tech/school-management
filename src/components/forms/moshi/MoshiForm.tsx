@@ -121,7 +121,7 @@ export function MoshiForm({ school, period }: MoshiFormProps) {
       const gradeNumber = MOSHI_GRADE_NAME_TO_NUMBER[selectedGrade] || 7;
 
       const responseData: MoshiResponseData = {
-        exam_type: examType,
+        exam_type: examType as 'regular' | 'furikae',
         ...(examType === 'regular'
           ? { regular_confirmed: true }
           : {
