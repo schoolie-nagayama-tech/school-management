@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { AdminLayout } from '@/components/layouts';
@@ -95,11 +95,11 @@ export default function AttendanceSummaryPage() {
     }
 
     // ヘッダー行
-    const typeNames = [...new Set(
+    const typeNames = Array.from(new Set(
       summaryData.flatMap((row) =>
         Object.values(row.type_totals).map((t) => t.name)
       )
-    )];
+    ));
     
     const headers = ['教室', '講師名', 'ステータス', ...typeNames, '合計', '金額合計'];
     

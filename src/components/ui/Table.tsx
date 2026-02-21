@@ -1,6 +1,7 @@
-﻿'use client';
+'use client';
 
 import { ReactNode } from 'react';
+import type { TdHTMLAttributes } from 'react';
 
 interface TableProps {
   children: ReactNode;
@@ -61,7 +62,7 @@ export function TableRow({ children, className = '', onClick }: TableRowProps) {
 }
 
 interface TableHeadProps {
-  children: ReactNode;
+  children?: ReactNode;
   className?: string;
 }
 
@@ -73,15 +74,15 @@ export function TableHead({ children, className = '' }: TableHeadProps) {
   );
 }
 
-interface TableCellProps {
-  children: ReactNode;
+interface TableCellProps extends TdHTMLAttributes<HTMLTableCellElement> {
+  children?: ReactNode;
   className?: string;
 }
 
-export function TableCell({ children, className = '' }: TableCellProps) {
+export function TableCell({ children, className = '', ...rest }: TableCellProps) {
   return (
-    <td className={`px-4 py-3 text-sm text-[#4b5563] ${className}`}>
-      {children}
+    <td className={`px-4 py-3 text-sm text-[#4b5563] ${className}`} {...rest}>
+      {children ?? null}
     </td>
   );
 }

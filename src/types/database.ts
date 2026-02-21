@@ -743,6 +743,57 @@ export type Database = {
           },
         ];
       };
+      user_profiles: {
+        Row: {
+          id: string;
+          email: string;
+          display_name: string | null;
+          role: string;
+          is_active: boolean;
+          invited_by: string | null;
+          invited_at: string | null;
+          last_login_at: string | null;
+          created_at: string;
+          updated_at: string;
+          teachable_subject_ids?: string[] | null;
+          available_days_of_week?: number[] | null;
+          available_slot_numbers_by_day?: Record<string, number[]> | null;
+          default_school_id?: string | null;
+        };
+        Insert: {
+          id?: string;
+          email: string;
+          display_name?: string | null;
+          role?: string;
+          is_active?: boolean;
+          invited_by?: string | null;
+          invited_at?: string | null;
+          last_login_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          teachable_subject_ids?: string[] | null;
+          available_days_of_week?: number[] | null;
+          available_slot_numbers_by_day?: Record<string, number[]> | null;
+          default_school_id?: string | null;
+        };
+        Update: {
+          id?: string;
+          email?: string;
+          display_name?: string | null;
+          role?: string;
+          is_active?: boolean;
+          invited_by?: string | null;
+          invited_at?: string | null;
+          last_login_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          teachable_subject_ids?: string[] | null;
+          available_days_of_week?: number[] | null;
+          available_slot_numbers_by_day?: Record<string, number[]> | null;
+          default_school_id?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

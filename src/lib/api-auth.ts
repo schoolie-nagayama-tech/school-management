@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -183,7 +184,7 @@ export async function requireManager(request: NextRequest): Promise<NextResponse
 export async function isUserInScope(
   targetUserId: string,
   callerSchoolIds: string[],
-  supabaseAdmin: ReturnType<typeof createClient>
+  supabaseAdmin: SupabaseClient
 ): Promise<boolean> {
   if (callerSchoolIds.length === 0) return false;
   const { data: targetSchools } = await supabaseAdmin
