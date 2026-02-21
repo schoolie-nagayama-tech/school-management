@@ -81,9 +81,10 @@ export async function listAssessmentsBySchool(
     throw new Error('成績スコアの取得に失敗しました');
   }
 
+  const scoresTyped = (scores || []) as AssessmentScore[];
   const assessmentsWithScores: AssessmentWithScores[] = (assessments as Assessment[]).map((assessment) => ({
     ...assessment,
-    scores: (scores || []).filter((score) => score.assessment_id === assessment.id),
+    scores: scoresTyped.filter((score) => score.assessment_id === assessment.id),
   }));
 
   const byStudent = new Map<string, AssessmentWithScores[]>();
@@ -142,9 +143,11 @@ export async function listAssessments(
   }
 
   // assessmentとscoresを結合
-  const assessmentsWithScores: AssessmentWithScores[] = assessments.map((assessment) => ({
+  const scoresTyped = (scores || []) as AssessmentScore[];
+  const assessmentsTyped = assessments as Assessment[];
+  const assessmentsWithScores: AssessmentWithScores[] = assessmentsTyped.map((assessment) => ({
     ...assessment,
-    scores: (scores || []).filter((score) => score.assessment_id === assessment.id),
+    scores: scoresTyped.filter((score) => score.assessment_id === assessment.id),
   }));
 
   return assessmentsWithScores;
@@ -190,6 +193,7 @@ export async function createAssessmentRow(
     throw new Error('成績行の作成に失敗しました');
   }
 
+  const assessmentRow = assessment as Assessment;
   // 必要な科目のスコア行を空で作成
   let subjectsToCreate: readonly string[];
   if (category === 'mock') {
@@ -200,7 +204,7 @@ export async function createAssessmentRow(
   }
 
   const scoreInserts: AssessmentScoreInsert[] = subjectsToCreate.map((subject) => ({
-    assessment_id: assessment.id,
+    assessment_id: assessmentRow.id,
     subject,
     value: null,
   }));
@@ -217,15 +221,15 @@ export async function createAssessmentRow(
   const { data: scores, error: fetchScoresError } = await supabase
     .from('assessment_scores')
     .select('*')
-    .eq('assessment_id', assessment.id);
+    .eq('assessment_id', assessmentRow.id);
 
   if (fetchScoresError) {
     console.error('Error fetching created scores:', fetchScoresError);
   }
 
   return {
-    ...assessment,
-    scores: scores || [],
+    ...assessmentRow,
+    scores: (scores || []) as AssessmentScore[],
   };
 }
 
@@ -251,12 +255,13 @@ export async function updateScore(
     throw new Error('スコアの取得に失敗しました');
   }
 
-  if (existingScore) {
+  const existing = existingScore as AssessmentScore | null;
+  if (existing) {
     // 更新
     const { data: updatedScore, error: updateError } = await supabase
       .from('assessment_scores')
       .update({ value })
-      .eq('id', existingScore.id)
+      .eq('id', existing.id)
       .select()
       .single();
 
@@ -265,7 +270,7 @@ export async function updateScore(
       throw new Error('スコアの更新に失敗しました');
     }
 
-    return updatedScore;
+    return updatedScore as AssessmentScore;
   } else {
     // 新規作成
     const { data: newScore, error: insertError } = await supabase
@@ -283,7 +288,7 @@ export async function updateScore(
       throw new Error('スコアの作成に失敗しました');
     }
 
-    return newScore;
+    return newScore as AssessmentScore;
   }
 }
 
@@ -328,7 +333,7 @@ export async function updateAssessmentMeta(
     throw new Error('成績行の更新に失敗しました');
   }
 
-  return updatedAssessment;
+  return updatedAssessment as Assessment;
 }
 
 /**

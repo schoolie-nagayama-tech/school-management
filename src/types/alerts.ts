@@ -41,6 +41,13 @@ export interface Alert {
     days_overdue?: number;
     item_name?: string;
     due_date?: string;
+    task_id?: string;
+    interview_date?: string;
+    content?: string;
+    exam_id?: string;
+    exam_date?: string;
+    exam_name?: string;
+    textbook_name?: string;
   };
 }
 

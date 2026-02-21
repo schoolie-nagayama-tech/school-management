@@ -794,6 +794,42 @@ export type Database = {
         };
         Relationships: [];
       };
+      alert_dismissals: {
+        Row: {
+          id: string;
+          school_id: string;
+          student_id: string;
+          alert_type: string;
+          alert_key: string;
+          dismissed_by: string | null;
+          dismissed_at: string;
+          note: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          student_id: string;
+          alert_type: string;
+          alert_key: string;
+          dismissed_by?: string | null;
+          dismissed_at?: string;
+          note?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          student_id?: string;
+          alert_type?: string;
+          alert_key?: string;
+          dismissed_by?: string | null;
+          dismissed_at?: string;
+          note?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
