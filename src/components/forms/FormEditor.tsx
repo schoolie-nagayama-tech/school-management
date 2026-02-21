@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { Button, Input, Modal, Select } from '@/components/ui';
@@ -58,41 +58,6 @@ export function FormEditor({
   const [isFieldEditorOpen, setIsFieldEditorOpen] = useState(false);
   const [editingField, setEditingField] = useState<FormField | null>(null);
   const [isArchiving, setIsArchiving] = useState(false);
-
-  useEffect(() => {
-    if (isOpen) {
-      loadApplicationItems();
-      if (formId) {
-        loadForm();
-      } else if (template) {
-        // テンプレートから作成
-        setTitle(`${template.name}（${new Date().toLocaleDateString('ja-JP')}）`);
-        setSlug(
-          template.name
-            .toLowerCase()
-            .replace(/\s+/g, '-')
-            .replace(/[^a-z0-9-]/g, '') +
-            '-' +
-            new Date().toISOString().split('T')[0].replace(/-/g, '')
-        );
-        setDescription(template.description || '');
-        setFields([]);
-        setForm(null);
-      } else {
-        // 新規作成
-        setTitle('');
-        setDescription('');
-        setSlug('');
-        setStatus('draft');
-        setPublishStart('');
-        setPublishEnd('');
-        setCompletionMessage('');
-        setLinkedApplicationItemId('');
-        setFields([]);
-        setForm(null);
-      }
-    }
-  }, [isOpen, formId, template, loadApplicationItems, loadForm]);
 
   const loadApplicationItems = useCallback(async () => {
     try {
@@ -205,6 +170,7 @@ export function FormEditor({
         setFields(formWithFields.fields);
       } else {
         savedForm = await createForm({
+          template_id: null,
           title: title.trim(),
           description: description.trim() || null,
           slug: slug.trim(),
@@ -418,13 +384,11 @@ export function FormEditor({
                   value={status}
                   onChange={(e) => setStatus(e.target.value as typeof status)}
                   disabled={isSubmitting}
-                >
-                  {Object.entries(FORM_STATUS_LABELS).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </Select>
+                  options={Object.entries(FORM_STATUS_LABELS).map(([value, label]) => ({
+                    value,
+                    label,
+                  }))}
+                />
                 <p className="mt-1 text-xs text-[#4b5563]/60">
                   「下書き」は非公開、「公開済み」は公開中、「終了」は公開終了です
                 </p>
@@ -477,14 +441,11 @@ export function FormEditor({
                   value={linkedApplicationItemId}
                   onChange={(e) => setLinkedApplicationItemId(e.target.value)}
                   disabled={isSubmitting}
-                >
-                  <option value="">なし</option>
-                  {applicationItems.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
-                </Select>
+                  options={[
+                    { value: '', label: 'なし' },
+                    ...applicationItems.map((item) => ({ value: item.id, label: item.name })),
+                  ]}
+                />
               </div>
 
               {(formId || form) && (

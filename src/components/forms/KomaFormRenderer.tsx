@@ -49,14 +49,14 @@ export function KomaFormRenderer({
 
   // 見積金額
   const estimatedPrice = useMemo(() => {
-    if (!grade || grade === '') return 0;
+    if (grade === '' || typeof grade !== 'number') return 0;
     const pricePerKoma = getPriceByGradeNumber(Number(grade));
     return totalKomas * pricePerKoma;
   }, [grade, totalKomas]);
 
   // 学年ラベル
   const gradeLabel = useMemo(() => {
-    if (!grade || grade === '') return '';
+    if (grade === '' || typeof grade !== 'number') return '';
     return KOMA_GRADE_OPTIONS.find((opt) => opt.value === grade)?.label || '';
   }, [grade]);
 
@@ -72,7 +72,7 @@ export function KomaFormRenderer({
       newErrors.studentName = '生徒名を入力してください';
     }
 
-    if (!grade || grade === '') {
+    if (grade === '' || typeof grade !== 'number') {
       newErrors.grade = '学年を選択してください';
     }
 
@@ -157,7 +157,7 @@ export function KomaFormRenderer({
     if (allSelected) {
       setSelectedSlots((prev) => prev.filter((id) => !periodSlotIds.includes(id)));
     } else {
-      setSelectedSlots((prev) => [...new Set([...prev, ...periodSlotIds])]);
+      setSelectedSlots((prev) => Array.from(new Set([...prev, ...periodSlotIds])));
     }
   };
 
@@ -170,7 +170,7 @@ export function KomaFormRenderer({
     if (allSelected) {
       setSelectedSlots((prev) => prev.filter((id) => !dateSlotIds.includes(id)));
     } else {
-      setSelectedSlots((prev) => [...new Set([...prev, ...dateSlotIds])]);
+      setSelectedSlots((prev) => Array.from(new Set([...prev, ...dateSlotIds])));
     }
   };
 
@@ -242,14 +242,11 @@ export function KomaFormRenderer({
                 }
               }}
               disabled={isSubmitting}
-            >
-              <option value="">選択してください</option>
-              {KOMA_GRADE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </Select>
+              options={[
+                { value: '', label: '選択してください' },
+                ...KOMA_GRADE_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label })),
+              ]}
+            />
             {errors.grade && (
               <p className="text-sm text-[#ef4444] mt-1">{errors.grade}</p>
             )}
@@ -320,7 +317,7 @@ export function KomaFormRenderer({
       </div>
 
       {/* 料金表と見積 */}
-      {grade && grade !== '' && (
+      {grade !== '' && typeof grade === 'number' && (
         <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
           <h3 className="text-lg font-semibold text-[#1f2937] mb-4">料金</h3>
           <div className="space-y-4">
@@ -454,7 +451,7 @@ export function KomaFormRenderer({
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder={notesField.placeholder || ''}
+            placeholder={('placeholder' in notesField && notesField.placeholder) ? String(notesField.placeholder) : ''}
             rows={4}
             disabled={isSubmitting}
             className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:ring-2 focus:ring-[#3b82f6] focus:border-[#3b82f6] disabled:opacity-50"
