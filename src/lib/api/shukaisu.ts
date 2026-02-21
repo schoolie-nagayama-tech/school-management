@@ -217,7 +217,7 @@ export async function getShukaisuResponses(
   let filtered = responses.map((r) => ({
     ...r,
     form_type: 'shukaisu' as const,
-    response_data: r.response_data as ShukaisuResponseData,
+    response_data: r.response_data as unknown as ShukaisuResponseData,
   }));
 
   // 対応状況フィルター（計上・座席の両方済みを「対応済み」とする）

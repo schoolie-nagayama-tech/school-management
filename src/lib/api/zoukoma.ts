@@ -43,7 +43,7 @@ export async function getZoukomaPeriods(
   return periods.map((period) => ({
     ...period,
     settings: (period.settings as unknown as ZoukomaSettings) || {},
-  }));
+  })) as ZoukomaPeriod[];
 }
 
 /**
@@ -87,7 +87,7 @@ export async function getActiveZoukomaPeriod(
   return {
     ...period,
     settings: (period.settings as unknown as ZoukomaSettings) || {},
-  };
+  } as ZoukomaPeriod;
 }
 
 /**
@@ -104,7 +104,7 @@ export async function getZoukomaPeriod(
   return {
     ...period,
     settings: (period.settings as unknown as ZoukomaSettings) || {},
-  };
+  } as ZoukomaPeriod;
 }
 
 /**
@@ -136,14 +136,14 @@ export async function createZoukomaPeriod(
     ...data,
     school_id: targetSchoolId,
     form_type: 'zoukoma',
-    settings: data.settings != null ? (data.settings as unknown as Record<string, unknown>) : undefined,
+    settings: (data.settings != null ? data.settings : {}) as unknown as Record<string, unknown>,
   };
 
   const period = await createFormPeriod(periodData);
   return {
     ...period,
     settings: (period.settings as unknown as ZoukomaSettings) || {},
-  };
+  } as ZoukomaPeriod;
 }
 
 /**
@@ -157,14 +157,14 @@ export async function updateZoukomaPeriod(
 ): Promise<ZoukomaPeriod> {
   const updateData: FormPeriodUpdate = {
     ...data,
-    settings: data.settings ? (data.settings as unknown as Record<string, unknown>) : undefined,
+    settings: data.settings != null ? (data.settings as unknown as Record<string, unknown>) : undefined,
   };
 
   const period = await updateFormPeriod(id, updateData);
   return {
     ...period,
     settings: (period.settings as unknown as ZoukomaSettings) || {},
-  };
+  } as ZoukomaPeriod;
 }
 
 /**
@@ -213,7 +213,7 @@ export async function submitZoukomaResponse(data: {
     student_name: data.student_name,
     grade: data.grade,
     email: data.email,
-    response_data: data.response_data as Record<string, unknown>,
+    response_data: data.response_data as unknown as Record<string, unknown>,
     status_checks: {
       charged: false,
       seated: false,
@@ -223,8 +223,8 @@ export async function submitZoukomaResponse(data: {
   const response = await createFormResponse(responseData);
   return {
     ...response,
-    response_data: response.response_data as ZoukomaResponseData,
-  };
+    response_data: response.response_data as unknown as ZoukomaResponseData,
+  } as ZoukomaResponse;
 }
 
 /**
@@ -247,7 +247,7 @@ export async function getZoukomaResponses(
   // status_checksでフィルタリング
   let filtered = responses.map((r) => ({
     ...r,
-    response_data: r.response_data as ZoukomaResponseData,
+    response_data: r.response_data as unknown as ZoukomaResponseData,
   }));
 
   if (filters?.chargedStatus === 'charged') {
@@ -270,7 +270,7 @@ export async function getZoukomaResponses(
     );
   }
 
-  return filtered;
+  return filtered as ZoukomaResponse[];
 }
 
 /**
@@ -333,8 +333,8 @@ export async function updateZoukomaResponseStatus(
   const updated = await updateFormResponseStatus(responseId, newStatus);
   return {
     ...updated,
-    response_data: updated.response_data as ZoukomaResponseData,
-  };
+    response_data: updated.response_data as unknown as ZoukomaResponseData,
+  } as ZoukomaResponse;
 }
 
 /**

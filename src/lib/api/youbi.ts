@@ -217,7 +217,7 @@ export async function getYoubiResponses(
   let filtered = responses.map((r) => ({
     ...r,
     form_type: 'youbi' as const,
-    response_data: r.response_data as YoubiResponseData,
+    response_data: r.response_data as unknown as YoubiResponseData,
   }));
 
   // 対応状況フィルター（計上・座席の両方済みを「対応済み」とする）

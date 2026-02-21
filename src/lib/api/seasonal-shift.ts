@@ -186,14 +186,15 @@ export async function getSeasonalShiftSubmissionByEditToken(
   if (subError) throw new Error(`提出の取得に失敗しました: ${subError.message}`);
   if (!submission) return null;
 
+  const sub = submission as SeasonalShiftSubmission;
   const { data: slots, error: slotsError } = await supabase
     .from('seasonal_shift_submission_slots')
     .select('*')
-    .eq('submission_id', submission.id);
+    .eq('submission_id', sub.id);
   if (slotsError) throw new Error(`シフト詳細の取得に失敗しました: ${slotsError.message}`);
 
   return {
-    ...(submission as SeasonalShiftSubmission),
+    ...sub,
     slots: (slots || []) as SeasonalShiftSubmissionSlot[],
   };
 }
@@ -283,9 +284,10 @@ export async function createSeasonalShiftSubmission(
     throw new Error(`提出の保存に失敗しました: ${subError.message}`);
   }
 
+  const sub = submission as SeasonalShiftSubmission;
   if (slots.length > 0) {
     const slotRows = slots.map((s) => ({
-      submission_id: submission.id,
+      submission_id: sub.id,
       shift_date: s.shift_date,
       time_slot: s.time_slot,
       available: s.available,
@@ -300,7 +302,7 @@ export async function createSeasonalShiftSubmission(
     const res = await fetch('/api/seasonal-shift/notify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'submitted', submissionId: submission.id }),
+      body: JSON.stringify({ type: 'submitted', submissionId: sub.id }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -310,7 +312,7 @@ export async function createSeasonalShiftSubmission(
     console.warn('提出通知メールの送信に失敗しました:', e);
   }
 
-  return submission as SeasonalShiftSubmission;
+  return sub;
 }
 
 /** 修正許可を付与（allow_edit=true にし、edit_token を返す） */
@@ -337,7 +339,7 @@ export async function allowSeasonalShiftEdit(submissionId: string): Promise<stri
     console.warn('修正許可メールの送信に失敗しました:', e);
   }
 
-  return data.edit_token;
+  return data.edit_token as string;
 }
 
 /** トークンで提出を更新（再提出後は allow_edit を false に） */

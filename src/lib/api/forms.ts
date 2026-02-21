@@ -698,18 +698,17 @@ export async function submitFormResponse(
   }
 
   const formRow = form as { school_id: string };
-  const { error } = await supabase
-    .from('form_responses')
-    .insert({
-      form_id: formId,
-      school_id: formRow.school_id,
-      form_type: 'kyozai', // フォーム機能用のプレースホルダ
-      form_period: 'n/a',
-      student_name: response.student_name,
-      grade: response.grade ?? 0,
-      email: response.email ?? '',
-      response_data: response.answers,
-    } as unknown as Record<string, unknown>);
+  const insertPayload = {
+    form_id: formId,
+    school_id: formRow.school_id,
+    form_type: 'kyozai',
+    form_period: 'n/a',
+    student_name: response.student_name,
+    grade: response.grade ?? 0,
+    email: response.email ?? '',
+    response_data: response.answers as Record<string, unknown>,
+  };
+  const { error } = await supabase.from('form_responses').insert(insertPayload);
 
   if (error) {
     throw new Error(`回答の送信に失敗しました: ${error.message}`);

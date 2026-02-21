@@ -1672,6 +1672,259 @@ export type Database = {
         };
         Relationships: [];
       };
+      seasonal_shift_settings: {
+        Row: {
+          id: string;
+          school_id: string;
+          name: string;
+          start_date: string;
+          end_date: string;
+          deadline: string;
+          description: string;
+          weekday_slots: string;
+          saturday_slots: string;
+          status: string;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          name: string;
+          start_date: string;
+          end_date: string;
+          deadline: string;
+          description?: string;
+          weekday_slots?: string;
+          saturday_slots?: string;
+          status?: string;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: Partial<{
+          id: string;
+          school_id: string;
+          name: string;
+          start_date: string;
+          end_date: string;
+          deadline: string;
+          description: string;
+          weekday_slots: string;
+          saturday_slots: string;
+          status: string;
+          created_at: string | null;
+          updated_at: string | null;
+        }>;
+        Relationships: [];
+      };
+      seasonal_shift_slot_settings: {
+        Row: {
+          id: string;
+          setting_id: string;
+          slot_date: string;
+          time_slot: string;
+          is_open: boolean;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          setting_id: string;
+          slot_date: string;
+          time_slot: string;
+          is_open: boolean;
+          created_at?: string | null;
+        };
+        Update: Record<string, unknown>;
+        Relationships: [];
+      };
+      seasonal_shift_submissions: {
+        Row: {
+          id: string;
+          setting_id: string;
+          school_id: string;
+          teacher_name: string;
+          teacher_email: string;
+          submitted_at: string | null;
+          notes: string;
+          allow_edit: boolean;
+          edit_token: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          setting_id: string;
+          school_id: string;
+          teacher_name: string;
+          teacher_email: string;
+          submitted_at?: string | null;
+          notes?: string;
+          allow_edit?: boolean;
+          edit_token?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: Record<string, unknown>;
+        Relationships: [];
+      };
+      seasonal_shift_submission_slots: {
+        Row: {
+          id: string;
+          submission_id: string;
+          shift_date: string;
+          time_slot: string;
+          available: boolean;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          submission_id: string;
+          shift_date: string;
+          time_slot: string;
+          available: boolean;
+          created_at?: string | null;
+        };
+        Update: Record<string, unknown>;
+        Relationships: [];
+      };
+      seasonal_courses: {
+        Row: {
+          id: string;
+          school_id: string | null;
+          name: string;
+          season: string;
+          target_grades: number[];
+          total_koma: number;
+          comment: string | null;
+          is_active: boolean;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          school_id?: string | null;
+          name: string;
+          season: string;
+          target_grades?: number[];
+          total_koma?: number;
+          comment?: string | null;
+          is_active?: boolean;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: Record<string, unknown>;
+        Relationships: [];
+      };
+      seasonal_course_textbooks: {
+        Row: {
+          id: string;
+          course_id: string;
+          textbook_id: number;
+          sort_order: number;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          course_id: string;
+          textbook_id: number;
+          sort_order?: number;
+          created_at?: string | null;
+        };
+        Update: Record<string, unknown>;
+        Relationships: [];
+      };
+      seasonal_course_curriculum: {
+        Row: {
+          id: string;
+          course_id: string;
+          textbook_id: number;
+          curriculum_item_id: number;
+          proposal_count: number;
+          group_number: number | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          course_id: string;
+          textbook_id: number;
+          curriculum_item_id: number;
+          proposal_count?: number;
+          group_number?: number | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: Record<string, unknown>;
+        Relationships: [];
+      };
+      seasonal_course_applications: {
+        Row: {
+          id: string;
+          course_id: string;
+          student_id: string;
+          applied_at: string | null;
+          applied_mode: string | null;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          course_id: string;
+          student_id: string;
+          applied_at?: string | null;
+          applied_mode?: string | null;
+          created_at?: string | null;
+        };
+        Update: Record<string, unknown>;
+        Relationships: [];
+      };
+      system_settings: {
+        Row: {
+          id: string;
+          key: string;
+          value: string;
+          description: string | null;
+          category: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          key: string;
+          value: string;
+          description?: string | null;
+          category?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: Record<string, unknown>;
+        Relationships: [];
+      };
+      teachers: {
+        Row: {
+          id: string;
+          name: string;
+          name_kana: string | null;
+          email: string | null;
+          phone: string | null;
+          is_active: boolean;
+          school_id: string;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          name_kana?: string | null;
+          email?: string | null;
+          phone?: string | null;
+          is_active: boolean;
+          school_id: string;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: Record<string, unknown>;
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -1799,7 +2052,6 @@ export const ASSESSMENT_NAME_LABELS: Record<string, string> = {
   // 内申
   [ASSESSMENT_NAME_CODES.REPORT_CARD.TERM1]: '1学期',
   [ASSESSMENT_NAME_CODES.REPORT_CARD.TERM2]: '2学期',
-  [ASSESSMENT_NAME_CODES.REPORT_CARD.YEAR_END]: '学年末',
   [ASSESSMENT_NAME_CODES.REPORT_CARD.FIRST]: '前期',
   [ASSESSMENT_NAME_CODES.REPORT_CARD.SECOND]: '後期',
   // 模試

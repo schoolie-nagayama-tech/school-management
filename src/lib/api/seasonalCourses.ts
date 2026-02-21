@@ -30,8 +30,9 @@ export async function getSeasonalCourses(schoolId: string): Promise<SeasonalCour
   if (error) throw error;
 
   // 適用数を取得
+  const coursesTyped = (data || []) as SeasonalCourseWithDetails[];
   const coursesWithCount = await Promise.all(
-    (data || []).map(async (course) => {
+    coursesTyped.map(async (course) => {
       const { count } = await supabase
         .from('seasonal_course_applications')
         .select('*', { count: 'exact', head: true })
@@ -64,7 +65,7 @@ export async function getSeasonalCourse(courseId: string): Promise<SeasonalCours
     throw error;
   }
 
-  return data;
+  return data as SeasonalCourseWithDetails | null;
 }
 
 // コースを作成
@@ -88,7 +89,7 @@ export async function createSeasonalCourse(
     .single();
 
   if (error) throw error;
-  return course;
+  return course as SeasonalCourse;
 }
 
 // コースを更新
@@ -114,7 +115,7 @@ export async function updateSeasonalCourse(
     .single();
 
   if (error) throw error;
-  return course;
+  return course as SeasonalCourse;
 }
 
 // コースを削除（論理削除）
@@ -201,8 +202,8 @@ export async function getCourseCurriculum(
   if (settingsError) throw settingsError;
 
   return {
-    items: items || [],
-    settings: settings || [],
+    items: (items || []) as CurriculumItem[],
+    settings: (settings || []) as SeasonalCourseCurriculum[],
   };
 }
 
@@ -231,7 +232,7 @@ export async function saveCourseCurriculum(
     .single();
 
   if (error) throw error;
-  return result;
+  return result as SeasonalCourseCurriculum;
 }
 
 // 一括でカリキュラム設定を保存

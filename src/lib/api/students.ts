@@ -332,20 +332,21 @@ export async function updateStudent(
     await setStudentSubjects(id, subjectIds);
   }
 
+  const oldTyped = oldData as Student | null;
   // statusが変更された場合はstatus_changed、それ以外はupdated
   const action: StudentLogInsert['action'] =
-    oldData && oldData.status !== studentData.status
+    oldTyped && oldTyped.status !== studentData.status
       ? 'status_changed'
       : 'updated';
 
   // ログを記録
   const diff: Record<string, unknown> = {};
-  if (oldData) {
+  if (oldTyped) {
     Object.keys(student).forEach((key) => {
       const typedKey = key as keyof StudentUpdate;
-      if (student[typedKey] !== undefined && oldData[typedKey] !== student[typedKey]) {
+      if (student[typedKey] !== undefined && oldTyped[typedKey] !== student[typedKey]) {
         diff[key] = {
-          old: oldData[typedKey],
+          old: oldTyped[typedKey],
           new: student[typedKey],
         };
       }
@@ -389,14 +390,15 @@ export async function deleteStudent(id: string): Promise<void> {
     throw new Error('生徒の削除に失敗しました');
   }
 
+  const oldTyped = oldData as Student;
   // ログを記録
   await logStudentAction(id, schoolId, 'soft_deleted', {
     deletedValues: {
-      student_code: oldData.student_code,
-      last_name: oldData.last_name,
-      first_name: oldData.first_name,
-      grade: oldData.grade,
-      status: oldData.status,
+      student_code: oldTyped.student_code,
+      last_name: oldTyped.last_name,
+      first_name: oldTyped.first_name,
+      grade: oldTyped.grade,
+      status: oldTyped.status,
     },
   });
 }

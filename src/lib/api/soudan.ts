@@ -216,7 +216,7 @@ export async function getSoudanResponses(
   let filtered = responses.map((r) => ({
     ...r,
     form_type: 'soudan' as const,
-    response_data: r.response_data as SoudanResponseData,
+    response_data: r.response_data as unknown as SoudanResponseData,
   }));
 
   // 相談区分フィルター
