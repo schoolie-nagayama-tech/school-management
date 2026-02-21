@@ -3,6 +3,8 @@ import { getForm } from '@/lib/api/forms';
 import { PublicFormRenderer, KomaFormRenderer } from '@/components/forms';
 import { getDefaultSchoolId, getSchool } from '@/lib/api/schools';
 
+export const dynamic = 'force-dynamic';
+
 interface FormPreviewPageProps {
   params: Promise<{ formId: string }>;
 }
