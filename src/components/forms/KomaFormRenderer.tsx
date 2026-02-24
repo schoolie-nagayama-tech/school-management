@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Input, Select } from '@/components/ui';
+import { Input, Select } from '@/components/ui';
 import type { FormWithFields } from '@/types/database';
 import { KOMA_GRADE_OPTIONS } from '@/lib/forms/grade-converter';
 import { generateSlots, groupSlotsByDate } from '@/lib/forms/slots';
@@ -32,6 +32,7 @@ export function KomaFormRenderer({
   const [notes, setNotes] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // スロット生成
   const slots = useMemo(() => generateSlots(), []);
@@ -111,6 +112,7 @@ export function KomaFormRenderer({
     }
 
     setIsSubmitting(true);
+    setErrorMessage('');
     try {
       // answersオブジェクトを構築
       const answers: Record<string, unknown> = {};
@@ -142,7 +144,9 @@ export function KomaFormRenderer({
       router.push(`/portal/${schoolCode}/${form.slug}?submitted=true`);
     } catch (error) {
       console.error('Error submitting form:', error);
-      alert('送信に失敗しました。もう一度お試しください。');
+      setErrorMessage(
+        error instanceof Error ? error.message : '送信に失敗しました。もう一度お試しください。'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -187,19 +191,19 @@ export function KomaFormRenderer({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Heroセクション */}
-      <div className="bg-gradient-to-r from-[#3b82f6] to-[#60a5fa] rounded-xl p-8 text-center text-white">
-        <h2 className="text-3xl font-bold mb-2">{form.title}</h2>
-        <p className="text-lg opacity-90 mb-4">{form.description}</p>
-        <span className="inline-block bg-white/20 px-4 py-1 rounded-full text-sm">
-          定期テスト対策
-        </span>
+    <div className="space-y-6">
+      {/* ヒーローセクション */}
+      <div className="bg-gradient-to-r from-[#3b82f6] to-[#60a5fa] rounded-xl border border-[#e5e7eb] p-8 text-center">
+        <h1 className="text-3xl font-bold text-[#1f2937] mb-4">{form.title}</h1>
+        {form.description && (
+          <p className="text-[#4b5563] text-lg">{form.description}</p>
+        )}
       </div>
 
+    <form onSubmit={handleSubmit} className="space-y-6">
       {/* 基本情報 */}
       <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
-        <h3 className="text-lg font-semibold text-[#1f2937] mb-4">基本情報</h3>
+        <h2 className="text-xl font-bold text-[#1f2937] mb-4">基本情報</h2>
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-[#4b5563] mb-2">
@@ -281,7 +285,7 @@ export function KomaFormRenderer({
 
       {/* 科目入力 */}
       <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
-        <h3 className="text-lg font-semibold text-[#1f2937] mb-4">科目別コマ数</h3>
+        <h2 className="text-xl font-bold text-[#1f2937] mb-2">科目別コマ数</h2>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           {subjectFields.map((field) => {
             const subjectName = field.label.replace('（コマ）', '');
@@ -319,7 +323,7 @@ export function KomaFormRenderer({
       {/* 料金表と見積 */}
       {grade !== '' && typeof grade === 'number' && (
         <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
-          <h3 className="text-lg font-semibold text-[#1f2937] mb-4">料金</h3>
+          <h2 className="text-xl font-bold text-[#1f2937] mb-4">料金</h2>
           <div className="space-y-4">
             <div>
               <p className="text-sm text-[#4b5563] mb-2">単価（{gradeLabel}）</p>
@@ -344,7 +348,7 @@ export function KomaFormRenderer({
 
       {/* スロット選択 */}
       <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
-        <h3 className="text-lg font-semibold text-[#1f2937] mb-4">出席可能日程</h3>
+        <h2 className="text-xl font-bold text-[#1f2937] mb-2">出席可能日程</h2>
         
         {/* 時限全選択ボタン */}
         <div className="mb-4 flex gap-2 flex-wrap">
@@ -447,7 +451,7 @@ export function KomaFormRenderer({
       {/* 備考 */}
       {notesField && (
         <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
-          <h3 className="text-lg font-semibold text-[#1f2937] mb-4">{notesField.label}</h3>
+          <h2 className="text-xl font-bold text-[#1f2937] mb-2">{notesField.label}</h2>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
@@ -459,33 +463,31 @@ export function KomaFormRenderer({
         </div>
       )}
 
-      {/* 注意ボックス */}
-      <div className="bg-[#3b82f6]/20 border border-[#3b82f6] rounded-xl p-4">
-        <p className="text-sm text-[#1f2937]">
-          <strong>ご注意:</strong> 送信後、担当者よりご連絡いたします。
-        </p>
-      </div>
+      {errorMessage && (
+        <div className="bg-[#ef4444]/10 border border-[#ef4444] rounded-lg p-4">
+          <p className="text-sm text-[#ef4444]">{errorMessage}</p>
+        </div>
+      )}
 
       {/* ボタン */}
-      <div className="flex justify-center gap-4 pt-6">
-        <Button
+      <div className="flex gap-4 justify-end">
+        <button
           type="button"
           onClick={handleReset}
-          variant="secondary"
           disabled={isSubmitting}
-          className="min-h-[48px] px-8"
+          className="px-6 py-3 bg-white text-[#4b5563] font-medium rounded-lg border border-[#e5e7eb] hover:bg-[#f3f4f6] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           リセット
-        </Button>
-        <Button
+        </button>
+        <button
           type="submit"
-          size="lg"
           disabled={isSubmitting}
-          className="min-h-[48px] px-8 text-lg"
+          className="px-6 py-3 bg-[#3b82f6] text-white font-medium rounded-lg hover:bg-[#60a5fa] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isSubmitting ? '送信中...' : '送信する'}
-        </Button>
+          {isSubmitting ? '送信中...' : '申し込む'}
+        </button>
       </div>
     </form>
+    </div>
   );
 }
