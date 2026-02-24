@@ -250,19 +250,7 @@ export function ZoukomaForm({ school, period }: ZoukomaFormProps) {
   }
 
   return (
-    <div className="space-y-6">
-      {/* ヒーローセクション */}
-      <div className="bg-gradient-to-r from-[#3b82f6] to-[#60a5fa] rounded-xl border border-[#e5e7eb] p-8 text-center">
-        <h1 className="text-3xl font-bold text-[#1f2937] mb-4">
-          {period.title}
-        </h1>
-        {settings.description && (
-          <p className="text-[#4b5563] text-lg">{settings.description}</p>
-        )}
-      </div>
-
-      {/* フォーム */}
-      <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6">
         {/* セクション1: 基本情報 */}
         <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 space-y-4">
           <h2 className="text-xl font-bold text-[#1f2937] mb-4">基本情報</h2>
@@ -409,7 +397,6 @@ export function ZoukomaForm({ school, period }: ZoukomaFormProps) {
             {isSubmitting ? '送信中...' : '申し込む'}
           </button>
         </div>
-      </form>
-    </div>
+    </form>
   );
 }

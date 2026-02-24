@@ -22,7 +22,7 @@ export default async function ZoukomaPortalPage({
   const period = await getActiveZoukomaPeriod(schoolCode);
 
   return (
-    <div className="min-h-screen bg-[#f8fafc]">
+    <div className="min-h-screen bg-[#f3f4f6]">
       <div className="max-w-lg mx-auto px-4 py-8 w-full">
         {!period ? (
           // 公開期間外
@@ -41,8 +41,22 @@ export default async function ZoukomaPortalPage({
             </a>
           </div>
         ) : (
-          // フォーム表示
-          <ZoukomaForm school={school} period={period} />
+          // フォーム表示（他フォームと同じレイアウト：ヘッダー＋白カード）
+          <>
+            <header className="mb-6">
+              <h1 className="text-2xl font-bold text-[#1f2937] mb-2">
+                {period.title}
+              </h1>
+              {period.settings?.description && (
+                <p className="text-[#4b5563] whitespace-pre-line">
+                  {period.settings.description}
+                </p>
+              )}
+            </header>
+            <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
+              <ZoukomaForm school={school} period={period} />
+            </div>
+          </>
         )}
       </div>
     </div>
