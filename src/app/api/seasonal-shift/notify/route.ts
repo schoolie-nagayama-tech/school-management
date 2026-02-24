@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { requireAdmin } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,11 +18,10 @@ function getSupabaseAdmin() {
  * 講習シフト通知メールを送信する Edge Function をサーバーから呼び出す。
  * ブラウザの anon クライアントで invoke すると JWT 検証で 401 になるため、
  * サーバー（サービスロール）経由で呼ぶ。
+ * 講師提出フォームは公開ページのため認証不要。
  */
 export async function POST(request: NextRequest) {
   try {
-    const authError = await requireAdmin(request);
-    if (authError) return authError;
     const body = await request.json();
     const { type, submissionId } = body as {
       type?: 'submitted' | 'allow_edit';

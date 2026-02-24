@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find \"C:\\\\Users\\\\ytaka\\\\Desktop\\\\student-management\" -type f -name \"*.tsx\" -o -name \"*.ts\" | xargs grep -l \"edit.*seasonal.*shift\\\\|getSeasonalShiftSubmissionByEditToken\" 2>/dev/null)"
+    ]
+  }
+}
