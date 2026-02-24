@@ -2,22 +2,22 @@
 
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Button, Badge } from '@/components/ui';
 import { GripVertical, Pencil, Trash2 } from 'lucide-react';
+import { TableCell } from '@/components/ui';
 import type { AttendanceType } from '@/types/attendance';
 
 interface SortableAttendanceTypeRowProps {
   item: AttendanceType;
   onEdit: (item: AttendanceType) => void;
   onDeleteClick: (item: AttendanceType) => void;
-  isSubmitting?: boolean;
+  isSubmitting: boolean;
 }
 
 export function SortableAttendanceTypeRow({
   item,
   onEdit,
   onDeleteClick,
-  isSubmitting = false,
+  isSubmitting,
 }: SortableAttendanceTypeRowProps) {
   const {
     attributes,
@@ -31,62 +31,70 @@ export function SortableAttendanceTypeRow({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
   };
 
   return (
     <tr
       ref={setNodeRef}
       style={style}
-      className={`border-b border-[#e5e7eb]/20 ${isDragging ? 'z-50 bg-white' : ''}`}
+      className={`border-b border-[#e5e7eb]/20 ${isDragging ? 'opacity-50 bg-white' : ''}`}
     >
-      <td className="px-4 py-3 text-sm text-[#4b5563]">
+      <TableCell className="w-12 border border-[#e5e7eb] px-4 py-3">
         <button
+          type="button"
           {...attributes}
           {...listeners}
-          className="p-1 rounded hover:bg-[#f3f4f6] cursor-grab active:cursor-grabbing disabled:opacity-50 disabled:cursor-not-allowed"
+          className="p-1 text-[#9ca3af] hover:text-[#6b7280] cursor-grab active:cursor-grabbing disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={isSubmitting}
           title="ドラッグして並び替え"
         >
-          <GripVertical className="h-4 w-4 text-[#4b5563]" />
+          <GripVertical className="h-5 w-5" />
         </button>
-      </td>
-      <td className="px-4 py-3 text-sm font-medium text-[#4b5563]">{item.name}</td>
-      <td className="px-4 py-3 text-sm text-[#4b5563]">
-        <Badge variant="outline">
+      </TableCell>
+      <TableCell className="border border-[#e5e7eb] px-4 py-3">
+        <span className="font-medium text-[#1f2937]">{item.name}</span>
+      </TableCell>
+      <TableCell className="border border-[#e5e7eb] px-4 py-3">
+        <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium border border-[#3b82f6] text-[#3b82f6] bg-white">
           {item.unit === 'count' ? 'コマ' : '時間'}
-        </Badge>
-      </td>
-      <td className="px-4 py-3 text-sm text-right text-[#4b5563]">
+        </span>
+      </TableCell>
+      <TableCell className="text-right border border-[#e5e7eb] px-4 py-3">
         ¥{item.unit_price.toLocaleString()}
-      </td>
-      <td className="px-4 py-3 text-sm text-center text-[#4b5563]">
-        {item.is_active ? (
-          <Badge variant="default">有効</Badge>
-        ) : (
-          <Badge variant="secondary">無効</Badge>
-        )}
-      </td>
-      <td className="px-4 py-3 text-sm text-[#4b5563]">
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
+      </TableCell>
+      <TableCell className="text-center border border-[#e5e7eb] px-4 py-3">
+        <span
+          className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
+            item.is_active
+              ? 'bg-[#3b82f6] text-white'
+              : 'bg-[#f3f4f6] text-[#6b7280]'
+          }`}
+        >
+          {item.is_active ? '有効' : '無効'}
+        </span>
+      </TableCell>
+      <TableCell className="w-24 border border-[#e5e7eb] px-4 py-3">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
             onClick={() => onEdit(item)}
-            className="p-2"
             disabled={isSubmitting}
+            className="p-2 text-[#4b5563] hover:bg-[#f3f4f6] rounded-lg transition-colors disabled:opacity-50"
+            title="編集"
           >
             <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
+          </button>
+          <button
+            type="button"
             onClick={() => onDeleteClick(item)}
-            className="p-2"
             disabled={isSubmitting}
+            className="p-2 text-[#4b5563] hover:text-[#ef4444] hover:bg-[#fef2f2] rounded-lg transition-colors disabled:opacity-50"
+            title="削除"
           >
-            <Trash2 className="h-4 w-4 text-[#ef4444]" />
-          </Button>
+            <Trash2 className="h-4 w-4" />
+          </button>
         </div>
-      </td>
+      </TableCell>
     </tr>
   );
 }
