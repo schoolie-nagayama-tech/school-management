@@ -191,15 +191,6 @@ export function KomaFormRenderer({
   };
 
   return (
-    <div className="space-y-6">
-      {/* ヒーローセクション */}
-      <div className="bg-gradient-to-r from-[#3b82f6] to-[#60a5fa] rounded-xl border border-[#e5e7eb] p-8 text-center">
-        <h1 className="text-3xl font-bold text-[#1f2937] mb-4">{form.title}</h1>
-        {form.description && (
-          <p className="text-[#4b5563] text-lg">{form.description}</p>
-        )}
-      </div>
-
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* 基本情報 */}
       <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
@@ -488,6 +479,5 @@ export function KomaFormRenderer({
         </button>
       </div>
     </form>
-    </div>
   );
 }

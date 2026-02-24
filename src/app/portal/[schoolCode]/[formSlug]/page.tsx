@@ -70,12 +70,20 @@ export default async function FormPage({ params, searchParams }: FormPageProps) 
     );
   }
 
-  // test-koma は ZoukomaForm と同じ構造（カードなし・ヘッダーなし）で表示
+  // test-koma は他フォームと同じレイアウトで表示（ヘッダー＋白カード）
   if (form.slug === 'test-koma') {
     return (
-      <div className="min-h-screen bg-[#f8fafc]">
+      <div className="min-h-screen bg-[#f3f4f6]">
         <div className="max-w-lg mx-auto px-4 py-8 w-full">
-          <KomaFormRenderer form={form} schoolCode={schoolCode} />
+          <header className="mb-6">
+            <h1 className="text-2xl font-bold text-[#1f2937] mb-2">{form.title}</h1>
+            {form.description && (
+              <p className="text-[#4b5563] whitespace-pre-line">{form.description}</p>
+            )}
+          </header>
+          <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
+            <KomaFormRenderer form={form} schoolCode={schoolCode} />
+          </div>
         </div>
       </div>
     );
