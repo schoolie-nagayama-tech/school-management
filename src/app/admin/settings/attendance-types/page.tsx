@@ -1,6 +1,21 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { AdminLayout } from '@/components/layouts';
 import {
   Button,
@@ -10,7 +25,6 @@ import {
   CardTitle,
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
@@ -27,7 +41,6 @@ import {
   Input,
   Label,
   Switch,
-  Badge,
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -37,14 +50,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui';
-import { Plus, Pencil, Trash2, GripVertical } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui';
+import { SortableAttendanceTypeRow } from '@/components/attendance/SortableAttendanceTypeRow';
 import {
   getAttendanceTypes,
   createAttendanceType,
   updateAttendanceType,
   deleteAttendanceType,
+  updateAttendanceTypeOrder,
 } from '@/lib/api/attendance';
 import { getSchools } from '@/lib/api/schools';
 import type { AttendanceType, AttendanceTypeFormData } from '@/types/attendance';
@@ -60,6 +75,7 @@ export default function AttendanceTypesPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<AttendanceType | null>(null);
   const [deletingItem, setDeletingItem] = useState<AttendanceType | null>(null);
+  const [isReordering, setIsReordering] = useState(false);
   const [formData, setFormData] = useState<AttendanceTypeFormData>({
     name: '',
     unit: 'count',
@@ -183,6 +199,50 @@ export default function AttendanceTypesPage() {
 
   const selectedSchool = schools.find(s => s.id === selectedSchoolId);
 
+  // ドラッグ&ドロップ用のセンサー
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // 並び替え完了時の処理
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const oldIndex = attendanceTypes.findIndex((item) => item.id === active.id);
+    const newIndex = attendanceTypes.findIndex((item) => item.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) {
+      return;
+    }
+
+    const newItems = arrayMove(attendanceTypes, oldIndex, newIndex);
+    const previousItems = [...attendanceTypes];
+    setAttendanceTypes(newItems);
+
+    setIsReordering(true);
+    try {
+      await updateAttendanceTypeOrder(
+        newItems.map((item, index) => ({ id: item.id, display_order: index }))
+      );
+      success('並び順を更新しました');
+    } catch (error) {
+      console.error('Failed to reorder attendance types:', error);
+      setAttendanceTypes(previousItems);
+      toastError('並び替えに失敗しました');
+    } finally {
+      setIsReordering(false);
+    }
+  };
+
+  const isSubmitting = isReordering;
+
   return (
     <AdminLayout headerTitle="講師勤怠">
       <div className="space-y-6">
@@ -234,61 +294,40 @@ export default function AttendanceTypesPage() {
                 </Button>
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12"></TableHead>
-                    <TableHead>種別名</TableHead>
-                    <TableHead>単位</TableHead>
-                    <TableHead className="text-right">単価</TableHead>
-                    <TableHead className="text-center">有効</TableHead>
-                    <TableHead className="w-24">操作</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {attendanceTypes.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>
-                        <GripVertical className="h-4 w-4 text-[#4b5563] cursor-grab" />
-                      </TableCell>
-                      <TableCell className="font-medium">{item.name}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {item.unit === 'count' ? 'コマ' : '時間'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        ¥{item.unit_price.toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {item.is_active ? (
-                          <Badge variant="default">有効</Badge>
-                        ) : (
-                          <Badge variant="secondary">無効</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            onClick={() => handleEdit(item)}
-                            className="p-2"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            onClick={() => handleDeleteClick(item)}
-                            className="p-2"
-                          >
-                            <Trash2 className="h-4 w-4 text-[#ef4444]" />
-                          </Button>
-                        </div>
-                      </TableCell>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12"></TableHead>
+                      <TableHead>種別名</TableHead>
+                      <TableHead>単位</TableHead>
+                      <TableHead className="text-right">単価</TableHead>
+                      <TableHead className="text-center">有効</TableHead>
+                      <TableHead className="w-24">操作</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    <SortableContext
+                      items={attendanceTypes.map((item) => item.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {attendanceTypes.map((item) => (
+                        <SortableAttendanceTypeRow
+                          key={item.id}
+                          item={item}
+                          onEdit={handleEdit}
+                          onDeleteClick={handleDeleteClick}
+                          isSubmitting={isSubmitting}
+                        />
+                      ))}
+                    </SortableContext>
+                  </TableBody>
+                </Table>
+              </DndContext>
             )}
           </CardContent>
         </Card>

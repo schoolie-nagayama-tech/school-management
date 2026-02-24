@@ -649,7 +649,10 @@ export async function generateWeeklySchedule(
   }
 
   if (entries.length > 0) {
-    const { error: insError } = await db.from('schedule_entries').insert(entries);
+    const { error: insError } = await db.from('schedule_entries').upsert(entries, {
+      onConflict: 'school_id,entry_date,time_slot_id,teacher_id,student_id',
+      ignoreDuplicates: true,
+    });
     if (insError) {
       console.error('Error inserting schedule entries:', insError);
       const msg =
