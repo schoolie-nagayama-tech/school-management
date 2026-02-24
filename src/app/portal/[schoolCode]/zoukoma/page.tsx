@@ -43,7 +43,7 @@ export default async function ZoukomaPortalPage({
         ) : (
           // フォーム表示（他フォームと同じレイアウト：ヘッダー＋白カード）
           <>
-            <header className="mb-6">
+            <header className="mb-6 text-center">
               <h1 className="text-2xl font-bold text-[#1f2937] mb-2">
                 {period.title}
               </h1>
