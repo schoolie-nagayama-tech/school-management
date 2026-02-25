@@ -79,8 +79,8 @@ export default function StudentScoresPage() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
-  const [showGraph, setShowGraph] = useState(true);
-  const [showMockGraph, setShowMockGraph] = useState(true);
+  const [showGraph, setShowGraph] = useState(false);
+  const [showMockGraph, setShowMockGraph] = useState(false);
   const [editingCell, setEditingCell] = useState<{ assessmentId: string; subject: string } | null>(null);
   const [cellValue, setCellValue] = useState('');
   const [addingRowCategory, setAddingRowCategory] = useState<Category | null>(null);
