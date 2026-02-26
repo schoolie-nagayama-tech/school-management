@@ -53,10 +53,10 @@ export default async function PortalPage({ params }: PortalPageProps) {
           try {
             const activePeriod = await getActiveFormPeriod(school.id, formType);
             const isFormActive = !!activePeriod;
-            return { menu, isFormActive, isVisible: menu.is_visible };
+            return { menu, isFormActive, isVisible: menu.is_visible === true };
           } catch (error) {
             console.error(`Error checking form period for ${menu.menu_key}:`, error);
-            return { menu, isFormActive: false, isVisible: menu.is_visible };
+            return { menu, isFormActive: false, isVisible: menu.is_visible === true };
           }
         }
       }
@@ -64,7 +64,7 @@ export default async function PortalPage({ params }: PortalPageProps) {
       const hasLinks: boolean = menu.menu_key === 'mendan'
         ? !!(menu.link_urls && menu.link_urls.length > 0)
         : !!menu.link_url;
-      return { menu, isFormActive: hasLinks, isVisible: menu.is_visible };
+      return { menu, isFormActive: hasLinks, isVisible: menu.is_visible === true };
     })
   );
 

@@ -19,8 +19,8 @@ interface PortalMenuCardProps {
 export function PortalMenuCard({ menu, schoolCode, isFormActive = false, isVisible = true }: PortalMenuCardProps) {
   const isMendan = menu.menu_key === 'mendan';
 
-  // 非公開（設定で非表示にした場合）はグレーアウト表示
-  const showAsDisabled = !isVisible;
+  // 非公開（設定で非表示にした場合）はグレーアウト表示（非表示ではなくグレーで表示）
+  const showAsDisabled = isVisible !== true;
 
   // 外部リンクの場合
   if (menu.link_type === 'external') {
