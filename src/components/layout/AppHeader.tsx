@@ -12,9 +12,10 @@ import type { School } from '@/types/database';
 interface AppHeaderProps {
   title: string;
   onSettingsClick?: () => void;
+  onBulkGradeUpdateClick?: () => void;
 }
 
-export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
+export function AppHeader({ title, onSettingsClick, onBulkGradeUpdateClick }: AppHeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { profile, permissions, signOut, isLoading: authLoading, schoolIds, selectedSchoolId, setSelectedSchoolId, getSelectedSchoolIds } = useAuth();
@@ -512,7 +513,7 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
                 <span className="hidden sm:inline">ログアウト</span>
               </button>
             )}
-            {(onSettingsClick || profile?.role === 'admin') && (showAllLinks || permissions?.canAccessSettings || profile?.role === 'admin') && (
+            {(onSettingsClick || onBulkGradeUpdateClick || profile?.role === 'admin') && (showAllLinks || permissions?.canAccessSettings || permissions?.canAccessStudents || profile?.role === 'admin') && (
               <div className="relative settings-dropdown-container">
                 <button
                   onClick={(e) => {
@@ -548,6 +549,17 @@ export function AppHeader({ title, onSettingsClick }: AppHeaderProps) {
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="py-1">
+                      {onBulkGradeUpdateClick && (
+                        <button
+                          onClick={() => {
+                            onBulkGradeUpdateClick();
+                            setShowSettingsDropdown(false);
+                          }}
+                          className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors"
+                        >
+                          一括学年更新
+                        </button>
+                      )}
                       {onSettingsClick && (
                         <button
                           onClick={() => {

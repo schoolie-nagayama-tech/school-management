@@ -9,6 +9,7 @@ interface AdminLayoutProps {
   children: ReactNode;
   headerTitle?: string;
   headerOnSettingsClick?: () => void;
+  headerOnBulkGradeUpdateClick?: () => void;
   title?: string;
   actions?: ReactNode; // 右上のボタン類
 }
@@ -17,6 +18,7 @@ export function AdminLayout({
   children, 
   headerTitle,
   headerOnSettingsClick,
+  headerOnBulkGradeUpdateClick,
   title, 
   actions
 }: AdminLayoutProps) {
@@ -25,7 +27,11 @@ export function AdminLayout({
   return (
     <div className="min-h-screen bg-white">
       {headerTitle && (
-        <AppHeader title={headerTitle} onSettingsClick={headerOnSettingsClick} />
+        <AppHeader
+          title={headerTitle}
+          onSettingsClick={headerOnSettingsClick}
+          onBulkGradeUpdateClick={headerOnBulkGradeUpdateClick}
+        />
       )}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* ページヘッダー */}

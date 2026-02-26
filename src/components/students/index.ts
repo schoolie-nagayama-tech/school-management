@@ -1,6 +1,7 @@
 export { StudentForm } from './StudentForm';
 export { StudentTable } from './StudentTable';
 export { DeleteConfirmDialog } from './DeleteConfirmDialog';
+export { BulkGradeUpdateModal } from './BulkGradeUpdateModal';
 export { StudentDetailModal } from './StudentDetailModal';
 export { StudentScores } from './StudentScores';
 export { InterviewList } from './InterviewList';
