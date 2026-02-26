@@ -6,6 +6,7 @@ import type { PortalMenu } from '@/types/database';
 interface MenuWithActiveStatus {
   menu: PortalMenu;
   isFormActive: boolean;
+  isVisible: boolean;
 }
 
 interface PortalMenuListProps {
@@ -24,12 +25,13 @@ export function PortalMenuList({ menus, schoolCode }: PortalMenuListProps) {
 
   return (
     <div className="space-y-3 sm:space-y-4">
-      {menus.map(({ menu, isFormActive }) => (
+      {menus.map(({ menu, isFormActive, isVisible }) => (
         <PortalMenuCard
           key={menu.id}
           menu={menu}
           schoolCode={schoolCode}
           isFormActive={isFormActive}
+          isVisible={isVisible}
         />
       ))}
     </div>

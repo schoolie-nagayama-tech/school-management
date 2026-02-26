@@ -52,23 +52,25 @@ export async function getFormPeriods(
 
 /**
  * 公開中のフォーム公開期間を取得
- * 日付ベースで公開期間内の期間を取得（is_activeフラグは無視）
+ * 期間管理の「公開」状態（is_active=true）と日付ベースで公開期間内の期間を取得
+ * 設定画面の公開状況と同期
  */
 export async function getActiveFormPeriod(
   schoolId: string,
   formType: FormType
 ): Promise<FormPeriod | null> {
-  const now = new Date().toISOString();
-  const nowDate = new Date(now);
+  const nowDate = new Date();
 
-  // 全ての期間を取得してから、日付ベースでフィルタリング（is_archived が false または null のものを対象）
+  // 期間管理で「公開」にした期間（is_active=true）を取得
   const { data, error } = await supabase
     .from('form_periods')
     .select('*')
     .eq('school_id', schoolId)
     .eq('form_type', formType)
+    .eq('is_active', true)
     .or('is_archived.eq.false,is_archived.is.null')
-    .order('period_key', { ascending: false });
+    .order('period_key', { ascending: false })
+    .limit(1);
 
   if (error) {
     console.error(`[getActiveFormPeriod] Error fetching periods:`, error);
@@ -76,44 +78,23 @@ export async function getActiveFormPeriod(
   }
 
   if (!data || data.length === 0) {
-    console.log(`[getActiveFormPeriod] No periods found for schoolId: ${schoolId}, formType: ${formType}`);
     return null;
   }
 
-  console.log(`[getActiveFormPeriod] Found ${data.length} periods for schoolId: ${schoolId}, formType: ${formType}`);
-  console.log(`[getActiveFormPeriod] Current time: ${nowDate.toISOString()}`);
+  const period = data[0] as FormPeriod;
 
-  // JavaScript側で公開期間をフィルタリング（日付ベース）
-  const typedData = data as FormPeriod[];
-  const activePeriods = typedData.filter((period) => {
-    const start = period.publish_start ? new Date(period.publish_start) : null;
-    const end = period.publish_end ? new Date(period.publish_end) : null;
+  // 日付ベースで公開期間内かチェック
+  const start = period.publish_start ? new Date(period.publish_start) : null;
+  const end = period.publish_end ? new Date(period.publish_end) : null;
 
-    console.log(`[getActiveFormPeriod] Period ${period.period_key}: start=${start?.toISOString() ?? 'null'}, end=${end?.toISOString() ?? 'null'}`);
-
-    // 公開開始日が設定されていて、現在時刻より後の場合は除外
-    if (start && start > nowDate) {
-      console.log(`[getActiveFormPeriod] Period ${period.period_key}: Not started yet`);
-      return false;
-    }
-    // 公開開始日が未設定の場合は「制限なし」として扱い、終了日のみチェック
-    // 公開終了日が設定されていて、現在時刻より前の場合は除外
-    if (end && end < nowDate) {
-      console.log(`[getActiveFormPeriod] Period ${period.period_key}: Already ended`);
-      return false;
-    }
-    // 公開中（開始日未設定＝常時公開、または開始日以降 & 終了日未設定または終了日以内）
-    console.log(`[getActiveFormPeriod] Period ${period.period_key}: ACTIVE${!start ? ' (開始日未設定)' : ''}${!end ? ' (永続公開)' : ''}`);
-    return true;
-  });
-
-  if (activePeriods.length === 0) {
-    console.log(`[getActiveFormPeriod] No active periods found`);
-    return null;
+  if (start && start > nowDate) {
+    return null; // 公開開始前
+  }
+  if (end && end < nowDate) {
+    return null; // 公開終了後
   }
 
-  console.log(`[getActiveFormPeriod] Returning active period: ${activePeriods[0].period_key}`);
-  return activePeriods[0] as FormPeriod;
+  return period;
 }
 
 /**

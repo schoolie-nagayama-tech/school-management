@@ -13,15 +13,28 @@ interface PortalMenuCardProps {
   menu: PortalMenu;
   schoolCode: string;
   isFormActive?: boolean; // フォームが公開期間内かどうか
+  isVisible?: boolean; // 設定での公開（非公開時はグレーアウト）
 }
 
-export function PortalMenuCard({ menu, schoolCode, isFormActive = false }: PortalMenuCardProps) {
+export function PortalMenuCard({ menu, schoolCode, isFormActive = false, isVisible = true }: PortalMenuCardProps) {
   const isMendan = menu.menu_key === 'mendan';
+
+  // 非公開（設定で非表示にした場合）はグレーアウト表示
+  const showAsDisabled = !isVisible;
 
   // 外部リンクの場合
   if (menu.link_type === 'external') {
     // 面談申し込みで複数リンクがある場合
     if (isMendan && menu.link_urls && menu.link_urls.length > 0) {
+      if (showAsDisabled) {
+        return (
+          <div className={cardDisabled}>
+            <h2 className="text-base sm:text-lg font-bold text-slate-500 mb-0.5">{menu.title}</h2>
+            {menu.description && <p className="text-sm text-slate-400">{menu.description}</p>}
+            <p className="text-xs font-medium mt-2 text-slate-400">準備中</p>
+          </div>
+        );
+      }
       return (
         <div className="w-full space-y-3">
           <div>
@@ -52,6 +65,15 @@ export function PortalMenuCard({ menu, schoolCode, isFormActive = false }: Porta
 
     // 単一外部リンクの場合
     if (menu.link_url) {
+      if (showAsDisabled) {
+        return (
+          <div className={cardDisabled}>
+            <h2 className="text-base sm:text-lg font-bold text-slate-500 mb-0.5">{menu.title}</h2>
+            {menu.description && <p className="text-sm text-slate-400">{menu.description}</p>}
+            <p className="text-xs font-medium mt-2 text-slate-400">準備中</p>
+          </div>
+        );
+      }
       return (
         <a
           href={menu.link_url}
@@ -88,6 +110,15 @@ export function PortalMenuCard({ menu, schoolCode, isFormActive = false }: Porta
       formUrl = `/portal/${schoolCode}/${menu.menu_key}`;
     }
 
+    if (showAsDisabled) {
+      return (
+        <div className={cardDisabled}>
+          <h2 className="text-base sm:text-lg font-bold text-slate-500 mb-0.5">{menu.title}</h2>
+          {menu.description && <p className="text-sm text-slate-400">{menu.description}</p>}
+          <p className="text-xs font-medium mt-2 text-slate-400">準備中</p>
+        </div>
+      );
+    }
     if (isFormActive) {
       return (
         <Link href={formUrl} className={cardActive}>

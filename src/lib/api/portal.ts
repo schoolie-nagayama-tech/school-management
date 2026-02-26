@@ -26,10 +26,9 @@ export async function getPortalMenus(schoolId?: string): Promise<PortalMenu[]> {
 }
 
 /**
- * 公開メニューを取得（ポータル用、is_visible=trueのみ）
+ * ポータル用メニューを全件取得（非公開も含む・非公開はグレーアウト表示）
  */
-export async function getVisiblePortalMenus(schoolCode: string): Promise<PortalMenu[]> {
-  // まず学校IDを取得
+export async function getAllPortalMenusForPortal(schoolCode: string): Promise<PortalMenu[]> {
   const school = await getSchoolByCode(schoolCode);
   if (!school) {
     throw new Error(`教室が見つかりません: ${schoolCode}`);
@@ -39,11 +38,10 @@ export async function getVisiblePortalMenus(schoolCode: string): Promise<PortalM
     .from('portal_menu')
     .select('*')
     .eq('school_id', school.id)
-    .eq('is_visible', true)
     .order('sort_order', { ascending: true });
 
   if (error) {
-    throw new Error(`公開メニュー一覧の取得に失敗しました: ${error.message}`);
+    throw new Error(`ポータルメニュー一覧の取得に失敗しました: ${error.message}`);
   }
 
   return (data || []) as PortalMenu[];

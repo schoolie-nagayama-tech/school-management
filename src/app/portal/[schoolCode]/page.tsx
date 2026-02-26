@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getSchoolByCode } from '@/lib/api/schools';
-import { getVisiblePortalMenus } from '@/lib/api/portal';
+import { getAllPortalMenusForPortal } from '@/lib/api/portal';
 import { getActiveFormPeriod } from '@/lib/api/form-periods';
 import { PortalMenuList } from '@/components/portal';
 import type { FormType, PortalMenu } from '@/types/database';
@@ -34,16 +34,16 @@ export default async function PortalPage({ params }: PortalPageProps) {
     notFound();
   }
 
-  // 公開メニューを取得
+  // メニューを全件取得（非公開はグレーアウト表示）
   let menus: PortalMenu[];
   try {
-    menus = await getVisiblePortalMenus(schoolCode);
+    menus = await getAllPortalMenusForPortal(schoolCode);
   } catch (error) {
     console.error('Error fetching portal menus:', error);
     menus = [];
   }
 
-  // 各メニューの公開期間をチェック
+  // 各メニューの公開期間をチェック（is_visible と isFormActive を渡す）
   const menusWithActiveStatus = await Promise.all(
     menus.map(async (menu) => {
       // 内部フォームの場合のみ公開期間をチェック
@@ -53,10 +53,10 @@ export default async function PortalPage({ params }: PortalPageProps) {
           try {
             const activePeriod = await getActiveFormPeriod(school.id, formType);
             const isFormActive = !!activePeriod;
-            return { menu, isFormActive };
+            return { menu, isFormActive, isVisible: menu.is_visible };
           } catch (error) {
             console.error(`Error checking form period for ${menu.menu_key}:`, error);
-            return { menu, isFormActive: false };
+            return { menu, isFormActive: false, isVisible: menu.is_visible };
           }
         }
       }
@@ -64,7 +64,7 @@ export default async function PortalPage({ params }: PortalPageProps) {
       const hasLinks: boolean = menu.menu_key === 'mendan'
         ? !!(menu.link_urls && menu.link_urls.length > 0)
         : !!menu.link_url;
-      return { menu, isFormActive: hasLinks };
+      return { menu, isFormActive: hasLinks, isVisible: menu.is_visible };
     })
   );
 
