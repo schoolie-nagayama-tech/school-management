@@ -250,11 +250,13 @@ export async function createStudent(
 ): Promise<Student> {
   const schoolId = getDefaultSchoolId();
 
-  // 生徒コードが空の場合はnullに（UNIQUE制約で複数NULLが許可される）
+  // 生徒コードが空の場合は一意のコードを自動生成（DBがNOT NULLかつUNIQUEのため）
+  const rawCode =
+    student.student_code != null ? String(student.student_code).trim() : '';
   const studentCode =
-    student.student_code != null && String(student.student_code).trim() !== ''
-      ? String(student.student_code).trim()
-      : null;
+    rawCode !== ''
+      ? rawCode
+      : `A${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 
   const studentWithSchool: StudentInsert = {
     ...student,
@@ -305,12 +307,16 @@ export async function updateStudent(
 ): Promise<Student> {
   const schoolId = getDefaultSchoolId();
 
-  // 生徒コードが空の場合はnullに（UNIQUE制約で複数NULLが許可される）
+  // 生徒コードが空の場合は既存値を維持（空文字は更新しない）
   const updateData = { ...student };
   if ('student_code' in student) {
     const sc = student.student_code;
-    updateData.student_code =
-      sc != null && String(sc).trim() !== '' ? String(sc).trim() : null;
+    // 空の場合は更新対象から除外（既存のコードを維持）
+    if (sc == null || String(sc).trim() === '') {
+      delete updateData.student_code;
+    } else {
+      updateData.student_code = String(sc).trim();
+    }
   }
 
   // 既存データを取得（diff用）
