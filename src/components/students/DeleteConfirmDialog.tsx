@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { Button, Modal } from '@/components/ui';
 import type { Student } from '@/types/database';
@@ -46,9 +46,6 @@ export function DeleteConfirmDialog({
             <p className="mt-2 text-sm text-[#4b5563]">
               <span className="font-medium">
                 {student.last_name} {student.first_name}
-              </span>
-              <span className="text-[#4b5563]/60 ml-2">
-                ({student.student_code})
               </span>
             </p>
             <p className="mt-3 text-sm text-[#4b5563]">

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { Modal, Button } from '@/components/ui';
@@ -110,9 +110,6 @@ export function LinkStudentModal({
                   <div className="flex-1">
                     <div className="text-[#1f2937] font-medium">
                       {student.last_name} {student.first_name}
-                    </div>
-                    <div className="text-sm text-[#4b5563]/60">
-                      {student.student_code || 'コード未設定'}
                     </div>
                   </div>
                 </label>

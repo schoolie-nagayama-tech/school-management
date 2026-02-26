@@ -123,12 +123,6 @@ export function StudentDetailModal({
           <h3 className="text-sm font-semibold text-[#1f2937] mb-3">基本情報</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs text-[#4b5563]">生徒コード</label>
-              <p className="mt-1 text-sm font-mono text-[#1f2937]">
-                {student.student_code || <span className="text-[#4b5563]/40">未設定</span>}
-              </p>
-            </div>
-            <div>
               <label className="text-xs text-[#4b5563]">在籍状況</label>
               <div className="mt-1">
                 {!isTeacher && onStatusChange ? (

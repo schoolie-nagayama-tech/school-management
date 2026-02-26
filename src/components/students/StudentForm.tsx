@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -184,18 +184,6 @@ export function StudentForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* 生徒コード */}
-      <Input
-        label="生徒コード"
-        name="student_code"
-        value={formData.student_code}
-        onChange={handleChange}
-        error={errors.student_code}
-        placeholder="例: S0001（空欄可）"
-        disabled={isEdit}
-        helpText={isEdit ? '生徒コードは変更できません' : '空欄の場合は自動で割り当てられません'}
-      />
-
       {/* 氏名 */}
       <div className="grid grid-cols-2 gap-4">
         <Input

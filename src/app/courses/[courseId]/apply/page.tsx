@@ -328,9 +328,6 @@ export default function CourseApplyPage() {
                   />
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] border-r border-[#e5e7eb]">
-                  生徒コード
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] border-r border-[#e5e7eb]">
                   氏名
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-[#1f2937] border-r border-[#e5e7eb]">
@@ -344,7 +341,7 @@ export default function CourseApplyPage() {
             <tbody>
               {filteredStudents.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-sm text-[#4b5563]">
+                  <td colSpan={4} className="px-4 py-8 text-center text-sm text-[#4b5563]">
                     対象の生徒がいません
                   </td>
                 </tr>
@@ -367,9 +364,6 @@ export default function CourseApplyPage() {
                           onChange={e => handleSelectStudent(student.id, e.target.checked)}
                           className="w-4 h-4"
                         />
-                      </td>
-                      <td className="px-4 py-3 text-sm text-[#4b5563] border-r border-[#e5e7eb]">
-                        {student.student_code || '-'}
                       </td>
                       <td className="px-4 py-3 text-sm font-medium text-[#1f2937] border-r border-[#e5e7eb]">
                         <Link

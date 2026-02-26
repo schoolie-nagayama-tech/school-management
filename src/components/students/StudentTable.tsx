@@ -69,9 +69,6 @@ export function StudentTable({
         <table className="w-full">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="px-4 py-3 text-left text-xs font-semibold text-[#1a1a1a] uppercase tracking-wider">
-                コード
-              </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 氏名
               </th>
@@ -106,9 +103,6 @@ export function StudentTable({
                   }`}
                   onClick={() => onRowClick?.(student)}
                 >
-                <td className="px-4 py-3 text-sm font-mono text-[#4b5563]">
-                  {student.student_code || <span className="text-[#4b5563]/30">-</span>}
-                </td>
                 <td className="px-4 py-3">
                     <span className="text-sm font-medium text-[#1a1a1a]">
                     {student.last_name} {student.first_name}
