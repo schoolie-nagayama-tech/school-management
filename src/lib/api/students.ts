@@ -250,10 +250,16 @@ export async function createStudent(
 ): Promise<Student> {
   const schoolId = getDefaultSchoolId();
 
-  // school_idを設定
+  // 生徒コードが空の場合はnullに（UNIQUE制約で複数NULLが許可される）
+  const studentCode =
+    student.student_code != null && String(student.student_code).trim() !== ''
+      ? String(student.student_code).trim()
+      : null;
+
   const studentWithSchool: StudentInsert = {
     ...student,
     school_id: schoolId,
+    student_code: studentCode,
   };
 
   const { data, error } = await supabase
@@ -299,6 +305,14 @@ export async function updateStudent(
 ): Promise<Student> {
   const schoolId = getDefaultSchoolId();
 
+  // 生徒コードが空の場合はnullに（UNIQUE制約で複数NULLが許可される）
+  const updateData = { ...student };
+  if ('student_code' in student) {
+    const sc = student.student_code;
+    updateData.student_code =
+      sc != null && String(sc).trim() !== '' ? String(sc).trim() : null;
+  }
+
   // 既存データを取得（diff用）
   const { data: oldData } = await supabase
     .from('students')
@@ -310,7 +324,7 @@ export async function updateStudent(
 
   const { data, error } = await supabase
     .from('students')
-    .update({ ...student, updated_at: new Date().toISOString() } as never)
+    .update({ ...updateData, updated_at: new Date().toISOString() } as never)
     .eq('id', id)
     .eq('school_id', schoolId)
     .is('deleted_at', null)
