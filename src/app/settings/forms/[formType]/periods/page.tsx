@@ -12,6 +12,7 @@ import {
   unpublishPeriod,
   deletePeriodWithCheck,
   archivePeriod,
+  unarchivePeriod,
   getResponseCountByPeriod,
 } from '@/lib/api/form-periods';
 import { ZoukomaPeriodEditor } from '@/components/forms/zoukoma/ZoukomaPeriodEditor';
@@ -142,6 +143,24 @@ export default function FormPeriodsPage() {
     }
   };
 
+  const handleUnarchive = async (period: FormPeriod) => {
+    try {
+      setIsSubmitting(true);
+      const result = await unarchivePeriod(
+        period.id,
+        schoolId,
+        formType as FormType,
+        period.period_key
+      );
+      await fetchPeriods();
+      success(`元に戻しました（回答${result.responsesUnarchived}件を含む）`);
+    } catch (err) {
+      error(err instanceof Error ? err.message : 'アーカイブ解除に失敗しました');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleEditSuccess = () => {
     setEditingPeriod(null);
     fetchPeriods();
@@ -242,6 +261,7 @@ export default function FormPeriodsPage() {
               onUnpublish={handleUnpublish}
               onDelete={handleDelete}
               onArchive={handleArchive}
+              onUnarchive={handleUnarchive}
               getResponseCount={getResponseCount}
               isSubmitting={isSubmitting}
             />

@@ -37,19 +37,21 @@ export interface PeriodListTableProps {
   onUnpublish: (period: FormPeriod) => void;
   onDelete: (period: FormPeriod) => void;
   onArchive: (period: FormPeriod) => void;
+  onUnarchive: (period: FormPeriod) => void;
   getResponseCount: (periodKey: string) => Promise<number>;
   isSubmitting?: boolean;
 }
 
 export function PeriodListTable({
   periods,
-  formType: _formType,
-  schoolId: _schoolId,
+  formType,
+  schoolId,
   onEdit,
   onPublish,
   onUnpublish,
   onDelete,
   onArchive,
+  onUnarchive,
   getResponseCount,
   isSubmitting = false,
 }: PeriodListTableProps) {
@@ -134,6 +136,19 @@ export function PeriodListTable({
                       >
                         編集
                       </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() =>
+                          window.open(
+                            `/forms/preview-period/${formType}/${period.period_key}?schoolId=${schoolId}`,
+                            '_blank'
+                          )
+                        }
+                        disabled={isSubmitting}
+                      >
+                        プレビュー
+                      </Button>
                       {isActive ? (
                         <Button
                           variant="secondary"
@@ -155,15 +170,43 @@ export function PeriodListTable({
                           </Button>
                         )
                       )}
-                      {!period.is_archived && (
+                      {period.is_archived ? (
                         <Button
                           variant="secondary"
                           size="sm"
-                          onClick={() => handleDeleteClick(period)}
-                          disabled={isSubmitting || deletingId === period.id}
+                          onClick={() => onUnarchive(period)}
+                          disabled={isSubmitting}
+                          title="アーカイブを解除して元に戻す"
                         >
-                          {deletingId === period.id ? '処理中...' : '削除'}
+                          元に戻す
                         </Button>
+                      ) : (
+                        <>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => {
+                              if (
+                                window.confirm(
+                                  `「${period.title || period.period_key}」をアーカイブしますか？\n\nこの期間の全ての回答もアーカイブされます。`
+                                )
+                              ) {
+                                onArchive(period);
+                              }
+                            }}
+                            disabled={isSubmitting}
+                          >
+                            アーカイブ
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => handleDeleteClick(period)}
+                            disabled={isSubmitting || deletingId === period.id}
+                          >
+                            {deletingId === period.id ? '処理中...' : '削除'}
+                          </Button>
+                        </>
                       )}
                     </div>
                   </td>
