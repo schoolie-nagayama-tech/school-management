@@ -14,6 +14,12 @@ import { ShukaisuForm } from '@/components/forms/shukaisu';
 import { SoudanForm } from '@/components/forms/soudan';
 import { YoubiForm } from '@/components/forms/youbi';
 import type { FormType } from '@/types/database';
+import type { ZoukomaPeriod } from '@/types/forms/zoukoma';
+import type { MoshiPeriod } from '@/types/forms/moshi';
+import type { MogiPeriod } from '@/types/forms/mogi';
+import type { ShukaisuPeriod } from '@/types/forms/shukaisu';
+import type { SoudanPeriod } from '@/types/forms/soudan';
+import type { YoubiPeriod } from '@/types/forms/youbi';
 
 export const dynamic = 'force-dynamic';
 
@@ -103,22 +109,22 @@ export default async function FormPeriodPreviewPage({
 
         <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
           {formType === 'zoukoma' && (
-            <ZoukomaForm school={school} period={period} isPreview />
+            <ZoukomaForm school={school} period={period as ZoukomaPeriod} isPreview />
           )}
           {formType === 'moshi' && (
-            <MoshiForm school={school} period={period} isPreview />
+            <MoshiForm school={school} period={period as MoshiPeriod} isPreview />
           )}
           {formType === 'mogi' && (
-            <MogiForm school={school} period={period} isPreview />
+            <MogiForm school={school} period={period as MogiPeriod} isPreview />
           )}
           {formType === 'shukaisu' && (
-            <ShukaisuForm school={school} period={period} isPreview />
+            <ShukaisuForm school={school} period={period as ShukaisuPeriod} isPreview />
           )}
           {formType === 'soudan' && (
-            <SoudanForm school={school} period={period} isPreview />
+            <SoudanForm school={school} period={period as SoudanPeriod} isPreview />
           )}
           {formType === 'youbi' && (
-            <YoubiForm school={school} period={period} isPreview />
+            <YoubiForm school={school} period={period as YoubiPeriod} isPreview />
           )}
         </div>
       </div>
