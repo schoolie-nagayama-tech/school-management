@@ -387,6 +387,9 @@ async function handleSeasonalShiftNotification(type: string, submissionId: strin
     if (!editToken) {
       throw new Error('修正用トークンが取得できません')
     }
+    if (!teacherEmail || !teacherEmail.trim()) {
+      throw new Error('講師メールアドレスが登録されていないため、メールを送信できません')
+    }
     const editUrl = `${SITE_URL.replace(/\/$/, '')}/seasonal-shift/${submission.setting_id}/edit/${editToken}`
     if (teacherEmail) {
       const subject = `【${schoolName}】シフト修正のお願い`

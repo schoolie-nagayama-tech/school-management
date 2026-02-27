@@ -14,6 +14,7 @@ import {
   getSeasonalShiftAttendanceCounts,
   getSeasonalShiftTeacherSlotCounts,
   allowSeasonalShiftEdit,
+  resendSeasonalShiftEditEmail,
   deleteSeasonalShiftSubmission,
 } from '@/lib/api/seasonal-shift';
 import type {
@@ -43,6 +44,7 @@ export default function SeasonalShiftSubmissionsPage() {
   >([]);
   const [isLoading, setIsLoading] = useState(true);
   const [allowingId, setAllowingId] = useState<string | null>(null);
+  const [resendingId, setResendingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [detailSubmission, setDetailSubmission] = useState<{
     id: string;
@@ -115,6 +117,18 @@ export default function SeasonalShiftSubmissionsPage() {
       error(err instanceof Error ? err.message : '修正許可の付与に失敗しました');
     } finally {
       setAllowingId(null);
+    }
+  };
+
+  const handleResendEmail = async (sub: SeasonalShiftSubmission) => {
+    setResendingId(sub.id);
+    try {
+      await resendSeasonalShiftEditEmail(sub.id);
+      success('修正許可メールを再送しました');
+    } catch (err) {
+      error(err instanceof Error ? err.message : 'メールの再送に失敗しました');
+    } finally {
+      setResendingId(null);
     }
   };
 
@@ -267,7 +281,23 @@ export default function SeasonalShiftSubmissionsPage() {
                     <td className="px-4 py-3 text-[#4b5563]">{formatDate(sub.submitted_at)}</td>
                     <td className="px-4 py-3 text-center">
                       {sub.allow_edit ? (
-                        <span className="text-green-600 text-xs">許可済</span>
+                        <span className="flex items-center justify-center gap-2">
+                          <span className="text-green-600 text-xs">許可済</span>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={resendingId === sub.id || !sub.teacher_email}
+                            onClick={() => handleResendEmail(sub)}
+                            title={
+                              !sub.teacher_email
+                                ? 'メールアドレス未登録のため再送できません'
+                                : '修正許可メールを再送'
+                            }
+                          >
+                            {resendingId === sub.id ? '送信中...' : 'メール再送'}
+                          </Button>
+                        </span>
                       ) : (
                         <Button
                           type="button"
@@ -370,7 +400,7 @@ export default function SeasonalShiftSubmissionsPage() {
                 <Button type="button" variant="outline" onClick={handleExportPDF}>
                   PDF出力
                 </Button>
-                {!detailSubmission.allow_edit && (
+                {!detailSubmission.allow_edit ? (
                   <Button
                     type="button"
                     variant="outline"
@@ -381,6 +411,23 @@ export default function SeasonalShiftSubmissionsPage() {
                     }}
                   >
                     {allowingId === detailSubmission.id ? '処理中...' : '修正を許可する'}
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={
+                      resendingId === detailSubmission.id || !detailSubmission.teacher_email
+                    }
+                    onClick={() => {
+                      const sub = submissions.find((s) => s.id === detailSubmission.id);
+                      if (sub) handleResendEmail(sub);
+                    }}
+                    title={
+                      !detailSubmission.teacher_email ? 'メールアドレス未登録' : '修正許可メールを再送'
+                    }
+                  >
+                    {resendingId === detailSubmission.id ? '送信中...' : 'メール再送'}
                   </Button>
                 )}
                 <Button

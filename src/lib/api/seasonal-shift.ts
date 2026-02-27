@@ -325,21 +325,30 @@ export async function allowSeasonalShiftEdit(submissionId: string): Promise<stri
     .single();
   if (error) throw new Error(`修正許可の更新に失敗しました: ${error.message}`);
 
-  try {
-    const res = await fetch('/api/seasonal-shift/notify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'allow_edit', submissionId }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      console.warn('修正許可メールの送信に失敗しました:', res.status, err);
-    }
-  } catch (e) {
-    console.warn('修正許可メールの送信に失敗しました:', e);
+  const res = await fetch('/api/seasonal-shift/notify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type: 'allow_edit', submissionId }),
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(err?.error ?? '修正許可メールの送信に失敗しました');
   }
 
   return data.edit_token as string;
+}
+
+/** 修正許可メールを再送（allow_edit=true の提出向け） */
+export async function resendSeasonalShiftEditEmail(submissionId: string): Promise<void> {
+  const res = await fetch('/api/seasonal-shift/notify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type: 'allow_edit', submissionId }),
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(err?.error ?? '修正許可メールの再送に失敗しました');
+  }
 }
 
 /** トークンで提出を更新（再提出後は allow_edit を false に） */
