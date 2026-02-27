@@ -127,64 +127,68 @@ export function PeriodListTable({
                     <PeriodStatusBadge period={period} />
                   </td>
                   <td className="border border-[#e5e7eb] px-4 py-3">
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => onEdit(period)}
-                        disabled={isSubmitting}
-                      >
-                        編集
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() =>
-                          window.open(
-                            `/forms/preview-period/${formType}/${period.period_key}?schoolId=${schoolId}`,
-                            '_blank'
-                          )
-                        }
-                        disabled={isSubmitting}
-                      >
-                        プレビュー
-                      </Button>
-                      {isActive ? (
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <Button
                           variant="secondary"
                           size="sm"
-                          onClick={() => onUnpublish(period)}
+                          onClick={() => onEdit(period)}
                           disabled={isSubmitting}
                         >
-                          非公開
+                          編集
                         </Button>
-                      ) : (
-                        !period.is_archived && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() =>
+                            window.open(
+                              `/forms/preview-period/${formType}/${period.period_key}?schoolId=${schoolId}`,
+                              '_blank'
+                            )
+                          }
+                          disabled={isSubmitting}
+                        >
+                          プレビュー
+                        </Button>
+                        {isActive ? (
                           <Button
                             variant="secondary"
                             size="sm"
-                            onClick={() => onPublish(period)}
+                            onClick={() => onUnpublish(period)}
                             disabled={isSubmitting}
                           >
-                            公開
+                            非公開
                           </Button>
-                        )
-                      )}
-                      {period.is_archived ? (
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => onUnarchive(period)}
-                          disabled={isSubmitting}
-                          title="アーカイブを解除して元に戻す"
-                        >
-                          元に戻す
-                        </Button>
-                      ) : (
-                        <>
+                        ) : (
+                          !period.is_archived && (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => onPublish(period)}
+                              disabled={isSubmitting}
+                            >
+                              公開
+                            </Button>
+                          )
+                        )}
+                        {period.is_archived && (
                           <Button
                             variant="secondary"
                             size="sm"
+                            onClick={() => onUnarchive(period)}
+                            disabled={isSubmitting}
+                            title="アーカイブを解除して元に戻す"
+                          >
+                            元に戻す
+                          </Button>
+                        )}
+                      </div>
+                      {!period.is_archived && (
+                        <div className="flex gap-1 ml-auto">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="!px-2 !py-1 !text-xs"
                             onClick={() => {
                               if (
                                 window.confirm(
@@ -199,14 +203,15 @@ export function PeriodListTable({
                             アーカイブ
                           </Button>
                           <Button
-                            variant="secondary"
+                            variant="danger"
                             size="sm"
+                            className="!px-2 !py-1 !text-xs"
                             onClick={() => handleDeleteClick(period)}
                             disabled={isSubmitting || deletingId === period.id}
                           >
-                            {deletingId === period.id ? '処理中...' : '削除'}
+                            {deletingId === period.id ? '処理中' : '削除'}
                           </Button>
-                        </>
+                        </div>
                       )}
                     </div>
                   </td>
