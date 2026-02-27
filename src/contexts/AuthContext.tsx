@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { createSupabaseBrowserClient } from '@/lib/supabase';
 import { User } from '@supabase/supabase-js';
@@ -44,6 +44,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [schoolIds, setSchoolIds] = useState<string[]>([]);
   const [selectedSchoolId, setSelectedSchoolIdState] = useState<string | 'all' | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const lastUserIdRef = useRef<string | null>(null);
 
   // 選択された教室IDを設定（localStorageにも保存）
   const setSelectedSchoolId = useCallback((schoolId: string | 'all') => {
@@ -250,10 +251,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (session?.user) {
           if (mounted) {
             setUser(session.user);
+            lastUserIdRef.current = session.user.id;
           }
           await fetchProfile(session.user.id, session.user, () => mounted);
         } else {
           if (mounted) {
+            lastUserIdRef.current = null;
             setUser(null);
             setProfile(null);
             setPermissions(null);
@@ -267,6 +270,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
         console.error('Error initializing auth:', err);
         if (mounted) {
+          lastUserIdRef.current = null;
           setUser(null);
           setProfile(null);
           setPermissions(null);
@@ -291,15 +295,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
           // TOKEN_REFRESHED（タブ切替時のトークン更新）では読み込み表示を出さない
           const isTokenRefresh = event === 'TOKEN_REFRESHED';
 
-          if (session?.user) {
-            if (mounted) {
-              setUser(session.user);
-              if (!isTokenRefresh) {
-                setIsLoading(true);
-              }
+        if (session?.user) {
+          if (mounted) {
+            setUser(session.user);
+            // タブ切替時: TOKEN_REFRESHED または同一ユーザーの再検知では読み込みを出さない
+            const isSameUserRecovery = lastUserIdRef.current === session.user.id;
+            if (!isTokenRefresh && !isSameUserRecovery) {
+              setIsLoading(true);
             }
-            // トークン更新の場合は既存プロファイルで十分、fetchProfileはスキップ
-            if (isTokenRefresh) return;
+          }
+          // トークン更新または同一ユーザー復帰の場合は既存プロファイルで十分、fetchProfileはスキップ
+          if (isTokenRefresh || lastUserIdRef.current === session.user.id) return;
 
             // 非同期処理はsetTimeoutで遅延実行して、コールバックを同期的に終了させる
             setTimeout(async () => {
@@ -315,18 +321,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 console.error('Error fetching profile in auth state change:', profileErr);
               } finally {
                 if (mounted) {
+                  lastUserIdRef.current = session.user!.id;
                   setIsLoading(false);
                 }
               }
             }, 0);
           } else {
             if (mounted) {
-            setUser(null);
-            setProfile(null);
-            setPermissions(null);
-            setSchoolIds([]);
-            setSelectedSchoolIdState(null);
-            setIsLoading(false);
+              lastUserIdRef.current = null;
+              setUser(null);
+              setProfile(null);
+              setPermissions(null);
+              setSchoolIds([]);
+              setSelectedSchoolIdState(null);
+              setIsLoading(false);
             }
           }
         }
