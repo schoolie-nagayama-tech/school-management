@@ -287,12 +287,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
         (event, session) => {
           // コールバックを同期的に処理し、非同期処理は別途実行
           if (!mounted) return;
-          
+
+          // TOKEN_REFRESHED（タブ切替時のトークン更新）では読み込み表示を出さない
+          const isTokenRefresh = event === 'TOKEN_REFRESHED';
+
           if (session?.user) {
             if (mounted) {
               setUser(session.user);
-              setIsLoading(true);
+              if (!isTokenRefresh) {
+                setIsLoading(true);
+              }
             }
+            // トークン更新の場合は既存プロファイルで十分、fetchProfileはスキップ
+            if (isTokenRefresh) return;
+
             // 非同期処理はsetTimeoutで遅延実行して、コールバックを同期的に終了させる
             setTimeout(async () => {
               if (!mounted) return;
