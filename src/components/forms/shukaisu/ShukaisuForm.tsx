@@ -16,11 +16,12 @@ import { useToast } from '@/hooks/useToast';
 interface ShukaisuFormProps {
   school: School;
   period: ShukaisuPeriod;
+  isPreview?: boolean;
 }
 
 const GRADES = ['小1', '小2', '小3', '小4', '小5', '小6', '中1', '中2', '中3', '高1', '高2', '高3'];
 
-export function ShukaisuForm({ school, period }: ShukaisuFormProps) {
+export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
   const router = useRouter();
   const { success, error } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -312,6 +313,11 @@ export function ShukaisuForm({ school, period }: ShukaisuFormProps) {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {isPreview && (
+          <div className="p-3 bg-amber-100 border border-amber-400 rounded-lg">
+            <p className="text-sm text-amber-800 font-medium">＜プレビューモード＞ このページは管理者確認用です。実際の回答は送信されません。</p>
+          </div>
+        )}
         {/* 説明文 */}
         {settings.description && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">

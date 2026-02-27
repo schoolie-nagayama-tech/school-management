@@ -2,6 +2,7 @@ import {
   getFormPeriods,
   getActiveFormPeriod,
   getFormPeriod,
+  getFormPeriodByKey,
   createFormPeriod,
   updateFormPeriod,
   deleteFormPeriod,
@@ -76,6 +77,22 @@ export async function getMoshiPeriod(id: string): Promise<MoshiPeriod | null> {
     return null;
   }
 
+  return {
+    ...period,
+    form_type: 'moshi' as const,
+    settings: (period.settings || {}) as unknown as MoshiSettings,
+  };
+}
+
+/**
+ * 模試期間を period_key で取得（プレビュー用）
+ */
+export async function getMoshiPeriodByKey(
+  schoolId: string,
+  periodKey: string
+): Promise<MoshiPeriod | null> {
+  const period = await getFormPeriodByKey(schoolId, 'moshi', periodKey);
+  if (!period) return null;
   return {
     ...period,
     form_type: 'moshi' as const,

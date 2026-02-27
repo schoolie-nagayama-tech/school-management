@@ -2,6 +2,7 @@ import {
   getFormPeriods,
   getActiveFormPeriod,
   getFormPeriod,
+  getFormPeriodByKey,
   createFormPeriod,
   updateFormPeriod,
   deleteFormPeriod,
@@ -76,6 +77,22 @@ export async function getYoubiPeriod(id: string): Promise<YoubiPeriod | null> {
     return null;
   }
 
+  return {
+    ...period,
+    form_type: 'youbi' as const,
+    settings: (period.settings || {}) as unknown as YoubiSettings,
+  };
+}
+
+/**
+ * 曜日変更期間を period_key で取得（プレビュー用）
+ */
+export async function getYoubiPeriodByKey(
+  schoolId: string,
+  periodKey: string
+): Promise<YoubiPeriod | null> {
+  const period = await getFormPeriodByKey(schoolId, 'youbi', periodKey);
+  if (!period) return null;
   return {
     ...period,
     form_type: 'youbi' as const,

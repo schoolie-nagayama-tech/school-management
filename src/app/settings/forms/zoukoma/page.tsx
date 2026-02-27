@@ -252,6 +252,18 @@ export default function ZoukomaSettingsPage() {
                           </button>
                           <button
                             onClick={() => {
+                              const schoolId = getDefaultSchoolId();
+                              window.open(
+                                `/forms/preview-period/zoukoma/${period.period_key}?schoolId=${schoolId}`,
+                                '_blank'
+                              );
+                            }}
+                            className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] transition-colors"
+                          >
+                            プレビュー
+                          </button>
+                          <button
+                            onClick={() => {
                               window.location.href = `/forms/responses/zoukoma/${period.period_key}`;
                             }}
                             className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] transition-colors"
@@ -298,11 +310,23 @@ export default function ZoukomaSettingsPage() {
                       <td className="border border-[#e5e7eb] px-4 py-3">
                         <div className="flex gap-2">
                           <button
+                            onClick={() => {
+                              const schoolId = getDefaultSchoolId();
+                              window.open(
+                                `/forms/preview-period/zoukoma/${period.period_key}?schoolId=${schoolId}`,
+                                '_blank'
+                              );
+                            }}
+                            className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] transition-colors"
+                          >
+                            プレビュー
+                          </button>
+                          <button
                             onClick={() => handleUnarchive(period)}
                             className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] transition-colors"
                             disabled={isSubmitting}
                           >
-                            アーカイブ解除
+                            元に戻す
                           </button>
                           <button
                             onClick={() => handleDelete(period)}

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -226,12 +226,12 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
                   リンク取得
                 </Button>
                 <Button
-                  onClick={() => router.push(`/forms/preview/${form.id}`)}
+                  onClick={() => window.open(`/forms/preview/${form.id}`, '_blank')}
                   variant="secondary"
                   size="sm"
                   disabled={isSubmitting}
                 >
-                  確認
+                  プレビュー
                 </Button>
                 {form.status === 'draft' && (
                   <Button
@@ -278,8 +278,9 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
                     variant="secondary"
                     size="sm"
                     disabled={isSubmitting}
+                    title="アーカイブを解除して元に戻す"
                   >
-                    アーカイブ解除
+                    元に戻す
                   </Button>
                 ) : (
                   <Button

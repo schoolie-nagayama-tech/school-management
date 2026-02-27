@@ -14,11 +14,12 @@ import { MOSHI_GRADE_NAME_TO_NUMBER } from '@/types/forms/moshi';
 interface MoshiFormProps {
   school: School;
   period: MoshiPeriod;
+  isPreview?: boolean;
 }
 
 type ExamType = 'regular' | 'furikae';
 
-export function MoshiForm({ school, period }: MoshiFormProps) {
+export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -109,7 +110,10 @@ export function MoshiForm({ school, period }: MoshiFormProps) {
   // フォーム送信
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    if (isPreview) {
+      alert('プレビューモードでは送信できません。');
+      return;
+    }
     if (!validate()) {
       return;
     }
@@ -205,6 +209,11 @@ export function MoshiForm({ school, period }: MoshiFormProps) {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {isPreview && (
+          <div className="p-3 bg-amber-100 border border-amber-400 rounded-lg">
+            <p className="text-sm text-amber-800 font-medium">＜プレビューモード＞ このページは管理者確認用です。実際の回答は送信されません。</p>
+          </div>
+        )}
         {/* 説明文 */}
         {settings.description && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">

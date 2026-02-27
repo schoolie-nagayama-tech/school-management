@@ -2,6 +2,7 @@ import {
   getFormPeriods,
   getActiveFormPeriod,
   getFormPeriod,
+  getFormPeriodByKey,
   createFormPeriod,
   updateFormPeriod,
   deleteFormPeriod,
@@ -76,6 +77,22 @@ export async function getSoudanPeriod(id: string): Promise<SoudanPeriod | null> 
     return null;
   }
 
+  return {
+    ...period,
+    form_type: 'soudan' as const,
+    settings: (period.settings || {}) as unknown as SoudanSettings,
+  };
+}
+
+/**
+ * お客様相談期間を period_key で取得（プレビュー用）
+ */
+export async function getSoudanPeriodByKey(
+  schoolId: string,
+  periodKey: string
+): Promise<SoudanPeriod | null> {
+  const period = await getFormPeriodByKey(schoolId, 'soudan', periodKey);
+  if (!period) return null;
   return {
     ...period,
     form_type: 'soudan' as const,

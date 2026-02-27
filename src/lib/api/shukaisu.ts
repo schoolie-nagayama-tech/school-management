@@ -2,6 +2,7 @@ import {
   getFormPeriods,
   getActiveFormPeriod,
   getFormPeriod,
+  getFormPeriodByKey,
   createFormPeriod,
   updateFormPeriod,
   deleteFormPeriod,
@@ -76,6 +77,22 @@ export async function getShukaisuPeriod(id: string): Promise<ShukaisuPeriod | nu
     return null;
   }
 
+  return {
+    ...period,
+    form_type: 'shukaisu' as const,
+    settings: (period.settings || {}) as unknown as ShukaisuSettings,
+  };
+}
+
+/**
+ * 週回数変更期間を period_key で取得（プレビュー用）
+ */
+export async function getShukaisuPeriodByKey(
+  schoolId: string,
+  periodKey: string
+): Promise<ShukaisuPeriod | null> {
+  const period = await getFormPeriodByKey(schoolId, 'shukaisu', periodKey);
+  if (!period) return null;
   return {
     ...period,
     form_type: 'shukaisu' as const,

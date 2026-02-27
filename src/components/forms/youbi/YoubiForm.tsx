@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -16,11 +16,12 @@ import { useToast } from '@/hooks/useToast';
 interface YoubiFormProps {
   school: School;
   period: YoubiPeriod;
+  isPreview?: boolean;
 }
 
 const GRADES = ['小1', '小2', '小3', '小4', '小5', '小6', '中1', '中2', '中3', '高1', '高2', '高3'];
 
-export function YoubiForm({ school, period }: YoubiFormProps) {
+export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
   const router = useRouter();
   const { success, error } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -157,7 +158,10 @@ export function YoubiForm({ school, period }: YoubiFormProps) {
   // フォーム送信
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    if (isPreview) {
+      alert('プレビューモードでは送信できません。');
+      return;
+    }
     if (!validate()) {
       return;
     }
@@ -301,6 +305,11 @@ export function YoubiForm({ school, period }: YoubiFormProps) {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {isPreview && (
+          <div className="p-3 bg-amber-100 border border-amber-400 rounded-lg">
+            <p className="text-sm text-amber-800 font-medium">＜プレビューモード＞ このページは管理者確認用です。実際の回答は送信されません。</p>
+          </div>
+        )}
         {/* 説明文 */}
         {settings.description && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">

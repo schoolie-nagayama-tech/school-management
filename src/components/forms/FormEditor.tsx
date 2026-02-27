@@ -536,22 +536,36 @@ export function FormEditor({
               {(formId || form) && (
                 <div className="pt-4 border-t border-[#e5e7eb]">
                   <div className="mb-4">
+                    <h3 className="text-sm font-medium text-[#1f2937] mb-2">プレビュー</h3>
+                    <p className="text-xs text-[#4b5563]/60 mb-3">
+                      フォームの表示を確認できます。実際の回答は送信されません。
+                    </p>
+                    <Button
+                      onClick={() => window.open(`/forms/preview/${form?.id ?? formId}`, '_blank')}
+                      variant="secondary"
+                      size="sm"
+                      disabled={isSubmitting || isArchiving || !(form?.id ?? formId)}
+                    >
+                      プレビュー
+                    </Button>
+                  </div>
+                  <div className="mb-4">
                     <h3 className="text-sm font-medium text-[#1f2937] mb-2">アーカイブ</h3>
                     <p className="text-xs text-[#4b5563]/60 mb-3">
-                      フォームをアーカイブすると、ポータルから非表示になります。このフォームから申し込んだ回答も自動でアーカイブされます。
+                      フォームをアーカイブすると、ポータルから非表示になります。このフォームから申し込んだ回答も自動でアーカイブされます。元に戻すには下のボタンを使用してください。
                     </p>
                     {form?.is_archived ? (
                       <Button
                         onClick={async () => {
                           if (!formId && !form?.id) return;
-                          if (!confirm('このフォームのアーカイブを解除しますか？')) return;
+                          if (!confirm('このフォームのアーカイブを解除して元に戻しますか？')) return;
                           
                           setIsArchiving(true);
                           setErrorMessage('');
                           try {
                             const result = await unarchiveForm(formId || form!.id);
                             await loadForm();
-                            alert(`アーカイブを解除しました（回答${result.responsesUnarchived}件を含む）`);
+                            alert(`元に戻しました（回答${result.responsesUnarchived}件を含む）`);
                           } catch (error) {
                             console.error('Error unarchiving form:', error);
                             setErrorMessage(
@@ -564,8 +578,9 @@ export function FormEditor({
                         variant="secondary"
                         size="sm"
                         disabled={isArchiving || isSubmitting}
+                        title="アーカイブを解除して元に戻す"
                       >
-                        {isArchiving ? '処理中...' : 'アーカイブ解除'}
+                        {isArchiving ? '処理中...' : '元に戻す'}
                       </Button>
                     ) : (
                       <Button

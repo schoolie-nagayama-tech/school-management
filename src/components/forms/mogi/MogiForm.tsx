@@ -16,9 +16,10 @@ import { CancelAgreement } from './CancelAgreement';
 interface MogiFormProps {
   school: School;
   period: MogiPeriod;
+  isPreview?: boolean;
 }
 
-export function MogiForm({ school, period }: MogiFormProps) {
+export function MogiForm({ school, period, isPreview }: MogiFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -81,7 +82,10 @@ export function MogiForm({ school, period }: MogiFormProps) {
   // フォーム送信
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    if (isPreview) {
+      alert('プレビューモードでは送信できません。');
+      return;
+    }
     if (!validate()) {
       return;
     }
@@ -191,6 +195,11 @@ export function MogiForm({ school, period }: MogiFormProps) {
 
       {/* フォーム */}
       <form onSubmit={handleSubmit} className="space-y-6">
+        {isPreview && (
+          <div className="p-3 bg-amber-100 border border-amber-400 rounded-lg">
+            <p className="text-sm text-amber-800 font-medium">＜プレビューモード＞ このページは管理者確認用です。実際の回答は送信されません。</p>
+          </div>
+        )}
         {/* エラーメッセージ */}
         {errorMessage && (
           <div className="bg-[#ef4444]/10 border border-[#ef4444] rounded-lg p-4">

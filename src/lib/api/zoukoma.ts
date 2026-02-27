@@ -2,6 +2,7 @@ import {
   getFormPeriods,
   getActiveFormPeriod,
   getFormPeriod,
+  getFormPeriodByKey,
   createFormPeriod,
   updateFormPeriod,
   deleteFormPeriod,
@@ -100,6 +101,22 @@ export async function getZoukomaPeriod(
   if (!period || period.form_type !== 'zoukoma') {
     return null;
   }
+
+  return {
+    ...period,
+    settings: (period.settings as unknown as ZoukomaSettings) || {},
+  } as ZoukomaPeriod;
+}
+
+/**
+ * 増コマ申込期間を period_key で取得（プレビュー用）
+ */
+export async function getZoukomaPeriodByKey(
+  schoolId: string,
+  periodKey: string
+): Promise<ZoukomaPeriod | null> {
+  const period = await getFormPeriodByKey(schoolId, 'zoukoma', periodKey);
+  if (!period) return null;
 
   return {
     ...period,

@@ -2,6 +2,7 @@ import {
   getFormPeriods,
   getActiveFormPeriod,
   getFormPeriod,
+  getFormPeriodByKey,
   createFormPeriod,
   updateFormPeriod,
   deleteFormPeriod,
@@ -74,6 +75,22 @@ export async function getMogiPeriod(id: string): Promise<MogiPeriod | null> {
     return null;
   }
 
+  return {
+    ...period,
+    form_type: 'mogi' as const,
+    settings: (period.settings || {}) as unknown as MogiSettings,
+  };
+}
+
+/**
+ * Vもぎ期間を period_key で取得（プレビュー用）
+ */
+export async function getMogiPeriodByKey(
+  schoolId: string,
+  periodKey: string
+): Promise<MogiPeriod | null> {
+  const period = await getFormPeriodByKey(schoolId, 'mogi', periodKey);
+  if (!period) return null;
   return {
     ...period,
     form_type: 'mogi' as const,

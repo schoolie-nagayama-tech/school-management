@@ -286,6 +286,20 @@ export default function YoubiSettingsPage() {
                           >
                             編集
                           </Button>
+                          <Button
+                            onClick={() => {
+                              const schoolId = getDefaultSchoolId();
+                              window.open(
+                                `/forms/preview-period/youbi/${period.period_key}?schoolId=${schoolId}`,
+                                '_blank'
+                              );
+                            }}
+                            variant="secondary"
+                            size="sm"
+                            disabled={isSubmitting}
+                          >
+                            プレビュー
+                          </Button>
                           <Link
                             href={`/forms/responses/youbi/${period.period_key}`}
                             className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] flex items-center justify-center"
@@ -350,6 +364,19 @@ export default function YoubiSettingsPage() {
                           </td>
                           <td className="border border-[#e5e7eb] px-4 py-3">
                             <div className="flex gap-2">
+                              <Button
+                                onClick={() => {
+                                  const schoolId = getDefaultSchoolId();
+                                  window.open(
+                                    `/forms/preview-period/youbi/${period.period_key}?schoolId=${schoolId}`,
+                                    '_blank'
+                                  );
+                                }}
+                                variant="secondary"
+                                size="sm"
+                              >
+                                プレビュー
+                              </Button>
                               <Link
                                 href={`/forms/responses/youbi/${period.period_key}`}
                                 className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] flex items-center justify-center"
@@ -362,7 +389,7 @@ export default function YoubiSettingsPage() {
                                 size="sm"
                                 disabled={isSubmitting}
                               >
-                                アーカイブ解除
+                                元に戻す
                               </Button>
                             </div>
                           </td>

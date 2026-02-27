@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -14,11 +14,12 @@ import { SOUDAN_GRADE_NAME_TO_NUMBER } from '@/types/forms/soudan';
 interface SoudanFormProps {
   school: School;
   period: SoudanPeriod;
+  isPreview?: boolean;
 }
 
 const GRADES = ['小1', '小2', '小3', '小4', '小5', '小6', '中1', '中2', '中3', '高1', '高2', '高3'];
 
-export function SoudanForm({ school, period }: SoudanFormProps) {
+export function SoudanForm({ school, period, isPreview }: SoudanFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -77,7 +78,10 @@ export function SoudanForm({ school, period }: SoudanFormProps) {
   // フォーム送信
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    if (isPreview) {
+      alert('プレビューモードでは送信できません。');
+      return;
+    }
     if (!validate()) {
       return;
     }
@@ -157,6 +161,11 @@ export function SoudanForm({ school, period }: SoudanFormProps) {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {isPreview && (
+          <div className="p-3 bg-amber-100 border border-amber-400 rounded-lg">
+            <p className="text-sm text-amber-800 font-medium">＜プレビューモード＞ このページは管理者確認用です。実際の回答は送信されません。</p>
+          </div>
+        )}
         {/* 説明文 */}
         {settings.description && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">

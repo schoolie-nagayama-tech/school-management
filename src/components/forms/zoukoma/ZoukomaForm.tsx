@@ -19,9 +19,10 @@ import { SlotTable } from './SlotTable';
 interface ZoukomaFormProps {
   school: School;
   period: ZoukomaPeriod;
+  isPreview?: boolean;
 }
 
-export function ZoukomaForm({ school, period }: ZoukomaFormProps) {
+export function ZoukomaForm({ school, period, isPreview }: ZoukomaFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -127,7 +128,10 @@ export function ZoukomaForm({ school, period }: ZoukomaFormProps) {
   // フォーム送信
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    if (isPreview) {
+      alert('プレビューモードでは送信できません。');
+      return;
+    }
     if (!validate()) {
       return;
     }
@@ -251,6 +255,13 @@ export function ZoukomaForm({ school, period }: ZoukomaFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+        {isPreview && (
+          <div className="p-3 bg-amber-100 border border-amber-400 rounded-lg mb-4">
+            <p className="text-sm text-amber-800 font-medium">
+              ＜プレビューモード＞ このページは管理者確認用です。実際の回答は送信されません。
+            </p>
+          </div>
+        )}
         {/* セクション1: 基本情報 */}
         <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 space-y-4">
           <h2 className="text-xl font-bold text-[#1f2937] mb-4">基本情報</h2>
