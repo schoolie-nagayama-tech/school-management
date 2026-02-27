@@ -49,6 +49,7 @@ export default function TeacherAttendancePage() {
   );
   const [sheetId, setSheetId] = useState<string | null>(null);
   const [status, setStatus] = useState<AttendanceSheetStatus>('draft');
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
   const [attendanceTypes, setAttendanceTypes] = useState<AttendanceType[]>([]);
   const [records, setRecords] = useState<Map<string, number>>(new Map());
   const [notes, setNotes] = useState<Map<string, { lateEarly: string; note: string }>>(
@@ -112,6 +113,7 @@ export default function TeacherAttendancePage() {
       );
       setSheetId(sheet.id);
       setStatus(sheet.status as AttendanceSheetStatus);
+      setRejectionReason(sheet.rejection_reason ?? null);
 
       // 明細と備考を取得
       const detail = await getAttendanceSheetDetail(sheet.id);
@@ -350,6 +352,11 @@ export default function TeacherAttendancePage() {
           <div className="max-w-6xl mx-auto px-4 py-3">
             <p className="text-red-700 text-sm">
               <strong>差し戻し：</strong>内容を修正して再提出してください
+              {rejectionReason && (
+                <span className="block mt-2 pl-4 border-l-2 border-red-300">
+                  {rejectionReason}
+                </span>
+              )}
             </p>
           </div>
         </div>
