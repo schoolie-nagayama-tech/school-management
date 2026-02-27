@@ -193,11 +193,11 @@ export default function AttendanceSheetDetailPage() {
     }
   };
 
-  // 承認取消（入力中に戻す）
+  // 承認取消（提出済みに戻す）
   const handleReopen = async () => {
     try {
       await reopenAttendanceSheet(sheetId);
-      success('入力中に戻しました');
+      success('提出済みに戻しました');
       setIsReopenDialogOpen(false);
       fetchData();
     } catch (error) {
@@ -417,7 +417,7 @@ export default function AttendanceSheetDetailPage() {
               onClick={() => setIsReopenDialogOpen(true)}
             >
               <RotateCcw className="h-4 w-4 mr-2" />
-              承認を取り消して編集可能にする
+              承認を取り消して提出済みに戻す
             </Button>
           )}
         </div>
@@ -461,7 +461,7 @@ export default function AttendanceSheetDetailPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>承認を取り消しますか？</AlertDialogTitle>
             <AlertDialogDescription>
-              承認を取り消すと、講師が再度編集できるようになります。
+              承認を取り消すと、提出済みの状態に戻ります。その後、編集・承認・差し戻しを選択できます。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

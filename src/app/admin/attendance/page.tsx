@@ -3,17 +3,18 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
-import { Card, CardContent, CardHeader, CardTitle, Button, SelectShadcn as Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge, Checkbox, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Textarea, Label } from '@/components/ui';
+import { Card, CardContent, CardHeader, CardTitle, Button, SelectShadcn as Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge, Checkbox, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Textarea, Label, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui';
 import { ToastContainer } from '@/components/ui';
-import { ChevronLeft, ChevronRight, CheckCircle, XCircle, Eye, ExternalLink } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle, ExternalLink, Download, RotateCcw } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { getSchools } from '@/lib/api/schools';
 import {
-  getAttendanceSheetList,
-  getActiveAttendanceTypes,
+  getAttendanceSummary,
+  getAllAttendanceTypes,
   approveAttendanceSheet,
   rejectAttendanceSheet,
   bulkApproveAttendanceSheets,
+  reopenAttendanceSheet,
 } from '@/lib/api/attendance';
 import {
   getCurrentYearMonth,
@@ -30,19 +31,20 @@ import {
 } from '@/types/attendance';
 import type { School } from '@/types/database';
 
-interface SheetWithTotals {
+interface SummaryRow {
   id: string;
-  teacher_id: string;
-  school_id: string;
-  year_month: string;
-  status: AttendanceSheetStatus;
-  submitted_at: string | null;
-  approved_at: string | null;
-  rejection_reason: string | null;
-  teacher: { id: string; name: string };
-  approved_by_user: { id: string; display_name: string | null } | null;
-  type_totals: Record<string, { name: string; unit: string; total: number }>;
+  school: { id: string; name: string; code?: string | null } | null;
+  teacher: { id: string; name: string } | null;
+  status: string;
+  type_totals: Record<string, {
+    name: string;
+    unit: string;
+    unit_price?: number;
+    total: number;
+    amount?: number;
+  }>;
   grand_total: number;
+  total_amount: number;
 }
 
 export default function AttendanceManagementPage() {
@@ -51,16 +53,18 @@ export default function AttendanceManagementPage() {
   const { toasts, removeToast, success, error: toastError } = useToast();
 
   const [schools, setSchools] = useState<School[]>([]);
-  const [selectedSchoolId, setSelectedSchoolId] = useState<string>('');
+  const [selectedSchoolId, setSelectedSchoolId] = useState<string>('all');
   const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
   const [yearMonth, setYearMonth] = useState(getCurrentYearMonth());
   const [attendanceTypes, setAttendanceTypes] = useState<AttendanceType[]>([]);
-  const [sheets, setSheets] = useState<SheetWithTotals[]>([]);
+  const [sheets, setSheets] = useState<SummaryRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
-  const [rejectingSheet, setRejectingSheet] = useState<SheetWithTotals | null>(null);
+  const [rejectingSheet, setRejectingSheet] = useState<SummaryRow | null>(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [isReopenDialogOpen, setIsReopenDialogOpen] = useState(false);
+  const [reopeningSheet, setReopeningSheet] = useState<SummaryRow | null>(null);
 
   // 教室一覧を取得
   useEffect(() => {
@@ -68,10 +72,6 @@ export default function AttendanceManagementPage() {
       try {
         const data = await getSchools();
         setSchools(data);
-        if (data.length > 0) {
-          setSelectedSchoolId(data[0].id);
-          setSelectedSchool(data[0]);
-        }
       } catch (error) {
         console.error('Failed to fetch schools:', error);
         toastError('教室の取得に失敗しました');
@@ -80,19 +80,18 @@ export default function AttendanceManagementPage() {
     fetchSchools();
   }, [toastError]);
 
-  // 出勤簿一覧を取得
+  // 出勤簿一覧を取得（getAttendanceSummary で統合データ取得）
   useEffect(() => {
     async function fetchData() {
-      if (!selectedSchoolId) return;
-
       setIsLoading(true);
       try {
-        const [typesData, sheetsData] = await Promise.all([
-          getActiveAttendanceTypes(selectedSchoolId),
-          getAttendanceSheetList(selectedSchoolId, yearMonth),
+        const schoolId = selectedSchoolId === 'all' ? null : selectedSchoolId;
+        const [typesData, summaryResult] = await Promise.all([
+          getAllAttendanceTypes(schoolId ? [schoolId] : undefined),
+          getAttendanceSummary(schoolId, yearMonth),
         ]);
         setAttendanceTypes(typesData);
-        setSheets(sheetsData);
+        setSheets(summaryResult);
         setSelectedIds(new Set());
       } catch (error) {
         console.error('Failed to fetch data:', error);
@@ -104,11 +103,17 @@ export default function AttendanceManagementPage() {
     fetchData();
   }, [selectedSchoolId, yearMonth, toastError]);
 
-  // 教室変更時
+  // 教室変更時（selectedSchoolの更新）
+  useEffect(() => {
+    if (selectedSchoolId === 'all') {
+      setSelectedSchool(null);
+    } else {
+      setSelectedSchool(schools.find((s) => s.id === selectedSchoolId) || null);
+    }
+  }, [selectedSchoolId, schools]);
+
   const handleSchoolChange = (schoolId: string) => {
     setSelectedSchoolId(schoolId);
-    const school = schools.find((s) => s.id === schoolId);
-    setSelectedSchool(school || null);
   };
 
   // 選択切り替え
@@ -134,17 +139,24 @@ export default function AttendanceManagementPage() {
     }
   };
 
+  const refetchData = async () => {
+    const schoolId = selectedSchoolId === 'all' ? null : selectedSchoolId;
+    const [typesData, summaryResult] = await Promise.all([
+      getAllAttendanceTypes(schoolId ? [schoolId] : undefined),
+      getAttendanceSummary(schoolId, yearMonth),
+    ]);
+    setAttendanceTypes(typesData);
+    setSheets(summaryResult);
+  };
+
   // 個別承認
-  const handleApprove = async (sheet: SheetWithTotals) => {
+  const handleApprove = async (sheet: SummaryRow) => {
     if (!profile) return;
 
     try {
       await approveAttendanceSheet(sheet.id, profile.id);
-      success(`${sheet.teacher.name}の出勤簿を承認しました`);
-
-      // 一覧を再取得
-      const data = await getAttendanceSheetList(selectedSchoolId, yearMonth);
-      setSheets(data);
+      success(`${sheet.teacher?.name ?? '不明'}の出勤簿を承認しました`);
+      await refetchData();
     } catch (error) {
       console.error('Failed to approve:', error);
       toastError('承認に失敗しました');
@@ -152,7 +164,7 @@ export default function AttendanceManagementPage() {
   };
 
   // 修正ダイアログを開く
-  const handleRejectClick = (sheet: SheetWithTotals) => {
+  const handleRejectClick = (sheet: SummaryRow) => {
     setRejectingSheet(sheet);
     setRejectReason('');
     setIsRejectDialogOpen(true);
@@ -164,16 +176,35 @@ export default function AttendanceManagementPage() {
 
     try {
       await rejectAttendanceSheet(rejectingSheet.id, rejectReason);
-      success(`${rejectingSheet.teacher.name}の出勤簿を修正しました`);
+      success(`${rejectingSheet.teacher?.name ?? '不明'}の出勤簿を修正しました`);
       setIsRejectDialogOpen(false);
       setRejectingSheet(null);
-
-      // 一覧を再取得
-      const data = await getAttendanceSheetList(selectedSchoolId, yearMonth);
-      setSheets(data);
+      await refetchData();
     } catch (error) {
       console.error('Failed to reject:', error);
       toastError('修正に失敗しました');
+    }
+  };
+
+  // 承認取消ダイアログを開く
+  const handleReopenClick = (sheet: SummaryRow) => {
+    setReopeningSheet(sheet);
+    setIsReopenDialogOpen(true);
+  };
+
+  // 承認取消実行
+  const handleReopen = async () => {
+    if (!reopeningSheet) return;
+
+    try {
+      await reopenAttendanceSheet(reopeningSheet.id);
+      success(`${reopeningSheet.teacher?.name ?? '不明'}の出勤簿の承認を取り消しました`);
+      setIsReopenDialogOpen(false);
+      setReopeningSheet(null);
+      await refetchData();
+    } catch (error) {
+      console.error('Failed to reopen:', error);
+      toastError('承認取消に失敗しました');
     }
   };
 
@@ -185,10 +216,7 @@ export default function AttendanceManagementPage() {
       await bulkApproveAttendanceSheets(Array.from(selectedIds), profile.id);
       success(`${selectedIds.size}件の出勤簿を承認しました`);
       setSelectedIds(new Set());
-
-      // 一覧を再取得
-      const data = await getAttendanceSheetList(selectedSchoolId, yearMonth);
-      setSheets(data);
+      await refetchData();
     } catch (error) {
       console.error('Failed to bulk approve:', error);
       toastError('一括承認に失敗しました');
@@ -196,7 +224,7 @@ export default function AttendanceManagementPage() {
   };
 
   // 詳細画面へ
-  const handleViewDetail = (sheet: SheetWithTotals) => {
+  const handleViewDetail = (sheet: SummaryRow) => {
     router.push(`/admin/attendance/sheets/${sheet.id}`);
   };
 
@@ -206,19 +234,90 @@ export default function AttendanceManagementPage() {
     window.open(`/attendance/${selectedSchool.code}`, '_blank');
   };
 
+  // CSVエクスポート
+  const handleExportCSV = () => {
+    if (sheets.length === 0) {
+      toastError('エクスポートするデータがありません');
+      return;
+    }
+
+    const typeNames = Array.from(new Set(
+      sheets.flatMap((row) =>
+        Object.values(row.type_totals).map((t) => t.name)
+      )
+    ));
+
+    const hasSchoolColumn = selectedSchoolId === 'all';
+    const headers = hasSchoolColumn
+      ? ['教室', '講師名', 'ステータス', ...typeNames, '合計', '金額合計']
+      : ['講師名', 'ステータス', ...typeNames, '合計', '金額合計'];
+
+    const rows = sheets.map((row) => {
+      const typeCols = typeNames.map((name) => {
+        const typeData = Object.values(row.type_totals).find((t) => t.name === name);
+        return typeData?.total || 0;
+      });
+
+      const base = hasSchoolColumn
+        ? [row.school?.name || '', row.teacher?.name || '', ATTENDANCE_STATUS_LABELS[row.status as keyof typeof ATTENDANCE_STATUS_LABELS] || '']
+        : [row.teacher?.name || '', ATTENDANCE_STATUS_LABELS[row.status as keyof typeof ATTENDANCE_STATUS_LABELS] || ''];
+      return [...base, ...typeCols, row.grand_total, row.total_amount];
+    });
+
+    const totalRow: string[] = hasSchoolColumn ? ['合計', '', ''] : ['合計', ''];
+    typeNames.forEach((name) => {
+      const total = sheets.reduce((sum, row) => {
+        const typeData = Object.values(row.type_totals).find((t) => t.name === name);
+        return sum + (typeData?.total || 0);
+      }, 0);
+      totalRow.push(total.toString());
+    });
+    totalRow.push(sheets.reduce((sum, row) => sum + row.grand_total, 0).toString());
+    totalRow.push(sheets.reduce((sum, row) => sum + row.total_amount, 0).toString());
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((row) => row.join(',')),
+      totalRow.join(','),
+    ].join('\n');
+
+    const bom = new Uint8Array([0xef, 0xbb, 0xbf]);
+    const blob = new Blob([bom, csvContent], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `出勤簿集計_${yearMonth}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    success('CSVをダウンロードしました');
+  };
+
   const submittedCount = sheets.filter((s) => s.status === 'submitted').length;
+  const showSchoolColumn = selectedSchoolId === 'all';
+
+  // 表示用の種別リスト（重複排除）
+  const displayTypes = attendanceTypes.filter((type, index, self) =>
+    index === self.findIndex((t) => t.name === type.name)
+  );
 
   return (
     <AdminLayout headerTitle="講師勤怠">
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">出勤簿管理</h1>
-          {selectedSchool && (
-            <Button variant="secondary" onClick={handleOpenPortal}>
-              <ExternalLink className="h-4 w-4 mr-2" />
-              勤怠ポータルを開く
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" onClick={handleExportCSV} disabled={sheets.length === 0}>
+              <Download className="h-4 w-4 mr-2" />
+              CSVエクスポート
             </Button>
-          )}
+            {selectedSchool && (
+              <Button variant="secondary" onClick={handleOpenPortal}>
+                <ExternalLink className="h-4 w-4 mr-2" />
+                勤怠ポータルを開く
+              </Button>
+            )}
+          </div>
         </div>
 
         <Card>
@@ -230,10 +329,11 @@ export default function AttendanceManagementPage() {
                   <Select value={selectedSchoolId} onValueChange={handleSchoolChange}>
                     <SelectTrigger>
                       <SelectValue placeholder="教室を選択">
-                        {selectedSchool?.name}
+                        {selectedSchoolId === 'all' ? '全教室' : schools.find((s) => s.id === selectedSchoolId)?.name}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="all">全教室</SelectItem>
                       {schools.map((school) => (
                         <SelectItem key={school.id} value={school.id}>
                           {school.name}
@@ -265,7 +365,6 @@ export default function AttendanceManagementPage() {
             </div>
           </CardHeader>
           <CardContent>
-            {/* 一括承認ボタン */}
             {submittedCount > 0 && (
               <div className="mb-4 flex items-center gap-4">
                 <span className="text-sm text-[#4b5563]">
@@ -303,15 +402,17 @@ export default function AttendanceManagementPage() {
                           disabled={submittedCount === 0}
                         />
                       </TableHead>
+                      {showSchoolColumn && <TableHead>教室</TableHead>}
                       <TableHead>講師名</TableHead>
                       <TableHead className="text-center">ステータス</TableHead>
-                      {attendanceTypes.map((type) => (
+                      {displayTypes.map((type) => (
                         <TableHead key={type.id} className="text-center">
                           {type.name}
                         </TableHead>
                       ))}
                       <TableHead className="text-center">合計</TableHead>
-                      <TableHead className="w-32">操作</TableHead>
+                      <TableHead className="text-right">金額</TableHead>
+                      <TableHead className="min-w-[240px]">操作</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -324,57 +425,97 @@ export default function AttendanceManagementPage() {
                             disabled={sheet.status !== 'submitted'}
                           />
                         </TableCell>
+                        {showSchoolColumn && (
+                          <TableCell>{sheet.school?.name ?? ''}</TableCell>
+                        )}
                         <TableCell className="font-medium">
                           {sheet.teacher?.name ?? '不明'}
                         </TableCell>
                         <TableCell className="text-center">
-                          <Badge className={ATTENDANCE_STATUS_COLORS[sheet.status]}>
-                            {ATTENDANCE_STATUS_LABELS[sheet.status]}
+                          <Badge className={ATTENDANCE_STATUS_COLORS[sheet.status as AttendanceSheetStatus]}>
+                            {ATTENDANCE_STATUS_LABELS[sheet.status as AttendanceSheetStatus]}
                           </Badge>
                         </TableCell>
-                        {attendanceTypes.map((type) => (
-                          <TableCell key={type.id} className="text-center">
-                            {sheet.type_totals[type.id]?.total || 0}
-                            {type.unit === 'hours' ? 'h' : ''}
-                          </TableCell>
-                        ))}
+                        {displayTypes.map((type) => {
+                          const typeData = Object.values(sheet.type_totals).find(
+                            (t) => t.name === type.name
+                          );
+                          return (
+                            <TableCell key={type.id} className="text-center">
+                              {typeData?.total || 0}
+                              {type.unit === 'hours' ? 'h' : ''}
+                            </TableCell>
+                          );
+                        })}
                         <TableCell className="text-center font-medium">
                           {sheet.grand_total}
                         </TableCell>
+                        <TableCell className="text-right">
+                          ¥{sheet.total_amount.toLocaleString()}
+                        </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-1">
+                          <div className="flex flex-wrap gap-2">
                             <Button
-                              variant="ghost"
+                              variant="secondary"
+                              size="sm"
                               onClick={() => handleViewDetail(sheet)}
-                              className="p-2"
-                              title="詳細"
                             >
-                              <Eye className="h-4 w-4" />
+                              詳細
                             </Button>
                             {sheet.status === 'submitted' && (
                               <>
                                 <Button
-                                  variant="ghost"
+                                  size="sm"
                                   onClick={() => handleApprove(sheet)}
-                                  className="p-2 text-green-600 hover:text-green-700"
-                                  title="承認"
+                                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
                                 >
-                                  <CheckCircle className="h-4 w-4" />
+                                  承認
                                 </Button>
                                 <Button
-                                  variant="ghost"
+                                  variant="danger"
+                                  size="sm"
                                   onClick={() => handleRejectClick(sheet)}
-                                  className="p-2 text-red-600 hover:text-red-700"
-                                  title="修正"
                                 >
-                                  <XCircle className="h-4 w-4" />
+                                  修正
                                 </Button>
                               </>
+                            )}
+                            {sheet.status === 'approved' && (
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => handleReopenClick(sheet)}
+                              >
+                                <RotateCcw className="h-3 w-3 mr-1" />
+                                承認取消
+                              </Button>
                             )}
                           </div>
                         </TableCell>
                       </TableRow>
                     ))}
+                    {/* 合計行 */}
+                    <TableRow className="bg-gray-100 font-medium">
+                      <TableCell colSpan={showSchoolColumn ? 4 : 3}>合計</TableCell>
+                      {displayTypes.map((type) => (
+                        <TableCell key={type.id} className="text-center">
+                          {sheets.reduce((sum, row) => {
+                            const typeData = Object.values(row.type_totals).find(
+                              (t) => t.name === type.name
+                            );
+                            return sum + (typeData?.total || 0);
+                          }, 0)}
+                          {type.unit === 'hours' ? 'h' : ''}
+                        </TableCell>
+                      ))}
+                      <TableCell className="text-center">
+                        {sheets.reduce((sum, row) => sum + row.grand_total, 0)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        ¥{sheets.reduce((sum, row) => sum + row.total_amount, 0).toLocaleString()}
+                      </TableCell>
+                      <TableCell />
+                    </TableRow>
                   </TableBody>
                 </Table>
               </div>
@@ -391,7 +532,7 @@ export default function AttendanceManagementPage() {
           </DialogHeader>
           <div className="py-4">
             <p className="text-sm text-[#4b5563] mb-4">
-              {rejectingSheet?.teacher.name}の出勤簿を修正します。
+              {rejectingSheet?.teacher?.name ?? '不明'}の出勤簿を修正します。
             </p>
             <div className="space-y-2">
               <Label htmlFor="reason">修正理由（任意）</Label>
@@ -411,15 +552,32 @@ export default function AttendanceManagementPage() {
             >
               キャンセル
             </Button>
-            <Button
-              variant="danger"
-              onClick={handleReject}
-            >
+            <Button variant="danger" onClick={handleReject}>
               修正する
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* 承認取消確認ダイアログ */}
+      <AlertDialog open={isReopenDialogOpen} onOpenChange={setIsReopenDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>承認を取り消しますか？</AlertDialogTitle>
+            <AlertDialogDescription>
+              承認を取り消すと、提出済みの状態に戻ります。その後、編集・承認・差し戻しを選択できます。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setIsReopenDialogOpen(false)}>
+              キャンセル
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleReopen}>
+              取り消す
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </AdminLayout>

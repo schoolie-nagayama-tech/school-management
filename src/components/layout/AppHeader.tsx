@@ -347,16 +347,6 @@ export function AppHeader({ title, onSettingsClick, onBulkGradeUpdateClick }: Ap
                         出勤簿管理
                       </Link>
                       <Link
-                        href="/admin/attendance/summary"
-                        className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
-                          pathname === '/admin/attendance/summary'
-                            ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
-                            : ''
-                        }`}
-                      >
-                        月次集計
-                      </Link>
-                      <Link
                         href="/admin/attendance/late-early"
                         className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                           pathname === '/admin/attendance/late-early'

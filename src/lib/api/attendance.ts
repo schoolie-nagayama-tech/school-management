@@ -612,13 +612,12 @@ export async function bulkApproveAttendanceSheets(
   return data;
 }
 
-// 出勤簿のステータスを入力中に戻す（承認取消）
+// 出勤簿のステータスを提出済みに戻す（承認取消）
 export async function reopenAttendanceSheet(sheetId: string) {
   const { data, error } = await supabase
     .from('attendance_sheets')
     .update({
-      status: 'draft',
-      submitted_at: null,
+      status: 'submitted',
       approved_at: null,
       approved_by: null,
       rejection_reason: null,
