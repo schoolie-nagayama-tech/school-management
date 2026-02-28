@@ -14,8 +14,6 @@ import {
   archivePeriod,
   unarchivePeriod,
   getResponseCountByPeriod,
-  createFormPeriodForSchools,
-  updateFormPeriodForSchools,
 } from '@/lib/api/form-periods';
 import { ZoukomaPeriodEditor } from '@/components/forms/zoukoma/ZoukomaPeriodEditor';
 import { MogiPeriodEditor } from '@/components/forms/mogi/MogiPeriodEditor';
