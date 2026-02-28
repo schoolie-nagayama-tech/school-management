@@ -8,7 +8,7 @@ import {
   getBulletinPosts,
   getBulletinLabels,
   markAsRead,
-  archiveBulletinPost,
+  deleteBulletinPost,
   getUnreadCount,
 } from '@/lib/api/bulletin';
 import { getSchools } from '@/lib/api/schools';
@@ -153,18 +153,18 @@ export function BulletinBoard({ className = '' }: BulletinBoardProps) {
     setIsPostModalOpen(true);
   }, []);
 
-  const handleArchive = useCallback(async (post: BulletinPost) => {
-    if (!confirm('この投稿をアーカイブしますか？')) {
+  const handleDelete = useCallback(async (post: BulletinPost) => {
+    if (!confirm('この投稿を削除しますか？')) {
       return;
     }
 
     try {
-      await archiveBulletinPost(post.id);
-      success('アーカイブしました');
+      await deleteBulletinPost(post.id);
+      success('削除しました');
       await fetchData();
     } catch (error) {
-      console.error('Error archiving post:', error);
-      toastError('アーカイブに失敗しました');
+      console.error('Error deleting post:', error);
+      toastError('削除に失敗しました');
     }
   }, [success, toastError, fetchData]);
 
@@ -253,7 +253,7 @@ export function BulletinBoard({ className = '' }: BulletinBoardProps) {
                   canRead={canRead}
                   onRead={() => handleRead(post)}
                   onEdit={() => handleEdit(post)}
-                  onArchive={() => handleArchive(post)}
+                  onDelete={() => handleDelete(post)}
                   onShowReaders={() => handleShowReaders(post)}
                 />
               ))

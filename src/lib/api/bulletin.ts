@@ -388,9 +388,9 @@ export async function updateBulletinPost(
 }
 
 /**
- * 投稿をアーカイブ
+ * 投稿を削除（論理削除）
  */
-export async function archiveBulletinPost(id: string): Promise<void> {
+export async function deleteBulletinPost(id: string): Promise<void> {
   const { error } = await supabase
     .from('bulletin_posts')
     .update({
@@ -400,31 +400,14 @@ export async function archiveBulletinPost(id: string): Promise<void> {
     .eq('id', id);
 
   if (error) {
-    throw new Error(`投稿のアーカイブに失敗しました: ${error.message}`);
+    throw new Error(`投稿の削除に失敗しました: ${error.message}`);
   }
 }
 
 /**
- * 投稿のアーカイブを解除
+ * 投稿を物理削除（管理用・通常は論理削除を使用）
  */
-export async function unarchiveBulletinPost(id: string): Promise<void> {
-  const { error } = await supabase
-    .from('bulletin_posts')
-    .update({
-      is_archived: false,
-      archived_at: null,
-    })
-    .eq('id', id);
-
-  if (error) {
-    throw new Error(`投稿のアーカイブ解除に失敗しました: ${error.message}`);
-  }
-}
-
-/**
- * 投稿を削除
- */
-export async function deleteBulletinPost(id: string): Promise<void> {
+export async function hardDeleteBulletinPost(id: string): Promise<void> {
   const { error } = await supabase
     .from('bulletin_posts')
     .delete()

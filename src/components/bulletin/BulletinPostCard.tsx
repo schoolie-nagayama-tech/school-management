@@ -2,7 +2,7 @@
 
 import type { BulletinPost } from '@/types/bulletin';
 import { Button } from '@/components/ui';
-import { Edit2, Archive, Users, Check } from 'lucide-react';
+import { Edit2, Trash2, Users, Check } from 'lucide-react';
 
 interface BulletinPostCardProps {
   post: BulletinPost;
@@ -12,7 +12,7 @@ interface BulletinPostCardProps {
   canRead: boolean; // 講師のみが既読機能を使える
   onRead: () => void;
   onEdit: () => void;
-  onArchive: () => void;
+  onDelete: () => void;
   onShowReaders: () => void;
 }
 
@@ -23,7 +23,7 @@ export function BulletinPostCard({
   canRead,
   onRead,
   onEdit,
-  onArchive,
+  onDelete,
   onShowReaders,
 }: BulletinPostCardProps) {
   const createdDate = new Date(post.created_at).toLocaleDateString('ja-JP', {
@@ -113,13 +113,13 @@ export function BulletinPostCard({
               編集
             </Button>
             <Button
-              onClick={onArchive}
+              onClick={onDelete}
               variant="ghost"
               size="sm"
               className="text-xs px-2 py-1"
             >
-              <Archive className="w-3 h-3 mr-1" />
-              アーカイブ
+              <Trash2 className="w-3 h-3 mr-1" />
+              削除
             </Button>
           </>
         )}

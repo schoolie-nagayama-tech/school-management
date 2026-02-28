@@ -1,8 +1,9 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { StudentInterview, InterviewType, INTERVIEW_TYPE_LABELS, INTERVIEW_TYPE_COLORS } from '@/types/database';
 import { getStudentInterviews, deleteInterview, completeTask, uncompleteTask } from '@/lib/api/interviews';
+import { undismissAlert } from '@/lib/api/alerts';
 import { InterviewModal } from './InterviewModal';
 import { Button, Select } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
@@ -173,6 +174,12 @@ export function InterviewList({ studentId, schoolId }: InterviewListProps) {
                                     success('タスクを完了しました');
                                   } else {
                                     await uncompleteTask(interview.id);
+                                    // 対応済み記録があれば解除してアラートを再表示
+                                    try {
+                                      await undismissAlert(schoolId, studentId, 'interview_task', `task:${interview.id}`);
+                                    } catch (_) {
+                                      // 対応済み記録がない場合は無視
+                                    }
                                     success('タスクを未完了に戻しました');
                                   }
                                   fetchInterviews();
