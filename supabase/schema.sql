@@ -1,4 +1,4 @@
-﻿-- 生徒管理システム - データベーススキーマ v1.5
+-- 生徒管理システム - データベーススキーマ v1.5
 -- Supabase SQL Editorで実行してください
 
 -- ============================================
@@ -428,7 +428,9 @@ CREATE TABLE IF NOT EXISTS portal_menu (
   title TEXT NOT NULL,
   description TEXT,
   is_visible BOOLEAN NOT NULL DEFAULT true,
+  link_type TEXT NOT NULL DEFAULT 'external' CHECK (link_type IN ('internal', 'external')),
   link_url TEXT,
+  link_urls JSONB DEFAULT NULL,
   sort_order INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
@@ -445,6 +447,7 @@ CREATE TRIGGER update_portal_menu_updated_at
 -- インデックス
 CREATE INDEX IF NOT EXISTS idx_portal_menu_school_id ON portal_menu(school_id);
 CREATE INDEX IF NOT EXISTS idx_portal_menu_school_visible_order ON portal_menu(school_id, is_visible, sort_order);
+CREATE INDEX IF NOT EXISTS idx_portal_menu_link_urls ON portal_menu USING GIN (link_urls);
 
 -- RLS (Row Level Security) ポリシー
 ALTER TABLE portal_menu ENABLE ROW LEVEL SECURITY;

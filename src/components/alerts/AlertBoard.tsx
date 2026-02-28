@@ -10,6 +10,7 @@ import { GRADE_LABELS } from '@/types/database';
 import { ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { dismissAlert } from '@/lib/api/alerts';
+import { completeTask } from '@/lib/api/interviews';
 import { ALERT_TYPE_LABELS, ALERT_TYPE_COLORS } from '@/types/alerts';
 
 interface AlertBoardProps {
@@ -113,6 +114,14 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
       if (schoolIds.length === 0) {
         toastError('教室が選択されていません');
         return;
+      }
+      
+      // 面談タスクの場合：面談記録のタスクを完了にしてから対応済み記録を付与（同期）
+      if (alert.alert_type === 'interview_task') {
+        const taskId = alert.details?.task_id ?? (alert.alert_key.startsWith('task:') ? alert.alert_key.slice(5) : null);
+        if (taskId) {
+          await completeTask(taskId);
+        }
       }
       
       // 生徒のschool_idを取得
