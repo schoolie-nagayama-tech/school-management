@@ -36,6 +36,7 @@ import { useToast } from '@/hooks/useToast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
+import { getSchools } from '@/lib/api/schools';
 
 const SUPPORTED_FORM_TYPES: FormType[] = [
   'zoukoma',
@@ -60,11 +61,27 @@ export default function FormPeriodsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const [editingPeriod, setEditingPeriod] = useState<FormPeriod | null | 'new'>(null);
+  const [allowedSchoolsList, setAllowedSchoolsList] = useState<{ id: string; name: string }[]>([]);
   const { toasts, removeToast, success, error } = useToast();
 
   const selectedSchoolIds = getSelectedSchoolIds();
   const schoolId = selectedSchoolIds[0] ?? '';
   const isMultiSchool = selectedSchoolIds.length > 1;
+
+  useEffect(() => {
+    if (!isMultiSchool) {
+      setAllowedSchoolsList([]);
+      return;
+    }
+    getSchools()
+      .then((schools) => {
+        const list = schools
+          .filter((s) => selectedSchoolIds.includes(s.id))
+          .map((s) => ({ id: s.id, name: s.name }));
+        setAllowedSchoolsList(list);
+      })
+      .catch(console.error);
+  }, [isMultiSchool, selectedSchoolIds.join(',')]);
   const formTypeValid = SUPPORTED_FORM_TYPES.includes(formType as FormType);
   const formLabel = FORM_TYPE_LABELS[formType as FormType] ?? formType;
 
@@ -288,6 +305,7 @@ export default function FormPeriodsPage() {
           period={editingPeriod === 'new' ? null : (editingPeriod as ZoukomaPeriod)}
           schoolId={schoolId}
           schoolIds={isMultiSchool ? selectedSchoolIds : undefined}
+          allowedSchools={isMultiSchool ? allowedSchoolsList : undefined}
           onClose={() => setEditingPeriod(null)}
           onSuccess={handleEditSuccess}
         />
@@ -298,6 +316,7 @@ export default function FormPeriodsPage() {
           period={editingPeriod === 'new' ? null : (editingPeriod as MogiPeriod)}
           schoolId={schoolId}
           schoolIds={isMultiSchool ? selectedSchoolIds : undefined}
+          allowedSchools={isMultiSchool ? allowedSchoolsList : undefined}
           onClose={() => setEditingPeriod(null)}
           onSuccess={handleEditSuccess}
         />
@@ -308,6 +327,7 @@ export default function FormPeriodsPage() {
           period={editingPeriod === 'new' ? null : (editingPeriod as unknown as MoshiPeriod)}
           schoolId={schoolId}
           schoolIds={isMultiSchool ? selectedSchoolIds : undefined}
+          allowedSchools={isMultiSchool ? allowedSchoolsList : undefined}
           onClose={() => setEditingPeriod(null)}
           onSuccess={handleEditSuccess}
         />
@@ -318,6 +338,7 @@ export default function FormPeriodsPage() {
           period={editingPeriod === 'new' ? null : (editingPeriod as unknown as SoudanPeriod)}
           schoolId={schoolId}
           schoolIds={isMultiSchool ? selectedSchoolIds : undefined}
+          allowedSchools={isMultiSchool ? allowedSchoolsList : undefined}
           onClose={() => setEditingPeriod(null)}
           onSuccess={handleEditSuccess}
         />
@@ -328,6 +349,7 @@ export default function FormPeriodsPage() {
           period={editingPeriod === 'new' ? null : (editingPeriod as unknown as ShukaisuPeriod)}
           schoolId={schoolId}
           schoolIds={isMultiSchool ? selectedSchoolIds : undefined}
+          allowedSchools={isMultiSchool ? allowedSchoolsList : undefined}
           onClose={() => setEditingPeriod(null)}
           onSuccess={handleEditSuccess}
         />
@@ -338,6 +360,7 @@ export default function FormPeriodsPage() {
           period={editingPeriod === 'new' ? null : (editingPeriod as unknown as YoubiPeriod)}
           schoolId={schoolId}
           schoolIds={isMultiSchool ? selectedSchoolIds : undefined}
+          allowedSchools={isMultiSchool ? allowedSchoolsList : undefined}
           onClose={() => setEditingPeriod(null)}
           onSuccess={handleEditSuccess}
         />

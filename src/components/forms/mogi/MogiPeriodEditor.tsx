@@ -14,6 +14,8 @@ interface MogiPeriodEditorProps {
   schoolId?: string;
   /** 複数教室に一括作成・更新する場合 */
   schoolIds?: string[];
+  /** 編集時に更新対象を選ぶための教室一覧（id, name） */
+  allowedSchools?: { id: string; name: string }[];
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -23,12 +25,14 @@ export function MogiPeriodEditor({
   period,
   schoolId,
   schoolIds,
+  allowedSchools,
   onClose,
   onSuccess,
 }: MogiPeriodEditorProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [applyToAllSchools, setApplyToAllSchools] = useState(true);
+  const [selectedSchoolIdsForUpdate, setSelectedSchoolIdsForUpdate] = useState<string[]>([]);
 
   // 共通会場テキストと日程エントリ
   interface DateEntry {
@@ -196,7 +200,10 @@ export function MogiPeriodEditor({
       }
       setError('');
     }
-  }, [isOpen, period, schoolId]);
+    if (isOpen && period && allowedSchools && allowedSchools.length > 0) {
+      setSelectedSchoolIdsForUpdate(allowedSchools.map((s) => s.id));
+    }
+  }, [isOpen, period, schoolId, allowedSchools]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -701,7 +708,41 @@ export function MogiPeriodEditor({
           disabled={isSubmitting}
         />
 
-        {period && schoolIds && schoolIds.length > 1 && (
+        {period && allowedSchools && allowedSchools.length > 1 && (
+          <div className="p-3 bg-[#eff6ff] rounded-lg border border-[#bfdbfe]">
+            <p className="text-sm font-medium text-[#1f2937] mb-2">
+              同じ内容で更新する教室を選択
+            </p>
+            <div className="flex flex-wrap gap-x-4 gap-y-2">
+              {allowedSchools.map((school) => (
+                <label
+                  key={school.id}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedSchoolIdsForUpdate.includes(school.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedSchoolIdsForUpdate((prev) =>
+                          prev.includes(school.id) ? prev : [...prev, school.id]
+                        );
+                      } else {
+                        setSelectedSchoolIdsForUpdate((prev) =>
+                          prev.filter((id) => id !== school.id)
+                        );
+                      }
+                    }}
+                    disabled={isSubmitting}
+                    className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6]"
+                  />
+                  <span className="text-sm text-[#1f2937]">{school.name}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+        {period && schoolIds && schoolIds.length > 1 && !allowedSchools?.length && (
           <label className="flex items-center gap-2 p-3 bg-[#eff6ff] rounded-lg border border-[#bfdbfe] cursor-pointer">
             <input
               type="checkbox"
