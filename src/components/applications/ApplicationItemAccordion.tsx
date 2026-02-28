@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { ApplicationItem } from '@/types/database';
@@ -284,6 +284,30 @@ export function ApplicationItemAccordion({
                               className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6]"
                             />
                             <span className="text-xs">講師が編集可能</span>
+                          </label>
+                          <label className="flex items-center gap-2 text-sm text-[#4b5563]">
+                            <input
+                              type="checkbox"
+                              checked={item.manager_only === true}
+                              onChange={async (e) => {
+                                setIsProcessing(true);
+                                try {
+                                  await updateApplicationItem(item.id, { manager_only: e.target.checked });
+                                  success(e.target.checked ? '室長以上のみ表示にしました' : '全員に表示にしました');
+                                  onUpdated();
+                                } catch (error) {
+                                  console.error('Failed to update manager_only:', error);
+                                  toastError(
+                                    error instanceof Error ? error.message : '設定の更新に失敗しました'
+                                  );
+                                } finally {
+                                  setIsProcessing(false);
+                                }
+                              }}
+                              disabled={isProcessing}
+                              className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6]"
+                            />
+                            <span className="text-xs">室長以上のみ表示</span>
                           </label>
                         </div>
                         <div className="flex gap-3">

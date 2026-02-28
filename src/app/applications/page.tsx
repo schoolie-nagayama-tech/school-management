@@ -92,6 +92,14 @@ export default function ApplicationsPage() {
     }
   }, [fetchData, selectedSchoolId]);
 
+  // 講師の場合は室長以上のみ表示の列を除外
+  const displayItems = useMemo(() => {
+    if (profile?.role === 'teacher') {
+      return items.filter((i) => !i.manager_only);
+    }
+    return items;
+  }, [items, profile?.role]);
+
   // フィルター適用
   const filteredStudents = useMemo(() => {
     let result = students;
@@ -125,7 +133,13 @@ export default function ApplicationsPage() {
     }
 
     return result;
-  }, [students, applications, filters]);
+  }, [students, applications, filters.grade, filters.search, filters.itemId]);
+
+  // 表示用項目（非表示除外はテーブル側で適用）
+  const tableItems = useMemo(
+    () => displayItems.filter((i) => filters.showHidden || !i.is_hidden),
+    [displayItems, filters.showHidden]
+  );
 
   // フィルター変更
   const handleFilterChange = (newFilters: Partial<ApplicationFilters>) => {
@@ -322,7 +336,7 @@ export default function ApplicationsPage() {
       {/* フィルターパネル */}
       <ApplicationFiltersPanel
           filters={filters}
-          items={items}
+          items={displayItems}
           onChange={handleFilterChange}
         onReset={handleResetFilters}
       />
@@ -380,7 +394,7 @@ export default function ApplicationsPage() {
               <span className="ml-3 text-[#4b5563]">読み込み中...</span>
             </div>
           </div>
-        ) : items.length === 0 ? (
+        ) : tableItems.length === 0 ? (
           <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 text-center">
             <p className="text-[#4b5563] mb-4">申込項目がありません。</p>
             {canEdit && isManagerOrAbove && (
@@ -392,7 +406,7 @@ export default function ApplicationsPage() {
       ) : (
         <ApplicationTable
           students={filteredStudents}
-          items={items.filter((i) => filters.showHidden || !i.is_hidden)}
+          items={tableItems}
           applications={applications}
           onStatusChange={canEdit ? handleStatusChange : undefined}
           onNumberChange={canEdit ? handleNumberChange : undefined}

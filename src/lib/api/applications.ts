@@ -1,4 +1,4 @@
-﻿import { supabase } from '../supabase';
+import { supabase } from '../supabase';
 import type {
   ApplicationItem,
   ApplicationItemInsert,
@@ -44,6 +44,7 @@ export async function getApplicationItems(
     ...item,
     column_type: item.column_type || 'check',
     due_date: item.due_date || null,
+    manager_only: item.manager_only === true,
   })) as ApplicationItem[];
 }
 
@@ -91,6 +92,7 @@ export async function createApplicationItem(
     ...(data as any),
     column_type: (data as any).column_type || 'check',
     due_date: (data as any).due_date || null,
+    manager_only: (data as any).manager_only === true,
   } as ApplicationItem;
 }
 
@@ -116,6 +118,7 @@ export async function updateApplicationItem(
     ...(data as any),
     column_type: (data as any).column_type || 'check',
     due_date: (data as any).due_date || null,
+    manager_only: (data as any).manager_only === true,
   } as ApplicationItem;
 }
 

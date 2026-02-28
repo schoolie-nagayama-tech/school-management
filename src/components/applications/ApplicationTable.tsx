@@ -6,6 +6,7 @@ import { updateStudentApplication, updateApplicationItem, createApplicationItem,
 import { useAuth } from '@/contexts/AuthContext';
 import { useState } from 'react';
 import { useToast } from '@/hooks/useToast';
+import { Lock } from 'lucide-react';
 
 interface ApplicationTableProps {
   students: Student[];
@@ -60,6 +61,7 @@ export function ApplicationTable({
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [newItemColumnType, setNewItemColumnType] = useState<ApplicationColumnType>('check');
   const [newItemDueDate, setNewItemDueDate] = useState<string>('');
+  const [newItemManagerOnly, setNewItemManagerOnly] = useState(false);
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
   const [editingCell, setEditingCell] = useState<{ studentId: string; itemId: string; type: 'number' | 'date' } | null>(null);
   const [editingValue, setEditingValue] = useState<string>('');
@@ -183,10 +185,11 @@ export function ApplicationTable({
                   ? new Date(item.due_date).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })
                   : null;
                 
+                const isReadOnlyForTeacher = isTeacher && !item.teacher_editable;
                 return (
                   <th
                     key={item.id}
-                    className={`px-4 py-3 text-center text-[#1f2937] font-semibold border-r border-[#e5e7eb] min-w-[120px] relative group ${isOverdue ? 'bg-red-100' : ''}`}
+                    className={`px-4 py-3 text-center text-[#1f2937] font-semibold border-r border-[#e5e7eb] min-w-[120px] relative group ${isOverdue ? 'bg-red-100' : ''} ${isReadOnlyForTeacher ? 'bg-amber-50/80' : ''}`}
                   >
                     {onStatusChange && !isTeacher && editingItemId === item.id ? (
                       <div className="flex items-center gap-2">
@@ -275,7 +278,15 @@ export function ApplicationTable({
                               </button>
                             </>
                           ) : (
-                            <span className="text-sm">{item.name}</span>
+                            <span className="text-sm flex items-center justify-center gap-1 flex-wrap">
+                              {item.name}
+                              {isTeacher && !item.teacher_editable && (
+                                <>
+                                  <Lock className="w-3.5 h-3.5 text-amber-600 shrink-0" aria-hidden />
+                                  <span className="text-xs text-amber-700 font-normal">閲覧のみ</span>
+                                </>
+                              )}
+                            </span>
                           )}
                         </div>
                         <div className="text-[10px] text-[#4b5563]/70">
@@ -319,6 +330,15 @@ export function ApplicationTable({
                       placeholder="期日（任意）"
                       className="w-full px-2 py-1 text-sm border border-[#e5e7eb] rounded bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
                     />
+                    <label className="flex items-center gap-2 text-sm text-[#4b5563]">
+                      <input
+                        type="checkbox"
+                        checked={newItemManagerOnly}
+                        onChange={(e) => setNewItemManagerOnly(e.target.checked)}
+                        className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6]"
+                      />
+                      <span>室長以上のみ表示（講師には非表示）</span>
+                    </label>
                     <div className="flex gap-2">
                       <button
                         onClick={async () => {
@@ -334,6 +354,7 @@ export function ApplicationTable({
                                   name: editingName.trim(),
                                   column_type: newItemColumnType,
                                   due_date: newItemDueDate || null,
+                                  manager_only: newItemManagerOnly,
                                 }, 
                                 schoolIds[0]
                               );
@@ -343,6 +364,7 @@ export function ApplicationTable({
                               setEditingName('');
                               setNewItemColumnType('check');
                               setNewItemDueDate('');
+                              setNewItemManagerOnly(false);
                             } catch (err) {
                               toastError(
                                 err instanceof Error ? err.message : '項目の追加に失敗しました'
@@ -360,6 +382,7 @@ export function ApplicationTable({
                           setEditingName('');
                           setNewItemColumnType('check');
                           setNewItemDueDate('');
+                          setNewItemManagerOnly(false);
                         }}
                         className="flex-1 px-2 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] transition-colors"
                       >
@@ -473,12 +496,14 @@ export function ApplicationTable({
                         key={item.id}
                         className={`px-4 py-3 text-center border-r border-[#e5e7eb] transition-colors ${style} ${
                           isOverdueAndIncomplete ? 'bg-red-100' : ''
-                        } ${
+                        } ${isTeacher && !canEdit ? 'bg-amber-50/50' : ''} ${
                           isUpdating ? 'opacity-50' : (onStatusChange && canEdit) ? 'cursor-pointer hover:bg-[#3b82f6]/10' : 'cursor-default opacity-60'
                         }`}
                         onClick={() => onStatusChange && !isUpdating && canEdit && handleCellClick(student.id, item.id)}
                         title={
-                          status === null
+                          isTeacher && !canEdit
+                            ? '閲覧のみ（講師は編集できません）'
+                            : status === null
                             ? '未確認（クリックで未申込に）'
                             : status === 'pending'
                             ? '未申込（クリックで申込済に）'
@@ -503,7 +528,7 @@ export function ApplicationTable({
                         key={item.id}
                         className={`px-4 py-3 text-center border-r border-[#e5e7eb] transition-colors ${
                           isOverdueAndIncomplete ? 'bg-red-100' : 'bg-white'
-                        } ${
+                        } ${isTeacher && !canEdit ? 'bg-amber-50/50' : ''} ${
                           isUpdating ? 'opacity-50' : (onNumberChange && canEdit) ? 'cursor-pointer hover:bg-[#3b82f6]/10' : 'cursor-default opacity-60'
                         }`}
                         onClick={() => {
@@ -512,6 +537,7 @@ export function ApplicationTable({
                             setEditingValue(numberValue?.toString() || '');
                           }
                         }}
+                        title={isTeacher && !canEdit ? '閲覧のみ（講師は編集できません）' : undefined}
                       >
                         {isEditing ? (
                           <input
@@ -567,7 +593,7 @@ export function ApplicationTable({
                         key={item.id}
                         className={`px-4 py-3 text-center border-r border-[#e5e7eb] transition-colors ${
                           isOverdueAndIncomplete ? 'bg-red-100' : 'bg-white'
-                        } ${
+                        } ${isTeacher && !canEdit ? 'bg-amber-50/50' : ''} ${
                           isUpdating ? 'opacity-50' : (onDateChange && canEdit) ? 'cursor-pointer hover:bg-[#3b82f6]/10' : 'cursor-default opacity-60'
                         }`}
                         onClick={() => {
@@ -576,6 +602,7 @@ export function ApplicationTable({
                             setEditingValue(dateValue || '');
                           }
                         }}
+                        title={isTeacher && !canEdit ? '閲覧のみ（講師は編集できません）' : undefined}
                       >
                         {isEditing ? (
                           <input

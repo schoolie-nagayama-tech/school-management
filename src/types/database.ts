@@ -259,6 +259,7 @@ export type Database = {
           column_type?: 'check' | 'number' | 'date';
           due_date?: string | null;
           teacher_editable?: boolean;
+          manager_only?: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -271,6 +272,7 @@ export type Database = {
           column_type?: 'check' | 'number' | 'date';
           due_date?: string | null;
           teacher_editable?: boolean;
+          manager_only?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -283,6 +285,7 @@ export type Database = {
           column_type?: 'check' | 'number' | 'date';
           due_date?: string | null;
           teacher_editable?: boolean;
+          manager_only?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -2142,6 +2145,7 @@ export type ApplicationItem = Database['public']['Tables']['application_items'][
   column_type: ApplicationColumnType;
   due_date: string | null;
   teacher_editable?: boolean;
+  manager_only?: boolean;
 };
 export type ApplicationItemInsert = Database['public']['Tables']['application_items']['Insert'];
 export type ApplicationItemUpdate = Database['public']['Tables']['application_items']['Update'];
