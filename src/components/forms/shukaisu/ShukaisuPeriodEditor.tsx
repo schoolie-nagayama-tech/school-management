@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Modal, Input, Button, Select } from '@/components/ui';
 import { createShukaisuPeriod, updateShukaisuPeriod } from '@/lib/api/shukaisu';
+import { createFormPeriodForSchools, updateFormPeriodForSchools } from '@/lib/api/form-periods';
 import { getApplicationItems } from '@/lib/api/applications';
 import { getClassPeriods, formatPeriodsToText } from '@/lib/api/class-periods';
 import type { ShukaisuPeriod, ShukaisuSettings } from '@/types/forms/shukaisu';
@@ -12,6 +13,8 @@ interface ShukaisuPeriodEditorProps {
   isOpen: boolean;
   period: ShukaisuPeriod | null;
   schoolId?: string;
+  /** 複数教室に一括作成・更新する場合 */
+  schoolIds?: string[];
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -31,11 +34,13 @@ export function ShukaisuPeriodEditor({
   isOpen,
   period,
   schoolId,
+  schoolIds,
   onClose,
   onSuccess,
 }: ShukaisuPeriodEditorProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [applyToAllSchools, setApplyToAllSchools] = useState(true);
 
   // フォームデータ
   const [periodKey, setPeriodKey] = useState('');
@@ -193,12 +198,26 @@ export function ShukaisuPeriodEditor({
       };
 
       if (period) {
-        await updateShukaisuPeriod(period.id, baseData);
+        if (schoolIds && schoolIds.length > 1 && applyToAllSchools) {
+          await updateFormPeriodForSchools(
+            schoolIds,
+            'shukaisu',
+            period.period_key,
+            baseData
+          );
+        } else {
+          await updateShukaisuPeriod(period.id, baseData);
+        }
       } else {
-        await createShukaisuPeriod(
-          { ...baseData, period_key: periodKey.trim() },
-          schoolId
-        );
+        const createData = { ...baseData, period_key: periodKey.trim() };
+        if (schoolIds && schoolIds.length > 1) {
+          await createFormPeriodForSchools(schoolIds, {
+            ...createData,
+            form_type: 'shukaisu',
+          });
+        } else {
+          await createShukaisuPeriod(createData, schoolId);
+        }
       }
 
       onSuccess();
@@ -394,6 +413,21 @@ export function ShukaisuPeriodEditor({
             disabled={isSubmitting}
           />
         </section>
+
+        {period && schoolIds && schoolIds.length > 1 && (
+          <label className="flex items-center gap-2 p-3 bg-[#eff6ff] rounded-lg border border-[#bfdbfe] cursor-pointer">
+            <input
+              type="checkbox"
+              checked={applyToAllSchools}
+              onChange={(e) => setApplyToAllSchools(e.target.checked)}
+              disabled={isSubmitting}
+              className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6]"
+            />
+            <span className="text-sm text-[#1f2937]">
+              選択中の他教室の同じ期間も同じ内容で更新する
+            </span>
+          </label>
+        )}
 
         {/* フッター */}
         <div className="flex justify-end gap-3 pt-4 border-t border-[#e5e7eb]">

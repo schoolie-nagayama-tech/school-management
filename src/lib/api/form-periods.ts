@@ -183,6 +183,41 @@ export async function updateFormPeriod(
 }
 
 /**
+ * 選択した複数教室に同じフォーム期間を一括作成（既存の period_key があれば更新）
+ */
+export async function createFormPeriodForSchools(
+  schoolIds: string[],
+  data: Omit<FormPeriodInsert, 'school_id'>
+): Promise<FormPeriod[]> {
+  if (schoolIds.length === 0) {
+    return [];
+  }
+  const results: FormPeriod[] = [];
+  for (const schoolId of schoolIds) {
+    const period = await createFormPeriod({ ...data, school_id: schoolId });
+    results.push(period);
+  }
+  return results;
+}
+
+/**
+ * 選択した複数教室の同じ form_type / period_key の期間を同じ内容で一括更新（存在しない教室はスキップ）
+ */
+export async function updateFormPeriodForSchools(
+  schoolIds: string[],
+  formType: FormType,
+  periodKey: string,
+  updates: FormPeriodUpdate
+): Promise<void> {
+  for (const schoolId of schoolIds) {
+    const period = await getFormPeriodByKey(schoolId, formType, periodKey);
+    if (period) {
+      await updateFormPeriod(period.id, updates);
+    }
+  }
+}
+
+/**
  * フォーム公開期間を1件取得
  */
 export async function getFormPeriod(id: string): Promise<FormPeriod | null> {

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Modal, Input, Button, Select } from '@/components/ui';
 import { createSoudanPeriod, updateSoudanPeriod } from '@/lib/api/soudan';
+import { createFormPeriodForSchools, updateFormPeriodForSchools } from '@/lib/api/form-periods';
 import { getApplicationItems } from '@/lib/api/applications';
 import type { SoudanPeriod, SoudanSettings } from '@/types/forms/soudan';
 import type { ApplicationItem } from '@/types/database';
@@ -11,6 +12,8 @@ interface SoudanPeriodEditorProps {
   isOpen: boolean;
   period: SoudanPeriod | null;
   schoolId?: string;
+  /** 複数教室に一括作成・更新する場合 */
+  schoolIds?: string[];
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -32,11 +35,13 @@ export function SoudanPeriodEditor({
   isOpen,
   period,
   schoolId,
+  schoolIds,
   onClose,
   onSuccess,
 }: SoudanPeriodEditorProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [applyToAllSchools, setApplyToAllSchools] = useState(true);
 
   // フォームデータ
   const [periodKey, setPeriodKey] = useState('');
@@ -156,12 +161,26 @@ export function SoudanPeriodEditor({
       };
 
       if (period) {
-        await updateSoudanPeriod(period.id, baseData);
+        if (schoolIds && schoolIds.length > 1 && applyToAllSchools) {
+          await updateFormPeriodForSchools(
+            schoolIds,
+            'soudan',
+            period.period_key,
+            baseData
+          );
+        } else {
+          await updateSoudanPeriod(period.id, baseData);
+        }
       } else {
-        await createSoudanPeriod(
-          { ...baseData, period_key: periodKey.trim() },
-          schoolId
-        );
+        const createData = { ...baseData, period_key: periodKey.trim() };
+        if (schoolIds && schoolIds.length > 1) {
+          await createFormPeriodForSchools(schoolIds, {
+            ...createData,
+            form_type: 'soudan',
+          });
+        } else {
+          await createSoudanPeriod(createData, schoolId);
+        }
       }
 
       onSuccess();
@@ -318,6 +337,21 @@ export function SoudanPeriodEditor({
             disabled={isSubmitting}
           />
         </section>
+
+        {period && schoolIds && schoolIds.length > 1 && (
+          <label className="flex items-center gap-2 p-3 bg-[#eff6ff] rounded-lg border border-[#bfdbfe] cursor-pointer">
+            <input
+              type="checkbox"
+              checked={applyToAllSchools}
+              onChange={(e) => setApplyToAllSchools(e.target.checked)}
+              disabled={isSubmitting}
+              className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6]"
+            />
+            <span className="text-sm text-[#1f2937]">
+              選択中の他教室の同じ期間も同じ内容で更新する
+            </span>
+          </label>
+        )}
 
         {/* フッター */}
         <div className="flex justify-end gap-3 pt-4 border-t border-[#e5e7eb]">

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Modal, Input, Button, Select } from '@/components/ui';
 import { createMogiPeriod, updateMogiPeriod } from '@/lib/api/mogi';
+import { createFormPeriodForSchools, updateFormPeriodForSchools } from '@/lib/api/form-periods';
 import { getApplicationItems } from '@/lib/api/applications';
 import type { MogiPeriod, MogiSettings, Venue } from '@/types/forms/mogi';
 import type { ApplicationItem } from '@/types/database';
@@ -11,6 +12,8 @@ interface MogiPeriodEditorProps {
   isOpen: boolean;
   period: MogiPeriod | null;
   schoolId?: string;
+  /** 複数教室に一括作成・更新する場合 */
+  schoolIds?: string[];
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -19,11 +22,13 @@ export function MogiPeriodEditor({
   isOpen,
   period,
   schoolId,
+  schoolIds,
   onClose,
   onSuccess,
 }: MogiPeriodEditorProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [applyToAllSchools, setApplyToAllSchools] = useState(true);
 
   // 共通会場テキストと日程エントリ
   interface DateEntry {
@@ -267,30 +272,44 @@ export function MogiPeriodEditor({
 
       const settingsForApi = settings as unknown as Record<string, unknown>;
 
+      const updates = {
+        title: title.trim(),
+        publish_start: publishStart ? new Date(publishStart).toISOString() : null,
+        publish_end: publishEnd ? new Date(publishEnd).toISOString() : null,
+        is_active: shouldBeActive,
+        settings: settingsForApi,
+        linked_application_item_id: linkedApplicationItemId || null,
+      };
+
       if (period) {
-        // 更新（FormPeriodUpdate は period_key を除外）
-        await updateMogiPeriod(period.id, {
+        if (schoolIds && schoolIds.length > 1 && applyToAllSchools) {
+          await updateFormPeriodForSchools(
+            schoolIds,
+            'mogi',
+            period.period_key,
+            updates
+          );
+        } else {
+          await updateMogiPeriod(period.id, updates);
+        }
+      } else {
+        const createData = {
+          period_key: periodKey.trim(),
           title: title.trim(),
+          settings: settingsForApi,
           publish_start: publishStart ? new Date(publishStart).toISOString() : null,
           publish_end: publishEnd ? new Date(publishEnd).toISOString() : null,
           is_active: shouldBeActive,
-          settings: settingsForApi,
           linked_application_item_id: linkedApplicationItemId || null,
-        });
-      } else {
-        // 新規作成
-        await createMogiPeriod(
-          {
-            period_key: periodKey.trim(),
-            title: title.trim(),
-            settings: settingsForApi,
-            publish_start: publishStart ? new Date(publishStart).toISOString() : null,
-            publish_end: publishEnd ? new Date(publishEnd).toISOString() : null,
-            is_active: shouldBeActive,
-            linked_application_item_id: linkedApplicationItemId || null,
-          },
-          schoolId
-        );
+        };
+        if (schoolIds && schoolIds.length > 1) {
+          await createFormPeriodForSchools(schoolIds, {
+            ...createData,
+            form_type: 'mogi',
+          });
+        } else {
+          await createMogiPeriod(createData, schoolId);
+        }
       }
       onSuccess();
       onClose();
@@ -681,6 +700,21 @@ export function MogiPeriodEditor({
           ]}
           disabled={isSubmitting}
         />
+
+        {period && schoolIds && schoolIds.length > 1 && (
+          <label className="flex items-center gap-2 p-3 bg-[#eff6ff] rounded-lg border border-[#bfdbfe] cursor-pointer">
+            <input
+              type="checkbox"
+              checked={applyToAllSchools}
+              onChange={(e) => setApplyToAllSchools(e.target.checked)}
+              disabled={isSubmitting}
+              className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6]"
+            />
+            <span className="text-sm text-[#1f2937]">
+              選択中の他教室の同じ期間も同じ内容で更新する
+            </span>
+          </label>
+        )}
 
         <div className="flex justify-end gap-3 pt-4 border-t border-[#e5e7eb]">
           <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>

@@ -14,6 +14,8 @@ import {
   archivePeriod,
   unarchivePeriod,
   getResponseCountByPeriod,
+  createFormPeriodForSchools,
+  updateFormPeriodForSchools,
 } from '@/lib/api/form-periods';
 import { ZoukomaPeriodEditor } from '@/components/forms/zoukoma/ZoukomaPeriodEditor';
 import { MogiPeriodEditor } from '@/components/forms/mogi/MogiPeriodEditor';
@@ -60,7 +62,9 @@ export default function FormPeriodsPage() {
   const [editingPeriod, setEditingPeriod] = useState<FormPeriod | null | 'new'>(null);
   const { toasts, removeToast, success, error } = useToast();
 
-  const schoolId = getSelectedSchoolIds()[0] ?? '';
+  const selectedSchoolIds = getSelectedSchoolIds();
+  const schoolId = selectedSchoolIds[0] ?? '';
+  const isMultiSchool = selectedSchoolIds.length > 1;
   const formTypeValid = SUPPORTED_FORM_TYPES.includes(formType as FormType);
   const formLabel = FORM_TYPE_LABELS[formType as FormType] ?? formType;
 
@@ -216,6 +220,14 @@ export default function FormPeriodsPage() {
             </div>
           )}
 
+          {isMultiSchool && (
+            <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+              <p className="font-medium mb-1">複数教室を選択中です</p>
+              <p>
+                新しい期間を作成すると、選択中の{selectedSchoolIds.length}教室に同じ期間が一括で作成されます。編集時に「他教室も同じ内容で更新」にチェックを入れると、選択中の全教室の同じ期間が更新されます。
+              </p>
+            </div>
+          )}
           <div className="mb-6 p-4 bg-[#eff6ff] border border-[#3b82f6]/30 rounded-lg text-sm text-[#1e40af]">
             <p className="font-medium mb-1">💡 公開できる期間は1つだけです。</p>
             <p>
@@ -275,6 +287,7 @@ export default function FormPeriodsPage() {
           isOpen
           period={editingPeriod === 'new' ? null : (editingPeriod as ZoukomaPeriod)}
           schoolId={schoolId}
+          schoolIds={isMultiSchool ? selectedSchoolIds : undefined}
           onClose={() => setEditingPeriod(null)}
           onSuccess={handleEditSuccess}
         />
@@ -284,6 +297,7 @@ export default function FormPeriodsPage() {
           isOpen
           period={editingPeriod === 'new' ? null : (editingPeriod as MogiPeriod)}
           schoolId={schoolId}
+          schoolIds={isMultiSchool ? selectedSchoolIds : undefined}
           onClose={() => setEditingPeriod(null)}
           onSuccess={handleEditSuccess}
         />
@@ -293,6 +307,7 @@ export default function FormPeriodsPage() {
           isOpen
           period={editingPeriod === 'new' ? null : (editingPeriod as unknown as MoshiPeriod)}
           schoolId={schoolId}
+          schoolIds={isMultiSchool ? selectedSchoolIds : undefined}
           onClose={() => setEditingPeriod(null)}
           onSuccess={handleEditSuccess}
         />
@@ -302,6 +317,7 @@ export default function FormPeriodsPage() {
           isOpen
           period={editingPeriod === 'new' ? null : (editingPeriod as unknown as SoudanPeriod)}
           schoolId={schoolId}
+          schoolIds={isMultiSchool ? selectedSchoolIds : undefined}
           onClose={() => setEditingPeriod(null)}
           onSuccess={handleEditSuccess}
         />
@@ -311,6 +327,7 @@ export default function FormPeriodsPage() {
           isOpen
           period={editingPeriod === 'new' ? null : (editingPeriod as unknown as ShukaisuPeriod)}
           schoolId={schoolId}
+          schoolIds={isMultiSchool ? selectedSchoolIds : undefined}
           onClose={() => setEditingPeriod(null)}
           onSuccess={handleEditSuccess}
         />
@@ -320,6 +337,7 @@ export default function FormPeriodsPage() {
           isOpen
           period={editingPeriod === 'new' ? null : (editingPeriod as unknown as YoubiPeriod)}
           schoolId={schoolId}
+          schoolIds={isMultiSchool ? selectedSchoolIds : undefined}
           onClose={() => setEditingPeriod(null)}
           onSuccess={handleEditSuccess}
         />
