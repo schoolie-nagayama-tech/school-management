@@ -281,7 +281,9 @@ export function ApplicationTable({
                             <span className="text-sm flex items-center justify-center gap-1 flex-wrap">
                               {item.name}
                               {isTeacher && !item.teacher_editable && (
-                                <Lock className="w-3.5 h-3.5 text-amber-600 shrink-0" aria-hidden title="閲覧のみ" />
+                                <span title="閲覧のみ" className="inline-flex">
+                                  <Lock className="w-3.5 h-3.5 text-amber-600 shrink-0" aria-hidden />
+                                </span>
                               )}
                             </span>
                           )}
