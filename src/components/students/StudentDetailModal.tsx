@@ -50,9 +50,10 @@ export function StudentDetailModal({
   const [activeTab, setActiveTab] = useState<TabType>('basic');
   const schoolId = getDefaultSchoolId();
 
+  // 通塾日程の編集は室長以上のみ。講師にはタブごと非表示
   const tabs: { key: TabType; label: string }[] = [
     { key: 'basic', label: '基本情報' },
-    { key: 'schedule', label: '通塾日程' },
+    ...(isTeacher ? [] : [{ key: 'schedule' as const, label: '通塾日程' }]),
     { key: 'interviews', label: '面談記録' },
   ];
 
@@ -281,7 +282,7 @@ export function StudentDetailModal({
           </>
         )}
 
-        {activeTab === 'schedule' && student && (
+        {activeTab === 'schedule' && !isTeacher && student && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-[#0d0d0d]">通塾日程</h3>

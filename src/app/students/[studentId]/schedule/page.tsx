@@ -8,12 +8,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { StudentRegularScheduleList } from '@/components/students/StudentRegularScheduleList';
 import { getStudent } from '@/lib/api/students';
 import { useAuth } from '@/contexts/AuthContext';
+import AccessDenied from '@/components/AccessDenied';
 import type { Student } from '@/types/database';
 
 export default function StudentSchedulePage() {
   const params = useParams();
-  const _router = useRouter();
-  const { getSelectedSchoolIds } = useAuth();
+  const router = useRouter();
+  const { getSelectedSchoolIds, profile } = useAuth();
   const studentId = params?.studentId as string;
   const [student, setStudent] = useState<Student | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,6 +36,15 @@ export default function StudentSchedulePage() {
   useEffect(() => {
     loadStudent();
   }, [loadStudent]);
+
+  // 通塾日程の編集は室長以上のみ。講師はアクセス不可
+  if (profile && profile.role === 'teacher') {
+    return (
+      <AdminLayout headerTitle="通塾日程">
+        <AccessDenied />
+      </AdminLayout>
+    );
+  }
 
   if (loading) {
     return (

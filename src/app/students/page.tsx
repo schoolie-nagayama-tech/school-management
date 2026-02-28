@@ -444,7 +444,7 @@ export default function StudentsPage() {
           onScores={handleOpenScores}
           onProgress={handleOpenProgress}
           onInterviews={handleOpenInterviews}
-          onSchedule={handleOpenSchedule}
+          onSchedule={!isTeacher ? handleOpenSchedule : undefined}
           isLoading={isLoading}
         />
 
@@ -504,7 +504,7 @@ export default function StudentsPage() {
           setSelectedStudent(null);
         }}
         onEdit={handleOpenEditModal}
-        onOpenSchedule={handleOpenSchedule}
+        onOpenSchedule={!isTeacher ? handleOpenSchedule : undefined}
         onStatusChange={!isTeacher ? handleStatusChange : undefined}
         onDelete={
           !isTeacher
