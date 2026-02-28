@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,7 +16,7 @@ import { Label } from '@/components/ui';
 import { SelectShadcn as Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui';
 import { Copy, Check, Eye, EyeOff, Trash2 } from 'lucide-react';
 import type { School, UserRole, UserProfile } from '@/types/database';
-import { USER_ROLE_LABELS } from '@/types/database';
+import { USER_ROLE_LABELS, USER_ROLE_LEVELS } from '@/types/database';
 
 type TabType = 'users' | 'schools';
 
@@ -45,6 +45,15 @@ export default function UsersPage() {
   const isManager = roleLower === 'manager';
   const isOwner = roleLower === 'owner';
   const isAdmin = roleLower === 'admin';
+
+  // 編集可能か：自分より権限が下、もしくは自分の情報
+  const canEditUser = (targetUser: UserWithDetails): boolean => {
+    if (!profile?.role) return false;
+    if (targetUser.id === profile.id) return true; // 自分の情報
+    const myLevel = USER_ROLE_LEVELS[profile.role as UserRole] ?? 0;
+    const targetLevel = USER_ROLE_LEVELS[targetUser.role as UserRole] ?? 0;
+    return targetLevel < myLevel; // 自分より権限が下
+  };
   
   // ユーザー作成フォーム
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -79,6 +88,7 @@ export default function UsersPage() {
   // 削除確認
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletingUser, setDeletingUser] = useState<UserWithDetails | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // 教室管理
   const [editingSchool, setEditingSchool] = useState<School | null>(null);
@@ -87,17 +97,11 @@ export default function UsersPage() {
   const [notificationEmail, setNotificationEmail] = useState('');
   const [isSavingSchool, setIsSavingSchool] = useState(false);
 
-  // データ取得（認証完了後および権限が決まったあとで実行）
-  useEffect(() => {
-    if (authLoading) return;
-    loadData();
-  }, [authLoading, profile?.role, profile?.id]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
       const [usersResponse, schoolsData] = await Promise.all([
-        fetchWithAuth(`/api/admin/users?t=${Date.now()}`),
+        fetchWithAuth(`/api/admin/users?t=${Date.now()}`, { cache: 'no-store' } as RequestInit),
         getSchools(),
       ]);
       
@@ -124,7 +128,10 @@ export default function UsersPage() {
         if (myIds.length > 0) {
           filteredUsers = filteredUsers.filter((user: UserWithDetails) => {
             const userSchoolIds = (user.user_schools || []).map((us: { school_id: string }) => us.school_id);
-            return userSchoolIds.some((sid: string) => myIds.includes(sid));
+            return (
+              userSchoolIds.length === 0 || // 未割当ユーザーも通す（新規登録ユーザーが消えないように）
+              userSchoolIds.some((sid: string) => myIds.includes(sid))
+            );
           });
         }
       } else if (isManager && profile?.id) {
@@ -132,7 +139,11 @@ export default function UsersPage() {
         filteredUsers = filteredUsers.filter((user: UserWithDetails) => user.id === profile.id);
       }
       
-      setUsers(filteredUsers);
+      setUsers((prev) => {
+        const apiIds = new Set(filteredUsers.map((u: UserWithDetails) => u.id));
+        const onlyInPrev = prev.filter((u) => !apiIds.has(u.id));
+        return [...filteredUsers, ...onlyInPrev];
+      });
       setSchools(schoolsData);
       if (schoolsData.length > 0 && !formData.schoolId) {
         setFormData(prev => ({ ...prev, schoolId: schoolsData[0].id }));
@@ -143,7 +154,13 @@ export default function UsersPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toastError, isAdmin, isOwner, mySchoolIds, profile?.id]);
+
+  // データ取得（認証完了後および権限が決まったあとで実行）
+  useEffect(() => {
+    if (authLoading) return;
+    loadData();
+  }, [authLoading, profile?.role, profile?.id, loadData]);
 
   // ユーザー作成
   const handleCreate = async () => {
@@ -178,8 +195,13 @@ export default function UsersPage() {
         throw new Error(result.error || 'ユーザーの作成に失敗しました');
       }
 
+      const createdUser = result.user;
+      if (!createdUser?.id) {
+        throw new Error('ユーザー情報の取得に失敗しました');
+      }
+
       setCreatedUser({
-        email: result.user?.email || result.user?.id || '',
+        email: createdUser.email || createdUser.id || '',
         password: formData.password,
         displayName: formData.displayName,
       });
@@ -192,7 +214,9 @@ export default function UsersPage() {
         role: 'manager',
         schoolId: schools[0]?.id || '',
       });
-      await loadData();
+
+      // 楽観的更新：API 戻り値で一覧に追加（loadData で上書きしない）
+      setUsers((prev) => [...prev, createdUser as UserWithDetails]);
       success('ユーザーを作成しました');
     } catch (error: any) {
       console.error('Failed to create user:', error);
@@ -258,20 +282,24 @@ export default function UsersPage() {
       const data = await res.json().catch(() => ({}));
       const updatedUserSchools = Array.isArray(data?.user_schools) ? data.user_schools : undefined;
 
+      const savedUserId = editingUser.id;
+      const isEditingSelf = editingUser.id === profile?.id;
+
+      // 楽観的更新：DB 保存が成功しているので、一覧を即時反映（loadData で上書きしない）
+      const updatedUser: UserWithDetails = {
+        ...editingUser,
+        display_name: editDisplayName,
+        default_school_id: defaultSchoolId,
+        ...(isEditingSelf
+          ? {}
+          : {
+              role: editRole,
+              user_schools: updatedUserSchools ?? editingUser.user_schools ?? [],
+            }),
+      };
+
       setEditingUser(null);
-
-      // 返却された user_schools で一覧を即時更新（登録が確実に反映されるように）
-      if (updatedUserSchools && editingUser) {
-        setUsers((prev) =>
-          prev.map((u) =>
-            u.id === editingUser.id
-              ? { ...u, user_schools: updatedUserSchools }
-              : u
-          )
-        );
-      }
-
-      await loadData();
+      setUsers((prev) => prev.map((u) => (u.id === savedUserId ? updatedUser : u)));
       success('ユーザーを更新しました');
     } catch (err) {
       console.error('Error updating user:', err);
@@ -283,8 +311,9 @@ export default function UsersPage() {
 
   // ユーザー削除
   const handleDelete = async () => {
-    if (!deletingUser) return;
+    if (!deletingUser || isDeleting) return;
     const userIdToDelete = deletingUser.id;
+    setIsDeleting(true);
 
     try {
       const response = await fetchWithAuth(`/api/admin/users/${userIdToDelete}`, {
@@ -296,6 +325,9 @@ export default function UsersPage() {
         if (response.status === 404) {
           setUsers((prev) => prev.filter((u) => u.id !== userIdToDelete));
           success('ユーザーを削除しました');
+          setIsDeleting(false);
+          setIsDeleteDialogOpen(false);
+          setDeletingUser(null);
           return;
         }
         let msg = '削除に失敗しました';
@@ -314,6 +346,7 @@ export default function UsersPage() {
       console.error('Failed to delete user:', error);
       toastError(error instanceof Error ? error.message : '削除に失敗しました');
     } finally {
+      setIsDeleting(false);
       setIsDeleteDialogOpen(false);
       setDeletingUser(null);
     }
@@ -429,9 +462,9 @@ export default function UsersPage() {
 
   return (
     <AdminLayout headerTitle="ユーザー管理">
-      <div className="p-6 max-w-7xl mx-auto">
+      <div className="flex flex-col h-[calc(100vh-6.5rem)] max-w-7xl mx-auto">
         {/* ヘッダー */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4 flex-shrink-0">
           <div className="flex items-center gap-4">
             <Link
               href="/students"
@@ -475,7 +508,7 @@ export default function UsersPage() {
         </div>
 
         {/* タブ */}
-        <div className="flex gap-2 mb-6 border-b border-[#e5e7eb]/20">
+        <div className="flex gap-2 mb-4 border-b border-[#e5e7eb]/20 flex-shrink-0">
           <button
             onClick={() => setActiveTab('users')}
             className={`px-4 py-2 font-medium transition-colors ${
@@ -501,55 +534,65 @@ export default function UsersPage() {
         </div>
 
         {isLoading ? (
-          <div className="text-center py-12">
-            <div className="w-12 h-12 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-[#4b5563]">読み込み中...</p>
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-12 h-12 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-[#4b5563]">読み込み中...</p>
+            </div>
           </div>
         ) : activeTab === 'users' ? (
-          <div className="space-y-6">
+          <div className="flex-1 min-h-0 flex flex-col">
             {/* ユーザー一覧 */}
-            <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
-              <div className="p-4 bg-[#f3f4f6] border-b border-[#e5e7eb]">
+            <div className="bg-white rounded-xl border border-[#e5e7eb] flex-1 min-h-0 flex flex-col overflow-hidden">
+              <div className="p-3 bg-[#f3f4f6] border-b border-[#e5e7eb] flex-shrink-0">
                 <h2 className="font-bold text-[#1f2937]">登録済みユーザー ({users.length})</h2>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[900px]">
+              <div className="flex-1 min-h-0 overflow-auto">
+                <table className="w-full table-fixed">
+                  <colgroup>
+                    <col style={{ width: '12%' }} />
+                    <col style={{ width: '20%' }} />
+                    <col style={{ width: '12%' }} />
+                    <col style={{ width: '25%' }} />
+                    <col style={{ width: '8%' }} />
+                    <col style={{ width: '11%' }} />
+                    <col style={{ width: '12%' }} />
+                  </colgroup>
                   <thead className="bg-[#f3f4f6] border-b border-[#e5e7eb]">
                     <tr>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937] whitespace-nowrap min-w-[100px]">名前</th>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937] whitespace-nowrap min-w-[180px]">メール</th>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937] whitespace-nowrap min-w-[100px]">権限</th>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937] whitespace-nowrap min-w-[260px]">担当教室</th>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937] whitespace-nowrap min-w-[70px]">状態</th>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937] whitespace-nowrap min-w-[95px]">最終ログイン</th>
-                      <th className="px-4 py-3 text-right text-sm font-bold text-[#1f2937] whitespace-nowrap min-w-[160px]">操作</th>
+                      <th className="px-3 py-2 text-left text-sm font-bold text-[#1f2937] truncate">名前</th>
+                      <th className="px-3 py-2 text-left text-sm font-bold text-[#1f2937] truncate">メール</th>
+                      <th className="px-3 py-2 text-left text-sm font-bold text-[#1f2937] truncate">権限</th>
+                      <th className="px-3 py-2 text-left text-sm font-bold text-[#1f2937]">担当教室</th>
+                      <th className="px-3 py-2 text-left text-sm font-bold text-[#1f2937] truncate">状態</th>
+                      <th className="px-3 py-2 text-left text-sm font-bold text-[#1f2937] truncate">最終ログイン</th>
+                      <th className="px-3 py-2 text-right text-sm font-bold text-[#1f2937] truncate">操作</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#e5e7eb]/10">
                     {users.map(user => (
                       <tr key={user.id} className="hover:bg-[#f3f4f6]/50">
-                        <td className="px-4 py-3 text-sm text-[#1f2937] whitespace-nowrap">
+                        <td className="px-3 py-2 text-sm text-[#1f2937] truncate" title={user.display_name || '-'}>
                           {user.display_name || '-'}
                         </td>
-                        <td className="px-4 py-3 text-sm text-[#4b5563] whitespace-nowrap">{user.email}</td>
-                        <td className="px-4 py-3 whitespace-nowrap">
+                        <td className="px-3 py-2 text-sm text-[#4b5563] truncate" title={user.email}>{user.email}</td>
+                        <td className="px-3 py-2 whitespace-nowrap">
                           <span className="inline-block px-2 py-1 text-xs font-bold bg-[#3b82f6]/20 text-[#1f2937] rounded">
                             {USER_ROLE_LABELS[user.role as UserRole] ?? '未設定'}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-sm text-[#4b5563]">
+                        <td className="px-3 py-2 text-sm text-[#4b5563] align-top break-words">
                           {user.user_schools && user.user_schools.length > 0 ? (
-                            <div className="flex flex-nowrap gap-1 overflow-x-auto">
+                            <div className="flex flex-wrap gap-1 break-words">
                               {user.user_schools.map((us, idx) => {
                                 const profileWithDefault = user as UserWithDetails & { default_school_id?: string | null };
                                 const isDefault = profileWithDefault.default_school_id === us.school_id;
                                 return (
                                   <span
                                     key={us.id || `${us.user_id}-${us.school_id}-${idx}`}
-                                    className={`inline-flex items-center shrink-0 px-2 py-0.5 text-xs rounded whitespace-nowrap ${isDefault ? 'bg-[#e5e7eb] text-[#4b5563]' : 'bg-[#f3f4f6]'}`}
+                                    className={`inline-flex items-center shrink-0 px-2 py-0.5 text-xs rounded whitespace-nowrap ${isDefault ? 'bg-blue-100 text-blue-800 font-medium' : 'bg-[#f3f4f6] text-[#4b5563]'}`}
                                   >
                                     {us.school?.name || '不明'}
-                                    {isDefault && <span className="ml-1 text-[#6b7280]">(デフォルト)</span>}
                                   </span>
                                 );
                               })}
@@ -558,7 +601,7 @@ export default function UsersPage() {
                             <span className="text-[#4b5563]/50">なし</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 whitespace-nowrap">
+                        <td className="px-3 py-2 whitespace-nowrap">
                           {user.is_active ? (
                             <span className="inline-block px-2 py-1 text-xs font-bold bg-green-100 text-green-700 rounded">
                               有効
@@ -569,13 +612,13 @@ export default function UsersPage() {
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-sm text-[#4b5563] whitespace-nowrap">
+                        <td className="px-3 py-2 text-sm text-[#4b5563] whitespace-nowrap">
                           {user.last_login_at ? new Date(user.last_login_at).toLocaleDateString('ja-JP') : '-'}
                         </td>
-                        <td className="px-4 py-3 text-right whitespace-nowrap">
+                        <td className="px-3 py-2 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-2">
-                            {/* 教室長の場合は自分の情報のみ編集可能 */}
-                            {(!isManager || user.id === profile?.id) && (
+                            {/* 自分より権限が下、もしくは自分の情報のみ編集可能 */}
+                            {canEditUser(user) && (
                               <>
                                 <Button
                                   variant="ghost"
@@ -616,27 +659,27 @@ export default function UsersPage() {
             </div>
           </div>
         ) : canAccessSchoolSettings ? (
-          <div className="space-y-6">
+          <div className="flex-1 min-h-0 flex flex-col">
             {/* 教室一覧 */}
-            <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
-              <div className="p-4 bg-[#f3f4f6] border-b border-[#e5e7eb]">
+            <div className="bg-white rounded-xl border border-[#e5e7eb] flex-1 min-h-0 flex flex-col overflow-hidden">
+              <div className="p-3 bg-[#f3f4f6] border-b border-[#e5e7eb] flex-shrink-0">
                 <h2 className="font-bold text-[#1f2937]">教室一覧 ({schools.length})</h2>
               </div>
-              <div className="overflow-x-auto">
+              <div className="flex-1 min-h-0 overflow-auto">
                 <table className="w-full">
                   <thead className="bg-[#f3f4f6] border-b border-[#e5e7eb]">
                     <tr>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937]">教室名</th>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937]">コード</th>
-                      <th className="px-4 py-3 text-right text-sm font-bold text-[#1f2937]">操作</th>
+                      <th className="px-3 py-2 text-left text-sm font-bold text-[#1f2937]">教室名</th>
+                      <th className="px-3 py-2 text-left text-sm font-bold text-[#1f2937]">コード</th>
+                      <th className="px-3 py-2 text-right text-sm font-bold text-[#1f2937]">操作</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#e5e7eb]/10">
                     {schools.map(school => (
                       <tr key={school.id} className="hover:bg-[#f3f4f6]/50">
-                        <td className="px-4 py-3 text-sm text-[#1f2937]">{school.name}</td>
-                        <td className="px-4 py-3 text-sm text-[#4b5563]">{school.code || '-'}</td>
-                        <td className="px-4 py-3 text-right">
+                        <td className="px-3 py-2 text-sm text-[#1f2937]">{school.name}</td>
+                        <td className="px-3 py-2 text-sm text-[#4b5563]">{school.code || '-'}</td>
+                        <td className="px-3 py-2 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <Button
                               variant="ghost"
@@ -664,7 +707,7 @@ export default function UsersPage() {
             </div>
           </div>
         ) : (
-          <div className="p-6">
+          <div className="flex-1 flex items-center p-6">
             <div className="bg-[#ef4444]/10 border border-[#ef4444] rounded-lg p-4">
               <p className="text-[#ef4444]">教室設定はオーナー権限以上のみアクセス可能です</p>
             </div>
@@ -775,10 +818,7 @@ export default function UsersPage() {
         {/* 作成完了ダイアログ */}
         <Dialog
           open={isResultDialogOpen}
-          onOpenChange={(open) => {
-            setIsResultDialogOpen(open);
-            if (!open) loadData();
-          }}
+          onOpenChange={setIsResultDialogOpen}
         >
           <DialogHeader>
             <DialogTitle>ユーザーを作成しました</DialogTitle>
@@ -855,12 +895,7 @@ export default function UsersPage() {
             </div>
           </DialogContent>
           <DialogFooter>
-            <Button
-              onClick={() => {
-                setIsResultDialogOpen(false);
-                loadData();
-              }}
-            >
+            <Button onClick={() => setIsResultDialogOpen(false)}>
               閉じる
             </Button>
           </DialogFooter>
@@ -879,9 +914,10 @@ export default function UsersPage() {
               <AlertDialogCancel onClick={() => { setIsDeleteDialogOpen(false); setDeletingUser(null); }}>キャンセル</AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDelete}
+                disabled={isDeleting}
                 className="bg-[#ef4444] text-white hover:bg-[#dc2626]"
               >
-                削除
+                {isDeleting ? '削除中...' : '削除'}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -968,7 +1004,9 @@ export default function UsersPage() {
         {editingUser && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 max-w-md w-full">
-              <h2 className="text-xl font-bold text-[#1f2937] mb-4">ユーザー編集</h2>
+              <h2 className="text-xl font-bold text-[#1f2937] mb-4">
+                {editingUser.id === profile?.id ? '自分の情報を編集' : 'ユーザー編集'}
+              </h2>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-[#1f2937] mb-1">
@@ -993,6 +1031,7 @@ export default function UsersPage() {
                     placeholder="山田 太郎"
                   />
                 </div>
+                {editingUser.id !== profile?.id && (
                 <div>
                   <label className="block text-sm font-medium text-[#1f2937] mb-1">
                     権限
@@ -1009,6 +1048,8 @@ export default function UsersPage() {
                     ))}
                   </select>
                 </div>
+                )}
+                {editingUser.id !== profile?.id && (
                 <div>
                   <label className="block text-sm font-medium text-[#1f2937] mb-1">
                     担当教室
@@ -1037,6 +1078,7 @@ export default function UsersPage() {
                     ))}
                   </div>
                 </div>
+                )}
                 {editSchoolIds.length > 1 && (
                   <div>
                     <label className="block text-sm font-medium text-[#1f2937] mb-1">

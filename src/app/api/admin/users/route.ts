@@ -60,11 +60,18 @@ export async function GET(request: NextRequest) {
     if (authError) return authError;
     const supabaseAdmin = getSupabaseAdmin();
     const roleParam = request.nextUrl.searchParams.get('role');
+    const requestTs = request.nextUrl.searchParams.get('t');
+    const queryNowIso =
+      requestTs && Number.isFinite(Number(requestTs))
+        ? new Date(Number(requestTs)).toISOString()
+        : new Date().toISOString();
 
     // 全ユーザープロファイルを取得（直接 SELECT で確実に全件取得。RPC はレプリケーション遅延等で抜けがある場合がある）
     const { data: profiles, error: profilesError } = await supabaseAdmin
       .from('user_profiles')
       .select('*')
+      // 一覧URLごとに毎回変わる条件を付与し、古いキャッシュ応答を避ける
+      .lte('created_at', queryNowIso)
       .order('created_at', { ascending: false });
 
     if (profilesError) {
@@ -100,6 +107,7 @@ export async function GET(request: NextRequest) {
       .from('user_schools')
       .select('*, school:schools(*)')
       .in('user_id', userIds)
+      .lte('created_at', queryNowIso)
       .order('user_id')
       .order('school_id');
 

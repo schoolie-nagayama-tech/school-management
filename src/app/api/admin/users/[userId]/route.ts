@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { requireAdmin, requireManager, getApiAuth, isUserInScope } from '@/lib/api-auth';
 import { writeAuditLog } from '@/lib/audit-log';
+import { USER_ROLE_LEVELS } from '@/types/database';
 
 function getSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -124,7 +125,7 @@ export async function PATCH(
   { params }: { params: { userId: string } }
 ) {
   try {
-    const authError = await requireAdmin(request);
+    const authError = await requireManager(request);
     if (authError) return authError;
     const userId = params.userId;
     if (!userId) {
@@ -133,17 +134,38 @@ export async function PATCH(
     const supabaseAdmin = getSupabaseAdmin();
     const { auth } = await getApiAuth(request);
     if (!auth) return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
-    const inScope = await isUserInScope(userId, auth.schoolIds, supabaseAdmin);
-    if (!inScope) {
-      console.error(JSON.stringify({
-        type: 'SCOPE_VIOLATION',
-        actorId: auth.userId,
-        targetUserId: userId,
-        path: request.nextUrl.pathname,
-        timestamp: new Date().toISOString(),
-      }));
-      return NextResponse.json({ error: 'ユーザーが見つかりません' }, { status: 404 });
+
+    const isEditingSelf = userId === auth.userId;
+
+    // 自分以外を編集する場合は、権限チェックとスコープチェック
+    if (!isEditingSelf) {
+      const inScope = await isUserInScope(userId, auth.schoolIds, supabaseAdmin);
+      if (!inScope) {
+        console.error(JSON.stringify({
+          type: 'SCOPE_VIOLATION',
+          actorId: auth.userId,
+          targetUserId: userId,
+          path: request.nextUrl.pathname,
+          timestamp: new Date().toISOString(),
+        }));
+        return NextResponse.json({ error: 'ユーザーが見つかりません' }, { status: 404 });
+      }
+      // 自分より権限が下のユーザーのみ編集可能
+      const { data: targetProfile } = await supabaseAdmin
+        .from('user_profiles')
+        .select('role')
+        .eq('id', userId)
+        .maybeSingle();
+      const myLevel = USER_ROLE_LEVELS[auth.role as keyof typeof USER_ROLE_LEVELS] ?? 0;
+      const targetLevel = USER_ROLE_LEVELS[(targetProfile?.role as keyof typeof USER_ROLE_LEVELS) ?? ''] ?? 0;
+      if (targetLevel >= myLevel) {
+        return NextResponse.json(
+          { error: '自分より権限が高い、または同レベルのユーザーは編集できません' },
+          { status: 403 }
+        );
+      }
     }
+
     const body = await request.json();
 
     // ユーザー管理からの編集（school_ids が渡された場合は profile + user_schools をサービスロールで更新）
@@ -161,8 +183,21 @@ export async function PATCH(
         updated_at: new Date().toISOString(),
       };
       if (display_name !== undefined) profileUpdates.display_name = display_name;
-      if (role !== undefined) profileUpdates.role = role;
-      if (default_school_id !== undefined) profileUpdates.default_school_id = default_school_id || null;
+      // 自分自身の編集では権限・教室は変更不可。デフォルト教室のみ変更可。
+      if (!isEditingSelf) {
+        if (role !== undefined) profileUpdates.role = role;
+        if (default_school_id !== undefined) profileUpdates.default_school_id = default_school_id || null;
+      } else if (default_school_id !== undefined) {
+        // 自分のデフォルト教室変更時は、自分が所属する教室のいずれかであることを確認
+        const { data: mySchools } = await supabaseAdmin
+          .from('user_schools')
+          .select('school_id')
+          .eq('user_id', userId);
+        const mySchoolIds = (mySchools || []).map((r: { school_id: string }) => r.school_id);
+        if (mySchoolIds.includes(default_school_id)) {
+          profileUpdates.default_school_id = default_school_id;
+        }
+      }
 
       const { error: profileError } = await supabaseAdmin
         .from('user_profiles')
@@ -171,37 +206,40 @@ export async function PATCH(
 
       if (profileError) throw profileError;
 
-      const { data: currentRows } = await supabaseAdmin
-        .from('user_schools')
-        .select('school_id')
-        .eq('user_id', userId);
-      const currentIds = (currentRows || []).map((r: { school_id: string }) => String(r.school_id).trim());
-
-      const toAdd = wantIds.filter((sid) => !currentIds.includes(sid));
-      const toRemove = currentIds.filter((sid) => !wantIds.includes(sid));
-
-      console.log('[PATCH user]', { userId, bodySchoolIds: body.school_ids, wantIds, currentIds, toAdd, toRemove });
-
-      for (const school_id of toAdd) {
-        const { error: insertError } = await supabaseAdmin
+      // 自分自身の編集では user_schools は変更しない
+      if (!isEditingSelf) {
+        const { data: currentRows } = await supabaseAdmin
           .from('user_schools')
-          .insert({ user_id: userId, school_id });
+          .select('school_id')
+          .eq('user_id', userId);
+        const currentIds = (currentRows || []).map((r: { school_id: string }) => String(r.school_id).trim());
 
-        if (insertError) {
-          console.error('user_schools insert error:', insertError);
-          throw insertError;
+        const toAdd = wantIds.filter((sid) => !currentIds.includes(sid));
+        const toRemove = currentIds.filter((sid) => !wantIds.includes(sid));
+
+        console.log('[PATCH user]', { userId, bodySchoolIds: body.school_ids, wantIds, currentIds, toAdd, toRemove });
+
+        for (const school_id of toAdd) {
+          const { error: insertError } = await supabaseAdmin
+            .from('user_schools')
+            .insert({ user_id: userId, school_id });
+
+          if (insertError) {
+            console.error('user_schools insert error:', insertError);
+            throw insertError;
+          }
         }
-      }
 
-      for (const sid of toRemove) {
-        const { error: deleteError } = await supabaseAdmin
-          .from('user_schools')
-          .delete()
-          .eq('user_id', userId)
-          .eq('school_id', sid);
-        if (deleteError) {
-          console.error('user_schools delete error:', deleteError);
-          throw deleteError;
+        for (const sid of toRemove) {
+          const { error: deleteError } = await supabaseAdmin
+            .from('user_schools')
+            .delete()
+            .eq('user_id', userId)
+            .eq('school_id', sid);
+          if (deleteError) {
+            console.error('user_schools delete error:', deleteError);
+            throw deleteError;
+          }
         }
       }
 

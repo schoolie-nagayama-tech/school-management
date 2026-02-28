@@ -185,12 +185,34 @@ export async function POST(request: NextRequest) {
       request,
     });
 
+    // 一覧の楽観的更新用に、作成済みユーザー（user_schools 込み）を返す
+    const { data: profile } = await supabaseAdmin
+      .from('user_profiles')
+      .select('*')
+      .eq('id', authData.user.id)
+      .single();
+    const { data: userSchoolsWithSchool } = await supabaseAdmin
+      .from('user_schools')
+      .select('id, user_id, school_id, school:schools(id, name, code)')
+      .eq('user_id', authData.user.id);
+
+    const createdUser = profile
+      ? {
+          ...profile,
+          user_schools: userSchoolsWithSchool ?? [],
+        }
+      : {
+          id: authData.user.id,
+          email: authData.user.email ?? finalEmail,
+          display_name: displayName,
+          role,
+          is_active: true,
+          user_schools: userSchoolsWithSchool ?? [],
+        };
+
     return NextResponse.json({
       success: true,
-      user: {
-        id: authData.user.id,
-        email: authData.user.email,
-      },
+      user: createdUser,
     });
   } catch (error) {
     console.error('Failed to create user:', error);
