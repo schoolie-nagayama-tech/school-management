@@ -288,7 +288,7 @@ export default function TeacherAttendancePage() {
           <Button
             variant="secondary"
             className="mt-4"
-            onClick={() => router.push(`/attendance/${schoolCode}`)}
+            onClick={() => router.push('/students')}
           >
             戻る
           </Button>
@@ -306,7 +306,7 @@ export default function TeacherAttendancePage() {
           <div className="flex items-center justify-between">
             <Button
               variant="ghost"
-              onClick={() => router.push(`/attendance/${schoolCode}?ym=${yearMonth}`)}
+              onClick={() => router.push('/students')}
               className="p-2"
             >
               <ArrowLeft className="h-4 w-4 mr-1" />
