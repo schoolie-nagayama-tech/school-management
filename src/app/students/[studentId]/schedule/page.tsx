@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
@@ -13,7 +13,6 @@ import type { Student } from '@/types/database';
 
 export default function StudentSchedulePage() {
   const params = useParams();
-  const router = useRouter();
   const { getSelectedSchoolIds, profile } = useAuth();
   const studentId = params?.studentId as string;
   const [student, setStudent] = useState<Student | null>(null);
