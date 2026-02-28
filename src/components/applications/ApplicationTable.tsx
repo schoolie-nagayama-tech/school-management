@@ -188,7 +188,7 @@ export function ApplicationTable({
                     key={item.id}
                     className={`px-4 py-3 text-center text-[#1f2937] font-semibold border-r border-[#e5e7eb] min-w-[120px] relative group ${isOverdue ? 'bg-red-100' : ''}`}
                   >
-                    {onStatusChange && editingItemId === item.id ? (
+                    {onStatusChange && !isTeacher && editingItemId === item.id ? (
                       <div className="flex items-center gap-2">
                         <input
                           type="text"
@@ -224,7 +224,7 @@ export function ApplicationTable({
                     ) : (
                       <div className="flex flex-col items-center gap-1">
                         <div className="flex items-center justify-center gap-1 w-full">
-                          {onStatusChange ? (
+                          {onStatusChange && !isTeacher ? (
                             <>
                               <div
                                 className="flex-1 flex items-center justify-center gap-1 cursor-pointer hover:bg-[#3b82f6]/10 rounded px-2 py-1 transition-colors"
@@ -291,8 +291,8 @@ export function ApplicationTable({
                   </th>
                 );
               })}
-              {/* 新規列追加ボタン（編集権限がある場合のみ表示） */}
-              {onStatusChange && (
+              {/* 新規列追加ボタン（室長以上のみ。講師は非表示） */}
+              {onStatusChange && !isTeacher && (
                 <th className="px-4 py-3 text-center text-[#1f2937] font-semibold border-r border-[#e5e7eb] min-w-[120px]">
                   {isAddingNew ? (
                   <div className="flex flex-col gap-2">
@@ -423,10 +423,12 @@ export function ApplicationTable({
                   )}
                 </td>
               ))}
-              {/* 新規列追加行の集計セル（空） */}
-              <td className="px-4 py-2 text-center text-[#4b5563] text-sm border-r border-[#e5e7eb]">
-                -
-              </td>
+              {/* 新規列追加行の集計セル（空）- 室長以上のみ表示 */}
+              {onStatusChange && !isTeacher && (
+                <td className="px-4 py-2 text-center text-[#4b5563] text-sm border-r border-[#e5e7eb]">
+                  -
+                </td>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -619,8 +621,8 @@ export function ApplicationTable({
                     );
                   }
                 })}
-                {/* 新規列追加行のセル（空）- 編集権限がある場合のみ表示 */}
-                {onStatusChange && (
+                {/* 新規列追加行のセル（空）- 室長以上のみ表示 */}
+                {onStatusChange && !isTeacher && (
                   <td className="px-4 py-3 text-center border-r border-[#e5e7eb] bg-[#f3f4f6]">
                     -
                   </td>

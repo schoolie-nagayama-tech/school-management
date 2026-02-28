@@ -309,7 +309,7 @@ export default function ApplicationsPage() {
   return (
     <AdminLayout
       headerTitle="申込状況管理"
-      headerOnSettingsClick={canEdit ? () => setIsItemManagerOpen(true) : undefined}
+      headerOnSettingsClick={canEdit && isManagerOrAbove ? () => setIsItemManagerOpen(true) : undefined}
     >
 
       {/* エラーメッセージ */}
@@ -383,7 +383,7 @@ export default function ApplicationsPage() {
         ) : items.length === 0 ? (
           <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 text-center">
             <p className="text-[#4b5563] mb-4">申込項目がありません。</p>
-            {canEdit && (
+            {canEdit && isManagerOrAbove && (
               <Button onClick={() => setIsSettingsModalOpen(true)}>
                 項目設定を開く
               </Button>
@@ -402,16 +402,16 @@ export default function ApplicationsPage() {
         />
       )}
 
-      {/* 項目設定モーダル（既存）- 編集権限がある場合のみ表示 */}
-      {canEdit && (
+      {/* 項目設定モーダル（既存）- 室長以上のみ（列の追加・削除・名前変更） */}
+      {canEdit && isManagerOrAbove && (
         <ApplicationItemSettings
           isOpen={isSettingsModalOpen}
           onClose={handleSettingsClose}
         />
       )}
 
-      {/* 項目管理モーダル（新規）- 編集権限がある場合のみ表示 */}
-      {canEdit && (() => {
+      {/* 項目管理モーダル（新規）- 室長以上のみ表示 */}
+      {canEdit && isManagerOrAbove && (() => {
         const schoolIds = getSelectedSchoolIds();
         // 複数教室が選択されている場合は最初の教室を使用（管理は単一教室のみ）
         const schoolId = schoolIds.length > 0 ? schoolIds[0] : null;
