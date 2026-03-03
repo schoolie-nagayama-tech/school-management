@@ -1,4 +1,4 @@
-﻿import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import type { School } from '@/types/database';
 
 // デフォルト教室IDを取得（環境変数から）
@@ -121,6 +121,17 @@ export async function updateSchool(
 
 // 教室を削除
 export async function deleteSchool(id: string): Promise<void> {
+  // portal_menu が school_id で参照しているため、先に削除する（または DB で ON DELETE CASCADE にしている場合は不要）
+  const { error: menuError } = await supabase
+    .from('portal_menu')
+    .delete()
+    .eq('school_id', id);
+
+  if (menuError) {
+    console.error('Error deleting portal_menu for school:', menuError);
+    throw new Error('教室の削除に失敗しました');
+  }
+
   const { error } = await supabase
     .from('schools')
     .delete()
@@ -128,6 +139,11 @@ export async function deleteSchool(id: string): Promise<void> {
 
   if (error) {
     console.error('Error deleting school:', error);
+    if (error.code === '23503') {
+      throw new Error(
+        'この教室は他のデータで参照されているため削除できません。ユーザー・フォーム・メニュー等の関連を解除してください。'
+      );
+    }
     throw new Error('教室の削除に失敗しました');
   }
 }
