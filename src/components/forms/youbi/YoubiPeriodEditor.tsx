@@ -46,6 +46,7 @@ export function YoubiPeriodEditor({
   const [error, setError] = useState('');
   const [applyToAllSchools, setApplyToAllSchools] = useState(true);
   const [selectedSchoolIdsForUpdate, setSelectedSchoolIdsForUpdate] = useState<string[]>([]);
+  const [selectedSchoolIdsForCreate, setSelectedSchoolIdsForCreate] = useState<string[]>([]);
 
   // フォームデータ
   const [periodKey, setPeriodKey] = useState('');
@@ -136,6 +137,9 @@ export function YoubiPeriodEditor({
     if (isOpen && period && allowedSchools && allowedSchools.length > 0) {
       setSelectedSchoolIdsForUpdate(allowedSchools.map((s) => s.id));
     }
+    if (isOpen && !period && allowedSchools && allowedSchools.length > 0) {
+      setSelectedSchoolIdsForCreate(allowedSchools.map((s) => s.id));
+    }
   }, [isOpen, period, schoolId, allowedSchools]);
 
   // バリデーション
@@ -209,11 +213,19 @@ export function YoubiPeriodEditor({
         }
       } else {
         const createData = { ...baseData, period_key: periodKey.trim() };
-        if (schoolIds && schoolIds.length > 1) {
-          await createFormPeriodForSchools(schoolIds, {
+        const idsToCreate =
+          allowedSchools && allowedSchools.length > 1
+            ? selectedSchoolIdsForCreate
+            : schoolIds && schoolIds.length > 1
+              ? schoolIds
+              : null;
+        if (idsToCreate && idsToCreate.length > 1) {
+          await createFormPeriodForSchools(idsToCreate, {
             ...createData,
             form_type: 'youbi',
           });
+        } else if (idsToCreate && idsToCreate.length === 1) {
+          await createYoubiPeriod(createData, idsToCreate[0]);
         } else {
           await createYoubiPeriod(createData, schoolId);
         }
@@ -401,6 +413,40 @@ export function YoubiPeriodEditor({
           />
         </section>
 
+        {!period && allowedSchools && allowedSchools.length > 1 && (
+          <div className="p-3 bg-[#eff6ff] rounded-lg border border-[#bfdbfe]">
+            <p className="text-sm font-medium text-[#1f2937] mb-2">
+              作成する教室を選択
+            </p>
+            <div className="flex flex-wrap gap-x-4 gap-y-2">
+              {allowedSchools.map((school) => (
+                <label
+                  key={school.id}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedSchoolIdsForCreate.includes(school.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedSchoolIdsForCreate((prev) =>
+                          prev.includes(school.id) ? prev : [...prev, school.id]
+                        );
+                      } else {
+                        setSelectedSchoolIdsForCreate((prev) =>
+                          prev.filter((id) => id !== school.id)
+                        );
+                      }
+                    }}
+                    disabled={isSubmitting}
+                    className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6]"
+                  />
+                  <span className="text-sm text-[#1f2937]">{school.name}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
         {period && allowedSchools && allowedSchools.length > 1 && (
           <div className="p-3 bg-[#eff6ff] rounded-lg border border-[#bfdbfe]">
             <p className="text-sm font-medium text-[#1f2937] mb-2">

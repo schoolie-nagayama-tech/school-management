@@ -1,4 +1,4 @@
-﻿// 模試申込フォーム関連の型定義
+// 模試申込フォーム関連の型定義
 
 // 学年名と数値のマッピング（模試用）
 export const MOSHI_GRADE_NAME_TO_NUMBER: Record<string, number> = {
@@ -25,7 +25,8 @@ export interface MoshiSettings {
   grades: string[]; // 例: ["小4", "小5", "小6", "中1", "中2", "中3"]
   exam_date: string; // YYYY-MM-DD形式
   exam_date_label: string; // 例: "2月15日（日）"
-  exam_time: string; // 例: "10:00〜13:00"
+  /** 本試験の時間（未指定可）。時間指定は振替受験のみ */
+  exam_time?: string; // 例: "10:00〜13:00"
   furikae: {
     enabled: boolean;
     note: string;

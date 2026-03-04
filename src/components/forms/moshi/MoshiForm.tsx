@@ -304,7 +304,8 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
               />
               <div>
                 <span className="font-medium text-[#1f2937]">
-                  {settings.exam_date_label} {settings.exam_time}
+                  {settings.exam_date_label}
+                  {settings.exam_time ? ` ${settings.exam_time}` : ''}
                 </span>
                 <span className="block text-sm text-[#4b5563] mt-1">
                   の模試に参加します
