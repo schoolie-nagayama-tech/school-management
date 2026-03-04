@@ -98,22 +98,21 @@ export function SortableMenuRow({
           >
             ⋮⋮
           </button>
-          {menu.link_type === 'internal' && periodsPath ? (
+          <Button
+            onClick={() => onEdit(menu)}
+            variant="secondary"
+            size="sm"
+            disabled={isSubmitting}
+          >
+            編集
+          </Button>
+          {menu.link_type === 'internal' && periodsPath && (
             <Link
               href={periodsPath}
               className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-lg bg-[#3b82f6] text-white hover:bg-[#2563eb] transition-colors"
             >
               期間管理
             </Link>
-          ) : (
-            <Button
-              onClick={() => onEdit(menu)}
-              variant="secondary"
-              size="sm"
-              disabled={isSubmitting}
-            >
-              編集
-            </Button>
           )}
         </div>
       </td>
