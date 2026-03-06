@@ -58,6 +58,7 @@ export interface SeasonalShiftSubmission {
   notes: string;
   allow_edit: boolean;
   edit_token: string;
+  seat_chart_entered?: boolean;
   created_at: string;
   updated_at: string;
 }

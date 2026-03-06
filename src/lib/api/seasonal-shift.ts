@@ -253,6 +253,18 @@ export async function getSeasonalShiftTeacherSlotCounts(
     .sort((a, b) => b.count - a.count);
 }
 
+/** 座席表入力フラグを更新 */
+export async function updateSeasonalShiftSeatChartEntered(
+  submissionId: string,
+  entered: boolean
+): Promise<void> {
+  const { error } = await supabase
+    .from('seasonal_shift_submissions')
+    .update({ seat_chart_entered: entered, updated_at: new Date().toISOString() })
+    .eq('id', submissionId);
+  if (error) throw new Error(`座席表入力の更新に失敗しました: ${error.message}`);
+}
+
 /** 提出を削除（スロットは CASCADE で自動削除） */
 export async function deleteSeasonalShiftSubmission(submissionId: string): Promise<void> {
   const { error } = await supabase

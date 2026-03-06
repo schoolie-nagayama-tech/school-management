@@ -16,6 +16,7 @@ import {
   allowSeasonalShiftEdit,
   resendSeasonalShiftEditEmail,
   deleteSeasonalShiftSubmission,
+  updateSeasonalShiftSeatChartEntered,
 } from '@/lib/api/seasonal-shift';
 import type {
   SeasonalShiftSetting,
@@ -58,6 +59,7 @@ export default function SeasonalShiftSubmissionsPage() {
   } | null>(null);
   const [detailSlotSettings, setDetailSlotSettings] = useState<SlotSetting[]>([]);
   const [pdfExportAfterOpen, setPdfExportAfterOpen] = useState<string | null>(null);
+  const [updatingSeatChartId, setUpdatingSeatChartId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!settingId) return;
@@ -129,6 +131,22 @@ export default function SeasonalShiftSubmissionsPage() {
       error(err instanceof Error ? err.message : 'メールの再送に失敗しました');
     } finally {
       setResendingId(null);
+    }
+  };
+
+  const handleSeatChartToggle = async (sub: SeasonalShiftSubmission) => {
+    const next = !(sub.seat_chart_entered ?? false);
+    setUpdatingSeatChartId(sub.id);
+    try {
+      await updateSeasonalShiftSeatChartEntered(sub.id, next);
+      setSubmissions((prev) =>
+        prev.map((s) => (s.id === sub.id ? { ...s, seat_chart_entered: next } : s))
+      );
+      success(next ? '座席表入力を入力済みにしました' : '座席表入力を未入力にしました');
+    } catch (err) {
+      error(err instanceof Error ? err.message : '座席表入力の更新に失敗しました');
+    } finally {
+      setUpdatingSeatChartId(null);
     }
   };
 
@@ -270,6 +288,7 @@ export default function SeasonalShiftSubmissionsPage() {
                   <th className="px-4 py-3 text-left font-semibold text-[#1f2937]">メール</th>
                   <th className="px-4 py-3 text-left font-semibold text-[#1f2937]">提出日時</th>
                   <th className="px-4 py-3 text-center font-semibold text-[#1f2937]">修正許可</th>
+                  <th className="px-4 py-3 text-center font-semibold text-[#1f2937]">座席表入力</th>
                   <th className="px-4 py-3 text-right font-semibold text-[#1f2937]">操作</th>
                 </tr>
               </thead>
@@ -309,6 +328,20 @@ export default function SeasonalShiftSubmissionsPage() {
                           {allowingId === sub.id ? '処理中...' : '修正許可'}
                         </Button>
                       )}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <label className="inline-flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={sub.seat_chart_entered ?? false}
+                          disabled={updatingSeatChartId === sub.id}
+                          onChange={() => handleSeatChartToggle(sub)}
+                          className="w-4 h-4 rounded border-[#d1d5db] text-[#1e3a5f] focus:ring-[#1e3a5f]"
+                        />
+                        <span className="text-sm text-[#4b5563]">
+                          {updatingSeatChartId === sub.id ? '更新中...' : sub.seat_chart_entered ? '入力済' : '未入力'}
+                        </span>
+                      </label>
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-2">
