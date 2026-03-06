@@ -182,7 +182,7 @@ export default function SeasonalShiftSubmissionsPage() {
       await exportProgressToPDF(
         'submission-detail-pdf-content',
         `シフト提出_${setting?.name ?? '講習'}_${safeName}_${dateStr}.pdf`,
-        { fitToPage: true, orientation: 'landscape' }
+        { fitToPage: true, orientation: 'landscape', expandScrollable: true }
       );
       success('PDFをダウンロードしました');
     } catch (e) {
@@ -219,7 +219,7 @@ export default function SeasonalShiftSubmissionsPage() {
         await exportProgressToPDF(
           'submission-detail-pdf-content',
           `シフト提出_${setting?.name ?? '講習'}_${safeName}_${dateStr}.pdf`,
-          { fitToPage: true, orientation: 'landscape' }
+          { fitToPage: true, orientation: 'landscape', expandScrollable: true }
         );
         success('PDFをダウンロードしました');
       } catch (e) {

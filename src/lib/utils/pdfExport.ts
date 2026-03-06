@@ -6,9 +6,10 @@ export async function exportProgressToPDF(
   options?: {
     fitToPage?: boolean; // 1ページに収めるかどうか
     orientation?: 'portrait' | 'landscape'; // 縦向き or 横向き
+    expandScrollable?: boolean; // スクロール領域を展開して全体をキャプチャするか
   }
 ): Promise<void> {
-  const { fitToPage = false, orientation = 'portrait' } = options || {};
+  const { fitToPage = false, orientation = 'portrait', expandScrollable = false } = options || {};
 
   // html2canvas と jspdf を動的インポート
   const [html2canvasModule, jsPDFModule] = await Promise.all([
@@ -25,13 +26,25 @@ export async function exportProgressToPDF(
   }
 
   // 元のスタイルを保存
+  const el = element as HTMLElement;
   const originalStyles = {
     width: element.style.width,
     fontSize: element.style.fontSize,
     transform: element.style.transform,
+    maxHeight: el.style.maxHeight,
+    overflow: el.style.overflow,
+    overflowY: el.style.overflowY,
   };
 
   try {
+    // スクロール領域を展開：max-height/overflow を解除して全体をキャプチャ
+    if (expandScrollable) {
+      (element as HTMLElement).style.maxHeight = 'none';
+      (element as HTMLElement).style.overflow = 'visible';
+      (element as HTMLElement).style.overflowY = 'visible';
+      void (element as HTMLElement).offsetHeight; // リフローを強制
+    }
+
     if (fitToPage) {
       // 1ページに収める場合：フォントサイズ縮小・表が切れないよう体裁を整える
       element.style.width = orientation === 'landscape' ? '1400px' : '800px';
@@ -131,7 +144,10 @@ export async function exportProgressToPDF(
     element.style.width = originalStyles.width;
     element.style.fontSize = originalStyles.fontSize;
     element.style.transform = originalStyles.transform;
-    
+    (element as HTMLElement).style.maxHeight = originalStyles.maxHeight ?? '';
+    (element as HTMLElement).style.overflow = originalStyles.overflow ?? '';
+    (element as HTMLElement).style.overflowY = '';
+
     // テーブル・セクションのスタイルを元に戻す
     const tables = element.querySelectorAll('table');
     tables.forEach(table => {
