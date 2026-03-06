@@ -56,6 +56,7 @@ export function SubmissionDetailMatrix({
 
   if (dates.length === 0 || timeSlots.length === 0) return null;
 
+  // 縦形式：日付を行、時間帯を列にする（縦長で見やすい）
   return (
     <div className="overflow-x-auto -mx-1">
       <table className="min-w-full border-collapse text-sm border border-[#e5e7eb]">
