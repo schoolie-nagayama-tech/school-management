@@ -139,20 +139,13 @@ export function AppHeader({ title: _title, onSettingsClick, onBulkGradeUpdateCli
         <div className="flex items-center justify-between h-14">
           <div className="flex items-center gap-4">
             {/* NESTロゴ */}
-            <Link href="/students" className="flex items-center gap-2 shrink-0">
-              {/* Nアイコン: 白角丸ボックス + 赤N文字 */}
-              <span
-                className="w-8 h-8 bg-white rounded-lg flex items-center justify-center
-                           text-[#d32f2f] font-black text-lg leading-none select-none"
-              >
-                N
-              </span>
-              {/* NEST ワードマーク */}
-              <span className="text-white font-black text-xl tracking-widest select-none">
+            <Link href="/students" className="shrink-0">
+              <span className="text-white font-black text-2xl tracking-[0.4em] pr-[0.4em] select-none">
                 NEST
               </span>
             </Link>
-            <nav className="flex items-center gap-3 ml-2">
+            <div className="h-6 w-px bg-white/30"></div>
+            <nav className="flex items-center gap-3">
               {(showAllLinks || permissions?.canAccessStudents) && (
                 <Link
                   href="/students"
