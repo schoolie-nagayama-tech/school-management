@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { requireManager } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,14 +15,11 @@ function getSupabaseAdmin() {
   });
 }
 
-/**
- * 講習シフト通知メールを送信する Edge Function をサーバーから呼び出す。
- * ブラウザの anon クライアントで invoke すると JWT 検証で 401 になるため、
- * サーバー（サービスロール）経由で呼ぶ。
- * 講師提出フォームは公開ページのため認証不要。
- */
 export async function POST(request: NextRequest) {
   try {
+    const authError = await requireManager(request);
+    if (authError) return authError;
+
     const body = await request.json();
     const { type, submissionId } = body as {
       type?: 'submitted' | 'allow_edit';
@@ -30,13 +28,13 @@ export async function POST(request: NextRequest) {
 
     if (!type || !submissionId) {
       return NextResponse.json(
-        { error: 'type と submissionId は必須です' },
+        { error: 'type �� submissionId �͕K�{�ł�' },
         { status: 400 }
       );
     }
     if (type !== 'submitted' && type !== 'allow_edit') {
       return NextResponse.json(
-        { error: 'type は submitted または allow_edit です' },
+        { error: 'type �� submitted �܂��� allow_edit �ł�' },
         { status: 400 }
       );
     }
@@ -56,12 +54,15 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error('[seasonal-shift/notify] Edge Function error:', error);
       return NextResponse.json(
-        { error: '通知の送信に失敗しました' },
+        { error: '�ʒm�̑��M�Ɏ��s���܂���' },
         { status: 500 }
       );
     }
     if (data && typeof data === 'object' && 'error' in data) {
-      console.error('[seasonal-shift/notify] Edge Function returned error:', (data as { error: string }).error);
+      console.error(
+        '[seasonal-shift/notify] Edge Function returned error:',
+        (data as { error: string }).error
+      );
       return NextResponse.json(
         { error: (data as { error: string }).error },
         { status: 500 }
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
   } catch (e) {
     console.error('[seasonal-shift/notify]', e);
     return NextResponse.json(
-      { error: '通知の送信に失敗しました' },
+      { error: '�ʒm�̑��M�Ɏ��s���܂���' },
       { status: 500 }
     );
   }

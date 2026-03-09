@@ -1,7 +1,8 @@
 /**
- * 講習期間シフト提出 API
+ * 講習期間シフト提�E API
  */
 import { supabase } from '@/lib/supabase';
+import { fetchWithAuth } from '@/lib/api/auth';
 import type {
   SeasonalShiftSetting,
   SeasonalShiftSettingInsert,
@@ -13,7 +14,7 @@ import type {
   SubmissionWithSlots,
 } from '@/types/seasonal-shift';
 
-// ========== 設定 ==========
+// ========== 設宁E==========
 
 export async function getSeasonalShiftSettings(schoolId: string): Promise<SeasonalShiftSetting[]> {
   const { data, error } = await supabase
@@ -22,7 +23,7 @@ export async function getSeasonalShiftSettings(schoolId: string): Promise<Season
     .eq('school_id', schoolId)
     .order('start_date', { ascending: false });
 
-  if (error) throw new Error(`シフト設定の取得に失敗しました: ${error.message}`);
+  if (error) throw new Error(`シフト設定�E取得に失敗しました: ${error.message}`);
   return (data || []) as SeasonalShiftSetting[];
 }
 
@@ -33,11 +34,11 @@ export async function getSeasonalShiftSetting(id: string): Promise<SeasonalShift
     .eq('id', id)
     .maybeSingle();
 
-  if (error) throw new Error(`シフト設定の取得に失敗しました: ${error.message}`);
+  if (error) throw new Error(`シフト設定�E取得に失敗しました: ${error.message}`);
   return data as SeasonalShiftSetting | null;
 }
 
-/** 公開用：公開中の設定を1件取得 */
+/** 公開用�E��E開中の設定を1件取征E*/
 export async function getPublishedSeasonalShiftSetting(
   id: string
 ): Promise<SeasonalShiftSetting | null> {
@@ -48,7 +49,7 @@ export async function getPublishedSeasonalShiftSetting(
     .eq('status', 'published')
     .maybeSingle();
 
-  if (error) throw new Error(`シフト設定の取得に失敗しました: ${error.message}`);
+  if (error) throw new Error(`シフト設定�E取得に失敗しました: ${error.message}`);
   return data as SeasonalShiftSetting | null;
 }
 
@@ -71,7 +72,7 @@ export async function createSeasonalShiftSetting(
     .select()
     .single();
 
-  if (error) throw new Error(`シフト設定の作成に失敗しました: ${error.message}`);
+  if (error) throw new Error(`シフト設定�E作�Eに失敗しました: ${error.message}`);
   return data as SeasonalShiftSetting;
 }
 
@@ -89,16 +90,16 @@ export async function updateSeasonalShiftSetting(
     .select()
     .single();
 
-  if (error) throw new Error(`シフト設定の更新に失敗しました: ${error.message}`);
+  if (error) throw new Error(`シフト設定�E更新に失敗しました: ${error.message}`);
   return data as SeasonalShiftSetting;
 }
 
 export async function deleteSeasonalShiftSetting(id: string): Promise<void> {
   const { error } = await supabase.from('seasonal_shift_settings').delete().eq('id', id);
-  if (error) throw new Error(`シフト設定の削除に失敗しました: ${error.message}`);
+  if (error) throw new Error(`シフト設定�E削除に失敗しました: ${error.message}`);
 }
 
-// ========== 開講コマ設定 ==========
+// ========== 開講コマ設宁E==========
 
 export async function getSeasonalShiftSlotSettings(
   settingId: string
@@ -108,7 +109,7 @@ export async function getSeasonalShiftSlotSettings(
     .select('*')
     .eq('setting_id', settingId);
 
-  if (error) throw new Error(`開講コマ設定の取得に失敗しました: ${error.message}`);
+  if (error) throw new Error(`開講コマ設定�E取得に失敗しました: ${error.message}`);
   return (data || []) as SlotSetting[];
 }
 
@@ -120,7 +121,7 @@ export async function setSeasonalShiftSlotSettings(
     .from('seasonal_shift_slot_settings')
     .delete()
     .eq('setting_id', settingId);
-  if (delError) throw new Error(`開講コマ設定の削除に失敗しました: ${delError.message}`);
+  if (delError) throw new Error(`開講コマ設定�E削除に失敗しました: ${delError.message}`);
 
   if (items.length === 0) return;
 
@@ -132,10 +133,10 @@ export async function setSeasonalShiftSlotSettings(
   }));
 
   const { error: insError } = await supabase.from('seasonal_shift_slot_settings').insert(rows);
-  if (insError) throw new Error(`開講コマ設定の保存に失敗しました: ${insError.message}`);
+  if (insError) throw new Error(`開講コマ設定�E保存に失敗しました: ${insError.message}`);
 }
 
-// ========== 提出 ==========
+// ========== 提�E ==========
 
 export async function getSeasonalShiftSubmissions(
   settingId: string
@@ -146,7 +147,7 @@ export async function getSeasonalShiftSubmissions(
     .eq('setting_id', settingId)
     .order('submitted_at', { ascending: false });
 
-  if (error) throw new Error(`提出一覧の取得に失敗しました: ${error.message}`);
+  if (error) throw new Error(`提�E一覧の取得に失敗しました: ${error.message}`);
   return (data || []) as SeasonalShiftSubmission[];
 }
 
@@ -158,7 +159,7 @@ export async function getSeasonalShiftSubmissionWithSlots(
     .select('*')
     .eq('id', submissionId)
     .maybeSingle();
-  if (subError) throw new Error(`提出の取得に失敗しました: ${subError.message}`);
+  if (subError) throw new Error(`提�Eの取得に失敗しました: ${subError.message}`);
   if (!submission) return null;
 
   const { data: slots, error: slotsError } = await supabase
@@ -173,33 +174,29 @@ export async function getSeasonalShiftSubmissionWithSlots(
   };
 }
 
-/** 修正用トークンで提出を取得（allow_edit が true のときのみ有効） */
+/** 修正用ト�Eクンで提�Eを取得！Ellow_edit ぁEtrue のとき�Eみ有効�E�E*/
 export async function getSeasonalShiftSubmissionByEditToken(
   editToken: string
 ): Promise<SubmissionWithSlots | null> {
-  const { data: submission, error: subError } = await supabase
-    .from('seasonal_shift_submissions')
-    .select('*')
-    .eq('edit_token', editToken)
-    .eq('allow_edit', true)
-    .maybeSingle();
-  if (subError) throw new Error(`提出の取得に失敗しました: ${subError.message}`);
-  if (!submission) return null;
+  const res = await fetch(`/api/seasonal-shift/public/${encodeURIComponent(editToken)}`, {
+    cache: 'no-store',
+  });
 
-  const sub = submission as SeasonalShiftSubmission;
-  const { data: slots, error: slotsError } = await supabase
-    .from('seasonal_shift_submission_slots')
-    .select('*')
-    .eq('submission_id', sub.id);
-  if (slotsError) throw new Error(`シフト詳細の取得に失敗しました: ${slotsError.message}`);
+  if (res.status === 404) return null;
 
-  return {
-    ...sub,
-    slots: (slots || []) as SeasonalShiftSubmissionSlot[],
+  const payload = (await res.json().catch(() => ({}))) as {
+    error?: string;
+    submission?: SubmissionWithSlots | null;
   };
+
+  if (!res.ok) {
+    throw new Error(payload.error ?? '��o���̎擾�Ɏ��s���܂���');
+  }
+
+  return payload.submission ?? null;
 }
 
-/** 運営ダッシュボード用：日付×コマごとの出勤可能人数を集計 */
+/** 運営ダチE��ュボ�Eド用�E�日付×コマごとの出勤可能人数を集訁E*/
 export async function getSeasonalShiftAttendanceCounts(
   settingId: string
 ): Promise<Record<string, number>> {
@@ -213,7 +210,7 @@ export async function getSeasonalShiftAttendanceCounts(
     .in('submission_id', ids)
     .eq('available', true);
 
-  if (error) throw new Error(`出勤状況の集計に失敗しました: ${error.message}`);
+  if (error) throw new Error(`出勤状況�E雁E��に失敗しました: ${error.message}`);
 
   const counts: Record<string, number> = {};
   for (const s of slots || []) {
@@ -223,7 +220,7 @@ export async function getSeasonalShiftAttendanceCounts(
   return counts;
 }
 
-/** 講師別コマ数（多い順） */
+/** 講師別コマ数�E�多い頁E��E*/
 export async function getSeasonalShiftTeacherSlotCounts(
   settingId: string
 ): Promise<{ teacher_name: string; teacher_email: string; count: number }[]> {
@@ -262,72 +259,44 @@ export async function updateSeasonalShiftSeatChartEntered(
     .from('seasonal_shift_submissions')
     .update({ seat_chart_entered: entered, updated_at: new Date().toISOString() })
     .eq('id', submissionId);
-  if (error) throw new Error(`座席表入力の更新に失敗しました: ${error.message}`);
+  if (error) throw new Error(`座席表入力�E更新に失敗しました: ${error.message}`);
 }
 
-/** 提出を削除（スロットは CASCADE で自動削除） */
+/** 提�Eを削除�E�スロチE��は CASCADE で自動削除�E�E*/
 export async function deleteSeasonalShiftSubmission(submissionId: string): Promise<void> {
   const { error } = await supabase
     .from('seasonal_shift_submissions')
     .delete()
     .eq('id', submissionId);
-  if (error) throw new Error(`提出の削除に失敗しました: ${error.message}`);
+  if (error) throw new Error(`提�Eの削除に失敗しました: ${error.message}`);
 }
 
 export async function createSeasonalShiftSubmission(
   input: SeasonalShiftSubmissionInsert,
   slots: Omit<SeasonalShiftSubmissionSlotInsert, 'submission_id'>[]
 ): Promise<SeasonalShiftSubmission> {
-  const { data: submission, error: subError } = await supabase
-    .from('seasonal_shift_submissions')
-    .insert({
-      setting_id: input.setting_id,
-      school_id: input.school_id,
-      teacher_name: input.teacher_name,
-      teacher_email: input.teacher_email,
-      notes: input.notes ?? '',
-    })
-    .select()
-    .single();
-  if (subError) {
-    if (subError.code === '23505') {
-      throw new Error('この内容は既に送信されています。');
-    }
-    throw new Error(`提出の保存に失敗しました: ${subError.message}`);
+  const res = await fetch('/api/seasonal-shift/public', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ...input,
+      slots,
+    }),
+  });
+
+  const payload = (await res.json().catch(() => ({}))) as {
+    error?: string;
+    submission?: SeasonalShiftSubmission;
+  };
+
+  if (!res.ok || !payload.submission) {
+    throw new Error(payload.error ?? '��o�̑��M�Ɏ��s���܂���');
   }
 
-  const sub = submission as SeasonalShiftSubmission;
-  if (slots.length > 0) {
-    const slotRows = slots.map((s) => ({
-      submission_id: sub.id,
-      shift_date: s.shift_date,
-      time_slot: s.time_slot,
-      available: s.available,
-    }));
-    const { error: slotsError } = await supabase
-      .from('seasonal_shift_submission_slots')
-      .insert(slotRows);
-    if (slotsError) throw new Error(`シフト詳細の保存に失敗しました: ${slotsError.message}`);
-  }
-
-  try {
-    const res = await fetch('/api/seasonal-shift/notify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: 'submitted', submissionId: sub.id }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      console.warn('提出通知メールの送信に失敗しました:', res.status, err);
-    }
-  } catch (e) {
-    console.warn('提出通知メールの送信に失敗しました:', e);
-  }
-
-  return sub;
+  return payload.submission;
 }
 
-/** 修正許可を付与（allow_edit=true にし、edit_token を返す） */
+/** 修正許可を付与！Ellow_edit=true にし、edit_token を返す�E�E*/
 export async function allowSeasonalShiftEdit(submissionId: string): Promise<string> {
   const { data, error } = await supabase
     .from('seasonal_shift_submissions')
@@ -337,7 +306,7 @@ export async function allowSeasonalShiftEdit(submissionId: string): Promise<stri
     .single();
   if (error) throw new Error(`修正許可の更新に失敗しました: ${error.message}`);
 
-  const res = await fetch('/api/seasonal-shift/notify', {
+  const res = await fetchWithAuth('/api/seasonal-shift/notify', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ type: 'allow_edit', submissionId }),
@@ -350,9 +319,9 @@ export async function allowSeasonalShiftEdit(submissionId: string): Promise<stri
   return data.edit_token as string;
 }
 
-/** 修正許可メールを再送（allow_edit=true の提出向け） */
+/** 修正許可メールを�E送E��Ellow_edit=true の提�E向け�E�E*/
 export async function resendSeasonalShiftEditEmail(submissionId: string): Promise<void> {
-  const res = await fetch('/api/seasonal-shift/notify', {
+  const res = await fetchWithAuth('/api/seasonal-shift/notify', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ type: 'allow_edit', submissionId }),
@@ -363,47 +332,31 @@ export async function resendSeasonalShiftEditEmail(submissionId: string): Promis
   }
 }
 
-/** トークンで提出を更新（再提出後は allow_edit を false に） */
+/** ト�Eクンで提�Eを更新�E��E提�E後�E allow_edit めEfalse に�E�E*/
 export async function updateSeasonalShiftSubmissionByToken(
   editToken: string,
   input: { teacher_name: string; teacher_email: string; notes?: string },
   slots: Omit<SeasonalShiftSubmissionSlotInsert, 'submission_id'>[]
 ): Promise<SeasonalShiftSubmission | null> {
-  const sub = await getSeasonalShiftSubmissionByEditToken(editToken);
-  if (!sub) return null;
+  const res = await fetch(`/api/seasonal-shift/public/${encodeURIComponent(editToken)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ...input,
+      slots,
+    }),
+  });
 
-  const { error: subError } = await supabase
-    .from('seasonal_shift_submissions')
-    .update({
-      teacher_name: input.teacher_name,
-      teacher_email: input.teacher_email,
-      notes: input.notes ?? '',
-      allow_edit: false,
-      submitted_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', sub.id);
-  if (subError) throw new Error(`提出の更新に失敗しました: ${subError.message}`);
+  if (res.status === 404) return null;
 
-  const { error: delError } = await supabase
-    .from('seasonal_shift_submission_slots')
-    .delete()
-    .eq('submission_id', sub.id);
-  if (delError) throw new Error(`既存シフトの削除に失敗しました: ${delError.message}`);
+  const payload = (await res.json().catch(() => ({}))) as {
+    error?: string;
+    submission?: SubmissionWithSlots | null;
+  };
 
-  if (slots.length > 0) {
-    const slotRows = slots.map((s) => ({
-      submission_id: sub.id,
-      shift_date: s.shift_date,
-      time_slot: s.time_slot,
-      available: s.available,
-    }));
-    const { error: insError } = await supabase
-      .from('seasonal_shift_submission_slots')
-      .insert(slotRows);
-    if (insError) throw new Error(`シフト詳細の保存に失敗しました: ${insError.message}`);
+  if (!res.ok) {
+    throw new Error(payload.error ?? '��o���e�̍X�V�Ɏ��s���܂���');
   }
 
-  const updated = await getSeasonalShiftSubmissionWithSlots(sub.id);
-  return updated;
+  return (payload.submission as SeasonalShiftSubmission | null) ?? null;
 }
