@@ -141,23 +141,32 @@ export async function getStudentTextbooks(
     textbook: Textbook;
   })[];
 
-  // 設定とテスト情報を取得
-  const result: StudentTextbookWithDetails[] = await Promise.all(
-    studentTextbooks.map(async (st) => {
-      const [settings, exams] = await Promise.all([
-        getStudentTextbookSettings(st.id),
-        getStudentTextbookExams(st.id),
-      ]);
+  // 設定とテスト情報をテキストブックID一覧で一括取得（N×2クエリ→2クエリ）
+  const stIds = studentTextbooks.map((st) => st.id);
+  const [settingsResult, examsResult] = await Promise.all([
+    supabase.from('student_textbook_settings').select('*').in('student_textbook_id', stIds),
+    supabase
+      .from('student_textbook_exams')
+      .select('*')
+      .in('student_textbook_id', stIds)
+      .order('exam_date', { ascending: true }),
+  ]);
 
-      return {
-        ...st,
-        settings: settings || null,
-        exams: exams || [],
-      };
-    })
+  const settingsMap = new Map<string, StudentTextbookSetting>(
+    (settingsResult.data || []).map((s: StudentTextbookSetting) => [s.student_textbook_id, s])
   );
+  const examsMap = new Map<string, StudentTextbookExam[]>();
+  for (const exam of (examsResult.data || []) as StudentTextbookExam[]) {
+    const list = examsMap.get(exam.student_textbook_id) || [];
+    list.push(exam);
+    examsMap.set(exam.student_textbook_id, list);
+  }
 
-  return result;
+  return studentTextbooks.map((st) => ({
+    ...st,
+    settings: settingsMap.get(st.id) || null,
+    exams: examsMap.get(st.id) || [],
+  }));
 }
 
 /**

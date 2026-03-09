@@ -1,6 +1,6 @@
 import { supabase } from '../supabase';
 import { listAssessmentsBySchool } from './assessments';
-import { getInterviewsBySchool, getPendingTasks } from './interviews';
+import { getInterviewsBySchool, getPendingTasksBySchools } from './interviews';
 import { getApplicationItems, getStudentApplications } from './applications';
 import { getStudents } from './students';
 import { getStudentTextbooksExamsBySchool } from './progress';
@@ -64,8 +64,8 @@ export async function fetchAlertSources(schoolIds: string[]): Promise<AlertSourc
     listAssessmentsBySchool(schoolIds), // 全カテゴリ一括
     getInterviewsBySchool(schoolIds),
     getApplicationItems(schoolIds, false),
-    getStudentApplications(schoolIds).catch(() => []),
-    Promise.all(schoolIds.map((sid) => getPendingTasks(sid).catch(() => []))).then((arr) => arr.flat()),
+    getStudentApplications(schoolIds).catch((e) => { console.warn('学生申込の取得に失敗しました:', e); return []; }),
+    getPendingTasksBySchools(schoolIds).catch((e) => { console.warn('未完了タスクの取得に失敗しました:', e); return []; }),
     getStudentTextbooksExamsBySchool(schoolIds),
   ]);
 

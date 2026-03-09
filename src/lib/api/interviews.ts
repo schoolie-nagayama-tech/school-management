@@ -174,6 +174,38 @@ export async function getPendingTasks(
 }
 
 /**
+ * 複数教室の未完了タスクを一括取得（1クエリ）
+ */
+export async function getPendingTasksBySchools(
+  schoolIds: string[]
+): Promise<(StudentInterview & { student: { last_name: string; first_name: string } })[]> {
+  if (schoolIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('student_interviews')
+    .select(`
+      *,
+      students!inner(last_name, first_name)
+    `)
+    .in('school_id', schoolIds)
+    .eq('interview_type', 'task')
+    .eq('is_completed', false)
+    .order('interview_date', { ascending: true });
+
+  if (error) {
+    throw new Error(`未完了タスクの取得に失敗しました: ${error.message}`);
+  }
+
+  return (data || []).map((item: StudentInterview & { students: { last_name: string; first_name: string } }) => ({
+    ...item,
+    student: {
+      last_name: item.students.last_name,
+      first_name: item.students.first_name,
+    },
+  })) as (StudentInterview & { student: { last_name: string; first_name: string } })[];
+}
+
+/**
  * タスクを完了にする
  */
 export async function completeTask(id: string): Promise<void> {

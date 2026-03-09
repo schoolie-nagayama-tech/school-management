@@ -139,11 +139,7 @@ export default function UsersPage() {
         filteredUsers = filteredUsers.filter((user: UserWithDetails) => user.id === profile.id);
       }
       
-      setUsers((prev) => {
-        const apiIds = new Set(filteredUsers.map((u: UserWithDetails) => u.id));
-        const onlyInPrev = prev.filter((u) => !apiIds.has(u.id));
-        return [...filteredUsers, ...onlyInPrev];
-      });
+      setUsers(filteredUsers);
       setSchools(schoolsData);
       if (schoolsData.length > 0 && !formData.schoolId) {
         setFormData(prev => ({ ...prev, schoolId: schoolsData[0].id }));
