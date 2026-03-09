@@ -75,20 +75,16 @@ export async function reorderPortalMenus(
   schoolId: string,
   menuIds: string[]
 ): Promise<void> {
-  // トランザクション的な処理（Supabaseの制約により、ループで更新）
-  const updates = menuIds.map((menuId, index) => {
-    return supabase
+  // 逐次実行で部分コミットを最小化（エラー発生時は残りをスキップ）
+  for (let i = 0; i < menuIds.length; i++) {
+    const { error } = await supabase
       .from('portal_menu')
-      .update({ sort_order: index + 1 })
-      .eq('id', menuId)
+      .update({ sort_order: i + 1 })
+      .eq('id', menuIds[i])
       .eq('school_id', schoolId);
-  });
-
-  const results = await Promise.all(updates);
-
-  const errors = results.filter((result) => result.error);
-  if (errors.length > 0) {
-    throw new Error(`ポータルメニューの並び替えに失敗しました: ${errors[0].error?.message}`);
+    if (error) {
+      throw new Error(`ポータルメニューの並び替えに失敗しました: ${error.message}`);
+    }
   }
 }
 

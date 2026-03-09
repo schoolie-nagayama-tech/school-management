@@ -490,12 +490,24 @@ export async function getUnreadCount(schoolId: string, userId: string): Promise<
 
   const postIds = posts.map(p => p.id);
 
-  // DB側でカウントのみ取得（全既読データを転送しない）
-  const { count: readCount } = await supabase
-    .from('bulletin_reads')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .in('post_id', postIds);
+  // URL長制限（8KB）回避のため200件ずつチャンク分割してDB側でカウント
+  const CHUNK_SIZE = 200;
+  const chunks: string[][] = [];
+  for (let i = 0; i < postIds.length; i += CHUNK_SIZE) {
+    chunks.push(postIds.slice(i, i + CHUNK_SIZE));
+  }
 
-  return postIds.length - (readCount ?? 0);
+  const counts = await Promise.all(
+    chunks.map((chunk) =>
+      supabase
+        .from('bulletin_reads')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .in('post_id', chunk)
+        .then((r) => r.count ?? 0)
+    )
+  );
+
+  const totalRead = counts.reduce((sum, c) => sum + c, 0);
+  return postIds.length - totalRead;
 }

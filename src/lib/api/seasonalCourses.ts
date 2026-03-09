@@ -328,102 +328,146 @@ export async function applyCoursesToStudents(
   const course = await getSeasonalCourse(courseId);
   if (!course) throw new Error('コースが見つかりません');
 
+  if (studentIds.length === 0) return;
+
+  const textbookIds = course.textbooks.map((ct) => ct.textbook_id);
+  const now = new Date().toISOString();
+  // Map key: "student_id:textbook_id"
+  const stMap = new Map<string, string>();
+
+  // Step 1: 既存 student_textbooks を一括取得
+  const { data: existingStList } = await supabase
+    .from('student_textbooks')
+    .select('id, student_id, textbook_id')
+    .in('student_id', studentIds)
+    .in('textbook_id', textbookIds);
+
+  for (const st of (existingStList || []) as { id: string; student_id: string; textbook_id: number }[]) {
+    stMap.set(`${st.student_id}:${st.textbook_id}`, st.id);
+  }
+
+  // Step 2: 不足分の student_textbooks を一括INSERT
+  const missingRows = [];
   for (const studentId of studentIds) {
-    // 各テキストに対して処理
-    for (const courseTextbook of course.textbooks) {
-      const textbookId = courseTextbook.textbook_id;
-
-      // 生徒のstudent_textbooksを取得または作成
-      const { data: initialStudentTextbook, error: fetchError } = await supabase
-        .from('student_textbooks')
-        .select('id')
-        .eq('student_id', studentId)
-        .eq('textbook_id', textbookId)
-        .maybeSingle();
-
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        throw fetchError;
+    for (const ct of course.textbooks) {
+      if (!stMap.has(`${studentId}:${ct.textbook_id}`)) {
+        missingRows.push({
+          school_id: course.school_id,
+          student_id: studentId,
+          textbook_id: ct.textbook_id,
+          is_active: true,
+          season: course.season,
+        });
       }
+    }
+  }
+  if (missingRows.length > 0) {
+    const { data: newSts, error: stError } = await supabase
+      .from('student_textbooks')
+      .insert(missingRows as never)
+      .select('id, student_id, textbook_id');
+    if (stError) throw stError;
+    for (const st of (newSts || []) as { id: string; student_id: string; textbook_id: number }[]) {
+      stMap.set(`${st.student_id}:${st.textbook_id}`, st.id);
+    }
+  }
 
-      let studentTextbook = initialStudentTextbook;
-      if (!studentTextbook) {
-        // テキスト紐付けを作成
-        const { data: newSt, error: stError } = await supabase
-          .from('student_textbooks')
-          .insert({
-            school_id: course.school_id,
-            student_id: studentId,
-            textbook_id: textbookId,
-            is_active: true,
-            season: course.season,
-          })
-          .select('id')
-          .single();
-        
-        if (stError) throw stError;
-        studentTextbook = newSt;
+  // テキストIDごとのカリキュラムマップ
+  const curriculumByTextbook = new Map<number, typeof course.curriculum>();
+  for (const ct of course.textbooks) {
+    curriculumByTextbook.set(ct.textbook_id, course.curriculum.filter((c) => c.textbook_id === ct.textbook_id));
+  }
+
+  const allStIds = Array.from(new Set(Array.from(stMap.values())));
+
+  if (mode === 'overwrite') {
+    // 上書きモード: 全 student_progress を一括 upsert
+    const progressRows = [];
+    for (const studentId of studentIds) {
+      for (const ct of course.textbooks) {
+        const stId = stMap.get(`${studentId}:${ct.textbook_id}`);
+        if (!stId) continue;
+        for (const setting of curriculumByTextbook.get(ct.textbook_id) || []) {
+          progressRows.push({
+            student_textbook_id: stId,
+            curriculum_item_id: setting.curriculum_item_id,
+            proposal_count: setting.proposal_count,
+            group_number: setting.group_number,
+            updated_at: now,
+          });
+        }
       }
+    }
+    if (progressRows.length > 0) {
+      const { error } = await supabase
+        .from('student_progress')
+        .upsert(progressRows as never, { onConflict: 'student_textbook_id,curriculum_item_id' });
+      if (error) throw error;
+    }
+  } else {
+    // 加算モード: 既存 student_progress を一括取得してから差分計算
+    const { data: existingProgress } = await supabase
+      .from('student_progress')
+      .select('id, student_textbook_id, curriculum_item_id, proposal_count, group_number')
+      .in('student_textbook_id', allStIds);
 
-      // カリキュラム設定を生徒の進行表に反映
-      const courseCurriculum = course.curriculum.filter(c => c.textbook_id === textbookId);
+    type ExistingProgress = { id: string; student_textbook_id: string; curriculum_item_id: number; proposal_count: number | null; group_number: number | null };
+    const progressMap = new Map<string, ExistingProgress>(
+      ((existingProgress || []) as ExistingProgress[]).map((p) => [
+        `${p.student_textbook_id}:${p.curriculum_item_id}`,
+        p,
+      ])
+    );
 
-      for (const setting of courseCurriculum) {
-        if (mode === 'overwrite') {
-          // 上書きモード
-          await supabase
-            .from('student_progress')
-            .upsert({
-              student_textbook_id: studentTextbook.id,
+    const toInsert = [];
+    const toUpdate: { id: string; proposal_count: number; group_number: number | null }[] = [];
+
+    for (const studentId of studentIds) {
+      for (const ct of course.textbooks) {
+        const stId = stMap.get(`${studentId}:${ct.textbook_id}`);
+        if (!stId) continue;
+        for (const setting of curriculumByTextbook.get(ct.textbook_id) || []) {
+          const key = `${stId}:${setting.curriculum_item_id}`;
+          const existing = progressMap.get(key);
+          if (existing) {
+            toUpdate.push({
+              id: existing.id,
+              proposal_count: (existing.proposal_count || 0) + setting.proposal_count,
+              group_number: setting.group_number,
+            });
+          } else {
+            toInsert.push({
+              student_textbook_id: stId,
               curriculum_item_id: setting.curriculum_item_id,
               proposal_count: setting.proposal_count,
               group_number: setting.group_number,
-              updated_at: new Date().toISOString(),
-            }, {
-              onConflict: 'student_textbook_id,curriculum_item_id',
             });
-        } else {
-          // 加算モード
-          const { data: existing } = await supabase
-            .from('student_progress')
-            .select('id, proposal_count, group_number')
-            .eq('student_textbook_id', studentTextbook.id)
-            .eq('curriculum_item_id', setting.curriculum_item_id)
-            .single();
-
-          if (existing) {
-            // 既存のものがあれば加算（グループは上書き）
-            await supabase
-              .from('student_progress')
-              .update({
-                proposal_count: (existing.proposal_count || 0) + setting.proposal_count,
-                group_number: setting.group_number, // グループは上書き
-                updated_at: new Date().toISOString(),
-              })
-              .eq('id', existing.id);
-          } else {
-            // なければ新規作成
-            await supabase
-              .from('student_progress')
-              .insert({
-                student_textbook_id: studentTextbook.id,
-                curriculum_item_id: setting.curriculum_item_id,
-                proposal_count: setting.proposal_count,
-                group_number: setting.group_number,
-              });
           }
         }
       }
     }
 
-    // 適用履歴を記録
-    await supabase
-      .from('seasonal_course_applications')
-      .insert({
-        course_id: courseId,
-        student_id: studentId,
-        applied_mode: mode,
-      });
+    await Promise.all([
+      toInsert.length > 0
+        ? supabase.from('student_progress').insert(toInsert as never)
+        : Promise.resolve(),
+      ...toUpdate.map((u) =>
+        supabase
+          .from('student_progress')
+          .update({ proposal_count: u.proposal_count, group_number: u.group_number, updated_at: now } as never)
+          .eq('id', u.id)
+      ),
+    ]);
   }
+
+  // Step 4: 適用履歴を一括INSERT
+  await supabase.from('seasonal_course_applications').insert(
+    studentIds.map((studentId) => ({
+      course_id: courseId,
+      student_id: studentId,
+      applied_mode: mode,
+    }))
+  );
 }
 
 // コースの適用履歴を取得

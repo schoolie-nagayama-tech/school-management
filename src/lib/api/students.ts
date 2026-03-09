@@ -64,6 +64,15 @@ export async function getStudents(
     );
   }
 
+  // DB側でgrade/kana/nameを先にソート（nullsは最後）
+  query = query
+    .order('grade', { ascending: true })
+    .order('last_name_kana', { ascending: true, nullsFirst: false })
+    .order('first_name_kana', { ascending: true, nullsFirst: false })
+    .order('last_name', { ascending: true })
+    .order('first_name', { ascending: true })
+    .order('student_code', { ascending: true });
+
   const { data: students, error } = await query;
 
   if (error) {
@@ -75,49 +84,9 @@ export async function getStudents(
 
   const studentsTyped = students as Student[];
 
-  // 並び順を適用（SQL側で完全に実装できないため、JavaScript側でソート）
-  studentsTyped.sort((a, b) => {
-    // 1) status順: active → inactive → withdrawn
-    const statusOrder: Record<string, number> = {
-      active: 1,
-      inactive: 2,
-      withdrawn: 3,
-    };
-    const statusDiff = statusOrder[a.status] - statusOrder[b.status];
-    if (statusDiff !== 0) return statusDiff;
-
-    // 2) grade昇順
-    const gradeDiff = a.grade - b.grade;
-    if (gradeDiff !== 0) return gradeDiff;
-
-    // 3) フリガナ（last_name_kana, first_name_kana）昇順（NULL/空は最後）
-    const aLastKana = a.last_name_kana?.trim() || '';
-    const bLastKana = b.last_name_kana?.trim() || '';
-    const aFirstKana = a.first_name_kana?.trim() || '';
-    const bFirstKana = b.first_name_kana?.trim() || '';
-
-    if (!aLastKana && !bLastKana) {
-      // 両方NULL/空の場合は次へ
-    } else if (!aLastKana) return 1;
-    else if (!bLastKana) return -1;
-    else {
-      const kanaDiff = aLastKana.localeCompare(bLastKana, 'ja');
-      if (kanaDiff !== 0) return kanaDiff;
-      const firstKanaDiff = aFirstKana.localeCompare(bFirstKana, 'ja');
-      if (firstKanaDiff !== 0) return firstKanaDiff;
-    }
-
-    // 4) 氏名（last_name, first_name）昇順
-    const nameDiff = a.last_name.localeCompare(b.last_name, 'ja');
-    if (nameDiff !== 0) return nameDiff;
-    const firstNameDiff = a.first_name.localeCompare(b.first_name, 'ja');
-    if (firstNameDiff !== 0) return firstNameDiff;
-
-    // 5) student_code昇順（タイブレーク）
-    const aCode = a.student_code || '';
-    const bCode = b.student_code || '';
-    return aCode.localeCompare(bCode);
-  });
+  // status順のみJS側でソート（active→inactive→withdrawn）、DB順を安定ソートで保持
+  const statusOrder: Record<string, number> = { active: 1, inactive: 2, withdrawn: 3 };
+  studentsTyped.sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
 
   // 各生徒の科目を取得
   const studentIds = studentsTyped.map((s) => s.id);

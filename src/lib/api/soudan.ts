@@ -1,3 +1,4 @@
+import { supabase } from '@/lib/supabase';
 import {
   getFormPeriods,
   getActiveFormPeriod,
@@ -324,18 +325,21 @@ export async function getUnhandledSoudanCount(
 ): Promise<number> {
   const targetSchoolId = schoolId || getDefaultSchoolId();
   
-  // 全てのお客様相談期間を取得
+  // 非アーカイブ期間のperiod_keyを一括取得
   const periods = await getSoudanPeriods(targetSchoolId, false);
-  
-  // 各期間の未対応回答数を集計
-  let totalUnhandled = 0;
-  for (const period of periods) {
-    const responses = await getSoudanResponses(targetSchoolId, period.period_key, {
-      handledStatus: 'not_handled',
-      showArchived: false,
-    });
-    totalUnhandled += responses.length;
-  }
-  
-  return totalUnhandled;
+  if (periods.length === 0) return 0;
+
+  const periodKeys = periods.map((p) => p.period_key);
+
+  // DB側でCOUNTのみ取得（全回答データの転送不要）
+  const { count } = await supabase
+    .from('form_responses')
+    .select('*', { count: 'exact', head: true })
+    .eq('school_id', targetSchoolId)
+    .eq('form_type', 'soudan')
+    .in('form_period', periodKeys)
+    .eq('is_archived', false)
+    .or('status_checks->handled.is.null,status_checks->handled.eq.false');
+
+  return count ?? 0;
 }

@@ -192,12 +192,7 @@ export async function createFormPeriodForSchools(
   if (schoolIds.length === 0) {
     return [];
   }
-  const results: FormPeriod[] = [];
-  for (const schoolId of schoolIds) {
-    const period = await createFormPeriod({ ...data, school_id: schoolId });
-    results.push(period);
-  }
-  return results;
+  return Promise.all(schoolIds.map((schoolId) => createFormPeriod({ ...data, school_id: schoolId })));
 }
 
 /**
@@ -209,11 +204,12 @@ export async function updateFormPeriodForSchools(
   periodKey: string,
   updates: FormPeriodUpdate
 ): Promise<void> {
-  for (const schoolId of schoolIds) {
-    const period = await getFormPeriodByKey(schoolId, formType, periodKey);
-    if (period) {
-      await updateFormPeriod(period.id, updates);
-    }
+  const periods = await Promise.all(
+    schoolIds.map((schoolId) => getFormPeriodByKey(schoolId, formType, periodKey))
+  );
+  const existing = periods.filter((p): p is FormPeriod => p !== null);
+  if (existing.length > 0) {
+    await Promise.all(existing.map((p) => updateFormPeriod(p.id, updates)));
   }
 }
 
