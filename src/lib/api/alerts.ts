@@ -535,7 +535,7 @@ async function fetchAlertSourcesLight(schoolIds: string[]): Promise<Partial<Aler
       getInterviewsBySchool(schoolIds),
       getApplicationItems(schoolIds, false),
       getStudentApplications(schoolIds).catch(() => []),
-      Promise.all(schoolIds.map((sid) => getPendingTasks(sid).catch(() => []))).then((arr) => arr.flat()),
+      getPendingTasksBySchools(schoolIds).catch((e) => { console.warn('未完了タスクの取得に失敗しました:', e); return []; }),
     ]);
 
   return {

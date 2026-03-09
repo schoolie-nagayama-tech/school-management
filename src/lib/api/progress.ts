@@ -152,8 +152,9 @@ export async function getStudentTextbooks(
       .order('exam_date', { ascending: true }),
   ]);
 
+  const settingsList = (settingsResult.data || []) as StudentTextbookSetting[];
   const settingsMap = new Map<string, StudentTextbookSetting>(
-    (settingsResult.data || []).map((s: StudentTextbookSetting) => [s.student_textbook_id, s])
+    settingsList.map((s) => [s.student_textbook_id, s])
   );
   const examsMap = new Map<string, StudentTextbookExam[]>();
   for (const exam of (examsResult.data || []) as StudentTextbookExam[]) {

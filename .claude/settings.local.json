@@ -8,7 +8,9 @@
       "Bash(while read f)",
       "Bash(do wc -l \"$f\")",
       "Bash(done)",
-      "Bash(find /c/Users/ytaka/Desktop/student-management/src -type f -name \"*.tsx\" -exec wc -l {} +)"
+      "Bash(find /c/Users/ytaka/Desktop/student-management/src -type f -name \"*.tsx\" -exec wc -l {} +)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(npx next build)"
     ]
   }
 }
