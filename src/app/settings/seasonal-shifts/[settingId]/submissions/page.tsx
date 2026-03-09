@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
@@ -60,6 +60,8 @@ export default function SeasonalShiftSubmissionsPage() {
   const [detailSlotSettings, setDetailSlotSettings] = useState<SlotSetting[]>([]);
   const [pdfExportAfterOpen, setPdfExportAfterOpen] = useState<string | null>(null);
   const [updatingSeatChartId, setUpdatingSeatChartId] = useState<string | null>(null);
+  // 連続クリック時の競合防止用リクエストID
+  const openDetailRequestRef = useRef(0);
 
   const fetchData = useCallback(async () => {
     if (!settingId) return;
@@ -151,10 +153,13 @@ export default function SeasonalShiftSubmissionsPage() {
   };
 
   const openDetail = async (sub: SeasonalShiftSubmission) => {
+    const requestId = ++openDetailRequestRef.current;
     const [full, slotSettings] = await Promise.all([
       getSeasonalShiftSubmissionWithSlots(sub.id),
       getSeasonalShiftSlotSettings(settingId),
     ]);
+    // より新しいリクエストが来ていた場合は古い結果を破棄
+    if (requestId !== openDetailRequestRef.current) return;
     if (!full) return;
     setDetailSlotSettings(slotSettings);
     setDetailSubmission({
@@ -191,10 +196,12 @@ export default function SeasonalShiftSubmissionsPage() {
   };
 
   const handleExportPDFFromList = async (sub: SeasonalShiftSubmission) => {
+    const requestId = ++openDetailRequestRef.current;
     const [full, slotSettings] = await Promise.all([
       getSeasonalShiftSubmissionWithSlots(sub.id),
       getSeasonalShiftSlotSettings(settingId),
     ]);
+    if (requestId !== openDetailRequestRef.current) return;
     if (!full) return;
     setDetailSlotSettings(slotSettings);
     setDetailSubmission({

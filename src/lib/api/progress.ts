@@ -90,9 +90,12 @@ export async function getStudentTextbooksExamsBySchool(
     .from('student_textbook_settings')
     .select('*')
     .in('student_textbook_id', stIds);
+  // O(1)ルックアップ用Mapを事前構築してO(n²)→O(n)に改善
+  const settingsMap = new Map<string, StudentTextbookSetting>(
+    ((settings || []) as StudentTextbookSetting[]).map((s) => [s.student_textbook_id, s])
+  );
   for (const st of stList) {
-    const s = (settings || []).find((x: { student_textbook_id?: string }) => x.student_textbook_id === st.id) as StudentTextbookSetting | undefined;
-    settingsByStId.set(st.id, s || null);
+    settingsByStId.set(st.id, settingsMap.get(st.id) ?? null);
   }
 
   const result: StudentTextbookWithDetails[] = stList.map((st) => ({

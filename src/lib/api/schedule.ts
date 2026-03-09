@@ -644,9 +644,7 @@ export async function generateWeeklySchedule(
   }
 
   const uniqueTeacherIds = Array.from(new Set(entries.map((e) => e.teacher_id)));
-  for (const tid of uniqueTeacherIds) {
-    await ensureUserIsTeacher(tid);
-  }
+  await Promise.all(uniqueTeacherIds.map((tid) => ensureUserIsTeacher(tid)));
 
   if (entries.length > 0) {
     const { error: insError } = await db.from('schedule_entries').upsert(entries, {

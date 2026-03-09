@@ -99,7 +99,7 @@ export async function getFormResponses(
         .select('*')
         .in('id', linkedStudentIds)
         .is('deleted_at', null);
-      (studentData || []).forEach((s) => studentsMap.set(s.id, s as Student));
+      (studentData || []).forEach((s) => studentsMap.set((s as Student).id, s as Student));
     } catch (error) {
       console.error('Error fetching linked students:', error);
       // エラーが発生しても続行
