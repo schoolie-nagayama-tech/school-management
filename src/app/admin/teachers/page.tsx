@@ -16,6 +16,8 @@ import { Label } from '@/components/ui';
 import { SelectShadcn as Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui';
 import { Copy, Check, Eye, EyeOff, Trash2 } from 'lucide-react';
 import type { School, UserProfile } from '@/types/database';
+import { generateTeacherCSV, downloadCSV, type TeacherExportRow } from '@/lib/utils/csvUtils';
+import { TeacherCsvImportModal } from '@/components/csv/TeacherCsvImportModal';
 
 interface TeacherWithDetails extends UserProfile {
   user_schools?: Array<{
@@ -61,6 +63,9 @@ export default function TeachersPage() {
   // 削除確認
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletingTeacher, setDeletingTeacher] = useState<TeacherWithDetails | null>(null);
+
+  // CSV
+  const [isCsvImportModalOpen, setIsCsvImportModalOpen] = useState(false);
 
   // データ取得
   useEffect(() => {
@@ -284,9 +289,35 @@ export default function TeachersPage() {
             </Link>
             <h1 className="text-2xl font-bold text-[#1f2937]">講師管理</h1>
           </div>
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
-            + 講師を追加
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const exportRows: TeacherExportRow[] = teachers.map((t) => ({
+                  display_name: t.display_name,
+                  email: t.email,
+                  school_names: (t.user_schools || []).map((us) => us.school?.name ?? '').filter(Boolean),
+                  is_active: t.is_active ?? true,
+                }));
+                const csv = generateTeacherCSV(exportRows);
+                const date = new Date().toISOString().slice(0, 10);
+                downloadCSV(csv, `講師一覧_${date}.csv`);
+              }}
+            >
+              CSVエクスポート
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsCsvImportModalOpen(true)}
+            >
+              CSVインポート
+            </Button>
+            <Button onClick={() => setIsCreateDialogOpen(true)}>
+              + 講師を追加
+            </Button>
+          </div>
         </div>
 
         {isLoading ? (
@@ -578,6 +609,14 @@ export default function TeachersPage() {
         </AlertDialog>
 
       </div>
+      {/* CSVインポートモーダル */}
+      <TeacherCsvImportModal
+        isOpen={isCsvImportModalOpen}
+        onClose={() => setIsCsvImportModalOpen(false)}
+        schools={schools}
+        onImportComplete={loadData}
+      />
+
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </AdminLayout>
   );

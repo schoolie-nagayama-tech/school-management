@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Button, Modal } from '@/components/ui';
 import {
   StudentForm,
@@ -20,6 +20,15 @@ import {
   deleteStudent,
 } from '@/lib/api/students';
 import type { Student, StudentInsert, StudentUpdate, Subject } from '@/types/database';
+import {
+  generateStudentCSV,
+  generateAssessmentCSV,
+  generateInterviewCSV,
+  downloadCSV,
+} from '@/lib/utils/csvUtils';
+import { StudentCsvImportModal } from '@/components/csv/StudentCsvImportModal';
+import { listAssessmentsBySchool } from '@/lib/api/assessments';
+import { getInterviewsBySchool } from '@/lib/api/interviews';
 import type { ScheduleRegularPattern, ScheduleTimeSlot } from '@/types/schedule';
 import { GRADE_LABELS } from '@/types/database';
 import { useRequirePermission } from '@/hooks/usePermissions';
@@ -70,6 +79,10 @@ export default function StudentsPage() {
   } | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCsvImportModalOpen, setIsCsvImportModalOpen] = useState(false);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
 
   // エラーメッセージ
   const [errorMessage, setErrorMessage] = useState('');
@@ -123,6 +136,59 @@ export default function StudentsPage() {
     }, 300);
     return () => clearTimeout(timer);
   }, [searchQuery, fetchStudents]);
+
+  // エクスポートメニュー外クリックで閉じる
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setExportMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // CSVエクスポート: 生徒一覧
+  const handleExportStudents = () => {
+    const csv = generateStudentCSV(students);
+    const date = new Date().toISOString().slice(0, 10);
+    downloadCSV(csv, `生徒一覧_${date}.csv`);
+    setExportMenuOpen(false);
+  };
+
+  // CSVエクスポート: 成績
+  const handleExportAssessments = async () => {
+    setIsExporting(true);
+    setExportMenuOpen(false);
+    try {
+      const schoolIds = getSelectedSchoolIds();
+      const map = await listAssessmentsBySchool(schoolIds);
+      const csv = generateAssessmentCSV(students, map);
+      const date = new Date().toISOString().slice(0, 10);
+      downloadCSV(csv, `成績一覧_${date}.csv`);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : '成績データのエクスポートに失敗しました');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // CSVエクスポート: 面談記録
+  const handleExportInterviews = async () => {
+    setIsExporting(true);
+    setExportMenuOpen(false);
+    try {
+      const schoolIds = getSelectedSchoolIds();
+      const map = await getInterviewsBySchool(schoolIds);
+      const csv = generateInterviewCSV(students, map);
+      const date = new Date().toISOString().slice(0, 10);
+      downloadCSV(csv, `面談記録_${date}.csv`);
+    } catch (err) {
+      setErrorMessage(err instanceof Error ? err.message : '面談記録のエクスポートに失敗しました');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   // 新規登録モーダルを開く
   const handleOpenCreateModal = () => {
@@ -414,24 +480,61 @@ export default function StudentsPage() {
             )}
           </div>
 
-          {/* 新規登録ボタン（講師には非表示） */}
+          {/* CSV / 新規登録ボタン（講師には非表示） */}
           {!isTeacher && (
-            <Button onClick={handleOpenCreateModal}>
-              <svg
-                className="w-4 h-4 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            <div className="flex items-center gap-2">
+              {/* CSVエクスポート ドロップダウン */}
+              <div className="relative" ref={exportMenuRef}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setExportMenuOpen((prev) => !prev)}
+                  disabled={isExporting}
+                >
+                  {isExporting ? 'エクスポート中...' : 'CSVエクスポート ▾'}
+                </Button>
+                {exportMenuOpen && (
+                  <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-[#e5e7eb] z-50 min-w-[140px] overflow-hidden">
+                    {[
+                      { label: '生徒一覧', onClick: handleExportStudents },
+                      { label: '成績', onClick: handleExportAssessments },
+                      { label: '面談記録', onClick: handleExportInterviews },
+                    ].map((item) => (
+                      <button
+                        key={item.label}
+                        onClick={item.onClick}
+                        className="w-full text-left px-4 py-2 text-sm text-[#1f2937] hover:bg-[#f3f4f6] transition-colors"
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsCsvImportModalOpen(true)}
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-              新規登録
-            </Button>
+                CSVインポート
+              </Button>
+              <Button onClick={handleOpenCreateModal}>
+                <svg
+                  className="w-4 h-4 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                新規登録
+              </Button>
+            </div>
           )}
         </div>
 
@@ -447,6 +550,21 @@ export default function StudentsPage() {
           onSchedule={!isTeacher ? handleOpenSchedule : undefined}
           isLoading={isLoading}
         />
+
+      {/* CSVインポートモーダル */}
+      <StudentCsvImportModal
+        isOpen={isCsvImportModalOpen}
+        onClose={() => setIsCsvImportModalOpen(false)}
+        schoolId={getSelectedSchoolIds()[0] ?? ''}
+        onImportComplete={() => fetchStudents(searchQuery)}
+        existingStudentCodes={
+          new Set(
+            students
+              .map((s) => s.student_code)
+              .filter((c): c is string => !!c)
+          )
+        }
+      />
 
       {/* 新規登録モーダル */}
       <Modal
