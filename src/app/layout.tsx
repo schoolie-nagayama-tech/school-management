@@ -4,7 +4,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 export const metadata: Metadata = {
-  title: "生徒管理システム",
+  title: "NEST",
   description: "学習塾向け生徒管理システム",
 };
 
