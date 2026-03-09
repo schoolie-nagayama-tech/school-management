@@ -79,7 +79,7 @@ export async function GET(
   try {
     const editToken = params.editToken?.trim();
     if (!editToken) {
-      return NextResponse.json({ error: 'editToken が必要です' }, { status: 400 });
+      return NextResponse.json({ error: 'editToken is required' }, { status: 400 });
     }
 
     const submission = await getSubmissionByToken(getSupabaseAdmin(), editToken);
@@ -91,7 +91,7 @@ export async function GET(
   } catch (error) {
     console.error('[seasonal-shift/public] fetch failed:', error);
     return NextResponse.json(
-      { error: '提出情報の取得に失敗しました' },
+      { error: 'Failed to get submission' },
       { status: 500 }
     );
   }
@@ -104,7 +104,7 @@ export async function PUT(
   try {
     const editToken = params.editToken?.trim();
     if (!editToken) {
-      return NextResponse.json({ error: 'editToken が必要です' }, { status: 400 });
+      return NextResponse.json({ error: 'editToken is required' }, { status: 400 });
     }
 
     const body = (await request.json()) as PublicUpdateRequest;
@@ -115,7 +115,7 @@ export async function PUT(
 
     if (!teacherName || !teacherEmail) {
       return NextResponse.json(
-        { error: 'teacher_name, teacher_email は必須です' },
+        { error: 'teacher_name and teacher_email are required' },
         { status: 400 }
       );
     }
@@ -124,7 +124,7 @@ export async function PUT(
     const existing = await getSubmissionByToken(supabaseAdmin, editToken);
     if (!existing) {
       return NextResponse.json(
-        { error: '有効な編集用URLではありません' },
+        { error: 'Invalid edit URL' },
         { status: 404 }
       );
     }
@@ -176,7 +176,7 @@ export async function PUT(
   } catch (error) {
     console.error('[seasonal-shift/public] update failed:', error);
     return NextResponse.json(
-      { error: '提出内容の更新に失敗しました' },
+      { error: 'Failed to update submission' },
       { status: 500 }
     );
   }

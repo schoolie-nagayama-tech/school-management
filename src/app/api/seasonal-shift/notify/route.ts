@@ -28,13 +28,13 @@ export async function POST(request: NextRequest) {
 
     if (!type || !submissionId) {
       return NextResponse.json(
-        { error: 'type と submissionId は必須です' },
+        { error: 'type and submissionId are required' },
         { status: 400 }
       );
     }
     if (type !== 'submitted' && type !== 'allow_edit') {
       return NextResponse.json(
-        { error: 'type は submitted または allow_edit です' },
+        { error: 'type must be submitted or allow_edit' },
         { status: 400 }
       );
     }
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error('[seasonal-shift/notify] Edge Function error:', error);
       return NextResponse.json(
-        { error: '通知の送信に失敗しました' },
+        { error: 'Failed to send notification' },
         { status: 500 }
       );
     }
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
   } catch (e) {
     console.error('[seasonal-shift/notify]', e);
     return NextResponse.json(
-      { error: '通知の送信に失敗しました' },
+      { error: 'Failed to send notification' },
       { status: 500 }
     );
   }

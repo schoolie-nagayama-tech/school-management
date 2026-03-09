@@ -1,5 +1,5 @@
 /**
- * 隰帷ｿ呈悄髢薙す繝輔ヨ謠仙・ API
+ * Seasonal shift submission API
  */
 import { supabase } from '@/lib/supabase';
 import { fetchWithAuth } from '@/lib/api/auth';
@@ -14,7 +14,7 @@ import type {
   SubmissionWithSlots,
 } from '@/types/seasonal-shift';
 
-// ========== 險ｭ螳・==========
+// ========== Settings ==========
 
 export async function getSeasonalShiftSettings(schoolId: string): Promise<SeasonalShiftSetting[]> {
   const { data, error } = await supabase
@@ -23,7 +23,7 @@ export async function getSeasonalShiftSettings(schoolId: string): Promise<Season
     .eq('school_id', schoolId)
     .order('start_date', { ascending: false });
 
-  if (error) throw new Error(`繧ｷ繝輔ヨ險ｭ螳壹・蜿門ｾ励↓螟ｱ謨励＠縺ｾ縺励◆: ${error.message}`);
+  if (error) throw new Error(`Failed to get shift settings: ${error.message}`);
   return (data || []) as SeasonalShiftSetting[];
 }
 
@@ -34,11 +34,11 @@ export async function getSeasonalShiftSetting(id: string): Promise<SeasonalShift
     .eq('id', id)
     .maybeSingle();
 
-  if (error) throw new Error(`繧ｷ繝輔ヨ險ｭ螳壹・蜿門ｾ励↓螟ｱ謨励＠縺ｾ縺励◆: ${error.message}`);
+  if (error) throw new Error(`Failed to get shift settings: ${error.message}`);
   return data as SeasonalShiftSetting | null;
 }
 
-/** 蜈ｬ髢狗畑・壼・髢倶ｸｭ縺ｮ險ｭ螳壹ｒ1莉ｶ蜿門ｾ・*/
+/** Get published setting by id */
 export async function getPublishedSeasonalShiftSetting(
   id: string
 ): Promise<SeasonalShiftSetting | null> {
@@ -49,7 +49,7 @@ export async function getPublishedSeasonalShiftSetting(
     .eq('status', 'published')
     .maybeSingle();
 
-  if (error) throw new Error(`繧ｷ繝輔ヨ險ｭ螳壹・蜿門ｾ励↓螟ｱ謨励＠縺ｾ縺励◆: ${error.message}`);
+  if (error) throw new Error(`Failed to get shift settings: ${error.message}`);
   return data as SeasonalShiftSetting | null;
 }
 
@@ -72,7 +72,7 @@ export async function createSeasonalShiftSetting(
     .select()
     .single();
 
-  if (error) throw new Error(`繧ｷ繝輔ヨ險ｭ螳壹・菴懈・縺ｫ螟ｱ謨励＠縺ｾ縺励◆: ${error.message}`);
+  if (error) throw new Error(`Failed to get shift settings: ${error.message}`);
   return data as SeasonalShiftSetting;
 }
 
@@ -90,16 +90,16 @@ export async function updateSeasonalShiftSetting(
     .select()
     .single();
 
-  if (error) throw new Error(`繧ｷ繝輔ヨ險ｭ螳壹・譖ｴ譁ｰ縺ｫ螟ｱ謨励＠縺ｾ縺励◆: ${error.message}`);
+  if (error) throw new Error(`Failed to update shift setting: ${error.message}`);
   return data as SeasonalShiftSetting;
 }
 
 export async function deleteSeasonalShiftSetting(id: string): Promise<void> {
   const { error } = await supabase.from('seasonal_shift_settings').delete().eq('id', id);
-  if (error) throw new Error(`繧ｷ繝輔ヨ險ｭ螳壹・蜑企勁縺ｫ螟ｱ謨励＠縺ｾ縺励◆: ${error.message}`);
+  if (error) throw new Error(`Failed to delete shift setting: ${error.message}`);
 }
 
-// ========== 髢玖ｬ帙さ繝櫁ｨｭ螳・==========
+// ========== Slot settings ==========
 
 export async function getSeasonalShiftSlotSettings(
   settingId: string
@@ -109,7 +109,7 @@ export async function getSeasonalShiftSlotSettings(
     .select('*')
     .eq('setting_id', settingId);
 
-  if (error) throw new Error(`髢玖ｬ帙さ繝櫁ｨｭ螳壹・蜿門ｾ励↓螟ｱ謨励＠縺ｾ縺励◆: ${error.message}`);
+  if (error) throw new Error(`Failed to get shift settings: ${error.message}`);
   return (data || []) as SlotSetting[];
 }
 
@@ -121,7 +121,7 @@ export async function setSeasonalShiftSlotSettings(
     .from('seasonal_shift_slot_settings')
     .delete()
     .eq('setting_id', settingId);
-  if (delError) throw new Error(`髢玖ｬ帙さ繝櫁ｨｭ螳壹・蜑企勁縺ｫ螟ｱ謨励＠縺ｾ縺励◆: ${delError.message}`);
+  if (delError) throw new Error(`Failed to delete slot settings: ${delError.message}`);
 
   if (items.length === 0) return;
 
@@ -133,10 +133,10 @@ export async function setSeasonalShiftSlotSettings(
   }));
 
   const { error: insError } = await supabase.from('seasonal_shift_slot_settings').insert(rows);
-  if (insError) throw new Error(`髢玖ｬ帙さ繝櫁ｨｭ螳壹・菫晏ｭ倥↓螟ｱ謨励＠縺ｾ縺励◆: ${insError.message}`);
+  if (insError) throw new Error(`Failed to save slot settings: ${insError.message}`);
 }
 
-// ========== 謠仙・ ==========
+// ========== Submissions ==========
 
 export async function getSeasonalShiftSubmissions(
   settingId: string
@@ -147,7 +147,7 @@ export async function getSeasonalShiftSubmissions(
     .eq('setting_id', settingId)
     .order('submitted_at', { ascending: false });
 
-  if (error) throw new Error(`謠仙・荳隕ｧ縺ｮ蜿門ｾ励↓螟ｱ謨励＠縺ｾ縺励◆: ${error.message}`);
+  if (error) throw new Error(`Failed to get submissions: ${error.message}`);
   return (data || []) as SeasonalShiftSubmission[];
 }
 
@@ -159,14 +159,14 @@ export async function getSeasonalShiftSubmissionWithSlots(
     .select('*')
     .eq('id', submissionId)
     .maybeSingle();
-  if (subError) throw new Error(`謠仙・縺ｮ蜿門ｾ励↓螟ｱ謨励＠縺ｾ縺励◆: ${subError.message}`);
+  if (subError) throw new Error(`Failed to get submission: ${subError.message}`);
   if (!submission) return null;
 
   const { data: slots, error: slotsError } = await supabase
     .from('seasonal_shift_submission_slots')
     .select('*')
     .eq('submission_id', submissionId);
-  if (slotsError) throw new Error(`繧ｷ繝輔ヨ隧ｳ邏ｰ縺ｮ蜿門ｾ励↓螟ｱ謨励＠縺ｾ縺励◆: ${slotsError.message}`);
+  if (slotsError) throw new Error(`Failed to get shift details: ${slotsError.message}`);
 
   return {
     ...(submission as SeasonalShiftSubmission),
@@ -174,7 +174,7 @@ export async function getSeasonalShiftSubmissionWithSlots(
   };
 }
 
-/** 菫ｮ豁｣逕ｨ繝医・繧ｯ繝ｳ縺ｧ謠仙・繧貞叙蠕暦ｼ・llow_edit 縺・true 縺ｮ縺ｨ縺阪・縺ｿ譛牙柑・・*/
+/** Get submission by edit token (valid when allow_edit is true) */
 export async function getSeasonalShiftSubmissionByEditToken(
   editToken: string
 ): Promise<SubmissionWithSlots | null> {
@@ -190,13 +190,13 @@ export async function getSeasonalShiftSubmissionByEditToken(
   };
 
   if (!res.ok) {
-    throw new Error(payload.error ?? '提出情報の取得に失敗しました');
+    throw new Error(payload.error ?? 'Failed to get submission');
   }
 
   return payload.submission ?? null;
 }
 
-/** 驕句霧繝繝・す繝･繝懊・繝臥畑・壽律莉佚励さ繝槭＃縺ｨ縺ｮ蜃ｺ蜍､蜿ｯ閭ｽ莠ｺ謨ｰ繧帝寔險・*/
+/** Count attendance by date and slot */
 export async function getSeasonalShiftAttendanceCounts(
   settingId: string
 ): Promise<Record<string, number>> {
@@ -210,7 +210,7 @@ export async function getSeasonalShiftAttendanceCounts(
     .in('submission_id', ids)
     .eq('available', true);
 
-  if (error) throw new Error(`蜃ｺ蜍､迥ｶ豕√・髮・ｨ医↓螟ｱ謨励＠縺ｾ縺励◆: ${error.message}`);
+  if (error) throw new Error(`Failed to count attendance: ${error.message}`);
 
   const counts: Record<string, number> = {};
   for (const s of slots || []) {
@@ -220,7 +220,7 @@ export async function getSeasonalShiftAttendanceCounts(
   return counts;
 }
 
-/** 隰帛ｸｫ蛻･繧ｳ繝樊焚・亥､壹＞鬆・ｼ・*/
+/** Teacher slot counts (most first) */
 export async function getSeasonalShiftTeacherSlotCounts(
   settingId: string
 ): Promise<{ teacher_name: string; teacher_email: string; count: number }[]> {
@@ -234,7 +234,7 @@ export async function getSeasonalShiftTeacherSlotCounts(
     .in('submission_id', ids)
     .eq('available', true);
 
-  if (error) throw new Error(`隰帛ｸｫ蛻･繧ｳ繝樊焚縺ｮ蜿門ｾ励↓螟ｱ謨励＠縺ｾ縺励◆: ${error.message}`);
+  if (error) throw new Error(`Failed to get shift settings: ${error.message}`);
 
   const countBySubId: Record<string, number> = {};
   for (const s of slots || []) {
@@ -250,7 +250,7 @@ export async function getSeasonalShiftTeacherSlotCounts(
     .sort((a, b) => b.count - a.count);
 }
 
-/** 蠎ｧ蟶ｭ陦ｨ蜈･蜉帙ヵ繝ｩ繧ｰ繧呈峩譁ｰ */
+/** Update seat chart entered flag */
 export async function updateSeasonalShiftSeatChartEntered(
   submissionId: string,
   entered: boolean
@@ -259,16 +259,16 @@ export async function updateSeasonalShiftSeatChartEntered(
     .from('seasonal_shift_submissions')
     .update({ seat_chart_entered: entered, updated_at: new Date().toISOString() })
     .eq('id', submissionId);
-  if (error) throw new Error(`蠎ｧ蟶ｭ陦ｨ蜈･蜉帙・譖ｴ譁ｰ縺ｫ螟ｱ謨励＠縺ｾ縺励◆: ${error.message}`);
+  if (error) throw new Error(`Failed to update seat chart: ${error.message}`);
 }
 
-/** 謠仙・繧貞炎髯､・医せ繝ｭ繝・ヨ縺ｯ CASCADE 縺ｧ閾ｪ蜍募炎髯､・・*/
+/** Delete submission (slots are cascade deleted) */
 export async function deleteSeasonalShiftSubmission(submissionId: string): Promise<void> {
   const { error } = await supabase
     .from('seasonal_shift_submissions')
     .delete()
     .eq('id', submissionId);
-  if (error) throw new Error(`謠仙・縺ｮ蜑企勁縺ｫ螟ｱ謨励＠縺ｾ縺励◆: ${error.message}`);
+  if (error) throw new Error(`Failed to delete submission: ${error.message}`);
 }
 
 export async function createSeasonalShiftSubmission(
@@ -290,13 +290,13 @@ export async function createSeasonalShiftSubmission(
   };
 
   if (!res.ok || !payload.submission) {
-    throw new Error(payload.error ?? '提出の送信に失敗しました');
+    throw new Error(payload.error ?? 'Failed to submit');
   }
 
   return payload.submission;
 }
 
-/** 菫ｮ豁｣險ｱ蜿ｯ繧剃ｻ倅ｸ趣ｼ・llow_edit=true 縺ｫ縺励‘dit_token 繧定ｿ斐☆・・*/
+/** Grant edit permission (allow_edit=true, returns edit_token) */
 export async function allowSeasonalShiftEdit(submissionId: string): Promise<string> {
   const { data, error } = await supabase
     .from('seasonal_shift_submissions')
@@ -304,7 +304,7 @@ export async function allowSeasonalShiftEdit(submissionId: string): Promise<stri
     .eq('id', submissionId)
     .select('edit_token')
     .single();
-  if (error) throw new Error(`菫ｮ豁｣險ｱ蜿ｯ縺ｮ譖ｴ譁ｰ縺ｫ螟ｱ謨励＠縺ｾ縺励◆: ${error.message}`);
+  if (error) throw new Error(`Failed to update edit permission: ${error.message}`);
 
   const res = await fetchWithAuth('/api/seasonal-shift/notify', {
     method: 'POST',
@@ -313,13 +313,13 @@ export async function allowSeasonalShiftEdit(submissionId: string): Promise<stri
   });
   if (!res.ok) {
     const err = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new Error(err?.error ?? '菫ｮ豁｣險ｱ蜿ｯ繝｡繝ｼ繝ｫ縺ｮ騾∽ｿ｡縺ｫ螟ｱ謨励＠縺ｾ縺励◆');
+    throw new Error(err?.error ?? 'Failed to send edit permission email');
   }
 
   return data.edit_token as string;
 }
 
-/** 菫ｮ豁｣險ｱ蜿ｯ繝｡繝ｼ繝ｫ繧貞・騾・ｼ・llow_edit=true 縺ｮ謠仙・蜷代￠・・*/
+/** Resend edit permission email (for allow_edit=true submissions) */
 export async function resendSeasonalShiftEditEmail(submissionId: string): Promise<void> {
   const res = await fetchWithAuth('/api/seasonal-shift/notify', {
     method: 'POST',
@@ -328,11 +328,11 @@ export async function resendSeasonalShiftEditEmail(submissionId: string): Promis
   });
   if (!res.ok) {
     const err = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new Error(err?.error ?? '菫ｮ豁｣險ｱ蜿ｯ繝｡繝ｼ繝ｫ縺ｮ蜀埼√↓螟ｱ謨励＠縺ｾ縺励◆');
+    throw new Error(err?.error ?? 'Failed to resend edit email');
   }
 }
 
-/** 繝医・繧ｯ繝ｳ縺ｧ謠仙・繧呈峩譁ｰ・亥・謠仙・蠕後・ allow_edit 繧・false 縺ｫ・・*/
+/** Update submission by token (after resubmit, allow_edit becomes false) */
 export async function updateSeasonalShiftSubmissionByToken(
   editToken: string,
   input: { teacher_name: string; teacher_email: string; notes?: string },
@@ -355,7 +355,7 @@ export async function updateSeasonalShiftSubmissionByToken(
   };
 
   if (!res.ok) {
-    throw new Error(payload.error ?? '提出内容の更新に失敗しました');
+    throw new Error(payload.error ?? 'Failed to update submission');
   }
 
   return (payload.submission as SeasonalShiftSubmission | null) ?? null;

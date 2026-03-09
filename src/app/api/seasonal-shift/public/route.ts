@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
 
     if (!settingId || !schoolId || !teacherName || !teacherEmail) {
       return NextResponse.json(
-        { error: 'setting_id, school_id, teacher_name, teacher_email は必須です' },
+        { error: 'setting_id, school_id, teacher_name, teacher_email are required' },
         { status: 400 }
       );
     }
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
 
     if (!setting) {
       return NextResponse.json(
-        { error: '公開中のシフト設定が見つかりません' },
+        { error: 'Published shift setting not found' },
         { status: 404 }
       );
     }
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
     const deadline = new Date(`${setting.deadline}T23:59:59`);
     if (Number.isFinite(deadline.getTime()) && new Date() > deadline) {
       return NextResponse.json(
-        { error: '回答期限を過ぎているため送信できません' },
+        { error: 'Submission deadline has passed' },
         { status: 400 }
       );
     }
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
     if (submissionError) {
       if (submissionError.code === '23505') {
         return NextResponse.json(
-          { error: 'この先生は既に回答済みです' },
+          { error: 'This teacher has already submitted' },
           { status: 409 }
         );
       }
@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('[seasonal-shift/public] create failed:', error);
     return NextResponse.json(
-      { error: '提出の送信に失敗しました' },
+      { error: 'Failed to submit' },
       { status: 500 }
     );
   }
