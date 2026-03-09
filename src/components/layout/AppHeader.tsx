@@ -15,7 +15,7 @@ interface AppHeaderProps {
   onBulkGradeUpdateClick?: () => void;
 }
 
-export function AppHeader({ title, onSettingsClick, onBulkGradeUpdateClick }: AppHeaderProps) {
+export function AppHeader({ title: _title, onSettingsClick, onBulkGradeUpdateClick }: AppHeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { profile, permissions, signOut, isLoading: authLoading, schoolIds, selectedSchoolId, setSelectedSchoolId, getSelectedSchoolIds } = useAuth();
