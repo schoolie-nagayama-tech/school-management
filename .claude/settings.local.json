@@ -1,7 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "Bash(find \"C:\\\\Users\\\\ytaka\\\\Desktop\\\\student-management\" -type f -name \"*.tsx\" -o -name \"*.ts\" | xargs grep -l \"edit.*seasonal.*shift\\\\|getSeasonalShiftSubmissionByEditToken\" 2>/dev/null)"
+      "Bash(find \"C:\\\\Users\\\\ytaka\\\\Desktop\\\\student-management\" -type f -name \"*.tsx\" -o -name \"*.ts\" | xargs grep -l \"edit.*seasonal.*shift\\\\|getSeasonalShiftSubmissionByEditToken\" 2>/dev/null)",
+      "Bash(wc -l /c/Users/ytaka/Desktop/student-management/src/lib/api/*.ts)",
+      "Bash(xargs wc -l)",
+      "Bash(grep -rn \"N\\\\+1\\\\|loop.*await\\\\|for.*supabase\" /c/Users/ytaka/Desktop/student-management/src/lib/api/*.ts)",
+      "Bash(while read f)",
+      "Bash(do wc -l \"$f\")",
+      "Bash(done)",
+      "Bash(find /c/Users/ytaka/Desktop/student-management/src -type f -name \"*.tsx\" -exec wc -l {} +)"
     ]
   }
 }

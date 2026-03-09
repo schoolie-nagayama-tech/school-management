@@ -469,62 +469,93 @@ export async function bulkUpdateGrades(schoolIds: string[]): Promise<void> {
   }
   if (!students || students.length === 0) return;
 
-  for (const student of students as Array<{ id: string; school_id: string; grade: number }>) {
-    const oldGrade = student.grade;
-    if (oldGrade >= 13) continue;
+  const eligible = (students as Array<{ id: string; school_id: string; grade: number }>).filter(
+    (s) => s.grade < 13
+  );
+  if (eligible.length === 0) return;
 
-    const newGrade = oldGrade + 1;
-    const oldCategory = getGradeCategory(oldGrade);
-    const newCategory = getGradeCategory(newGrade);
-    const categoryChanged = oldCategory !== newCategory;
+  const now = new Date().toISOString();
 
-    // 1. grade を更新
-    const { error: updateError } = await supabase
-      .from('students')
-      .update({ grade: newGrade, updated_at: new Date().toISOString() } as never)
-      .eq('id', student.id)
-      .eq('school_id', student.school_id);
+  // カテゴリ変更する生徒を特定
+  const categoryChangedStudents = eligible.filter(
+    (s) => getGradeCategory(s.grade) !== getGradeCategory(s.grade + 1)
+  );
+  const categoryChangedIds = categoryChangedStudents.map((s) => s.id);
+  const categoryChangedMap = new Map(
+    categoryChangedStudents.map((s) => [s.id, getGradeCategory(s.grade + 1)])
+  );
 
-    if (updateError) {
-      console.error('Error updating student grade:', updateError);
-      throw new Error(`生徒の学年更新に失敗しました: ${student.id}`);
-    }
-
-    if (categoryChanged) {
-      // 2. student_subjects を削除（受講科目クリア）
-      await supabase
-        .from('student_subjects')
-        .delete()
-        .eq('student_id', student.id);
-
-      // 3. student_textbooks のうち textbook.grade_category !== newCategory を削除
-      const { data: stList } = await supabase
-        .from('student_textbooks')
-        .select('id, textbook:textbooks(grade_category)')
-        .eq('student_id', student.id);
-
-      if (stList) {
-        for (const st of stList as Array<{
-          id: string;
-          textbook: { grade_category: string | null } | null;
-        }>) {
-          const tbCat = st.textbook?.grade_category ?? null;
-          if (tbCat != null && tbCat !== newCategory) {
-            await supabase.from('student_textbooks').delete().eq('id', st.id);
-          }
-        }
-      }
-
-      // 4. schedule_regular_patterns の subject_ids を [] に
-      await supabase
-        .from('schedule_regular_patterns')
-        .update({ subject_ids: [], updated_at: new Date().toISOString() } as never)
-        .eq('student_id', student.id);
-    }
-
-    // ログ
-    await logStudentAction(student.id, student.school_id, 'updated', {
-      grade_bulk_update: { old: oldGrade, new: newGrade, categoryChanged },
-    });
+  // 1. gradeをグループごとにバッチUPDATE（学年ごとに1クエリ）
+  const gradeGroups = new Map<number, string[]>();
+  for (const s of eligible) {
+    const newGrade = s.grade + 1;
+    if (!gradeGroups.has(newGrade)) gradeGroups.set(newGrade, []);
+    gradeGroups.get(newGrade)!.push(s.id);
   }
+
+  const gradeUpdateResults = await Promise.all(
+    Array.from(gradeGroups.entries()).map(([newGrade, ids]) =>
+      supabase
+        .from('students')
+        .update({ grade: newGrade, updated_at: now } as never)
+        .in('id', ids)
+    )
+  );
+  for (const result of gradeUpdateResults) {
+    if (result.error) {
+      throw new Error(`生徒の学年更新に失敗しました: ${result.error.message}`);
+    }
+  }
+
+  // カテゴリ変更がある場合のみ以下を実行
+  if (categoryChangedIds.length > 0) {
+    // 2. student_subjects を一括削除
+    await supabase.from('student_subjects').delete().in('student_id', categoryChangedIds);
+
+    // 3. student_textbooks を一括取得
+    const { data: stList } = await supabase
+      .from('student_textbooks')
+      .select('id, student_id, textbook:textbooks(grade_category)')
+      .in('student_id', categoryChangedIds);
+
+    // 削除対象IDをJS側で絞り込んで一括DELETE
+    if (stList && stList.length > 0) {
+      const idsToDelete = (
+        stList as Array<{
+          id: string;
+          student_id: string;
+          textbook: { grade_category: string | null } | null;
+        }>
+      )
+        .filter((st) => {
+          const tbCat = st.textbook?.grade_category ?? null;
+          const newCat = categoryChangedMap.get(st.student_id);
+          return tbCat != null && tbCat !== newCat;
+        })
+        .map((st) => st.id);
+
+      if (idsToDelete.length > 0) {
+        await supabase.from('student_textbooks').delete().in('id', idsToDelete);
+      }
+    }
+
+    // 4. schedule_regular_patterns の subject_ids を一括リセット
+    await supabase
+      .from('schedule_regular_patterns')
+      .update({ subject_ids: [], updated_at: now } as never)
+      .in('student_id', categoryChangedIds);
+  }
+
+  // ログを並列記録
+  await Promise.all(
+    eligible.map((s) =>
+      logStudentAction(s.id, s.school_id, 'updated', {
+        grade_bulk_update: {
+          old: s.grade,
+          new: s.grade + 1,
+          categoryChanged: categoryChangedIds.includes(s.id),
+        },
+      })
+    )
+  );
 }

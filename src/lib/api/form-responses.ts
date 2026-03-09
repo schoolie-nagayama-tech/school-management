@@ -7,7 +7,6 @@ import type {
   Student,
 } from '@/types/database';
 import { getDefaultSchoolId } from './schools';
-import { getStudents } from './students';
 
 // ============================================
 // フォーム回答関連
@@ -91,17 +90,16 @@ export async function getFormResponses(
     .map((r) => r.linked_student_id)
     .filter((id): id is string => id !== null);
 
-  // 紐付け済みの生徒情報を取得
+  // 紐付き生徒のみをIDで絞り込んで取得（全生徒取得を避ける）
   const studentsMap = new Map<string, Student>();
   if (linkedStudentIds.length > 0) {
     try {
-      const allStudents = await getStudents();
-      linkedStudentIds.forEach((id) => {
-        const student = allStudents.find((s) => s.id === id);
-        if (student) {
-          studentsMap.set(id, student);
-        }
-      });
+      const { data: studentData } = await supabase
+        .from('students')
+        .select('*')
+        .in('id', linkedStudentIds)
+        .is('deleted_at', null);
+      (studentData || []).forEach((s) => studentsMap.set(s.id, s as Student));
     } catch (error) {
       console.error('Error fetching linked students:', error);
       // エラーが発生しても続行

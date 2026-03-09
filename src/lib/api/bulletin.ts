@@ -477,7 +477,7 @@ export async function getPostReaders(postId: string): Promise<BulletinRead[]> {
  * 未読件数を取得
  */
 export async function getUnreadCount(schoolId: string, userId: string): Promise<number> {
-  // 全投稿を取得
+  // 投稿IDのみ取得（データ転送を最小化）
   const { data: posts } = await supabase
     .from('bulletin_posts')
     .select('id')
@@ -490,14 +490,12 @@ export async function getUnreadCount(schoolId: string, userId: string): Promise<
 
   const postIds = posts.map(p => p.id);
 
-  // 既読投稿を取得
-  const { data: reads } = await supabase
+  // DB側でカウントのみ取得（全既読データを転送しない）
+  const { count: readCount } = await supabase
     .from('bulletin_reads')
-    .select('post_id')
+    .select('*', { count: 'exact', head: true })
     .eq('user_id', userId)
     .in('post_id', postIds);
 
-  const readPostIds = new Set((reads || []).map(r => r.post_id));
-
-  return postIds.filter(id => !readPostIds.has(id)).length;
+  return postIds.length - (readCount ?? 0);
 }
