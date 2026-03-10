@@ -233,7 +233,10 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
             <Input
               type="text"
               value={studentName}
-              onChange={(e) => setStudentName(e.target.value)}
+              onChange={(e) => {
+                setStudentName(e.target.value);
+                if (errors.studentName) setErrors((prev) => { const n = { ...prev }; delete n.studentName; return n; });
+              }}
               placeholder="例：山田 太郎"
               className={errors.studentName ? 'border-red-500' : ''}
             />
@@ -249,7 +252,10 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
             </label>
             <Select
               value={selectedGrade}
-              onChange={(e) => setSelectedGrade(e.target.value)}
+              onChange={(e) => {
+                setSelectedGrade(e.target.value);
+                if (errors.grade) setErrors((prev) => { const n = { ...prev }; delete n.grade; return n; });
+              }}
               options={[
                 { value: '', label: '選択してください' },
                 ...sortedGrades.map((g) => ({ value: g, label: g })),
@@ -269,7 +275,10 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
             <Input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (errors.email) setErrors((prev) => { const n = { ...prev }; delete n.email; return n; });
+              }}
               placeholder="example@email.com"
               className={errors.email ? 'border-red-500' : ''}
             />
@@ -299,7 +308,10 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
                 name="examType"
                 value="regular"
                 checked={examType === 'regular'}
-                onChange={(e) => setExamType(e.target.value as ExamType)}
+                onChange={(e) => {
+                  setExamType(e.target.value as ExamType);
+                  if (errors.examType) setErrors((prev) => { const n = { ...prev }; delete n.examType; return n; });
+                }}
                 className="mt-1"
               />
               <div>
@@ -329,7 +341,10 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
                   name="examType"
                   value="furikae"
                   checked={examType === 'furikae'}
-                  onChange={(e) => setExamType(e.target.value as ExamType)}
+                  onChange={(e) => {
+                    setExamType(e.target.value as ExamType);
+                    if (errors.examType) setErrors((prev) => { const n = { ...prev }; delete n.examType; return n; });
+                  }}
                   className="mt-1"
                 />
                 <div>
@@ -373,7 +388,10 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
                 <Input
                   type="date"
                   value={furikaeDate}
-                  onChange={(e) => setFurikaeDate(e.target.value)}
+                  onChange={(e) => {
+                    setFurikaeDate(e.target.value);
+                    if (errors.furikaeDate) setErrors((prev) => { const n = { ...prev }; delete n.furikaeDate; return n; });
+                  }}
                   className={errors.furikaeDate ? 'border-red-500' : ''}
                 />
                 {errors.furikaeDate && (
@@ -388,7 +406,10 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
                 </label>
                 <Select
                   value={furikaeTime}
-                  onChange={(e) => setFurikaeTime(e.target.value)}
+                  onChange={(e) => {
+                    setFurikaeTime(e.target.value);
+                    if (errors.furikaeTime) setErrors((prev) => { const n = { ...prev }; delete n.furikaeTime; return n; });
+                  }}
                   options={[
                     { value: '', label: '選択してください' },
                     ...timeOptions.map((time) => ({ value: time, label: `${time}〜` })),
