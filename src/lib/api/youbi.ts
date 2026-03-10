@@ -9,7 +9,7 @@ import {
   archivePeriod,
   unarchivePeriod,
 } from './form-periods';
-import { createFormResponse, getFormResponses, getFormResponse, updateFormResponseStatus } from './form-responses';
+import { createPublicFormResponse, getFormResponses, getFormResponse, updateFormResponseStatus } from './form-responses';
 import { getDefaultSchoolId, getSchoolByCode } from './schools';
 import type {
   FormPeriodInsert,
@@ -206,7 +206,7 @@ export async function submitYoubiResponse(
     },
   };
 
-  await createFormResponse(responseData);
+  await createPublicFormResponse(responseData);
 }
 
 // ============================================

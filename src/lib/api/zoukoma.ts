@@ -11,7 +11,7 @@ import {
 } from './form-periods';
 import {
   getFormResponses,
-  createFormResponse,
+  createPublicFormResponse,
   updateFormResponseStatus,
 } from './form-responses';
 import { getDefaultSchoolId, getSchoolByCode } from './schools';
@@ -237,7 +237,7 @@ export async function submitZoukomaResponse(data: {
     },
   };
 
-  const response = await createFormResponse(responseData);
+  const response = await createPublicFormResponse(responseData);
   return {
     ...response,
     response_data: response.response_data as unknown as ZoukomaResponseData,

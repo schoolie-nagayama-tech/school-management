@@ -7,7 +7,7 @@ import {
   updateFormPeriod,
   deleteFormPeriod,
 } from './form-periods';
-import { createFormResponse, getFormResponses, updateFormResponseStatus } from './form-responses';
+import { createPublicFormResponse, getFormResponses, updateFormResponseStatus } from './form-responses';
 import { getDefaultSchoolId, getSchoolByCode } from './schools';
 import type {
   FormPeriodInsert,
@@ -203,7 +203,7 @@ export async function submitMogiResponse(
     },
   };
 
-  await createFormResponse(responseData);
+  await createPublicFormResponse(responseData);
 }
 
 // ============================================

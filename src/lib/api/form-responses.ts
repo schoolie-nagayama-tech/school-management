@@ -137,6 +137,34 @@ export async function getFormResponse(id: string): Promise<FormResponse | null> 
 }
 
 /**
+ * 保護者ポータル用フォーム回答を作成（認証不要）
+ * サーバー側の /api/portal/form-responses に fetch して RLS をバイパスする
+ */
+export async function createPublicFormResponse(
+  data: FormResponseInsert
+): Promise<FormResponse> {
+  const res = await fetch('/api/portal/form-responses', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+
+  const json = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    if (res.status === 409) {
+      throw new Error('この内容は既に送信されています。');
+    }
+    throw new Error(
+      (json as { error?: string }).error ||
+        `フォーム回答の作成に失敗しました: ${res.status}`
+    );
+  }
+
+  return (json as { data: FormResponse }).data;
+}
+
+/**
  * フォーム回答を作成（申込者・教室への通知メールは Edge Function で送信）
  */
 export async function createFormResponse(
