@@ -240,14 +240,17 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
     slot: YoubiSlot,
     setSlot: (s: YoubiSlot) => void,
     label: string,
-    highlight?: string
+    highlight?: string,
+    required?: boolean
   ) => (
     <div
       className={`p-4 rounded-lg border ${
         highlight || 'border-gray-200 bg-gray-50'
       }`}
     >
-      <p className="text-sm font-medium text-[#1f2937] mb-3">{label}</p>
+      <p className="text-sm font-medium text-[#1f2937] mb-3">
+        {label}{required && <span className="text-red-500 ml-1">*</span>}
+      </p>
       <div className="grid grid-cols-3 gap-2">
         <div>
           <label className="block text-xs text-[#4b5563]/60 mb-1">曜日</label>
@@ -398,7 +401,7 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
               '第1希望',
               'border-[#3b82f6] bg-orange-50'
             )}
-            {renderSlotInput(request2, setRequest2, '第2希望', 'border-gray-300 bg-white')}
+            {renderSlotInput(request2, setRequest2, '第2希望', 'border-gray-300 bg-white', true)}
           </div>
         </section>
 
