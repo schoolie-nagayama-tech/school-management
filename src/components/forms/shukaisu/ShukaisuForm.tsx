@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Input, Select, Button } from '@/components/ui';
+import { ToastContainer } from '@/components/ui/Toast';
 import type { School } from '@/types/database';
 import type {
   ShukaisuPeriod,
@@ -23,7 +24,7 @@ const GRADES = ['小1', '小2', '小3', '小4', '小5', '小6', '中1', '中2', 
 
 export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
   const router = useRouter();
-  const { success, error } = useToast();
+  const { toasts, removeToast, success, error } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
@@ -233,6 +234,7 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
   if (isSubmitted) {
     return (
       <div className="max-w-md mx-auto p-6">
+        <ToastContainer toasts={toasts} onRemove={removeToast} />
         <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
           <div className="text-4xl mb-4">✓</div>
           <h2 className="text-xl font-bold text-green-800 mb-4">
@@ -300,6 +302,7 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
 
   return (
     <div className="max-w-md mx-auto p-4">
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
       {/* ヘッダー */}
       <div className="flex items-center justify-between mb-6">
         <button
