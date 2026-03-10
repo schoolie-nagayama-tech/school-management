@@ -103,10 +103,43 @@ function formatResponseDetails(formType: string, responseData: any): string {
       break
 
     case 'moshi':
-      if (responseData.selections?.length > 0) {
-        details += '<p><strong>選択した模試:</strong></p><ul>'
-        for (const sel of responseData.selections) {
-          details += `<li>${sel.exam_label} - ${sel.date_label} - ${sel.venue_label}</li>`
+      if (responseData.exam_type === 'regular') {
+        details += `<p><strong>受験方法:</strong> 本試験受験</p>`
+      } else if (responseData.exam_type === 'furikae') {
+        details += `<p><strong>受験方法:</strong> 振替受験</p>`
+        if (responseData.furikae_date_label) {
+          details += `<p><strong>振替日:</strong> ${responseData.furikae_date_label}</p>`
+        }
+        if (responseData.furikae_time) {
+          details += `<p><strong>時間帯:</strong> ${responseData.furikae_time}</p>`
+        }
+      }
+      if (responseData.note) {
+        details += `<p><strong>備考:</strong> ${responseData.note}</p>`
+      }
+      break
+
+    case 'shukaisu':
+      if (responseData.change_from_label) {
+        details += `<p><strong>変更開始時期:</strong> ${responseData.change_from_label}</p>`
+      }
+      if (responseData.current?.weekly_count !== undefined) {
+        details += `<p><strong>現在の週回数:</strong> ${responseData.current.weekly_count}回</p>`
+      }
+      if (responseData.current?.slots?.length > 0) {
+        details += '<p><strong>現在のコマ:</strong></p><ul>'
+        for (const slot of responseData.current.slots) {
+          details += `<li>${slot.day} ${slot.period_label} ${slot.subject}</li>`
+        }
+        details += '</ul>'
+      }
+      if (responseData.requested?.weekly_count !== undefined) {
+        details += `<p><strong>変更後の週回数:</strong> ${responseData.requested.weekly_count}回</p>`
+      }
+      if (responseData.requested?.slots?.length > 0) {
+        details += '<p><strong>希望コマ:</strong></p><ul>'
+        for (const slot of responseData.requested.slots) {
+          details += `<li>${slot.day} ${slot.period_label} ${slot.subject}</li>`
         }
         details += '</ul>'
       }
@@ -115,30 +148,21 @@ function formatResponseDetails(formType: string, responseData: any): string {
       }
       break
 
-    case 'shukaisu':
-      if (responseData.current_count !== undefined) {
-        details += `<p><strong>現在の週回数:</strong> ${responseData.current_count}回</p>`
-      }
-      if (responseData.new_count !== undefined) {
-        details += `<p><strong>変更後の週回数:</strong> ${responseData.new_count}回</p>`
-      }
-      if (responseData.reason) {
-        details += `<p><strong>変更理由:</strong> ${responseData.reason}</p>`
-      }
-      if (responseData.note) {
-        details += `<p><strong>備考:</strong> ${responseData.note}</p>`
-      }
-      break
-
     case 'youbi':
-      if (responseData.current_days) {
-        details += `<p><strong>現在の曜日:</strong> ${responseData.current_days}</p>`
+      if (responseData.change_from_label) {
+        details += `<p><strong>変更開始時期:</strong> ${responseData.change_from_label}</p>`
       }
-      if (responseData.new_days) {
-        details += `<p><strong>変更後の曜日:</strong> ${responseData.new_days}</p>`
+      if (responseData.current) {
+        const cur = responseData.current
+        details += `<p><strong>現在の曜日・時間:</strong> ${cur.day} ${cur.period_label} ${cur.subject}</p>`
       }
-      if (responseData.reason) {
-        details += `<p><strong>変更理由:</strong> ${responseData.reason}</p>`
+      if (responseData.request1) {
+        const r1 = responseData.request1
+        details += `<p><strong>第1希望:</strong> ${r1.day} ${r1.period_label} ${r1.subject}</p>`
+      }
+      if (responseData.request2) {
+        const r2 = responseData.request2
+        details += `<p><strong>第2希望:</strong> ${r2.day} ${r2.period_label} ${r2.subject}</p>`
       }
       if (responseData.note) {
         details += `<p><strong>備考:</strong> ${responseData.note}</p>`
@@ -192,6 +216,9 @@ function createApplicantEmail(
 
   const subject = `【${schoolName}】${formTypeLabel}のお申し込みを受け付けました`
 
+  // 曜日変更・週回数変更・テスト対策のみ「日程が決まりましたらGrowから確認」を表示
+  const showGrowLine = ['shukaisu', 'youbi'].includes(formType)
+
   const html = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
       <h2 style="color: #ff8e3c;">お申し込み受付完了</h2>
@@ -208,7 +235,7 @@ function createApplicantEmail(
         ${formatResponseDetails(formType, responseData)}
       </div>
       <p>ご不明点がございましたら、教室までお問い合わせください。</p>
-      <p>日程が決まりましたらGrowから確認してください。</p>
+      ${showGrowLine ? '<p>日程が決まりましたらGrowから確認してください。</p>' : ''}
       <p style="margin-top: 30px; color: #666;">${schoolName}</p>
       ${EMAIL_FOOTER}
     </div>
