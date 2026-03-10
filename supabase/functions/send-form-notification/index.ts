@@ -186,11 +186,14 @@ function formatResponseDetails(formType: string, responseData: any): string {
       break
 
     case 'soudan':
-      if (responseData.category) {
-        details += `<p><strong>相談カテゴリ:</strong> ${responseData.category}</p>`
+      if (responseData.categories?.length > 0) {
+        details += `<p><strong>相談区分:</strong> ${responseData.categories.join('、')}</p>`
       }
       if (responseData.content) {
         details += `<p><strong>相談内容:</strong></p><p style="white-space: pre-wrap;">${responseData.content}</p>`
+      }
+      if (responseData.phone) {
+        details += `<p><strong>電話番号:</strong> ${responseData.phone}</p>`
       }
       break
 

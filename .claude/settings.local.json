@@ -11,7 +11,9 @@
       "Bash(find /c/Users/ytaka/Desktop/student-management/src -type f -name \"*.tsx\" -exec wc -l {} +)",
       "Bash(npx tsc --noEmit)",
       "Bash(npx next build)",
-      "Bash(npm install papaparse @types/papaparse)"
+      "Bash(npm install papaparse @types/papaparse)",
+      "Bash(npx supabase functions deploy send-form-notification)",
+      "Bash(npx supabase functions deploy send-form-notification --project-ref mzxysqkuuxcfffwlfsvj)"
     ]
   }
 }
