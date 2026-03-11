@@ -119,17 +119,19 @@ export async function updateSchool(
   return school as School;
 }
 
-/** 教室を参照している件数を取得（削除前に「何がブロックしているか」を表示するため） */
+/** 教室を参照している件数を取得（削除前に「何がブロックしているか」を表示するため）
+ * 論理削除・アーカイブ済みは除外し、有効なデータのみカウントする */
 export async function getSchoolBlockingReferences(schoolId: string): Promise<{ label: string; count: number }[]> {
-  const tables: { table: string; label: string }[] = [
+  type QueryFilter = (q: ReturnType<typeof supabase.from>) => ReturnType<typeof supabase.from>;
+  const tables: { table: string; label: string; filter?: QueryFilter }[] = [
     { table: 'user_schools', label: 'ユーザー割り当て' },
-    { table: 'students', label: '生徒' },
-    { table: 'form_periods', label: 'フォーム期間' },
-    { table: 'form_responses', label: 'フォーム回答' },
+    { table: 'students', label: '生徒', filter: (q) => q.is('deleted_at', null) },
+    { table: 'form_periods', label: 'フォーム期間', filter: (q) => q.or('is_archived.eq.false,is_archived.is.null') },
+    { table: 'form_responses', label: 'フォーム回答', filter: (q) => q.eq('is_archived', false) },
     { table: 'application_items', label: '申込項目' },
     { table: 'student_applications', label: '生徒申込' },
     { table: 'bulletin_labels', label: 'お知らせラベル' },
-    { table: 'bulletin_posts', label: 'お知らせ' },
+    { table: 'bulletin_posts', label: 'お知らせ', filter: (q) => q.eq('is_archived', false) },
     { table: 'alert_dismissals', label: 'アラート非表示' },
     { table: 'student_interviews', label: '面談' },
   ];
@@ -137,11 +139,15 @@ export async function getSchoolBlockingReferences(schoolId: string): Promise<{ l
   const results: { label: string; count: number }[] = [];
 
   await Promise.all(
-    tables.map(async ({ table, label }) => {
-      const { count, error } = await supabase
+    tables.map(async ({ table, label, filter: queryFilter }) => {
+      let query = supabase
         .from(table)
         .select('id', { count: 'exact', head: true })
         .eq('school_id', schoolId);
+      if (queryFilter) {
+        query = queryFilter(query) as typeof query;
+      }
+      const { count, error } = await query;
 
       if (!error && count != null && count > 0) {
         results.push({ label, count });
@@ -149,7 +155,7 @@ export async function getSchoolBlockingReferences(schoolId: string): Promise<{ l
     })
   );
 
-  // exam_types, student_textbooks など別名のテーブルがある場合もチェック（存在するテーブルのみ）
+  // exam_types, student_textbooks など（論理削除なし）
   const optionalTables: { table: string; label: string }[] = [
     { table: 'exam_types', label: '試験種別' },
     { table: 'student_textbooks', label: '教材' },
