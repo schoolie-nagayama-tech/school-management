@@ -69,8 +69,8 @@ async function sendEmail(to: string, subject: string, html: string) {
   return res.json()
 }
 
-// 申込詳細をHTMLに変換
-function formatResponseDetails(formType: string, responseData: any): string {
+// 申込詳細をHTMLに変換（periodSettings は模試などフォーム種別ごとの設定を渡す場合に使用）
+function formatResponseDetails(formType: string, responseData: any, periodSettings?: any): string {
   let details = ''
 
   switch (formType) {
@@ -118,13 +118,19 @@ function formatResponseDetails(formType: string, responseData: any): string {
     case 'moshi':
       if (responseData.exam_type === 'regular') {
         details += `<p><strong>受験方法:</strong> 本試験受験</p>`
+        if (periodSettings?.exam_date_label) {
+          details += `<p><strong>本試験日:</strong> ${periodSettings.exam_date_label}</p>`
+        }
+        if (periodSettings?.exam_time) {
+          details += `<p><strong>時間:</strong> ${periodSettings.exam_time}</p>`
+        }
       } else if (responseData.exam_type === 'furikae') {
         details += `<p><strong>受験方法:</strong> 振替受験</p>`
         if (responseData.furikae_date_label) {
-          details += `<p><strong>振替日:</strong> ${responseData.furikae_date_label}</p>`
+          details += `<p><strong>振替希望日:</strong> ${responseData.furikae_date_label}</p>`
         }
         if (responseData.furikae_time) {
-          details += `<p><strong>時間帯:</strong> ${responseData.furikae_time}</p>`
+          details += `<p><strong>希望時間:</strong> ${responseData.furikae_time}</p>`
         }
       }
       if (responseData.note) {
@@ -217,6 +223,37 @@ function formatResponseDetails(formType: string, responseData: any): string {
   return details
 }
 
+// 模試申込用：対象模試の案内ブロック（フォームの全内容＝どの模試か・実施日時・案内文）をHTMLで返す
+function formatMoshiContextBlock(periodTitle: string, periodSettings: any): string {
+  if (!periodTitle && !periodSettings) return ''
+  const parts: string[] = []
+  if (periodTitle) {
+    parts.push(`<p><strong>対象の模試:</strong> ${periodTitle}</p>`)
+  }
+  if (periodSettings?.exam_date_label) {
+    parts.push(`<p><strong>試験日:</strong> ${periodSettings.exam_date_label}</p>`)
+  }
+  if (periodSettings?.exam_time) {
+    parts.push(`<p><strong>時間:</strong> ${periodSettings.exam_time}</p>`)
+  }
+  if (periodSettings?.description) {
+    parts.push(
+      '<p style="margin-top: 12px;"><strong>■ 案内文</strong></p>' +
+      `<div style="white-space: pre-wrap; background: #fff; padding: 12px; border-radius: 4px; border: 1px solid #e5e7eb; font-size: 13px; color: #374151;">${escapeHtml(periodSettings.description)}</div>`
+    )
+  }
+  return parts.length ? parts.join('') : ''
+}
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
 // 申込者向けメール作成
 function createApplicantEmail(
   schoolName: string,
@@ -224,7 +261,9 @@ function createApplicantEmail(
   studentName: string,
   grade: number,
   responseData: any,
-  createdAt: string
+  createdAt: string,
+  periodTitle?: string,
+  periodSettings?: any
 ): { subject: string; html: string } {
   const formTypeLabel = FORM_TYPE_LABELS[formType] || formType
   const gradeLabel = GRADE_LABELS[grade] || `${grade}年`
@@ -235,11 +274,21 @@ function createApplicantEmail(
   // 曜日変更・週回数変更・テスト対策のみ「日程が決まりましたらGrowから確認」を表示
   const showGrowLine = ['shukaisu', 'youbi'].includes(formType)
 
+  // 模試申込の場合は「対象の模試」と案内文を冒頭に表示
+  const moshiContextBlock =
+    formType === 'moshi' && (periodTitle || periodSettings)
+      ? `<div style="background: #eff6ff; padding: 16px; border-radius: 8px; margin-bottom: 16px; border: 1px solid #bfdbfe;">
+          <h3 style="margin-top: 0; color: #1e40af;">申し込まれた模試の内容</h3>
+          ${formatMoshiContextBlock(periodTitle || '', periodSettings)}
+        </div>`
+      : ''
+
   const html = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
       <h2 style="color: #ff8e3c;">お申し込み受付完了</h2>
       <p>${studentName} 様</p>
       <p>以下の内容でお申し込みを受け付けました。</p>
+      ${moshiContextBlock}
       <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
         <h3 style="margin-top: 0;">申込内容</h3>
         <p><strong>種別:</strong> ${formTypeLabel}</p>
@@ -249,7 +298,7 @@ function createApplicantEmail(
         <hr style="border: none; border-top: 1px solid #ddd; margin: 15px 0;">
         <h3>フォームのご記入内容</h3>
         <p style="color: #555; margin-bottom: 12px;">お申し込み時にご記入いただいた内容は以下のとおりです。</p>
-        ${formatResponseDetails(formType, responseData)}
+        ${formatResponseDetails(formType, responseData, formType === 'moshi' ? periodSettings : undefined)}
       </div>
       <p>ご不明点がございましたら、教室までお問い合わせください。</p>
       ${showGrowLine ? '<p>日程が決まりましたらGrowから確認してください。</p>' : ''}
@@ -269,7 +318,9 @@ function createManagerEmail(
   email: string,
   responseData: any,
   createdAt: string,
-  formPeriod: string
+  formPeriod: string,
+  periodTitle?: string,
+  periodSettings?: any
 ): { subject: string; html: string } {
   const formTypeLabel = FORM_TYPE_LABELS[formType] || formType
   const gradeLabel = GRADE_LABELS[grade] || `${grade}年`
@@ -277,9 +328,18 @@ function createManagerEmail(
 
   const subject = `【新規申込】${formTypeLabel}がありました`
 
+  const moshiContextBlock =
+    formType === 'moshi' && (periodTitle || periodSettings)
+      ? `<div style="background: #eff6ff; padding: 16px; border-radius: 8px; margin-bottom: 16px; border: 1px solid #bfdbfe;">
+          <h3 style="margin-top: 0; color: #1e40af;">対象の模試</h3>
+          ${formatMoshiContextBlock(periodTitle || '', periodSettings)}
+        </div>`
+      : ''
+
   const html = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
       <h2 style="color: #ff8e3c;">新しい申込がありました</h2>
+      ${moshiContextBlock}
       <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
         <h3 style="margin-top: 0;">申込情報</h3>
         <p><strong>種別:</strong> ${formTypeLabel}</p>
@@ -288,11 +348,11 @@ function createManagerEmail(
         <p><strong>学年:</strong> ${gradeLabel}</p>
         <p><strong>メールアドレス:</strong> ${email || '未設定'}</p>
         <hr style="border: none; border-top: 1px solid #ddd; margin: 15px 0;">
-        <h3>詳細</h3>
-        ${formatResponseDetails(formType, responseData)}
+        <h3>フォームの記入内容</h3>
+        ${formatResponseDetails(formType, responseData, formType === 'moshi' ? periodSettings : undefined)}
       </div>
       <p>
-        <a href="${SITE_URL}/forms/responses/${formType}/${formPeriod}" 
+        <a href="${SITE_URL}/forms/responses/${formType}/${formPeriod}"
            style="display: inline-block; background: #ff8e3c; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
           管理画面で確認
         </a>
@@ -503,6 +563,21 @@ serve(async (req) => {
       throw new Error(`教室情報の取得に失敗: ${schoolError?.message}`)
     }
 
+    // フォーム期間（対象の模試タイトル・案内文など）を取得（模試申込などでメールにフォーム全内容を含めるため）
+    let periodTitle: string | undefined
+    let periodSettings: any
+    const { data: periodRow } = await supabase
+      .from('form_periods')
+      .select('title, settings')
+      .eq('school_id', school_id)
+      .eq('form_type', form_type)
+      .eq('period_key', form_period)
+      .maybeSingle()
+    if (periodRow) {
+      periodTitle = periodRow.title
+      periodSettings = periodRow.settings ?? undefined
+    }
+
     // 申込者にメール送信
     if (email) {
       const applicantMail = createApplicantEmail(
@@ -511,7 +586,9 @@ serve(async (req) => {
         student_name,
         grade,
         response_data,
-        created_at
+        created_at,
+        periodTitle,
+        periodSettings
       )
       await sendEmail(email, applicantMail.subject, applicantMail.html)
       console.log(`申込者メール送信完了: ${email}`)
@@ -527,7 +604,9 @@ serve(async (req) => {
         email,
         response_data,
         created_at,
-        form_period
+        form_period,
+        periodTitle,
+        periodSettings
       )
       await sendEmail(school.notification_email, managerMail.subject, managerMail.html)
       console.log(`教室長メール送信完了: ${school.notification_email}`)
