@@ -119,9 +119,67 @@ export async function updateSchool(
   return school as School;
 }
 
+/** 教室を参照している件数を取得（削除前に「何がブロックしているか」を表示するため） */
+export async function getSchoolBlockingReferences(schoolId: string): Promise<{ label: string; count: number }[]> {
+  const tables: { table: string; label: string }[] = [
+    { table: 'user_schools', label: 'ユーザー割り当て' },
+    { table: 'students', label: '生徒' },
+    { table: 'form_periods', label: 'フォーム期間' },
+    { table: 'form_responses', label: 'フォーム回答' },
+    { table: 'application_items', label: '申込項目' },
+    { table: 'student_applications', label: '生徒申込' },
+    { table: 'bulletin_labels', label: 'お知らせラベル' },
+    { table: 'bulletin_posts', label: 'お知らせ' },
+    { table: 'alert_dismissals', label: 'アラート非表示' },
+    { table: 'student_interviews', label: '面談' },
+  ];
+
+  const results: { label: string; count: number }[] = [];
+
+  await Promise.all(
+    tables.map(async ({ table, label }) => {
+      const { count, error } = await supabase
+        .from(table)
+        .select('id', { count: 'exact', head: true })
+        .eq('school_id', schoolId);
+
+      if (!error && count != null && count > 0) {
+        results.push({ label, count });
+      }
+    })
+  );
+
+  // exam_types, student_textbooks など別名のテーブルがある場合もチェック（存在するテーブルのみ）
+  const optionalTables: { table: string; label: string }[] = [
+    { table: 'exam_types', label: '試験種別' },
+    { table: 'student_textbooks', label: '教材' },
+  ];
+
+  for (const { table, label } of optionalTables) {
+    const { count, error } = await supabase
+      .from(table)
+      .select('id', { count: 'exact', head: true })
+      .eq('school_id', schoolId);
+    if (!error && count != null && count > 0) {
+      results.push({ label, count });
+    }
+  }
+
+  return results.sort((a, b) => b.count - a.count);
+}
+
 // 教室を削除
 export async function deleteSchool(id: string): Promise<void> {
-  // portal_menu が school_id で参照しているため、先に削除する（または DB で ON DELETE CASCADE にしている場合は不要）
+  // 削除ブロック要因を事前に取得してメッセージを分かりやすくする
+  const blocking = await getSchoolBlockingReferences(id);
+  if (blocking.length > 0) {
+    const detail = blocking.map((b) => `${b.label}（${b.count}件）`).join('、');
+    throw new Error(
+      `この教室は次のデータで参照されているため削除できません。先に解除してください。［${detail}］`
+    );
+  }
+
+  // portal_menu を先に削除（CASCADE で消える場合もあるが、明示的に削除）
   const { error: menuError } = await supabase
     .from('portal_menu')
     .delete()
@@ -140,6 +198,7 @@ export async function deleteSchool(id: string): Promise<void> {
   if (error) {
     console.error('Error deleting school:', error);
     if (error.code === '23503') {
+      // 上でチェックした以外の参照がある場合
       throw new Error(
         'この教室は他のデータで参照されているため削除できません。ユーザー・フォーム・メニュー等の関連を解除してください。'
       );
