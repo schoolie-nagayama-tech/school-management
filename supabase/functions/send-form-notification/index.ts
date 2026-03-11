@@ -540,6 +540,29 @@ serve(async (req) => {
 
     // 既存のフォーム通知処理（増コマ申込、模試申込など）
     const { record } = body
+    const responseId = record?.id
+
+    // 二重送信防止：同じ form_response で既に送信済みならメールを送らない
+    if (responseId) {
+      const { data: updated, error: updateError } = await supabase
+        .from('form_responses')
+        .update({ notification_sent_at: new Date().toISOString() })
+        .eq('id', responseId)
+        .is('notification_sent_at', null)
+        .select('id')
+        .maybeSingle()
+
+      if (updateError) {
+        console.error('notification_sent_at 更新エラー:', updateError)
+        throw new Error(`送信済みフラグの更新に失敗: ${updateError.message}`)
+      }
+      if (!updated) {
+        console.log('申込通知は既に送信済みのためスキップ:', responseId)
+        return new Response(JSON.stringify({ success: true, skipped: true }), {
+          headers: { 'Content-Type': 'application/json' },
+        })
+      }
+    }
 
     const {
       school_id,
