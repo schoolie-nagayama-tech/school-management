@@ -306,6 +306,7 @@ export default function MoshiResponsePage() {
   );
 
   return (
+    <>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <AdminLayout headerTitle={`${periodKey} 模試申込 回答一覧`}>
         {errorMessage && (
