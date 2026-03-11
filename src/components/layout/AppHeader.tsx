@@ -324,7 +324,8 @@ export function AppHeader({ title: _title, onSettingsClick, onBulkGradeUpdateCli
                       <Link
                         href="/admin/attendance"
                         className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
-                          pathname === '/admin/attendance' || pathname?.startsWith('/admin/attendance')
+                          pathname === '/admin/attendance' ||
+                          (pathname?.startsWith('/admin/attendance/') && !pathname.startsWith('/admin/attendance/late-early'))
                             ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
                             : ''
                         }`}
