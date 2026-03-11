@@ -32,6 +32,11 @@ const EMAIL_FROM = 'スクールIE <noreply@school-ie.com>'
 // 全メールの末尾に付ける共通フッター
 const EMAIL_FOOTER = '<p style="margin-top: 24px; font-size: 12px; color: #888;">送信専用です。このメールに返信いただいてもお答えできません。</p>'
 
+/** Resend のレート制限（2 req/秒）を超えないよう、送信間に待機する */
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 // メール送信
 async function sendEmail(to: string, subject: string, html: string) {
   const res = await fetch('https://api.resend.com/emails', {
@@ -387,6 +392,7 @@ async function handleSeasonalShiftNotification(type: string, submissionId: strin
       `
       await sendEmail(teacherEmail, teacherSubject, teacherHtml)
       console.log('講師への提出完了メール送信完了:', teacherEmail)
+      await delay(600)
     }
 
     if (school.notification_email) {
@@ -500,6 +506,7 @@ serve(async (req) => {
       )
       await sendEmail(email, applicantMail.subject, applicantMail.html)
       console.log(`申込者メール送信完了: ${email}`)
+      await delay(600)
     }
 
     // 教室長にメール送信
