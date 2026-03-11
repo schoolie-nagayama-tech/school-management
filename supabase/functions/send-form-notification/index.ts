@@ -595,8 +595,8 @@ serve(async (req) => {
       await delay(1000)
     }
 
-    // 教室長にメール送信
-    if (school.notification_email) {
+    // 教室長にメール送信（申込者と同じアドレスの場合は送らない＝保護者が2通受け取るのを防ぐ）
+    if (school.notification_email && school.notification_email !== email) {
       const managerMail = createManagerEmail(
         form_type,
         student_name,
