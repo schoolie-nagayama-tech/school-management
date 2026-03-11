@@ -166,7 +166,7 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
 
   /** セル (dateStr, slotId) に出勤可能な講師を全員含む teacherGroups */
   const getTeacherGroupsForCell = useCallback(
-    (dateStr: string, slotId: string, slotNumber: number) => {
+    (dateStr: string, slotId: string, _slotNumber: number) => {
       const fromEntries = groupEntriesByTeacher(
         entries,
         dateStr,
@@ -175,7 +175,6 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
       );
       const cellKey = `${dateStr}-${slotId}`;
       const emptyIds = emptyTeacherSlots[cellKey] ?? [];
-      const fromEntryIds = new Set(fromEntries.map((g) => g.teacher.id));
       const merged: TeacherGroup[] = [];
 
       // (A) エントリがある講師（授業あり）

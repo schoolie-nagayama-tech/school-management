@@ -29,7 +29,9 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://mzxysqkuuxcfffwlfsvj.supabase.co/functions/v1/\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16eHlzcWt1dXhjZmZmd2xmc3ZqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2Nzc4NDkwMiwiZXhwIjoyMDgzMzYwOTAyfQ.n46O2j60kj475qyh55WDmPFcx0mygIbKSvzYa2fFoAE\")",
       "Bash(xargs grep -l \"password\\\\|postgres\\\\|mzxysqkuu\")",
       "Bash(powershell.exe -Command \"Get-StoredCredential -Target ''*supabase*'' 2>$null | Select-Object Target,UserName\")",
-      "Bash(cmdkey /list)"
+      "Bash(cmdkey /list)",
+      "Bash(npx next lint --file src/components/schedule/WeeklyScheduleGrid.tsx)",
+      "Bash(npm run lint)"
     ]
   }
 }
