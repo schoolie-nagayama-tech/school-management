@@ -247,7 +247,8 @@ function createApplicantEmail(
         <p><strong>生徒名:</strong> ${studentName}</p>
         <p><strong>学年:</strong> ${gradeLabel}</p>
         <hr style="border: none; border-top: 1px solid #ddd; margin: 15px 0;">
-        <h3>詳細</h3>
+        <h3>フォームのご記入内容</h3>
+        <p style="color: #555; margin-bottom: 12px;">お申し込み時にご記入いただいた内容は以下のとおりです。</p>
         ${formatResponseDetails(formType, responseData)}
       </div>
       <p>ご不明点がございましたら、教室までお問い合わせください。</p>
