@@ -610,7 +610,7 @@ serve(async (req) => {
       )
       await sendEmail(school.notification_email, managerMail.subject, managerMail.html)
       console.log(`教室長メール送信完了: ${school.notification_email}`)
-    } else {
+    } else if (!school.notification_email) {
       console.warn(`教室 ${school.name} に通知先メールが設定されていません`)
     }
 
