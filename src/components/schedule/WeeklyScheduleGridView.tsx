@@ -37,7 +37,7 @@ function getTodayLocalDateStr(): string {
   return `${y}-${m}-${day}`;
 }
 
-const SLOT_ROW_MIN_H = 'min-h-[140px]';
+const SLOT_ROW_MIN_H = 'min-h-[60px]';
 
 export interface WeeklyScheduleGridViewProps {
   schoolId: string;
@@ -54,7 +54,7 @@ export interface WeeklyScheduleGridViewProps {
   getTeacherGroupsForCell: (dateStr: string, slotId: string, slotNumber: number) => TeacherGroup[];
   onDragStart: (e: DragStartEvent) => void;
   onDragEnd: (event: DragEndEvent) => void;
-  onAddTeacher: (date: string, slotId: string) => void;
+  onAddTeacher: (date: string, slotId: string, existingTeacherIds: string[]) => void;
   onAddStudent: (date: string, slotId: string, teacherId: string) => void;
   onRemoveTeacher: (date: string, slotId: string, teacherId: string, entryCount: number) => void;
   onStudentClick: (entry: ScheduleEntry, e: React.MouseEvent) => void;
@@ -63,6 +63,7 @@ export interface WeeklyScheduleGridViewProps {
   onPrintDay?: (date: string) => void;
   /** 曜日ヘッダー行の一番右に表示する要素（例: 通塾日程ボタン） */
   headerRightContent?: React.ReactNode;
+  getKoushuInfo?: (studentId: string) => { enrolled: number; scheduled: number } | null;
 }
 
 export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
@@ -89,6 +90,7 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
     onTransferTargetClick,
     onPrintDay,
     headerRightContent,
+    getKoushuInfo,
   } = props;
 
   const todayLocal = getTodayLocalDateStr();
@@ -162,7 +164,7 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
         {timeSlots.map((slot, slotIndex) => (
           <div
             key={slot.id}
-            className={`border-t border-gray-200 pt-3 pb-5 ${slotIndex % 2 === 1 ? 'bg-gray-50' : ''}`}
+            className={`border-t border-gray-200 pt-2 pb-3 ${slotIndex % 2 === 1 ? 'bg-gray-50' : ''}`}
           >
             <div
               className="grid gap-x-6 w-full"
@@ -189,7 +191,7 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
                 const cellKey = `${dateStr}-${slot.id}`;
 
                 return (
-                  <div key={cellKey} className={`min-w-0 ${SLOT_ROW_MIN_H}`}>
+                  <div key={cellKey} className={`min-w-0 ${SLOT_ROW_MIN_H} border-l border-gray-100 pl-2`}>
                     <DayCell
                       date={dateStr}
                       timeSlot={slot}
@@ -199,7 +201,7 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
                       activeDragId={activeId}
                       activeDragEntry={activeEntry}
                       transferMode={!!transferMode}
-                      onAddTeacher={() => onAddTeacher(dateStr, slot.id)}
+                      onAddTeacher={(existingIds) => onAddTeacher(dateStr, slot.id, existingIds)}
                       onAddStudent={(teacherId) => onAddStudent(dateStr, slot.id, teacherId)}
                       onRemoveTeacher={(teacherId, entryCount) =>
                         onRemoveTeacher(dateStr, slot.id, teacherId, entryCount)
@@ -212,6 +214,7 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
                               onTransferTargetClick(dateStr, slotId, teacherId)
                           : undefined
                       }
+                      getKoushuInfo={getKoushuInfo}
                     />
                   </div>
                 );

@@ -9,12 +9,16 @@ export interface DraggableStudentCardProps {
   entry: ScheduleEntry;
   onStudentClick: (entry: ScheduleEntry, e: React.MouseEvent) => void;
   onTransferClick?: (entry: ScheduleEntry) => void;
+  koushuEnrolled?: number;
+  koushuScheduled?: number;
 }
 
 export const DraggableStudentCard = React.memo(function DraggableStudentCard({
   entry,
   onStudentClick,
   onTransferClick,
+  koushuEnrolled,
+  koushuScheduled,
 }: DraggableStudentCardProps) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: entry.id,
@@ -35,6 +39,8 @@ export const DraggableStudentCard = React.memo(function DraggableStudentCard({
           onStudentClick(entry, e);
         }}
         onTransferClick={onTransferClick}
+        koushuEnrolled={koushuEnrolled}
+        koushuScheduled={koushuScheduled}
       />
     </div>
   );

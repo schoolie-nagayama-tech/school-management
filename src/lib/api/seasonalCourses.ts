@@ -11,6 +11,214 @@ import type {
 } from '@/types/database';
 
 // =====================================================
+// 講習機能（座席表連携）用の型定義
+// =====================================================
+
+/** seasonal_courses に追加した期間カラムを含む型 */
+export interface KoushuCourse {
+  id: string;
+  school_id: string | null;
+  name: string;
+  season: string;
+  target_grades: number[];
+  total_koma: number;
+  comment: string | null;
+  is_active: boolean;
+  start_date: string | null;
+  end_date: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+  enrollment_count?: number;
+}
+
+/** 講習申し込み（座席表連携用: koushu_enrollments テーブル） */
+export interface KoushuEnrollment {
+  id: string;
+  course_id: string;
+  student_id: string;
+  koma_count: number;
+  subject_ids: string[];
+  created_at: string | null;
+  updated_at: string | null;
+  student?: {
+    id: string;
+    last_name: string;
+    first_name: string;
+    grade: number;
+  };
+}
+
+// =====================================================
+// 講習 CRUD（座席表連携）
+// =====================================================
+
+/** 学校の講習一覧を取得（start_date/end_date含む） */
+export async function getSchoolKoushu(schoolId: string): Promise<KoushuCourse[]> {
+  const { data, error } = await supabase
+    .from('seasonal_courses')
+    .select('*')
+    .eq('school_id', schoolId)
+    .eq('is_active', true)
+    .order('start_date', { ascending: false, nullsFirst: false });
+
+  if (error) throw error;
+
+  const courses = (data || []) as KoushuCourse[];
+
+  // 登録人数を集計
+  const withCounts = await Promise.all(
+    courses.map(async (c) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { count } = await (supabase as any)
+        .from('koushu_enrollments')
+        .select('*', { count: 'exact', head: true })
+        .eq('course_id', c.id);
+      return { ...c, enrollment_count: count ?? 0 };
+    })
+  );
+
+  return withCounts;
+}
+
+/** 講習を作成 */
+export async function createKoushu(
+  schoolId: string,
+  data: {
+    name: string;
+    season: string;
+    start_date: string | null;
+    end_date: string | null;
+    target_grades?: number[];
+    total_koma?: number;
+    comment?: string;
+  }
+): Promise<KoushuCourse> {
+  const { data: course, error } = await supabase
+    .from('seasonal_courses')
+    .insert({ school_id: schoolId, ...data })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return course as KoushuCourse;
+}
+
+/** 講習を更新 */
+export async function updateKoushu(
+  courseId: string,
+  data: Partial<{
+    name: string;
+    season: string;
+    start_date: string | null;
+    end_date: string | null;
+    target_grades: number[];
+    total_koma: number;
+    comment: string | null;
+  }>
+): Promise<KoushuCourse> {
+  const { data: course, error } = await supabase
+    .from('seasonal_courses')
+    .update({ ...data, updated_at: new Date().toISOString() })
+    .eq('id', courseId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return course as KoushuCourse;
+}
+
+/** 講習を削除（論理削除） */
+export async function deleteKoushu(courseId: string): Promise<void> {
+  const { error } = await supabase
+    .from('seasonal_courses')
+    .update({ is_active: false, updated_at: new Date().toISOString() })
+    .eq('id', courseId);
+
+  if (error) throw error;
+}
+
+// =====================================================
+// 講習申し込み管理（koushu_enrollments）
+// =====================================================
+
+/** 講習の申し込み一覧（生徒情報付き）を取得 */
+export async function getKoushuEnrollments(courseId: string): Promise<KoushuEnrollment[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('koushu_enrollments')
+    .select('*, student:students(id, last_name, first_name, grade)')
+    .eq('course_id', courseId)
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+  return (data || []) as KoushuEnrollment[];
+}
+
+/** 申し込みを登録・更新（upsert） */
+export async function upsertKoushuEnrollment(
+  courseId: string,
+  studentId: string,
+  komaCount: number,
+  subjectIds: string[]
+): Promise<void> {
+  // koushu_enrollments は生成型に含まれないため as never でキャスト
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('koushu_enrollments')
+    .upsert(
+      {
+        course_id: courseId,
+        student_id: studentId,
+        koma_count: komaCount,
+        subject_ids: subjectIds,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'course_id,student_id' }
+    );
+
+  if (error) throw error;
+}
+
+/** 申し込みを削除 */
+export async function deleteKoushuEnrollment(enrollmentId: string): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
+    .from('koushu_enrollments')
+    .delete()
+    .eq('id', enrollmentId);
+
+  if (error) throw error;
+}
+
+/** 講習期間のスケジュール済みコマ数を学生ごとに集計 */
+export async function getKoushuScheduledCounts(
+  schoolId: string,
+  startDate: string,
+  endDate: string,
+  studentIds: string[]
+): Promise<Map<string, number>> {
+  if (studentIds.length === 0) return new Map();
+
+  const { data, error } = await supabase
+    .from('schedule_entries')
+    .select('student_id, status')
+    .eq('school_id', schoolId)
+    .gte('entry_date', startDate)
+    .lte('entry_date', endDate)
+    .in('student_id', studentIds);
+
+  if (error) throw error;
+
+  const counts = new Map<string, number>();
+  for (const entry of data || []) {
+    if (entry.status === 'cancelled' || entry.status === 'transferred_out') continue;
+    const current = counts.get(entry.student_id) ?? 0;
+    counts.set(entry.student_id, current + 1);
+  }
+  return counts;
+}
+
+// =====================================================
 // コースCRUD
 // =====================================================
 

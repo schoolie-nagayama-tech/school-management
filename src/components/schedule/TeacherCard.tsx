@@ -57,6 +57,8 @@ export interface TeacherCardProps {
   /** 振替モード時: この講師ブロックをクリックで振替先に選ぶ */
   transferMode?: boolean;
   onTransferTargetClick?: (date: string, slotId: string, teacherId: string) => void;
+  /** 講習モード: 生徒IDから申し込み情報を返すコールバック */
+  getKoushuInfo?: (studentId: string) => { enrolled: number; scheduled: number } | null;
 }
 
 export const TeacherCard = React.memo(function TeacherCard({
@@ -75,13 +77,15 @@ export const TeacherCard = React.memo(function TeacherCard({
   activeDragEntry,
   transferMode,
   onTransferTargetClick,
+  getKoushuInfo,
 }: TeacherCardProps) {
   const dropId = getTeacherSlotId(date, timeSlotId, teacher.id);
   const { isOver, setNodeRef } = useDroppable({ id: dropId });
 
-  const activeEntries = entries.filter(
-    (e) => e.status !== 'cancelled' && e.status !== 'transferred_out'
-  );
+  // 表示対象: キャンセル以外すべて（振替元 transferred_out も表示して取り消し線スタイルで見せる）
+  const displayEntries = entries.filter((e) => e.status !== 'cancelled');
+  // 有効生徒数（満員・残席カウント用: 振替元は除く）
+  const activeEntries = displayEntries.filter((e) => e.status !== 'transferred_out');
   const canAddStudent = !isClosed && activeEntries.length < maxStudents;
   const displayName = teacher.display_name || teacher.email || '—';
 
@@ -104,40 +108,63 @@ export const TeacherCard = React.memo(function TeacherCard({
   const isOverAndCanDrop = isOver && canDrop;
   const isOverAndCannotDrop = isOver && !canDrop && activeDragEntry;
 
-  const handleCardClick = () => {
+  const handleTransferClick = () => {
     if (transferMode && onTransferTargetClick) onTransferTargetClick(date, timeSlotId, teacher.id);
   };
 
-  const isOnDuty = activeEntries.length > 0;
+  // 出勤可能だが授業なし → コンパクトな1行バッジ表示
+  if (isAvailableOnly) {
+    return (
+      <div
+        className={`
+          flex items-center gap-1 px-2 py-1 rounded-lg border border-dashed border-gray-200
+          bg-gray-50/50 text-gray-400
+          ${transferMode ? 'cursor-pointer hover:border-[var(--primary)]/40 hover:bg-gray-50' : ''}
+        `}
+        onClick={transferMode ? handleTransferClick : undefined}
+        role={transferMode ? 'button' : undefined}
+      >
+        <span className="text-xs truncate flex-1 min-w-0">{displayName}</span>
+        <span className="text-[10px] text-gray-300 flex-shrink-0 tabular-nums">{slotLabel}</span>
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onRemoveTeacher(); }}
+          className="flex-shrink-0 w-4 h-4 flex items-center justify-center rounded text-gray-300 hover:text-red-400 text-xs"
+          aria-label="講師を削除"
+        >
+          ×
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div
       className={`
-        group relative min-h-[72px] rounded-xl border transition-all duration-150
-        ${isAvailableOnly
-          ? 'border-dashed border-gray-100 bg-gray-50/30 opacity-75 hover:opacity-90'
-          : 'border border-gray-200 bg-white shadow-sm hover:shadow-md hover:bg-gray-50'}
-        ${isOnDuty ? 'border-l-2 border-l-[var(--primary)]' : ''}
-        ${!isOnDuty && !isAvailableOnly ? 'bg-gray-50/30' : ''}
+        group relative rounded-xl border transition-all duration-150
+        border border-gray-200 bg-white shadow-sm hover:shadow-md hover:bg-gray-50
+        border-l-2 border-l-[var(--primary)]
         ${transferMode ? 'cursor-pointer hover:border-[var(--primary)]/40 hover:bg-gray-50/50' : ''}
         ${isOverAndCanDrop ? 'ring-2 ring-green-400 bg-green-50/50' : ''}
         ${isOverAndCannotDrop ? 'ring-2 ring-red-200 bg-red-50/50 cursor-not-allowed' : ''}
       `}
-      onClick={transferMode && onTransferTargetClick ? handleCardClick : undefined}
+      onClick={transferMode && onTransferTargetClick ? handleTransferClick : undefined}
       role={transferMode && onTransferTargetClick ? 'button' : undefined}
     >
+      {/* ヘッダー：振替モード中もクリックで振替先を選べるよう onClick を設定 */}
       <div
-        className="flex justify-between items-center px-2.5 py-2 border-b border-gray-100"
-        onClick={(e) => transferMode && e.stopPropagation()}
+        className="flex justify-between items-center px-2 py-1.5 border-b border-gray-100"
+        onClick={(e) => {
+          if (transferMode) {
+            e.stopPropagation();
+            if (onTransferTargetClick) onTransferTargetClick(date, timeSlotId, teacher.id);
+          }
+        }}
       >
-        <span
-          className={`min-w-0 truncate flex-1 ${isAvailableOnly ? 'text-sm font-normal text-gray-400' : 'text-base font-medium text-gray-700'}`}
-        >
+        <span className="min-w-0 truncate flex-1 text-sm font-medium text-gray-700">
           {displayName}
         </span>
-        <span
-          className={`flex-shrink-0 ml-2 text-right tabular-nums ${isAvailableOnly ? 'text-[10px] text-gray-300' : 'text-xs text-gray-400'}`}
-        >
+        <span className="flex-shrink-0 ml-2 text-right tabular-nums text-xs text-gray-400">
           {slotLabel}
         </span>
         <button
@@ -147,23 +174,28 @@ export const TeacherCard = React.memo(function TeacherCard({
             e.stopPropagation();
             onRemoveTeacher();
           }}
-          className="flex-shrink-0 ml-1 w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-red-500 hover:bg-red-50 text-sm"
+          className="flex-shrink-0 ml-1 w-5 h-5 flex items-center justify-center rounded text-gray-400 hover:text-red-500 hover:bg-red-50 text-xs"
           aria-label="講師を削除"
         >
           ×
         </button>
       </div>
 
-      <div ref={setNodeRef} className="relative p-2 rounded-b-xl">
-        <div className="space-y-2">
-          {activeEntries.map((entry) => (
-            <DraggableStudentCard
-              key={entry.id}
-              entry={entry}
-              onStudentClick={onStudentClick}
-              onTransferClick={onTransferClick}
-            />
-          ))}
+      <div ref={setNodeRef} className="relative p-1.5 rounded-b-xl">
+        <div className="space-y-1">
+          {displayEntries.map((entry) => {
+            const ki = getKoushuInfo?.(entry.student_id);
+            return (
+              <DraggableStudentCard
+                key={entry.id}
+                entry={entry}
+                onStudentClick={onStudentClick}
+                onTransferClick={onTransferClick}
+                koushuEnrolled={ki?.enrolled}
+                koushuScheduled={ki?.scheduled}
+              />
+            );
+          })}
         </div>
 
         {canAddStudent && !transferMode && (
@@ -173,10 +205,10 @@ export const TeacherCard = React.memo(function TeacherCard({
               e.stopPropagation();
               onAddStudent();
             }}
-            className="absolute bottom-2 right-2 w-7 h-7 rounded-full flex items-center justify-center bg-white border border-gray-200 text-gray-500 hover:text-[var(--primary)] hover:border-[var(--primary)]/30 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-sm"
+            className="absolute bottom-1 right-1 w-6 h-6 rounded-full flex items-center justify-center bg-white border border-gray-200 text-gray-500 hover:text-[var(--primary)] hover:border-[var(--primary)]/30 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-sm"
             aria-label="生徒を追加"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
           </button>
         )}
       </div>

@@ -28,12 +28,18 @@ export interface StudentCardProps {
   entry: ScheduleEntry;
   onClick: (e: React.MouseEvent) => void;
   onTransferClick?: (entry: ScheduleEntry) => void;
+  /** 講習モード: 申し込みコマ数 */
+  koushuEnrolled?: number;
+  /** 講習モード: 期間内の受講済みコマ数 */
+  koushuScheduled?: number;
 }
 
 export const StudentCard = React.memo(function StudentCard({
   entry,
   onClick,
   onTransferClick,
+  koushuEnrolled,
+  koushuScheduled,
 }: StudentCardProps) {
   const status = entry.attendance_status ?? null;
   const statusKey = status === null ? 'null' : status;
@@ -47,7 +53,7 @@ export const StudentCard = React.memo(function StudentCard({
   const subjectNames = (entry.subjects ?? [])
     .map((s) => (typeof s === 'object' && s && 'name' in s ? s.name : String(s)))
     .filter(Boolean)
-    .join(' / ') || (entry.subject_ids?.length ? '—' : '—');
+    .join('/') || '—';
 
   const isTransferredOut = entry.status === 'transferred_out';
   const isTransferredIn = entry.status === 'transferred_in';
@@ -65,59 +71,55 @@ export const StudentCard = React.memo(function StudentCard({
         }
       }}
       className={`
-        px-2 py-1.5 rounded-lg border text-left shadow-sm
-        cursor-pointer hover:bg-gray-50 hover:shadow-md transition-all duration-150
+        px-1.5 py-1 rounded-lg border text-left shadow-sm
+        cursor-pointer hover:shadow-md transition-all duration-150
         ${colorClass}
         ${isTransferredOut ? 'opacity-60 line-through' : ''}
       `}
     >
-      {/* 生徒名（最優先・強） */}
-      <div className="flex justify-between items-start gap-2">
-        <p className="text-base font-semibold text-gray-900 leading-relaxed break-words min-w-0">
+      {/* 1行目: 生徒名 + 学年 + 操作アイコン */}
+      <div className="flex items-center gap-1">
+        <p className={`text-sm font-semibold leading-tight truncate flex-1 min-w-0 ${isTransferredOut ? 'text-gray-500' : 'text-gray-900'}`}>
           {studentName}
         </p>
-        <div className="flex items-center gap-0.5 flex-shrink-0">
-          {canTransfer && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onTransferClick(entry);
-              }}
-              className="p-0.5 rounded hover:bg-gray-100 text-gray-400 hover:text-[var(--primary)]"
-              title="振替"
-              aria-label="振替"
-            >
-              <ArrowRightLeft className="w-3.5 h-3.5" />
-            </button>
-          )}
-          <span
-            className={
-              statusKey === 'present'
-                ? 'text-green-600'
-                : statusKey === 'absent'
-                  ? 'text-red-600'
-                  : statusKey === 'late'
-                    ? 'text-yellow-600'
-                    : 'text-gray-400'
-            }
+        <span className="text-[10px] text-gray-400 flex-shrink-0">{grade}</span>
+        {canTransfer && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onTransferClick(entry);
+            }}
+            className="flex-shrink-0 p-0.5 rounded hover:bg-gray-100 text-gray-400 hover:text-[var(--primary)]"
+            title="振替"
+            aria-label="振替"
           >
-            {icon}
-          </span>
-        </div>
+            <ArrowRightLeft className="w-3 h-3" />
+          </button>
+        )}
+        <span
+          className={`flex-shrink-0 text-xs ${
+            statusKey === 'present' ? 'text-green-600' :
+            statusKey === 'absent' ? 'text-red-600' :
+            statusKey === 'late' ? 'text-yellow-600' : 'text-gray-400'
+          }`}
+        >
+          {icon}
+        </span>
       </div>
-      {/* 学年（中） */}
-      <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{grade}</p>
-      {/* 科目（弱） */}
-      <p className="text-xs text-gray-400 mt-0.5 leading-relaxed break-words">
-        {subjectNames || '—'}
-      </p>
-      {isTransferredIn && (
-        <p className="text-xs text-blue-600 mt-0.5">振替</p>
-      )}
-      {isTransferredOut && (
-        <p className="text-xs text-gray-400 mt-0.5">→ 振替済</p>
-      )}
+      {/* 2行目: 科目 + 講習残コマバッジ */}
+      <div className="flex items-center gap-1">
+        <p className="text-xs text-gray-700 font-medium leading-tight truncate flex-1 min-w-0">
+          {subjectNames}
+          {isTransferredIn && <span className="ml-1 text-blue-500 font-normal">振替</span>}
+          {isTransferredOut && <span className="ml-1 text-gray-400 font-normal">→振替済</span>}
+        </p>
+        {koushuEnrolled !== undefined && (
+          <span className="flex-shrink-0 text-[10px] font-semibold text-blue-600 bg-blue-50 px-1 py-0.5 rounded leading-none">
+            残{Math.max(0, koushuEnrolled - (koushuScheduled ?? 0))}
+          </span>
+        )}
+      </div>
     </div>
   );
 });

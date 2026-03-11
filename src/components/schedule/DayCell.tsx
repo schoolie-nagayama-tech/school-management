@@ -33,12 +33,13 @@ export interface DayCellProps {
   activeDragId: string | null;
   activeDragEntry: ScheduleEntry | null;
   transferMode: boolean;
-  onAddTeacher: () => void;
+  onAddTeacher: (existingTeacherIds: string[]) => void;
   onAddStudent: (teacherId: string) => void;
   onRemoveTeacher: (teacherId: string, entryCount: number) => void;
   onStudentClick: (entry: ScheduleEntry, e: React.MouseEvent) => void;
   onTransferClick?: (entry: ScheduleEntry) => void;
   onTransferTargetClick?: (date: string, slotId: string, teacherId: string) => void;
+  getKoushuInfo?: (studentId: string) => { enrolled: number; scheduled: number } | null;
 }
 
 export const DayCell = React.memo(function DayCell({
@@ -56,17 +57,18 @@ export const DayCell = React.memo(function DayCell({
   onStudentClick,
   onTransferClick,
   onTransferTargetClick,
+  getKoushuInfo,
 }: DayCellProps) {
   if (isClosed) {
     return (
-      <div className="py-3 rounded-xl bg-gray-100 text-gray-400 text-sm text-center flex items-center justify-center min-h-[80px]">
+      <div className="py-2 rounded-lg bg-gray-100 text-gray-400 text-xs text-center flex items-center justify-center min-h-[40px]">
         休講日
       </div>
     );
   }
 
   return (
-    <div className="py-3 space-y-3 min-h-[80px]">
+    <div className="py-1 space-y-1 min-h-[40px]">
       {teacherGroups.map((group) => (
         <TeacherCard
           key={group.teacher.id}
@@ -92,18 +94,21 @@ export const DayCell = React.memo(function DayCell({
           activeDragEntry={activeDragEntry}
           transferMode={transferMode}
           onTransferTargetClick={onTransferTargetClick}
+          getKoushuInfo={getKoushuInfo}
         />
       ))}
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onAddTeacher();
-        }}
-        className="w-full py-2 text-xs text-gray-400 hover:text-gray-600 rounded-xl transition-colors duration-200"
-      >
-        + 講師追加
-      </button>
+      {!transferMode && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddTeacher(teacherGroups.map((g) => g.teacher.id));
+          }}
+          className="w-full py-1 text-[10px] text-gray-300 hover:text-gray-500 rounded-lg transition-colors duration-200"
+        >
+          + 講師追加
+        </button>
+      )}
     </div>
   );
 });

@@ -48,7 +48,14 @@ import { StudentDetailModal } from '@/components/students';
 import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
-import { Calendar, Settings, Clock, BookOpen, Loader2, ChevronDown } from 'lucide-react';
+import { Calendar, Settings, Clock, BookOpen, Loader2, ChevronDown, GraduationCap } from 'lucide-react';
+import {
+  getSchoolKoushu,
+  getKoushuEnrollments,
+  getKoushuScheduledCounts,
+  type KoushuCourse,
+  type KoushuEnrollment,
+} from '@/lib/api/seasonalCourses';
 
 const DAY_LABELS: { value: number; label: string }[] = [
   { value: 0, label: '日' },
@@ -133,7 +140,7 @@ export default function SchedulePage() {
   const [, setAddModalOpen] = useState(false);
   const [addTarget, setAddTarget] = useState<{ date: string; slotId: string; teacherId: string } | null>(null);
   const [addTeacherModalOpen, setAddTeacherModalOpen] = useState(false);
-  const [addTeacherTarget, setAddTeacherTarget] = useState<{ date: string; slotId: string } | null>(null);
+  const [addTeacherTarget, setAddTeacherTarget] = useState<{ date: string; slotId: string; existingTeacherIds: string[] } | null>(null);
   const [transferModalOpen, setTransferModalOpen] = useState(false);
   const [transferringEntry, setTransferringEntry] = useState<ScheduleEntry | null>(null);
   const [initialTransferTarget, setInitialTransferTarget] = useState<{ date: string; slotId: string } | null>(null);
@@ -162,6 +169,12 @@ export default function SchedulePage() {
   }, [weekPickerOpen]);
   const [scheduleGenerateHasExisting, setScheduleGenerateHasExisting] = useState(false);
   const [scheduleGenerateLoading, setScheduleGenerateLoading] = useState(false);
+
+  // ---- 講習モード ----
+  const [koushuList, setKoushuList] = useState<KoushuCourse[]>([]);
+  const [selectedKoushu, setSelectedKoushu] = useState<KoushuCourse | null>(null);
+  const [koushuEnrollments, setKoushuEnrollments] = useState<Map<string, KoushuEnrollment>>(new Map());
+  const [koushuScheduledCounts, setKoushuScheduledCounts] = useState<Map<string, number>>(new Map());
 
   const router = useRouter();
 
@@ -291,6 +304,47 @@ export default function SchedulePage() {
     getStudents(undefined, [schoolId]).then(setStudents).catch(() => setStudents([]));
   }, [schoolId]);
 
+  // 講習リストをロード（schoolId 変更時）
+  useEffect(() => {
+    if (!schoolId) { setKoushuList([]); return; }
+    getSchoolKoushu(schoolId).then(setKoushuList).catch(() => setKoushuList([]));
+  }, [schoolId]);
+
+  // 講習モード選択時: 申し込みデータ + 期間スケジュール済み数を取得
+  const handleKoushuSelect = useCallback(async (course: KoushuCourse | null) => {
+    setSelectedKoushu(course);
+    if (!course) {
+      setKoushuEnrollments(new Map());
+      setKoushuScheduledCounts(new Map());
+      return;
+    }
+    const enrollments = await getKoushuEnrollments(course.id);
+    const enrollMap = new Map(enrollments.map((e) => [e.student_id, e]));
+    setKoushuEnrollments(enrollMap);
+    if (course.start_date && course.end_date && enrollMap.size > 0) {
+      const counts = await getKoushuScheduledCounts(
+        schoolId,
+        course.start_date,
+        course.end_date,
+        Array.from(enrollMap.keys())
+      );
+      setKoushuScheduledCounts(counts);
+    } else {
+      setKoushuScheduledCounts(new Map());
+    }
+  }, [schoolId]);
+
+  // 講習モード用: 生徒IDから申し込み情報を返す
+  const getKoushuInfo = useCallback((studentId: string) => {
+    if (!selectedKoushu) return null;
+    const en = koushuEnrollments.get(studentId);
+    if (!en) return null;
+    return {
+      enrolled: en.koma_count,
+      scheduled: koushuScheduledCounts.get(studentId) ?? 0,
+    };
+  }, [selectedKoushu, koushuEnrollments, koushuScheduledCounts]);
+
   useEffect(() => {
     refreshEntries();
   }, [refreshEntries]);
@@ -319,8 +373,8 @@ export default function SchedulePage() {
     router.push(`/admin/teachers/${entry.teacher_id}`);
   };
 
-  const handleAddTeacher = (date: string, slotId: string) => {
-    setAddTeacherTarget({ date, slotId });
+  const handleAddTeacher = (date: string, slotId: string, existingTeacherIds: string[]) => {
+    setAddTeacherTarget({ date, slotId, existingTeacherIds });
     setAddTeacherModalOpen(true);
   };
 
@@ -692,6 +746,12 @@ export default function SchedulePage() {
     }));
   }, [entries, subjects]);
 
+  // 講習モード: 講習登録済み生徒のみにフィルタリング
+  const displayEntries = useMemo(() => {
+    if (!selectedKoushu || koushuEnrollments.size === 0) return entriesWithSubjects;
+    return entriesWithSubjects.filter((e) => koushuEnrollments.has(e.student_id));
+  }, [entriesWithSubjects, selectedKoushu, koushuEnrollments]);
+
   const selectedSchool = schools.find((s) => s.id === schoolId);
   const _slotForAdd = addTarget ? timeSlots.find((s) => s.id === addTarget.slotId) : null;
 
@@ -829,12 +889,44 @@ export default function SchedulePage() {
             )}
           </div>
           {schoolId && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Link href="/schedule/regular-patterns">
                 <Button variant="secondary" size="sm">
                   通塾日程
                 </Button>
               </Link>
+              <Link href="/schedule/koushu">
+                <Button variant="secondary" size="sm" className="flex items-center gap-1">
+                  <GraduationCap className="h-3.5 w-3.5" />
+                  講習管理
+                </Button>
+              </Link>
+              {/* 講習モード切替 */}
+              {koushuList.length > 0 && (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-[var(--paragraph)]">講習:</span>
+                  <select
+                    value={selectedKoushu?.id ?? ''}
+                    onChange={(e) => {
+                      const course = koushuList.find((k) => k.id === e.target.value) ?? null;
+                      handleKoushuSelect(course);
+                    }}
+                    className="text-xs px-2 py-1 border border-[var(--stroke)] rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                  >
+                    <option value="">通常</option>
+                    {koushuList.map((k) => (
+                      <option key={k.id} value={k.id}>
+                        {k.name}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedKoushu && (
+                    <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full font-medium">
+                      講習モード
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -919,7 +1011,7 @@ export default function SchedulePage() {
                       schoolId={schoolId ?? ''}
                       weekDates={weekDates}
                       timeSlots={timeSlots}
-                      entries={entriesWithSubjects}
+                      entries={displayEntries}
                       closedDates={closedDates}
                       teachers={teachers}
                       emptyTeacherSlots={emptyTeacherSlots}
@@ -936,6 +1028,7 @@ export default function SchedulePage() {
                       onTransferTargetClick={handleTransferTargetClick}
                       onPrintDay={handlePrintDay}
                       onTransferCancel={() => setTransferMode(null)}
+                      getKoushuInfo={selectedKoushu ? getKoushuInfo : undefined}
                     />
                     </div>
                   )}
@@ -1057,6 +1150,7 @@ export default function SchedulePage() {
         }}
         teachers={teachers}
         schoolId={schoolId ?? ''}
+        existingTeacherIds={addTeacherTarget?.existingTeacherIds ?? []}
         onSelect={handleAddTeacherSelect}
       />
 

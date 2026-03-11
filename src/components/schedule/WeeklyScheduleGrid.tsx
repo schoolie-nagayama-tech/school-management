@@ -49,23 +49,6 @@ export interface TeacherOption {
   available_slot_numbers_by_day?: Record<string, number[]> | null;
 }
 
-/** その曜日・そのコマで講師が出勤可能か（空 or null = すべてなし） */
-function isTeacherAvailableForSlot(
-  teacher: TeacherOption,
-  dateStr: string,
-  slotNumber: number
-): boolean {
-  const dayOfWeek = new Date(dateStr + 'Z').getUTCDay();
-  const days = teacher.available_days_of_week;
-  if (!days || days.length === 0) return false;
-  if (!days.includes(dayOfWeek)) return false;
-  const byDay = teacher.available_slot_numbers_by_day;
-  if (!byDay || Object.keys(byDay).length === 0) return false;
-  const dayKey = String(dayOfWeek);
-  const slotNums = byDay[dayKey];
-  if (!slotNums || slotNums.length === 0) return false;
-  return slotNums.includes(slotNumber);
-}
 
 export interface WeeklyScheduleGridProps {
   schoolId: string;
@@ -78,7 +61,7 @@ export interface WeeklyScheduleGridProps {
   maxStudentsPerTeacher: number;
   transferMode: { sourceEntry: ScheduleEntry } | null;
   onEmptyTeacherSlotsChange: (next: Record<string, string[]>) => void;
-  onAddTeacher: (date: string, slotId: string) => void;
+  onAddTeacher: (date: string, slotId: string, existingTeacherIds: string[]) => void;
   onAddStudent: (date: string, slotId: string, teacherId: string) => void;
   onRemoveTeacher: (date: string, slotId: string, teacherId: string, entryCount: number) => void;
   onStudentClick: (entry: ScheduleEntry, e: React.MouseEvent) => void;
@@ -98,6 +81,7 @@ export interface WeeklyScheduleGridProps {
   onTransferCancel: () => void;
   /** 曜日ヘッダー行の一番右に表示する要素（例: 通塾日程ボタン） */
   headerRightContent?: React.ReactNode;
+  getKoushuInfo?: (studentId: string) => { enrolled: number; scheduled: number } | null;
 }
 
 export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
@@ -121,6 +105,7 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
     onTransferTargetClick,
     onPrintDay,
     headerRightContent,
+    getKoushuInfo,
   } = props;
 
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -188,30 +173,17 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
         slotId,
         teachersMap
       );
-      const availableTeachers = teachersForSchool.filter((t) =>
-        isTeacherAvailableForSlot(t, dateStr, slotNumber)
-      );
       const cellKey = `${dateStr}-${slotId}`;
       const emptyIds = emptyTeacherSlots[cellKey] ?? [];
       const fromEntryIds = new Set(fromEntries.map((g) => g.teacher.id));
       const merged: TeacherGroup[] = [];
 
-      // (A) エントリがある講師を先に追加（授業あり）
+      // (A) エントリがある講師（授業あり）
       for (const group of fromEntries) {
         merged.push({ ...group, isAvailableOnly: false });
       }
 
-      // (B) 出勤可能だがエントリがない講師を追加（出勤可能のみ）
-      for (const t of availableTeachers) {
-        if (fromEntryIds.has(t.id)) continue;
-        merged.push({
-          teacher: { id: t.id, display_name: t.display_name, email: t.email },
-          entries: [],
-          isAvailableOnly: true,
-        });
-      }
-
-      // (C) 手動追加した講師（生徒なし＝出勤可能として控えめに表示）
+      // (B) 手動で追加した講師スロット（+講師追加 で明示的に追加したもの）
       for (const tid of emptyIds) {
         if (merged.some((m) => m.teacher.id === tid)) continue;
         const teacher = teachersMap.get(tid);
@@ -250,6 +222,7 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
       onTransferTargetClick={onTransferTargetClick}
       onPrintDay={onPrintDay}
       headerRightContent={headerRightContent}
+      getKoushuInfo={getKoushuInfo}
     />
   );
 }

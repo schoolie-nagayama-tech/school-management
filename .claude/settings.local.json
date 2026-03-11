@@ -13,7 +13,23 @@
       "Bash(npx next build)",
       "Bash(npm install papaparse @types/papaparse)",
       "Bash(npx supabase functions deploy send-form-notification)",
-      "Bash(npx supabase functions deploy send-form-notification --project-ref mzxysqkuuxcfffwlfsvj)"
+      "Bash(npx supabase functions deploy send-form-notification --project-ref mzxysqkuuxcfffwlfsvj)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(where npm)",
+      "Bash(grep -l \"CREATE TABLE.*students\\\\|CREATE TABLE.*subjects\" \"C:\\\\Users\\\\ytaka\\\\Desktop\\\\student-management\\\\supabase\\\\migrations\"/*.sql)",
+      "Bash(grep -l \"students\\\\|subjects\" \"C:\\\\Users\\\\ytaka\\\\Desktop\\\\student-management\\\\supabase\\\\migrations\"/*.sql)",
+      "Bash(xargs grep -l \"CREATE TABLE.*students\")",
+      "Bash(xargs grep -l \"^export.*getSubjects\\\\|^export.*getStudents\")",
+      "Bash(npx supabase db push)",
+      "mcp__Claude_in_Chrome__javascript_tool",
+      "Bash(npx supabase --version)",
+      "Bash(npx supabase db --help)",
+      "Bash(npx supabase db push --help)",
+      "Bash(SUPABASE_ACCESS_TOKEN=\"test\" npx supabase link --project-ref mzxysqkuuxcfffwlfsvj)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://mzxysqkuuxcfffwlfsvj.supabase.co/functions/v1/\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16eHlzcWt1dXhjZmZmd2xmc3ZqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2Nzc4NDkwMiwiZXhwIjoyMDgzMzYwOTAyfQ.n46O2j60kj475qyh55WDmPFcx0mygIbKSvzYa2fFoAE\")",
+      "Bash(xargs grep -l \"password\\\\|postgres\\\\|mzxysqkuu\")",
+      "Bash(powershell.exe -Command \"Get-StoredCredential -Target ''*supabase*'' 2>$null | Select-Object Target,UserName\")",
+      "Bash(cmdkey /list)"
     ]
   }
 }
