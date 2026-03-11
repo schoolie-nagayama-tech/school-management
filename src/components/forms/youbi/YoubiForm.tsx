@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Input, Select, Button } from '@/components/ui';
 import { ToastContainer } from '@/components/ui/Toast';
@@ -26,6 +26,7 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
   const router = useRouter();
   const { toasts, removeToast, success, error } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   // 基本情報
@@ -159,6 +160,7 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
   // フォーム送信
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current) return;
     if (isPreview) {
       alert('プレビューモードでは送信できません。');
       return;
@@ -167,6 +169,7 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
       return;
     }
 
+    submittingRef.current = true;
     setIsSubmitting(true);
 
     try {
@@ -207,6 +210,7 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
           : '送信に失敗しました。もう一度お試しください。'
       );
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };

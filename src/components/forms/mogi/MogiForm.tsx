@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Input, Select } from '@/components/ui';
 import type { School } from '@/types/database';
 import type {
@@ -21,6 +21,7 @@ interface MogiFormProps {
 
 export function MogiForm({ school, period, isPreview }: MogiFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -82,6 +83,7 @@ export function MogiForm({ school, period, isPreview }: MogiFormProps) {
   // フォーム送信
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current) return;
     if (isPreview) {
       alert('プレビューモードでは送信できません。');
       return;
@@ -90,6 +92,7 @@ export function MogiForm({ school, period, isPreview }: MogiFormProps) {
       return;
     }
 
+    submittingRef.current = true;
     setIsSubmitting(true);
     setErrorMessage('');
 
@@ -120,6 +123,7 @@ export function MogiForm({ school, period, isPreview }: MogiFormProps) {
           : '申込の送信に失敗しました。もう一度お試しください。'
       );
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };

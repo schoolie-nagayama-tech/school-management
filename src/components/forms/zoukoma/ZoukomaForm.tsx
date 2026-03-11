@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Input, Select } from '@/components/ui';
 import type { School } from '@/types/database';
 import type {
@@ -24,6 +24,7 @@ interface ZoukomaFormProps {
 
 export function ZoukomaForm({ school, period, isPreview }: ZoukomaFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -128,6 +129,7 @@ export function ZoukomaForm({ school, period, isPreview }: ZoukomaFormProps) {
   // フォーム送信
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current) return;
     if (isPreview) {
       alert('プレビューモードでは送信できません。');
       return;
@@ -136,6 +138,7 @@ export function ZoukomaForm({ school, period, isPreview }: ZoukomaFormProps) {
       return;
     }
 
+    submittingRef.current = true;
     setIsSubmitting(true);
     setErrorMessage('');
 
@@ -206,6 +209,7 @@ export function ZoukomaForm({ school, period, isPreview }: ZoukomaFormProps) {
           : '送信に失敗しました。もう一度お試しください。'
       );
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };

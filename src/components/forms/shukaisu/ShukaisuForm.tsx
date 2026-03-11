@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Input, Select, Button } from '@/components/ui';
 import { ToastContainer } from '@/components/ui/Toast';
@@ -26,6 +26,7 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
   const router = useRouter();
   const { toasts, removeToast, success, error } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   // 基本情報
@@ -179,11 +180,13 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
   // フォーム送信
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current) return;
 
     if (!validate()) {
       return;
     }
 
+    submittingRef.current = true;
     setIsSubmitting(true);
 
     try {
@@ -226,6 +229,7 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
           : '送信に失敗しました。もう一度お試しください。'
       );
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };

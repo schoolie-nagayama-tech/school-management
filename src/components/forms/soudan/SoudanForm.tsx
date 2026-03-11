@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Input, Select, Button } from '@/components/ui';
 import type { School } from '@/types/database';
@@ -22,6 +22,7 @@ const GRADES = ['小1', '小2', '小3', '小4', '小5', '小6', '中1', '中2', 
 export function SoudanForm({ school, period, isPreview }: SoudanFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -78,6 +79,7 @@ export function SoudanForm({ school, period, isPreview }: SoudanFormProps) {
   // フォーム送信
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current) return;
     if (isPreview) {
       alert('プレビューモードでは送信できません。');
       return;
@@ -86,6 +88,7 @@ export function SoudanForm({ school, period, isPreview }: SoudanFormProps) {
       return;
     }
 
+    submittingRef.current = true;
     setIsSubmitting(true);
     setErrorMessage('');
 
@@ -119,6 +122,7 @@ export function SoudanForm({ school, period, isPreview }: SoudanFormProps) {
           : '送信に失敗しました。もう一度お試しください。'
       );
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };

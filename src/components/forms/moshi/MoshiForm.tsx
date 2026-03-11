@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Input, Select, Button } from '@/components/ui';
 import type { School } from '@/types/database';
@@ -22,6 +22,7 @@ type ExamType = 'regular' | 'furikae';
 export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -118,6 +119,7 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
   // フォーム送信
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current) return;
     if (isPreview) {
       alert('プレビューモードでは送信できません。');
       return;
@@ -126,6 +128,7 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
       return;
     }
 
+    submittingRef.current = true;
     setIsSubmitting(true);
     setErrorMessage('');
 
@@ -161,6 +164,7 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
           : '送信に失敗しました。もう一度お試しください。'
       );
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };

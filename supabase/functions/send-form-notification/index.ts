@@ -37,21 +37,29 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-// メール送信
+// メール送信（429 のときは1回だけリトライ）
 async function sendEmail(to: string, subject: string, html: string) {
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${RESEND_API_KEY}`,
-    },
-    body: JSON.stringify({
-      from: EMAIL_FROM,
-      to: [to],
-      subject,
-      html,
-    }),
-  })
+  const doSend = async (): Promise<Response> => {
+    return await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+      },
+      body: JSON.stringify({
+        from: EMAIL_FROM,
+        to: [to],
+        subject,
+        html,
+      }),
+    })
+  }
+
+  let res = await doSend()
+  if (res.status === 429) {
+    await delay(1100)
+    res = await doSend()
+  }
 
   if (!res.ok) {
     const error = await res.text()
@@ -392,7 +400,7 @@ async function handleSeasonalShiftNotification(type: string, submissionId: strin
       `
       await sendEmail(teacherEmail, teacherSubject, teacherHtml)
       console.log('講師への提出完了メール送信完了:', teacherEmail)
-      await delay(600)
+      await delay(1000)
     }
 
     if (school.notification_email) {
@@ -506,7 +514,7 @@ serve(async (req) => {
       )
       await sendEmail(email, applicantMail.subject, applicantMail.html)
       console.log(`申込者メール送信完了: ${email}`)
-      await delay(600)
+      await delay(1000)
     }
 
     // 教室長にメール送信

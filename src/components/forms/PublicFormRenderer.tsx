@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Input, Select } from '@/components/ui';
 import type { FormWithFields, FormField } from '@/types/database';
@@ -27,6 +27,7 @@ export function PublicFormRenderer({
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingRef = useRef(false);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -66,6 +67,7 @@ export function PublicFormRenderer({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current) return;
 
     if (isReadOnly) {
       alert('プレビューモードでは送信できません。実際のフォームページから送信してください。');
@@ -76,6 +78,7 @@ export function PublicFormRenderer({
       return;
     }
 
+    submittingRef.current = true;
     setIsSubmitting(true);
     try {
 
@@ -92,6 +95,8 @@ export function PublicFormRenderer({
     } catch (error) {
       console.error('Error submitting form:', error);
       alert('送信に失敗しました。もう一度お試しください。');
+    } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
