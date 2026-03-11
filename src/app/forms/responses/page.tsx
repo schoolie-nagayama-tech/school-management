@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { AppHeader } from '@/components/layout';
@@ -69,6 +69,80 @@ export default function FormResponsesPage() {
     const date = new Date(dateString);
     return `${date.getMonth() + 1}/${date.getDate()} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
   };
+
+  // テーブル並べ替え（列クリックでソート）
+  type SortKey = 'created_at' | 'form_type' | 'form_period' | 'student_name' | 'grade' | 'linked';
+  const [sortKey, setSortKey] = useState<SortKey>('created_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortOrder((o) => (o === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortOrder('asc');
+    }
+  };
+
+  const sortedResponses = [...responses].sort((a, b) => {
+    let cmp = 0;
+    switch (sortKey) {
+      case 'created_at':
+        cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        break;
+      case 'form_type':
+        cmp = (FORM_TYPE_LABELS[a.form_type] || '').localeCompare(FORM_TYPE_LABELS[b.form_type] || '', 'ja');
+        break;
+      case 'form_period':
+        cmp = (a.form_period || '').localeCompare(b.form_period || '', 'ja');
+        break;
+      case 'student_name': {
+        const nameA = a.linked_student
+          ? `${a.linked_student.last_name} ${a.linked_student.first_name}`
+          : a.student_name;
+        const nameB = b.linked_student
+          ? `${b.linked_student.last_name} ${b.linked_student.first_name}`
+          : b.student_name;
+        cmp = nameA.localeCompare(nameB, 'ja');
+        break;
+      }
+      case 'grade':
+        cmp = a.grade - b.grade;
+        break;
+      case 'linked':
+        cmp = (a.linked_student_id ? 1 : 0) - (b.linked_student_id ? 1 : 0);
+        break;
+      default:
+        break;
+    }
+    return sortOrder === 'asc' ? cmp : -cmp;
+  });
+
+  const SortableTh = ({
+    label,
+    sortKey: key,
+  }: {
+    label: string;
+    sortKey: SortKey;
+  }) => (
+    <th
+      className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase cursor-pointer select-none hover:bg-[#e5e7eb] transition-colors"
+      onClick={() => handleSort(key)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        {sortKey === key ? (
+          sortOrder === 'asc' ? (
+            <span className="text-[#3b82f6]">↑</span>
+          ) : (
+            <span className="text-[#3b82f6]">↓</span>
+          )
+        ) : (
+          <span className="text-[#9ca3af]">↕</span>
+        )}
+      </span>
+    </th>
+  );
 
   return (
     <div className="min-h-screen bg-[#f3f4f6]">
@@ -184,31 +258,19 @@ export default function FormResponsesPage() {
               <table className="w-full">
                 <thead>
                   <tr className="bg-[#f3f4f6] border-b border-[#e5e7eb]">
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
-                      回答日時
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
-                      種別
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
-                      期間
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
-                      生徒名
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
-                      学年
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
-                      紐付け
-                    </th>
+                    <SortableTh label="回答日時" sortKey="created_at" />
+                    <SortableTh label="種別" sortKey="form_type" />
+                    <SortableTh label="期間" sortKey="form_period" />
+                    <SortableTh label="生徒名" sortKey="student_name" />
+                    <SortableTh label="学年" sortKey="grade" />
+                    <SortableTh label="紐付け" sortKey="linked" />
                     <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
                       操作
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {responses.map((response) => (
+                  {sortedResponses.map((response) => (
                     <tr
                       key={response.id}
                       className="border-b border-[#e5e7eb]/20 hover:bg-[#f3f4f6]"

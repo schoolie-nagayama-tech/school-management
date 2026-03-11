@@ -246,8 +246,66 @@ export default function MoshiResponsePage() {
   const activeResponses = responses.filter(r => !r.is_archived);
   const allSelected = activeResponses.length > 0 && activeResponses.every(r => selectedIds.has(r.id));
 
+  // テーブル並べ替え（列クリックでソート）
+  type SortKey = 'created_at' | 'student_name' | 'grade' | 'exam_type' | 'charged' | 'linked';
+  const [sortKey, setSortKey] = useState<SortKey>('created_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortOrder((o) => (o === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setSortOrder('asc');
+    }
+  };
+
+  const sortedResponses = [...responses].sort((a, b) => {
+    let cmp = 0;
+    switch (sortKey) {
+      case 'created_at':
+        cmp = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        break;
+      case 'student_name': {
+        const nameA = a.linked_student ? `${a.linked_student.last_name} ${a.linked_student.first_name}` : a.student_name;
+        const nameB = b.linked_student ? `${b.linked_student.last_name} ${b.linked_student.first_name}` : b.student_name;
+        cmp = nameA.localeCompare(nameB, 'ja');
+        break;
+      }
+      case 'grade':
+        cmp = a.grade - b.grade;
+        break;
+      case 'exam_type': {
+        const typeA = a.response_data.exam_type === 'regular' ? '0' : `1${a.response_data.furikae_date_label || ''}`;
+        const typeB = b.response_data.exam_type === 'regular' ? '0' : `1${b.response_data.furikae_date_label || ''}`;
+        cmp = typeA.localeCompare(typeB);
+        break;
+      }
+      case 'charged':
+        cmp = (a.status_checks?.charged ? 1 : 0) - (b.status_checks?.charged ? 1 : 0);
+        break;
+      case 'linked':
+        cmp = (a.linked_student_id ? 1 : 0) - (b.linked_student_id ? 1 : 0);
+        break;
+      default:
+        break;
+    }
+    return sortOrder === 'asc' ? cmp : -cmp;
+  });
+
+  const SortableTh = ({ label, sortKey: key, className = '' }: { label: string; sortKey: SortKey; className?: string }) => (
+    <th
+      className={`px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase cursor-pointer select-none hover:bg-[#e5e7eb] transition-colors ${className}`}
+      onClick={() => handleSort(key)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        {sortKey === key ? (sortOrder === 'asc' ? <span className="text-[#3b82f6]">↑</span> : <span className="text-[#3b82f6]">↓</span>) : <span className="text-[#9ca3af]">↕</span>}
+      </span>
+    </th>
+  );
+
   return (
-    <>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <AdminLayout headerTitle={`${periodKey} 模試申込 回答一覧`}>
         {errorMessage && (
@@ -404,31 +462,19 @@ export default function MoshiResponsePage() {
                         className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6] cursor-pointer"
                       />
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
-                      回答日時
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
-                      生徒名
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
-                      学年
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
-                      受験方法
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
-                      計上
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
-                      紐付け
-                    </th>
+                    <SortableTh label="回答日時" sortKey="created_at" />
+                    <SortableTh label="生徒名" sortKey="student_name" />
+                    <SortableTh label="学年" sortKey="grade" />
+                    <SortableTh label="受験方法" sortKey="exam_type" />
+                    <SortableTh label="計上" sortKey="charged" />
+                    <SortableTh label="紐付け" sortKey="linked" />
                     <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
                       操作
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {responses.map((response) => (
+                  {sortedResponses.map((response) => (
                     <tr
                       key={response.id}
                       className={`border-b border-[#e5e7eb]/20 hover:bg-[#f3f4f6] ${
