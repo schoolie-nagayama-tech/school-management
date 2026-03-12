@@ -1,4 +1,5 @@
 ﻿export { ZoukomaForm } from './ZoukomaForm';
+export { ZoukomaResponseDetailModal } from './ZoukomaResponseDetailModal';
 export { SubjectInput } from './SubjectInput';
 export { PriceQuote } from './PriceQuote';
 export { SlotTable } from './SlotTable';

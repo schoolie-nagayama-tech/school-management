@@ -13,6 +13,7 @@ import {
 } from '@/lib/api/form-responses';
 import { getStudents } from '@/lib/api/students';
 import { LinkStudentModal } from '@/components/forms/LinkStudentModal';
+import { ZoukomaResponseDetailModal } from '@/components/forms/zoukoma';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui';
 import type { ZoukomaResponse, ZoukomaResponseFilters } from '@/types/forms/zoukoma';
@@ -37,6 +38,7 @@ export default function ZoukomaResponsePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [filters, setFilters] = useState<ZoukomaResponseFilters>({});
+  const [detailResponse, setDetailResponse] = useState<ZoukomaResponse | null>(null);
   const [linkingResponse, setLinkingResponse] = useState<ZoukomaResponse | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
   const [, setIsLoadingStudents] = useState(false);
@@ -327,7 +329,10 @@ export default function ZoukomaResponsePage() {
                       </td>
                       <td className="border border-[#e5e7eb] px-4 py-3">
                         <div className="flex gap-2">
-                          <button className="text-sm text-[#4b5563] hover:text-[#1f2937]">
+                          <button
+                            onClick={() => setDetailResponse(response)}
+                            className="text-sm text-[#4b5563] hover:text-[#1f2937]"
+                          >
                             詳細
                           </button>
                           {response.linked_student_id ? (
@@ -355,6 +360,15 @@ export default function ZoukomaResponsePage() {
           )}
         </div>
       </div>
+
+      {/* 詳細モーダル */}
+      {detailResponse && (
+        <ZoukomaResponseDetailModal
+          isOpen={!!detailResponse}
+          response={detailResponse}
+          onClose={() => setDetailResponse(null)}
+        />
+      )}
 
       {/* 紐付けモーダル */}
       {linkingResponse && (
