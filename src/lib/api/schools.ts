@@ -123,9 +123,11 @@ export async function updateSchool(
  * 論理削除・アーカイブ済みは除外し、有効なデータのみカウントする */
 export async function getSchoolBlockingReferences(schoolId: string): Promise<{ label: string; count: number }[]> {
   type QueryFilter = (q: ReturnType<typeof supabase.from>) => ReturnType<typeof supabase.from>;
+  // ユーザー割り当て（user_schools）は教室削除時に自動で解除するためブロック対象に含めない
   const tables: { table: string; label: string; filter?: QueryFilter }[] = [
-    { table: 'user_schools', label: 'ユーザー割り当て' },
     { table: 'students', label: '生徒', filter: (q) => q.is('deleted_at', null) },
+    { table: 'student_logs', label: '生徒ログ' },
+    { table: 'assessments', label: 'テスト・成績' },
     { table: 'form_periods', label: 'フォーム期間', filter: (q) => q.or('is_archived.eq.false,is_archived.is.null') },
     { table: 'form_responses', label: 'フォーム回答', filter: (q) => q.eq('is_archived', false) },
     { table: 'application_items', label: '申込項目' },
@@ -155,10 +157,12 @@ export async function getSchoolBlockingReferences(schoolId: string): Promise<{ l
     })
   );
 
-  // exam_types, student_textbooks など（論理削除なし）
+  // 存在する場合のみカウント（マイグレーションで未作成のテーブルがある場合を考慮）
   const optionalTables: { table: string; label: string }[] = [
     { table: 'exam_types', label: '試験種別' },
     { table: 'student_textbooks', label: '教材' },
+    { table: 'form_templates', label: 'フォームテンプレート' },
+    { table: 'forms', label: 'フォーム' },
   ];
 
   for (const { table, label } of optionalTables) {
@@ -185,6 +189,17 @@ export async function deleteSchool(id: string): Promise<void> {
     );
   }
 
+  // この教室へのユーザー割り当てを解除（システム管理者の全教室参照などで残っている行を削除）
+  const { error: userSchoolsError } = await supabase
+    .from('user_schools')
+    .delete()
+    .eq('school_id', id);
+
+  if (userSchoolsError) {
+    console.error('Error deleting user_schools for school:', userSchoolsError);
+    throw new Error('教室の削除に失敗しました');
+  }
+
   // portal_menu を先に削除（CASCADE で消える場合もあるが、明示的に削除）
   const { error: menuError } = await supabase
     .from('portal_menu')
@@ -204,9 +219,10 @@ export async function deleteSchool(id: string): Promise<void> {
   if (error) {
     console.error('Error deleting school:', error);
     if (error.code === '23503') {
-      // 上でチェックした以外の参照がある場合
+      // 上でチェックした以外の参照がある場合（別テーブルやRLSで見えない行など）
       throw new Error(
-        'この教室は他のデータで参照されているため削除できません。ユーザー・フォーム・メニュー等の関連を解除してください。'
+        'この教室は他のデータで参照されているため削除できません。' +
+          '生徒ログ・テスト成績・フォームテンプレート等が残っていないか確認するか、管理者に問い合わせください。'
       );
     }
     throw new Error('教室の削除に失敗しました');
