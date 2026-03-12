@@ -33,7 +33,7 @@ interface TeacherWithDetails extends UserProfile {
 }
 
 export default function TeachersPage() {
-  const { user, profile, permissions, isLoading: authLoading, getSelectedSchoolIds } = useAuth();
+  const { user, profile, permissions, isLoading: authLoading, getSelectedSchoolIds, demoSchoolIds } = useAuth();
   const { toasts, removeToast, success, error: toastError } = useToast();
   const [teachers, setTeachers] = useState<TeacherWithDetails[]>([]);
   const [schools, setSchools] = useState<School[]>([]);
@@ -94,11 +94,12 @@ export default function TeachersPage() {
       }
       setTeachers(teachersList);
 
-      // 教室長の場合は自分の権限がある教室のみ表示
-      let availableSchools = schoolsData;
+      // デモ教室を除外し、教室長の場合はさらに権限ある教室のみ表示
+      const demoSet = new Set(demoSchoolIds);
+      let availableSchools = schoolsData.filter((s) => !demoSet.has(s.id));
       if (isManager) {
         const userSchoolIds = getSelectedSchoolIds();
-        availableSchools = schoolsData.filter(school => userSchoolIds.includes(school.id));
+        availableSchools = availableSchools.filter(school => userSchoolIds.includes(school.id));
       }
       setSchools(availableSchools);
       

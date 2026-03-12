@@ -386,6 +386,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         profile,
         permissions,
         schoolIds,
+        demoSchoolIds,
         selectedSchoolId,
         isLoading,
         signOut: handleSignOut,
