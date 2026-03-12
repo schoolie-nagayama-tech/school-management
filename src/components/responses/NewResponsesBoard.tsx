@@ -49,7 +49,7 @@ function getDismissedIds(userId: string): Set<string> {
 
 function saveDismissedIds(userId: string, ids: Set<string>): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(`${DISMISSED_KEY_PREFIX}${userId}`, JSON.stringify([...ids]));
+  localStorage.setItem(`${DISMISSED_KEY_PREFIX}${userId}`, JSON.stringify(Array.from(ids)));
 }
 
 interface NewResponsesBoardProps {
@@ -83,7 +83,7 @@ export function NewResponsesBoard({ className = '' }: NewResponsesBoardProps) {
       setResponses(data);
 
       // 教室名を取得
-      const uniqueSchoolIds = [...new Set(data.map((r) => r.school_id))];
+      const uniqueSchoolIds = Array.from(new Set(data.map((r) => r.school_id)));
       const nameMap: Record<string, string> = {};
       await Promise.all(
         uniqueSchoolIds.map(async (sid) => {

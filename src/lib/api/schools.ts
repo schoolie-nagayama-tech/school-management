@@ -121,10 +121,10 @@ export async function updateSchool(
 }
 
 /** 教室を参照している件数を取得（削除前に「何がブロックしているか」を表示するため）
- * 論理削除・アーカイブ済みは除外し、有効なデータのみカウントする */
+ * 論理削除・アーカイブ済みは除外し、有効なデータのみカウントする。
+ * 教室削除時に自動作除するもの（user_schools, portal_menu, exam_types, bulletin_*）はブロック対象に含めない。 */
 export async function getSchoolBlockingReferences(schoolId: string): Promise<{ label: string; count: number }[]> {
   type QueryFilter = (q: ReturnType<typeof supabase.from>) => ReturnType<typeof supabase.from>;
-  // ユーザー割り当て（user_schools）は教室削除時に自動で解除するためブロック対象に含めない
   const tables: { table: string; label: string; filter?: QueryFilter }[] = [
     { table: 'students', label: '生徒', filter: (q) => q.is('deleted_at', null) },
     { table: 'student_logs', label: '生徒ログ' },
@@ -133,8 +133,6 @@ export async function getSchoolBlockingReferences(schoolId: string): Promise<{ l
     { table: 'form_responses', label: 'フォーム回答', filter: (q) => q.eq('is_archived', false) },
     { table: 'application_items', label: '申込項目' },
     { table: 'student_applications', label: '生徒申込' },
-    { table: 'bulletin_labels', label: 'お知らせラベル' },
-    { table: 'bulletin_posts', label: 'お知らせ', filter: (q) => q.eq('is_archived', false) },
     { table: 'alert_dismissals', label: 'アラート非表示' },
     { table: 'student_interviews', label: '面談' },
   ];
@@ -159,8 +157,8 @@ export async function getSchoolBlockingReferences(schoolId: string): Promise<{ l
   );
 
   // 存在する場合のみカウント（マイグレーションで未作成のテーブルがある場合を考慮）
+  // exam_types は教室削除時に自動作除するためブロック対象に含めない
   const optionalTables: { table: string; label: string }[] = [
-    { table: 'exam_types', label: '試験種別' },
     { table: 'student_textbooks', label: '教材' },
     { table: 'form_templates', label: 'フォームテンプレート' },
     { table: 'forms', label: 'フォーム' },
@@ -210,6 +208,30 @@ export async function deleteSchool(id: string): Promise<void> {
   if (menuError) {
     console.error('Error deleting portal_menu for school:', menuError);
     throw new Error('教室の削除に失敗しました');
+  }
+
+  // 教室作成時にマイグレーション等で自動作成されるデータを削除（これらがあると削除できないため）
+  // お知らせ投稿 → お知らせラベル → 試験種別 の順
+  const { error: bulletinPostsError } = await supabase
+    .from('bulletin_posts')
+    .delete()
+    .eq('school_id', id);
+  if (bulletinPostsError) {
+    console.warn('Error deleting bulletin_posts for school:', bulletinPostsError);
+  }
+  const { error: bulletinLabelsError } = await supabase
+    .from('bulletin_labels')
+    .delete()
+    .eq('school_id', id);
+  if (bulletinLabelsError) {
+    console.warn('Error deleting bulletin_labels for school:', bulletinLabelsError);
+  }
+  const { error: examTypesError } = await supabase
+    .from('exam_types')
+    .delete()
+    .eq('school_id', id);
+  if (examTypesError) {
+    console.warn('Error deleting exam_types for school:', examTypesError);
   }
 
   const { error } = await supabase
