@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AdminLayout } from '@/components/layouts';
 import { getFormResponses, type FormResponseWithStudent } from '@/lib/api/form-responses';
 import { getFormPeriods } from '@/lib/api/form-periods';
+import { getSchools } from '@/lib/api/schools';
 import type { FormType, FormPeriod } from '@/types/database';
 import { FORM_TYPE_LABELS, GRADE_LABELS } from '@/types/database';
 import { useRequirePermission } from '@/hooks/usePermissions';
@@ -154,9 +155,10 @@ export default function ResponsesPage() {
   const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
     (p) => p.canAccessApplications
   );
-  const { getSelectedSchoolIds, selectedSchoolId } = useAuth();
+  const { getSelectedSchoolIds, selectedSchoolId, profile } = useAuth();
   const [responses, setResponses] = useState<FormResponseWithStudent[]>([]);
   const [formPeriods, setFormPeriods] = useState<FormPeriod[]>([]);
+  const [schoolsMap, setSchoolsMap] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -280,6 +282,17 @@ export default function ResponsesPage() {
 
       setResponses(responsesData);
       setFormPeriods(periodsData);
+
+      // システム管理者のときは教室名マップを取得（一覧で教室名表示用）
+      const isSystemAdmin = profile?.role === 'admin';
+      if (isSystemAdmin) {
+        const schools = await getSchools();
+        const map: Record<string, string> = {};
+        schools.forEach((s) => { map[s.id] = s.name; });
+        setSchoolsMap(map);
+      } else {
+        setSchoolsMap({});
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
       setErrorMessage(
@@ -288,7 +301,7 @@ export default function ResponsesPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [getSelectedSchoolIds, filterFormType, filterPeriod, filterGrade, filterLinkedStatus]);
+  }, [getSelectedSchoolIds, filterFormType, filterPeriod, filterGrade, filterLinkedStatus, profile?.role]);
 
   useEffect(() => {
     if (selectedSchoolId !== null) {
@@ -501,6 +514,11 @@ export default function ResponsesPage() {
                         {getSortIcon(sortKey, 'form_period', sortOrder)}
                       </button>
                     </th>
+                    {profile?.role === 'admin' && (
+                      <th className="border border-[#e5e7eb] px-4 py-3 text-left">
+                        教室
+                      </th>
+                    )}
                     <th className="border border-[#e5e7eb] px-4 py-3 text-left">
                       <button
                         type="button"
@@ -548,6 +566,11 @@ export default function ResponsesPage() {
                       <td className="border border-[#e5e7eb] px-4 py-3">
                         {response.form_period}
                       </td>
+                      {profile?.role === 'admin' && (
+                        <td className="border border-[#e5e7eb] px-4 py-3">
+                          {schoolsMap[response.school_id] ?? '-'}
+                        </td>
+                      )}
                       <td className="border border-[#e5e7eb] px-4 py-3">
                         {response.linked_student
                           ? `${response.linked_student.last_name} ${response.linked_student.first_name}`
