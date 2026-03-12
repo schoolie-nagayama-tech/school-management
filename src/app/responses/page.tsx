@@ -473,13 +473,9 @@ export default function ResponsesPage() {
                       <td className="border border-[#e5e7eb] px-4 py-3 text-center">
                         {response.form_type === 'moshi' ? (
                           <span className="inline-flex flex-wrap items-center gap-1">
-                            {response.linked_student_id ? (
+                            {response.linked_student_id && (
                               <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">
                                 紐付け済み
-                              </span>
-                            ) : (
-                              <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-medium">
-                                未処理
                               </span>
                             )}
                             {(response.status_checks as Record<string, boolean> | undefined)?.charged && (
@@ -492,6 +488,13 @@ export default function ResponsesPage() {
                                 発注済み
                               </span>
                             )}
+                            {!response.linked_student_id &&
+                              !(response.status_checks as Record<string, boolean> | undefined)?.charged &&
+                              !(response.status_checks as Record<string, boolean> | undefined)?.order && (
+                                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-medium">
+                                  未処理
+                                </span>
+                              )}
                           </span>
                         ) : response.linked_student_id ? (
                           <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">
