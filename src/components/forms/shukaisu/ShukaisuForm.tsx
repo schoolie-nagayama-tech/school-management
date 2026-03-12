@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Input, Select, Button } from '@/components/ui';
 import { ToastContainer } from '@/components/ui/Toast';
