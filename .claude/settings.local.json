@@ -35,7 +35,14 @@
       "Bash(xargs grep -l \"subjects\\\\|time_slots\\\\|attendance_types\\\\|schedule\")",
       "Bash(grep -l \"CREATE TABLE.*subjects\\\\|CREATE TABLE.*time_slots\\\\|CREATE TABLE.*schedule\" /c/Users/ytaka/Desktop/student-management/supabase/migrations/*.sql)",
       "Bash(grep -l \"form_responses\" supabase/migrations/*.sql)",
-      "Bash(grep -v \"//\")"
+      "Bash(grep -v \"//\")",
+      "Bash(xargs grep -l \"CREATE TABLE.*subjects\")",
+      "Bash(grep -l \"subjects\" /c/Users/ytaka/Desktop/student-management/supabase/migrations/*.sql)",
+      "Bash(ls /c/Users/ytaka/Desktop/student-management/supabase/migrations/*.sql)",
+      "Bash(xargs grep -l \"CREATE TABLE subjects\")",
+      "Bash(grep -A 20 \"CREATE TABLE.*subjects\" /c/Users/ytaka/Desktop/student-management/supabase/migrations/*.sql)",
+      "Bash(sqlite3 :memory: \".help\")",
+      "Bash(npx supabase db pull)"
     ]
   }
 }

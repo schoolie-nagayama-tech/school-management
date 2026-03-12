@@ -389,7 +389,7 @@ async function handleSeasonalShiftNotification(type: string, submissionId: strin
 
   const { data: school, error: schoolError } = await supabase
     .from('schools')
-    .select('name, notification_email')
+    .select('name, notification_email, notification_emails')
     .eq('id', submission.school_id)
     .single()
 
@@ -464,7 +464,18 @@ async function handleSeasonalShiftNotification(type: string, submissionId: strin
       await delay(1000)
     }
 
-    if (school.notification_email) {
+    // 通知先メールアドレス一覧（notification_emails 配列を優先、なければ旧フィールドでフォールバック）
+    const shiftRecipients: string[] =
+      school.notification_emails && school.notification_emails.length > 0
+        ? school.notification_emails
+        : school.notification_email ? [school.notification_email] : []
+
+    if (shiftRecipients.length === 0) {
+      console.warn(`教室 ${schoolName} に通知先メールが設定されていません`)
+    }
+
+    for (const recipient of shiftRecipients) {
+      if (!recipient) continue
       const submissionsUrl = `${SITE_URL.replace(/\/$/, '')}/settings/seasonal-shifts/${submission.setting_id}/submissions`
       const adminSubject = `【シフト提出】${teacherName}さんが提出しました`
       const adminHtml = `
@@ -482,10 +493,9 @@ async function handleSeasonalShiftNotification(type: string, submissionId: strin
           ${EMAIL_FOOTER}
         </div>
       `
-      await sendEmail(school.notification_email, adminSubject, adminHtml)
-      console.log('管理者への通知メール送信完了:', school.notification_email)
-    } else {
-      console.warn(`教室 ${schoolName} に通知先メールが設定されていません`)
+      await sendEmail(recipient, adminSubject, adminHtml)
+      console.log('管理者への通知メール送信完了:', recipient)
+      await delay(1000)
     }
   } else if (type === 'allow_edit') {
     const editToken = submission.edit_token
@@ -578,7 +588,7 @@ serve(async (req) => {
     // 教室情報を取得
     const { data: school, error: schoolError } = await supabase
       .from('schools')
-      .select('name, notification_email')
+      .select('name, notification_email, notification_emails')
       .eq('id', school_id)
       .single()
 
@@ -618,8 +628,19 @@ serve(async (req) => {
       await delay(1000)
     }
 
-    // 教室長にメール送信（申込者と同じアドレスの場合は送らない＝保護者が2通受け取るのを防ぐ）
-    if (school.notification_email && school.notification_email !== email) {
+    // 通知先メールアドレス一覧（notification_emails 配列を優先、なければ旧フィールドでフォールバック）
+    const notificationRecipients: string[] =
+      school.notification_emails && school.notification_emails.length > 0
+        ? school.notification_emails
+        : school.notification_email ? [school.notification_email] : []
+
+    if (notificationRecipients.length === 0) {
+      console.warn(`教室 ${school.name} に通知先メールが設定されていません`)
+    }
+
+    // 通知先全員にメール送信（申込者と同じアドレスは除く）
+    for (const recipient of notificationRecipients) {
+      if (!recipient || recipient === email) continue
       const managerMail = createManagerEmail(
         form_type,
         student_name,
@@ -631,10 +652,9 @@ serve(async (req) => {
         periodTitle,
         periodSettings
       )
-      await sendEmail(school.notification_email, managerMail.subject, managerMail.html)
-      console.log(`教室長メール送信完了: ${school.notification_email}`)
-    } else if (!school.notification_email) {
-      console.warn(`教室 ${school.name} に通知先メールが設定されていません`)
+      await sendEmail(recipient, managerMail.subject, managerMail.html)
+      console.log(`通知メール送信完了: ${recipient}`)
+      await delay(1000)
     }
 
     return new Response(JSON.stringify({ success: true }), {
