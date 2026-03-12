@@ -35,6 +35,84 @@ function getSortIcon(currentKey: SortKey, key: SortKey, order: SortOrder) {
   );
 }
 
+/** 一覧で「未処理」バッジが付くか（詳細のチェックと同一条件） */
+function isUnprocessed(response: FormResponseWithStudent): boolean {
+  const sc = (response.status_checks as Record<string, boolean> | undefined) ?? {};
+  const linked = !!response.linked_student_id;
+  switch (response.form_type) {
+    case 'moshi':
+      return !linked && !sc.charged && !sc.order;
+    case 'zoukoma':
+    case 'youbi':
+    case 'shukaisu':
+      return !linked && !sc.charged && !sc.seated;
+    case 'mogi':
+      return !linked && !sc.charged;
+    case 'soudan':
+      return !linked && !sc.handled;
+    default:
+      return !linked;
+  }
+}
+
+/** 一覧の処理状態（詳細ページのチェックと同一の status_checks を表示） */
+function ResponseStatusBadges({ response }: { response: FormResponseWithStudent }) {
+  const sc = (response.status_checks as Record<string, boolean> | undefined) ?? {};
+  const linked = !!response.linked_student_id;
+
+  const badge = (label: string, className: string) => (
+    <span key={label} className={`px-2 py-1 rounded text-xs font-medium ${className}`}>
+      {label}
+    </span>
+  );
+
+  switch (response.form_type) {
+    case 'moshi':
+      return (
+        <span className="inline-flex flex-wrap items-center gap-1">
+          {linked && badge('紐付け済み', 'bg-green-100 text-green-800')}
+          {sc.charged && badge('計上済み', 'bg-blue-100 text-blue-800')}
+          {sc.order && badge('発注済み', 'bg-purple-100 text-purple-800')}
+          {!linked && !sc.charged && !sc.order && badge('未処理', 'bg-yellow-100 text-yellow-800')}
+        </span>
+      );
+    case 'zoukoma':
+    case 'youbi':
+    case 'shukaisu':
+      return (
+        <span className="inline-flex flex-wrap items-center gap-1">
+          {linked && badge('紐付け済み', 'bg-green-100 text-green-800')}
+          {sc.charged && badge('計上済み', 'bg-blue-100 text-blue-800')}
+          {sc.seated && badge('座席済み', 'bg-indigo-100 text-indigo-800')}
+          {!linked && !sc.charged && !sc.seated && badge('未処理', 'bg-yellow-100 text-yellow-800')}
+        </span>
+      );
+    case 'mogi':
+      return (
+        <span className="inline-flex flex-wrap items-center gap-1">
+          {linked && badge('紐付け済み', 'bg-green-100 text-green-800')}
+          {sc.charged && badge('計上済み', 'bg-blue-100 text-blue-800')}
+          {!linked && !sc.charged && badge('未処理', 'bg-yellow-100 text-yellow-800')}
+        </span>
+      );
+    case 'soudan':
+      return (
+        <span className="inline-flex flex-wrap items-center gap-1">
+          {linked && badge('紐付け済み', 'bg-green-100 text-green-800')}
+          {sc.handled && badge('対応済み', 'bg-blue-100 text-blue-800')}
+          {!linked && !sc.handled && badge('未処理', 'bg-yellow-100 text-yellow-800')}
+        </span>
+      );
+    default:
+      // kyozai など、詳細で status_checks を使わないフォーム
+      return (
+        <span className="inline-flex flex-wrap items-center gap-1">
+          {linked ? badge('紐付け済み', 'bg-green-100 text-green-800') : badge('未処理', 'bg-yellow-100 text-yellow-800')}
+        </span>
+      );
+  }
+}
+
 interface SummaryCardProps {
   formType: string;
   formTypeLabel: string;
@@ -223,7 +301,7 @@ export default function ResponsesPage() {
     return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
   };
 
-  // サマリー計算
+  // サマリー計算（未処理＝一覧で「未処理」バッジが付く件数）
   const summary = (() => {
     const byFormType: Record<string, { total: number; unprocessed: number }> = {};
     responses.forEach((response) => {
@@ -232,7 +310,7 @@ export default function ResponsesPage() {
         byFormType[key] = { total: 0, unprocessed: 0 };
       }
       byFormType[key].total++;
-      if (!response.linked_student_id) {
+      if (isUnprocessed(response)) {
         byFormType[key].unprocessed++;
       }
     });
@@ -479,40 +557,7 @@ export default function ResponsesPage() {
                         {GRADE_LABELS[response.grade] || response.grade}
                       </td>
                       <td className="border border-[#e5e7eb] px-4 py-3 text-center">
-                        {response.form_type === 'moshi' ? (
-                          <span className="inline-flex flex-wrap items-center gap-1">
-                            {response.linked_student_id && (
-                              <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">
-                                紐付け済み
-                              </span>
-                            )}
-                            {(response.status_checks as Record<string, boolean> | undefined)?.charged && (
-                              <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
-                                計上済み
-                              </span>
-                            )}
-                            {(response.status_checks as Record<string, boolean> | undefined)?.order && (
-                              <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-medium">
-                                発注済み
-                              </span>
-                            )}
-                            {!response.linked_student_id &&
-                              !(response.status_checks as Record<string, boolean> | undefined)?.charged &&
-                              !(response.status_checks as Record<string, boolean> | undefined)?.order && (
-                                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-medium">
-                                  未処理
-                                </span>
-                              )}
-                          </span>
-                        ) : response.linked_student_id ? (
-                          <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">
-                            紐付け済み
-                          </span>
-                        ) : (
-                          <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-medium">
-                            未処理
-                          </span>
-                        )}
+                        <ResponseStatusBadges response={response} />
                       </td>
                       <td className="border border-[#e5e7eb] px-4 py-3">
                         <div className="flex gap-2">
