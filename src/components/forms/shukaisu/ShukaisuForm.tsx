@@ -80,10 +80,13 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
     setIsLoadingSubjects(true);
     getSubjects(category)
       .then((subjects) => {
-        const allowed = new Set(settings.available_subjects ?? []);
-        const options = subjects
-          .filter((s) => allowed.has(s.name))
-          .map((s) => ({ value: s.name, label: s.name }));
+        const allowed =
+          settings.available_subjects?.length > 0
+            ? new Set(settings.available_subjects)
+            : null;
+        const options = allowed
+          ? subjects.filter((s) => allowed.has(s.name)).map((s) => ({ value: s.name, label: s.name }))
+          : subjects.map((s) => ({ value: s.name, label: s.name }));
         setSubjectOptionsForGrade(options);
       })
       .catch(() => setSubjectOptionsForGrade([]))

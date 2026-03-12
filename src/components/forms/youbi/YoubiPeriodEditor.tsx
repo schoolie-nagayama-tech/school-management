@@ -56,7 +56,6 @@ export function YoubiPeriodEditor({
   const [periodsText, setPeriodsText] = useState(
     DEFAULT_PERIODS.map((p) => `${p.code},${p.label}`).join('\n')
   );
-  const [subjectsText, setSubjectsText] = useState('英語\n数学\n国語\n理科\n社会');
   const [publishStart, setPublishStart] = useState('');
   const [publishEnd, setPublishEnd] = useState('');
   const [completionMessage, setCompletionMessage] = useState(
@@ -103,7 +102,6 @@ export function YoubiPeriodEditor({
           settings.available_periods?.map((p) => `${p.code},${p.label}`).join('\n') ||
           DEFAULT_PERIODS.map((p) => `${p.code},${p.label}`).join('\n')
         );
-        setSubjectsText(settings.available_subjects?.join('\n') || '英語\n数学\n国語\n理科\n社会');
         setPublishStart(
           period.publish_start
             ? new Date(period.publish_start).toISOString().slice(0, 16)
@@ -126,7 +124,6 @@ export function YoubiPeriodEditor({
         setDescription(DEFAULT_DESCRIPTION);
         setDaysText('月\n火\n水\n木\n金\n土');
         setPeriodsText(formatPeriodsToText(getClassPeriods(schoolId)));
-        setSubjectsText('英語\n数学\n国語\n理科\n社会');
         setPublishStart('');
         setPublishEnd('');
         setCompletionMessage('変更申請を受け付けました。\n内容を確認の上、Growにてご連絡いたします。');
@@ -160,10 +157,6 @@ export function YoubiPeriodEditor({
       setError('時限を入力してください');
       return false;
     }
-    if (parseLines(subjectsText).length === 0) {
-      setError('科目を入力してください');
-      return false;
-    }
     setError('');
     return true;
   };
@@ -180,7 +173,7 @@ export function YoubiPeriodEditor({
         description: description.trim(),
         available_days: parseLines(daysText),
         available_periods: parsePeriods(periodsText),
-        available_subjects: parseLines(subjectsText),
+        available_subjects: [], // 科目はフォームで科目テーブルを学年別に自動参照
         completion_message: completionMessage.trim(),
       };
 
@@ -342,17 +335,6 @@ export function YoubiPeriodEditor({
               <textarea
                 value={daysText}
                 onChange={(e) => setDaysText(e.target.value)}
-                rows={6}
-                className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 font-mono text-sm resize-y"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-                科目（改行区切り） <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                value={subjectsText}
-                onChange={(e) => setSubjectsText(e.target.value)}
                 rows={6}
                 className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 font-mono text-sm resize-y"
               />

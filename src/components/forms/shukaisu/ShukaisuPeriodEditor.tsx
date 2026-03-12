@@ -6,10 +6,8 @@ import { createShukaisuPeriod, updateShukaisuPeriod } from '@/lib/api/shukaisu';
 import { createFormPeriodForSchools, updateFormPeriodForSchools } from '@/lib/api/form-periods';
 import { getApplicationItems } from '@/lib/api/applications';
 import { getClassPeriods, formatPeriodsToText } from '@/lib/api/class-periods';
-import { getSubjects } from '@/lib/api/subjects';
 import type { ShukaisuPeriod, ShukaisuSettings } from '@/types/forms/shukaisu';
 import type { ApplicationItem } from '@/types/database';
-import type { Subject } from '@/types/database';
 
 interface ShukaisuPeriodEditorProps {
   isOpen: boolean;
@@ -57,10 +55,6 @@ export function ShukaisuPeriodEditor({
   const [periodsText, setPeriodsText] = useState(
     DEFAULT_PERIODS.map((p) => `${p.code},${p.label}`).join('\n')
   );
-  /** 共通科目マスタ（設定で管理されている科目） */
-  const [commonSubjects, setCommonSubjects] = useState<Subject[]>([]);
-  /** 選択中の科目名（共通科目から選択。既存期間にだけある名前も含む） */
-  const [selectedSubjectNames, setSelectedSubjectNames] = useState<string[]>([]);
   const [weeklyOptionsText, setWeeklyOptionsText] = useState('1,2,3,4,5');
   const [publishStart, setPublishStart] = useState('');
   const [publishEnd, setPublishEnd] = useState('');
@@ -100,21 +94,12 @@ export function ShukaisuPeriodEditor({
       .filter((n) => !isNaN(n));
   };
 
-  // 共通科目の取得
-  useEffect(() => {
-    if (isOpen) {
-      getSubjects()
-        .then((list) => setCommonSubjects(list))
-        .catch(() => setCommonSubjects([]));
-    }
-  }, [isOpen]);
-
   // 初期値の設定
   useEffect(() => {
     if (isOpen) {
       getApplicationItems(schoolId, true).then(setApplicationItems).catch(console.error);
       if (period) {
-        // 編集モード
+        // 編集モード（科目はテーブルから学年で自動参照するため指定不要）
         const settings = period.settings;
         setPeriodKey(period.period_key);
         setTitle(period.title);
@@ -124,7 +109,6 @@ export function ShukaisuPeriodEditor({
           settings.available_periods?.map((p) => `${p.code},${p.label}`).join('\n') ||
           DEFAULT_PERIODS.map((p) => `${p.code},${p.label}`).join('\n')
         );
-        setSelectedSubjectNames(settings.available_subjects ?? []);
         setWeeklyOptionsText(settings.weekly_options?.join(',') || '1,2,3,4,5');
         setPublishStart(
           period.publish_start
@@ -142,7 +126,6 @@ export function ShukaisuPeriodEditor({
         );
         setLinkedApplicationItemId(period.linked_application_item_id || '');
       } else {
-        setSelectedSubjectNames([]);
         // 新規作成モード（共通設定の授業の時間帯を初期値に）
         setPeriodKey(generatePeriodKey());
         setTitle('週回数変更');
@@ -183,10 +166,6 @@ export function ShukaisuPeriodEditor({
       setError('時限を入力してください');
       return false;
     }
-    if (selectedSubjectNames.length === 0) {
-      setError('科目を1つ以上選択してください');
-      return false;
-    }
     if (parseWeeklyOptions(weeklyOptionsText).length === 0) {
       setError('週回数選択肢を入力してください');
       return false;
@@ -216,7 +195,7 @@ export function ShukaisuPeriodEditor({
         description: description.trim(),
         available_days: parseLines(daysText),
         available_periods: parsePeriods(periodsText),
-        available_subjects: [...selectedSubjectNames],
+        available_subjects: [], // 科目はフォームで科目テーブルを学年別に自動参照
         weekly_options: parseWeeklyOptions(weeklyOptionsText),
         completion_message: completionMessage.trim(),
       };
@@ -382,52 +361,6 @@ export function ShukaisuPeriodEditor({
                 rows={6}
                 className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 font-mono text-sm resize-y"
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-                科目（共通の科目設定から選択） <span className="text-red-500">*</span>
-              </label>
-              {commonSubjects.length === 0 ? (
-                <p className="text-sm text-[#6b7280] py-2">科目を読み込み中...</p>
-              ) : (
-                <div className="flex flex-wrap gap-x-4 gap-y-2 py-2">
-                  {commonSubjects.map((s) => (
-                    <label key={s.id} className="inline-flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selectedSubjectNames.includes(s.name)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedSubjectNames((prev) => [...prev, s.name].sort());
-                          } else {
-                            setSelectedSubjectNames((prev) => prev.filter((n) => n !== s.name));
-                          }
-                        }}
-                        className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded"
-                      />
-                      <span className="text-sm text-[#1f2937]">{s.name}</span>
-                    </label>
-                  ))}
-                  {selectedSubjectNames.filter((n) => !commonSubjects.some((s) => s.name === n)).length > 0 && (
-                    <div className="w-full mt-2 pt-2 border-t border-[#e5e7eb]">
-                      <p className="text-xs text-[#6b7280] mb-1">共通に未登録の科目（保存済み）</p>
-                      {selectedSubjectNames
-                        .filter((n) => !commonSubjects.some((s) => s.name === n))
-                        .map((name) => (
-                          <label key={name} className="inline-flex items-center gap-2 cursor-pointer mr-4">
-                            <input
-                              type="checkbox"
-                              checked
-                              onChange={() => setSelectedSubjectNames((prev) => prev.filter((n) => n !== name))}
-                              className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded"
-                            />
-                            <span className="text-sm text-[#1f2937]">{name}</span>
-                          </label>
-                        ))}
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           </div>
 

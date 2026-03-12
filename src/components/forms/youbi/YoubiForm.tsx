@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Input, Select, Button } from '@/components/ui';
 import { ToastContainer } from '@/components/ui/Toast';
@@ -11,6 +11,7 @@ import type {
   YoubiSlot,
 } from '@/types/forms/youbi';
 import { submitYoubiResponse } from '@/lib/api/youbi';
+import { getSubjects } from '@/lib/api/subjects';
 import { YOUBI_GRADE_NAME_TO_NUMBER } from '@/types/forms/youbi';
 import { useToast } from '@/hooks/useToast';
 
@@ -21,6 +22,14 @@ interface YoubiFormProps {
 }
 
 const GRADES = ['小1', '小2', '小3', '小4', '小5', '小6', '中1', '中2', '中3', '高1', '高2', '高3'];
+
+function gradeToCategory(gradeLabel: string): 'elementary' | 'middle' | 'high' | null {
+  if (!gradeLabel) return null;
+  if (gradeLabel.startsWith('小')) return 'elementary';
+  if (gradeLabel.startsWith('中')) return 'middle';
+  if (gradeLabel.startsWith('高')) return 'high';
+  return null;
+}
 
 export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
   const router = useRouter();
@@ -62,11 +71,50 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
   const [changeFrom, setChangeFrom] = useState('');
   const [note, setNote] = useState('');
 
+  // 学年に応じた科目オプション（共通科目を小学/中学/高校で自動参照）
+  const [subjectOptionsForGrade, setSubjectOptionsForGrade] = useState<Array<{ value: string; label: string }>>([]);
+  const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
+
   // バリデーションエラー
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // 設定を取得
   const settings = period.settings;
+
+  // 学年変更時に共通科目を取得（available_subjects が空なら全科目、あれば絞り込み）
+  useEffect(() => {
+    const category = gradeToCategory(selectedGrade);
+    if (!category) {
+      setSubjectOptionsForGrade([]);
+      return;
+    }
+    setIsLoadingSubjects(true);
+    getSubjects(category)
+      .then((subjects) => {
+        const allowed =
+          settings.available_subjects?.length > 0
+            ? new Set(settings.available_subjects)
+            : null;
+        const options = allowed
+          ? subjects.filter((s) => allowed.has(s.name)).map((s) => ({ value: s.name, label: s.name }))
+          : subjects.map((s) => ({ value: s.name, label: s.name }));
+        setSubjectOptionsForGrade(options);
+      })
+      .catch(() => setSubjectOptionsForGrade([]))
+      .finally(() => setIsLoadingSubjects(false));
+  }, [selectedGrade, settings.available_subjects]);
+
+  // 学年を変えたらスロットの科目をクリア
+  const prevGradeRef = useRef<string>('');
+  useEffect(() => {
+    if (prevGradeRef.current !== selectedGrade && selectedGrade) {
+      setCurrent((prev) => ({ ...prev, subject: '' }));
+      setRequest1((prev) => ({ ...prev, subject: '' }));
+      setRequest2((prev) => ({ ...prev, subject: '' }));
+      prevGradeRef.current = selectedGrade;
+    }
+    if (!selectedGrade) prevGradeRef.current = '';
+  }, [selectedGrade]);
 
   const getPeriodLabel = (code: string): string => {
     return settings.available_periods.find((p) => p.code === code)?.label || code;
@@ -289,8 +337,8 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
             value={slot.subject}
             onChange={(e) => updateSlot(slot, setSlot, 'subject', e.target.value)}
             options={[
-              { value: '', label: '選択' },
-              ...settings.available_subjects.map((s) => ({ value: s, label: s })),
+              { value: '', label: selectedGrade ? (isLoadingSubjects ? '読み込み中...' : '科目') : '学年を選んでください' },
+              ...subjectOptionsForGrade,
             ]}
             className="text-sm"
           />
