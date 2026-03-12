@@ -119,14 +119,29 @@ export default function MogiResponsePage() {
     return selections.map((s) => `${s.date_label} ${s.venue_label}`).join(', ');
   };
 
-  // 計上状態の更新
+  // 計上状態の更新（APIで既存 status_checks をマージし、成功時にサマリーも即時反映）
   const handleChargedToggle = async (responseId: string, charged: boolean) => {
+    const prevResponses = responses;
+    const prevStats = stats;
+    setResponses((prev) =>
+      prev.map((r) =>
+        r.id === responseId
+          ? { ...r, status_checks: { ...r.status_checks, charged } }
+          : r
+      )
+    );
+    setStats((s) => ({
+      ...s,
+      charged_count: s.charged_count + (charged ? 1 : -1),
+    }));
     try {
       await updateMogiChargedStatus(responseId, charged);
       await fetchData();
       success(`${charged ? '計上' : '計上解除'}しました`);
     } catch (err) {
       console.error('Error updating charged status:', err);
+      setResponses(prevResponses);
+      setStats(prevStats);
       error(
         err instanceof Error
           ? err.message

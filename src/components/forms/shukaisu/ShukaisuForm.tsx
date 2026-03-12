@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Input, Select, Button } from '@/components/ui';
 import { ToastContainer } from '@/components/ui/Toast';
@@ -11,6 +11,7 @@ import type {
   ShukaisuSlot,
 } from '@/types/forms/shukaisu';
 import { submitShukaisuResponse } from '@/lib/api/shukaisu';
+import { getSubjects } from '@/lib/api/subjects';
 import { SHUKAISU_GRADE_NAME_TO_NUMBER } from '@/types/forms/shukaisu';
 import { useToast } from '@/hooks/useToast';
 
@@ -21,6 +22,15 @@ interface ShukaisuFormProps {
 }
 
 const GRADES = ['小1', '小2', '小3', '小4', '小5', '小6', '中1', '中2', '中3', '高1', '高2', '高3'];
+
+// 学年ラベル → 共通科目の grade_category
+function gradeToCategory(gradeLabel: string): 'elementary' | 'middle' | 'high' | null {
+  if (!gradeLabel) return null;
+  if (gradeLabel.startsWith('小')) return 'elementary';
+  if (gradeLabel.startsWith('中')) return 'middle';
+  if (gradeLabel.startsWith('高')) return 'high';
+  return null;
+}
 
 export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
   const router = useRouter();
@@ -50,11 +60,46 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
   const [changeFrom, setChangeFrom] = useState('');
   const [note, setNote] = useState('');
 
+  // 学年に応じた科目オプション（共通科目を小学/中学/高校でフィルタ）
+  const [subjectOptionsForGrade, setSubjectOptionsForGrade] = useState<Array<{ value: string; label: string }>>([]);
+  const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
+
   // バリデーションエラー
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // 設定を取得
   const settings = period.settings;
+
+  // 学年変更時に共通科目を取得し、期間で許可された科目だけをドロップダウンに表示
+  useEffect(() => {
+    const category = gradeToCategory(selectedGrade);
+    if (!category) {
+      setSubjectOptionsForGrade([]);
+      return;
+    }
+    setIsLoadingSubjects(true);
+    getSubjects(category)
+      .then((subjects) => {
+        const allowed = new Set(settings.available_subjects ?? []);
+        const options = subjects
+          .filter((s) => allowed.has(s.name))
+          .map((s) => ({ value: s.name, label: s.name }));
+        setSubjectOptionsForGrade(options);
+      })
+      .catch(() => setSubjectOptionsForGrade([]))
+      .finally(() => setIsLoadingSubjects(false));
+  }, [selectedGrade, settings.available_subjects]);
+
+  // 学年を変えたらスロットの科目選択をクリア（選択肢が変わるため）
+  const prevGradeRef = useRef<string>('');
+  useEffect(() => {
+    if (prevGradeRef.current !== selectedGrade && selectedGrade) {
+      setCurrentSlots((prev) => prev.map((s) => ({ ...s, subject: '' })));
+      setRequestedSlots((prev) => prev.map((s) => ({ ...s, subject: '' })));
+      prevGradeRef.current = selectedGrade;
+    }
+    if (!selectedGrade) prevGradeRef.current = '';
+  }, [selectedGrade]);
 
   // 週回数変更時にスロット数を調整
   useEffect(() => {
@@ -293,8 +338,8 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
               value={slot.subject}
               onChange={(e) => updateFn(index, 'subject', e.target.value)}
               options={[
-                { value: '', label: '科目' },
-                ...settings.available_subjects.map((s) => ({ value: s, label: s })),
+                { value: '', label: selectedGrade ? (isLoadingSubjects ? '読み込み中...' : '科目') : '学年を選んでください' },
+                ...subjectOptionsForGrade,
               ]}
               className="text-sm"
             />

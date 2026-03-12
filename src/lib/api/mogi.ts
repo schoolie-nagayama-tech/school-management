@@ -7,7 +7,7 @@ import {
   updateFormPeriod,
   deleteFormPeriod,
 } from './form-periods';
-import { createPublicFormResponse, getFormResponses, updateFormResponseStatus } from './form-responses';
+import { createPublicFormResponse, getFormResponses, getFormResponse, updateFormResponseStatus } from './form-responses';
 import { getDefaultSchoolId, getSchoolByCode } from './schools';
 import type {
   FormPeriodInsert,
@@ -322,13 +322,15 @@ export async function getMogiStats(
 }
 
 /**
- * Vもぎ回答の計上状態を更新
+ * Vもぎ回答の計上状態を更新（既存の status_checks をマージ）
  */
 export async function updateMogiChargedStatus(
   responseId: string,
   charged: boolean
 ): Promise<void> {
-  await updateFormResponseStatus(responseId, { charged });
+  const response = await getFormResponse(responseId);
+  const current = (response?.status_checks || {}) as Record<string, boolean>;
+  await updateFormResponseStatus(responseId, { ...current, charged });
 }
 
 /**

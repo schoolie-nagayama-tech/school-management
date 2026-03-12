@@ -10,7 +10,7 @@ import {
   archivePeriod,
   unarchivePeriod,
 } from './form-periods';
-import { createPublicFormResponse, getFormResponses, updateFormResponseStatus } from './form-responses';
+import { createPublicFormResponse, getFormResponses, getFormResponse, updateFormResponseStatus } from './form-responses';
 import { getDefaultSchoolId, getSchoolByCode } from './schools';
 import type {
   FormPeriodInsert,
@@ -297,13 +297,15 @@ export async function getSoudanStats(
 }
 
 /**
- * お客様相談回答の対応状況を更新
+ * お客様相談回答の対応状況を更新（既存の status_checks をマージ）
  */
 export async function updateSoudanHandledStatus(
   responseId: string,
   handled: boolean
 ): Promise<void> {
-  await updateFormResponseStatus(responseId, { handled });
+  const response = await getFormResponse(responseId);
+  const current = (response?.status_checks || {}) as Record<string, boolean>;
+  await updateFormResponseStatus(responseId, { ...current, handled });
 }
 
 /**

@@ -111,14 +111,29 @@ export default function SoudanResponsePage() {
     return content.substring(0, maxLength) + '...';
   };
 
-  // 対応状況の更新
+  // 対応状況の更新（APIで既存 status_checks をマージし、成功時にサマリーも即時反映）
   const handleHandledToggle = async (responseId: string, handled: boolean) => {
+    const prevResponses = responses;
+    const prevStats = stats;
+    setResponses((prev) =>
+      prev.map((r) =>
+        r.id === responseId
+          ? { ...r, status_checks: { ...r.status_checks, handled } }
+          : r
+      )
+    );
+    setStats((s) => ({
+      ...s,
+      handled_count: s.handled_count + (handled ? 1 : -1),
+    }));
     try {
       await updateSoudanHandledStatus(responseId, handled);
       await fetchData();
       success(`${handled ? '対応済み' : '未対応'}に更新しました`);
     } catch (err) {
       console.error('Error updating handled status:', err);
+      setResponses(prevResponses);
+      setStats(prevStats);
       error(
         err instanceof Error
           ? err.message
