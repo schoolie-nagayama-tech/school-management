@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { Modal } from '@/components/ui';
 import type { MoshiResponse } from '@/types/forms/moshi';
@@ -116,6 +116,25 @@ export function MoshiResponseDetailModal({
           <p className="text-sm text-[#4b5563]">
             {response.linked_student_id ? '紐付け済み' : '未紐付け'}
           </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-[#1f2937] mb-1">
+              計上
+            </label>
+            <p className="text-sm text-[#4b5563]">
+              {response.status_checks?.charged ? '計上済み' : '未計上'}
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[#1f2937] mb-1">
+              発注
+            </label>
+            <p className="text-sm text-[#4b5563]">
+              {response.status_checks?.order ? '発注済み' : '未発注'}
+            </p>
+          </div>
         </div>
       </div>
     </Modal>

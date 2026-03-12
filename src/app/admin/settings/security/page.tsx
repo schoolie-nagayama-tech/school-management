@@ -63,7 +63,12 @@ export default function SecuritySettingsPage() {
         cache: 'no-store',
         headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
       });
-      if (!res.ok) return;
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        const detail = (errBody?.detail ?? errBody?.error) as string | undefined;
+        toastError(detail ? `設定の取得に失敗しました (${res.status}): ${detail}` : `設定の取得に失敗しました (${res.status})`);
+        return;
+      }
       const json = await res.json();
       const settings = json.settings ?? [];
       for (const s of settings) {
@@ -116,21 +121,29 @@ export default function SecuritySettingsPage() {
         credentials: 'include',
       });
 
+      const errBody = await res.json().catch(() => ({}));
+      const errMessage = (errBody?.error ?? '保存に失敗しました') as string;
+      const errDetail = errBody?.detail as string | undefined;
+
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        toastError(err?.error ?? '保存に失敗しました');
+        const fullMessage = errDetail
+          ? `${errMessage} (${res.status}): ${errDetail}`
+          : `${errMessage} (${res.status})`;
+        toastError(fullMessage);
         return;
       }
 
       success('セキュリティ設定を保存しました');
-      await fetchSettings();
+      // 保存した値でその場で表示を更新（再取得でキャッシュやデフォルトに上書きされないようにする）
+      setTimeoutByRole(payload);
       // プライバシースクリーンなど他コンポーネントに設定更新を通知
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('system-settings-updated'));
       }
     } catch (err) {
       console.error('Error saving security settings:', err);
-      toastError('保存に失敗しました');
+      const msg = err instanceof Error ? err.message : 'ネットワークエラーの可能性があります';
+      toastError(`保存に失敗しました: ${msg}`);
     } finally {
       setIsSaving(false);
     }

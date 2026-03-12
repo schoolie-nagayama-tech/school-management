@@ -81,6 +81,7 @@ export interface MoshiResponse {
   linked_at: string | null;
   status_checks: {
     charged?: boolean;
+    order?: boolean; // 発注
   } | null;
   is_archived: boolean;
   archived_at: string | null;

@@ -138,8 +138,9 @@ export async function PUT(
 
     if (error) {
       console.error('Error upserting system setting:', error);
+      const message = error?.message ?? '不明なエラー';
       return NextResponse.json(
-        { error: 'システム設定の保存に失敗しました' },
+        { error: 'システム設定の保存に失敗しました', detail: message },
         { status: 500 }
       );
     }
@@ -151,8 +152,9 @@ export async function PUT(
     });
   } catch (err) {
     console.error('system-settings PUT error:', err);
+    const message = err instanceof Error ? err.message : '不明なエラー';
     return NextResponse.json(
-      { error: 'サーバーエラーが発生しました' },
+      { error: 'サーバーエラーが発生しました', detail: message },
       { status: 500 }
     );
   }

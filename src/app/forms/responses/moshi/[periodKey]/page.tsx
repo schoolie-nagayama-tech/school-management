@@ -7,6 +7,7 @@ import {
   getMoshiResponses,
   getMoshiStats,
   updateMoshiChargedStatus,
+  updateMoshiOrderStatus,
 } from '@/lib/api/moshi';
 import {
   unlinkResponseFromStudent,
@@ -115,18 +116,58 @@ export default function MoshiResponsePage() {
     }
   };
 
-  // 計上状態の更新
+  // 計上状態の更新（APIで既存 status_checks をマージして保存し、成功時にサマリーも即時反映）
   const handleChargedToggle = async (responseId: string, charged: boolean) => {
+    const prevResponses = responses;
+    const prevStats = stats;
+    setResponses((prev) =>
+      prev.map((r) =>
+        r.id === responseId
+          ? { ...r, status_checks: { ...r.status_checks, charged } }
+          : r
+      )
+    );
+    setStats((s) => ({
+      ...s,
+      charged_count: s.charged_count + (charged ? 1 : -1),
+    }));
     try {
       await updateMoshiChargedStatus(responseId, charged);
       await fetchData();
       success(`${charged ? '計上' : '計上解除'}しました`);
     } catch (err) {
       console.error('Error updating charged status:', err);
+      setResponses(prevResponses);
+      setStats(prevStats);
       error(
         err instanceof Error
           ? err.message
           : '計上状態の更新に失敗しました'
+      );
+    }
+  };
+
+  // 発注状態の更新（既存 status_checks をマージ）
+  const handleOrderToggle = async (responseId: string, order: boolean) => {
+    const prevResponses = responses;
+    setResponses((prev) =>
+      prev.map((r) =>
+        r.id === responseId
+          ? { ...r, status_checks: { ...r.status_checks, order } }
+          : r
+      )
+    );
+    try {
+      await updateMoshiOrderStatus(responseId, order);
+      await fetchData();
+      success(`${order ? '発注' : '発注解除'}しました`);
+    } catch (err) {
+      console.error('Error updating order status:', err);
+      setResponses(prevResponses);
+      error(
+        err instanceof Error
+          ? err.message
+          : '発注状態の更新に失敗しました'
       );
     }
   };
@@ -468,6 +509,9 @@ export default function MoshiResponsePage() {
                     <SortableTh label="学年" sortKey="grade" />
                     <SortableTh label="受験方法" sortKey="exam_type" />
                     <SortableTh label="計上" sortKey="charged" />
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
+                      発注
+                    </th>
                     <SortableTh label="紐付け" sortKey="linked" />
                     <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
                       操作
@@ -511,6 +555,14 @@ export default function MoshiResponsePage() {
                           type="checkbox"
                           checked={response.status_checks?.charged || false}
                           onChange={(e) => handleChargedToggle(response.id, e.target.checked)}
+                          className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6] cursor-pointer"
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-sm text-[#4b5563]">
+                        <input
+                          type="checkbox"
+                          checked={response.status_checks?.order || false}
+                          onChange={(e) => handleOrderToggle(response.id, e.target.checked)}
                           className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6] cursor-pointer"
                         />
                       </td>
