@@ -28,17 +28,18 @@ export interface FormResponseWithStudent extends FormResponse {
 
 /**
  * フォーム回答一覧を取得（紐付け済み生徒情報も含む）
+ * schoolId に string[] を渡すと複数教室の回答を一括取得する
  */
 export async function getFormResponses(
-  schoolId?: string,
+  schoolId?: string | string[],
   filters?: FormResponseFilters
 ): Promise<FormResponseWithStudent[]> {
-  const targetSchoolId = schoolId || getDefaultSchoolId();
+  const schoolIds = Array.isArray(schoolId) ? schoolId : [schoolId || getDefaultSchoolId()];
 
   let query = supabase
     .from('form_responses')
     .select('*')
-    .eq('school_id', targetSchoolId);
+    .in('school_id', schoolIds);
 
   if (filters?.formType) {
     query = query.eq('form_type', filters.formType);
@@ -113,6 +114,39 @@ export async function getFormResponses(
       ? studentsMap.get(response.linked_student_id) || null
       : null,
   }));
+}
+
+/**
+ * 最近の未処理フォーム回答を取得（トップページの新着通知用）
+ * @param schoolIds 対象教室IDの配列
+ * @param limitDays 何日以内の申込を取得するか（デフォルト: 7日）
+ * @param limit 最大取得件数（デフォルト: 10件）
+ */
+export async function getRecentUnprocessedResponses(
+  schoolIds: string[],
+  limitDays: number = 7,
+  limit: number = 10
+): Promise<FormResponseWithStudent[]> {
+  if (schoolIds.length === 0) return [];
+
+  const since = new Date();
+  since.setDate(since.getDate() - limitDays);
+
+  const { data, error } = await supabase
+    .from('form_responses')
+    .select('*')
+    .in('school_id', schoolIds)
+    .eq('is_archived', false)
+    .is('linked_student_id', null)
+    .gte('created_at', since.toISOString())
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(`新着申込の取得に失敗しました: ${error.message}`);
+  }
+
+  return (data || []) as FormResponseWithStudent[];
 }
 
 // 以下は既存のコードと同じ

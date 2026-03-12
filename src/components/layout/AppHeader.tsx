@@ -37,9 +37,16 @@ export function AppHeader({ title: _title, onSettingsClick, onBulkGradeUpdateCli
     const fetchSchools = async () => {
       try {
         const allSchools = await getSchools();
-        // ユーザーが担当している教室のみをフィルタ
-        const userSchools = allSchools.filter(school => schoolIds.includes(school.id));
-        setSchools(userSchools);
+        // ユーザーが担当している教室のみをフィルタし、デモ教室は非表示にする
+        const userSchools = allSchools.filter(school =>
+          schoolIds.includes(school.id) && !school.is_demo
+        );
+        // 非デモ教室が0件の場合はデモ教室も表示（初期セットアップ時のフォールバック）
+        if (userSchools.length === 0) {
+          setSchools(allSchools.filter(school => schoolIds.includes(school.id)));
+        } else {
+          setSchools(userSchools);
+        }
       } catch (error) {
         console.error('Error fetching schools:', error);
         // エラーが発生してもアプリは動作し続ける

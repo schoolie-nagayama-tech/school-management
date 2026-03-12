@@ -70,7 +70,7 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
   // 設定を取得
   const settings = period.settings;
 
-  // 学年変更時に共通科目を取得し、期間で許可された科目だけをドロップダウンに表示
+  // 学年変更時に共通科目を取得（科目設定＝subjects テーブルを常に参照し自動更新）
   useEffect(() => {
     const category = gradeToCategory(selectedGrade);
     if (!category) {
@@ -80,18 +80,12 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
     setIsLoadingSubjects(true);
     getSubjects(category)
       .then((subjects) => {
-        const allowed =
-          settings.available_subjects?.length > 0
-            ? new Set(settings.available_subjects)
-            : null;
-        const options = allowed
-          ? subjects.filter((s) => allowed.has(s.name)).map((s) => ({ value: s.name, label: s.name }))
-          : subjects.map((s) => ({ value: s.name, label: s.name }));
+        const options = subjects.map((s) => ({ value: s.name, label: s.name }));
         setSubjectOptionsForGrade(options);
       })
       .catch(() => setSubjectOptionsForGrade([]))
       .finally(() => setIsLoadingSubjects(false));
-  }, [selectedGrade, settings.available_subjects]);
+  }, [selectedGrade]);
 
   // 学年を変えたらスロットの科目選択をクリア（選択肢が変わるため）
   const prevGradeRef = useRef<string>('');

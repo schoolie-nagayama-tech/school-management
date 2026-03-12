@@ -8,6 +8,7 @@ export type Database = {
           name: string;
           code: string | null;
           notification_email: string | null;
+          is_demo: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -16,6 +17,7 @@ export type Database = {
           name: string;
           code?: string | null;
           notification_email?: string | null;
+          is_demo?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -24,6 +26,7 @@ export type Database = {
           name?: string;
           code?: string | null;
           notification_email?: string | null;
+          is_demo?: boolean;
           created_at?: string;
           updated_at?: string;
         };

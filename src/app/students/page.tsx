@@ -38,6 +38,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { AlertBoard } from '@/components/alerts';
 import { BulletinBoard } from '@/components/bulletin';
+import { NewResponsesBoard } from '@/components/responses/NewResponsesBoard';
 
 export default function StudentsPage() {
   // 権限チェック
@@ -369,6 +370,9 @@ export default function StudentsPage() {
             </div>
           </div>
         )}
+
+        {/* 新着申し込み通知 */}
+        {!isTeacher && <NewResponsesBoard className="mb-4" />}
 
         {/* 掲示板とアラート */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">

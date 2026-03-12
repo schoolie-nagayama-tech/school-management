@@ -161,16 +161,12 @@ export default function ResponsesPage() {
     setErrorMessage('');
     try {
       const schoolIds = getSelectedSchoolIds();
-      // 権限のある教室のみでフィルタリング
       if (schoolIds.length === 0) {
         setErrorMessage('教室が選択されていません');
         setIsLoading(false);
         return;
       }
-      
-      // 複数教室が選択されている場合は最初の教室を使用（フォーム回答は単一教室のみ対応）
-      const schoolId = schoolIds[0];
-      
+
       const filters: Parameters<typeof getFormResponses>[1] = {};
       if (filterFormType !== 'all') {
         filters.formType = filterFormType;
@@ -185,11 +181,23 @@ export default function ResponsesPage() {
         filters.linkedStatus = filterLinkedStatus;
       }
 
+      // 複数教室の期間を取得してperiod_keyで重複排除
+      const fetchPeriods = async () => {
+        if (filterFormType === 'all') return [];
+        const allPeriods = await Promise.all(
+          schoolIds.map((sid) => getFormPeriods(sid, filterFormType))
+        );
+        const seen = new Set<string>();
+        return allPeriods.flat().filter((p) => {
+          if (seen.has(p.period_key)) return false;
+          seen.add(p.period_key);
+          return true;
+        });
+      };
+
       const [responsesData, periodsData] = await Promise.all([
-        getFormResponses(schoolId, filters),
-        filterFormType !== 'all'
-          ? getFormPeriods(schoolId, filterFormType)
-          : Promise.resolve([]),
+        getFormResponses(schoolIds, filters),
+        fetchPeriods(),
       ]);
 
       setResponses(responsesData);

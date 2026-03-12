@@ -431,6 +431,17 @@ export default function UsersPage() {
     }
   };
 
+  // デモフラグ切り替え
+  const handleToggleDemo = async (school: School) => {
+    try {
+      await updateSchool(school.id, { is_demo: !school.is_demo });
+      setSchools((prev) => prev.map((s) => s.id === school.id ? { ...s, is_demo: !school.is_demo } : s));
+      success(school.is_demo ? 'デモフラグを解除しました' : 'デモ教室に設定しました');
+    } catch (err: any) {
+      toastError(err.message || 'デモフラグの更新に失敗しました');
+    }
+  };
+
   // 権限チェック（オーナー以上で教室設定タブにアクセス可能）
   const canAccessSchoolSettings = profile?.role === 'admin' || profile?.role === 'owner';
 
@@ -667,14 +678,36 @@ export default function UsersPage() {
                     <tr>
                       <th className="px-3 py-2 text-left text-sm font-bold text-[#1f2937]">教室名</th>
                       <th className="px-3 py-2 text-left text-sm font-bold text-[#1f2937]">コード</th>
+                      <th className="px-3 py-2 text-center text-sm font-bold text-[#1f2937]">デモ</th>
                       <th className="px-3 py-2 text-right text-sm font-bold text-[#1f2937]">操作</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#e5e7eb]/10">
                     {schools.map(school => (
-                      <tr key={school.id} className="hover:bg-[#f3f4f6]/50">
-                        <td className="px-3 py-2 text-sm text-[#1f2937]">{school.name}</td>
+                      <tr key={school.id} className={`hover:bg-[#f3f4f6]/50 ${school.is_demo ? 'opacity-60' : ''}`}>
+                        <td className="px-3 py-2 text-sm text-[#1f2937]">
+                          <span>{school.name}</span>
+                          {school.is_demo && (
+                            <span className="ml-2 px-1.5 py-0.5 text-[10px] bg-gray-200 text-gray-600 rounded">デモ</span>
+                          )}
+                        </td>
                         <td className="px-3 py-2 text-sm text-[#4b5563]">{school.code || '-'}</td>
+                        <td className="px-3 py-2 text-center">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleDemo(school)}
+                            title={school.is_demo ? 'デモフラグを解除する' : 'デモ教室に設定する'}
+                            className={`w-10 h-5 rounded-full transition-colors relative ${
+                              school.is_demo ? 'bg-gray-400' : 'bg-gray-200'
+                            }`}
+                          >
+                            <span
+                              className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                                school.is_demo ? 'translate-x-5' : 'translate-x-0.5'
+                              }`}
+                            />
+                          </button>
+                        </td>
                         <td className="px-3 py-2 text-right">
                           <div className="flex items-center justify-end gap-2">
                             <Button
