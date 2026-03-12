@@ -42,10 +42,8 @@ export function AppHeader({ title: _title, onSettingsClick, onBulkGradeUpdateCli
         const allSchools = await getSchools();
         const userSchools = allSchools.filter(school => schoolIds.includes(school.id));
         setSchools(userSchools);
-
-        // ドロップダウン用: デモ教室を除外。全部デモの場合はフォールバックで全件表示
-        const nonDemo = userSchools.filter(school => !school.is_demo);
-        setDisplaySchools(nonDemo.length > 0 ? nonDemo : userSchools);
+        // ドロップダウンには全教室を表示（デモ教室も選択可能にする）
+        setDisplaySchools(userSchools);
       } catch (error) {
         console.error('Error fetching schools:', error);
         // エラーが発生してもアプリは動作し続ける
@@ -444,11 +442,16 @@ export function AppHeader({ title: _title, onSettingsClick, onBulkGradeUpdateCli
                             e.stopPropagation();
                             handleSchoolChange(school.id);
                           }}
-                          className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
+                          className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors flex items-center gap-2 ${
                             selectedSchoolId === school.id ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold' : ''
                           }`}
                         >
-                          {school.code === 'DEFAULT' ? 'デフォルト' : school.name}
+                          <span>{school.code === 'DEFAULT' ? 'デフォルト' : school.name}</span>
+                          {school.is_demo && (
+                            <span className="ml-auto px-1.5 py-0.5 bg-gray-200 text-gray-500 text-[10px] rounded font-normal">
+                              デモ
+                            </span>
+                          )}
                         </button>
                       ))}
                     </div>
