@@ -3,11 +3,50 @@
 interface VisibilityBadgeProps {
   itemType: 'internal' | 'external';
   isVisible: boolean;
-  activePeriodTitle?: string | null; // 公開中の期間名（内部フォームの場合）
-  /** 期間が1件以上登録されているか（フォーム作成有無の確認用） */
+  activePeriodTitle?: string | null;
   hasRegisteredPeriods?: boolean;
-  externalUrl?: string | null; // 外部URL（外部リンクの場合）
+  registeredCount?: number;
+  externalUrl?: string | null;
   onToggle: () => void;
+}
+
+/** 状態 pill バッジ */
+function StatusBadge({ isActive, label }: { isActive: boolean; label: string }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+        isActive
+          ? 'bg-[#d1fae5] text-[#065f46]'
+          : 'bg-[#f3f4f6] text-[#6b7280]'
+      }`}
+    >
+      <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-[#059669]' : 'bg-[#9ca3af]'}`} />
+      {label}
+    </span>
+  );
+}
+
+/** 操作ボタン */
+function ToggleButton({
+  isVisible,
+  onToggle,
+}: {
+  isVisible: boolean;
+  onToggle: (e: React.MouseEvent) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className={`px-2.5 py-0.5 rounded text-xs font-medium transition-colors ${
+        isVisible
+          ? 'bg-[#f3f4f6] text-[#4b5563] hover:bg-[#e5e7eb]'
+          : 'bg-[#10b981] text-white hover:bg-[#059669]'
+      }`}
+    >
+      {isVisible ? '非公開にする' : '公開する'}
+    </button>
+  );
 }
 
 export function VisibilityBadge({
@@ -15,103 +54,54 @@ export function VisibilityBadge({
   isVisible,
   activePeriodTitle,
   hasRegisteredPeriods = false,
+  registeredCount,
   externalUrl,
   onToggle,
 }: VisibilityBadgeProps) {
-  // 内部フォームの場合
-  if (itemType === 'internal') {
-    if (!activePeriodTitle) {
-      // 公開中の期間がない → フォーム作成有無を表示し、公開/非公開ボタン
-      return (
-        <div className="flex items-center gap-2 flex-wrap">
-          {hasRegisteredPeriods ? (
-            <span className="text-sm text-[#6b7280]">作成済み・未公開</span>
-          ) : (
-            <span className="text-sm text-[#9ca3af]">公開なし（期間未作成）</span>
-          )}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggle();
-            }}
-            className={
-              isVisible
-                ? 'px-3 py-1 rounded text-sm font-medium bg-[#6b7280] text-white hover:bg-[#4b5563]'
-                : 'px-3 py-1 rounded text-sm font-medium bg-[#10b981] text-white hover:bg-[#059669]'
-            }
-          >
-            {isVisible ? '非公開にする' : '公開する'}
-          </button>
-        </div>
-      );
-    }
-    // 公開中の期間あり → 状態ラベル ＋ 公開/非公開を切り替えるボタン
-    return (
-      <div className="flex items-center gap-2 flex-wrap">
-        <span
-          className={
-            isVisible
-              ? 'text-sm font-medium text-[#059669]'
-              : 'text-sm text-[#6b7280]'
-          }
-        >
-          {isVisible ? `公開中（${activePeriodTitle}）` : '非公開'}
-        </span>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggle();
-          }}
-          className={
-            isVisible
-              ? 'px-3 py-1 rounded text-sm font-medium bg-[#6b7280] text-white hover:bg-[#4b5563]'
-              : 'px-3 py-1 rounded text-sm font-medium bg-[#10b981] text-white hover:bg-[#059669]'
-          }
-        >
-          {isVisible ? '非公開にする' : '公開する'}
-        </button>
-      </div>
-    );
-  }
+  const handleToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onToggle();
+  };
 
   // 外部リンクの場合
   if (itemType === 'external') {
     if (!externalUrl) {
-      return (
-        <span className="text-sm text-[#9ca3af]">URL未設定</span>
-      );
+      return <StatusBadge isActive={false} label="URL未設定" />;
     }
     return (
-      <div className="flex items-center gap-2 flex-wrap">
-        <span
-          className={
-            isVisible
-              ? 'text-sm font-medium text-[#059669]'
-              : 'text-sm text-[#6b7280]'
-          }
-        >
-          {isVisible ? '外部リンク・公開中' : '非公開'}
-        </span>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggle();
-          }}
-          className={
-            isVisible
-              ? 'px-3 py-1 rounded text-sm font-medium bg-[#6b7280] text-white hover:bg-[#4b5563]'
-              : 'px-3 py-1 rounded text-sm font-medium bg-[#10b981] text-white hover:bg-[#059669]'
-          }
-        >
-          {isVisible ? '非公開にする' : '公開する'}
-        </button>
+      <div className="flex items-center gap-2">
+        <StatusBadge isActive={isVisible} label={isVisible ? '公開中' : '非公開'} />
+        <ToggleButton isVisible={isVisible} onToggle={handleToggle} />
       </div>
     );
   }
 
-  // フォールバック
-  return <span className="text-sm text-[#9ca3af]">-</span>;
+  // 内部フォーム：期間未作成
+  if (!hasRegisteredPeriods && !activePeriodTitle) {
+    return <StatusBadge isActive={false} label="未作成" />;
+  }
+
+  // 内部フォーム：期間あり
+  const subParts: string[] = [];
+  if (activePeriodTitle) subParts.push(activePeriodTitle);
+  else if (hasRegisteredPeriods) subParts.push('作成済み');
+  if (registeredCount !== undefined) subParts.push(`登録済み ${registeredCount}件`);
+
+  const statusLabel = isVisible && activePeriodTitle ? '公開中' : isVisible ? '公開中' : '非公開';
+
+  return (
+    <div className="space-y-1">
+      {/* 1行目: バッジ + ボタン */}
+      <div className="flex items-center gap-2">
+        <StatusBadge isActive={isVisible && !!activePeriodTitle} label={statusLabel} />
+        <ToggleButton isVisible={isVisible} onToggle={handleToggle} />
+      </div>
+      {/* 2行目: 期間名 + 登録済み件数 */}
+      {subParts.length > 0 && (
+        <div className="text-xs text-[#6b7280] pl-0.5">
+          {subParts.join(' · ')}
+        </div>
+      )}
+    </div>
+  );
 }

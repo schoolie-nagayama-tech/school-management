@@ -75,28 +75,15 @@ export function SortableMenuRow({
         </div>
       </td>
       <td className="border border-[#e5e7eb] px-4 py-3">
-        <div className="space-y-1">
-          <VisibilityBadge
-            itemType={menu.link_type}
-            isVisible={menu.is_visible}
-            activePeriodTitle={activePeriodTitle}
-            hasRegisteredPeriods={registeredPeriods.length > 0}
-            externalUrl={menu.link_url}
-            onToggle={() => onToggleVisibility(menu)}
-          />
-          {formType && (
-            <div className="text-xs text-[#6b7280] mt-1">
-              {activePeriodTitle ? (
-                <span className="text-[#059669] font-medium">
-                  🟢 公開中（{activePeriodTitle}）
-                </span>
-              ) : (
-                <span className="text-[#6b7280]">⚪ 公開中の期間なし</span>
-              )}
-              <span className="ml-2">登録済み: {registeredPeriods.length}件</span>
-            </div>
-          )}
-        </div>
+        <VisibilityBadge
+          itemType={menu.link_type}
+          isVisible={menu.is_visible}
+          activePeriodTitle={activePeriodTitle}
+          hasRegisteredPeriods={registeredPeriods.length > 0}
+          registeredCount={formType ? registeredPeriods.length : undefined}
+          externalUrl={menu.link_url}
+          onToggle={() => onToggleVisibility(menu)}
+        />
       </td>
       <td className="border border-[#e5e7eb] px-4 py-3">
         <div className="flex items-center gap-2">
