@@ -8,14 +8,18 @@ import { getUnreadCount } from '@/lib/api/bulletin';
 import { useAuth } from '@/contexts/AuthContext';
 import { USER_ROLE_LABELS } from '@/types/database';
 import type { School } from '@/types/database';
+import { SubjectSettings } from '@/components/settings';
 
 interface AppHeaderProps {
   title: string;
+  /** ページ固有の設定ボタン（申込項目管理など）*/
   onSettingsClick?: () => void;
+  /** onSettingsClick のラベル（デフォルト: "ページ設定"）*/
+  settingsLabel?: string;
   onBulkGradeUpdateClick?: () => void;
 }
 
-export function AppHeader({ title: _title, onSettingsClick, onBulkGradeUpdateClick }: AppHeaderProps) {
+export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBulkGradeUpdateClick }: AppHeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { profile, permissions, signOut, isLoading: authLoading, schoolIds, selectedSchoolId, setSelectedSchoolId, getSelectedSchoolIds } = useAuth();
@@ -31,6 +35,7 @@ export function AppHeader({ title: _title, onSettingsClick, onBulkGradeUpdateCli
   const [displaySchools, setDisplaySchools] = useState<School[]>([]);
   const [showSchoolDropdown, setShowSchoolDropdown] = useState(false);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
+  const [isSubjectSettingsOpen, setIsSubjectSettingsOpen] = useState(false);
   const [bulletinUnreadCount, setBulletinUnreadCount] = useState(0);
 
   // permissionsがnullの場合は、すべてのリンクを表示（ローディング中の場合）
@@ -498,7 +503,7 @@ export function AppHeader({ title: _title, onSettingsClick, onBulkGradeUpdateCli
                 <span className="hidden sm:inline">ログアウト</span>
               </button>
             )}
-            {(onSettingsClick || onBulkGradeUpdateClick || profile?.role === 'admin') && (showAllLinks || permissions?.canAccessSettings || permissions?.canAccessStudents || profile?.role === 'admin') && (
+            {(showAllLinks || permissions?.canAccessStudents || permissions?.canAccessSettings || profile?.role === 'admin') && (
               <div className="relative settings-dropdown-container">
                 <button
                   onClick={(e) => {
@@ -545,6 +550,17 @@ export function AppHeader({ title: _title, onSettingsClick, onBulkGradeUpdateCli
                           一括学年更新
                         </button>
                       )}
+                      {(showAllLinks || permissions?.canAccessStudents) && (
+                        <button
+                          onClick={() => {
+                            setIsSubjectSettingsOpen(true);
+                            setShowSettingsDropdown(false);
+                          }}
+                          className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors"
+                        >
+                          科目設定
+                        </button>
+                      )}
                       {onSettingsClick && (
                         <button
                           onClick={() => {
@@ -553,7 +569,7 @@ export function AppHeader({ title: _title, onSettingsClick, onBulkGradeUpdateCli
                           }}
                           className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors"
                         >
-                          科目設定
+                          {settingsLabel ?? '設定'}
                         </button>
                       )}
                       {profile?.role === 'admin' && (
@@ -602,6 +618,11 @@ export function AppHeader({ title: _title, onSettingsClick, onBulkGradeUpdateCli
           </Link>
         )}
       </div>
+      {/* 科目設定モーダル（AppHeader内で一元管理） */}
+      <SubjectSettings
+        isOpen={isSubjectSettingsOpen}
+        onClose={() => setIsSubjectSettingsOpen(false)}
+      />
     </header>
   );
 }

@@ -9,17 +9,19 @@ interface AdminLayoutProps {
   children: ReactNode;
   headerTitle?: string;
   headerOnSettingsClick?: () => void;
+  headerSettingsLabel?: string;
   headerOnBulkGradeUpdateClick?: () => void;
   title?: string;
   actions?: ReactNode; // 右上のボタン類
 }
 
-export function AdminLayout({ 
-  children, 
+export function AdminLayout({
+  children,
   headerTitle,
   headerOnSettingsClick,
+  headerSettingsLabel,
   headerOnBulkGradeUpdateClick,
-  title, 
+  title,
   actions
 }: AdminLayoutProps) {
   useAuth();
@@ -30,6 +32,7 @@ export function AdminLayout({
         <AppHeader
           title={headerTitle}
           onSettingsClick={headerOnSettingsClick}
+          settingsLabel={headerSettingsLabel}
           onBulkGradeUpdateClick={headerOnBulkGradeUpdateClick}
         />
       )}

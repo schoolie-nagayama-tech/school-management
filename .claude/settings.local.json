@@ -34,7 +34,8 @@
       "Bash(npm run lint)",
       "Bash(xargs grep -l \"subjects\\\\|time_slots\\\\|attendance_types\\\\|schedule\")",
       "Bash(grep -l \"CREATE TABLE.*subjects\\\\|CREATE TABLE.*time_slots\\\\|CREATE TABLE.*schedule\" /c/Users/ytaka/Desktop/student-management/supabase/migrations/*.sql)",
-      "Bash(grep -l \"form_responses\" supabase/migrations/*.sql)"
+      "Bash(grep -l \"form_responses\" supabase/migrations/*.sql)",
+      "Bash(grep -v \"//\")"
     ]
   }
 }

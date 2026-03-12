@@ -12,7 +12,6 @@ import {
   RegularScheduleFormModal,
   BulkGradeUpdateModal,
 } from '@/components/students';
-import { SubjectSettings } from '@/components/settings';
 import {
   getStudents,
   createStudent,
@@ -67,7 +66,6 @@ export default function StudentsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isScoresModalOpen, setIsScoresModalOpen] = useState(false);
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isBulkGradeUpdateModalOpen, setIsBulkGradeUpdateModalOpen] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [scheduleModalStudent, setScheduleModalStudent] = useState<Student | null>(null);
@@ -346,7 +344,6 @@ export default function StudentsPage() {
   return (
     <AdminLayout
       headerTitle="生徒管理"
-      headerOnSettingsClick={() => setIsSettingsModalOpen(true)}
       headerOnBulkGradeUpdateClick={() => setIsBulkGradeUpdateModalOpen(true)}
     >
       {/* エラーメッセージ */}
@@ -710,12 +707,6 @@ export default function StudentsPage() {
           }}
         />
       )}
-
-      {/* 科目設定モーダル */}
-      <SubjectSettings
-        isOpen={isSettingsModalOpen}
-        onClose={() => setIsSettingsModalOpen(false)}
-      />
 
       {/* 一括学年更新モーダル */}
       <BulkGradeUpdateModal

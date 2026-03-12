@@ -30,26 +30,17 @@ const FORM_TYPE_COLORS: Record<string, { bg: string; text: string }> = {
   kyozai:   { bg: 'bg-gray-100',   text: 'text-gray-700'   },
 };
 
-// 教室名表示用の色（教室ごとに固定で割り当て）
+// 教室名表示用の色（出現順で割り当て、同じ画面内で被らないようにする）
 const SCHOOL_LABEL_COLORS = [
-  { bg: 'bg-sky-100',   text: 'text-sky-800' },
+  { bg: 'bg-sky-100',     text: 'text-sky-800' },
   { bg: 'bg-emerald-100', text: 'text-emerald-800' },
-  { bg: 'bg-violet-100', text: 'text-violet-800' },
-  { bg: 'bg-amber-100',  text: 'text-amber-800' },
-  { bg: 'bg-rose-100',   text: 'text-rose-800' },
-  { bg: 'bg-indigo-100', text: 'text-indigo-800' },
-  { bg: 'bg-teal-100',   text: 'text-teal-800' },
+  { bg: 'bg-violet-100',  text: 'text-violet-800' },
+  { bg: 'bg-rose-100',    text: 'text-rose-800' },
+  { bg: 'bg-indigo-100',  text: 'text-indigo-800' },
+  { bg: 'bg-teal-100',    text: 'text-teal-800' },
   { bg: 'bg-fuchsia-100', text: 'text-fuchsia-800' },
+  { bg: 'bg-orange-100',  text: 'text-orange-800' },
 ] as const;
-
-function getSchoolColor(schoolId: string): { bg: string; text: string } {
-  let n = 0;
-  for (let i = 0; i < schoolId.length; i++) {
-    n = (n * 31 + schoolId.charCodeAt(i)) >>> 0;
-  }
-  const index = n % SCHOOL_LABEL_COLORS.length;
-  return SCHOOL_LABEL_COLORS[index];
-}
 
 function formatDateTime(date: string): string {
   const d = new Date(date);
@@ -137,6 +128,23 @@ export function NewResponsesBoard({ className = '' }: NewResponsesBoardProps) {
     [responses, dismissedIds]
   );
 
+  // 表示中の教室を「先頭からの出現順」で並べ、その順で色を割り当て（同じ画面で色が被らないようにする）
+  const schoolColorBySchoolId = useMemo(() => {
+    const seen = new Set<string>();
+    const order: string[] = [];
+    visibleResponses.forEach((r) => {
+      if (r.school_id && !seen.has(r.school_id)) {
+        seen.add(r.school_id);
+        order.push(r.school_id);
+      }
+    });
+    const map: Record<string, { bg: string; text: string }> = {};
+    order.forEach((id, i) => {
+      map[id] = SCHOOL_LABEL_COLORS[i % SCHOOL_LABEL_COLORS.length];
+    });
+    return map;
+  }, [visibleResponses]);
+
   const handleDismiss = useCallback(
     (id: string) => {
       if (!user?.id) return;
@@ -218,7 +226,7 @@ export function NewResponsesBoard({ className = '' }: NewResponsesBoardProps) {
             const gradeLabel = GRADE_LABELS[response.grade] ?? `学年${response.grade}`;
             const color = FORM_TYPE_COLORS[response.form_type] ?? { bg: 'bg-gray-100', text: 'text-gray-700' };
             const schoolName = schoolNames[response.school_id];
-            const schoolColor = response.school_id ? getSchoolColor(response.school_id) : null;
+            const schoolColor = response.school_id ? schoolColorBySchoolId[response.school_id] : null;
             return (
               <div
                 key={response.id}

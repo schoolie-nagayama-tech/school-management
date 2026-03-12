@@ -324,6 +324,7 @@ export default function ApplicationsPage() {
     <AdminLayout
       headerTitle="申込状況管理"
       headerOnSettingsClick={canEdit && isManagerOrAbove ? () => setIsItemManagerOpen(true) : undefined}
+      headerSettingsLabel="申込項目管理"
     >
 
       {/* エラーメッセージ */}
