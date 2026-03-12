@@ -54,13 +54,24 @@ export function SortableMenuRow({
       className={`table-row-hover ${isDragging ? 'z-50' : ''}`}
     >
       <td className="border border-[#e5e7eb] px-4 py-3">
-        <div>
-          <div className="font-medium text-[#1f2937]">{menu.title}</div>
-          {menu.description && (
-            <div className="text-xs text-[#4b5563] mt-1">
-              {menu.description}
-            </div>
-          )}
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <div className="font-medium text-[#1f2937]">{menu.title}</div>
+            {menu.description && (
+              <div className="text-xs text-[#4b5563] mt-1">
+                {menu.description}
+              </div>
+            )}
+          </div>
+          <Button
+            onClick={() => onEdit(menu)}
+            variant="secondary"
+            size="sm"
+            disabled={isSubmitting}
+            className="shrink-0"
+          >
+            編集
+          </Button>
         </div>
       </td>
       <td className="border border-[#e5e7eb] px-4 py-3">
@@ -98,14 +109,6 @@ export function SortableMenuRow({
           >
             ⋮⋮
           </button>
-          <Button
-            onClick={() => onEdit(menu)}
-            variant="secondary"
-            size="sm"
-            disabled={isSubmitting}
-          >
-            編集
-          </Button>
           {menu.link_type === 'internal' && periodsPath && (
             <Link
               href={periodsPath}
