@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AdminLayout } from '@/components/layouts';
 import { getFormResponses, type FormResponseWithStudent } from '@/lib/api/form-responses';
 import { getFormPeriods } from '@/lib/api/form-periods';
@@ -10,6 +10,7 @@ import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
+import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 
 // フォーム種別 → フォーム詳細URLパス（/forms/responses/[path]/[period]）
 const FORM_TYPE_TO_PATH: Record<string, string> = {
@@ -21,6 +22,18 @@ const FORM_TYPE_TO_PATH: Record<string, string> = {
   soudan: 'soudan',   // お客様相談
   kyozai: 'kyozai',   // 教材販売
 };
+
+type SortKey = 'created_at' | 'form_type' | 'form_period' | 'student_name' | 'grade' | 'status';
+type SortOrder = 'asc' | 'desc';
+
+function getSortIcon(currentKey: SortKey, key: SortKey, order: SortOrder) {
+  if (currentKey !== key) return <ChevronsUpDown className="h-4 w-4 inline-block ml-1 opacity-50" />;
+  return order === 'asc' ? (
+    <ChevronUp className="h-4 w-4 inline-block ml-1" />
+  ) : (
+    <ChevronDown className="h-4 w-4 inline-block ml-1" />
+  );
+}
 
 interface SummaryCardProps {
   formType: string;
@@ -76,6 +89,71 @@ export default function ResponsesPage() {
   const [filterLinkedStatus, setFilterLinkedStatus] = useState<
     'all' | 'linked' | 'unlinked'
   >('all');
+
+  // ソート
+  const [sortKey, setSortKey] = useState<SortKey>('created_at');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+
+  const handleSort = useCallback((key: SortKey) => {
+    setSortKey((prev) => {
+      if (prev === key) {
+        setSortOrder((o) => (o === 'asc' ? 'desc' : 'asc'));
+        return prev;
+      }
+      setSortOrder('asc');
+      return key;
+    });
+  }, []);
+
+  // ソート済み一覧
+  const sortedResponses = useMemo(() => {
+    const list = [...responses];
+    list.sort((a, b) => {
+      let aVal: string | number | boolean;
+      let bVal: string | number | boolean;
+      switch (sortKey) {
+        case 'created_at':
+          aVal = new Date(a.created_at).getTime();
+          bVal = new Date(b.created_at).getTime();
+          return sortOrder === 'asc' ? (aVal as number) - (bVal as number) : (bVal as number) - (aVal as number);
+        case 'form_type':
+          aVal = FORM_TYPE_LABELS[a.form_type] ?? a.form_type;
+          bVal = FORM_TYPE_LABELS[b.form_type] ?? b.form_type;
+          break;
+        case 'form_period':
+          aVal = a.form_period ?? '';
+          bVal = b.form_period ?? '';
+          break;
+        case 'student_name':
+          aVal = a.linked_student
+            ? `${a.linked_student.last_name} ${a.linked_student.first_name}`
+            : a.student_name ?? '';
+          bVal = b.linked_student
+            ? `${b.linked_student.last_name} ${b.linked_student.first_name}`
+            : b.student_name ?? '';
+          break;
+        case 'grade':
+          aVal = a.grade ?? 0;
+          bVal = b.grade ?? 0;
+          return sortOrder === 'asc'
+            ? (aVal as number) - (bVal as number)
+            : (bVal as number) - (aVal as number);
+        case 'status':
+          aVal = a.linked_student_id ? 1 : 0;
+          bVal = b.linked_student_id ? 1 : 0;
+          return sortOrder === 'asc'
+            ? (aVal as number) - (bVal as number)
+            : (bVal as number) - (aVal as number);
+        default:
+          return 0;
+      }
+      const aStr = String(aVal);
+      const bStr = String(bVal);
+      const cmp = aStr.localeCompare(bStr, 'ja');
+      return sortOrder === 'asc' ? cmp : -cmp;
+    });
+    return list;
+  }, [responses, sortKey, sortOrder]);
 
   // データ取得
   const fetchData = useCallback(async () => {
@@ -308,22 +386,64 @@ export default function ResponsesPage() {
                 <thead>
                   <tr className="bg-[#f3f4f6]">
                     <th className="border border-[#e5e7eb] px-4 py-3 text-left">
-                      日時
+                      <button
+                        type="button"
+                        onClick={() => handleSort('created_at')}
+                        className="font-medium text-[#1f2937] hover:text-[#3b82f6] flex items-center"
+                      >
+                        日時
+                        {getSortIcon(sortKey, 'created_at', sortOrder)}
+                      </button>
                     </th>
                     <th className="border border-[#e5e7eb] px-4 py-3 text-left">
-                      種別
+                      <button
+                        type="button"
+                        onClick={() => handleSort('form_type')}
+                        className="font-medium text-[#1f2937] hover:text-[#3b82f6] flex items-center"
+                      >
+                        種別
+                        {getSortIcon(sortKey, 'form_type', sortOrder)}
+                      </button>
                     </th>
                     <th className="border border-[#e5e7eb] px-4 py-3 text-left">
-                      期間
+                      <button
+                        type="button"
+                        onClick={() => handleSort('form_period')}
+                        className="font-medium text-[#1f2937] hover:text-[#3b82f6] flex items-center"
+                      >
+                        期間
+                        {getSortIcon(sortKey, 'form_period', sortOrder)}
+                      </button>
                     </th>
                     <th className="border border-[#e5e7eb] px-4 py-3 text-left">
-                      生徒名
+                      <button
+                        type="button"
+                        onClick={() => handleSort('student_name')}
+                        className="font-medium text-[#1f2937] hover:text-[#3b82f6] flex items-center"
+                      >
+                        生徒名
+                        {getSortIcon(sortKey, 'student_name', sortOrder)}
+                      </button>
                     </th>
                     <th className="border border-[#e5e7eb] px-4 py-3 text-left">
-                      学年
+                      <button
+                        type="button"
+                        onClick={() => handleSort('grade')}
+                        className="font-medium text-[#1f2937] hover:text-[#3b82f6] flex items-center"
+                      >
+                        学年
+                        {getSortIcon(sortKey, 'grade', sortOrder)}
+                      </button>
                     </th>
                     <th className="border border-[#e5e7eb] px-4 py-3 text-center">
-                      処理状態
+                      <button
+                        type="button"
+                        onClick={() => handleSort('status')}
+                        className="font-medium text-[#1f2937] hover:text-[#3b82f6] flex items-center mx-auto"
+                      >
+                        処理状態
+                        {getSortIcon(sortKey, 'status', sortOrder)}
+                      </button>
                     </th>
                     <th className="border border-[#e5e7eb] px-4 py-3 text-left">
                       操作
@@ -331,7 +451,7 @@ export default function ResponsesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {responses.map((response) => (
+                  {sortedResponses.map((response) => (
                     <tr key={response.id} className="table-row-hover">
                       <td className="border border-[#e5e7eb] px-4 py-3">
                         {formatDateTime(response.created_at)}
