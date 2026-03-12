@@ -49,7 +49,7 @@ interface SummaryRow {
 
 export default function AttendanceManagementPage() {
   const router = useRouter();
-  const { profile } = useAuth();
+  const { profile, schoolIds: userSchoolIds } = useAuth();
   const { toasts, removeToast, success, error: toastError } = useToast();
 
   const [schools, setSchools] = useState<School[]>([]);
@@ -66,6 +66,9 @@ export default function AttendanceManagementPage() {
   const [isReopenDialogOpen, setIsReopenDialogOpen] = useState(false);
   const [reopeningSheet, setReopeningSheet] = useState<SummaryRow | null>(null);
 
+  // アクセス可能な教室のみ（他教室の出勤簿を見せない）
+  const allowedSchools = schools.filter((s) => userSchoolIds.includes(s.id));
+
   // 教室一覧を取得
   useEffect(() => {
     async function fetchSchools() {
@@ -80,15 +83,23 @@ export default function AttendanceManagementPage() {
     fetchSchools();
   }, [toastError]);
 
+  // アクセス可能な教室が1つのときはその教室を初期選択
+  useEffect(() => {
+    if (allowedSchools.length === 1 && selectedSchoolId === 'all') {
+      setSelectedSchoolId(allowedSchools[0].id);
+    }
+  }, [allowedSchools, selectedSchoolId]);
+
   // 出勤簿一覧を取得（getAttendanceSummary で統合データ取得）
   useEffect(() => {
     async function fetchData() {
       setIsLoading(true);
       try {
         const schoolId = selectedSchoolId === 'all' ? null : selectedSchoolId;
+        const allowedIds = schoolId ? undefined : (userSchoolIds.length > 0 ? userSchoolIds : undefined);
         const [typesData, summaryResult] = await Promise.all([
-          getAllAttendanceTypes(schoolId ? [schoolId] : undefined),
-          getAttendanceSummary(schoolId, yearMonth),
+          getAllAttendanceTypes(schoolId ? [schoolId] : (userSchoolIds.length > 0 ? userSchoolIds : undefined)),
+          getAttendanceSummary(schoolId, yearMonth, allowedIds),
         ]);
         setAttendanceTypes(typesData);
         setSheets(summaryResult);
@@ -101,16 +112,16 @@ export default function AttendanceManagementPage() {
       }
     }
     fetchData();
-  }, [selectedSchoolId, yearMonth, toastError]);
+  }, [selectedSchoolId, yearMonth, toastError, userSchoolIds]);
 
   // 教室変更時（selectedSchoolの更新）
   useEffect(() => {
     if (selectedSchoolId === 'all') {
       setSelectedSchool(null);
     } else {
-      setSelectedSchool(schools.find((s) => s.id === selectedSchoolId) || null);
+      setSelectedSchool(allowedSchools.find((s) => s.id === selectedSchoolId) || null);
     }
-  }, [selectedSchoolId, schools]);
+  }, [selectedSchoolId, allowedSchools]);
 
   const handleSchoolChange = (schoolId: string) => {
     setSelectedSchoolId(schoolId);
@@ -141,9 +152,10 @@ export default function AttendanceManagementPage() {
 
   const refetchData = async () => {
     const schoolId = selectedSchoolId === 'all' ? null : selectedSchoolId;
+    const allowedIds = schoolId ? undefined : (userSchoolIds.length > 0 ? userSchoolIds : undefined);
     const [typesData, summaryResult] = await Promise.all([
-      getAllAttendanceTypes(schoolId ? [schoolId] : undefined),
-      getAttendanceSummary(schoolId, yearMonth),
+      getAllAttendanceTypes(schoolId ? [schoolId] : (userSchoolIds.length > 0 ? userSchoolIds : undefined)),
+      getAttendanceSummary(schoolId, yearMonth, allowedIds),
     ]);
     setAttendanceTypes(typesData);
     setSheets(summaryResult);
@@ -329,12 +341,14 @@ export default function AttendanceManagementPage() {
                   <Select value={selectedSchoolId} onValueChange={handleSchoolChange}>
                     <SelectTrigger>
                       <SelectValue placeholder="教室を選択">
-                        {selectedSchoolId === 'all' ? '全教室' : schools.find((s) => s.id === selectedSchoolId)?.name}
+                        {selectedSchoolId === 'all' ? '全教室' : allowedSchools.find((s) => s.id === selectedSchoolId)?.name}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">全教室</SelectItem>
-                      {schools.map((school) => (
+                      {allowedSchools.length > 1 && (
+                        <SelectItem value="all">全教室</SelectItem>
+                      )}
+                      {allowedSchools.map((school) => (
                         <SelectItem key={school.id} value={school.id}>
                           {school.name}
                         </SelectItem>

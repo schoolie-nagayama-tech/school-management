@@ -638,9 +638,11 @@ export async function reopenAttendanceSheet(sheetId: string) {
 // ========================================
 
 // 月次集計データを取得
+// schoolId が null のときは allowedSchoolIds で絞る（未指定なら全件＝管理者用）
 export async function getAttendanceSummary(
   schoolId: string | null,
-  yearMonth: string
+  yearMonth: string,
+  allowedSchoolIds?: string[]
 ) {
   let query = supabase
     .from('attendance_sheets')
@@ -649,6 +651,11 @@ export async function getAttendanceSummary(
 
   if (schoolId) {
     query = query.eq('school_id', schoolId);
+  } else if (allowedSchoolIds && allowedSchoolIds.length > 0) {
+    query = query.in('school_id', allowedSchoolIds);
+  } else if (!schoolId) {
+    // 全教室指定だが allowedSchoolIds が空 → 権限なしのため0件
+    query = query.eq('school_id', '00000000-0000-0000-0000-000000000000');
   }
 
   const { data: sheetsData, error: sheetsError } = await query;
