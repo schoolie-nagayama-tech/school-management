@@ -81,6 +81,15 @@ export function usePrivacyScreenSettings(): PrivacyScreenSettings {
     fetchSettings();
   }, [authLoading, user, profile, fetchSettings]);
 
+  // セキュリティ設定画面で保存されたときに再取得して反映する
+  useEffect(() => {
+    const onSettingsUpdated = () => {
+      fetchSettings();
+    };
+    window.addEventListener('system-settings-updated', onSettingsUpdated);
+    return () => window.removeEventListener('system-settings-updated', onSettingsUpdated);
+  }, [fetchSettings]);
+
   const isLoading = authLoading || isFetching;
 
   return { timeoutByRole, isLoading };

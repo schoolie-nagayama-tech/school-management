@@ -124,6 +124,10 @@ export default function SecuritySettingsPage() {
 
       success('セキュリティ設定を保存しました');
       await fetchSettings();
+      // プライバシースクリーンなど他コンポーネントに設定更新を通知
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('system-settings-updated'));
+      }
     } catch (err) {
       console.error('Error saving security settings:', err);
       toastError('保存に失敗しました');
