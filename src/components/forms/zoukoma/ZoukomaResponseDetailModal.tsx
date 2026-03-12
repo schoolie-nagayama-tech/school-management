@@ -105,15 +105,32 @@ export function ZoukomaResponseDetailModal({
         {response_data.selected_slots && response_data.selected_slots.length > 0 && (
           <div>
             <label className="block text-sm font-medium text-[#1f2937] mb-2">
-              希望日程
+              希望日程（{response_data.selected_slots.length}件）
             </label>
-            <div className="space-y-1">
-              {response_data.selected_slots.map((slot) => (
-                <div key={slot.id} className="p-2 bg-[#f9fafb] rounded text-sm text-[#4b5563]">
-                  {slot.label}
-                </div>
-              ))}
-            </div>
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="bg-[#f3f4f6]">
+                  <th className="border border-[#e5e7eb] px-3 py-2 text-center font-medium text-[#4b5563] w-10">
+                    #
+                  </th>
+                  <th className="border border-[#e5e7eb] px-3 py-2 text-left font-medium text-[#4b5563]">
+                    日程
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {response_data.selected_slots.map((slot, index) => (
+                  <tr key={slot.id} className={index % 2 === 0 ? 'bg-white' : 'bg-[#f9fafb]'}>
+                    <td className="border border-[#e5e7eb] px-3 py-2 text-center text-[#6b7280]">
+                      {index + 1}
+                    </td>
+                    <td className="border border-[#e5e7eb] px-3 py-2 text-[#4b5563]">
+                      {slot.label}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
 
