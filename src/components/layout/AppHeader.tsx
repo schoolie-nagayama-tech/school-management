@@ -25,7 +25,10 @@ export function AppHeader({ title: _title, onSettingsClick, onBulkGradeUpdateCli
     setShowSchoolDropdown(false);
     router.refresh();
   };
+  // schools: ユーザーが担当する全教室（表示名解決に使用）
   const [schools, setSchools] = useState<School[]>([]);
+  // displaySchools: ドロップダウンに表示する教室（デモ教室を除外）
+  const [displaySchools, setDisplaySchools] = useState<School[]>([]);
   const [showSchoolDropdown, setShowSchoolDropdown] = useState(false);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const [bulletinUnreadCount, setBulletinUnreadCount] = useState(0);
@@ -37,16 +40,12 @@ export function AppHeader({ title: _title, onSettingsClick, onBulkGradeUpdateCli
     const fetchSchools = async () => {
       try {
         const allSchools = await getSchools();
-        // ユーザーが担当している教室のみをフィルタし、デモ教室は非表示にする
-        const userSchools = allSchools.filter(school =>
-          schoolIds.includes(school.id) && !school.is_demo
-        );
-        // 非デモ教室が0件の場合はデモ教室も表示（初期セットアップ時のフォールバック）
-        if (userSchools.length === 0) {
-          setSchools(allSchools.filter(school => schoolIds.includes(school.id)));
-        } else {
-          setSchools(userSchools);
-        }
+        const userSchools = allSchools.filter(school => schoolIds.includes(school.id));
+        setSchools(userSchools);
+
+        // ドロップダウン用: デモ教室を除外。全部デモの場合はフォールバックで全件表示
+        const nonDemo = userSchools.filter(school => !school.is_demo);
+        setDisplaySchools(nonDemo.length > 0 ? nonDemo : userSchools);
       } catch (error) {
         console.error('Error fetching schools:', error);
         // エラーが発生してもアプリは動作し続ける
@@ -402,7 +401,7 @@ export function AppHeader({ title: _title, onSettingsClick, onBulkGradeUpdateCli
             </nav>
           </div>
           <div className="flex items-center gap-3">
-            {schools.length > 1 && schoolDisplayName && (
+            {displaySchools.length > 1 && schoolDisplayName && (
               <div className="relative school-dropdown-container">
                 <button
                   onClick={(e) => {
@@ -422,7 +421,7 @@ export function AppHeader({ title: _title, onSettingsClick, onBulkGradeUpdateCli
                   </svg>
                 </button>
                 {showSchoolDropdown && (
-                  <div 
+                  <div
                     className="absolute right-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-xl ring-1 ring-black/5 z-50 min-w-[200px]"
                     onClick={(e) => e.stopPropagation()}
                   >
@@ -438,7 +437,7 @@ export function AppHeader({ title: _title, onSettingsClick, onBulkGradeUpdateCli
                       >
                         すべての教室
                       </button>
-                      {schools.map(school => (
+                      {displaySchools.map(school => (
                         <button
                           key={school.id}
                           onClick={(e) => {
@@ -457,7 +456,7 @@ export function AppHeader({ title: _title, onSettingsClick, onBulkGradeUpdateCli
                 )}
               </div>
             )}
-            {schools.length === 1 && schoolDisplayName && (
+            {displaySchools.length === 1 && schoolDisplayName && (
               <div className="text-xs font-medium text-gray-700 px-3 py-1.5 bg-gray-100 rounded-lg">
                 {schoolDisplayName}
               </div>
