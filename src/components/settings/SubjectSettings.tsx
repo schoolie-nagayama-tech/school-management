@@ -194,8 +194,13 @@ export function SubjectSettings({ isOpen, onClose }: SubjectSettingsProps) {
                     key={subject.id}
                     className="flex items-center gap-3 p-3 bg-[#f3f4f6] rounded-lg hover:bg-white transition-colors border border-[#e5e7eb]"
                   >
-                    <div className="flex-1">
+                    <div className="flex-1 flex items-center gap-2">
                       <p className="text-sm font-medium text-[#1f2937]">{subject.name}</p>
+                      {subject.duration_minutes === 45 && (
+                        <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs rounded font-medium">
+                          45分
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center gap-1">
                       <button
@@ -343,12 +348,14 @@ function SubjectEditModal({
   onSuccess,
 }: SubjectEditModalProps) {
   const [name, setName] = useState('');
+  const [durationMinutes, setDurationMinutes] = useState<45 | 90>(90);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (isOpen) {
       setName(subject?.name || '');
+      setDurationMinutes((subject?.duration_minutes as 45 | 90) ?? 90);
       setError('');
     }
   }, [isOpen, subject]);
@@ -366,7 +373,7 @@ function SubjectEditModal({
     try {
       if (subject) {
         // 更新
-        await updateSubject(subject.id, { name: name.trim() });
+        await updateSubject(subject.id, { name: name.trim(), duration_minutes: durationMinutes });
       } else {
         // 新規作成
         const currentSubjects = await getSubjects(gradeCategory);
@@ -374,6 +381,7 @@ function SubjectEditModal({
           name: name.trim(),
           grade_category: gradeCategory,
           sort_order: currentSubjects.length,
+          duration_minutes: durationMinutes,
         };
         await createSubject(newSubject);
       }
@@ -412,6 +420,40 @@ function SubjectEditModal({
           required
           autoFocus
         />
+
+        {/* 授業時間 */}
+        <div>
+          <label className="block text-sm font-medium text-[#1f2937] mb-2">授業時間</label>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setDurationMinutes(90)}
+              className={`flex-1 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                durationMinutes === 90
+                  ? 'bg-[#1e3a5f] text-white border-[#1e3a5f]'
+                  : 'bg-white text-[#4b5563] border-[#e5e7eb] hover:border-[#1e3a5f]'
+              }`}
+            >
+              90分
+            </button>
+            <button
+              type="button"
+              onClick={() => setDurationMinutes(45)}
+              className={`flex-1 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                durationMinutes === 45
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white text-[#4b5563] border-[#e5e7eb] hover:border-blue-600'
+              }`}
+            >
+              45分
+            </button>
+          </div>
+          <p className="text-xs text-[#6b7280] mt-1">
+            {durationMinutes === 45
+              ? '主に小4以下の授業で使用します'
+              : '通常の90分授業です'}
+          </p>
+        </div>
 
         <div className="flex justify-end gap-3 pt-4 border-t border-[#e5e7eb]">
           <Button type="button" variant="secondary" onClick={onClose}>

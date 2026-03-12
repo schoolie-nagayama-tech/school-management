@@ -31,6 +31,25 @@ export const SHUKAISU_GRADE_NUMBER_TO_NAME: Record<number, string> = {
   12: '高3',
 };
 
+// 科目設定（名前＋授業時間）
+export interface AvailableSubject {
+  name: string;
+  duration_minutes: number;
+}
+
+// available_subjects の要素型（後方互換のため string も許容）
+export type AvailableSubjectEntry = string | AvailableSubject;
+
+/** settings.available_subjects から科目名を取得するヘルパー */
+export function getSubjectName(entry: AvailableSubjectEntry): string {
+  return typeof entry === 'string' ? entry : entry.name;
+}
+
+/** settings.available_subjects から授業時間を取得するヘルパー */
+export function getSubjectDuration(entry: AvailableSubjectEntry): number {
+  return typeof entry === 'string' ? 90 : entry.duration_minutes;
+}
+
 // 週回数変更設定
 export interface ShukaisuSettings {
   description: string;
@@ -39,7 +58,7 @@ export interface ShukaisuSettings {
     code: string;
     label: string;
   }>;
-  available_subjects: string[];
+  available_subjects: AvailableSubjectEntry[];
   weekly_options: number[];
   completion_message: string;
 }
@@ -50,6 +69,7 @@ export interface ShukaisuSlot {
   period: string;
   period_label: string;
   subject: string;
+  duration_minutes?: number;
 }
 
 // 週回数変更回答データ

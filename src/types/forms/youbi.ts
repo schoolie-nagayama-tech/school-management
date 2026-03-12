@@ -31,6 +31,19 @@ export const YOUBI_GRADE_NUMBER_TO_NAME: Record<number, string> = {
   12: '高3',
 };
 
+// 科目設定（名前＋授業時間）— shukaisu と共通形式
+export type YoubiAvailableSubjectEntry = string | { name: string; duration_minutes: number };
+
+/** settings.available_subjects から科目名を取得するヘルパー */
+export function getYoubiSubjectName(entry: YoubiAvailableSubjectEntry): string {
+  return typeof entry === 'string' ? entry : entry.name;
+}
+
+/** settings.available_subjects から授業時間を取得するヘルパー */
+export function getYoubiSubjectDuration(entry: YoubiAvailableSubjectEntry): number {
+  return typeof entry === 'string' ? 90 : entry.duration_minutes;
+}
+
 // 曜日変更設定
 export interface YoubiSettings {
   description: string;
@@ -39,7 +52,7 @@ export interface YoubiSettings {
     code: string;
     label: string;
   }>;
-  available_subjects: string[];
+  available_subjects: YoubiAvailableSubjectEntry[];
   completion_message: string;
 }
 
@@ -49,6 +62,7 @@ export interface YoubiSlot {
   period: string;
   period_label: string;
   subject: string;
+  duration_minutes?: number;
 }
 
 // 曜日変更回答データ

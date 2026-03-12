@@ -73,6 +73,7 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
 
   // 学年に応じた科目オプション（共通科目を小学/中学/高校で自動参照）
   const [subjectOptionsForGrade, setSubjectOptionsForGrade] = useState<Array<{ value: string; label: string }>>([]);
+  const [subjectDurationMap, setSubjectDurationMap] = useState<Record<string, number>>({});
   const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
 
   // バリデーションエラー
@@ -86,15 +87,22 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
     const category = gradeToCategory(selectedGrade);
     if (!category) {
       setSubjectOptionsForGrade([]);
+      setSubjectDurationMap({});
       return;
     }
     setIsLoadingSubjects(true);
     getSubjects(category)
       .then((subjects) => {
         const options = subjects.map((s) => ({ value: s.name, label: s.name }));
+        const dMap: Record<string, number> = {};
+        subjects.forEach((s) => { dMap[s.name] = s.duration_minutes ?? 90; });
         setSubjectOptionsForGrade(options);
+        setSubjectDurationMap(dMap);
       })
-      .catch(() => setSubjectOptionsForGrade([]))
+      .catch(() => {
+        setSubjectOptionsForGrade([]);
+        setSubjectDurationMap({});
+      })
       .finally(() => setIsLoadingSubjects(false));
   }, [selectedGrade]);
 
@@ -140,6 +148,10 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
     // periodが変更されたらperiod_labelも更新
     if (field === 'period') {
       updated.period_label = getPeriodLabel(value);
+    }
+    // subjectが変更されたらduration_minutesも更新
+    if (field === 'subject') {
+      updated.duration_minutes = subjectDurationMap[value] ?? 90;
     }
     setSlot(updated);
   };
@@ -336,6 +348,11 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
             ]}
             className="text-sm"
           />
+          {slot.subject && slot.duration_minutes === 45 && (
+            <span className="mt-1 inline-block text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium">
+              45分授業
+            </span>
+          )}
         </div>
       </div>
     </div>

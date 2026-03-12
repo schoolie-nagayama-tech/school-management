@@ -62,6 +62,7 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
 
   // 学年に応じた科目オプション（共通科目を小学/中学/高校でフィルタ）
   const [subjectOptionsForGrade, setSubjectOptionsForGrade] = useState<Array<{ value: string; label: string }>>([]);
+  const [subjectDurationMap, setSubjectDurationMap] = useState<Record<string, number>>({});
   const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
 
   // バリデーションエラー
@@ -75,15 +76,22 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
     const category = gradeToCategory(selectedGrade);
     if (!category) {
       setSubjectOptionsForGrade([]);
+      setSubjectDurationMap({});
       return;
     }
     setIsLoadingSubjects(true);
     getSubjects(category)
       .then((subjects) => {
         const options = subjects.map((s) => ({ value: s.name, label: s.name }));
+        const dMap: Record<string, number> = {};
+        subjects.forEach((s) => { dMap[s.name] = s.duration_minutes ?? 90; });
         setSubjectOptionsForGrade(options);
+        setSubjectDurationMap(dMap);
       })
-      .catch(() => setSubjectOptionsForGrade([]))
+      .catch(() => {
+        setSubjectOptionsForGrade([]);
+        setSubjectDurationMap({});
+      })
       .finally(() => setIsLoadingSubjects(false));
   }, [selectedGrade]);
 
@@ -132,6 +140,10 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
           if (field === 'period') {
             updated.period_label = getPeriodLabel(value);
           }
+          // subjectが変更されたらduration_minutesも更新
+          if (field === 'subject') {
+            updated.duration_minutes = subjectDurationMap[value] ?? 90;
+          }
           return updated;
         }
         return s;
@@ -147,6 +159,10 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
           // periodが変更されたらperiod_labelも更新
           if (field === 'period') {
             updated.period_label = getPeriodLabel(value);
+          }
+          // subjectが変更されたらduration_minutesも更新
+          if (field === 'subject') {
+            updated.duration_minutes = subjectDurationMap[value] ?? 90;
           }
           return updated;
         }
@@ -331,15 +347,22 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
               ]}
               className="text-sm"
             />
-            <Select
-              value={slot.subject}
-              onChange={(e) => updateFn(index, 'subject', e.target.value)}
-              options={[
-                { value: '', label: selectedGrade ? (isLoadingSubjects ? '読み込み中...' : '科目') : '学年を選んでください' },
-                ...subjectOptionsForGrade,
-              ]}
-              className="text-sm"
-            />
+            <div>
+              <Select
+                value={slot.subject}
+                onChange={(e) => updateFn(index, 'subject', e.target.value)}
+                options={[
+                  { value: '', label: selectedGrade ? (isLoadingSubjects ? '読み込み中...' : '科目') : '学年を選んでください' },
+                  ...subjectOptionsForGrade,
+                ]}
+                className="text-sm"
+              />
+              {slot.subject && slot.duration_minutes === 45 && (
+                <span className="mt-1 inline-block text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium">
+                  45分授業
+                </span>
+              )}
+            </div>
           </div>
         </div>
       ))}

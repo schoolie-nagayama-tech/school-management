@@ -30,6 +30,27 @@ const FORM_TYPE_COLORS: Record<string, { bg: string; text: string }> = {
   kyozai:   { bg: 'bg-gray-100',   text: 'text-gray-700'   },
 };
 
+// 教室名表示用の色（教室ごとに固定で割り当て）
+const SCHOOL_LABEL_COLORS = [
+  { bg: 'bg-sky-100',   text: 'text-sky-800' },
+  { bg: 'bg-emerald-100', text: 'text-emerald-800' },
+  { bg: 'bg-violet-100', text: 'text-violet-800' },
+  { bg: 'bg-amber-100',  text: 'text-amber-800' },
+  { bg: 'bg-rose-100',   text: 'text-rose-800' },
+  { bg: 'bg-indigo-100', text: 'text-indigo-800' },
+  { bg: 'bg-teal-100',   text: 'text-teal-800' },
+  { bg: 'bg-fuchsia-100', text: 'text-fuchsia-800' },
+] as const;
+
+function getSchoolColor(schoolId: string): { bg: string; text: string } {
+  let n = 0;
+  for (let i = 0; i < schoolId.length; i++) {
+    n = (n * 31 + schoolId.charCodeAt(i)) >>> 0;
+  }
+  const index = n % SCHOOL_LABEL_COLORS.length;
+  return SCHOOL_LABEL_COLORS[index];
+}
+
 function formatDateTime(date: string): string {
   const d = new Date(date);
   return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -159,7 +180,6 @@ export function NewResponsesBoard({ className = '' }: NewResponsesBoardProps) {
       {/* ヘッダー */}
       <div className="flex items-center justify-between p-4 bg-[#fff8e1] border-b border-[#ffe082]">
         <div className="flex items-center gap-2">
-          <span className="text-lg">📋</span>
           <span className="font-bold text-[#1a1a1a]">新着の申し込み（{visibleResponses.length}件）</span>
           <span className="text-xs text-gray-500 ml-1">直近7日・未処理</span>
         </div>
@@ -198,6 +218,7 @@ export function NewResponsesBoard({ className = '' }: NewResponsesBoardProps) {
             const gradeLabel = GRADE_LABELS[response.grade] ?? `学年${response.grade}`;
             const color = FORM_TYPE_COLORS[response.form_type] ?? { bg: 'bg-gray-100', text: 'text-gray-700' };
             const schoolName = schoolNames[response.school_id];
+            const schoolColor = response.school_id ? getSchoolColor(response.school_id) : null;
             return (
               <div
                 key={response.id}
@@ -214,9 +235,9 @@ export function NewResponsesBoard({ className = '' }: NewResponsesBoardProps) {
                 <Link href={href} className="flex items-center gap-2 flex-1 min-w-0 hover:underline">
                   <span className="text-sm text-[#1a1a1a] truncate">{response.student_name}</span>
                   <span className="text-xs text-gray-500 whitespace-nowrap shrink-0">{gradeLabel}</span>
-                  {schoolName && (
-                    <span className="text-xs text-gray-400 whitespace-nowrap shrink-0">
-                      [{schoolName}]
+                  {schoolName && schoolColor && (
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap shrink-0 ${schoolColor.bg} ${schoolColor.text}`}>
+                      {schoolName}
                     </span>
                   )}
                 </Link>

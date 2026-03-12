@@ -145,6 +145,7 @@ export type Database = {
           name: string;
           grade_category: 'elementary' | 'middle' | 'high';
           sort_order: number;
+          duration_minutes: number;
           created_at: string;
         };
         Insert: {
@@ -152,6 +153,7 @@ export type Database = {
           name: string;
           grade_category: 'elementary' | 'middle' | 'high';
           sort_order?: number;
+          duration_minutes?: number;
           created_at?: string;
         };
         Update: {
@@ -159,6 +161,7 @@ export type Database = {
           name?: string;
           grade_category?: 'elementary' | 'middle' | 'high';
           sort_order?: number;
+          duration_minutes?: number;
           created_at?: string;
         };
         Relationships: [];

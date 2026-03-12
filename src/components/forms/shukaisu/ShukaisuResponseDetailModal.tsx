@@ -26,9 +26,14 @@ export function ShukaisuResponseDetailModal({
       <div className="space-y-2">
         {slots.map((slot, index) => (
           <div key={index} className="p-2 bg-gray-50 rounded text-sm">
-            <p className="text-[#4b5563]">
-              {index + 1}コマ目: {slot.day} {slot.period_label} {slot.subject}
-            </p>
+            <div className="flex items-center gap-2 text-[#4b5563]">
+              <span>{index + 1}コマ目: {slot.day} {slot.period_label} {slot.subject}</span>
+              {slot.duration_minutes === 45 && (
+                <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs rounded font-medium shrink-0">
+                  45分
+                </span>
+              )}
+            </div>
           </div>
         ))}
       </div>
