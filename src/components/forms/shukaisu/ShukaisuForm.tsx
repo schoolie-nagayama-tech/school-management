@@ -82,11 +82,20 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
     setIsLoadingSubjects(true);
     getSubjects(category)
       .then((subjects) => {
-        const options = subjects.map((s) => ({ value: s.name, label: s.name }));
         const dMap: Record<string, number> = {};
         subjects.forEach((s) => { dMap[s.name] = s.duration_minutes ?? 90; });
-        setSubjectOptionsForGrade(options);
         setSubjectDurationMap(dMap);
+        // 小5以上（学年番号5以上）は45分科目を非表示
+        const gradeNum = SHUKAISU_GRADE_NAME_TO_NUMBER[selectedGrade] ?? 0;
+        const isGrade5Plus = gradeNum >= 5;
+        const displaySubjects = isGrade5Plus
+          ? subjects.filter(s => (s.duration_minutes ?? 90) !== 45)
+          : subjects;
+        const options = displaySubjects.map(s => ({
+          value: s.name,
+          label: (s.duration_minutes ?? 90) === 45 ? `${s.name}（45分）` : s.name,
+        }));
+        setSubjectOptionsForGrade(options);
       })
       .catch(() => {
         setSubjectOptionsForGrade([]);
