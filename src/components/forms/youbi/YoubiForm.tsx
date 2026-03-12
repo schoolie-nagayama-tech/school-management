@@ -87,7 +87,6 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
     const category = gradeToCategory(selectedGrade);
     if (!category) {
       setSubjectOptionsForGrade([]);
-      setSubjectDurationMap({});
       return;
     }
     setIsLoadingSubjects(true);

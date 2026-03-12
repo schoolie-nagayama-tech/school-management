@@ -76,7 +76,6 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
     const category = gradeToCategory(selectedGrade);
     if (!category) {
       setSubjectOptionsForGrade([]);
-      setSubjectDurationMap({});
       return;
     }
     setIsLoadingSubjects(true);
