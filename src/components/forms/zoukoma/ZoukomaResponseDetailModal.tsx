@@ -39,9 +39,7 @@ export function ZoukomaResponseDetailModal({
             生徒名
           </label>
           <p className="text-sm text-[#4b5563]">
-            {response.linked_student
-              ? `${(response.linked_student as { last_name: string; first_name: string }).last_name} ${(response.linked_student as { last_name: string; first_name: string }).first_name}`
-              : response.student_name}
+            {response.student_name}
           </p>
         </div>
 
