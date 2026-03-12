@@ -96,6 +96,8 @@ export default function UsersPage() {
   const [schoolCode, setSchoolCode] = useState('');
   const [notificationEmail, setNotificationEmail] = useState('');
   const [isSavingSchool, setIsSavingSchool] = useState(false);
+  const [schoolToDelete, setSchoolToDelete] = useState<School | null>(null);
+  const [isDeletingSchool, setIsDeletingSchool] = useState(false);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -418,16 +420,25 @@ export default function UsersPage() {
     }
   };
 
-  // 教室削除
-  const handleDeleteSchool = async (id: string) => {
-    if (!confirm('この教室を削除しますか？関連するデータも削除される可能性があります。')) return;
+  // 教室削除（確認ポップアップを開く）
+  const openDeleteSchoolDialog = (school: School) => {
+    setSchoolToDelete(school);
+  };
+
+  // 教室削除の実行
+  const handleConfirmDeleteSchool = async () => {
+    if (!schoolToDelete) return;
+    setIsDeletingSchool(true);
     try {
-      await deleteSchool(id);
+      await deleteSchool(schoolToDelete.id);
       await loadData();
+      setSchoolToDelete(null);
       success('教室を削除しました');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error deleting school:', err);
-      toastError(err.message || '教室の削除に失敗しました');
+      toastError(err instanceof Error ? err.message : '教室の削除に失敗しました');
+    } finally {
+      setIsDeletingSchool(false);
     }
   };
 
@@ -720,7 +731,7 @@ export default function UsersPage() {
                             {school.code !== 'DEFAULT' && (
                               <Button
                                 variant="ghost"
-                                onClick={() => handleDeleteSchool(school.id)}
+                                onClick={() => openDeleteSchoolDialog(school)}
                                 className="p-2 text-[#ef4444] hover:text-[#ef4444]"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -947,6 +958,31 @@ export default function UsersPage() {
                 className="bg-[#ef4444] text-white hover:bg-[#dc2626]"
               >
                 {isDeleting ? '削除中...' : '削除'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* 教室削除確認 */}
+        <AlertDialog open={!!schoolToDelete} onOpenChange={(open) => !open && setSchoolToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>教室を削除しますか？</AlertDialogTitle>
+              <AlertDialogDescription>
+                「{schoolToDelete?.name}」を削除します。この操作は取り消せません。
+                生徒・フォーム回答・申込などが紐づいている場合は削除できません。空の教室のみ削除可能です。
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setSchoolToDelete(null)}>
+                キャンセル
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleConfirmDeleteSchool}
+                disabled={isDeletingSchool}
+                className="bg-[#ef4444] text-white hover:bg-[#dc2626]"
+              >
+                {isDeletingSchool ? '削除中...' : '削除する'}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
