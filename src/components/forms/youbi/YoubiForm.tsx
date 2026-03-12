@@ -72,8 +72,8 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
   const [note, setNote] = useState('');
 
   // 学年に応じた科目オプション（共通科目を小学/中学/高校で自動参照）
+  // value は "科目名|||duration" 形式（同名科目の誤判定防止）
   const [subjectOptionsForGrade, setSubjectOptionsForGrade] = useState<Array<{ value: string; label: string }>>([]);
-  const [subjectDurationMap, setSubjectDurationMap] = useState<Record<string, number>>({});
   const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
 
   // バリデーションエラー
@@ -93,24 +93,24 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
     setIsLoadingSubjects(true);
     getSubjects(category)
       .then((subjects) => {
-        const dMap: Record<string, number> = {};
-        subjects.forEach((s) => { dMap[s.name] = s.duration_minutes ?? 90; });
-        setSubjectDurationMap(dMap);
         // 小5以上（学年番号5以上）は45分科目を非表示
         const gradeNum = YOUBI_GRADE_NAME_TO_NUMBER[selectedGrade] ?? 0;
         const isGrade5Plus = gradeNum >= 5;
         const displaySubjects = isGrade5Plus
           ? subjects.filter(s => (s.duration_minutes ?? 90) !== 45)
           : subjects;
-        const options = displaySubjects.map(s => ({
-          value: s.name,
-          label: (s.duration_minutes ?? 90) === 45 ? `${s.name}（45分）` : s.name,
-        }));
+        // value に duration を埋め込む → 同名科目が複数あっても正しいdurationを保持
+        const options = displaySubjects.map(s => {
+          const dur = s.duration_minutes ?? 90;
+          return {
+            value: `${s.name}|||${dur}`,
+            label: dur === 45 ? `${s.name}（45分）` : s.name,
+          };
+        });
         setSubjectOptionsForGrade(options);
       })
       .catch(() => {
         setSubjectOptionsForGrade([]);
-        setSubjectDurationMap({});
       })
       .finally(() => setIsLoadingSubjects(false));
   }, [selectedGrade]);
@@ -146,6 +146,18 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
     return `${month}月${day}日（${dow}）〜`;
   };
 
+  // "科目名|||duration" 形式のoption valueをパースするヘルパー
+  const parseSubjectOptionValue = (encoded: string): { name: string; duration: number } => {
+    const sepIdx = encoded.lastIndexOf('|||');
+    if (sepIdx !== -1) {
+      return {
+        name: encoded.slice(0, sepIdx),
+        duration: parseInt(encoded.slice(sepIdx + 3)) || 90,
+      };
+    }
+    return { name: encoded, duration: 90 };
+  };
+
   // スロットの更新
   const updateSlot = (
     slot: YoubiSlot,
@@ -158,9 +170,11 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
     if (field === 'period') {
       updated.period_label = getPeriodLabel(value);
     }
-    // subjectが変更されたらduration_minutesも更新
+    // subjectが変更されたら "名前|||duration" をパースして分離
     if (field === 'subject') {
-      updated.duration_minutes = subjectDurationMap[value] ?? 90;
+      const { name, duration } = parseSubjectOptionValue(value);
+      updated.subject = name;
+      updated.duration_minutes = name ? duration : undefined;
     }
     setSlot(updated);
   };
@@ -349,7 +363,7 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
         <div>
           <label className="block text-xs text-[#4b5563]/60 mb-1">科目</label>
           <Select
-            value={slot.subject}
+            value={slot.subject ? `${slot.subject}|||${slot.duration_minutes ?? 90}` : ''}
             onChange={(e) => updateSlot(slot, setSlot, 'subject', e.target.value)}
             options={[
               { value: '', label: selectedGrade ? (isLoadingSubjects ? '読み込み中...' : '科目') : '学年を選んでください' },
