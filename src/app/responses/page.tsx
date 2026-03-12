@@ -471,7 +471,29 @@ export default function ResponsesPage() {
                         {GRADE_LABELS[response.grade] || response.grade}
                       </td>
                       <td className="border border-[#e5e7eb] px-4 py-3 text-center">
-                        {response.linked_student_id ? (
+                        {response.form_type === 'moshi' ? (
+                          <span className="inline-flex flex-wrap items-center gap-1">
+                            {response.linked_student_id ? (
+                              <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">
+                                紐付け済み
+                              </span>
+                            ) : (
+                              <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-medium">
+                                未処理
+                              </span>
+                            )}
+                            {(response.status_checks as Record<string, boolean> | undefined)?.charged && (
+                              <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
+                                計上済み
+                              </span>
+                            )}
+                            {(response.status_checks as Record<string, boolean> | undefined)?.order && (
+                              <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-medium">
+                                発注済み
+                              </span>
+                            )}
+                          </span>
+                        ) : response.linked_student_id ? (
                           <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">
                             紐付け済み
                           </span>

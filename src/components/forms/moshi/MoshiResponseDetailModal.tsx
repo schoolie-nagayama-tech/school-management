@@ -8,12 +8,17 @@ interface MoshiResponseDetailModalProps {
   isOpen: boolean;
   response: MoshiResponse;
   onClose: () => void;
+  /** 計上・発注を変更したときに一覧と連動するためのコールバック（省略時は表示のみ） */
+  onChargedChange?: (responseId: string, charged: boolean) => void;
+  onOrderChange?: (responseId: string, order: boolean) => void;
 }
 
 export function MoshiResponseDetailModal({
   isOpen,
   response,
   onClose,
+  onChargedChange,
+  onOrderChange,
 }: MoshiResponseDetailModalProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -123,17 +128,45 @@ export function MoshiResponseDetailModal({
             <label className="block text-sm font-medium text-[#1f2937] mb-1">
               計上
             </label>
-            <p className="text-sm text-[#4b5563]">
-              {response.status_checks?.charged ? '計上済み' : '未計上'}
-            </p>
+            {onChargedChange ? (
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={response.status_checks?.charged || false}
+                  onChange={(e) => onChargedChange(response.id, e.target.checked)}
+                  className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded"
+                />
+                <span className="text-sm text-[#4b5563]">
+                  {response.status_checks?.charged ? '計上済み' : '未計上'}
+                </span>
+              </label>
+            ) : (
+              <p className="text-sm text-[#4b5563]">
+                {response.status_checks?.charged ? '計上済み' : '未計上'}
+              </p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-[#1f2937] mb-1">
               発注
             </label>
-            <p className="text-sm text-[#4b5563]">
-              {response.status_checks?.order ? '発注済み' : '未発注'}
-            </p>
+            {onOrderChange ? (
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={response.status_checks?.order || false}
+                  onChange={(e) => onOrderChange(response.id, e.target.checked)}
+                  className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded"
+                />
+                <span className="text-sm text-[#4b5563]">
+                  {response.status_checks?.order ? '発注済み' : '未発注'}
+                </span>
+              </label>
+            ) : (
+              <p className="text-sm text-[#4b5563]">
+                {response.status_checks?.order ? '発注済み' : '未発注'}
+              </p>
+            )}
           </div>
         </div>
       </div>

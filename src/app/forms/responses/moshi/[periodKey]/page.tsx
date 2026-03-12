@@ -657,12 +657,14 @@ export default function MoshiResponsePage() {
         />
       )}
 
-      {/* 回答詳細モーダル */}
+      {/* 回答詳細モーダル（一覧の最新状態を参照して計上・発注と連動） */}
       {detailResponse && (
         <MoshiResponseDetailModal
           isOpen={!!detailResponse}
-          response={detailResponse}
+          response={responses.find((r) => r.id === detailResponse.id) ?? detailResponse}
           onClose={() => setDetailResponse(null)}
+          onChargedChange={handleChargedToggle}
+          onOrderChange={handleOrderToggle}
         />
       )}
       </AdminLayout>
