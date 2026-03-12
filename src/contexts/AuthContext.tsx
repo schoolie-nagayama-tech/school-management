@@ -14,12 +14,13 @@ interface AuthContextType {
   profile: UserProfile | null;
   permissions: Permission | null;
   schoolIds: string[];
+  demoSchoolIds: string[]; // is_demo=true の教室IDセット
   selectedSchoolId: string | 'all' | null; // 選択中の教室ID、'all'はすべての教室、nullは未選択
   isLoading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   setSelectedSchoolId: (schoolId: string | 'all') => void;
-  getSelectedSchoolIds: () => string[]; // 選択された教室IDの配列を返す（'all'の場合はすべてのschoolIds）
+  getSelectedSchoolIds: () => string[]; // 選択された教室IDの配列を返す（'all'の場合はデモ除外したschoolIds）
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,6 +43,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [permissions, setPermissions] = useState<Permission | null>(null);
   const [schoolIds, setSchoolIds] = useState<string[]>([]);
+  const [demoSchoolIds, setDemoSchoolIds] = useState<string[]>([]);
   const [selectedSchoolId, setSelectedSchoolIdState] = useState<string | 'all' | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const lastUserIdRef = useRef<string | null>(null);
@@ -54,16 +56,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, []);
 
-  // 選択された教室IDの配列を返す
+  // 選択された教室IDの配列を返す（'all'の場合はデモ教室を除外）
   const getSelectedSchoolIds = useCallback((): string[] => {
     if (selectedSchoolId === 'all') {
-      return schoolIds;
+      const demoSet = new Set(demoSchoolIds);
+      return schoolIds.filter(id => !demoSet.has(id));
     }
     if (selectedSchoolId) {
       return [selectedSchoolId];
     }
     return [];
-  }, [selectedSchoolId, schoolIds]);
+  }, [selectedSchoolId, schoolIds, demoSchoolIds]);
 
   // プロファイルを取得
   const fetchProfile = useCallback(async (userId: string, authUser?: User | null, isMounted?: () => boolean) => {
@@ -138,6 +141,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           if (userProfile.role === 'admin' || userProfile.role === 'owner') {
             const allSchools = await getSchools();
             fetchedSchoolIds = allSchools.map(school => school.id);
+            // デモ教室IDを記録（'all'選択時に除外するため）
+            setDemoSchoolIds(allSchools.filter(s => s.is_demo).map(s => s.id));
           } else {
             // その他のロールは紐付けられた教室のみ
             const userSchools = await getUserSchools(userId);
@@ -224,6 +229,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setProfile(null);
     setPermissions(null);
     setSchoolIds([]);
+    setDemoSchoolIds([]);
     setSelectedSchoolIdState(null);
     router.replace('/login');
   }, [router]);

@@ -24,7 +24,7 @@ const FORM_TYPE_TO_PATH: Record<string, string> = {
   kyozai: 'kyozai',   // 教材販売
 };
 
-type SortKey = 'created_at' | 'form_type' | 'form_period' | 'student_name' | 'grade' | 'status';
+type SortKey = 'created_at' | 'form_type' | 'form_period' | 'school' | 'student_name' | 'grade' | 'status';
 type SortOrder = 'asc' | 'desc';
 
 function getSortIcon(currentKey: SortKey, key: SortKey, order: SortOrder) {
@@ -204,6 +204,10 @@ export default function ResponsesPage() {
           aVal = a.form_period ?? '';
           bVal = b.form_period ?? '';
           break;
+        case 'school':
+          aVal = schoolsMap[a.school_id] ?? '';
+          bVal = schoolsMap[b.school_id] ?? '';
+          break;
         case 'student_name':
           aVal = a.linked_student
             ? `${a.linked_student.last_name} ${a.linked_student.first_name}`
@@ -233,7 +237,7 @@ export default function ResponsesPage() {
       return sortOrder === 'asc' ? cmp : -cmp;
     });
     return list;
-  }, [responses, sortKey, sortOrder]);
+  }, [responses, sortKey, sortOrder, schoolsMap]);
 
   // データ取得
   const fetchData = useCallback(async () => {
@@ -516,7 +520,14 @@ export default function ResponsesPage() {
                     </th>
                     {profile?.role === 'admin' && (
                       <th className="border border-[#e5e7eb] px-4 py-3 text-left">
-                        教室
+                        <button
+                          type="button"
+                          onClick={() => handleSort('school')}
+                          className="font-medium text-[#1f2937] hover:text-[#3b82f6] flex items-center"
+                        >
+                          教室
+                          {getSortIcon(sortKey, 'school', sortOrder)}
+                        </button>
                       </th>
                     )}
                     <th className="border border-[#e5e7eb] px-4 py-3 text-left">
