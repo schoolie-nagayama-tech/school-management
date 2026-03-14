@@ -107,10 +107,10 @@ export function ZoukomaResponseDetailModal({
           const slotSet = new Set(response_data.selected_slots.map(s => s.id));
 
           // ユニークな日付キー（ソート済み）
-          const dateKeys = [...new Set(response_data.selected_slots.map(s => s.id.split('_')[0]))].sort();
+          const dateKeys = Array.from(new Set(response_data.selected_slots.map(s => s.id.split('_')[0]))).sort();
 
           // ユニークな時限キー（数値順）
-          const periodKeys = [...new Set(response_data.selected_slots.map(s => s.id.split('_')[1]))]
+          const periodKeys = Array.from(new Set(response_data.selected_slots.map(s => s.id.split('_')[1])))
             .sort((a, b) => parseInt(a) - parseInt(b));
 
           // dateKey → "3/11(水)" のラベルマップ
