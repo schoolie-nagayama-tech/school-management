@@ -519,6 +519,141 @@ export async function deleteStudent(id: string): Promise<void> {
   });
 }
 
+// 生徒を一括論理削除
+export async function bulkDeleteStudents(ids: string[]): Promise<number> {
+  if (ids.length === 0) return 0;
+
+  const schoolId = getDefaultSchoolId();
+  const now = new Date().toISOString();
+
+  // 対象生徒の情報を取得（ログ用）
+  const { data: targets } = await supabase
+    .from('students')
+    .select('id, student_code, last_name, first_name, grade, status')
+    .in('id', ids)
+    .is('deleted_at', null);
+
+  const targetList = (targets || []) as Array<{
+    id: string;
+    student_code: string | null;
+    last_name: string;
+    first_name: string;
+    grade: number;
+    status: string;
+  }>;
+
+  if (targetList.length === 0) return 0;
+
+  const targetIds = targetList.map((t) => t.id);
+
+  const { error, count } = await supabase
+    .from('students')
+    .update({ deleted_at: now } as never, { count: 'exact' })
+    .in('id', targetIds)
+    .is('deleted_at', null);
+
+  if (error) {
+    console.error('Error bulk deleting students:', error);
+    throw new Error('生徒の一括削除に失敗しました');
+  }
+
+  // ログを並列記録
+  await Promise.all(
+    targetList.map((s) =>
+      logStudentAction(s.id, schoolId, 'soft_deleted', {
+        bulk_delete: true,
+        deletedValues: {
+          student_code: s.student_code,
+          last_name: s.last_name,
+          first_name: s.first_name,
+          grade: s.grade,
+          status: s.status,
+        },
+      })
+    )
+  );
+
+  return count ?? 0;
+}
+
+// 選択した生徒の教室を移動（IDベース）
+export async function moveStudentsToSchool(
+  studentIds: string[],
+  toSchoolId: string
+): Promise<number> {
+  if (studentIds.length === 0) return 0;
+  if (!toSchoolId) throw new Error('移動先の教室を選択してください');
+
+  const now = new Date().toISOString();
+
+  // 対象生徒の現在のschool_idを取得
+  const { data: targets } = await supabase
+    .from('students')
+    .select('id, school_id')
+    .in('id', studentIds)
+    .is('deleted_at', null);
+
+  const targetList = (targets || []) as Array<{ id: string; school_id: string }>;
+  if (targetList.length === 0) return 0;
+
+  // 既に移動先にいる生徒は除外
+  const toMove = targetList.filter((t) => t.school_id !== toSchoolId);
+  if (toMove.length === 0) return 0;
+
+  const ids = toMove.map((t) => t.id);
+
+  // students を更新
+  const { error, count } = await supabase
+    .from('students')
+    .update({ school_id: toSchoolId, updated_at: now } as never, { count: 'exact' })
+    .in('id', ids)
+    .is('deleted_at', null);
+
+  if (error) {
+    console.error('Error moving students:', error);
+    throw new Error('生徒の教室移動に失敗しました');
+  }
+
+  // 関連テーブルも更新（移動元school_idごとにグループ化）
+  const byFromSchool = new Map<string, string[]>();
+  for (const t of toMove) {
+    if (!byFromSchool.has(t.school_id)) byFromSchool.set(t.school_id, []);
+    byFromSchool.get(t.school_id)!.push(t.id);
+  }
+
+  for (const [fromSchoolId, groupIds] of Array.from(byFromSchool.entries())) {
+    await Promise.all([
+      supabase
+        .from('student_logs')
+        .update({ school_id: toSchoolId } as never)
+        .in('student_id', groupIds)
+        .eq('school_id', fromSchoolId),
+      supabase
+        .from('student_interviews')
+        .update({ school_id: toSchoolId, updated_at: now } as never)
+        .in('student_id', groupIds)
+        .eq('school_id', fromSchoolId),
+      supabase
+        .from('assessments')
+        .update({ school_id: toSchoolId, updated_at: now } as never)
+        .in('student_id', groupIds)
+        .eq('school_id', fromSchoolId),
+      supabase
+        .from('schedule_regular_patterns')
+        .update({ school_id: toSchoolId, updated_at: now } as never)
+        .in('student_id', groupIds)
+        .eq('school_id', fromSchoolId),
+      supabase
+        .from('schedule_entries')
+        .update({ school_id: toSchoolId, updated_at: now } as never)
+        .in('student_id', groupIds)
+        .eq('school_id', fromSchoolId),
+    ]);
+  }
+
+  return count ?? 0;
+}
+
 // 生徒を復元（将来用）
 export async function restoreStudent(id: string): Promise<void> {
   const schoolId = getDefaultSchoolId();

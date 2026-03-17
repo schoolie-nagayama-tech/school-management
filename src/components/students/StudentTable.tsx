@@ -13,6 +13,8 @@ interface StudentTableProps {
   onProgress?: (student: Student) => void;
   onSchedule?: (student: Student) => void;
   isLoading?: boolean;
+  selectedIds?: Set<string>;
+  onSelectionChange?: (ids: Set<string>) => void;
 }
 
 export function StudentTable({
@@ -25,7 +27,39 @@ export function StudentTable({
   onProgress,
   onSchedule,
   isLoading = false,
+  selectedIds,
+  onSelectionChange,
 }: StudentTableProps) {
+  const selectable = !!selectedIds && !!onSelectionChange;
+
+  const allSelected = selectable && students.length > 0 && students.every((s) => selectedIds.has(s.id));
+  const someSelected = selectable && students.some((s) => selectedIds.has(s.id));
+
+  const handleToggleAll = () => {
+    if (!onSelectionChange) return;
+    if (allSelected) {
+      // 現在表示中の生徒のみ選択解除
+      const next = new Set(selectedIds);
+      students.forEach((s) => next.delete(s.id));
+      onSelectionChange(next);
+    } else {
+      const next = new Set(selectedIds);
+      students.forEach((s) => next.add(s.id));
+      onSelectionChange(next);
+    }
+  };
+
+  const handleToggle = (id: string) => {
+    if (!onSelectionChange || !selectedIds) return;
+    const next = new Set(selectedIds);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    onSelectionChange(next);
+  };
+
   if (isLoading) {
     return (
       <div className="bg-[#f8f8f8] rounded-xl border border-gray-200 p-8">
@@ -69,6 +103,19 @@ export function StudentTable({
         <table className="w-full">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
+              {selectable && (
+                <th className="px-3 py-3 w-10">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = someSelected && !allSelected;
+                    }}
+                    onChange={handleToggleAll}
+                    className="w-4 h-4 rounded border-gray-300 text-[#1e3a5f] focus:ring-[#1e3a5f]/30"
+                  />
+                </th>
+              )}
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 氏名
               </th>
@@ -95,14 +142,27 @@ export function StudentTable({
           <tbody className="divide-y divide-gray-100">
             {students.map((student) => {
               const subjectNames = student.subjects?.map((s) => s.name).join(', ') || '';
+              const isChecked = selectable && selectedIds.has(student.id);
               return (
                 <tr
                   key={student.id}
                   className={`transition-colors duration-150 ${
+                    isChecked ? 'bg-[#1e3a5f]/5' : ''
+                  } ${
                     onRowClick ? 'cursor-pointer hover:bg-gray-50' : ''
                   }`}
                   onClick={() => onRowClick?.(student)}
                 >
+                {selectable && (
+                  <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => handleToggle(student.id)}
+                      className="w-4 h-4 rounded border-gray-300 text-[#1e3a5f] focus:ring-[#1e3a5f]/30"
+                    />
+                  </td>
+                )}
                 <td className="px-4 py-3">
                     <span className="text-sm font-medium text-[#1a1a1a]">
                     {student.last_name} {student.first_name}
@@ -266,11 +326,16 @@ export function StudentTable({
           </tbody>
         </table>
       </div>
-      
+
       {/* フッター：件数表示 */}
       <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
         <p className="text-sm text-[#4b5563]">
           全 <span className="font-semibold">{students.length}</span> 件
+          {selectable && selectedIds.size > 0 && (
+            <span className="ml-2 text-[#1e3a5f] font-medium">
+              （{selectedIds.size}件選択中）
+            </span>
+          )}
         </p>
       </div>
     </div>

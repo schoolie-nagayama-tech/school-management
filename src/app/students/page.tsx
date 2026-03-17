@@ -18,7 +18,11 @@ import {
   createStudent,
   updateStudent,
   deleteStudent,
+  bulkDeleteStudents,
+  moveStudentsToSchool,
 } from '@/lib/api/students';
+import { getSchools } from '@/lib/api/schools';
+import type { School } from '@/types/database';
 import type { Student, StudentInsert, StudentUpdate, Subject } from '@/types/database';
 import {
   generateStudentCSV,
@@ -84,6 +88,17 @@ export default function StudentsPage() {
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
+
+  // 選択状態
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // 一括削除確認
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
+
+  // 選択生徒の教室移動
+  const [isMoveSelectedModalOpen, setIsMoveSelectedModalOpen] = useState(false);
+  const [moveTargetSchoolId, setMoveTargetSchoolId] = useState('');
+  const [schools, setSchools] = useState<School[]>([]);
 
   // エラーメッセージ
   const [errorMessage, setErrorMessage] = useState('');
@@ -297,6 +312,61 @@ export default function StudentsPage() {
     setIsScheduleModalOpen(true);
     setIsDetailModalOpen(false);
     setSelectedStudent(null);
+  };
+
+  // 一括削除
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    setIsSubmitting(true);
+    setErrorMessage('');
+    try {
+      await bulkDeleteStudents(Array.from(selectedIds));
+      setIsBulkDeleteDialogOpen(false);
+      setSelectedIds(new Set());
+      await fetchStudents(searchQuery);
+    } catch (error) {
+      console.error('Error bulk deleting students:', error);
+      setErrorMessage(
+        error instanceof Error ? error.message : '一括削除に失敗しました'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // 選択した生徒を教室移動
+  const handleMoveSelected = async () => {
+    if (selectedIds.size === 0 || !moveTargetSchoolId) return;
+    setIsSubmitting(true);
+    setErrorMessage('');
+    try {
+      const count = await moveStudentsToSchool(Array.from(selectedIds), moveTargetSchoolId);
+      setIsMoveSelectedModalOpen(false);
+      setMoveTargetSchoolId('');
+      setSelectedIds(new Set());
+      if (count > 0) {
+        await fetchStudents(searchQuery);
+      }
+    } catch (error) {
+      console.error('Error moving students:', error);
+      setErrorMessage(
+        error instanceof Error ? error.message : '教室移動に失敗しました'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // 教室移動モーダルを開くときに教室一覧を取得
+  const handleOpenMoveSelectedModal = async () => {
+    try {
+      const allSchools = await getSchools();
+      setSchools(allSchools.filter((s) => !s.is_demo));
+      setIsMoveSelectedModalOpen(true);
+    } catch (error) {
+      console.error('Error fetching schools:', error);
+      setErrorMessage('教室一覧の取得に失敗しました');
+    }
   };
 
   // 削除（論理削除、詳細モーダルから呼ばれる場合もある）
@@ -548,6 +618,35 @@ export default function StudentsPage() {
           )}
         </div>
 
+        {/* 一括操作バー */}
+        {!isTeacher && selectedIds.size > 0 && (
+          <div className="mb-4 flex items-center gap-3 p-3 bg-[#1e3a5f]/5 border border-[#1e3a5f]/20 rounded-lg">
+            <span className="text-sm font-medium text-[#1e3a5f]">
+              {selectedIds.size}件選択中
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleOpenMoveSelectedModal}
+            >
+              教室移動
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={() => setIsBulkDeleteDialogOpen(true)}
+            >
+              一括削除
+            </Button>
+            <button
+              onClick={() => setSelectedIds(new Set())}
+              className="ml-auto text-sm text-gray-500 hover:text-gray-700"
+            >
+              選択解除
+            </button>
+          </div>
+        )}
+
         {/* 生徒一覧テーブル */}
         <StudentTable
           students={filteredStudents}
@@ -559,6 +658,8 @@ export default function StudentsPage() {
           onInterviews={handleOpenInterviews}
           onSchedule={!isTeacher ? handleOpenSchedule : undefined}
           isLoading={isLoading}
+          selectedIds={!isTeacher ? selectedIds : undefined}
+          onSelectionChange={!isTeacher ? setSelectedIds : undefined}
         />
 
       {/* CSVインポートモーダル */}
@@ -724,6 +825,102 @@ export default function StudentsPage() {
           }}
         />
       )}
+
+      {/* 一括削除確認ダイアログ */}
+      <Modal
+        isOpen={isBulkDeleteDialogOpen}
+        onClose={() => setIsBulkDeleteDialogOpen(false)}
+        title="生徒の一括削除"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-[#ef4444]/20 flex items-center justify-center">
+              <svg
+                className="w-5 h-5 text-[#ef4444]"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+            <div>
+              <p className="text-[#1f2937]">
+                選択した <span className="font-bold">{selectedIds.size}名</span> の生徒を削除してもよろしいですか？
+              </p>
+              <p className="mt-3 text-sm text-[#4b5563]">
+                削除後もデータは保持されますが、一覧には表示されなくなります。
+              </p>
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 pt-4 border-t border-[#e5e7eb]">
+            <Button variant="secondary" onClick={() => setIsBulkDeleteDialogOpen(false)}>
+              キャンセル
+            </Button>
+            <Button variant="danger" onClick={handleBulkDelete} isLoading={isSubmitting}>
+              {selectedIds.size}名を削除する
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* 選択生徒の教室移動モーダル */}
+      <Modal
+        isOpen={isMoveSelectedModalOpen}
+        onClose={() => {
+          setIsMoveSelectedModalOpen(false);
+          setMoveTargetSchoolId('');
+        }}
+        title="選択した生徒の教室移動"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-[#4b5563]">
+            選択した <span className="font-bold">{selectedIds.size}名</span> の生徒を移動します。
+          </p>
+          <div>
+            <label className="block text-sm font-medium text-[#1f2937] mb-1">
+              移動先の教室
+            </label>
+            <select
+              value={moveTargetSchoolId}
+              onChange={(e) => setMoveTargetSchoolId(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-[#1a1a1a] focus:ring-2 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f]"
+            >
+              <option value="">教室を選択...</option>
+              {schools.map((school) => (
+                <option key={school.id} value={school.id}>
+                  {school.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex justify-end gap-3 pt-4 border-t border-[#e5e7eb]">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setIsMoveSelectedModalOpen(false);
+                setMoveTargetSchoolId('');
+              }}
+            >
+              キャンセル
+            </Button>
+            <Button
+              onClick={handleMoveSelected}
+              isLoading={isSubmitting}
+              disabled={!moveTargetSchoolId}
+            >
+              移動する
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* 一括学年更新モーダル */}
       <BulkGradeUpdateModal
