@@ -42,7 +42,10 @@
       "Bash(xargs grep -l \"CREATE TABLE subjects\")",
       "Bash(grep -A 20 \"CREATE TABLE.*subjects\" /c/Users/ytaka/Desktop/student-management/supabase/migrations/*.sql)",
       "Bash(sqlite3 :memory: \".help\")",
-      "Bash(npx supabase db pull)"
+      "Bash(npx supabase db pull)",
+      "Bash(npm install:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
