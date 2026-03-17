@@ -10,7 +10,7 @@ import {
   updateApplicationItemSortOrder,
 } from '@/lib/api/applications';
 import { useAuth } from '@/contexts/AuthContext';
-import type { ApplicationItem } from '@/types/database';
+import type { ApplicationItem, ApplicationColumnType } from '@/types/database';
 
 interface ApplicationItemSettingsProps {
   isOpen: boolean;
@@ -25,6 +25,9 @@ export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSett
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ApplicationItem | null>(null);
   const [itemName, setItemName] = useState('');
+  const [itemColumnType, setItemColumnType] = useState<ApplicationColumnType>('check');
+  const [itemDueDate, setItemDueDate] = useState<string>('');
+  const [itemManagerOnly, setItemManagerOnly] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // 項目一覧を取得
@@ -60,6 +63,9 @@ export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSett
   const handleAdd = () => {
     setEditingItem(null);
     setItemName('');
+    setItemColumnType('check');
+    setItemDueDate('');
+    setItemManagerOnly(false);
     setIsEditModalOpen(true);
   };
 
@@ -193,7 +199,15 @@ export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSett
           return;
         }
         // 複数教室が選択されている場合は最初の教室を使用
-        await createApplicationItem({ name: itemName.trim() }, schoolIds[0]);
+        await createApplicationItem(
+          {
+            name: itemName.trim(),
+            column_type: itemColumnType,
+            due_date: itemDueDate || null,
+            manager_only: itemManagerOnly,
+          },
+          schoolIds[0]
+        );
       }
       setIsEditModalOpen(false);
       setItemName('');
@@ -327,6 +341,49 @@ export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSett
               disabled={isSubmitting}
             />
           </div>
+
+          {/* 新規追加時のみカラムタイプ・期日・室長のみ表示を表示 */}
+          {!editingItem && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-[#4b5563] mb-2">
+                  カラムタイプ
+                </label>
+                <select
+                  value={itemColumnType}
+                  onChange={(e) => setItemColumnType(e.target.value as ApplicationColumnType)}
+                  className="w-full px-3 py-2 text-sm border border-[#e5e7eb] rounded-lg bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                  disabled={isSubmitting}
+                >
+                  <option value="check">チェック</option>
+                  <option value="number">数値</option>
+                  <option value="date">日付</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#4b5563] mb-2">
+                  期日（任意）
+                </label>
+                <input
+                  type="date"
+                  value={itemDueDate}
+                  onChange={(e) => setItemDueDate(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-[#e5e7eb] rounded-lg bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                  disabled={isSubmitting}
+                />
+              </div>
+              <label className="flex items-center gap-2 text-sm text-[#4b5563]">
+                <input
+                  type="checkbox"
+                  checked={itemManagerOnly}
+                  onChange={(e) => setItemManagerOnly(e.target.checked)}
+                  className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6]"
+                  disabled={isSubmitting}
+                />
+                <span>室長以上のみ表示（講師には非表示）</span>
+              </label>
+            </>
+          )}
 
           {errorMessage && (
             <div className="bg-[#ef4444]/20 text-[#ef4444] px-4 py-2 rounded border border-[#ef4444]">
