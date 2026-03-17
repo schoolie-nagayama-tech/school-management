@@ -45,7 +45,10 @@
       "Bash(npx supabase db pull)",
       "Bash(npm install:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "mcp__faa90072-dcd0-4481-89eb-d7e81d774b30__list_projects",
+      "mcp__faa90072-dcd0-4481-89eb-d7e81d774b30__execute_sql",
+      "Bash(npx tsc:*)"
     ]
   }
 }

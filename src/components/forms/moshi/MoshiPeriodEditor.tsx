@@ -5,7 +5,6 @@ import { Modal, Input, Button, Select } from '@/components/ui';
 import { createMoshiPeriod, updateMoshiPeriod } from '@/lib/api/moshi';
 import { createFormPeriodForSchools, updateFormPeriodForSchools } from '@/lib/api/form-periods';
 import { getApplicationItems } from '@/lib/api/applications';
-import { getDefaultSchoolId } from '@/lib/api/schools';
 import type { MoshiPeriod, MoshiSettings } from '@/types/forms/moshi';
 import type { ApplicationItem } from '@/types/database';
 
@@ -76,9 +75,9 @@ export function MoshiPeriodEditor({
   // 初期値の設定
   useEffect(() => {
     if (isOpen) {
-      const schoolId = getDefaultSchoolId();
-      // 申込項目を取得
-      getApplicationItems(schoolId, true).then(setApplicationItems).catch(console.error);
+      // 申込項目を取得（選択中の教室のものを取得）
+      const targetIds = schoolIds && schoolIds.length > 0 ? schoolIds : schoolId ? [schoolId] : undefined;
+      getApplicationItems(targetIds, true).then(setApplicationItems).catch(console.error);
 
       if (period) {
         // 編集モード

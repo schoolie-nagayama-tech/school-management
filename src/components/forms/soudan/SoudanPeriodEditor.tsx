@@ -87,7 +87,8 @@ export function SoudanPeriodEditor({
   // 初期値の設定
   useEffect(() => {
     if (isOpen) {
-      getApplicationItems(schoolId, true).then(setApplicationItems).catch(console.error);
+      const targetIds = schoolIds && schoolIds.length > 0 ? schoolIds : schoolId ? [schoolId] : undefined;
+      getApplicationItems(targetIds, true).then(setApplicationItems).catch(console.error);
       if (period) {
         // 編集モード
         const settings = period.settings;

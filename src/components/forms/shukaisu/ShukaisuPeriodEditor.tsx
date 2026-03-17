@@ -97,7 +97,8 @@ export function ShukaisuPeriodEditor({
   // 初期値の設定
   useEffect(() => {
     if (isOpen) {
-      getApplicationItems(schoolId, true).then(setApplicationItems).catch(console.error);
+      const targetIds = schoolIds && schoolIds.length > 0 ? schoolIds : schoolId ? [schoolId] : undefined;
+      getApplicationItems(targetIds, true).then(setApplicationItems).catch(console.error);
       if (period) {
         // 編集モード（科目はテーブルから学年で自動参照するため指定不要）
         const settings = period.settings;

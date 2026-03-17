@@ -124,8 +124,9 @@ export function MogiPeriodEditor({
   // 初期値の設定
   useEffect(() => {
     if (isOpen) {
-      // 申込項目を取得
-      getApplicationItems().then(setApplicationItems).catch(console.error);
+      // 申込項目を取得（選択中の教室のものを取得）
+      const targetIds = schoolIds && schoolIds.length > 0 ? schoolIds : schoolId ? [schoolId] : undefined;
+      getApplicationItems(targetIds, true).then(setApplicationItems).catch(console.error);
       // デフォルト自動挿入の設定を読み込み
       if (typeof window !== 'undefined' && schoolId) {
         setUseDefaultInsert(window.localStorage.getItem(MOGI_USE_DEFAULTS_KEY(schoolId)) === 'true');
