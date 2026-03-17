@@ -188,6 +188,88 @@ textarea:focus {
   animation: privacy-screen-fade-in 0.3s ease-in forwards;
 }
 
+/* リッチテキストエディタ（連絡掲示板） */
+.rich-text-editor .ProseMirror {
+  min-height: 120px;
+}
+.rich-text-editor .ProseMirror:focus {
+  outline: none;
+}
+.rich-text-editor .ProseMirror p {
+  margin: 0.25em 0;
+}
+.rich-text-editor .ProseMirror p:first-child {
+  margin-top: 0;
+}
+.rich-text-editor .ProseMirror h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0.5em 0 0.25em;
+  color: var(--headline);
+}
+.rich-text-editor .ProseMirror h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0.5em 0 0.25em;
+  color: var(--headline);
+}
+.rich-text-editor .ProseMirror h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0.4em 0 0.2em;
+  color: var(--headline);
+}
+.rich-text-editor .ProseMirror strong {
+  font-weight: 700;
+}
+.rich-text-editor .ProseMirror em {
+  font-style: italic;
+}
+.rich-text-editor .ProseMirror s {
+  text-decoration: line-through;
+}
+.rich-text-editor .ProseMirror p.is-editor-empty:first-child::before {
+  color: #9ca3af;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* 掲示板カード内のリッチテキスト表示 */
+.bulletin-post-content p {
+  margin: 0.25em 0;
+}
+.bulletin-post-content p:first-child {
+  margin-top: 0;
+}
+.bulletin-post-content h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0.5em 0 0.25em;
+  color: var(--headline);
+}
+.bulletin-post-content h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0.4em 0 0.2em;
+  color: var(--headline);
+}
+.bulletin-post-content h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0.35em 0 0.2em;
+  color: var(--headline);
+}
+.bulletin-post-content strong {
+  font-weight: 700;
+}
+.bulletin-post-content ul,
+.bulletin-post-content ol {
+  margin: 0.25em 0;
+  padding-left: 1.5em;
+}
+
 /* 保護者向けテーブルのスタイル */
 .progress-table-parent {
   border: 2px solid #374151;

@@ -16,8 +16,13 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.90.0",
+    "@tiptap/extension-placeholder": "^3.20.4",
+    "@tiptap/react": "^3.20.4",
+    "@tiptap/starter-kit": "^3.20.4",
     "@types/papaparse": "^5.5.2",
+    "dompurify": "^3.3.3",
     "html2canvas": "^1.4.1",
+    "isomorphic-dompurify": "^3.4.0",
     "jspdf": "^4.0.0",
     "lucide-react": "^0.562.0",
     "next": "14.2.35",
@@ -28,6 +33,7 @@
     "sonner": "^2.0.7"
   },
   "devDependencies": {
+    "@types/dompurify": "^3.0.5",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

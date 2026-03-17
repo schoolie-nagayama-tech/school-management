@@ -1,8 +1,22 @@
 'use client';
 
+import DOMPurify from 'isomorphic-dompurify';
 import type { BulletinPost } from '@/types/bulletin';
 import { Button } from '@/components/ui';
 import { Edit2, Trash2, Users, Check } from 'lucide-react';
+
+/** 本文が HTML かどうか（タグを含むか） */
+function isHtmlContent(content: string): boolean {
+  return /<[a-z][\s\S]*>/i.test(content);
+}
+
+/** 許可するタグのみでサニタイズ（掲示板のリッチテキスト用） */
+function sanitizeBulletinHtml(html: string): string {
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['p', 'br', 'strong', 'b', 'em', 'i', 's', 'strike', 'h1', 'h2', 'h3', 'ul', 'ol', 'li'],
+    ALLOWED_ATTR: [],
+  });
+}
 
 interface BulletinPostCardProps {
   post: BulletinPost;
@@ -64,11 +78,14 @@ export function BulletinPostCard({
         )}
       </div>
 
-      {/* 本文を表示 */}
+      {/* 本文を表示（リッチテキスト HTML または従来のプレーンテキスト） */}
       {post.content && (
-        <div className="text-sm text-[var(--text)] whitespace-pre-wrap break-words mb-2 pl-0">
-          {post.content}
-        </div>
+        <div
+          className="bulletin-post-content text-sm text-[var(--text)] break-words mb-2 pl-0"
+          {...(isHtmlContent(post.content)
+            ? { dangerouslySetInnerHTML: { __html: sanitizeBulletinHtml(post.content) } }
+            : { style: { whiteSpace: 'pre-wrap' }, children: post.content })}
+        />
       )}
 
       <div className="flex items-center justify-between text-xs text-gray-500 mb-2">

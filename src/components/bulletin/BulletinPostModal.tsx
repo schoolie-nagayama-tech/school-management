@@ -3,8 +3,7 @@
 import { useState, useEffect } from 'react';
 import type { BulletinPost, BulletinLabel } from '@/types/bulletin';
 import type { School } from '@/types/database';
-import { Modal } from '@/components/ui';
-import { Button, Input } from '@/components/ui';
+import { Modal, Button, Input, RichTextEditor } from '@/components/ui';
 
 interface BulletinPostModalProps {
   isOpen: boolean;
@@ -56,8 +55,13 @@ export function BulletinPostModal({
     }
   }, [post, isOpen]);
 
+  const isContentEmpty = (html: string) => {
+    const text = html.replace(/<[^>]*>/g, '').trim();
+    return text.length === 0;
+  };
+
   const handleSubmit = async () => {
-    if (!title.trim() || !content.trim()) {
+    if (!title.trim() || isContentEmpty(content)) {
       return;
     }
 
@@ -75,17 +79,17 @@ export function BulletinPostModal({
       const { data: { user } } = await supabase.auth.getUser();
       const userId = user?.id;
 
-      if (post) {
+        if (post) {
         await updateBulletinPost(post.id, {
           title: title.trim(),
-          content: content.trim(),
+          content: content,
           label_id: labelId,
           is_pinned: isPinned,
         }, userId);
       } else {
         const payload = {
           title: title.trim(),
-          content: content.trim(),
+          content,
           label_id: targetSchoolIds.length === 1 ? labelId : null,
           is_pinned: isPinned,
         };
@@ -196,12 +200,12 @@ export function BulletinPostModal({
           <label className="block text-sm font-medium text-[#1f2937] mb-1">
             本文 <span className="text-[#ef4444]">*</span>
           </label>
-          <textarea
+          <RichTextEditor
+            key={post?.id ?? 'new'}
             value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="本文を入力"
-            rows={8}
-            className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6] resize-none"
+            onChange={setContent}
+            placeholder="本文を入力（太字・見出しなどが使えます）"
+            minHeight="200px"
           />
         </div>
 
@@ -226,7 +230,7 @@ export function BulletinPostModal({
             onClick={handleSubmit}
             disabled={
               !title.trim() ||
-              !content.trim() ||
+              isContentEmpty(content) ||
               isSubmitting ||
               (!post && showSchoolSelector && selectedSchoolIds.length === 0)
             }

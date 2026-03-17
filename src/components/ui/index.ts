@@ -1,4 +1,4 @@
-﻿export { Button } from './Button';
+export { Button } from './Button';
 export { Input } from './Input';
 export { Select } from './Select';
 export { Modal } from './Modal';
@@ -13,4 +13,6 @@ export { Badge } from './Badge';
 export { Label } from './Label';
 export { Checkbox } from './Checkbox';
 export { Textarea } from './Textarea';
+export { RichTextEditor } from './RichTextEditor';
+export type { RichTextEditorProps } from './RichTextEditor';
 export { Select as SelectShadcn, SelectTrigger, SelectValue, SelectContent, SelectItem } from './Select-shadcn';
