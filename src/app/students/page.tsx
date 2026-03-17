@@ -11,7 +11,6 @@ import {
   StudentRegularScheduleList,
   RegularScheduleFormModal,
   BulkGradeUpdateModal,
-  BulkMoveStudentsModal,
 } from '@/components/students';
 import {
   getStudents,
@@ -72,7 +71,6 @@ export default function StudentsPage() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isScoresModalOpen, setIsScoresModalOpen] = useState(false);
   const [isBulkGradeUpdateModalOpen, setIsBulkGradeUpdateModalOpen] = useState(false);
-  const [isBulkMoveStudentsModalOpen, setIsBulkMoveStudentsModalOpen] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [scheduleModalStudent, setScheduleModalStudent] = useState<Student | null>(null);
   const [addScheduleFormContext, setAddScheduleFormContext] = useState<{
@@ -591,14 +589,7 @@ export default function StudentsPage() {
               >
                 CSVインポート
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsBulkMoveStudentsModalOpen(true)}
-              >
-                教室移動（修正）
-              </Button>
-              <Button onClick={handleOpenCreateModal}>
+<Button onClick={handleOpenCreateModal}>
                 <svg
                   className="w-4 h-4 mr-2"
                   fill="none"
@@ -677,15 +668,7 @@ export default function StudentsPage() {
         }
       />
 
-      {/* 教室移動（既存不具合の修正用途） */}
-      <BulkMoveStudentsModal
-        isOpen={isBulkMoveStudentsModalOpen}
-        onClose={() => setIsBulkMoveStudentsModalOpen(false)}
-        defaultToSchoolId={getSelectedSchoolIds()[0] ?? undefined}
-        onMoved={() => fetchStudents(searchQuery)}
-      />
-
-      {/* 新規登録モーダル */}
+{/* 新規登録モーダル */}
       <Modal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}

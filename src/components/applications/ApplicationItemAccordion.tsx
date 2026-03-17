@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ApplicationItem } from '@/types/database';
+import { ApplicationItem, ApplicationColumnType } from '@/types/database';
 import {
   createApplicationItem,
   updateApplicationItem,
@@ -28,6 +28,9 @@ export function ApplicationItemAccordion({
   const { success, error: toastError } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [newItemName, setNewItemName] = useState('');
+  const [newItemColumnType, setNewItemColumnType] = useState<ApplicationColumnType>('check');
+  const [newItemDueDate, setNewItemDueDate] = useState<string>('');
+  const [newItemManagerOnly, setNewItemManagerOnly] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -46,9 +49,20 @@ export function ApplicationItemAccordion({
 
     setIsProcessing(true);
     try {
-      await createApplicationItem({ name: newItemName.trim() }, _schoolId);
+      await createApplicationItem(
+        {
+          name: newItemName.trim(),
+          column_type: newItemColumnType,
+          due_date: newItemDueDate || null,
+          manager_only: newItemManagerOnly,
+        },
+        _schoolId
+      );
       success('項目を追加しました');
       setNewItemName('');
+      setNewItemColumnType('check');
+      setNewItemDueDate('');
+      setNewItemManagerOnly(false);
       onUpdated();
     } catch (error) {
       console.error('Failed to create item:', error);
@@ -199,20 +213,52 @@ export function ApplicationItemAccordion({
             <label className="block text-sm font-medium text-[#1f2937] mb-2">
               新しい項目を追加
             </label>
-            <div className="flex gap-2">
-              <Input
-                type="text"
-                value={newItemName}
-                onChange={(e) => setNewItemName(e.target.value)}
-                placeholder="例: 12月度 冬期講習"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleAdd();
-                }}
-                disabled={isProcessing}
-              />
-              <Button onClick={handleAdd} disabled={isProcessing || !newItemName.trim()}>
-                追加
-              </Button>
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  value={newItemName}
+                  onChange={(e) => setNewItemName(e.target.value)}
+                  placeholder="例: 12月度 冬期講習"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleAdd();
+                  }}
+                  disabled={isProcessing}
+                />
+                <Button onClick={handleAdd} disabled={isProcessing || !newItemName.trim()}>
+                  追加
+                </Button>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <select
+                  value={newItemColumnType}
+                  onChange={(e) => setNewItemColumnType(e.target.value as ApplicationColumnType)}
+                  className="px-3 py-2 text-sm border border-[#e5e7eb] rounded-lg bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                  disabled={isProcessing}
+                >
+                  <option value="check">チェック</option>
+                  <option value="number">数値</option>
+                  <option value="date">日付</option>
+                </select>
+                <input
+                  type="date"
+                  value={newItemDueDate}
+                  onChange={(e) => setNewItemDueDate(e.target.value)}
+                  className="px-3 py-2 text-sm border border-[#e5e7eb] rounded-lg bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                  disabled={isProcessing}
+                  placeholder="期日（任意）"
+                />
+                <label className="flex items-center gap-2 text-sm text-[#4b5563]">
+                  <input
+                    type="checkbox"
+                    checked={newItemManagerOnly}
+                    onChange={(e) => setNewItemManagerOnly(e.target.checked)}
+                    className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6]"
+                    disabled={isProcessing}
+                  />
+                  <span>室長以上のみ表示（講師には非表示）</span>
+                </label>
+              </div>
             </div>
           </div>
 
