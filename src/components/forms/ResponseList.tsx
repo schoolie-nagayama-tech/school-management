@@ -43,9 +43,9 @@ export function ResponseList({ responses, formId, onRefresh }: ResponseListProps
 
   const handleLink = async (response: FormResponse) => {
     setSelectedResponse(response);
-    // 同じ学年の生徒を取得
+    // 同じ教室・同じ学年の生徒を取得（教室間で生徒が混ざらないようにする）
     try {
-      const allStudents = await getStudents();
+      const allStudents = await getStudents(undefined, [response.school_id]);
       const sameGradeStudents = allStudents.filter(
         (s) => s.grade === response.grade && s.deleted_at === null
       );

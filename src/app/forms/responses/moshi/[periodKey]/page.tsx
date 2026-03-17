@@ -177,8 +177,8 @@ export default function MoshiResponsePage() {
     setLinkingResponse(response);
     setIsLoadingStudents(true);
     try {
-      // 同じ学年の生徒を取得
-      const allStudents = await getStudents();
+      // 同じ教室・同じ学年の生徒を取得（教室間で混ざらないようにする）
+      const allStudents = await getStudents(undefined, [response.school_id]);
       const sameGradeStudents = allStudents.filter(
         (s) => s.grade === response.grade && s.status === 'active'
       );
