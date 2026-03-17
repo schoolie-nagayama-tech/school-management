@@ -10,3 +10,4 @@ export { InterviewListModal } from './InterviewListModal';
 export { TaskAlert } from './TaskAlert';
 export { StudentRegularScheduleList } from './StudentRegularScheduleList';
 export { RegularScheduleFormModal } from './RegularScheduleFormModal';
+export { BulkMoveStudentsModal } from './BulkMoveStudentsModal';

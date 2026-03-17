@@ -212,12 +212,139 @@ export async function getStudent(
   return data as Student | null;
 }
 
+export async function bulkMoveStudentsToSchool({
+  fromSchoolId,
+  toSchoolId,
+  studentCodes,
+}: {
+  fromSchoolId: string;
+  toSchoolId: string;
+  /** 指定した場合は、生徒コード一致のみを移動（移動元教室にいるもののみ） */
+  studentCodes?: string[];
+}): Promise<{
+  movedStudents: number;
+  updatedStudentLogs: number;
+  updatedInterviews: number;
+  updatedAssessments: number;
+  updatedSchedulePatterns: number;
+  updatedScheduleEntries: number;
+}> {
+  if (!fromSchoolId || !toSchoolId) {
+    throw new Error('移動元・移動先の教室を選択してください');
+  }
+  if (fromSchoolId === toSchoolId) {
+    throw new Error('移動元と移動先が同じです');
+  }
+
+  // 対象生徒IDを取得
+  let q = supabase
+    .from('students')
+    .select('id, student_code')
+    .eq('school_id', fromSchoolId)
+    .is('deleted_at', null);
+
+  if (studentCodes && studentCodes.length > 0) {
+    q = q.in('student_code', studentCodes);
+  }
+
+  const { data: targets, error: targetErr } = await q;
+  if (targetErr) {
+    console.error('Error selecting target students:', targetErr);
+    throw new Error('移動対象の生徒取得に失敗しました');
+  }
+
+  const ids = ((targets || []) as Array<{ id: string; student_code: string | null }>)
+    .map((t) => t.id)
+    .filter(Boolean);
+  if (ids.length === 0) {
+    return {
+      movedStudents: 0,
+      updatedStudentLogs: 0,
+      updatedInterviews: 0,
+      updatedAssessments: 0,
+      updatedSchedulePatterns: 0,
+      updatedScheduleEntries: 0,
+    };
+  }
+
+  const now = new Date().toISOString();
+
+  // 1) students を更新
+  const { error: moveErr, count: movedCount } = await supabase
+    .from('students')
+    .update({ school_id: toSchoolId, updated_at: now } as never, { count: 'exact' })
+    .in('id', ids)
+    .eq('school_id', fromSchoolId)
+    .is('deleted_at', null);
+
+  if (moveErr) {
+    console.error('Error moving students:', moveErr);
+    throw new Error('生徒の教室移動に失敗しました');
+  }
+
+  // 2) 関連テーブルの school_id も揃える（新規インポート直後を想定し、範囲は必要最小限）
+  const [
+    { error: logsErr, count: logsCount },
+    { error: interviewsErr, count: interviewsCount },
+    { error: assessmentsErr, count: assessmentsCount },
+    { error: patternsErr, count: patternsCount },
+    { error: entriesErr, count: entriesCount },
+  ] = await Promise.all([
+    supabase
+      .from('student_logs')
+      .update({ school_id: toSchoolId } as never, { count: 'exact' })
+      .in('student_id', ids)
+      .eq('school_id', fromSchoolId),
+    supabase
+      .from('student_interviews')
+      .update({ school_id: toSchoolId, updated_at: now } as never, { count: 'exact' })
+      .in('student_id', ids)
+      .eq('school_id', fromSchoolId),
+    supabase
+      .from('assessments')
+      .update({ school_id: toSchoolId, updated_at: now } as never, { count: 'exact' })
+      .in('student_id', ids)
+      .eq('school_id', fromSchoolId),
+    supabase
+      .from('schedule_regular_patterns')
+      .update({ school_id: toSchoolId, updated_at: now } as never, { count: 'exact' })
+      .in('student_id', ids)
+      .eq('school_id', fromSchoolId),
+    supabase
+      .from('schedule_entries')
+      .update({ school_id: toSchoolId, updated_at: now } as never, { count: 'exact' })
+      .in('student_id', ids)
+      .eq('school_id', fromSchoolId),
+  ]);
+
+  // RLS等で更新できないテーブルがあっても、生徒移動自体は完了しているため致命にしない
+  if (logsErr) console.warn('Failed to update student_logs school_id:', logsErr);
+  if (interviewsErr) console.warn('Failed to update student_interviews school_id:', interviewsErr);
+  if (assessmentsErr) console.warn('Failed to update assessments school_id:', assessmentsErr);
+  if (patternsErr) console.warn('Failed to update schedule_regular_patterns school_id:', patternsErr);
+  if (entriesErr) console.warn('Failed to update schedule_entries school_id:', entriesErr);
+
+  return {
+    movedStudents: movedCount ?? 0,
+    updatedStudentLogs: logsCount ?? 0,
+    updatedInterviews: interviewsCount ?? 0,
+    updatedAssessments: assessmentsCount ?? 0,
+    updatedSchedulePatterns: patternsCount ?? 0,
+    updatedScheduleEntries: entriesCount ?? 0,
+  };
+}
+
 // 生徒を新規登録
 export async function createStudent(
   student: StudentInsert,
   subjectIds?: string[]
 ): Promise<Student> {
-  const schoolId = getDefaultSchoolId();
+  // 呼び出し元が school_id を指定している場合はそれを優先（CSVインポート等）
+  // 未指定の場合のみデフォルト教室に紐づける
+  const schoolId =
+    student.school_id && String(student.school_id).trim() !== ''
+      ? String(student.school_id)
+      : getDefaultSchoolId();
 
   // 生徒コードが空の場合は一意のコードを自動生成（DBがNOT NULLかつUNIQUEのため）
   const rawCode =
