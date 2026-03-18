@@ -168,7 +168,7 @@ export function ApplicationTable({
 
   return (
     <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
-      <div className="overflow-auto max-h-[75vh]">
+      <div className="overflow-auto max-h-[calc(100vh-200px)]">
         <table className="w-full border-collapse table-fixed">
           <thead className="sticky top-0 z-30">
             <tr className="bg-[#1e3a5f] border-b border-[#e5e7eb]">
