@@ -169,13 +169,13 @@ export function ApplicationTable({
   return (
     <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
       <div className="overflow-auto max-h-[75vh]">
-        <table className="w-full border-collapse">
+        <table className="border-collapse">
           <thead className="sticky top-0 z-30">
-            <tr className="bg-[#f3f4f6] border-b border-[#e5e7eb]">
-              <th className="px-4 py-3 text-left text-[#1f2937] font-semibold border-r border-[#e5e7eb] sticky left-0 bg-[#f3f4f6] z-40">
+            <tr className="bg-[#1e3a5f] border-b border-[#e5e7eb]">
+              <th className="px-3 py-2 text-left text-white text-xs font-semibold border-r border-[#2d4a6f] sticky left-0 bg-[#1e3a5f] z-40 w-[56px]">
                 学年
               </th>
-              <th className="px-4 py-3 text-left text-[#1f2937] font-semibold border-r border-[#e5e7eb] sticky left-[80px] bg-[#f3f4f6] z-40" style={{ boxShadow: '4px 0 6px -2px rgba(0,0,0,0.08)' }}>
+              <th className="px-3 py-2 text-left text-white text-xs font-semibold border-r border-[#2d4a6f] sticky left-[56px] bg-[#1e3a5f] z-40 min-w-[100px] max-w-[140px]" style={{ boxShadow: '4px 0 6px -2px rgba(0,0,0,0.15)' }}>
                 名前
               </th>
               {items.map((item) => {
@@ -189,7 +189,7 @@ export function ApplicationTable({
                 return (
                   <th
                     key={item.id}
-                    className={`px-4 py-3 text-center text-[#1f2937] font-semibold border-r border-[#e5e7eb] min-w-[120px] relative group ${isOverdue ? 'bg-red-100' : ''} ${isReadOnlyForTeacher ? 'bg-amber-50/80' : ''}`}
+                    className={`px-3 py-2 text-center text-xs font-semibold border-r border-[#2d4a6f] min-w-[100px] relative group ${isOverdue ? 'bg-[#7f1d1d] text-white' : 'text-white'} ${isReadOnlyForTeacher ? 'bg-[#2d4a6f]' : ''}`}
                   >
                     {onStatusChange && !isTeacher && editingItemId === item.id ? (
                       <div className="flex items-center gap-2">
@@ -230,20 +230,20 @@ export function ApplicationTable({
                           {onStatusChange && !isTeacher ? (
                             <>
                               <div
-                                className="flex-1 flex items-center justify-center gap-1 cursor-pointer hover:bg-[#3b82f6]/10 rounded px-2 py-1 transition-colors"
+                                className="flex-1 flex items-center justify-center gap-1 cursor-pointer hover:bg-white/10 rounded px-1 py-0.5 transition-colors"
                                 onClick={() => {
                                   setEditingItemId(item.id);
                                   setEditingName(item.name);
                                 }}
                                 title="クリックして編集"
                               >
-                                <span className="text-sm">{item.name}</span>
-                                <span className="text-xs text-[#4b5563]/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <span className="text-xs text-white">{item.name}</span>
+                                <span className="text-[10px] text-white/40 opacity-0 group-hover:opacity-100 transition-opacity">
                                   ✏️
                                 </span>
                               </div>
                               <button
-                                className="text-xs text-[#ef4444] hover:text-[#ef4444]/80 opacity-0 group-hover:opacity-100 transition-opacity px-1 py-1 rounded hover:bg-[#ef4444]/10"
+                                className="text-[10px] text-red-300 hover:text-red-200 opacity-0 group-hover:opacity-100 transition-opacity px-1 py-0.5 rounded hover:bg-red-500/20"
                                 onClick={async (e) => {
                                   e.stopPropagation();
                                   if (
@@ -278,21 +278,21 @@ export function ApplicationTable({
                               </button>
                             </>
                           ) : (
-                            <span className="text-sm flex items-center justify-center gap-1 flex-wrap">
+                            <span className="text-xs text-white flex items-center justify-center gap-1 flex-wrap">
                               {item.name}
                               {isTeacher && !item.teacher_editable && (
                                 <span title="閲覧のみ" className="inline-flex">
-                                  <Lock className="w-3.5 h-3.5 text-amber-600 shrink-0" aria-hidden />
+                                  <Lock className="w-3 h-3 text-amber-300 shrink-0" aria-hidden />
                                 </span>
                               )}
                             </span>
                           )}
                         </div>
-                        <div className="text-[10px] text-[#4b5563]/70">
-                          [{APPLICATION_COLUMN_TYPE_LABELS[columnType]}]
+                        <div className="text-[10px] text-white/50">
+                          {APPLICATION_COLUMN_TYPE_LABELS[columnType]}
                         </div>
                         {dueDateStr && (
-                          <div className={`text-[10px] ${isOverdue ? 'text-red-600 font-semibold' : 'text-[#4b5563]/70'}`}>
+                          <div className={`text-[10px] ${isOverdue ? 'text-red-300 font-semibold' : 'text-white/50'}`}>
                             〆 {dueDateStr}
                           </div>
                         )}
@@ -303,7 +303,7 @@ export function ApplicationTable({
               })}
               {/* 新規列追加ボタン（室長以上のみ。講師は非表示） */}
               {onStatusChange && !isTeacher && (
-                <th className="px-4 py-3 text-center text-[#1f2937] font-semibold border-r border-[#e5e7eb] min-w-[120px]">
+                <th className="px-3 py-2 text-center text-white text-xs font-semibold border-r border-[#2d4a6f] min-w-[100px]">
                   {isAddingNew ? (
                   <div className="flex flex-col gap-2">
                     <input
@@ -407,41 +407,41 @@ export function ApplicationTable({
               )}
             </tr>
             {/* 集計行 */}
-            <tr className="bg-[#f3f4f6] border-b border-[#e5e7eb]">
-              <td className="px-4 py-2 text-left text-[#4b5563] text-sm border-r border-[#e5e7eb] sticky left-0 bg-[#f3f4f6] z-40 w-[80px]">
+            <tr className="bg-[#f0f4f8] border-b border-[#e5e7eb]">
+              <td className="px-3 py-1.5 text-left text-[#4b5563] text-xs border-r border-[#e5e7eb] sticky left-0 bg-[#f0f4f8] z-40 w-[56px]">
                 集計
               </td>
-              <td className="px-4 py-2 text-left text-[#4b5563] text-sm border-r border-[#e5e7eb] sticky left-[80px] bg-[#f3f4f6] z-40" style={{ boxShadow: '4px 0 6px -2px rgba(0,0,0,0.08)' }}>
+              <td className="px-3 py-1.5 text-left text-[#4b5563] text-xs border-r border-[#e5e7eb] sticky left-[56px] bg-[#f0f4f8] z-40" style={{ boxShadow: '4px 0 6px -2px rgba(0,0,0,0.08)' }}>
               </td>
               {summaryData.map((summary) => (
                 <td
                   key={summary.itemId}
-                  className="px-4 py-2 text-center text-[#4b5563] text-sm border-r border-[#e5e7eb]"
+                  className="px-3 py-1.5 text-center text-[#4b5563] text-[11px] border-r border-[#e5e7eb] bg-[#f0f4f8]"
                 >
                   {summary.columnType === 'check' && (
-                    <div className="flex flex-col gap-1">
-                      <span className="text-xs">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[11px] text-[#6b7280]">
                         対象: {summary.applicableStudents}人
                       </span>
-                      <span className="text-xs font-semibold">
-                        申込済: {summary.completedCount}人 ({summary.completionRate}%)
+                      <span className="text-[11px] font-semibold text-[#1e3a5f]">
+                        済: {summary.completedCount} ({summary.completionRate}%)
                       </span>
                     </div>
                   )}
                   {summary.columnType === 'number' && (
-                    <div className="flex flex-col gap-1">
-                      <span className="text-xs font-semibold">
-                        合計: {summary.total}
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[11px] font-semibold text-[#1e3a5f]">
+                        計: {summary.total}
                       </span>
-                      <span className="text-xs">
+                      <span className="text-[11px] text-[#6b7280]">
                         入力: {summary.inputCount}人
                       </span>
                     </div>
                   )}
                   {summary.columnType === 'date' && (
-                    <div className="flex flex-col gap-1">
-                      <span className="text-xs font-semibold">
-                        入力済: {summary.inputCount}人 ({summary.completionRate}%)
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[11px] font-semibold text-[#1e3a5f]">
+                        入力済: {summary.inputCount} ({summary.completionRate}%)
                       </span>
                     </div>
                   )}
@@ -449,23 +449,25 @@ export function ApplicationTable({
               ))}
               {/* 新規列追加行の集計セル（空）- 室長以上のみ表示 */}
               {onStatusChange && !isTeacher && (
-                <td className="px-4 py-2 text-center text-[#4b5563] text-sm border-r border-[#e5e7eb]">
+                <td className="px-3 py-1.5 text-center text-[#6b7280] text-[11px] border-r border-[#e5e7eb] bg-[#f0f4f8]">
                   -
                 </td>
               )}
             </tr>
           </thead>
           <tbody>
-            {students.map((student) => (
+            {students.map((student, idx) => {
+              const rowBg = idx % 2 === 0 ? 'bg-white' : 'bg-[#f8fafc]';
+              return (
               <tr
                 key={student.id}
-                className="border-b border-[#e5e7eb] hover:bg-[#f3f4f6]/30"
+                className={`border-b border-[#e5e7eb] hover:bg-[#e8f0fe] ${rowBg}`}
               >
-                <td className="px-4 py-3 text-[#4b5563] border-r border-[#e5e7eb] sticky left-0 bg-white z-20">
+                <td className={`px-3 py-2 text-xs text-[#4b5563] border-r border-[#e5e7eb] sticky left-0 ${rowBg} z-20 w-[56px]`}>
                   {GRADE_LABELS[student.grade] || student.grade}
                 </td>
                 <td
-                  className={`px-4 py-3 text-[#4b5563] border-r border-[#e5e7eb] sticky left-[80px] bg-white z-20 ${
+                  className={`px-3 py-2 text-xs text-[#1f2937] border-r border-[#e5e7eb] sticky left-[56px] ${rowBg} z-20 min-w-[100px] max-w-[140px] whitespace-nowrap ${
                     onStudentClick ? 'cursor-pointer hover:text-[#3b82f6]' : ''
                   }`}
                   style={{ boxShadow: '4px 0 6px -2px rgba(0,0,0,0.08)' }}
@@ -496,7 +498,7 @@ export function ApplicationTable({
                     return (
                       <td
                         key={item.id}
-                        className={`px-4 py-3 text-center border-r border-[#e5e7eb] transition-colors ${style} ${
+                        className={`px-3 py-2 text-center border-r border-[#e5e7eb] transition-colors ${style} ${
                           isOverdueAndIncomplete ? 'bg-red-100' : ''
                         } ${isTeacher && !canEdit ? 'bg-amber-50/50' : ''} ${
                           isUpdating ? 'opacity-50' : (onStatusChange && canEdit) ? 'cursor-pointer hover:bg-[#3b82f6]/10' : 'cursor-default opacity-60'
@@ -517,7 +519,7 @@ export function ApplicationTable({
                         {isUpdating ? (
                           <span className="text-[#4b5563]">...</span>
                         ) : (
-                          <span className="text-lg font-semibold">{symbol}</span>
+                          <span className="text-sm font-semibold">{symbol}</span>
                         )}
                       </td>
                     );
@@ -528,7 +530,7 @@ export function ApplicationTable({
                     return (
                       <td
                         key={item.id}
-                        className={`px-4 py-3 text-center border-r border-[#e5e7eb] transition-colors ${
+                        className={`px-3 py-2 text-center border-r border-[#e5e7eb] transition-colors ${
                           isOverdueAndIncomplete ? 'bg-red-100' : 'bg-white'
                         } ${isTeacher && !canEdit ? 'bg-amber-50/50' : ''} ${
                           isUpdating ? 'opacity-50' : (onNumberChange && canEdit) ? 'cursor-pointer hover:bg-[#3b82f6]/10' : 'cursor-default opacity-60'
@@ -593,7 +595,7 @@ export function ApplicationTable({
                     return (
                       <td
                         key={item.id}
-                        className={`px-4 py-3 text-center border-r border-[#e5e7eb] transition-colors ${
+                        className={`px-3 py-2 text-center border-r border-[#e5e7eb] transition-colors ${
                           isOverdueAndIncomplete ? 'bg-red-100' : 'bg-white'
                         } ${isTeacher && !canEdit ? 'bg-amber-50/50' : ''} ${
                           isUpdating ? 'opacity-50' : (onDateChange && canEdit) ? 'cursor-pointer hover:bg-[#3b82f6]/10' : 'cursor-default opacity-60'
@@ -652,12 +654,13 @@ export function ApplicationTable({
                 })}
                 {/* 新規列追加行のセル（空）- 室長以上のみ表示 */}
                 {onStatusChange && !isTeacher && (
-                  <td className="px-4 py-3 text-center border-r border-[#e5e7eb] bg-[#f3f4f6]">
+                  <td className="px-3 py-2 text-center border-r border-[#e5e7eb] text-[#d1d5db] text-xs">
                     -
                   </td>
                 )}
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
