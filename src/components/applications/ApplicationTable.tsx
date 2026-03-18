@@ -168,14 +168,14 @@ export function ApplicationTable({
 
   return (
     <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
-      <div className="overflow-x-auto">
+      <div className="overflow-auto max-h-[75vh]">
         <table className="w-full border-collapse">
-          <thead>
+          <thead className="sticky top-0 z-30">
             <tr className="bg-[#f3f4f6] border-b border-[#e5e7eb]">
-              <th className="px-4 py-3 text-left text-[#1f2937] font-semibold border-r border-[#e5e7eb] sticky left-0 bg-[#f3f4f6] z-20">
+              <th className="px-4 py-3 text-left text-[#1f2937] font-semibold border-r border-[#e5e7eb] sticky left-0 bg-[#f3f4f6] z-40">
                 学年
               </th>
-              <th className="px-4 py-3 text-left text-[#1f2937] font-semibold border-r border-[#e5e7eb] sticky left-[80px] bg-[#f3f4f6] z-20" style={{ boxShadow: '4px 0 6px -2px rgba(0,0,0,0.08)' }}>
+              <th className="px-4 py-3 text-left text-[#1f2937] font-semibold border-r border-[#e5e7eb] sticky left-[80px] bg-[#f3f4f6] z-40" style={{ boxShadow: '4px 0 6px -2px rgba(0,0,0,0.08)' }}>
                 名前
               </th>
               {items.map((item) => {
@@ -407,11 +407,11 @@ export function ApplicationTable({
               )}
             </tr>
             {/* 集計行 */}
-            <tr className="bg-[#f3f4f6]/50 border-b border-[#e5e7eb]">
-              <td className="px-4 py-2 text-left text-[#4b5563] text-sm border-r border-[#e5e7eb] sticky left-0 bg-[#f3f4f6]/50 z-20 w-[80px]">
+            <tr className="bg-[#f3f4f6] border-b border-[#e5e7eb]">
+              <td className="px-4 py-2 text-left text-[#4b5563] text-sm border-r border-[#e5e7eb] sticky left-0 bg-[#f3f4f6] z-40 w-[80px]">
                 集計
               </td>
-              <td className="px-4 py-2 text-left text-[#4b5563] text-sm border-r border-[#e5e7eb] sticky left-[80px] bg-[#f3f4f6]/50 z-20" style={{ boxShadow: '4px 0 6px -2px rgba(0,0,0,0.08)' }}>
+              <td className="px-4 py-2 text-left text-[#4b5563] text-sm border-r border-[#e5e7eb] sticky left-[80px] bg-[#f3f4f6] z-40" style={{ boxShadow: '4px 0 6px -2px rgba(0,0,0,0.08)' }}>
               </td>
               {summaryData.map((summary) => (
                 <td
