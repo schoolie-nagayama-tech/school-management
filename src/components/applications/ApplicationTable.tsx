@@ -169,13 +169,13 @@ export function ApplicationTable({
   return (
     <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
       <div className="overflow-auto max-h-[75vh]">
-        <table className="border-collapse">
+        <table className="w-full border-collapse table-fixed">
           <thead className="sticky top-0 z-30">
             <tr className="bg-[#1e3a5f] border-b border-[#e5e7eb]">
-              <th className="px-3 py-2 text-left text-white text-xs font-semibold border-r border-[#2d4a6f] sticky left-0 bg-[#1e3a5f] z-40 w-[56px]">
+              <th className="px-3 py-2 text-left text-white text-xs font-semibold border-r border-[#2d4a6f] sticky left-0 bg-[#1e3a5f] z-40 w-[60px]">
                 学年
               </th>
-              <th className="px-3 py-2 text-left text-white text-xs font-semibold border-r border-[#2d4a6f] sticky left-[56px] bg-[#1e3a5f] z-40 min-w-[100px] max-w-[140px]" style={{ boxShadow: '4px 0 6px -2px rgba(0,0,0,0.15)' }}>
+              <th className="px-3 py-2 text-left text-white text-xs font-semibold border-r border-[#2d4a6f] sticky left-[60px] bg-[#1e3a5f] z-40 w-[160px]" style={{ boxShadow: '4px 0 6px -2px rgba(0,0,0,0.15)' }}>
                 名前
               </th>
               {items.map((item) => {
@@ -189,7 +189,7 @@ export function ApplicationTable({
                 return (
                   <th
                     key={item.id}
-                    className={`px-3 py-2 text-center text-xs font-semibold border-r border-[#2d4a6f] min-w-[100px] relative group ${isOverdue ? 'bg-[#7f1d1d] text-white' : 'text-white'} ${isReadOnlyForTeacher ? 'bg-[#2d4a6f]' : ''}`}
+                    className={`px-3 py-2 text-center text-xs font-semibold border-r border-[#2d4a6f] relative group ${isOverdue ? 'bg-[#7f1d1d] text-white' : 'text-white'} ${isReadOnlyForTeacher ? 'bg-[#2d4a6f]' : ''}`}
                   >
                     {onStatusChange && !isTeacher && editingItemId === item.id ? (
                       <div className="flex items-center gap-2">
@@ -303,7 +303,7 @@ export function ApplicationTable({
               })}
               {/* 新規列追加ボタン（室長以上のみ。講師は非表示） */}
               {onStatusChange && !isTeacher && (
-                <th className="px-3 py-2 text-center text-white text-xs font-semibold border-r border-[#2d4a6f] min-w-[100px]">
+                <th className="px-3 py-2 text-center text-white text-xs font-semibold border-r border-[#2d4a6f] w-[120px]">
                   {isAddingNew ? (
                   <div className="flex flex-col gap-2">
                     <input
@@ -408,10 +408,10 @@ export function ApplicationTable({
             </tr>
             {/* 集計行 */}
             <tr className="bg-[#f0f4f8] border-b border-[#e5e7eb]">
-              <td className="px-3 py-1.5 text-left text-[#4b5563] text-xs border-r border-[#e5e7eb] sticky left-0 bg-[#f0f4f8] z-40 w-[56px]">
+              <td className="px-3 py-1.5 text-left text-[#4b5563] text-xs border-r border-[#e5e7eb] sticky left-0 bg-[#f0f4f8] z-40 w-[60px]">
                 集計
               </td>
-              <td className="px-3 py-1.5 text-left text-[#4b5563] text-xs border-r border-[#e5e7eb] sticky left-[56px] bg-[#f0f4f8] z-40" style={{ boxShadow: '4px 0 6px -2px rgba(0,0,0,0.08)' }}>
+              <td className="px-3 py-1.5 text-left text-[#4b5563] text-xs border-r border-[#e5e7eb] sticky left-[60px] bg-[#f0f4f8] z-40 w-[160px]" style={{ boxShadow: '4px 0 6px -2px rgba(0,0,0,0.08)' }}>
               </td>
               {summaryData.map((summary) => (
                 <td
@@ -463,11 +463,11 @@ export function ApplicationTable({
                 key={student.id}
                 className={`border-b border-[#e5e7eb] hover:bg-[#e8f0fe] ${rowBg}`}
               >
-                <td className={`px-3 py-2 text-xs text-[#4b5563] border-r border-[#e5e7eb] sticky left-0 ${rowBg} z-20 w-[56px]`}>
+                <td className={`px-3 py-2 text-xs text-[#4b5563] border-r border-[#e5e7eb] sticky left-0 ${rowBg} z-20 w-[60px]`}>
                   {GRADE_LABELS[student.grade] || student.grade}
                 </td>
                 <td
-                  className={`px-3 py-2 text-xs text-[#1f2937] border-r border-[#e5e7eb] sticky left-[56px] ${rowBg} z-20 min-w-[100px] max-w-[140px] whitespace-nowrap ${
+                  className={`px-3 py-2 text-xs text-[#1f2937] border-r border-[#e5e7eb] sticky left-[60px] ${rowBg} z-20 w-[160px] whitespace-nowrap ${
                     onStudentClick ? 'cursor-pointer hover:text-[#3b82f6]' : ''
                   }`}
                   style={{ boxShadow: '4px 0 6px -2px rgba(0,0,0,0.08)' }}
