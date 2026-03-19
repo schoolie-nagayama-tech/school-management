@@ -122,17 +122,30 @@ export function PortalMenuCard({ menu, schoolCode, isFormActive = false, isVisib
     if (isFormActive) {
       return (
         <Link href={formUrl} className={cardActive}>
-          <h2 className="text-base sm:text-lg font-bold text-white mb-0.5">{menu.title}</h2>
-          {menu.description && <p className="text-sm text-white/90">{menu.description}</p>}
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <h2 className="text-base sm:text-lg font-bold text-white mb-0.5">{menu.title}</h2>
+              {menu.description && <p className="text-sm text-white/90">{menu.description}</p>}
+            </div>
+            <span className="flex-shrink-0 px-2 py-0.5 text-xs font-bold bg-white/20 text-white rounded-full">
+              受付中
+            </span>
+          </div>
           <span className="sr-only">お申し込みはこちら</span>
         </Link>
       );
     }
     return (
       <div className={cardDisabled}>
-        <h2 className="text-base sm:text-lg font-bold text-slate-500 mb-0.5">{menu.title}</h2>
-        {menu.description && <p className="text-sm text-slate-400">{menu.description}</p>}
-        <p className="text-xs font-medium mt-2 text-slate-400">準備中</p>
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <h2 className="text-base sm:text-lg font-bold text-slate-500 mb-0.5">{menu.title}</h2>
+            {menu.description && <p className="text-sm text-slate-400">{menu.description}</p>}
+          </div>
+          <span className="flex-shrink-0 px-2 py-0.5 text-xs font-bold bg-slate-200 text-slate-500 rounded-full">
+            受付期間外
+          </span>
+        </div>
       </div>
     );
   }

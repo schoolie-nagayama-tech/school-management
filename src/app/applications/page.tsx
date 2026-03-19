@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AdminLayout } from '@/components/layouts';
 import { Button } from '@/components/ui';
-import { ApplicationTable, ApplicationItemSettings, ApplicationFiltersPanel, ApplicationItemManager, ApplicationItemAccordion } from '@/components/applications';
+import { ApplicationTable, ApplicationItemSettings, ApplicationFiltersPanel, ApplicationItemAccordion } from '@/components/applications';
 import { StudentDetailModal } from '@/components/students';
 import {
   getStudents,
@@ -42,7 +42,6 @@ export default function ApplicationsPage() {
   const [applications, setApplications] = useState<StudentApplication[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [isItemManagerOpen, setIsItemManagerOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
@@ -323,8 +322,6 @@ export default function ApplicationsPage() {
   return (
     <AdminLayout
       headerTitle="申込状況管理"
-      headerOnSettingsClick={canEdit && isManagerOrAbove ? () => setIsItemManagerOpen(true) : undefined}
-      headerSettingsLabel="申込項目管理"
     >
 
       {/* エラーメッセージ */}
@@ -425,23 +422,6 @@ export default function ApplicationsPage() {
         />
       )}
 
-      {/* 項目管理モーダル（新規）- 室長以上のみ表示 */}
-      {canEdit && isManagerOrAbove && (() => {
-        const schoolIds = getSelectedSchoolIds();
-        // 複数教室が選択されている場合は最初の教室を使用（管理は単一教室のみ）
-        const schoolId = schoolIds.length > 0 ? schoolIds[0] : null;
-        if (!schoolId) return null;
-        return (
-          <ApplicationItemManager
-            schoolId={schoolId}
-            items={items}
-            showHidden={filters.showHidden ?? false}
-            isOpen={isItemManagerOpen}
-            onClose={() => setIsItemManagerOpen(false)}
-            onUpdated={fetchData}
-          />
-        );
-      })()}
 
       {/* 生徒詳細モーダル */}
       {selectedStudent && (

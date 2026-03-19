@@ -11,6 +11,7 @@ import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 
 // フォーム種別 → フォーム詳細URLパス（/forms/responses/[path]/[period]）
@@ -156,23 +157,50 @@ export default function ResponsesPage() {
     (p) => p.canAccessApplications
   );
   const { getSelectedSchoolIds, selectedSchoolId, profile } = useAuth();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [responses, setResponses] = useState<FormResponseWithStudent[]>([]);
   const [formPeriods, setFormPeriods] = useState<FormPeriod[]>([]);
   const [schoolsMap, setSchoolsMap] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // フィルター
-  const [filterFormType, setFilterFormType] = useState<FormType | 'all'>('all');
-  const [filterPeriod, setFilterPeriod] = useState<string>('all');
-  const [filterGrade, setFilterGrade] = useState<number | 'all'>('all');
+  // フィルター（URLパラメータから初期値を復元）
+  const [filterFormType, setFilterFormType] = useState<FormType | 'all'>(
+    (searchParams.get('type') as FormType) || 'all'
+  );
+  const [filterPeriod, setFilterPeriod] = useState<string>(
+    searchParams.get('period') || 'all'
+  );
+  const [filterGrade, setFilterGrade] = useState<number | 'all'>(() => {
+    const g = searchParams.get('grade');
+    return g ? Number(g) : 'all';
+  });
   const [filterLinkedStatus, setFilterLinkedStatus] = useState<
     'all' | 'linked' | 'unlinked'
-  >('all');
+  >((searchParams.get('linked') as 'all' | 'linked' | 'unlinked') || 'all');
 
   // ソート
-  const [sortKey, setSortKey] = useState<SortKey>('created_at');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [sortKey, setSortKey] = useState<SortKey>(
+    (searchParams.get('sort') as SortKey) || 'created_at'
+  );
+  const [sortOrder, setSortOrder] = useState<SortOrder>(
+    (searchParams.get('order') as SortOrder) || 'desc'
+  );
+
+  // フィルター変更時にURLパラメータを同期
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (filterFormType !== 'all') params.set('type', filterFormType);
+    if (filterPeriod !== 'all') params.set('period', filterPeriod);
+    if (filterGrade !== 'all') params.set('grade', String(filterGrade));
+    if (filterLinkedStatus !== 'all') params.set('linked', filterLinkedStatus);
+    if (sortKey !== 'created_at') params.set('sort', sortKey);
+    if (sortOrder !== 'desc') params.set('order', sortOrder);
+    const qs = params.toString();
+    const newUrl = qs ? `?${qs}` : '/responses';
+    router.replace(newUrl, { scroll: false });
+  }, [filterFormType, filterPeriod, filterGrade, filterLinkedStatus, sortKey, sortOrder, router]);
 
   const handleSort = useCallback((key: SortKey) => {
     setSortKey((prev) => {

@@ -223,18 +223,6 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                       回答一覧
                     </Link>
                     {(showAllLinks || permissions?.canAccessPortal) && (
-                      <>
-                      <Link
-                        href="/forms/manage"
-                        onClick={() => setShowFormDropdown(false)}
-                        className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
-                          pathname === '/forms/manage' || pathname?.startsWith('/forms/manage')
-                            ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
-                            : ''
-                        }`}
-                      >
-                        カスタムフォーム
-                      </Link>
                       <Link
                         href="/settings/portal"
                         onClick={() => setShowFormDropdown(false)}
@@ -246,7 +234,6 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                       >
                         ポータル設定
                       </Link>
-                      </>
                     )}
                   </div>
                 </div>
