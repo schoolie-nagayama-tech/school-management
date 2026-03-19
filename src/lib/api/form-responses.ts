@@ -69,11 +69,11 @@ export async function getFormResponses(
     query = query.ilike('student_name', `%${filters.search}%`);
   }
 
-  // 計上状態フィルター
+  // 計上状態フィルター（JSONB内のフィールド）
   if (filters?.chargedStatus === 'charged') {
-    query = query.eq('status_checks->charged', true);
+    query = query.eq('status_checks->>charged', 'true');
   } else if (filters?.chargedStatus === 'not_charged') {
-    query = query.or('status_checks->charged.is.null,status_checks->charged.eq.false');
+    query = query.or('status_checks->>charged.is.null,status_checks->>charged.eq.false');
   }
 
   query = query.order('created_at', { ascending: false });

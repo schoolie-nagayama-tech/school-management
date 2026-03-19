@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       status_checks?: unknown;
     };
 
-    if (!school_id || !form_type || !form_period || !student_name || !email) {
+    if (!school_id?.trim() || !form_type?.trim() || !form_period?.trim() || !student_name?.trim() || !email?.trim()) {
       return NextResponse.json(
         { error: 'school_id, form_type, form_period, student_name, email は必須です' },
         { status: 400 }
@@ -111,11 +111,15 @@ export async function POST(request: NextRequest) {
     // 申込通知メール送信（失敗しても回答は成功扱い）
     try {
       // 自動紐付け後の最新データを取得してメール送信
-      const { data: latestResponse } = await supabaseAdmin
+      const { data: latestResponse, error: refetchError } = await supabaseAdmin
         .from('form_responses')
         .select('*')
         .eq('id', created.id)
         .single();
+
+      if (refetchError) {
+        console.warn('[portal/form-responses] 最新データの再取得に失敗（元データで通知します）:', refetchError);
+      }
 
       const { error: invokeError } = await supabaseAdmin.functions.invoke(
         'send-form-notification',

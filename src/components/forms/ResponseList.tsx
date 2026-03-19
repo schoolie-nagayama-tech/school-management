@@ -7,6 +7,7 @@ import { GRADE_LABELS } from '@/types/database';
 import { getStudents } from '@/lib/api/students';
 import { ResponseDetailModal } from './ResponseDetailModal';
 import { LinkStudentModal } from './LinkStudentModal';
+import { unlinkResponseFromStudent } from '@/lib/api/forms';
 import { useConfirm } from '@/hooks/useConfirm';
 
 interface ResponseListProps {
@@ -175,7 +176,6 @@ export function ResponseList({ responses, formId, onRefresh }: ResponseListProps
                           {response.linked_student_id ? (
                             <Button
                               onClick={async () => {
-                                const { unlinkResponseFromStudent } = await import('@/lib/api/forms');
                                 if (await confirm({ description: '紐付けを解除しますか？' })) {
                                   try {
                                     await unlinkResponseFromStudent(response.id);

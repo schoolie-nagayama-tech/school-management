@@ -279,9 +279,9 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
                 </span>
               </div>
               <div className="p-3 space-y-2">
-                {studentAlert.alerts.map((alert, index) => (
+                {studentAlert.alerts.map((alert) => (
                   <AlertItem
-                    key={`${alert.id}-${index}`}
+                    key={alert.id}
                     alert={alert}
                     onDismiss={handleDismiss}
                     canDismiss={canDismiss}

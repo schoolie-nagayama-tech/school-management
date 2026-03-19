@@ -59,7 +59,10 @@
       "Bash(grep -n \"href=\" /c/Users/ytaka/Desktop/student-management/src/app/forms/preview-period/[formType]/[periodKey]/page.tsx)",
       "Bash(ls -la /c/Users/ytaka/Desktop/student-management/src/app/settings/*/page.tsx)",
       "Bash(grep -r \"Link href=.*back\\\\|back button\\\\|breadcrumb\\\\|<Link href=\"\"/students\"\"\" /c/Users/ytaka/Desktop/student-management/src/app/students/[studentId] --include=\"*.tsx\")",
-      "Bash(node -e \":*)"
+      "Bash(node -e \":*)",
+      "Bash(grep -l \"useConfirm\" /c/Users/ytaka/Desktop/student-management/src/components/**/*.tsx)",
+      "Bash(grep -E \"\\\\.\\(tsx?|jsx?\\)$\")",
+      "Bash(grep -n \"\\\\.single\\(\\)\" src/app/api/admin/users/[userId]/route.ts)"
     ]
   }
 }

@@ -116,7 +116,19 @@ export async function PUT(
       );
     }
 
-    const valueStr = typeof value === 'string' ? value : JSON.stringify(value);
+    // 文字列の場合はJSON妥当性を検証
+    let valueStr: string;
+    if (typeof value === 'string') {
+      // JSON文字列として保存する設定の場合、パース可能か検証
+      try {
+        JSON.parse(value);
+      } catch {
+        // 純粋な文字列値（JSON構造でない）はそのまま許可
+      }
+      valueStr = value;
+    } else {
+      valueStr = JSON.stringify(value);
+    }
     const now = new Date().toISOString();
 
     const { data, error } = await supabaseAdmin

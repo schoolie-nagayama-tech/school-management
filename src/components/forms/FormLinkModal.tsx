@@ -26,12 +26,13 @@ export function FormLinkModal({ isOpen, onClose, form }: FormLinkModalProps) {
 
   const formUrl = getFormUrl();
 
-  // 学校コードを取得
+  // 学校コードを取得（form.id で依存を安定化）
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (isOpen && form) {
       loadSchoolCode();
     }
-  }, [isOpen, form]);
+  }, [isOpen, form?.id]);
 
   const loadSchoolCode = async () => {
     setIsLoading(true);

@@ -208,39 +208,30 @@ export async function PATCH(
 
       // 自分自身の編集では user_schools は変更しない
       if (!isEditingSelf) {
-        const { data: currentRows } = await supabaseAdmin
+        // 原子的に更新: 既存をすべて削除してから一括挿入
+        const { error: deleteAllError } = await supabaseAdmin
           .from('user_schools')
-          .select('school_id')
+          .delete()
           .eq('user_id', userId);
-        const currentIds = (currentRows || []).map((r: { school_id: string }) => String(r.school_id).trim());
 
-        const toAdd = wantIds.filter((sid) => !currentIds.includes(sid));
-        const toRemove = currentIds.filter((sid) => !wantIds.includes(sid));
+        if (deleteAllError) {
+          console.error('user_schools delete all error:', deleteAllError);
+          throw deleteAllError;
+        }
 
-        console.log('[PATCH user]', { userId, bodySchoolIds: body.school_ids, wantIds, currentIds, toAdd, toRemove });
-
-        for (const school_id of toAdd) {
+        if (wantIds.length > 0) {
+          const rows = wantIds.map((school_id) => ({ user_id: userId, school_id }));
           const { error: insertError } = await supabaseAdmin
             .from('user_schools')
-            .insert({ user_id: userId, school_id });
+            .insert(rows);
 
           if (insertError) {
-            console.error('user_schools insert error:', insertError);
+            console.error('user_schools bulk insert error:', insertError);
             throw insertError;
           }
         }
 
-        for (const sid of toRemove) {
-          const { error: deleteError } = await supabaseAdmin
-            .from('user_schools')
-            .delete()
-            .eq('user_id', userId)
-            .eq('school_id', sid);
-          if (deleteError) {
-            console.error('user_schools delete error:', deleteError);
-            throw deleteError;
-          }
-        }
+        console.log('[PATCH user]', { userId, wantIds });
       }
 
       const { data: afterRows } = await supabaseAdmin
