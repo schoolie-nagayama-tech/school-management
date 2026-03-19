@@ -2762,7 +2762,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission> = {
     canAccessCourses: false,
     canAccessSettings: false,
     canAccessUsers: false,
-    canAccessPortal: true,
+    canAccessPortal: false,
     canEditStudentInfo: false,
     canEditProposalCount: false,
     canEditApplicationCount: false,

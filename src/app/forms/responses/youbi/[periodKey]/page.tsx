@@ -344,11 +344,12 @@ export default function YoubiResponsePage() {
                 onChange={(e) => setShowArchived(e.target.checked)}
                 className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6] cursor-pointer"
               />
-              <span className="text-sm text-[#1f2937]">
+              <span className="text-sm text-[#1f2937] flex items-center gap-2">
                 アーカイブ済みを表示
                 {archivedCount > 0 && (
                   <span className="ml-1 text-[#4b5563]/60">({archivedCount}件)</span>
                 )}
+                {isLoading && <span className="inline-block w-3 h-3 border-2 border-[#3b82f6] border-t-transparent rounded-full animate-spin" />}
               </span>
             </label>
           </div>

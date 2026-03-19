@@ -414,7 +414,7 @@ export default function StudentsPage() {
   return (
     <AdminLayout
       headerTitle="生徒管理"
-      headerOnBulkGradeUpdateClick={() => setIsBulkGradeUpdateModalOpen(true)}
+      headerOnBulkGradeUpdateClick={!isTeacher ? () => setIsBulkGradeUpdateModalOpen(true) : undefined}
     >
       {/* エラーメッセージ */}
         {errorMessage && (
