@@ -17,6 +17,7 @@ export default function SchoolSettingsPage() {
 
   const [school, setSchool] = useState<School | null>(null);
   const [notificationEmails, setNotificationEmails] = useState<string[]>([]);
+  const [logoUrl, setLogoUrl] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -28,6 +29,7 @@ export default function SchoolSettingsPage() {
         const schoolData = await getSchool(schoolId);
         if (schoolData) {
           setSchool(schoolData);
+          setLogoUrl(schoolData.logo_url || '');
           // notification_emails 配列を優先、なければ旧フィールドから復元
           if (schoolData.notification_emails && schoolData.notification_emails.length > 0) {
             setNotificationEmails(schoolData.notification_emails);
@@ -75,6 +77,7 @@ export default function SchoolSettingsPage() {
         notification_emails: filteredEmails,
         // 旧フィールドも先頭アドレスで更新（後方互換）
         notification_email: filteredEmails[0] ?? null,
+        logo_url: logoUrl.trim() || null,
       });
 
       // 更新後のデータを再取得
@@ -129,6 +132,42 @@ export default function SchoolSettingsPage() {
     <AdminLayout headerTitle="教室設定">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="max-w-2xl mx-auto">
+        {/* ロゴ設定 */}
+        <Card>
+          <CardHeader>
+            <CardTitle>ポータル表示</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[#1f2937] mb-2">
+                  ロゴ画像URL
+                </label>
+                <Input
+                  type="url"
+                  value={logoUrl}
+                  onChange={(e) => setLogoUrl(e.target.value)}
+                  placeholder="https://example.com/logo.png"
+                />
+                <p className="mt-1.5 text-xs text-[#6b7280]">
+                  保護者ポータルのヘッダーに表示されるロゴ画像のURLです。未設定の場合は教室名の頭文字が表示されます。
+                </p>
+              </div>
+              {logoUrl && (
+                <div className="flex items-center gap-3 p-3 bg-[#f9fafb] rounded-lg border border-[#e5e7eb]">
+                  <img
+                    src={logoUrl}
+                    alt="ロゴプレビュー"
+                    className="w-10 h-10 rounded-lg object-cover border border-[#e5e7eb]"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  />
+                  <span className="text-sm text-[#6b7280]">プレビュー</span>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>通知設定</CardTitle>

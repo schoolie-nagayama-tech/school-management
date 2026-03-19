@@ -77,11 +77,19 @@ export default async function PortalPage({ params }: PortalPageProps) {
       >
         <div className="max-w-lg mx-auto px-5 py-4 sm:py-5">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-[#1a1a1a] flex items-center justify-center flex-shrink-0">
-              <span className="text-white text-sm font-bold">
-                {school.name.charAt(0)}
-              </span>
-            </div>
+            {school.logo_url ? (
+              <img
+                src={school.logo_url}
+                alt={school.name}
+                className="w-9 h-9 rounded-lg object-cover flex-shrink-0"
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-lg bg-[#1a1a1a] flex items-center justify-center flex-shrink-0">
+                <span className="text-white text-sm font-bold">
+                  {school.name.charAt(0)}
+                </span>
+              </div>
+            )}
             <div className="min-w-0">
               <h1 className="text-base sm:text-lg font-bold text-[#1a1a1a] truncate leading-tight">
                 {school.name}
