@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
 import { Button } from '@/components/ui';
 import { ApplicationTable, ApplicationItemSettings, ApplicationFiltersPanel, ApplicationItemAccordion } from '@/components/applications';
@@ -30,6 +31,7 @@ export default function ApplicationsPage() {
   );
 
   // 編集権限
+  const router = useRouter();
   const canEdit = useCanEdit('canEditApplications');
   const { getSelectedSchoolIds, selectedSchoolId, profile } = useAuth();
   
@@ -430,8 +432,12 @@ export default function ApplicationsPage() {
           onClose={handleDetailClose}
           student={selectedStudent}
           onEdit={() => {
-            // 編集は別ページで行うため、ここでは詳細を閉じるだけ
+            // 生徒管理ページで編集
+            const studentId = selectedStudent?.id;
             handleDetailClose();
+            if (studentId) {
+              router.push(`/students?edit=${studentId}`);
+            }
           }}
         />
       )}

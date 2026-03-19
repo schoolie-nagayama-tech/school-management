@@ -38,7 +38,7 @@ import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
 import { AdminLayout } from '@/components/layouts';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertBoard } from '@/components/alerts';
 import { BulletinBoard } from '@/components/bulletin';
 import { NewResponsesBoard } from '@/components/responses/NewResponsesBoard';
@@ -50,6 +50,7 @@ export default function StudentsPage() {
   );
   const { getSelectedSchoolIds, selectedSchoolId, profile } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   
   // 講師かどうかを判定
   const isTeacher = profile?.role === 'teacher';
@@ -118,6 +119,20 @@ export default function StudentsPage() {
       setIsLoading(false);
     }
   }, [getSelectedSchoolIds]);
+
+  // URLパラメータ ?edit=studentId で編集モーダルを自動起動
+  useEffect(() => {
+    const editId = searchParams.get('edit');
+    if (editId && students.length > 0 && !isLoading) {
+      const student = students.find((s) => s.id === editId);
+      if (student) {
+        setSelectedStudent(student);
+        setIsEditModalOpen(true);
+        // URLからパラメータを消す
+        router.replace('/students', { scroll: false });
+      }
+    }
+  }, [searchParams, students, isLoading, router]);
 
   // フィルター済みの生徒一覧
   const filteredStudents = useMemo(() => {

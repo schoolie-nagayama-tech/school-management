@@ -76,7 +76,7 @@ export default async function PortalPage({ params }: PortalPageProps) {
         style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
       >
         <div className="max-w-lg mx-auto px-4 py-4 sm:py-5">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white drop-shadow-sm">
+          <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-white drop-shadow-sm truncate">
             {school.name}
           </h1>
           <p className="text-sm sm:text-base text-emerald-50 mt-1">
