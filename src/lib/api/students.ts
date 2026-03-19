@@ -401,8 +401,6 @@ export async function updateStudent(
   student: StudentUpdate,
   subjectIds?: string[]
 ): Promise<Student> {
-  const schoolId = getDefaultSchoolId();
-
   // 生徒コードが空の場合は既存値を維持（空文字は更新しない）
   const updateData = { ...student };
   if ('student_code' in student) {
@@ -472,7 +470,7 @@ export async function updateStudent(
     diff.newValues = student;
   }
 
-  await logStudentAction(studentData.id, schoolId, action, diff);
+  await logStudentAction(studentData.id, studentData.school_id, action, diff);
 
   return studentData;
 }
@@ -505,7 +503,7 @@ export async function deleteStudent(id: string): Promise<void> {
 
   const oldTyped = oldData as Student;
   // ログを記録
-  await logStudentAction(id, schoolId, 'soft_deleted', {
+  await logStudentAction(id, oldTyped.school_id, 'soft_deleted', {
     deletedValues: {
       student_code: oldTyped.student_code,
       last_name: oldTyped.last_name,
@@ -520,18 +518,18 @@ export async function deleteStudent(id: string): Promise<void> {
 export async function bulkDeleteStudents(ids: string[]): Promise<number> {
   if (ids.length === 0) return 0;
 
-  const schoolId = getDefaultSchoolId();
   const now = new Date().toISOString();
 
   // 対象生徒の情報を取得（ログ用）
   const { data: targets } = await supabase
     .from('students')
-    .select('id, student_code, last_name, first_name, grade, status')
+    .select('id, school_id, student_code, last_name, first_name, grade, status')
     .in('id', ids)
     .is('deleted_at', null);
 
   const targetList = (targets || []) as Array<{
     id: string;
+    school_id: string;
     student_code: string | null;
     last_name: string;
     first_name: string;
@@ -557,7 +555,7 @@ export async function bulkDeleteStudents(ids: string[]): Promise<number> {
   // ログを並列記録
   await Promise.all(
     targetList.map((s) =>
-      logStudentAction(s.id, schoolId, 'soft_deleted', {
+      logStudentAction(s.id, s.school_id, 'soft_deleted', {
         bulk_delete: true,
         deletedValues: {
           student_code: s.student_code,
@@ -653,11 +651,13 @@ export async function moveStudentsToSchool(
 
 // 生徒を復元（将来用）
 export async function restoreStudent(id: string): Promise<void> {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('students')
     .update({ deleted_at: null } as never)
     .eq('id', id)
-    .not('deleted_at', 'is', null);
+    .not('deleted_at', 'is', null)
+    .select('school_id')
+    .single();
 
   if (error) {
     console.error('Error restoring student:', error);
@@ -665,7 +665,8 @@ export async function restoreStudent(id: string): Promise<void> {
   }
 
   // ログを記録
-  await logStudentAction(id, schoolId, 'restored');
+  const restored = data as { school_id: string };
+  await logStudentAction(id, restored.school_id, 'restored');
 }
 
 // 学年カテゴリ取得
