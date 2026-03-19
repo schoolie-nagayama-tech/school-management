@@ -3,158 +3,166 @@
 import Link from 'next/link';
 import type { PortalMenu } from '@/types/database';
 
-// ポータル用・緑基調・柔らかく透明感のあるスタイル・タッチしやすい高さ
-const cardActive =
-  'block w-full min-h-[56px] sm:min-h-[64px] p-4 rounded-2xl border border-emerald-300/50 bg-emerald-500 text-white hover:bg-emerald-600 active:bg-emerald-600/95 shadow-sm transition-all duration-200';
-const cardDisabled =
-  'block w-full min-h-[56px] sm:min-h-[64px] p-4 rounded-2xl border border-slate-200/80 bg-white/60 backdrop-blur-sm text-slate-500 cursor-not-allowed';
-
 interface PortalMenuCardProps {
   menu: PortalMenu;
   schoolCode: string;
-  isFormActive?: boolean; // フォームが公開期間内かどうか
-  isVisible?: boolean; // 設定での公開（非公開時はグレーアウト）
+  isFormActive?: boolean;
+  isVisible?: boolean;
+}
+
+// アクティブカード（白背景+左線アクセント）
+function ActiveCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return (
+    <div className={`bg-white rounded-xl border border-[#e5e7eb] shadow-sm hover:shadow-md hover:border-[#d1d5db] active:scale-[0.99] transition-all duration-150 ${className}`}>
+      {children}
+    </div>
+  );
+}
+
+// 非アクティブカード
+function DisabledCard({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="bg-[#f3f4f6] rounded-xl border border-[#e5e7eb] opacity-60 cursor-not-allowed">
+      {children}
+    </div>
+  );
+}
+
+// 矢印アイコン
+function ChevronRight() {
+  return (
+    <svg className="w-4 h-4 text-[#9ca3af] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+    </svg>
+  );
+}
+
+// 外部リンクアイコン
+function ExternalIcon() {
+  return (
+    <svg className="w-3.5 h-3.5 text-[#9ca3af] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+    </svg>
+  );
+}
+
+// ステータスバッジ
+function StatusBadge({ active }: { active: boolean }) {
+  if (active) {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+        受付中
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex px-2 py-0.5 text-[11px] font-medium rounded-full bg-[#f3f4f6] text-[#9ca3af] border border-[#e5e7eb]">
+      受付期間外
+    </span>
+  );
 }
 
 export function PortalMenuCard({ menu, schoolCode, isFormActive = false, isVisible = true }: PortalMenuCardProps) {
   const isMendan = menu.menu_key === 'mendan';
-
-  // 非公開（設定で非表示にした場合）はグレーアウト表示（非表示ではなくグレーで表示）
   const showAsDisabled = isVisible !== true;
 
-  // 外部リンクの場合
-  if (menu.link_type === 'external') {
-    // 面談申し込みで複数リンクがある場合
-    if (isMendan && menu.link_urls && menu.link_urls.length > 0) {
-      if (showAsDisabled) {
-        return (
-          <div className={cardDisabled}>
-            <h2 className="text-base sm:text-lg font-bold text-slate-500 mb-0.5">{menu.title}</h2>
-            {menu.description && <p className="text-sm text-slate-400">{menu.description}</p>}
-            <p className="text-xs font-medium mt-2 text-slate-400">準備中</p>
-          </div>
-        );
-      }
-      return (
-        <div className="w-full space-y-3">
-          <div>
-            <h2 className="text-base sm:text-lg font-bold text-slate-700 mb-0.5">{menu.title}</h2>
-            {menu.description && (
-              <p className="text-sm text-slate-600">{menu.description}</p>
-            )}
-          </div>
-          <div className="space-y-2">
-            {menu.link_urls.map((link, index) => (
-              <a
-                key={index}
-                href={link.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`${cardActive} flex items-center justify-between`}
-              >
-                <span className="text-base font-medium text-white">{link.label}</span>
-                <svg className="w-5 h-5 flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </a>
-            ))}
-          </div>
+  // カード内部のコンテンツ
+  const cardContent = (
+    <div className="flex items-center gap-3 p-4">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-0.5">
+          <h2 className="text-[15px] font-bold text-[#1a1a1a] truncate">{menu.title}</h2>
         </div>
-      );
-    }
+        {menu.description && (
+          <p className="text-[13px] text-[#6b7280] truncate">{menu.description}</p>
+        )}
+      </div>
+      <StatusBadge active={isFormActive && !showAsDisabled} />
+      {isFormActive && !showAsDisabled && <ChevronRight />}
+    </div>
+  );
 
-    // 単一外部リンクの場合
-    if (menu.link_url) {
-      if (showAsDisabled) {
-        return (
-          <div className={cardDisabled}>
-            <h2 className="text-base sm:text-lg font-bold text-slate-500 mb-0.5">{menu.title}</h2>
-            {menu.description && <p className="text-sm text-slate-400">{menu.description}</p>}
-            <p className="text-xs font-medium mt-2 text-slate-400">準備中</p>
-          </div>
-        );
-      }
-      return (
+  // 非公開
+  if (showAsDisabled) {
+    return <DisabledCard>{cardContent}</DisabledCard>;
+  }
+
+  // 外部リンク：面談（複数リンク）
+  if (menu.link_type === 'external' && isMendan && menu.link_urls && menu.link_urls.length > 0) {
+    return (
+      <div className="space-y-2">
+        <div className="px-1">
+          <h2 className="text-[15px] font-bold text-[#1a1a1a]">{menu.title}</h2>
+          {menu.description && <p className="text-[13px] text-[#6b7280] mt-0.5">{menu.description}</p>}
+        </div>
+        {menu.link_urls.map((link, index) => (
+          <ActiveCard key={index}>
+            <a
+              href={link.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 p-4"
+            >
+              <span className="flex-1 text-[15px] font-medium text-[#1a1a1a]">{link.label}</span>
+              <ExternalIcon />
+            </a>
+          </ActiveCard>
+        ))}
+      </div>
+    );
+  }
+
+  // 外部リンク：単一
+  if (menu.link_type === 'external' && menu.link_url) {
+    return (
+      <ActiveCard>
         <a
           href={menu.link_url}
           target="_blank"
           rel="noopener noreferrer"
-          className={`${cardActive} flex items-start sm:items-center justify-between gap-3`}
+          className="flex items-center gap-3 p-4"
         >
           <div className="flex-1 min-w-0">
-            <h2 className="text-base sm:text-lg font-bold text-white mb-0.5">{menu.title}</h2>
-            {menu.description && <p className="text-sm text-white/90">{menu.description}</p>}
+            <h2 className="text-[15px] font-bold text-[#1a1a1a] truncate">{menu.title}</h2>
+            {menu.description && <p className="text-[13px] text-[#6b7280] truncate">{menu.description}</p>}
           </div>
-          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-          </svg>
+          <StatusBadge active />
+          <ExternalIcon />
         </a>
-      );
-    }
-    // 外部リンクが未設定
-    return (
-      <div className={cardDisabled}>
-        <h2 className="text-base sm:text-lg font-bold text-slate-500 mb-0.5">{menu.title}</h2>
-        {menu.description && <p className="text-sm text-slate-400">{menu.description}</p>}
-        <p className="text-xs font-medium mt-2 text-slate-400">準備中</p>
-      </div>
+      </ActiveCard>
     );
   }
 
-  // 内部フォームの場合
+  // 外部リンク未設定
+  if (menu.link_type === 'external') {
+    return <DisabledCard>{cardContent}</DisabledCard>;
+  }
+
+  // 内部フォーム
   if (menu.link_type === 'internal') {
-    let formUrl: string;
-    if (menu.link_url && menu.link_url.startsWith('/portal/')) {
-      formUrl = menu.link_url;
-    } else {
-      formUrl = `/portal/${schoolCode}/${menu.menu_key}`;
+    const formUrl = menu.link_url?.startsWith('/portal/')
+      ? menu.link_url
+      : `/portal/${schoolCode}/${menu.menu_key}`;
+
+    if (!isFormActive) {
+      return <DisabledCard>{cardContent}</DisabledCard>;
     }
 
-    if (showAsDisabled) {
-      return (
-        <div className={cardDisabled}>
-          <h2 className="text-base sm:text-lg font-bold text-slate-500 mb-0.5">{menu.title}</h2>
-          {menu.description && <p className="text-sm text-slate-400">{menu.description}</p>}
-          <p className="text-xs font-medium mt-2 text-slate-400">準備中</p>
-        </div>
-      );
-    }
-    if (isFormActive) {
-      return (
-        <Link href={formUrl} className={cardActive}>
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex-1 min-w-0">
-              <h2 className="text-base sm:text-lg font-bold text-white mb-0.5">{menu.title}</h2>
-              {menu.description && <p className="text-sm text-white/90">{menu.description}</p>}
-            </div>
-            <span className="flex-shrink-0 px-2 py-0.5 text-xs font-bold bg-white/20 text-white rounded-full">
-              受付中
-            </span>
-          </div>
-          <span className="sr-only">お申し込みはこちら</span>
-        </Link>
-      );
-    }
     return (
-      <div className={cardDisabled}>
-        <div className="flex items-start justify-between gap-2">
+      <ActiveCard>
+        <Link href={formUrl} className="flex items-center gap-3 p-4">
           <div className="flex-1 min-w-0">
-            <h2 className="text-base sm:text-lg font-bold text-slate-500 mb-0.5">{menu.title}</h2>
-            {menu.description && <p className="text-sm text-slate-400">{menu.description}</p>}
+            <h2 className="text-[15px] font-bold text-[#1a1a1a] truncate">{menu.title}</h2>
+            {menu.description && <p className="text-[13px] text-[#6b7280] truncate">{menu.description}</p>}
           </div>
-          <span className="flex-shrink-0 px-2 py-0.5 text-xs font-bold bg-slate-200 text-slate-500 rounded-full">
-            受付期間外
-          </span>
-        </div>
-      </div>
+          <StatusBadge active />
+          <ChevronRight />
+        </Link>
+      </ActiveCard>
     );
   }
 
-  return (
-    <div className={cardDisabled}>
-      <h2 className="text-base sm:text-lg font-bold text-slate-500 mb-0.5">{menu.title}</h2>
-      {menu.description && <p className="text-sm text-slate-400">{menu.description}</p>}
-      <p className="text-xs font-medium mt-2 text-slate-400">準備中</p>
-    </div>
-  );
+  // fallback
+  return <DisabledCard>{cardContent}</DisabledCard>;
 }

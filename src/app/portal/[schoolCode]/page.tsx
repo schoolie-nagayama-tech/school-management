@@ -69,30 +69,35 @@ export default async function PortalPage({ params }: PortalPageProps) {
   );
 
   return (
-    <div className="min-h-[100dvh] flex flex-col bg-gradient-to-b from-emerald-50/90 via-white to-teal-50/50">
-      {/* ヘッダー：柔らかい緑・白文字・スマホのノッチ対応 */}
+    <div className="min-h-[100dvh] flex flex-col bg-[#f8f9fa]">
+      {/* ヘッダー */}
       <header
-        className="bg-emerald-500/95 text-white shadow-sm backdrop-blur-sm"
-        style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
+        className="bg-white border-b border-[#e5e7eb]"
+        style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
       >
-        <div className="max-w-lg mx-auto px-4 py-4 sm:py-5">
-          <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-white drop-shadow-sm truncate">
-            {school.name}
-          </h1>
-          <p className="text-sm sm:text-base text-emerald-50 mt-1">
-            各種お申し込みページ
-          </p>
+        <div className="max-w-lg mx-auto px-5 py-4 sm:py-5">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-[#1a1a1a] flex items-center justify-center flex-shrink-0">
+              <span className="text-white text-sm font-bold">
+                {school.name.charAt(0)}
+              </span>
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-lg font-bold text-[#1a1a1a] truncate leading-tight">
+                {school.name}
+              </h1>
+              <p className="text-xs text-[#6b7280] mt-0.5">各種お申し込み</p>
+            </div>
+          </div>
         </div>
       </header>
 
       {/* 本文 */}
-      <main className="flex-1 max-w-lg mx-auto w-full px-4 py-6 sm:py-8 pb-[env(safe-area-inset-bottom)]">
-        {/* 案内文：透明感のある白オーバーレイ */}
-        <div className="bg-white/75 backdrop-blur-md border border-emerald-200/60 rounded-2xl p-4 sm:p-5 mb-6 shadow-sm text-slate-600">
-          <p className="text-sm sm:text-base leading-relaxed">
-            こちらは各種お申し込みページです。お申し込み内容の確認メールが届きますので、ご記入のうえ送信してください。
-          </p>
-        </div>
+      <main className="flex-1 max-w-lg mx-auto w-full px-4 sm:px-5 py-5 sm:py-6 pb-[env(safe-area-inset-bottom)]">
+        {/* 案内文 */}
+        <p className="text-[13px] text-[#6b7280] leading-relaxed mb-5 px-1">
+          お申し込み内容の確認メールが届きます。ご記入のうえ送信してください。
+        </p>
 
         {/* メニュー一覧 */}
         <PortalMenuList menus={menusWithActiveStatus} schoolCode={schoolCode} />
