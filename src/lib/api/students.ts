@@ -420,7 +420,6 @@ export async function updateStudent(
     .from('students')
     .select('*')
     .eq('id', id)
-    .eq('school_id', schoolId)
     .is('deleted_at', null)
     .single();
 
@@ -428,7 +427,6 @@ export async function updateStudent(
     .from('students')
     .update({ ...updateData, updated_at: new Date().toISOString() } as never)
     .eq('id', id)
-    .eq('school_id', schoolId)
     .is('deleted_at', null)
     .select()
     .single();
@@ -438,7 +436,10 @@ export async function updateStudent(
     if (error.code === '23505') {
       throw new Error('この生徒コードは既に使用されています');
     }
-    throw new Error('生徒情報の更新に失敗しました');
+    if (error.code === 'PGRST116') {
+      throw new Error('生徒が見つかりません。他のユーザーによって削除された可能性があります。');
+    }
+    throw new Error(`生徒情報の更新に失敗しました: ${error.message}`);
   }
 
   const studentData = data as Student;
@@ -478,14 +479,11 @@ export async function updateStudent(
 
 // 生徒を論理削除（soft delete）
 export async function deleteStudent(id: string): Promise<void> {
-  const schoolId = getDefaultSchoolId();
-
   // 既存データを取得（ログ用）
   const { data: oldData } = await supabase
     .from('students')
     .select('*')
     .eq('id', id)
-    .eq('school_id', schoolId)
     .is('deleted_at', null)
     .single();
 
@@ -498,7 +496,6 @@ export async function deleteStudent(id: string): Promise<void> {
     .from('students')
     .update({ deleted_at: new Date().toISOString() } as never)
     .eq('id', id)
-    .eq('school_id', schoolId)
     .is('deleted_at', null);
 
   if (error) {
@@ -656,13 +653,10 @@ export async function moveStudentsToSchool(
 
 // 生徒を復元（将来用）
 export async function restoreStudent(id: string): Promise<void> {
-  const schoolId = getDefaultSchoolId();
-
   const { error } = await supabase
     .from('students')
     .update({ deleted_at: null } as never)
     .eq('id', id)
-    .eq('school_id', schoolId)
     .not('deleted_at', 'is', null);
 
   if (error) {
