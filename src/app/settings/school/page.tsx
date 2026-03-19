@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { AdminLayout } from '@/components/layouts';
 import { Button, Card, CardHeader, CardTitle, CardContent, Input, ToastContainer } from '@/components/ui';
+import Link from 'next/link';
 import { getDefaultSchoolId, getSchool, updateSchool } from '@/lib/api/schools';
 import { useToast } from '@/hooks/useToast';
 import { useRequirePermission } from '@/hooks/usePermissions';
@@ -18,6 +19,8 @@ export default function SchoolSettingsPage() {
   const [school, setSchool] = useState<School | null>(null);
   const [notificationEmails, setNotificationEmails] = useState<string[]>([]);
   const [logoUrl, setLogoUrl] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -65,6 +68,65 @@ export default function SchoolSettingsPage() {
     setNotificationEmails((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // ロゴ画像アップロード
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !school) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toastError('ファイルサイズは2MB以下にしてください');
+      return;
+    }
+    if (!file.type.startsWith('image/')) {
+      toastError('画像ファイルのみアップロードできます');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('schoolId', school.id);
+
+      const res = await fetch('/api/upload/logo', {
+        method: 'POST',
+        body: formData,
+      });
+      const json = await res.json();
+
+      if (!res.ok) {
+        throw new Error(json.error || 'アップロードに失敗しました');
+      }
+
+      setLogoUrl(json.url);
+      // school オブジェクトも更新
+      setSchool({ ...school, logo_url: json.url });
+      success('ロゴ画像をアップロードしました');
+    } catch (err) {
+      toastError(err instanceof Error ? err.message : 'アップロードに失敗しました');
+    } finally {
+      setIsUploading(false);
+      // inputをリセット
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  // ロゴ画像を削除
+  const handleLogoRemove = async () => {
+    if (!school) return;
+    setIsUploading(true);
+    try {
+      await updateSchool(school.id, { logo_url: null });
+      setLogoUrl('');
+      setSchool({ ...school, logo_url: null });
+      success('ロゴ画像を削除しました');
+    } catch (err) {
+      toastError(err instanceof Error ? err.message : '削除に失敗しました');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   // 通知先メールアドレスを保存
   const handleSave = async () => {
     if (!school) return;
@@ -77,7 +139,6 @@ export default function SchoolSettingsPage() {
         notification_emails: filteredEmails,
         // 旧フィールドも先頭アドレスで更新（後方互換）
         notification_email: filteredEmails[0] ?? null,
-        logo_url: logoUrl.trim() || null,
       });
 
       // 更新後のデータを再取得
@@ -132,6 +193,14 @@ export default function SchoolSettingsPage() {
     <AdminLayout headerTitle="教室設定">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="max-w-2xl mx-auto">
+        <div className="mb-4">
+          <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-[#6b7280] hover:text-[#1f2937] transition-colors">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            設定に戻る
+          </Link>
+        </div>
         {/* ロゴ設定 */}
         <Card>
           <CardHeader>
@@ -139,31 +208,53 @@ export default function SchoolSettingsPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-[#1f2937] mb-2">
-                  ロゴ画像URL
-                </label>
-                <Input
-                  type="url"
-                  value={logoUrl}
-                  onChange={(e) => setLogoUrl(e.target.value)}
-                  placeholder="https://example.com/logo.png"
-                />
-                <p className="mt-1.5 text-xs text-[#6b7280]">
-                  保護者ポータルのヘッダーに表示されるロゴ画像のURLです。未設定の場合は教室名の頭文字が表示されます。
-                </p>
-              </div>
-              {logoUrl && (
-                <div className="flex items-center gap-3 p-3 bg-[#f9fafb] rounded-lg border border-[#e5e7eb]">
+              <label className="block text-sm font-medium text-[#1f2937] mb-1">
+                ロゴ画像
+              </label>
+              <div className="flex items-center gap-4">
+                {logoUrl ? (
                   <img
                     src={logoUrl}
-                    alt="ロゴプレビュー"
-                    className="w-10 h-10 rounded-lg object-cover border border-[#e5e7eb]"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    alt="ロゴ"
+                    className="w-16 h-16 rounded-xl object-cover border border-[#e5e7eb] bg-[#f9fafb]"
                   />
-                  <span className="text-sm text-[#6b7280]">プレビュー</span>
+                ) : (
+                  <div className="w-16 h-16 rounded-xl bg-[#f3f4f6] border border-dashed border-[#d1d5db] flex items-center justify-center">
+                    <svg className="w-6 h-6 text-[#9ca3af]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                )}
+                <div className="flex flex-col gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleLogoUpload}
+                    className="hidden"
+                  />
+                  <Button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                    className="text-sm"
+                  >
+                    {isUploading ? 'アップロード中...' : logoUrl ? '画像を変更' : '画像をアップロード'}
+                  </Button>
+                  {logoUrl && (
+                    <button
+                      type="button"
+                      onClick={handleLogoRemove}
+                      disabled={isUploading}
+                      className="text-xs text-[#ef4444] hover:text-[#dc2626] transition-colors disabled:opacity-50"
+                    >
+                      ロゴを削除
+                    </button>
+                  )}
                 </div>
-              )}
+              </div>
+              <p className="text-xs text-[#6b7280]">
+                保護者ポータルのヘッダーに表示されます。2MB以下の画像ファイル。
+              </p>
             </div>
           </CardContent>
         </Card>

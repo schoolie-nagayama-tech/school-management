@@ -58,7 +58,7 @@ const settingsItems: SettingsItem[] = [
     requiresManager: true,
   },
   {
-    href: '/settings/attendance-types',
+    href: '/admin/settings/attendance-types',
     icon: <Clock className="w-5 h-5" />,
     label: 'コマ種別設定',
     description: '授業コマの種別（通常・補習など）',

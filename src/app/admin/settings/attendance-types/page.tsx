@@ -50,6 +50,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui';
+import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui';
@@ -246,6 +247,14 @@ export default function AttendanceTypesPage() {
   return (
     <AdminLayout headerTitle="講師勤怠">
       <div className="space-y-6">
+        <div className="mb-4">
+          <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-[#6b7280] hover:text-[#1f2937] transition-colors">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            設定に戻る
+          </Link>
+        </div>
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">コマ種別設定</h1>
         </div>

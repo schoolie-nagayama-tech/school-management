@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { AdminLayout } from '@/components/layouts';
 import { Button, Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
+import Link from 'next/link';
 import { createSupabaseBrowserClient } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
@@ -103,6 +104,14 @@ export default function AccountSettingsPage() {
     <AdminLayout headerTitle="アカウント設定">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="max-w-2xl mx-auto">
+        <div className="mb-4">
+          <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-[#6b7280] hover:text-[#1f2937] transition-colors">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            設定に戻る
+          </Link>
+        </div>
         <Card>
           <CardHeader>
             <CardTitle>ログイン方法</CardTitle>

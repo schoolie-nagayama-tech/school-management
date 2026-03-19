@@ -170,6 +170,14 @@ export default function ShukaisuSettingsPage() {
     <div>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <AdminLayout headerTitle="週回数変更 設定">
+        <div className="mb-4">
+          <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-[#6b7280] hover:text-[#1f2937] transition-colors">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            設定に戻る
+          </Link>
+        </div>
         {errorMessage && (
           <div className="mb-4 p-4 bg-[#ef4444]/20 border border-[#ef4444] rounded-lg">
             <p className="text-sm text-[#ef4444]">{errorMessage}</p>

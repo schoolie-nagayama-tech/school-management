@@ -94,6 +94,14 @@ export default function SeasonalShiftsPage() {
     <AdminLayout headerTitle="講習シフト設定">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="max-w-4xl">
+        <div className="mb-4">
+          <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-[#6b7280] hover:text-[#1f2937] transition-colors">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            設定に戻る
+          </Link>
+        </div>
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-[#1f2937]">講習期間シフト設定</h1>
           <Link href="/settings/seasonal-shifts/new">

@@ -5,6 +5,7 @@ import { AdminLayout } from '@/components/layouts';
 import { getZoukomaPeriods, deleteZoukomaPeriod, archiveZoukomaPeriod, unarchiveZoukomaPeriod } from '@/lib/api/zoukoma';
 import { ZoukomaPeriodForm } from '@/components/forms/zoukoma/ZoukomaPeriodForm';
 import type { ZoukomaPeriod } from '@/types/forms/zoukoma';
+import Link from 'next/link';
 import { getDefaultSchoolId } from '@/lib/api/schools';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -143,6 +144,14 @@ export default function ZoukomaSettingsPage() {
     <div>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <AdminLayout headerTitle="増コマ申込 設定">
+        <div className="mb-4">
+          <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-[#6b7280] hover:text-[#1f2937] transition-colors">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            設定に戻る
+          </Link>
+        </div>
         {errorMessage && (
           <div className="mb-4 p-4 bg-[#ef4444]/20 border border-[#ef4444] rounded-lg">
             <p className="text-sm text-[#ef4444]">{errorMessage}</p>
