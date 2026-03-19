@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { getFormBySlug } from '@/lib/api/forms';
 import { PublicFormRenderer, KomaFormRenderer } from '@/components/forms';
 
@@ -58,12 +59,12 @@ export default async function FormPage({ params, searchParams }: FormPageProps) 
                 {form.completion_message}
               </p>
             )}
-            <a
+            <Link
               href={`/portal/${schoolCode}`}
               className="inline-block px-6 py-3 bg-[#3b82f6] text-white font-semibold rounded-lg hover:bg-[#60a5fa] transition-colors"
             >
-              戻る
-            </a>
+              ポータルメニューに戻る
+            </Link>
           </div>
         </div>
       </div>
@@ -75,6 +76,9 @@ export default async function FormPage({ params, searchParams }: FormPageProps) 
     return (
       <div className="min-h-screen bg-[#f3f4f6]">
         <div className="max-w-lg mx-auto px-4 py-8 w-full">
+          <Link href={`/portal/${schoolCode}`} className="text-sm text-gray-500 hover:text-gray-700 mb-4 inline-block">
+            ← メニューに戻る
+          </Link>
           <header className="mb-6">
             <h1 className="text-2xl font-bold text-[#1f2937] mb-2">{form.title}</h1>
             {form.description && (
@@ -92,6 +96,9 @@ export default async function FormPage({ params, searchParams }: FormPageProps) 
   return (
     <div className="min-h-screen bg-[#f3f4f6]">
       <div className="max-w-lg mx-auto px-4 py-8 w-full">
+        <Link href={`/portal/${schoolCode}`} className="text-sm text-gray-500 hover:text-gray-700 mb-4 inline-block">
+          ← メニューに戻る
+        </Link>
         {/* ヘッダー */}
         <header className="mb-6">
           <h1 className="text-2xl font-bold text-[#1f2937] mb-2">{form.title}</h1>

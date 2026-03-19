@@ -8,6 +8,7 @@ import { InterviewModal } from './InterviewModal';
 import { Button, Select } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConfirm } from '@/hooks/useConfirm';
 
 interface InterviewListProps {
   studentId: string;
@@ -15,6 +16,7 @@ interface InterviewListProps {
 }
 
 export function InterviewList({ studentId, schoolId }: InterviewListProps) {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [interviews, setInterviews] = useState<StudentInterview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -61,7 +63,7 @@ export function InterviewList({ studentId, schoolId }: InterviewListProps) {
 
   // 削除処理
   const handleDelete = async (id: string) => {
-    if (!window.confirm('この記録を削除しますか？')) return;
+    if (!(await confirm({ title: '削除確認', description: 'この記録を削除しますか？', confirmLabel: '削除', variant: 'danger' }))) return;
     
     try {
       await deleteInterview(id);
@@ -236,6 +238,8 @@ export function InterviewList({ studentId, schoolId }: InterviewListProps) {
             ))}
         </div>
       )}
+
+      {ConfirmDialog}
 
       {/* モーダル */}
       {isModalOpen && (

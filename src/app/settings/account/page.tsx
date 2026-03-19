@@ -6,6 +6,7 @@ import { Button, Card, CardHeader, CardTitle, CardContent } from '@/components/u
 import { createSupabaseBrowserClient } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
+import { useConfirm } from '@/hooks/useConfirm';
 import { ToastContainer } from '@/components/ui';
 
 // Google認証を許可するロール
@@ -14,6 +15,7 @@ const GOOGLE_AUTH_ALLOWED_ROLES = ['admin', 'owner', 'manager'];
 export default function AccountSettingsPage() {
   const { user, profile } = useAuth();
   const { toasts, removeToast, success, error: toastError } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
   const [linkedProviders, setLinkedProviders] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -47,7 +49,7 @@ export default function AccountSettingsPage() {
   };
 
   const handleUnlinkGoogle = async () => {
-    if (!window.confirm('Googleアカウントの紐付けを解除しますか？')) {
+    if (!(await confirm({ description: 'Googleアカウントの紐付けを解除しますか？' }))) {
       return;
     }
 
@@ -159,6 +161,7 @@ export default function AccountSettingsPage() {
           </CardContent>
         </Card>
       </div>
+      {ConfirmDialog}
     </AdminLayout>
   );
 }

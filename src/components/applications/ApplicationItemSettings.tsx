@@ -12,6 +12,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
 import type { ApplicationItem, ApplicationColumnType } from '@/types/database';
+import { useConfirm } from '@/hooks/useConfirm';
 
 interface ApplicationItemSettingsProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ interface ApplicationItemSettingsProps {
 export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSettingsProps) {
   const { getSelectedSchoolIds } = useAuth();
   const { error: toastError } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
   const [items, setItems] = useState<ApplicationItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -80,7 +82,7 @@ export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSett
 
   // 項目を削除
   const handleDelete = async (id: string) => {
-    if (!confirm('この項目を削除しますか？削除すると、関連する申込状況も削除されます。')) return;
+    if (!(await confirm({ title: '削除確認', description: 'この項目を削除しますか？削除すると、関連する申込状況も削除されます。', confirmLabel: '削除', variant: 'danger' }))) return;
 
     setIsSubmitting(true);
     setErrorMessage('');
@@ -411,6 +413,8 @@ export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSett
           </div>
         </div>
       </Modal>
+
+      {ConfirmDialog}
     </>
   );
 }

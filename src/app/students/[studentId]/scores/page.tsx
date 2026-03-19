@@ -21,6 +21,7 @@ import {
   GRADE_LABELS,
 } from '@/types/database';
 import { useToast } from '@/hooks/useToast';
+import { useConfirm } from '@/hooks/useConfirm';
 import { useRequirePermission } from '@/hooks/usePermissions';
 import { useAuth } from '@/contexts/AuthContext';
 import AccessDenied from '@/components/AccessDenied';
@@ -70,6 +71,7 @@ export default function StudentScoresPage() {
   const { permissions, getSelectedSchoolIds } = useAuth();
   const canEditScores = !!permissions?.canEditScores;
   const { toasts, removeToast, success, error: toastError } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
 
   const [student, setStudent] = useState<Student | null>(null);
   const [assessmentsByCategory, setAssessmentsByCategory] = useState<Record<Category, AssessmentWithScores[]>>({
@@ -189,7 +191,7 @@ export default function StudentScoresPage() {
   };
 
   const handleDeleteRow = async (assessmentId: string) => {
-    if (!confirm('この行を削除してもよろしいですか？')) return;
+    if (!(await confirm({ title: '削除確認', description: 'この行を削除してもよろしいですか？', confirmLabel: '削除', variant: 'danger' }))) return;
     try {
       await deleteAssessmentRow(assessmentId);
       await fetchAllAssessments();
@@ -443,6 +445,7 @@ export default function StudentScoresPage() {
           </div>
         </div>
       </div>
+      {ConfirmDialog}
     </AdminLayout>
   );
 }

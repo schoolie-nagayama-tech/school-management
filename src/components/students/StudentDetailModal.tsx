@@ -13,6 +13,7 @@ import type { ScheduleRegularPattern } from '@/types/schedule';
 import { InterviewList } from './InterviewList';
 import { useAuth } from '@/contexts/AuthContext';
 import { Calendar } from 'lucide-react';
+import { useConfirm } from '@/hooks/useConfirm';
 
 type StudentStatus = Student['status'];
 
@@ -41,6 +42,7 @@ export function StudentDetailModal({
   onDelete,
 }: StudentDetailModalProps) {
   const { profile } = useAuth();
+  const { confirm, ConfirmDialog } = useConfirm();
   const isTeacher = profile?.role === 'teacher';
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -53,6 +55,7 @@ export function StudentDetailModal({
   // 通塾日程の編集は室長以上のみ。講師にはタブごと非表示
   const tabs: { key: TabType; label: string }[] = [
     { key: 'basic', label: '基本情報' },
+    { key: 'scores', label: '成績' },
     ...(isTeacher ? [] : [{ key: 'schedule' as const, label: '通塾日程' }]),
     { key: 'interviews', label: '面談記録' },
   ];
@@ -259,7 +262,7 @@ export function StudentDetailModal({
                     variant="outline"
                     className="text-red-600 border-red-200 hover:bg-red-50"
                     onClick={async () => {
-                      if (!window.confirm(`${student.last_name} ${student.first_name} を削除しますか？\n論理削除され、一覧から非表示になります。`)) return;
+                      if (!(await confirm({ title: '削除確認', description: `${student.last_name} ${student.first_name} を削除しますか？論理削除され、一覧から非表示になります。`, confirmLabel: '削除', variant: 'danger' }))) return;
                       await onDelete(student);
                       onClose();
                     }}
@@ -338,11 +341,13 @@ export function StudentDetailModal({
         {activeTab === 'scores' && student && (
           <div className="min-h-[400px]">
             <p className="text-sm text-[#4b5563] mb-4">
-              成績管理機能は別ウィンドウで開きます。生徒一覧ページから「成績」ボタンをクリックしてください。
+              成績の詳細を確認できます。下のボタンから成績ページへ移動してください。
             </p>
-            <Button onClick={handleEdit} variant="secondary">
-              成績を開く
-            </Button>
+            <Link href={`/students/${student.id}/scores`}>
+              <Button variant="secondary">
+                成績の詳細を確認
+              </Button>
+            </Link>
           </div>
         )}
 
@@ -352,6 +357,7 @@ export function StudentDetailModal({
           </div>
         )}
       </div>
+      {ConfirmDialog}
     </Modal>
   );
 }

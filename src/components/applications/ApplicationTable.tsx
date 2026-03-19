@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useState } from 'react';
 import { useToast } from '@/hooks/useToast';
 import { Lock } from 'lucide-react';
+import { useConfirm } from '@/hooks/useConfirm';
 
 interface ApplicationTableProps {
   students: Student[];
@@ -54,6 +55,7 @@ export function ApplicationTable({
   onItemsChange,
 }: ApplicationTableProps) {
   const { getSelectedSchoolIds, profile } = useAuth();
+  const { confirm, ConfirmDialog } = useConfirm();
   const isTeacher = profile?.role === 'teacher';
   const [updatingCells, setUpdatingCells] = useState<Set<string>>(new Set());
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
@@ -247,9 +249,12 @@ export function ApplicationTable({
                                 onClick={async (e) => {
                                   e.stopPropagation();
                                   if (
-                                    window.confirm(
-                                      `「${item.name}」を削除してもよろしいですか？\n\nこの列の全ての申込状況データも削除されます。`
-                                    )
+                                    await confirm({
+                                      title: '削除確認',
+                                      description: `「${item.name}」を削除してもよろしいですか？この列の全ての申込状況データも削除されます。`,
+                                      confirmLabel: '削除',
+                                      variant: 'danger',
+                                    })
                                   ) {
                                     setDeletingItemId(item.id);
                                     try {
@@ -664,6 +669,7 @@ export function ApplicationTable({
           </tbody>
         </table>
       </div>
+      {ConfirmDialog}
     </div>
   );
 }

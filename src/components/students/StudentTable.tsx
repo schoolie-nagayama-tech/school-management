@@ -192,6 +192,7 @@ export function StudentTable({
                     {onScores && (
                       <button
                         onClick={() => onScores(student)}
+                        aria-label="成績"
                         className="flex flex-col items-center gap-1 p-1.5 text-gray-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/10 rounded-lg transition-colors"
                       >
                         <svg
@@ -213,6 +214,7 @@ export function StudentTable({
                     {onInterviews && (
                       <button
                         onClick={() => onInterviews(student)}
+                        aria-label="面談"
                         className="flex flex-col items-center gap-1 p-1.5 text-[#4b5563] hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
                       >
                         <svg
@@ -234,6 +236,7 @@ export function StudentTable({
                     {onProgress && (
                       <button
                         onClick={() => onProgress(student)}
+                        aria-label="進行表"
                         className="flex flex-col items-center gap-1 p-1.5 text-gray-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/10 rounded-lg transition-colors"
                       >
                         <svg
@@ -255,6 +258,7 @@ export function StudentTable({
                     {onSchedule && (
                       <button
                         onClick={() => onSchedule(student)}
+                        aria-label="通塾日程"
                         className="flex flex-col items-center gap-1 p-1.5 text-gray-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/10 rounded-lg transition-colors"
                       >
                         <svg
@@ -276,6 +280,7 @@ export function StudentTable({
                     {onEdit && (
                       <button
                         onClick={() => onEdit(student)}
+                        aria-label="編集"
                         className="flex flex-col items-center gap-1 p-1.5 text-gray-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/10 rounded-lg transition-colors"
                       >
                         <svg
@@ -300,6 +305,7 @@ export function StudentTable({
                           e.stopPropagation();
                           onDelete(student);
                         }}
+                        aria-label="削除"
                         className="flex flex-col items-center gap-1 p-1.5 text-[#4b5563] hover:text-[#ef4444] hover:bg-[#ef4444]/10 rounded-lg transition-colors"
                       >
                         <svg

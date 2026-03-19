@@ -5,6 +5,7 @@ import { Button, Modal } from '@/components/ui';
 import { bulkUpdateGrades, getStudents } from '@/lib/api/students';
 import type { Student } from '@/types/database';
 import { GRADE_LABELS } from '@/types/database';
+import { useConfirm } from '@/hooks/useConfirm';
 
 function getGradeCategory(grade: number): 'elementary' | 'middle' | 'high' {
   if (grade <= 6) return 'elementary';
@@ -25,6 +26,7 @@ export function BulkGradeUpdateModal({
   onSuccess,
   schoolIds,
 }: BulkGradeUpdateModalProps) {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [students, setStudents] = useState<Student[]>([]);
@@ -80,9 +82,12 @@ export function BulkGradeUpdateModal({
 
   const handleExecute = async () => {
     if (totalCount === 0) return;
-    const confirmed = window.confirm(
-      `${totalCount}名の生徒の学年を一括更新します。カテゴリが変わる生徒（${categoryChange}名）は受講科目・テキストがリセットされます。この操作は取り消せません。実行しますか？`
-    );
+    const confirmed = await confirm({
+      title: '一括学年更新',
+      description: `${totalCount}名の生徒の学年を一括更新します。カテゴリが変わる生徒（${categoryChange}名）は受講科目・テキストがリセットされます。この操作は取り消せません。実行しますか？`,
+      confirmLabel: '実行',
+      variant: 'danger',
+    });
     if (!confirmed) return;
 
     setIsSubmitting(true);
@@ -193,6 +198,7 @@ export function BulkGradeUpdateModal({
           </Button>
         </div>
       </div>
+      {ConfirmDialog}
     </Modal>
   );
 }

@@ -7,6 +7,7 @@ import { GRADE_LABELS } from '@/types/database';
 import { getStudents } from '@/lib/api/students';
 import { ResponseDetailModal } from './ResponseDetailModal';
 import { LinkStudentModal } from './LinkStudentModal';
+import { useConfirm } from '@/hooks/useConfirm';
 
 interface ResponseListProps {
   responses: FormResponse[];
@@ -15,6 +16,7 @@ interface ResponseListProps {
 }
 
 export function ResponseList({ responses, formId, onRefresh }: ResponseListProps) {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [gradeFilter, setGradeFilter] = useState<number | ''>('');
   const [linkedFilter, setLinkedFilter] = useState<'all' | 'linked' | 'unlinked'>('all');
   const [selectedResponse, setSelectedResponse] = useState<FormResponse | null>(null);
@@ -174,7 +176,7 @@ export function ResponseList({ responses, formId, onRefresh }: ResponseListProps
                             <Button
                               onClick={async () => {
                                 const { unlinkResponseFromStudent } = await import('@/lib/api/forms');
-                                if (confirm('紐付けを解除しますか？')) {
+                                if (await confirm({ description: '紐付けを解除しますか？' })) {
                                   try {
                                     await unlinkResponseFromStudent(response.id);
                                     onRefresh();
@@ -207,6 +209,8 @@ export function ResponseList({ responses, formId, onRefresh }: ResponseListProps
           </div>
         </div>
       </div>
+
+      {ConfirmDialog}
 
       <ResponseDetailModal
         isOpen={isDetailModalOpen}

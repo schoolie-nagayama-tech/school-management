@@ -25,6 +25,7 @@ import type {
   ApplicationItem,
 } from '@/types/database';
 import { FORM_FIELD_TYPE_LABELS, FORM_STATUS_LABELS } from '@/types/database';
+import { useConfirm } from '@/hooks/useConfirm';
 
 interface FormEditorProps {
   isOpen: boolean;
@@ -41,6 +42,7 @@ export function FormEditor({
   template,
   onSuccess,
 }: FormEditorProps) {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [form, setForm] = useState<FormWithFields | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -259,7 +261,7 @@ export function FormEditor({
   };
 
   const handleDeleteField = async (id: string) => {
-    if (!confirm('この項目を削除しますか？')) return;
+    if (!(await confirm({ title: '削除確認', description: 'この項目を削除しますか？', confirmLabel: '削除', variant: 'danger' }))) return;
 
     const targetFormId = formId || form?.id;
     if (!targetFormId) return;
@@ -566,7 +568,7 @@ export function FormEditor({
                       <Button
                         onClick={async () => {
                           if (!formId && !form?.id) return;
-                          if (!confirm('このフォームのアーカイブを解除して元に戻しますか？')) return;
+                          if (!(await confirm({ description: 'このフォームのアーカイブを解除して元に戻しますか？' }))) return;
                           
                           setIsArchiving(true);
                           setErrorMessage('');
@@ -594,7 +596,7 @@ export function FormEditor({
                       <Button
                         onClick={async () => {
                           if (!formId && !form?.id) return;
-                          if (!confirm('このフォームをアーカイブしますか？\n\nこのフォームから申し込んだ回答も自動でアーカイブされます。')) return;
+                          if (!(await confirm({ title: 'アーカイブ確認', description: 'このフォームをアーカイブしますか？このフォームから申し込んだ回答も自動でアーカイブされます。', confirmLabel: 'アーカイブ', variant: 'warning' }))) return;
                           
                           setIsArchiving(true);
                           setErrorMessage('');
@@ -644,6 +646,8 @@ export function FormEditor({
         onSave={handleSaveField}
         field={editingField}
       />
+
+      {ConfirmDialog}
     </>
   );
 }

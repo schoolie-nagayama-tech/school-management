@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui';
 import { PeriodStatusBadge, getPeriodStatus } from './PeriodStatusBadge';
 import type { FormPeriod } from '@/types/database';
+import { useConfirm } from '@/hooks/useConfirm';
 
 function formatPublishRange(period: FormPeriod): string {
   if (!period.publish_start && !period.publish_end) {
@@ -55,6 +56,7 @@ export function PeriodListTable({
   getResponseCount,
   isSubmitting = false,
 }: PeriodListTableProps) {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [archiveConfirm, setArchiveConfirm] = useState<FormPeriod | null>(null);
 
@@ -64,7 +66,7 @@ export function PeriodListTable({
       setArchiveConfirm(period);
       return;
     }
-    if (window.confirm(`期間「${period.period_key} ${period.title}」を削除しますか？`)) {
+    if (await confirm({ title: '削除確認', description: `期間「${period.period_key} ${period.title}」を削除しますか？`, confirmLabel: '削除', variant: 'danger' })) {
       setDeletingId(period.id);
       try {
         await onDelete(period);
@@ -189,11 +191,14 @@ export function PeriodListTable({
                             variant="outline"
                             size="sm"
                             className="!px-2 !py-1 !text-xs"
-                            onClick={() => {
+                            onClick={async () => {
                               if (
-                                window.confirm(
-                                  `「${period.title || period.period_key}」をアーカイブしますか？\n\nこの期間の全ての回答もアーカイブされます。`
-                                )
+                                await confirm({
+                                  title: 'アーカイブ確認',
+                                  description: `「${period.title || period.period_key}」をアーカイブしますか？この期間の全ての回答もアーカイブされます。`,
+                                  confirmLabel: 'アーカイブ',
+                                  variant: 'warning',
+                                })
                               ) {
                                 onArchive(period);
                               }
@@ -221,6 +226,8 @@ export function PeriodListTable({
           </tbody>
         </table>
       </div>
+
+      {ConfirmDialog}
 
       {/* アーカイブ確認モーダル */}
       {archiveConfirm && (

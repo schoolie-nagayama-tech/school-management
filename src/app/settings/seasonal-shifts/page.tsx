@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { Button, ToastContainer } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
+import { useConfirm } from '@/hooks/useConfirm';
 import { useAuth } from '@/contexts/AuthContext';
 import { getDefaultSchoolId } from '@/lib/api/schools';
 import {
@@ -19,6 +20,7 @@ import AccessDenied from '@/components/AccessDenied';
 export default function SeasonalShiftsPage() {
   const { getSelectedSchoolIds } = useAuth();
   const { toasts, removeToast, success, error } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
   const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
     (p) => p.canAccessPortal ?? false
   );
@@ -56,7 +58,7 @@ export default function SeasonalShiftsPage() {
   }, [fetchData]);
 
   const handleDelete = async (id: string, name: string) => {
-    if (!window.confirm(`「${name}」を削除してもよろしいですか？`)) return;
+    if (!(await confirm({ title: '削除確認', description: `「${name}」を削除してもよろしいですか？`, confirmLabel: '削除', variant: 'danger' }))) return;
     try {
       await deleteSeasonalShiftSetting(id);
       success('シフト設定を削除しました');
@@ -176,6 +178,7 @@ export default function SeasonalShiftsPage() {
           </div>
         )}
       </div>
+      {ConfirmDialog}
     </AdminLayout>
   );
 }

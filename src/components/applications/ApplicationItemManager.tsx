@@ -11,6 +11,7 @@ import {
 } from '@/lib/api/applications';
 import { Modal, Button, Input } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
+import { useConfirm } from '@/hooks/useConfirm';
 
 interface ApplicationItemManagerProps {
   schoolId?: string;
@@ -32,6 +33,7 @@ export function ApplicationItemManager({
 }: ApplicationItemManagerProps) {
   // schoolId is available but not currently used
   const { success, error: toastError } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
   const [newItemName, setNewItemName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
@@ -91,7 +93,7 @@ export function ApplicationItemManager({
 
   // 非表示
   const handleHide = async (id: string) => {
-    if (!window.confirm('この項目を非表示にしますか？\n（申込データは保持されます）')) {
+    if (!(await confirm({ description: 'この項目を非表示にしますか？（申込データは保持されます）' }))) {
       return;
     }
 
@@ -130,15 +132,18 @@ export function ApplicationItemManager({
   // 削除
   const handleDelete = async (id: string, name: string) => {
     if (
-      !window.confirm(
-        `「${name}」を削除しますか？\n\n⚠️ この項目に関連する全ての申込データも削除されます。\nこの操作は取り消せません。`
-      )
+      !(await confirm({
+        title: '削除確認',
+        description: `「${name}」を削除しますか？\n\n⚠️ この項目に関連する全ての申込データも削除されます。この操作は取り消せません。`,
+        confirmLabel: '削除',
+        variant: 'danger',
+      }))
     ) {
       return;
     }
 
     // 二重確認
-    if (!window.confirm('本当に削除しますか？')) {
+    if (!(await confirm({ title: '削除確認', description: '本当に削除しますか？', confirmLabel: '削除', variant: 'danger' }))) {
       return;
     }
 
@@ -174,6 +179,7 @@ export function ApplicationItemManager({
   const hiddenItems = items.filter((i) => i.is_hidden);
 
   return (
+    <>
     <Modal
       isOpen={isOpen}
       onClose={onClose}
@@ -368,5 +374,7 @@ export function ApplicationItemManager({
         )}
       </div>
     </Modal>
+    {ConfirmDialog}
+    </>
   );
 }

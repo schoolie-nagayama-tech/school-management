@@ -241,7 +241,7 @@ export default function ZoukomaResponsePage() {
           {isLoading ? (
             <div className="text-center py-8 text-[#4b5563]">読み込み中...</div>
           ) : responses.length === 0 ? (
-            <div className="text-center py-8 text-[#4b5563]">回答がありません</div>
+            <div className="text-center py-8 text-[#4b5563]">回答がありません。保護者ポータルから申込が届くとここに表示されます。</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full border-collapse border border-[#e5e7eb] text-sm">

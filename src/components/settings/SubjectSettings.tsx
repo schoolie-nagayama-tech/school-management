@@ -11,6 +11,7 @@ import {
 } from '@/lib/api/subjects';
 import type { Subject, SubjectInsert } from '@/types/database';
 import { GRADE_CATEGORY_LABELS } from '@/types/database';
+import { useConfirm } from '@/hooks/useConfirm';
 
 interface SubjectSettingsProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ interface SubjectSettingsProps {
 type GradeCategory = 'elementary' | 'middle' | 'high';
 
 export function SubjectSettings({ isOpen, onClose }: SubjectSettingsProps) {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [activeTab, setActiveTab] = useState<GradeCategory>('elementary');
   const [subjects, setSubjects] = useState<Record<GradeCategory, Subject[]>>({
     elementary: [],
@@ -73,7 +75,7 @@ export function SubjectSettings({ isOpen, onClose }: SubjectSettingsProps) {
 
   // 科目を削除
   const handleDelete = async (id: string) => {
-    if (!confirm('この科目を削除しますか？')) return;
+    if (!(await confirm({ title: '削除確認', description: 'この科目を削除しますか？', confirmLabel: '削除', variant: 'danger' }))) return;
 
     setIsSubmitting(true);
     setErrorMessage('');
@@ -186,7 +188,7 @@ export function SubjectSettings({ isOpen, onClose }: SubjectSettingsProps) {
             <div className="space-y-2">
               {currentSubjects.length === 0 ? (
                 <p className="text-sm text-[#4b5563] text-center py-8">
-                  科目が登録されていません
+                  科目が登録されていません。下の「科目を追加」ボタンから追加してください。
                 </p>
               ) : (
                 currentSubjects.map((subject, index) => (
@@ -311,6 +313,8 @@ export function SubjectSettings({ isOpen, onClose }: SubjectSettingsProps) {
           </div>
         </div>
       </Modal>
+
+      {ConfirmDialog}
 
       {/* 編集モーダル */}
       <SubjectEditModal

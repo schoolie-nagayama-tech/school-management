@@ -241,6 +241,22 @@ export default function FormResponsesPage() {
               </select>
             </div>
           </div>
+          {(filterFormType !== 'all' || filterPeriod !== 'all' || filterGrade !== 'all' || filterLinkedStatus !== 'all') && (
+            <div className="mt-3 text-right">
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterFormType('all');
+                  setFilterPeriod('all');
+                  setFilterGrade('all');
+                  setFilterLinkedStatus('all');
+                }}
+                className="text-sm text-blue-600 hover:text-blue-800 cursor-pointer"
+              >
+                フィルターをリセット
+              </button>
+            </div>
+          )}
         </div>
 
         {/* 回答一覧 */}
@@ -251,7 +267,7 @@ export default function FormResponsesPage() {
             </div>
           ) : responses.length === 0 ? (
             <div className="p-8 text-center">
-              <p className="text-[#4b5563]">回答がありません</p>
+              <p className="text-[#4b5563]">回答がありません。保護者ポータルから申込が届くとここに表示されます。</p>
             </div>
           ) : (
             <div className="overflow-x-auto">

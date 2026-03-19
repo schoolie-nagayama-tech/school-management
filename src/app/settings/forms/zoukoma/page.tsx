@@ -7,6 +7,7 @@ import { ZoukomaPeriodForm } from '@/components/forms/zoukoma/ZoukomaPeriodForm'
 import type { ZoukomaPeriod } from '@/types/forms/zoukoma';
 import { getDefaultSchoolId } from '@/lib/api/schools';
 import { useToast } from '@/hooks/useToast';
+import { useConfirm } from '@/hooks/useConfirm';
 import { ToastContainer } from '@/components/ui';
 
 export default function ZoukomaSettingsPage() {
@@ -18,6 +19,7 @@ export default function ZoukomaSettingsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const { toasts, removeToast, success, error } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
 
   const fetchPeriods = useCallback(async () => {
     setIsLoading(true);
@@ -75,7 +77,7 @@ export default function ZoukomaSettingsPage() {
   };
 
   const handleDelete = async (period: ZoukomaPeriod) => {
-    if (!confirm(`「${period.title}」を削除してもよろしいですか？\nこの操作は取り消せません。`)) {
+    if (!(await confirm({ title: '削除確認', description: `「${period.title}」を削除してもよろしいですか？\nこの操作は取り消せません。`, confirmLabel: '削除', variant: 'danger' }))) {
       return;
     }
 
@@ -97,7 +99,7 @@ export default function ZoukomaSettingsPage() {
   };
 
   const handleArchive = async (period: ZoukomaPeriod) => {
-    if (!confirm(`「${period.title}」をアーカイブしますか？\n\nこの期間の全ての回答もアーカイブされます。`)) {
+    if (!(await confirm({ title: 'アーカイブ確認', description: `「${period.title}」をアーカイブしますか？\n\nこの期間の全ての回答もアーカイブされます。`, confirmLabel: 'アーカイブ', variant: 'warning' }))) {
       return;
     }
 
@@ -183,7 +185,7 @@ export default function ZoukomaSettingsPage() {
             <div className="text-center py-8 text-[#4b5563]">読み込み中...</div>
           ) : periods.length === 0 ? (
             <div className="text-center py-8 text-[#4b5563]">
-              期間がありません
+              期間がありません。右上の「新規作成」ボタンから追加してください。
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -357,6 +359,7 @@ export default function ZoukomaSettingsPage() {
           fetchPeriods();
         }}
       />
+      {ConfirmDialog}
       </AdminLayout>
     </div>
   );

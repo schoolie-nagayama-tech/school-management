@@ -448,6 +448,22 @@ export default function ResponsesPage() {
               </select>
             </div>
           </div>
+          {(filterFormType !== 'all' || filterPeriod !== 'all' || filterGrade !== 'all' || filterLinkedStatus !== 'all') && (
+            <div className="mt-3 text-right">
+              <button
+                type="button"
+                onClick={() => {
+                  setFilterFormType('all');
+                  setFilterPeriod('all');
+                  setFilterGrade('all');
+                  setFilterLinkedStatus('all');
+                }}
+                className="text-sm text-blue-600 hover:text-blue-800 cursor-pointer"
+              >
+                フィルターをリセット
+              </button>
+            </div>
+          )}
         </div>
 
         {/* サマリーセクション */}
@@ -482,7 +498,7 @@ export default function ResponsesPage() {
           {isLoading ? (
             <div className="text-center py-8 text-[#4b5563]">読み込み中...</div>
           ) : responses.length === 0 ? (
-            <div className="text-center py-8 text-[#4b5563]">回答がありません</div>
+            <div className="text-center py-8 text-[#4b5563]">回答がありません。フィルターを変更するか、フォームの公開後に回答が届くとここに表示されます。</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full border-collapse border border-[#e5e7eb] text-sm">

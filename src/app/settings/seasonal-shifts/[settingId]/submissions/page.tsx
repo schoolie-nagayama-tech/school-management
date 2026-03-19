@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
 import { Button, ToastContainer } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
+import { useConfirm } from '@/hooks/useConfirm';
 import {
   getSeasonalShiftSetting,
   getSeasonalShiftSubmissions,
@@ -34,6 +35,7 @@ export default function SeasonalShiftSubmissionsPage() {
   const params = useParams();
   const settingId = params.settingId as string;
   const { toasts, removeToast, success, error } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
   // 申込画面（提出一覧）はログイン済みなら誰でもアクセス可能
   const { hasPermission, isLoading: permissionLoading } = useRequirePermission(() => true);
   const [setting, setSetting] = useState<SeasonalShiftSetting | null>(null);
@@ -92,7 +94,7 @@ export default function SeasonalShiftSubmissionsPage() {
   }, [fetchData]);
 
   const handleDelete = async (sub: SeasonalShiftSubmission) => {
-    if (!window.confirm(`${sub.teacher_name} さんの提出を削除しますか？\nこの操作は取り消せません。`)) return;
+    if (!(await confirm({ title: '削除確認', description: `${sub.teacher_name} さんの提出を削除しますか？\nこの操作は取り消せません。`, confirmLabel: '削除', variant: 'danger' }))) return;
     setDeletingId(sub.id);
     try {
       await deleteSeasonalShiftSubmission(sub.id);
@@ -490,6 +492,7 @@ export default function SeasonalShiftSubmissionsPage() {
           </div>
         )}
       </div>
+      {ConfirmDialog}
     </AdminLayout>
   );
 }

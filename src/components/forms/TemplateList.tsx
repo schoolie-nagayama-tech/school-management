@@ -9,6 +9,7 @@ import {
 } from '@/lib/api/forms';
 import type { FormTemplate } from '@/types/database';
 import { TemplateEditor } from './TemplateEditor';
+import { useConfirm } from '@/hooks/useConfirm';
 
 interface TemplateListProps {
   onSelectTemplate: (template: FormTemplate) => void;
@@ -22,6 +23,7 @@ export function TemplateList({ onSelectTemplate, onRefresh }: TemplateListProps)
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { confirm, ConfirmDialog } = useConfirm();
 
   const fetchTemplates = async () => {
     setIsLoading(true);
@@ -54,7 +56,7 @@ export function TemplateList({ onSelectTemplate, onRefresh }: TemplateListProps)
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('このテンプレートを削除しますか？')) return;
+    if (!(await confirm({ title: '削除確認', description: 'このテンプレートを削除しますか？', confirmLabel: '削除', variant: 'danger' }))) return;
 
     setIsSubmitting(true);
     setErrorMessage('');
@@ -166,6 +168,8 @@ export function TemplateList({ onSelectTemplate, onRefresh }: TemplateListProps)
           </div>
         )}
       </div>
+
+      {ConfirmDialog}
 
       <TemplateEditor
         isOpen={isEditorOpen}

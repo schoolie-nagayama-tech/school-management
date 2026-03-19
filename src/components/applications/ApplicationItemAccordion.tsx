@@ -11,6 +11,7 @@ import {
 } from '@/lib/api/applications';
 import { Button, Input } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
+import { useConfirm } from '@/hooks/useConfirm';
 
 interface ApplicationItemAccordionProps {
   schoolId?: string;
@@ -26,6 +27,7 @@ export function ApplicationItemAccordion({
   onUpdated,
 }: ApplicationItemAccordionProps) {
   const { success, error: toastError } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
   const [isOpen, setIsOpen] = useState(false);
   const [newItemName, setNewItemName] = useState('');
   const [newItemColumnType, setNewItemColumnType] = useState<ApplicationColumnType>('check');
@@ -100,7 +102,7 @@ export function ApplicationItemAccordion({
 
   // 非表示
   const handleHide = async (id: string) => {
-    if (!window.confirm('この項目を非表示にしますか？\n（申込データは保持されます）')) {
+    if (!(await confirm({ description: 'この項目を非表示にしますか？（申込データは保持されます）' }))) {
       return;
     }
 
@@ -139,15 +141,18 @@ export function ApplicationItemAccordion({
   // 削除
   const handleDelete = async (id: string, name: string) => {
     if (
-      !window.confirm(
-        `「${name}」を削除しますか？\n\n⚠️ この項目に関連する全ての申込データも削除されます。\nこの操作は取り消せません。`
-      )
+      !(await confirm({
+        title: '削除確認',
+        description: `「${name}」を削除しますか？\n\n⚠️ この項目に関連する全ての申込データも削除されます。この操作は取り消せません。`,
+        confirmLabel: '削除',
+        variant: 'danger',
+      }))
     ) {
       return;
     }
 
     // 二重確認
-    if (!window.confirm('本当に削除しますか？')) {
+    if (!(await confirm({ title: '削除確認', description: '本当に削除しますか？', confirmLabel: '削除', variant: 'danger' }))) {
       return;
     }
 
@@ -427,6 +432,7 @@ export function ApplicationItemAccordion({
           )}
         </div>
       )}
+      {ConfirmDialog}
     </div>
   );
 }

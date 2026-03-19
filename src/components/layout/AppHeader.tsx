@@ -37,6 +37,8 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const [isSubjectSettingsOpen, setIsSubjectSettingsOpen] = useState(false);
   const [bulletinUnreadCount, setBulletinUnreadCount] = useState(0);
+  const [showFormDropdown, setShowFormDropdown] = useState(false);
+  const [showTeacherDropdown, setShowTeacherDropdown] = useState(false);
 
   // permissionsがnullの場合は、すべてのリンクを表示（ローディング中の場合）
   const showAllLinks = !permissions || authLoading;
@@ -184,33 +186,19 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                 <div className="relative">
                   <button
                     className={`px-2.5 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 ${
-                      pathname?.startsWith('/responses') || 
+                      pathname?.startsWith('/responses') ||
                       pathname?.startsWith('/forms/responses') ||
                       pathname === '/settings/portal' ||
                       pathname?.startsWith('/settings/portal')
                         ? 'bg-white text-[#d32f2f] font-semibold'
                         : 'text-white/90 hover:bg-white/10 hover:text-white'
                     }`}
-                  onMouseEnter={(e) => {
-                    const container = e.currentTarget.closest('.relative');
-                    const dropdown = container?.querySelector('.form-management-dropdown') as HTMLElement;
-                    if (dropdown) {
-                      dropdown.style.opacity = '1';
-                      dropdown.style.visibility = 'visible';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    const container = e.currentTarget.closest('.relative');
-                    const dropdown = container?.querySelector('.form-management-dropdown') as HTMLElement;
-                    if (dropdown) {
-                      dropdown.style.opacity = '0';
-                      dropdown.style.visibility = 'hidden';
-                    }
-                  }}
-                >
+                    onClick={() => setShowFormDropdown(!showFormDropdown)}
+                    onBlur={() => setTimeout(() => setShowFormDropdown(false), 200)}
+                  >
                   フォーム管理
                   <svg
-                    className="w-3 h-3"
+                    className={`w-3 h-3 transition-transform ${showFormDropdown ? 'rotate-180' : ''}`}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -218,20 +206,14 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
-                <div 
-                  className="form-management-dropdown absolute top-full left-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-xl z-50 min-w-[150px] opacity-0 invisible transition-all"
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.opacity = '1';
-                    e.currentTarget.style.visibility = 'visible';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.opacity = '0';
-                    e.currentTarget.style.visibility = 'hidden';
-                  }}
+                {showFormDropdown && (
+                <div
+                  className="absolute top-full left-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-xl z-50 min-w-[150px]"
                 >
                   <div className="py-1">
                     <Link
                       href="/responses"
+                      onClick={() => setShowFormDropdown(false)}
                       className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                         pathname?.startsWith('/responses') || pathname?.startsWith('/forms/responses')
                           ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
@@ -243,6 +225,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                     {(showAllLinks || permissions?.canAccessPortal) && (
                       <Link
                         href="/settings/portal"
+                        onClick={() => setShowFormDropdown(false)}
                         className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                           pathname === '/settings/portal' || pathname?.startsWith('/settings/portal')
                             ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
@@ -254,6 +237,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                     )}
                   </div>
                 </div>
+                )}
                 </div>
               )}
               {(showAllLinks || permissions?.canAccessCourses) && (
@@ -281,26 +265,12 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                         ? 'bg-white text-[#d32f2f] font-semibold'
                         : 'text-white/90 hover:bg-white/10 hover:text-white'
                     }`}
-                    onMouseEnter={(e) => {
-                      const container = e.currentTarget.closest('.relative');
-                      const dropdown = container?.querySelector('.teacher-dropdown') as HTMLElement;
-                      if (dropdown) {
-                        dropdown.style.opacity = '1';
-                        dropdown.style.visibility = 'visible';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      const container = e.currentTarget.closest('.relative');
-                      const dropdown = container?.querySelector('.teacher-dropdown') as HTMLElement;
-                      if (dropdown) {
-                        dropdown.style.opacity = '0';
-                        dropdown.style.visibility = 'hidden';
-                      }
-                    }}
+                    onClick={() => setShowTeacherDropdown(!showTeacherDropdown)}
+                    onBlur={() => setTimeout(() => setShowTeacherDropdown(false), 200)}
                   >
                     講師
                     <svg
-                      className="w-3 h-3"
+                      className={`w-3 h-3 transition-transform ${showTeacherDropdown ? 'rotate-180' : ''}`}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -308,16 +278,9 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                   </button>
-                  <div 
-                    className="teacher-dropdown absolute top-full left-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-xl z-50 min-w-[180px] opacity-0 invisible transition-all"
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.opacity = '1';
-                      e.currentTarget.style.visibility = 'visible';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.opacity = '0';
-                      e.currentTarget.style.visibility = 'hidden';
-                    }}
+                  {showTeacherDropdown && (
+                  <div
+                    className="absolute top-full left-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-xl z-50 min-w-[180px]"
                   >
                     <div className="py-1">
                       <Link
@@ -373,6 +336,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                       </Link>
                     </div>
                   </div>
+                  )}
                 </div>
               ) : (
                 /* 講師は自分の出勤簿へのリンクのみ */

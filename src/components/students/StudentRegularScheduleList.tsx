@@ -15,6 +15,7 @@ import { getSubjects } from '@/lib/api/subjects';
 import type { ScheduleRegularPattern, ScheduleTimeSlot } from '@/types/schedule';
 import { DAY_OF_WEEK_LABELS, SCHEDULE_PERIOD_LABELS } from '@/types/schedule';
 import { useToast } from '@/hooks/useToast';
+import { useConfirm } from '@/hooks/useConfirm';
 
 interface TeacherOption {
   id: string;
@@ -60,6 +61,7 @@ export function StudentRegularScheduleList({
 }: StudentRegularScheduleListProps) {
   const { profile } = useAuth();
   const { success, error: toastError } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
   const [patterns, setPatterns] = useState<ScheduleRegularPattern[]>([]);
   const [timeSlots, setTimeSlots] = useState<ScheduleTimeSlot[]>([]);
   const [teachers, setTeachers] = useState<TeacherOption[]>([]);
@@ -114,7 +116,7 @@ export function StudentRegularScheduleList({
   };
 
   const handleDelete = async (pattern: ScheduleRegularPattern) => {
-    if (!confirm('この通塾日程を削除しますか？')) return;
+    if (!(await confirm({ title: '削除確認', description: 'この通塾日程を削除しますか？', confirmLabel: '削除', variant: 'danger' }))) return;
     try {
       await deleteRegularPattern(pattern.id);
       await regenerateCurrentWeekIfNeeded(schoolId, profile?.id);
@@ -235,6 +237,8 @@ export function StudentRegularScheduleList({
           📅 週{patterns.length}回通塾
         </p>
       )}
+
+      {ConfirmDialog}
 
       {(!onOpenAddForm || !onOpenEditForm) && (
         <RegularScheduleFormModal

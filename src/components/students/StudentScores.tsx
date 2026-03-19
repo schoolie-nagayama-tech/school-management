@@ -19,6 +19,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConfirm } from '@/hooks/useConfirm';
 
 interface StudentScoresProps {
   student: Student;
@@ -64,6 +65,7 @@ const MOCK_SUBJECTS = [
 
 export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) {
   const { permissions } = useAuth();
+  const { confirm, ConfirmDialog } = useConfirm();
   const [assessments, setAssessments] = useState<{
     regular_test: AssessmentWithScores[];
     report_card: AssessmentWithScores[];
@@ -183,7 +185,7 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
 
   // 行削除
   const handleDeleteRow = async (assessmentId: string) => {
-    if (!confirm('この行を削除してもよろしいですか？')) {
+    if (!(await confirm({ title: '削除確認', description: 'この行を削除してもよろしいですか？', confirmLabel: '削除', variant: 'danger' }))) {
       return;
     }
 
@@ -529,6 +531,7 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
           {renderSection('mock', assessments.mock)}
         </div>
       )}
+      {ConfirmDialog}
     </Modal>
   );
 }

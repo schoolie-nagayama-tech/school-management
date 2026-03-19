@@ -7,6 +7,7 @@ import { Button, ToastContainer } from '@/components/ui';
 import { getMoshiPeriods, deleteMoshiPeriod, getMoshiResponseCount, archiveMoshiPeriod, unarchiveMoshiPeriod } from '@/lib/api/moshi';
 import { MoshiPeriodEditor } from '@/components/forms/moshi/MoshiPeriodEditor';
 import { useToast } from '@/hooks/useToast';
+import { useConfirm } from '@/hooks/useConfirm';
 import type { MoshiPeriod } from '@/types/forms/moshi';
 import { getDefaultSchoolId } from '@/lib/api/schools';
 
@@ -20,6 +21,7 @@ export default function MoshiSettingsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
   const { toasts, removeToast, success, error } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
 
   const fetchPeriods = useCallback(async () => {
     setIsLoading(true);
@@ -94,29 +96,26 @@ export default function MoshiSettingsPage() {
 
   // 期間削除
   const handleDelete = async (periodId: string, periodTitle: string) => {
-    if (window.confirm(`「${periodTitle}」を削除してもよろしいですか？`)) {
-      try {
-        setIsSubmitting(true);
-        await deleteMoshiPeriod(periodId);
-        await fetchPeriods();
-        success('期間を削除しました');
-      } catch (err) {
-        console.error('Error deleting period:', err);
-        error(
-          err instanceof Error ? err.message : '期間の削除に失敗しました'
-        );
-      } finally {
-        setIsSubmitting(false);
-      }
+    if (!(await confirm({ title: '削除確認', description: `「${periodTitle}」を削除してもよろしいですか？`, confirmLabel: '削除', variant: 'danger' }))) return;
+    try {
+      setIsSubmitting(true);
+      await deleteMoshiPeriod(periodId);
+      await fetchPeriods();
+      success('期間を削除しました');
+    } catch (err) {
+      console.error('Error deleting period:', err);
+      error(
+        err instanceof Error ? err.message : '期間の削除に失敗しました'
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   // 期間アーカイブ
   const handleArchivePeriod = async (period: MoshiPeriod) => {
     if (
-      !window.confirm(
-        `「${period.title}」をアーカイブしますか？\n\nこの期間の全ての回答もアーカイブされます。`
-      )
+      !(await confirm({ title: 'アーカイブ確認', description: `「${period.title}」をアーカイブしますか？\n\nこの期間の全ての回答もアーカイブされます。`, confirmLabel: 'アーカイブ', variant: 'warning' }))
     ) {
       return;
     }
@@ -213,7 +212,7 @@ export default function MoshiSettingsPage() {
             <div className="text-center py-8 text-[#4b5563]">読み込み中...</div>
           ) : periods.length === 0 ? (
             <div className="text-center py-8 text-[#4b5563]">
-              期間がありません
+              期間がありません。右上の「新規作成」ボタンから追加してください。
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -411,6 +410,7 @@ export default function MoshiSettingsPage() {
             </div>
           )}
         </div>
+      {ConfirmDialog}
       </AdminLayout>
 
       {/* 期間編集モーダル */}

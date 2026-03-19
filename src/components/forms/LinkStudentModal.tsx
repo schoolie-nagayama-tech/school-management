@@ -54,7 +54,7 @@ export function LinkStudentModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="申込状況を更新"
+      title="生徒への紐付け"
     >
       <div className="space-y-4">
         {/* 回答者情報 */}

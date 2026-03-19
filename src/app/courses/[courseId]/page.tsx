@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { Button, Modal, Select, ToastContainer } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
+import { useConfirm } from '@/hooks/useConfirm';
 import {
   getSeasonalCourse,
   updateSeasonalCourse,
@@ -39,6 +40,7 @@ export default function CourseDetailPage() {
   const router = useRouter();
   const courseId = params?.courseId as string;
   const { toasts, removeToast, success, error } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
 
   const [course, setCourse] = useState<SeasonalCourseWithDetails | null>(null);
   const [allTextbooks, setAllTextbooks] = useState<Textbook[]>([]);
@@ -230,7 +232,7 @@ export default function CourseDetailPage() {
   // テキストを削除
   const handleRemoveTextbook = async (textbookId: number, textbookName: string) => {
     if (!courseId) return;
-    if (!window.confirm(`「${textbookName}」をコースから削除しますか？\nカリキュラム設定も削除されます。`)) {
+    if (!(await confirm({ title: '削除確認', description: `「${textbookName}」をコースから削除しますか？\nカリキュラム設定も削除されます。`, confirmLabel: '削除', variant: 'danger' }))) {
       return;
     }
     setIsSaving(true);
@@ -898,6 +900,7 @@ export default function CourseDetailPage() {
           保存中...
         </div>
       )}
+      {ConfirmDialog}
     </AdminLayout>
   );
 }

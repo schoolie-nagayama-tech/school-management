@@ -8,6 +8,7 @@ import { KOMA_GRADE_OPTIONS } from '@/lib/forms/grade-converter';
 import { generateSlots, groupSlotsByDate } from '@/lib/forms/slots';
 import { getPriceByGradeNumber } from '@/lib/forms/pricing';
 import { submitFormResponse } from '@/lib/api/forms';
+import { useConfirm } from '@/hooks/useConfirm';
 
 interface KomaFormRendererProps {
   form: FormWithFields;
@@ -24,6 +25,7 @@ export function KomaFormRenderer({
   isReadOnly = false,
 }: KomaFormRendererProps) {
   const router = useRouter();
+  const { confirm, ConfirmDialog } = useConfirm();
   const [studentName, setStudentName] = useState('');
   const [grade, setGrade] = useState<number | ''>('');
   const [email, setEmail] = useState('');
@@ -66,7 +68,7 @@ export function KomaFormRenderer({
     return emailRegex.test(email);
   };
 
-  const validate = () => {
+  const validate = async () => {
     const newErrors: Record<string, string> = {};
 
     if (!studentName.trim()) {
@@ -90,7 +92,7 @@ export function KomaFormRenderer({
 
     // 合計コマ数が0の場合は警告
     if (totalKomas === 0) {
-      if (!confirm('合計コマ数が0です。このまま送信しますか？')) {
+      if (!(await confirm({ description: '合計コマ数が0です。このまま送信しますか？' }))) {
         return false;
       }
     }
@@ -101,7 +103,7 @@ export function KomaFormRenderer({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validate()) {
+    if (!(await validate())) {
       return;
     }
 
@@ -179,8 +181,8 @@ export function KomaFormRenderer({
   };
 
   // リセット
-  const handleReset = () => {
-    if (!confirm('入力内容をリセットしますか？')) return;
+  const handleReset = async () => {
+    if (!(await confirm({ description: '入力内容をリセットしますか？' }))) return;
     setStudentName('');
     setGrade('');
     setEmail('');
@@ -459,6 +461,8 @@ export function KomaFormRenderer({
           <p className="text-sm text-[#ef4444]">{errorMessage}</p>
         </div>
       )}
+
+      {ConfirmDialog}
 
       {/* ボタン */}
       <div className="flex gap-4 justify-end">

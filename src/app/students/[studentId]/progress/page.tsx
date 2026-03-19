@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
 import { Button, ToastContainer, Modal, Select } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
+import { useConfirm } from '@/hooks/useConfirm';
 import {
   getStudentTextbooks,
   createStudentTextbook,
@@ -53,6 +54,7 @@ export default function StudentProgressPage() {
   const router = useRouter();
   const studentId = params?.studentId as string;
   const { toasts, removeToast, success, error } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
   const { profile, getSelectedSchoolIds } = useAuth();
   
   // 講師かどうかを判定（講師は下書きを見られない）
@@ -937,7 +939,7 @@ export default function StudentProgressPage() {
                     <>
                       <Button
                         onClick={async () => {
-                          if (window.confirm(`${selectedTextbook.textbook.name}を${selectedTextbook.is_draft ? '公開' : '下書き'}にしますか？`)) {
+                          if (await confirm({ description: `${selectedTextbook.textbook.name}を${selectedTextbook.is_draft ? '公開' : '下書き'}にしますか？` })) {
                             try {
                               await updateStudentTextbook(selectedTextbook.id, {
                                 is_draft: !selectedTextbook.is_draft,
@@ -957,7 +959,7 @@ export default function StudentProgressPage() {
                       </Button>
                       <Button
                         onClick={async () => {
-                          if (window.confirm(`${selectedTextbook.textbook.name}を${selectedTextbook.is_active ? '非表示' : '表示'}にしますか？`)) {
+                          if (await confirm({ description: `${selectedTextbook.textbook.name}を${selectedTextbook.is_active ? '非表示' : '表示'}にしますか？` })) {
                             try {
                               await updateStudentTextbook(selectedTextbook.id, {
                                 is_active: !selectedTextbook.is_active,
@@ -976,7 +978,7 @@ export default function StudentProgressPage() {
                       </Button>
                       <Button
                         onClick={async () => {
-                          if (window.confirm(`${selectedTextbook.textbook.name}を削除しますか？\nこの操作は取り消せません。`)) {
+                          if (await confirm({ title: '削除確認', description: `${selectedTextbook.textbook.name}を削除しますか？\nこの操作は取り消せません。`, confirmLabel: '削除', variant: 'danger' })) {
                             try {
                               await deleteStudentTextbook(selectedTextbook.id);
                               await fetchStudentTextbooks();
@@ -2214,7 +2216,7 @@ export default function StudentProgressPage() {
                       {!isTeacher && (
                         <Button
                           onClick={async () => {
-                            if (window.confirm(`${st.textbook.name}を削除しますか？\nこの操作は取り消せません。`)) {
+                            if (await confirm({ title: '削除確認', description: `${st.textbook.name}を削除しますか？\nこの操作は取り消せません。`, confirmLabel: '削除', variant: 'danger' })) {
                               try {
                                 await deleteStudentTextbook(st.id);
                                 await fetchStudentTextbooks();
@@ -2239,6 +2241,7 @@ export default function StudentProgressPage() {
             )}
           </div>
         </Modal>
+      {ConfirmDialog}
       </AdminLayout>
     </div>
   );

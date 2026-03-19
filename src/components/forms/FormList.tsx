@@ -7,6 +7,7 @@ import { getForms, deleteForm, updateFormStatus, archiveForm, unarchiveForm } fr
 import type { Form, FormStatus } from '@/types/database';
 import { FORM_STATUS_LABELS } from '@/types/database';
 import { FormLinkModal } from './FormLinkModal';
+import { useConfirm } from '@/hooks/useConfirm';
 
 interface FormListProps {
   onEditForm: (form: Form) => void;
@@ -17,6 +18,7 @@ interface FormListProps {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefresh }: FormListProps) {
   const router = useRouter();
+  const { confirm, ConfirmDialog } = useConfirm();
   const [forms, setForms] = useState<Form[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
@@ -47,7 +49,7 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
   }, [showArchived]);
 
   const handleDelete = async (id: string) => {
-    if (!confirm('このフォームを削除しますか？回答データも削除されます。')) return;
+    if (!(await confirm({ title: '削除確認', description: 'このフォームを削除しますか？回答データも削除されます。', confirmLabel: '削除', variant: 'danger' }))) return;
 
     setIsSubmitting(true);
     setErrorMessage('');
@@ -83,7 +85,7 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
   };
 
   const handleArchive = async (id: string) => {
-    if (!confirm('このフォームをアーカイブしますか？\n\nこのフォームから申し込んだ回答も自動でアーカイブされます。')) return;
+    if (!(await confirm({ title: 'アーカイブ確認', description: 'このフォームをアーカイブしますか？このフォームから申し込んだ回答も自動でアーカイブされます。', confirmLabel: 'アーカイブ', variant: 'warning' }))) return;
 
     setIsSubmitting(true);
     setErrorMessage('');
@@ -313,6 +315,8 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
           ))}
         </div>
       )}
+
+      {ConfirmDialog}
 
       <FormLinkModal
         isOpen={isLinkModalOpen}

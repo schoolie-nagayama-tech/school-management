@@ -18,7 +18,7 @@ export function PortalMenuList({ menus, schoolCode }: PortalMenuListProps) {
   if (menus.length === 0) {
     return (
       <div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-emerald-200/50 p-6 sm:p-8 text-center shadow-sm">
-        <p className="text-slate-600 text-sm sm:text-base">現在利用可能なメニューはありません</p>
+        <p className="text-slate-600 text-sm sm:text-base">現在利用可能なメニューはありません。受付期間外の可能性があります。</p>
       </div>
     );
   }

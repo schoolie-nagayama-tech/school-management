@@ -16,6 +16,7 @@ import type { BulletinPost, BulletinLabel } from '@/types/bulletin';
 import type { School } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
+import { useConfirm } from '@/hooks/useConfirm';
 import { Button } from '@/components/ui';
 import { ChevronDown, ChevronUp, Plus } from 'lucide-react';
 
@@ -26,6 +27,7 @@ interface BulletinBoardProps {
 export function BulletinBoard({ className = '' }: BulletinBoardProps) {
   const { getSelectedSchoolIds, profile } = useAuth();
   const { success, error: toastError } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
   const [posts, setPosts] = useState<BulletinPost[]>([]);
   /** 教室IDごとのラベル一覧（複数教室対応） */
   const [labelsBySchool, setLabelsBySchool] = useState<Record<string, BulletinLabel[]>>({});
@@ -154,7 +156,7 @@ export function BulletinBoard({ className = '' }: BulletinBoardProps) {
   }, []);
 
   const handleDelete = useCallback(async (post: BulletinPost) => {
-    if (!confirm('この投稿を削除しますか？')) {
+    if (!(await confirm({ title: '削除確認', description: 'この投稿を削除しますか？', confirmLabel: '削除', variant: 'danger' }))) {
       return;
     }
 
@@ -166,7 +168,7 @@ export function BulletinBoard({ className = '' }: BulletinBoardProps) {
       console.error('Error deleting post:', error);
       toastError('削除に失敗しました');
     }
-  }, [success, toastError, fetchData]);
+  }, [confirm, success, toastError, fetchData]);
 
   const handleShowReaders = useCallback((post: BulletinPost) => {
     setReadersModalPost(post);
@@ -241,7 +243,7 @@ export function BulletinBoard({ className = '' }: BulletinBoardProps) {
           <div className="p-4 space-y-3">
             {posts.length === 0 ? (
               <div className="text-center text-sm text-gray-400 py-8">
-                投稿はありません
+                投稿はありません。{canEdit ? '「新規投稿」ボタンから投稿を作成できます。' : ''}
               </div>
             ) : (
               posts.map((post) => (
@@ -284,6 +286,8 @@ export function BulletinBoard({ className = '' }: BulletinBoardProps) {
           onSaved={handlePostSaved}
         />
       )}
+
+      {ConfirmDialog}
 
       {/* 既読者一覧モーダル */}
       {readersModalPost && (

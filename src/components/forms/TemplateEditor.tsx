@@ -18,6 +18,7 @@ import type {
   FormFieldType,
 } from '@/types/database';
 import { FORM_FIELD_TYPE_LABELS } from '@/types/database';
+import { useConfirm } from '@/hooks/useConfirm';
 
 interface TemplateEditorProps {
   isOpen: boolean;
@@ -32,6 +33,7 @@ export function TemplateEditor({
   templateId,
   onSuccess,
 }: TemplateEditorProps) {
+  const { confirm, ConfirmDialog } = useConfirm();
   const [template, setTemplate] = useState<FormTemplateWithFields | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -164,7 +166,7 @@ export function TemplateEditor({
   };
 
   const handleDeleteField = async (id: string) => {
-    if (!confirm('この項目を削除しますか？')) return;
+    if (!(await confirm({ title: '削除確認', description: 'この項目を削除しますか？', confirmLabel: '削除', variant: 'danger' }))) return;
 
     setIsSubmitting(true);
     setErrorMessage('');
@@ -350,6 +352,8 @@ export function TemplateEditor({
         onSave={handleSaveField}
         field={editingField}
       />
+
+      {ConfirmDialog}
     </>
   );
 }

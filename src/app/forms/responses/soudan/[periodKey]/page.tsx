@@ -18,6 +18,7 @@ import {
 import { getStudents } from '@/lib/api/students';
 import { LinkStudentModal } from '@/components/forms/LinkStudentModal';
 import { useToast } from '@/hooks/useToast';
+import { useConfirm } from '@/hooks/useConfirm';
 import { ToastContainer } from '@/components/ui';
 import type { SoudanResponse, SoudanResponseFilters } from '@/types/forms/soudan';
 import type { Student } from '@/types/database';
@@ -45,6 +46,7 @@ export default function SoudanResponsePage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoadingStudents, setIsLoadingStudents] = useState(false);
   const { toasts, removeToast, success, error } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
 
   // フィルター
   const [filterGrade, setFilterGrade] = useState<number | 'all'>('all');
@@ -217,7 +219,7 @@ export default function SoudanResponsePage() {
       return;
     }
 
-    if (!confirm(`${selectedIds.size}件の回答をアーカイブしますか？`)) {
+    if (!(await confirm({ title: 'アーカイブ確認', description: `${selectedIds.size}件の回答をアーカイブしますか？`, confirmLabel: 'アーカイブ', variant: 'warning' }))) {
       return;
     }
 
@@ -424,7 +426,7 @@ export default function SoudanResponsePage() {
             </div>
           ) : responses.length === 0 ? (
             <div className="p-8 text-center">
-              <p className="text-[#4b5563]">回答がありません</p>
+              <p className="text-[#4b5563]">回答がありません。保護者ポータルから申込が届くとここに表示されます。</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -614,6 +616,7 @@ export default function SoudanResponsePage() {
           onClose={() => setDetailResponse(null)}
         />
       )}
+      {ConfirmDialog}
       </AdminLayout>
     </>
   );
