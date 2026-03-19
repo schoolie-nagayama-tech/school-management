@@ -10,7 +10,6 @@ import {
   Globe,
   Calendar,
   Shield,
-  BookOpen,
   Clock,
 } from 'lucide-react';
 
@@ -75,7 +74,7 @@ const settingsItems: SettingsItem[] = [
 ];
 
 export default function SettingsPage() {
-  const { profile, permissions } = useAuth();
+  const { profile } = useAuth();
   const isAdmin = profile?.role === 'admin' || profile?.role === 'owner';
   const isManager = isAdmin || profile?.role === 'manager';
 

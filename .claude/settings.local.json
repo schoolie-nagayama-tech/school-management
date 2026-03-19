@@ -62,7 +62,8 @@
       "Bash(node -e \":*)",
       "Bash(grep -l \"useConfirm\" /c/Users/ytaka/Desktop/student-management/src/components/**/*.tsx)",
       "Bash(grep -E \"\\\\.\\(tsx?|jsx?\\)$\")",
-      "Bash(grep -n \"\\\\.single\\(\\)\" src/app/api/admin/users/[userId]/route.ts)"
+      "Bash(grep -n \"\\\\.single\\(\\)\" src/app/api/admin/users/[userId]/route.ts)",
+      "Bash(npx next:*)"
     ]
   }
 }
