@@ -16,6 +16,7 @@ export function FormLinkModal({ isOpen, onClose, form }: FormLinkModalProps) {
   const [schoolCode, setSchoolCode] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // フォームのURLを生成
   const getFormUrl = () => {
@@ -59,13 +60,14 @@ export function FormLinkModal({ isOpen, onClose, form }: FormLinkModalProps) {
 
   const handleCopy = async () => {
     if (!formUrl) return;
+    setErrorMessage('');
     try {
       await navigator.clipboard.writeText(formUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       console.error('Failed to copy:', error);
-      alert('コピーに失敗しました');
+      setErrorMessage('コピーに失敗しました');
     }
   };
 
@@ -74,6 +76,11 @@ export function FormLinkModal({ isOpen, onClose, form }: FormLinkModalProps) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="フォームリンク">
       <div className="space-y-4">
+        {errorMessage && (
+          <div className="bg-[#ef4444]/20 text-[#ef4444] px-4 py-2 rounded border border-[#ef4444] text-sm">
+            {errorMessage}
+          </div>
+        )}
         <div>
           <label className="block text-sm font-medium text-[#4b5563] mb-2">
             フォームタイトル

@@ -10,6 +10,7 @@ import {
   updateApplicationItemSortOrder,
 } from '@/lib/api/applications';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/useToast';
 import type { ApplicationItem, ApplicationColumnType } from '@/types/database';
 
 interface ApplicationItemSettingsProps {
@@ -19,6 +20,7 @@ interface ApplicationItemSettingsProps {
 
 export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSettingsProps) {
   const { getSelectedSchoolIds } = useAuth();
+  const { error: toastError } = useToast();
   const [items, setItems] = useState<ApplicationItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -183,7 +185,7 @@ export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSett
   // 編集モーダルの保存
   const handleSave = async () => {
     if (!itemName.trim()) {
-      alert('項目名を入力してください');
+      toastError('項目名を入力してください');
       return;
     }
 

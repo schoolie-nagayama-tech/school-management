@@ -43,7 +43,7 @@ export default function SoudanResponsePage() {
   const [linkingResponse, setLinkingResponse] = useState<SoudanResponse | null>(null);
   const [detailResponse, setDetailResponse] = useState<SoudanResponse | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
-  const [, setIsLoadingStudents] = useState(false);
+  const [isLoadingStudents, setIsLoadingStudents] = useState(false);
   const { toasts, removeToast, success, error } = useToast();
 
   // フィルター
@@ -223,10 +223,11 @@ export default function SoudanResponsePage() {
 
     setIsProcessing(true);
     try {
+      const count = selectedIds.size;
       await archiveResponses(Array.from(selectedIds));
       setSelectedIds(new Set());
       await fetchData();
-      success(`${selectedIds.size}件をアーカイブしました`);
+      success(`${count}件をアーカイブしました`);
     } catch (err) {
       console.error('Error bulk archiving:', err);
       error(err instanceof Error ? err.message : 'アーカイブに失敗しました');
@@ -600,6 +601,7 @@ export default function SoudanResponsePage() {
             updated_at: linkingResponse.updated_at,
           }}
           students={students}
+          isLoadingStudents={isLoadingStudents}
           onSuccess={handleLinkSuccess}
         />
       )}

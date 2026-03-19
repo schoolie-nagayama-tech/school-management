@@ -20,6 +20,7 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
   const [forms, setForms] = useState<Form[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
   const [selectedFormForLink, setSelectedFormForLink] = useState<Form | null>(null);
@@ -83,14 +84,15 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
 
   const handleArchive = async (id: string) => {
     if (!confirm('このフォームをアーカイブしますか？\n\nこのフォームから申し込んだ回答も自動でアーカイブされます。')) return;
-    
+
     setIsSubmitting(true);
     setErrorMessage('');
+    setSuccessMessage('');
     try {
       const result = await archiveForm(id);
       await fetchForms();
       onRefresh();
-      alert(`アーカイブしました（回答${result.responsesArchived}件を含む）`);
+      setSuccessMessage(`アーカイブしました（回答${result.responsesArchived}件を含む）`);
     } catch (error) {
       console.error('Error archiving form:', error);
       setErrorMessage(
@@ -104,11 +106,12 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
   const handleUnarchive = async (id: string) => {
     setIsSubmitting(true);
     setErrorMessage('');
+    setSuccessMessage('');
     try {
       const result = await unarchiveForm(id);
       await fetchForms();
       onRefresh();
-      alert(`アーカイブを解除しました（回答${result.responsesUnarchived}件を含む）`);
+      setSuccessMessage(`アーカイブを解除しました（回答${result.responsesUnarchived}件を含む）`);
     } catch (error) {
       console.error('Error unarchiving form:', error);
       setErrorMessage(
@@ -141,8 +144,13 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
   return (
     <div className="space-y-4">
       {errorMessage && (
-        <div className="bg-[#ef4444]/20 text-[#ef4444] px-4 py-2 rounded border border-[#ef4444]">
+        <div className="bg-[#ef4444]/20 text-[#ef4444] px-4 py-2 rounded border border-[#ef4444] text-sm">
           {errorMessage}
+        </div>
+      )}
+      {successMessage && (
+        <div className="bg-[#22c55e]/20 text-[#15803d] px-4 py-2 rounded border border-[#22c55e] text-sm">
+          {successMessage}
         </div>
       )}
 

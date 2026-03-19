@@ -37,6 +37,7 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submittingRef = useRef(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // 基本情報
   const [studentName, setStudentName] = useState('');
@@ -238,7 +239,7 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
     e.preventDefault();
     if (submittingRef.current) return;
     if (isPreview) {
-      alert('プレビューモードでは送信できません。');
+      setErrorMessage('プレビューモードでは送信できません。');
       return;
     }
     if (!validate()) {
@@ -399,6 +400,11 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
         {isPreview && (
           <div className="p-3 bg-amber-100 border border-amber-400 rounded-lg">
             <p className="text-sm text-amber-800 font-medium">＜プレビューモード＞ このページは管理者確認用です。実際の回答は送信されません。</p>
+          </div>
+        )}
+        {errorMessage && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+            {errorMessage}
           </div>
         )}
         {/* 説明文 */}

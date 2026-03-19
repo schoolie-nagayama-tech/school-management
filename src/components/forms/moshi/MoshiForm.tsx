@@ -121,7 +121,7 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
     e.preventDefault();
     if (submittingRef.current) return;
     if (isPreview) {
-      alert('プレビューモードでは送信できません。');
+      setErrorMessage('プレビューモードでは送信できません。');
       return;
     }
     if (!validate()) {

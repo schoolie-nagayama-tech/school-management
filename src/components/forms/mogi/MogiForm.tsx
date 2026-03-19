@@ -85,7 +85,7 @@ export function MogiForm({ school, period, isPreview }: MogiFormProps) {
     e.preventDefault();
     if (submittingRef.current) return;
     if (isPreview) {
-      alert('プレビューモードでは送信できません。');
+      setErrorMessage('プレビューモードでは送信できません。');
       return;
     }
     if (!validate()) {

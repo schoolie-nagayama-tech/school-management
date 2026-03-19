@@ -48,7 +48,16 @@
       "Bash(git commit:*)",
       "mcp__faa90072-dcd0-4481-89eb-d7e81d774b30__list_projects",
       "mcp__faa90072-dcd0-4481-89eb-d7e81d774b30__execute_sql",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(grep -l \"requireAdmin\\\\|requireManager\\\\|useRequirePermission\" /c/Users/ytaka/Desktop/student-management/src/app/*/page.tsx /c/Users/ytaka/Desktop/student-management/src/app/*/*/page.tsx)",
+      "Bash(grep -n \"profile.role\\\\|permissions\\\\.\" /c/Users/ytaka/Desktop/student-management/src/app/students/[studentId]/schedule/page.tsx)",
+      "Bash(grep -rn \"profile.role === ''teacher''\" /c/Users/ytaka/Desktop/student-management/src/app --include=\"*.tsx\")",
+      "Bash(xargs grep:*)",
+      "Bash(while read:*)",
+      "Bash(do)",
+      "Bash(grep -o '\\\\${[^}]*}')",
+      "Bash(grep -n \"href=\" /c/Users/ytaka/Desktop/student-management/src/app/forms/preview-period/[formType]/[periodKey]/page.tsx)",
+      "Bash(ls -la /c/Users/ytaka/Desktop/student-management/src/app/settings/*/page.tsx)"
     ]
   }
 }

@@ -15,6 +15,7 @@ interface PortalMenuSettingsProps {
 export function PortalMenuSettings({ menus, onUpdate }: PortalMenuSettingsProps) {
   const [editingMenu, setEditingMenu] = useState<PortalMenu | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleEdit = (menu: PortalMenu) => {
     setEditingMenu(menu);
@@ -40,7 +41,7 @@ export function PortalMenuSettings({ menus, onUpdate }: PortalMenuSettingsProps)
       onUpdate();
     } catch (error) {
       console.error('Error reordering menus:', error);
-      alert('並び替えに失敗しました');
+      setErrorMessage('並び替えに失敗しました');
     } finally {
       setIsSubmitting(false);
     }
@@ -62,7 +63,7 @@ export function PortalMenuSettings({ menus, onUpdate }: PortalMenuSettingsProps)
       onUpdate();
     } catch (error) {
       console.error('Error reordering menus:', error);
-      alert('並び替えに失敗しました');
+      setErrorMessage('並び替えに失敗しました');
     } finally {
       setIsSubmitting(false);
     }
@@ -78,6 +79,11 @@ export function PortalMenuSettings({ menus, onUpdate }: PortalMenuSettingsProps)
 
   return (
     <div className="space-y-2">
+      {errorMessage && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+          {errorMessage}
+        </div>
+      )}
       <table className="w-full border-collapse">
         <thead>
           <tr className="border-b border-[#e5e7eb]">

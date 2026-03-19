@@ -11,6 +11,7 @@ interface LinkStudentModalProps {
   onClose: () => void;
   response: FormResponse | null;
   students: Student[];
+  isLoadingStudents?: boolean;
   onSuccess: () => void;
 }
 
@@ -19,6 +20,7 @@ export function LinkStudentModal({
   onClose,
   response,
   students,
+  isLoadingStudents = false,
   onSuccess,
 }: LinkStudentModalProps) {
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
@@ -84,7 +86,12 @@ export function LinkStudentModal({
           <label className="block text-sm font-medium text-[#4b5563] mb-2">
             同じ学年の生徒を選択 <span className="text-[#ef4444]">*</span>
           </label>
-          {students.length === 0 ? (
+          {isLoadingStudents ? (
+            <div className="text-center py-8 text-[#4b5563]/60">
+              <div className="inline-block w-5 h-5 border-2 border-[#3b82f6] border-t-transparent rounded-full animate-spin mb-2" />
+              <p>生徒一覧を読み込み中...</p>
+            </div>
+          ) : students.length === 0 ? (
             <div className="text-center py-8 text-[#4b5563]/60">
               同じ学年の生徒が登録されていません
             </div>

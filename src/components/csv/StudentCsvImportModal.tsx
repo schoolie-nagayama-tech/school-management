@@ -44,6 +44,7 @@ export function StudentCsvImportModal({
   const [parseError, setParseError] = useState<string>('');
   const [progress, setProgress] = useState(0);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [errorMessage, setErrorMessage] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const resetState = () => {
@@ -52,6 +53,7 @@ export function StudentCsvImportModal({
     setParseError('');
     setProgress(0);
     setImportResult(null);
+    setErrorMessage('');
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -94,8 +96,9 @@ export function StudentCsvImportModal({
 
   // インポート実行
   const handleImport = async () => {
+    setErrorMessage('');
     if (!schoolId) {
-      alert('教室が選択されていません');
+      setErrorMessage('教室が選択されていません');
       return;
     }
     setStep('importing');
@@ -333,6 +336,12 @@ export function StudentCsvImportModal({
               </table>
             </div>
           </div>
+
+          {errorMessage && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-[#c62828]">{errorMessage}</p>
+            </div>
+          )}
 
           <div className="flex justify-between">
             <Button variant="ghost" onClick={resetState}>

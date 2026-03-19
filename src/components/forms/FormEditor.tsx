@@ -55,6 +55,7 @@ export function FormEditor({
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [isFieldEditorOpen, setIsFieldEditorOpen] = useState(false);
   const [editingField, setEditingField] = useState<FormField | null>(null);
   const [isArchiving, setIsArchiving] = useState(false);
@@ -130,12 +131,14 @@ export function FormEditor({
   }, [isOpen, formId, template, loadApplicationItems, loadForm]);
 
   const handleSave = async () => {
+    setErrorMessage('');
+    setSuccessMessage('');
     if (!title.trim()) {
-      alert('フォームタイトルを入力してください');
+      setErrorMessage('フォームタイトルを入力してください');
       return;
     }
     if (!slug.trim()) {
-      alert('URLスラッグを入力してください');
+      setErrorMessage('URLスラッグを入力してください');
       return;
     }
 
@@ -199,7 +202,7 @@ export function FormEditor({
 
   const handleAddField = () => {
     if (!formId && !form) {
-      alert('先にフォームを保存してください');
+      setErrorMessage('先にフォームを保存してください');
       return;
     }
     setEditingField(null);
@@ -220,7 +223,7 @@ export function FormEditor({
   }) => {
     const targetFormId = formId || form?.id;
     if (!targetFormId) {
-      alert('先にフォームを保存してください');
+      setErrorMessage('先にフォームを保存してください');
       return;
     }
 
@@ -329,8 +332,13 @@ export function FormEditor({
       >
         <div className="space-y-4 max-h-[80vh] overflow-y-auto">
           {errorMessage && (
-            <div className="bg-[#ef4444]/20 text-[#ef4444] px-4 py-2 rounded border border-[#ef4444]">
+            <div className="bg-[#ef4444]/20 text-[#ef4444] px-4 py-2 rounded border border-[#ef4444] text-sm">
               {errorMessage}
+            </div>
+          )}
+          {successMessage && (
+            <div className="bg-[#22c55e]/20 text-[#15803d] px-4 py-2 rounded border border-[#22c55e] text-sm">
+              {successMessage}
             </div>
           )}
 
@@ -565,7 +573,7 @@ export function FormEditor({
                           try {
                             const result = await unarchiveForm(formId || form!.id);
                             await loadForm();
-                            alert(`元に戻しました（回答${result.responsesUnarchived}件を含む）`);
+                            setSuccessMessage(`元に戻しました（回答${result.responsesUnarchived}件を含む）`);
                           } catch (error) {
                             console.error('Error unarchiving form:', error);
                             setErrorMessage(
@@ -593,7 +601,7 @@ export function FormEditor({
                           try {
                             const result = await archiveForm(formId || form!.id);
                             await loadForm();
-                            alert(`アーカイブしました（回答${result.responsesArchived}件を含む）`);
+                            setSuccessMessage(`アーカイブしました（回答${result.responsesArchived}件を含む）`);
                           } catch (error) {
                             console.error('Error archiving form:', error);
                             setErrorMessage(

@@ -191,7 +191,7 @@ export default function FormResponsesPage() {
                 className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563]"
                 disabled={filterFormType === 'all'}
               >
-                <option value="all">全て</option>
+                <option value="all">{filterFormType === 'all' ? 'フォーム種別を選択してください' : '全て'}</option>
                 {formPeriods.map((period) => (
                   <option key={period.id} value={period.period_key}>
                     {period.title}
@@ -301,24 +301,12 @@ export default function FormResponsesPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2">
-                          <button
+                          <a
+                            href={`/forms/responses/${response.form_type}/${response.form_period}`}
                             className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb]"
-                            onClick={() => {
-                              // TODO: 詳細モーダルを開く
-                              alert('詳細機能は実装中です');
-                            }}
                           >
                             詳細
-                          </button>
-                          <button
-                            className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb]"
-                            onClick={() => {
-                              // TODO: 紐付けモーダルを開く
-                              alert('紐付け機能は実装中です');
-                            }}
-                          >
-                            {response.linked_student_id ? '解除' : '紐付け'}
-                          </button>
+                          </a>
                         </div>
                       </td>
                     </tr>

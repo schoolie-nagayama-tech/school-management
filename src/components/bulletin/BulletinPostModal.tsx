@@ -37,6 +37,7 @@ export function BulletinPostModal({
   const [labelId, setLabelId] = useState<string | null>(null);
   const [isPinned, setIsPinned] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const availableSchools = schools.filter((s) => schoolIds?.includes(s.id)) ?? [];
   const allSelected = availableSchools.length > 0 && selectedSchoolIds.length >= availableSchools.length;
@@ -67,7 +68,7 @@ export function BulletinPostModal({
 
     const targetSchoolIds = post ? [post.school_id] : (selectedSchoolIds.length > 0 ? selectedSchoolIds : [schoolId]);
     if (targetSchoolIds.length === 0) {
-      alert('投稿先の教室を1つ以上選択してください');
+      setErrorMessage('投稿先の教室を1つ以上選択してください');
       return;
     }
 
@@ -102,7 +103,7 @@ export function BulletinPostModal({
       onClose();
     } catch (error) {
       console.error('Error saving post:', error);
-      alert('保存に失敗しました');
+      setErrorMessage('保存に失敗しました');
     } finally {
       setIsSubmitting(false);
     }
@@ -129,6 +130,11 @@ export function BulletinPostModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={post ? '投稿を編集' : '新規投稿'}>
       <div className="space-y-4">
+        {errorMessage && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+            {errorMessage}
+          </div>
+        )}
         {showSchoolSelector && (
           <div>
             <div className="flex items-center justify-between mb-2">

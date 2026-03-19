@@ -333,7 +333,9 @@ export default function UsersPage() {
           const body = await response.json();
           if (body?.details) msg = body.details;
           else if (body?.error) msg = body.error;
-        } catch {}
+        } catch (parseErr) {
+          console.warn('Failed to parse error response:', parseErr);
+        }
         throw new Error(msg);
       }
 

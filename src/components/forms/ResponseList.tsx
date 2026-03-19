@@ -21,6 +21,7 @@ export function ResponseList({ responses, formId, onRefresh }: ResponseListProps
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
   const [students, setStudents] = useState<Student[]>([]);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // フィルター適用
   const filteredResponses = responses.filter((response) => {
@@ -43,6 +44,7 @@ export function ResponseList({ responses, formId, onRefresh }: ResponseListProps
 
   const handleLink = async (response: FormResponse) => {
     setSelectedResponse(response);
+    setErrorMessage('');
     // 同じ教室・同じ学年の生徒を取得（教室間で生徒が混ざらないようにする）
     try {
       const allStudents = await getStudents(undefined, [response.school_id]);
@@ -53,7 +55,7 @@ export function ResponseList({ responses, formId, onRefresh }: ResponseListProps
       setIsLinkModalOpen(true);
     } catch (error) {
       console.error('Error fetching students:', error);
-      alert('生徒一覧の取得に失敗しました');
+      setErrorMessage('生徒一覧の取得に失敗しました');
     }
   };
 
@@ -65,6 +67,12 @@ export function ResponseList({ responses, formId, onRefresh }: ResponseListProps
   return (
     <>
       <div className="space-y-4">
+        {errorMessage && (
+          <div className="bg-[#ef4444]/20 text-[#ef4444] px-4 py-2 rounded border border-[#ef4444] text-sm">
+            {errorMessage}
+          </div>
+        )}
+
         {/* フィルター */}
         <div className="flex gap-4 items-center">
           <div className="flex items-center gap-2">
@@ -172,7 +180,7 @@ export function ResponseList({ responses, formId, onRefresh }: ResponseListProps
                                     onRefresh();
                                   } catch (error) {
                                     console.error('Error unlinking:', error);
-                                    alert('紐付け解除に失敗しました');
+                                    setErrorMessage('紐付け解除に失敗しました');
                                   }
                                 }
                               }}

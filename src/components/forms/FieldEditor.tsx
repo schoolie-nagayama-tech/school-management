@@ -25,6 +25,7 @@ export function FieldEditor({ isOpen, onClose, onSave, field }: FieldEditorProps
   const [isRequired, setIsRequired] = useState(false);
   const [optionsText, setOptionsText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // 選択肢が必要なフィールドタイプ
   const needsOptions = ['select', 'radio', 'checkbox'].includes(fieldType);
@@ -48,16 +49,18 @@ export function FieldEditor({ isOpen, onClose, onSave, field }: FieldEditorProps
       setIsRequired(false);
       setOptionsText('');
     }
+    setErrorMessage('');
   }, [field, isOpen]);
 
   const handleSave = () => {
+    setErrorMessage('');
     if (!label.trim()) {
-      alert('ラベルを入力してください');
+      setErrorMessage('ラベルを入力してください');
       return;
     }
 
     if (needsOptions && !optionsText.trim()) {
-      alert('選択肢を入力してください（1行に1つずつ）');
+      setErrorMessage('選択肢を入力してください（1行に1つずつ）');
       return;
     }
 
@@ -80,7 +83,7 @@ export function FieldEditor({ isOpen, onClose, onSave, field }: FieldEditorProps
       onClose();
     } catch (error) {
       console.error('Error saving field:', error);
-      alert('項目の保存に失敗しました');
+      setErrorMessage('項目の保存に失敗しました');
     } finally {
       setIsSubmitting(false);
     }
@@ -93,6 +96,12 @@ export function FieldEditor({ isOpen, onClose, onSave, field }: FieldEditorProps
       title={field ? '項目を編集' : '項目を追加'}
     >
       <div className="space-y-4">
+        {errorMessage && (
+          <div className="bg-[#ef4444]/20 text-[#ef4444] px-4 py-2 rounded border border-[#ef4444] text-sm">
+            {errorMessage}
+          </div>
+        )}
+
         <div>
           <label className="block text-sm font-medium text-[#4b5563] mb-2">
             項目タイプ <span className="text-[#ef4444]">*</span>

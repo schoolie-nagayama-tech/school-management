@@ -107,7 +107,7 @@ export function KomaFormRenderer({
 
     // プレビューモードのチェック
     if (window.location.pathname.includes('/preview/')) {
-      alert('プレビューモードでは送信できません。実際のフォームページから送信してください。');
+      setErrorMessage('プレビューモードでは送信できません。実際のフォームページから送信してください。');
       return;
     }
 

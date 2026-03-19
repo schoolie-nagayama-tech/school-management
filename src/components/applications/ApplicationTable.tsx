@@ -156,7 +156,7 @@ export function ApplicationTable({
       onStatusChange(studentId, itemId, nextStatus);
     } catch (error) {
       console.error('Failed to update application status:', error);
-      alert('申込状況の更新に失敗しました');
+      toastError('申込状況の更新に失敗しました');
     } finally {
       setUpdatingCells((prev) => {
         const next = new Set(prev);
@@ -556,7 +556,7 @@ export function ApplicationTable({
                                 onNumberChange?.(student.id, item.id, numValue);
                               } catch (error) {
                                 console.error('Failed to update number:', error);
-                                alert('数値の更新に失敗しました');
+                                toastError('数値の更新に失敗しました');
                               } finally {
                                 setUpdatingCells((prev) => {
                                   const next = new Set(prev);
@@ -621,7 +621,7 @@ export function ApplicationTable({
                                 onDateChange?.(student.id, item.id, dateVal);
                               } catch (error) {
                                 console.error('Failed to update date:', error);
-                                alert('日付の更新に失敗しました');
+                                toastError('日付の更新に失敗しました');
                               } finally {
                                 setUpdatingCells((prev) => {
                                   const next = new Set(prev);

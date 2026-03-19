@@ -41,7 +41,7 @@ export default function ZoukomaResponsePage() {
   const [detailResponse, setDetailResponse] = useState<ZoukomaResponse | null>(null);
   const [linkingResponse, setLinkingResponse] = useState<ZoukomaResponse | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
-  const [, setIsLoadingStudents] = useState(false);
+  const [isLoadingStudents, setIsLoadingStudents] = useState(false);
   const { toasts, removeToast, success, error } = useToast();
 
   const fetchData = useCallback(async () => {
@@ -393,6 +393,7 @@ export default function ZoukomaResponsePage() {
             updated_at: linkingResponse.updated_at,
           }}
           students={students}
+          isLoadingStudents={isLoadingStudents}
           onSuccess={handleLinkSuccess}
         />
       )}

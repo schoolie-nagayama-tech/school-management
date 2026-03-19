@@ -27,6 +27,7 @@ export function PublicFormRenderer({
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const submittingRef = useRef(false);
 
   const validateEmail = (email: string) => {
@@ -70,7 +71,7 @@ export function PublicFormRenderer({
     if (submittingRef.current) return;
 
     if (isReadOnly) {
-      alert('プレビューモードでは送信できません。実際のフォームページから送信してください。');
+      setErrorMessage('プレビューモードでは送信できません。実際のフォームページから送信してください。');
       return;
     }
 
@@ -94,7 +95,7 @@ export function PublicFormRenderer({
       router.push(`/portal/${schoolCode}/${form.slug}?submitted=true`);
     } catch (error) {
       console.error('Error submitting form:', error);
-      alert('送信に失敗しました。もう一度お試しください。');
+      setErrorMessage('送信に失敗しました。もう一度お試しください。');
     } finally {
       submittingRef.current = false;
       setIsSubmitting(false);
@@ -301,6 +302,11 @@ export function PublicFormRenderer({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {errorMessage && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+          {errorMessage}
+        </div>
+      )}
       {/* 共通項目 */}
       <div className="space-y-4 bg-[#f3f4f6] p-4 rounded-lg border border-[#e5e7eb]">
         <h3 className="text-lg font-semibold text-[#1f2937] mb-4">基本情報</h3>

@@ -78,7 +78,7 @@ export function TemplateEditor({
 
   const handleSave = async () => {
     if (!name.trim()) {
-      alert('テンプレート名を入力してください');
+      setErrorMessage('テンプレート名を入力してください');
       return;
     }
 
@@ -131,7 +131,7 @@ export function TemplateEditor({
     is_required: boolean;
   }) => {
     if (!template?.id) {
-      alert('先にテンプレートを保存してください');
+      setErrorMessage('先にテンプレートを保存してください');
       return;
     }
 

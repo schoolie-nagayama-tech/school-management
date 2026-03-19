@@ -76,13 +76,13 @@ export function TemplateList({ onSelectTemplate, onRefresh }: TemplateListProps)
     try {
       const templateWithFields = await getFormTemplate(template.id);
       if (templateWithFields.fields.length === 0) {
-        alert('このテンプレートには項目がありません。先に項目を追加してください。');
+        setErrorMessage('このテンプレートには項目がありません。先に項目を追加してください。');
         return;
       }
       onSelectTemplate(template);
     } catch (error) {
       console.error('Error loading template:', error);
-      alert('テンプレートの読み込みに失敗しました');
+      setErrorMessage('テンプレートの読み込みに失敗しました');
     }
   };
 

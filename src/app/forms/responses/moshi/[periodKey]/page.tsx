@@ -45,7 +45,7 @@ export default function MoshiResponsePage() {
   const [linkingResponse, setLinkingResponse] = useState<MoshiResponse | null>(null);
   const [detailResponse, setDetailResponse] = useState<MoshiResponse | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
-  const [, setIsLoadingStudents] = useState(false);
+  const [isLoadingStudents, setIsLoadingStudents] = useState(false);
   const { toasts, removeToast, success, error } = useToast();
 
   // フィルター
@@ -253,10 +253,11 @@ export default function MoshiResponsePage() {
 
     setIsProcessing(true);
     try {
+      const count = selectedIds.size;
       await archiveResponses(Array.from(selectedIds));
       setSelectedIds(new Set());
       await fetchData();
-      success(`${selectedIds.size}件をアーカイブしました`);
+      success(`${count}件をアーカイブしました`);
     } catch (err) {
       console.error('Error bulk archiving:', err);
       error(err instanceof Error ? err.message : 'アーカイブに失敗しました');
@@ -653,6 +654,7 @@ export default function MoshiResponsePage() {
             updated_at: linkingResponse.updated_at,
           }}
           students={students}
+          isLoadingStudents={isLoadingStudents}
           onSuccess={handleLinkSuccess}
         />
       )}

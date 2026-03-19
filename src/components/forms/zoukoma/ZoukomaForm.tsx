@@ -131,7 +131,7 @@ export function ZoukomaForm({ school, period, isPreview }: ZoukomaFormProps) {
     e.preventDefault();
     if (submittingRef.current) return;
     if (isPreview) {
-      alert('プレビューモードでは送信できません。');
+      setErrorMessage('プレビューモードでは送信できません。');
       return;
     }
     if (!validate()) {

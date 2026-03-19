@@ -41,6 +41,7 @@ export function TeacherCsvImportModal({
   const [selectedSchoolId, setSelectedSchoolId] = useState(schools[0]?.id ?? '');
   const [progress, setProgress] = useState(0);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const [errorMessage, setErrorMessage] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const resetState = () => {
@@ -49,6 +50,7 @@ export function TeacherCsvImportModal({
     setParseError('');
     setProgress(0);
     setImportResult(null);
+    setErrorMessage('');
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -86,12 +88,13 @@ export function TeacherCsvImportModal({
 
   // インポート実行
   const handleImport = async () => {
+    setErrorMessage('');
     if (!selectedSchoolId) {
-      alert('所属教室を選択してください');
+      setErrorMessage('所属教室を選択してください');
       return;
     }
     if (defaultPassword.length < 4) {
-      alert('初期パスワードは4文字以上で入力してください');
+      setErrorMessage('初期パスワードは4文字以上で入力してください');
       return;
     }
 
@@ -295,6 +298,12 @@ export function TeacherCsvImportModal({
               </table>
             </div>
           </div>
+
+          {errorMessage && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-[#c62828]">{errorMessage}</p>
+            </div>
+          )}
 
           <div className="flex justify-between">
             <Button variant="ghost" onClick={resetState}>← やり直し</Button>

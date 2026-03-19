@@ -94,7 +94,7 @@ export default async function FormPeriodPreviewPage({
               {formLabel} プレビュー
             </h1>
             <Link
-              href="/settings/forms"
+              href="/settings/portal"
               className="px-4 py-2 text-sm text-[#4b5563] hover:text-[#1f2937] hover:bg-[#f3f4f6] rounded-lg transition-colors"
             >
               設定に戻る
