@@ -85,9 +85,8 @@ export default function SettingsPage() {
   });
 
   return (
-    <AdminLayout>
+    <AdminLayout headerTitle="設定">
       <div className="max-w-3xl mx-auto py-8 px-4">
-        <h1 className="text-2xl font-bold text-[#1a1a1a] mb-6">設定</h1>
         <div className="space-y-2">
           {visibleItems.map((item) => (
             <Link

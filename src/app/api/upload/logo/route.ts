@@ -48,15 +48,30 @@ export async function POST(request: NextRequest) {
 
     const supabaseAdmin = getSupabaseAdmin();
 
-    // ファイル名を生成
+    // バケットが存在しなければ作成
+    const { data: buckets } = await supabaseAdmin.storage.listBuckets();
+    if (!buckets?.find((b) => b.name === 'public-assets')) {
+      await supabaseAdmin.storage.createBucket('public-assets', { public: true });
+    }
+
+    // ファイル名を生成（キャッシュバスティング用にタイムスタンプ付加）
     const ext = file.name.split('.').pop() || 'png';
-    const fileName = `school-logos/${schoolId}/logo.${ext}`;
+    const fileName = `school-logos/${schoolId}/logo_${Date.now()}.${ext}`;
 
     // バッファに変換
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Supabase Storageにアップロード（既存ファイルは上書き）
+    // 既存のロゴファイルを削除（上書きではなく新ファイル）
+    const { data: existingFiles } = await supabaseAdmin.storage
+      .from('public-assets')
+      .list(`school-logos/${schoolId}`);
+    if (existingFiles && existingFiles.length > 0) {
+      const filesToDelete = existingFiles.map((f) => `school-logos/${schoolId}/${f.name}`);
+      await supabaseAdmin.storage.from('public-assets').remove(filesToDelete);
+    }
+
+    // Supabase Storageにアップロード
     const { error: uploadError } = await supabaseAdmin.storage
       .from('public-assets')
       .upload(fileName, buffer, {
