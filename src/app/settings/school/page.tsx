@@ -4,9 +4,10 @@ import { useState, useEffect, useRef } from 'react';
 import { AdminLayout } from '@/components/layouts';
 import { Button, Card, CardHeader, CardTitle, CardContent, Input, ToastContainer } from '@/components/ui';
 import Link from 'next/link';
-import { getDefaultSchoolId, getSchool, updateSchool } from '@/lib/api/schools';
+import { getSchool, updateSchool } from '@/lib/api/schools';
 import { useToast } from '@/hooks/useToast';
 import { useRequirePermission } from '@/hooks/usePermissions';
+import { useAuth } from '@/contexts/AuthContext';
 import AccessDenied from '@/components/AccessDenied';
 import type { School } from '@/types/database';
 
@@ -15,6 +16,7 @@ export default function SchoolSettingsPage() {
     (p) => p.canAccessSettings
   );
   const { toasts, removeToast, success, error: toastError } = useToast();
+  const { getSelectedSchoolIds } = useAuth();
 
   const [school, setSchool] = useState<School | null>(null);
   const [notificationEmails, setNotificationEmails] = useState<string[]>([]);
@@ -28,7 +30,9 @@ export default function SchoolSettingsPage() {
   useEffect(() => {
     const fetchSchool = async () => {
       try {
-        const schoolId = getDefaultSchoolId();
+        const schoolIds = getSelectedSchoolIds();
+        const schoolId = schoolIds[0];
+        if (!schoolId) return;
         const schoolData = await getSchool(schoolId);
         if (schoolData) {
           setSchool(schoolData);
@@ -53,7 +57,8 @@ export default function SchoolSettingsPage() {
     if (hasPermission) {
       fetchSchool();
     }
-  }, [hasPermission, toastError]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasPermission, toastError, getSelectedSchoolIds]);
 
   // メールアドレスリストを更新
   const updateEmail = (index: number, value: string) => {
