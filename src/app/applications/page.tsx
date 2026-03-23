@@ -73,7 +73,8 @@ export default function ApplicationsPage() {
         getApplicationItems(schoolIds, filters.showHidden),
         getStudentApplications(schoolIds),
       ]);
-      setStudents(studentsData);
+      // 退会（withdrawn）の生徒は申込状況に表示しない
+      setStudents(studentsData.filter((s) => s.status !== 'withdrawn'));
       setItems(itemsData);
       setApplications(applicationsData);
     } catch (error) {
