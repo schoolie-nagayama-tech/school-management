@@ -42,6 +42,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertBoard } from '@/components/alerts';
 import { BulletinBoard } from '@/components/bulletin';
 import { NewResponsesBoard } from '@/components/responses/NewResponsesBoard';
+import { RecentUpdatesBoard } from '@/components/students/RecentUpdatesBoard';
+import { useToast } from '@/hooks/useToast';
+import { ToastContainer } from '@/components/ui';
 
 export default function StudentsPage() {
   // 権限チェック
@@ -54,6 +57,7 @@ export default function StudentsPage() {
   
   // 講師かどうかを判定
   const isTeacher = profile?.role === 'teacher';
+  const { toasts, removeToast, success } = useToast();
   // 状態管理
   const [students, setStudents] = useState<(Student & { subjects?: Subject[] })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -291,8 +295,19 @@ export default function StudentsPage() {
     setIsSubmitting(true);
     setErrorMessage('');
     try {
-      await updateStudent(selectedStudent.id, data as StudentUpdate, subjectIds);
+      const update = data as StudentUpdate;
+      await updateStudent(selectedStudent.id, update, subjectIds);
       setIsEditModalOpen(false);
+      // ステータス変更時のトースト案内
+      if (update.status && update.status !== selectedStudent.status) {
+        const statusLabel = update.status === 'withdrawn' ? '退会' : update.status === 'inactive' ? '休会' : '在籍中';
+        success(`${selectedStudent.last_name} ${selectedStudent.first_name} を「${statusLabel}」に変更しました`);
+        if ((update.status === 'withdrawn' || update.status === 'inactive') && !showInactive) {
+          success('退会・休会の生徒を表示するには「退会済み表示」をONにしてください');
+        }
+      } else {
+        success('生徒情報を更新しました');
+      }
       setSelectedStudent(null);
       await fetchStudents(searchQuery);
     } catch (error) {
@@ -438,6 +453,7 @@ export default function StudentsPage() {
       headerTitle="生徒管理"
       headerOnBulkGradeUpdateClick={!isTeacher ? () => setIsBulkGradeUpdateModalOpen(true) : undefined}
     >
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
       {/* エラーメッセージ */}
         {errorMessage && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
@@ -471,8 +487,18 @@ export default function StudentsPage() {
           </div>
         )}
 
-        {/* 新着申し込み通知 */}
-        {!isTeacher && <NewResponsesBoard className="mb-4" />}
+        {/* 新着申し込み通知 ＆ 更新履歴 */}
+        {!isTeacher && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+            <NewResponsesBoard />
+            <RecentUpdatesBoard
+              onStudentClick={(studentId) => {
+                const student = students.find((s) => s.id === studentId);
+                if (student) handleOpenDetailModal(student);
+              }}
+            />
+          </div>
+        )}
 
         {/* 掲示板とアラート */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
@@ -529,12 +555,21 @@ export default function StudentsPage() {
             {/* 休会・退会表示ボタン（講師には非表示） */}
             {!isTeacher && (
               <button
-                onClick={() => setShowInactive(!showInactive)}
+                onClick={() => {
+                  const next = !showInactive;
+                  setShowInactive(next);
+                  if (next) {
+                    const inactiveCount = students.filter((s) => s.status !== 'active').length;
+                    if (inactiveCount === 0) {
+                      success('現在、休会・退会の生徒はいません');
+                    }
+                  }
+                }}
                 className={`
                   inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors
                   ${
                     showInactive
-                      ? 'bg-[#1e3a5f]/10 text-[#1e3a5f] hover:bg-[#1e3a5f]/20 border border-[#1e3a5f]/20'
+                      ? 'bg-[#1e3a5f] text-white hover:bg-[#1e3a5f]/90 border border-[#1e3a5f]'
                       : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
                   }
                 `}
@@ -758,7 +793,6 @@ export default function StudentsPage() {
         }}
         onEdit={handleOpenEditModal}
         onOpenSchedule={!isTeacher ? handleOpenSchedule : undefined}
-        onStatusChange={!isTeacher ? handleStatusChange : undefined}
         onDelete={
           !isTeacher
             ? async (student) => {

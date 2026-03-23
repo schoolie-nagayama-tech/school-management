@@ -106,45 +106,45 @@ export function ScoreChart({ data, category }: ScoreChartProps) {
             formatter={(value) => SUBJECT_LABELS[value] || value}
           />
           <Line
-            type="monotone"
+            type="linear"
             dataKey="english"
-            name="english"
+            name="英語"
             stroke={SUBJECT_COLORS.english}
             strokeWidth={2}
             dot={{ r: 3 }}
             connectNulls
           />
           <Line
-            type="monotone"
+            type="linear"
             dataKey="math"
-            name="math"
+            name="数学"
             stroke={SUBJECT_COLORS.math}
             strokeWidth={2}
             dot={{ r: 3 }}
             connectNulls
           />
           <Line
-            type="monotone"
+            type="linear"
             dataKey="japanese"
-            name="japanese"
+            name="国語"
             stroke={SUBJECT_COLORS.japanese}
             strokeWidth={2}
             dot={{ r: 3 }}
             connectNulls
           />
           <Line
-            type="monotone"
+            type="linear"
             dataKey="science"
-            name="science"
+            name="理科"
             stroke={SUBJECT_COLORS.science}
             strokeWidth={2}
             dot={{ r: 3 }}
             connectNulls
           />
           <Line
-            type="monotone"
+            type="linear"
             dataKey="social"
-            name="social"
+            name="社会"
             stroke={SUBJECT_COLORS.social}
             strokeWidth={2}
             dot={{ r: 3 }}

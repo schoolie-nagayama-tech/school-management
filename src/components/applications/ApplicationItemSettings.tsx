@@ -77,6 +77,7 @@ export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSett
   const handleEdit = (item: ApplicationItem) => {
     setEditingItem(item);
     setItemName(item.name);
+    setItemDueDate(item.due_date || '');
     setIsEditModalOpen(true);
   };
 
@@ -195,7 +196,7 @@ export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSett
     setErrorMessage('');
     try {
       if (editingItem) {
-        await updateApplicationItem(editingItem.id, { name: itemName.trim() });
+        await updateApplicationItem(editingItem.id, { name: itemName.trim(), due_date: itemDueDate || null });
       } else {
         const schoolIds = getSelectedSchoolIds();
         if (schoolIds.length === 0) {
@@ -346,7 +347,19 @@ export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSett
             />
           </div>
 
-          {/* 新規追加時のみカラムタイプ・期日・室長のみ表示を表示 */}
+          {/* 期日は新規・編集ともに表示、カラムタイプ・室長のみ表示は新規のみ */}
+          <div>
+            <label className="block text-sm font-medium text-[#4b5563] mb-2">
+              期日（任意）
+            </label>
+            <input
+              type="date"
+              value={itemDueDate}
+              onChange={(e) => setItemDueDate(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-[#e5e7eb] rounded-lg bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+              disabled={isSubmitting}
+            />
+          </div>
           {!editingItem && (
             <>
               <div>
@@ -363,18 +376,6 @@ export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSett
                   <option value="number">数値</option>
                   <option value="date">日付</option>
                 </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#4b5563] mb-2">
-                  期日（任意）
-                </label>
-                <input
-                  type="date"
-                  value={itemDueDate}
-                  onChange={(e) => setItemDueDate(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-[#e5e7eb] rounded-lg bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
-                  disabled={isSubmitting}
-                />
               </div>
               <label className="flex items-center gap-2 text-sm text-[#4b5563]">
                 <input

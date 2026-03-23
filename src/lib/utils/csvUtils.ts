@@ -448,3 +448,81 @@ export function generateInterviewCSV(
 
   return [header, ...dataRows].join('\r\n');
 }
+
+// ─────────────────────────────────────────────
+// 模試成績CSVインポート
+// ─────────────────────────────────────────────
+
+const MOCK_NAME_MAP: Record<string, string> = {
+  '会場模試': 'venue',
+  '教室模試': 'classroom',
+  venue: 'venue',
+  classroom: 'classroom',
+};
+
+export interface MockCsvRow {
+  rowIndex: number;
+  name_code: string;
+  exam_month: string;
+  scores: Record<string, number | null>;
+  errors: string[];
+}
+
+export function getMockCSVTemplate(): string {
+  return 'テスト名,試験月,英語,数学,国語,理科,社会,偏差値(3科),偏差値(5科)\r\n会場模試,2025-06,72,85,68,77,81,58.3,62.1\r\n教室模試,2025-07,75,80,70,73,78,56.5,60.8';
+}
+
+export function parseMockCSV(file: File): Promise<MockCsvRow[]> {
+  return new Promise((resolve, reject) => {
+    Papa.parse<Record<string, string>>(file, {
+      header: true,
+      skipEmptyLines: true,
+      encoding: 'UTF-8',
+      complete(results) {
+        const rows: MockCsvRow[] = [];
+        for (let i = 0; i < results.data.length; i++) {
+          const raw = results.data[i];
+          const errors: string[] = [];
+
+          const rawName = (raw['テスト名'] ?? '').trim();
+          const name_code = MOCK_NAME_MAP[rawName] ?? '';
+          if (!name_code) errors.push(`テスト名「${rawName}」は無効です（会場模試 or 教室模試）`);
+
+          const exam_month = (raw['試験月'] ?? '').trim();
+          if (!/^\d{4}-\d{2}$/.test(exam_month)) errors.push(`試験月「${exam_month}」はYYYY-MM形式で入力してください`);
+
+          const scores: Record<string, number | null> = {};
+          const subjectMap: [string, string][] = [
+            ['英語', 'english'],
+            ['数学', 'math'],
+            ['国語', 'japanese'],
+            ['理科', 'science'],
+            ['社会', 'social'],
+            ['偏差値(3科)', 'hensa_3'],
+            ['偏差値(5科)', 'hensa_5'],
+          ];
+          for (const [csvKey, dbKey] of subjectMap) {
+            const val = (raw[csvKey] ?? '').trim();
+            if (val === '') {
+              scores[dbKey] = null;
+            } else {
+              const num = parseFloat(val);
+              if (isNaN(num)) {
+                errors.push(`${csvKey}「${val}」は数値で入力してください`);
+                scores[dbKey] = null;
+              } else {
+                scores[dbKey] = num;
+              }
+            }
+          }
+
+          rows.push({ rowIndex: i + 2, name_code, exam_month, scores, errors });
+        }
+        resolve(rows);
+      },
+      error(err) {
+        reject(new Error(`CSVの読み込みに失敗しました: ${err.message}`));
+      },
+    });
+  });
+}

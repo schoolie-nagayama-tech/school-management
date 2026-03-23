@@ -4,6 +4,8 @@ import { Button } from '@/components/ui';
 import type { AssessmentWithScores } from '@/types/database';
 import { ASSESSMENT_NAME_LABELS, GRADE_LABELS } from '@/types/database';
 import { SUBJECT_CODES } from '@/types/database';
+import { calcNaishin } from '@/lib/utils/convertedNaishin';
+import type { NaishinType } from '@/lib/utils/convertedNaishin';
 
 const FIVE_SUBJECTS = [
   SUBJECT_CODES.ENGLISH,
@@ -42,6 +44,7 @@ interface ScoreTableRowProps {
     type: 'five_sum' | 'nine_sum'
   ) => string;
   canEdit: boolean;
+  naishinType?: NaishinType;
 }
 
 export function ScoreTableRow({
@@ -56,6 +59,7 @@ export function ScoreTableRow({
   onDelete,
   getCalculatedValue,
   canEdit,
+  naishinType,
 }: ScoreTableRowProps) {
   const scoreMap = new Map(assessment.scores.map((s) => [s.subject, s.value]));
 
@@ -117,7 +121,22 @@ export function ScoreTableRow({
   const fiveSum = getCalculatedValue(assessment, 'five_sum');
   const nineSum = getCalculatedValue(assessment, 'nine_sum');
 
-  const regularRow = (
+  // 換算内申の計算（report_card の場合のみ）
+  let naishinDisplay: string | null = null;
+  if (naishinType && category === 'report_card') {
+    const scores: Record<string, number | null> = {};
+    for (const subj of COMMON_9_SUBJECTS) {
+      scores[subj] = scoreMap.get(subj) ?? null;
+    }
+    const result = calcNaishin(scores, naishinType);
+    if (result.converted !== null) {
+      naishinDisplay = `${result.converted}/${result.max_score}`;
+    } else {
+      naishinDisplay = '—';
+    }
+  }
+
+  return (
     <tr className="hover:bg-[var(--surface)]">
       <td className="border border-gray-200 px-2 py-1.5 text-sm text-[var(--headline)] whitespace-nowrap">
         {GRADE_LABELS[assessment.grade] ?? assessment.grade}
@@ -133,6 +152,11 @@ export function ScoreTableRow({
       <td className="border border-gray-200 px-2 py-1.5 text-center text-sm font-medium text-[var(--paragraph)]">
         {nineSum}
       </td>
+      {naishinType && category === 'report_card' && (
+        <td className="border border-gray-200 px-2 py-1.5 text-center text-sm font-medium text-[var(--paragraph)] bg-blue-50">
+          {naishinDisplay}
+        </td>
+      )}
       {canEdit && (
         <td className="border border-gray-200 px-2 py-1.5 text-center">
           <Button variant="danger" size="sm" onClick={() => onDelete(assessment.id)}>
@@ -142,7 +166,6 @@ export function ScoreTableRow({
       )}
     </tr>
   );
-  return regularRow;
 }
 
 export function getCalculatedValue(

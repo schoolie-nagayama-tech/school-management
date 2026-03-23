@@ -26,10 +26,10 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
   const [showInfoPopup, setShowInfoPopup] = useState(false);
   /** Heavy アラート（成績・テスト）の取得状態 */
   const [heavyLoadState, setHeavyLoadState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
-  
+
   // 対応済み操作はmanager以上のみ
   const canDismiss = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
-  
+
   // アラートタイプの説明
   const alertTypeDescriptions: Record<string, string> = {
     score_drop: '前回と比較して10点以上低下した科目',
@@ -108,14 +108,14 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
 
   const handleDismiss = useCallback(async (alert: Alert) => {
     if (!canDismiss) return;
-    
+
     try {
       const schoolIds = getSelectedSchoolIds();
       if (schoolIds.length === 0) {
         toastError('教室が選択されていません');
         return;
       }
-      
+
       // 面談タスクの場合：面談記録のタスクを完了にしてから対応済み記録を付与（同期）
       if (alert.alert_type === 'interview_task') {
         const taskId = alert.details?.task_id ?? (alert.alert_key.startsWith('task:') ? alert.alert_key.slice(5) : null);
@@ -123,19 +123,19 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
           await completeTask(taskId);
         }
       }
-      
+
       // 生徒のschool_idを取得
       const { data: student, error: studentError } = await supabase
         .from('students')
         .select('school_id')
         .eq('id', alert.student_id)
         .maybeSingle();
-      
+
       if (studentError || !student) {
         toastError('生徒情報が見つかりません');
         return;
       }
-      
+
       await dismissAlert(
         student.school_id,
         alert.student_id,
@@ -144,7 +144,7 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
         profile?.id,
         undefined
       );
-      
+
       success('対応済みにしました');
       // アラートを再取得（キャッシュをスキップ）
       await fetchAlerts(true);
@@ -197,7 +197,7 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
             <Info className="w-4 h-4" />
           </button>
         </div>
-        <button 
+        <button
           onClick={() => setIsExpanded(!isExpanded)}
           className="text-gray-400 hover:text-gray-600 transition-colors"
         >
@@ -208,7 +208,7 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
           )}
         </button>
       </div>
-      
+
       {/* アラート内容説明ポップアップ */}
       {showInfoPopup && (
         <div className="relative">
@@ -266,19 +266,19 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
 
       {/* アラート一覧（生徒ごとにカードヘッダーで区切り） */}
       {isExpanded && (
-        <div className="p-4 space-y-4">
+        <div className="p-3 space-y-2 max-h-[400px] lg:max-h-[500px] overflow-y-auto">
           {studentAlerts.map((studentAlert) => (
             <div key={studentAlert.student_id} className="rounded-lg border border-gray-200 overflow-hidden bg-white">
-              {/* カードヘッダー：生徒名・学年（統一感のあるセクション区切り） */}
-              <div className="flex items-center gap-2 px-4 py-3 bg-gray-50 border-b border-gray-200">
-                <span className="font-semibold text-[#1a1a1a]">
+              {/* カードヘッダー：生徒名・学年 */}
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border-b border-gray-200">
+                <span className="font-semibold text-sm text-[#1a1a1a]">
                   {studentAlert.student_name}
                 </span>
                 <span className="text-xs text-gray-500">
                   （{GRADE_LABELS[studentAlert.grade] || studentAlert.grade}）
                 </span>
               </div>
-              <div className="p-3 space-y-2">
+              <div className="p-2 space-y-1">
                 {studentAlert.alerts.map((alert) => (
                   <AlertItem
                     key={alert.id}

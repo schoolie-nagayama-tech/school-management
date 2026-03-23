@@ -26,6 +26,7 @@ import { useRequirePermission } from '@/hooks/usePermissions';
 import { useAuth } from '@/contexts/AuthContext';
 import AccessDenied from '@/components/AccessDenied';
 import { exportProgressToPDF } from '@/lib/utils/pdfExport';
+import { MockCsvImportModal } from '@/components/scores/MockCsvImportModal';
 
 type Category = 'regular_test' | 'report_card' | 'mock';
 
@@ -91,6 +92,7 @@ export default function StudentScoresPage() {
   const [newRowMonth, setNewRowMonth] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExportingPdf, setIsExportingPdf] = useState(false);
+  const [isMockCsvModalOpen, setIsMockCsvModalOpen] = useState(false);
 
   const fetchStudent = useCallback(async () => {
     if (!studentId) return;
@@ -344,7 +346,16 @@ export default function StudentScoresPage() {
                     <div className="py-8 text-center text-sm text-[var(--paragraph)]">読み込み中...</div>
                   ) : (
                     <>
-                      <div className="mb-3 flex justify-end">
+                      <div className="mb-3 flex justify-end gap-2">
+                        {category === 'mock' && canEditScores && (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setIsMockCsvModalOpen(true)}
+                          >
+                            CSVインポート
+                          </Button>
+                        )}
                         {!addingRowCategory && canEditScores && (
                           <Button
                             variant="primary"
@@ -446,6 +457,15 @@ export default function StudentScoresPage() {
         </div>
       </div>
       {ConfirmDialog}
+      {student && (
+        <MockCsvImportModal
+          isOpen={isMockCsvModalOpen}
+          onClose={() => setIsMockCsvModalOpen(false)}
+          studentId={studentId}
+          studentGrade={student.grade}
+          onImportComplete={fetchAllAssessments}
+        />
+      )}
     </AdminLayout>
   );
 }

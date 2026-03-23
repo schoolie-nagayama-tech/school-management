@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Modal, Button, Select } from '@/components/ui';
+import { Modal, Button } from '@/components/ui';
 import { getStudentWithSubjects } from '@/lib/api/subjects';
 import { getDefaultSchoolId } from '@/lib/api/schools';
 import { getRegularPatterns } from '@/lib/api/schedule';
@@ -15,8 +15,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Calendar } from 'lucide-react';
 import { useConfirm } from '@/hooks/useConfirm';
 
-type StudentStatus = Student['status'];
-
 interface StudentDetailModalProps {
   isOpen: boolean;
   student: Student | null;
@@ -24,8 +22,6 @@ interface StudentDetailModalProps {
   onEdit: (student: Student) => void;
   /** 通塾日程をモーダルで直接開く（未指定の場合は従来のリンク） */
   onOpenSchedule?: (student: Student) => void;
-  /** 状況変更（詳細から直接変更する場合） */
-  onStatusChange?: (student: Student, status: StudentStatus) => Promise<void>;
   /** 削除（論理削除） */
   onDelete?: (student: Student) => Promise<void>;
 }
@@ -38,13 +34,11 @@ export function StudentDetailModal({
   onClose,
   onEdit,
   onOpenSchedule,
-  onStatusChange,
   onDelete,
 }: StudentDetailModalProps) {
   const { profile } = useAuth();
   const { confirm, ConfirmDialog } = useConfirm();
   const isTeacher = profile?.role === 'teacher';
-  const [statusUpdating, setStatusUpdating] = useState(false);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [schedulePatterns, setSchedulePatterns] = useState<ScheduleRegularPattern[]>([]);
   const [scheduleLoading, setScheduleLoading] = useState(false);
@@ -95,7 +89,6 @@ export function StudentDetailModal({
   if (!student) return null;
 
   const handleEdit = () => {
-    // 編集モーダルを開く（handleOpenEditModal内で詳細モーダルも閉じられる）
     onEdit(student);
   };
 
@@ -129,34 +122,11 @@ export function StudentDetailModal({
             <div>
               <label className="text-xs text-[#4b5563]">在籍状況</label>
               <div className="mt-1">
-                {!isTeacher && onStatusChange ? (
-                  <Select
-                    value={student.status}
-                    onChange={async (e) => {
-                      const newStatus = e.target.value as StudentStatus;
-                      if (newStatus === student.status) return;
-                      setStatusUpdating(true);
-                      try {
-                        await onStatusChange(student, newStatus);
-                      } finally {
-                        setStatusUpdating(false);
-                      }
-                    }}
-                    options={[
-                      { value: 'active', label: '在籍中' },
-                      { value: 'inactive', label: '休会' },
-                      { value: 'withdrawn', label: '退会' },
-                    ]}
-                    disabled={statusUpdating}
-                    className="max-w-[140px]"
-                  />
-                ) : (
-                  <span
-                    className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${STATUS_COLORS[student.status]}`}
-                  >
-                    {STATUS_LABELS[student.status]}
-                  </span>
-                )}
+                <span
+                  className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${STATUS_COLORS[student.status]}`}
+                >
+                  {STATUS_LABELS[student.status]}
+                </span>
               </div>
             </div>
             <div>

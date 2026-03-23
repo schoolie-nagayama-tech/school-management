@@ -39,6 +39,7 @@ export interface Alert {
     current_value?: number;
     diff?: number;
     days_overdue?: number;
+    days_until_due?: number;
     item_name?: string;
     due_date?: string;
     task_id?: string;

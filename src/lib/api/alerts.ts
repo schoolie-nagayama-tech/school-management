@@ -220,23 +220,37 @@ function buildApplicationOverdueCandidates(sources: AlertSources): Alert[] {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const overdueItems = sources.applicationItems.filter((item) => {
+  // 期日3日前から表示する
+  const upcomingItems = sources.applicationItems.filter((item) => {
     if (item.column_type !== 'check') return false;
     if (!item.due_date) return false;
     const dueDate = new Date(item.due_date);
     dueDate.setHours(0, 0, 0, 0);
-    return dueDate < today;
+    const daysDiff = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    return daysDiff <= 3; // 3日前から表示
   });
 
   for (const student of sources.students) {
-    for (const item of overdueItems) {
+    for (const item of upcomingItems) {
       const app = sources.applications.find((a) => a.student_id === student.id && a.item_id === item.id);
       if (app?.status === 'completed' || app?.status === 'not_applicable') continue;
 
+      const dueDate = new Date(item.due_date!);
+      dueDate.setHours(0, 0, 0, 0);
+      const daysDiff = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
       const alertKey = `application:${item.id}:${item.due_date}`;
-      const dueDateStr = item.due_date
-        ? new Date(item.due_date).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })
-        : '';
+      const dueDateStr = dueDate.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' });
+
+      let message: string;
+      if (daysDiff > 0) {
+        message = `${item.name}（期日まであと${daysDiff}日: ${dueDateStr}）`;
+      } else if (daysDiff === 0) {
+        message = `${item.name}（本日期日: ${dueDateStr}）`;
+      } else {
+        message = `${item.name}（期日超過${Math.abs(daysDiff)}日: ${dueDateStr}）`;
+      }
+
       alerts.push({
         id: `${student.id}:application_overdue:${alertKey}`,
         student_id: student.id,
@@ -244,8 +258,12 @@ function buildApplicationOverdueCandidates(sources: AlertSources): Alert[] {
         grade: student.grade,
         alert_type: 'application_overdue',
         alert_key: alertKey,
-        message: `${item.name}（期日: ${dueDateStr}）`,
-        details: { item_name: item.name, due_date: item.due_date ?? undefined },
+        message,
+        details: {
+          item_name: item.name,
+          due_date: item.due_date ?? undefined,
+          days_until_due: daysDiff,
+        },
       });
     }
   }
@@ -255,6 +273,8 @@ function buildApplicationOverdueCandidates(sources: AlertSources): Alert[] {
 function buildInterviewTaskCandidates(sources: AlertSources): Alert[] {
   const alerts: Alert[] = [];
   const studentMap = new Map(sources.students.map((s) => [s.id, s]));
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
   for (const task of sources.pendingTasks) {
     const studentId = task.student_id;
@@ -272,6 +292,14 @@ function buildInterviewTaskCandidates(sources: AlertSources): Alert[] {
       ? (task.content.length > 50 ? task.content.substring(0, 50) + '...' : task.content)
       : '';
 
+    // 期日までの日数を計算
+    let daysUntilDue: number | undefined;
+    if (task.interview_date) {
+      const taskDate = new Date(task.interview_date);
+      taskDate.setHours(0, 0, 0, 0);
+      daysUntilDue = Math.ceil((taskDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    }
+
     alerts.push({
       id: `${studentId}:interview_task:${alertKey}`,
       student_id: studentId,
@@ -280,7 +308,12 @@ function buildInterviewTaskCandidates(sources: AlertSources): Alert[] {
       alert_type: 'interview_task',
       alert_key: alertKey,
       message: taskDateStr ? `${taskDateStr}: ${contentPreview}` : contentPreview || 'タスク',
-      details: { task_id: task.id, interview_date: task.interview_date, content: task.content ?? undefined },
+      details: {
+        task_id: task.id,
+        interview_date: task.interview_date,
+        content: task.content ?? undefined,
+        days_until_due: daysUntilDue,
+      },
     });
   }
   return alerts;
