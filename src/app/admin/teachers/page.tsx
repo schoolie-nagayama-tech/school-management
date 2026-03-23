@@ -18,6 +18,7 @@ import { Copy, Check, Eye, EyeOff, Trash2 } from 'lucide-react';
 import type { School, UserProfile } from '@/types/database';
 import { generateTeacherCSV, downloadCSV, type TeacherExportRow } from '@/lib/utils/csvUtils';
 import { TeacherCsvImportModal } from '@/components/csv/TeacherCsvImportModal';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 interface TeacherWithDetails extends UserProfile {
   user_schools?: Array<{
@@ -214,7 +215,7 @@ export default function TeachersPage() {
       success('講師を削除しました');
     } catch (error) {
       console.error('Failed to delete teacher:', error);
-      toastError(error instanceof Error ? error.message : '削除に失敗しました');
+      toastError(getUserErrorMessage(error, '削除に失敗しました'));
     } finally {
       setIsDeleteDialogOpen(false);
       setDeletingTeacher(null);

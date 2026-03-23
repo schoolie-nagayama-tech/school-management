@@ -28,6 +28,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { MOSHI_GRADE_NUMBER_TO_NAME } from '@/types/forms/moshi';
 import { MoshiStats } from '@/components/forms/moshi/MoshiStats';
 import { MoshiResponseDetailModal } from '@/components/forms/moshi/MoshiResponseDetailModal';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 export default function MoshiResponsePage() {
   const params = useParams();
@@ -90,7 +91,7 @@ export default function MoshiResponsePage() {
     } catch (error) {
       console.error('Error fetching moshi responses:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '回答一覧の取得に失敗しました'
+        getUserErrorMessage(error, '回答一覧の取得に失敗しました')
       );
     } finally {
       setIsLoading(false);
@@ -209,7 +210,7 @@ export default function MoshiResponsePage() {
     } catch (err) {
       console.error('Error unlinking student:', err);
       error(
-        err instanceof Error ? err.message : '紐付け解除に失敗しました'
+        getUserErrorMessage(err, '紐付け解除に失敗しました')
       );
     }
   };
@@ -223,7 +224,7 @@ export default function MoshiResponsePage() {
       success('アーカイブしました');
     } catch (err) {
       console.error('Error archiving response:', err);
-      error(err instanceof Error ? err.message : 'アーカイブに失敗しました');
+      error(getUserErrorMessage(err, 'アーカイブに失敗しました'));
     } finally {
       setIsProcessing(false);
     }
@@ -237,7 +238,7 @@ export default function MoshiResponsePage() {
       success('アーカイブを解除しました');
     } catch (err) {
       console.error('Error unarchiving response:', err);
-      error(err instanceof Error ? err.message : 'アーカイブ解除に失敗しました');
+      error(getUserErrorMessage(err, 'アーカイブ解除に失敗しました'));
     } finally {
       setIsProcessing(false);
     }
@@ -262,7 +263,7 @@ export default function MoshiResponsePage() {
       success(`${count}件をアーカイブしました`);
     } catch (err) {
       console.error('Error bulk archiving:', err);
-      error(err instanceof Error ? err.message : 'アーカイブに失敗しました');
+      error(getUserErrorMessage(err, 'アーカイブに失敗しました'));
     } finally {
       setIsProcessing(false);
     }

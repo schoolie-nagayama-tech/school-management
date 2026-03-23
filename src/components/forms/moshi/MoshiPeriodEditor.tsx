@@ -7,6 +7,7 @@ import { createFormPeriodForSchools, updateFormPeriodForSchools } from '@/lib/ap
 import { getApplicationItems } from '@/lib/api/applications';
 import type { MoshiPeriod, MoshiSettings } from '@/types/forms/moshi';
 import type { ApplicationItem } from '@/types/database';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 interface MoshiPeriodEditorProps {
   isOpen: boolean;
@@ -249,7 +250,7 @@ export function MoshiPeriodEditor({
     } catch (error) {
       console.error('Failed to save:', error);
       setError(
-        error instanceof Error ? error.message : '保存に失敗しました'
+        getUserErrorMessage(error, '保存に失敗しました')
       );
     } finally {
       setIsSubmitting(false);

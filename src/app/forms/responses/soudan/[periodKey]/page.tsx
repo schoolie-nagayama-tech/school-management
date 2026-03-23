@@ -27,6 +27,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { SOUDAN_GRADE_NUMBER_TO_NAME } from '@/types/forms/soudan';
 import { SoudanStats } from '@/components/forms/soudan/SoudanStats';
 import { SoudanResponseDetailModal } from '@/components/forms/soudan/SoudanResponseDetailModal';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 export default function SoudanResponsePage() {
   const params = useParams();
@@ -90,7 +91,7 @@ export default function SoudanResponsePage() {
     } catch (error) {
       console.error('Error fetching soudan responses:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '回答一覧の取得に失敗しました'
+        getUserErrorMessage(error, '回答一覧の取得に失敗しました')
       );
     } finally {
       setIsLoading(false);
@@ -179,7 +180,7 @@ export default function SoudanResponsePage() {
     } catch (err) {
       console.error('Error unlinking student:', err);
       error(
-        err instanceof Error ? err.message : '紐付け解除に失敗しました'
+        getUserErrorMessage(err, '紐付け解除に失敗しました')
       );
     }
   };
@@ -193,7 +194,7 @@ export default function SoudanResponsePage() {
       success('アーカイブしました');
     } catch (err) {
       console.error('Error archiving response:', err);
-      error(err instanceof Error ? err.message : 'アーカイブに失敗しました');
+      error(getUserErrorMessage(err, 'アーカイブに失敗しました'));
     } finally {
       setIsProcessing(false);
     }
@@ -207,7 +208,7 @@ export default function SoudanResponsePage() {
       success('アーカイブを解除しました');
     } catch (err) {
       console.error('Error unarchiving response:', err);
-      error(err instanceof Error ? err.message : 'アーカイブ解除に失敗しました');
+      error(getUserErrorMessage(err, 'アーカイブ解除に失敗しました'));
     } finally {
       setIsProcessing(false);
     }
@@ -232,7 +233,7 @@ export default function SoudanResponsePage() {
       success(`${count}件をアーカイブしました`);
     } catch (err) {
       console.error('Error bulk archiving:', err);
-      error(err instanceof Error ? err.message : 'アーカイブに失敗しました');
+      error(getUserErrorMessage(err, 'アーカイブに失敗しました'));
     } finally {
       setIsProcessing(false);
     }

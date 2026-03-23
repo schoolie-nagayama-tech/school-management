@@ -10,6 +10,7 @@ import { MogiForm } from '@/components/forms/mogi';
 import type { MogiPeriod } from '@/types/forms/mogi';
 import type { School } from '@/types/database';
 import type { PortalMenu } from '@/types/database';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 export default function MogiPortalPage() {
   const params = useParams();
@@ -47,7 +48,7 @@ export default function MogiPortalPage() {
       } catch (error) {
         console.error('Error fetching data:', error);
         setErrorMessage(
-          error instanceof Error ? error.message : 'データの取得に失敗しました'
+          getUserErrorMessage(error, 'データの取得に失敗しました')
         );
       } finally {
         setIsLoading(false);

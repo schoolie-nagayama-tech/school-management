@@ -5,6 +5,7 @@ import { StudentInterview } from '@/types/database';
 import { getPendingTasks, completeTask } from '@/lib/api/interviews';
 import { useToast } from '@/hooks/useToast';
 import { getDefaultSchoolId } from '@/lib/api/schools';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 interface TaskWithStudent extends StudentInterview {
   student: { last_name: string; first_name: string };
@@ -53,7 +54,7 @@ export function TaskAlert({ schoolId, onTaskClick }: TaskAlertProps) {
     } catch (error) {
       console.error('Failed to complete task:', error);
       toastError(
-        error instanceof Error ? error.message : 'タスクの完了に失敗しました'
+        getUserErrorMessage(error, 'タスクの完了に失敗しました')
       );
     }
   };

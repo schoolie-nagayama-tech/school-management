@@ -6,6 +6,7 @@ import { bulkUpdateGrades, getStudents } from '@/lib/api/students';
 import type { Student } from '@/types/database';
 import { GRADE_LABELS } from '@/types/database';
 import { useConfirm } from '@/hooks/useConfirm';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 function getGradeCategory(grade: number): 'elementary' | 'middle' | 'high' {
   if (grade <= 6) return 'elementary';
@@ -99,7 +100,7 @@ export function BulkGradeUpdateModal({
     } catch (error) {
       console.error('Bulk grade update error:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '学年の一括更新に失敗しました'
+        getUserErrorMessage(error, '学年の一括更新に失敗しました')
       );
     } finally {
       setIsSubmitting(false);

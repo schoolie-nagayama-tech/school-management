@@ -8,6 +8,7 @@ import { getSchoolByCode } from '@/lib/api/schools';
 import { SoudanForm } from '@/components/forms/soudan';
 import type { SoudanPeriod } from '@/types/forms/soudan';
 import type { School } from '@/types/database';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 export default function SoudanPortalPage() {
   const params = useParams();
@@ -44,7 +45,7 @@ export default function SoudanPortalPage() {
       } catch (error) {
         console.error('Error fetching data:', error);
         setErrorMessage(
-          error instanceof Error ? error.message : 'データの取得に失敗しました'
+          getUserErrorMessage(error, 'データの取得に失敗しました')
         );
       } finally {
         setIsLoading(false);

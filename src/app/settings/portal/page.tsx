@@ -29,6 +29,7 @@ import type { PortalMenu, FormType, FormPeriod, School } from '@/types/database'
 import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 // menu_keyからform_typeへのマッピング
 const MENU_KEY_TO_FORM_TYPE: Record<string, FormType | null> = {
@@ -118,7 +119,7 @@ export default function PortalSettingsPage() {
     } catch (error) {
       console.error('Error fetching data:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : 'データの取得に失敗しました'
+        getUserErrorMessage(error, 'データの取得に失敗しました')
       );
     } finally {
       setIsLoading(false);

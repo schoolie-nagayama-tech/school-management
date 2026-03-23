@@ -10,6 +10,7 @@ import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
 import type { SeasonalCourseWithDetails, SeasonType } from '@/types/database';
 import { SEASON_LABELS, GRADE_LABELS } from '@/types/database';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 export default function CoursesPage() {
   // 権限チェック
@@ -50,7 +51,7 @@ export default function CoursesPage() {
     } catch (error) {
       console.error('Error fetching courses:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '講習一覧の取得に失敗しました'
+        getUserErrorMessage(error, '講習一覧の取得に失敗しました')
       );
     } finally {
       setIsLoading(false);
@@ -107,7 +108,7 @@ export default function CoursesPage() {
     } catch (error) {
       console.error('Error creating course:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '講習の作成に失敗しました'
+        getUserErrorMessage(error, '講習の作成に失敗しました')
       );
     } finally {
       setIsSubmitting(false);

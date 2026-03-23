@@ -10,6 +10,7 @@ import {
 import type { FormTemplate } from '@/types/database';
 import { TemplateEditor } from './TemplateEditor';
 import { useConfirm } from '@/hooks/useConfirm';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 interface TemplateListProps {
   onSelectTemplate: (template: FormTemplate) => void;
@@ -34,7 +35,7 @@ export function TemplateList({ onSelectTemplate, onRefresh }: TemplateListProps)
     } catch (error) {
       console.error('Error fetching templates:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : 'テンプレート一覧の取得に失敗しました'
+        getUserErrorMessage(error, 'テンプレート一覧の取得に失敗しました')
       );
     } finally {
       setIsLoading(false);
@@ -67,7 +68,7 @@ export function TemplateList({ onSelectTemplate, onRefresh }: TemplateListProps)
     } catch (error) {
       console.error('Error deleting template:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : 'テンプレートの削除に失敗しました'
+        getUserErrorMessage(error, 'テンプレートの削除に失敗しました')
       );
     } finally {
       setIsSubmitting(false);

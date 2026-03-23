@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 // フォーム種別 → フォーム詳細URLパス（/forms/responses/[path]/[period]）
 const FORM_TYPE_TO_PATH: Record<string, string> = {
@@ -328,7 +329,7 @@ export default function ResponsesPage() {
     } catch (error) {
       console.error('Error fetching data:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : 'データの取得に失敗しました'
+        getUserErrorMessage(error, 'データの取得に失敗しました')
       );
     } finally {
       setIsLoading(false);

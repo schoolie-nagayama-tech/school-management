@@ -10,6 +10,7 @@ import { useRequirePermission } from '@/hooks/usePermissions';
 import { useAuth } from '@/contexts/AuthContext';
 import AccessDenied from '@/components/AccessDenied';
 import type { School } from '@/types/database';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 export default function SchoolSettingsPage() {
   const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
@@ -108,7 +109,7 @@ export default function SchoolSettingsPage() {
       setSchool({ ...school, logo_url: json.url });
       success('ロゴ画像をアップロードしました');
     } catch (err) {
-      toastError(err instanceof Error ? err.message : 'アップロードに失敗しました');
+      toastError(getUserErrorMessage(err, 'アップロードに失敗しました'));
     } finally {
       setIsUploading(false);
       // inputをリセット
@@ -126,7 +127,7 @@ export default function SchoolSettingsPage() {
       setSchool({ ...school, logo_url: null });
       success('ロゴ画像を削除しました');
     } catch (err) {
-      toastError(err instanceof Error ? err.message : '削除に失敗しました');
+      toastError(getUserErrorMessage(err, '削除に失敗しました'));
     } finally {
       setIsUploading(false);
     }
@@ -157,7 +158,7 @@ export default function SchoolSettingsPage() {
     } catch (error) {
       console.error('Error updating school:', error);
       toastError(
-        error instanceof Error ? error.message : '更新に失敗しました'
+        getUserErrorMessage(error, '更新に失敗しました')
       );
     } finally {
       setIsSubmitting(false);

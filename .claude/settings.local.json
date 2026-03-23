@@ -76,7 +76,8 @@
       "Bash(find supabase/migrations -type f -exec grep -l \"CREATE TABLE.*student_logs\" {})",
       "Bash(grep -l \"export\" \"C:\\\\Users\\\\ytaka\\\\Desktop\\\\student-management\\\\src\\\\lib\\\\api\"/*.ts)",
       "Bash(grep -r \"Google\\\\|Calendar\\\\|Slack\\\\|Discord\\\\|Email\\\\|Webhook\" C:UsersytakaDesktopstudent-managementsrc --include=*.ts --include=*.tsx)",
-      "Bash(find C:UsersytakaDesktopstudent-management -type f \\\\\\(-name *.env* -o -name *.config.* \\\\\\))"
+      "Bash(find C:UsersytakaDesktopstudent-management -type f \\\\\\(-name *.env* -o -name *.config.* \\\\\\))",
+      "Bash(python /tmp/fix_errors.py)"
     ]
   }
 }

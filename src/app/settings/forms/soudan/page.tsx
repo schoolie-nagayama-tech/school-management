@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
 import type { SoudanPeriod } from '@/types/forms/soudan';
 import { getDefaultSchoolId } from '@/lib/api/schools';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 export default function SoudanSettingsPage() {
   const [periods, setPeriods] = useState<SoudanPeriod[]>([]);
@@ -48,7 +49,7 @@ export default function SoudanSettingsPage() {
     } catch (error) {
       console.error('Error fetching soudan periods:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '期間一覧の取得に失敗しました'
+        getUserErrorMessage(error, '期間一覧の取得に失敗しました')
       );
     } finally {
       setIsLoading(false);
@@ -105,7 +106,7 @@ export default function SoudanSettingsPage() {
     } catch (err) {
       console.error('Error deleting period:', err);
       error(
-        err instanceof Error ? err.message : '期間の削除に失敗しました'
+        getUserErrorMessage(err, '期間の削除に失敗しました')
       );
     } finally {
       setIsSubmitting(false);
@@ -135,7 +136,7 @@ export default function SoudanSettingsPage() {
     } catch (err) {
       console.error('Error archiving period:', err);
       error(
-        err instanceof Error ? err.message : 'アーカイブに失敗しました'
+        getUserErrorMessage(err, 'アーカイブに失敗しました')
       );
     } finally {
       setIsSubmitting(false);
@@ -159,7 +160,7 @@ export default function SoudanSettingsPage() {
     } catch (err) {
       console.error('Error unarchiving period:', err);
       error(
-        err instanceof Error ? err.message : 'アーカイブ解除に失敗しました'
+        getUserErrorMessage(err, 'アーカイブ解除に失敗しました')
       );
     } finally {
       setIsSubmitting(false);

@@ -45,6 +45,7 @@ import { NewResponsesBoard } from '@/components/responses/NewResponsesBoard';
 import { RecentUpdatesBoard } from '@/components/students/RecentUpdatesBoard';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 export default function StudentsPage() {
   // 権限チェック
@@ -117,7 +118,7 @@ export default function StudentsPage() {
     } catch (error) {
       console.error('Error fetching students:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '生徒一覧の取得に失敗しました'
+        getUserErrorMessage(error, '生徒一覧の取得に失敗しました')
       );
     } finally {
       setIsLoading(false);
@@ -190,7 +191,7 @@ export default function StudentsPage() {
       const date = new Date().toISOString().slice(0, 10);
       downloadCSV(csv, `生徒一覧_${date}.csv`);
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : '生徒一覧のエクスポートに失敗しました');
+      setErrorMessage(getUserErrorMessage(err, '生徒一覧のエクスポートに失敗しました'));
     } finally {
       setIsExporting(false);
     }
@@ -207,7 +208,7 @@ export default function StudentsPage() {
       const date = new Date().toISOString().slice(0, 10);
       downloadCSV(csv, `成績一覧_${date}.csv`);
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : '成績データのエクスポートに失敗しました');
+      setErrorMessage(getUserErrorMessage(err, '成績データのエクスポートに失敗しました'));
     } finally {
       setIsExporting(false);
     }
@@ -224,7 +225,7 @@ export default function StudentsPage() {
       const date = new Date().toISOString().slice(0, 10);
       downloadCSV(csv, `面談記録_${date}.csv`);
     } catch (err) {
-      setErrorMessage(err instanceof Error ? err.message : '面談記録のエクスポートに失敗しました');
+      setErrorMessage(getUserErrorMessage(err, '面談記録のエクスポートに失敗しました'));
     } finally {
       setIsExporting(false);
     }
@@ -262,7 +263,7 @@ export default function StudentsPage() {
     } catch (error) {
       console.error('Error creating student:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '生徒の登録に失敗しました'
+        getUserErrorMessage(error, '生徒の登録に失敗しました')
       );
     } finally {
       setIsSubmitting(false);
@@ -297,7 +298,7 @@ export default function StudentsPage() {
     } catch (error) {
       console.error('Error updating student:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '生徒情報の更新に失敗しました'
+        getUserErrorMessage(error, '生徒情報の更新に失敗しました')
       );
     } finally {
       setIsSubmitting(false);
@@ -346,7 +347,7 @@ export default function StudentsPage() {
     } catch (error) {
       console.error('Error bulk deleting students:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '一括削除に失敗しました'
+        getUserErrorMessage(error, '一括削除に失敗しました')
       );
     } finally {
       setIsSubmitting(false);
@@ -369,7 +370,7 @@ export default function StudentsPage() {
     } catch (error) {
       console.error('Error moving students:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '教室移動に失敗しました'
+        getUserErrorMessage(error, '教室移動に失敗しました')
       );
     } finally {
       setIsSubmitting(false);
@@ -402,7 +403,7 @@ export default function StudentsPage() {
     } catch (error) {
       console.error('Error deleting student:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '生徒の削除に失敗しました'
+        getUserErrorMessage(error, '生徒の削除に失敗しました')
       );
     } finally {
       setIsSubmitting(false);

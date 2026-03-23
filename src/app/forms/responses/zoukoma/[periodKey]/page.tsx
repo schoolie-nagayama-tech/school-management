@@ -21,6 +21,7 @@ import type { Student } from '@/types/database';
 import { getDefaultSchoolId } from '@/lib/api/schools';
 import { useAuth } from '@/contexts/AuthContext';
 import { GRADE_NUMBER_TO_NAME } from '@/types/forms/zoukoma';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 export default function ZoukomaResponsePage() {
   const params = useParams();
@@ -59,7 +60,7 @@ export default function ZoukomaResponsePage() {
     } catch (error) {
       console.error('Error fetching data:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : 'データの取得に失敗しました'
+        getUserErrorMessage(error, 'データの取得に失敗しました')
       );
     } finally {
       setIsLoading(false);
@@ -139,7 +140,7 @@ export default function ZoukomaResponsePage() {
     } catch (err) {
       console.error('Error unlinking student:', err);
       error(
-        err instanceof Error ? err.message : '紐付け解除に失敗しました'
+        getUserErrorMessage(err, '紐付け解除に失敗しました')
       );
     }
   };

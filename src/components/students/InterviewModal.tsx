@@ -5,6 +5,7 @@ import { StudentInterview, InterviewType, INTERVIEW_TYPE_LABELS } from '@/types/
 import { createInterview, updateInterview } from '@/lib/api/interviews';
 import { Modal, Button, Input } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 interface InterviewModalProps {
   studentId: string;
@@ -78,7 +79,7 @@ export function InterviewModal({ studentId, schoolId, interview, onClose, onSave
     } catch (error) {
       console.error('Failed to save:', error);
       toastError(
-        error instanceof Error ? error.message : '保存に失敗しました'
+        getUserErrorMessage(error, '保存に失敗しました')
       );
     } finally {
       setIsSaving(false);

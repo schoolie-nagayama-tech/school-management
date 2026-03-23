@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfirm } from '@/hooks/useConfirm';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 interface StudentScoresProps {
   student: Student;
@@ -108,7 +109,7 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
     } catch (error) {
       console.error('Error fetching assessments:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '成績データの取得に失敗しました'
+        getUserErrorMessage(error, '成績データの取得に失敗しました')
       );
     } finally {
       setIsLoading(false);
@@ -144,7 +145,7 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
     } catch (error) {
       console.error('Error updating score:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : 'スコアの更新に失敗しました'
+        getUserErrorMessage(error, 'スコアの更新に失敗しました')
       );
     } finally {
       setEditingCell(null);
@@ -178,7 +179,7 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
     } catch (error) {
       console.error('Error creating assessment row:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '行の追加に失敗しました'
+        getUserErrorMessage(error, '行の追加に失敗しました')
       );
     }
   };
@@ -195,7 +196,7 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
     } catch (error) {
       console.error('Error deleting assessment row:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '行の削除に失敗しました'
+        getUserErrorMessage(error, '行の削除に失敗しました')
       );
     }
   };

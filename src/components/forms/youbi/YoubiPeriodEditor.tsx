@@ -8,6 +8,7 @@ import { getApplicationItems } from '@/lib/api/applications';
 import { getClassPeriods, formatPeriodsToText } from '@/lib/api/class-periods';
 import type { YoubiPeriod, YoubiSettings } from '@/types/forms/youbi';
 import type { ApplicationItem } from '@/types/database';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 interface YoubiPeriodEditorProps {
   isOpen: boolean;
@@ -230,7 +231,7 @@ export function YoubiPeriodEditor({
     } catch (error) {
       console.error('Failed to save:', error);
       setError(
-        error instanceof Error ? error.message : '保存に失敗しました'
+        getUserErrorMessage(error, '保存に失敗しました')
       );
     } finally {
       setIsSubmitting(false);

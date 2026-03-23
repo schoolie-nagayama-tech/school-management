@@ -7,6 +7,7 @@ import { createFormPeriodForSchools, updateFormPeriodForSchools } from '@/lib/ap
 import { getApplicationItems } from '@/lib/api/applications';
 import type { SoudanPeriod, SoudanSettings } from '@/types/forms/soudan';
 import type { ApplicationItem } from '@/types/database';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 interface SoudanPeriodEditorProps {
   isOpen: boolean;
@@ -223,7 +224,7 @@ export function SoudanPeriodEditor({
     } catch (error) {
       console.error('Failed to save:', error);
       setError(
-        error instanceof Error ? error.message : '保存に失敗しました'
+        getUserErrorMessage(error, '保存に失敗しました')
       );
     } finally {
       setIsSubmitting(false);

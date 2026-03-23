@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
 import type { ApplicationItem, ApplicationColumnType } from '@/types/database';
 import { useConfirm } from '@/hooks/useConfirm';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 interface ApplicationItemSettingsProps {
   isOpen: boolean;
@@ -50,7 +51,7 @@ export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSett
     } catch (error) {
       console.error('Error fetching application items:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '項目一覧の取得に失敗しました'
+        getUserErrorMessage(error, '項目一覧の取得に失敗しました')
       );
     } finally {
       setIsLoading(false);
@@ -93,7 +94,7 @@ export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSett
     } catch (error) {
       console.error('Error deleting application item:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '項目の削除に失敗しました'
+        getUserErrorMessage(error, '項目の削除に失敗しました')
       );
     } finally {
       setIsSubmitting(false);
@@ -127,7 +128,7 @@ export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSett
     } catch (error) {
       console.error('Error updating sort order:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '並び順の更新に失敗しました'
+        getUserErrorMessage(error, '並び順の更新に失敗しました')
       );
     } finally {
       setIsSubmitting(false);
@@ -161,7 +162,7 @@ export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSett
     } catch (error) {
       console.error('Error updating sort order:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '並び順の更新に失敗しました'
+        getUserErrorMessage(error, '並び順の更新に失敗しました')
       );
     } finally {
       setIsSubmitting(false);
@@ -178,7 +179,7 @@ export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSett
     } catch (error) {
       console.error('Error toggling active status:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '状態の更新に失敗しました'
+        getUserErrorMessage(error, '状態の更新に失敗しました')
       );
     } finally {
       setIsSubmitting(false);
@@ -221,7 +222,7 @@ export function ApplicationItemSettings({ isOpen, onClose }: ApplicationItemSett
     } catch (error) {
       console.error('Error saving application item:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '項目の保存に失敗しました'
+        getUserErrorMessage(error, '項目の保存に失敗しました')
       );
     } finally {
       setIsSubmitting(false);

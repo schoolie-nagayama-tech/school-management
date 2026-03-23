@@ -26,6 +26,7 @@ import type {
 } from '@/types/database';
 import { FORM_FIELD_TYPE_LABELS, FORM_STATUS_LABELS } from '@/types/database';
 import { useConfirm } from '@/hooks/useConfirm';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 interface FormEditorProps {
   isOpen: boolean;
@@ -90,7 +91,7 @@ export function FormEditor({
     } catch (error) {
       console.error('Error loading form:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : 'フォームの読み込みに失敗しました'
+        getUserErrorMessage(error, 'フォームの読み込みに失敗しました')
       );
     } finally {
       setIsLoading(false);
@@ -195,7 +196,7 @@ export function FormEditor({
     } catch (error) {
       console.error('Error saving form:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : 'フォームの保存に失敗しました'
+        getUserErrorMessage(error, 'フォームの保存に失敗しました')
       );
     } finally {
       setIsSubmitting(false);
@@ -253,7 +254,7 @@ export function FormEditor({
     } catch (error) {
       console.error('Error saving field:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '項目の保存に失敗しました'
+        getUserErrorMessage(error, '項目の保存に失敗しました')
       );
     } finally {
       setIsSubmitting(false);
@@ -277,7 +278,7 @@ export function FormEditor({
     } catch (error) {
       console.error('Error deleting field:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '項目の削除に失敗しました'
+        getUserErrorMessage(error, '項目の削除に失敗しました')
       );
     } finally {
       setIsSubmitting(false);
@@ -310,7 +311,7 @@ export function FormEditor({
     } catch (error) {
       console.error('Error reordering fields:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '並び順の更新に失敗しました'
+        getUserErrorMessage(error, '並び順の更新に失敗しました')
       );
     } finally {
       setIsSubmitting(false);
@@ -579,7 +580,7 @@ export function FormEditor({
                           } catch (error) {
                             console.error('Error unarchiving form:', error);
                             setErrorMessage(
-                              error instanceof Error ? error.message : 'アーカイブ解除に失敗しました'
+                              getUserErrorMessage(error, 'アーカイブ解除に失敗しました')
                             );
                           } finally {
                             setIsArchiving(false);
@@ -607,7 +608,7 @@ export function FormEditor({
                           } catch (error) {
                             console.error('Error archiving form:', error);
                             setErrorMessage(
-                              error instanceof Error ? error.message : 'アーカイブに失敗しました'
+                              getUserErrorMessage(error, 'アーカイブに失敗しました')
                             );
                           } finally {
                             setIsArchiving(false);

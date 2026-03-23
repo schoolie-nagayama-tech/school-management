@@ -12,6 +12,7 @@ import {
 import type { Subject, SubjectInsert } from '@/types/database';
 import { GRADE_CATEGORY_LABELS } from '@/types/database';
 import { useConfirm } from '@/hooks/useConfirm';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 interface SubjectSettingsProps {
   isOpen: boolean;
@@ -48,7 +49,7 @@ export function SubjectSettings({ isOpen, onClose }: SubjectSettingsProps) {
     } catch (error) {
       console.error('Error fetching subjects:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '科目一覧の取得に失敗しました'
+        getUserErrorMessage(error, '科目一覧の取得に失敗しました')
       );
     } finally {
       setIsLoading(false);
@@ -85,7 +86,7 @@ export function SubjectSettings({ isOpen, onClose }: SubjectSettingsProps) {
     } catch (error) {
       console.error('Error deleting subject:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '科目の削除に失敗しました'
+        getUserErrorMessage(error, '科目の削除に失敗しました')
       );
     } finally {
       setIsSubmitting(false);
@@ -393,7 +394,7 @@ function SubjectEditModal({
     } catch (error) {
       console.error('Error saving subject:', error);
       setError(
-        error instanceof Error ? error.message : '科目の保存に失敗しました'
+        getUserErrorMessage(error, '科目の保存に失敗しました')
       );
     } finally {
       setIsSubmitting(false);

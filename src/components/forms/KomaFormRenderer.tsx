@@ -9,6 +9,7 @@ import { generateSlots, groupSlotsByDate } from '@/lib/forms/slots';
 import { getPriceByGradeNumber } from '@/lib/forms/pricing';
 import { submitFormResponse } from '@/lib/api/forms';
 import { useConfirm } from '@/hooks/useConfirm';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 interface KomaFormRendererProps {
   form: FormWithFields;
@@ -147,7 +148,7 @@ export function KomaFormRenderer({
     } catch (error) {
       console.error('Error submitting form:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '送信に失敗しました。もう一度お試しください。'
+        getUserErrorMessage(error, '送信に失敗しました。もう一度お試しください。')
       );
     } finally {
       setIsSubmitting(false);

@@ -19,6 +19,7 @@ import type {
 } from '@/types/database';
 import { FORM_FIELD_TYPE_LABELS } from '@/types/database';
 import { useConfirm } from '@/hooks/useConfirm';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 interface TemplateEditorProps {
   isOpen: boolean;
@@ -57,7 +58,7 @@ export function TemplateEditor({
     } catch (error) {
       console.error('Error loading template:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : 'テンプレートの読み込みに失敗しました'
+        getUserErrorMessage(error, 'テンプレートの読み込みに失敗しました')
       );
     } finally {
       setIsLoading(false);
@@ -108,7 +109,7 @@ export function TemplateEditor({
     } catch (error) {
       console.error('Error saving template:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : 'テンプレートの保存に失敗しました'
+        getUserErrorMessage(error, 'テンプレートの保存に失敗しました')
       );
     } finally {
       setIsSubmitting(false);
@@ -158,7 +159,7 @@ export function TemplateEditor({
     } catch (error) {
       console.error('Error saving field:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '項目の保存に失敗しました'
+        getUserErrorMessage(error, '項目の保存に失敗しました')
       );
     } finally {
       setIsSubmitting(false);
@@ -176,7 +177,7 @@ export function TemplateEditor({
     } catch (error) {
       console.error('Error deleting field:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '項目の削除に失敗しました'
+        getUserErrorMessage(error, '項目の削除に失敗しました')
       );
     } finally {
       setIsSubmitting(false);
@@ -203,7 +204,7 @@ export function TemplateEditor({
     } catch (error) {
       console.error('Error reordering fields:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '並び順の更新に失敗しました'
+        getUserErrorMessage(error, '並び順の更新に失敗しました')
       );
     } finally {
       setIsSubmitting(false);

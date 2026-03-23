@@ -23,6 +23,7 @@ import type {
 import { useRequirePermission, useCanEdit } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 export default function ApplicationsPage() {
   // 権限チェック
@@ -80,7 +81,7 @@ export default function ApplicationsPage() {
     } catch (error) {
       console.error('Error fetching data:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : 'データの取得に失敗しました'
+        getUserErrorMessage(error, 'データの取得に失敗しました')
       );
     } finally {
       setIsLoading(false);

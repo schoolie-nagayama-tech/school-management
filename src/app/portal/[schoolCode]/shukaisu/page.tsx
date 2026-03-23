@@ -8,6 +8,7 @@ import { getSchoolByCode } from '@/lib/api/schools';
 import { ShukaisuForm } from '@/components/forms/shukaisu';
 import type { ShukaisuPeriod } from '@/types/forms/shukaisu';
 import type { School } from '@/types/database';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 export default function ShukaisuPortalPage() {
   const params = useParams();
@@ -44,7 +45,7 @@ export default function ShukaisuPortalPage() {
       } catch (error) {
         console.error('Error fetching data:', error);
         setErrorMessage(
-          error instanceof Error ? error.message : 'データの取得に失敗しました'
+          getUserErrorMessage(error, 'データの取得に失敗しました')
         );
       } finally {
         setIsLoading(false);

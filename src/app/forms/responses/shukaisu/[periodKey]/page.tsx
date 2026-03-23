@@ -27,6 +27,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { SHUKAISU_GRADE_NUMBER_TO_NAME } from '@/types/forms/shukaisu';
 import { ShukaisuStats } from '@/components/forms/shukaisu/ShukaisuStats';
 import { ShukaisuResponseDetailModal } from '@/components/forms/shukaisu/ShukaisuResponseDetailModal';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 export default function ShukaisuResponsePage() {
   const params = useParams();
@@ -87,7 +88,7 @@ export default function ShukaisuResponsePage() {
     } catch (error) {
       console.error('Error fetching shukaisu responses:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '回答一覧の取得に失敗しました'
+        getUserErrorMessage(error, '回答一覧の取得に失敗しました')
       );
     } finally {
       setIsLoading(false);
@@ -166,7 +167,7 @@ export default function ShukaisuResponsePage() {
     } catch (err) {
       console.error('Error unlinking student:', err);
       error(
-        err instanceof Error ? err.message : '紐付け解除に失敗しました'
+        getUserErrorMessage(err, '紐付け解除に失敗しました')
       );
     }
   };
@@ -180,7 +181,7 @@ export default function ShukaisuResponsePage() {
       success('アーカイブしました');
     } catch (err) {
       console.error('Error archiving response:', err);
-      error(err instanceof Error ? err.message : 'アーカイブに失敗しました');
+      error(getUserErrorMessage(err, 'アーカイブに失敗しました'));
     } finally {
       setIsProcessing(false);
     }
@@ -194,7 +195,7 @@ export default function ShukaisuResponsePage() {
       success('アーカイブを解除しました');
     } catch (err) {
       console.error('Error unarchiving response:', err);
-      error(err instanceof Error ? err.message : 'アーカイブ解除に失敗しました');
+      error(getUserErrorMessage(err, 'アーカイブ解除に失敗しました'));
     } finally {
       setIsProcessing(false);
     }
@@ -219,7 +220,7 @@ export default function ShukaisuResponsePage() {
       success(`${count}件をアーカイブしました`);
     } catch (err) {
       console.error('Error bulk archiving:', err);
-      error(err instanceof Error ? err.message : 'アーカイブに失敗しました');
+      error(getUserErrorMessage(err, 'アーカイブに失敗しました'));
     } finally {
       setIsProcessing(false);
     }

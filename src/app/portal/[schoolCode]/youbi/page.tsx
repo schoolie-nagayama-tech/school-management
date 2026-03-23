@@ -8,6 +8,7 @@ import { getSchoolByCode } from '@/lib/api/schools';
 import { YoubiForm } from '@/components/forms/youbi';
 import type { YoubiPeriod } from '@/types/forms/youbi';
 import type { School } from '@/types/database';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 export default function YoubiPortalPage() {
   const params = useParams();
@@ -44,7 +45,7 @@ export default function YoubiPortalPage() {
       } catch (error) {
         console.error('Error fetching data:', error);
         setErrorMessage(
-          error instanceof Error ? error.message : 'データの取得に失敗しました'
+          getUserErrorMessage(error, 'データの取得に失敗しました')
         );
       } finally {
         setIsLoading(false);

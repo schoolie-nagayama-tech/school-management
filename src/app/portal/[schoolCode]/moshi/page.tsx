@@ -8,6 +8,7 @@ import { getSchoolByCode } from '@/lib/api/schools';
 import { MoshiForm } from '@/components/forms/moshi';
 import type { MoshiPeriod } from '@/types/forms/moshi';
 import type { School } from '@/types/database';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 export default function MoshiPortalPage() {
   const params = useParams();
@@ -44,7 +45,7 @@ export default function MoshiPortalPage() {
       } catch (error) {
         console.error('Error fetching data:', error);
         setErrorMessage(
-          error instanceof Error ? error.message : 'データの取得に失敗しました'
+          getUserErrorMessage(error, 'データの取得に失敗しました')
         );
       } finally {
         setIsLoading(false);

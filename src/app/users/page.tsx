@@ -17,6 +17,7 @@ import { SelectShadcn as Select, SelectContent, SelectItem, SelectTrigger, Selec
 import { Copy, Check, Eye, EyeOff, Trash2 } from 'lucide-react';
 import type { School, UserRole, UserProfile } from '@/types/database';
 import { USER_ROLE_LABELS, USER_ROLE_LEVELS } from '@/types/database';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 type TabType = 'users' | 'schools';
 
@@ -148,7 +149,7 @@ export default function UsersPage() {
       }
     } catch (err) {
       console.error('Error loading data:', err);
-      toastError(err instanceof Error ? err.message : 'データの取得に失敗しました');
+      toastError(getUserErrorMessage(err, 'データの取得に失敗しました'));
     } finally {
       setIsLoading(false);
     }
@@ -301,7 +302,7 @@ export default function UsersPage() {
       success('ユーザーを更新しました');
     } catch (err) {
       console.error('Error updating user:', err);
-      toastError(err instanceof Error ? err.message : 'ユーザーの更新に失敗しました');
+      toastError(getUserErrorMessage(err, 'ユーザーの更新に失敗しました'));
     } finally {
       setIsSaving(false);
     }
@@ -344,7 +345,7 @@ export default function UsersPage() {
       success('ユーザーを削除しました');
     } catch (error) {
       console.error('Failed to delete user:', error);
-      toastError(error instanceof Error ? error.message : '削除に失敗しました');
+      toastError(getUserErrorMessage(error, '削除に失敗しました'));
     } finally {
       setIsDeleting(false);
       setIsDeleteDialogOpen(false);
@@ -438,7 +439,7 @@ export default function UsersPage() {
       success('教室を削除しました');
     } catch (err: unknown) {
       console.error('Error deleting school:', err);
-      toastError(err instanceof Error ? err.message : '教室の削除に失敗しました');
+      toastError(getUserErrorMessage(err, '教室の削除に失敗しました'));
     } finally {
       setIsDeletingSchool(false);
     }

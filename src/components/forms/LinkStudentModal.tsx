@@ -5,6 +5,7 @@ import { Modal, Button } from '@/components/ui';
 import type { FormResponse, Student } from '@/types/database';
 import { GRADE_LABELS } from '@/types/database';
 import { linkResponseToStudent } from '@/lib/api/form-responses';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 interface LinkStudentModalProps {
   isOpen: boolean;
@@ -43,7 +44,7 @@ export function LinkStudentModal({
     } catch (error) {
       console.error('Error linking response:', error);
       setError(
-        error instanceof Error ? error.message : '紐付けに失敗しました'
+        getUserErrorMessage(error, '紐付けに失敗しました')
       );
     } finally {
       setIsSubmitting(false);

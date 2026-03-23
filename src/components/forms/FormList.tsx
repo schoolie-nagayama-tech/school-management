@@ -8,6 +8,7 @@ import type { Form, FormStatus } from '@/types/database';
 import { FORM_STATUS_LABELS } from '@/types/database';
 import { FormLinkModal } from './FormLinkModal';
 import { useConfirm } from '@/hooks/useConfirm';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 interface FormListProps {
   onEditForm: (form: Form) => void;
@@ -37,7 +38,7 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
     } catch (error) {
       console.error('Error fetching forms:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : 'フォーム一覧の取得に失敗しました'
+        getUserErrorMessage(error, 'フォーム一覧の取得に失敗しました')
       );
     } finally {
       setIsLoading(false);
@@ -60,7 +61,7 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
     } catch (error) {
       console.error('Error deleting form:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : 'フォームの削除に失敗しました'
+        getUserErrorMessage(error, 'フォームの削除に失敗しました')
       );
     } finally {
       setIsSubmitting(false);
@@ -77,7 +78,7 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
     } catch (error) {
       console.error('Error updating form status:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '状態の更新に失敗しました'
+        getUserErrorMessage(error, '状態の更新に失敗しました')
       );
     } finally {
       setIsSubmitting(false);
@@ -98,7 +99,7 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
     } catch (error) {
       console.error('Error archiving form:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : 'フォームのアーカイブに失敗しました'
+        getUserErrorMessage(error, 'フォームのアーカイブに失敗しました')
       );
     } finally {
       setIsSubmitting(false);
@@ -117,7 +118,7 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
     } catch (error) {
       console.error('Error unarchiving form:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : 'フォームのアーカイブ解除に失敗しました'
+        getUserErrorMessage(error, 'フォームのアーカイブ解除に失敗しました')
       );
     } finally {
       setIsSubmitting(false);

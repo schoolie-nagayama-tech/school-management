@@ -27,6 +27,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { GRADE_NUMBER_TO_NAME } from '@/types/forms/mogi';
 import { MogiStats } from '@/components/forms/mogi/MogiStats';
 import { MogiResponseDetailModal } from '@/components/forms/mogi/MogiResponseDetailModal';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 export default function MogiResponsePage() {
   const params = useParams();
@@ -99,7 +100,7 @@ export default function MogiResponsePage() {
     } catch (error) {
       console.error('Error fetching mogi responses:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '回答一覧の取得に失敗しました'
+        getUserErrorMessage(error, '回答一覧の取得に失敗しました')
       );
     } finally {
       setIsLoading(false);
@@ -187,7 +188,7 @@ export default function MogiResponsePage() {
     } catch (err) {
       console.error('Error unlinking student:', err);
       error(
-        err instanceof Error ? err.message : '紐付け解除に失敗しました'
+        getUserErrorMessage(err, '紐付け解除に失敗しました')
       );
     }
   };
@@ -207,7 +208,7 @@ export default function MogiResponsePage() {
       success('アーカイブしました');
     } catch (err) {
       console.error('Error archiving response:', err);
-      error(err instanceof Error ? err.message : 'アーカイブに失敗しました');
+      error(getUserErrorMessage(err, 'アーカイブに失敗しました'));
     } finally {
       setIsProcessing(false);
     }
@@ -221,7 +222,7 @@ export default function MogiResponsePage() {
       success('アーカイブを解除しました');
     } catch (err) {
       console.error('Error unarchiving response:', err);
-      error(err instanceof Error ? err.message : 'アーカイブ解除に失敗しました');
+      error(getUserErrorMessage(err, 'アーカイブ解除に失敗しました'));
     } finally {
       setIsProcessing(false);
     }
@@ -246,7 +247,7 @@ export default function MogiResponsePage() {
       success(`${count}件をアーカイブしました`);
     } catch (err) {
       console.error('Error bulk archiving:', err);
-      error(err instanceof Error ? err.message : 'アーカイブに失敗しました');
+      error(getUserErrorMessage(err, 'アーカイブに失敗しました'));
     } finally {
       setIsProcessing(false);
     }

@@ -6,6 +6,7 @@ import { getFormResponses, type FormResponseWithStudent } from '@/lib/api/form-r
 import { getFormPeriods } from '@/lib/api/form-periods';
 import type { FormType, FormPeriod } from '@/types/database';
 import { FORM_TYPE_LABELS, GRADE_LABELS } from '@/types/database';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 // TODO: ResponseTable, ResponseDetailModal, LinkStudentModalコンポーネントを作成
 
@@ -54,7 +55,7 @@ export default function FormResponsesPage() {
     } catch (error) {
       console.error('Error fetching data:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : 'データの取得に失敗しました'
+        getUserErrorMessage(error, 'データの取得に失敗しました')
       );
     } finally {
       setIsLoading(false);

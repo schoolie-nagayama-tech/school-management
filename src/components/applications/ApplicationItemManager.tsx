@@ -12,6 +12,7 @@ import {
 import { Modal, Button, Input } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 interface ApplicationItemManagerProps {
   schoolId?: string;
@@ -60,7 +61,7 @@ export function ApplicationItemManager({
     } catch (error) {
       console.error('Failed to create item:', error);
       toastError(
-        error instanceof Error ? error.message : '追加に失敗しました'
+        getUserErrorMessage(error, '追加に失敗しました')
       );
     } finally {
       setIsProcessing(false);
@@ -84,7 +85,7 @@ export function ApplicationItemManager({
     } catch (error) {
       console.error('Failed to rename item:', error);
       toastError(
-        error instanceof Error ? error.message : '変更に失敗しました'
+        getUserErrorMessage(error, '変更に失敗しました')
       );
     } finally {
       setIsProcessing(false);
@@ -105,7 +106,7 @@ export function ApplicationItemManager({
     } catch (error) {
       console.error('Failed to hide item:', error);
       toastError(
-        error instanceof Error ? error.message : '非表示に失敗しました'
+        getUserErrorMessage(error, '非表示に失敗しました')
       );
     } finally {
       setIsProcessing(false);
@@ -122,7 +123,7 @@ export function ApplicationItemManager({
     } catch (error) {
       console.error('Failed to unhide item:', error);
       toastError(
-        error instanceof Error ? error.message : '再表示に失敗しました'
+        getUserErrorMessage(error, '再表示に失敗しました')
       );
     } finally {
       setIsProcessing(false);
@@ -155,7 +156,7 @@ export function ApplicationItemManager({
     } catch (error) {
       console.error('Failed to delete item:', error);
       toastError(
-        error instanceof Error ? error.message : '削除に失敗しました'
+        getUserErrorMessage(error, '削除に失敗しました')
       );
     } finally {
       setIsProcessing(false);
@@ -267,7 +268,7 @@ export function ApplicationItemManager({
                               } catch (error) {
                                 console.error('Failed to update teacher_editable:', error);
                                 toastError(
-                                  error instanceof Error ? error.message : '設定の更新に失敗しました'
+                                  getUserErrorMessage(error, '設定の更新に失敗しました')
                                 );
                               } finally {
                                 setIsProcessing(false);
@@ -291,7 +292,7 @@ export function ApplicationItemManager({
                               } catch (error) {
                                 console.error('Failed to update manager_only:', error);
                                 toastError(
-                                  error instanceof Error ? error.message : '設定の更新に失敗しました'
+                                  getUserErrorMessage(error, '設定の更新に失敗しました')
                                 );
                               } finally {
                                 setIsProcessing(false);

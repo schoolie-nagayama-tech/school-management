@@ -10,6 +10,7 @@ import { GradePriceEditor } from './GradePriceEditor';
 import { SubjectListEditor } from './SubjectListEditor';
 import { ScheduleEditor } from './ScheduleEditor';
 import { SlotPreview } from './SlotPreview';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 interface ZoukomaPeriodFormProps {
   isOpen: boolean;
@@ -247,7 +248,7 @@ export function ZoukomaPeriodForm({
     } catch (error) {
       console.error('Error saving period:', error);
       setError(
-        error instanceof Error ? error.message : '期間の保存に失敗しました'
+        getUserErrorMessage(error, '期間の保存に失敗しました')
       );
     } finally {
       setIsSubmitting(false);

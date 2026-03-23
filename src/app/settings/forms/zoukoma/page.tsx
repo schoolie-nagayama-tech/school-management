@@ -10,6 +10,7 @@ import { getDefaultSchoolId } from '@/lib/api/schools';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { ToastContainer } from '@/components/ui';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 export default function ZoukomaSettingsPage() {
   const [periods, setPeriods] = useState<ZoukomaPeriod[]>([]);
@@ -32,7 +33,7 @@ export default function ZoukomaSettingsPage() {
     } catch (error) {
       console.error('Error fetching periods:', error);
       setErrorMessage(
-        error instanceof Error ? error.message : '期間一覧の取得に失敗しました'
+        getUserErrorMessage(error, '期間一覧の取得に失敗しました')
       );
     } finally {
       setIsLoading(false);
@@ -113,7 +114,7 @@ export default function ZoukomaSettingsPage() {
     } catch (err) {
       console.error('Error archiving period:', err);
       error(
-        err instanceof Error ? err.message : 'アーカイブに失敗しました'
+        getUserErrorMessage(err, 'アーカイブに失敗しました')
       );
     } finally {
       setIsSubmitting(false);
@@ -130,7 +131,7 @@ export default function ZoukomaSettingsPage() {
     } catch (err) {
       console.error('Error unarchiving period:', err);
       error(
-        err instanceof Error ? err.message : 'アーカイブ解除に失敗しました'
+        getUserErrorMessage(err, 'アーカイブ解除に失敗しました')
       );
     } finally {
       setIsSubmitting(false);
