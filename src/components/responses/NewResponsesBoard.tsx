@@ -189,7 +189,7 @@ export function NewResponsesBoard({ className = '' }: NewResponsesBoardProps) {
       <div className="flex items-center justify-between p-4 bg-[#fff8e1] border-b border-[#ffe082]">
         <div className="flex items-center gap-2">
           <span className="font-bold text-[#1a1a1a]">新着の申し込み（{visibleResponses.length}件）</span>
-          <span className="text-xs text-gray-500 ml-1">直近7日・未処理</span>
+          <span className="text-xs text-gray-500 ml-1">直近7日</span>
         </div>
         <div className="flex items-center gap-2">
           <Link

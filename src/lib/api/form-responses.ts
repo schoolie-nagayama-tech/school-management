@@ -137,7 +137,6 @@ export async function getRecentUnprocessedResponses(
     .select('*')
     .in('school_id', schoolIds)
     .eq('is_archived', false)
-    .is('linked_student_id', null)
     .gte('created_at', since.toISOString())
     .order('created_at', { ascending: false })
     .limit(limit);
