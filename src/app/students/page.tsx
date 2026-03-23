@@ -269,22 +269,6 @@ export default function StudentsPage() {
     }
   };
 
-  // 状況変更（詳細モーダルから直接変更）
-  const handleStatusChange = async (student: Student, status: Student['status']) => {
-    setErrorMessage('');
-    try {
-      await updateStudent(student.id, { status });
-      setSelectedStudent((prev) => (prev?.id === student.id ? { ...prev, status } : prev));
-      await fetchStudents(searchQuery);
-    } catch (error) {
-      console.error('Error updating student status:', error);
-      setErrorMessage(
-        error instanceof Error ? error.message : '状況の更新に失敗しました'
-      );
-      throw error;
-    }
-  };
-
   // 更新
   const handleUpdate = async (
     data: StudentInsert | StudentUpdate,

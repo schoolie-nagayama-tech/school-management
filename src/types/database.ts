@@ -981,6 +981,7 @@ export type Database = {
         Update: {
           id?: string;
           school_id?: string;
+          form_id?: string | null;
           form_type?: string;
           form_period?: string;
           student_name?: string;

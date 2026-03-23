@@ -72,7 +72,8 @@
       "Bash(grep \"ADD COLUMN\" supabase/migrations/*.sql)",
       "Bash(ls -1 supabase/migrations/*.sql)",
       "Bash(grep -h \"CREATE TABLE\\\\|ALTER TABLE\" supabase/migrations/*.sql)",
-      "Bash(grep -n \"form_id\" supabase/migrations/*.sql)"
+      "Bash(grep -n \"form_id\" supabase/migrations/*.sql)",
+      "Bash(find supabase/migrations -type f -exec grep -l \"CREATE TABLE.*student_logs\" {})"
     ]
   }
 }
