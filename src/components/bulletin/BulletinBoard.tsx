@@ -18,7 +18,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { Button } from '@/components/ui';
-import { ChevronDown, ChevronUp, Plus } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, Check } from 'lucide-react';
+import { RELEASE_NOTES } from '@/lib/data/releaseNotes';
+
+const UPDATES_LAST_SEEN_KEY = 'updatesBoard_lastSeenDate';
 
 interface BulletinBoardProps {
   className?: string;
@@ -46,6 +49,27 @@ export function BulletinBoard({ className = '' }: BulletinBoardProps) {
   // 既読機能は講師のみ
   const canRead = profile?.role === 'teacher';
   const userId = profile?.id;
+
+  // アップデート情報
+  const [updateLastSeen, setUpdateLastSeen] = useState<string | null>(null);
+  const [updateMounted, setUpdateMounted] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setUpdateLastSeen(localStorage.getItem(UPDATES_LAST_SEEN_KEY));
+      setUpdateMounted(true);
+    }
+  }, []);
+
+  const recentNotes = RELEASE_NOTES.slice(0, 3);
+  const latestDate = recentNotes[0]?.date ?? '';
+  const hasUpdateUnread = updateMounted && (!updateLastSeen || updateLastSeen < latestDate);
+  const handleMarkUpdateRead = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(UPDATES_LAST_SEEN_KEY, latestDate);
+      setUpdateLastSeen(latestDate);
+    }
+  };
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -241,7 +265,49 @@ export function BulletinBoard({ className = '' }: BulletinBoardProps) {
         {/* 投稿一覧 */}
         {isExpanded && (
           <div className="p-4 space-y-3">
-            {posts.length === 0 ? (
+            {/* アップデート情報（未読時のみ表示） */}
+            {recentNotes.length > 0 && hasUpdateUnread && (
+              <div className="rounded-lg border border-green-200 bg-[#e8f5e9] overflow-hidden">
+                <div className="flex items-center justify-between px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-green-800">アップデート情報</span>
+                    {hasUpdateUnread && (
+                      <span className="px-1.5 py-0.5 text-[10px] font-bold bg-green-600 text-white rounded-full">NEW</span>
+                    )}
+                  </div>
+                  {hasUpdateUnread && (
+                    <button
+                      onClick={handleMarkUpdateRead}
+                      className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-700 px-1.5 py-0.5 rounded hover:bg-green-100 transition-colors"
+                    >
+                      <Check className="w-3 h-3" />
+                      確認済み
+                    </button>
+                  )}
+                </div>
+                <div className="px-3 pb-2 space-y-2">
+                  {recentNotes.map((note) => (
+                    <div key={note.version}>
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="px-1.5 py-0.5 bg-green-100 text-green-800 text-[10px] font-semibold rounded">{note.version}</span>
+                        <span className="text-[10px] text-gray-500">{note.date}</span>
+                        <span className="text-xs font-medium text-[#1a1a1a]">{note.title}</span>
+                      </div>
+                      <ul className="space-y-0.5 ml-1">
+                        {note.items.map((item, i) => (
+                          <li key={i} className="flex items-start gap-1.5 text-xs text-gray-600">
+                            <span className="text-green-500 mt-0.5 shrink-0">•</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {posts.length === 0 && recentNotes.length === 0 ? (
               <div className="text-center text-sm text-gray-400 py-8">
                 投稿はありません。{canEdit ? '「新規投稿」ボタンから投稿を作成できます。' : ''}
               </div>

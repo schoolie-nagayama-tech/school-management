@@ -63,7 +63,16 @@
       "Bash(grep -l \"useConfirm\" /c/Users/ytaka/Desktop/student-management/src/components/**/*.tsx)",
       "Bash(grep -E \"\\\\.\\(tsx?|jsx?\\)$\")",
       "Bash(grep -n \"\\\\.single\\(\\)\" src/app/api/admin/users/[userId]/route.ts)",
-      "Bash(npx next:*)"
+      "Bash(npx next:*)",
+      "Bash(ls -la supabase/migrations/*student_logs*)",
+      "Bash(grep -l \"ALTER TABLE.*application_items\\\\|ADD COLUMN.*due_date\" supabase/migrations/*.sql)",
+      "Bash(grep -r \"is_archived\\\\|archived_at\" supabase/migrations/*.sql)",
+      "Bash(grep -l \"student_logs\" supabase/migrations/*.sql)",
+      "Bash(grep -n \"CREATE TABLE.*student_logs\" supabase/migrations/*.sql)",
+      "Bash(grep \"ADD COLUMN\" supabase/migrations/*.sql)",
+      "Bash(ls -1 supabase/migrations/*.sql)",
+      "Bash(grep -h \"CREATE TABLE\\\\|ALTER TABLE\" supabase/migrations/*.sql)",
+      "Bash(grep -n \"form_id\" supabase/migrations/*.sql)"
     ]
   }
 }
