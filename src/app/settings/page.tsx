@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { useAuth } from '@/contexts/AuthContext';
+import { EmbedTokenManager } from '@/components/settings/EmbedTokenManager';
 import {
   User,
   School,
@@ -107,6 +108,13 @@ export default function SettingsPage() {
             </Link>
           ))}
         </div>
+
+        {/* 埋め込みウィジェット管理 */}
+        {isManager && (
+          <div className="mt-8 p-4 bg-white border border-[#e5e7eb] rounded-lg">
+            <EmbedTokenManager />
+          </div>
+        )}
       </div>
     </AdminLayout>
   );

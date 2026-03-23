@@ -1688,6 +1688,42 @@ export type Database = {
         };
         Relationships: [];
       };
+      embed_tokens: {
+        Row: {
+          id: string;
+          school_id: string;
+          token: string;
+          label: string;
+          embed_type: string;
+          is_active: boolean;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          token?: string;
+          label?: string;
+          embed_type?: string;
+          is_active?: boolean;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          token?: string;
+          label?: string;
+          embed_type?: string;
+          is_active?: boolean;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       regular_shift_settings: {
         Row: {
           id: string;
