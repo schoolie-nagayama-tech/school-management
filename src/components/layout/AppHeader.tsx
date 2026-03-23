@@ -257,7 +257,6 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                 <div className="relative">
                   <button
                     className={`px-2.5 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 ${
-                      pathname?.startsWith('/admin/settings/attendance-types') ||
                       pathname?.startsWith('/admin/teachers') ||
                       pathname?.startsWith('/admin/attendance') ||
                       pathname === '/settings/seasonal-shifts' ||
@@ -315,16 +314,6 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                         遅刻・早退一覧
                       </Link>
                       <Link
-                        href="/admin/settings/attendance-types"
-                        className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
-                          pathname === '/admin/settings/attendance-types' || pathname?.startsWith('/admin/settings/attendance-types')
-                            ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
-                            : ''
-                        }`}
-                      >
-                        コマ種別設定
-                      </Link>
-                      <Link
                         href="/settings/seasonal-shifts"
                         className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                           pathname === '/settings/seasonal-shifts' || pathname?.startsWith('/settings/seasonal-shifts')
@@ -352,18 +341,6 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                     出勤簿
                   </Link>
                 )
-              )}
-              {(showAllLinks || permissions?.canAccessUsers) && (
-                <Link
-                  href="/users"
-                  className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
-                    pathname === '/users' || pathname?.startsWith('/users/')
-                      ? 'bg-white text-[#d32f2f] font-semibold'
-                      : 'text-white/90 hover:bg-white/10 hover:text-white'
-                  }`}
-                >
-                  ユーザー管理
-                </Link>
               )}
             </nav>
           </div>
@@ -556,6 +533,33 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                         >
                           {settingsLabel ?? '設定'}
                         </button>
+                      )}
+                      <div className="border-t border-[#e5e7eb] my-1" />
+                      {(showAllLinks || permissions?.canAccessUsers) && (
+                        <Link
+                          href="/users"
+                          className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
+                            pathname === '/users' || pathname?.startsWith('/users/')
+                              ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
+                              : ''
+                          }`}
+                          onClick={() => setShowSettingsDropdown(false)}
+                        >
+                          ユーザー管理
+                        </Link>
+                      )}
+                      {(showAllLinks || permissions?.canAccessSettings) && (
+                        <Link
+                          href="/admin/settings/attendance-types"
+                          className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
+                            pathname?.startsWith('/admin/settings/attendance-types')
+                              ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
+                              : ''
+                          }`}
+                          onClick={() => setShowSettingsDropdown(false)}
+                        >
+                          コマ種別設定
+                        </Link>
                       )}
                       {profile?.role === 'admin' && (
                         <Link
