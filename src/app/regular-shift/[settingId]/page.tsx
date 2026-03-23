@@ -10,9 +10,6 @@ import {
 import type { RegularShiftSetting, RegularShiftSlotSetting } from '@/types/regular-shift';
 import { RegularShiftSlotMatrix, type RegularSlotSettingRow } from '@/components/regular-shift/RegularShiftSlotMatrix';
 
-const DAY_LABELS: Record<number, string> = {
-  1: '月', 2: '火', 3: '水', 4: '木', 5: '金', 6: '土',
-};
 const DAYS = [1, 2, 3, 4, 5, 6] as const;
 
 export default function RegularShiftFormPage() {
