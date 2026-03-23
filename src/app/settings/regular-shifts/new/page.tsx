@@ -1,0 +1,201 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { AdminLayout } from '@/components/layouts';
+import { Button, ToastContainer } from '@/components/ui';
+import { useToast } from '@/hooks/useToast';
+import { useAuth } from '@/contexts/AuthContext';
+import { getDefaultSchoolId } from '@/lib/api/schools';
+import { createRegularShiftSetting, setRegularShiftSlotSettings } from '@/lib/api/regular-shift';
+import { useRequirePermission } from '@/hooks/usePermissions';
+import AccessDenied from '@/components/AccessDenied';
+import { RegularShiftSlotMatrix, type RegularSlotSettingRow } from '@/components/regular-shift/RegularShiftSlotMatrix';
+
+const DAYS = [1, 2, 3, 4, 5, 6] as const;
+
+function generateDefaultSlotSettings(timeSlots: string[]): RegularSlotSettingRow[] {
+  const rows: RegularSlotSettingRow[] = [];
+  DAYS.forEach((day) => {
+    const isOpen = day !== 6; // Saturday closed by default
+    timeSlots.forEach((time_slot) => {
+      rows.push({ day_of_week: day, time_slot, is_open: isOpen });
+    });
+  });
+  return rows;
+}
+
+export default function NewRegularShiftPage() {
+  const router = useRouter();
+  const { getSelectedSchoolIds } = useAuth();
+  const { toasts, removeToast, success, error } = useToast();
+  const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
+    (p) => p.canAccessPortal ?? false
+  );
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [slotSettings, setSlotSettings] = useState<RegularSlotSettingRow[]>([]);
+  const [form, setForm] = useState({
+    name: '',
+    deadline: '',
+    description: '',
+    weekday_slots: '14:45-16:15,16:20-17:50,17:55-19:25,19:30-21:00',
+    saturday_slots: '14:45-16:15,16:20-17:50,17:55-19:25,19:30-21:00',
+    status: 'draft' as 'draft' | 'published',
+  });
+
+  const timeSlotsArray = form.weekday_slots
+    ? form.weekday_slots.split(',').map((s) => s.trim()).filter(Boolean)
+    : [];
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const schoolIds = getSelectedSchoolIds();
+    const schoolId = schoolIds.length > 0 ? schoolIds[0] : getDefaultSchoolId();
+    setIsSubmitting(true);
+    try {
+      const created = await createRegularShiftSetting({
+        school_id: schoolId,
+        name: form.name.trim(),
+        deadline: form.deadline || null,
+        description: form.description.trim() || null,
+        weekday_slots: form.weekday_slots.trim(),
+        saturday_slots: form.saturday_slots.trim(),
+        status: form.status,
+      });
+      const slotsToSave =
+        slotSettings.length > 0
+          ? slotSettings.map((s) => ({ ...s, setting_id: created.id }))
+          : generateDefaultSlotSettings(timeSlotsArray).map((s) => ({
+              ...s,
+              setting_id: created.id,
+            }));
+      if (slotsToSave.length > 0) {
+        await setRegularShiftSlotSettings(created.id, slotsToSave);
+      }
+      success('通常シフト設定を作成しました');
+      router.push(`/settings/regular-shifts/${created.id}`);
+    } catch (err) {
+      error(err instanceof Error ? err.message : '作成に失敗しました');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (permissionLoading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center min-h-[40vh]">
+          <p className="text-[#4b5563]">読み込み中...</p>
+        </div>
+      </AdminLayout>
+    );
+  }
+  if (!hasPermission) {
+    return (
+      <AdminLayout>
+        <AccessDenied />
+      </AdminLayout>
+    );
+  }
+
+  return (
+    <AdminLayout headerTitle="通常シフト 新規作成">
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
+      <div className="max-w-2xl">
+        <Link
+          href="/settings/seasonal-shifts"
+          className="text-sm text-[#3b82f6] hover:underline mb-4 inline-block"
+        >
+          ← 一覧に戻る
+        </Link>
+        <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-[#e5e7eb] p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-[#1f2937] mb-1">シフト名 *</label>
+            <input
+              type="text"
+              required
+              value={form.name}
+              onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+              placeholder="例：2026年度 通常シフト"
+              className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[#1f2937] mb-1">提出締切日</label>
+            <input
+              type="date"
+              value={form.deadline}
+              onChange={(e) => setForm((p) => ({ ...p, deadline: e.target.value }))}
+              className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[#1f2937] mb-1">説明文</label>
+            <textarea
+              value={form.description}
+              onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+              rows={3}
+              placeholder="提出フォームに表示する説明"
+              className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[#1f2937] mb-1">平日の時間帯（カンマ区切り） *</label>
+            <input
+              type="text"
+              required
+              value={form.weekday_slots}
+              onChange={(e) => setForm((p) => ({ ...p, weekday_slots: e.target.value }))}
+              placeholder="14:45-16:15,16:20-17:50,..."
+              className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[#1f2937] mb-1">土曜の時間帯（カンマ区切り）</label>
+            <input
+              type="text"
+              value={form.saturday_slots}
+              onChange={(e) => setForm((p) => ({ ...p, saturday_slots: e.target.value }))}
+              placeholder="平日と同じ形式"
+              className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
+            />
+          </div>
+          {timeSlotsArray.length > 0 && (
+            <div className="border-t border-[#e5e7eb] pt-4">
+              <RegularShiftSlotMatrix
+                timeSlots={timeSlotsArray}
+                value={slotSettings}
+                onChange={setSlotSettings}
+                mode="settings"
+              />
+            </div>
+          )}
+          <div>
+            <label className="block text-sm font-medium text-[#1f2937] mb-1">ステータス</label>
+            <select
+              value={form.status}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, status: e.target.value as 'draft' | 'published' }))
+              }
+              className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
+            >
+              <option value="draft">下書き</option>
+              <option value="published">公開中</option>
+            </select>
+          </div>
+          <div className="flex gap-3 pt-4">
+            <Button type="submit" disabled={isSubmitting} className="bg-[#d32f2f] hover:bg-[#b71c1c] text-white">
+              {isSubmitting ? '作成中...' : '作成'}
+            </Button>
+            <Link href="/settings/seasonal-shifts">
+              <Button type="button" variant="outline">
+                キャンセル
+              </Button>
+            </Link>
+          </div>
+        </form>
+      </div>
+    </AdminLayout>
+  );
+}

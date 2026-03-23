@@ -1688,6 +1688,115 @@ export type Database = {
         };
         Relationships: [];
       };
+      regular_shift_settings: {
+        Row: {
+          id: string;
+          school_id: string;
+          name: string;
+          deadline: string | null;
+          description: string | null;
+          weekday_slots: string;
+          saturday_slots: string;
+          status: string;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          name: string;
+          deadline?: string | null;
+          description?: string | null;
+          weekday_slots?: string;
+          saturday_slots?: string;
+          status?: string;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: Partial<{
+          id: string;
+          school_id: string;
+          name: string;
+          deadline: string | null;
+          description: string | null;
+          weekday_slots: string;
+          saturday_slots: string;
+          status: string;
+          created_at: string | null;
+          updated_at: string | null;
+        }>;
+        Relationships: [];
+      };
+      regular_shift_slot_settings: {
+        Row: {
+          id: string;
+          setting_id: string;
+          day_of_week: number;
+          time_slot: string;
+          is_open: boolean;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          setting_id: string;
+          day_of_week: number;
+          time_slot: string;
+          is_open: boolean;
+          created_at?: string | null;
+        };
+        Update: Record<string, unknown>;
+        Relationships: [];
+      };
+      regular_shift_submissions: {
+        Row: {
+          id: string;
+          setting_id: string;
+          school_id: string;
+          teacher_name: string;
+          teacher_email: string;
+          submitted_at: string | null;
+          notes: string;
+          allow_edit: boolean;
+          edit_token: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          setting_id: string;
+          school_id: string;
+          teacher_name: string;
+          teacher_email: string;
+          submitted_at?: string | null;
+          notes?: string;
+          allow_edit?: boolean;
+          edit_token?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: Record<string, unknown>;
+        Relationships: [];
+      };
+      regular_shift_submission_slots: {
+        Row: {
+          id: string;
+          submission_id: string;
+          day_of_week: number;
+          time_slot: string;
+          available: boolean;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          submission_id: string;
+          day_of_week: number;
+          time_slot: string;
+          available: boolean;
+          created_at?: string | null;
+        };
+        Update: Record<string, unknown>;
+        Relationships: [];
+      };
       seasonal_shift_settings: {
         Row: {
           id: string;

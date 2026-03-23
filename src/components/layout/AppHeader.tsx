@@ -321,7 +321,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                             : ''
                         }`}
                       >
-                        講習シフト設定
+                        シフト設定
                       </Link>
                     </div>
                   </div>
