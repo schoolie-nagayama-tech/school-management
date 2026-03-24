@@ -173,29 +173,38 @@ export async function getTeachersWithAttendance(
     throw new Error('コマ種別の取得に失敗しました');
   }
 
-  // 講師ごとの合計を計算
-  const result = await Promise.all(
-    (teachers || []).map(async (teacher) => {
-      const sheet = sheets?.find((s) => s.teacher_id === teacher.id);
-      
-      let totalCount = 0;
-      if (sheet) {
-        const { data: records } = await supabase
-          .from('attendance_records')
-          .select('value')
-          .eq('sheet_id', sheet.id);
-        
-        totalCount = records?.reduce((sum, r) => sum + Number(r.value), 0) || 0;
-      }
+  // 全シートの出勤レコードを一括取得
+  const allSheetIds = (sheets || []).map((s) => s.id);
+  const recordsBySheet = new Map<string, any[]>();
+  if (allSheetIds.length > 0) {
+    const { data: allRecords } = await supabase
+      .from('attendance_records')
+      .select('sheet_id, value')
+      .in('sheet_id', allSheetIds);
+    (allRecords || []).forEach((r) => {
+      const list = recordsBySheet.get(r.sheet_id) || [];
+      list.push(r);
+      recordsBySheet.set(r.sheet_id, list);
+    });
+  }
 
-      return {
-        ...teacher,
-        sheet_id: sheet?.id || null,
-        status: sheet?.status || 'draft',
-        total_count: totalCount,
-      };
-    })
-  );
+  // 講師ごとの合計を計算
+  const result = (teachers || []).map((teacher) => {
+    const sheet = sheets?.find((s) => s.teacher_id === teacher.id);
+
+    let totalCount = 0;
+    if (sheet) {
+      const records = recordsBySheet.get(sheet.id) || [];
+      totalCount = records.reduce((sum, r) => sum + Number(r.value), 0);
+    }
+
+    return {
+      ...teacher,
+      sheet_id: sheet?.id || null,
+      status: sheet?.status || 'draft',
+      total_count: totalCount,
+    };
+  });
 
   return result;
 }
@@ -497,47 +506,58 @@ export async function getAttendanceSheetList(
     }
   }
 
+  // 全シートの出勤レコードを一括取得
+  const allSheetIds = sheets.map((s) => s.id);
+  const recordsBySheet2 = new Map<string, any[]>();
+  if (allSheetIds.length > 0) {
+    const { data: allRecords } = await supabase
+      .from('attendance_records')
+      .select(`
+        sheet_id,
+        value,
+        attendance_type:attendance_types(id, name, unit)
+      `)
+      .in('sheet_id', allSheetIds);
+    (allRecords || []).forEach((r: any) => {
+      const list = recordsBySheet2.get(r.sheet_id) || [];
+      list.push(r);
+      recordsBySheet2.set(r.sheet_id, list);
+    });
+  }
+
   // 各シートの合計を計算
-  const result = await Promise.all(
-    sheets.map(async (sheet) => {
-      const { data: records } = await supabase
-        .from('attendance_records')
-        .select(`
-          value,
-          attendance_type:attendance_types(id, name, unit)
-        `)
-        .eq('sheet_id', sheet.id);
+  const result = sheets.map((sheet) => {
+    const records = recordsBySheet2.get(sheet.id) || [];
 
-      // 種別ごとの合計を計算
-      const typeTotals: Record<string, { name: string; unit: string; total: number }> = {};
-      records?.forEach((r: any) => {
-        const typeId = r.attendance_type?.id;
-        if (!typeId) return;
-        
-        if (!typeTotals[typeId]) {
-          typeTotals[typeId] = {
-            name: r.attendance_type.name,
-            unit: r.attendance_type.unit,
-            total: 0,
-          };
-        }
-        typeTotals[typeId].total += Number(r.value);
-      });
+    // 種別ごとの合計を計算
+    const typeTotals: Record<string, { name: string; unit: string; total: number }> = {};
+    records.forEach((r: any) => {
+      const typeId = r.attendance_type?.id;
+      if (!typeId) return;
 
-      const grandTotal = Object.values(typeTotals).reduce(
-        (sum, t) => sum + t.total,
-        0
-      );
+      if (!typeTotals[typeId]) {
+        typeTotals[typeId] = {
+          name: r.attendance_type.name,
+          unit: r.attendance_type.unit,
+          total: 0,
+        };
+      }
+      typeTotals[typeId].total += Number(r.value);
+    });
 
-      return {
-        ...sheet,
-        teacher: teacherMap[sheet.teacher_id] || null,
-        approved_by_user: sheet.approved_by ? approverMap[sheet.approved_by] || null : null,
-        type_totals: typeTotals,
-        grand_total: grandTotal,
-      };
-    })
-  );
+    const grandTotal = Object.values(typeTotals).reduce(
+      (sum, t) => sum + t.total,
+      0
+    );
+
+    return {
+      ...sheet,
+      teacher: teacherMap[sheet.teacher_id] || null,
+      approved_by_user: sheet.approved_by ? approverMap[sheet.approved_by] || null : null,
+      type_totals: typeTotals,
+      grand_total: grandTotal,
+    };
+  });
 
   return result;
 }
@@ -700,58 +720,68 @@ export async function getAttendanceSummary(
     }
   }
 
-  // 各シートの詳細を取得
-  const result = await Promise.all(
-    sheets.map(async (sheet) => {
-      // 明細を取得
-      const { data: records } = await supabase
-        .from('attendance_records')
-        .select(`
-          value,
-          attendance_type:attendance_types(id, name, unit, unit_price)
-        `)
-        .eq('sheet_id', sheet.id);
+  // 全シートの出勤レコードを一括取得
+  const summarySheetIds = sheets.map((s) => s.id);
+  const recordsBySheet3 = new Map<string, any[]>();
+  if (summarySheetIds.length > 0) {
+    const { data: allRecords } = await supabase
+      .from('attendance_records')
+      .select(`
+        sheet_id,
+        value,
+        attendance_type:attendance_types(id, name, unit, unit_price)
+      `)
+      .in('sheet_id', summarySheetIds);
+    (allRecords || []).forEach((r: any) => {
+      const list = recordsBySheet3.get(r.sheet_id) || [];
+      list.push(r);
+      recordsBySheet3.set(r.sheet_id, list);
+    });
+  }
 
-      // 種別ごとの合計と金額を計算
-      const typeTotals: Record<string, {
-        name: string;
-        unit: string;
-        unit_price: number;
-        total: number;
-        amount: number;
-      }> = {};
+  // 各シートの詳細を計算
+  const result = sheets.map((sheet) => {
+    const records = recordsBySheet3.get(sheet.id) || [];
 
-      records?.forEach((r: any) => {
-        const type = r.attendance_type;
-        if (!type) return;
+    // 種別ごとの合計と金額を計算
+    const typeTotals: Record<string, {
+      name: string;
+      unit: string;
+      unit_price: number;
+      total: number;
+      amount: number;
+    }> = {};
 
-        if (!typeTotals[type.id]) {
-          typeTotals[type.id] = {
-            name: type.name,
-            unit: type.unit,
-            unit_price: type.unit_price,
-            total: 0,
-            amount: 0,
-          };
-        }
-        const value = Number(r.value);
-        typeTotals[type.id].total += value;
-        typeTotals[type.id].amount += value * type.unit_price;
-      });
+    records.forEach((r: any) => {
+      const type = r.attendance_type;
+      if (!type) return;
 
-      const grandTotal = Object.values(typeTotals).reduce((sum, t) => sum + t.total, 0);
-      const totalAmount = Object.values(typeTotals).reduce((sum, t) => sum + t.amount, 0);
+      if (!typeTotals[type.id]) {
+        typeTotals[type.id] = {
+          name: type.name,
+          unit: type.unit,
+          unit_price: type.unit_price,
+          total: 0,
+          amount: 0,
+        };
+      }
+      const value = Number(r.value);
+      typeTotals[type.id].total += value;
+      typeTotals[type.id].amount += value * type.unit_price;
+    });
 
-      return {
-        ...sheet,
-        teacher: sheet.teacher_id ? teacherMap[sheet.teacher_id] || null : null,
-        school: sheet.school_id ? schoolMap[sheet.school_id] || null : null,
-        type_totals: typeTotals,
-        grand_total: grandTotal,
-        total_amount: totalAmount,
-      };
-    })
-  );
+    const grandTotal = Object.values(typeTotals).reduce((sum, t) => sum + t.total, 0);
+    const totalAmount = Object.values(typeTotals).reduce((sum, t) => sum + t.amount, 0);
+
+    return {
+      ...sheet,
+      teacher: sheet.teacher_id ? teacherMap[sheet.teacher_id] || null : null,
+      school: sheet.school_id ? schoolMap[sheet.school_id] || null : null,
+      type_totals: typeTotals,
+      grand_total: grandTotal,
+      total_amount: totalAmount,
+    };
+  });
 
   return result;
 }

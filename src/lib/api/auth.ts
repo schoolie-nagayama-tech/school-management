@@ -209,31 +209,33 @@ export async function getUsers(): Promise<UserWithDetails[]> {
     return [];
   }
 
-  // 各ユーザーの教室情報を取得
-  const usersWithSchools = await Promise.all(
-    (profiles as UserProfile[]).map(async (profile) => {
-      const { data: userSchools, error: schoolsError } = await supabase
-        .from('user_schools')
-        .select(`
-          *,
-          school:schools(*)
-        `)
-        .eq('user_id', profile.id);
+  // 全ユーザーの教室情報を一括取得（N+1クエリ解消）
+  const allUserIds = (profiles as UserProfile[]).map((p) => p.id);
+  const { data: allUserSchools, error: schoolsError } = await supabase
+    .from('user_schools')
+    .select(`
+      *,
+      school:schools(*)
+    `)
+    .in('user_id', allUserIds);
 
-      if (schoolsError) {
-        console.error(`Error fetching schools for user ${profile.id}:`, schoolsError);
-        return {
-          ...profile,
-          schools: [],
-        } as UserWithDetails;
-      }
+  if (schoolsError) {
+    console.error('Error fetching user schools:', schoolsError);
+  }
 
-      return {
-        ...profile,
-        schools: (userSchools || []) as any[],
-      } as UserWithDetails;
-    })
-  );
+  // ユーザーIDごとに教室情報をグループ化
+  const schoolsByUserId = new Map<string, Record<string, unknown>[]>();
+  for (const us of (allUserSchools || []) as Array<Record<string, unknown>>) {
+    const userId = us.user_id as string;
+    const list = schoolsByUserId.get(userId) || [];
+    list.push(us);
+    schoolsByUserId.set(userId, list);
+  }
+
+  const usersWithSchools = (profiles as UserProfile[]).map((profile) => ({
+    ...profile,
+    schools: schoolsByUserId.get(profile.id) || [],
+  } as unknown as UserWithDetails));
 
   return usersWithSchools;
 }
