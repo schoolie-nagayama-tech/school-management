@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (tokenError || !tokenData) {
-      return NextResponse.json({ error: '無効なトークンです' }, { status: 403 });
+      return NextResponse.json({ error: '無効なトークンです', detail: tokenError?.message || 'no data' }, { status: 403 });
     }
 
     const schoolId = tokenData.school_id;
@@ -53,8 +53,8 @@ export async function GET(request: NextRequest) {
       .order('last_name_kana');
 
     if (studentsError) {
-      console.error('Error fetching students:', studentsError);
-      return NextResponse.json({ error: 'データ取得に失敗しました' }, { status: 500 });
+      console.error('Error fetching students:', JSON.stringify(studentsError));
+      return NextResponse.json({ error: 'データ取得に失敗しました', step: 'students', detail: studentsError.message }, { status: 500 });
     }
 
     // 申込項目取得（非表示除外）
@@ -67,8 +67,8 @@ export async function GET(request: NextRequest) {
       .order('sort_order');
 
     if (itemsError) {
-      console.error('Error fetching items:', itemsError);
-      return NextResponse.json({ error: 'データ取得に失敗しました' }, { status: 500 });
+      console.error('Error fetching items:', JSON.stringify(itemsError));
+      return NextResponse.json({ error: 'データ取得に失敗しました', step: 'items', detail: itemsError.message }, { status: 500 });
     }
 
     // 申込状況取得
@@ -78,8 +78,8 @@ export async function GET(request: NextRequest) {
       .eq('school_id', schoolId);
 
     if (appsError) {
-      console.error('Error fetching applications:', appsError);
-      return NextResponse.json({ error: 'データ取得に失敗しました' }, { status: 500 });
+      console.error('Error fetching applications:', JSON.stringify(appsError));
+      return NextResponse.json({ error: 'データ取得に失敗しました', step: 'applications', detail: appsError.message }, { status: 500 });
     }
 
     // 教室名取得
@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Embed API error:', error);
-    return NextResponse.json({ error: 'サーバーエラーが発生しました' }, { status: 500 });
+    return NextResponse.json({ error: 'サーバーエラーが発生しました', step: 'catch', detail: error instanceof Error ? error.message : String(error) }, { status: 500 });
   }
 }
 
