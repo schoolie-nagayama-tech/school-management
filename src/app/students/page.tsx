@@ -41,8 +41,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertBoard } from '@/components/alerts';
 import { BulletinBoard } from '@/components/bulletin';
-import { NewResponsesBoard } from '@/components/responses/NewResponsesBoard';
-import { RecentUpdatesBoard } from '@/components/students/RecentUpdatesBoard';
+import { NotificationFeed } from '@/components/notifications/NotificationFeed';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
@@ -472,23 +471,22 @@ export default function StudentsPage() {
           </div>
         )}
 
-        {/* 新着申し込み通知 ＆ 更新履歴 */}
-        {!isTeacher && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-            <NewResponsesBoard />
-            <RecentUpdatesBoard
+        {/* 連絡掲示板（横いっぱい） */}
+        <div className="mb-4">
+          <BulletinBoard />
+        </div>
+
+        {/* アラート＋通知フィード（2カラム） */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+          <AlertBoard />
+          {!isTeacher && (
+            <NotificationFeed
               onStudentClick={(studentId) => {
                 const student = students.find((s) => s.id === studentId);
                 if (student) handleOpenDetailModal(student);
               }}
             />
-          </div>
-        )}
-
-        {/* 掲示板とアラート */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-          <BulletinBoard />
-          <AlertBoard />
+          )}
         </div>
 
         {/* ツールバー */}
