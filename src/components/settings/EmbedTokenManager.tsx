@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { supabase } from '@/lib/supabase';
-import { Copy, Trash2, Plus, ExternalLink, Eye, EyeOff } from 'lucide-react';
+import { Copy, Trash2, Plus, ExternalLink, Eye, EyeOff, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
 
 interface EmbedToken {
   id: string;
@@ -26,6 +26,8 @@ export function EmbedTokenManager() {
   const [tokens, setTokens] = useState<EmbedToken[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showTokens, setShowTokens] = useState<Set<string>>(new Set());
+  const [previewTokenId, setPreviewTokenId] = useState<string | null>(null);
+  const [previewKey, setPreviewKey] = useState(0);
 
   const schoolIds = getSelectedSchoolIds();
   const schoolId = schoolIds.length > 0 ? schoolIds[0] : null;
@@ -228,9 +230,38 @@ export function EmbedTokenManager() {
                   rel="noopener noreferrer"
                   className="flex items-center gap-1 text-[11px] text-green-600 hover:text-green-800 bg-green-50 hover:bg-green-100 px-2 py-1 rounded"
                 >
-                  <ExternalLink className="w-3 h-3" /> プレビュー
+                  <ExternalLink className="w-3 h-3" /> 別タブで開く
                 </a>
+                <button
+                  onClick={() => setPreviewTokenId(previewTokenId === token.id ? null : token.id)}
+                  className="flex items-center gap-1 text-[11px] text-amber-600 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 px-2 py-1 rounded"
+                >
+                  {previewTokenId === token.id ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                  プレビュー
+                </button>
               </div>
+
+              {/* プレビュー */}
+              {previewTokenId === token.id && (
+                <div className="mt-3 border border-gray-200 rounded-lg overflow-hidden">
+                  <div className="flex items-center justify-between bg-gray-50 px-3 py-1.5 border-b">
+                    <span className="text-[11px] text-gray-500 font-medium">📋 プレビュー</span>
+                    <button
+                      onClick={() => setPreviewKey((k) => k + 1)}
+                      className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-700 px-1.5 py-0.5 rounded hover:bg-gray-200"
+                    >
+                      <RefreshCw className="w-3 h-3" /> 再読み込み
+                    </button>
+                  </div>
+                  <iframe
+                    key={previewKey}
+                    src={getEmbedUrl(token.token)}
+                    className="w-full border-0"
+                    style={{ height: '500px' }}
+                    title="埋め込みプレビュー"
+                  />
+                </div>
+              )}
 
               {/* 使い方 */}
               <div className="mt-2 text-[10px] text-gray-400">

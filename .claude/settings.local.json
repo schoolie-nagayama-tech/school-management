@@ -77,7 +77,16 @@
       "Bash(grep -l \"export\" \"C:\\\\Users\\\\ytaka\\\\Desktop\\\\student-management\\\\src\\\\lib\\\\api\"/*.ts)",
       "Bash(grep -r \"Google\\\\|Calendar\\\\|Slack\\\\|Discord\\\\|Email\\\\|Webhook\" C:UsersytakaDesktopstudent-managementsrc --include=*.ts --include=*.tsx)",
       "Bash(find C:UsersytakaDesktopstudent-management -type f \\\\\\(-name *.env* -o -name *.config.* \\\\\\))",
-      "Bash(python /tmp/fix_errors.py)"
+      "Bash(python /tmp/fix_errors.py)",
+      "Bash(wc -l /c/Users/ytaka/Desktop/student-management/src/app/*/page.tsx)",
+      "Bash(find /c/Users/ytaka/Desktop/student-management -name .env* -o -name vercel.json -o -name docker*)",
+      "Bash(grep -l \"application\" C:UsersytakaDesktopstudent-managementsupabasemigrations/*.sql)",
+      "mcp__faa90072-dcd0-4481-89eb-d7e81d774b30__apply_migration",
+      "Bash(npx vitest:*)",
+      "Bash(curl -s \"http://localhost:3000/api/embed/applications?token=9b5a940fdd17357a64f511b8f5547d78466e7d6512d17bff6e0841e44daa8fc5\")",
+      "Bash(curl -sv \"http://localhost:3000/api/embed/applications?token=9b5a940fdd17357a64f511b8f5547d78466e7d6512d17bff6e0841e44daa8fc5\")",
+      "Bash(curl -s \"https://school-management-eight-cyan.vercel.app/api/embed/applications?token=9b5a940fdd17357a64f511b8f5547d78466e7d6512d17bff6e0841e44daa8fc5\")",
+      "Bash(grep -l embed_tokens /c/Users/ytaka/Desktop/student-management/supabase/migrations/*)"
     ]
   }
 }

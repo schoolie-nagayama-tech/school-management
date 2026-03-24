@@ -7,6 +7,9 @@
 
 /** 既知のエラーパターンと対応する日本語メッセージ */
 const ERROR_TRANSLATIONS: Array<{ pattern: RegExp; message: string }> = [
+  // ── DB処理タイムアウト（ネットワーク系より先に判定） ──
+  { pattern: /statement timeout|57014/i, message: '処理に時間がかかりすぎています。データ量を減らして再度お試しください。' },
+
   // ── ネットワーク系 ──
   { pattern: /fetch failed|network error|failed to fetch|networkerror/i, message: '通信エラーが発生しました。インターネット接続を確認してください。' },
   { pattern: /timeout|timed out|aborted/i, message: '通信がタイムアウトしました。しばらく待ってから再度お試しください。' },
@@ -35,7 +38,6 @@ const ERROR_TRANSLATIONS: Array<{ pattern: RegExp; message: string }> = [
   // ── DB接続系 ──
   { pattern: /could not connect|connection.*refused|connection.*reset/i, message: 'データベースに接続できませんでした。しばらく待ってから再度お試しください。' },
   { pattern: /too many connections|53300/i, message: 'サーバーが混み合っています。しばらく待ってから再度お試しください。' },
-  { pattern: /statement timeout|57014/i, message: '処理に時間がかかりすぎています。データ量を減らして再度お試しください。' },
 
   // ── Supabase Storage ──
   { pattern: /payload too large|file.*too large|413/i, message: 'ファイルサイズが大きすぎます。サイズを小さくして再度お試しください。' },
