@@ -16,7 +16,7 @@ interface BillingPeriodSelectorProps {
   periods: BillingPeriod[];
   selectedPeriodId: string | null;
   onSelect: (periodId: string | null) => void;
-  schoolId: string | null;
+  schoolId: string | string[] | null;
   onUpdated: () => void;
   canEdit: boolean;
 }
@@ -34,9 +34,11 @@ export function BillingPeriodSelector({
   const [isCreating, setIsCreating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [newStartDate, setNewStartDate] = useState('');
-  const [newEndDate, setNewEndDate] = useState('');
+  // 新規作成: 年月プルダウン
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1;
+  const [newYear, setNewYear] = useState(currentYear);
+  const [newMonth, setNewMonth] = useState(currentMonth);
   const [editName, setEditName] = useState('');
   const [editStartDate, setEditStartDate] = useState('');
   const [editEndDate, setEditEndDate] = useState('');
@@ -44,26 +46,34 @@ export function BillingPeriodSelector({
   const selectedPeriod = periods.find((p) => p.id === selectedPeriodId);
 
   const handleCreate = async () => {
-    if (!newName.trim() || !newStartDate || !newEndDate) {
-      toastError('期間名、開始日、終了日を入力してください');
+    if (!schoolId || (Array.isArray(schoolId) && schoolId.length === 0)) {
+      toastError('教室が選択されていません');
       return;
     }
-    if (!schoolId) {
-      toastError('教室が選択されていません');
+
+    // 年月から期間名・開始日・終了日を自動生成
+    const name = `${newYear}年${newMonth}月請求`;
+    const startDate = `${newYear}-${String(newMonth).padStart(2, '0')}-01`;
+    const lastDay = new Date(newYear, newMonth, 0).getDate();
+    const endDate = `${newYear}-${String(newMonth).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+    // 重複チェック
+    const exists = periods.some(
+      (p) => p.name === name || (p.start_date === startDate && p.end_date === endDate)
+    );
+    if (exists) {
+      toastError(`${newYear}年${newMonth}月の請求期間は既に存在します`);
       return;
     }
 
     setIsProcessing(true);
     try {
       const created = await createBillingPeriod(
-        { name: newName.trim(), start_date: newStartDate, end_date: newEndDate },
+        { name, start_date: startDate, end_date: endDate },
         schoolId
       );
       success('請求期間を作成しました');
       setIsCreating(false);
-      setNewName('');
-      setNewStartDate('');
-      setNewEndDate('');
       onUpdated();
       onSelect(created.id);
     } catch (error) {
@@ -201,51 +211,47 @@ export function BillingPeriodSelector({
         )}
       </div>
 
-      {/* 新規作成フォーム */}
+      {/* 新規作成フォーム（年月プルダウン） */}
       {isCreating && canEdit && (
         <div className="mt-4 p-4 bg-[#f3f4f6] rounded-lg border border-[#e5e7eb]">
           <h3 className="text-sm font-semibold text-[#1f2937] mb-3">新規期間の作成</h3>
           <div className="flex flex-wrap gap-3 items-end">
-            <div className="flex-1 min-w-[150px]">
-              <label className="block text-xs text-[#4b5563] mb-1">期間名</label>
-              <Input
-                type="text"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder="例: 2026年4月請求"
+            <div className="w-28">
+              <label className="block text-xs text-[#4b5563] mb-1">年</label>
+              <select
+                value={newYear}
+                onChange={(e) => setNewYear(Number(e.target.value))}
                 disabled={isProcessing}
-              />
+                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+              >
+                {Array.from({ length: 5 }, (_, i) => currentYear - 1 + i).map((y) => (
+                  <option key={y} value={y}>{y}年</option>
+                ))}
+              </select>
             </div>
-            <div className="w-40">
-              <label className="block text-xs text-[#4b5563] mb-1">開始日</label>
-              <Input
-                type="date"
-                value={newStartDate}
-                onChange={(e) => setNewStartDate(e.target.value)}
+            <div className="w-24">
+              <label className="block text-xs text-[#4b5563] mb-1">月</label>
+              <select
+                value={newMonth}
+                onChange={(e) => setNewMonth(Number(e.target.value))}
                 disabled={isProcessing}
-              />
+                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+              >
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                  <option key={m} value={m}>{m}月</option>
+                ))}
+              </select>
             </div>
-            <div className="w-40">
-              <label className="block text-xs text-[#4b5563] mb-1">終了日</label>
-              <Input
-                type="date"
-                value={newEndDate}
-                onChange={(e) => setNewEndDate(e.target.value)}
-                disabled={isProcessing}
-              />
+            <div className="text-sm text-[#6b7280] pt-5">
+              → {newYear}年{newMonth}月1日 〜 {newYear}年{newMonth}月{new Date(newYear, newMonth, 0).getDate()}日
             </div>
             <div className="flex gap-2">
-              <Button onClick={handleCreate} disabled={isProcessing || !newName.trim() || !newStartDate || !newEndDate}>
+              <Button onClick={handleCreate} disabled={isProcessing}>
                 作成
               </Button>
               <Button
                 variant="secondary"
-                onClick={() => {
-                  setIsCreating(false);
-                  setNewName('');
-                  setNewStartDate('');
-                  setNewEndDate('');
-                }}
+                onClick={() => setIsCreating(false)}
               >
                 キャンセル
               </Button>

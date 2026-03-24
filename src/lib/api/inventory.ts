@@ -43,31 +43,35 @@ export async function getMaterials(
 
 /**
  * 教材を作成
+ * schoolId に配列を渡すと全ての教室に対して一括作成する
  */
 export async function createMaterial(
   item: Omit<MaterialInsert, 'school_id'>,
-  schoolId?: string
+  schoolId?: string | string[]
 ): Promise<Material> {
-  const targetSchoolId = schoolId || getDefaultSchoolId();
+  const targetSchoolIds = Array.isArray(schoolId)
+    ? schoolId
+    : [schoolId || getDefaultSchoolId()];
+
+  const insertData = targetSchoolIds.map((sid) => ({
+    ...item,
+    school_id: sid,
+    unit: item.unit || '冊',
+    stock_quantity: item.stock_quantity ?? 0,
+    low_stock_threshold: item.low_stock_threshold ?? 5,
+    is_active: item.is_active ?? true,
+  }));
 
   const { data, error } = await supabase
     .from('materials')
-    .insert({
-      ...item,
-      school_id: targetSchoolId,
-      unit: item.unit || '冊',
-      stock_quantity: item.stock_quantity ?? 0,
-      low_stock_threshold: item.low_stock_threshold ?? 5,
-      is_active: item.is_active ?? true,
-    })
-    .select()
-    .single();
+    .insert(insertData)
+    .select();
 
   if (error) {
     throw new Error(getUserErrorMessage(error, '教材の作成に失敗しました'));
   }
 
-  return data as Material;
+  return (data as Material[])[0];
 }
 
 /**

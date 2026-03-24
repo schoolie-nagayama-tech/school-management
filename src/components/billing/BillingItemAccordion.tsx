@@ -14,7 +14,7 @@ import { useConfirm } from '@/hooks/useConfirm';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 interface BillingItemAccordionProps {
-  schoolId?: string;
+  schoolId?: string | string[];
   periodId: string;
   items: BillingItem[];
   onUpdated: () => void;
@@ -41,7 +41,7 @@ export function BillingItemAccordion({
       return;
     }
 
-    if (!_schoolId) {
+    if (!_schoolId || (Array.isArray(_schoolId) && _schoolId.length === 0)) {
       toastError('教室が選択されていません');
       return;
     }

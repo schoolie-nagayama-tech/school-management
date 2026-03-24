@@ -45,32 +45,34 @@ export async function getBillingPeriods(
 
 /**
  * 請求期間を作成
+ * schoolId に配列を渡すと全ての教室に対して一括作成する
  */
 export async function createBillingPeriod(
   period: { name: string; start_date: string; end_date: string },
-  schoolId?: string
+  schoolId?: string | string[]
 ): Promise<BillingPeriod> {
-  const targetSchoolId = schoolId || getDefaultSchoolId();
+  const targetSchoolIds = Array.isArray(schoolId)
+    ? schoolId
+    : [schoolId || getDefaultSchoolId()];
 
-  const insertData: BillingPeriodInsert = {
-    school_id: targetSchoolId,
+  const insertData: BillingPeriodInsert[] = targetSchoolIds.map((sid) => ({
+    school_id: sid,
     name: period.name,
     start_date: period.start_date,
     end_date: period.end_date,
     is_active: true,
-  };
+  }));
 
   const { data, error } = await supabase
     .from('billing_periods')
     .insert(insertData)
-    .select()
-    .single();
+    .select();
 
   if (error) {
     throw new Error(`請求期間の作成に失敗しました: ${error.message}`);
   }
 
-  return data as BillingPeriod;
+  return (data as BillingPeriod[])[0];
 }
 
 /**
@@ -145,46 +147,51 @@ export async function getBillingItems(
 
 /**
  * 請求項目を作成
+ * schoolId に配列を渡すと全ての教室に対して一括作成する
  */
 export async function createBillingItem(
   item: { billing_period_id: string; name: string; source_type?: string },
-  schoolId?: string
+  schoolId?: string | string[]
 ): Promise<BillingItem> {
-  const targetSchoolId = schoolId || getDefaultSchoolId();
+  const targetSchoolIds = Array.isArray(schoolId)
+    ? schoolId
+    : [schoolId || getDefaultSchoolId()];
 
-  // 最大のsort_orderを取得
-  const { data: existingItems } = await supabase
-    .from('billing_items')
-    .select('sort_order')
-    .eq('billing_period_id', item.billing_period_id)
-    .eq('school_id', targetSchoolId)
-    .order('sort_order', { ascending: false })
-    .limit(1);
+  // 各教室ごとに最大 sort_order を取得してデータを作成
+  const insertData: BillingItemInsert[] = [];
+  for (const sid of targetSchoolIds) {
+    const { data: existingItems } = await supabase
+      .from('billing_items')
+      .select('sort_order')
+      .eq('billing_period_id', item.billing_period_id)
+      .eq('school_id', sid)
+      .order('sort_order', { ascending: false })
+      .limit(1);
 
-  const maxSortOrder = existingItems && existingItems.length > 0
-    ? existingItems[0].sort_order
-    : -1;
+    const maxSortOrder = existingItems && existingItems.length > 0
+      ? existingItems[0].sort_order
+      : -1;
 
-  const insertData: BillingItemInsert = {
-    school_id: targetSchoolId,
-    billing_period_id: item.billing_period_id,
-    name: item.name,
-    source_type: (item.source_type as BillingItem['source_type']) || 'free',
-    sort_order: maxSortOrder + 1,
-    is_active: true,
-  };
+    insertData.push({
+      school_id: sid,
+      billing_period_id: item.billing_period_id,
+      name: item.name,
+      source_type: (item.source_type as BillingItem['source_type']) || 'free',
+      sort_order: maxSortOrder + 1,
+      is_active: true,
+    });
+  }
 
   const { data, error } = await supabase
     .from('billing_items')
     .insert(insertData)
-    .select()
-    .single();
+    .select();
 
   if (error) {
     throw new Error(`請求項目の作成に失敗しました: ${error.message}`);
   }
 
-  return data as BillingItem;
+  return (data as BillingItem[])[0];
 }
 
 /**

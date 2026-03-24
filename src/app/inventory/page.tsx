@@ -106,10 +106,10 @@ export default function InventoryPage() {
     return result;
   }, [materials, search, categoryFilter]);
 
-  // 教材作成
+  // 教材作成（全ての選択教室に一括作成）
   const handleCreate = async (data: MaterialFormData) => {
     const schoolIds = getSelectedSchoolIds();
-    const schoolId = schoolIds.length > 0 ? schoolIds[0] : undefined;
+    const targetSchoolIds = schoolIds.length > 0 ? schoolIds : undefined;
     await createMaterial(
       {
         name: data.name,
@@ -118,7 +118,7 @@ export default function InventoryPage() {
         unit: data.unit,
         low_stock_threshold: data.low_stock_threshold,
       },
-      schoolId
+      targetSchoolIds
     );
     fetchData();
   };

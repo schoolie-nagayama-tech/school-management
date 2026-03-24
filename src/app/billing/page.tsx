@@ -238,7 +238,7 @@ export default function BillingPage() {
   }
 
   const schoolIds = getSelectedSchoolIds();
-  const currentSchoolId = schoolIds.length > 0 ? schoolIds[0] : null;
+  const currentSchoolIds = schoolIds.length > 0 ? schoolIds : null;
 
   return (
     <AdminLayout headerTitle="請求管理">
@@ -254,7 +254,7 @@ export default function BillingPage() {
         periods={periods}
         selectedPeriodId={selectedPeriodId}
         onSelect={setSelectedPeriodId}
-        schoolId={currentSchoolId}
+        schoolId={currentSchoolIds}
         onUpdated={handlePeriodsUpdated}
         canEdit={canEdit && isManagerOrAbove}
       />
@@ -269,9 +269,9 @@ export default function BillingPage() {
       )}
 
       {/* 項目管理アコーディオン（教室長以上のみ） */}
-      {selectedPeriodId && isManagerOrAbove && currentSchoolId && (
+      {selectedPeriodId && isManagerOrAbove && currentSchoolIds && (
         <BillingItemAccordion
-          schoolId={currentSchoolId}
+          schoolId={currentSchoolIds}
           periodId={selectedPeriodId}
           items={items}
           onUpdated={handleItemsUpdated}
