@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AlertItem } from './AlertItem';
 import { getAlertsLight, getAlertsHeavy, mergeStudentAlerts, invalidateAlertCache } from '@/lib/api/alerts';
 import type { StudentAlerts, Alert } from '@/types/alerts';
@@ -154,7 +154,10 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
     }
   }, [canDismiss, getSelectedSchoolIds, profile?.id, success, toastError, fetchAlerts]);
 
-  const totalAlerts = studentAlerts.reduce((sum, sa) => sum + sa.alerts.length, 0);
+  const totalAlerts = useMemo(
+    () => studentAlerts.reduce((sum, sa) => sum + sa.alerts.length, 0),
+    [studentAlerts]
+  );
 
   if (isLoading) {
     return (

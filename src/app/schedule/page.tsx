@@ -160,7 +160,7 @@ export default function SchedulePage() {
 
   const schoolId = selectedSchoolId && selectedSchoolId !== 'all' ? selectedSchoolId : selectedSchoolIdLocal;
 
-  const weekDatesAll = getWeekDates(weekStart);
+  const weekDatesAll = useMemo(() => getWeekDates(weekStart), [weekStart]);
   const weekDates = useMemo(() => {
     const days = visibleDaysOfWeek.length > 0 ? visibleDaysOfWeek : defaultVisibleDays;
     return weekDatesAll.filter((d) => {
@@ -312,12 +312,12 @@ export default function SchedulePage() {
     refreshEntries();
   }, [refreshEntries]);
 
-  const handleEntryClick = (entry: ScheduleEntry, e: React.MouseEvent) => {
+  const handleEntryClick = useCallback((entry: ScheduleEntry, e: React.MouseEvent) => {
     e.stopPropagation();
     setActionModalEntry(entry);
-  };
+  }, []);
 
-  const handleStudentClickFromAction = () => {
+  const handleStudentClickFromAction = useCallback(() => {
     const entry = actionModalEntry;
     if (!entry) return;
     setActionModalEntry(null);
@@ -327,21 +327,21 @@ export default function SchedulePage() {
     } else {
       toastError('生徒情報の取得に失敗しました');
     }
-  };
+  }, [actionModalEntry, students, toastError]);
 
-  const handleTeacherClickFromAction = () => {
+  const handleTeacherClickFromAction = useCallback(() => {
     const entry = actionModalEntry;
     if (!entry) return;
     setActionModalEntry(null);
     router.push(`/admin/teachers/${entry.teacher_id}`);
-  };
+  }, [actionModalEntry, router]);
 
-  const handleAddTeacher = (date: string, slotId: string, existingTeacherIds: string[]) => {
+  const handleAddTeacher = useCallback((date: string, slotId: string, existingTeacherIds: string[]) => {
     setAddTeacherTarget({ date, slotId, existingTeacherIds });
     setAddTeacherModalOpen(true);
-  };
+  }, []);
 
-  const handleAddTeacherSelect = (teacherId: string) => {
+  const handleAddTeacherSelect = useCallback((teacherId: string) => {
     if (!addTeacherTarget) return;
     const cellKey = `${addTeacherTarget.date}-${addTeacherTarget.slotId}`;
     setEmptyTeacherSlots((prev) => ({
@@ -350,13 +350,13 @@ export default function SchedulePage() {
     }));
     setAddTeacherTarget(null);
     setAddTeacherModalOpen(false);
-  };
+  }, [addTeacherTarget]);
 
-  const handleAddStudent = (date: string, slotId: string, teacherId: string) => {
+  const handleAddStudent = useCallback((date: string, slotId: string, teacherId: string) => {
     setAddTarget({ date, slotId, teacherId });
-  };
+  }, []);
 
-  const handleRemoveTeacher = (
+  const handleRemoveTeacher = useCallback((
     date: string,
     slotId: string,
     teacherId: string,
@@ -374,9 +374,9 @@ export default function SchedulePage() {
       return;
     }
     setRemoveTeacherConfirm({ date, slotId, teacherId, entryCount });
-  };
+  }, []);
 
-  const handleTeacherCardMove = async (
+  const handleTeacherCardMove = useCallback(async (
     source: { date: string; slotId: string; teacherId: string },
     target: { date: string; slotId: string }
   ) => {
@@ -393,10 +393,10 @@ export default function SchedulePage() {
     }
     success('講師カードを移動しました');
     refreshEntries();
-  };
+  }, [entries, success, refreshEntries]);
 
   /** 振替モード時: 座席表の講師ブロックをクリックで振替先に選び、即実行。同日同時間帯は移動として扱う */
-  const handleTransferTargetClick = async (
+  const handleTransferTargetClick = useCallback(async (
     targetDate: string,
     targetSlotId: string,
     targetTeacherId: string
@@ -425,12 +425,12 @@ export default function SchedulePage() {
     } catch (e) {
       toastError((e as Error).message);
     }
-  };
+  }, [transferMode, schoolId, success, refreshEntries, toastError]);
 
   /** 日付横の印刷アイコン: その日だけ印刷用ビューを表示して印刷 */
-  const handlePrintDay = (dateStr: string) => {
+  const handlePrintDay = useCallback((dateStr: string) => {
     setPrintDay(dateStr);
-  };
+  }, []);
 
   useEffect(() => {
     if (!printDay) return;
@@ -464,7 +464,7 @@ export default function SchedulePage() {
     };
   }, [scheduleGenerateConfirmOpen, schoolId, weekStartStr]);
 
-  const handleScheduleGenerateConfirm = async () => {
+  const handleScheduleGenerateConfirm = useCallback(async () => {
     if (!schoolId || !weekStartStr) return;
     setScheduleGenerateLoading(true);
     try {
@@ -476,23 +476,23 @@ export default function SchedulePage() {
     } finally {
       setScheduleGenerateLoading(false);
     }
-  };
+  }, [schoolId, weekStartStr, profile?.id, success, refreshEntries]);
 
-  const handleEditClick = () => {
+  const handleEditClick = useCallback(() => {
     if (!actionModalEntry) return;
     setEditingEntry(actionModalEntry);
     setEditModalOpen(true);
     setActionModalEntry(null);
-  };
+  }, [actionModalEntry]);
 
   /** 振替モードに切り替え（座席表の講師ブロックをクリックで振替先を選ぶ） */
-  const handleTransferFromAction = () => {
+  const handleTransferFromAction = useCallback(() => {
     if (!actionModalEntry) return;
     setTransferMode({ sourceEntry: actionModalEntry });
     setActionModalEntry(null);
-  };
+  }, [actionModalEntry]);
 
-  const handleAbsentFromAction = async () => {
+  const handleAbsentFromAction = useCallback(async () => {
     const entry = actionModalEntry;
     if (!entry || !profile) return;
     if (!window.confirm('この授業を欠席にしますか？')) return;
@@ -504,17 +504,17 @@ export default function SchedulePage() {
     } catch (e) {
       toastError((e as Error).message);
     }
-  };
+  }, [actionModalEntry, profile, success, refreshEntries, toastError]);
 
-  const handleDeleteClick = () => {
+  const handleDeleteClick = useCallback(() => {
     if (!actionModalEntry) return;
     setDeletingEntry(actionModalEntry);
     setDeleteDialogOpen(true);
     setActionModalEntry(null);
-  };
+  }, [actionModalEntry]);
 
   /** 振替先授業を通常の授業に戻す（振替取り消し） */
-  const handleRevertTransfer = async () => {
+  const handleRevertTransfer = useCallback(async () => {
     const entry = actionModalEntry;
     if (!entry || entry.status !== 'transferred_in') return;
     if (!window.confirm('この振替を元に戻し、通常の授業に戻しますか？')) return;
@@ -526,16 +526,31 @@ export default function SchedulePage() {
     } catch (e) {
       toastError((e as Error).message);
     }
-  };
+  }, [actionModalEntry, success, refreshEntries, toastError]);
 
   /** 生徒カードの振替アイコンまたはクリックで振替モードを開始 */
-  const handleTransferClickFromCard = (entry: ScheduleEntry) => {
+  const handleTransferClickFromCard = useCallback((entry: ScheduleEntry) => {
     setTransferringEntry(entry);
     setTransferModalOpen(true);
     setActionModalEntry(null);
-  };
+  }, []);
 
-  const handleStudentEntryDrop = async (
+  const entriesWithSubjects = useMemo(() => {
+    return entries.map((e) => ({
+      ...e,
+      subjects: (e.subject_ids || [])
+        .map((id) => subjects.find((s) => s.id === id))
+        .filter(Boolean) as { id: string; name: string }[],
+    }));
+  }, [entries, subjects]);
+
+  // 講習モード: 講習登録済み生徒のみにフィルタリング
+  const displayEntries = useMemo(() => {
+    if (!selectedKoushu || koushuEnrollments.size === 0) return entriesWithSubjects;
+    return entriesWithSubjects.filter((e) => koushuEnrollments.has(e.student_id));
+  }, [entriesWithSubjects, selectedKoushu, koushuEnrollments]);
+
+  const handleStudentEntryDrop = useCallback(async (
     entryId: string,
     targetDate: string,
     targetSlotId: string,
@@ -583,9 +598,20 @@ export default function SchedulePage() {
     } catch (e) {
       toastError((e as Error).message);
     }
-  };
+  }, [entriesWithSubjects, entries, schoolId, success, refreshEntries, toastError]);
 
-  const handleEditSave = async (form: ScheduleEntryFormData) => {
+  const selectedSchool = useMemo(() => schools.find((s) => s.id === schoolId), [schools, schoolId]);
+
+  /** 講師が選択科目を指導可能か。teachable_subject_ids が空/未設定の講師は全科目可 */
+  const canTeacherTeachSubjects = useCallback((teacherId: string, subjectIds: string[]) => {
+    if (subjectIds.length === 0) return true;
+    const teacher = teachers.find((t) => t.id === teacherId);
+    const allowed = teacher?.teachable_subject_ids;
+    if (!allowed || allowed.length === 0) return true;
+    return subjectIds.every((id) => allowed.includes(id));
+  }, [teachers]);
+
+  const handleEditSave = useCallback(async (form: ScheduleEntryFormData) => {
     if (!editingEntry) return;
     if (!canTeacherTeachSubjects(form.teacher_id, form.subject_ids)) {
       toastError('この講師は選択した科目を指導できません。');
@@ -600,9 +626,9 @@ export default function SchedulePage() {
     } catch (e) {
       toastError((e as Error).message);
     }
-  };
+  }, [editingEntry, canTeacherTeachSubjects, toastError, success, refreshEntries]);
 
-  const handleTransfer = async (
+  const handleTransfer = useCallback(async (
     targetDate: string,
     targetSlotId: string,
     targetTeacherId: string,
@@ -625,9 +651,9 @@ export default function SchedulePage() {
     } catch (e) {
       toastError((e as Error).message);
     }
-  };
+  }, [schoolId, transferringEntry, success, refreshEntries, toastError]);
 
-  const handleDeleteConfirm = async (deleteType: 'single' | 'regular') => {
+  const handleDeleteConfirm = useCallback(async (deleteType: 'single' | 'regular') => {
     if (!deletingEntry) return;
     try {
       if (deleteType === 'single') {
@@ -650,9 +676,9 @@ export default function SchedulePage() {
     } catch (e) {
       toastError((e as Error).message);
     }
-  };
+  }, [deletingEntry, success, refreshEntries, toastError]);
 
-  const handleRemoveTeacherConfirm = async () => {
+  const handleRemoveTeacherConfirm = useCallback(async () => {
     if (!removeTeacherConfirm) return;
     const { date, slotId, teacherId } = removeTeacherConfirm;
     const toDelete = entries.filter(
@@ -673,33 +699,7 @@ export default function SchedulePage() {
     } catch (e) {
       toastError((e as Error).message);
     }
-  };
-
-  const entriesWithSubjects = useMemo(() => {
-    return entries.map((e) => ({
-      ...e,
-      subjects: (e.subject_ids || [])
-        .map((id) => subjects.find((s) => s.id === id))
-        .filter(Boolean) as { id: string; name: string }[],
-    }));
-  }, [entries, subjects]);
-
-  // 講習モード: 講習登録済み生徒のみにフィルタリング
-  const displayEntries = useMemo(() => {
-    if (!selectedKoushu || koushuEnrollments.size === 0) return entriesWithSubjects;
-    return entriesWithSubjects.filter((e) => koushuEnrollments.has(e.student_id));
-  }, [entriesWithSubjects, selectedKoushu, koushuEnrollments]);
-
-  const selectedSchool = schools.find((s) => s.id === schoolId);
-
-  /** 講師が選択科目を指導可能か。teachable_subject_ids が空/未設定の講師は全科目可 */
-  const canTeacherTeachSubjects = (teacherId: string, subjectIds: string[]) => {
-    if (subjectIds.length === 0) return true;
-    const teacher = teachers.find((t) => t.id === teacherId);
-    const allowed = teacher?.teachable_subject_ids;
-    if (!allowed || allowed.length === 0) return true;
-    return subjectIds.every((id) => allowed.includes(id));
-  };
+  }, [removeTeacherConfirm, entries, success, refreshEntries, toastError]);
 
   const isAdmin = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
   if (authLoading || !profile) {

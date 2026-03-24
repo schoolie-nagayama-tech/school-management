@@ -164,6 +164,15 @@ export default function StudentsPage() {
     setCurrentPage(1);
   }, [showInactive, selectedGrade, searchQuery]);
 
+  // 既存の生徒コード（CSVインポート時の重複チェック用）
+  const existingStudentCodes = useMemo(() => {
+    return new Set(
+      students
+        .map((s) => s.student_code)
+        .filter((c): c is string => !!c)
+    );
+  }, [students]);
+
   // ページネーション適用
   const totalPages = Math.max(1, Math.ceil(filteredStudents.length / ITEMS_PER_PAGE));
   const paginatedStudents = useMemo(() => {
@@ -198,7 +207,7 @@ export default function StudentsPage() {
   }, []);
 
   // CSVエクスポート: 生徒一覧
-  const handleExportStudents = () => {
+  const handleExportStudents = useCallback(() => {
     setIsExporting(true);
     setExportMenuOpen(false);
     try {
@@ -210,10 +219,10 @@ export default function StudentsPage() {
     } finally {
       setIsExporting(false);
     }
-  };
+  }, [students]);
 
   // CSVエクスポート: 成績
-  const handleExportAssessments = async () => {
+  const handleExportAssessments = useCallback(async () => {
     setIsExporting(true);
     setExportMenuOpen(false);
     try {
@@ -227,10 +236,10 @@ export default function StudentsPage() {
     } finally {
       setIsExporting(false);
     }
-  };
+  }, [students, getSelectedSchoolIds]);
 
   // CSVエクスポート: 面談記録
-  const handleExportInterviews = async () => {
+  const handleExportInterviews = useCallback(async () => {
     setIsExporting(true);
     setExportMenuOpen(false);
     try {
@@ -244,28 +253,28 @@ export default function StudentsPage() {
     } finally {
       setIsExporting(false);
     }
-  };
+  }, [students, getSelectedSchoolIds]);
 
   // 新規登録モーダルを開く
-  const handleOpenCreateModal = () => {
+  const handleOpenCreateModal = useCallback(() => {
     setIsCreateModalOpen(true);
-  };
+  }, []);
 
   // 編集モーダルを開く（詳細モーダルから開く場合は詳細を閉じて前面に表示）
-  const handleOpenEditModal = (student: Student) => {
+  const handleOpenEditModal = useCallback((student: Student) => {
     setSelectedStudent(student);
     setIsDetailModalOpen(false);
     setIsEditModalOpen(true);
-  };
+  }, []);
 
   // 削除ダイアログを開く
-  const handleOpenDeleteDialog = (student: Student) => {
+  const handleOpenDeleteDialog = useCallback((student: Student) => {
     setSelectedStudent(student);
     setIsDeleteDialogOpen(true);
-  };
+  }, []);
 
   // 新規登録
-  const handleCreate = async (
+  const handleCreate = useCallback(async (
     data: StudentInsert | StudentUpdate,
     subjectIds?: string[]
   ) => {
@@ -283,10 +292,10 @@ export default function StudentsPage() {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [fetchStudents, searchQuery]);
 
   // 更新
-  const handleUpdate = async (
+  const handleUpdate = useCallback(async (
     data: StudentInsert | StudentUpdate,
     subjectIds?: string[]
   ) => {
@@ -318,39 +327,39 @@ export default function StudentsPage() {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [selectedStudent, showInactive, success, fetchStudents, searchQuery]);
 
   // 詳細モーダルを開く
-  const handleOpenDetailModal = (student: Student) => {
+  const handleOpenDetailModal = useCallback((student: Student) => {
     setSelectedStudent(student);
     setIsDetailModalOpen(true);
-  };
+  }, []);
 
   // 進行表を開く
-  const handleOpenProgress = (student: Student) => {
+  const handleOpenProgress = useCallback((student: Student) => {
     router.push(`/students/${student.id}/progress`);
-  };
+  }, [router]);
 
   // 面談記録を開く（直接面談記録ページに遷移）
-  const handleOpenInterviews = (student: Student) => {
+  const handleOpenInterviews = useCallback((student: Student) => {
     router.push(`/students/${student.id}/interviews`);
-  };
+  }, [router]);
 
   // 成績推移ページへ遷移
-  const handleOpenScores = (student: Student) => {
+  const handleOpenScores = useCallback((student: Student) => {
     router.push(`/students/${student.id}/scores`);
-  };
+  }, [router]);
 
   // 通塾日程モーダルを直接開く（その生徒の授業設定）
-  const handleOpenSchedule = (student: Student) => {
+  const handleOpenSchedule = useCallback((student: Student) => {
     setScheduleModalStudent(student);
     setIsScheduleModalOpen(true);
     setIsDetailModalOpen(false);
     setSelectedStudent(null);
-  };
+  }, []);
 
   // 一括削除
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = useCallback(async () => {
     if (selectedIds.size === 0) return;
     setIsSubmitting(true);
     setErrorMessage('');
@@ -367,10 +376,10 @@ export default function StudentsPage() {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [selectedIds, fetchStudents, searchQuery]);
 
   // 選択した生徒を教室移動
-  const handleMoveSelected = async () => {
+  const handleMoveSelected = useCallback(async () => {
     if (selectedIds.size === 0 || !moveTargetSchoolId) return;
     setIsSubmitting(true);
     setErrorMessage('');
@@ -390,7 +399,7 @@ export default function StudentsPage() {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [selectedIds, moveTargetSchoolId, fetchStudents, searchQuery]);
 
   // 教室移動モーダルを開くときに教室一覧を取得
   const handleOpenMoveSelectedModal = async () => {
@@ -405,7 +414,7 @@ export default function StudentsPage() {
   };
 
   // 削除（論理削除、詳細モーダルから呼ばれる場合もある）
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     if (!selectedStudent) return;
 
     setIsSubmitting(true);
@@ -423,7 +432,7 @@ export default function StudentsPage() {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [selectedStudent, fetchStudents, searchQuery]);
 
   // 権限チェック中
   if (permissionLoading) {
@@ -768,13 +777,7 @@ export default function StudentsPage() {
         onClose={() => setIsCsvImportModalOpen(false)}
         schoolId={getSelectedSchoolIds()[0] ?? ''}
         onImportComplete={() => fetchStudents(searchQuery)}
-        existingStudentCodes={
-          new Set(
-            students
-              .map((s) => s.student_code)
-              .filter((c): c is string => !!c)
-          )
-        }
+        existingStudentCodes={existingStudentCodes}
       />
 
 {/* 新規登録モーダル */}

@@ -8,6 +8,7 @@ import { getApplicationItems } from '@/lib/api/applications';
 import type { ZoukomaPeriod, ZoukomaSettings } from '@/types/forms/zoukoma';
 import type { ApplicationItem } from '@/types/database';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
+import { resolveUpdateSchoolIds, resolveCreateSchoolIds } from '@/hooks/usePeriodEditor';
 
 interface ZoukomaPeriodEditorProps {
   isOpen: boolean;
@@ -134,12 +135,12 @@ export function ZoukomaPeriodEditor({
       };
 
       if (period) {
-        const idsToUpdate =
-          allowedSchools && allowedSchools.length > 1
-            ? selectedSchoolIdsForUpdate
-            : schoolIds && schoolIds.length > 1 && applyToAllSchools
-              ? schoolIds
-              : null;
+        const idsToUpdate = resolveUpdateSchoolIds({
+          allowedSchools,
+          selectedSchoolIdsForUpdate,
+          schoolIds,
+          applyToAllSchools,
+        });
         if (idsToUpdate && idsToUpdate.length > 1) {
           await updateFormPeriodForSchools(
             idsToUpdate,
@@ -160,11 +161,18 @@ export function ZoukomaPeriodEditor({
           is_active: isActive,
           linked_application_item_id: linkedApplicationItemId || null,
         };
-        if (schoolIds && schoolIds.length > 1) {
-          await createFormPeriodForSchools(schoolIds, {
+        const idsToCreate = resolveCreateSchoolIds({
+          allowedSchools,
+          selectedSchoolIdsForCreate,
+          schoolIds,
+        });
+        if (idsToCreate && idsToCreate.length > 1) {
+          await createFormPeriodForSchools(idsToCreate, {
             ...createData,
             form_type: 'zoukoma',
           });
+        } else if (idsToCreate && idsToCreate.length === 1) {
+          await createZoukomaPeriod(createData, idsToCreate[0]);
         } else {
           await createZoukomaPeriod(createData, schoolId);
         }
