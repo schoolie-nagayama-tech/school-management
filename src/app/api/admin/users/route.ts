@@ -131,7 +131,7 @@ export async function GET(request: NextRequest) {
     }));
 
     return NextResponse.json({ users: usersWithSchools }, { headers: noCacheHeaders });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to fetch users:', error);
     return NextResponse.json(
       { error: 'ユーザーの取得に失敗しました' },

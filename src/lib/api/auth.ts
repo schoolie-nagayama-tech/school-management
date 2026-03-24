@@ -74,9 +74,10 @@ export async function getSession() {
     const { data, error } = await supabase.auth.getSession();
     if (error) throw error;
     return data.session;
-  } catch (err: any) {
+  } catch (err: unknown) {
     // AbortErrorは再スローしない（コンポーネントがアンマウントされた場合）
-    if (err?.name === 'AbortError' || err?.message?.includes('aborted') || err?.message?.includes('signal is aborted')) {
+    const errObj = err instanceof Error ? err : null;
+    if (errObj?.name === 'AbortError' || errObj?.message?.includes('aborted') || errObj?.message?.includes('signal is aborted')) {
       return null;
     }
     throw err;
@@ -126,9 +127,10 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
       throw error;
     }
     return data as UserProfile;
-  } catch (err: any) {
+  } catch (err: unknown) {
     // AbortErrorは無視
-    if (err?.name === 'AbortError' || err?.message?.includes('aborted') || err?.message?.includes('signal is aborted')) {
+    const errObj = err instanceof Error ? err : null;
+    if (errObj?.name === 'AbortError' || errObj?.message?.includes('aborted') || errObj?.message?.includes('signal is aborted')) {
       return null;
     }
     throw err;
@@ -255,9 +257,10 @@ export async function getUserSchools(userId: string): Promise<UserSchool[]> {
 
     if (error) throw error;
     return data || [];
-  } catch (err: any) {
+  } catch (err: unknown) {
     // AbortErrorは無視
-    if (err?.name === 'AbortError' || err?.message?.includes('aborted') || err?.message?.includes('signal is aborted')) {
+    const errObj = err instanceof Error ? err : null;
+    if (errObj?.name === 'AbortError' || errObj?.message?.includes('aborted') || errObj?.message?.includes('signal is aborted')) {
       return [];
     }
     throw err;

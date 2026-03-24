@@ -40,10 +40,10 @@ export async function getApplicationItems(
     throw new Error(`申込項目の取得に失敗しました: ${error.message}`);
   }
 
-  return (data || []).map((item: any) => ({
+  return (data || []).map((item: Record<string, unknown>) => ({
     ...item,
-    column_type: item.column_type || 'check',
-    due_date: item.due_date || null,
+    column_type: (item.column_type as string) || 'check',
+    due_date: (item.due_date as string | null) || null,
     manager_only: item.manager_only === true,
   })) as ApplicationItem[];
 }
@@ -230,7 +230,7 @@ export async function getStudentApplications(
     throw new Error(`申込状況の取得に失敗しました: ${error.message}`);
   }
 
-  return (data || []).map((app: any) => ({
+  return (data || []).map((app: Record<string, unknown>) => ({
     ...app,
     number_value: app.number_value ?? null,
     date_value: app.date_value ?? null,

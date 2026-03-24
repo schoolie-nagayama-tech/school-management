@@ -30,3 +30,5 @@ export { DeleteScheduleEntryModal } from './DeleteScheduleEntryModal';
 export type { DeleteType } from './DeleteScheduleEntryModal';
 export { TransferModeBar } from './TransferModeBar';
 export { ScheduleDailyPrintView } from './ScheduleDailyPrintView';
+export { ScheduleToolbar } from './ScheduleToolbar';
+export { ScheduleDialogs } from './ScheduleDialogs';

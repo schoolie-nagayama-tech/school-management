@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { portalFormResponseSchema } from '@/lib/validations/schemas';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +23,16 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
+    // Zodスキーマでバリデーション
+    const parsed = portalFormResponseSchema.safeParse(body);
+    if (!parsed.success) {
+      const messages = parsed.error.issues.map((i) => i.message).join(', ');
+      return NextResponse.json(
+        { error: `入力内容に不備があります: ${messages}` },
+        { status: 400 }
+      );
+    }
+
     const {
       school_id,
       form_type,
@@ -30,24 +41,8 @@ export async function POST(request: NextRequest) {
       grade,
       email,
       response_data,
-      status_checks,
-    } = body as {
-      school_id?: string;
-      form_type?: string;
-      form_period?: string;
-      student_name?: string;
-      grade?: number;
-      email?: string;
-      response_data?: unknown;
-      status_checks?: unknown;
-    };
-
-    if (!school_id?.trim() || !form_type?.trim() || !form_period?.trim() || !student_name?.trim() || !email?.trim()) {
-      return NextResponse.json(
-        { error: 'school_id, form_type, form_period, student_name, email は必須です' },
-        { status: 400 }
-      );
-    }
+    } = parsed.data;
+    const status_checks = (body as Record<string, unknown>).status_checks;
 
     const supabaseAdmin = getSupabaseAdmin();
 
@@ -161,7 +156,7 @@ function normalizeName(name: string): string {
  * - 期間に申込項目が紐付けられていれば申込状況も自動で「completed」にする
  */
 async function autoLinkAndUpdateApplication(
-  supabaseAdmin: any,
+  supabaseAdmin: SupabaseClient,
   response: { id: string; student_name: string; grade?: number; school_id?: string; form_type?: string; form_period?: string },
   schoolId: string,
   formType: string,
@@ -183,7 +178,7 @@ async function autoLinkAndUpdateApplication(
   const normalizedResponseName = normalizeName(response.student_name);
 
   // 名前マッチング（スペース有無を正規化して比較）
-  const matched = students.filter((s: any) => {
+  const matched = students.filter((s: { last_name: string; first_name: string; id: string }) => {
     const fullName = normalizeName(`${s.last_name}${s.first_name}`);
     return fullName === normalizedResponseName;
   });

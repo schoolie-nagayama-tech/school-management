@@ -138,22 +138,38 @@ export default function StudentsPage() {
     }
   }, [searchParams, students, isLoading, router]);
 
+  // ページネーション
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 50;
+
   // フィルター済みの生徒一覧
   const filteredStudents = useMemo(() => {
     let filtered = students;
-    
+
     // 在籍状況フィルター
     if (!showInactive) {
       filtered = filtered.filter((student) => student.status === 'active');
     }
-    
+
     // 学年フィルター
     if (selectedGrade !== 'all') {
       filtered = filtered.filter((student) => student.grade === selectedGrade);
     }
-    
+
     return filtered;
   }, [students, showInactive, selectedGrade]);
+
+  // フィルタ変更時にページリセット
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [showInactive, selectedGrade, searchQuery]);
+
+  // ページネーション適用
+  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / ITEMS_PER_PAGE));
+  const paginatedStudents = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredStudents.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredStudents, currentPage]);
 
   // 初回読み込みと教室選択変更時の再読み込み
   useEffect(() => {
@@ -691,7 +707,7 @@ export default function StudentsPage() {
 
         {/* 生徒一覧テーブル */}
         <StudentTable
-          students={filteredStudents}
+          students={paginatedStudents}
           onEdit={!isTeacher ? handleOpenEditModal : undefined}
           onDelete={!isTeacher ? handleOpenDeleteDialog : undefined}
           onRowClick={handleOpenDetailModal}
@@ -703,6 +719,48 @@ export default function StudentsPage() {
           selectedIds={!isTeacher ? selectedIds : undefined}
           onSelectionChange={!isTeacher ? setSelectedIds : undefined}
         />
+
+        {/* ページネーション */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mt-4 px-2">
+            <span className="text-sm text-gray-500">
+              {filteredStudents.length}件中 {(currentPage - 1) * ITEMS_PER_PAGE + 1}〜{Math.min(currentPage * ITEMS_PER_PAGE, filteredStudents.length)}件を表示
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+                className="px-2 py-1 text-sm rounded border border-gray-200 disabled:opacity-40 hover:bg-gray-50"
+              >
+                «
+              </button>
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 text-sm rounded border border-gray-200 disabled:opacity-40 hover:bg-gray-50"
+              >
+                ‹ 前
+              </button>
+              <span className="px-3 py-1 text-sm text-[#1e3a5f] font-medium">
+                {currentPage} / {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 text-sm rounded border border-gray-200 disabled:opacity-40 hover:bg-gray-50"
+              >
+                次 ›
+              </button>
+              <button
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+                className="px-2 py-1 text-sm rounded border border-gray-200 disabled:opacity-40 hover:bg-gray-50"
+              >
+                »
+              </button>
+            </div>
+          </div>
+        )}
 
       {/* CSVインポートモーダル */}
       <StudentCsvImportModal

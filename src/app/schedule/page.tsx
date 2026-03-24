@@ -1,24 +1,18 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { Button } from '@/components/ui';
 import { ToastContainer } from '@/components/ui';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui';
 import {
-  ScheduleEntryModal,
-  TransferModal,
-  TeacherDetailModal,
   WeeklyScheduleGrid,
-  StudentActionModal,
-  AddTeacherModal,
-  AddStudentToSlotModal,
-  DeleteScheduleEntryModal,
   TransferModeBar,
   ScheduleDailyPrintView,
+  ScheduleToolbar,
+  ScheduleDialogs,
 } from '@/components/schedule';
 import { fetchWithAuth } from '@/lib/api/auth';
 import { getSchools } from '@/lib/api/schools';
@@ -32,7 +26,6 @@ import {
   generateWeeklySchedule,
   hasEntriesForWeek,
   getExpectedEntryKeysFromPatterns,
-  createScheduleEntry,
   updateScheduleEntry,
   moveScheduleEntry,
   recordAttendance,
@@ -44,11 +37,10 @@ import {
 } from '@/lib/api/schedule';
 import type { ScheduleEntry, ScheduleEntryFormData, ScheduleTimeSlot } from '@/types/schedule';
 import type { School, Student } from '@/types/database';
-import { StudentDetailModal } from '@/components/students';
 import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
-import { Calendar, Settings, Clock, BookOpen, Loader2, ChevronDown, GraduationCap } from 'lucide-react';
+import { Clock, BookOpen } from 'lucide-react';
 import {
   getSchoolKoushu,
   getKoushuEnrollments,
@@ -56,16 +48,6 @@ import {
   type KoushuCourse,
   type KoushuEnrollment,
 } from '@/lib/api/seasonalCourses';
-
-const DAY_LABELS: { value: number; label: string }[] = [
-  { value: 0, label: '日' },
-  { value: 1, label: '月' },
-  { value: 2, label: '火' },
-  { value: 3, label: '水' },
-  { value: 4, label: '木' },
-  { value: 5, label: '金' },
-  { value: 6, label: '土' },
-];
 
 function getWeekStart(d: Date): Date {
   const day = d.getDay();
@@ -82,17 +64,6 @@ function toLocalDateStr(d: Date): string {
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
-}
-
-function formatWeekLabel(start: Date): string {
-  const end = new Date(start);
-  end.setDate(end.getDate() + 6);
-  const sameMonth =
-    start.getFullYear() === end.getFullYear() && start.getMonth() === end.getMonth();
-  if (sameMonth) {
-    return `${start.getFullYear()}年${start.getMonth() + 1}月 ${start.getDate()}〜${end.getDate()}日`;
-  }
-  return `${start.getFullYear()}年${start.getMonth() + 1}月${start.getDate()}日〜${end.getFullYear()}年${end.getMonth() + 1}月${end.getDate()}日`;
 }
 
 function getWeekDates(weekStart: Date): string[] {
@@ -158,15 +129,7 @@ export default function SchedulePage() {
   const [selectedTeacher, setSelectedTeacher] = useState<typeof teachers[0] | null>(null);
   const [printDay, setPrintDay] = useState<string | null>(null);
   const [scheduleSettingsOpen, setScheduleSettingsOpen] = useState(false);
-  const [weekPickerOpen, setWeekPickerOpen] = useState(false);
-  const weekPickerInputRef = useRef<HTMLInputElement>(null);
   const [scheduleGenerateConfirmOpen, setScheduleGenerateConfirmOpen] = useState(false);
-
-  useEffect(() => {
-    if (weekPickerOpen && weekPickerInputRef.current?.showPicker) {
-      weekPickerInputRef.current.showPicker();
-    }
-  }, [weekPickerOpen]);
   const [scheduleGenerateHasExisting, setScheduleGenerateHasExisting] = useState(false);
   const [scheduleGenerateLoading, setScheduleGenerateLoading] = useState(false);
 
@@ -639,31 +602,6 @@ export default function SchedulePage() {
     }
   };
 
-  const _handleAddSave = async (form: ScheduleEntryFormData) => {
-    if (!schoolId || !addTarget) return;
-    if (!canTeacherTeachSubjects(form.teacher_id, form.subject_ids)) {
-      toastError('この講師は選択した科目を指導できません。');
-      return;
-    }
-    try {
-      await createScheduleEntry(schoolId, addTarget.date, addTarget.slotId, form);
-      success('授業を追加しました');
-      const cellKey = `${addTarget.date}-${addTarget.slotId}`;
-      setEmptyTeacherSlots((prev) => {
-        const next = { ...prev };
-        const arr = (next[cellKey] ?? []).filter((id) => id !== form.teacher_id);
-        if (arr.length === 0) delete next[cellKey];
-        else next[cellKey] = arr;
-        return next;
-      });
-      setAddModalOpen(false);
-      setAddTarget(null);
-      refreshEntries();
-    } catch (e) {
-      toastError((e as Error).message);
-    }
-  };
-
   const handleTransfer = async (
     targetDate: string,
     targetSlotId: string,
@@ -753,7 +691,6 @@ export default function SchedulePage() {
   }, [entriesWithSubjects, selectedKoushu, koushuEnrollments]);
 
   const selectedSchool = schools.find((s) => s.id === schoolId);
-  const _slotForAdd = addTarget ? timeSlots.find((s) => s.id === addTarget.slotId) : null;
 
   /** 講師が選択科目を指導可能か。teachable_subject_ids が空/未設定の講師は全科目可 */
   const canTeacherTeachSubjects = (teacherId: string, subjectIds: string[]) => {
@@ -783,153 +720,18 @@ export default function SchedulePage() {
   return (
     <AdminLayout headerTitle="座席表">
       <div className="space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => {
-                  const prev = new Date(weekStart);
-                  prev.setDate(prev.getDate() - 7);
-                  setWeekStart(prev);
-                }}
-              >
-                前週
-              </Button>
-              {weekPickerOpen ? (
-                <input
-                  ref={weekPickerInputRef}
-                  type="date"
-                  value={toLocalDateStr(weekStart)}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val) {
-                      setWeekStart(getWeekStart(new Date(val + 'T12:00:00')));
-                      setWeekPickerOpen(false);
-                    }
-                  }}
-                  onBlur={() => setWeekPickerOpen(false)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Escape') setWeekPickerOpen(false);
-                  }}
-                  autoFocus
-                  className="min-w-[180px] py-1 px-2 text-sm border border-gray-200 rounded-lg text-[var(--paragraph)] focus:ring-2 focus:ring-gray-300 focus:border-gray-300 focus:outline-none"
-                  title="週を選択"
-                />
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setWeekPickerOpen(true)}
-                  className="text-sm text-[var(--paragraph)] min-w-[180px] py-1 px-2 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
-                  title="クリックで週を選択"
-                >
-                  {formatWeekLabel(weekStart)}
-                </button>
-              )}
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => {
-                  const next = new Date(weekStart);
-                  next.setDate(next.getDate() + 7);
-                  setWeekStart(next);
-                }}
-              >
-                次週
-              </Button>
-              {weekStartStr !== toLocalDateStr(getWeekStart(new Date())) && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setWeekStart(getWeekStart(new Date()))}
-                >
-                  今週
-                </Button>
-              )}
-            </div>
-            {schoolId && (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setScheduleSettingsOpen(true)}
-                className="flex items-center gap-1"
-              >
-                <Settings className="h-4 w-4" />
-                座席表の設定
-                <ChevronDown className="h-4 w-4 opacity-70" />
-              </Button>
-            )}
-            {schoolId && (
-              <>
-                <span className="text-sm text-[var(--paragraph)] ml-1">表示曜日:</span>
-                <div className="flex flex-wrap items-center gap-1">
-                  {DAY_LABELS.map((d) => (
-                    <label
-                      key={d.value}
-                      className="flex items-center gap-1 text-xs cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={visibleDaysOfWeek.includes(d.value)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setVisibleDaysPersist([...visibleDaysOfWeek, d.value].sort((a, b) => a - b));
-                          } else {
-                            setVisibleDaysPersist(visibleDaysOfWeek.filter((x) => x !== d.value));
-                          }
-                        }}
-                        className="rounded border-[var(--stroke)]"
-                      />
-                      <span className="text-[var(--headline)]">{d.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-          {schoolId && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <Link href="/schedule/regular-patterns">
-                <Button variant="secondary" size="sm">
-                  通塾日程
-                </Button>
-              </Link>
-              <Link href="/schedule/koushu">
-                <Button variant="secondary" size="sm" className="flex items-center gap-1">
-                  <GraduationCap className="h-3.5 w-3.5" />
-                  講習管理
-                </Button>
-              </Link>
-              {/* 講習モード切替 */}
-              {koushuList.length > 0 && (
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs text-[var(--paragraph)]">講習:</span>
-                  <select
-                    value={selectedKoushu?.id ?? ''}
-                    onChange={(e) => {
-                      const course = koushuList.find((k) => k.id === e.target.value) ?? null;
-                      handleKoushuSelect(course);
-                    }}
-                    className="text-xs px-2 py-1 border border-[var(--stroke)] rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-                  >
-                    <option value="">通常</option>
-                    {koushuList.map((k) => (
-                      <option key={k.id} value={k.id}>
-                        {k.name}
-                      </option>
-                    ))}
-                  </select>
-                  {selectedKoushu && (
-                    <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full font-medium">
-                      講習モード
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+        <ScheduleToolbar
+          weekStart={weekStart}
+          weekStartStr={weekStartStr}
+          schoolId={schoolId ?? ''}
+          visibleDaysOfWeek={visibleDaysOfWeek}
+          koushuList={koushuList}
+          selectedKoushu={selectedKoushu}
+          onWeekChange={setWeekStart}
+          onSettingsOpen={() => setScheduleSettingsOpen(true)}
+          onVisibleDaysChange={setVisibleDaysPersist}
+          onKoushuSelect={handleKoushuSelect}
+        />
 
         {!schoolId ? (
           <Card>
@@ -1039,249 +841,85 @@ export default function SchedulePage() {
         )}
       </div>
 
-      <Dialog open={scheduleSettingsOpen} onOpenChange={setScheduleSettingsOpen}>
-        <DialogContent className="max-w-sm bg-white border border-gray-200">
-          <DialogHeader>
-            <DialogTitle>座席表の設定</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col gap-2 py-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              className="justify-start"
-              onClick={() => {
-                setScheduleSettingsOpen(false);
-                setScheduleGenerateConfirmOpen(true);
-              }}
-            >
-              <Calendar className="mr-2 h-4 w-4" />
-              スケジュール生成
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              className="justify-start"
-              onClick={() => {
-                setScheduleSettingsOpen(false);
-                router.push('/schedule/settings/time-slots');
-              }}
-            >
-              <Settings className="mr-2 h-4 w-4" />
-              コマ時間設定
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              className="justify-start"
-              onClick={() => {
-                setScheduleSettingsOpen(false);
-                router.push('/schedule/settings/closed-days');
-              }}
-            >
-              休講日設定
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog open={scheduleGenerateConfirmOpen} onOpenChange={setScheduleGenerateConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>スケジュールを強制再生成しますか？</AlertDialogTitle>
-            <AlertDialogDescription>
-              {scheduleGenerateLoading
-                ? '確認中...'
-                : scheduleGenerateHasExisting
-                  ? 'この週には既にスケジュールが登録されています。強制的に上書きしますか？'
-                  : '通塾日程から、選択中の週のスケジュールを一括生成します。（通常は自動で反映されます）'}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setScheduleGenerateConfirmOpen(false)}>
-              キャンセル
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={handleScheduleGenerateConfirm}>
-              {scheduleGenerateLoading ? (
-                <>
-                  <Loader2 className="inline h-4 w-4 animate-spin mr-2" />
-                  生成中...
-                </>
-              ) : (
-                '生成する'
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <StudentActionModal
-        open={!!actionModalEntry}
-        onClose={() => setActionModalEntry(null)}
-        entry={actionModalEntry}
-        timeSlot={
-          actionModalEntry
-            ? timeSlots.find((s) => s.id === actionModalEntry.time_slot_id) ?? null
-            : null
-        }
-        onTransfer={handleTransferFromAction}
+      <ScheduleDialogs
+        schoolId={schoolId ?? ''}
+        profileId={profile?.id}
+        scheduleSettingsOpen={scheduleSettingsOpen}
+        onScheduleSettingsChange={setScheduleSettingsOpen}
+        onScheduleGenerateOpen={() => setScheduleGenerateConfirmOpen(true)}
+        scheduleGenerateConfirmOpen={scheduleGenerateConfirmOpen}
+        onScheduleGenerateConfirmChange={setScheduleGenerateConfirmOpen}
+        scheduleGenerateLoading={scheduleGenerateLoading}
+        scheduleGenerateHasExisting={scheduleGenerateHasExisting}
+        onScheduleGenerateConfirm={handleScheduleGenerateConfirm}
+        actionModalEntry={actionModalEntry}
+        onActionModalClose={() => setActionModalEntry(null)}
+        timeSlots={timeSlots}
+        onTransferFromAction={handleTransferFromAction}
         onRevertTransfer={handleRevertTransfer}
-        onAbsent={handleAbsentFromAction}
-        onEdit={handleEditClick}
-        onDelete={handleDeleteClick}
-        onStudentClick={handleStudentClickFromAction}
-        onTeacherClick={handleTeacherClickFromAction}
-      />
-
-      <StudentDetailModal
-        isOpen={!!studentDetailStudent}
-        student={studentDetailStudent}
-        onClose={() => setStudentDetailStudent(null)}
-        onEdit={() => {
-          setStudentDetailStudent(null);
-          router.push('/students');
-        }}
-      />
-
-      <AddTeacherModal
-        open={addTeacherModalOpen}
-        onClose={() => {
+        onAbsentFromAction={handleAbsentFromAction}
+        onEditClick={handleEditClick}
+        onDeleteClick={handleDeleteClick}
+        onStudentClickFromAction={handleStudentClickFromAction}
+        onTeacherClickFromAction={handleTeacherClickFromAction}
+        studentDetailStudent={studentDetailStudent}
+        onStudentDetailClose={() => setStudentDetailStudent(null)}
+        addTeacherModalOpen={addTeacherModalOpen}
+        onAddTeacherClose={() => {
           setAddTeacherModalOpen(false);
           setAddTeacherTarget(null);
         }}
         teachers={teachers}
-        schoolId={schoolId ?? ''}
-        existingTeacherIds={addTeacherTarget?.existingTeacherIds ?? []}
-        onSelect={handleAddTeacherSelect}
-      />
-
-      <ScheduleEntryModal
-        open={editModalOpen}
-        onClose={() => {
+        addTeacherExistingIds={addTeacherTarget?.existingTeacherIds ?? []}
+        onAddTeacherSelect={handleAddTeacherSelect}
+        editModalOpen={editModalOpen}
+        onEditModalClose={() => {
           setEditModalOpen(false);
           setEditingEntry(null);
         }}
-        mode="edit"
-        date={editingEntry?.entry_date ?? ''}
-        slot={editingEntry?.time_slot ?? null}
-        entry={editingEntry}
-        teachers={teachers}
+        editingEntry={editingEntry}
         students={students}
         subjects={subjects}
-        schoolId={schoolId ?? ''}
-        onSave={handleEditSave}
-      />
-
-      <AddStudentToSlotModal
-        isOpen={!!addTarget}
-        onClose={() => {
+        onEditSave={handleEditSave}
+        addTarget={addTarget}
+        onAddTargetClose={() => {
           setAddModalOpen(false);
           setAddTarget(null);
         }}
-        date={addTarget?.date ?? ''}
-        dayOfWeek={
-          addTarget?.date
-            ? new Date(addTarget.date + 'Z').getUTCDay()
-            : 0
-        }
-        timeSlot={
-          addTarget
-            ? timeSlots.find((s) => s.id === addTarget.slotId) ?? ({} as ScheduleTimeSlot)
-            : ({} as ScheduleTimeSlot)
-        }
-        teacherId={addTarget?.teacherId ?? ''}
-        teacherName={
-          addTarget
-            ? teachers.find((t) => t.id === addTarget.teacherId)?.display_name ||
-              teachers.find((t) => t.id === addTarget.teacherId)?.email ||
-              '—'
-            : '—'
-        }
-        schoolId={schoolId ?? ''}
-        subjects={subjects}
-        teacherTeachableSubjectIds={
-          addTarget
-            ? teachers.find((t) => t.id === addTarget.teacherId)
-                ?.teachable_subject_ids
-            : undefined
-        }
-        onSuccess={() => {
+        onAddSuccess={() => {
           refreshEntries();
           setAddTarget(null);
           setAddModalOpen(false);
         }}
-      />
-
-      <TransferModal
-        open={transferModalOpen}
-        onClose={() => {
+        transferModalOpen={transferModalOpen}
+        onTransferModalClose={() => {
           setTransferModalOpen(false);
           setTransferringEntry(null);
           setInitialTransferTarget(null);
         }}
-        entry={transferringEntry}
-        teachers={teachers}
-        timeSlots={timeSlots}
-        schoolId={schoolId ?? ''}
-        weekStart={weekStartStr}
-        weekEnd={weekEndStr}
+        transferringEntry={transferringEntry}
+        weekStartStr={weekStartStr}
+        weekEndStr={weekEndStr}
         closedDates={closedDates}
-        initialTargetDate={initialTransferTarget?.date}
-        initialTargetSlotId={initialTransferTarget?.slotId}
+        initialTransferTarget={initialTransferTarget}
         onTransfer={handleTransfer}
-      />
-
-      <TeacherDetailModal
-        open={teacherDetailOpen}
-        onClose={() => {
+        teacherDetailOpen={teacherDetailOpen}
+        onTeacherDetailClose={() => {
           setTeacherDetailOpen(false);
           setSelectedTeacher(null);
         }}
-        teacher={selectedTeacher}
-        subjects={subjects}
-      />
-
-      <DeleteScheduleEntryModal
-        open={deleteDialogOpen}
-        onClose={() => {
+        selectedTeacher={selectedTeacher}
+        deleteDialogOpen={deleteDialogOpen}
+        onDeleteDialogClose={() => {
           setDeleteDialogOpen(false);
           setDeletingEntry(null);
         }}
-        entry={deletingEntry}
-        timeSlot={
-          deletingEntry
-            ? timeSlots.find((s) => s.id === deletingEntry.time_slot_id) ?? null
-            : null
-        }
-        onConfirm={handleDeleteConfirm}
+        deletingEntry={deletingEntry}
+        onDeleteConfirm={handleDeleteConfirm}
+        removeTeacherConfirm={removeTeacherConfirm}
+        onRemoveTeacherConfirmClose={() => setRemoveTeacherConfirm(null)}
+        onRemoveTeacherConfirm={handleRemoveTeacherConfirm}
       />
-
-      <AlertDialog
-        open={!!removeTeacherConfirm}
-        onOpenChange={(open) => !open && setRemoveTeacherConfirm(null)}
-        overlayClassName="z-[100]"
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>講師カードを削除しますか？</AlertDialogTitle>
-            <AlertDialogDescription>
-              {removeTeacherConfirm?.entryCount
-                ? `この講師の授業が${removeTeacherConfirm.entryCount}件すべて削除されます。`
-                : '講師カードを削除します。'}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setRemoveTeacherConfirm(null)}>
-              キャンセル
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleRemoveTeacherConfirm}
-              className="bg-[#d9376e] text-white hover:bg-[#c02d5a]"
-            >
-              削除
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </AdminLayout>

@@ -8,16 +8,15 @@ import { updateUserProfile, fetchWithAuth } from '@/lib/api/auth';
 import { getSchools, createSchool, updateSchool, deleteSchool } from '@/lib/api/schools';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui';
 import { Button } from '@/components/ui';
-import { Input } from '@/components/ui';
-import { Label } from '@/components/ui';
-import { SelectShadcn as Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui';
-import { Copy, Check, Eye, EyeOff, Trash2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import type { School, UserRole, UserProfile } from '@/types/database';
 import { USER_ROLE_LABELS, USER_ROLE_LEVELS } from '@/types/database';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
+import { UserEditModal } from '@/components/users/UserEditModal';
+import { SchoolFormModal } from '@/components/users/SchoolFormModal';
+import { UserCreateDialogs } from '@/components/users/UserCreateDialogs';
 
 type TabType = 'users' | 'schools';
 
@@ -41,7 +40,7 @@ export default function UsersPage() {
   const [users, setUsers] = useState<UserWithDetails[]>([]);
   const [schools, setSchools] = useState<School[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   const roleLower = String(profile?.role ?? '').toLowerCase();
   const isManager = roleLower === 'manager';
   const isOwner = roleLower === 'owner';
@@ -55,20 +54,12 @@ export default function UsersPage() {
     const targetLevel = USER_ROLE_LEVELS[targetUser.role as UserRole] ?? 0;
     return targetLevel < myLevel; // 自分より権限が下
   };
-  
+
   // ユーザー作成フォーム
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isResultDialogOpen, setIsResultDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({
-    email: '',
-    displayName: '',
-    password: '',
-    role: 'manager' as UserRole,
-    schoolId: '',
-  });
   const [createdUser, setCreatedUser] = useState<{
     email: string;
     password: string;
@@ -77,13 +68,9 @@ export default function UsersPage() {
 
   // 教室作成モーダル
   const [showSchoolForm, setShowSchoolForm] = useState(false);
-  
+
   // 編集モーダル
   const [editingUser, setEditingUser] = useState<UserWithDetails | null>(null);
-  const [editDisplayName, setEditDisplayName] = useState('');
-  const [editRole, setEditRole] = useState<UserRole>('manager');
-  const [editSchoolIds, setEditSchoolIds] = useState<string[]>([]);
-  const [editDefaultSchoolId, setEditDefaultSchoolId] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
 
   // 削除確認
@@ -107,7 +94,7 @@ export default function UsersPage() {
         fetchWithAuth(`/api/admin/users?t=${Date.now()}`, { cache: 'no-store' } as RequestInit),
         getSchools(),
       ]);
-      
+
       if (!usersResponse.ok) {
         const errBody = await usersResponse.json().catch(() => ({}));
         const msg = errBody.details || errBody.error || 'データの取得に失敗しました';
@@ -115,12 +102,12 @@ export default function UsersPage() {
       }
       const usersData = await usersResponse.json();
       const list = Array.isArray(usersData?.users) ? usersData.users : [];
-      
+
       // 講師を除外（念のため）
       let filteredUsers = list.filter((user: UserWithDetails) =>
         String(user?.role ?? '').toLowerCase() !== 'teacher'
       );
-      
+
       // 権限ごとに表示するユーザーを分ける
       if (isAdmin) {
         // システム管理者：全ユーザー表示
@@ -141,12 +128,9 @@ export default function UsersPage() {
         // 教室長：自分の情報のみ表示
         filteredUsers = filteredUsers.filter((user: UserWithDetails) => user.id === profile.id);
       }
-      
+
       setUsers(filteredUsers);
       setSchools(schoolsData);
-      if (schoolsData.length > 0 && !formData.schoolId) {
-        setFormData(prev => ({ ...prev, schoolId: schoolsData[0].id }));
-      }
     } catch (err) {
       console.error('Error loading data:', err);
       toastError(getUserErrorMessage(err, 'データの取得に失敗しました'));
@@ -162,7 +146,7 @@ export default function UsersPage() {
   }, [authLoading, profile?.role, profile?.id, loadData]);
 
   // ユーザー作成
-  const handleCreate = async () => {
+  const handleCreate = async (formData: { email: string; displayName: string; password: string; role: UserRole; schoolId: string }) => {
     if (!formData.displayName || !formData.password || !formData.schoolId) {
       toastError('必須項目を入力してください');
       return;
@@ -180,7 +164,7 @@ export default function UsersPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: formData.email || undefined, // 未入力の場合は自動生成
+          email: formData.email || undefined,
           password: formData.password,
           displayName: formData.displayName,
           role: formData.role,
@@ -194,28 +178,21 @@ export default function UsersPage() {
         throw new Error(result.error || 'ユーザーの作成に失敗しました');
       }
 
-      const createdUser = result.user;
-      if (!createdUser?.id) {
+      const createdUserData = result.user;
+      if (!createdUserData?.id) {
         throw new Error('ユーザー情報の取得に失敗しました');
       }
 
       setCreatedUser({
-        email: createdUser.email || createdUser.id || '',
+        email: createdUserData.email || createdUserData.id || '',
         password: formData.password,
         displayName: formData.displayName,
       });
       setIsCreateDialogOpen(false);
       setIsResultDialogOpen(true);
-      setFormData({
-        email: '',
-        displayName: '',
-        password: '',
-        role: 'manager',
-        schoolId: schools[0]?.id || '',
-      });
 
-      // 楽観的更新：API 戻り値で一覧に追加（loadData で上書きしない）
-      setUsers((prev) => [...prev, createdUser as UserWithDetails]);
+      // 楽観的更新：API 戻り値で一覧に追加
+      setUsers((prev) => [...prev, createdUserData as UserWithDetails]);
       success('ユーザーを作成しました');
     } catch (error: any) {
       console.error('Failed to create user:', error);
@@ -237,38 +214,24 @@ export default function UsersPage() {
     }
   };
 
-  // ユーザー編集モーダルを開く（講師以外のロールのみ選択可能）
-  const openEditModal = (user: UserWithDetails) => {
-    setEditingUser(user);
-    setEditDisplayName(user.display_name || '');
-    setEditRole(user.role === 'teacher' ? 'manager' : (user.role || 'manager'));
-    const ids = user.user_schools?.map(us => us.school_id) || [];
-    setEditSchoolIds(ids);
-    const profileWithDefault = user as UserWithDetails & { default_school_id?: string | null };
-    const defaultId = profileWithDefault.default_school_id && ids.includes(profileWithDefault.default_school_id)
-      ? profileWithDefault.default_school_id
-      : ids[0] || '';
-    setEditDefaultSchoolId(defaultId);
-  };
-
-  // ユーザー編集を保存（API 経由でサービスロールで保存し、RLS の影響を受けないようにする）
-  const handleSaveUser = async () => {
+  // ユーザー編集を保存
+  const handleSaveUser = async (displayName: string, role: UserRole, schoolIds: string[], defaultSchoolId: string) => {
     if (!editingUser) return;
 
     setIsSaving(true);
     try {
-      const defaultSchoolId = editSchoolIds.length > 0 && editSchoolIds.includes(editDefaultSchoolId)
-        ? editDefaultSchoolId
+      const resolvedDefaultSchoolId = schoolIds.length > 0 && schoolIds.includes(defaultSchoolId)
+        ? defaultSchoolId
         : null;
 
       const res = await fetchWithAuth(`/api/admin/users/${editingUser.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          display_name: editDisplayName,
-          role: editRole,
-          default_school_id: defaultSchoolId,
-          school_ids: editSchoolIds,
+          display_name: displayName,
+          role: role,
+          default_school_id: resolvedDefaultSchoolId,
+          school_ids: schoolIds,
         }),
       });
 
@@ -284,15 +247,15 @@ export default function UsersPage() {
       const savedUserId = editingUser.id;
       const isEditingSelf = editingUser.id === profile?.id;
 
-      // 楽観的更新：DB 保存が成功しているので、一覧を即時反映（loadData で上書きしない）
+      // 楽観的更新
       const updatedUser: UserWithDetails = {
         ...editingUser,
-        display_name: editDisplayName,
-        default_school_id: defaultSchoolId,
+        display_name: displayName,
+        default_school_id: resolvedDefaultSchoolId,
         ...(isEditingSelf
           ? {}
           : {
-              role: editRole,
+              role: role,
               user_schools: updatedUserSchools ?? editingUser.user_schools ?? [],
             }),
       };
@@ -320,7 +283,6 @@ export default function UsersPage() {
       });
 
       if (!response.ok) {
-        // 404 = 既に削除済み → 一覧から除外して成功扱い
         if (response.status === 404) {
           setUsers((prev) => prev.filter((u) => u.id !== userIdToDelete));
           success('ユーザーを削除しました');
@@ -340,7 +302,6 @@ export default function UsersPage() {
         throw new Error(msg);
       }
 
-      // 楽観的更新：一覧から即時削除（loadData は呼ばない＝古いキャッシュで上書きされない）
       setUsers((prev) => prev.filter((u) => u.id !== userIdToDelete));
       success('ユーザーを削除しました');
     } catch (error) {
@@ -370,8 +331,8 @@ export default function UsersPage() {
     e.preventDefault();
     setIsSavingSchool(true);
     try {
-      await createSchool({ 
-        name: schoolName, 
+      await createSchool({
+        name: schoolName,
         code: schoolCode || null,
         notification_email: notificationEmail.trim() || null,
       });
@@ -403,8 +364,8 @@ export default function UsersPage() {
     if (!editingSchool) return;
     setIsSavingSchool(true);
     try {
-      await updateSchool(editingSchool.id, { 
-        name: schoolName, 
+      await updateSchool(editingSchool.id, {
+        name: schoolName,
         code: schoolCode || null,
         notification_email: notificationEmail.trim() || null,
       });
@@ -638,12 +599,11 @@ export default function UsersPage() {
                         </td>
                         <td className="px-3 py-2 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end gap-2">
-                            {/* 自分より権限が下、もしくは自分の情報のみ編集可能 */}
                             {canEditUser(user) && (
                               <>
                                 <Button
                                   variant="ghost"
-                                  onClick={() => openEditModal(user)}
+                                  onClick={() => setEditingUser(user)}
                                   className="p-2"
                                 >
                                   編集
@@ -655,7 +615,6 @@ export default function UsersPage() {
                                 >
                                   {user.is_active ? '無効化' : '有効化'}
                                 </Button>
-                                {/* 削除は自分のアカウントではできない */}
                                 {user.id !== profile?.id && (
                                   <Button
                                     variant="ghost"
@@ -757,192 +716,18 @@ export default function UsersPage() {
           </div>
         )}
 
-        {/* ユーザー作成ダイアログ */}
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogHeader>
-            <DialogTitle>ユーザーを追加</DialogTitle>
-          </DialogHeader>
-          <DialogContent>
-            <div className="space-y-4">
-              <div className="text-sm text-[#4b5563] mb-4">
-                新しいユーザーアカウントを作成します。ユーザーID（メールアドレス）は未入力の場合、自動生成されます。
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">メールアドレス（ID）</Label>
-                <Input
-                  id="email"
-                  type="text"
-                  value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
-                  placeholder="未入力の場合は自動生成されます"
-                />
-                <p className="text-xs text-[#4b5563]/70">ログイン時に使用するIDです。未入力の場合は自動生成されます。</p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="displayName">表示名 *</Label>
-                <Input
-                  id="displayName"
-                  value={formData.displayName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, displayName: e.target.value })
-                  }
-                  placeholder="山田 太郎"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">パスワード *</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) =>
-                    setFormData({ ...formData, password: e.target.value })
-                  }
-                  placeholder="4文字以上"
-                />
-                <p className="text-xs text-[#4b5563]/70">パスワードは4文字以上で入力してください</p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="role">権限 *</Label>
-                <Select
-                  value={formData.role}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, role: value as UserRole })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">システム管理者</SelectItem>
-                    <SelectItem value="owner">エリアマネージャー</SelectItem>
-                    <SelectItem value="manager">教室長</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="school">所属教室 *</Label>
-                <Select
-                  value={formData.schoolId}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, schoolId: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="教室を選択（登録済みから選択）" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {schools.map((school) => (
-                      <SelectItem key={school.id} value={school.id}>
-                        {school.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-[#4b5563]/70">複数教室の権限は作成後に編集で設定できます。登録済みの教室から選択してください。</p>
-              </div>
-            </div>
-          </DialogContent>
-          <DialogFooter>
-            <Button
-              variant="ghost"
-              onClick={() => setIsCreateDialogOpen(false)}
-            >
-              キャンセル
-            </Button>
-            <Button onClick={handleCreate} disabled={isSubmitting}>
-              {isSubmitting ? '作成中...' : '作成'}
-            </Button>
-          </DialogFooter>
-        </Dialog>
-
-        {/* 作成完了ダイアログ */}
-        <Dialog
-          open={isResultDialogOpen}
-          onOpenChange={setIsResultDialogOpen}
-        >
-          <DialogHeader>
-            <DialogTitle>ユーザーを作成しました</DialogTitle>
-          </DialogHeader>
-          <DialogContent>
-            <div className="space-y-4">
-              <div className="text-sm text-[#4b5563] mb-4">
-                以下の情報をユーザーに伝えてください。パスワードは後から確認できません。
-              </div>
-              {createdUser && (
-                <>
-                  <div className="space-y-2">
-                    <Label>表示名</Label>
-                    <Input value={createdUser.displayName} readOnly />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>メールアドレス（ID）</Label>
-                    <div className="flex items-center gap-2">
-                      <Input value={createdUser.email} readOnly className="flex-1" />
-                      <Button
-                        variant="ghost"
-                        onClick={() => handleCopy(createdUser.email, 'email')}
-                        className="p-2"
-                      >
-                        {copiedField === 'email' ? (
-                          <Check className="h-4 w-4 text-green-600" />
-                        ) : (
-                          <Copy className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>仮パスワード</Label>
-                    <div className="flex items-center gap-2">
-                      <div className="relative flex-1">
-                        <Input
-                          type={showPassword ? 'text' : 'password'}
-                          value={createdUser.password}
-                          readOnly
-                        />
-                        <Button
-                          variant="ghost"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-0 top-0 h-full p-2"
-                        >
-                          {showPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        onClick={() => handleCopy(createdUser.password, 'password')}
-                        className="p-2"
-                      >
-                        {copiedField === 'password' ? (
-                          <Check className="h-4 w-4 text-green-600" />
-                        ) : (
-                          <Copy className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
-                    <p className="text-sm text-yellow-800">
-                      ⚠️ パスワードはこの画面を閉じると再表示できません。必ずメモしてください。
-                    </p>
-                  </div>
-                </>
-              )}
-            </div>
-          </DialogContent>
-          <DialogFooter>
-            <Button onClick={() => setIsResultDialogOpen(false)}>
-              閉じる
-            </Button>
-          </DialogFooter>
-        </Dialog>
+        <UserCreateDialogs
+          isCreateDialogOpen={isCreateDialogOpen}
+          onCreateDialogChange={setIsCreateDialogOpen}
+          isResultDialogOpen={isResultDialogOpen}
+          onResultDialogChange={setIsResultDialogOpen}
+          schools={schools}
+          onCreateUser={handleCreate}
+          createdUser={createdUser}
+          isSubmitting={isSubmitting}
+          onCopy={handleCopy}
+          copiedField={copiedField}
+        />
 
         {/* 削除確認ダイアログ */}
         <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
@@ -993,198 +778,37 @@ export default function UsersPage() {
 
         {/* 教室作成・編集モーダル */}
         {(showSchoolForm || editingSchool) && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 max-w-md w-full">
-              <h2 className="text-xl font-bold text-[#1f2937] mb-4">
-                {editingSchool ? '教室を編集' : '教室を追加'}
-              </h2>
-              <form
-                onSubmit={editingSchool ? (e) => { e.preventDefault(); handleSaveSchool(); } : handleCreateSchool}
-                className="space-y-4"
-              >
-                <div>
-                  <label className="block text-sm font-medium text-[#1f2937] mb-1">
-                    教室名
-                  </label>
-                  <input
-                    type="text"
-                    value={schoolName}
-                    onChange={e => setSchoolName(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
-                    placeholder="例：長山教室"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#1f2937] mb-1">
-                    教室コード（任意）
-                  </label>
-                  <input
-                    type="text"
-                    value={schoolCode}
-                    onChange={e => setSchoolCode(e.target.value)}
-                    className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
-                    placeholder="例：NAGAYAMA"
-                  />
-                  <p className="mt-1 text-xs text-[#4b5563]">ポータルURLで使用されます</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#1f2937] mb-1">
-                    申込通知先メールアドレス（任意）
-                  </label>
-                  <input
-                    type="email"
-                    value={notificationEmail}
-                    onChange={e => setNotificationEmail(e.target.value)}
-                    className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
-                    placeholder="manager@example.com"
-                  />
-                  <p className="mt-1 text-xs text-[#4b5563]">フォームから申込があった際に通知を受け取るメールアドレスです</p>
-                </div>
-                <div className="flex gap-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowSchoolForm(false);
-                      setEditingSchool(null);
-                      setSchoolName('');
-                      setSchoolCode('');
-                      setNotificationEmail('');
-                    }}
-                    className="flex-1 px-4 py-2 bg-[#f3f4f6] text-[#1f2937] rounded-lg hover:bg-[#e5e7eb] transition-colors"
-                  >
-                    キャンセル
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSavingSchool}
-                    className="flex-1 px-4 py-2 bg-[#3b82f6] text-white font-bold rounded-lg hover:bg-[#60a5fa] transition-colors disabled:opacity-50"
-                  >
-                    {isSavingSchool ? '保存中...' : editingSchool ? '更新' : '作成'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
+          <SchoolFormModal
+            editingSchool={editingSchool}
+            schoolName={schoolName}
+            schoolCode={schoolCode}
+            notificationEmail={notificationEmail}
+            isSavingSchool={isSavingSchool}
+            onSchoolNameChange={setSchoolName}
+            onSchoolCodeChange={setSchoolCode}
+            onNotificationEmailChange={setNotificationEmail}
+            onSubmitCreate={handleCreateSchool}
+            onSubmitEdit={handleSaveSchool}
+            onClose={() => {
+              setShowSchoolForm(false);
+              setEditingSchool(null);
+              setSchoolName('');
+              setSchoolCode('');
+              setNotificationEmail('');
+            }}
+          />
         )}
 
         {/* ユーザー編集モーダル */}
         {editingUser && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 max-w-md w-full">
-              <h2 className="text-xl font-bold text-[#1f2937] mb-4">
-                {editingUser.id === profile?.id ? '自分の情報を編集' : 'ユーザー編集'}
-              </h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-[#1f2937] mb-1">
-                    メールアドレス
-                  </label>
-                  <input
-                    type="text"
-                    value={editingUser.email}
-                    disabled
-                    className="w-full px-3 py-2 border border-[#e5e7eb]/30 rounded-lg bg-[#f3f4f6] text-[#4b5563]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-[#1f2937] mb-1">
-                    表示名
-                  </label>
-                  <input
-                    type="text"
-                    value={editDisplayName}
-                    onChange={e => setEditDisplayName(e.target.value)}
-                    className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
-                    placeholder="山田 太郎"
-                  />
-                </div>
-                {editingUser.id !== profile?.id && (
-                <div>
-                  <label className="block text-sm font-medium text-[#1f2937] mb-1">
-                    権限
-                  </label>
-                  <select
-                    value={editRole}
-                    onChange={e => setEditRole(e.target.value as UserRole)}
-                    className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
-                  >
-                    {(Object.keys(USER_ROLE_LABELS) as UserRole[]).filter(role => role !== 'teacher').map(role => (
-                      <option key={role} value={role}>
-                        {USER_ROLE_LABELS[role]}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                )}
-                {editingUser.id !== profile?.id && (
-                <div>
-                  <label className="block text-sm font-medium text-[#1f2937] mb-1">
-                    担当教室
-                  </label>
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {schools.map(school => (
-                      <label key={school.id} className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={editSchoolIds.includes(school.id)}
-                          onChange={e => {
-                            if (e.target.checked) {
-                              setEditSchoolIds([...editSchoolIds, school.id]);
-                            } else {
-                              const next = editSchoolIds.filter(id => id !== school.id);
-                              setEditSchoolIds(next);
-                              if (editDefaultSchoolId === school.id) {
-                                setEditDefaultSchoolId(next[0] || '');
-                              }
-                            }
-                          }}
-                          className="rounded border-[#e5e7eb]"
-                        />
-                        <span className="text-sm text-[#1f2937]">{school.name}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-                )}
-                {editSchoolIds.length > 1 && (
-                  <div>
-                    <label className="block text-sm font-medium text-[#1f2937] mb-1">
-                      デフォルトの教室
-                    </label>
-                    <p className="text-xs text-[#4b5563]/70 mb-2">複数教室のとき、ログイン時に最初に選択される教室です。</p>
-                    <select
-                      value={editDefaultSchoolId}
-                      onChange={e => setEditDefaultSchoolId(e.target.value)}
-                      className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
-                    >
-                      {schools.filter(s => editSchoolIds.includes(s.id)).map(school => (
-                        <option key={school.id} value={school.id}>
-                          {school.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-                <div className="flex gap-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setEditingUser(null)}
-                    className="flex-1 px-4 py-2 bg-[#f3f4f6] text-[#1f2937] rounded-lg hover:bg-[#e5e7eb] transition-colors"
-                  >
-                    キャンセル
-                  </button>
-                  <button
-                    onClick={handleSaveUser}
-                    disabled={isSaving}
-                    className="flex-1 px-4 py-2 bg-[#3b82f6] text-white font-bold rounded-lg hover:bg-[#60a5fa] transition-colors disabled:opacity-50"
-                  >
-                    {isSaving ? '保存中...' : '保存'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <UserEditModal
+            editingUser={editingUser}
+            profileId={profile?.id}
+            schools={schools}
+            isSaving={isSaving}
+            onSave={handleSaveUser}
+            onClose={() => setEditingUser(null)}
+          />
         )}
       </div>
       <ToastContainer toasts={toasts} onRemove={removeToast} />

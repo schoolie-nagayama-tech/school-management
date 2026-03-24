@@ -393,8 +393,8 @@ export async function getStudentProgress(
   }
 
   const progressMap = new Map<string, StudentProgressWithDetails>();
-  (progressData || []).forEach((p: any) => {
-    progressMap.set(p.curriculum_item_id.toString(), p as StudentProgressWithDetails);
+  (progressData || []).forEach((p: Record<string, unknown>) => {
+    progressMap.set(String(p.curriculum_item_id), p as unknown as StudentProgressWithDetails);
   });
 
   // 目次項目と進行記録を結合

@@ -9,6 +9,11 @@ import { getPermissions } from '@/types/database';
 import { getUserProfile, createUserProfile, updateLastLogin, getUserSchools, addUserToSchool } from '@/lib/api/auth';
 import { getSchools } from '@/lib/api/schools';
 
+function isAbortError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  return err.name === 'AbortError' || err.message?.includes('aborted') || err.message?.includes('signal is aborted');
+}
+
 interface AuthContextType {
   user: User | null;
   profile: UserProfile | null;
@@ -85,9 +90,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
             .from('user_profiles')
             .select('*', { count: 'exact', head: true });
           count = result.count;
-        } catch (countErr: any) {
+        } catch (countErr: unknown) {
           // AbortErrorは無視
-          if (countErr?.name === 'AbortError' || countErr?.message?.includes('aborted') || countErr?.message?.includes('signal is aborted')) {
+          if (isAbortError(countErr)) {
             return null;
           }
           throw countErr;
@@ -104,9 +109,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
             role,
             authUser.user_metadata?.full_name
           );
-        } catch (createErr: any) {
+        } catch (createErr: unknown) {
           // AbortErrorは無視
-          if (createErr?.name === 'AbortError' || createErr?.message?.includes('aborted') || createErr?.message?.includes('signal is aborted')) {
+          if (isAbortError(createErr)) {
             return null;
           }
           throw createErr;
@@ -116,9 +121,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (role === 'teacher' && process.env.NEXT_PUBLIC_DEFAULT_SCHOOL_ID) {
           try {
             await addUserToSchool(userId, process.env.NEXT_PUBLIC_DEFAULT_SCHOOL_ID);
-          } catch (schoolErr: any) {
+          } catch (schoolErr: unknown) {
             // AbortErrorは無視
-            if (schoolErr?.name === 'AbortError' || schoolErr?.message?.includes('aborted') || schoolErr?.message?.includes('signal is aborted')) {
+            if (isAbortError(schoolErr)) {
               return null;
             }
             // 教室紐付けのエラーは致命的ではないので、ログに記録するだけ
@@ -148,9 +153,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
             const userSchools = await getUserSchools(userId);
             fetchedSchoolIds = userSchools.map(us => us.school_id);
           }
-        } catch (schoolsErr: any) {
+        } catch (schoolsErr: unknown) {
           // AbortErrorは無視
-          if (schoolsErr?.name === 'AbortError' || schoolsErr?.message?.includes('aborted') || schoolsErr?.message?.includes('signal is aborted')) {
+          if (isAbortError(schoolsErr)) {
             return null;
           }
           throw schoolsErr;
@@ -185,9 +190,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // 最終ログイン更新（エラーが発生しても続行）
         try {
           await updateLastLogin(userId);
-        } catch (loginErr: any) {
+        } catch (loginErr: unknown) {
           // AbortErrorは無視
-          if (loginErr?.name === 'AbortError' || loginErr?.message?.includes('aborted') || loginErr?.message?.includes('signal is aborted')) {
+          if (isAbortError(loginErr)) {
             return userProfile;
           }
           // 最終ログイン更新のエラーは致命的ではないので、ログに記録するだけ
@@ -195,9 +200,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       }
       return userProfile;
-    } catch (err: any) {
+    } catch (err: unknown) {
       // AbortErrorは無視（コンポーネントがアンマウントされた場合）
-      if (err?.name === 'AbortError' || err?.message?.includes('aborted') || err?.message?.includes('signal is aborted')) {
+      if (isAbortError(err)) {
         return null;
       }
       console.error('Error fetching profile:', err);
@@ -269,9 +274,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
             setSchoolIds([]);
           }
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         // AbortErrorは無視（コンポーネントがアンマウントされた場合）
-        if (err?.name === 'AbortError' || err?.message?.includes('aborted') || err?.message?.includes('signal is aborted')) {
+        if (isAbortError(err)) {
           return;
         }
         console.error('Error initializing auth:', err);
@@ -318,9 +323,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
               if (!mounted) return;
               try {
                 await fetchProfile(session.user!.id, session.user, () => mounted);
-              } catch (profileErr: any) {
+              } catch (profileErr: unknown) {
                 // AbortErrorは無視
-                if (profileErr?.name === 'AbortError' || profileErr?.message?.includes('aborted') || profileErr?.message?.includes('signal is aborted')) {
+                if (isAbortError(profileErr)) {
                   return;
                 }
                 // その他のエラーはログに記録するが、処理は続行

@@ -360,7 +360,7 @@ export async function updateBulletinPost(
   },
   userId?: string
 ): Promise<BulletinPost> {
-  const updateData: any = { ...updates };
+  const updateData: Record<string, unknown> = { ...updates };
   if (userId) {
     updateData.updated_by = userId;
   }
@@ -467,7 +467,7 @@ export async function getPostReaders(postId: string): Promise<BulletinRead[]> {
     throw new Error(`既読者の取得に失敗しました: ${error.message}`);
   }
 
-  return (data || []).map((r: any) => ({
+  return (data || []).map((r: Record<string, unknown>) => ({
     ...r,
     user: r.user || null,
   })) as BulletinRead[];

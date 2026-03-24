@@ -86,7 +86,8 @@
       "Bash(curl -s \"http://localhost:3000/api/embed/applications?token=9b5a940fdd17357a64f511b8f5547d78466e7d6512d17bff6e0841e44daa8fc5\")",
       "Bash(curl -sv \"http://localhost:3000/api/embed/applications?token=9b5a940fdd17357a64f511b8f5547d78466e7d6512d17bff6e0841e44daa8fc5\")",
       "Bash(curl -s \"https://school-management-eight-cyan.vercel.app/api/embed/applications?token=9b5a940fdd17357a64f511b8f5547d78466e7d6512d17bff6e0841e44daa8fc5\")",
-      "Bash(grep -l embed_tokens /c/Users/ytaka/Desktop/student-management/supabase/migrations/*)"
+      "Bash(grep -l embed_tokens /c/Users/ytaka/Desktop/student-management/supabase/migrations/*)",
+      "Bash(npm ls:*)"
     ]
   }
 }

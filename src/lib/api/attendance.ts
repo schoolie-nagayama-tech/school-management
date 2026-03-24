@@ -518,10 +518,10 @@ export async function getAttendanceSheetList(
         attendance_type:attendance_types(id, name, unit)
       `)
       .in('sheet_id', allSheetIds);
-    (allRecords || []).forEach((r: any) => {
-      const list = recordsBySheet2.get(r.sheet_id) || [];
+    (allRecords || []).forEach((r: Record<string, unknown>) => {
+      const list = recordsBySheet2.get(r.sheet_id as string) || [];
       list.push(r);
-      recordsBySheet2.set(r.sheet_id, list);
+      recordsBySheet2.set(r.sheet_id as string, list);
     });
   }
 
@@ -531,18 +531,18 @@ export async function getAttendanceSheetList(
 
     // 種別ごとの合計を計算
     const typeTotals: Record<string, { name: string; unit: string; total: number }> = {};
-    records.forEach((r: any) => {
-      const typeId = r.attendance_type?.id;
-      if (!typeId) return;
+    records.forEach((r: Record<string, unknown>) => {
+      const type = r.attendance_type as { id: string; name: string; unit: string } | null;
+      if (!type?.id) return;
 
-      if (!typeTotals[typeId]) {
-        typeTotals[typeId] = {
-          name: r.attendance_type.name,
-          unit: r.attendance_type.unit,
+      if (!typeTotals[type.id]) {
+        typeTotals[type.id] = {
+          name: type.name,
+          unit: type.unit,
           total: 0,
         };
       }
-      typeTotals[typeId].total += Number(r.value);
+      typeTotals[type.id].total += Number(r.value);
     });
 
     const grandTotal = Object.values(typeTotals).reduce(
@@ -732,10 +732,10 @@ export async function getAttendanceSummary(
         attendance_type:attendance_types(id, name, unit, unit_price)
       `)
       .in('sheet_id', summarySheetIds);
-    (allRecords || []).forEach((r: any) => {
-      const list = recordsBySheet3.get(r.sheet_id) || [];
+    (allRecords || []).forEach((r: Record<string, unknown>) => {
+      const list = recordsBySheet3.get(r.sheet_id as string) || [];
       list.push(r);
-      recordsBySheet3.set(r.sheet_id, list);
+      recordsBySheet3.set(r.sheet_id as string, list);
     });
   }
 
@@ -752,8 +752,8 @@ export async function getAttendanceSummary(
       amount: number;
     }> = {};
 
-    records.forEach((r: any) => {
-      const type = r.attendance_type;
+    records.forEach((r: Record<string, unknown>) => {
+      const type = r.attendance_type as { id: string; name: string; unit: string; unit_price: number } | null;
       if (!type) return;
 
       if (!typeTotals[type.id]) {
