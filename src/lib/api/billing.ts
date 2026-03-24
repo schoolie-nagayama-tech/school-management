@@ -9,6 +9,7 @@ import type {
   StudentBilling,
 } from '@/types/database';
 import { getDefaultSchoolId } from './schools';
+import { getFifthWeekDays, calcFifthWeekSlots } from '@/lib/utils/fifthWeek';
 
 // ============================================
 // 請求期間 (Billing Periods)
@@ -375,4 +376,100 @@ export async function toggleStudentBilling(
 
     return data as StudentBilling;
   }
+}
+
+// ============================================
+// 5週目自動計算 (Fifth Week Auto-Fill)
+// ============================================
+
+/**
+ * 5週目の請求を自動計算・一括設定
+ *
+ * 1. 期間の月から5回ある曜日を特定
+ * 2. 通塾日程(regular_patterns)からその曜日のコマ数を生徒ごとに計算
+ * 3. student_billings にコマ数をupsert
+ */
+export async function autoFillFifthWeekBilling(
+  billingItemId: string,
+  periodStartDate: string,  // 'YYYY-MM-DD' format
+  schoolIds: string | string[]
+): Promise<{ updated: number; skipped: number }> {
+  const targetSchoolIds = Array.isArray(schoolIds) ? schoolIds : [schoolIds];
+
+  // 1. Parse year/month from period start date
+  const [yearStr, monthStr] = periodStartDate.split('-');
+  const year = Number(yearStr);
+  const month = Number(monthStr);
+
+  // 2. Get 5th week days
+  const fifthWeekDows = getFifthWeekDays(year, month);
+  if (fifthWeekDows.length === 0) {
+    return { updated: 0, skipped: 0 };
+  }
+
+  // 3. Fetch regular patterns for all schools
+  const { data: patterns, error: patternError } = await supabase
+    .from('schedule_regular_patterns')
+    .select('student_id, day_of_week, is_active')
+    .in('school_id', targetSchoolIds)
+    .eq('is_active', true)
+    .eq('period_type', 'regular');
+
+  if (patternError) throw new Error(`通塾日程の取得に失敗: ${patternError.message}`);
+  if (!patterns || patterns.length === 0) return { updated: 0, skipped: 0 };
+
+  // 4. Calculate slots per student
+  const slotMap = calcFifthWeekSlots(patterns, fifthWeekDows);
+
+  // 5. Upsert billing records
+  let updated = 0;
+  let skipped = 0;
+
+  const entries = Array.from(slotMap.entries());
+  for (let i = 0; i < entries.length; i++) {
+    const studentId = entries[i][0];
+    const quantity = entries[i][1];
+
+    if (quantity <= 0) {
+      skipped++;
+      continue;
+    }
+
+    // Check if record exists
+    const { data: existing } = await supabase
+      .from('student_billings')
+      .select('id')
+      .eq('student_id', studentId)
+      .eq('billing_item_id', billingItemId)
+      .maybeSingle();
+
+    if (existing) {
+      await supabase
+        .from('student_billings')
+        .update({ is_billed: true, quantity })
+        .eq('id', existing.id);
+    } else {
+      // Need school_id for insert - get from student record
+      const { data: studentData } = await supabase
+        .from('students')
+        .select('school_id')
+        .eq('id', studentId)
+        .single();
+
+      if (studentData) {
+        await supabase
+          .from('student_billings')
+          .insert({
+            school_id: studentData.school_id,
+            student_id: studentId,
+            billing_item_id: billingItemId,
+            is_billed: true,
+            quantity,
+          });
+      }
+    }
+    updated++;
+  }
+
+  return { updated, skipped };
 }

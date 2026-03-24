@@ -182,6 +182,7 @@ export default function BillingPage() {
             student_id: studentId,
             billing_item_id: billingItemId,
             is_billed: isBilled,
+            quantity: null,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           };
@@ -339,6 +340,8 @@ export default function BillingPage() {
           onBillingChange={canEdit ? handleBillingChange : undefined}
           onStudentClick={handleStudentClick}
           onItemsChange={handleItemsUpdated}
+          periodStartDate={periods.find(p => p.id === selectedPeriodId)?.start_date}
+          schoolIds={getSelectedSchoolIds()}
         />
       )}
 

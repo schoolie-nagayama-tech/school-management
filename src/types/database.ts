@@ -2386,6 +2386,7 @@ export type Database = {
           student_id: string;
           billing_item_id: string;
           is_billed: boolean;
+          quantity: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -2395,6 +2396,7 @@ export type Database = {
           student_id: string;
           billing_item_id: string;
           is_billed?: boolean;
+          quantity?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -2404,6 +2406,7 @@ export type Database = {
           student_id?: string;
           billing_item_id?: string;
           is_billed?: boolean;
+          quantity?: number | null;
           created_at?: string;
           updated_at?: string;
         };

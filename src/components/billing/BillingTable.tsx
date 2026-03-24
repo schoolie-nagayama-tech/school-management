@@ -2,7 +2,8 @@
 
 import type { Student, BillingItem, StudentBilling } from '@/types/database';
 import { GRADE_LABELS, BILLING_SOURCE_TYPE_LABELS } from '@/types/database';
-import { toggleStudentBilling, updateBillingItem, deleteBillingItem } from '@/lib/api/billing';
+import { toggleStudentBilling, updateBillingItem, deleteBillingItem, autoFillFifthWeekBilling } from '@/lib/api/billing';
+import { getFifthWeekDayLabels } from '@/lib/utils/fifthWeek';
 import { useAuth } from '@/contexts/AuthContext';
 import { useState } from 'react';
 import { useToast } from '@/hooks/useToast';
@@ -15,6 +16,8 @@ interface BillingTableProps {
   onBillingChange?: (studentId: string, billingItemId: string, isBilled: boolean) => void;
   onStudentClick?: (student: Student) => void;
   onItemsChange?: () => void;
+  periodStartDate?: string;  // For 5th week auto-calc
+  schoolIds?: string | string[];  // For 5th week auto-calc
 }
 
 export function BillingTable({
@@ -24,6 +27,8 @@ export function BillingTable({
   onBillingChange,
   onStudentClick,
   onItemsChange,
+  periodStartDate,
+  schoolIds,
 }: BillingTableProps) {
   const { profile } = useAuth();
   const isTeacher = profile?.role === 'teacher';
@@ -32,6 +37,7 @@ export function BillingTable({
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
+  const [autoFilling, setAutoFilling] = useState(false);
   const { success, error: toastError } = useToast();
   const { confirm, ConfirmDialog } = useConfirm();
 
@@ -41,14 +47,33 @@ export function BillingTable({
     billingMap.set(`${b.student_id}-${b.billing_item_id}`, b);
   });
 
+  // 項目ごとにquantityを持つかどうかを判定
+  const itemHasQuantity = (itemId: string): boolean => {
+    return students.some((student) => {
+      const key = `${student.id}-${itemId}`;
+      const billing = billingMap.get(key);
+      return billing?.quantity != null && billing.quantity > 0;
+    });
+  };
+
   // 集計行の計算
   const summaryData = items.map((item) => {
     const totalStudents = students.length;
-    const billedCount = students.filter((student) => {
+    const hasQuantityData = itemHasQuantity(item.id);
+
+    let billedCount = 0;
+    let quantitySum = 0;
+
+    students.forEach((student) => {
       const key = `${student.id}-${item.id}`;
       const billing = billingMap.get(key);
-      return billing?.is_billed === true;
-    }).length;
+      const isBilled = billing?.is_billed === true || (billing?.quantity != null && billing.quantity > 0);
+      if (isBilled) billedCount++;
+      if (billing?.quantity != null && billing.quantity > 0) {
+        quantitySum += billing.quantity;
+      }
+    });
+
     const billedRate = totalStudents > 0
       ? Math.round((billedCount / totalStudents) * 100)
       : 0;
@@ -58,6 +83,8 @@ export function BillingTable({
       totalStudents,
       billedCount,
       billedRate,
+      hasQuantityData,
+      quantitySum,
     };
   });
 
@@ -86,6 +113,41 @@ export function BillingTable({
     }
   };
 
+  // 5週目自動計算ハンドラ
+  const handleAutoFillFifthWeek = async (itemId: string) => {
+    if (!periodStartDate || !schoolIds) return;
+
+    const [yearStr, monthStr] = periodStartDate.split('-');
+    const year = Number(yearStr);
+    const month = Number(monthStr);
+    const dayLabels = getFifthWeekDayLabels(year, month);
+
+    if (!dayLabels) {
+      toastError(`${year}年${month}月には5週目がありません`);
+      return;
+    }
+
+    const confirmed = await confirm({
+      title: '5週目自動計算',
+      description: `5週目のコマ数を通塾日程から自動計算しますか？\n\n${year}年${month}月は${dayLabels}曜日に5週目があります。`,
+      confirmLabel: '自動計算',
+      variant: 'default',
+    });
+
+    if (!confirmed) return;
+
+    setAutoFilling(true);
+    try {
+      const result = await autoFillFifthWeekBilling(itemId, periodStartDate, schoolIds);
+      success(`${result.updated}名の5週目コマ数を自動計算しました`);
+      onItemsChange?.();
+    } catch (err) {
+      toastError(err instanceof Error ? err.message : '5週目の自動計算に失敗しました');
+    } finally {
+      setAutoFilling(false);
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
       <div className="overflow-auto max-h-[calc(100vh-200px)]">
@@ -100,6 +162,8 @@ export function BillingTable({
               </th>
               {items.map((item) => {
                 const sourceLabel = BILLING_SOURCE_TYPE_LABELS[item.source_type] || item.source_type;
+                const isFifthWeekItem = item.name.includes('5週目');
+                const showAutoFillButton = isFifthWeekItem && onBillingChange && isManagerOrAbove && periodStartDate && schoolIds;
                 return (
                   <th
                     key={item.id}
@@ -198,15 +262,30 @@ export function BillingTable({
                             <span className="text-xs text-white">{item.name}</span>
                           )}
                         </div>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                          item.source_type === 'free'
-                            ? 'bg-white/20 text-white/70'
-                            : item.source_type === 'form_charged'
-                            ? 'bg-blue-400/30 text-blue-200'
-                            : 'bg-amber-400/30 text-amber-200'
-                        }`}>
-                          {sourceLabel}
-                        </span>
+                        <div className="flex items-center gap-1">
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                            item.source_type === 'free'
+                              ? 'bg-white/20 text-white/70'
+                              : item.source_type === 'form_charged'
+                              ? 'bg-blue-400/30 text-blue-200'
+                              : 'bg-amber-400/30 text-amber-200'
+                          }`}>
+                            {sourceLabel}
+                          </span>
+                          {showAutoFillButton && (
+                            <button
+                              className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-400/30 text-amber-200 hover:bg-amber-400/50 transition-colors disabled:opacity-50"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAutoFillFifthWeek(item.id);
+                              }}
+                              disabled={autoFilling}
+                              title="通塾日程から5週目コマ数を自動計算"
+                            >
+                              {autoFilling ? '...' : '⚡自動計算'}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     )}
                   </th>
@@ -229,6 +308,11 @@ export function BillingTable({
                     <span className="text-[11px] font-semibold text-[#1e3a5f]">
                       済: {summary.billedCount}/{summary.totalStudents} ({summary.billedRate}%)
                     </span>
+                    {summary.hasQuantityData && (
+                      <span className="text-[10px] text-[#4b5563]">
+                        合計: {summary.quantitySum}コマ
+                      </span>
+                    )}
                   </div>
                 </td>
               ))}
@@ -257,7 +341,8 @@ export function BillingTable({
                   {items.map((item) => {
                     const key = `${student.id}-${item.id}`;
                     const billing = billingMap.get(key);
-                    const isBilled = billing?.is_billed === true;
+                    const hasQuantity = billing?.quantity != null && billing.quantity > 0;
+                    const isBilled = billing?.is_billed === true || hasQuantity;
                     const isUpdating = updatingCells.has(key);
                     const canEditCell = !isTeacher;
 
@@ -279,6 +364,8 @@ export function BillingTable({
                         title={
                           isTeacher
                             ? '閲覧のみ'
+                            : hasQuantity
+                            ? `${billing?.quantity}コマ（クリックで解除）`
                             : isBilled
                             ? '請求済（クリックで解除）'
                             : '未請求（クリックで請求済に）'
@@ -286,6 +373,8 @@ export function BillingTable({
                       >
                         {isUpdating ? (
                           <span className="text-[#4b5563]">...</span>
+                        ) : hasQuantity ? (
+                          <span className="text-sm font-semibold text-green-700">{billing?.quantity}</span>
                         ) : isBilled ? (
                           <span className="text-sm font-semibold text-green-700">✓</span>
                         ) : (
