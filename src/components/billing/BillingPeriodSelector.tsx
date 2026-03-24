@@ -5,6 +5,7 @@ import type { BillingPeriod } from '@/types/database';
 import { Button, Input } from '@/components/ui';
 import {
   createBillingPeriod,
+  createBillingItem,
   updateBillingPeriod,
   deleteBillingPeriod,
 } from '@/lib/api/billing';
@@ -34,32 +35,61 @@ export function BillingPeriodSelector({
   const [isCreating, setIsCreating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  // 新規作成: 年月プルダウン
+  // 新規作成: 年月プルダウン + 期日
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
   const [newYear, setNewYear] = useState(currentYear);
   const [newMonth, setNewMonth] = useState(currentMonth);
+  // 期日: デフォルトは選択年月の月初〜月末
+  const defaultStartDate = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`;
+  const defaultEndDay = new Date(currentYear, currentMonth, 0).getDate();
+  const defaultEndDate = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(defaultEndDay).padStart(2, '0')}`;
+  const [newStartDate, setNewStartDate] = useState(defaultStartDate);
+  const [newEndDate, setNewEndDate] = useState(defaultEndDate);
   const [editName, setEditName] = useState('');
   const [editStartDate, setEditStartDate] = useState('');
   const [editEndDate, setEditEndDate] = useState('');
 
   const selectedPeriod = periods.find((p) => p.id === selectedPeriodId);
 
+  // 年月変更時に期日も自動更新
+  const updateDatesFromYearMonth = (year: number, month: number) => {
+    const start = `${year}-${String(month).padStart(2, '0')}-01`;
+    const lastDay = new Date(year, month, 0).getDate();
+    const end = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    setNewStartDate(start);
+    setNewEndDate(end);
+  };
+
+  const handleYearChange = (year: number) => {
+    setNewYear(year);
+    updateDatesFromYearMonth(year, newMonth);
+  };
+
+  const handleMonthChange = (month: number) => {
+    setNewMonth(month);
+    updateDatesFromYearMonth(newYear, month);
+  };
+
+  /** デフォルト請求項目 */
+  const DEFAULT_BILLING_ITEMS = ['5週目', '単語練習帳'];
+
   const handleCreate = async () => {
     if (!schoolId || (Array.isArray(schoolId) && schoolId.length === 0)) {
       toastError('教室が選択されていません');
       return;
     }
+    if (!newStartDate || !newEndDate) {
+      toastError('開始日と終了日を入力してください');
+      return;
+    }
 
-    // 年月から期間名・開始日・終了日を自動生成
+    // 期間名を自動生成
     const name = `${newYear}年${newMonth}月請求`;
-    const startDate = `${newYear}-${String(newMonth).padStart(2, '0')}-01`;
-    const lastDay = new Date(newYear, newMonth, 0).getDate();
-    const endDate = `${newYear}-${String(newMonth).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
 
     // 重複チェック
     const exists = periods.some(
-      (p) => p.name === name || (p.start_date === startDate && p.end_date === endDate)
+      (p) => p.name === name || (p.start_date === newStartDate && p.end_date === newEndDate)
     );
     if (exists) {
       toastError(`${newYear}年${newMonth}月の請求期間は既に存在します`);
@@ -69,10 +99,24 @@ export function BillingPeriodSelector({
     setIsProcessing(true);
     try {
       const created = await createBillingPeriod(
-        { name, start_date: startDate, end_date: endDate },
+        { name, start_date: newStartDate, end_date: newEndDate },
         schoolId
       );
-      success('請求期間を作成しました');
+
+      // デフォルト項目を自動追加
+      for (const itemName of DEFAULT_BILLING_ITEMS) {
+        try {
+          await createBillingItem(
+            { billing_period_id: created.id, name: itemName, source_type: 'free' },
+            schoolId
+          );
+        } catch {
+          // デフォルト項目の追加失敗は無視（期間作成は成功しているため）
+          console.warn(`デフォルト項目「${itemName}」の追加に失敗`);
+        }
+      }
+
+      success('請求期間を作成しました（デフォルト項目を追加済み）');
       setIsCreating(false);
       onUpdated();
       onSelect(created.id);
@@ -211,7 +255,7 @@ export function BillingPeriodSelector({
         )}
       </div>
 
-      {/* 新規作成フォーム（年月プルダウン） */}
+      {/* 新規作成フォーム（年月プルダウン + 期日） */}
       {isCreating && canEdit && (
         <div className="mt-4 p-4 bg-[#f3f4f6] rounded-lg border border-[#e5e7eb]">
           <h3 className="text-sm font-semibold text-[#1f2937] mb-3">新規期間の作成</h3>
@@ -220,7 +264,7 @@ export function BillingPeriodSelector({
               <label className="block text-xs text-[#4b5563] mb-1">年</label>
               <select
                 value={newYear}
-                onChange={(e) => setNewYear(Number(e.target.value))}
+                onChange={(e) => handleYearChange(Number(e.target.value))}
                 disabled={isProcessing}
                 className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
               >
@@ -233,7 +277,7 @@ export function BillingPeriodSelector({
               <label className="block text-xs text-[#4b5563] mb-1">月</label>
               <select
                 value={newMonth}
-                onChange={(e) => setNewMonth(Number(e.target.value))}
+                onChange={(e) => handleMonthChange(Number(e.target.value))}
                 disabled={isProcessing}
                 className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
               >
@@ -242,8 +286,23 @@ export function BillingPeriodSelector({
                 ))}
               </select>
             </div>
-            <div className="text-sm text-[#6b7280] pt-5">
-              → {newYear}年{newMonth}月1日 〜 {newYear}年{newMonth}月{new Date(newYear, newMonth, 0).getDate()}日
+            <div className="w-36">
+              <label className="block text-xs text-[#4b5563] mb-1">開始日</label>
+              <Input
+                type="date"
+                value={newStartDate}
+                onChange={(e) => setNewStartDate(e.target.value)}
+                disabled={isProcessing}
+              />
+            </div>
+            <div className="w-36">
+              <label className="block text-xs text-[#4b5563] mb-1">終了日</label>
+              <Input
+                type="date"
+                value={newEndDate}
+                onChange={(e) => setNewEndDate(e.target.value)}
+                disabled={isProcessing}
+              />
             </div>
             <div className="flex gap-2">
               <Button onClick={handleCreate} disabled={isProcessing}>
@@ -257,6 +316,9 @@ export function BillingPeriodSelector({
               </Button>
             </div>
           </div>
+          <p className="text-xs text-[#9ca3af] mt-2">
+            ※ デフォルト項目「5週目」「単語練習帳」が自動追加されます
+          </p>
         </div>
       )}
 
