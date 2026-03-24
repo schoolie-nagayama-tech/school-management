@@ -39,6 +39,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
   const [bulletinUnreadCount, setBulletinUnreadCount] = useState(0);
   const [showFormDropdown, setShowFormDropdown] = useState(false);
   const [showTeacherDropdown, setShowTeacherDropdown] = useState(false);
+  const [showBusinessDropdown, setShowBusinessDropdown] = useState(false);
 
   // permissionsがnullの場合は、すべてのリンクを表示（ローディング中の場合）
   const showAllLinks = !permissions || authLoading;
@@ -123,8 +124,8 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
 
   // クリック外でドロップダウンを閉じる
   useEffect(() => {
-    if (!showSchoolDropdown && !showSettingsDropdown) return;
-    
+    if (!showSchoolDropdown && !showSettingsDropdown && !showBusinessDropdown) return;
+
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (!target.closest('.school-dropdown-container')) {
@@ -133,16 +134,19 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
       if (!target.closest('.settings-dropdown-container')) {
         setShowSettingsDropdown(false);
       }
+      if (!target.closest('.business-dropdown-container')) {
+        setShowBusinessDropdown(false);
+      }
     };
-    
+
     setTimeout(() => {
       document.addEventListener('click', handleClickOutside);
     }, 0);
-    
+
     return () => {
       document.removeEventListener('click', handleClickOutside);
     };
-  }, [showSchoolDropdown, showSettingsDropdown]);
+  }, [showSchoolDropdown, showSettingsDropdown, showBusinessDropdown]);
 
   return (
     <header className="bg-[#d32f2f] shadow-md">
@@ -341,6 +345,73 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                     出勤簿
                   </Link>
                 )
+              )}
+              {/* 業務管理（教室長以上のみ） */}
+              {(showAllLinks || permissions?.canAccessBilling) && (
+                <div className="relative">
+                  <button
+                    className={`px-2.5 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 ${
+                      pathname?.startsWith('/billing') ||
+                      pathname?.startsWith('/ordering') ||
+                      pathname?.startsWith('/inventory')
+                        ? 'bg-white text-[#d32f2f] font-semibold'
+                        : 'text-white/90 hover:bg-white/10 hover:text-white'
+                    }`}
+                    onClick={() => setShowBusinessDropdown(!showBusinessDropdown)}
+                    onBlur={() => setTimeout(() => setShowBusinessDropdown(false), 200)}
+                  >
+                    業務管理
+                    <svg
+                      className={`w-3 h-3 transition-transform ${showBusinessDropdown ? 'rotate-180' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {showBusinessDropdown && (
+                  <div
+                    className="absolute top-full left-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-xl z-50 min-w-[150px]"
+                  >
+                    <div className="py-1">
+                      <Link
+                        href="/billing"
+                        onClick={() => setShowBusinessDropdown(false)}
+                        className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
+                          pathname?.startsWith('/billing')
+                            ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
+                            : ''
+                        }`}
+                      >
+                        請求管理
+                      </Link>
+                      <Link
+                        href="/ordering"
+                        onClick={() => setShowBusinessDropdown(false)}
+                        className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
+                          pathname?.startsWith('/ordering')
+                            ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
+                            : ''
+                        }`}
+                      >
+                        発注管理
+                      </Link>
+                      <Link
+                        href="/inventory"
+                        onClick={() => setShowBusinessDropdown(false)}
+                        className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
+                          pathname?.startsWith('/inventory')
+                            ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
+                            : ''
+                        }`}
+                      >
+                        在庫管理
+                      </Link>
+                    </div>
+                  </div>
+                  )}
+                </div>
               )}
             </nav>
           </div>

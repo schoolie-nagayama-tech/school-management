@@ -1,0 +1,306 @@
+'use client';
+
+import type { Student, BillingItem, StudentBilling } from '@/types/database';
+import { GRADE_LABELS, BILLING_SOURCE_TYPE_LABELS } from '@/types/database';
+import { toggleStudentBilling, updateBillingItem, deleteBillingItem } from '@/lib/api/billing';
+import { useAuth } from '@/contexts/AuthContext';
+import { useState } from 'react';
+import { useToast } from '@/hooks/useToast';
+import { useConfirm } from '@/hooks/useConfirm';
+
+interface BillingTableProps {
+  students: Student[];
+  items: BillingItem[];
+  billings: StudentBilling[];
+  onBillingChange?: (studentId: string, billingItemId: string, isBilled: boolean) => void;
+  onStudentClick?: (student: Student) => void;
+  onItemsChange?: () => void;
+}
+
+export function BillingTable({
+  students,
+  items,
+  billings,
+  onBillingChange,
+  onStudentClick,
+  onItemsChange,
+}: BillingTableProps) {
+  const { profile } = useAuth();
+  const isTeacher = profile?.role === 'teacher';
+  const isManagerOrAbove = profile?.role === 'manager' || profile?.role === 'owner' || profile?.role === 'admin';
+  const [updatingCells, setUpdatingCells] = useState<Set<string>>(new Set());
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState('');
+  const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
+  const { success, error: toastError } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
+
+  // 請求状況をマップ化（student_id + billing_item_id -> billing）
+  const billingMap = new Map<string, StudentBilling>();
+  billings.forEach((b) => {
+    billingMap.set(`${b.student_id}-${b.billing_item_id}`, b);
+  });
+
+  // 集計行の計算
+  const summaryData = items.map((item) => {
+    const totalStudents = students.length;
+    const billedCount = students.filter((student) => {
+      const key = `${student.id}-${item.id}`;
+      const billing = billingMap.get(key);
+      return billing?.is_billed === true;
+    }).length;
+    const billedRate = totalStudents > 0
+      ? Math.round((billedCount / totalStudents) * 100)
+      : 0;
+
+    return {
+      itemId: item.id,
+      totalStudents,
+      billedCount,
+      billedRate,
+    };
+  });
+
+  const handleCellClick = async (studentId: string, billingItemId: string) => {
+    if (!onBillingChange) return;
+
+    const key = `${studentId}-${billingItemId}`;
+    const existing = billingMap.get(key);
+    const currentIsBilled = existing?.is_billed === true;
+    const newIsBilled = !currentIsBilled;
+
+    setUpdatingCells((prev) => new Set(prev).add(key));
+
+    try {
+      await toggleStudentBilling(studentId, billingItemId, newIsBilled);
+      onBillingChange(studentId, billingItemId, newIsBilled);
+    } catch (error) {
+      console.error('Failed to toggle billing status:', error);
+      toastError('請求状況の更新に失敗しました');
+    } finally {
+      setUpdatingCells((prev) => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+    }
+  };
+
+  return (
+    <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
+      <div className="overflow-auto max-h-[calc(100vh-200px)]">
+        <table className="w-full border-collapse table-fixed">
+          <thead className="sticky top-0 z-30">
+            <tr className="bg-[#1e3a5f] border-b border-[#e5e7eb]">
+              <th className="px-3 py-2 text-left text-white text-xs font-semibold border-r border-[#2d4a6f] sticky left-0 bg-[#1e3a5f] z-40 w-[60px]">
+                学年
+              </th>
+              <th className="px-3 py-2 text-left text-white text-xs font-semibold border-r border-[#2d4a6f] sticky left-[60px] bg-[#1e3a5f] z-40 w-[160px]" style={{ boxShadow: '4px 0 6px -2px rgba(0,0,0,0.15)' }}>
+                名前
+              </th>
+              {items.map((item) => {
+                const sourceLabel = BILLING_SOURCE_TYPE_LABELS[item.source_type] || item.source_type;
+                return (
+                  <th
+                    key={item.id}
+                    className="px-3 py-2 text-center text-xs font-semibold border-r border-[#2d4a6f] text-white relative group"
+                  >
+                    {onBillingChange && isManagerOrAbove && editingItemId === item.id ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={editingName}
+                          onChange={(e) => setEditingName(e.target.value)}
+                          onBlur={async () => {
+                            if (editingName.trim() && editingName.trim() !== item.name) {
+                              try {
+                                await updateBillingItem(item.id, { name: editingName.trim() });
+                                success('項目名を更新しました');
+                                onItemsChange?.();
+                              } catch (err) {
+                                toastError(
+                                  err instanceof Error ? err.message : '項目名の更新に失敗しました'
+                                );
+                              }
+                            }
+                            setEditingItemId(null);
+                            setEditingName('');
+                          }}
+                          onKeyDown={async (e) => {
+                            if (e.key === 'Enter') {
+                              e.currentTarget.blur();
+                            } else if (e.key === 'Escape') {
+                              setEditingItemId(null);
+                              setEditingName('');
+                            }
+                          }}
+                          autoFocus
+                          className="flex-1 px-2 py-1 text-sm border border-[#e5e7eb] rounded bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-1">
+                        <div className="flex items-center justify-center gap-1 w-full">
+                          {onBillingChange && isManagerOrAbove ? (
+                            <>
+                              <div
+                                className="flex-1 flex items-center justify-center gap-1 cursor-pointer hover:bg-white/10 rounded px-1 py-0.5 transition-colors"
+                                onClick={() => {
+                                  setEditingItemId(item.id);
+                                  setEditingName(item.name);
+                                }}
+                                title="クリックして編集"
+                              >
+                                <span className="text-xs text-white">{item.name}</span>
+                                <span className="text-[10px] text-white/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  ✏️
+                                </span>
+                              </div>
+                              <button
+                                className="text-[10px] text-red-300 hover:text-red-200 opacity-0 group-hover:opacity-100 transition-opacity px-1 py-0.5 rounded hover:bg-red-500/20"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (
+                                    await confirm({
+                                      title: '削除確認',
+                                      description: `「${item.name}」を削除してもよろしいですか？この列の全ての請求データも削除されます。`,
+                                      confirmLabel: '削除',
+                                      variant: 'danger',
+                                    })
+                                  ) {
+                                    setDeletingItemId(item.id);
+                                    try {
+                                      await deleteBillingItem(item.id);
+                                      success('項目を削除しました');
+                                      onItemsChange?.();
+                                    } catch (err) {
+                                      toastError(
+                                        err instanceof Error
+                                          ? err.message
+                                          : '項目の削除に失敗しました'
+                                      );
+                                    } finally {
+                                      setDeletingItemId(null);
+                                    }
+                                  }
+                                }}
+                                disabled={deletingItemId === item.id}
+                                title="削除"
+                              >
+                                {deletingItemId === item.id ? (
+                                  <span className="text-xs">...</span>
+                                ) : (
+                                  <span>🗑️</span>
+                                )}
+                              </button>
+                            </>
+                          ) : (
+                            <span className="text-xs text-white">{item.name}</span>
+                          )}
+                        </div>
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                          item.source_type === 'free'
+                            ? 'bg-white/20 text-white/70'
+                            : item.source_type === 'form_charged'
+                            ? 'bg-blue-400/30 text-blue-200'
+                            : 'bg-amber-400/30 text-amber-200'
+                        }`}>
+                          {sourceLabel}
+                        </span>
+                      </div>
+                    )}
+                  </th>
+                );
+              })}
+            </tr>
+            {/* 集計行 */}
+            <tr className="bg-[#f0f4f8] border-b border-[#e5e7eb]">
+              <td className="px-3 py-1.5 text-left text-[#4b5563] text-xs border-r border-[#e5e7eb] sticky left-0 bg-[#f0f4f8] z-40 w-[60px]">
+                集計
+              </td>
+              <td className="px-3 py-1.5 text-left text-[#4b5563] text-xs border-r border-[#e5e7eb] sticky left-[60px] bg-[#f0f4f8] z-40 w-[160px]" style={{ boxShadow: '4px 0 6px -2px rgba(0,0,0,0.08)' }}>
+              </td>
+              {summaryData.map((summary) => (
+                <td
+                  key={summary.itemId}
+                  className="px-3 py-1.5 text-center text-[#4b5563] text-[11px] border-r border-[#e5e7eb] bg-[#f0f4f8]"
+                >
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[11px] font-semibold text-[#1e3a5f]">
+                      済: {summary.billedCount}/{summary.totalStudents} ({summary.billedRate}%)
+                    </span>
+                  </div>
+                </td>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {students.map((student, idx) => {
+              const rowBg = idx % 2 === 0 ? 'bg-white' : 'bg-[#f8fafc]';
+              return (
+                <tr
+                  key={student.id}
+                  className={`border-b border-[#e5e7eb] hover:bg-[#e8f0fe] ${rowBg}`}
+                >
+                  <td className={`px-3 py-2 text-xs text-[#4b5563] border-r border-[#e5e7eb] sticky left-0 ${rowBg} z-20 w-[60px]`}>
+                    {GRADE_LABELS[student.grade] || student.grade}
+                  </td>
+                  <td
+                    className={`px-3 py-2 text-xs text-[#1f2937] border-r border-[#e5e7eb] sticky left-[60px] ${rowBg} z-20 w-[160px] whitespace-nowrap ${
+                      onStudentClick ? 'cursor-pointer hover:text-[#3b82f6]' : ''
+                    }`}
+                    style={{ boxShadow: '4px 0 6px -2px rgba(0,0,0,0.08)' }}
+                    onClick={() => onStudentClick?.(student)}
+                  >
+                    {student.last_name} {student.first_name}
+                  </td>
+                  {items.map((item) => {
+                    const key = `${student.id}-${item.id}`;
+                    const billing = billingMap.get(key);
+                    const isBilled = billing?.is_billed === true;
+                    const isUpdating = updatingCells.has(key);
+                    const canEditCell = !isTeacher;
+
+                    return (
+                      <td
+                        key={item.id}
+                        className={`px-3 py-2 text-center border-r border-[#e5e7eb] transition-colors ${
+                          isBilled ? 'bg-green-100' : ''
+                        } ${
+                          isUpdating
+                            ? 'opacity-50'
+                            : onBillingChange && canEditCell
+                            ? 'cursor-pointer hover:bg-[#3b82f6]/10'
+                            : 'cursor-default'
+                        }`}
+                        onClick={() =>
+                          onBillingChange && !isUpdating && canEditCell && handleCellClick(student.id, item.id)
+                        }
+                        title={
+                          isTeacher
+                            ? '閲覧のみ'
+                            : isBilled
+                            ? '請求済（クリックで解除）'
+                            : '未請求（クリックで請求済に）'
+                        }
+                      >
+                        {isUpdating ? (
+                          <span className="text-[#4b5563]">...</span>
+                        ) : isBilled ? (
+                          <span className="text-sm font-semibold text-green-700">✓</span>
+                        ) : (
+                          <span></span>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      {ConfirmDialog}
+    </div>
+  );
+}

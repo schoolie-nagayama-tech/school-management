@@ -2086,6 +2086,348 @@ export type Database = {
         Update: Record<string, unknown>;
         Relationships: [];
       };
+      // ==============================
+      // 在庫管理 (Inventory)
+      // ==============================
+      materials: {
+        Row: {
+          id: string;
+          school_id: string;
+          name: string;
+          description: string | null;
+          category: string | null;
+          unit: string;
+          stock_quantity: number;
+          low_stock_threshold: number;
+          is_active: boolean;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          name: string;
+          description?: string | null;
+          category?: string | null;
+          unit?: string;
+          stock_quantity?: number;
+          low_stock_threshold?: number;
+          is_active?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          name?: string;
+          description?: string | null;
+          category?: string | null;
+          unit?: string;
+          stock_quantity?: number;
+          low_stock_threshold?: number;
+          is_active?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'materials_school_id_fkey';
+            columns: ['school_id'];
+            referencedRelation: 'schools';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      material_stock_transactions: {
+        Row: {
+          id: string;
+          school_id: string;
+          material_id: string;
+          transaction_type: 'in' | 'out' | 'adjust';
+          quantity: number;
+          reason: string | null;
+          related_order_id: string | null;
+          related_student_id: string | null;
+          performed_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          material_id: string;
+          transaction_type: 'in' | 'out' | 'adjust';
+          quantity: number;
+          reason?: string | null;
+          related_order_id?: string | null;
+          related_student_id?: string | null;
+          performed_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          material_id?: string;
+          transaction_type?: 'in' | 'out' | 'adjust';
+          quantity?: number;
+          reason?: string | null;
+          related_order_id?: string | null;
+          related_student_id?: string | null;
+          performed_by?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'material_stock_transactions_school_id_fkey';
+            columns: ['school_id'];
+            referencedRelation: 'schools';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'material_stock_transactions_material_id_fkey';
+            columns: ['material_id'];
+            referencedRelation: 'materials';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'fk_stock_txns_order';
+            columns: ['related_order_id'];
+            referencedRelation: 'material_orders';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'material_stock_transactions_related_student_id_fkey';
+            columns: ['related_student_id'];
+            referencedRelation: 'students';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      // ==============================
+      // 発注管理 (Ordering)
+      // ==============================
+      material_orders: {
+        Row: {
+          id: string;
+          school_id: string;
+          material_id: string;
+          student_id: string;
+          quantity: number;
+          status: 'pending' | 'ordered' | 'delivered' | 'distributed' | 'cancelled';
+          ordered_at: string | null;
+          delivered_at: string | null;
+          distributed_at: string | null;
+          notes: string | null;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          material_id: string;
+          student_id: string;
+          quantity?: number;
+          status?: 'pending' | 'ordered' | 'delivered' | 'distributed' | 'cancelled';
+          ordered_at?: string | null;
+          delivered_at?: string | null;
+          distributed_at?: string | null;
+          notes?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          material_id?: string;
+          student_id?: string;
+          quantity?: number;
+          status?: 'pending' | 'ordered' | 'delivered' | 'distributed' | 'cancelled';
+          ordered_at?: string | null;
+          delivered_at?: string | null;
+          distributed_at?: string | null;
+          notes?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'material_orders_school_id_fkey';
+            columns: ['school_id'];
+            referencedRelation: 'schools';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'material_orders_material_id_fkey';
+            columns: ['material_id'];
+            referencedRelation: 'materials';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'material_orders_student_id_fkey';
+            columns: ['student_id'];
+            referencedRelation: 'students';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      // ==============================
+      // 請求管理 (Billing)
+      // ==============================
+      billing_periods: {
+        Row: {
+          id: string;
+          school_id: string;
+          name: string;
+          start_date: string;
+          end_date: string;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          name: string;
+          start_date: string;
+          end_date: string;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          name?: string;
+          start_date?: string;
+          end_date?: string;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'billing_periods_school_id_fkey';
+            columns: ['school_id'];
+            referencedRelation: 'schools';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      billing_items: {
+        Row: {
+          id: string;
+          school_id: string;
+          billing_period_id: string;
+          name: string;
+          source_type: 'free' | 'form_charged' | 'order';
+          source_form_response_id: string | null;
+          source_order_id: string | null;
+          sort_order: number;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          billing_period_id: string;
+          name: string;
+          source_type?: 'free' | 'form_charged' | 'order';
+          source_form_response_id?: string | null;
+          source_order_id?: string | null;
+          sort_order?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          billing_period_id?: string;
+          name?: string;
+          source_type?: 'free' | 'form_charged' | 'order';
+          source_form_response_id?: string | null;
+          source_order_id?: string | null;
+          sort_order?: number;
+          is_active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'billing_items_school_id_fkey';
+            columns: ['school_id'];
+            referencedRelation: 'schools';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'billing_items_billing_period_id_fkey';
+            columns: ['billing_period_id'];
+            referencedRelation: 'billing_periods';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'billing_items_source_order_id_fkey';
+            columns: ['source_order_id'];
+            referencedRelation: 'material_orders';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      student_billings: {
+        Row: {
+          id: string;
+          school_id: string;
+          student_id: string;
+          billing_item_id: string;
+          is_billed: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          student_id: string;
+          billing_item_id: string;
+          is_billed?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          student_id?: string;
+          billing_item_id?: string;
+          is_billed?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'student_billings_school_id_fkey';
+            columns: ['school_id'];
+            referencedRelation: 'schools';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'student_billings_student_id_fkey';
+            columns: ['student_id'];
+            referencedRelation: 'students';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'student_billings_billing_item_id_fkey';
+            columns: ['billing_item_id'];
+            referencedRelation: 'billing_items';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -2818,6 +3160,12 @@ export interface Permission {
   canEditScores: boolean;
   canEditInterviews: boolean;
   canEditApplications: boolean;
+  canAccessBilling: boolean;
+  canEditBilling: boolean;
+  canAccessInventory: boolean;
+  canEditInventory: boolean;
+  canAccessOrdering: boolean;
+  canEditOrdering: boolean;
 }
 
 // 権限定義
@@ -2841,6 +3189,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission> = {
     canEditScores: true,
     canEditInterviews: true,
     canEditApplications: true,
+    canAccessBilling: true,
+    canEditBilling: true,
+    canAccessInventory: true,
+    canEditInventory: true,
+    canAccessOrdering: true,
+    canEditOrdering: true,
   },
   owner: {
     canAccessStudents: true,
@@ -2861,6 +3215,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission> = {
     canEditScores: true,
     canEditInterviews: true,
     canEditApplications: true,
+    canAccessBilling: true,
+    canEditBilling: true,
+    canAccessInventory: true,
+    canEditInventory: true,
+    canAccessOrdering: true,
+    canEditOrdering: true,
   },
   manager: {
     canAccessStudents: true,
@@ -2881,6 +3241,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission> = {
     canEditScores: true,
     canEditInterviews: true,
     canEditApplications: true,
+    canAccessBilling: true,
+    canEditBilling: true,
+    canAccessInventory: true,
+    canEditInventory: true,
+    canAccessOrdering: true,
+    canEditOrdering: true,
   },
   teacher: {
     canAccessStudents: true,
@@ -2901,6 +3267,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission> = {
     canEditScores: true,
     canEditInterviews: false,
     canEditApplications: true,
+    canAccessBilling: false,
+    canEditBilling: false,
+    canAccessInventory: false,
+    canEditInventory: false,
+    canAccessOrdering: false,
+    canEditOrdering: false,
   },
   parent: {
     canAccessStudents: false,
@@ -2921,6 +3293,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission> = {
     canEditScores: false,
     canEditInterviews: false,
     canEditApplications: false,
+    canAccessBilling: false,
+    canEditBilling: false,
+    canAccessInventory: false,
+    canEditInventory: false,
+    canAccessOrdering: false,
+    canEditOrdering: false,
   },
 };
 
@@ -2933,3 +3311,60 @@ export function getPermissions(role: UserRole): Permission {
 export function hasHigherOrEqualRole(userRole: UserRole, requiredRole: UserRole): boolean {
   return USER_ROLE_LEVELS[userRole] >= USER_ROLE_LEVELS[requiredRole];
 }
+
+// ============================================
+// 在庫管理 (Inventory)
+// ============================================
+export type Material = Database['public']['Tables']['materials']['Row'];
+export type MaterialInsert = Database['public']['Tables']['materials']['Insert'];
+export type MaterialUpdate = Database['public']['Tables']['materials']['Update'];
+
+export type MaterialStockTransaction = Database['public']['Tables']['material_stock_transactions']['Row'];
+export type MaterialStockTransactionInsert = Database['public']['Tables']['material_stock_transactions']['Insert'];
+
+export type StockTransactionType = 'in' | 'out' | 'adjust';
+export const STOCK_TRANSACTION_TYPE_LABELS: Record<StockTransactionType, string> = {
+  in: '入庫', out: '出庫', adjust: '調整',
+};
+
+// ============================================
+// 発注管理 (Ordering)
+// ============================================
+export type MaterialOrder = Database['public']['Tables']['material_orders']['Row'];
+export type MaterialOrderInsert = Database['public']['Tables']['material_orders']['Insert'];
+export type MaterialOrderUpdate = Database['public']['Tables']['material_orders']['Update'];
+
+export type OrderStatus = 'pending' | 'ordered' | 'delivered' | 'distributed' | 'cancelled';
+export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
+  pending: '発注待ち', ordered: '発注済み', delivered: '納品済み', distributed: '配布済み', cancelled: 'キャンセル',
+};
+export const ORDER_STATUS_COLORS: Record<OrderStatus, string> = {
+  pending: 'bg-yellow-100 text-yellow-800', ordered: 'bg-blue-100 text-blue-800',
+  delivered: 'bg-green-100 text-green-800', distributed: 'bg-gray-100 text-gray-800',
+  cancelled: 'bg-red-100 text-red-800',
+};
+
+export type MaterialOrderWithDetails = MaterialOrder & {
+  material?: Material;
+  student?: { id: string; last_name: string; first_name: string; grade: number };
+};
+
+// ============================================
+// 請求管理 (Billing)
+// ============================================
+export type BillingPeriod = Database['public']['Tables']['billing_periods']['Row'];
+export type BillingPeriodInsert = Database['public']['Tables']['billing_periods']['Insert'];
+export type BillingPeriodUpdate = Database['public']['Tables']['billing_periods']['Update'];
+
+export type BillingItem = Database['public']['Tables']['billing_items']['Row'];
+export type BillingItemInsert = Database['public']['Tables']['billing_items']['Insert'];
+export type BillingItemUpdate = Database['public']['Tables']['billing_items']['Update'];
+
+export type BillingSourceType = 'free' | 'form_charged' | 'order';
+export const BILLING_SOURCE_TYPE_LABELS: Record<BillingSourceType, string> = {
+  free: '手動', form_charged: 'フォーム計上', order: '発注',
+};
+
+export type StudentBilling = Database['public']['Tables']['student_billings']['Row'];
+export type StudentBillingInsert = Database['public']['Tables']['student_billings']['Insert'];
+export type StudentBillingUpdate = Database['public']['Tables']['student_billings']['Update'];
