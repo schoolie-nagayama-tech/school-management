@@ -71,14 +71,14 @@ export function BillingPeriodSelector({
     updateDatesFromYearMonth(newYear, month);
   };
 
-  /** デフォルト請求項目: { name, source_type } */
-  const DEFAULT_BILLING_ITEMS: Array<{ name: string; source_type: string }> = [
-    { name: '5週目', source_type: 'free' },
-    { name: '単語練習帳', source_type: 'free' },
-    { name: '増コマ', source_type: 'form_charged' },
-    { name: '模擬', source_type: 'form_charged' },
-    { name: '模試', source_type: 'form_charged' },
-    { name: '教材発注', source_type: 'order' },
+  /** デフォルト請求項目 */
+  const DEFAULT_BILLING_ITEMS: Array<{ name: string; source_type: string; value_type: string; linked_form_type?: string }> = [
+    { name: '5週目', source_type: 'free', value_type: 'number' },
+    { name: '単語練習帳', source_type: 'free', value_type: 'number' },
+    { name: '増コマ', source_type: 'form_charged', value_type: 'number', linked_form_type: 'zoukoma' },
+    { name: '模擬', source_type: 'form_charged', value_type: 'number', linked_form_type: 'mogi' },
+    { name: '模試', source_type: 'form_charged', value_type: 'number', linked_form_type: 'moshi' },
+    { name: '教材発注', source_type: 'order', value_type: 'text' },
   ];
 
   const handleCreate = async () => {
@@ -114,7 +114,13 @@ export function BillingPeriodSelector({
       for (const item of DEFAULT_BILLING_ITEMS) {
         try {
           await createBillingItem(
-            { billing_period_id: created.id, name: item.name, source_type: item.source_type },
+            {
+              billing_period_id: created.id,
+              name: item.name,
+              source_type: item.source_type,
+              value_type: item.value_type,
+              linked_form_type: item.linked_form_type || null,
+            },
             schoolId
           );
         } catch {

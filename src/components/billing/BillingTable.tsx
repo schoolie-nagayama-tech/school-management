@@ -2,7 +2,7 @@
 
 import type { Student, BillingItem, StudentBilling } from '@/types/database';
 import { GRADE_LABELS, BILLING_SOURCE_TYPE_LABELS } from '@/types/database';
-import { toggleStudentBilling, updateBillingItem, deleteBillingItem, syncApplicationToBilling, syncOrdersToBilling, autoFillFifthWeekBilling } from '@/lib/api/billing';
+import { toggleStudentBilling, updateBillingItem, deleteBillingItem, syncApplicationToBilling, syncOrdersToBilling, autoFillFifthWeekBilling, updateBillingValue, syncFormToBilling, calcFifthWeekBilling } from '@/lib/api/billing';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { getFifthWeekDayLabels } from '@/lib/utils/fifthWeek';
 import { useAuth } from '@/contexts/AuthContext';
@@ -20,6 +20,7 @@ interface BillingTableProps {
   periodStartDate?: string;  // For 5th week auto-calc
   periodEndDate?: string;    // For order sync
   schoolIds?: string | string[];  // For 5th week auto-calc
+  billingPeriodId?: string;  // For form sync and 5th week calc
 }
 
 export function BillingTable({
@@ -32,6 +33,7 @@ export function BillingTable({
   periodStartDate,
   periodEndDate,
   schoolIds,
+  billingPeriodId,
 }: BillingTableProps) {
   const { profile } = useAuth();
   const isTeacher = profile?.role === 'teacher';
@@ -41,6 +43,9 @@ export function BillingTable({
   const [editingName, setEditingName] = useState('');
   const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
   const [autoFilling, setAutoFilling] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [editingCell, setEditingCell] = useState<{ studentId: string; itemId: string } | null>(null);
+  const [editingValue, setEditingValue] = useState<string>('');
   const { success, error: toastError } = useToast();
   const { confirm, ConfirmDialog } = useConfirm();
 
@@ -63,17 +68,30 @@ export function BillingTable({
   const summaryData = items.map((item) => {
     const totalStudents = students.length;
     const hasQuantityData = itemHasQuantity(item.id);
+    const valueType = item.value_type || 'check';
 
     let billedCount = 0;
     let quantitySum = 0;
+    let numberSum = 0;
+    let numberBilledCount = 0;
+    let textBilledCount = 0;
 
     students.forEach((student) => {
       const key = `${student.id}-${item.id}`;
       const billing = billingMap.get(key);
-      const isBilled = billing?.is_billed === true || (billing?.quantity != null && billing.quantity > 0);
-      if (isBilled) billedCount++;
-      if (billing?.quantity != null && billing.quantity > 0) {
-        quantitySum += billing.quantity;
+
+      if (valueType === 'number') {
+        if (billing?.is_billed) numberBilledCount++;
+        if (billing?.value_number != null) numberSum += billing.value_number;
+      } else if (valueType === 'text') {
+        if (billing?.is_billed) textBilledCount++;
+      } else {
+        // check type (default)
+        const isBilled = billing?.is_billed === true || (billing?.quantity != null && billing.quantity > 0);
+        if (isBilled) billedCount++;
+        if (billing?.quantity != null && billing.quantity > 0) {
+          quantitySum += billing.quantity;
+        }
       }
     });
 
@@ -83,11 +101,15 @@ export function BillingTable({
 
     return {
       itemId: item.id,
+      valueType,
       totalStudents,
       billedCount,
       billedRate,
       hasQuantityData,
       quantitySum,
+      numberSum,
+      numberBilledCount,
+      textBilledCount,
     };
   });
 
@@ -116,7 +138,125 @@ export function BillingTable({
     }
   };
 
-  // 5週目自動計算ハンドラ
+  // Number cell edit handler
+  const handleNumberCellClick = (studentId: string, itemId: string, currentBilling: StudentBilling | undefined) => {
+    if (isTeacher) return;
+    setEditingCell({ studentId, itemId });
+    setEditingValue(currentBilling?.value_number != null ? String(currentBilling.value_number) : '');
+  };
+
+  // Text cell edit handler
+  const handleTextCellClick = (studentId: string, itemId: string, currentBilling: StudentBilling | undefined) => {
+    if (isTeacher) return;
+    setEditingCell({ studentId, itemId });
+    setEditingValue(currentBilling?.value_text || '');
+  };
+
+  // Save edited value
+  const handleSaveEditedValue = async (valueType: 'number' | 'text') => {
+    if (!editingCell) return;
+    const { studentId, itemId } = editingCell;
+    const key = `${studentId}-${itemId}`;
+    setUpdatingCells((prev) => new Set(prev).add(key));
+    try {
+      if (valueType === 'number') {
+        const numVal = editingValue.trim() === '' ? null : Number(editingValue);
+        await updateBillingValue(studentId, itemId, { value_number: numVal });
+      } else {
+        const textVal = editingValue.trim() === '' ? null : editingValue.trim();
+        await updateBillingValue(studentId, itemId, { value_text: textVal });
+      }
+      onItemsChange?.();
+    } catch (err) {
+      toastError(err instanceof Error ? err.message : '値の更新に失敗しました');
+    } finally {
+      setUpdatingCells((prev) => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+      setEditingCell(null);
+      setEditingValue('');
+    }
+  };
+
+  // Charged toggle for number/text cells
+  const handleChargedToggle = async (studentId: string, itemId: string, currentBilling: StudentBilling | undefined) => {
+    if (isTeacher || !onBillingChange) return;
+    const key = `${studentId}-${itemId}`;
+    setUpdatingCells((prev) => new Set(prev).add(key));
+    try {
+      await updateBillingValue(studentId, itemId, { is_billed: !currentBilling?.is_billed });
+      onBillingChange(studentId, itemId, !currentBilling?.is_billed);
+    } catch (err) {
+      toastError(err instanceof Error ? err.message : '計上の更新に失敗しました');
+    } finally {
+      setUpdatingCells((prev) => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+    }
+  };
+
+  // Form sync handler
+  const handleFormSync = async (_itemId: string) => {
+    if (!billingPeriodId || !schoolIds) return;
+    const confirmed = await confirm({
+      title: 'フォーム回答同期',
+      description: 'フォーム回答から請求データを同期しますか？\n紐付け済みの回答件数が反映されます。',
+      confirmLabel: '同期する',
+      variant: 'default',
+    });
+    if (!confirmed) return;
+
+    setSyncing(true);
+    try {
+      const result = await syncFormToBilling(billingPeriodId, schoolIds);
+      success(`${result.synced}件の請求データを同期しました`);
+      onItemsChange?.();
+    } catch (err) {
+      toastError(err instanceof Error ? err.message : 'フォーム同期に失敗しました');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  // 5th week calc handler (new version using calcFifthWeekBilling)
+  const handleCalcFifthWeek = async () => {
+    if (!billingPeriodId || !schoolIds || !periodStartDate) return;
+
+    const [yearStr, monthStr] = periodStartDate.split('-');
+    const year = Number(yearStr);
+    const month = Number(monthStr);
+    const dayLabels = getFifthWeekDayLabels(year, month);
+
+    if (!dayLabels) {
+      toastError(`${year}年${month}月には5週目がありません`);
+      return;
+    }
+
+    const confirmed = await confirm({
+      title: '5週目自動計算',
+      description: `5週目のコマ数を通塾日程から自動計算しますか？\n\n${year}年${month}月は${dayLabels}曜日に5週目があります。`,
+      confirmLabel: '自動計算',
+      variant: 'default',
+    });
+    if (!confirmed) return;
+
+    setAutoFilling(true);
+    try {
+      const result = await calcFifthWeekBilling(billingPeriodId, schoolIds);
+      success(`${result.updated}名の5週目コマ数を自動計算しました`);
+      onItemsChange?.();
+    } catch (err) {
+      toastError(err instanceof Error ? err.message : '5週目の自動計算に失敗しました');
+    } finally {
+      setAutoFilling(false);
+    }
+  };
+
+  // 5週目自動計算ハンドラ (legacy)
   const handleAutoFillFifthWeek = async (itemId: string) => {
     if (!periodStartDate || !schoolIds) return;
 
@@ -280,12 +420,29 @@ export function BillingTable({
                               className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-400/30 text-amber-200 hover:bg-amber-400/50 transition-colors disabled:opacity-50"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleAutoFillFifthWeek(item.id);
+                                if (billingPeriodId) {
+                                  handleCalcFifthWeek();
+                                } else {
+                                  handleAutoFillFifthWeek(item.id);
+                                }
                               }}
                               disabled={autoFilling}
                               title="通塾日程から5週目コマ数を自動計算"
                             >
                               {autoFilling ? '...' : '⚡自動計算'}
+                            </button>
+                          )}
+                          {item.linked_form_type && !isTeacher && billingPeriodId && schoolIds && (
+                            <button
+                              className="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-400/30 text-cyan-200 hover:bg-cyan-400/50 transition-colors disabled:opacity-50"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleFormSync(item.id);
+                              }}
+                              disabled={syncing}
+                              title="フォーム回答から同期"
+                            >
+                              {syncing ? '...' : '🔄同期'}
                             </button>
                           )}
                           {item.source_type === 'form_charged' && !isTeacher && periodStartDate && schoolIds && (
@@ -354,13 +511,30 @@ export function BillingTable({
                   className="px-3 py-1.5 text-center text-[#4b5563] text-[11px] border-r border-[#e5e7eb] bg-[#f0f4f8]"
                 >
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-[11px] font-semibold text-[#1e3a5f]">
-                      済: {summary.billedCount}/{summary.totalStudents} ({summary.billedRate}%)
-                    </span>
-                    {summary.hasQuantityData && (
-                      <span className="text-[10px] text-[#4b5563]">
-                        合計: {summary.quantitySum}コマ
+                    {summary.valueType === 'number' ? (
+                      <>
+                        <span className="text-[11px] font-semibold text-[#1e3a5f]">
+                          計上: {summary.numberBilledCount}件
+                        </span>
+                        <span className="text-[10px] text-[#4b5563]">
+                          合計: {summary.numberSum}
+                        </span>
+                      </>
+                    ) : summary.valueType === 'text' ? (
+                      <span className="text-[11px] font-semibold text-[#1e3a5f]">
+                        計上: {summary.textBilledCount}件
                       </span>
+                    ) : (
+                      <>
+                        <span className="text-[11px] font-semibold text-[#1e3a5f]">
+                          済: {summary.billedCount}/{summary.totalStudents} ({summary.billedRate}%)
+                        </span>
+                        {summary.hasQuantityData && (
+                          <span className="text-[10px] text-[#4b5563]">
+                            合計: {summary.quantitySum}コマ
+                          </span>
+                        )}
+                      </>
                     )}
                   </div>
                 </td>
@@ -390,10 +564,142 @@ export function BillingTable({
                   {items.map((item) => {
                     const key = `${student.id}-${item.id}`;
                     const billing = billingMap.get(key);
-                    const hasQuantity = billing?.quantity != null && billing.quantity > 0;
-                    const isBilled = billing?.is_billed === true || hasQuantity;
+                    const valueType = item.value_type || 'check';
                     const isUpdating = updatingCells.has(key);
                     const canEditCell = !isTeacher;
+                    const isEditingThis = editingCell?.studentId === student.id && editingCell?.itemId === item.id;
+
+                    if (valueType === 'number') {
+                      const hasValue = billing?.value_number != null;
+                      const isBilled = billing?.is_billed === true;
+                      const bgClass = hasValue && isBilled
+                        ? 'bg-green-100'
+                        : hasValue
+                        ? 'bg-yellow-50'
+                        : '';
+
+                      return (
+                        <td
+                          key={item.id}
+                          className={`px-1 py-1 text-center border-r border-[#e5e7eb] transition-colors relative ${bgClass} ${
+                            isUpdating ? 'opacity-50' : ''
+                          }`}
+                        >
+                          {isUpdating ? (
+                            <span className="text-[#4b5563] text-xs">...</span>
+                          ) : isEditingThis ? (
+                            <input
+                              type="number"
+                              value={editingValue}
+                              onChange={(e) => setEditingValue(e.target.value)}
+                              onBlur={() => handleSaveEditedValue('number')}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') e.currentTarget.blur();
+                                if (e.key === 'Escape') { setEditingCell(null); setEditingValue(''); }
+                              }}
+                              autoFocus
+                              className="w-full px-1 py-0.5 text-xs text-center border border-blue-400 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+                            />
+                          ) : (
+                            <div className="flex items-center justify-center gap-0.5">
+                              <span
+                                className={`text-xs font-semibold cursor-pointer hover:underline ${
+                                  hasValue ? (isBilled ? 'text-green-700' : 'text-yellow-700') : 'text-gray-400'
+                                }`}
+                                onClick={() => canEditCell && onBillingChange && handleNumberCellClick(student.id, item.id, billing)}
+                                title={hasValue ? `${billing?.value_number}（クリックで編集）` : 'クリックで入力'}
+                              >
+                                {hasValue ? billing?.value_number : '-'}
+                              </span>
+                              {canEditCell && onBillingChange && (
+                                <button
+                                  className={`text-[10px] leading-none rounded px-0.5 ${
+                                    isBilled
+                                      ? 'text-green-600 hover:text-green-800'
+                                      : 'text-gray-400 hover:text-gray-600'
+                                  }`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleChargedToggle(student.id, item.id, billing);
+                                  }}
+                                  title={isBilled ? '計上済（クリックで解除）' : '未計上（クリックで計上）'}
+                                >
+                                  {isBilled ? '☑' : '☐'}
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                      );
+                    }
+
+                    if (valueType === 'text') {
+                      const hasValue = billing?.value_text != null && billing.value_text !== '';
+                      const isBilled = billing?.is_billed === true;
+                      const bgClass = hasValue && isBilled
+                        ? 'bg-green-100'
+                        : hasValue
+                        ? 'bg-yellow-50'
+                        : '';
+
+                      return (
+                        <td
+                          key={item.id}
+                          className={`px-1 py-1 text-center border-r border-[#e5e7eb] transition-colors relative ${bgClass} ${
+                            isUpdating ? 'opacity-50' : ''
+                          }`}
+                        >
+                          {isUpdating ? (
+                            <span className="text-[#4b5563] text-xs">...</span>
+                          ) : isEditingThis ? (
+                            <input
+                              type="text"
+                              value={editingValue}
+                              onChange={(e) => setEditingValue(e.target.value)}
+                              onBlur={() => handleSaveEditedValue('text')}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') e.currentTarget.blur();
+                                if (e.key === 'Escape') { setEditingCell(null); setEditingValue(''); }
+                              }}
+                              autoFocus
+                              className="w-full px-1 py-0.5 text-xs border border-blue-400 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+                            />
+                          ) : (
+                            <div className="flex items-center justify-center gap-0.5">
+                              <span
+                                className={`text-xs cursor-pointer hover:underline truncate max-w-[60px] ${
+                                  hasValue ? (isBilled ? 'text-green-700' : 'text-yellow-700') : 'text-gray-400'
+                                }`}
+                                onClick={() => canEditCell && onBillingChange && handleTextCellClick(student.id, item.id, billing)}
+                                title={hasValue ? `${billing?.value_text}（クリックで編集）` : 'クリックで入力'}
+                              >
+                                {hasValue ? billing?.value_text : '-'}
+                              </span>
+                              {canEditCell && onBillingChange && (
+                                <button
+                                  className={`text-[10px] leading-none rounded px-0.5 ${
+                                    isBilled
+                                      ? 'text-green-600 hover:text-green-800'
+                                      : 'text-gray-400 hover:text-gray-600'
+                                  }`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleChargedToggle(student.id, item.id, billing);
+                                  }}
+                                  title={isBilled ? '計上済（クリックで解除）' : '未計上（クリックで計上）'}
+                                >
+                                  {isBilled ? '☑' : '☐'}
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                      );
+                    }
+
+                    // Default: check type
+                    const hasQuantity = billing?.quantity != null && billing.quantity > 0;
+                    const isBilled = billing?.is_billed === true || hasQuantity;
 
                     return (
                       <td

@@ -183,6 +183,8 @@ export default function BillingPage() {
             billing_item_id: billingItemId,
             is_billed: isBilled,
             quantity: null,
+            value_number: null,
+            value_text: null,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           };
