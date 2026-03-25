@@ -124,29 +124,33 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
 
   // クリック外でドロップダウンを閉じる
   useEffect(() => {
-    if (!showSchoolDropdown && !showSettingsDropdown && !showBusinessDropdown) return;
+    if (!showSchoolDropdown && !showSettingsDropdown && !showBusinessDropdown && !showFormDropdown && !showTeacherDropdown) return;
 
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (!target.closest('.school-dropdown-container')) {
+      if (showSchoolDropdown && !target.closest('.school-dropdown-container')) {
         setShowSchoolDropdown(false);
       }
-      if (!target.closest('.settings-dropdown-container')) {
+      if (showSettingsDropdown && !target.closest('.settings-dropdown-container')) {
         setShowSettingsDropdown(false);
       }
-      if (!target.closest('.business-dropdown-container')) {
+      if (showBusinessDropdown && !target.closest('.business-dropdown-container')) {
         setShowBusinessDropdown(false);
+      }
+      if (showFormDropdown && !target.closest('.form-dropdown-container')) {
+        setShowFormDropdown(false);
+      }
+      if (showTeacherDropdown && !target.closest('.teacher-dropdown-container')) {
+        setShowTeacherDropdown(false);
       }
     };
 
-    setTimeout(() => {
-      document.addEventListener('click', handleClickOutside);
-    }, 0);
+    document.addEventListener('mousedown', handleClickOutside);
 
     return () => {
-      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showSchoolDropdown, showSettingsDropdown, showBusinessDropdown]);
+  }, [showSchoolDropdown, showSettingsDropdown, showBusinessDropdown, showFormDropdown, showTeacherDropdown]);
 
   return (
     <header className="bg-[#d32f2f] shadow-md">
@@ -160,7 +164,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
               </span>
             </Link>
             <div className="h-6 w-px bg-white/30"></div>
-            <nav className="flex items-center gap-3 relative z-50">
+            <nav className="flex items-center gap-3">
               {(showAllLinks || permissions?.canAccessStudents) && (
                 <Link
                   href="/students"
@@ -187,7 +191,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
               )}
               {/* フォーム管理（教室長以上のみ） */}
               {(showAllLinks || permissions?.canAccessPortal) && (
-                <div className="relative">
+                <div className="relative form-dropdown-container">
                   <button
                     className={`px-2.5 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 ${
                       pathname?.startsWith('/responses') ||
@@ -198,8 +202,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                         : 'text-white/90 hover:bg-white/10 hover:text-white'
                     }`}
                     onClick={() => setShowFormDropdown(!showFormDropdown)}
-                    onBlur={() => setTimeout(() => setShowFormDropdown(false), 200)}
-                  >
+                                      >
                   フォーム管理
                   <svg
                     className={`w-3 h-3 transition-transform ${showFormDropdown ? 'rotate-180' : ''}`}
@@ -258,7 +261,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
               )}
               {/* 講師メニュー（教室長以上のみ） */}
               {!profile || profile.role !== 'teacher' ? (
-                <div className="relative">
+                <div className="relative teacher-dropdown-container">
                   <button
                     className={`px-2.5 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 ${
                       pathname?.startsWith('/admin/teachers') ||
@@ -269,8 +272,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                         : 'text-white/90 hover:bg-white/10 hover:text-white'
                     }`}
                     onClick={() => setShowTeacherDropdown(!showTeacherDropdown)}
-                    onBlur={() => setTimeout(() => setShowTeacherDropdown(false), 200)}
-                  >
+                                      >
                     講師
                     <svg
                       className={`w-3 h-3 transition-transform ${showTeacherDropdown ? 'rotate-180' : ''}`}
@@ -358,8 +360,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                         : 'text-white/90 hover:bg-white/10 hover:text-white'
                     }`}
                     onClick={() => setShowBusinessDropdown(!showBusinessDropdown)}
-                    onBlur={() => setTimeout(() => setShowBusinessDropdown(false), 200)}
-                  >
+                                      >
                     業務管理
                     <svg
                       className={`w-3 h-3 transition-transform ${showBusinessDropdown ? 'rotate-180' : ''}`}
