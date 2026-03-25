@@ -160,7 +160,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
               </span>
             </Link>
             <div className="h-6 w-px bg-white/30"></div>
-            <nav className="flex items-center gap-3">
+            <nav className="flex items-center gap-3 relative z-50">
               {(showAllLinks || permissions?.canAccessStudents) && (
                 <Link
                   href="/students"
@@ -372,7 +372,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                   </button>
                   {showBusinessDropdown && (
                   <div
-                    className="absolute top-full left-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-xl z-50 min-w-[150px]"
+                    className="absolute top-full left-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-xl z-[9999] min-w-[150px]"
                   >
                     <div className="py-1">
                       <Link
