@@ -348,7 +348,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
               )}
               {/* 業務管理（教室長以上のみ） */}
               {(showAllLinks || permissions?.canAccessBilling) && (
-                <div className="relative">
+                <div className="relative business-dropdown-container">
                   <button
                     className={`px-2.5 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 ${
                       pathname?.startsWith('/billing') ||
