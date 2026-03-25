@@ -509,21 +509,20 @@ export async function syncApplicationToBilling(
 
   const appItemIds = appItems.map(item => item.id);
 
-  // 2. Find student_applications where these items are checked (status_value = '✓' or is checked)
-  // student_applications has: student_id, application_item_id, status_value, school_id
+  // 2. Find student_applications where these items are completed
+  // student_applications has: student_id, item_id, status, school_id
   const { data: applications, error: appError } = await supabase
     .from('student_applications')
-    .select('student_id, application_item_id, status_value, school_id')
-    .in('application_item_id', appItemIds)
+    .select('student_id, item_id, status, school_id')
+    .in('item_id', appItemIds)
     .in('school_id', targetSchoolIds);
 
   if (appError) throw new Error(`申込状況の取得に失敗: ${appError.message}`);
   if (!applications) return { synced: 0, total: 0 };
 
-  // 3. Filter to only checked/completed applications
-  // status_value is '✓' for check type items, or a truthy value
+  // 3. Filter to only completed applications
   const checkedApps = applications.filter(app =>
-    app.status_value === '✓' || app.status_value === 'true' || app.status_value === '1'
+    app.status === 'completed'
   );
 
   // 4. Upsert billing records
@@ -601,7 +600,11 @@ export async function syncOrdersToBilling(
 
   // Upsert billing records
   let synced = 0;
-  for (const [studentId, data] of studentQuantities) {
+  const entries = Array.from(studentQuantities.entries());
+  for (let i = 0; i < entries.length; i++) {
+    const studentId = entries[i][0];
+    const data = entries[i][1];
+
     const { data: existing } = await supabase
       .from('student_billings')
       .select('id')
