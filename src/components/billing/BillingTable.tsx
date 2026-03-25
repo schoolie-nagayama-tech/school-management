@@ -74,7 +74,9 @@ export function BillingTable({
     let quantitySum = 0;
     let numberSum = 0;
     let numberBilledCount = 0;
+    let numberHasValueCount = 0;
     let textBilledCount = 0;
+    let textHasValueCount = 0;
 
     students.forEach((student) => {
       const key = `${student.id}-${item.id}`;
@@ -82,9 +84,13 @@ export function BillingTable({
 
       if (valueType === 'number') {
         if (billing?.is_billed) numberBilledCount++;
-        if (billing?.value_number != null) numberSum += billing.value_number;
+        if (billing?.value_number != null) {
+          numberHasValueCount++;
+          numberSum += billing.value_number;
+        }
       } else if (valueType === 'text') {
         if (billing?.is_billed) textBilledCount++;
+        if (billing?.value_text != null && billing.value_text !== '') textHasValueCount++;
       } else {
         // check type (default)
         const isBilled = billing?.is_billed === true || (billing?.quantity != null && billing.quantity > 0);
@@ -109,7 +115,9 @@ export function BillingTable({
       quantitySum,
       numberSum,
       numberBilledCount,
+      numberHasValueCount,
       textBilledCount,
+      textHasValueCount,
     };
   });
 
@@ -513,17 +521,23 @@ export function BillingTable({
                   <div className="flex flex-col gap-0.5">
                     {summary.valueType === 'number' ? (
                       <>
-                        <span className="text-[11px] font-semibold text-[#1e3a5f]">
-                          計上: {summary.numberBilledCount}件
+                        <span className="text-[11px] text-[#4b5563]">
+                          対象: <strong className="text-[#1e3a5f]">{summary.numberHasValueCount}</strong>名
+                          {summary.numberSum > 0 && <span className="ml-1">（合計: {summary.numberSum}）</span>}
                         </span>
-                        <span className="text-[10px] text-[#4b5563]">
-                          合計: {summary.numberSum}
+                        <span className={`text-[11px] font-semibold ${summary.numberBilledCount > 0 ? 'text-green-600' : 'text-orange-500'}`}>
+                          計上: {summary.numberBilledCount}/{summary.numberHasValueCount}
                         </span>
                       </>
                     ) : summary.valueType === 'text' ? (
-                      <span className="text-[11px] font-semibold text-[#1e3a5f]">
-                        計上: {summary.textBilledCount}件
-                      </span>
+                      <>
+                        <span className="text-[11px] text-[#4b5563]">
+                          対象: <strong className="text-[#1e3a5f]">{summary.textHasValueCount}</strong>名
+                        </span>
+                        <span className={`text-[11px] font-semibold ${summary.textBilledCount > 0 ? 'text-green-600' : 'text-orange-500'}`}>
+                          計上: {summary.textBilledCount}/{summary.textHasValueCount}
+                        </span>
+                      </>
                     ) : (
                       <>
                         <span className="text-[11px] font-semibold text-[#1e3a5f]">
@@ -601,22 +615,24 @@ export function BillingTable({
                               className="w-full px-1 py-0.5 text-xs text-center border border-blue-400 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
                             />
                           ) : (
-                            <div className="flex items-center justify-center gap-0.5">
+                            <div className="flex flex-col items-center gap-0.5">
+                              {/* 数値表示（クリックで編集） */}
                               <span
-                                className={`text-xs font-semibold cursor-pointer hover:underline ${
-                                  hasValue ? (isBilled ? 'text-green-700' : 'text-yellow-700') : 'text-gray-400'
+                                className={`text-sm font-bold cursor-pointer hover:underline ${
+                                  hasValue ? (isBilled ? 'text-green-700' : 'text-[#1e3a5f]') : 'text-gray-300'
                                 }`}
                                 onClick={() => canEditCell && onBillingChange && handleNumberCellClick(student.id, item.id, billing)}
                                 title={hasValue ? `${billing?.value_number}（クリックで編集）` : 'クリックで入力'}
                               >
                                 {hasValue ? billing?.value_number : '-'}
                               </span>
-                              {canEditCell && onBillingChange && (
+                              {/* 計上ボタン（大きく目立つ） */}
+                              {canEditCell && onBillingChange && hasValue && (
                                 <button
-                                  className={`text-[10px] leading-none rounded px-0.5 ${
+                                  className={`text-[11px] leading-none rounded-md px-2 py-0.5 font-medium transition-colors ${
                                     isBilled
-                                      ? 'text-green-600 hover:text-green-800'
-                                      : 'text-gray-400 hover:text-gray-600'
+                                      ? 'bg-green-500 text-white hover:bg-green-600'
+                                      : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
                                   }`}
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -624,7 +640,7 @@ export function BillingTable({
                                   }}
                                   title={isBilled ? '計上済（クリックで解除）' : '未計上（クリックで計上）'}
                                 >
-                                  {isBilled ? '☑' : '☐'}
+                                  {isBilled ? '✓ 計上' : '計上'}
                                 </button>
                               )}
                             </div>
@@ -665,22 +681,24 @@ export function BillingTable({
                               className="w-full px-1 py-0.5 text-xs border border-blue-400 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
                             />
                           ) : (
-                            <div className="flex items-center justify-center gap-0.5">
+                            <div className="flex flex-col items-center gap-0.5">
+                              {/* テキスト表示（クリックで編集） */}
                               <span
-                                className={`text-xs cursor-pointer hover:underline truncate max-w-[60px] ${
-                                  hasValue ? (isBilled ? 'text-green-700' : 'text-yellow-700') : 'text-gray-400'
+                                className={`text-xs cursor-pointer hover:underline truncate max-w-[80px] ${
+                                  hasValue ? (isBilled ? 'text-green-700' : 'text-[#1e3a5f]') : 'text-gray-300'
                                 }`}
                                 onClick={() => canEditCell && onBillingChange && handleTextCellClick(student.id, item.id, billing)}
                                 title={hasValue ? `${billing?.value_text}（クリックで編集）` : 'クリックで入力'}
                               >
                                 {hasValue ? billing?.value_text : '-'}
                               </span>
-                              {canEditCell && onBillingChange && (
+                              {/* 計上ボタン（大きく目立つ） */}
+                              {canEditCell && onBillingChange && hasValue && (
                                 <button
-                                  className={`text-[10px] leading-none rounded px-0.5 ${
+                                  className={`text-[11px] leading-none rounded-md px-2 py-0.5 font-medium transition-colors ${
                                     isBilled
-                                      ? 'text-green-600 hover:text-green-800'
-                                      : 'text-gray-400 hover:text-gray-600'
+                                      ? 'bg-green-500 text-white hover:bg-green-600'
+                                      : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
                                   }`}
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -688,7 +706,7 @@ export function BillingTable({
                                   }}
                                   title={isBilled ? '計上済（クリックで解除）' : '未計上（クリックで計上）'}
                                 >
-                                  {isBilled ? '☑' : '☐'}
+                                  {isBilled ? '✓ 計上' : '計上'}
                                 </button>
                               )}
                             </div>
