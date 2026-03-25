@@ -8,6 +8,7 @@ import {
   createBillingItem,
   updateBillingPeriod,
   deleteBillingPeriod,
+  syncFormToBilling,
 } from '@/lib/api/billing';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -129,7 +130,14 @@ export function BillingPeriodSelector({
         }
       }
 
-      success('請求期間を作成しました（デフォルト項目を追加済み）');
+      // フォーム連携項目の自動同期（申込データを反映）
+      try {
+        await syncFormToBilling(created.id, schoolId);
+      } catch {
+        console.warn('フォーム自動同期に失敗（手動で同期ボタンを使用してください）');
+      }
+
+      success('請求期間を作成しました（デフォルト項目・フォーム同期済み）');
       setIsCreating(false);
       onUpdated();
       onSelect(created.id);
