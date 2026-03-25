@@ -755,20 +755,39 @@ export async function calcFifthWeekBilling(
   const targetSchoolIds = Array.isArray(schoolIds) ? schoolIds : [schoolIds];
 
   // 1. Get the billing period to determine year-month
+  // 請求名から年月を取得し、+1ヶ月（翌月分の月謝として5週目を計算）
   const { data: period, error: periodError } = await supabase
     .from('billing_periods')
-    .select('start_date')
+    .select('name, start_date')
     .eq('id', billingPeriodId)
     .single();
 
   if (periodError || !period) throw new Error(`請求期間の取得に失敗: ${periodError?.message}`);
 
-  const [yearStr, monthStr] = period.start_date.split('-');
-  const year = Number(yearStr);
-  const month = Number(monthStr);
+  // 請求名から年月を抽出（例: "2026年3月請求" → 2026, 3）
+  const nameMatch = period.name.match(/(\d{4})年(\d{1,2})月/);
+  let year: number;
+  let month: number;
+  if (nameMatch) {
+    year = Number(nameMatch[1]);
+    month = Number(nameMatch[2]);
+  } else {
+    // フォールバック: start_dateから取得
+    const [yearStr, monthStr] = period.start_date.split('-');
+    year = Number(yearStr);
+    month = Number(monthStr);
+  }
 
-  // 2. Get 5th week days
-  const fifthWeekDows = getFifthWeekDays(year, month);
+  // 5週目は翌月分（月謝は翌月分を請求するため）
+  let targetYear = year;
+  let targetMonth = month + 1;
+  if (targetMonth > 12) {
+    targetMonth = 1;
+    targetYear++;
+  }
+
+  // 2. Get 5th week days for the NEXT month
+  const fifthWeekDows = getFifthWeekDays(targetYear, targetMonth);
   if (fifthWeekDows.length === 0) {
     return { updated: 0, skipped: 0 };
   }

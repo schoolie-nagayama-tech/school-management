@@ -231,12 +231,17 @@ export function BillingTable({
   };
 
   // 5th week calc handler (new version using calcFifthWeekBilling)
+  // 5週目は翌月分（月謝は翌月分を請求するため）
   const handleCalcFifthWeek = async () => {
     if (!billingPeriodId || !schoolIds || !periodStartDate) return;
 
     const [yearStr, monthStr] = periodStartDate.split('-');
-    const year = Number(yearStr);
-    const month = Number(monthStr);
+    let year = Number(yearStr);
+    let month = Number(monthStr);
+    // 翌月の5週目を計算（月謝は翌月分）
+    month++;
+    if (month > 12) { month = 1; year++; }
+
     const dayLabels = getFifthWeekDayLabels(year, month);
 
     if (!dayLabels) {
@@ -245,8 +250,8 @@ export function BillingTable({
     }
 
     const confirmed = await confirm({
-      title: '5週目自動計算',
-      description: `5週目のコマ数を通塾日程から自動計算しますか？\n\n${year}年${month}月は${dayLabels}曜日に5週目があります。`,
+      title: '5週目自動計算（翌月分）',
+      description: `翌月（${year}年${month}月）の5週目コマ数を通塾日程から自動計算しますか？\n\n${year}年${month}月は${dayLabels}曜日に5週目があります。`,
       confirmLabel: '自動計算',
       variant: 'default',
     });
@@ -264,13 +269,15 @@ export function BillingTable({
     }
   };
 
-  // 5週目自動計算ハンドラ (legacy)
+  // 5週目自動計算ハンドラ (legacy) - 翌月分
   const handleAutoFillFifthWeek = async (itemId: string) => {
     if (!periodStartDate || !schoolIds) return;
 
     const [yearStr, monthStr] = periodStartDate.split('-');
-    const year = Number(yearStr);
-    const month = Number(monthStr);
+    let year = Number(yearStr);
+    let month = Number(monthStr);
+    month++;
+    if (month > 12) { month = 1; year++; }
     const dayLabels = getFifthWeekDayLabels(year, month);
 
     if (!dayLabels) {
@@ -279,8 +286,8 @@ export function BillingTable({
     }
 
     const confirmed = await confirm({
-      title: '5週目自動計算',
-      description: `5週目のコマ数を通塾日程から自動計算しますか？\n\n${year}年${month}月は${dayLabels}曜日に5週目があります。`,
+      title: '5週目自動計算（翌月分）',
+      description: `翌月（${year}年${month}月）の5週目コマ数を通塾日程から自動計算しますか？\n\n${year}年${month}月は${dayLabels}曜日に5週目があります。`,
       confirmLabel: '自動計算',
       variant: 'default',
     });

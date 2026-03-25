@@ -41,23 +41,28 @@ export function BillingPeriodSelector({
   const currentMonth = new Date().getMonth() + 1;
   const [newYear, setNewYear] = useState(currentYear);
   const [newMonth, setNewMonth] = useState(currentMonth);
-  // 期日: デフォルトは選択年月の月初〜月末
-  const defaultStartDate = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`;
-  const defaultEndDay = new Date(currentYear, currentMonth, 0).getDate();
-  const defaultEndDate = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(defaultEndDay).padStart(2, '0')}`;
-  const [newStartDate, setNewStartDate] = useState(defaultStartDate);
-  const [newEndDate, setNewEndDate] = useState(defaultEndDate);
+  // 期日: デフォルトは前月10日〜当月10日（締め日は毎月前後するため手動調整可能）
+  const calcDefaultDates = (year: number, month: number) => {
+    // 前月10日
+    const prevMonth = month === 1 ? 12 : month - 1;
+    const prevYear = month === 1 ? year - 1 : year;
+    const start = `${prevYear}-${String(prevMonth).padStart(2, '0')}-10`;
+    // 当月10日
+    const end = `${year}-${String(month).padStart(2, '0')}-10`;
+    return { start, end };
+  };
+  const { start: defaultStart, end: defaultEnd } = calcDefaultDates(currentYear, currentMonth);
+  const [newStartDate, setNewStartDate] = useState(defaultStart);
+  const [newEndDate, setNewEndDate] = useState(defaultEnd);
   const [editName, setEditName] = useState('');
   const [editStartDate, setEditStartDate] = useState('');
   const [editEndDate, setEditEndDate] = useState('');
 
   const selectedPeriod = periods.find((p) => p.id === selectedPeriodId);
 
-  // 年月変更時に期日も自動更新
+  // 年月変更時に期日も自動更新（前月10日〜当月10日）
   const updateDatesFromYearMonth = (year: number, month: number) => {
-    const start = `${year}-${String(month).padStart(2, '0')}-01`;
-    const lastDay = new Date(year, month, 0).getDate();
-    const end = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    const { start, end } = calcDefaultDates(year, month);
     setNewStartDate(start);
     setNewEndDate(end);
   };
