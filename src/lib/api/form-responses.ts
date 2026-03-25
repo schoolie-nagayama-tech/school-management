@@ -308,61 +308,68 @@ export async function linkResponseToStudent(
   }
 
   // Billing auto-sync: if form type has a linked billing item, auto-reflect
+  // 判定基準: response.created_at が請求期間の start_date〜end_date 内
   try {
-    // Find active billing periods for this school
+    const responseDate = response.created_at?.split('T')[0] || new Date().toISOString().split('T')[0];
+
+    // Find active billing periods that cover the response date
     const { data: activePeriods } = await supabase
       .from('billing_periods')
-      .select('id, start_date')
+      .select('id, start_date, end_date')
       .eq('school_id', response.school_id)
-      .eq('is_active', true);
+      .eq('is_active', true)
+      .lte('start_date', responseDate)
+      .gte('end_date', responseDate);
 
     if (activePeriods && activePeriods.length > 0) {
-      // Find billing items linked to this form type
       for (const period of activePeriods) {
-        const periodMonth = period.start_date.substring(0, 7); // YYYY-MM
-        // Only sync if form_period matches
-        if (response.form_period?.startsWith(periodMonth)) {
-          const { data: linkedItems } = await supabase
-            .from('billing_items')
-            .select('id')
-            .eq('billing_period_id', period.id)
-            .eq('linked_form_type', response.form_type);
+        const { data: linkedItems } = await supabase
+          .from('billing_items')
+          .select('id')
+          .eq('billing_period_id', period.id)
+          .eq('linked_form_type', response.form_type);
 
-          if (linkedItems) {
-            for (const item of linkedItems) {
-              // Count total responses for this student+form_type+period
-              const { count } = await supabase
-                .from('form_responses')
-                .select('id', { count: 'exact', head: true })
-                .eq('form_type', response.form_type)
-                .eq('linked_student_id', studentId)
-                .eq('school_id', response.school_id)
-                .like('form_period', `${periodMonth}%`);
+        if (linkedItems) {
+          for (const item of linkedItems) {
+            // Count total responses for this student+form_type within billing period range
+            const periodEndPlusOne = (() => {
+              const d = new Date(period.end_date);
+              d.setDate(d.getDate() + 1);
+              return d.toISOString().split('T')[0];
+            })();
 
-              // Upsert billing
-              const { data: existing } = await supabase
+            const { count } = await supabase
+              .from('form_responses')
+              .select('id', { count: 'exact', head: true })
+              .eq('form_type', response.form_type)
+              .eq('linked_student_id', studentId)
+              .eq('school_id', response.school_id)
+              .gte('created_at', `${period.start_date}T00:00:00`)
+              .lt('created_at', `${periodEndPlusOne}T00:00:00`);
+
+            // Upsert billing
+            const { data: existing } = await supabase
+              .from('student_billings')
+              .select('id')
+              .eq('student_id', studentId)
+              .eq('billing_item_id', item.id)
+              .maybeSingle();
+
+            if (existing) {
+              await supabase
                 .from('student_billings')
-                .select('id')
-                .eq('student_id', studentId)
-                .eq('billing_item_id', item.id)
-                .maybeSingle();
-
-              if (existing) {
-                await supabase
-                  .from('student_billings')
-                  .update({ value_number: count || 1 })
-                  .eq('id', existing.id);
-              } else {
-                await supabase
-                  .from('student_billings')
-                  .insert({
-                    school_id: response.school_id,
-                    student_id: studentId,
-                    billing_item_id: item.id,
-                    is_billed: false,
-                    value_number: count || 1,
-                  });
-              }
+                .update({ value_number: count || 1 })
+                .eq('id', existing.id);
+            } else {
+              await supabase
+                .from('student_billings')
+                .insert({
+                  school_id: response.school_id,
+                  student_id: studentId,
+                  billing_item_id: item.id,
+                  is_billed: false,
+                  value_number: count || 1,
+                });
             }
           }
         }

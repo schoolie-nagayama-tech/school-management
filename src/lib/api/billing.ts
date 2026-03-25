@@ -588,27 +588,38 @@ export async function syncFormToBilling(
   if (itemsError) throw new Error(`請求項目の取得に失敗: ${itemsError.message}`);
   if (!linkedItems || linkedItems.length === 0) return { synced: 0 };
 
-  // 2. Get the billing period to determine year-month
+  // 2. Get the billing period date range
   const { data: period, error: periodError } = await supabase
     .from('billing_periods')
-    .select('start_date')
+    .select('start_date, end_date')
     .eq('id', billingPeriodId)
     .single();
 
   if (periodError || !period) throw new Error(`請求期間の取得に失敗: ${periodError?.message}`);
-  const periodMonth = period.start_date.substring(0, 7); // YYYY-MM
+
+  // 請求期間の開始日〜終了日+1日（終了日の23:59:59までを含む）
+  const periodStart = period.start_date; // e.g. "2026-03-01"
+  const periodEndPlusOne = (() => {
+    const d = new Date(period.end_date);
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().split('T')[0]; // e.g. "2026-04-01"
+  })();
 
   let synced = 0;
 
   for (const item of linkedItems) {
-    // 3. Get form_responses linked to students for this form_type and period
+    // 3. Get form_responses linked to students for this form_type
+    //    判定基準: created_at が請求期間の start_date〜end_date 内
+    //    → 月またぎ対応: form_period ではなく申込日時で判定
+    //    → 同月複数フォーム期間: 合算される
     const { data: responses, error: respError } = await supabase
       .from('form_responses')
       .select('linked_student_id')
       .eq('form_type', item.linked_form_type!)
       .not('linked_student_id', 'is', null)
       .in('school_id', targetSchoolIds)
-      .like('form_period', `${periodMonth}%`);
+      .gte('created_at', `${periodStart}T00:00:00`)
+      .lt('created_at', `${periodEndPlusOne}T00:00:00`);
 
     if (respError) {
       console.warn(`フォーム回答の取得に失敗 (${item.linked_form_type}):`, respError);
