@@ -71,8 +71,15 @@ export function BillingPeriodSelector({
     updateDatesFromYearMonth(newYear, month);
   };
 
-  /** デフォルト請求項目 */
-  const DEFAULT_BILLING_ITEMS = ['5週目', '単語練習帳'];
+  /** デフォルト請求項目: { name, source_type } */
+  const DEFAULT_BILLING_ITEMS: Array<{ name: string; source_type: string }> = [
+    { name: '5週目', source_type: 'free' },
+    { name: '単語練習帳', source_type: 'free' },
+    { name: '増コマ', source_type: 'form_charged' },
+    { name: '模擬', source_type: 'form_charged' },
+    { name: '模試', source_type: 'form_charged' },
+    { name: '教材発注', source_type: 'order' },
+  ];
 
   const handleCreate = async () => {
     if (!schoolId || (Array.isArray(schoolId) && schoolId.length === 0)) {
@@ -104,15 +111,15 @@ export function BillingPeriodSelector({
       );
 
       // デフォルト項目を自動追加
-      for (const itemName of DEFAULT_BILLING_ITEMS) {
+      for (const item of DEFAULT_BILLING_ITEMS) {
         try {
           await createBillingItem(
-            { billing_period_id: created.id, name: itemName, source_type: 'free' },
+            { billing_period_id: created.id, name: item.name, source_type: item.source_type },
             schoolId
           );
         } catch {
           // デフォルト項目の追加失敗は無視（期間作成は成功しているため）
-          console.warn(`デフォルト項目「${itemName}」の追加に失敗`);
+          console.warn(`デフォルト項目「${item.name}」の追加に失敗`);
         }
       }
 
@@ -317,7 +324,7 @@ export function BillingPeriodSelector({
             </div>
           </div>
           <p className="text-xs text-[#9ca3af] mt-2">
-            ※ デフォルト項目「5週目」「単語練習帳」が自動追加されます
+            ※ デフォルト項目（5週目、単語練習帳、増コマ、模擬、模試、教材発注）が自動追加されます
           </p>
         </div>
       )}

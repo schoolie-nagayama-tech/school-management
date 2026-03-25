@@ -341,6 +341,7 @@ export default function BillingPage() {
           onStudentClick={handleStudentClick}
           onItemsChange={handleItemsUpdated}
           periodStartDate={periods.find(p => p.id === selectedPeriodId)?.start_date}
+          periodEndDate={periods.find(p => p.id === selectedPeriodId)?.end_date}
           schoolIds={getSelectedSchoolIds()}
         />
       )}

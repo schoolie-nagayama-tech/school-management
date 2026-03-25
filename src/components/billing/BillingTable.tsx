@@ -2,7 +2,8 @@
 
 import type { Student, BillingItem, StudentBilling } from '@/types/database';
 import { GRADE_LABELS, BILLING_SOURCE_TYPE_LABELS } from '@/types/database';
-import { toggleStudentBilling, updateBillingItem, deleteBillingItem, autoFillFifthWeekBilling } from '@/lib/api/billing';
+import { toggleStudentBilling, updateBillingItem, deleteBillingItem, syncApplicationToBilling, syncOrdersToBilling, autoFillFifthWeekBilling } from '@/lib/api/billing';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { getFifthWeekDayLabels } from '@/lib/utils/fifthWeek';
 import { useAuth } from '@/contexts/AuthContext';
 import { useState } from 'react';
@@ -17,6 +18,7 @@ interface BillingTableProps {
   onStudentClick?: (student: Student) => void;
   onItemsChange?: () => void;
   periodStartDate?: string;  // For 5th week auto-calc
+  periodEndDate?: string;    // For order sync
   schoolIds?: string | string[];  // For 5th week auto-calc
 }
 
@@ -28,6 +30,7 @@ export function BillingTable({
   onStudentClick,
   onItemsChange,
   periodStartDate,
+  periodEndDate,
   schoolIds,
 }: BillingTableProps) {
   const { profile } = useAuth();
@@ -268,7 +271,7 @@ export function BillingTable({
                               ? 'bg-white/20 text-white/70'
                               : item.source_type === 'form_charged'
                               ? 'bg-blue-400/30 text-blue-200'
-                              : 'bg-amber-400/30 text-amber-200'
+                              : 'bg-purple-400/30 text-purple-200'
                           }`}>
                             {sourceLabel}
                           </span>
@@ -283,6 +286,52 @@ export function BillingTable({
                               title="通塾日程から5週目コマ数を自動計算"
                             >
                               {autoFilling ? '...' : '⚡自動計算'}
+                            </button>
+                          )}
+                          {item.source_type === 'form_charged' && !isTeacher && periodStartDate && schoolIds && (
+                            <button
+                              className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-400/30 text-blue-200 hover:bg-blue-400/50 transition-colors"
+                              title="申込状況から同期"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                if (!await confirm({
+                                  title: '申込状況から同期',
+                                  description: `「${item.name}」を申込状況から自動同期しますか？\n申込済み（✓）の生徒が請求に反映されます。`,
+                                  confirmLabel: '同期する',
+                                })) return;
+                                try {
+                                  const result = await syncApplicationToBilling(item.id, item.name, schoolIds);
+                                  success(`${result.synced}名の申込状況を同期しました`);
+                                  onItemsChange?.();
+                                } catch (err) {
+                                  toastError(getUserErrorMessage(err, '同期に失敗しました'));
+                                }
+                              }}
+                            >
+                              🔄同期
+                            </button>
+                          )}
+                          {item.source_type === 'order' && !isTeacher && periodStartDate && schoolIds && (
+                            <button
+                              className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-400/30 text-purple-200 hover:bg-purple-400/50 transition-colors"
+                              title="発注管理から同期"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                if (!await confirm({
+                                  title: '発注管理から同期',
+                                  description: `「${item.name}」を発注管理から自動同期しますか？\n期間内の発注が請求に反映されます。`,
+                                  confirmLabel: '同期する',
+                                })) return;
+                                try {
+                                  const result = await syncOrdersToBilling(item.id, schoolIds, periodStartDate, periodEndDate || periodStartDate);
+                                  success(`${result.synced}名の発注を同期しました`);
+                                  onItemsChange?.();
+                                } catch (err) {
+                                  toastError(getUserErrorMessage(err, '同期に失敗しました'));
+                                }
+                              }}
+                            >
+                              🔄同期
                             </button>
                           )}
                         </div>

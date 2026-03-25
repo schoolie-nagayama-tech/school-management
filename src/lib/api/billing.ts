@@ -473,3 +473,160 @@ export async function autoFillFifthWeekBilling(
 
   return { updated, skipped };
 }
+
+// ============================================
+// 申込状況・発注管理からの自動同期
+// ============================================
+
+/**
+ * 申込状況（application_items / student_applications）から請求データを自動同期
+ *
+ * 指定された請求項目（source_type='form_charged'）に対して、
+ * 申込状況で対応する項目が「申込済み（✓）」になっている生徒を
+ * 請求に自動反映する。
+ *
+ * マッピング:
+ * - 「増コマ」→ application_items で name に「増コマ」を含む項目
+ * - 「模擬」→ application_items で name に「模擬」を含む項目
+ * - 「模試」→ application_items で name に「模試」を含む項目
+ */
+export async function syncApplicationToBilling(
+  billingItemId: string,
+  billingItemName: string,
+  schoolIds: string | string[]
+): Promise<{ synced: number; total: number }> {
+  const targetSchoolIds = Array.isArray(schoolIds) ? schoolIds : [schoolIds];
+
+  // 1. Find matching application_items by name keyword
+  const { data: appItems, error: appItemError } = await supabase
+    .from('application_items')
+    .select('id, name')
+    .in('school_id', targetSchoolIds)
+    .ilike('name', `%${billingItemName}%`);
+
+  if (appItemError) throw new Error(`申込項目の取得に失敗: ${appItemError.message}`);
+  if (!appItems || appItems.length === 0) return { synced: 0, total: 0 };
+
+  const appItemIds = appItems.map(item => item.id);
+
+  // 2. Find student_applications where these items are checked (status_value = '✓' or is checked)
+  // student_applications has: student_id, application_item_id, status_value, school_id
+  const { data: applications, error: appError } = await supabase
+    .from('student_applications')
+    .select('student_id, application_item_id, status_value, school_id')
+    .in('application_item_id', appItemIds)
+    .in('school_id', targetSchoolIds);
+
+  if (appError) throw new Error(`申込状況の取得に失敗: ${appError.message}`);
+  if (!applications) return { synced: 0, total: 0 };
+
+  // 3. Filter to only checked/completed applications
+  // status_value is '✓' for check type items, or a truthy value
+  const checkedApps = applications.filter(app =>
+    app.status_value === '✓' || app.status_value === 'true' || app.status_value === '1'
+  );
+
+  // 4. Upsert billing records
+  let synced = 0;
+  for (const app of checkedApps) {
+    const { data: existing } = await supabase
+      .from('student_billings')
+      .select('id')
+      .eq('student_id', app.student_id)
+      .eq('billing_item_id', billingItemId)
+      .maybeSingle();
+
+    if (existing) {
+      await supabase
+        .from('student_billings')
+        .update({ is_billed: true })
+        .eq('id', existing.id);
+    } else {
+      await supabase
+        .from('student_billings')
+        .insert({
+          school_id: app.school_id,
+          student_id: app.student_id,
+          billing_item_id: billingItemId,
+          is_billed: true,
+          quantity: null,
+        });
+    }
+    synced++;
+  }
+
+  return { synced, total: checkedApps.length };
+}
+
+/**
+ * 発注管理（material_orders）から請求データを自動同期
+ *
+ * 発注済み（pending以外）の教材発注を請求に反映。
+ * 生徒ごとに発注数をquantityとして設定。
+ */
+export async function syncOrdersToBilling(
+  billingItemId: string,
+  schoolIds: string | string[],
+  periodStartDate: string,
+  periodEndDate: string
+): Promise<{ synced: number }> {
+  const targetSchoolIds = Array.isArray(schoolIds) ? schoolIds : [schoolIds];
+
+  // Get orders within the billing period date range (excluding cancelled)
+  const { data: orders, error: orderError } = await supabase
+    .from('material_orders')
+    .select('student_id, school_id, quantity, status, material_id, materials(name)')
+    .in('school_id', targetSchoolIds)
+    .neq('status', 'cancelled')
+    .gte('created_at', periodStartDate)
+    .lte('created_at', periodEndDate + 'T23:59:59');
+
+  if (orderError) throw new Error(`発注データの取得に失敗: ${orderError.message}`);
+  if (!orders || orders.length === 0) return { synced: 0 };
+
+  // Group by student_id, sum quantities
+  const studentQuantities = new Map<string, { quantity: number; school_id: string }>();
+  for (const order of orders) {
+    if (!order.student_id) continue;
+    const existing = studentQuantities.get(order.student_id);
+    if (existing) {
+      existing.quantity += order.quantity || 1;
+    } else {
+      studentQuantities.set(order.student_id, {
+        quantity: order.quantity || 1,
+        school_id: order.school_id,
+      });
+    }
+  }
+
+  // Upsert billing records
+  let synced = 0;
+  for (const [studentId, data] of studentQuantities) {
+    const { data: existing } = await supabase
+      .from('student_billings')
+      .select('id')
+      .eq('student_id', studentId)
+      .eq('billing_item_id', billingItemId)
+      .maybeSingle();
+
+    if (existing) {
+      await supabase
+        .from('student_billings')
+        .update({ is_billed: true, quantity: data.quantity })
+        .eq('id', existing.id);
+    } else {
+      await supabase
+        .from('student_billings')
+        .insert({
+          school_id: data.school_id,
+          student_id: studentId,
+          billing_item_id: billingItemId,
+          is_billed: true,
+          quantity: data.quantity,
+        });
+    }
+    synced++;
+  }
+
+  return { synced };
+}
