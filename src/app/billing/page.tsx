@@ -7,7 +7,6 @@ import {
   BillingPeriodSelector,
   BillingTable,
   BillingItemAccordion,
-  BillingFiltersPanel,
 } from '@/components/billing';
 import type { BillingFilters } from '@/components/billing';
 import { StudentDetailModal } from '@/components/students';
@@ -23,6 +22,7 @@ import type {
   BillingItem,
   StudentBilling,
 } from '@/types/database';
+import { GRADE_LABELS } from '@/types/database';
 import { useRequirePermission, useCanEdit } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
@@ -252,24 +252,47 @@ export default function BillingPage() {
         </div>
       )}
 
-      {/* 期間選択 */}
-      <BillingPeriodSelector
-        periods={periods}
-        selectedPeriodId={selectedPeriodId}
-        onSelect={setSelectedPeriodId}
-        schoolId={currentSchoolIds}
-        onUpdated={handlePeriodsUpdated}
-        canEdit={canEdit && isManagerOrAbove}
-      />
+      {/* 期間選択 + 検索（1行にまとめる） */}
+      <div className="flex flex-wrap items-end gap-3 mb-4">
+        {/* 期間セレクト */}
+        <div className="flex-1 min-w-[250px]">
+          <BillingPeriodSelector
+            periods={periods}
+            selectedPeriodId={selectedPeriodId}
+            onSelect={setSelectedPeriodId}
+            schoolId={currentSchoolIds}
+            onUpdated={handlePeriodsUpdated}
+            canEdit={canEdit && isManagerOrAbove}
+          />
+        </div>
 
-      {/* フィルターパネル */}
-      {selectedPeriodId && (
-        <BillingFiltersPanel
-          filters={filters}
-          onChange={handleFilterChange}
-          onReset={handleResetFilters}
-        />
-      )}
+        {/* 検索 + 学年フィルター（期間選択時のみ） */}
+        {selectedPeriodId && (
+          <>
+            <div className="w-64">
+              <input
+                type="text"
+                placeholder="氏名・フリガナで検索"
+                value={filters.search}
+                onChange={(e) => handleFilterChange({ search: e.target.value })}
+                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white placeholder-gray-400 focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f]"
+              />
+            </div>
+            <div className="w-32">
+              <select
+                value={filters.grade ?? ''}
+                onChange={(e) => handleFilterChange({ grade: e.target.value ? Number(e.target.value) : null })}
+                className="w-full px-2 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#1f2937] focus:ring-2 focus:ring-[#1e3a5f]/20"
+              >
+                <option value="">全学年</option>
+                {Array.from(new Set(students.map((s) => s.grade))).sort((a, b) => a - b).map((g) => (
+                  <option key={g} value={g}>{GRADE_LABELS[g] || g}</option>
+                ))}
+              </select>
+            </div>
+          </>
+        )}
+      </div>
 
       {/* 項目管理アコーディオン（教室長以上のみ） */}
       {selectedPeriodId && isManagerOrAbove && currentSchoolIds && (
@@ -279,18 +302,6 @@ export default function BillingPage() {
           items={items}
           onUpdated={handleItemsUpdated}
         />
-      )}
-
-      {/* 説明 */}
-      {selectedPeriodId && canEdit && (
-        <div className="mb-4 text-[#4b5563] text-sm">
-          <p>セルをクリックして請求状況を切り替えます: 空白 → ✓（請求済）→ 空白</p>
-        </div>
-      )}
-      {selectedPeriodId && !canEdit && (
-        <div className="mb-4 text-[#4b5563] text-sm">
-          <p>請求状況を閲覧できます。編集するには編集権限が必要です。</p>
-        </div>
       )}
 
       {/* テーブル */}
