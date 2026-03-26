@@ -562,8 +562,8 @@ export async function syncApplicationToBilling(
 /**
  * 発注管理（material_orders）から請求データを自動同期
  *
- * 発注済み（pending以外）の教材発注を請求に反映。
- * 生徒ごとに発注数をquantityとして設定。
+ * 教材発注を請求に反映。
+ * 生徒ごとに発注数をquantityとして設定し、教材名をvalue_textに設定。
  */
 /**
  * フォーム回答を請求データに同期
@@ -950,27 +950,35 @@ export async function syncOrdersToBilling(
   if (orderError) throw new Error(`発注データの取得に失敗: ${orderError.message}`);
   if (!orders || orders.length === 0) return { synced: 0 };
 
-  // Group by student_id, sum quantities
-  const studentQuantities = new Map<string, { quantity: number; school_id: string }>();
+  // Group by student_id, sum quantities and collect textbook names
+  const studentData = new Map<string, { quantity: number; school_id: string; textbookNames: string[] }>();
   for (const order of orders) {
     if (!order.student_id) continue;
-    const existing = studentQuantities.get(order.student_id);
+    const materialName = (order as Record<string, unknown>).materials
+      ? ((order as Record<string, unknown>).materials as { name: string })?.name
+      : null;
+    const existing = studentData.get(order.student_id);
     if (existing) {
       existing.quantity += order.quantity || 1;
+      if (materialName && !existing.textbookNames.includes(materialName)) {
+        existing.textbookNames.push(materialName);
+      }
     } else {
-      studentQuantities.set(order.student_id, {
+      studentData.set(order.student_id, {
         quantity: order.quantity || 1,
         school_id: order.school_id,
+        textbookNames: materialName ? [materialName] : [],
       });
     }
   }
 
   // Upsert billing records
   let synced = 0;
-  const entries = Array.from(studentQuantities.entries());
+  const entries = Array.from(studentData.entries());
   for (let i = 0; i < entries.length; i++) {
     const studentId = entries[i][0];
     const data = entries[i][1];
+    const valueText = data.textbookNames.length > 0 ? data.textbookNames.join(', ') : null;
 
     const { data: existing } = await supabase
       .from('student_billings')
@@ -982,7 +990,7 @@ export async function syncOrdersToBilling(
     if (existing) {
       await supabase
         .from('student_billings')
-        .update({ is_billed: true, quantity: data.quantity })
+        .update({ is_billed: false, quantity: data.quantity, value_text: valueText })
         .eq('id', existing.id);
     } else {
       await supabase
@@ -991,8 +999,9 @@ export async function syncOrdersToBilling(
           school_id: data.school_id,
           student_id: studentId,
           billing_item_id: billingItemId,
-          is_billed: true,
+          is_billed: false,
           quantity: data.quantity,
+          value_text: valueText,
         });
     }
     synced++;

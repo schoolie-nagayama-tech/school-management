@@ -2215,7 +2215,7 @@ export type Database = {
           material_id: string;
           student_id: string;
           quantity: number;
-          status: 'pending' | 'ordered' | 'delivered' | 'distributed' | 'cancelled';
+          status: 'unconfirmed' | 'ordered' | 'delivered' | 'distributed' | 'cancelled';
           ordered_at: string | null;
           delivered_at: string | null;
           distributed_at: string | null;
@@ -2230,7 +2230,7 @@ export type Database = {
           material_id: string;
           student_id: string;
           quantity?: number;
-          status?: 'pending' | 'ordered' | 'delivered' | 'distributed' | 'cancelled';
+          status?: 'unconfirmed' | 'ordered' | 'delivered' | 'distributed' | 'cancelled';
           ordered_at?: string | null;
           delivered_at?: string | null;
           distributed_at?: string | null;
@@ -2245,7 +2245,7 @@ export type Database = {
           material_id?: string;
           student_id?: string;
           quantity?: number;
-          status?: 'pending' | 'ordered' | 'delivered' | 'distributed' | 'cancelled';
+          status?: 'unconfirmed' | 'ordered' | 'delivered' | 'distributed' | 'cancelled';
           ordered_at?: string | null;
           delivered_at?: string | null;
           distributed_at?: string | null;
@@ -3349,12 +3349,12 @@ export type MaterialOrder = Database['public']['Tables']['material_orders']['Row
 export type MaterialOrderInsert = Database['public']['Tables']['material_orders']['Insert'];
 export type MaterialOrderUpdate = Database['public']['Tables']['material_orders']['Update'];
 
-export type OrderStatus = 'pending' | 'ordered' | 'delivered' | 'distributed' | 'cancelled';
+export type OrderStatus = 'unconfirmed' | 'ordered' | 'delivered' | 'distributed' | 'cancelled';
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
-  pending: '発注待ち', ordered: '発注済み', delivered: '納品済み', distributed: '配布済み', cancelled: 'キャンセル',
+  unconfirmed: '未確認', ordered: '発注済み', delivered: '発送済み', distributed: '配布済み', cancelled: 'キャンセル',
 };
 export const ORDER_STATUS_COLORS: Record<OrderStatus, string> = {
-  pending: 'bg-yellow-100 text-yellow-800', ordered: 'bg-blue-100 text-blue-800',
+  unconfirmed: 'bg-yellow-100 text-yellow-800', ordered: 'bg-blue-100 text-blue-800',
   delivered: 'bg-green-100 text-green-800', distributed: 'bg-gray-100 text-gray-800',
   cancelled: 'bg-red-100 text-red-800',
 };

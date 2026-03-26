@@ -7,7 +7,7 @@ import type {
 } from '@/types/database';
 import { getDefaultSchoolId } from './schools';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
-import { createBillingItem, toggleStudentBilling } from '@/lib/api/billing';
+import { createBillingItem } from '@/lib/api/billing';
 import { createStockTransaction } from '@/lib/api/inventory';
 
 interface OrderFilters {
@@ -98,7 +98,7 @@ export async function createOrder(
       material_id: order.material_id,
       student_id: order.student_id,
       quantity: order.quantity ?? 1,
-      status: 'pending' as OrderStatus,
+      status: 'unconfirmed' as OrderStatus,
       notes: order.notes || null,
       ordered_at: null,
       delivered_at: null,
@@ -115,13 +115,15 @@ export async function createOrder(
 }
 
 /**
- * 発注を作成し、請求項目・生徒請求も自動作成する
+ * 発注を作成し、「教材発注」請求項目の生徒セルに教材名を自動反映する
  */
 export async function createOrderWithBilling(
   order: { material_id: string; student_id: string; quantity?: number; notes?: string },
   billingPeriodId: string,
   schoolId?: string
 ): Promise<{ order: MaterialOrder; billingItem: BillingItem | null }> {
+  const targetSchoolId = schoolId || getDefaultSchoolId();
+
   // 1. 発注を作成
   const createdOrder = await createOrder(order, schoolId);
 
@@ -140,29 +142,85 @@ export async function createOrderWithBilling(
       return { order: createdOrder, billingItem: null };
     }
 
-    // 3. 請求項目を作成
-    billingItem = await createBillingItem(
-      {
-        billing_period_id: billingPeriodId,
-        name: material.name,
-        source_type: 'order',
-      },
-      schoolId
-    );
-
-    // 3b. source_order_id を設定（createBillingItem では設定されないため直接更新）
-    await supabase
+    // 3. 「教材発注」請求項目を検索（source_type='order' のもの）
+    const { data: existingItem } = await supabase
       .from('billing_items')
-      .update({ source_order_id: createdOrder.id })
-      .eq('id', billingItem.id);
+      .select('*')
+      .eq('billing_period_id', billingPeriodId)
+      .eq('school_id', targetSchoolId)
+      .eq('source_type', 'order')
+      .maybeSingle();
 
-    // 4. 生徒請求エントリを作成
-    await toggleStudentBilling(
-      order.student_id,
-      billingItem.id,
-      true,
-      schoolId
-    );
+    if (!existingItem) {
+      // 「教材発注」項目がまだない場合は新規作成
+      billingItem = await createBillingItem(
+        {
+          billing_period_id: billingPeriodId,
+          name: '教材発注',
+          source_type: 'order',
+          value_type: 'text',
+        },
+        schoolId
+      );
+    } else {
+      billingItem = existingItem as BillingItem;
+    }
+
+    // 4. この生徒の全発注から教材名を収集
+    const { data: periodData } = await supabase
+      .from('billing_periods')
+      .select('start_date, end_date')
+      .eq('id', billingPeriodId)
+      .single();
+
+    const startDate = periodData?.start_date || '';
+    const endDate = periodData?.end_date || '';
+
+    const { data: studentOrders } = await supabase
+      .from('material_orders')
+      .select('material_id, materials(name)')
+      .eq('student_id', order.student_id)
+      .eq('school_id', targetSchoolId)
+      .neq('status', 'cancelled')
+      .gte('created_at', startDate)
+      .lte('created_at', endDate + 'T23:59:59');
+
+    // 教材名をユニークに収集
+    const textbookNames: string[] = [];
+    for (const o of studentOrders || []) {
+      const name = (o as Record<string, unknown>).materials
+        ? ((o as Record<string, unknown>).materials as { name: string })?.name
+        : null;
+      if (name && !textbookNames.includes(name)) {
+        textbookNames.push(name);
+      }
+    }
+    const valueText = textbookNames.length > 0 ? textbookNames.join(', ') : null;
+
+    // 5. student_billings を upsert（value_text に教材名を設定）
+    const { data: existingBilling } = await supabase
+      .from('student_billings')
+      .select('id')
+      .eq('student_id', order.student_id)
+      .eq('billing_item_id', billingItem.id)
+      .maybeSingle();
+
+    if (existingBilling) {
+      await supabase
+        .from('student_billings')
+        .update({ value_text: valueText, is_billed: false })
+        .eq('id', existingBilling.id);
+    } else {
+      await supabase
+        .from('student_billings')
+        .insert({
+          school_id: targetSchoolId,
+          student_id: order.student_id,
+          billing_item_id: billingItem.id,
+          is_billed: false,
+          value_text: valueText,
+        });
+    }
   } catch (error) {
     // 請求連携に失敗しても発注自体は成功として返す
     console.error('請求連携に失敗しました:', error);
@@ -219,13 +277,13 @@ export async function updateOrderStatus(
   // 在庫トランザクションを自動作成
   try {
     if (status === 'delivered') {
-      // 納品時: 入庫
+      // 発送済み: 入庫
       await createStockTransaction({
         school_id: existingOrder.school_id,
         material_id: existingOrder.material_id,
         transaction_type: 'in',
         quantity: existingOrder.quantity,
-        reason: '発注納品',
+        reason: '発注発送',
         related_order_id: id,
         related_student_id: null,
       });
@@ -250,14 +308,14 @@ export async function updateOrderStatus(
 }
 
 /**
- * 発注を削除（pendingのみ）
+ * 発注を削除（unconfirmedのみ）
  */
 export async function deleteOrder(id: string): Promise<void> {
   const { error } = await supabase
     .from('material_orders')
     .delete()
     .eq('id', id)
-    .eq('status', 'pending');
+    .eq('status', 'unconfirmed');
 
   if (error) {
     throw new Error(getUserErrorMessage(error, '発注の削除に失敗しました'));
@@ -282,7 +340,7 @@ export async function createBulkOrders(
     material_id: order.material_id,
     student_id: order.student_id,
     quantity: order.quantity ?? 1,
-    status: 'pending' as OrderStatus,
+    status: 'unconfirmed' as OrderStatus,
     notes: null,
     ordered_at: null,
     delivered_at: null,

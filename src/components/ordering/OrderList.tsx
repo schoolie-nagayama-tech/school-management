@@ -7,15 +7,15 @@ import { OrderStatusBadge } from './OrderStatusBadge';
 import type { MaterialOrderWithDetails, OrderStatus } from '@/types/database';
 
 const STATUS_OPTIONS: { value: OrderStatus; label: string }[] = [
-  { value: 'pending', label: '未発注' },
+  { value: 'unconfirmed', label: '未確認' },
   { value: 'ordered', label: '発注済' },
-  { value: 'delivered', label: '納品済' },
+  { value: 'delivered', label: '発送済' },
   { value: 'distributed', label: '配布済' },
   { value: 'cancelled', label: 'キャンセル' },
 ];
 
 const ROW_COLORS: Record<OrderStatus, string> = {
-  pending: '',
+  unconfirmed: '',
   ordered: 'bg-blue-50',
   delivered: 'bg-green-50',
   distributed: 'bg-gray-50',
@@ -62,7 +62,7 @@ export function OrderList({ orders, canEdit, onStatusChange, onDelete }: OrderLi
               <TableHead className="text-center">数量</TableHead>
               <TableHead>ステータス</TableHead>
               <TableHead>発注日</TableHead>
-              <TableHead>納品日</TableHead>
+              <TableHead>発送日</TableHead>
               {canEdit && <TableHead className="text-center">操作</TableHead>}
             </TableRow>
           </TableHeader>
@@ -102,7 +102,7 @@ export function OrderList({ orders, canEdit, onStatusChange, onDelete }: OrderLi
                 <TableCell>{formatDate(order.delivered_at)}</TableCell>
                 {canEdit && (
                   <TableCell className="text-center">
-                    {order.status === 'pending' && (
+                    {order.status === 'unconfirmed' && (
                       <Button
                         variant="ghost"
                         onClick={() => onDelete(order.id)}

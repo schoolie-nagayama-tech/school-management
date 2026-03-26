@@ -5,9 +5,9 @@ import { OrderStatusBadge } from './OrderStatusBadge';
 import type { MaterialOrderWithDetails, OrderStatus } from '@/types/database';
 
 const STATUS_OPTIONS: { value: OrderStatus; label: string }[] = [
-  { value: 'pending', label: '未発注' },
+  { value: 'unconfirmed', label: '未確認' },
   { value: 'ordered', label: '発注済' },
-  { value: 'delivered', label: '納品済' },
+  { value: 'delivered', label: '発送済' },
   { value: 'distributed', label: '配布済' },
   { value: 'cancelled', label: 'キャンセル' },
 ];
@@ -110,7 +110,7 @@ export function OrderHistoryPanel({
               </td>
               {canEdit && (
                 <td className="py-2 px-3 text-center">
-                  {order.status === 'pending' && (
+                  {order.status === 'unconfirmed' && (
                     <button
                       onClick={() => onDelete(order.id)}
                       className="text-xs text-red-500 hover:text-red-700 transition-colors"
