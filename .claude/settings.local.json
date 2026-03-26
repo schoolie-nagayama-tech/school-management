@@ -101,7 +101,13 @@
       "Bash(taskkill //PID 35296 //F)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/billing)",
       "Bash(curl -s http://localhost:3000/billing)",
-      "Bash(echo \"EXIT_CODE: $?\")"
+      "Bash(echo \"EXIT_CODE: $?\")",
+      "Bash(find /c/Users/ytaka/Desktop/student-management -maxdepth 2 -name *.md -o -name CLAUDE.md)",
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
+      "Bash(grep -l \"user_profiles\\\\|user_schools\" /c/Users/ytaka/Desktop/student-management/supabase/migrations/*.sql)",
+      "Bash(grep -l \"CREATE TABLE.*user_profiles\" /c/Users/ytaka/Desktop/student-management/supabase/migrations/*.sql)",
+      "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")",
+      "Bash(grep -r \"API_KEY\\\\|secret\\\\|token\\\\|integration\" /c/Users/ytaka/Desktop/student-management/supabase/migrations/*.sql)"
     ]
   }
 }
