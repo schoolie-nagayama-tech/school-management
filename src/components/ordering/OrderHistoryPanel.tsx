@@ -110,14 +110,16 @@ export function OrderHistoryPanel({
               </td>
               {canEdit && (
                 <td className="py-2 px-3 text-center">
-                  {order.status === 'unconfirmed' && (
-                    <button
-                      onClick={() => onDelete(order.id)}
-                      className="text-xs text-red-500 hover:text-red-700 transition-colors"
-                    >
-                      削除
-                    </button>
-                  )}
+                  <button
+                    onClick={() => {
+                      if (confirm('この発注を削除しますか？')) {
+                        onDelete(order.id);
+                      }
+                    }}
+                    className="text-xs text-gray-400 hover:text-red-600 transition-colors"
+                  >
+                    削除
+                  </button>
                 </td>
               )}
             </tr>

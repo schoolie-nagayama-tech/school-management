@@ -314,8 +314,7 @@ export async function deleteOrder(id: string): Promise<void> {
   const { error } = await supabase
     .from('material_orders')
     .delete()
-    .eq('id', id)
-    .eq('status', 'unconfirmed');
+    .eq('id', id);
 
   if (error) {
     throw new Error(getUserErrorMessage(error, '発注の削除に失敗しました'));

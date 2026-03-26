@@ -98,27 +98,34 @@ function TextbookProductCard({ textbook, students, canEdit, stockQuantity, onOrd
           : 'text-gray-500';
 
   return (
-    <div className={`bg-white rounded-lg border border-gray-200 border-l-4 ${color.border} p-3 hover:shadow-md transition-shadow flex flex-col`}>
+    <div className={`rounded-lg border border-gray-200 border-l-4 ${color.border} hover:shadow-md transition-shadow flex flex-col overflow-hidden`}>
+      {/* Header: 学年 + 科目（色付き帯） */}
+      <div className={`flex items-center justify-between px-3 py-1.5 ${color.bg}`}>
+        {textbook.grade ? (
+          <span className="text-xs font-bold text-[#1e3a5f] bg-white/80 px-2 py-0.5 rounded">
+            {textbook.grade}
+          </span>
+        ) : (
+          <span className="text-[10px] text-gray-400">-</span>
+        )}
+        {textbook.subject && (
+          <span className={`text-xs font-semibold ${color.text}`}>
+            {textbook.subject}
+          </span>
+        )}
+      </div>
       {/* Textbook Info */}
-      <div className="mb-1">
+      <div className="px-3 pt-2 pb-1">
         <div className="text-sm font-semibold text-[#1e3a5f] line-clamp-2 leading-tight" title={textbook.name}>
           {textbook.name}
         </div>
-        {detailParts.length > 0 && (
-          <div className="text-xs text-gray-500 mt-0.5">
-            {textbook.publisher && <span>{textbook.publisher}</span>}
-            {textbook.grade && <span className="ml-1">{textbook.grade}</span>}
-            {textbook.subject && (
-              <span className={`ml-1.5 inline-block px-1.5 py-0 rounded text-[10px] font-medium ${color.bg} ${color.text}`}>
-                {textbook.subject}
-              </span>
-            )}
-          </div>
+        {textbook.publisher && (
+          <div className="text-[11px] text-gray-400 mt-0.5">{textbook.publisher}</div>
         )}
       </div>
 
       {/* Stock Display */}
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between px-3 mb-2">
         <span className={`text-xs ${stockColor}`}>
           在庫: {stockQuantity !== null ? `${stockQuantity}冊` : '未登録'}
           {stockQuantity !== null && stockQuantity <= 2 && (
@@ -137,7 +144,7 @@ function TextbookProductCard({ textbook, students, canEdit, stockQuantity, onOrd
 
       {/* Order Section */}
       {canEdit && (
-        <div className="border-t border-gray-100 pt-2 flex-1 flex flex-col gap-1.5">
+        <div className="border-t border-gray-100 pt-2 px-3 pb-3 flex-1 flex flex-col gap-1.5">
           <select
             value={selectedStudentId}
             onChange={(e) => setSelectedStudentId(e.target.value)}
