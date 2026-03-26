@@ -13,7 +13,7 @@ import { DAY_OF_WEEK_LABELS, SCHEDULE_PERIOD_LABELS } from '@/types/schedule';
 import type { ScheduleRegularPattern } from '@/types/schedule';
 import { InterviewList } from './InterviewList';
 import { useAuth } from '@/contexts/AuthContext';
-import { Calendar, BookOpen } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { useConfirm } from '@/hooks/useConfirm';
 
 interface StudentDetailModalProps {
@@ -209,10 +209,7 @@ export function StudentDetailModal({
 
         {/* 所持教材 */}
         <div>
-          <h3 className="text-sm font-semibold text-[#1f2937] mb-3 flex items-center gap-1.5">
-            <BookOpen className="w-4 h-4 text-[#3b82f6]" />
-            所持教材
-          </h3>
+          <h3 className="text-sm font-semibold text-[#1f2937] mb-3">所持教材</h3>
           {isLoading ? (
             <p className="text-sm text-[#4b5563]">読み込み中...</p>
           ) : textbooks.length > 0 ? (

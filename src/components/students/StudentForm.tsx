@@ -1,14 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Button, Input, Select } from '@/components/ui';
-import type { Student, StudentInsert, StudentUpdate, Subject } from '@/types/database';
-import { Calendar } from 'lucide-react';
-import { GRADE_LABELS, STATUS_LABELS } from '@/types/database';
+import type { Student, StudentInsert, StudentUpdate, Subject, OrderStatus } from '@/types/database';
+import { Calendar, X, Plus } from 'lucide-react';
+import { GRADE_LABELS, STATUS_LABELS, ORDER_STATUS_LABELS } from '@/types/database';
 import { getSubjects } from '@/lib/api/subjects';
 import { getStudentSubjects } from '@/lib/api/subjects';
 import { getDefaultSchoolId } from '@/lib/api/schools';
+import { getStudentTextbooks, deleteOrder } from '@/lib/api/ordering';
+import type { StudentTextbook } from '@/lib/api/ordering';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 interface StudentFormProps {
   student?: Student | null;
@@ -63,6 +66,11 @@ export function StudentForm({
   const [selectedSubjectIds, setSelectedSubjectIds] = useState<string[]>([]);
   const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
 
+  // 所持教材
+  const [textbooks, setTextbooks] = useState<StudentTextbook[]>([]);
+  const [textbooksLoading, setTextbooksLoading] = useState(false);
+  const [textbookError, setTextbookError] = useState<string | null>(null);
+
   // studentプロップが変更された時にフォームデータを更新
   useEffect(() => {
     if (student) {
@@ -81,6 +89,37 @@ export function StudentForm({
       });
     }
   }, [student]);
+
+  // 所持教材を取得（編集時のみ）
+  const fetchTextbooks = useCallback(async () => {
+    if (!student?.id) return;
+    setTextbooksLoading(true);
+    setTextbookError(null);
+    try {
+      const data = await getStudentTextbooks(student.id);
+      setTextbooks(data);
+    } catch (err) {
+      setTextbookError(getUserErrorMessage(err, '教材の取得に失敗しました'));
+    } finally {
+      setTextbooksLoading(false);
+    }
+  }, [student?.id]);
+
+  useEffect(() => {
+    if (isEdit && student?.id) {
+      fetchTextbooks();
+    }
+  }, [isEdit, student?.id, fetchTextbooks]);
+
+  const handleDeleteTextbook = async (orderId: string, textbookName: string) => {
+    if (!confirm(`「${textbookName}」を削除しますか？`)) return;
+    try {
+      await deleteOrder(orderId);
+      setTextbooks((prev) => prev.filter((t) => t.orderId !== orderId));
+    } catch (err) {
+      setTextbookError(getUserErrorMessage(err, '削除に失敗しました'));
+    }
+  };
 
   // 学年に応じて科目を取得
   useEffect(() => {
@@ -321,6 +360,61 @@ export function StudentForm({
           error={errors.subject_other}
           placeholder="例: 物理"
         />
+      )}
+
+      {/* 所持教材 */}
+      {isEdit && student?.id && (
+        <div>
+          <label className="block text-sm font-medium text-[#1f2937] mb-2">
+            所持教材
+          </label>
+          {textbooksLoading ? (
+            <p className="text-sm text-[#4b5563]">読み込み中...</p>
+          ) : textbookError ? (
+            <p className="text-sm text-red-600">{textbookError}</p>
+          ) : textbooks.length > 0 ? (
+            <div className="space-y-1 border border-[#e5e7eb] rounded-lg p-2 bg-white">
+              {textbooks.map((tb) => (
+                <div
+                  key={tb.orderId}
+                  className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-[#f3f4f6] group"
+                >
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <span className="text-sm text-[#1f2937] truncate">{tb.textbookName}</span>
+                    {tb.quantity > 1 && (
+                      <span className="text-xs text-[#4b5563] bg-gray-100 px-1.5 py-0.5 rounded">
+                        x{tb.quantity}
+                      </span>
+                    )}
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                      tb.status === 'distributed' ? 'bg-green-100 text-green-700' :
+                      tb.status === 'delivered' ? 'bg-blue-100 text-blue-700' :
+                      tb.status === 'ordered' ? 'bg-indigo-100 text-indigo-700' :
+                      'bg-yellow-100 text-yellow-700'
+                    }`}>
+                      {ORDER_STATUS_LABELS[tb.status]}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteTextbook(tb.orderId, tb.textbookName)}
+                    className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 transition-all"
+                    title="削除"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-[#4b5563]/60">
+              発注された教材はありません
+            </p>
+          )}
+          <p className="text-xs text-[#9ca3af] mt-1">
+            教材の追加は「教材・発注管理」ページから行えます
+          </p>
+        </div>
       )}
 
       {/* 通塾日程 */}
