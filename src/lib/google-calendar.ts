@@ -146,7 +146,6 @@ export async function createCalendarEvent(
   const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
   // 開始・終了時間を計算
-  const [hours, minutes] = params.startTime.split(':').map(Number);
   const startDate = new Date(`${params.date}T${params.startTime}:00+09:00`);
   const endDate = new Date(startDate.getTime() + params.durationMinutes * 60 * 1000);
 
