@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import { Search, Check, AlertTriangle, Package } from 'lucide-react';
+import { Search, AlertTriangle, Package } from 'lucide-react';
 import type { Textbook, Material } from '@/types/database';
 
 interface StudentOption {
