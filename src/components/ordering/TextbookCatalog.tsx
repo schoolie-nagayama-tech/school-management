@@ -86,18 +86,20 @@ function TextbookProductCard({ textbook, students, canEdit, stockQuantity, onOrd
 
   const color = getSubjectColor(textbook.subject);
 
-  // Stock display color
+  // Stock display: 0が正常（全配布済み）、多いほど要対応（未配布在庫あり）
   const stockColor =
     stockQuantity === null
       ? 'text-gray-400'
-      : stockQuantity <= 2
-        ? 'text-red-600 font-semibold'
-        : stockQuantity <= 5
-          ? 'text-orange-600'
-          : 'text-gray-500';
+      : stockQuantity === 0
+        ? 'text-green-600'
+        : stockQuantity >= 10
+          ? 'text-red-600 font-semibold'
+          : stockQuantity >= 5
+            ? 'text-orange-600 font-medium'
+            : 'text-[#1e3a5f]';
 
   return (
-    <div className={`rounded-lg border border-gray-200 border-l-4 ${color.border} hover:shadow-md transition-shadow flex flex-col overflow-hidden`}>
+    <div className={`rounded-lg border ${stockQuantity !== null && stockQuantity >= 10 ? 'border-red-300' : stockQuantity !== null && stockQuantity >= 5 ? 'border-orange-300' : 'border-gray-200'} border-l-4 ${color.border} hover:shadow-md transition-shadow flex flex-col overflow-hidden`}>
       {/* Header: 学年 + 科目（色付き帯） */}
       <div className={`flex items-center justify-between px-3 py-1.5 ${color.bg}`}>
         {textbook.grade ? (
@@ -126,9 +128,13 @@ function TextbookProductCard({ textbook, students, canEdit, stockQuantity, onOrd
       {/* Stock Display */}
       <div className="flex items-center justify-between px-3 mb-2">
         <span className={`text-xs ${stockColor}`}>
-          在庫: {stockQuantity !== null ? `${stockQuantity}冊` : '未登録'}
-          {stockQuantity !== null && stockQuantity <= 2 && (
-            <AlertTriangle className="inline w-3.5 h-3.5 ml-0.5 text-red-500" />
+          {stockQuantity === null
+            ? '在庫: 未登録'
+            : stockQuantity === 0
+              ? '在庫: 0冊（配布完了）'
+              : `在庫: ${stockQuantity}冊`}
+          {stockQuantity !== null && stockQuantity >= 5 && (
+            <AlertTriangle className="inline w-3.5 h-3.5 ml-0.5" />
           )}
         </span>
         {canEdit && (
