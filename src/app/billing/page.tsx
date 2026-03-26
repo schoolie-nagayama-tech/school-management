@@ -158,11 +158,6 @@ export default function BillingPage() {
     setFilters((prev) => ({ ...prev, ...newFilters }));
   };
 
-  // フィルターリセット
-  const handleResetFilters = () => {
-    setFilters({ search: '', grade: null });
-  };
-
   // 請求状況が変更されたときの処理
   const handleBillingChange = useCallback(
     (studentId: string, billingItemId: string, isBilled: boolean) => {
