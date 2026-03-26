@@ -391,23 +391,12 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                         href="/ordering"
                         onClick={() => setShowBusinessDropdown(false)}
                         className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
-                          pathname?.startsWith('/ordering')
+                          pathname?.startsWith('/ordering') || pathname?.startsWith('/inventory')
                             ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
                             : ''
                         }`}
                       >
-                        発注管理
-                      </Link>
-                      <Link
-                        href="/inventory"
-                        onClick={() => setShowBusinessDropdown(false)}
-                        className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
-                          pathname?.startsWith('/inventory')
-                            ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
-                            : ''
-                        }`}
-                      >
-                        在庫管理
+                        教材・発注管理
                       </Link>
                     </div>
                   </div>
