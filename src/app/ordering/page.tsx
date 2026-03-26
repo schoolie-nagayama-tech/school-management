@@ -376,6 +376,21 @@ export default function OrderingPage() {
           materials={materials}
           onOrder={handleTextbookOrder}
           onStockAdjust={handleStockAdjust}
+          onStockRegister={async (textbookName: string) => {
+            // 在庫未登録のテキスト → まず Material を作成してから在庫調整モーダルを開く
+            try {
+              const schoolIds = getSelectedSchoolIds();
+              const newMaterial = await createMaterial(
+                { name: textbookName, category: 'テキスト', unit: '冊', low_stock_threshold: 3 },
+                schoolIds
+              );
+              setStockTxnMaterial(newMaterial);
+              setStockTxnMode('in');
+              setIsStockTxnOpen(true);
+            } catch (err) {
+              setErrorMessage(getUserErrorMessage(err, '教材の登録に失敗しました'));
+            }
+          }}
         />
       )}
 

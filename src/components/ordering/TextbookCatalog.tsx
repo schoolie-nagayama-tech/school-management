@@ -18,9 +18,10 @@ interface TextbookCatalogProps {
   materials: Material[];
   onOrder: (textbookName: string, studentId: string, quantity: number, notes: string) => Promise<void>;
   onStockAdjust?: (material: Material) => void;
+  onStockRegister?: (textbookName: string) => void;
 }
 
-const ITEMS_PER_PAGE = 40;
+const ITEMS_PER_PAGE = 60;
 
 // ─── Subject Color Coding ─────────────────────────────────
 const SUBJECT_COLORS: Record<string, { bg: string; text: string; border: string }> = {
@@ -97,55 +98,60 @@ function TextbookProductCard({ textbook, students, canEdit, stockQuantity, onOrd
           : 'text-gray-500';
 
   return (
-    <div className={`bg-white rounded border border-gray-200 border-l-4 ${color.border} p-2 hover:shadow-md transition-shadow flex flex-col`}>
+    <div className={`bg-white rounded-lg border border-gray-200 border-l-4 ${color.border} p-3 hover:shadow-md transition-shadow flex flex-col`}>
       {/* Textbook Info */}
-      <div className="mb-0.5">
-        <div className="text-xs font-semibold text-[#1e3a5f] truncate" title={textbook.name}>
+      <div className="mb-1">
+        <div className="text-sm font-semibold text-[#1e3a5f] line-clamp-2 leading-tight" title={textbook.name}>
           {textbook.name}
         </div>
         {detailParts.length > 0 && (
-          <div className="text-[10px] text-gray-500 truncate">
-            {detailParts.join(' | ')}
+          <div className="text-xs text-gray-500 mt-0.5">
+            {textbook.publisher && <span>{textbook.publisher}</span>}
+            {textbook.grade && <span className="ml-1">{textbook.grade}</span>}
+            {textbook.subject && (
+              <span className={`ml-1.5 inline-block px-1.5 py-0 rounded text-[10px] font-medium ${color.bg} ${color.text}`}>
+                {textbook.subject}
+              </span>
+            )}
           </div>
         )}
       </div>
 
       {/* Stock Display */}
-      <div className="flex items-center justify-between mb-1">
-        <span className={`text-[10px] ${stockColor}`}>
-          在庫: {stockQuantity !== null ? `${stockQuantity}冊` : '-'}
+      <div className="flex items-center justify-between mb-2">
+        <span className={`text-xs ${stockColor}`}>
+          在庫: {stockQuantity !== null ? `${stockQuantity}冊` : '未登録'}
           {stockQuantity !== null && stockQuantity <= 2 && (
-            <AlertTriangle className="inline w-3 h-3 ml-0.5 text-red-500" />
+            <AlertTriangle className="inline w-3.5 h-3.5 ml-0.5 text-red-500" />
           )}
         </span>
-        {onStockAdjust && canEdit && stockQuantity !== null && (
+        {canEdit && (
           <button
             onClick={onStockAdjust}
-            className="text-[10px] text-gray-400 hover:text-[#1e3a5f] hover:underline"
+            className="text-[11px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-[#1e3a5f] transition-colors"
           >
-            在庫調整
+            {stockQuantity !== null ? '在庫調整' : '在庫登録'}
           </button>
         )}
       </div>
 
       {/* Order Section */}
       {canEdit && (
-        <div className="border-t border-gray-100 pt-1 flex-1 flex flex-col">
-          {/* Compact: Student select + quantity + order button in one row */}
-          <div className="flex items-center gap-1">
-            <select
-              value={selectedStudentId}
-              onChange={(e) => setSelectedStudentId(e.target.value)}
-              disabled={isOrdering}
-              className="flex-1 min-w-0 px-1 py-0.5 border border-gray-200 rounded text-[10px] bg-white text-gray-700 focus:ring-1 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f] transition-colors"
-            >
-              <option value="">生徒...</option>
-              {students.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {gradeLabel(s.grade)} {s.last_name}{s.first_name}
-                </option>
-              ))}
-            </select>
+        <div className="border-t border-gray-100 pt-2 flex-1 flex flex-col gap-1.5">
+          <select
+            value={selectedStudentId}
+            onChange={(e) => setSelectedStudentId(e.target.value)}
+            disabled={isOrdering}
+            className="w-full px-2 py-1.5 border border-gray-200 rounded-md text-xs bg-white text-gray-700 focus:ring-1 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f] transition-colors"
+          >
+            <option value="">生徒を選択...</option>
+            {students.map((s) => (
+              <option key={s.id} value={s.id}>
+                {gradeLabel(s.grade)} {s.last_name} {s.first_name}
+              </option>
+            ))}
+          </select>
+          <div className="flex items-center gap-1.5">
             <input
               type="number"
               min={1}
@@ -153,20 +159,19 @@ function TextbookProductCard({ textbook, students, canEdit, stockQuantity, onOrd
               value={quantity}
               onChange={(e) => setQuantity(Math.max(1, Math.min(20, parseInt(e.target.value) || 1)))}
               disabled={isOrdering}
-              className="w-8 text-center px-0.5 py-0.5 border border-gray-200 rounded text-[10px]"
+              className="w-14 text-center px-1 py-1.5 border border-gray-200 rounded-md text-xs"
             />
+            <span className="text-xs text-gray-400">冊</span>
             <button
               onClick={handleOrder}
               disabled={!selectedStudentId || isOrdering}
-              className={`px-2 py-0.5 rounded font-medium text-[10px] transition-colors whitespace-nowrap ${
+              className={`flex-1 py-1.5 rounded-md font-medium text-xs transition-colors ${
                 orderSuccess
                   ? 'bg-green-600 text-white'
-                  : 'bg-[#1e3a5f] text-white hover:bg-[#2d4a6f] disabled:opacity-50 disabled:cursor-not-allowed'
+                  : 'bg-[#1e3a5f] text-white hover:bg-[#2d4a6f] disabled:opacity-40 disabled:cursor-not-allowed'
               }`}
             >
-              {isOrdering ? '...' : orderSuccess ? (
-                <span className="flex items-center gap-0.5"><Check className="w-3 h-3" />済</span>
-              ) : '発注'}
+              {isOrdering ? '処理中...' : orderSuccess ? '発注済み' : '発注する'}
             </button>
           </div>
         </div>
@@ -178,21 +183,29 @@ function TextbookProductCard({ textbook, students, canEdit, stockQuantity, onOrd
 // ─── Subject Legend ──────────────────────────────────────────
 
 function SubjectLegend() {
+  const colorEntries = Object.entries(SUBJECT_COLORS);
   return (
-    <div className="flex flex-wrap items-center gap-3 mb-2">
-      {Object.entries(SUBJECT_COLORS).map(([subject, colors]) => (
-        <div key={subject} className="flex items-center gap-1">
-          <span className={`w-3 h-3 rounded-sm ${colors.border.replace('border-l-', 'bg-')}`} />
-          <span className="text-[10px] text-gray-600">{subject}</span>
-        </div>
+    <div className="flex flex-wrap items-center gap-2 mb-3 px-1">
+      {colorEntries.map(([subject, colors]) => (
+        <span
+          key={subject}
+          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${colors.bg} ${colors.text}`}
+        >
+          <span className={`w-2.5 h-2.5 rounded-full ${colors.border.replace('border-l-', 'bg-')}`} />
+          {subject}
+        </span>
       ))}
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-50 text-gray-600">
+        <span className="w-2.5 h-2.5 rounded-full bg-gray-400" />
+        その他
+      </span>
     </div>
   );
 }
 
 // ─── Main Catalog ───────────────────────────────────────────
 
-export function TextbookCatalog({ textbooks, students, canEdit, materials, onOrder, onStockAdjust }: TextbookCatalogProps) {
+export function TextbookCatalog({ textbooks, students, canEdit, materials, onOrder, onStockAdjust, onStockRegister }: TextbookCatalogProps) {
   // Filters
   const [search, setSearch] = useState('');
   const [schoolTypeFilter, setSchoolTypeFilter] = useState<string>('all');
@@ -458,7 +471,7 @@ export function TextbookCatalog({ textbooks, students, canEdit, materials, onOrd
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
             {paginatedTextbooks.map((tb) => {
               const stockInfo = getStockInfo(tb);
               return (
@@ -469,7 +482,13 @@ export function TextbookCatalog({ textbooks, students, canEdit, materials, onOrd
                   canEdit={canEdit}
                   stockQuantity={stockInfo ? stockInfo.quantity : null}
                   onOrder={onOrder}
-                  onStockAdjust={stockInfo && onStockAdjust ? () => onStockAdjust(stockInfo.material) : undefined}
+                  onStockAdjust={
+                    stockInfo && onStockAdjust
+                      ? () => onStockAdjust(stockInfo.material)
+                      : onStockRegister
+                        ? () => onStockRegister(formatTextbookLabel(tb))
+                        : undefined
+                  }
                 />
               );
             })}
