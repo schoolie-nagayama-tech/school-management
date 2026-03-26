@@ -6,13 +6,14 @@ import { Modal, Button } from '@/components/ui';
 import { getStudentWithSubjects } from '@/lib/api/subjects';
 import { getDefaultSchoolId } from '@/lib/api/schools';
 import { getRegularPatterns } from '@/lib/api/schedule';
+import { getStudentTextbooks } from '@/lib/api/ordering';
 import type { Student, Subject } from '@/types/database';
-import { GRADE_LABELS, STATUS_LABELS, STATUS_COLORS } from '@/types/database';
+import { GRADE_LABELS, STATUS_LABELS, STATUS_COLORS, ORDER_STATUS_LABELS } from '@/types/database';
 import { DAY_OF_WEEK_LABELS, SCHEDULE_PERIOD_LABELS } from '@/types/schedule';
 import type { ScheduleRegularPattern } from '@/types/schedule';
 import { InterviewList } from './InterviewList';
 import { useAuth } from '@/contexts/AuthContext';
-import { Calendar } from 'lucide-react';
+import { Calendar, BookOpen } from 'lucide-react';
 import { useConfirm } from '@/hooks/useConfirm';
 
 interface StudentDetailModalProps {
@@ -40,6 +41,7 @@ export function StudentDetailModal({
   const { confirm, ConfirmDialog } = useConfirm();
   const isTeacher = profile?.role === 'teacher';
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [textbooks, setTextbooks] = useState<Awaited<ReturnType<typeof getStudentTextbooks>>>([]);
   const [schedulePatterns, setSchedulePatterns] = useState<ScheduleRegularPattern[]>([]);
   const [scheduleLoading, setScheduleLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -57,20 +59,21 @@ export function StudentDetailModal({
   useEffect(() => {
     if (isOpen && student) {
       setIsLoading(true);
-      getStudentWithSubjects(student.id)
-        .then((data) => {
-          if (data) {
-            setSubjects(data.subjects);
-          }
-        })
+      Promise.all([
+        getStudentWithSubjects(student.id).then((data) => {
+          if (data) setSubjects(data.subjects);
+        }),
+        getStudentTextbooks(student.id).then(setTextbooks).catch(() => setTextbooks([])),
+      ])
         .catch((error) => {
-          console.error('Error fetching student subjects:', error);
+          console.error('Error fetching student data:', error);
         })
         .finally(() => {
           setIsLoading(false);
         });
     } else {
       setSubjects([]);
+      setTextbooks([]);
     }
   }, [isOpen, student]);
 
@@ -201,6 +204,43 @@ export function StudentDetailModal({
               <label className="text-xs text-[#4b5563]">その他</label>
               <p className="mt-1 text-sm text-[#1f2937]">{student.subject_other}</p>
             </div>
+          )}
+        </div>
+
+        {/* 所持教材 */}
+        <div>
+          <h3 className="text-sm font-semibold text-[#1f2937] mb-3 flex items-center gap-1.5">
+            <BookOpen className="w-4 h-4 text-[#3b82f6]" />
+            所持教材
+          </h3>
+          {isLoading ? (
+            <p className="text-sm text-[#4b5563]">読み込み中...</p>
+          ) : textbooks.length > 0 ? (
+            <div className="space-y-1.5">
+              {textbooks.map((tb) => (
+                <div
+                  key={tb.orderId}
+                  className="flex items-center justify-between px-3 py-1.5 bg-[#f8fafc] rounded-lg border border-[#e5e7eb]"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-sm text-[#1f2937] truncate">{tb.textbookName}</span>
+                    {tb.quantity > 1 && (
+                      <span className="text-xs text-[#4b5563] bg-gray-200 px-1.5 py-0.5 rounded">×{tb.quantity}</span>
+                    )}
+                  </div>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full whitespace-nowrap ${
+                    tb.status === 'distributed' ? 'bg-green-100 text-green-700' :
+                    tb.status === 'delivered' ? 'bg-blue-100 text-blue-700' :
+                    tb.status === 'ordered' ? 'bg-indigo-100 text-indigo-700' :
+                    'bg-yellow-100 text-yellow-700'
+                  }`}>
+                    {ORDER_STATUS_LABELS[tb.status]}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-[#4b5563]/60">発注された教材はありません</p>
           )}
         </div>
 

@@ -358,3 +358,38 @@ export async function createBulkOrders(
 
   return (data || []) as MaterialOrder[];
 }
+
+/**
+ * 生徒の所持教材一覧を取得（キャンセル以外の発注教材）
+ */
+export interface StudentTextbook {
+  orderId: string;
+  textbookName: string;
+  quantity: number;
+  status: OrderStatus;
+  orderedAt: string | null;
+}
+
+export async function getStudentTextbooks(studentId: string): Promise<StudentTextbook[]> {
+  const { data, error } = await supabase
+    .from('material_orders')
+    .select('id, quantity, status, ordered_at, materials(name)')
+    .eq('student_id', studentId)
+    .neq('status', 'cancelled')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throw new Error(getUserErrorMessage(error, '所持教材の取得に失敗しました'));
+  }
+
+  return (data || []).map((row: Record<string, unknown>) => {
+    const mat = row.materials as Record<string, unknown> | null;
+    return {
+      orderId: row.id as string,
+      textbookName: mat?.name ? String(mat.name) : '不明',
+      quantity: row.quantity as number,
+      status: row.status as OrderStatus,
+      orderedAt: row.ordered_at as string | null,
+    };
+  });
+}
