@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { AdminLayout } from '@/components/layouts';
 import { Button, Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
 import Link from 'next/link';
@@ -20,8 +20,34 @@ export default function AccountSettingsPage() {
   const [linkedProviders, setLinkedProviders] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Google Calendar連携状態
+  const [calendarStatus, setCalendarStatus] = useState<{
+    connected: boolean;
+    email?: string;
+  }>({ connected: false });
+  const [calendarLoading, setCalendarLoading] = useState(false);
+
   // Google認証が許可されているか
   const canUseGoogleAuth = profile && GOOGLE_AUTH_ALLOWED_ROLES.includes(profile.role);
+
+  // Calendar連携状態を取得
+  const fetchCalendarStatus = useCallback(async () => {
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const res = await fetch('/api/integrations/google/calendar/status', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (res.ok) {
+        const { data } = await res.json();
+        setCalendarStatus(data);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
   useEffect(() => {
     const fetchIdentities = async () => {
@@ -33,7 +59,10 @@ export default function AccountSettingsPage() {
       setIsLoading(false);
     };
     fetchIdentities();
-  }, []);
+    if (canUseGoogleAuth) {
+      fetchCalendarStatus();
+    }
+  }, [canUseGoogleAuth, fetchCalendarStatus]);
 
   const handleLinkGoogle = async () => {
     const supabase = createSupabaseBrowserClient();
@@ -57,7 +86,7 @@ export default function AccountSettingsPage() {
     const supabase = createSupabaseBrowserClient();
     const { data: { user: currentUser } } = await supabase.auth.getUser();
     const googleIdentity = currentUser?.identities?.find(i => i.provider === 'google');
-    
+
     if (googleIdentity) {
       const { error } = await supabase.auth.unlinkIdentity(googleIdentity);
       if (error) {
@@ -69,14 +98,50 @@ export default function AccountSettingsPage() {
     }
   };
 
-  // URLパラメータから紐付け成功を確認
+  // Google Calendar 連携開始
+  const handleConnectCalendar = () => {
+    // APIルートにリダイレクト（サーバー側でOAuth URLに転送）
+    window.location.href = '/api/integrations/google/authorize';
+  };
+
+  // Google Calendar 連携解除
+  const handleDisconnectCalendar = async () => {
+    if (!(await confirm({ description: 'Googleカレンダー連携を解除しますか？\n模試の振替予定がカレンダーに自動追加されなくなります。' }))) {
+      return;
+    }
+
+    setCalendarLoading(true);
+    try {
+      const supabase = createSupabaseBrowserClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const res = await fetch('/api/integrations/google/calendar/disconnect', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+
+      if (res.ok) {
+        success('Googleカレンダー連携を解除しました');
+        setCalendarStatus({ connected: false });
+      } else {
+        toastError('連携解除に失敗しました');
+      }
+    } catch {
+      toastError('連携解除に失敗しました');
+    } finally {
+      setCalendarLoading(false);
+    }
+  };
+
+  // URLパラメータからカレンダー連携結果を確認
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+
+    // Google SSO紐付け成功
     if (params.get('linked') === 'google') {
       success('Googleアカウントの紐付けが完了しました');
-      // URLからパラメータを削除
       window.history.replaceState({}, '', '/settings/account');
-      // 再読み込みしてidentitiesを更新
       const fetchIdentities = async () => {
         const supabase = createSupabaseBrowserClient();
         const { data: { user: currentUser } } = await supabase.auth.getUser();
@@ -86,7 +151,22 @@ export default function AccountSettingsPage() {
       };
       fetchIdentities();
     }
-  }, [success]);
+
+    // カレンダー連携成功
+    if (params.get('calendar_connected') === 'true') {
+      const email = params.get('calendar_email') || '';
+      success(`Googleカレンダーを連携しました${email ? `（${email}）` : ''}`);
+      window.history.replaceState({}, '', '/settings/account');
+      setCalendarStatus({ connected: true, email: email || undefined });
+    }
+
+    // カレンダー連携エラー
+    const calendarError = params.get('calendar_error');
+    if (calendarError) {
+      toastError(calendarError);
+      window.history.replaceState({}, '', '/settings/account');
+    }
+  }, [success, toastError]);
 
   const isGoogleLinked = linkedProviders.includes('google');
 
@@ -103,7 +183,7 @@ export default function AccountSettingsPage() {
   return (
     <AdminLayout headerTitle="アカウント設定">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-2xl mx-auto space-y-6">
         <div className="mb-4">
           <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-[#6b7280] hover:text-[#1f2937] transition-colors">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -112,6 +192,8 @@ export default function AccountSettingsPage() {
             設定に戻る
           </Link>
         </div>
+
+        {/* ログイン方法 */}
         <Card>
           <CardHeader>
             <CardTitle>ログイン方法</CardTitle>
@@ -169,6 +251,67 @@ export default function AccountSettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* 外部サービス連携（教室長以上のみ） */}
+        {canUseGoogleAuth && (
+          <Card>
+            <CardHeader>
+              <CardTitle>外部サービス連携</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {/* Google Calendar */}
+                <div className="flex items-center justify-between p-4 bg-[#f3f4f6] rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
+                      <rect x="3" y="4" width="18" height="18" rx="2" stroke="#4285F4" strokeWidth="2"/>
+                      <path d="M3 9h18" stroke="#4285F4" strokeWidth="2"/>
+                      <path d="M9 4V2" stroke="#4285F4" strokeWidth="2" strokeLinecap="round"/>
+                      <path d="M15 4V2" stroke="#4285F4" strokeWidth="2" strokeLinecap="round"/>
+                      <rect x="7" y="12" width="3" height="3" rx="0.5" fill="#34A853"/>
+                      <rect x="7" y="16" width="3" height="3" rx="0.5" fill="#FBBC05"/>
+                      <rect x="11" y="12" width="3" height="3" rx="0.5" fill="#EA4335"/>
+                    </svg>
+                    <div>
+                      <p className="font-medium text-[#1f2937]">Googleカレンダー</p>
+                      {calendarStatus.connected ? (
+                        <p className="text-sm text-[#4b5563]">
+                          連携中: {calendarStatus.email || '(メール不明)'}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-[#4b5563]">
+                          模試の振替予定を自動でカレンダーに追加します
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  {calendarStatus.connected ? (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleDisconnectCalendar}
+                      disabled={calendarLoading}
+                    >
+                      {calendarLoading ? '解除中...' : '解除'}
+                    </Button>
+                  ) : (
+                    <Button size="sm" onClick={handleConnectCalendar}>
+                      連携する
+                    </Button>
+                  )}
+                </div>
+
+                {calendarStatus.connected && (
+                  <div className="px-4 py-2 bg-blue-50 rounded-lg">
+                    <p className="text-xs text-blue-700">
+                      模試フォームで「振替受験」が選択された際、あなたのGoogleカレンダーに振替予定が自動追加されます。
+                    </p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
       {ConfirmDialog}
     </AdminLayout>

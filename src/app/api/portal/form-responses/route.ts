@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { portalFormResponseSchema } from '@/lib/validations/schemas';
+import { createFurikaeCalendarEvents } from '@/lib/google-calendar';
 
 export const dynamic = 'force-dynamic';
 
@@ -101,6 +102,39 @@ export async function POST(request: NextRequest) {
       await autoLinkAndUpdateApplication(supabaseAdmin, created, school_id, form_type, form_period);
     } catch (e) {
       console.warn('[portal/form-responses] 自動紐付けに失敗しました（無視します）:', e);
+    }
+
+    // 模試の振替受験 → Google Calendarにイベント作成（失敗しても回答は成功扱い）
+    if (form_type === 'moshi') {
+      try {
+        const rd = response_data as Record<string, unknown>;
+        if (rd.exam_type === 'furikae' && rd.furikae_date && rd.furikae_time) {
+          // 学年番号→表示名変換
+          const gradeNames: Record<number, string> = {
+            4: '小4', 5: '小5', 6: '小6', 7: '中1', 8: '中2', 9: '中3',
+          };
+          // 期間タイトルを取得
+          const { data: periodData } = await supabaseAdmin
+            .from('form_periods')
+            .select('title')
+            .eq('school_id', school_id)
+            .eq('form_type', 'moshi')
+            .eq('period_key', form_period)
+            .maybeSingle();
+
+          await createFurikaeCalendarEvents({
+            schoolId: school_id,
+            studentName: student_name,
+            grade: gradeNames[grade] || `${grade}`,
+            furikaeDate: rd.furikae_date as string,
+            furikaeDateLabel: (rd.furikae_date_label as string) || '',
+            furikaeTime: rd.furikae_time as string,
+            periodTitle: periodData?.title || undefined,
+          });
+        }
+      } catch (e) {
+        console.warn('[portal/form-responses] カレンダーイベント作成に失敗しました（無視します）:', e);
+      }
     }
 
     // 申込通知メール送信（失敗しても回答は成功扱い）
