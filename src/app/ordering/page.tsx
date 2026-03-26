@@ -11,7 +11,7 @@ import {
 import type { MaterialFormData } from '@/components/inventory';
 import { MaterialCard } from '@/components/ordering/MaterialCard';
 import { OrderHistoryPanel } from '@/components/ordering/OrderHistoryPanel';
-import { TextbookOrderForm } from '@/components/ordering/TextbookOrderForm';
+import { TextbookCatalog } from '@/components/ordering/TextbookCatalog';
 import {
   getMaterials,
   createMaterial,
@@ -59,12 +59,13 @@ export default function OrderingPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Filters
+  // UI state
+  const [showOrderHistory, setShowOrderHistory] = useState(false);
+  const [showInventory, setShowInventory] = useState(false);
+
+  // Inventory filters
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
-
-  // Order history panel
-  const [showOrderHistory, setShowOrderHistory] = useState(false);
 
   // Material form modal
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -126,7 +127,7 @@ export default function OrderingPage() {
     }
   }, [fetchData, selectedSchoolId]);
 
-  // Categories for filter
+  // Categories for inventory filter
   const categories = useMemo(() => {
     const cats = new Set<string>();
     materials.forEach((m) => {
@@ -135,7 +136,7 @@ export default function OrderingPage() {
     return Array.from(cats).sort();
   }, [materials]);
 
-  // Filtered materials
+  // Filtered materials (for inventory section)
   const filteredMaterials = useMemo(() => {
     let result = materials;
     if (search) {
@@ -224,7 +225,7 @@ export default function OrderingPage() {
     setIsFormOpen(true);
   };
 
-  // --- Ordering ---
+  // --- Ordering (for inventory materials) ---
   const handleOrder = async (
     materialId: string,
     studentId: string,
@@ -369,17 +370,6 @@ export default function OrderingPage() {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-bold text-gray-900">教材・発注管理</h2>
         <div className="flex items-center gap-2">
-          {canEdit && (
-            <Button
-              onClick={() => {
-                setEditingMaterial(null);
-                setIsFormOpen(true);
-              }}
-              className="text-sm"
-            >
-              ＋ 教材登録
-            </Button>
-          )}
           <button
             onClick={() => setShowOrderHistory(!showOrderHistory)}
             className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
@@ -389,6 +379,16 @@ export default function OrderingPage() {
             }`}
           >
             発注履歴 ({orders.length})
+          </button>
+          <button
+            onClick={() => setShowInventory(!showInventory)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+              showInventory
+                ? 'bg-[#1e3a5f] text-white border-[#1e3a5f]'
+                : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+            }`}
+          >
+            在庫管理
           </button>
         </div>
       </div>
@@ -416,45 +416,7 @@ export default function OrderingPage() {
         </div>
       )}
 
-      {/* テキスト発注セクション */}
-      {canEdit && (
-        <TextbookOrderForm
-          students={students}
-          textbooks={textbooks}
-          canEdit={canEdit}
-          onOrder={handleTextbookOrder}
-        />
-      )}
-
-      {/* 教材在庫セクション */}
-      <h2 className="text-lg font-semibold text-[#1e3a5f] mb-4 flex items-center gap-1.5">
-        <span>📦</span> 教材在庫 ({materials.length}件)
-      </h2>
-
-      {/* Search & Filter Bar */}
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="flex-1 min-w-[200px] max-w-xs">
-          <Input
-            placeholder="🔍 教材名で検索..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        <select
-          className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-gray-600 text-sm focus:ring-2 focus:ring-[#3b82f6] focus:border-[#3b82f6]"
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
-        >
-          <option value="">カテゴリ: 全て</option>
-          {categories.map((cat) => (
-            <option key={cat} value={cat}>
-              {cat}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Material Cards Grid */}
+      {/* Textbook Catalog (main content) */}
       {isLoading ? (
         <div className="bg-white rounded-xl border border-gray-200 p-8">
           <div className="flex items-center justify-center">
@@ -469,44 +431,107 @@ export default function OrderingPage() {
             <span className="ml-3 text-[#4b5563]">読み込み中...</span>
           </div>
         </div>
-      ) : filteredMaterials.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-          <div className="text-4xl mb-3">📦</div>
-          <h3 className="text-lg font-semibold text-gray-800 mb-1">
-            {materials.length === 0 ? '教材が登録されていません' : '検索条件に一致する教材がありません'}
-          </h3>
-          <p className="text-sm text-gray-500 mb-4">
-            {materials.length === 0
-              ? '「＋教材登録」ボタンから最初の教材を登録しましょう'
-              : '検索条件やカテゴリフィルターを変更してみてください'}
-          </p>
-          {materials.length === 0 && canEdit && (
-            <Button
-              onClick={() => {
-                setEditingMaterial(null);
-                setIsFormOpen(true);
-              }}
-            >
-              ＋ 教材を登録する
-            </Button>
-          )}
-        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredMaterials.map((material) => (
-            <MaterialCard
-              key={material.id}
-              material={material}
-              students={students}
-              canEdit={canEdit}
-              onEdit={handleEdit}
-              onDelete={handleDeleteMaterial}
-              onStockIn={handleStockIn}
-              onStockOut={handleStockOut}
-              onHistory={handleHistory}
-              onOrder={handleOrder}
-            />
-          ))}
+        <TextbookCatalog
+          textbooks={textbooks}
+          students={students}
+          canEdit={canEdit}
+          onOrder={handleTextbookOrder}
+        />
+      )}
+
+      {/* ─── Inventory Section (collapsible) ─── */}
+      {showInventory && (
+        <div className="mt-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-[#1e3a5f] flex items-center gap-1.5">
+              <span>📦</span> 教材在庫 ({materials.length}件)
+            </h2>
+            <div className="flex items-center gap-2">
+              {canEdit && (
+                <Button
+                  onClick={() => {
+                    setEditingMaterial(null);
+                    setIsFormOpen(true);
+                  }}
+                  className="text-sm"
+                >
+                  ＋ 教材登録
+                </Button>
+              )}
+              <button
+                onClick={() => setShowInventory(false)}
+                className="text-gray-400 hover:text-gray-600 text-sm"
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
+
+          {/* Search & Filter Bar */}
+          <div className="mb-4 flex flex-wrap items-center gap-3">
+            <div className="flex-1 min-w-[200px] max-w-xs">
+              <Input
+                placeholder="🔍 教材名で検索..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <select
+              className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-gray-600 text-sm focus:ring-2 focus:ring-[#3b82f6] focus:border-[#3b82f6]"
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+            >
+              <option value="">カテゴリ: 全て</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Material Cards Grid */}
+          {filteredMaterials.length === 0 ? (
+            <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+              <div className="text-4xl mb-3">📦</div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-1">
+                {materials.length === 0 ? '教材が登録されていません' : '検索条件に一致する教材がありません'}
+              </h3>
+              <p className="text-sm text-gray-500 mb-4">
+                {materials.length === 0
+                  ? '「＋教材登録」ボタンから最初の教材を登録しましょう'
+                  : '検索条件やカテゴリフィルターを変更してみてください'}
+              </p>
+              {materials.length === 0 && canEdit && (
+                <Button
+                  onClick={() => {
+                    setEditingMaterial(null);
+                    setIsFormOpen(true);
+                  }}
+                >
+                  ＋ 教材を登録する
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredMaterials.map((material) => (
+                <MaterialCard
+                  key={material.id}
+                  material={material}
+                  students={students}
+                  canEdit={canEdit}
+                  onEdit={handleEdit}
+                  onDelete={handleDeleteMaterial}
+                  onStockIn={handleStockIn}
+                  onStockOut={handleStockOut}
+                  onHistory={handleHistory}
+                  onOrder={handleOrder}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
