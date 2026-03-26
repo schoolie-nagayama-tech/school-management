@@ -608,11 +608,8 @@ export async function syncFormToBilling(
   let synced = 0;
 
   for (const item of linkedItems) {
-    // 3. Get form_responses linked to students for this form_type
-    //    判定基準: created_at が請求期間の start_date〜end_date 内
-    //    → 月またぎ対応: form_period ではなく申込日時で判定
-    //    → 同月複数フォーム期間: 合算される
-    const { data: responses, error: respError } = await supabase
+    // 3a. 今期の日付範囲内の回答を取得
+    const { data: currentResponses, error: respError } = await supabase
       .from('form_responses')
       .select('linked_student_id')
       .eq('form_type', item.linked_form_type!)
@@ -625,11 +622,75 @@ export async function syncFormToBilling(
       console.warn(`フォーム回答の取得に失敗 (${item.linked_form_type}):`, respError);
       continue;
     }
-    if (!responses || responses.length === 0) continue;
+
+    // 3b. 前期以前で未計上の回答も取得（計上漏れ救済）
+    //     created_at < 今期の開始日 の回答のうち、
+    //     過去の請求期間で計上済み(is_billed=true)でないものを含める
+    let carryOverResponses: Array<{ linked_student_id: string | null }> = [];
+    try {
+      // 前期以前の全回答を取得
+      const { data: olderResponses } = await supabase
+        .from('form_responses')
+        .select('linked_student_id')
+        .eq('form_type', item.linked_form_type!)
+        .not('linked_student_id', 'is', null)
+        .in('school_id', targetSchoolIds)
+        .lt('created_at', `${periodStart}T00:00:00`);
+
+      if (olderResponses && olderResponses.length > 0) {
+        // 過去の請求期間の同じform_typeの項目で計上済みの生徒を取得
+        const { data: pastPeriods } = await supabase
+          .from('billing_periods')
+          .select('id')
+          .in('school_id', targetSchoolIds)
+          .lt('end_date', periodStart); // 今期より前の期間
+
+        if (pastPeriods && pastPeriods.length > 0) {
+          const pastPeriodIds = pastPeriods.map(p => p.id);
+          // 過去の期間で同じform_typeの請求項目を取得
+          const { data: pastItems } = await supabase
+            .from('billing_items')
+            .select('id')
+            .in('billing_period_id', pastPeriodIds)
+            .eq('linked_form_type', item.linked_form_type!);
+
+          if (pastItems && pastItems.length > 0) {
+            const pastItemIds = pastItems.map(pi => pi.id);
+            // 過去の期間で計上済みの生徒IDを取得
+            const { data: chargedBillings } = await supabase
+              .from('student_billings')
+              .select('student_id')
+              .in('billing_item_id', pastItemIds)
+              .eq('is_billed', true);
+
+            const chargedStudentIds = new Set(
+              chargedBillings?.map(b => b.student_id) || []
+            );
+
+            // 計上済みでない生徒の回答だけキャリーオーバー
+            carryOverResponses = olderResponses.filter(
+              r => r.linked_student_id && !chargedStudentIds.has(r.linked_student_id)
+            );
+          } else {
+            // 過去に請求項目がない = 全部キャリーオーバー
+            carryOverResponses = olderResponses;
+          }
+        } else {
+          // 過去の請求期間がない = 全部キャリーオーバー
+          carryOverResponses = olderResponses;
+        }
+      }
+    } catch (carryErr) {
+      console.warn('キャリーオーバー取得に失敗（今期分のみで続行）:', carryErr);
+    }
+
+    // 3c. 今期 + キャリーオーバーを合算
+    const allResponses = [...(currentResponses || []), ...carryOverResponses];
+    if (allResponses.length === 0) continue;
 
     // 4. Group by student_id, count responses per student
     const studentCounts = new Map<string, number>();
-    for (const resp of responses) {
+    for (const resp of allResponses) {
       if (resp.linked_student_id) {
         const current = studentCounts.get(resp.linked_student_id) || 0;
         studentCounts.set(resp.linked_student_id, current + 1);
