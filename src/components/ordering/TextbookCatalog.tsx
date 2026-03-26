@@ -84,7 +84,6 @@ function TextbookProductCard({ textbook, students, canEdit, stockQuantity, onOrd
     }
   };
 
-  const detailParts = [textbook.publisher, textbook.grade, textbook.subject].filter(Boolean);
   const color = getSubjectColor(textbook.subject);
 
   // Stock display color

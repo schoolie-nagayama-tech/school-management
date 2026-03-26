@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Button, Input, Select } from '@/components/ui';
-import type { Student, StudentInsert, StudentUpdate, Subject, OrderStatus } from '@/types/database';
-import { Calendar, X, Plus } from 'lucide-react';
+import type { Student, StudentInsert, StudentUpdate, Subject } from '@/types/database';
+import { Calendar, X } from 'lucide-react';
 import { GRADE_LABELS, STATUS_LABELS, ORDER_STATUS_LABELS } from '@/types/database';
 import { getSubjects } from '@/lib/api/subjects';
 import { getStudentSubjects } from '@/lib/api/subjects';
