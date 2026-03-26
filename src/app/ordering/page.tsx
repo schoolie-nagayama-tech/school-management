@@ -9,7 +9,7 @@ import {
   StockHistoryDrawer,
 } from '@/components/inventory';
 import type { MaterialFormData } from '@/components/inventory';
-import { OrderHistoryPanel } from '@/components/ordering/OrderHistoryPanel';
+import Link from 'next/link';
 import { TextbookCatalog } from '@/components/ordering/TextbookCatalog';
 import {
   getMaterials,
@@ -21,8 +21,6 @@ import {
   getOrders,
   createOrder,
   createOrderWithBilling,
-  updateOrderStatus,
-  deleteOrder,
 } from '@/lib/api/ordering';
 import { getStudents } from '@/lib/api/students';
 import { getBillingPeriods } from '@/lib/api/billing';
@@ -56,9 +54,6 @@ export default function OrderingPage() {
   const [activeBillingPeriod, setActiveBillingPeriod] = useState<BillingPeriod | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
-
-  // UI state
-  const [showOrderHistory, setShowOrderHistory] = useState(false);
 
   // Material form modal
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -227,44 +222,6 @@ export default function OrderingPage() {
     fetchData();
   };
 
-  const handleStatusChange = useCallback(
-    async (orderId: string, newStatus: OrderStatus) => {
-      try {
-        await updateOrderStatus(orderId, newStatus);
-        setOrders((prev) =>
-          prev.map((order) => {
-            if (order.id !== orderId) return order;
-            const now = new Date().toISOString();
-            const updates: Partial<MaterialOrderWithDetails> = { status: newStatus };
-            if (newStatus === 'ordered') updates.ordered_at = now;
-            if (newStatus === 'delivered') updates.delivered_at = now;
-            if (newStatus === 'distributed') updates.distributed_at = now;
-            return { ...order, ...updates };
-          })
-        );
-        // Refresh materials to update stock counts
-        const updatedMaterials = await getMaterials(schoolIds);
-        setMaterials(updatedMaterials);
-      } catch (error) {
-        setErrorMessage(getUserErrorMessage(error, 'ステータスの更新に失敗しました'));
-      }
-    },
-    [schoolIds]
-  );
-
-  const handleDeleteOrder = useCallback(
-    async (orderId: string) => {
-      if (!confirm('この発注を削除しますか？')) return;
-      try {
-        await deleteOrder(orderId);
-        setOrders((prev) => prev.filter((o) => o.id !== orderId));
-      } catch (error) {
-        setErrorMessage(getUserErrorMessage(error, '発注の削除に失敗しました'));
-      }
-    },
-    []
-  );
-
   const handleFormClose = () => {
     setIsFormOpen(false);
     setEditingMaterial(null);
@@ -306,16 +263,12 @@ export default function OrderingPage() {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-bold text-gray-900">教材・発注管理</h2>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowOrderHistory(!showOrderHistory)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-              showOrderHistory
-                ? 'bg-[#1e3a5f] text-white border-[#1e3a5f]'
-                : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-            }`}
+          <Link
+            href="/ordering/history"
+            className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
           >
             発注履歴 ({orders.length})
-          </button>
+          </Link>
           {canEdit && (
             <Button
               onClick={() => {
@@ -329,29 +282,6 @@ export default function OrderingPage() {
           )}
         </div>
       </div>
-
-      {/* Order History Panel */}
-      {showOrderHistory && (
-        <div className="mb-4 bg-white rounded-xl border border-gray-200 shadow-sm">
-          <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-gray-800">発注履歴</h3>
-            <button
-              onClick={() => setShowOrderHistory(false)}
-              className="text-gray-400 hover:text-gray-600 text-sm"
-            >
-              閉じる
-            </button>
-          </div>
-          <div className="p-4">
-            <OrderHistoryPanel
-              orders={orders}
-              canEdit={canEdit}
-              onStatusChange={handleStatusChange}
-              onDelete={handleDeleteOrder}
-            />
-          </div>
-        </div>
-      )}
 
       {/* Textbook Catalog (main content) */}
       {isLoading ? (
