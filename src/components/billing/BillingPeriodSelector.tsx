@@ -81,6 +81,8 @@ export function BillingPeriodSelector({
   const DEFAULT_BILLING_ITEMS: Array<{ name: string; source_type: string; value_type: string; linked_form_type?: string }> = [
     { name: '5週目', source_type: 'free', value_type: 'number' },
     { name: '単語練習帳', source_type: 'free', value_type: 'number' },
+    { name: '週回数変更', source_type: 'form_charged', value_type: 'number', linked_form_type: 'shukaisu' },
+    { name: '曜日変更', source_type: 'form_charged', value_type: 'number', linked_form_type: 'youbi' },
     { name: '増コマ', source_type: 'form_charged', value_type: 'number', linked_form_type: 'zoukoma' },
     { name: '模擬', source_type: 'form_charged', value_type: 'number', linked_form_type: 'mogi' },
     { name: '模試', source_type: 'form_charged', value_type: 'number', linked_form_type: 'moshi' },
