@@ -100,7 +100,8 @@
       "Bash(tasklist)",
       "Bash(taskkill //PID 35296 //F)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/billing)",
-      "Bash(curl -s http://localhost:3000/billing)"
+      "Bash(curl -s http://localhost:3000/billing)",
+      "Bash(echo \"EXIT_CODE: $?\")"
     ]
   }
 }

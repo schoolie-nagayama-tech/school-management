@@ -11,6 +11,7 @@ import {
 import type { MaterialFormData } from '@/components/inventory';
 import { MaterialCard } from '@/components/ordering/MaterialCard';
 import { OrderHistoryPanel } from '@/components/ordering/OrderHistoryPanel';
+import { TextbookOrderForm } from '@/components/ordering/TextbookOrderForm';
 import {
   getMaterials,
   createMaterial,
@@ -27,12 +28,14 @@ import {
 } from '@/lib/api/ordering';
 import { getStudents } from '@/lib/api/students';
 import { getBillingPeriods } from '@/lib/api/billing';
+import { getTextbooks } from '@/lib/api/textbooks';
 import type {
   Material,
   MaterialOrderWithDetails,
   OrderStatus,
   StockTransactionType,
   BillingPeriod,
+  Textbook,
 } from '@/types/database';
 import { useRequirePermission, useCanEdit } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
@@ -51,6 +54,7 @@ export default function OrderingPage() {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [orders, setOrders] = useState<MaterialOrderWithDetails[]>([]);
   const [students, setStudents] = useState<{ id: string; last_name: string; first_name: string; grade: number | null }[]>([]);
+  const [textbooks, setTextbooks] = useState<Textbook[]>([]);
   const [activeBillingPeriod, setActiveBillingPeriod] = useState<BillingPeriod | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
@@ -85,15 +89,17 @@ export default function OrderingPage() {
         return;
       }
 
-      const [materialsData, ordersData, studentsData, billingPeriods] = await Promise.all([
+      const [materialsData, ordersData, studentsData, billingPeriods, textbooksData] = await Promise.all([
         getMaterials(schoolIds),
         getOrders(schoolIds).catch(() => [] as MaterialOrderWithDetails[]),
         getStudents(undefined, schoolIds),
         getBillingPeriods(schoolIds).catch(() => [] as BillingPeriod[]),
+        getTextbooks().catch(() => [] as Textbook[]),
       ]);
 
       setMaterials(materialsData);
       setOrders(ordersData);
+      setTextbooks(textbooksData);
       setStudents(
         studentsData
           .filter((s) => s.status === 'active')
@@ -243,6 +249,47 @@ export default function OrderingPage() {
     setOrders(updatedOrders);
   };
 
+  // --- Textbook Ordering ---
+  const handleTextbookOrder = async (
+    textbookName: string,
+    studentId: string,
+    quantity: number,
+    notes: string
+  ) => {
+    const schoolId = schoolIds.length > 0 ? schoolIds[0] : undefined;
+
+    // Check if a material already exists with this textbook name
+    let material = materials.find((m) => m.name === textbookName);
+
+    if (!material) {
+      // Create a new material for this textbook
+      material = await createMaterial(
+        {
+          name: textbookName,
+          category: 'テキスト',
+          unit: '冊',
+        },
+        schoolIds.length > 0 ? schoolIds : undefined
+      );
+    }
+
+    const orderData = {
+      material_id: material.id,
+      student_id: studentId,
+      quantity,
+      notes: notes || undefined,
+    };
+
+    if (activeBillingPeriod) {
+      await createOrderWithBilling(orderData, activeBillingPeriod.id, schoolId);
+    } else {
+      await createOrder(orderData, schoolId);
+    }
+
+    // Refresh all data
+    fetchData();
+  };
+
   const handleStatusChange = useCallback(
     async (orderId: string, newStatus: OrderStatus) => {
       try {
@@ -368,6 +415,21 @@ export default function OrderingPage() {
           </div>
         </div>
       )}
+
+      {/* テキスト発注セクション */}
+      {canEdit && (
+        <TextbookOrderForm
+          students={students}
+          textbooks={textbooks}
+          canEdit={canEdit}
+          onOrder={handleTextbookOrder}
+        />
+      )}
+
+      {/* 教材在庫セクション */}
+      <h2 className="text-lg font-semibold text-[#1e3a5f] mb-4 flex items-center gap-1.5">
+        <span>📦</span> 教材在庫 ({materials.length}件)
+      </h2>
 
       {/* Search & Filter Bar */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
