@@ -604,7 +604,13 @@ export function BillingTable({
                           key={item.id}
                           className={`px-1 py-1 text-center border-r border-[#e5e7eb] transition-colors relative ${bgClass} ${
                             isUpdating ? 'opacity-50' : ''
-                          }`}
+                          } ${canEditCell && onBillingChange && !isEditingThis ? 'cursor-pointer hover:bg-blue-50' : ''}`}
+                          onClick={() => {
+                            if (!isUpdating && !isEditingThis && canEditCell && onBillingChange) {
+                              handleNumberCellClick(student.id, item.id, billing);
+                            }
+                          }}
+                          title={hasValue ? `${billing?.value_number}（クリックで編集）` : 'クリックで入力'}
                         >
                           {isUpdating ? (
                             <span className="text-[#4b5563] text-xs">...</span>
@@ -618,22 +624,21 @@ export function BillingTable({
                                 if (e.key === 'Enter') e.currentTarget.blur();
                                 if (e.key === 'Escape') { setEditingCell(null); setEditingValue(''); }
                               }}
+                              onClick={(e) => e.stopPropagation()}
                               autoFocus
-                              className="w-full px-1 py-0.5 text-xs text-center border border-blue-400 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+                              className="w-full px-2 py-1 text-sm text-center border-2 border-blue-400 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
                             />
                           ) : (
                             <div className="flex flex-col items-center gap-0.5">
-                              {/* 数値表示（クリックで編集） */}
+                              {/* 数値表示 */}
                               <span
-                                className={`text-sm font-bold cursor-pointer hover:underline ${
+                                className={`text-sm font-bold ${
                                   hasValue ? (isBilled ? 'text-green-700' : 'text-[#1e3a5f]') : 'text-gray-300'
                                 }`}
-                                onClick={() => canEditCell && onBillingChange && handleNumberCellClick(student.id, item.id, billing)}
-                                title={hasValue ? `${billing?.value_number}（クリックで編集）` : 'クリックで入力'}
                               >
                                 {hasValue ? billing?.value_number : '-'}
                               </span>
-                              {/* 計上ボタン（大きく目立つ） */}
+                              {/* 計上ボタン */}
                               {canEditCell && onBillingChange && hasValue && (
                                 <button
                                   className={`text-[11px] leading-none rounded-md px-2 py-0.5 font-medium transition-colors ${
@@ -670,7 +675,13 @@ export function BillingTable({
                           key={item.id}
                           className={`px-1 py-1 text-center border-r border-[#e5e7eb] transition-colors relative ${bgClass} ${
                             isUpdating ? 'opacity-50' : ''
-                          }`}
+                          } ${canEditCell && onBillingChange && !isEditingThis ? 'cursor-pointer hover:bg-blue-50' : ''}`}
+                          onClick={() => {
+                            if (!isUpdating && !isEditingThis && canEditCell && onBillingChange) {
+                              handleTextCellClick(student.id, item.id, billing);
+                            }
+                          }}
+                          title={hasValue ? `${billing?.value_text}（クリックで編集）` : 'クリックで入力'}
                         >
                           {isUpdating ? (
                             <span className="text-[#4b5563] text-xs">...</span>
@@ -684,22 +695,21 @@ export function BillingTable({
                                 if (e.key === 'Enter') e.currentTarget.blur();
                                 if (e.key === 'Escape') { setEditingCell(null); setEditingValue(''); }
                               }}
+                              onClick={(e) => e.stopPropagation()}
                               autoFocus
-                              className="w-full px-1 py-0.5 text-xs border border-blue-400 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+                              className="w-full px-2 py-1 text-sm border-2 border-blue-400 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
                             />
                           ) : (
                             <div className="flex flex-col items-center gap-0.5">
-                              {/* テキスト表示（クリックで編集） */}
+                              {/* テキスト表示 */}
                               <span
-                                className={`text-xs cursor-pointer hover:underline truncate max-w-[80px] ${
+                                className={`text-xs truncate max-w-[80px] ${
                                   hasValue ? (isBilled ? 'text-green-700' : 'text-[#1e3a5f]') : 'text-gray-300'
                                 }`}
-                                onClick={() => canEditCell && onBillingChange && handleTextCellClick(student.id, item.id, billing)}
-                                title={hasValue ? `${billing?.value_text}（クリックで編集）` : 'クリックで入力'}
                               >
                                 {hasValue ? billing?.value_text : '-'}
                               </span>
-                              {/* 計上ボタン（大きく目立つ） */}
+                              {/* 計上ボタン */}
                               {canEditCell && onBillingChange && hasValue && (
                                 <button
                                   className={`text-[11px] leading-none rounded-md px-2 py-0.5 font-medium transition-colors ${
