@@ -2,21 +2,19 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AdminLayout } from '@/components/layouts';
-import { Button, Input } from '@/components/ui';
+import { Button } from '@/components/ui';
 import {
   MaterialForm,
   StockTransactionModal,
   StockHistoryDrawer,
 } from '@/components/inventory';
 import type { MaterialFormData } from '@/components/inventory';
-import { MaterialCard } from '@/components/ordering/MaterialCard';
 import { OrderHistoryPanel } from '@/components/ordering/OrderHistoryPanel';
 import { TextbookCatalog } from '@/components/ordering/TextbookCatalog';
 import {
   getMaterials,
   createMaterial,
   updateMaterial,
-  deleteMaterial,
   createStockTransaction,
 } from '@/lib/api/inventory';
 import {
@@ -61,11 +59,6 @@ export default function OrderingPage() {
 
   // UI state
   const [showOrderHistory, setShowOrderHistory] = useState(false);
-  const [showInventory, setShowInventory] = useState(false);
-
-  // Inventory filters
-  const [search, setSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
 
   // Material form modal
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -127,28 +120,6 @@ export default function OrderingPage() {
     }
   }, [fetchData, selectedSchoolId]);
 
-  // Categories for inventory filter
-  const categories = useMemo(() => {
-    const cats = new Set<string>();
-    materials.forEach((m) => {
-      if (m.category) cats.add(m.category);
-    });
-    return Array.from(cats).sort();
-  }, [materials]);
-
-  // Filtered materials (for inventory section)
-  const filteredMaterials = useMemo(() => {
-    let result = materials;
-    if (search) {
-      const searchLower = search.toLowerCase();
-      result = result.filter((m) => m.name.toLowerCase().includes(searchLower));
-    }
-    if (categoryFilter) {
-      result = result.filter((m) => m.category === categoryFilter);
-    }
-    return result;
-  }, [materials, search, categoryFilter]);
-
   const schoolIds = useMemo(() => getSelectedSchoolIds(), [getSelectedSchoolIds]);
 
   // --- Material CRUD ---
@@ -179,16 +150,6 @@ export default function OrderingPage() {
     fetchData();
   };
 
-  const handleDeleteMaterial = async (material: Material) => {
-    if (!confirm(`「${material.name}」を削除しますか？`)) return;
-    try {
-      await deleteMaterial(material.id);
-      fetchData();
-    } catch (error) {
-      setErrorMessage(getUserErrorMessage(error, '教材の削除に失敗しました'));
-    }
-  };
-
   // --- Stock ---
   const handleStockTransaction = async (txnData: { quantity: number; reason: string }) => {
     if (!stockTxnMaterial) return;
@@ -203,54 +164,13 @@ export default function OrderingPage() {
     fetchData();
   };
 
-  const handleStockIn = (material: Material) => {
+  const handleStockAdjust = (material: Material) => {
     setStockTxnMaterial(material);
-    setStockTxnMode('in');
+    setStockTxnMode('adjust');
     setIsStockTxnOpen(true);
   };
 
-  const handleStockOut = (material: Material) => {
-    setStockTxnMaterial(material);
-    setStockTxnMode('out');
-    setIsStockTxnOpen(true);
-  };
-
-  const handleHistory = (material: Material) => {
-    setHistoryMaterial(material);
-    setIsHistoryOpen(true);
-  };
-
-  const handleEdit = (material: Material) => {
-    setEditingMaterial(material);
-    setIsFormOpen(true);
-  };
-
-  // --- Ordering (for inventory materials) ---
-  const handleOrder = async (
-    materialId: string,
-    studentId: string,
-    quantity: number,
-    notes: string
-  ) => {
-    const schoolId = schoolIds.length > 0 ? schoolIds[0] : undefined;
-    const orderData = {
-      material_id: materialId,
-      student_id: studentId,
-      quantity,
-      notes: notes || undefined,
-    };
-
-    if (activeBillingPeriod) {
-      await createOrderWithBilling(orderData, activeBillingPeriod.id, schoolId);
-    } else {
-      await createOrder(orderData, schoolId);
-    }
-    // Refresh orders
-    const updatedOrders = await getOrders(schoolIds).catch(() => [] as MaterialOrderWithDetails[]);
-    setOrders(updatedOrders);
-  };
-
-  // --- Textbook Ordering ---
+  // --- Textbook Ordering (with auto stock decrement) ---
   const handleTextbookOrder = async (
     textbookName: string,
     studentId: string,
@@ -285,6 +205,22 @@ export default function OrderingPage() {
       await createOrderWithBilling(orderData, activeBillingPeriod.id, schoolId);
     } else {
       await createOrder(orderData, schoolId);
+    }
+
+    // Auto-decrement stock by creating an 'out' transaction
+    if (schoolId) {
+      try {
+        await createStockTransaction({
+          school_id: schoolId,
+          material_id: material.id,
+          transaction_type: 'out' as StockTransactionType,
+          quantity,
+          reason: '発注による自動出庫',
+        });
+      } catch {
+        // Stock decrement is best-effort; don't block the order
+        console.warn('Auto stock decrement failed');
+      }
     }
 
     // Refresh all data
@@ -380,16 +316,17 @@ export default function OrderingPage() {
           >
             発注履歴 ({orders.length})
           </button>
-          <button
-            onClick={() => setShowInventory(!showInventory)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-              showInventory
-                ? 'bg-[#1e3a5f] text-white border-[#1e3a5f]'
-                : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-            }`}
-          >
-            在庫管理
-          </button>
+          {canEdit && (
+            <Button
+              onClick={() => {
+                setEditingMaterial(null);
+                setIsFormOpen(true);
+              }}
+              className="text-sm"
+            >
+              教材登録
+            </Button>
+          )}
         </div>
       </div>
 
@@ -436,103 +373,10 @@ export default function OrderingPage() {
           textbooks={textbooks}
           students={students}
           canEdit={canEdit}
+          materials={materials}
           onOrder={handleTextbookOrder}
+          onStockAdjust={handleStockAdjust}
         />
-      )}
-
-      {/* ─── Inventory Section (collapsible) ─── */}
-      {showInventory && (
-        <div className="mt-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-[#1e3a5f] flex items-center gap-1.5">
-              <span>📦</span> 教材在庫 ({materials.length}件)
-            </h2>
-            <div className="flex items-center gap-2">
-              {canEdit && (
-                <Button
-                  onClick={() => {
-                    setEditingMaterial(null);
-                    setIsFormOpen(true);
-                  }}
-                  className="text-sm"
-                >
-                  ＋ 教材登録
-                </Button>
-              )}
-              <button
-                onClick={() => setShowInventory(false)}
-                className="text-gray-400 hover:text-gray-600 text-sm"
-              >
-                閉じる
-              </button>
-            </div>
-          </div>
-
-          {/* Search & Filter Bar */}
-          <div className="mb-4 flex flex-wrap items-center gap-3">
-            <div className="flex-1 min-w-[200px] max-w-xs">
-              <Input
-                placeholder="🔍 教材名で検索..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-            <select
-              className="px-3 py-2 border border-gray-200 rounded-lg bg-white text-gray-600 text-sm focus:ring-2 focus:ring-[#3b82f6] focus:border-[#3b82f6]"
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-            >
-              <option value="">カテゴリ: 全て</option>
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Material Cards Grid */}
-          {filteredMaterials.length === 0 ? (
-            <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-              <div className="text-4xl mb-3">📦</div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-1">
-                {materials.length === 0 ? '教材が登録されていません' : '検索条件に一致する教材がありません'}
-              </h3>
-              <p className="text-sm text-gray-500 mb-4">
-                {materials.length === 0
-                  ? '「＋教材登録」ボタンから最初の教材を登録しましょう'
-                  : '検索条件やカテゴリフィルターを変更してみてください'}
-              </p>
-              {materials.length === 0 && canEdit && (
-                <Button
-                  onClick={() => {
-                    setEditingMaterial(null);
-                    setIsFormOpen(true);
-                  }}
-                >
-                  ＋ 教材を登録する
-                </Button>
-              )}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredMaterials.map((material) => (
-                <MaterialCard
-                  key={material.id}
-                  material={material}
-                  students={students}
-                  canEdit={canEdit}
-                  onEdit={handleEdit}
-                  onDelete={handleDeleteMaterial}
-                  onStockIn={handleStockIn}
-                  onStockOut={handleStockOut}
-                  onHistory={handleHistory}
-                  onOrder={handleOrder}
-                />
-              ))}
-            </div>
-          )}
-        </div>
       )}
 
       {/* Material Form Modal */}

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import type { Textbook } from '@/types/database';
+import { Search, Check, AlertTriangle, Package } from 'lucide-react';
+import type { Textbook, Material } from '@/types/database';
 
 interface StudentOption {
   id: string;
@@ -14,10 +15,27 @@ interface TextbookCatalogProps {
   textbooks: Textbook[];
   students: StudentOption[];
   canEdit: boolean;
+  materials: Material[];
   onOrder: (textbookName: string, studentId: string, quantity: number, notes: string) => Promise<void>;
+  onStockAdjust?: (material: Material) => void;
 }
 
-const ITEMS_PER_PAGE = 20;
+const ITEMS_PER_PAGE = 40;
+
+// ─── Subject Color Coding ─────────────────────────────────
+const SUBJECT_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  '英語': { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-l-blue-500' },
+  '数学': { bg: 'bg-red-50', text: 'text-red-700', border: 'border-l-red-500' },
+  '国語': { bg: 'bg-green-50', text: 'text-green-700', border: 'border-l-green-500' },
+  '理科': { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-l-purple-500' },
+  '社会': { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-l-orange-500' },
+};
+const DEFAULT_COLOR = { bg: 'bg-gray-50', text: 'text-gray-700', border: 'border-l-gray-400' };
+
+function getSubjectColor(subject: string | null) {
+  if (!subject) return DEFAULT_COLOR;
+  return SUBJECT_COLORS[subject] ?? DEFAULT_COLOR;
+}
 
 function gradeLabel(grade: number | null): string {
   if (grade === null || grade === undefined) return '';
@@ -40,10 +58,12 @@ interface TextbookProductCardProps {
   textbook: Textbook;
   students: StudentOption[];
   canEdit: boolean;
+  stockQuantity: number | null; // null = no matching material
   onOrder: (textbookName: string, studentId: string, quantity: number, notes: string) => Promise<void>;
+  onStockAdjust?: () => void;
 }
 
-function TextbookProductCard({ textbook, students, canEdit, onOrder }: TextbookProductCardProps) {
+function TextbookProductCard({ textbook, students, canEdit, stockQuantity, onOrder, onStockAdjust }: TextbookProductCardProps) {
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [isOrdering, setIsOrdering] = useState(false);
@@ -64,102 +84,130 @@ function TextbookProductCard({ textbook, students, canEdit, onOrder }: TextbookP
   };
 
   const detailParts = [textbook.publisher, textbook.grade, textbook.subject].filter(Boolean);
+  const color = getSubjectColor(textbook.subject);
+
+  // Stock display color
+  const stockColor =
+    stockQuantity === null
+      ? 'text-gray-400'
+      : stockQuantity <= 2
+        ? 'text-red-600 font-semibold'
+        : stockQuantity <= 5
+          ? 'text-orange-600'
+          : 'text-gray-500';
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-3 hover:shadow-md transition-shadow flex flex-col">
+    <div className={`bg-white rounded border border-gray-200 border-l-4 ${color.border} p-2 hover:shadow-md transition-shadow flex flex-col`}>
       {/* Textbook Info */}
-      <div className="mb-1">
-        <div className="text-sm font-semibold text-[#1e3a5f] flex items-center gap-1">
-          <span className="text-base flex-shrink-0">📘</span>
-          <span className="truncate">{textbook.name}</span>
+      <div className="mb-0.5">
+        <div className="text-xs font-semibold text-[#1e3a5f] truncate" title={textbook.name}>
+          {textbook.name}
         </div>
         {detailParts.length > 0 && (
-          <div className="text-xs text-gray-500 mt-0.5 truncate pl-6">
+          <div className="text-[10px] text-gray-500 truncate">
             {detailParts.join(' | ')}
           </div>
         )}
       </div>
 
+      {/* Stock Display */}
+      <div className="flex items-center justify-between mb-1">
+        <span className={`text-[10px] ${stockColor}`}>
+          在庫: {stockQuantity !== null ? `${stockQuantity}冊` : '-'}
+          {stockQuantity !== null && stockQuantity <= 2 && (
+            <AlertTriangle className="inline w-3 h-3 ml-0.5 text-red-500" />
+          )}
+        </span>
+        {onStockAdjust && canEdit && stockQuantity !== null && (
+          <button
+            onClick={onStockAdjust}
+            className="text-[10px] text-gray-400 hover:text-[#1e3a5f] hover:underline"
+          >
+            在庫調整
+          </button>
+        )}
+      </div>
+
       {/* Order Section */}
       {canEdit && (
-        <div className="border-t border-gray-100 mt-2 pt-2 flex-1 flex flex-col">
-          {/* Student Select */}
-          <div className="mb-1.5">
-            <label className="block text-[10px] text-gray-400 mb-0.5">生徒</label>
+        <div className="border-t border-gray-100 pt-1 flex-1 flex flex-col">
+          {/* Compact: Student select + quantity + order button in one row */}
+          <div className="flex items-center gap-1">
             <select
               value={selectedStudentId}
               onChange={(e) => setSelectedStudentId(e.target.value)}
               disabled={isOrdering}
-              className="w-full px-2 py-1 border border-gray-200 rounded text-xs bg-white text-gray-700 focus:ring-1 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f] transition-colors"
+              className="flex-1 min-w-0 px-1 py-0.5 border border-gray-200 rounded text-[10px] bg-white text-gray-700 focus:ring-1 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f] transition-colors"
             >
-              <option value="">選択...</option>
+              <option value="">生徒...</option>
               {students.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {gradeLabel(s.grade)} {s.last_name} {s.first_name}
+                  {gradeLabel(s.grade)} {s.last_name}{s.first_name}
                 </option>
               ))}
             </select>
+            <input
+              type="number"
+              min={1}
+              max={20}
+              value={quantity}
+              onChange={(e) => setQuantity(Math.max(1, Math.min(20, parseInt(e.target.value) || 1)))}
+              disabled={isOrdering}
+              className="w-8 text-center px-0.5 py-0.5 border border-gray-200 rounded text-[10px]"
+            />
+            <button
+              onClick={handleOrder}
+              disabled={!selectedStudentId || isOrdering}
+              className={`px-2 py-0.5 rounded font-medium text-[10px] transition-colors whitespace-nowrap ${
+                orderSuccess
+                  ? 'bg-green-600 text-white'
+                  : 'bg-[#1e3a5f] text-white hover:bg-[#2d4a6f] disabled:opacity-50 disabled:cursor-not-allowed'
+              }`}
+            >
+              {isOrdering ? '...' : orderSuccess ? (
+                <span className="flex items-center gap-0.5"><Check className="w-3 h-3" />済</span>
+              ) : '発注'}
+            </button>
           </div>
-
-          {/* Quantity */}
-          <div className="mb-2">
-            <label className="block text-[10px] text-gray-400 mb-0.5">数量</label>
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                disabled={isOrdering || quantity <= 1}
-                className="w-6 h-6 rounded bg-gray-100 text-xs flex items-center justify-center text-gray-600 hover:bg-gray-200 disabled:opacity-40 transition-colors"
-              >
-                −
-              </button>
-              <input
-                type="number"
-                min={1}
-                max={20}
-                value={quantity}
-                onChange={(e) => setQuantity(Math.max(1, Math.min(20, parseInt(e.target.value) || 1)))}
-                disabled={isOrdering}
-                className="w-10 text-center px-1 py-0.5 border border-gray-200 rounded text-xs"
-              />
-              <button
-                type="button"
-                onClick={() => setQuantity((q) => Math.min(20, q + 1))}
-                disabled={isOrdering || quantity >= 20}
-                className="w-6 h-6 rounded bg-gray-100 text-xs flex items-center justify-center text-gray-600 hover:bg-gray-200 disabled:opacity-40 transition-colors"
-              >
-                ＋
-              </button>
-            </div>
-          </div>
-
-          {/* Order Button */}
-          <button
-            onClick={handleOrder}
-            disabled={!selectedStudentId || isOrdering}
-            className={`w-full py-1.5 rounded-lg font-medium text-xs transition-colors mt-auto ${
-              orderSuccess
-                ? 'bg-green-600 text-white'
-                : 'bg-[#1e3a5f] text-white hover:bg-[#2d4a6f] disabled:opacity-50 disabled:cursor-not-allowed'
-            }`}
-          >
-            {isOrdering ? '発注中...' : orderSuccess ? '✓ 発注済み' : '🛒 発注する'}
-          </button>
         </div>
       )}
     </div>
   );
 }
 
+// ─── Subject Legend ──────────────────────────────────────────
+
+function SubjectLegend() {
+  return (
+    <div className="flex flex-wrap items-center gap-3 mb-2">
+      {Object.entries(SUBJECT_COLORS).map(([subject, colors]) => (
+        <div key={subject} className="flex items-center gap-1">
+          <span className={`w-3 h-3 rounded-sm ${colors.border.replace('border-l-', 'bg-')}`} />
+          <span className="text-[10px] text-gray-600">{subject}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── Main Catalog ───────────────────────────────────────────
 
-export function TextbookCatalog({ textbooks, students, canEdit, onOrder }: TextbookCatalogProps) {
+export function TextbookCatalog({ textbooks, students, canEdit, materials, onOrder, onStockAdjust }: TextbookCatalogProps) {
   // Filters
   const [search, setSearch] = useState('');
   const [schoolTypeFilter, setSchoolTypeFilter] = useState<string>('all');
   const [selectedGrades, setSelectedGrades] = useState<Set<string>>(new Set());
   const [selectedSubjects, setSelectedSubjects] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Build a stock lookup: textbook label → stock_quantity
+  const stockMap = useMemo(() => {
+    const map = new Map<string, { quantity: number; material: Material }>();
+    for (const m of materials) {
+      map.set(m.name, { quantity: m.stock_quantity, material: m });
+    }
+    return map;
+  }, [materials]);
 
   // Derive available grades and subjects from data
   const { grades, subjects } = useMemo(() => {
@@ -262,6 +310,13 @@ export function TextbookCatalog({ textbooks, students, canEdit, onOrder }: Textb
     return pages;
   }, [safeCurrentPage, totalPages]);
 
+  // Helper to get stock info for a textbook
+  const getStockInfo = useCallback((tb: Textbook) => {
+    const label = formatTextbookLabel(tb);
+    const entry = stockMap.get(label) ?? stockMap.get(tb.name);
+    return entry ?? null;
+  }, [stockMap]);
+
   return (
     <div className="flex gap-4">
       {/* ─── Left Sidebar Filters ─── */}
@@ -351,9 +406,7 @@ export function TextbookCatalog({ textbooks, students, canEdit, onOrder }: Textb
         {/* Search Bar */}
         <div className="mb-3">
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none">
-              🔍
-            </span>
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             <input
               type="text"
               value={search}
@@ -366,6 +419,9 @@ export function TextbookCatalog({ textbooks, students, canEdit, onOrder }: Textb
             />
           </div>
         </div>
+
+        {/* Subject Legend */}
+        <SubjectLegend />
 
         {/* Results count */}
         <div className="text-xs text-gray-500 mb-2">
@@ -391,7 +447,7 @@ export function TextbookCatalog({ textbooks, students, canEdit, onOrder }: Textb
         {/* Grid */}
         {paginatedTextbooks.length === 0 ? (
           <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-            <div className="text-4xl mb-3">📚</div>
+            <Package className="w-10 h-10 text-gray-300 mx-auto mb-3" />
             <h3 className="text-lg font-semibold text-gray-800 mb-1">
               {textbooks.length === 0 ? 'テキストが登録されていません' : '条件に一致するテキストがありません'}
             </h3>
@@ -402,16 +458,21 @@ export function TextbookCatalog({ textbooks, students, canEdit, onOrder }: Textb
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {paginatedTextbooks.map((tb) => (
-              <TextbookProductCard
-                key={tb.id}
-                textbook={tb}
-                students={students}
-                canEdit={canEdit}
-                onOrder={onOrder}
-              />
-            ))}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+            {paginatedTextbooks.map((tb) => {
+              const stockInfo = getStockInfo(tb);
+              return (
+                <TextbookProductCard
+                  key={tb.id}
+                  textbook={tb}
+                  students={students}
+                  canEdit={canEdit}
+                  stockQuantity={stockInfo ? stockInfo.quantity : null}
+                  onOrder={onOrder}
+                  onStockAdjust={stockInfo && onStockAdjust ? () => onStockAdjust(stockInfo.material) : undefined}
+                />
+              );
+            })}
           </div>
         )}
 
