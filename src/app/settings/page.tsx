@@ -13,6 +13,7 @@ import {
   Shield,
   Clock,
   Link2,
+  BookOpen,
 } from 'lucide-react';
 
 interface SettingsItem {
@@ -50,6 +51,13 @@ const settingsItems: SettingsItem[] = [
     icon: <FileText className="w-5 h-5" />,
     label: 'フォーム期間設定',
     description: '模試・模擬・集回数・曜日・相談・増コマの受付期間',
+    requiresManager: true,
+  },
+  {
+    href: '/settings/textbooks',
+    icon: <BookOpen className="w-5 h-5" />,
+    label: '教材マスタ管理',
+    description: '教材・カリキュラムの登録・編集',
     requiresManager: true,
   },
   {
