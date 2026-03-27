@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import { Search, AlertTriangle, Package } from 'lucide-react';
+import { Search, AlertTriangle, Package, ShoppingCart, X, Trash2 } from 'lucide-react';
 import type { Textbook, Material } from '@/types/database';
 
 interface StudentOption {
@@ -11,12 +11,22 @@ interface StudentOption {
   grade: number | null;
 }
 
+export interface CartItem {
+  id: string; // unique key for cart
+  textbookName: string;
+  studentId: string;
+  studentLabel: string;
+  quantity: number;
+  textbook: Textbook;
+}
+
 interface TextbookCatalogProps {
   textbooks: Textbook[];
   students: StudentOption[];
   canEdit: boolean;
   materials: Material[];
   onOrder: (textbookName: string, studentId: string, quantity: number, notes: string) => Promise<void>;
+  onBulkOrder: (items: CartItem[]) => Promise<void>;
   onStockAdjust?: (material: Material) => void;
   onStockRegister?: (textbookName: string) => void;
 }
@@ -59,29 +69,26 @@ interface TextbookProductCardProps {
   textbook: Textbook;
   students: StudentOption[];
   canEdit: boolean;
-  stockQuantity: number | null; // null = no matching material
-  onOrder: (textbookName: string, studentId: string, quantity: number, notes: string) => Promise<void>;
+  stockQuantity: number | null;
+  onAddToCart: (textbook: Textbook, textbookName: string, studentId: string, studentLabel: string, quantity: number) => void;
   onStockAdjust?: () => void;
 }
 
-function TextbookProductCard({ textbook, students, canEdit, stockQuantity, onOrder, onStockAdjust }: TextbookProductCardProps) {
+function TextbookProductCard({ textbook, students, canEdit, stockQuantity, onAddToCart, onStockAdjust }: TextbookProductCardProps) {
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [quantity, setQuantity] = useState(1);
-  const [isOrdering, setIsOrdering] = useState(false);
-  const [orderSuccess, setOrderSuccess] = useState(false);
+  const [addedSuccess, setAddedSuccess] = useState(false);
 
-  const handleOrder = async () => {
+  const handleAddToCart = () => {
     if (!selectedStudentId) return;
-    setIsOrdering(true);
-    try {
-      await onOrder(formatTextbookLabel(textbook), selectedStudentId, quantity, '');
-      setSelectedStudentId('');
-      setQuantity(1);
-      setOrderSuccess(true);
-      setTimeout(() => setOrderSuccess(false), 2000);
-    } finally {
-      setIsOrdering(false);
-    }
+    const student = students.find((s) => s.id === selectedStudentId);
+    if (!student) return;
+    const studentLabel = `${gradeLabel(student.grade)} ${student.last_name} ${student.first_name}`;
+    onAddToCart(textbook, formatTextbookLabel(textbook), selectedStudentId, studentLabel, quantity);
+    setSelectedStudentId('');
+    setQuantity(1);
+    setAddedSuccess(true);
+    setTimeout(() => setAddedSuccess(false), 1500);
   };
 
   const color = getSubjectColor(textbook.subject);
@@ -175,15 +182,15 @@ function TextbookProductCard({ textbook, students, canEdit, stockQuantity, onOrd
             />
             <span className="text-xs text-gray-400">冊</span>
             <button
-              onClick={handleOrder}
-              disabled={!selectedStudentId || isOrdering}
+              onClick={handleAddToCart}
+              disabled={!selectedStudentId}
               className={`flex-1 py-1.5 rounded-md font-medium text-xs transition-colors ${
-                orderSuccess
+                addedSuccess
                   ? 'bg-green-600 text-white'
                   : 'bg-[#1e3a5f] text-white hover:bg-[#2d4a6f] disabled:opacity-40 disabled:cursor-not-allowed'
               }`}
             >
-              {isOrdering ? '処理中...' : orderSuccess ? '発注済み' : '発注する'}
+              {addedSuccess ? '追加しました' : 'カートに追加'}
             </button>
           </div>
         </div>
@@ -215,9 +222,138 @@ function SubjectLegend() {
   );
 }
 
+// ─── Cart Drawer ────────────────────────────────────────────
+
+function CartDrawer({
+  isOpen,
+  items,
+  onClose,
+  onRemove,
+  onSubmit,
+  isSubmitting,
+}: {
+  isOpen: boolean;
+  items: CartItem[];
+  onClose: () => void;
+  onRemove: (id: string) => void;
+  onSubmit: () => void;
+  isSubmitting: boolean;
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <>
+      {/* Overlay */}
+      <div className="fixed inset-0 bg-black/30 z-40" onClick={onClose} />
+      {/* Drawer */}
+      <div className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white shadow-xl z-50 flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+          <h3 className="text-base font-bold text-gray-900 flex items-center gap-2">
+            <ShoppingCart className="w-5 h-5" />
+            発注カート（{items.length}件）
+          </h3>
+          <button onClick={onClose} className="p-1 rounded hover:bg-gray-100 transition-colors">
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+
+        {/* Cart Items */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+          {items.length === 0 ? (
+            <div className="text-center text-gray-400 py-12">
+              <ShoppingCart className="w-10 h-10 mx-auto mb-2 opacity-40" />
+              <p className="text-sm">カートは空です</p>
+            </div>
+          ) : (
+            items.map((item) => {
+              const color = getSubjectColor(item.textbook.subject);
+              return (
+                <div
+                  key={item.id}
+                  className={`flex items-start gap-3 p-3 rounded-lg border border-gray-200 border-l-4 ${color.border} bg-white`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-gray-900 truncate">{item.textbook.name}</div>
+                    <div className="text-xs text-gray-500 mt-0.5">
+                      {item.studentLabel} × {item.quantity}冊
+                    </div>
+                    {item.textbook.subject && (
+                      <span className={`inline-block text-[10px] px-1.5 py-0.5 rounded mt-1 ${color.bg} ${color.text}`}>
+                        {item.textbook.grade} {item.textbook.subject}
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => onRemove(item.id)}
+                    className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                    title="削除"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Footer */}
+        {items.length > 0 && (
+          <div className="border-t border-gray-200 p-4 space-y-2">
+            <div className="flex items-center justify-between text-sm text-gray-600">
+              <span>合計</span>
+              <span className="font-bold text-gray-900">{items.length}件 / {items.reduce((sum, i) => sum + i.quantity, 0)}冊</span>
+            </div>
+            <button
+              onClick={onSubmit}
+              disabled={isSubmitting}
+              className="w-full py-2.5 rounded-lg font-bold text-sm bg-[#1e3a5f] text-white hover:bg-[#2d4a6f] disabled:opacity-50 transition-colors"
+            >
+              {isSubmitting ? '発注中...' : 'まとめて発注する'}
+            </button>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
 // ─── Main Catalog ───────────────────────────────────────────
 
-export function TextbookCatalog({ textbooks, students, canEdit, materials, onOrder, onStockAdjust, onStockRegister }: TextbookCatalogProps) {
+export function TextbookCatalog({ textbooks, students, canEdit, materials, onBulkOrder, onStockAdjust, onStockRegister }: TextbookCatalogProps) {
+  // Cart state
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleAddToCart = useCallback((textbook: Textbook, textbookName: string, studentId: string, studentLabel: string, quantity: number) => {
+    const newItem: CartItem = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      textbookName,
+      studentId,
+      studentLabel,
+      quantity,
+      textbook,
+    };
+    setCartItems((prev) => [...prev, newItem]);
+  }, []);
+
+  const handleRemoveFromCart = useCallback((id: string) => {
+    setCartItems((prev) => prev.filter((item) => item.id !== id));
+  }, []);
+
+  const handleBulkOrder = useCallback(async () => {
+    if (cartItems.length === 0) return;
+    setIsSubmitting(true);
+    try {
+      await onBulkOrder(cartItems);
+      setCartItems([]);
+      setIsCartOpen(false);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [cartItems, onBulkOrder]);
+
   // Filters
   const [search, setSearch] = useState('');
   const [schoolTypeFilter, setSchoolTypeFilter] = useState<string>('all');
@@ -493,7 +629,7 @@ export function TextbookCatalog({ textbooks, students, canEdit, materials, onOrd
                   students={students}
                   canEdit={canEdit}
                   stockQuantity={stockInfo ? stockInfo.quantity : null}
-                  onOrder={onOrder}
+                  onAddToCart={handleAddToCart}
                   onStockAdjust={
                     stockInfo && onStockAdjust
                       ? () => onStockAdjust(stockInfo.material)
@@ -540,6 +676,52 @@ export function TextbookCatalog({ textbooks, students, canEdit, materials, onOrd
           </div>
         )}
       </div>
+
+      {/* Floating Cart Bar */}
+      {canEdit && cartItems.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-200 shadow-[0_-4px_12px_rgba(0,0,0,0.1)]">
+          <div className="max-w-screen-xl mx-auto px-4 py-3 flex items-center justify-between">
+            <button
+              onClick={() => setIsCartOpen(true)}
+              className="flex items-center gap-2 text-sm text-gray-700 hover:text-[#1e3a5f] transition-colors"
+            >
+              <div className="relative">
+                <ShoppingCart className="w-5 h-5" />
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-4.5 h-4.5 rounded-full flex items-center justify-center min-w-[18px] px-1">
+                  {cartItems.length}
+                </span>
+              </div>
+              <span className="font-medium">
+                カート: {cartItems.length}件（{cartItems.reduce((s, i) => s + i.quantity, 0)}冊）
+              </span>
+            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCartItems([])}
+                className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors"
+              >
+                全て取消
+              </button>
+              <button
+                onClick={() => setIsCartOpen(true)}
+                className="px-4 py-1.5 text-sm rounded-lg font-bold bg-[#1e3a5f] text-white hover:bg-[#2d4a6f] transition-colors"
+              >
+                まとめて発注
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cart Drawer */}
+      <CartDrawer
+        isOpen={isCartOpen}
+        items={cartItems}
+        onClose={() => setIsCartOpen(false)}
+        onRemove={handleRemoveFromCart}
+        onSubmit={handleBulkOrder}
+        isSubmitting={isSubmitting}
+      />
     </div>
   );
 }

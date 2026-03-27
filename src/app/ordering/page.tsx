@@ -11,6 +11,7 @@ import {
 import type { MaterialFormData } from '@/components/inventory';
 import Link from 'next/link';
 import { TextbookCatalog } from '@/components/ordering/TextbookCatalog';
+import type { CartItem } from '@/components/ordering/TextbookCatalog';
 import {
   getMaterials,
   createMaterial,
@@ -21,6 +22,7 @@ import {
   getOrders,
   createOrder,
   createOrderWithBilling,
+  createBulkOrders,
 } from '@/lib/api/ordering';
 import { getStudents } from '@/lib/api/students';
 import { getBillingPeriods } from '@/lib/api/billing';
@@ -221,6 +223,69 @@ export default function OrderingPage() {
     fetchData();
   };
 
+  // --- Bulk Order (Cart) ---
+  const handleBulkOrder = async (items: CartItem[]) => {
+    const schoolId = schoolIds.length > 0 ? schoolIds[0] : undefined;
+
+    // Ensure materials exist for all items
+    const materialCache = new Map<string, Material>();
+    for (const m of materials) {
+      materialCache.set(m.name, m);
+    }
+
+    const orderEntries: Array<{
+      material_id: string;
+      student_id: string;
+      quantity: number;
+      notes?: string;
+    }> = [];
+
+    for (const item of items) {
+      let material = materialCache.get(item.textbookName);
+      if (!material) {
+        material = await createMaterial(
+          { name: item.textbookName, category: 'テキスト', unit: '冊' },
+          schoolIds.length > 0 ? schoolIds : undefined
+        );
+        materialCache.set(item.textbookName, material);
+      }
+      orderEntries.push({
+        material_id: material.id,
+        student_id: item.studentId,
+        quantity: item.quantity,
+      });
+    }
+
+    // Bulk insert orders
+    if (activeBillingPeriod) {
+      // With billing: create individually for billing linkage
+      for (const entry of orderEntries) {
+        await createOrderWithBilling(entry, activeBillingPeriod.id, schoolId);
+      }
+    } else {
+      await createBulkOrders(orderEntries, schoolId);
+    }
+
+    // Auto-decrement stock
+    if (schoolId) {
+      for (const entry of orderEntries) {
+        try {
+          await createStockTransaction({
+            school_id: schoolId,
+            material_id: entry.material_id,
+            transaction_type: 'out' as StockTransactionType,
+            quantity: entry.quantity,
+            reason: '発注による自動出庫',
+          });
+        } catch {
+          console.warn('Auto stock decrement failed');
+        }
+      }
+    }
+
+    fetchData();
+  };
+
   const handleFormClose = () => {
     setIsFormOpen(false);
     setEditingMaterial(null);
@@ -304,6 +369,7 @@ export default function OrderingPage() {
           canEdit={canEdit}
           materials={materials}
           onOrder={handleTextbookOrder}
+          onBulkOrder={handleBulkOrder}
           onStockAdjust={handleStockAdjust}
           onStockRegister={async (textbookName: string) => {
             // 在庫未登録のテキスト → まず Material を作成してから在庫調整モーダルを開く
