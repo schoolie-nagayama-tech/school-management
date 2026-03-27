@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { AdminLayout } from '@/components/layouts';
 import { useAuth } from '@/contexts/AuthContext';
+import { createSupabaseBrowserClient } from '@/lib/supabase';
 import Link from 'next/link';
 import { ChevronLeft, Calendar, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 
@@ -33,7 +34,13 @@ export default function IntegrationsPage() {
     setIsLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/integrations/google/connections');
+      const supabase = createSupabaseBrowserClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/integrations/google/connections', {
+        headers: {
+          Authorization: `Bearer ${session?.access_token || ''}`,
+        },
+      });
       if (!res.ok) throw new Error('取得に失敗しました');
       const data = await res.json();
       setConnections(data.connections || []);
