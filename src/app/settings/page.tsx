@@ -12,6 +12,7 @@ import {
   Calendar,
   Shield,
   Clock,
+  Link2,
 } from 'lucide-react';
 
 interface SettingsItem {
@@ -64,6 +65,13 @@ const settingsItems: SettingsItem[] = [
     label: 'コマ種別設定',
     description: '授業コマの種別（通常・補習など）',
     requiresManager: true,
+  },
+  {
+    href: '/settings/integrations',
+    icon: <Link2 className="w-5 h-5" />,
+    label: '外部サービス連携',
+    description: 'Googleカレンダー連携状況の確認',
+    requiresAdmin: true,
   },
   {
     href: '/admin/settings/security',

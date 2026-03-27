@@ -160,7 +160,6 @@ function TextbookProductCard({ textbook, students, canEdit, stockQuantity, onAdd
           <select
             value={selectedStudentId}
             onChange={(e) => setSelectedStudentId(e.target.value)}
-            disabled={isOrdering}
             className="w-full px-2 py-1.5 border border-gray-200 rounded-md text-xs bg-white text-gray-700 focus:ring-1 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f] transition-colors"
           >
             <option value="">生徒を選択...</option>
@@ -177,7 +176,6 @@ function TextbookProductCard({ textbook, students, canEdit, stockQuantity, onAdd
               max={20}
               value={quantity}
               onChange={(e) => setQuantity(Math.max(1, Math.min(20, parseInt(e.target.value) || 1)))}
-              disabled={isOrdering}
               className="w-14 text-center px-1 py-1.5 border border-gray-200 rounded-md text-xs"
             />
             <span className="text-xs text-gray-400">冊</span>

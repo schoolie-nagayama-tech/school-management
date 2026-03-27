@@ -5,11 +5,14 @@ import { createClient } from '@supabase/supabase-js';
 // Google OAuth2 クライアント
 // ============================================
 
-function getOAuth2Client() {
+function getOAuth2Client(origin?: string) {
+  const redirectUri = origin
+    ? `${origin}/api/integrations/google/callback`
+    : `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/integrations/google/callback`;
   return new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
-    `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/integrations/google/callback`
+    redirectUri
   );
 }
 
@@ -25,8 +28,8 @@ function getSupabaseAdmin() {
 // 認証URL生成
 // ============================================
 
-export function getGoogleAuthUrl(userId: string): string {
-  const oauth2Client = getOAuth2Client();
+export function getGoogleAuthUrl(userId: string, origin?: string): string {
+  const oauth2Client = getOAuth2Client(origin);
   return oauth2Client.generateAuthUrl({
     access_type: 'offline',
     prompt: 'consent', // 毎回 refresh_token を取得するため
@@ -43,8 +46,8 @@ export function getGoogleAuthUrl(userId: string): string {
 // トークン取得・保存
 // ============================================
 
-export async function handleGoogleCallback(code: string, userId: string) {
-  const oauth2Client = getOAuth2Client();
+export async function handleGoogleCallback(code: string, userId: string, origin?: string) {
+  const oauth2Client = getOAuth2Client(origin);
   const { tokens } = await oauth2Client.getToken(code);
 
   if (!tokens.refresh_token) {

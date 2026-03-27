@@ -85,6 +85,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
   }
 
-  const authUrl = getGoogleAuthUrl(userId);
+  const origin = request.nextUrl.origin;
+  const authUrl = getGoogleAuthUrl(userId, origin);
   return NextResponse.redirect(authUrl);
 }

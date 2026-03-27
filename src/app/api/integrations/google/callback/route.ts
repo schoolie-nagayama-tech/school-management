@@ -13,7 +13,9 @@ export async function GET(request: NextRequest) {
   const state = searchParams.get('state'); // userId
   const error = searchParams.get('error');
 
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+  // リクエスト元のoriginを使用（複数ドメイン対応）
+  const origin = request.nextUrl.origin;
+  const baseUrl = origin || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
   if (error) {
     console.error('[google-callback] OAuth error:', error);
@@ -29,7 +31,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const result = await handleGoogleCallback(code, state);
+    const result = await handleGoogleCallback(code, state, origin);
     return NextResponse.redirect(
       `${baseUrl}/settings/account?calendar_connected=true&calendar_email=${encodeURIComponent(result.email || '')}`
     );
