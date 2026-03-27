@@ -30,7 +30,11 @@ export function getGoogleAuthUrl(userId: string): string {
   return oauth2Client.generateAuthUrl({
     access_type: 'offline',
     prompt: 'consent', // 毎回 refresh_token を取得するため
-    scope: ['https://www.googleapis.com/auth/calendar.events'],
+    scope: [
+      'openid',
+      'email',
+      'https://www.googleapis.com/auth/calendar.events',
+    ],
     state: userId, // コールバックでユーザーを特定
   });
 }
@@ -47,10 +51,18 @@ export async function handleGoogleCallback(code: string, userId: string) {
     throw new Error('refresh_token が取得できませんでした。Google側で連携を解除してから再度お試しください。');
   }
 
-  // 連携先メールアドレスを取得
-  oauth2Client.setCredentials(tokens);
-  const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
-  const { data: userInfo } = await oauth2.userinfo.get();
+  // id_token からメールアドレスを取得（userinfo APIを呼ばずに済む）
+  let email: string | null = null;
+  if (tokens.id_token) {
+    try {
+      const payload = JSON.parse(
+        Buffer.from(tokens.id_token.split('.')[1], 'base64').toString()
+      );
+      email = payload.email || null;
+    } catch {
+      // id_token のパースに失敗しても続行
+    }
+  }
 
   const supabaseAdmin = getSupabaseAdmin();
   const { error } = await supabaseAdmin
@@ -60,14 +72,14 @@ export async function handleGoogleCallback(code: string, userId: string) {
       access_token: tokens.access_token!,
       refresh_token: tokens.refresh_token,
       token_expiry: new Date(tokens.expiry_date!).toISOString(),
-      calendar_email: userInfo.email || null,
+      calendar_email: email,
     }, { onConflict: 'user_id' });
 
   if (error) {
     throw new Error(`トークンの保存に失敗しました: ${error.message}`);
   }
 
-  return { email: userInfo.email };
+  return { email };
 }
 
 // ============================================
