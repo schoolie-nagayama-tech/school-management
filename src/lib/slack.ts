@@ -205,3 +205,93 @@ export async function notifyDistributionReminder(params: {
 
   return sendWebhook(WEBHOOK_MATERIALS, blocks, `⚠️ 未配布の教材: ${params.orders.length}件`);
 }
+
+// ============================================
+// デイリーレポート（平日13時）
+// ============================================
+
+interface DailyReportSchoolSection {
+  schoolName: string;
+  slackMentionId: string | null;
+  unconfirmed: { materialName: string; studentName: string; createdAt: string }[];
+  overdueDistribution: { materialName: string; studentName: string; deliveredAt: string }[];
+}
+
+/** 教材管理デイリーレポート */
+export async function notifyDailyReport(params: {
+  date: string; // "3/27" 形式
+  schools: DailyReportSchoolSection[];
+}): Promise<boolean> {
+  if (!WEBHOOK_MATERIALS) return false;
+
+  // 全体の件数
+  const totalUnconfirmed = params.schools.reduce((sum, s) => sum + s.unconfirmed.length, 0);
+  const totalOverdue = params.schools.reduce((sum, s) => sum + s.overdueDistribution.length, 0);
+
+  if (totalUnconfirmed === 0 && totalOverdue === 0) {
+    // 何もなければ通知しない
+    return true;
+  }
+
+  const blocks: SlackBlock[] = [
+    {
+      type: 'header',
+      text: { type: 'plain_text', text: `📋 教材管理デイリーレポート（${params.date}）`, emoji: true },
+    },
+  ];
+
+  // 未確認セクション
+  if (totalUnconfirmed > 0) {
+    blocks.push({
+      type: 'section',
+      text: { type: 'mrkdwn', text: `*🔴 未確認の発注: ${totalUnconfirmed}件*` },
+    });
+
+    for (const school of params.schools) {
+      if (school.unconfirmed.length === 0) continue;
+      const mention = school.slackMentionId ? ` <@${school.slackMentionId}>` : '';
+      const lines = school.unconfirmed.slice(0, 10).map(
+        (o) => `　• ${o.materialName} → ${o.studentName}（${o.createdAt}）`
+      );
+      if (school.unconfirmed.length > 10) {
+        lines.push(`　…他 ${school.unconfirmed.length - 10} 件`);
+      }
+      blocks.push({
+        type: 'section',
+        text: { type: 'mrkdwn', text: `*${school.schoolName}*${mention}\n${lines.join('\n')}` },
+      });
+    }
+  }
+
+  // 配布遅延セクション
+  if (totalOverdue > 0) {
+    blocks.push(
+      { type: 'divider' } as SlackBlock,
+      {
+        type: 'section',
+        text: { type: 'mrkdwn', text: `*🟡 発送後7日以上未配布: ${totalOverdue}件*` },
+      }
+    );
+
+    for (const school of params.schools) {
+      if (school.overdueDistribution.length === 0) continue;
+      const mention = school.slackMentionId ? ` <@${school.slackMentionId}>` : '';
+      const lines = school.overdueDistribution.slice(0, 10).map(
+        (o) => `　• ${o.materialName} → ${o.studentName}（発送: ${o.deliveredAt}）`
+      );
+      if (school.overdueDistribution.length > 10) {
+        lines.push(`　…他 ${school.overdueDistribution.length - 10} 件`);
+      }
+      blocks.push({
+        type: 'section',
+        text: { type: 'mrkdwn', text: `*${school.schoolName}*${mention}\n${lines.join('\n')}` },
+      });
+    }
+  }
+
+  return sendWebhook(
+    WEBHOOK_MATERIALS,
+    blocks,
+    `📋 デイリーレポート: 未確認${totalUnconfirmed}件 / 未配布${totalOverdue}件`
+  );
+}

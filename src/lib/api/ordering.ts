@@ -374,7 +374,7 @@ export async function getStudentTextbooks(studentId: string): Promise<StudentTex
     .from('material_orders')
     .select('id, quantity, status, ordered_at, materials(name)')
     .eq('student_id', studentId)
-    .neq('status', 'cancelled')
+    .eq('status', 'distributed')
     .order('created_at', { ascending: false });
 
   if (error) {

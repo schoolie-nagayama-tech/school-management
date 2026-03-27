@@ -9,6 +9,7 @@ export type Database = {
           code: string | null;
           notification_email: string | null;
           notification_emails: string[];
+          slack_mention_id: string | null;
           logo_url: string | null;
           is_demo: boolean;
           created_at: string;
@@ -20,6 +21,7 @@ export type Database = {
           code?: string | null;
           notification_email?: string | null;
           notification_emails?: string[];
+          slack_mention_id?: string | null;
           logo_url?: string | null;
           is_demo?: boolean;
           created_at?: string;
@@ -31,6 +33,7 @@ export type Database = {
           code?: string | null;
           notification_email?: string | null;
           notification_emails?: string[];
+          slack_mention_id?: string | null;
           logo_url?: string | null;
           is_demo?: boolean;
           created_at?: string;

@@ -97,7 +97,7 @@ export async function createSchool(
 // 教室を更新
 export async function updateSchool(
   id: string,
-  data: { name?: string; code?: string | null; notification_email?: string | null; notification_emails?: string[]; logo_url?: string | null; is_demo?: boolean }
+  data: { name?: string; code?: string | null; notification_email?: string | null; notification_emails?: string[]; logo_url?: string | null; is_demo?: boolean; slack_mention_id?: string | null }
 ): Promise<School> {
   const { data: school, error } = await supabase
     .from('schools')

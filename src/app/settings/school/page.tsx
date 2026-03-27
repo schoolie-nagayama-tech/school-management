@@ -21,6 +21,7 @@ export default function SchoolSettingsPage() {
 
   const [school, setSchool] = useState<School | null>(null);
   const [notificationEmails, setNotificationEmails] = useState<string[]>([]);
+  const [slackMentionId, setSlackMentionId] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -38,6 +39,7 @@ export default function SchoolSettingsPage() {
         if (schoolData) {
           setSchool(schoolData);
           setLogoUrl(schoolData.logo_url || '');
+          setSlackMentionId(schoolData.slack_mention_id || '');
           // notification_emails 配列を優先、なければ旧フィールドから復元
           if (schoolData.notification_emails && schoolData.notification_emails.length > 0) {
             setNotificationEmails(schoolData.notification_emails);
@@ -145,6 +147,7 @@ export default function SchoolSettingsPage() {
         notification_emails: filteredEmails,
         // 旧フィールドも先頭アドレスで更新（後方互換）
         notification_email: filteredEmails[0] ?? null,
+        slack_mention_id: slackMentionId.trim() || null,
       });
 
       // 更新後のデータを再取得
@@ -152,6 +155,7 @@ export default function SchoolSettingsPage() {
       if (updatedSchool) {
         setSchool(updatedSchool);
         setNotificationEmails(updatedSchool.notification_emails ?? []);
+        setSlackMentionId(updatedSchool.slack_mention_id || '');
       }
 
       success('通知先メールアドレスを更新しました');
@@ -317,6 +321,22 @@ export default function SchoolSettingsPage() {
 
                 <p className="mt-2 text-sm text-[#4b5563]">
                   フォームから申込があった際に通知を受け取るメールアドレスです。複数設定すると全員に通知されます。
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#1f2937] mb-2">
+                  Slack担当者メンバーID
+                </label>
+                <Input
+                  type="text"
+                  value={slackMentionId}
+                  onChange={(e) => setSlackMentionId(e.target.value)}
+                  placeholder="U012345ABC"
+                  className="max-w-xs"
+                />
+                <p className="mt-2 text-sm text-[#4b5563]">
+                  教材管理の通知でメンションする担当者のSlackメンバーIDです。Slackのプロフィール → 「メンバーIDをコピー」で取得できます。
                 </p>
               </div>
 
