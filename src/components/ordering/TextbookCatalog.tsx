@@ -413,6 +413,17 @@ export function TextbookCatalog({ textbooks, students, canEdit, materials, onBul
       });
     }
 
+    // 科目 → 学年の順でデフォルトソート
+    const SUBJECT_ORDER = ['英語', '数学', '算数', '国語', '理科', '社会'];
+    result = [...result].sort((a, b) => {
+      const subA = SUBJECT_ORDER.indexOf(a.subject || '');
+      const subB = SUBJECT_ORDER.indexOf(b.subject || '');
+      const orderA = subA === -1 ? 999 : subA;
+      const orderB = subB === -1 ? 999 : subB;
+      if (orderA !== orderB) return orderA - orderB;
+      return (a.grade || '').localeCompare(b.grade || '', 'ja');
+    });
+
     return result;
   }, [textbooks, schoolTypeFilter, selectedGrades, selectedSubjects, search]);
 
