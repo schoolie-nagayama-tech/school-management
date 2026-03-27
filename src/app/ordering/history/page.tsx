@@ -13,6 +13,26 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { ArrowLeft } from 'lucide-react';
+import { getSupabaseBrowserClient } from '@/lib/supabase';
+
+/** Slack通知を送信（失敗しても無視） */
+async function sendSlackNotification(orderIds: string[], newStatus: string) {
+  try {
+    const sb = getSupabaseBrowserClient();
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) return;
+    await fetch('/api/ordering/status', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ orderIds, newStatus }),
+    });
+  } catch {
+    // Slack通知失敗は無視
+  }
+}
 
 const DISPLAY_STATUSES: OrderStatus[] = ['unconfirmed', 'ordered', 'delivered', 'distributed'];
 
@@ -75,6 +95,8 @@ export default function OrderHistoryPage() {
       await updateOrderStatus(orderId, newStatus);
       setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status: newStatus } : o));
       success('ステータスを更新しました');
+      // Slack通知（発注・発送時のみ、バックグラウンド）
+      sendSlackNotification([orderId], newStatus);
     } catch (err) {
       toastError(getUserErrorMessage(err, 'ステータスの更新に失敗しました'));
     }
@@ -85,6 +107,8 @@ export default function OrderHistoryPage() {
       await Promise.all(orderIds.map((id) => updateOrderStatus(id, newStatus)));
       setOrders((prev) => prev.map((o) => orderIds.includes(o.id) ? { ...o, status: newStatus } : o));
       success(`${orderIds.length}件のステータスを更新しました`);
+      // Slack通知（発注・発送時のみ、バックグラウンド）
+      sendSlackNotification(orderIds, newStatus);
     } catch (err) {
       toastError(getUserErrorMessage(err, '一括ステータス更新に失敗しました'));
     }
