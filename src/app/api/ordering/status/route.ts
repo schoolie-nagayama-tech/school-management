@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 教室名を取得
-    const schoolIds = [...new Set(orders.map((o: Record<string, unknown>) => o.school_id as string))];
+    const schoolIds = Array.from(new Set(orders.map((o: Record<string, unknown>) => o.school_id as string)));
     const { data: schools } = await supabaseAdmin
       .from('schools')
       .select('id, name')
