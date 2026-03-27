@@ -8,9 +8,9 @@ export const dynamic = 'force-dynamic';
  * 全ユーザーのGoogleカレンダー連携状況を取得（admin/owner のみ）
  */
 export async function GET(request: NextRequest) {
-  const { error: authError } = await requireAdmin(request);
+  const authError = await requireAdmin(request);
   if (authError) {
-    return NextResponse.json({ error: authError }, { status: 403 });
+    return authError;
   }
 
   const supabaseAdmin = createClient(
