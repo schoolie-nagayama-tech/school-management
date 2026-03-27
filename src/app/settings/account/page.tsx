@@ -99,9 +99,15 @@ export default function AccountSettingsPage() {
   };
 
   // Google Calendar 連携開始
-  const handleConnectCalendar = () => {
-    // APIルートにリダイレクト（サーバー側でOAuth URLに転送）
-    window.location.href = '/api/integrations/google/authorize';
+  const handleConnectCalendar = async () => {
+    const supabase = createSupabaseBrowserClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toastError('セッションが取得できません。再ログインしてください。');
+      return;
+    }
+    // トークンをクエリパラメータで渡してリダイレクト
+    window.location.href = `/api/integrations/google/authorize?token=${session.access_token}`;
   };
 
   // Google Calendar 連携解除
