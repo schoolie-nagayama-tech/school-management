@@ -175,6 +175,7 @@ export async function createCalendarEvent(
           dateTime: endDate.toISOString(),
           timeZone: 'Asia/Tokyo',
         },
+        transparency: 'transparent', // 「予定なし」として登録
       },
     });
 
