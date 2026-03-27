@@ -224,7 +224,11 @@ export async function disconnectGoogleCalendar(userId: string): Promise<void> {
 // ============================================
 
 /**
- * 模試の振替受験回答があった場合、対象教室のmanager全員のカレンダーにイベントを追加
+ * 模試の振替受験回答があった場合、教室のメールアドレスと一致する
+ * Googleカレンダー連携ユーザーのカレンダーにイベントを追加
+ *
+ * マッチング: schools.notification_email / notification_emails
+ *           ↔ google_calendar_tokens.calendar_email
  */
 export async function createFurikaeCalendarEvents(params: {
   schoolId: string;
@@ -237,43 +241,59 @@ export async function createFurikaeCalendarEvents(params: {
 }): Promise<void> {
   const supabaseAdmin = getSupabaseAdmin();
 
-  // 教室に所属する manager/admin/owner を取得
-  const { data: userSchools, error: usError } = await supabaseAdmin
-    .from('user_schools')
-    .select('user_id')
-    .eq('school_id', params.schoolId);
+  // 1) 教室のメールアドレスを取得
+  const { data: school, error: schoolError } = await supabaseAdmin
+    .from('schools')
+    .select('notification_email, notification_emails')
+    .eq('id', params.schoolId)
+    .maybeSingle();
 
-  if (usError || !userSchools || userSchools.length === 0) {
-    console.warn('[google-calendar] 教室のユーザーが見つかりません');
+  if (schoolError || !school) {
+    console.warn('[google-calendar] 教室情報が取得できません:', schoolError?.message);
     return;
   }
 
-  const userIds = userSchools.map((us: { user_id: string }) => us.user_id);
+  // notification_email と notification_emails を統合してユニークなリストにする
+  const schoolEmails: string[] = [];
+  if (school.notification_email) {
+    schoolEmails.push(school.notification_email.toLowerCase());
+  }
+  if (school.notification_emails && Array.isArray(school.notification_emails)) {
+    for (const e of school.notification_emails) {
+      const lower = (e as string).toLowerCase();
+      if (!schoolEmails.includes(lower)) {
+        schoolEmails.push(lower);
+      }
+    }
+  }
 
-  // manager以上のロールを持つユーザーを絞り込み
-  const { data: profiles, error: profileError } = await supabaseAdmin
-    .from('user_profiles')
-    .select('id, role')
-    .in('id', userIds)
-    .in('role', ['admin', 'owner', 'manager']);
-
-  if (profileError || !profiles || profiles.length === 0) {
-    console.warn('[google-calendar] 管理者ユーザーが見つかりません');
+  if (schoolEmails.length === 0) {
+    console.warn('[google-calendar] 教室にメールアドレスが設定されていません');
     return;
   }
 
-  // Calendar連携済みのユーザーにイベント作成
+  // 2) calendar_email が教室メールと一致するトークンを検索
   const { data: tokens, error: tokenError } = await supabaseAdmin
     .from('google_calendar_tokens')
-    .select('user_id')
-    .in('user_id', profiles.map((p: { id: string }) => p.id));
+    .select('user_id, calendar_email');
 
   if (tokenError || !tokens || tokens.length === 0) {
     console.log('[google-calendar] Calendar連携済みのユーザーがいません（スキップ）');
     return;
   }
 
-  // 各ユーザーのカレンダーにイベントを作成
+  // 教室メールと一致するユーザーだけに絞り込む
+  const matchedTokens = tokens.filter(
+    (t: { user_id: string; calendar_email: string | null }) =>
+      t.calendar_email && schoolEmails.includes(t.calendar_email.toLowerCase())
+  );
+
+  if (matchedTokens.length === 0) {
+    console.log(`[google-calendar] 教室メール(${schoolEmails.join(', ')})と一致するCalendar連携ユーザーがいません`);
+    return;
+  }
+
+  // 3) イベント作成
   const gradeLabel = params.grade;
   const title = `【模試振替】${params.studentName}（${gradeLabel}）`;
   const description = [
@@ -285,10 +305,10 @@ export async function createFurikaeCalendarEvents(params: {
   ].filter(Boolean).join('\n');
 
   // 小学生は約2時間、中学生は約3時間（デフォルト）
-  const gradeNum = parseInt(params.grade) || 0;
-  const durationMinutes = gradeNum <= 6 ? 120 : 180;
+  const isElementary = ['小4', '小5', '小6'].includes(params.grade);
+  const durationMinutes = isElementary ? 120 : 180;
 
-  for (const token of tokens) {
+  for (const token of matchedTokens) {
     try {
       const result = await createCalendarEvent(token.user_id, {
         summary: title,
@@ -298,7 +318,7 @@ export async function createFurikaeCalendarEvents(params: {
         durationMinutes,
       });
       if (result.success) {
-        console.log(`[google-calendar] イベント作成成功: user=${token.user_id}, event=${result.eventId}`);
+        console.log(`[google-calendar] イベント作成成功: user=${token.user_id} (${token.calendar_email}), event=${result.eventId}`);
       } else {
         console.warn(`[google-calendar] イベント作成失敗: user=${token.user_id}, error=${result.error}`);
       }

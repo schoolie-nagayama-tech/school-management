@@ -111,7 +111,8 @@
       "Bash(find C:UsersytakaDesktopstudent-management -name .env* -type f)",
       "Bash(find C:UsersytakaDesktopstudent-managementsrcappapi -type f -name *.ts)",
       "Bash(grep -n export.*function C:UsersytakaDesktopstudent-managementsrclibapi-auth.ts)",
-      "Bash(find C:UsersytakaDesktopstudent-managementsupabasemigrations -type f -name *.sql)"
+      "Bash(find C:UsersytakaDesktopstudent-managementsupabasemigrations -type f -name *.sql)",
+      "Bash(grep -l \"CREATE TABLE.*schools\" /c/Users/ytaka/Desktop/student-management/supabase/migrations/*.sql)"
     ]
   }
 }
