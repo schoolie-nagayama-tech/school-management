@@ -15,11 +15,9 @@ import {
   updateStudentProgressNumber,
   updateStudentProgressDate,
   createCourseProgressItem,
-  updateCourseProgressItem,
   deleteCourseProgressItem,
   hideCourseProgressItem,
   unhideCourseProgressItem,
-  updateCourseProgressItemSortOrder,
 } from '@/lib/api/courseProgress';
 import {
   getTemplates,
