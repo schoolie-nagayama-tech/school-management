@@ -8,10 +8,12 @@ import {
   notifyBulkOrderDelivered,
 } from '@/lib/slack';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 /**
  * POST /api/ordering/status
@@ -35,6 +37,8 @@ export async function POST(request: NextRequest) {
     if (newStatus !== 'ordered' && newStatus !== 'delivered') {
       return NextResponse.json({ ok: true, notified: false });
     }
+
+    const supabaseAdmin = getSupabaseAdmin();
 
     // 注文詳細を取得
     const { data: orders, error } = await supabaseAdmin
