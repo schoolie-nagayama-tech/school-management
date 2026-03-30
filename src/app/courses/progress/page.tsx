@@ -6,6 +6,7 @@ import { CourseProgressDashboard, CourseProgressTable } from '@/components/cours
 import { SeasonYearSelector } from '@/components/course-shared/SeasonYearSelector';
 import { TemplateApplyDialog } from '@/components/course-shared/TemplateApplyDialog';
 import { getStudents } from '@/lib/api/students';
+import { supabase } from '@/lib/supabase';
 import {
   getCourseProgressItems,
   getStudentCourseProgress,
@@ -312,6 +313,45 @@ export default function CourseProgressPage() {
     [getSelectedSchoolIds, season, year, fetchData]
   );
 
+  // カレンダー同期
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState('');
+  const handleSyncCalendar = useCallback(async () => {
+    const schoolIds = getSelectedSchoolIds();
+    if (schoolIds.length === 0) return;
+    setSyncing(true);
+    setSyncMessage('');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setSyncMessage('認証エラー: ログインし直してください');
+        return;
+      }
+      const res = await fetch('/api/courses/progress/sync-calendar', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ schoolId: schoolIds[0] }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setSyncMessage(data.error || '同期に失敗しました');
+        return;
+      }
+      setSyncMessage(data.message);
+      if (data.synced > 0) {
+        await fetchData();
+      }
+    } catch (err) {
+      console.error('Error syncing calendar:', err);
+      setSyncMessage('カレンダー同期に失敗しました');
+    } finally {
+      setSyncing(false);
+    }
+  }, [getSelectedSchoolIds, fetchData]);
+
   // テンプレートダイアログを手動で開く
   const handleOpenTemplateDialog = useCallback(async () => {
     const tpls = await getTemplates('progress', season);
@@ -425,10 +465,26 @@ export default function CourseProgressPage() {
                 >
                   {showItemManager ? '項目管理を閉じる' : '項目管理'}
                 </button>
+                <button
+                  onClick={handleSyncCalendar}
+                  disabled={syncing}
+                  className="px-3 py-1.5 text-xs border border-blue-200 rounded-lg hover:bg-blue-50 text-blue-600 disabled:opacity-50"
+                  title="Googleカレンダーの面談予約を取得して進捗を同期"
+                >
+                  {syncing ? '同期中...' : '📅 面談同期'}
+                </button>
               </>
             )}
           </div>
         </div>
+
+        {/* カレンダー同期結果 */}
+        {syncMessage && (
+          <div className="mb-4 px-4 py-2 rounded border border-blue-200 bg-blue-50 text-sm text-blue-700 flex items-center justify-between">
+            <span>{syncMessage}</span>
+            <button onClick={() => setSyncMessage('')} className="text-blue-400 hover:text-blue-600 ml-2">&times;</button>
+          </div>
+        )}
 
         {/* エラーメッセージ */}
         {errorMessage && (
