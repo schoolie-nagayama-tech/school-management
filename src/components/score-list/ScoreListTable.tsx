@@ -152,7 +152,7 @@ export function ScoreListTable({
 
 function StudentGroup({
   student,
-  category,
+  category: _category,
   columns,
   canEdit,
   editingCell,
