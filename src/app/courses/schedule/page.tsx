@@ -80,7 +80,7 @@ export default function CourseSchedulePage() {
       setTasks(data);
 
       if (data.length === 0 && isManagerOrAbove) {
-        const tpls = await getTemplates('schedule', season);
+        const tpls = await getTemplates('schedule', season, schoolIds[0]);
         setTemplates(tpls);
         if (tpls.length > 0) {
           setShowTemplateDialog(true);
@@ -262,10 +262,12 @@ export default function CourseSchedulePage() {
   );
 
   const handleOpenTemplateDialog = useCallback(async () => {
-    const tpls = await getTemplates('schedule', season);
+    const schoolIds = getSelectedSchoolIds();
+    if (schoolIds.length === 0) return;
+    const tpls = await getTemplates('schedule', season, schoolIds[0]);
     setTemplates(tpls);
     setShowTemplateDialog(true);
-  }, [season]);
+  }, [season, getSelectedSchoolIds]);
 
   // 完了率
   const completionRate = useMemo(() => {

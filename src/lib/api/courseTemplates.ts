@@ -1,34 +1,26 @@
-import { supabase } from '../supabase';
-import { callCoursePrepApi } from './coursePrepApi';
+import { callCoursePrepApi, fetchCoursePrepApi } from './coursePrepApi';
 import type { CourseTemplate, SeasonType } from '@/types/database';
 
 /**
- * テンプレート一覧取得
+ * テンプレート一覧取得（サーバーAPI経由）
+ * NOTE: テンプレートはschool_id=NULLのものもあるため、schoolIdにはダミーで任意のアクセス可能な教室IDを渡す
  */
 export async function getTemplates(
   type?: 'schedule' | 'progress',
-  season?: SeasonType
+  season?: SeasonType,
+  schoolId?: string
 ): Promise<CourseTemplate[]> {
-  let query = supabase
-    .from('course_prep_templates')
-    .select('*')
-    .order('is_default', { ascending: false })
-    .order('created_at', { ascending: false });
-
-  if (type) {
-    query = query.eq('template_type', type);
+  // schoolIdが不明な場合は空で渡す（API側でschoolId必須なので、呼び出し元で渡す）
+  if (!schoolId) {
+    // フォールバック: schoolIdなしでは取得できないので空配列
+    return [];
   }
-  if (season) {
-    query = query.or(`season.eq.${season},season.is.null`);
-  }
+  const params: Record<string, string> = { schoolId };
+  if (type) params.templateType = type;
+  if (season) params.season = season;
 
-  const { data, error } = await query;
-
-  if (error) {
-    throw new Error(`テンプレートの取得に失敗しました: ${error.message}`);
-  }
-
-  return (data || []) as CourseTemplate[];
+  const result = await fetchCoursePrepApi('get_templates', params);
+  return (result.data || []) as CourseTemplate[];
 }
 
 /**
@@ -64,9 +56,7 @@ export async function initializeScheduleFromTemplate(
 }
 
 /**
- * 現在の設定をテンプレートとして保存
- * NOTE: テンプレート保存は頻度が低いため、直接supabaseクライアント経由で実行
- * RLSが問題になる場合はサーバーAPI追加を検討
+ * 現在の設定をテンプレートとして保存（サーバーAPI経由）
  */
 export async function saveCurrentAsTemplate(
   schoolId: string,
@@ -75,68 +65,18 @@ export async function saveCurrentAsTemplate(
   type: 'schedule' | 'progress',
   name: string
 ): Promise<CourseTemplate> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = supabase as any;
-  let templateData: Record<string, unknown>[];
-
-  if (type === 'progress') {
-    const { data: items, error } = await db
-      .from('course_prep_progress_items')
-      .select('name, column_type, sort_order')
-      .eq('school_id', schoolId)
-      .eq('season', season)
-      .eq('year', year)
-      .or('is_hidden.eq.false,is_hidden.is.null')
-      .order('sort_order');
-
-    if (error) throw new Error(`項目の取得に失敗しました: ${error.message}`);
-    templateData = (items || []) as Record<string, unknown>[];
-  } else {
-    const { data: tasks, error } = await db
-      .from('course_prep_schedule_tasks')
-      .select('major_category, name, description, sort_order')
-      .eq('school_id', schoolId)
-      .eq('season', season)
-      .eq('year', year)
-      .order('sort_order');
-
-    if (error) throw new Error(`タスクの取得に失敗しました: ${error.message}`);
-    templateData = (tasks || []) as Record<string, unknown>[];
-  }
-
-  const { data, error } = await db
-    .from('course_prep_templates')
-    .insert({
-      school_id: schoolId,
-      template_type: type,
-      season,
-      name,
-      template_data: templateData,
-      is_default: false,
-    })
-    .select()
-    .single();
-
-  if (error) {
-    throw new Error(`テンプレートの保存に失敗しました: ${error.message}`);
-  }
-
-  return data as CourseTemplate;
+  const result = await callCoursePrepApi('save_template', schoolId, {
+    season,
+    year,
+    templateType: type,
+    name,
+  });
+  return result.data as CourseTemplate;
 }
 
 /**
- * テンプレートを削除
+ * テンプレートを削除（サーバーAPI経由）
  */
-export async function deleteTemplate(id: string): Promise<void> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const db = supabase as any;
-  const { error } = await db
-    .from('course_prep_templates')
-    .delete()
-    .eq('id', id)
-    .eq('is_default', false);
-
-  if (error) {
-    throw new Error(`テンプレートの削除に失敗しました: ${error.message}`);
-  }
+export async function deleteTemplate(id: string, schoolId: string): Promise<void> {
+  await callCoursePrepApi('delete_template', schoolId, { templateId: id });
 }

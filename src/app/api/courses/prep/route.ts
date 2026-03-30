@@ -35,6 +35,153 @@ async function authenticateAndAuthorize(request: NextRequest, schoolId: string) 
 }
 
 /**
+ * GET /api/courses/prep?action=...&schoolId=...&season=...&year=...
+ *
+ * サービスロールキーで RLS をバイパスして講習準備データを読み取る
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const url = new URL(request.url);
+    const action = url.searchParams.get('action');
+    const schoolId = url.searchParams.get('schoolId');
+
+    if (!action || !schoolId) {
+      return NextResponse.json({ error: 'action と schoolId が必要です' }, { status: 400 });
+    }
+
+    const authResult = await authenticateAndAuthorize(request, schoolId);
+    if ('error' in authResult) {
+      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+    }
+    const { supabaseAdmin } = authResult;
+
+    const season = url.searchParams.get('season') || '';
+    const year = parseInt(url.searchParams.get('year') || '0', 10);
+    const includeHidden = url.searchParams.get('includeHidden') === 'true';
+
+    switch (action) {
+      case 'get_progress_items': {
+        let query = supabaseAdmin
+          .from('course_prep_progress_items')
+          .select('*')
+          .eq('school_id', schoolId)
+          .eq('season', season)
+          .eq('year', year)
+          .order('sort_order', { ascending: true });
+
+        if (!includeHidden) {
+          query = query.or('is_hidden.eq.false,is_hidden.is.null');
+        }
+
+        const { data, error } = await query;
+        if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ data: data || [] });
+      }
+
+      case 'get_student_progress': {
+        // まず該当期間の項目IDを取得
+        const { data: items } = await supabaseAdmin
+          .from('course_prep_progress_items')
+          .select('id')
+          .eq('school_id', schoolId)
+          .eq('season', season)
+          .eq('year', year);
+
+        if (!items || items.length === 0) {
+          return NextResponse.json({ data: [] });
+        }
+
+        const itemIds = items.map((i: { id: string }) => i.id);
+        const { data, error } = await supabaseAdmin
+          .from('course_prep_student_progress')
+          .select('*')
+          .eq('school_id', schoolId)
+          .in('item_id', itemIds);
+
+        if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ data: data || [] });
+      }
+
+      case 'get_period': {
+        const { data, error } = await supabaseAdmin
+          .from('course_prep_periods')
+          .select('*')
+          .eq('school_id', schoolId)
+          .eq('season', season)
+          .eq('year', year)
+          .maybeSingle();
+
+        if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ data });
+      }
+
+      case 'get_templates': {
+        const templateType = url.searchParams.get('templateType') || undefined;
+        let query = supabaseAdmin
+          .from('course_prep_templates')
+          .select('*')
+          .order('is_default', { ascending: false })
+          .order('created_at', { ascending: false });
+
+        if (templateType) {
+          query = query.eq('template_type', templateType);
+        }
+        if (season) {
+          query = query.or(`season.eq.${season},season.is.null`);
+        }
+
+        const { data, error } = await query;
+        if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json({ data: data || [] });
+      }
+
+      case 'get_schedule_tasks': {
+        const { data: tasks, error } = await supabaseAdmin
+          .from('course_prep_schedule_tasks')
+          .select('*')
+          .eq('school_id', schoolId)
+          .eq('season', season)
+          .eq('year', year)
+          .order('sort_order', { ascending: true });
+
+        if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+        if (!tasks || tasks.length === 0) return NextResponse.json({ data: [] });
+
+        const taskIds = tasks.map((t: { id: string }) => t.id);
+        const { data: markers } = await supabaseAdmin
+          .from('course_prep_schedule_markers')
+          .select('*')
+          .in('task_id', taskIds)
+          .order('marker_date', { ascending: true });
+
+        const markersByTask = new Map<string, unknown[]>();
+        for (const m of (markers || [])) {
+          const tid = (m as { task_id: string }).task_id;
+          if (!markersByTask.has(tid)) markersByTask.set(tid, []);
+          markersByTask.get(tid)!.push(m);
+        }
+
+        const result = tasks.map((t: { id: string }) => ({
+          ...t,
+          markers: markersByTask.get(t.id) || [],
+        }));
+
+        return NextResponse.json({ data: result });
+      }
+
+      default:
+        return NextResponse.json({ error: `不明なアクション: ${action}` }, { status: 400 });
+    }
+  } catch (error) {
+    console.error('[courses/prep GET] Error:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : '取得に失敗しました' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
  * POST /api/courses/prep
  *
  * サービスロールキーで RLS をバイパスして講習準備データを操作する
@@ -93,6 +240,12 @@ export async function POST(request: NextRequest) {
         return await handleUpdateScheduleTask(supabaseAdmin, params);
       case 'delete_schedule_task':
         return await handleDeleteScheduleTask(supabaseAdmin, params);
+      case 'save_template':
+        return await handleSaveTemplate(supabaseAdmin, schoolId, params);
+      case 'delete_template':
+        return await handleDeleteTemplate(supabaseAdmin, params);
+      case 'delete_all_progress_items':
+        return await handleDeleteAllProgressItems(supabaseAdmin, schoolId, params);
       case 'upsert_schedule_marker':
         return await handleUpsertScheduleMarker(supabaseAdmin, params);
       case 'delete_schedule_marker':
@@ -135,18 +288,13 @@ async function handleInitProgressTemplate(
     return NextResponse.json({ error: 'テンプレートに項目がありません' }, { status: 400 });
   }
 
-  // 既存チェック
-  const { data: existing } = await supabaseAdmin
+  // 既存項目を削除してから挿入（再適用対応）
+  await supabaseAdmin
     .from('course_prep_progress_items')
-    .select('id')
+    .delete()
     .eq('school_id', schoolId)
     .eq('season', season)
-    .eq('year', year)
-    .limit(1);
-
-  if (existing && existing.length > 0) {
-    return NextResponse.json({ error: '既に項目が存在します' }, { status: 409 });
-  }
+    .eq('year', year);
 
   const insertData = items.map((item) => ({
     school_id: schoolId,
@@ -190,17 +338,13 @@ async function handleInitScheduleTemplate(
     return NextResponse.json({ error: 'テンプレートにタスクがありません' }, { status: 400 });
   }
 
-  const { data: existing } = await supabaseAdmin
+  // 既存タスクを削除してから挿入（再適用対応）
+  await supabaseAdmin
     .from('course_prep_schedule_tasks')
-    .select('id')
+    .delete()
     .eq('school_id', schoolId)
     .eq('season', season)
-    .eq('year', year)
-    .limit(1);
-
-  if (existing && existing.length > 0) {
-    return NextResponse.json({ error: '既にタスクが存在します' }, { status: 409 });
-  }
+    .eq('year', year);
 
   const insertData = tasks.map((task) => ({
     school_id: schoolId,
@@ -464,6 +608,86 @@ async function handleDeleteScheduleMarker(
     .delete()
     .eq('task_id', params.taskId)
     .eq('marker_date', params.markerDate);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ success: true });
+}
+
+// ===== テンプレート =====
+
+async function handleSaveTemplate(
+  supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
+  schoolId: string,
+  params: { season: string; year: number; templateType: string; name: string }
+) {
+  const { season, year, templateType, name } = params;
+  let templateData: Record<string, unknown>[];
+
+  if (templateType === 'progress') {
+    const { data, error } = await supabaseAdmin
+      .from('course_prep_progress_items')
+      .select('name, column_type, sort_order')
+      .eq('school_id', schoolId)
+      .eq('season', season)
+      .eq('year', year)
+      .or('is_hidden.eq.false,is_hidden.is.null')
+      .order('sort_order');
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    templateData = (data || []) as Record<string, unknown>[];
+  } else {
+    const { data, error } = await supabaseAdmin
+      .from('course_prep_schedule_tasks')
+      .select('major_category, name, description, sort_order')
+      .eq('school_id', schoolId)
+      .eq('season', season)
+      .eq('year', year)
+      .order('sort_order');
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    templateData = (data || []) as Record<string, unknown>[];
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('course_prep_templates')
+    .insert({
+      school_id: schoolId,
+      template_type: templateType,
+      season,
+      name,
+      template_data: templateData,
+      is_default: false,
+    })
+    .select()
+    .single();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ data });
+}
+
+async function handleDeleteTemplate(
+  supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
+  params: { templateId: string }
+) {
+  const { error } = await supabaseAdmin
+    .from('course_prep_templates')
+    .delete()
+    .eq('id', params.templateId)
+    .eq('is_default', false);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ success: true });
+}
+
+async function handleDeleteAllProgressItems(
+  supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
+  schoolId: string,
+  params: { season: string; year: number }
+) {
+  const { error } = await supabaseAdmin
+    .from('course_prep_progress_items')
+    .delete()
+    .eq('school_id', schoolId)
+    .eq('season', params.season)
+    .eq('year', params.year);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });

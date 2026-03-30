@@ -1,5 +1,4 @@
-import { supabase } from '../supabase';
-import { callCoursePrepApi } from './coursePrepApi';
+import { callCoursePrepApi, fetchCoursePrepApi } from './coursePrepApi';
 import type {
   CourseProgressItem,
   StudentCourseProgress,
@@ -8,10 +7,6 @@ import type {
   ApplicationColumnType,
   SeasonType,
 } from '@/types/database';
-
-// 新規テーブルは生成型に未反映のため any キャスト（SELECT用）
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const db = supabase as any;
 
 // =============================================
 // 講習期間メタ
@@ -22,18 +17,12 @@ export async function getCoursePrepPeriod(
   season: SeasonType,
   year: number
 ): Promise<CoursePrepPeriod | null> {
-  const { data, error } = await db
-    .from('course_prep_periods')
-    .select('*')
-    .eq('school_id', schoolId)
-    .eq('season', season)
-    .eq('year', year)
-    .maybeSingle();
-
-  if (error) {
-    throw new Error(`講習期間の取得に失敗しました: ${error.message}`);
-  }
-  return data as CoursePrepPeriod | null;
+  const result = await fetchCoursePrepApi('get_period', {
+    schoolId,
+    season,
+    year: String(year),
+  });
+  return (result.data as CoursePrepPeriod) || null;
 }
 
 export async function upsertCoursePrepPeriod(
@@ -61,25 +50,14 @@ export async function getCourseProgressItems(
   year: number,
   includeHidden: boolean = false
 ): Promise<CourseProgressItem[]> {
-  let query = supabase
-    .from('course_prep_progress_items')
-    .select('*')
-    .eq('school_id', schoolId)
-    .eq('season', season)
-    .eq('year', year)
-    .order('sort_order', { ascending: true });
+  const result = await fetchCoursePrepApi('get_progress_items', {
+    schoolId,
+    season,
+    year: String(year),
+    includeHidden: String(includeHidden),
+  });
 
-  if (!includeHidden) {
-    query = query.or('is_hidden.eq.false,is_hidden.is.null');
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    throw new Error(`進捗項目の取得に失敗しました: ${error.message}`);
-  }
-
-  return (data || []).map((item: Record<string, unknown>) => ({
+  return ((result.data as Record<string, unknown>[]) || []).map((item) => ({
     ...item,
     column_type: (item.column_type as string) || 'check',
     manager_only: item.manager_only === true,
@@ -98,18 +76,10 @@ export async function createCourseProgressItem(
   season: SeasonType,
   year: number
 ): Promise<CourseProgressItem> {
-  // 現在の最大sort_orderを取得（SELECT はRLS通る）
-  const { data: existingItems } = await db
-    .from('course_prep_progress_items')
-    .select('sort_order')
-    .eq('school_id', schoolId)
-    .eq('season', season)
-    .eq('year', year)
-    .order('sort_order', { ascending: false })
-    .limit(1);
-
-  const maxSortOrder = existingItems && existingItems.length > 0
-    ? existingItems[0].sort_order
+  // 現在の項目数をAPI経由で取得してsort_orderを決定
+  const items = await getCourseProgressItems(schoolId, season, year, true);
+  const maxSortOrder = items.length > 0
+    ? Math.max(...items.map(i => i.sort_order))
     : -1;
 
   const result = await callCoursePrepApi('create_progress_item', schoolId, {
@@ -123,23 +93,7 @@ export async function createCourseProgressItem(
   return result.data as CourseProgressItem;
 }
 
-export async function updateCourseProgressItem(
-  id: string,
-  updates: Partial<Pick<CourseProgressItem, 'name' | 'column_type' | 'manager_only' | 'column_group' | 'is_hidden' | 'sort_order'>>
-): Promise<CourseProgressItem> {
-  const { data, error } = await db
-    .from('course_prep_progress_items')
-    .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .select()
-    .single();
-
-  if (error) {
-    throw new Error(`進捗項目の更新に失敗しました: ${error.message}`);
-  }
-
-  return data as CourseProgressItem;
-}
+// updateCourseProgressItem は hide/delete で代替
 
 export async function hideCourseProgressItem(id: string, schoolId: string): Promise<void> {
   await callCoursePrepApi('hide_progress_item', schoolId, { itemId: id, isHidden: true });
@@ -153,23 +107,7 @@ export async function deleteCourseProgressItem(id: string, schoolId: string): Pr
   await callCoursePrepApi('delete_progress_item', schoolId, { itemId: id });
 }
 
-export async function updateCourseProgressItemSortOrder(
-  items: { id: string; sort_order: number }[]
-): Promise<void> {
-  const updates = items.map((item) =>
-    db
-      .from('course_prep_progress_items')
-      .update({ sort_order: item.sort_order })
-      .eq('id', item.id)
-  );
-
-  const results = await Promise.all(updates);
-  const errors = results.filter((r) => r.error);
-
-  if (errors.length > 0) {
-    throw new Error(`並び順の更新に失敗しました: ${errors[0].error?.message}`);
-  }
-}
+// updateCourseProgressItemSortOrder は必要になったら API に追加
 
 // =============================================
 // 生徒進捗データ
@@ -180,32 +118,13 @@ export async function getStudentCourseProgress(
   season: SeasonType,
   year: number
 ): Promise<StudentCourseProgress[]> {
-  // まず該当期間の項目IDを取得
-  const { data: items } = await db
-    .from('course_prep_progress_items')
-    .select('id')
-    .eq('school_id', schoolId)
-    .eq('season', season)
-    .eq('year', year);
+  const result = await fetchCoursePrepApi('get_student_progress', {
+    schoolId,
+    season,
+    year: String(year),
+  });
 
-  if (!items || items.length === 0) return [];
-
-  const itemIds = items.map((i: { id: string }) => i.id);
-
-  const { data, error } = await db
-    .from('course_prep_student_progress')
-    .select('*')
-    .eq('school_id', schoolId)
-    .in('item_id', itemIds);
-
-  if (error) {
-    if (error.code === 'PGRST116' || error.code === '42501') {
-      return [];
-    }
-    throw new Error(`進捗データの取得に失敗しました: ${error.message}`);
-  }
-
-  return (data || []).map((d: Record<string, unknown>) => ({
+  return ((result.data as Record<string, unknown>[]) || []).map((d) => ({
     ...d,
     number_value: d.number_value ?? null,
     date_value: d.date_value ?? null,
@@ -218,19 +137,9 @@ export async function updateStudentProgress(
   status: ApplicationStatus | null,
   schoolId?: string
 ): Promise<StudentCourseProgress | null> {
-  // schoolIdが渡されなかった場合はSELECTで取得
-  let resolvedSchoolId = schoolId;
-  if (!resolvedSchoolId) {
-    const { data: student } = await db
-      .from('students')
-      .select('school_id')
-      .eq('id', studentId)
-      .single();
-    resolvedSchoolId = student?.school_id;
-  }
-  if (!resolvedSchoolId) throw new Error('school_idが取得できません');
+  if (!schoolId) throw new Error('school_idが必要です');
 
-  await callCoursePrepApi('update_student_progress', resolvedSchoolId, {
+  await callCoursePrepApi('update_student_progress', schoolId, {
     studentId,
     itemId,
     status: status || 'pending',
@@ -244,18 +153,9 @@ export async function updateStudentProgressNumber(
   numberValue: number | null,
   schoolId?: string
 ): Promise<StudentCourseProgress | null> {
-  let resolvedSchoolId = schoolId;
-  if (!resolvedSchoolId) {
-    const { data: student } = await db
-      .from('students')
-      .select('school_id')
-      .eq('id', studentId)
-      .single();
-    resolvedSchoolId = student?.school_id;
-  }
-  if (!resolvedSchoolId) throw new Error('school_idが取得できません');
+  if (!schoolId) throw new Error('school_idが必要です');
 
-  await callCoursePrepApi('update_student_number', resolvedSchoolId, {
+  await callCoursePrepApi('update_student_number', schoolId, {
     studentId,
     itemId,
     numberValue,
@@ -269,18 +169,9 @@ export async function updateStudentProgressDate(
   dateValue: string | null,
   schoolId?: string
 ): Promise<StudentCourseProgress | null> {
-  let resolvedSchoolId = schoolId;
-  if (!resolvedSchoolId) {
-    const { data: student } = await db
-      .from('students')
-      .select('school_id')
-      .eq('id', studentId)
-      .single();
-    resolvedSchoolId = student?.school_id;
-  }
-  if (!resolvedSchoolId) throw new Error('school_idが取得できません');
+  if (!schoolId) throw new Error('school_idが必要です');
 
-  await callCoursePrepApi('update_student_date', resolvedSchoolId, {
+  await callCoursePrepApi('update_student_date', schoolId, {
     studentId,
     itemId,
     dateValue,

@@ -113,7 +113,7 @@ export default function CourseProgressPage() {
 
       // 項目が0件なら初回テンプレート適用を提案
       if (itemsData.length === 0 && isManagerOrAbove) {
-        const tpls = await getTemplates('progress', season);
+        const tpls = await getTemplates('progress', season, schoolId);
         setTemplates(tpls);
         if (tpls.length > 0) {
           setShowTemplateDialog(true);
@@ -359,10 +359,12 @@ export default function CourseProgressPage() {
 
   // テンプレートダイアログを手動で開く
   const handleOpenTemplateDialog = useCallback(async () => {
-    const tpls = await getTemplates('progress', season);
+    const schoolIds = getSelectedSchoolIds();
+    if (schoolIds.length === 0) return;
+    const tpls = await getTemplates('progress', season, schoolIds[0]);
     setTemplates(tpls);
     setShowTemplateDialog(true);
-  }, [season]);
+  }, [season, getSelectedSchoolIds]);
 
   // 項目追加
   const handleAddItem = useCallback(async () => {
