@@ -3386,3 +3386,98 @@ export const BILLING_SOURCE_TYPE_LABELS: Record<BillingSourceType, string> = {
 export type StudentBilling = Database['public']['Tables']['student_billings']['Row'];
 export type StudentBillingInsert = Database['public']['Tables']['student_billings']['Insert'];
 export type StudentBillingUpdate = Database['public']['Tables']['student_billings']['Update'];
+
+// =============================================
+// 講習準備 工程表・進捗管理表
+// =============================================
+
+export interface CoursePrepPeriod {
+  id: string;
+  school_id: string;
+  season: SeasonType;
+  year: number;
+  budget_koma: number;
+  schedule_start_date: string | null;
+  schedule_end_date: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CourseProgressItem {
+  id: string;
+  school_id: string;
+  season: SeasonType;
+  year: number;
+  name: string;
+  column_type: ApplicationColumnType;
+  sort_order: number;
+  is_hidden: boolean;
+  manager_only: boolean;
+  column_group: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StudentCourseProgress {
+  id: string;
+  school_id: string;
+  student_id: string;
+  item_id: string;
+  status: ApplicationStatus | null;
+  number_value: number | null;
+  date_value: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ScheduleTask {
+  id: string;
+  school_id: string;
+  season: SeasonType;
+  year: number;
+  major_category: string;
+  name: string;
+  description: string | null;
+  deadline: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  is_completed: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ScheduleMarker {
+  id: string;
+  task_id: string;
+  marker_date: string;
+  label: string;
+  color: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ScheduleTaskWithMarkers extends ScheduleTask {
+  markers: ScheduleMarker[];
+}
+
+export interface CourseTemplate {
+  id: string;
+  school_id: string | null;
+  template_type: 'schedule' | 'progress';
+  season: SeasonType | null;
+  name: string;
+  template_data: Record<string, unknown>[];
+  is_default: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// 進捗管理の列グループ定義
+export const PROGRESS_COLUMN_GROUPS: Record<string, { label: string; color: string }> = {
+  '基本': { label: '基本情報', color: '#6b7280' },
+  '面談': { label: '面談関連', color: '#3b82f6' },
+  '増コマ': { label: '増コマ関連', color: '#f59e0b' },
+  '事務': { label: '事務処理', color: '#10b981' },
+  '教科別': { label: '教科別コマ', color: '#8b5cf6' },
+};
