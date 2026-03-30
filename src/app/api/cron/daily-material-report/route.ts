@@ -7,10 +7,12 @@ export const maxDuration = 30;
 
 const CRON_SECRET = process.env.CRON_SECRET;
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 /**
  * GET /api/cron/daily-material-report
@@ -32,6 +34,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const supabaseAdmin = getSupabaseAdmin();
+
     // 全教室を取得（デモ除外）
     const { data: schools, error: schoolError } = await supabaseAdmin
       .from('schools')
