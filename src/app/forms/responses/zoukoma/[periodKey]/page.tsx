@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
 import {
   getZoukomaResponses,
@@ -25,6 +25,8 @@ import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 export default function ZoukomaResponsePage() {
   const params = useParams();
+  const searchParams = useSearchParams();
+  const schoolIdParam = searchParams.get('schoolId');
   const periodKey = (params?.periodKey as string) || '';
   const { getSelectedSchoolIds } = useAuth();
   const [responses, setResponses] = useState<ZoukomaResponse[]>([]);
@@ -50,7 +52,7 @@ export default function ZoukomaResponsePage() {
     setErrorMessage('');
     try {
       const schoolIds = getSelectedSchoolIds();
-      const schoolId = schoolIds.length > 0 ? schoolIds[0] : getDefaultSchoolId();
+      const schoolId = schoolIdParam || (schoolIds.length > 0 ? schoolIds[0] : getDefaultSchoolId());
       const [responsesData, statsData] = await Promise.all([
         getZoukomaResponses(schoolId, periodKey, filters),
         getZoukomaStats(schoolId, periodKey),
@@ -65,7 +67,7 @@ export default function ZoukomaResponsePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [getSelectedSchoolIds, periodKey, filters]);
+  }, [getSelectedSchoolIds, schoolIdParam, periodKey, filters]);
 
   useEffect(() => {
     if (periodKey) {

@@ -316,16 +316,11 @@ export default function ResponsesPage() {
       setResponses(responsesData);
       setFormPeriods(periodsData);
 
-      // システム管理者のときは教室名マップを取得（一覧で教室名表示用）
-      const isSystemAdmin = profile?.role === 'admin';
-      if (isSystemAdmin) {
-        const schools = await getSchools();
-        const map: Record<string, string> = {};
-        schools.forEach((s) => { map[s.id] = s.name; });
-        setSchoolsMap(map);
-      } else {
-        setSchoolsMap({});
-      }
+      // 教室名マップを取得（一覧で教室名表示用）
+      const schools = await getSchools();
+      const map: Record<string, string> = {};
+      schools.forEach((s) => { map[s.id] = s.name; });
+      setSchoolsMap(map);
     } catch (error) {
       console.error('Error fetching data:', error);
       setErrorMessage(
@@ -563,18 +558,16 @@ export default function ResponsesPage() {
                         {getSortIcon(sortKey, 'form_period', sortOrder)}
                       </button>
                     </th>
-                    {profile?.role === 'admin' && (
-                      <th className="border border-[#e5e7eb] px-4 py-3 text-left">
-                        <button
-                          type="button"
-                          onClick={() => handleSort('school')}
-                          className="font-medium text-[#1f2937] hover:text-[#3b82f6] flex items-center"
-                        >
-                          教室
-                          {getSortIcon(sortKey, 'school', sortOrder)}
-                        </button>
-                      </th>
-                    )}
+                    <th className="border border-[#e5e7eb] px-4 py-3 text-left">
+                      <button
+                        type="button"
+                        onClick={() => handleSort('school')}
+                        className="font-medium text-[#1f2937] hover:text-[#3b82f6] flex items-center"
+                      >
+                        教室
+                        {getSortIcon(sortKey, 'school', sortOrder)}
+                      </button>
+                    </th>
                     <th className="border border-[#e5e7eb] px-4 py-3 text-left">
                       <button
                         type="button"
@@ -622,11 +615,9 @@ export default function ResponsesPage() {
                       <td className="border border-[#e5e7eb] px-4 py-3">
                         {response.form_period}
                       </td>
-                      {profile?.role === 'admin' && (
-                        <td className="border border-[#e5e7eb] px-4 py-3">
-                          {schoolsMap[response.school_id] ?? '-'}
-                        </td>
-                      )}
+                      <td className="border border-[#e5e7eb] px-4 py-3">
+                        {schoolsMap[response.school_id] ?? '-'}
+                      </td>
                       <td className="border border-[#e5e7eb] px-4 py-3">
                         {response.linked_student
                           ? `${response.linked_student.last_name} ${response.linked_student.first_name}`
@@ -641,7 +632,7 @@ export default function ResponsesPage() {
                       <td className="border border-[#e5e7eb] px-4 py-3">
                         <div className="flex gap-2">
                           <Link
-                            href={`/forms/responses/${FORM_TYPE_TO_PATH[response.form_type] ?? response.form_type}/${response.form_period}`}
+                            href={`/forms/responses/${FORM_TYPE_TO_PATH[response.form_type] ?? response.form_type}/${response.form_period}?schoolId=${response.school_id}`}
                             className="text-sm text-[#4b5563] hover:text-[#1f2937]"
                           >
                             詳細

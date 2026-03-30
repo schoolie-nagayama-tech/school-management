@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
 import {
   getShukaisuResponses,
@@ -31,6 +31,8 @@ import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 export default function ShukaisuResponsePage() {
   const params = useParams();
+  const searchParams = useSearchParams();
+  const schoolIdParam = searchParams.get('schoolId');
   const periodKey = (params?.periodKey as string) || '';
   const { getSelectedSchoolIds } = useAuth();
   const [responses, setResponses] = useState<ShukaisuResponse[]>([]);
@@ -67,7 +69,7 @@ export default function ShukaisuResponsePage() {
     setErrorMessage('');
     try {
       const schoolIds = getSelectedSchoolIds();
-      const schoolId = schoolIds.length > 0 ? schoolIds[0] : getDefaultSchoolId();
+      const schoolId = schoolIdParam || (schoolIds.length > 0 ? schoolIds[0] : getDefaultSchoolId());
       const filters: ShukaisuResponseFilters = {
         grade: filterGrade === 'all' ? undefined : filterGrade,
         handledStatus: filterHandledStatus === 'all' ? undefined : filterHandledStatus,
@@ -93,7 +95,7 @@ export default function ShukaisuResponsePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [getSelectedSchoolIds, periodKey, filterGrade, filterHandledStatus, filterLinkedStatus, searchQuery, showArchived]);
+  }, [getSelectedSchoolIds, schoolIdParam, periodKey, filterGrade, filterHandledStatus, filterLinkedStatus, searchQuery, showArchived]);
 
   useEffect(() => {
     if (periodKey) {

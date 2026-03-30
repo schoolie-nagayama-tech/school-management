@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
 import {
   getMogiResponses,
@@ -31,6 +31,8 @@ import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 export default function MogiResponsePage() {
   const params = useParams();
+  const searchParams = useSearchParams();
+  const schoolIdParam = searchParams.get('schoolId');
   const periodKey = (params?.periodKey as string) || '';
   const { getSelectedSchoolIds } = useAuth();
   const [responses, setResponses] = useState<MogiResponse[]>([]);
@@ -78,7 +80,7 @@ export default function MogiResponsePage() {
     setErrorMessage('');
     try {
       const schoolIds = getSelectedSchoolIds();
-      const schoolId = schoolIds.length > 0 ? schoolIds[0] : getDefaultSchoolId();
+      const schoolId = schoolIdParam || (schoolIds.length > 0 ? schoolIds[0] : getDefaultSchoolId());
       const filters: MogiResponseFilters = {
         grade: filterGrade === 'all' ? undefined : filterGrade,
         dateId: filterDateId === 'all' ? undefined : filterDateId,
@@ -105,7 +107,7 @@ export default function MogiResponsePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [getSelectedSchoolIds, periodKey, filterGrade, filterDateId, filterVenueId, filterChargedStatus, filterLinkedStatus, showArchived]);
+  }, [getSelectedSchoolIds, schoolIdParam, periodKey, filterGrade, filterDateId, filterVenueId, filterChargedStatus, filterLinkedStatus, showArchived]);
 
   useEffect(() => {
     if (periodKey) {

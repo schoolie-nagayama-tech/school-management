@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
 import {
   getMoshiResponses,
@@ -32,6 +32,8 @@ import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 export default function MoshiResponsePage() {
   const params = useParams();
+  const searchParams = useSearchParams();
+  const schoolIdParam = searchParams.get('schoolId');
   const periodKey = (params?.periodKey as string) || '';
   const { getSelectedSchoolIds } = useAuth();
   const [responses, setResponses] = useState<MoshiResponse[]>([]);
@@ -70,7 +72,7 @@ export default function MoshiResponsePage() {
     setErrorMessage('');
     try {
       const schoolIds = getSelectedSchoolIds();
-      const schoolId = schoolIds.length > 0 ? schoolIds[0] : getDefaultSchoolId();
+      const schoolId = schoolIdParam || (schoolIds.length > 0 ? schoolIds[0] : getDefaultSchoolId());
       const filters: MoshiResponseFilters = {
         grade: filterGrade === 'all' ? undefined : filterGrade,
         examType: filterExamType === 'all' ? undefined : filterExamType,
@@ -96,7 +98,7 @@ export default function MoshiResponsePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [getSelectedSchoolIds, periodKey, filterGrade, filterExamType, filterChargedStatus, filterLinkedStatus, showArchived]);
+  }, [getSelectedSchoolIds, schoolIdParam, periodKey, filterGrade, filterExamType, filterChargedStatus, filterLinkedStatus, showArchived]);
 
   useEffect(() => {
     if (periodKey) {
