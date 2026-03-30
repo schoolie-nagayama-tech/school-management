@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getApiAuth } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,33 +16,22 @@ function getSupabaseAdmin() {
 }
 
 /**
- * 認証チェック: Bearer トークンからユーザーを取得し、school_id へのアクセス権を検証
+ * 認証チェック: 既存の getApiAuth を使って認証＋school_id アクセス権を検証
+ * admin/owner は全教室アクセス可能
  */
 async function authenticateAndAuthorize(request: NextRequest, schoolId: string) {
-  const supabaseAdmin = getSupabaseAdmin();
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    return { error: '認証が必要です', status: 401 };
-  }
-  const token = authHeader.replace('Bearer ', '');
-  const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
-  if (authError || !user) {
+  const { auth } = await getApiAuth(request);
+  if (!auth) {
     return { error: '認証が必要です', status: 401 };
   }
 
-  // user_schools で school_id アクセス権チェック
-  const { data: userSchool } = await supabaseAdmin
-    .from('user_schools')
-    .select('school_id')
-    .eq('user_id', user.id)
-    .eq('school_id', schoolId)
-    .maybeSingle();
-
-  if (!userSchool) {
+  // schoolIds には admin/owner の場合は全教室が入っている
+  if (!auth.schoolIds.includes(schoolId)) {
     return { error: 'この教室へのアクセス権がありません', status: 403 };
   }
 
-  return { user, supabaseAdmin };
+  const supabaseAdmin = getSupabaseAdmin();
+  return { user: auth, supabaseAdmin };
 }
 
 /**
