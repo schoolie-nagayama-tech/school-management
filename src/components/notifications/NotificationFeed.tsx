@@ -192,9 +192,15 @@ function saveDismissedIds(userId: string, ids: Set<string>): void {
 
 // ── コンポーネント ──
 
+interface StudentClickInfo {
+  studentId?: string;
+  studentName: string;
+  schoolId?: string;
+}
+
 interface NotificationFeedProps {
   className?: string;
-  onStudentClick?: (studentId: string) => void;
+  onStudentClick?: (info: StudentClickInfo) => void;
 }
 
 export function NotificationFeed({ className = '', onStudentClick }: NotificationFeedProps) {
@@ -254,6 +260,7 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
             formLabel: FORM_TYPE_LABELS[r.form_type] ?? r.form_type,
             formPeriod: r.form_period,
             schoolId: r.school_id,
+            studentId: r.linked_student_id ?? undefined,
             studentName: r.student_name,
             gradeLabel: GRADE_LABELS[r.grade] ?? `学年${r.grade}`,
           });
@@ -288,6 +295,7 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
               action: l.action,
               changeSummary: summary,
               studentId: l.student_id,
+              schoolId: l.school_id,
               studentName: student ? `${student.last_name} ${student.first_name}` : '(不明)',
             });
           });
@@ -502,12 +510,12 @@ interface FeedItemRowProps {
   schoolNames: Record<string, string>;
   schoolColorBySchoolId: Record<string, { bg: string; text: string }>;
   onDismiss: (id: string) => void;
-  onStudentClick?: (studentId: string) => void;
+  onStudentClick?: (info: StudentClickInfo) => void;
 }
 
 function FeedItemRow({ item, schoolNames, schoolColorBySchoolId, onDismiss, onStudentClick }: FeedItemRowProps) {
   if (item.type === 'response') {
-    return <ResponseRow item={item} schoolNames={schoolNames} schoolColorBySchoolId={schoolColorBySchoolId} onDismiss={onDismiss} />;
+    return <ResponseRow item={item} schoolNames={schoolNames} schoolColorBySchoolId={schoolColorBySchoolId} onDismiss={onDismiss} onStudentClick={onStudentClick} />;
   }
   return <UpdateRow item={item} onDismiss={onDismiss} onStudentClick={onStudentClick} />;
 }
@@ -517,11 +525,13 @@ function ResponseRow({
   schoolNames,
   schoolColorBySchoolId,
   onDismiss,
+  onStudentClick,
 }: {
   item: FeedItem;
   schoolNames: Record<string, string>;
   schoolColorBySchoolId: Record<string, { bg: string; text: string }>;
   onDismiss: (id: string) => void;
+  onStudentClick?: (info: StudentClickInfo) => void;
 }) {
   const path = FORM_TYPE_TO_PATH[item.formType ?? ''] ?? item.formType;
   const href = `/forms/responses/${path}/${item.formPeriod}`;
@@ -534,11 +544,21 @@ function ResponseRow({
       <span className="text-xs text-gray-400 whitespace-nowrap w-[72px] shrink-0">
         {formatDateTime(item.timestamp)}
       </span>
-      <span className={`px-1.5 py-0.5 ${color.bg} ${color.text} text-[11px] font-medium rounded whitespace-nowrap shrink-0`}>
+      <Link href={href} className={`px-1.5 py-0.5 ${color.bg} ${color.text} text-[11px] font-medium rounded whitespace-nowrap shrink-0 hover:opacity-80`}>
         {item.formLabel}
-      </span>
-      <Link href={href} className="flex items-center gap-2 flex-1 min-w-0 hover:underline">
-        <span className="text-sm text-[#1a1a1a] truncate">{item.studentName}</span>
+      </Link>
+      <div className="flex items-center gap-2 flex-1 min-w-0">
+        {onStudentClick ? (
+          <button
+            type="button"
+            onClick={() => onStudentClick({ studentId: item.studentId, studentName: item.studentName, schoolId: item.schoolId })}
+            className="text-sm text-[#1a1a1a] hover:text-[#3b82f6] hover:underline cursor-pointer font-medium shrink-0"
+          >
+            {item.studentName}
+          </button>
+        ) : (
+          <span className="text-sm text-[#1a1a1a] truncate">{item.studentName}</span>
+        )}
         {item.gradeLabel && (
           <span className="text-xs text-gray-500 whitespace-nowrap shrink-0">{item.gradeLabel}</span>
         )}
@@ -547,7 +567,7 @@ function ResponseRow({
             {schoolName}
           </span>
         )}
-      </Link>
+      </div>
       <button
         onClick={() => onDismiss(item.id)}
         className="flex items-center text-gray-400 hover:text-green-600 p-1 rounded hover:bg-green-50 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
@@ -566,7 +586,7 @@ function UpdateRow({
 }: {
   item: FeedItem;
   onDismiss: (id: string) => void;
-  onStudentClick?: (studentId: string) => void;
+  onStudentClick?: (info: StudentClickInfo) => void;
 }) {
   const actionInfo = ACTION_LABELS[item.action ?? ''] ?? { label: item.action ?? '', className: 'bg-gray-100 text-gray-600' };
 
@@ -579,10 +599,10 @@ function UpdateRow({
         {actionInfo.label}
       </span>
       <div className="flex items-center gap-2 flex-1 min-w-0">
-        {item.studentId && onStudentClick ? (
+        {onStudentClick ? (
           <button
             type="button"
-            onClick={() => onStudentClick(item.studentId!)}
+            onClick={() => onStudentClick({ studentId: item.studentId, studentName: item.studentName, schoolId: item.schoolId })}
             className="text-sm text-[#1a1a1a] hover:text-[#3b82f6] hover:underline cursor-pointer font-medium shrink-0"
           >
             {item.studentName}

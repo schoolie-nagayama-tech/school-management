@@ -506,8 +506,27 @@ export default function StudentsPage() {
           <AlertBoard />
           {!isTeacher && (
             <NotificationFeed
-              onStudentClick={(studentId) => {
-                const student = students.find((s) => s.id === studentId);
+              onStudentClick={({ studentId, studentName, schoolId }) => {
+                // 1. IDで検索
+                let student = studentId
+                  ? students.find((s) => s.id === studentId)
+                  : undefined;
+                // 2. 名前+教室で検索（スペースを正規化して比較）
+                if (!student && studentName) {
+                  const normalize = (s: string) => s.replace(/[\s\u3000]+/g, '');
+                  const normalizedInput = normalize(studentName);
+                  student = students.find((s) => {
+                    const normalizedFull = normalize(`${s.last_name}${s.first_name}`);
+                    return normalizedFull === normalizedInput && (!schoolId || s.school_id === schoolId);
+                  });
+                  // 3. 教室をまたいで名前だけで検索（フォールバック）
+                  if (!student) {
+                    student = students.find((s) => {
+                      const normalizedFull = normalize(`${s.last_name}${s.first_name}`);
+                      return normalizedFull === normalizedInput;
+                    });
+                  }
+                }
                 if (student) handleOpenDetailModal(student);
               }}
             />
