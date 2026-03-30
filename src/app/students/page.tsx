@@ -45,6 +45,7 @@ import { NotificationFeed } from '@/components/notifications/NotificationFeed';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
+import { ScoreListView } from '@/components/score-list';
 
 export default function StudentsPage() {
   // 権限チェック
@@ -68,6 +69,14 @@ export default function StudentsPage() {
   
   // 学年フィルター
   const [selectedGrade, setSelectedGrade] = useState<number | 'all'>('all');
+
+  // タブ切り替え
+  type TabType = 'roster' | 'report_card' | 'regular_test' | 'mock';
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'report_card' || tab === 'regular_test' || tab === 'mock') return tab;
+    return 'roster';
+  });
 
   // モーダル関連
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -533,6 +542,59 @@ export default function StudentsPage() {
           )}
         </div>
 
+        {/* タブナビゲーション */}
+        <div className="flex items-center gap-0 border-b border-gray-200 mb-6">
+          {([
+            { key: 'roster' as TabType, label: '生徒名簿' },
+            { key: 'report_card' as TabType, label: '内申集計' },
+            { key: 'regular_test' as TabType, label: 'テスト点数集計' },
+            { key: 'mock' as TabType, label: '模試結果集計' },
+          ] as const).map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => {
+                setActiveTab(tab.key);
+                router.replace(`/students${tab.key === 'roster' ? '' : `?tab=${tab.key}`}`, { scroll: false });
+              }}
+              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                activeTab === tab.key
+                  ? 'border-[#1e3a5f] text-[#1e3a5f]'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* 成績一覧タブ */}
+        {activeTab !== 'roster' && (
+          <div>
+            {/* 学年フィルター */}
+            <div className="flex items-center gap-3 mb-4">
+              <select
+                value={selectedGrade}
+                onChange={(e) => setSelectedGrade(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white text-[#1a1a1a] focus:ring-2 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f]"
+              >
+                <option value="all">全学年</option>
+                {Array.from({ length: 13 }, (_, i) => i + 1).map((grade) => (
+                  <option key={grade} value={grade}>
+                    {GRADE_LABELS[grade] || `学年${grade}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <ScoreListView
+              category={activeTab}
+              students={filteredStudents}
+              schoolIds={getSelectedSchoolIds()}
+            />
+          </div>
+        )}
+
+        {/* ===== 生徒名簿タブ（既存） ===== */}
+        {activeTab === 'roster' && <>
         {/* ツールバー */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           {/* 左側: 検索 + フィルターボタン */}
@@ -789,6 +851,7 @@ export default function StudentsPage() {
             </div>
           </div>
         )}
+        </>}
 
       {/* CSVインポートモーダル */}
       <StudentCsvImportModal
