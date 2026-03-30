@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,20 +10,22 @@ import { ToastContainer } from '@/components/ui';
 import AccessDenied from '@/components/AccessDenied';
 import { getTextbooks, createTextbook, updateTextbook, deleteTextbook } from '@/lib/api/textbooks';
 import type { Textbook, TextbookInsert } from '@/types/database';
-import { Plus, Search, Edit2, Trash2, BookOpen, ChevronLeft, ListOrdered } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, BookOpen, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const SCHOOL_TYPES = ['小学', '中学', '高校'];
 const GRADES = ['1年', '2年', '3年', '4年', '5年', '6年', '共通'];
 const SUBJECTS = ['英語', '数学', '算数', '国語', '理科', '社会'];
 
-const SUBJECT_COLORS: Record<string, string> = {
-  '英語': 'bg-blue-100 text-blue-700',
-  '数学': 'bg-red-100 text-red-700',
-  '算数': 'bg-red-100 text-red-700',
-  '国語': 'bg-green-100 text-green-700',
-  '理科': 'bg-purple-100 text-purple-700',
-  '社会': 'bg-amber-100 text-amber-700',
+const SUBJECT_COLORS: Record<string, { bg: string; text: string; border: string; dot: string }> = {
+  '英語': { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', dot: 'bg-blue-500' },
+  '数学': { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', dot: 'bg-red-500' },
+  '算数': { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', dot: 'bg-red-500' },
+  '国語': { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200', dot: 'bg-green-500' },
+  '理科': { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200', dot: 'bg-purple-500' },
+  '社会': { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', dot: 'bg-amber-500' },
 };
+
+const DEFAULT_COLORS = { bg: 'bg-gray-50', text: 'text-gray-700', border: 'border-gray-200', dot: 'bg-gray-400' };
 
 interface TextbookForm {
   name: string;
@@ -43,6 +46,7 @@ const emptyForm: TextbookForm = {
 };
 
 export default function TextbookMasterPage() {
+  const router = useRouter();
   const { profile } = useAuth();
   const { toasts, removeToast, success: toastSuccess, error: toastError } = useToast();
   const isManager = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
@@ -76,7 +80,7 @@ export default function TextbookMasterPage() {
     if (isManager) loadTextbooks();
   }, [isManager]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Filter
+  // Filter & Sort
   const filtered = useMemo(() => {
     let result = textbooks;
     if (schoolTypeFilter) result = result.filter(t => t.school_type === schoolTypeFilter);
@@ -89,8 +93,8 @@ export default function TextbookMasterPage() {
         return terms.every(term => s.includes(term));
       });
     }
-    // Sort: school_type → subject → grade → name
     const SUBJECT_ORDER = ['英語', '数学', '算数', '国語', '理科', '社会'];
+    const GRADE_ORDER = ['1年', '2年', '3年', '4年', '5年', '6年', '共通'];
     result = [...result].sort((a, b) => {
       const stA = SCHOOL_TYPES.indexOf(a.school_type || '');
       const stB = SCHOOL_TYPES.indexOf(b.school_type || '');
@@ -98,10 +102,29 @@ export default function TextbookMasterPage() {
       const subjA = SUBJECT_ORDER.indexOf(a.subject || '');
       const subjB = SUBJECT_ORDER.indexOf(b.subject || '');
       if (subjA !== subjB) return (subjA === -1 ? 999 : subjA) - (subjB === -1 ? 999 : subjB);
-      return (a.grade || '').localeCompare(b.grade || '', 'ja');
+      const grA = GRADE_ORDER.indexOf(a.grade || '');
+      const grB = GRADE_ORDER.indexOf(b.grade || '');
+      if (grA !== grB) return (grA === -1 ? 999 : grA) - (grB === -1 ? 999 : grB);
+      return a.name.localeCompare(b.name, 'ja');
     });
     return result;
   }, [textbooks, schoolTypeFilter, gradeFilter, subjectFilter, search]);
+
+  // Group by school_type → subject
+  const grouped = useMemo(() => {
+    const groups: { key: string; schoolType: string; subject: string; items: Textbook[] }[] = [];
+    const map = new Map<string, Textbook[]>();
+    for (const t of filtered) {
+      const key = `${t.school_type || '未分類'}__${t.subject || '未分類'}`;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(t);
+    }
+    map.forEach((items, key) => {
+      const [schoolType, subject] = key.split('__');
+      groups.push({ key, schoolType, subject, items });
+    });
+    return groups;
+  }, [filtered]);
 
   // Available grades based on school type
   const availableGrades = useMemo(() => {
@@ -117,7 +140,8 @@ export default function TextbookMasterPage() {
     setShowModal(true);
   };
 
-  const openEditModal = (t: Textbook) => {
+  const openEditModal = (e: React.MouseEvent, t: Textbook) => {
+    e.stopPropagation();
     setEditingId(t.id);
     setForm({
       name: t.name,
@@ -167,7 +191,8 @@ export default function TextbookMasterPage() {
     }
   };
 
-  const handleDelete = async (id: number, name: string) => {
+  const handleDelete = async (e: React.MouseEvent, id: number, name: string) => {
+    e.stopPropagation();
     if (!window.confirm(`「${name}」を削除しますか？\n紐づくカリキュラムも全て削除されます。`)) return;
     try {
       await deleteTextbook(id);
@@ -182,7 +207,7 @@ export default function TextbookMasterPage() {
 
   return (
     <AdminLayout headerTitle="教材マスタ管理">
-      <div className="max-w-6xl mx-auto py-6 px-4">
+      <div className="max-w-5xl mx-auto py-6 px-4">
         {/* Header */}
         <div className="mb-6">
           <Link href="/settings" className="inline-flex items-center text-sm text-[#6b7280] hover:text-[#374151] mb-4">
@@ -191,7 +216,7 @@ export default function TextbookMasterPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-xl font-bold text-[#1f2937]">教材マスタ管理</h1>
-              <p className="text-sm text-[#6b7280] mt-1">教材の追加・編集・カリキュラム管理</p>
+              <p className="text-sm text-[#6b7280] mt-1">教材をクリックするとカリキュラム（目次）を管理できます</p>
             </div>
             <button
               onClick={openAddModal}
@@ -203,30 +228,30 @@ export default function TextbookMasterPage() {
         </div>
 
         {/* Filters */}
-        <div className="bg-white border border-[#e5e7eb] rounded-lg p-4 mb-4">
-          <div className="flex flex-wrap gap-3">
-            <div className="relative flex-1 min-w-[200px]">
+        <div className="bg-white border border-[#e5e7eb] rounded-lg p-3 mb-4">
+          <div className="flex flex-wrap gap-2">
+            <div className="relative flex-1 min-w-[180px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9ca3af]" />
               <input
                 type="text"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                placeholder="教材名で検索..."
-                className="w-full pl-9 pr-3 py-2 border border-[#d1d5db] rounded-lg text-sm focus:ring-1 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f]"
+                placeholder="教材名・出版社で検索..."
+                className="w-full pl-9 pr-3 py-1.5 border border-[#d1d5db] rounded-lg text-sm focus:ring-1 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f]"
               />
             </div>
             <select
               value={schoolTypeFilter}
               onChange={e => { setSchoolTypeFilter(e.target.value); setGradeFilter(''); }}
-              className="px-3 py-2 border border-[#d1d5db] rounded-lg text-sm bg-white"
+              className="px-3 py-1.5 border border-[#d1d5db] rounded-lg text-sm bg-white"
             >
-              <option value="">学校種別: 全て</option>
+              <option value="">種別: 全て</option>
               {SCHOOL_TYPES.map(st => <option key={st} value={st}>{st}</option>)}
             </select>
             <select
               value={gradeFilter}
               onChange={e => setGradeFilter(e.target.value)}
-              className="px-3 py-2 border border-[#d1d5db] rounded-lg text-sm bg-white"
+              className="px-3 py-1.5 border border-[#d1d5db] rounded-lg text-sm bg-white"
             >
               <option value="">学年: 全て</option>
               {availableGrades.map(g => <option key={g} value={g}>{g}</option>)}
@@ -234,7 +259,7 @@ export default function TextbookMasterPage() {
             <select
               value={subjectFilter}
               onChange={e => setSubjectFilter(e.target.value)}
-              className="px-3 py-2 border border-[#d1d5db] rounded-lg text-sm bg-white"
+              className="px-3 py-1.5 border border-[#d1d5db] rounded-lg text-sm bg-white"
             >
               <option value="">科目: 全て</option>
               {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
@@ -243,77 +268,90 @@ export default function TextbookMasterPage() {
         </div>
 
         {/* Count */}
-        <div className="text-sm text-[#6b7280] mb-3">
+        <div className="text-xs text-[#9ca3af] mb-3">
           {filtered.length}件 / {textbooks.length}件
         </div>
 
-        {/* Table */}
-        <div className="bg-white border border-[#e5e7eb] rounded-lg overflow-hidden">
-          {loading ? (
-            <div className="p-8 text-center text-[#9ca3af]">読み込み中...</div>
-          ) : filtered.length === 0 ? (
-            <div className="p-8 text-center text-[#9ca3af]">教材が見つかりません</div>
-          ) : (
-            <table className="w-full">
-              <thead>
-                <tr className="bg-[#f9fafb] border-b border-[#e5e7eb]">
-                  <th className="text-left px-4 py-3 text-xs font-medium text-[#6b7280] uppercase">教材名</th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-[#6b7280] uppercase w-24">出版社</th>
-                  <th className="text-center px-4 py-3 text-xs font-medium text-[#6b7280] uppercase w-20">種別</th>
-                  <th className="text-center px-4 py-3 text-xs font-medium text-[#6b7280] uppercase w-16">学年</th>
-                  <th className="text-center px-4 py-3 text-xs font-medium text-[#6b7280] uppercase w-16">科目</th>
-                  <th className="text-center px-4 py-3 text-xs font-medium text-[#6b7280] uppercase w-32">操作</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#e5e7eb]">
-                {filtered.map(t => (
-                  <tr key={t.id} className="hover:bg-[#f9fafb] transition-colors">
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-sm text-[#1f2937]">{t.name}</div>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-[#6b7280]">{t.publisher || '-'}</td>
-                    <td className="px-4 py-3 text-center">
-                      <span className="text-xs px-2 py-0.5 rounded bg-[#f3f4f6] text-[#4b5563]">{t.school_type || '-'}</span>
-                    </td>
-                    <td className="px-4 py-3 text-center text-sm text-[#6b7280]">{t.grade || '-'}</td>
-                    <td className="px-4 py-3 text-center">
-                      {t.subject ? (
-                        <span className={`text-xs px-2 py-0.5 rounded ${SUBJECT_COLORS[t.subject] || 'bg-gray-100 text-gray-700'}`}>
-                          {t.subject}
-                        </span>
-                      ) : '-'}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        <Link
-                          href={`/settings/textbooks/${t.id}/curriculum`}
-                          className="inline-flex items-center gap-1 px-2 py-1 text-xs text-[#1e3a5f] hover:bg-[#e8edf3] rounded transition-colors"
-                          title="カリキュラム"
-                        >
-                          <ListOrdered className="w-3.5 h-3.5" />目次
-                        </Link>
-                        <button
-                          onClick={() => openEditModal(t)}
-                          className="p-1.5 text-[#6b7280] hover:text-[#1e3a5f] hover:bg-[#f3f4f6] rounded transition-colors"
-                          title="編集"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(t.id, t.name)}
-                          className="p-1.5 text-[#6b7280] hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-                          title="削除"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+        {/* Content */}
+        {loading ? (
+          <div className="bg-white border border-[#e5e7eb] rounded-lg p-12 text-center text-[#9ca3af]">読み込み中...</div>
+        ) : filtered.length === 0 ? (
+          <div className="bg-white border border-[#e5e7eb] rounded-lg p-12 text-center text-[#9ca3af]">
+            教材が見つかりません
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {grouped.map(group => {
+              const colors = SUBJECT_COLORS[group.subject] || DEFAULT_COLORS;
+              return (
+                <div key={group.key}>
+                  {/* Group Header */}
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`w-2 h-2 rounded-full ${colors.dot}`} />
+                    <h2 className="text-sm font-semibold text-[#374151]">
+                      {group.schoolType} / {group.subject}
+                    </h2>
+                    <span className="text-xs text-[#9ca3af]">{group.items.length}件</span>
+                  </div>
+
+                  {/* Cards */}
+                  <div className="space-y-1">
+                    {group.items.map(t => (
+                      <div
+                        key={t.id}
+                        onClick={() => router.push(`/settings/textbooks/${t.id}/curriculum`)}
+                        className={`group flex items-center gap-3 px-4 py-3 bg-white border rounded-lg cursor-pointer
+                          hover:${colors.bg} hover:${colors.border} border-[#e5e7eb] hover:border-[#d1d5db]
+                          hover:shadow-sm transition-all`}
+                      >
+                        {/* Subject Indicator */}
+                        <div className={`flex-shrink-0 w-1 h-8 rounded-full ${colors.dot} opacity-40 group-hover:opacity-100 transition-opacity`} />
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-sm text-[#1f2937] truncate">{t.name}</span>
+                            {t.publisher && (
+                              <span className="flex-shrink-0 text-xs text-[#9ca3af]">{t.publisher}</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Tags */}
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-[#f3f4f6] text-[#6b7280]">
+                            {t.grade || '-'}
+                          </span>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={(e) => openEditModal(e, t)}
+                            className="p-1.5 text-[#9ca3af] hover:text-[#1e3a5f] hover:bg-white rounded transition-colors"
+                            title="編集"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={(e) => handleDelete(e, t.id, t.name)}
+                            className="p-1.5 text-[#9ca3af] hover:text-red-500 hover:bg-white rounded transition-colors"
+                            title="削除"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        {/* Arrow */}
+                        <ChevronRight className="w-4 h-4 text-[#d1d5db] group-hover:text-[#9ca3af] flex-shrink-0 transition-colors" />
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* Modal */}
         {showModal && (
@@ -331,7 +369,8 @@ export default function TextbookMasterPage() {
                     value={form.name}
                     onChange={e => setForm({ ...form, name: e.target.value })}
                     className="w-full px-3 py-2 border border-[#d1d5db] rounded-lg text-sm focus:ring-1 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f]"
-                    placeholder="例: フォレスタ 英語Ⅰ"
+                    placeholder="例: フォレスタ 英語I"
+                    autoFocus
                   />
                 </div>
                 <div>
