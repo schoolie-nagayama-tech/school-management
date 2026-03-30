@@ -1,11 +1,44 @@
 -- RLSポリシー修正: FOR ALLを操作別ポリシーに置き換え（INSERT時のWITH CHECK対応）
+-- 冪等実行対応: 旧FOR ALLポリシーと新per-operationポリシーの両方をDROP
 
+-- 旧 FOR ALL ポリシーを削除
 DROP POLICY IF EXISTS "prep_periods_all" ON course_prep_periods;
 DROP POLICY IF EXISTS "prep_items_all" ON course_prep_progress_items;
 DROP POLICY IF EXISTS "prep_student_progress_all" ON course_prep_student_progress;
 DROP POLICY IF EXISTS "prep_schedule_tasks_all" ON course_prep_schedule_tasks;
 DROP POLICY IF EXISTS "prep_schedule_markers_all" ON course_prep_schedule_markers;
 DROP POLICY IF EXISTS "prep_templates_all" ON course_prep_templates;
+
+-- 新 per-operation ポリシーも念のため削除（再実行対応）
+DROP POLICY IF EXISTS "prep_periods_select" ON course_prep_periods;
+DROP POLICY IF EXISTS "prep_periods_insert" ON course_prep_periods;
+DROP POLICY IF EXISTS "prep_periods_update" ON course_prep_periods;
+DROP POLICY IF EXISTS "prep_periods_delete" ON course_prep_periods;
+
+DROP POLICY IF EXISTS "prep_items_select" ON course_prep_progress_items;
+DROP POLICY IF EXISTS "prep_items_insert" ON course_prep_progress_items;
+DROP POLICY IF EXISTS "prep_items_update" ON course_prep_progress_items;
+DROP POLICY IF EXISTS "prep_items_delete" ON course_prep_progress_items;
+
+DROP POLICY IF EXISTS "prep_student_select" ON course_prep_student_progress;
+DROP POLICY IF EXISTS "prep_student_insert" ON course_prep_student_progress;
+DROP POLICY IF EXISTS "prep_student_update" ON course_prep_student_progress;
+DROP POLICY IF EXISTS "prep_student_delete" ON course_prep_student_progress;
+
+DROP POLICY IF EXISTS "prep_tasks_select" ON course_prep_schedule_tasks;
+DROP POLICY IF EXISTS "prep_tasks_insert" ON course_prep_schedule_tasks;
+DROP POLICY IF EXISTS "prep_tasks_update" ON course_prep_schedule_tasks;
+DROP POLICY IF EXISTS "prep_tasks_delete" ON course_prep_schedule_tasks;
+
+DROP POLICY IF EXISTS "prep_markers_select" ON course_prep_schedule_markers;
+DROP POLICY IF EXISTS "prep_markers_insert" ON course_prep_schedule_markers;
+DROP POLICY IF EXISTS "prep_markers_update" ON course_prep_schedule_markers;
+DROP POLICY IF EXISTS "prep_markers_delete" ON course_prep_schedule_markers;
+
+DROP POLICY IF EXISTS "prep_templates_select" ON course_prep_templates;
+DROP POLICY IF EXISTS "prep_templates_insert" ON course_prep_templates;
+DROP POLICY IF EXISTS "prep_templates_update" ON course_prep_templates;
+DROP POLICY IF EXISTS "prep_templates_delete" ON course_prep_templates;
 
 -- course_prep_periods
 CREATE POLICY "prep_periods_select" ON course_prep_periods FOR SELECT USING (

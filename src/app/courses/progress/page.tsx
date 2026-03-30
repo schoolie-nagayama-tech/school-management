@@ -193,7 +193,8 @@ export default function CourseProgressPage() {
         ];
       });
       try {
-        await updateStudentProgress(studentId, itemId, status);
+        const schoolId = students.find((s) => s.id === studentId)?.school_id;
+        await updateStudentProgress(studentId, itemId, status, schoolId);
       } catch (err) {
         console.error('Error updating status:', err);
         fetchData();
@@ -230,7 +231,8 @@ export default function CourseProgressPage() {
         ];
       });
       try {
-        await updateStudentProgressNumber(studentId, itemId, value);
+        const schoolId = students.find((s) => s.id === studentId)?.school_id;
+        await updateStudentProgressNumber(studentId, itemId, value, schoolId);
       } catch (err) {
         console.error('Error updating number:', err);
         fetchData();
@@ -267,7 +269,8 @@ export default function CourseProgressPage() {
         ];
       });
       try {
-        await updateStudentProgressDate(studentId, itemId, value);
+        const schoolId = students.find((s) => s.id === studentId)?.school_id;
+        await updateStudentProgressDate(studentId, itemId, value, schoolId);
       } catch (err) {
         console.error('Error updating date:', err);
         fetchData();
@@ -282,10 +285,12 @@ export default function CourseProgressPage() {
       const schoolIds = getSelectedSchoolIds();
       if (schoolIds.length === 0) return;
       try {
-        const updated = await upsertCoursePrepPeriod(schoolIds[0], season, year, {
+        await upsertCoursePrepPeriod(schoolIds[0], season, year, {
           budget_koma: value,
         });
-        setPeriod(updated);
+        // 再取得
+        const updatedPeriod = await getCoursePrepPeriod(schoolIds[0], season, year);
+        setPeriod(updatedPeriod);
       } catch (err) {
         console.error('Error updating budget:', err);
       }
@@ -389,32 +394,36 @@ export default function CourseProgressPage() {
   const handleDeleteItem = useCallback(
     async (itemId: string) => {
       if (!confirm('この項目を削除しますか？関連するデータも削除されます。')) return;
+      const schoolIds = getSelectedSchoolIds();
+      if (schoolIds.length === 0) return;
       try {
-        await deleteCourseProgressItem(itemId);
+        await deleteCourseProgressItem(itemId, schoolIds[0]);
         await fetchData();
       } catch (err) {
         console.error('Error deleting item:', err);
         setErrorMessage(getUserErrorMessage(err, '項目の削除に失敗しました'));
       }
     },
-    [fetchData]
+    [fetchData, getSelectedSchoolIds]
   );
 
   // 項目非表示トグル
   const handleToggleHideItem = useCallback(
     async (itemId: string, isHidden: boolean) => {
+      const schoolIds = getSelectedSchoolIds();
+      if (schoolIds.length === 0) return;
       try {
         if (isHidden) {
-          await unhideCourseProgressItem(itemId);
+          await unhideCourseProgressItem(itemId, schoolIds[0]);
         } else {
-          await hideCourseProgressItem(itemId);
+          await hideCourseProgressItem(itemId, schoolIds[0]);
         }
         await fetchData();
       } catch (err) {
         console.error('Error toggling item visibility:', err);
       }
     },
-    [fetchData]
+    [fetchData, getSelectedSchoolIds]
   );
 
   // 権限チェック中

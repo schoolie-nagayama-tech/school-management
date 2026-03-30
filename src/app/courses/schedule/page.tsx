@@ -103,17 +103,19 @@ export default function CourseSchedulePage() {
   // 完了トグル
   const handleToggleComplete = useCallback(
     async (taskId: string, completed: boolean) => {
+      const schoolIds = getSelectedSchoolIds();
+      if (schoolIds.length === 0) return;
       setTasks((prev) =>
         prev.map((t) => (t.id === taskId ? { ...t, is_completed: completed } : t))
       );
       try {
-        await updateScheduleTask(taskId, { is_completed: completed });
+        await updateScheduleTask(taskId, { is_completed: completed }, schoolIds[0]);
       } catch (err) {
         console.error('Error:', err);
         fetchData();
       }
     },
-    [fetchData]
+    [fetchData, getSelectedSchoolIds]
   );
 
   // マーカークリック
@@ -128,17 +130,29 @@ export default function CourseSchedulePage() {
   // マーカー保存
   const handleMarkerSave = useCallback(
     async (taskId: string, date: string, label: string, color?: string) => {
+      const schoolIds = getSelectedSchoolIds();
+      if (schoolIds.length === 0) return;
       try {
-        const marker = await upsertScheduleMarker(taskId, date, label, color);
+        await upsertScheduleMarker(taskId, date, label, color, schoolIds[0]);
+        // ローカル更新
         setTasks((prev) =>
           prev.map((t) => {
             if (t.id !== taskId) return t;
-            const existing = t.markers.findIndex((m) => m.marker_date === date);
+            const existingIdx = t.markers.findIndex((m) => m.marker_date === date);
             const markers = [...t.markers];
-            if (existing >= 0) {
-              markers[existing] = marker;
+            const newMarker = {
+              id: `temp-${taskId}-${date}`,
+              task_id: taskId,
+              marker_date: date,
+              label,
+              color: color || null,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            };
+            if (existingIdx >= 0) {
+              markers[existingIdx] = newMarker;
             } else {
-              markers.push(marker);
+              markers.push(newMarker);
               markers.sort((a, b) => a.marker_date.localeCompare(b.marker_date));
             }
             return { ...t, markers };
@@ -149,14 +163,16 @@ export default function CourseSchedulePage() {
         fetchData();
       }
     },
-    [fetchData]
+    [fetchData, getSelectedSchoolIds]
   );
 
   // マーカー削除
   const handleMarkerDelete = useCallback(
     async (taskId: string, date: string) => {
+      const schoolIds = getSelectedSchoolIds();
+      if (schoolIds.length === 0) return;
       try {
-        await deleteScheduleMarker(taskId, date);
+        await deleteScheduleMarker(taskId, date, schoolIds[0]);
         setTasks((prev) =>
           prev.map((t) => {
             if (t.id !== taskId) return t;
@@ -168,7 +184,7 @@ export default function CourseSchedulePage() {
         fetchData();
       }
     },
-    [fetchData]
+    [fetchData, getSelectedSchoolIds]
   );
 
   // タスク追加
@@ -194,31 +210,35 @@ export default function CourseSchedulePage() {
   // タスク削除
   const handleDeleteTask = useCallback(
     async (taskId: string) => {
+      const schoolIds = getSelectedSchoolIds();
+      if (schoolIds.length === 0) return;
       try {
-        await deleteScheduleTask(taskId);
+        await deleteScheduleTask(taskId, schoolIds[0]);
         await fetchData();
       } catch (err) {
         console.error('Error deleting task:', err);
         setErrorMessage(getUserErrorMessage(err, 'タスクの削除に失敗しました'));
       }
     },
-    [fetchData]
+    [fetchData, getSelectedSchoolIds]
   );
 
   // タスク日付更新
   const handleUpdateDates = useCallback(
     async (taskId: string, startDate: string | null, endDate: string | null) => {
+      const schoolIds = getSelectedSchoolIds();
+      if (schoolIds.length === 0) return;
       setTasks((prev) =>
         prev.map((t) => (t.id === taskId ? { ...t, start_date: startDate, end_date: endDate } : t))
       );
       try {
-        await updateScheduleTask(taskId, { start_date: startDate, end_date: endDate });
+        await updateScheduleTask(taskId, { start_date: startDate, end_date: endDate }, schoolIds[0]);
       } catch (err) {
         console.error('Error updating dates:', err);
         fetchData();
       }
     },
-    [fetchData]
+    [fetchData, getSelectedSchoolIds]
   );
 
   // テンプレート適用

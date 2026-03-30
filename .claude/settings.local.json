@@ -114,7 +114,23 @@
       "Bash(find C:UsersytakaDesktopstudent-managementsupabasemigrations -type f -name *.sql)",
       "Bash(grep -l \"CREATE TABLE.*schools\" /c/Users/ytaka/Desktop/student-management/supabase/migrations/*.sql)",
       "Bash(grep -n \"form_type === ''moshi''\" /c/Users/ytaka/Desktop/student-management/src/app/api/portal/form-responses/route.ts)",
-      "Bash(grep -A 50 \"CREATE TABLE IF NOT EXISTS schools\" /c/Users/ytaka/Desktop/student-management/supabase/migrations/*.sql)"
+      "Bash(grep -A 50 \"CREATE TABLE IF NOT EXISTS schools\" /c/Users/ytaka/Desktop/student-management/supabase/migrations/*.sql)",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" npx next build)",
+      "Bash(find /c/Users/ytaka/Desktop/student-management -name *讀* -o -name *講習* -type f)",
+      "Bash(find /c/Users/ytaka/Desktop -type f -name *.xls*)",
+      "Bash(find /c/Users/ytaka/Desktop -type f \\\\\\(-name *夏期講習準備スケジュール* -o -name *講習進捗管理表* \\\\\\))",
+      "Bash(find /c/Users/ytaka/Desktop/OnlineLive_tools_2025_v19 -type f \\\\\\(-name *.xlsx -o -name *.xls \\\\\\))",
+      "Bash(find /c/Users/ytaka/Desktop -type f \\\\\\(-name *講習準備* -o -name *講習進捗* \\\\\\) -newer /c/Users/ytaka/Desktop/OnlineLive_tools_2025_v19)",
+      "Bash(find /c/Users/ytaka/Desktop -type d -name *2025* -o -type d -name *夏期*)",
+      "Bash(find /c/Users/ytaka/Desktop/高橋 -type f -name *準備スケジュール* -o -name *進捗管理表*)",
+      "Bash(grep -E \"xls[x]?$\")",
+      "Bash(python3 -c \":*)",
+      "Bash(python -c \":*)",
+      "Bash(pip list:*)",
+      "Bash(find C:/Users/ytaka/Desktop/高橋 -name *進捗* -type f)",
+      "Bash(find C:/Users/ytaka/Desktop/高橋 -name *準備スケジュール* -type f)",
+      "Bash(ls \"C:/Users/ytaka/Desktop/student-management/supabase/migrations/20260330\"*)",
+      "Bash(ls \"C:\\\\Users\\\\ytaka\\\\Desktop\\\\student-management\\\\src\\\\app\\\\api\\\\courses\"\" 2>/dev/null || echo \"no dir \")"
     ]
   }
 }

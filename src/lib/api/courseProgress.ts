@@ -1,4 +1,5 @@
 import { supabase } from '../supabase';
+import { callCoursePrepApi } from './coursePrepApi';
 import type {
   CourseProgressItem,
   StudentCourseProgress,
@@ -8,7 +9,7 @@ import type {
   SeasonType,
 } from '@/types/database';
 
-// 新規テーブルは生成型に未反映のため any キャスト
+// 新規テーブルは生成型に未反映のため any キャスト（SELECT用）
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
 
@@ -40,26 +41,14 @@ export async function upsertCoursePrepPeriod(
   season: SeasonType,
   year: number,
   updates: Partial<Pick<CoursePrepPeriod, 'budget_koma' | 'schedule_start_date' | 'schedule_end_date'>>
-): Promise<CoursePrepPeriod> {
-  const { data, error } = await db
-    .from('course_prep_periods')
-    .upsert(
-      {
-        school_id: schoolId,
-        season,
-        year,
-        ...updates,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'school_id,season,year' }
-    )
-    .select()
-    .single();
-
-  if (error) {
-    throw new Error(`講習期間の更新に失敗しました: ${error.message}`);
-  }
-  return data as CoursePrepPeriod;
+): Promise<void> {
+  await callCoursePrepApi('upsert_period', schoolId, {
+    season,
+    year,
+    budgetKoma: updates.budget_koma,
+    scheduleStartDate: updates.schedule_start_date,
+    scheduleEndDate: updates.schedule_end_date,
+  });
 }
 
 // =============================================
@@ -109,6 +98,7 @@ export async function createCourseProgressItem(
   season: SeasonType,
   year: number
 ): Promise<CourseProgressItem> {
+  // 現在の最大sort_orderを取得（SELECT はRLS通る）
   const { data: existingItems } = await db
     .from('course_prep_progress_items')
     .select('sort_order')
@@ -122,26 +112,15 @@ export async function createCourseProgressItem(
     ? existingItems[0].sort_order
     : -1;
 
-  const { data, error } = await db
-    .from('course_prep_progress_items')
-    .insert({
-      name: item.name,
-      column_type: item.column_type || 'check',
-      manager_only: item.manager_only || false,
-      column_group: item.column_group || null,
-      school_id: schoolId,
-      season,
-      year,
-      sort_order: maxSortOrder + 1,
-    })
-    .select()
-    .single();
+  const result = await callCoursePrepApi('create_progress_item', schoolId, {
+    season,
+    year,
+    name: item.name,
+    columnType: item.column_type || 'check',
+    sortOrder: maxSortOrder + 1,
+  });
 
-  if (error) {
-    throw new Error(`進捗項目の作成に失敗しました: ${error.message}`);
-  }
-
-  return data as CourseProgressItem;
+  return result.data as CourseProgressItem;
 }
 
 export async function updateCourseProgressItem(
@@ -162,43 +141,16 @@ export async function updateCourseProgressItem(
   return data as CourseProgressItem;
 }
 
-export async function hideCourseProgressItem(id: string): Promise<void> {
-  const { error } = await db
-    .from('course_prep_progress_items')
-    .update({
-      is_hidden: true,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', id);
-
-  if (error) {
-    throw new Error(`進捗項目の非表示に失敗しました: ${error.message}`);
-  }
+export async function hideCourseProgressItem(id: string, schoolId: string): Promise<void> {
+  await callCoursePrepApi('hide_progress_item', schoolId, { itemId: id, isHidden: true });
 }
 
-export async function unhideCourseProgressItem(id: string): Promise<void> {
-  const { error } = await db
-    .from('course_prep_progress_items')
-    .update({
-      is_hidden: false,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', id);
-
-  if (error) {
-    throw new Error(`進捗項目の再表示に失敗しました: ${error.message}`);
-  }
+export async function unhideCourseProgressItem(id: string, schoolId: string): Promise<void> {
+  await callCoursePrepApi('hide_progress_item', schoolId, { itemId: id, isHidden: false });
 }
 
-export async function deleteCourseProgressItem(id: string): Promise<void> {
-  const { error } = await db
-    .from('course_prep_progress_items')
-    .delete()
-    .eq('id', id);
-
-  if (error) {
-    throw new Error(`進捗項目の削除に失敗しました: ${error.message}`);
-  }
+export async function deleteCourseProgressItem(id: string, schoolId: string): Promise<void> {
+  await callCoursePrepApi('delete_progress_item', schoolId, { itemId: id });
 }
 
 export async function updateCourseProgressItemSortOrder(
@@ -263,178 +215,75 @@ export async function getStudentCourseProgress(
 export async function updateStudentProgress(
   studentId: string,
   itemId: string,
-  status: ApplicationStatus | null
+  status: ApplicationStatus | null,
+  schoolId?: string
 ): Promise<StudentCourseProgress | null> {
-  const { data: student, error: studentError } = await db
-    .from('students')
-    .select('school_id')
-    .eq('id', studentId)
-    .single();
-
-  if (studentError || !student) {
-    throw new Error(`生徒情報の取得に失敗しました: ${studentError?.message || '生徒が見つかりません'}`);
-  }
-
-  const schoolId = student.school_id;
-
-  if (status === null) {
-    const { error } = await db
-      .from('course_prep_student_progress')
-      .delete()
-      .eq('student_id', studentId)
-      .eq('item_id', itemId)
-      .eq('school_id', schoolId);
-
-    if (error) {
-      throw new Error(`進捗データの削除に失敗しました: ${error.message}`);
-    }
-    return null;
-  }
-
-  const { data: existing } = await db
-    .from('course_prep_student_progress')
-    .select('id')
-    .eq('student_id', studentId)
-    .eq('item_id', itemId)
-    .eq('school_id', schoolId)
-    .maybeSingle();
-
-  if (existing) {
-    const { data, error } = await db
-      .from('course_prep_student_progress')
-      .update({ status })
-      .eq('id', existing.id)
-      .select()
+  // schoolIdが渡されなかった場合はSELECTで取得
+  let resolvedSchoolId = schoolId;
+  if (!resolvedSchoolId) {
+    const { data: student } = await db
+      .from('students')
+      .select('school_id')
+      .eq('id', studentId)
       .single();
-
-    if (error) throw new Error(`進捗データの更新に失敗しました: ${error.message}`);
-    return { ...(data as any), number_value: (data as any).number_value ?? null, date_value: (data as any).date_value ?? null } as StudentCourseProgress;
-  } else {
-    const { data, error } = await db
-      .from('course_prep_student_progress')
-      .insert({ school_id: schoolId, student_id: studentId, item_id: itemId, status })
-      .select()
-      .single();
-
-    if (error) throw new Error(`進捗データの作成に失敗しました: ${error.message}`);
-    return { ...(data as any), number_value: (data as any).number_value ?? null, date_value: (data as any).date_value ?? null } as StudentCourseProgress;
+    resolvedSchoolId = student?.school_id;
   }
+  if (!resolvedSchoolId) throw new Error('school_idが取得できません');
+
+  await callCoursePrepApi('update_student_progress', resolvedSchoolId, {
+    studentId,
+    itemId,
+    status: status || 'pending',
+  });
+  return null;
 }
 
 export async function updateStudentProgressNumber(
   studentId: string,
   itemId: string,
-  numberValue: number | null
+  numberValue: number | null,
+  schoolId?: string
 ): Promise<StudentCourseProgress | null> {
-  const { data: student, error: studentError } = await db
-    .from('students')
-    .select('school_id')
-    .eq('id', studentId)
-    .single();
-
-  if (studentError || !student) {
-    throw new Error(`生徒情報の取得に失敗しました: ${studentError?.message || '生徒が見つかりません'}`);
-  }
-
-  const schoolId = student.school_id;
-
-  if (numberValue === null) {
-    const { error } = await db
-      .from('course_prep_student_progress')
-      .delete()
-      .eq('student_id', studentId)
-      .eq('item_id', itemId)
-      .eq('school_id', schoolId);
-
-    if (error) throw new Error(`進捗データの削除に失敗しました: ${error.message}`);
-    return null;
-  }
-
-  const { data: existing } = await db
-    .from('course_prep_student_progress')
-    .select('id')
-    .eq('student_id', studentId)
-    .eq('item_id', itemId)
-    .eq('school_id', schoolId)
-    .maybeSingle();
-
-  if (existing) {
-    const { data, error } = await db
-      .from('course_prep_student_progress')
-      .update({ number_value: numberValue } as any)
-      .eq('id', existing.id)
-      .select()
+  let resolvedSchoolId = schoolId;
+  if (!resolvedSchoolId) {
+    const { data: student } = await db
+      .from('students')
+      .select('school_id')
+      .eq('id', studentId)
       .single();
-
-    if (error) throw new Error(`進捗データの更新に失敗しました: ${error.message}`);
-    return { ...(data as any), number_value: (data as any).number_value ?? null, date_value: (data as any).date_value ?? null } as StudentCourseProgress;
-  } else {
-    const { data, error } = await db
-      .from('course_prep_student_progress')
-      .insert({ school_id: schoolId, student_id: studentId, item_id: itemId, status: null as any, number_value: numberValue } as any)
-      .select()
-      .single();
-
-    if (error) throw new Error(`進捗データの作成に失敗しました: ${error.message}`);
-    return { ...(data as any), number_value: (data as any).number_value ?? null, date_value: (data as any).date_value ?? null } as StudentCourseProgress;
+    resolvedSchoolId = student?.school_id;
   }
+  if (!resolvedSchoolId) throw new Error('school_idが取得できません');
+
+  await callCoursePrepApi('update_student_number', resolvedSchoolId, {
+    studentId,
+    itemId,
+    numberValue,
+  });
+  return null;
 }
 
 export async function updateStudentProgressDate(
   studentId: string,
   itemId: string,
-  dateValue: string | null
+  dateValue: string | null,
+  schoolId?: string
 ): Promise<StudentCourseProgress | null> {
-  const { data: student, error: studentError } = await db
-    .from('students')
-    .select('school_id')
-    .eq('id', studentId)
-    .single();
-
-  if (studentError || !student) {
-    throw new Error(`生徒情報の取得に失敗しました: ${studentError?.message || '生徒が見つかりません'}`);
-  }
-
-  const schoolId = student.school_id;
-
-  if (dateValue === null) {
-    const { error } = await db
-      .from('course_prep_student_progress')
-      .delete()
-      .eq('student_id', studentId)
-      .eq('item_id', itemId)
-      .eq('school_id', schoolId);
-
-    if (error) throw new Error(`進捗データの削除に失敗しました: ${error.message}`);
-    return null;
-  }
-
-  const { data: existing } = await db
-    .from('course_prep_student_progress')
-    .select('id')
-    .eq('student_id', studentId)
-    .eq('item_id', itemId)
-    .eq('school_id', schoolId)
-    .maybeSingle();
-
-  if (existing) {
-    const { data, error } = await db
-      .from('course_prep_student_progress')
-      .update({ date_value: dateValue } as any)
-      .eq('id', existing.id)
-      .select()
+  let resolvedSchoolId = schoolId;
+  if (!resolvedSchoolId) {
+    const { data: student } = await db
+      .from('students')
+      .select('school_id')
+      .eq('id', studentId)
       .single();
-
-    if (error) throw new Error(`進捗データの更新に失敗しました: ${error.message}`);
-    return { ...(data as any), number_value: (data as any).number_value ?? null, date_value: (data as any).date_value ?? null } as StudentCourseProgress;
-  } else {
-    const { data, error } = await db
-      .from('course_prep_student_progress')
-      .insert({ school_id: schoolId, student_id: studentId, item_id: itemId, status: null as any, date_value: dateValue } as any)
-      .select()
-      .single();
-
-    if (error) throw new Error(`進捗データの作成に失敗しました: ${error.message}`);
-    return { ...(data as any), number_value: (data as any).number_value ?? null, date_value: (data as any).date_value ?? null } as StudentCourseProgress;
+    resolvedSchoolId = student?.school_id;
   }
+  if (!resolvedSchoolId) throw new Error('school_idが取得できません');
+
+  await callCoursePrepApi('update_student_date', resolvedSchoolId, {
+    studentId,
+    itemId,
+    dateValue,
+  });
+  return null;
 }

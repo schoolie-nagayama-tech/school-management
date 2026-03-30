@@ -1,4 +1,5 @@
 import { supabase } from '../supabase';
+import { callCoursePrepApi } from './coursePrepApi';
 import type {
   ScheduleTask,
   ScheduleMarker,
@@ -6,7 +7,7 @@ import type {
   SeasonType,
 } from '@/types/database';
 
-// 新規テーブルは生成型に未反映のため any キャスト
+// 新規テーブルは生成型に未反映のため any キャスト（SELECT用）
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
 
@@ -69,6 +70,7 @@ export async function createScheduleTask(
     end_date?: string | null;
   }
 ): Promise<ScheduleTask> {
+  // 現在の最大sort_orderを取得
   const { data: existing } = await db
     .from('course_prep_schedule_tasks')
     .select('sort_order')
@@ -80,48 +82,31 @@ export async function createScheduleTask(
 
   const maxSort = existing && existing.length > 0 ? existing[0].sort_order : -1;
 
-  const { data, error } = await db
-    .from('course_prep_schedule_tasks')
-    .insert({
-      school_id: schoolId,
-      season,
-      year,
-      major_category: task.major_category,
-      name: task.name,
-      description: task.description || null,
-      start_date: task.start_date || null,
-      end_date: task.end_date || null,
-      sort_order: maxSort + 1,
-    })
-    .select()
-    .single();
+  const result = await callCoursePrepApi('create_schedule_task', schoolId, {
+    season,
+    year,
+    majorCategory: task.major_category,
+    name: task.name,
+    description: task.description || null,
+    sortOrder: maxSort + 1,
+  });
 
-  if (error) throw new Error(`タスクの作成に失敗しました: ${error.message}`);
-  return data as ScheduleTask;
+  return result.data as ScheduleTask;
 }
 
 export async function updateScheduleTask(
   id: string,
-  updates: Partial<Pick<ScheduleTask, 'major_category' | 'name' | 'description' | 'start_date' | 'end_date' | 'is_completed' | 'sort_order'>>
-): Promise<ScheduleTask> {
-  const { data, error } = await db
-    .from('course_prep_schedule_tasks')
-    .update({ ...updates, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .select()
-    .single();
-
-  if (error) throw new Error(`タスクの更新に失敗しました: ${error.message}`);
-  return data as ScheduleTask;
+  updates: Partial<Pick<ScheduleTask, 'major_category' | 'name' | 'description' | 'start_date' | 'end_date' | 'is_completed' | 'sort_order'>>,
+  schoolId: string
+): Promise<void> {
+  await callCoursePrepApi('update_schedule_task', schoolId, {
+    taskId: id,
+    updates,
+  });
 }
 
-export async function deleteScheduleTask(id: string): Promise<void> {
-  const { error } = await db
-    .from('course_prep_schedule_tasks')
-    .delete()
-    .eq('id', id);
-
-  if (error) throw new Error(`タスクの削除に失敗しました: ${error.message}`);
+export async function deleteScheduleTask(id: string, schoolId: string): Promise<void> {
+  await callCoursePrepApi('delete_schedule_task', schoolId, { taskId: id });
 }
 
 // =============================================
@@ -132,46 +117,26 @@ export async function upsertScheduleMarker(
   taskId: string,
   date: string,
   label: string,
-  color?: string | null
-): Promise<ScheduleMarker> {
-  const { data: existing } = await db
-    .from('course_prep_schedule_markers')
-    .select('id')
-    .eq('task_id', taskId)
-    .eq('marker_date', date)
-    .maybeSingle();
-
-  if (existing) {
-    const { data, error } = await db
-      .from('course_prep_schedule_markers')
-      .update({ label, color: color || null, updated_at: new Date().toISOString() })
-      .eq('id', existing.id)
-      .select()
-      .single();
-
-    if (error) throw new Error(`マーカーの更新に失敗しました: ${error.message}`);
-    return data as ScheduleMarker;
-  } else {
-    const { data, error } = await db
-      .from('course_prep_schedule_markers')
-      .insert({ task_id: taskId, marker_date: date, label, color: color || null })
-      .select()
-      .single();
-
-    if (error) throw new Error(`マーカーの作成に失敗しました: ${error.message}`);
-    return data as ScheduleMarker;
-  }
+  color?: string | null,
+  schoolId?: string
+): Promise<void> {
+  if (!schoolId) throw new Error('schoolIdが必要です');
+  await callCoursePrepApi('upsert_schedule_marker', schoolId, {
+    taskId,
+    markerDate: date,
+    label,
+    color: color || null,
+  });
 }
 
 export async function deleteScheduleMarker(
   taskId: string,
-  date: string
+  date: string,
+  schoolId?: string
 ): Promise<void> {
-  const { error } = await db
-    .from('course_prep_schedule_markers')
-    .delete()
-    .eq('task_id', taskId)
-    .eq('marker_date', date);
-
-  if (error) throw new Error(`マーカーの削除に失敗しました: ${error.message}`);
+  if (!schoolId) throw new Error('schoolIdが必要です');
+  await callCoursePrepApi('delete_schedule_marker', schoolId, {
+    taskId,
+    markerDate: date,
+  });
 }
