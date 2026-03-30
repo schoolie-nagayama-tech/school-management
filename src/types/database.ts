@@ -3414,6 +3414,8 @@ export interface CourseProgressItem {
   is_hidden: boolean;
   manager_only: boolean;
   column_group: string | null;
+  deadline: string | null;
+  auto_source: 'regular_weekly' | 'course_sessions' | null;
   created_at: string;
   updated_at: string;
 }

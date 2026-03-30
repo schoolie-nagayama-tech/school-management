@@ -13,8 +13,9 @@ import {
   upsertScheduleMarker,
   deleteScheduleMarker,
 } from '@/lib/api/courseSchedule';
+import { getCourseProgressItems } from '@/lib/api/courseProgress';
 import { getTemplates, initializeScheduleFromTemplate } from '@/lib/api/courseTemplates';
-import type { ScheduleTaskWithMarkers, ScheduleMarker, CourseTemplate, SeasonType } from '@/types/database';
+import type { ScheduleTaskWithMarkers, ScheduleMarker, CourseTemplate, CourseProgressItem, SeasonType } from '@/types/database';
 import { useRequirePermission, useCanEdit } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
@@ -51,6 +52,7 @@ export default function CourseSchedulePage() {
 
   // データ
   const [tasks, setTasks] = useState<ScheduleTaskWithMarkers[]>([]);
+  const [deadlineItems, setDeadlineItems] = useState<CourseProgressItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -76,8 +78,12 @@ export default function CourseSchedulePage() {
         setIsLoading(false);
         return;
       }
-      const data = await getScheduleTasks(schoolIds[0], season, year);
+      const [data, progressItems] = await Promise.all([
+        getScheduleTasks(schoolIds[0], season, year),
+        getCourseProgressItems(schoolIds[0], season, year, false),
+      ]);
       setTasks(data);
+      setDeadlineItems(progressItems.filter((i) => i.deadline));
 
       if (data.length === 0 && isManagerOrAbove) {
         const tpls = await getTemplates('schedule', season, schoolIds[0]);
@@ -390,6 +396,7 @@ export default function CourseSchedulePage() {
         ) : (
           <ScheduleGanttChart
             tasks={tasks}
+            deadlineItems={deadlineItems}
             startDate={dateRange.start}
             endDate={dateRange.end}
             canEdit={canEdit}

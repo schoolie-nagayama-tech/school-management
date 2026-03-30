@@ -130,7 +130,10 @@
       "Bash(find C:/Users/ytaka/Desktop/高橋 -name *進捗* -type f)",
       "Bash(find C:/Users/ytaka/Desktop/高橋 -name *準備スケジュール* -type f)",
       "Bash(ls \"C:/Users/ytaka/Desktop/student-management/supabase/migrations/20260330\"*)",
-      "Bash(ls \"C:\\\\Users\\\\ytaka\\\\Desktop\\\\student-management\\\\src\\\\app\\\\api\\\\courses\"\" 2>/dev/null || echo \"no dir \")"
+      "Bash(ls \"C:\\\\Users\\\\ytaka\\\\Desktop\\\\student-management\\\\src\\\\app\\\\api\\\\courses\"\" 2>/dev/null || echo \"no dir \")",
+      "Bash(grep -l \"CREATE TABLE.*schedule_regular_patterns\\\\|CREATE TABLE.*students\" /c/Users/ytaka/Desktop/student-management/supabase/migrations/*.sql)",
+      "Bash(grep -n \"CREATE TABLE IF NOT EXISTS students\" /c/Users/ytaka/Desktop/student-management/supabase/migrations/*.sql)",
+      "Bash(grep -r 'CREATE TABLE.*students' /c/Users/ytaka/Desktop/student-management/supabase --include=*.sql)"
     ]
   }
 }

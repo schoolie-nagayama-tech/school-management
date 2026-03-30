@@ -16,9 +16,12 @@ import {
   updateStudentProgressNumber,
   updateStudentProgressDate,
   createCourseProgressItem,
+  updateCourseProgressItem,
   deleteCourseProgressItem,
   hideCourseProgressItem,
   unhideCourseProgressItem,
+  getAutoValues,
+  type AutoValues,
 } from '@/lib/api/courseProgress';
 import {
   getTemplates,
@@ -68,6 +71,7 @@ export default function CourseProgressPage() {
   const [items, setItems] = useState<CourseProgressItem[]>([]);
   const [progressData, setProgressData] = useState<StudentCourseProgress[]>([]);
   const [period, setPeriod] = useState<CoursePrepPeriod | null>(null);
+  const [autoValuesData, setAutoValuesData] = useState<AutoValues>({});
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -99,17 +103,19 @@ export default function CourseProgressPage() {
       }
       const schoolId = schoolIds[0];
 
-      const [studentsData, itemsData, progressResult, periodData] = await Promise.all([
+      const [studentsData, itemsData, progressResult, periodData, autoVals] = await Promise.all([
         getStudents(undefined, schoolIds),
         getCourseProgressItems(schoolId, season, year, showHidden),
         getStudentCourseProgress(schoolId, season, year),
         getCoursePrepPeriod(schoolId, season, year),
+        getAutoValues(schoolId, season, year),
       ]);
 
       setStudents(studentsData.filter((s) => s.status !== 'withdrawn'));
       setItems(itemsData);
       setProgressData(progressResult);
       setPeriod(periodData);
+      setAutoValuesData(autoVals);
 
       // 項目が0件なら初回テンプレート適用を提案
       if (itemsData.length === 0 && isManagerOrAbove) {
@@ -428,6 +434,39 @@ export default function CourseProgressPage() {
     [fetchData, getSelectedSchoolIds]
   );
 
+  // 項目名変更
+  const handleItemNameChange = useCallback(
+    async (itemId: string, name: string) => {
+      const schoolIds = getSelectedSchoolIds();
+      if (schoolIds.length === 0) return;
+      // ローカル即時反映
+      setItems((prev) => prev.map((i) => (i.id === itemId ? { ...i, name } : i)));
+      try {
+        await updateCourseProgressItem(itemId, schoolIds[0], { name });
+      } catch (err) {
+        console.error('Error updating item name:', err);
+        fetchData();
+      }
+    },
+    [getSelectedSchoolIds, fetchData]
+  );
+
+  // 期日変更（ガントチャート連動はschedule側で実装）
+  const handleItemDeadlineChange = useCallback(
+    async (itemId: string, deadline: string | null) => {
+      const schoolIds = getSelectedSchoolIds();
+      if (schoolIds.length === 0) return;
+      setItems((prev) => prev.map((i) => (i.id === itemId ? { ...i, deadline } : i)));
+      try {
+        await updateCourseProgressItem(itemId, schoolIds[0], { deadline });
+      } catch (err) {
+        console.error('Error updating item deadline:', err);
+        fetchData();
+      }
+    },
+    [getSelectedSchoolIds, fetchData]
+  );
+
   // 権限チェック中
   if (permissionLoading) {
     return (
@@ -710,10 +749,13 @@ export default function CourseProgressPage() {
             students={filteredStudents}
             items={displayItems}
             progressData={progressData}
+            autoValues={autoValuesData}
             canEdit={canEdit}
             onStatusChange={handleStatusChange}
             onNumberChange={handleNumberChange}
             onDateChange={handleDateChange}
+            onItemNameChange={isManagerOrAbove ? handleItemNameChange : undefined}
+            onItemDeadlineChange={isManagerOrAbove ? handleItemDeadlineChange : undefined}
           />
         )}
       </div>

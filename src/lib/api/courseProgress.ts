@@ -62,6 +62,8 @@ export async function getCourseProgressItems(
     column_type: (item.column_type as string) || 'check',
     manager_only: item.manager_only === true,
     is_hidden: item.is_hidden === true,
+    deadline: (item.deadline as string) || null,
+    auto_source: (item.auto_source as string) || null,
   })) as CourseProgressItem[];
 }
 
@@ -76,7 +78,6 @@ export async function createCourseProgressItem(
   season: SeasonType,
   year: number
 ): Promise<CourseProgressItem> {
-  // 現在の項目数をAPI経由で取得してsort_orderを決定
   const items = await getCourseProgressItems(schoolId, season, year, true);
   const maxSortOrder = items.length > 0
     ? Math.max(...items.map(i => i.sort_order))
@@ -93,7 +94,17 @@ export async function createCourseProgressItem(
   return result.data as CourseProgressItem;
 }
 
-// updateCourseProgressItem は hide/delete で代替
+export async function updateCourseProgressItem(
+  id: string,
+  schoolId: string,
+  updates: Partial<Pick<CourseProgressItem, 'name' | 'column_type' | 'deadline' | 'auto_source' | 'sort_order' | 'column_group'>>
+): Promise<CourseProgressItem> {
+  const result = await callCoursePrepApi('update_progress_item', schoolId, {
+    itemId: id,
+    updates,
+  });
+  return result.data as CourseProgressItem;
+}
 
 export async function hideCourseProgressItem(id: string, schoolId: string): Promise<void> {
   await callCoursePrepApi('hide_progress_item', schoolId, { itemId: id, isHidden: true });
@@ -106,8 +117,6 @@ export async function unhideCourseProgressItem(id: string, schoolId: string): Pr
 export async function deleteCourseProgressItem(id: string, schoolId: string): Promise<void> {
   await callCoursePrepApi('delete_progress_item', schoolId, { itemId: id });
 }
-
-// updateCourseProgressItemSortOrder は必要になったら API に追加
 
 // =============================================
 // 生徒進捗データ
@@ -136,15 +145,13 @@ export async function updateStudentProgress(
   itemId: string,
   status: ApplicationStatus | null,
   schoolId?: string
-): Promise<StudentCourseProgress | null> {
+): Promise<void> {
   if (!schoolId) throw new Error('school_idが必要です');
-
   await callCoursePrepApi('update_student_progress', schoolId, {
     studentId,
     itemId,
     status: status || 'pending',
   });
-  return null;
 }
 
 export async function updateStudentProgressNumber(
@@ -152,15 +159,13 @@ export async function updateStudentProgressNumber(
   itemId: string,
   numberValue: number | null,
   schoolId?: string
-): Promise<StudentCourseProgress | null> {
+): Promise<void> {
   if (!schoolId) throw new Error('school_idが必要です');
-
   await callCoursePrepApi('update_student_number', schoolId, {
     studentId,
     itemId,
     numberValue,
   });
-  return null;
 }
 
 export async function updateStudentProgressDate(
@@ -168,13 +173,30 @@ export async function updateStudentProgressDate(
   itemId: string,
   dateValue: string | null,
   schoolId?: string
-): Promise<StudentCourseProgress | null> {
+): Promise<void> {
   if (!schoolId) throw new Error('school_idが必要です');
-
   await callCoursePrepApi('update_student_date', schoolId, {
     studentId,
     itemId,
     dateValue,
   });
-  return null;
+}
+
+// =============================================
+// 自動計算値（通常週回数・講習回数）
+// =============================================
+
+export type AutoValues = Record<string, { regular_weekly: number; course_sessions: number }>;
+
+export async function getAutoValues(
+  schoolId: string,
+  season: SeasonType,
+  year: number
+): Promise<AutoValues> {
+  const result = await fetchCoursePrepApi('get_auto_values', {
+    schoolId,
+    season,
+    year: String(year),
+  });
+  return (result.data || {}) as AutoValues;
 }

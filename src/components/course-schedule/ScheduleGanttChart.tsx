@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import type { ScheduleTaskWithMarkers, ScheduleMarker } from '@/types/database';
+import type { ScheduleTaskWithMarkers, ScheduleMarker, CourseProgressItem } from '@/types/database';
 
 interface ScheduleGanttChartProps {
   tasks: ScheduleTaskWithMarkers[];
+  deadlineItems?: CourseProgressItem[];
   startDate: Date;
   endDate: Date;
   canEdit: boolean;
@@ -27,6 +28,7 @@ function isSameDay(a: Date, b: Date): boolean {
 
 export function ScheduleGanttChart({
   tasks,
+  deadlineItems = [],
   startDate,
   endDate,
   canEdit,
@@ -183,6 +185,55 @@ export function ScheduleGanttChart({
           </tr>
         </thead>
         <tbody>
+          {/* 期日マーカー行（進捗管理からの連動） */}
+          {deadlineItems.length > 0 && (
+            <>
+              <tr>
+                <td
+                  colSpan={2 + dates.length}
+                  className="sticky left-0 z-20 bg-orange-50 border border-gray-200 px-2 py-1"
+                >
+                  <span className="text-[10px] text-orange-600 font-bold">期日</span>
+                </td>
+              </tr>
+              {deadlineItems.map((item) => (
+                <tr key={`deadline-${item.id}`} className="bg-orange-50/30">
+                  <td className="sticky left-0 z-10 bg-white border border-gray-200 px-1 py-1 text-center">
+                    <span className="text-orange-400 text-[10px]">!</span>
+                  </td>
+                  <td className="sticky left-[32px] z-10 bg-white border border-gray-200 px-2 py-1">
+                    <div className="text-xs text-orange-700">{item.name}</div>
+                  </td>
+                  {dates.map((d) => {
+                    const dateStr = formatDate(d);
+                    const isToday = isSameDay(d, today);
+                    const isDeadline = item.deadline === dateStr;
+                    const isPast = item.deadline ? new Date(item.deadline) < d : false;
+                    return (
+                      <td
+                        key={dateStr}
+                        className={`border border-gray-200 px-0 py-0 text-center relative ${
+                          isDeadline ? 'bg-orange-100' : ''
+                        }`}
+                      >
+                        {isToday && (
+                          <div className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-red-400 z-10 -translate-x-1/2" />
+                        )}
+                        {isDeadline && (
+                          <div className="text-[8px] font-bold text-orange-600 leading-tight py-0.5">
+                            !
+                          </div>
+                        )}
+                        {!isDeadline && !isPast && item.deadline && new Date(item.deadline) > d && (
+                          <div className="absolute top-1/2 -translate-y-1/2 h-1 bg-orange-200 left-0 right-0" />
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </>
+          )}
           {categories.map(({ category, tasks: catTasks }) => {
             const isCollapsed = collapsedCategories.has(category);
             const completedCount = catTasks.filter((t) => t.is_completed).length;

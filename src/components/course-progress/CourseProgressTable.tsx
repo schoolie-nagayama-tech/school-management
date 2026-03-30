@@ -3,18 +3,21 @@
 import { useState, useCallback, useMemo } from 'react';
 import type { Student, CourseProgressItem, StudentCourseProgress, ApplicationStatus } from '@/types/database';
 import { GRADE_LABELS, PROGRESS_COLUMN_GROUPS } from '@/types/database';
+import type { AutoValues } from '@/lib/api/courseProgress';
 
 interface CourseProgressTableProps {
   students: Student[];
   items: CourseProgressItem[];
   progressData: StudentCourseProgress[];
+  autoValues?: AutoValues;
   canEdit: boolean;
   onStatusChange: (studentId: string, itemId: string, status: ApplicationStatus | null) => void;
   onNumberChange: (studentId: string, itemId: string, value: number | null) => void;
   onDateChange: (studentId: string, itemId: string, value: string | null) => void;
+  onItemNameChange?: (itemId: string, name: string) => void;
+  onItemDeadlineChange?: (itemId: string, deadline: string | null) => void;
 }
 
-// ステータスのサイクル
 function nextStatus(current: ApplicationStatus | null | undefined): ApplicationStatus | null {
   if (!current) return 'pending';
   if (current === 'pending') return 'completed';
@@ -24,9 +27,9 @@ function nextStatus(current: ApplicationStatus | null | undefined): ApplicationS
 
 function statusSymbol(status: ApplicationStatus | null | undefined): string {
   if (!status) return '';
-  if (status === 'pending') return '×';
-  if (status === 'completed') return '✓';
-  if (status === 'not_applicable') return '–';
+  if (status === 'pending') return '\u00d7';
+  if (status === 'completed') return '\u2713';
+  if (status === 'not_applicable') return '\u2013';
   return '';
 }
 
@@ -46,19 +49,33 @@ function statusTextClass(status: ApplicationStatus | null | undefined): string {
   return '';
 }
 
+function formatDeadline(deadline: string | null): string {
+  if (!deadline) return '';
+  const d = new Date(deadline);
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
 export function CourseProgressTable({
   students,
   items,
   progressData,
+  autoValues,
   canEdit,
   onStatusChange,
   onNumberChange,
   onDateChange,
+  onItemNameChange,
+  onItemDeadlineChange,
 }: CourseProgressTableProps) {
   const [editingCell, setEditingCell] = useState<{ studentId: string; itemId: string } | null>(null);
   const [editValue, setEditValue] = useState('');
+  // 項目名編集
+  const [editingItemName, setEditingItemName] = useState<string | null>(null);
+  const [editItemNameValue, setEditItemNameValue] = useState('');
+  // 期日編集
+  const [editingDeadline, setEditingDeadline] = useState<string | null>(null);
+  const [editDeadlineValue, setEditDeadlineValue] = useState('');
 
-  // 進捗データをマップ化
   const progressMap = useMemo(() => {
     const map = new Map<string, StudentCourseProgress>();
     for (const d of progressData) {
@@ -67,17 +84,15 @@ export function CourseProgressTable({
     return map;
   }, [progressData]);
 
-  // 生徒を学年順にソート
   const sortedStudents = useMemo(() => {
     return [...students].sort((a, b) => (a.grade || 0) - (b.grade || 0));
   }, [students]);
 
-  // 列グループ化
   const columnGroups = useMemo(() => {
     const groups: { key: string; label: string; color: string; items: CourseProgressItem[] }[] = [];
     const ungrouped: CourseProgressItem[] = [];
-
     const groupMap = new Map<string, CourseProgressItem[]>();
+
     for (const item of items) {
       const g = item.column_group;
       if (g && PROGRESS_COLUMN_GROUPS[g]) {
@@ -87,7 +102,6 @@ export function CourseProgressTable({
         ungrouped.push(item);
       }
     }
-
     if (ungrouped.length > 0) {
       groups.push({ key: '_ungrouped', label: '', color: '#6b7280', items: ungrouped });
     }
@@ -95,11 +109,9 @@ export function CourseProgressTable({
       const def = PROGRESS_COLUMN_GROUPS[key];
       groups.push({ key, label: def.label, color: def.color, items: groupItems });
     }
-
     return groups;
   }, [items]);
 
-  // 列ヘッダーの完了率
   const itemCompletionRates = useMemo(() => {
     const rates: Record<string, { completed: number; total: number }> = {};
     for (const item of items) {
@@ -114,7 +126,6 @@ export function CourseProgressTable({
     return rates;
   }, [items, students, progressMap]);
 
-  // 生徒別のチェック完了率
   const studentCompletionRates = useMemo(() => {
     const checkItems = items.filter((i) => i.column_type === 'check');
     const rates: Record<string, { completed: number; total: number }> = {};
@@ -133,8 +144,7 @@ export function CourseProgressTable({
     (studentId: string, itemId: string) => {
       if (!canEdit) return;
       const d = progressMap.get(`${studentId}:${itemId}`);
-      const newStatus = nextStatus(d?.status);
-      onStatusChange(studentId, itemId, newStatus);
+      onStatusChange(studentId, itemId, nextStatus(d?.status));
     },
     [canEdit, progressMap, onStatusChange]
   );
@@ -162,8 +172,7 @@ export function CourseProgressTable({
   const handleDateBlur = useCallback(
     (studentId: string, itemId: string) => {
       setEditingCell(null);
-      const val = editValue.trim() || null;
-      onDateChange(studentId, itemId, val);
+      onDateChange(studentId, itemId, editValue.trim() || null);
     },
     [editValue, onDateChange]
   );
@@ -180,23 +189,45 @@ export function CourseProgressTable({
     [handleNumberBlur, handleDateBlur]
   );
 
+  // 項目名保存
+  const handleItemNameSave = useCallback(
+    (itemId: string) => {
+      setEditingItemName(null);
+      const name = editItemNameValue.trim();
+      if (name && onItemNameChange) onItemNameChange(itemId, name);
+    },
+    [editItemNameValue, onItemNameChange]
+  );
+
+  // 期日保存
+  const handleDeadlineSave = useCallback(
+    (itemId: string) => {
+      setEditingDeadline(null);
+      if (onItemDeadlineChange) onItemDeadlineChange(itemId, editDeadlineValue || null);
+    },
+    [editDeadlineValue, onItemDeadlineChange]
+  );
+
+  // 自動計算値を取得
+  const getAutoValue = useCallback(
+    (studentId: string, autoSource: string | null): number | null => {
+      if (!autoSource || !autoValues) return null;
+      const sv = autoValues[studentId];
+      if (!sv) return 0;
+      if (autoSource === 'regular_weekly') return sv.regular_weekly;
+      if (autoSource === 'course_sessions') return sv.course_sessions;
+      return null;
+    },
+    [autoValues]
+  );
+
   if (students.length === 0) {
-    return (
-      <div className="py-12 text-center text-sm text-gray-400 italic">
-        対象の生徒がいません
-      </div>
-    );
+    return <div className="py-12 text-center text-sm text-gray-400 italic">対象の生徒がいません</div>;
   }
-
   if (items.length === 0) {
-    return (
-      <div className="py-12 text-center text-sm text-gray-400 italic">
-        進捗項目がありません。テンプレートから作成してください。
-      </div>
-    );
+    return <div className="py-12 text-center text-sm text-gray-400 italic">進捗項目がありません。テンプレートから作成してください。</div>;
   }
 
-  // 学年ごとにグループ分け
   let lastGrade: number | null = null;
 
   return (
@@ -218,7 +249,7 @@ export function CourseProgressTable({
             ))}
             <th className="border border-gray-200 bg-gray-50 px-2 py-1 min-w-[80px]" />
           </tr>
-          {/* 列ヘッダー */}
+          {/* 列ヘッダー（項目名 + 完了率） */}
           <tr className="bg-gray-100">
             <th className="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700 sticky left-0 bg-gray-100 z-20 min-w-[48px]">
               学年
@@ -231,9 +262,71 @@ export function CourseProgressTable({
                 <th
                   key={item.id}
                   className="border border-gray-200 px-1 py-2 text-center font-medium text-gray-700 min-w-[52px] whitespace-nowrap"
-                  title={item.name}
                 >
-                  <div className="text-[10px] leading-tight">{item.name}</div>
+                  {/* 項目名（ダブルクリックで編集） */}
+                  {editingItemName === item.id ? (
+                    <input
+                      type="text"
+                      value={editItemNameValue}
+                      onChange={(e) => setEditItemNameValue(e.target.value)}
+                      onBlur={() => handleItemNameSave(item.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleItemNameSave(item.id);
+                        if (e.key === 'Escape') setEditingItemName(null);
+                      }}
+                      autoFocus
+                      className="w-full px-1 py-0.5 text-[10px] border border-blue-300 rounded text-center"
+                    />
+                  ) : (
+                    <div
+                      className={`text-[10px] leading-tight ${canEdit && onItemNameChange ? 'cursor-pointer hover:text-blue-600' : ''}`}
+                      onDoubleClick={() => {
+                        if (canEdit && onItemNameChange) {
+                          setEditingItemName(item.id);
+                          setEditItemNameValue(item.name);
+                        }
+                      }}
+                      title={`${item.name}${item.auto_source ? ' (自動)' : ''}${item.deadline ? ` 期日:${item.deadline}` : ''}\nダブルクリックで名前を編集`}
+                    >
+                      {item.name}
+                      {item.auto_source && <span className="text-blue-400 ml-0.5" title="自動計算">A</span>}
+                    </div>
+                  )}
+                  {/* 期日表示 */}
+                  {editingDeadline === item.id ? (
+                    <input
+                      type="date"
+                      value={editDeadlineValue}
+                      onChange={(e) => setEditDeadlineValue(e.target.value)}
+                      onBlur={() => handleDeadlineSave(item.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleDeadlineSave(item.id);
+                        if (e.key === 'Escape') setEditingDeadline(null);
+                      }}
+                      autoFocus
+                      className="w-full px-0.5 py-0 text-[9px] border border-blue-300 rounded mt-0.5"
+                    />
+                  ) : (
+                    <div
+                      className={`text-[9px] mt-0.5 ${
+                        item.deadline
+                          ? new Date(item.deadline) < new Date()
+                            ? 'text-red-500 font-bold'
+                            : 'text-orange-500'
+                          : 'text-gray-300'
+                      } ${canEdit && onItemDeadlineChange ? 'cursor-pointer hover:underline' : ''}`}
+                      onClick={() => {
+                        if (canEdit && onItemDeadlineChange) {
+                          setEditingDeadline(item.id);
+                          setEditDeadlineValue(item.deadline || '');
+                        }
+                      }}
+                      title="クリックで期日を設定"
+                    >
+                      {item.deadline ? formatDeadline(item.deadline) : '期日'}
+                    </div>
+                  )}
+                  {/* チェック列の完了率 */}
                   {item.column_type === 'check' && itemCompletionRates[item.id] && (
                     <div className="mt-0.5">
                       <span className={`text-[9px] px-1 rounded ${
@@ -258,15 +351,10 @@ export function CourseProgressTable({
             const showGradeSeparator = student.grade !== lastGrade;
             lastGrade = student.grade || null;
             const completion = studentCompletionRates[student.id];
-            const completionRate = completion && completion.total > 0
-              ? completion.completed / completion.total
-              : 0;
+            const completionRate = completion && completion.total > 0 ? completion.completed / completion.total : 0;
 
             return (
-              <tr
-                key={student.id}
-                className={`hover:bg-blue-50/30 ${showGradeSeparator ? 'border-t-2 border-t-gray-300' : ''}`}
-              >
+              <tr key={student.id} className={`hover:bg-blue-50/30 ${showGradeSeparator ? 'border-t-2 border-t-gray-300' : ''}`}>
                 <td className="border border-gray-200 px-2 py-1 text-center text-xs text-gray-600 sticky left-0 bg-white z-10">
                   {GRADE_LABELS[student.grade || 0] || ''}
                 </td>
@@ -278,8 +366,17 @@ export function CourseProgressTable({
                 {columnGroups.flatMap((g) =>
                   g.items.map((item) => {
                     const d = progressMap.get(`${student.id}:${item.id}`);
-                    const isEditing =
-                      editingCell?.studentId === student.id && editingCell?.itemId === item.id;
+                    const isEditing = editingCell?.studentId === student.id && editingCell?.itemId === item.id;
+
+                    // 自動計算列
+                    if (item.auto_source && item.column_type === 'number') {
+                      const autoVal = getAutoValue(student.id, item.auto_source);
+                      return (
+                        <td key={item.id} className="border border-gray-200 px-1 py-1 text-center bg-blue-50/30">
+                          <span className="text-xs text-blue-700 font-medium">{autoVal ?? 0}</span>
+                        </td>
+                      );
+                    }
 
                     if (item.column_type === 'check') {
                       return (
@@ -288,9 +385,7 @@ export function CourseProgressTable({
                           className={`border border-gray-200 px-1 py-1 text-center cursor-pointer select-none ${statusBgClass(d?.status)}`}
                           onClick={() => handleCheckClick(student.id, item.id)}
                         >
-                          <span className={`text-sm ${statusTextClass(d?.status)}`}>
-                            {statusSymbol(d?.status)}
-                          </span>
+                          <span className={`text-sm ${statusTextClass(d?.status)}`}>{statusSymbol(d?.status)}</span>
                         </td>
                       );
                     }
@@ -315,13 +410,9 @@ export function CourseProgressTable({
                         <td
                           key={item.id}
                           className="border border-gray-200 px-1 py-1 text-center cursor-pointer hover:bg-blue-50"
-                          onClick={() =>
-                            handleStartEdit(student.id, item.id, d?.number_value != null ? String(d.number_value) : '')
-                          }
+                          onClick={() => handleStartEdit(student.id, item.id, d?.number_value != null ? String(d.number_value) : '')}
                         >
-                          <span className="text-xs text-[#1e3a5f]">
-                            {d?.number_value != null ? d.number_value : ''}
-                          </span>
+                          <span className="text-xs text-[#1e3a5f]">{d?.number_value != null ? d.number_value : ''}</span>
                         </td>
                       );
                     }
@@ -349,9 +440,7 @@ export function CourseProgressTable({
                         <td
                           key={item.id}
                           className="border border-gray-200 px-1 py-1 text-center cursor-pointer hover:bg-blue-50"
-                          onClick={() =>
-                            handleStartEdit(student.id, item.id, d?.date_value || '')
-                          }
+                          onClick={() => handleStartEdit(student.id, item.id, d?.date_value || '')}
                         >
                           <span className="text-xs text-[#1e3a5f]">{dateStr}</span>
                         </td>
@@ -361,7 +450,6 @@ export function CourseProgressTable({
                     return <td key={item.id} className="border border-gray-200" />;
                   })
                 )}
-                {/* 進捗バー */}
                 <td className="border border-gray-200 px-2 py-1">
                   <div className="flex items-center gap-1.5">
                     <div className="flex-1 bg-gray-100 rounded-full h-1.5 min-w-[40px]">
@@ -369,8 +457,7 @@ export function CourseProgressTable({
                         className="h-1.5 rounded-full transition-all"
                         style={{
                           width: `${Math.round(completionRate * 100)}%`,
-                          backgroundColor:
-                            completionRate >= 0.8 ? '#10b981' : completionRate >= 0.5 ? '#f59e0b' : '#ef4444',
+                          backgroundColor: completionRate >= 0.8 ? '#10b981' : completionRate >= 0.5 ? '#f59e0b' : '#ef4444',
                         }}
                       />
                     </div>

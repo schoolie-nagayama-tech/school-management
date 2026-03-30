@@ -169,6 +169,67 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ data: result });
       }
 
+      case 'get_auto_values': {
+        // 通塾日程から通常週回数を計算、講習期間から講習回数を計算
+        // student_id[] → { studentId: { regular_weekly: number, course_sessions: number } }
+        const periodSeason = season; // 'spring' | 'summer' | 'winter'
+
+        // 1. 通常週回数: schedule_regular_patterns で period_type='regular', is_active=true
+        const { data: regularPatterns } = await supabaseAdmin
+          .from('schedule_regular_patterns')
+          .select('student_id, id')
+          .eq('school_id', schoolId)
+          .eq('period_type', 'regular')
+          .eq('is_active', true);
+
+        const regularWeeklyMap: Record<string, number> = {};
+        for (const p of (regularPatterns || []) as { student_id: string }[]) {
+          regularWeeklyMap[p.student_id] = (regularWeeklyMap[p.student_id] || 0) + 1;
+        }
+
+        // 2. 講習回数: schedule_regular_patterns で period_type=seasonに対応するもの
+        const { data: seasonalPatterns } = await supabaseAdmin
+          .from('schedule_regular_patterns')
+          .select('student_id, id')
+          .eq('school_id', schoolId)
+          .eq('period_type', periodSeason)
+          .eq('is_active', true);
+
+        const courseSessionsMap: Record<string, number> = {};
+        for (const p of (seasonalPatterns || []) as { student_id: string }[]) {
+          courseSessionsMap[p.student_id] = (courseSessionsMap[p.student_id] || 0) + 1;
+        }
+
+        // 3. 講習期間が設定されていれば、週数を掛けて総回数を推定
+        const { data: periodData } = await supabaseAdmin
+          .from('course_prep_periods')
+          .select('schedule_start_date, schedule_end_date')
+          .eq('school_id', schoolId)
+          .eq('season', season)
+          .eq('year', year)
+          .maybeSingle();
+
+        let weeksInPeriod = 1;
+        if (periodData?.schedule_start_date && periodData?.schedule_end_date) {
+          const start = new Date(periodData.schedule_start_date);
+          const end = new Date(periodData.schedule_end_date);
+          const days = Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+          weeksInPeriod = Math.max(1, Math.round(days / 7));
+        }
+
+        // courseSessionsは週あたりのコマ数 × 週数
+        const result: Record<string, { regular_weekly: number; course_sessions: number }> = {};
+        const allStudentIds = Array.from(new Set([...Object.keys(regularWeeklyMap), ...Object.keys(courseSessionsMap)]));
+        for (const sid of allStudentIds) {
+          result[sid] = {
+            regular_weekly: regularWeeklyMap[sid] || 0,
+            course_sessions: (courseSessionsMap[sid] || 0) * weeksInPeriod,
+          };
+        }
+
+        return NextResponse.json({ data: result });
+      }
+
       default:
         return NextResponse.json({ error: `不明なアクション: ${action}` }, { status: 400 });
     }
@@ -225,11 +286,13 @@ export async function POST(request: NextRequest) {
       case 'create_progress_item':
         return await handleCreateProgressItem(supabaseAdmin, schoolId, params);
       case 'update_student_progress':
-        return await handleUpdateStudentProgress(supabaseAdmin, params);
+        return await handleUpdateStudentProgress(supabaseAdmin, { ...params, schoolId });
       case 'update_student_number':
-        return await handleUpdateStudentNumber(supabaseAdmin, params);
+        return await handleUpdateStudentNumber(supabaseAdmin, { ...params, schoolId });
       case 'update_student_date':
-        return await handleUpdateStudentDate(supabaseAdmin, params);
+        return await handleUpdateStudentDate(supabaseAdmin, { ...params, schoolId });
+      case 'update_progress_item':
+        return await handleUpdateProgressItem(supabaseAdmin, params);
       case 'hide_progress_item':
         return await handleHideProgressItem(supabaseAdmin, params);
       case 'delete_progress_item':
@@ -392,6 +455,28 @@ async function handleCreateProgressItem(
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+  return NextResponse.json({ data });
+}
+
+async function handleUpdateProgressItem(
+  supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
+  params: { itemId: string; updates: Record<string, unknown> }
+) {
+  const allowed = ['name', 'column_type', 'deadline', 'auto_source', 'sort_order', 'column_group'];
+  const filtered: Record<string, unknown> = {};
+  for (const key of allowed) {
+    if (key in params.updates) filtered[key] = params.updates[key];
+  }
+  filtered.updated_at = new Date().toISOString();
+
+  const { data, error } = await supabaseAdmin
+    .from('course_prep_progress_items')
+    .update(filtered)
+    .eq('id', params.itemId)
+    .select()
+    .single();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ data });
 }
 
