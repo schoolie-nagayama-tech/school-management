@@ -307,16 +307,6 @@ export async function linkResponseToStudent(
     }
   }
 
-  // 講習進捗の面談申込連携: soudanフォーム紐付け時に「面談申込・面談日決定」を自動完了
-  if (response.form_type === 'soudan') {
-    try {
-      const { syncSoudanToProgress } = await import('./courseProgressSync');
-      await syncSoudanToProgress(response.school_id, studentId);
-    } catch (syncError) {
-      console.warn('Failed to sync soudan to course progress:', syncError);
-    }
-  }
-
   // Billing auto-sync: if form type has a linked billing item, auto-reflect
   // 判定基準: response.created_at が請求期間の start_date〜end_date 内
   try {
