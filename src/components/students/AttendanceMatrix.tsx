@@ -201,7 +201,7 @@ export function AttendanceMatrix({ studentId, schoolId, studentGrade, canEdit, o
           {subjects90.length > 0 && (
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-[10px] text-gray-400 font-medium w-[36px] flex-shrink-0">90分</span>
-              {subjects90.map((sub, idx) => {
+              {subjects90.map((sub) => {
                 const color = getSubjectColor(sub.id, subjects.indexOf(sub));
                 return (
                   <div
@@ -219,7 +219,7 @@ export function AttendanceMatrix({ studentId, schoolId, studentGrade, canEdit, o
           {subjects45.length > 0 && (
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-[10px] text-gray-400 font-medium w-[36px] flex-shrink-0">45分</span>
-              {subjects45.map((sub, idx) => {
+              {subjects45.map((sub) => {
                 const color = getSubjectColor(sub.id, subjects.indexOf(sub));
                 return (
                   <div
