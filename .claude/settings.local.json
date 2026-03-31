@@ -133,7 +133,9 @@
       "Bash(ls \"C:\\\\Users\\\\ytaka\\\\Desktop\\\\student-management\\\\src\\\\app\\\\api\\\\courses\"\" 2>/dev/null || echo \"no dir \")",
       "Bash(grep -l \"CREATE TABLE.*schedule_regular_patterns\\\\|CREATE TABLE.*students\" /c/Users/ytaka/Desktop/student-management/supabase/migrations/*.sql)",
       "Bash(grep -n \"CREATE TABLE IF NOT EXISTS students\" /c/Users/ytaka/Desktop/student-management/supabase/migrations/*.sql)",
-      "Bash(grep -r 'CREATE TABLE.*students' /c/Users/ytaka/Desktop/student-management/supabase --include=*.sql)"
+      "Bash(grep -r 'CREATE TABLE.*students' /c/Users/ytaka/Desktop/student-management/supabase --include=*.sql)",
+      "Bash(find /c/Users/ytaka/Desktop/student-management -type f -name *shift*)",
+      "Bash(git push:*)"
     ]
   }
 }
