@@ -47,6 +47,8 @@ export async function createScheduleTask(
     name: task.name,
     description: task.description || null,
     sortOrder: maxSort + 1,
+    startDate: task.start_date || null,
+    endDate: task.end_date || null,
   });
 
   return result.data as ScheduleTask;

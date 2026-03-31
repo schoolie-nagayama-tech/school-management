@@ -607,7 +607,7 @@ async function handleUpdateStudentDate(
 async function handleCreateScheduleTask(
   supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
   schoolId: string,
-  params: { season: string; year: number; majorCategory: string; name: string; description?: string; sortOrder: number }
+  params: { season: string; year: number; majorCategory: string; name: string; description?: string; sortOrder: number; startDate?: string | null; endDate?: string | null }
 ) {
   const { data, error } = await supabaseAdmin
     .from('course_prep_schedule_tasks')
@@ -619,6 +619,8 @@ async function handleCreateScheduleTask(
       name: params.name,
       description: params.description || null,
       sort_order: params.sortOrder,
+      ...(params.startDate ? { start_date: params.startDate } : {}),
+      ...(params.endDate ? { end_date: params.endDate } : {}),
     })
     .select()
     .single();
