@@ -43,12 +43,29 @@ import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
-// 現在の期を推定
-function getCurrentSeason(): SeasonType {
+// localStorage共通キー（工程表と共有）
+const STORAGE_KEY = 'course_prep_season_year';
+
+function getDefaultSeason(): SeasonType {
   const month = new Date().getMonth() + 1;
   if (month >= 2 && month <= 5) return 'spring';
   if (month >= 6 && month <= 9) return 'summer';
   return 'winter';
+}
+
+function loadSavedSeasonYear(): { season: SeasonType; year: number } {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.season && parsed.year) return parsed;
+    }
+  } catch { /* ignore */ }
+  return { season: getDefaultSeason(), year: new Date().getFullYear() };
+}
+
+function saveSavedSeasonYear(season: SeasonType, year: number) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ season, year })); } catch { /* ignore */ }
 }
 
 export default function CourseProgressPage() {
@@ -62,9 +79,19 @@ export default function CourseProgressPage() {
     profile?.role === 'owner' ||
     profile?.role === 'admin';
 
-  // 期・年選択
-  const [season, setSeason] = useState<SeasonType>(getCurrentSeason());
-  const [year, setYear] = useState(new Date().getFullYear());
+  // 期・年選択（localStorageから復元、工程表と共有）
+  const [season, setSeasonRaw] = useState<SeasonType>(() => loadSavedSeasonYear().season);
+  const [year, setYearRaw] = useState(() => loadSavedSeasonYear().year);
+
+  const setSeason = useCallback((s: SeasonType) => {
+    setSeasonRaw(s);
+    saveSavedSeasonYear(s, year);
+  }, [year]);
+
+  const setYear = useCallback((y: number) => {
+    setYearRaw(y);
+    saveSavedSeasonYear(season, y);
+  }, [season]);
 
   // データ
   const [students, setStudents] = useState<Student[]>([]);
