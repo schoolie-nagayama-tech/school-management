@@ -3,8 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import {
-  getPublishedRegularShiftSetting,
-  getRegularShiftSlotSettings,
+  getPublishedRegularShiftSettingPublic,
   createRegularShiftSubmission,
 } from '@/lib/api/regular-shift';
 import type { RegularShiftSetting, RegularShiftSlotSetting } from '@/types/regular-shift';
@@ -33,15 +32,13 @@ export default function RegularShiftFormPage() {
     setIsLoading(true);
     setErrorMessage('');
     try {
-      const [s, slots] = await Promise.all([
-        getPublishedRegularShiftSetting(settingId),
-        getRegularShiftSlotSettings(settingId),
-      ]);
-      if (!s) {
+      const result = await getPublishedRegularShiftSettingPublic(settingId);
+      if (!result) {
         setSetting(null);
         setIsLoading(false);
         return;
       }
+      const { setting: s, slotSettings: slots } = result;
       setSetting(s);
       setSlotSettings(slots);
       // Initialize form slots: all unchecked

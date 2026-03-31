@@ -53,6 +53,27 @@ export async function getPublishedRegularShiftSetting(
   return data as RegularShiftSetting | null;
 }
 
+/** Get published setting with slot settings via public API (no auth required) */
+export async function getPublishedRegularShiftSettingPublic(
+  settingId: string
+): Promise<{ setting: RegularShiftSetting; slotSettings: RegularShiftSlotSetting[] } | null> {
+  const res = await fetch(`/api/regular-shift/public?settingId=${encodeURIComponent(settingId)}`, {
+    cache: 'no-store',
+  });
+
+  if (res.status === 404) return null;
+
+  const payload = (await res.json().catch(() => ({}))) as {
+    error?: string;
+    setting?: RegularShiftSetting;
+    slotSettings?: RegularShiftSlotSetting[];
+  };
+
+  if (!res.ok || !payload.setting) return null;
+
+  return { setting: payload.setting, slotSettings: payload.slotSettings ?? [] };
+}
+
 export async function createRegularShiftSetting(
   input: RegularShiftSettingInsert
 ): Promise<RegularShiftSetting> {

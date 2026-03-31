@@ -3,8 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import {
-  getPublishedRegularShiftSetting,
-  getRegularShiftSlotSettings,
+  getPublishedRegularShiftSettingPublic,
   getRegularShiftSubmissionByEditToken,
   updateRegularShiftSubmission,
 } from '@/lib/api/regular-shift';
@@ -36,16 +35,16 @@ export default function RegularShiftEditPage() {
     setIsLoading(true);
     setErrorMessage('');
     try {
-      const [s, slots, submission] = await Promise.all([
-        getPublishedRegularShiftSetting(settingId),
-        getRegularShiftSlotSettings(settingId),
+      const [settingResult, submission] = await Promise.all([
+        getPublishedRegularShiftSettingPublic(settingId),
         getRegularShiftSubmissionByEditToken(editToken),
       ]);
-      if (!s || !submission) {
+      if (!settingResult || !submission) {
         setSetting(null);
         setIsLoading(false);
         return;
       }
+      const { setting: s, slotSettings: slots } = settingResult;
       setSetting(s);
       setSlotSettings(slots);
       setSubmissionId(submission.id);
