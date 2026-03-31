@@ -78,7 +78,7 @@ export function StudentDetailModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="生徒詳細" size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title="生徒詳細" size="xl">
       <div className="space-y-6">
         {/* タブ */}
         <div className="flex border-b border-[#e5e7eb] -mx-6 px-6">
