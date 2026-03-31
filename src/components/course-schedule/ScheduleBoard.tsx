@@ -15,7 +15,9 @@ interface ScheduleBoardProps {
     start_date: string | null;
     end_date: string | null;
     major_category: string;
+    sort_order: number;
   }>) => Promise<void>;
+  onReorderTasks?: (reorderedIds: { id: string; sort_order: number }[]) => Promise<void>;
   onDeleteTask: (taskId: string) => Promise<void>;
   onAddTask: (majorCategory: string, name: string, description?: string) => Promise<void>;
 }
@@ -165,17 +167,33 @@ function TaskRow({
   canEdit,
   rangeStart,
   rangeEnd,
+  isFirst,
+  isLast,
   onToggleComplete,
   onUpdateTask,
   onDeleteTask,
+  onMoveUp,
+  onMoveDown,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  isDragOver,
 }: {
   task: ScheduleTaskWithMarkers;
   canEdit: boolean;
   rangeStart: Date;
   rangeEnd: Date;
+  isFirst: boolean;
+  isLast: boolean;
   onToggleComplete: (taskId: string, completed: boolean) => Promise<void>;
   onUpdateTask: ScheduleBoardProps['onUpdateTask'];
   onDeleteTask: (taskId: string) => Promise<void>;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  onDragStart?: () => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDrop?: () => void;
+  isDragOver?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const bar = computeBarPosition(task.start_date, task.end_date, rangeStart, rangeEnd);
@@ -185,10 +203,47 @@ function TaskRow({
     <div
       className={`group border-b border-gray-50 last:border-b-0 ${
         isCompleted ? 'bg-gray-50/50' : 'hover:bg-blue-50/30'
-      } transition-colors`}
+      } ${isDragOver ? 'border-t-2 border-t-blue-400' : ''} transition-colors`}
+      draggable={canEdit}
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = 'move';
+        onDragStart?.();
+      }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        onDragOver?.(e);
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        onDrop?.();
+      }}
     >
       {/* Main row */}
       <div className="flex items-center gap-2 px-3 py-2 min-h-[40px]">
+        {/* Drag handle + move buttons */}
+        {canEdit && (
+          <div className="flex flex-col items-center shrink-0 -mr-1">
+            <button
+              onClick={onMoveUp}
+              disabled={isFirst}
+              className="text-[9px] text-gray-300 hover:text-gray-500 disabled:opacity-0 leading-none p-0"
+              title="上に移動"
+            >
+              ▲
+            </button>
+            <span className="cursor-grab active:cursor-grabbing text-gray-300 text-[10px] leading-none select-none" title="ドラッグで並べ替え">⠿</span>
+            <button
+              onClick={onMoveDown}
+              disabled={isLast}
+              className="text-[9px] text-gray-300 hover:text-gray-500 disabled:opacity-0 leading-none p-0"
+              title="下に移動"
+            >
+              ▼
+            </button>
+          </div>
+        )}
+
         {/* Checkbox */}
         {canEdit ? (
           <input
@@ -518,6 +573,7 @@ function CategorySection({
   rangeEnd,
   onToggleComplete,
   onUpdateTask,
+  onReorderTasks,
   onDeleteTask,
   onAddTask,
 }: {
@@ -528,13 +584,55 @@ function CategorySection({
   rangeEnd: Date;
   onToggleComplete: ScheduleBoardProps['onToggleComplete'];
   onUpdateTask: ScheduleBoardProps['onUpdateTask'];
+  onReorderTasks?: ScheduleBoardProps['onReorderTasks'];
   onDeleteTask: ScheduleBoardProps['onDeleteTask'];
   onAddTask: ScheduleBoardProps['onAddTask'];
 }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [dragSourceId, setDragSourceId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
   const completed = tasks.filter((t) => t.is_completed).length;
   const total = tasks.length;
   const progress = total > 0 ? completed / total : 0;
+
+  const handleSwap = async (indexA: number, indexB: number) => {
+    if (indexA < 0 || indexB < 0 || indexA >= tasks.length || indexB >= tasks.length) return;
+    if (!onReorderTasks) return;
+    const taskA = tasks[indexA];
+    const taskB = tasks[indexB];
+    await onReorderTasks([
+      { id: taskA.id, sort_order: taskB.sort_order },
+      { id: taskB.id, sort_order: taskA.sort_order },
+    ]);
+  };
+
+  const handleDrop = async (targetId: string) => {
+    if (!dragSourceId || dragSourceId === targetId || !onReorderTasks) {
+      setDragSourceId(null);
+      setDragOverId(null);
+      return;
+    }
+    const sourceIdx = tasks.findIndex((t) => t.id === dragSourceId);
+    const targetIdx = tasks.findIndex((t) => t.id === targetId);
+    if (sourceIdx === -1 || targetIdx === -1) {
+      setDragSourceId(null);
+      setDragOverId(null);
+      return;
+    }
+
+    // Recompute sort_order for all tasks in new order
+    const reordered = [...tasks];
+    const [moved] = reordered.splice(sourceIdx, 1);
+    reordered.splice(targetIdx, 0, moved);
+
+    const updates = reordered.map((t, i) => ({
+      id: t.id,
+      sort_order: i + 1,
+    }));
+    await onReorderTasks(updates);
+    setDragSourceId(null);
+    setDragOverId(null);
+  };
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -571,16 +669,27 @@ function CategorySection({
       {/* Tasks list */}
       {!collapsed && (
         <div className="border-t border-gray-100">
-          {tasks.map((task) => (
+          {tasks.map((task, idx) => (
             <TaskRow
               key={task.id}
               task={task}
               canEdit={canEdit}
               rangeStart={rangeStart}
               rangeEnd={rangeEnd}
+              isFirst={idx === 0}
+              isLast={idx === tasks.length - 1}
               onToggleComplete={onToggleComplete}
               onUpdateTask={onUpdateTask}
               onDeleteTask={onDeleteTask}
+              onMoveUp={() => handleSwap(idx, idx - 1)}
+              onMoveDown={() => handleSwap(idx, idx + 1)}
+              onDragStart={() => setDragSourceId(task.id)}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOverId(task.id);
+              }}
+              onDrop={() => handleDrop(task.id)}
+              isDragOver={dragOverId === task.id && dragSourceId !== task.id}
             />
           ))}
           {canEdit && (
@@ -640,6 +749,7 @@ export function ScheduleBoard({
   year,
   onToggleComplete,
   onUpdateTask,
+  onReorderTasks,
   onDeleteTask,
   onAddTask,
 }: ScheduleBoardProps) {
@@ -710,6 +820,7 @@ export function ScheduleBoard({
           rangeEnd={rangeEnd}
           onToggleComplete={onToggleComplete}
           onUpdateTask={onUpdateTask}
+          onReorderTasks={onReorderTasks}
           onDeleteTask={onDeleteTask}
           onAddTask={onAddTask}
         />

@@ -180,6 +180,7 @@ export default function CourseSchedulePage() {
         start_date: string | null;
         end_date: string | null;
         major_category: string;
+        sort_order: number;
       }>
     ) => {
       const ids = getSelectedSchoolIds();
@@ -260,6 +261,35 @@ export default function CourseSchedulePage() {
         );
       } catch (err) {
         console.error('Error deleting marker:', err);
+        fetchData();
+      }
+    },
+    [fetchData, getSelectedSchoolIds]
+  );
+
+  // タスク並べ替え
+  const handleReorderTasks = useCallback(
+    async (reorderedIds: { id: string; sort_order: number }[]) => {
+      const ids = getSelectedSchoolIds();
+      if (ids.length === 0) return;
+
+      // Optimistic update
+      setTasks((prev) => {
+        const updated = prev.map((t) => {
+          const match = reorderedIds.find((r) => r.id === t.id);
+          return match ? { ...t, sort_order: match.sort_order } : t;
+        });
+        return updated.sort((a, b) => a.sort_order - b.sort_order);
+      });
+
+      try {
+        await Promise.all(
+          reorderedIds.map((r) =>
+            updateScheduleTask(r.id, { sort_order: r.sort_order }, ids[0])
+          )
+        );
+      } catch (err) {
+        console.error('Error reordering tasks:', err);
         fetchData();
       }
     },
@@ -512,6 +542,7 @@ export default function CourseSchedulePage() {
             year={year}
             onToggleComplete={handleToggleComplete}
             onUpdateTask={handleUpdateTask}
+            onReorderTasks={handleReorderTasks}
             onDeleteTask={handleDeleteTask}
             onAddTask={handleAddTask}
           />
