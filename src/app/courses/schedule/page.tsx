@@ -318,6 +318,8 @@ export default function CourseSchedulePage() {
               startDate={dateRange.start}
               endDate={dateRange.end}
               onChangeRange={(start, end) => setDateRange({ start, end })}
+              season={season}
+              year={year}
             />
           </div>
           <div className="flex items-center gap-2">

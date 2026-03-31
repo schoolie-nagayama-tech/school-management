@@ -2,7 +2,7 @@
 -- notification_emails TEXT[] 列を追加し、既存の notification_email を配列に移行
 
 ALTER TABLE schools
-  ADD COLUMN notification_emails TEXT[] NOT NULL DEFAULT '{}';
+  ADD COLUMN IF NOT EXISTS notification_emails TEXT[] NOT NULL DEFAULT '{}';
 
 -- 既存の single email を配列の先頭要素として移行
 UPDATE schools

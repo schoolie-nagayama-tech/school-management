@@ -359,13 +359,16 @@ async function handleInitProgressTemplate(
     .eq('season', season)
     .eq('year', year);
 
-  const insertData = items.map((item) => ({
+  const insertData = items.map((item: { name: string; column_type: string; sort_order: number; column_group?: string; auto_source?: string; manager_only?: boolean }) => ({
     school_id: schoolId,
     season,
     year,
     name: item.name,
     column_type: item.column_type || 'check',
     sort_order: item.sort_order,
+    ...(item.column_group ? { column_group: item.column_group } : {}),
+    ...(item.auto_source ? { auto_source: item.auto_source } : {}),
+    ...(item.manager_only !== undefined ? { manager_only: item.manager_only } : {}),
   }));
 
   const { error: insertError } = await supabaseAdmin
