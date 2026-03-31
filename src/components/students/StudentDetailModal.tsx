@@ -5,13 +5,11 @@ import Link from 'next/link';
 import { Modal, Button } from '@/components/ui';
 import { getStudentWithSubjects } from '@/lib/api/subjects';
 import { getDefaultSchoolId } from '@/lib/api/schools';
-import { getRegularPatterns } from '@/lib/api/schedule';
 import { getStudentTextbooks } from '@/lib/api/ordering';
 import type { Student, Subject } from '@/types/database';
 import { GRADE_LABELS, STATUS_LABELS, STATUS_COLORS, ORDER_STATUS_LABELS } from '@/types/database';
-import { DAY_OF_WEEK_LABELS, SCHEDULE_PERIOD_LABELS } from '@/types/schedule';
-import type { ScheduleRegularPattern } from '@/types/schedule';
 import { InterviewList } from './InterviewList';
+import { AttendanceMatrix } from './AttendanceMatrix';
 import { useAuth } from '@/contexts/AuthContext';
 import { Calendar } from 'lucide-react';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -21,8 +19,6 @@ interface StudentDetailModalProps {
   student: Student | null;
   onClose: () => void;
   onEdit: (student: Student) => void;
-  /** 通塾日程をモーダルで直接開く（未指定の場合は従来のリンク） */
-  onOpenSchedule?: (student: Student) => void;
   /** 削除（論理削除） */
   onDelete?: (student: Student) => Promise<void>;
 }
@@ -34,7 +30,6 @@ export function StudentDetailModal({
   student,
   onClose,
   onEdit,
-  onOpenSchedule,
   onDelete,
 }: StudentDetailModalProps) {
   const { profile } = useAuth();
@@ -42,8 +37,6 @@ export function StudentDetailModal({
   const isTeacher = profile?.role === 'teacher';
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [textbooks, setTextbooks] = useState<Awaited<ReturnType<typeof getStudentTextbooks>>>([]);
-  const [schedulePatterns, setSchedulePatterns] = useState<ScheduleRegularPattern[]>([]);
-  const [scheduleLoading, setScheduleLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('basic');
   const schoolId = getDefaultSchoolId();
@@ -77,17 +70,6 @@ export function StudentDetailModal({
     }
   }, [isOpen, student]);
 
-  useEffect(() => {
-    if (isOpen && student && activeTab === 'schedule' && student.school_id) {
-      setScheduleLoading(true);
-      getRegularPatterns(student.school_id, { studentId: student.id })
-        .then(setSchedulePatterns)
-        .catch(() => setSchedulePatterns([]))
-        .finally(() => setScheduleLoading(false));
-    } else if (!isOpen || activeTab !== 'schedule') {
-      setSchedulePatterns([]);
-    }
-  }, [isOpen, student, activeTab]);
 
   if (!student) return null;
 
@@ -296,52 +278,20 @@ export function StudentDetailModal({
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-[#0d0d0d]">通塾日程</h3>
-              {onOpenSchedule ? (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => onOpenSchedule(student)}
-                >
+              <Link
+                href={`/schedule/regular-patterns?studentId=${student.id}&schoolId=${student.school_id ?? schoolId}`}
+              >
+                <Button variant="secondary" size="sm">
                   <Calendar className="mr-2 h-4 w-4" />
-                  通塾日程を編集
+                  詳細編集
                 </Button>
-              ) : (
-                <Link
-                  href={`/schedule/regular-patterns?studentId=${student.id}&schoolId=${student.school_id ?? schoolId}`}
-                >
-                  <Button variant="secondary" size="sm">
-                    <Calendar className="mr-2 h-4 w-4" />
-                    通塾日程を編集
-                  </Button>
-                </Link>
-              )}
+              </Link>
             </div>
-            {scheduleLoading ? (
-              <p className="text-sm text-[#2a2a2a]">読み込み中...</p>
-            ) : schedulePatterns.length === 0 ? (
-              <p className="text-sm text-[#2a2a2a]/60">通塾日程が登録されていません。上の「通塾日程を編集」から登録できます。</p>
-            ) : (
-              <ul className="space-y-2 border rounded-md p-3 bg-[#eff0f3]/50">
-                {schedulePatterns.map((p) => (
-                  <li key={p.id} className="text-sm text-[#0d0d0d] flex flex-wrap gap-x-3 gap-y-1">
-                    <span>{DAY_OF_WEEK_LABELS[p.day_of_week] ?? p.day_of_week}</span>
-                    <span>
-                      {p.time_slot
-                        ? `${p.time_slot.slot_number}限 ${p.time_slot.start_time?.slice(0, 5)}-${p.time_slot.end_time?.slice(0, 5)}`
-                        : '—'}
-                    </span>
-                    <span className="text-[#2a2a2a]">
-                      {p.teacher?.display_name || p.teacher?.email || '—'}
-                    </span>
-                    <span className="text-[#2a2a2a]">
-                      <span className="inline-flex px-2 py-0.5 text-xs rounded bg-[#ff8e3c]/20 border border-[#ff8e3c]/40">
-                        {SCHEDULE_PERIOD_LABELS[p.period_type]}
-                      </span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <AttendanceMatrix
+              studentId={student.id}
+              schoolId={student.school_id ?? schoolId}
+              canEdit={!isTeacher}
+            />
           </div>
         )}
 

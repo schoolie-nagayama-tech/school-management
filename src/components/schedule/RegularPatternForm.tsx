@@ -345,7 +345,7 @@ export function RegularPatternForm({
               <p className="text-xs text-[var(--paragraph-light)]">科目を選択すると、担当可能な講師のみ表示されます</p>
             ) : null}
             <Select
-              value={form.teacher_id}
+              value={form.teacher_id ?? undefined}
               onValueChange={(v) => setForm({ ...form, teacher_id: v })}
             >
               <SelectTrigger>

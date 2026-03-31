@@ -129,7 +129,7 @@ export default function RegularPatternsPage() {
 
   const handleSave = async (form: ScheduleRegularPatternFormData) => {
     if (!selectedSchoolId) return;
-    if (!canTeacherTeachSubjects(form.teacher_id, form.subject_ids || [])) {
+    if (form.teacher_id && !canTeacherTeachSubjects(form.teacher_id, form.subject_ids || [])) {
       toastError('この講師は選択した科目を指導できません。');
       return;
     }

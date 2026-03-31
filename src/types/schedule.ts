@@ -63,7 +63,7 @@ export interface ScheduleRegularPattern {
   student_id: string;
   day_of_week: number;
   time_slot_id: string;
-  teacher_id: string;
+  teacher_id: string | null;
   subject_ids: string[];
   seat_label: string | null;
   period_type: SchedulePeriodType;
@@ -73,7 +73,7 @@ export interface ScheduleRegularPattern {
   // リレーション
   student?: { id: string; last_name: string; first_name: string; grade: number };
   time_slot?: ScheduleTimeSlot;
-  teacher?: { id: string; display_name: string | null; email: string | null };
+  teacher?: { id: string; display_name: string | null; email: string | null } | null;
   subjects?: { id: string; name: string }[];
 }
 
@@ -81,7 +81,7 @@ export interface ScheduleRegularPatternFormData {
   student_id: string;
   day_of_week: number;
   time_slot_id: string;
-  teacher_id: string;
+  teacher_id: string | null;
   subject_ids: string[];
   seat_label: string;
   period_type: SchedulePeriodType;

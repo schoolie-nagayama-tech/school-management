@@ -395,7 +395,9 @@ export async function createRegularPattern(
   schoolId: string,
   form: ScheduleRegularPatternFormData
 ): Promise<ScheduleRegularPattern> {
-  await ensureUserIsTeacher(form.teacher_id);
+  if (form.teacher_id) {
+    await ensureUserIsTeacher(form.teacher_id);
+  }
   const timeSlot = await getTimeSlotById(form.time_slot_id);
   if (timeSlot) {
     const conflict = await checkStudentTimeConflict(
@@ -458,7 +460,7 @@ export async function updateRegularPattern(
     }
   }
 
-  if (form.teacher_id !== undefined) {
+  if (form.teacher_id !== undefined && form.teacher_id !== null) {
     await ensureUserIsTeacher(form.teacher_id);
   }
   const updatePayload: Record<string, unknown> = {};
@@ -608,7 +610,7 @@ export async function generateWeeklySchedule(
   const entriesMap = new Map<string, EntryRow>();
 
   for (const p of patterns) {
-    if (!p.time_slot) continue;
+    if (!p.time_slot || !p.teacher_id) continue; // 講師未設定のパターンはスケジュール生成対象外
     for (let d = 0; d < 7; d++) {
       const dDate = new Date(weekStart);
       dDate.setUTCDate(weekStart.getUTCDate() + d);

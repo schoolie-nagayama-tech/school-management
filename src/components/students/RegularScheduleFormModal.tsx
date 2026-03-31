@@ -94,7 +94,7 @@ export function RegularScheduleFormModal({
     if (pattern) {
       setDayOfWeek(pattern.day_of_week);
       setTimeSlotId(pattern.time_slot_id);
-      setTeacherId(pattern.teacher_id);
+      setTeacherId(pattern.teacher_id ?? '');
       setSubjectIds(pattern.subject_ids ?? []);
       setPeriodType(pattern.period_type ?? 'regular');
     } else {

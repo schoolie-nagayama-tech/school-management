@@ -918,7 +918,6 @@ export default function StudentsPage() {
           setSelectedStudent(null);
         }}
         onEdit={handleOpenEditModal}
-        onOpenSchedule={!isTeacher ? handleOpenSchedule : undefined}
         onDelete={
           !isTeacher
             ? async (student) => {
