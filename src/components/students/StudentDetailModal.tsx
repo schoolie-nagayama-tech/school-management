@@ -3,10 +3,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Modal, Button } from '@/components/ui';
-import { getStudentWithSubjects } from '@/lib/api/subjects';
 import { getDefaultSchoolId } from '@/lib/api/schools';
 import { getStudentTextbooks } from '@/lib/api/ordering';
-import type { Student, Subject } from '@/types/database';
+import type { Student } from '@/types/database';
 import { GRADE_LABELS, STATUS_LABELS, STATUS_COLORS, ORDER_STATUS_LABELS } from '@/types/database';
 import { InterviewList } from './InterviewList';
 import { AttendanceMatrix } from './AttendanceMatrix';
@@ -35,7 +34,6 @@ export function StudentDetailModal({
   const { profile } = useAuth();
   const { confirm, ConfirmDialog } = useConfirm();
   const isTeacher = profile?.role === 'teacher';
-  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [textbooks, setTextbooks] = useState<Awaited<ReturnType<typeof getStudentTextbooks>>>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('basic');
@@ -53,9 +51,6 @@ export function StudentDetailModal({
     if (isOpen && student) {
       setIsLoading(true);
       Promise.all([
-        getStudentWithSubjects(student.id).then((data) => {
-          if (data) setSubjects(data.subjects);
-        }),
         getStudentTextbooks(student.id).then(setTextbooks).catch(() => setTextbooks([])),
       ])
         .catch((error) => {
@@ -65,7 +60,6 @@ export function StudentDetailModal({
           setIsLoading(false);
         });
     } else {
-      setSubjects([]);
       setTextbooks([]);
     }
   }, [isOpen, student]);
@@ -161,33 +155,6 @@ export function StudentDetailModal({
             </div>
           </div>
         )}
-
-        {/* 受講科目 */}
-        <div>
-          <h3 className="text-sm font-semibold text-[#1f2937] mb-3">受講科目</h3>
-          {isLoading ? (
-            <p className="text-sm text-[#4b5563]">読み込み中...</p>
-          ) : subjects.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {subjects.map((subject) => (
-                <span
-                  key={subject.id}
-                  className="inline-flex px-3 py-1 text-sm bg-[#3b82f6]/20 text-[#1f2937] rounded-full border border-[#e5e7eb]"
-                >
-                  {subject.name}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-[#4b5563]/60">受講科目が設定されていません</p>
-          )}
-          {student.subject_other && (
-            <div className="mt-2">
-              <label className="text-xs text-[#4b5563]">その他</label>
-              <p className="mt-1 text-sm text-[#1f2937]">{student.subject_other}</p>
-            </div>
-          )}
-        </div>
 
         {/* 所持教材 */}
         <div>

@@ -2,9 +2,11 @@
 
 import type { Student, Subject } from '@/types/database';
 import { GRADE_LABELS, STATUS_LABELS, STATUS_COLORS } from '@/types/database';
+import type { SchedulePatternSummary } from '@/lib/api/students';
+import { DAY_OF_WEEK_LABELS } from '@/types/schedule';
 
 interface StudentTableProps {
-  students: (Student & { subjects?: Subject[] })[];
+  students: (Student & { subjects?: Subject[]; schedulePatterns?: SchedulePatternSummary[] })[];
   onEdit?: (student: Student) => void;
   onDelete?: (student: Student) => void;
   onRowClick?: (student: Student) => void;
@@ -129,7 +131,7 @@ export function StudentTable({
                 学校名
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                受講科目
+                通塾日程
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 状況
@@ -141,7 +143,7 @@ export function StudentTable({
           </thead>
           <tbody className="divide-y divide-gray-100">
             {students.map((student) => {
-              const subjectNames = student.subjects?.map((s) => s.name).join(', ') || '';
+              const schedulePatterns = student.schedulePatterns || [];
               const isChecked = selectable && selectedIds.has(student.id);
               return (
                 <tr
@@ -178,7 +180,21 @@ export function StudentTable({
                   {student.school_name || <span className="text-[#4b5563]/30">-</span>}
                 </td>
                 <td className="px-4 py-3 text-sm text-[#4b5563]">
-                  {subjectNames || <span className="text-[#4b5563]/30">-</span>}
+                  {schedulePatterns.length > 0 ? (
+                    <div className="flex flex-wrap gap-x-2 gap-y-0.5 items-center">
+                      {schedulePatterns.map((p, i) => (
+                        <span key={i} className="inline-flex text-xs">
+                          <span className="text-[#6b7280]">{DAY_OF_WEEK_LABELS[p.day_of_week]}</span>
+                          {p.subject_names?.[0] && (
+                            <span className="text-[#3b82f6] ml-0.5">{p.subject_names[0]}</span>
+                          )}
+                        </span>
+                      ))}
+                      <span className="text-[10px] text-[#9ca3af]">週{schedulePatterns.length}回</span>
+                    </div>
+                  ) : (
+                    <span className="text-[#4b5563]/30">-</span>
+                  )}
                 </td>
                 <td className="px-4 py-3">
                   <span

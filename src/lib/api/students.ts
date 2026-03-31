@@ -40,10 +40,17 @@ async function logStudentAction(
 
 // 生徒一覧を取得（科目情報も含む）
 // 並び順: 1) status (active → inactive → withdrawn), 2) grade, 3) kana, 4) name, 5) student_code
+/** 通塾日程サマリ（一覧表示用） */
+export interface SchedulePatternSummary {
+  day_of_week: number;
+  subject_ids: string[];
+  subject_names: string[];
+}
+
 export async function getStudents(
   searchQuery?: string,
   schoolIds?: string[] // 複数教室IDを指定可能（未指定の場合はデフォルト教室）
-): Promise<(Student & { subjects: Subject[] })[]> {
+): Promise<(Student & { subjects: Subject[]; schedulePatterns: SchedulePatternSummary[] })[]> {
   // schoolIdsが指定されていない場合はデフォルト教室を使用
   const targetSchoolIds = schoolIds && schoolIds.length > 0 
     ? schoolIds 
@@ -88,79 +95,75 @@ export async function getStudents(
   const statusOrder: Record<string, number> = { active: 1, inactive: 2, withdrawn: 3 };
   studentsTyped.sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
 
-  // 各生徒の科目を取得
   const studentIds = studentsTyped.map((s) => s.id);
+  const emptyResult = () => studentsTyped.map((student) => ({
+    ...student,
+    subjects: [] as Subject[],
+    schedulePatterns: [] as SchedulePatternSummary[],
+  }));
 
-  const { data: studentSubjects, error: ssError } = await supabase
-    .from('student_subjects')
-    .select('student_id, subject_id')
-    .in('student_id', studentIds);
+  // 受講科目と通塾日程パターンを並列取得
+  const [ssResult, patternsResult] = await Promise.all([
+    supabase.from('student_subjects').select('student_id, subject_id').in('student_id', studentIds),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from('schedule_regular_patterns')
+      .select('student_id, day_of_week, subject_ids')
+      .in('student_id', studentIds)
+      .eq('period_type', 'regular')
+      .eq('is_active', true)
+      .order('day_of_week', { ascending: true }),
+  ]);
 
-  if (ssError) {
-    console.error('Error fetching student subjects:', ssError);
-    // 科目取得に失敗しても生徒データは返す
-    return studentsTyped.map((student) => ({
-      ...student,
-      subjects: [] as Subject[],
-    }));
+  if (ssResult.error) {
+    console.error('Error fetching student subjects:', ssResult.error);
+    return emptyResult();
   }
+  const studentSubjects = ssResult.data || [];
 
-  if (!studentSubjects || studentSubjects.length === 0) {
-    return studentsTyped.map((student) => ({
-      ...student,
-      subjects: [] as Subject[],
-    }));
-  }
+  // 全科目IDを収集（受講科目＋通塾日程の科目）
+  const allSubjectIdSet = new Set<string>();
+  studentSubjects.forEach((ss) => { if (ss.subject_id) allSubjectIdSet.add(ss.subject_id); });
+  const rawPatterns = (patternsResult.data || []) as { student_id: string; day_of_week: number; subject_ids: string[] }[];
+  rawPatterns.forEach((p) => { (p.subject_ids || []).forEach((id: string) => allSubjectIdSet.add(id)); });
 
-  // 科目IDを取得（重複を除去）
-  const subjectIdSet = new Set<string>();
-  studentSubjects.forEach((ss) => {
-    if (ss.subject_id) {
-      subjectIdSet.add(ss.subject_id);
-    }
-  });
-  const subjectIds = Array.from(subjectIdSet);
-
-  const { data: subjects, error: subjectsError } = await supabase
-    .from('subjects')
-    .select('*')
-    .in('id', subjectIds);
-
-  if (subjectsError) {
-    console.error('Error fetching subjects:', subjectsError);
-    // 科目取得に失敗しても生徒データは返す
-    return studentsTyped.map((student) => ({
-      ...student,
-      subjects: [] as Subject[],
-    }));
-  }
-
-  const subjectsTyped = (subjects || []) as Subject[];
-
-  // 生徒と科目を関連付け
+  // 全科目を一括取得
+  const allSubjectIds = Array.from(allSubjectIdSet);
   const subjectsMap = new Map<string, Subject>();
-  subjectsTyped.forEach((s) => {
-    subjectsMap.set(s.id, s);
-  });
+  if (allSubjectIds.length > 0) {
+    const { data: subjects } = await supabase.from('subjects').select('*').in('id', allSubjectIds);
+    ((subjects || []) as Subject[]).forEach((s) => subjectsMap.set(s.id, s));
+  }
 
+  // 生徒×受講科目マップ
   const studentSubjectsMap = new Map<string, string[]>();
-
   studentSubjects.forEach((ss) => {
     if (ss.student_id && ss.subject_id) {
-      if (!studentSubjectsMap.has(ss.student_id)) {
-        studentSubjectsMap.set(ss.student_id, []);
-      }
+      if (!studentSubjectsMap.has(ss.student_id)) studentSubjectsMap.set(ss.student_id, []);
       studentSubjectsMap.get(ss.student_id)!.push(ss.subject_id);
     }
   });
 
+  // 生徒×通塾日程パターンマップ
+  const patternsMap = new Map<string, SchedulePatternSummary[]>();
+  for (const p of rawPatterns) {
+    if (!patternsMap.has(p.student_id)) patternsMap.set(p.student_id, []);
+    const sIds = p.subject_ids || [];
+    patternsMap.get(p.student_id)!.push({
+      day_of_week: p.day_of_week,
+      subject_ids: sIds,
+      subject_names: sIds
+        .map((id: string) => subjectsMap.get(id)?.name)
+        .filter((n: string | undefined): n is string => !!n),
+    });
+  }
+
   return studentsTyped.map((student) => {
-    const subjectIds = studentSubjectsMap.get(student.id) || [];
+    const sIds = studentSubjectsMap.get(student.id) || [];
     return {
       ...student,
-      subjects: subjectIds
-        .map((id) => subjectsMap.get(id))
-        .filter((s): s is Subject => s !== undefined),
+      subjects: sIds.map((id) => subjectsMap.get(id)).filter((s): s is Subject => s !== undefined),
+      schedulePatterns: patternsMap.get(student.id) || [],
     };
   });
 }
