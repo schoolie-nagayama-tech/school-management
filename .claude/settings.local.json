@@ -135,7 +135,31 @@
       "Bash(grep -n \"CREATE TABLE IF NOT EXISTS students\" /c/Users/ytaka/Desktop/student-management/supabase/migrations/*.sql)",
       "Bash(grep -r 'CREATE TABLE.*students' /c/Users/ytaka/Desktop/student-management/supabase --include=*.sql)",
       "Bash(find /c/Users/ytaka/Desktop/student-management -type f -name *shift*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(npx eslint:*)",
+      "Bash(grep -r 全体表示 /c/Users/ytaka/Desktop/student-management/src --include=*.tsx --include=*.ts)",
+      "Read(//c/Users/ytaka/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/78a67ec3-a310-4c6f-8fef-ed661951c692/cf655715-00cf-4bb1-b06f-df19515c00ec/skills/xlsx/**)",
+      "Bash(where python:*)",
+      "Bash(pip install:*)",
+      "Bash(node -e \"try{require\\(''xlsx''\\);console.log\\(''xlsx available''\\)}catch\\(e\\){console.log\\(''xlsx not available''\\)}\")",
+      "Bash(npx supabase:*)",
+      "Bash(ls \"C:\\\\Users\\\\ytaka\\\\Desktop\\\\student-management\\\\supabase\\\\migrations\\\\20260312\"*)",
+      "Bash(for v:*)",
+      "Bash(do npx:*)",
+      "Bash(mv 20260312_schools_notification_emails.sql 20260312010000_schools_notification_emails.sql)",
+      "Bash(mv 20260312_subjects_duration_minutes.sql 20260312020000_subjects_duration_minutes.sql)",
+      "Bash(mv 20260312_subjects_elementary_add.sql 20260312030000_subjects_elementary_add.sql)",
+      "Bash(mv 20260312_subjects_high_add.sql 20260312040000_subjects_high_add.sql)",
+      "Bash(mv 20260319_storage_public_assets.sql 20260319010000_storage_public_assets.sql)",
+      "Bash(mv 20260323_form_responses_form_id.sql 20260323010000_form_responses_form_id.sql)",
+      "Bash(mv 20260323_regular_shift.sql 20260323020000_regular_shift.sql)",
+      "Bash(mv 20260323_student_logs.sql 20260323030000_student_logs.sql)",
+      "Bash(mv 20260324_billing_quantity.sql 20260324010000_billing_quantity.sql)",
+      "Bash(mv 20260312_schools_is_demo.sql 20260312050000_schools_is_demo.sql)",
+      "Bash(mv 20260319_schools_logo_url.sql 20260319020000_schools_logo_url.sql)",
+      "Bash(mv 20260323_embed_tokens.sql 20260323040000_embed_tokens.sql)",
+      "Bash(mv 20260324_billing_inventory_ordering.sql 20260324030000_billing_inventory_ordering.sql)",
+      "Bash(mv 20260325_billing_extended.sql 20260325010000_billing_extended.sql)"
     ]
   }
 }

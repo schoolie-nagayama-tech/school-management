@@ -294,9 +294,13 @@ export default function CourseProgressPage() {
         await upsertCoursePrepPeriod(schoolIds[0], season, year, {
           budget_koma: value,
         });
-        // 再取得
-        const updatedPeriod = await getCoursePrepPeriod(schoolIds[0], season, year);
+        // 期間とauto-valuesを再取得（期間日付変更時にcourse_sessionsが変わるため）
+        const [updatedPeriod, autoVals] = await Promise.all([
+          getCoursePrepPeriod(schoolIds[0], season, year),
+          getAutoValues(schoolIds[0], season, year),
+        ]);
         setPeriod(updatedPeriod);
+        setAutoValuesData(autoVals);
       } catch (err) {
         console.error('Error updating budget:', err);
       }
