@@ -68,6 +68,13 @@ const settingsItems: SettingsItem[] = [
     requiresManager: true,
   },
   {
+    href: '/settings/time-slots',
+    icon: <Clock className="w-5 h-5" />,
+    label: 'コマ時間設定',
+    description: 'コマ番号・開始時刻・終了時刻の管理',
+    requiresManager: true,
+  },
+  {
     href: '/admin/settings/attendance-types',
     icon: <Clock className="w-5 h-5" />,
     label: 'コマ種別設定',

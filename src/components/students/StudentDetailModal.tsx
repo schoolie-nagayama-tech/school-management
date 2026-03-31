@@ -290,6 +290,7 @@ export function StudentDetailModal({
             <AttendanceMatrix
               studentId={student.id}
               schoolId={student.school_id ?? schoolId}
+              studentGrade={student.grade}
               canEdit={!isTeacher}
             />
           </div>

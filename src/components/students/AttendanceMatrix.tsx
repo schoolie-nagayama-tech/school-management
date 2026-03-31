@@ -1,46 +1,83 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { getRegularPatterns, getTimeSlots, deleteRegularPattern } from '@/lib/api/schedule';
+import { getSubjects } from '@/lib/api/subjects';
 import type { ScheduleRegularPattern, ScheduleTimeSlot } from '@/types/schedule';
 import { DAY_OF_WEEK_LABELS, SCHEDULE_PERIOD_LABELS } from '@/types/schedule';
+import type { Subject } from '@/types/database';
 import { supabase } from '@/lib/supabase';
 
 interface AttendanceMatrixProps {
   studentId: string;
   schoolId: string;
+  studentGrade?: number;
   canEdit: boolean;
   onPatternChange?: () => void;
 }
 
-// 月〜土 (1-6)。日曜(0)は除外
+// 月〜土 (1-6)
 const WEEKDAYS = [1, 2, 3, 4, 5, 6];
 
-export function AttendanceMatrix({ studentId, schoolId, canEdit, onPatternChange }: AttendanceMatrixProps) {
+function gradeToCategory(grade: number): 'elementary' | 'middle' | 'high' {
+  if (grade <= 6) return 'elementary';
+  if (grade <= 9) return 'middle';
+  return 'high';
+}
+
+export function AttendanceMatrix({ studentId, schoolId, studentGrade, canEdit, onPatternChange }: AttendanceMatrixProps) {
   const [patterns, setPatterns] = useState<ScheduleRegularPattern[]>([]);
   const [timeSlots, setTimeSlots] = useState<ScheduleTimeSlot[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [saving, setSaving] = useState<string | null>(null); // "day-slot" key being saved
+  const [saving, setSaving] = useState<string | null>(null);
+  // セル選択メニュー
+  const [menuCell, setMenuCell] = useState<{ day: number; slotId: string } | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [pats, slots] = await Promise.all([
+      const gradeCategory = studentGrade ? gradeToCategory(studentGrade) : undefined;
+      const [pats, slots, subs] = await Promise.all([
         getRegularPatterns(schoolId, { studentId }),
         getTimeSlots(schoolId),
+        getSubjects(gradeCategory),
       ]);
       setPatterns(pats);
       setTimeSlots(slots.filter((s) => s.is_active));
+      setSubjects(subs);
     } catch (err) {
       console.error('Error fetching attendance data:', err);
     } finally {
       setIsLoading(false);
     }
-  }, [schoolId, studentId]);
+  }, [schoolId, studentId, studentGrade]);
 
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // メニュー外クリックで閉じる
+  useEffect(() => {
+    if (!menuCell) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuCell(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [menuCell]);
+
+  // 科目IDから科目名のマップ
+  const subjectMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const s of subjects) {
+      map.set(s.id, s.name);
+    }
+    return map;
+  }, [subjects]);
 
   // パターンを曜日×コマのマップにする (period_type='regular' のみ)
   const patternMap = useMemo(() => {
@@ -58,45 +95,75 @@ export function AttendanceMatrix({ studentId, schoolId, canEdit, onPatternChange
     return patterns.filter((p) => p.period_type === 'regular').length;
   }, [patterns]);
 
+  // セルクリック → メニュー表示 or 削除
   const handleCellClick = useCallback(
-    async (dayOfWeek: number, slotId: string) => {
+    (dayOfWeek: number, slotId: string) => {
       if (!canEdit) return;
       const key = `${dayOfWeek}-${slotId}`;
-      if (saving) return; // 保存中は無視
-      setSaving(key);
-
       const existing = patternMap.get(key);
+
+      if (existing) {
+        // 既存パターン → 削除確認メニュー表示
+        setMenuCell({ day: dayOfWeek, slotId });
+      } else {
+        // 空セル → 科目選択メニュー表示
+        setMenuCell({ day: dayOfWeek, slotId });
+      }
+    },
+    [canEdit, patternMap]
+  );
+
+  // 科目を選択してパターン作成
+  const handleSelectSubject = useCallback(
+    async (dayOfWeek: number, slotId: string, subjectId: string) => {
+      const key = `${dayOfWeek}-${slotId}`;
+      setSaving(key);
+      setMenuCell(null);
       try {
-        if (existing) {
-          // OFF: soft delete
-          await deleteRegularPattern(existing.id);
-        } else {
-          // ON: create pattern without teacher (teacher_id=null)
-          // Use supabase directly to avoid ensureUserIsTeacher check
-          const { error } = await (supabase as any)
-            .from('schedule_regular_patterns')
-            .insert({
-              school_id: schoolId,
-              student_id: studentId,
-              day_of_week: dayOfWeek,
-              time_slot_id: slotId,
-              teacher_id: null,
-              subject_ids: [],
-              seat_label: null,
-              period_type: 'regular',
-              is_active: true,
-            });
-          if (error) throw error;
-        }
+        const { error } = await (supabase as any)
+          .from('schedule_regular_patterns')
+          .insert({
+            school_id: schoolId,
+            student_id: studentId,
+            day_of_week: dayOfWeek,
+            time_slot_id: slotId,
+            teacher_id: null,
+            subject_ids: [subjectId],
+            seat_label: null,
+            period_type: 'regular',
+            is_active: true,
+          });
+        if (error) throw error;
         await fetchData();
         onPatternChange?.();
       } catch (err) {
-        console.error('Error toggling pattern:', err);
+        console.error('Error creating pattern:', err);
       } finally {
         setSaving(null);
       }
     },
-    [canEdit, saving, patternMap, schoolId, studentId, fetchData, onPatternChange]
+    [schoolId, studentId, fetchData, onPatternChange]
+  );
+
+  // パターン削除
+  const handleRemovePattern = useCallback(
+    async (dayOfWeek: number, slotId: string) => {
+      const key = `${dayOfWeek}-${slotId}`;
+      const existing = patternMap.get(key);
+      if (!existing) return;
+      setSaving(key);
+      setMenuCell(null);
+      try {
+        await deleteRegularPattern(existing.id);
+        await fetchData();
+        onPatternChange?.();
+      } catch (err) {
+        console.error('Error deleting pattern:', err);
+      } finally {
+        setSaving(null);
+      }
+    },
+    [patternMap, fetchData, onPatternChange]
   );
 
   if (isLoading) {
@@ -104,7 +171,7 @@ export function AttendanceMatrix({ studentId, schoolId, canEdit, onPatternChange
   }
 
   if (timeSlots.length === 0) {
-    return <p className="text-sm text-[#2a2a2a]/60">コマ時間が未設定です。スケジュール設定からコマ時間を登録してください。</p>;
+    return <p className="text-sm text-[#2a2a2a]/60">コマ時間が未設定です。設定 → コマ時間設定から登録してください。</p>;
   }
 
   return (
@@ -142,24 +209,69 @@ export function AttendanceMatrix({ studentId, schoolId, canEdit, onPatternChange
                   const pattern = patternMap.get(key);
                   const isOn = !!pattern;
                   const isSaving = saving === key;
+                  const isMenuOpen = menuCell?.day === day && menuCell?.slotId === slot.id;
+
+                  // 科目名を取得
+                  const subjectNames = pattern?.subject_ids
+                    ?.map((id) => subjectMap.get(id))
+                    .filter(Boolean) as string[] | undefined;
 
                   return (
                     <td
                       key={key}
-                      onClick={() => handleCellClick(day, slot.id)}
-                      className={`border border-gray-200 px-1 py-1 text-center transition-colors ${
+                      className={`border border-gray-200 px-1 py-1 text-center transition-colors relative ${
                         canEdit ? 'cursor-pointer hover:bg-blue-50' : ''
                       } ${isSaving ? 'opacity-50' : ''} ${
-                        isOn ? 'bg-blue-100' : 'bg-white'
+                        isOn ? 'bg-blue-50' : 'bg-white'
                       }`}
+                      onClick={() => handleCellClick(day, slot.id)}
                     >
                       {isOn && (
                         <div className="flex flex-col items-center">
-                          <span className="text-blue-600 text-[11px] font-bold">●</span>
+                          <span className="text-blue-700 text-[11px] font-medium leading-tight">
+                            {subjectNames && subjectNames.length > 0
+                              ? subjectNames.join('/')
+                              : '●'}
+                          </span>
                           {pattern.teacher?.display_name && (
-                            <span className="text-[8px] text-gray-500 truncate max-w-[44px]">
+                            <span className="text-[8px] text-gray-400 truncate max-w-[44px]">
                               {pattern.teacher.display_name}
                             </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* 科目選択メニュー */}
+                      {isMenuOpen && canEdit && (
+                        <div
+                          ref={menuRef}
+                          className="absolute z-50 top-full left-1/2 -translate-x-1/2 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[100px]"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {isOn ? (
+                            <>
+                              <button
+                                className="w-full text-left px-3 py-1.5 text-[11px] text-red-500 hover:bg-red-50"
+                                onClick={() => handleRemovePattern(day, slot.id)}
+                              >
+                                削除
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              {subjects.map((sub) => (
+                                <button
+                                  key={sub.id}
+                                  className="w-full text-left px-3 py-1.5 text-[11px] text-gray-700 hover:bg-blue-50"
+                                  onClick={() => handleSelectSubject(day, slot.id, sub.id)}
+                                >
+                                  {sub.name}
+                                </button>
+                              ))}
+                              {subjects.length === 0 && (
+                                <p className="px-3 py-1.5 text-[11px] text-gray-400">科目がありません</p>
+                              )}
+                            </>
                           )}
                         </div>
                       )}

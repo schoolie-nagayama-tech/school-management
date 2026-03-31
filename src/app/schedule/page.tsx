@@ -753,7 +753,7 @@ export default function SchedulePage() {
                   <p className="text-[var(--paragraph)] mb-4">
                     座席表を利用するには、まずコマ時間を設定してください。
                   </p>
-                  <Link href="/schedule/settings/time-slots">
+                  <Link href="/settings/time-slots">
                     <Button>コマ時間設定へ</Button>
                   </Link>
                 </CardContent>

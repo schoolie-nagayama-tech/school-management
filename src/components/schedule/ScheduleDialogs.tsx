@@ -208,7 +208,7 @@ export function ScheduleDialogs({
               className="justify-start"
               onClick={() => {
                 onScheduleSettingsChange(false);
-                router.push('/schedule/settings/time-slots');
+                router.push('/settings/time-slots');
               }}
             >
               <Settings className="mr-2 h-4 w-4" />
