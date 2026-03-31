@@ -511,6 +511,8 @@ export default function CourseSchedulePage() {
               canEdit={canEdit}
               onToggleComplete={handleToggleComplete}
               onMarkerClick={handleMarkerClick}
+              onUpdateTask={handleUpdateTask}
+              onDeleteTask={handleDeleteTask}
             />
           )
         )}

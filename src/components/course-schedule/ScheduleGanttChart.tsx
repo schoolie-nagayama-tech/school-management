@@ -11,6 +11,8 @@ interface ScheduleGanttChartProps {
   canEdit: boolean;
   onToggleComplete: (taskId: string, completed: boolean) => void;
   onMarkerClick: (taskId: string, date: string, existing?: ScheduleMarker) => void;
+  onUpdateTask?: (taskId: string, updates: Partial<{ name: string; description: string | null; start_date: string | null; end_date: string | null }>) => void;
+  onDeleteTask?: (taskId: string) => void;
 }
 
 function formatDate(d: Date): string {
@@ -26,6 +28,65 @@ function isSameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
+// インライン編集コンポーネント
+function InlineEditCell({
+  value,
+  onSave,
+  className,
+  disabled,
+}: {
+  value: string;
+  onSave: (val: string) => void;
+  className?: string;
+  disabled?: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [editing]);
+
+  useEffect(() => { setDraft(value); }, [value]);
+
+  if (disabled || !editing) {
+    return (
+      <span
+        className={`${className || ''} ${!disabled ? 'cursor-pointer hover:bg-blue-50 rounded px-0.5 -mx-0.5' : ''}`}
+        onDoubleClick={() => !disabled && setEditing(true)}
+        title={disabled ? undefined : 'ダブルクリックで編集'}
+      >
+        {value}
+      </span>
+    );
+  }
+
+  const commit = () => {
+    const trimmed = draft.trim();
+    if (trimmed && trimmed !== value) onSave(trimmed);
+    setEditing(false);
+  };
+
+  return (
+    <input
+      ref={inputRef}
+      type="text"
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') commit();
+        if (e.key === 'Escape') { setDraft(value); setEditing(false); }
+      }}
+      className="text-xs border border-blue-300 rounded px-1 py-0 w-full outline-none focus:ring-1 focus:ring-blue-400"
+    />
+  );
+}
+
 export function ScheduleGanttChart({
   tasks,
   deadlineItems = [],
@@ -34,6 +95,8 @@ export function ScheduleGanttChart({
   canEdit,
   onToggleComplete,
   onMarkerClick,
+  onUpdateTask,
+  onDeleteTask,
 }: ScheduleGanttChartProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const todayRef = useRef<HTMLDivElement>(null);
@@ -268,13 +331,29 @@ export function ScheduleGanttChart({
                         />
                       </td>
                       {/* タスク名 */}
-                      <td className="sticky left-[32px] z-10 bg-white border border-gray-200 px-2 py-1">
-                        <div className={`text-xs ${task.is_completed ? 'line-through text-gray-400' : 'text-[#1e3a5f]'}`}>
-                          {task.name}
+                      <td className="sticky left-[32px] z-10 bg-white border border-gray-200 px-2 py-1 group/task">
+                        <div className="flex items-center gap-1">
+                          <div className="flex-1 min-w-0">
+                            <InlineEditCell
+                              value={task.name}
+                              onSave={(val) => onUpdateTask?.(task.id, { name: val })}
+                              disabled={!canEdit || !onUpdateTask}
+                              className={`text-xs ${task.is_completed ? 'line-through text-gray-400' : 'text-[#1e3a5f]'}`}
+                            />
+                            {task.description && (
+                              <div className="text-[9px] text-gray-400 truncate max-w-[160px]">{task.description}</div>
+                            )}
+                          </div>
+                          {canEdit && onDeleteTask && (
+                            <button
+                              onClick={() => { if (confirm(`「${task.name}」を削除しますか？`)) onDeleteTask(task.id); }}
+                              className="text-[9px] text-red-400 hover:text-red-600 opacity-0 group-hover/task:opacity-100 transition-opacity shrink-0"
+                              title="削除"
+                            >
+                              ✕
+                            </button>
+                          )}
                         </div>
-                        {task.description && (
-                          <div className="text-[9px] text-gray-400 truncate max-w-[160px]">{task.description}</div>
-                        )}
                       </td>
                       {/* 日付セル */}
                       {dates.map((d) => {
