@@ -275,14 +275,6 @@ export default function CourseSchedulePage() {
     [fetchData, getSelectedSchoolIds]
   );
 
-  // タスク日付更新（ガントチャート用の互換ハンドラ）
-  const handleUpdateDates = useCallback(
-    async (taskId: string, startDate: string | null, endDate: string | null) => {
-      await handleUpdateTask(taskId, { start_date: startDate, end_date: endDate });
-    },
-    [handleUpdateTask]
-  );
-
   // テンプレート適用
   const handleApplyTemplate = useCallback(
     async (templateId: string) => {

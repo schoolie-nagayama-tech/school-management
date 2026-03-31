@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import type { ScheduleTaskWithMarkers, SeasonType } from '@/types/database';
 
 interface ScheduleBoardProps {
