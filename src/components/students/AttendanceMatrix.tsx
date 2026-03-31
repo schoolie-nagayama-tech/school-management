@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, DragEvent } from 'react';
 import { getRegularPatterns, getTimeSlots, deleteRegularPattern } from '@/lib/api/schedule';
 import { getSubjects } from '@/lib/api/subjects';
 import type { ScheduleRegularPattern, ScheduleTimeSlot } from '@/types/schedule';
 import { DAY_OF_WEEK_LABELS, SCHEDULE_PERIOD_LABELS } from '@/types/schedule';
 import type { Subject } from '@/types/database';
 import { supabase } from '@/lib/supabase';
+import { X } from 'lucide-react';
 
 interface AttendanceMatrixProps {
   studentId: string;
@@ -25,15 +26,33 @@ function gradeToCategory(grade: number): 'elementary' | 'middle' | 'high' {
   return 'high';
 }
 
+// 科目ごとの色
+const SUBJECT_COLORS: Record<string, { bg: string; text: string; border: string }> = {};
+const COLOR_PALETTE = [
+  { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-300' },
+  { bg: 'bg-emerald-100', text: 'text-emerald-700', border: 'border-emerald-300' },
+  { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-300' },
+  { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-300' },
+  { bg: 'bg-rose-100', text: 'text-rose-700', border: 'border-rose-300' },
+  { bg: 'bg-cyan-100', text: 'text-cyan-700', border: 'border-cyan-300' },
+  { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-300' },
+  { bg: 'bg-indigo-100', text: 'text-indigo-700', border: 'border-indigo-300' },
+];
+
+function getSubjectColor(subjectId: string, index: number) {
+  if (!SUBJECT_COLORS[subjectId]) {
+    SUBJECT_COLORS[subjectId] = COLOR_PALETTE[index % COLOR_PALETTE.length];
+  }
+  return SUBJECT_COLORS[subjectId];
+}
+
 export function AttendanceMatrix({ studentId, schoolId, studentGrade, canEdit, onPatternChange }: AttendanceMatrixProps) {
   const [patterns, setPatterns] = useState<ScheduleRegularPattern[]>([]);
   const [timeSlots, setTimeSlots] = useState<ScheduleTimeSlot[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
-  // セル選択メニュー
-  const [menuCell, setMenuCell] = useState<{ day: number; slotId: string } | null>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const [dragOverCell, setDragOverCell] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -57,18 +76,6 @@ export function AttendanceMatrix({ studentId, schoolId, studentGrade, canEdit, o
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-
-  // メニュー外クリックで閉じる
-  useEffect(() => {
-    if (!menuCell) return;
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuCell(null);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [menuCell]);
 
   // 科目IDから科目名のマップ
   const subjectMap = useMemo(() => {
@@ -95,30 +102,38 @@ export function AttendanceMatrix({ studentId, schoolId, studentGrade, canEdit, o
     return patterns.filter((p) => p.period_type === 'regular').length;
   }, [patterns]);
 
-  // セルクリック → メニュー表示 or 削除
-  const handleCellClick = useCallback(
-    (dayOfWeek: number, slotId: string) => {
+  // ドラッグ開始
+  const handleDragStart = useCallback((e: DragEvent, subjectId: string) => {
+    e.dataTransfer.setData('subjectId', subjectId);
+    e.dataTransfer.effectAllowed = 'copy';
+  }, []);
+
+  // ドラッグオーバー
+  const handleDragOver = useCallback((e: DragEvent, key: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    setDragOverCell(key);
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setDragOverCell(null);
+  }, []);
+
+  // ドロップ → パターン作成
+  const handleDrop = useCallback(
+    async (e: DragEvent, dayOfWeek: number, slotId: string) => {
+      e.preventDefault();
+      setDragOverCell(null);
       if (!canEdit) return;
+
+      const subjectId = e.dataTransfer.getData('subjectId');
+      if (!subjectId) return;
+
       const key = `${dayOfWeek}-${slotId}`;
       const existing = patternMap.get(key);
+      if (existing) return; // 既にある場合は無視
 
-      if (existing) {
-        // 既存パターン → 削除確認メニュー表示
-        setMenuCell({ day: dayOfWeek, slotId });
-      } else {
-        // 空セル → 科目選択メニュー表示
-        setMenuCell({ day: dayOfWeek, slotId });
-      }
-    },
-    [canEdit, patternMap]
-  );
-
-  // 科目を選択してパターン作成
-  const handleSelectSubject = useCallback(
-    async (dayOfWeek: number, slotId: string, subjectId: string) => {
-      const key = `${dayOfWeek}-${slotId}`;
       setSaving(key);
-      setMenuCell(null);
       try {
         const { error } = await (supabase as any)
           .from('schedule_regular_patterns')
@@ -142,17 +157,17 @@ export function AttendanceMatrix({ studentId, schoolId, studentGrade, canEdit, o
         setSaving(null);
       }
     },
-    [schoolId, studentId, fetchData, onPatternChange]
+    [canEdit, patternMap, schoolId, studentId, fetchData, onPatternChange]
   );
 
   // パターン削除
   const handleRemovePattern = useCallback(
-    async (dayOfWeek: number, slotId: string) => {
+    async (e: React.MouseEvent, dayOfWeek: number, slotId: string) => {
+      e.stopPropagation();
       const key = `${dayOfWeek}-${slotId}`;
       const existing = patternMap.get(key);
       if (!existing) return;
       setSaving(key);
-      setMenuCell(null);
       try {
         await deleteRegularPattern(existing.id);
         await fetchData();
@@ -176,112 +191,104 @@ export function AttendanceMatrix({ studentId, schoolId, studentGrade, canEdit, o
 
   return (
     <div className="space-y-3">
-      <div className="overflow-x-auto">
-        <table className="border-collapse text-xs w-full">
-          <thead>
-            <tr>
-              <th className="border border-gray-200 bg-gray-50 px-2 py-1.5 text-left text-[10px] text-gray-500 min-w-[80px]">
-                コマ
-              </th>
-              {WEEKDAYS.map((day) => (
-                <th
-                  key={day}
-                  className={`border border-gray-200 bg-gray-50 px-2 py-1.5 text-center text-[10px] min-w-[48px] ${
-                    day === 6 ? 'text-blue-500' : 'text-gray-600'
-                  }`}
+      <div className="flex gap-4">
+        {/* 科目一覧（ドラッグ元） */}
+        {canEdit && (
+          <div className="flex-shrink-0 w-[80px] space-y-1.5">
+            <p className="text-[10px] text-gray-400 font-medium mb-1">科目</p>
+            {subjects.map((sub, idx) => {
+              const color = getSubjectColor(sub.id, idx);
+              return (
+                <div
+                  key={sub.id}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, sub.id)}
+                  className={`px-2 py-1.5 text-[11px] font-medium rounded border cursor-grab active:cursor-grabbing select-none ${color.bg} ${color.text} ${color.border}`}
                 >
-                  {DAY_OF_WEEK_LABELS[day]}
+                  {sub.name}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* マトリクス */}
+        <div className="flex-1 overflow-x-auto">
+          <table className="border-collapse text-xs w-full">
+            <thead>
+              <tr>
+                <th className="border border-gray-200 bg-gray-50 px-2 py-1.5 text-left text-[10px] text-gray-500 min-w-[80px]">
+                  コマ
                 </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {timeSlots.map((slot) => (
-              <tr key={slot.id}>
-                <td className="border border-gray-200 bg-gray-50 px-2 py-1 text-[10px] text-gray-500 whitespace-nowrap">
-                  {slot.slot_number}限{' '}
-                  <span className="text-gray-400">
-                    {slot.start_time?.slice(0, 5)}-{slot.end_time?.slice(0, 5)}
-                  </span>
-                </td>
-                {WEEKDAYS.map((day) => {
-                  const key = `${day}-${slot.id}`;
-                  const pattern = patternMap.get(key);
-                  const isOn = !!pattern;
-                  const isSaving = saving === key;
-                  const isMenuOpen = menuCell?.day === day && menuCell?.slotId === slot.id;
-
-                  // 科目名を取得
-                  const subjectNames = pattern?.subject_ids
-                    ?.map((id) => subjectMap.get(id))
-                    .filter(Boolean) as string[] | undefined;
-
-                  return (
-                    <td
-                      key={key}
-                      className={`border border-gray-200 px-1 py-1 text-center transition-colors relative ${
-                        canEdit ? 'cursor-pointer hover:bg-blue-50' : ''
-                      } ${isSaving ? 'opacity-50' : ''} ${
-                        isOn ? 'bg-blue-50' : 'bg-white'
-                      }`}
-                      onClick={() => handleCellClick(day, slot.id)}
-                    >
-                      {isOn && (
-                        <div className="flex flex-col items-center">
-                          <span className="text-blue-700 text-[11px] font-medium leading-tight">
-                            {subjectNames && subjectNames.length > 0
-                              ? subjectNames.join('/')
-                              : '●'}
-                          </span>
-                          {pattern.teacher?.display_name && (
-                            <span className="text-[8px] text-gray-400 truncate max-w-[44px]">
-                              {pattern.teacher.display_name}
-                            </span>
-                          )}
-                        </div>
-                      )}
-
-                      {/* 科目選択メニュー */}
-                      {isMenuOpen && canEdit && (
-                        <div
-                          ref={menuRef}
-                          className="absolute z-50 top-full left-1/2 -translate-x-1/2 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[100px]"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {isOn ? (
-                            <>
-                              <button
-                                className="w-full text-left px-3 py-1.5 text-[11px] text-red-500 hover:bg-red-50"
-                                onClick={() => handleRemovePattern(day, slot.id)}
-                              >
-                                削除
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              {subjects.map((sub) => (
-                                <button
-                                  key={sub.id}
-                                  className="w-full text-left px-3 py-1.5 text-[11px] text-gray-700 hover:bg-blue-50"
-                                  onClick={() => handleSelectSubject(day, slot.id, sub.id)}
-                                >
-                                  {sub.name}
-                                </button>
-                              ))}
-                              {subjects.length === 0 && (
-                                <p className="px-3 py-1.5 text-[11px] text-gray-400">科目がありません</p>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </td>
-                  );
-                })}
+                {WEEKDAYS.map((day) => (
+                  <th
+                    key={day}
+                    className={`border border-gray-200 bg-gray-50 px-2 py-1.5 text-center text-[10px] min-w-[56px] ${
+                      day === 6 ? 'text-blue-500' : 'text-gray-600'
+                    }`}
+                  >
+                    {DAY_OF_WEEK_LABELS[day]}
+                  </th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {timeSlots.map((slot) => (
+                <tr key={slot.id}>
+                  <td className="border border-gray-200 bg-gray-50 px-2 py-1.5 text-[10px] text-gray-500 whitespace-nowrap">
+                    {slot.slot_number}限{' '}
+                    <span className="text-gray-400">
+                      {slot.start_time?.slice(0, 5)}-{slot.end_time?.slice(0, 5)}
+                    </span>
+                  </td>
+                  {WEEKDAYS.map((day) => {
+                    const key = `${day}-${slot.id}`;
+                    const pattern = patternMap.get(key);
+                    const isOn = !!pattern;
+                    const isSaving = saving === key;
+                    const isDragOver = dragOverCell === key && !isOn;
+
+                    // 科目名と色を取得
+                    const firstSubjectId = pattern?.subject_ids?.[0];
+                    const subjectName = firstSubjectId ? subjectMap.get(firstSubjectId) : null;
+                    const subjectIdx = firstSubjectId ? subjects.findIndex((s) => s.id === firstSubjectId) : 0;
+                    const color = firstSubjectId ? getSubjectColor(firstSubjectId, subjectIdx) : null;
+
+                    return (
+                      <td
+                        key={key}
+                        className={`border border-gray-200 px-0.5 py-1 text-center transition-all relative h-[36px] ${
+                          isSaving ? 'opacity-50' : ''
+                        } ${isDragOver ? 'bg-blue-100 ring-2 ring-inset ring-blue-400' : ''} ${
+                          !isOn && !isDragOver ? 'bg-white' : ''
+                        }`}
+                        onDragOver={(e) => handleDragOver(e, key)}
+                        onDragLeave={handleDragLeave}
+                        onDrop={(e) => handleDrop(e, day, slot.id)}
+                      >
+                        {isOn && (
+                          <div className={`group relative flex items-center justify-center rounded mx-0.5 px-1 py-0.5 ${color?.bg ?? 'bg-gray-100'}`}>
+                            <span className={`text-[11px] font-medium leading-tight ${color?.text ?? 'text-gray-600'}`}>
+                              {subjectName ?? '●'}
+                            </span>
+                            {canEdit && (
+                              <button
+                                onClick={(e) => handleRemovePattern(e, day, slot.id)}
+                                className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-gray-400 hover:bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="w-2.5 h-2.5" />
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* サマリ */}
