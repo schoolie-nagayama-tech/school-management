@@ -189,31 +189,56 @@ export function AttendanceMatrix({ studentId, schoolId, studentGrade, canEdit, o
     return <p className="text-sm text-[#2a2a2a]/60">コマ時間が未設定です。設定 → コマ時間設定から登録してください。</p>;
   }
 
+  // 90分科目と45分科目に分類
+  const subjects90 = subjects.filter((s) => s.duration_minutes >= 90);
+  const subjects45 = subjects.filter((s) => s.duration_minutes < 90);
+
   return (
     <div className="space-y-3">
-      <div className="flex gap-4">
-        {/* 科目一覧（ドラッグ元） */}
-        {canEdit && (
-          <div className="flex-shrink-0 w-[80px] space-y-1.5">
-            <p className="text-[10px] text-gray-400 font-medium mb-1">科目</p>
-            {subjects.map((sub, idx) => {
-              const color = getSubjectColor(sub.id, idx);
-              return (
-                <div
-                  key={sub.id}
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, sub.id)}
-                  className={`px-2 py-1.5 text-[11px] font-medium rounded border cursor-grab active:cursor-grabbing select-none ${color.bg} ${color.text} ${color.border}`}
-                >
-                  {sub.name}
-                </div>
-              );
-            })}
-          </div>
-        )}
+      {/* 科目一覧（ドラッグ元）— 表の上に横並び */}
+      {canEdit && (
+        <div className="space-y-1.5">
+          {subjects90.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[10px] text-gray-400 font-medium w-[36px] flex-shrink-0">90分</span>
+              {subjects90.map((sub, idx) => {
+                const color = getSubjectColor(sub.id, subjects.indexOf(sub));
+                return (
+                  <div
+                    key={sub.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, sub.id)}
+                    className={`px-2.5 py-1 text-[11px] font-medium rounded border cursor-grab active:cursor-grabbing select-none ${color.bg} ${color.text} ${color.border}`}
+                  >
+                    {sub.name}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {subjects45.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="text-[10px] text-gray-400 font-medium w-[36px] flex-shrink-0">45分</span>
+              {subjects45.map((sub, idx) => {
+                const color = getSubjectColor(sub.id, subjects.indexOf(sub));
+                return (
+                  <div
+                    key={sub.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, sub.id)}
+                    className={`px-2.5 py-1 text-[11px] font-medium rounded border-2 border-dashed cursor-grab active:cursor-grabbing select-none ${color.bg} ${color.text} ${color.border}`}
+                  >
+                    {sub.name}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
-        {/* マトリクス */}
-        <div className="flex-1 overflow-x-auto">
+      {/* マトリクス */}
+      <div className="overflow-x-auto">
           <table className="border-collapse text-xs w-full">
             <thead>
               <tr>
@@ -248,16 +273,18 @@ export function AttendanceMatrix({ studentId, schoolId, studentGrade, canEdit, o
                     const isSaving = saving === key;
                     const isDragOver = dragOverCell === key && !isOn;
 
-                    // 科目名と色を取得
+                    // 科目名・時間・色を取得
                     const firstSubjectId = pattern?.subject_ids?.[0];
-                    const subjectName = firstSubjectId ? subjectMap.get(firstSubjectId) : null;
+                    const subjectObj = firstSubjectId ? subjects.find((s) => s.id === firstSubjectId) : null;
+                    const subjectName = subjectObj?.name ?? (firstSubjectId ? subjectMap.get(firstSubjectId) : null);
+                    const is45 = subjectObj ? subjectObj.duration_minutes < 90 : false;
                     const subjectIdx = firstSubjectId ? subjects.findIndex((s) => s.id === firstSubjectId) : 0;
                     const color = firstSubjectId ? getSubjectColor(firstSubjectId, subjectIdx) : null;
 
                     return (
                       <td
                         key={key}
-                        className={`border border-gray-200 px-0.5 py-1 text-center transition-all relative h-[36px] ${
+                        className={`border border-gray-200 px-0.5 py-0.5 text-center transition-all relative h-[36px] ${
                           isSaving ? 'opacity-50' : ''
                         } ${isDragOver ? 'bg-blue-100 ring-2 ring-inset ring-blue-400' : ''} ${
                           !isOn && !isDragOver ? 'bg-white' : ''
@@ -267,10 +294,13 @@ export function AttendanceMatrix({ studentId, schoolId, studentGrade, canEdit, o
                         onDrop={(e) => handleDrop(e, day, slot.id)}
                       >
                         {isOn && (
-                          <div className={`group relative flex items-center justify-center rounded mx-0.5 px-1 py-0.5 ${color?.bg ?? 'bg-gray-100'}`}>
+                          <div className={`group relative flex flex-col items-center justify-center rounded mx-0.5 px-1 py-0.5 ${is45 ? 'border-2 border-dashed' : 'border'} ${color?.bg ?? 'bg-gray-100'} ${color?.border ?? 'border-gray-300'}`}>
                             <span className={`text-[11px] font-medium leading-tight ${color?.text ?? 'text-gray-600'}`}>
                               {subjectName ?? '●'}
                             </span>
+                            {is45 && (
+                              <span className="text-[8px] text-gray-400 leading-none">45分</span>
+                            )}
                             {canEdit && (
                               <button
                                 onClick={(e) => handleRemovePattern(e, day, slot.id)}
@@ -289,7 +319,6 @@ export function AttendanceMatrix({ studentId, schoolId, studentGrade, canEdit, o
             </tbody>
           </table>
         </div>
-      </div>
 
       {/* サマリ */}
       <div className="flex items-center gap-4 text-xs">
