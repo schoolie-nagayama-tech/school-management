@@ -399,7 +399,7 @@ async function handleInitScheduleTemplate(
     return NextResponse.json({ error: 'テンプレートが見つかりません' }, { status: 404 });
   }
 
-  const tasks = (template as { template_data: Array<{ major_category: string; name: string; description?: string; sort_order: number }> }).template_data;
+  const tasks = (template as { template_data: Array<{ major_category: string; name: string; description?: string; sort_order: number; start_date?: string; end_date?: string }> }).template_data;
   if (!tasks || tasks.length === 0) {
     return NextResponse.json({ error: 'テンプレートにタスクがありません' }, { status: 400 });
   }
@@ -420,6 +420,8 @@ async function handleInitScheduleTemplate(
     name: task.name,
     description: task.description || null,
     sort_order: task.sort_order,
+    ...(task.start_date ? { start_date: task.start_date } : {}),
+    ...(task.end_date ? { end_date: task.end_date } : {}),
   }));
 
   const { error: insertError } = await supabaseAdmin
@@ -727,7 +729,7 @@ async function handleSaveTemplate(
   } else {
     const { data, error } = await supabaseAdmin
       .from('course_prep_schedule_tasks')
-      .select('major_category, name, description, sort_order')
+      .select('major_category, name, description, sort_order, start_date, end_date')
       .eq('school_id', schoolId)
       .eq('season', season)
       .eq('year', year)

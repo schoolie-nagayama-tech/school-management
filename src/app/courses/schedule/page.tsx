@@ -18,9 +18,9 @@ import {
   upsertScheduleMarker,
   deleteScheduleMarker,
 } from '@/lib/api/courseSchedule';
-import { getCourseProgressItems } from '@/lib/api/courseProgress';
-import { getTemplates, initializeScheduleFromTemplate } from '@/lib/api/courseTemplates';
-import type { ScheduleTaskWithMarkers, ScheduleMarker, CourseTemplate, CourseProgressItem, SeasonType } from '@/types/database';
+import { getCourseProgressItems, getStudentCourseProgress } from '@/lib/api/courseProgress';
+import { getTemplates, initializeScheduleFromTemplate, saveCurrentAsTemplate, deleteTemplate } from '@/lib/api/courseTemplates';
+import type { ScheduleTaskWithMarkers, ScheduleMarker, CourseTemplate, CourseProgressItem, StudentCourseProgress, SeasonType } from '@/types/database';
 import { useRequirePermission, useCanEdit } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
@@ -90,6 +90,7 @@ export default function CourseSchedulePage() {
   // データ
   const [tasks, setTasks] = useState<ScheduleTaskWithMarkers[]>([]);
   const [deadlineItems, setDeadlineItems] = useState<CourseProgressItem[]>([]);
+  const [progressSummary, setProgressSummary] = useState<{ total: number; completed: number; itemSummaries?: { name: string; total: number; done: number }[] } | undefined>();
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -97,6 +98,9 @@ export default function CourseSchedulePage() {
   const [templates, setTemplates] = useState<CourseTemplate[]>([]);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [templateLoading, setTemplateLoading] = useState(false);
+  const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false);
+  const [saveTemplateName, setSaveTemplateName] = useState('');
+  const [saveTemplateLoading, setSaveTemplateLoading] = useState(false);
 
   // マーカー入力（ガントチャート用）
   const [markerInput, setMarkerInput] = useState<{
@@ -124,12 +128,40 @@ export default function CourseSchedulePage() {
         setIsLoading(false);
         return;
       }
-      const [data, progressItems] = await Promise.all([
+      const [data, progressItems, studentProgress] = await Promise.all([
         getScheduleTasks(ids[0], season, year),
         getCourseProgressItems(ids[0], season, year, false),
+        getStudentCourseProgress(ids[0], season, year).catch(() => [] as StudentCourseProgress[]),
       ]);
       setTasks(data);
       setDeadlineItems(progressItems.filter((i) => i.deadline));
+
+      // 進捗管理サマリーを計算
+      if (progressItems.length > 0 && studentProgress.length > 0) {
+        // check型の項目について完了率を計算
+        const checkItems = progressItems.filter((pi) => pi.column_type === 'check');
+        const totalStudentChecks = checkItems.length > 0
+          ? studentProgress.filter((sp) => checkItems.some((ci) => ci.id === sp.item_id)).length
+          : 0;
+        const doneStudentChecks = checkItems.length > 0
+          ? studentProgress.filter((sp) => checkItems.some((ci) => ci.id === sp.item_id) && sp.status === 'completed').length
+          : 0;
+
+        // 項目ごとのサマリー（主要なものだけ）
+        const itemSummaries = checkItems.slice(0, 6).map((ci) => {
+          const related = studentProgress.filter((sp) => sp.item_id === ci.id);
+          const done = related.filter((sp) => sp.status === 'completed').length;
+          return { name: ci.name, total: related.length, done };
+        }).filter((s) => s.total > 0);
+
+        setProgressSummary({
+          total: totalStudentChecks,
+          completed: doneStudentChecks,
+          itemSummaries,
+        });
+      } else {
+        setProgressSummary(undefined);
+      }
 
       if (data.length === 0 && isManagerOrAbove) {
         const tpls = await getTemplates('schedule', season, ids[0]);
@@ -360,6 +392,40 @@ export default function CourseSchedulePage() {
     setShowTemplateDialog(true);
   }, [season, getSelectedSchoolIds]);
 
+  // テンプレートとして保存
+  const handleSaveAsTemplate = useCallback(async () => {
+    if (!saveTemplateName.trim()) return;
+    const ids = getSelectedSchoolIds();
+    if (ids.length === 0) return;
+    setSaveTemplateLoading(true);
+    try {
+      await saveCurrentAsTemplate(ids[0], season, year, 'schedule', saveTemplateName.trim());
+      setShowSaveTemplateDialog(false);
+      setSaveTemplateName('');
+      alert('テンプレートとして保存しました');
+    } catch (err) {
+      console.error('Error saving template:', err);
+      setErrorMessage(getUserErrorMessage(err, 'テンプレートの保存に失敗しました'));
+    } finally {
+      setSaveTemplateLoading(false);
+    }
+  }, [saveTemplateName, getSelectedSchoolIds, season, year]);
+
+  // テンプレート削除
+  const handleDeleteTemplate = useCallback(async (templateId: string) => {
+    const ids = getSelectedSchoolIds();
+    if (ids.length === 0) return;
+    try {
+      await deleteTemplate(templateId, ids[0]);
+      // テンプレート一覧を再取得
+      const tpls = await getTemplates('schedule', season, ids[0]);
+      setTemplates(tpls);
+    } catch (err) {
+      console.error('Error deleting template:', err);
+      setErrorMessage(getUserErrorMessage(err, 'テンプレートの削除に失敗しました'));
+    }
+  }, [getSelectedSchoolIds, season]);
+
   // 全教室に展開
   const handleDeployToAllSchools = useCallback(async () => {
     if (tasks.length === 0) {
@@ -498,6 +564,18 @@ export default function CourseSchedulePage() {
                 >
                   テンプレート適用
                 </button>
+                {tasks.length > 0 && (
+                  <button
+                    onClick={() => {
+                      const seasonLabel = season === 'spring' ? '春期' : season === 'summer' ? '夏期' : '冬期';
+                      setSaveTemplateName(`${seasonLabel}${year} 工程表テンプレート`);
+                      setShowSaveTemplateDialog(true);
+                    }}
+                    className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600"
+                  >
+                    テンプレート保存
+                  </button>
+                )}
                 {managedSchoolIds.length > 1 && (
                   <button
                     onClick={handleDeployToAllSchools}
@@ -564,8 +642,11 @@ export default function CourseSchedulePage() {
             <ScheduleGanttChart
               tasks={tasks}
               deadlineItems={deadlineItems}
+              progressSummary={progressSummary}
               startDate={dateRange.start}
               endDate={dateRange.end}
+              season={season}
+              year={year}
               canEdit={canEdit}
               onToggleComplete={handleToggleComplete}
               onMarkerClick={handleMarkerClick}
@@ -593,9 +674,52 @@ export default function CourseSchedulePage() {
         <TemplateApplyDialog
           templates={templates}
           onApply={handleApplyTemplate}
+          onDelete={handleDeleteTemplate}
           onClose={() => setShowTemplateDialog(false)}
           isLoading={templateLoading}
         />
+      )}
+
+      {/* テンプレート保存ダイアログ */}
+      {showSaveTemplateDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-2xl max-w-md w-full mx-4">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-bold text-[#1e3a5f]">テンプレートとして保存</h3>
+              <p className="text-sm text-gray-500 mt-1">
+                現在の工程表（{tasks.length}タスク、日付含む）をテンプレートとして保存します
+              </p>
+            </div>
+            <div className="px-6 py-4">
+              <label className="block text-sm text-gray-600 mb-1">テンプレート名</label>
+              <input
+                type="text"
+                value={saveTemplateName}
+                onChange={(e) => setSaveTemplateName(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSaveAsTemplate(); }}
+                placeholder="テンプレート名を入力"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                autoFocus
+              />
+            </div>
+            <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-2">
+              <button
+                onClick={() => { setShowSaveTemplateDialog(false); setSaveTemplateName(''); }}
+                className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg"
+                disabled={saveTemplateLoading}
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleSaveAsTemplate}
+                disabled={!saveTemplateName.trim() || saveTemplateLoading}
+                className="px-4 py-2 text-sm bg-[#1e3a5f] text-white rounded-lg hover:bg-[#2c5282] disabled:opacity-50"
+              >
+                {saveTemplateLoading ? '保存中...' : '保存'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </AdminLayout>
   );
