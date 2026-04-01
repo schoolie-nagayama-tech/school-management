@@ -322,12 +322,20 @@ export function CourseProgressTable({
     [autoValues]
   );
 
-  if (students.length === 0) {
-    return <div className="py-12 text-center text-sm text-gray-400 italic">対象の生徒がいません</div>;
-  }
-  if (items.length === 0) {
-    return <div className="py-12 text-center text-sm text-gray-400 italic">進捗項目がありません。テンプレートから作成してください。</div>;
-  }
+  // コンテナ幅を測定してセル幅を動的に計算
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerWidth(entry.contentRect.width);
+      }
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   // 左固定列の幅
   const GRADE_W = 36;
@@ -335,10 +343,27 @@ export function CourseProgressTable({
   const PROGRESS_W = 72;
   const LEFT_TOTAL = GRADE_W + NAME_W + PROGRESS_W;
 
+  // セル幅を動的計算: 残り幅を項目数で均等割り（最小28px）
+  const MIN_CELL_W = 28;
+  const itemCount = items.length;
+  const availableWidth = containerWidth > 0 ? containerWidth - LEFT_TOTAL : 0;
+  const dynamicCellW = itemCount > 0 && availableWidth > 0
+    ? Math.max(MIN_CELL_W, Math.floor(availableWidth / itemCount))
+    : 36;
+  // スクロールが必要かどうか
+  const needsScroll = dynamicCellW <= MIN_CELL_W;
+
+  if (students.length === 0) {
+    return <div ref={containerRef} className="py-12 text-center text-sm text-gray-400 italic">対象の生徒がいません</div>;
+  }
+  if (items.length === 0) {
+    return <div ref={containerRef} className="py-12 text-center text-sm text-gray-400 italic">進捗項目がありません。テンプレートから作成してください。</div>;
+  }
+
   return (
     <>
-      <div className="overflow-x-auto border border-gray-200 rounded-xl bg-white shadow-sm">
-        <table className="border-collapse" style={{ minWidth: `${LEFT_TOTAL + items.length * 36}px` }}>
+      <div ref={containerRef} className={`border border-gray-200 rounded-xl bg-white shadow-sm ${needsScroll ? 'overflow-x-auto' : 'overflow-hidden'}`}>
+        <table className="border-collapse w-full" style={needsScroll ? { minWidth: `${LEFT_TOTAL + itemCount * MIN_CELL_W}px` } : undefined}>
           {/* ===== グループカラーバー ===== */}
           <thead>
             <tr>
@@ -414,7 +439,7 @@ export function CourseProgressTable({
                     <th
                       key={item.id}
                       className="border-b border-gray-200 px-0 py-1 text-center"
-                      style={{ width: 36, minWidth: 36 }}
+                      style={{ width: dynamicCellW, minWidth: MIN_CELL_W }}
                     >
                       <Tooltip text={`${item.name}${item.deadline ? ` (期日: ${formatDeadline(item.deadline)})` : ''}${item.auto_source ? ' [自動]' : ''}`}>
                         <div
@@ -428,8 +453,11 @@ export function CourseProgressTable({
                             }
                           }}
                         >
-                          {/* 項目名を短く表示（4文字まで） */}
-                          {item.name.length > 4 ? item.name.slice(0, 4) + '..' : item.name}
+                          {/* 項目名をセル幅に応じて表示 */}
+                          {(() => {
+                            const maxChars = dynamicCellW >= 60 ? 6 : dynamicCellW >= 44 ? 4 : 3;
+                            return item.name.length > maxChars ? item.name.slice(0, maxChars) + '..' : item.name;
+                          })()}
                           {item.auto_source && <span className="text-blue-400 text-[8px]">A</span>}
                         </div>
                         {/* 期日バッジ */}
@@ -536,7 +564,6 @@ export function CourseProgressTable({
                           <td
                             key={item.id}
                             className="border-b border-gray-100 p-0 text-center"
-                            style={{ width: 36, minWidth: 36 }}
                           >
                             <div
                               className="w-full h-[30px] flex items-center justify-center text-[10px] font-semibold"
@@ -558,7 +585,6 @@ export function CourseProgressTable({
                           <td
                             key={item.id}
                             className="border-b border-gray-100 p-0 text-center"
-                            style={{ width: 36, minWidth: 36 }}
                           >
                             <div
                               className={`w-full h-[30px] flex items-center justify-center text-xs font-bold ${canEdit ? 'cursor-pointer' : ''} transition-colors`}
@@ -583,7 +609,6 @@ export function CourseProgressTable({
                           <td
                             key={item.id}
                             className="border-b border-gray-100 p-0 text-center"
-                            style={{ width: 36, minWidth: 36 }}
                           >
                             <div
                               className={`w-full h-[30px] flex items-center justify-center text-[10px] font-medium ${canEdit ? 'cursor-pointer hover:ring-1 hover:ring-blue-300 hover:ring-inset' : ''} transition-all`}
@@ -608,7 +633,6 @@ export function CourseProgressTable({
                           <td
                             key={item.id}
                             className="border-b border-gray-100 p-0 text-center"
-                            style={{ width: 36, minWidth: 36 }}
                           >
                             <div
                               className={`w-full h-[30px] flex items-center justify-center text-[9px] ${canEdit ? 'cursor-pointer hover:ring-1 hover:ring-blue-300 hover:ring-inset' : ''} transition-all`}
