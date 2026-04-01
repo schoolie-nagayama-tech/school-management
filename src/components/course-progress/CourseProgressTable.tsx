@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import type { Student, CourseProgressItem, StudentCourseProgress, ApplicationStatus } from '@/types/database';
 import { GRADE_LABELS, PROGRESS_COLUMN_GROUPS } from '@/types/database';
 import type { AutoValues } from '@/lib/api/courseProgress';
@@ -25,34 +25,99 @@ function nextStatus(current: ApplicationStatus | null | undefined): ApplicationS
   return null;
 }
 
-function statusSymbol(status: ApplicationStatus | null | undefined): string {
-  if (!status) return '';
-  if (status === 'pending') return '\u00d7';
-  if (status === 'completed') return '\u2713';
-  if (status === 'not_applicable') return '\u2013';
-  return '';
-}
-
-function statusBgClass(status: ApplicationStatus | null | undefined): string {
-  if (!status) return '';
-  if (status === 'pending') return 'bg-yellow-50';
-  if (status === 'completed') return 'bg-green-50';
-  if (status === 'not_applicable') return 'bg-gray-100';
-  return '';
-}
-
-function statusTextClass(status: ApplicationStatus | null | undefined): string {
-  if (!status) return 'text-gray-300';
-  if (status === 'pending') return 'text-yellow-600 font-bold';
-  if (status === 'completed') return 'text-green-600 font-bold';
-  if (status === 'not_applicable') return 'text-gray-400';
-  return '';
-}
-
 function formatDeadline(deadline: string | null): string {
   if (!deadline) return '';
   const d = new Date(deadline);
   return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+// ヒートマップセルの色を返す
+function getCellStyle(
+  item: CourseProgressItem,
+  status: ApplicationStatus | null | undefined,
+  numberValue: number | null | undefined,
+  groupColor: string
+): { bg: string; text: string; border: string } {
+  if (item.column_type === 'check') {
+    if (status === 'completed') return { bg: `${groupColor}22`, text: groupColor, border: `${groupColor}44` };
+    if (status === 'pending') return { bg: '#fef3c7', text: '#d97706', border: '#fcd34d' };
+    if (status === 'not_applicable') return { bg: '#f3f4f6', text: '#9ca3af', border: '#e5e7eb' };
+    return { bg: '#ffffff', text: '#d1d5db', border: '#f3f4f6' };
+  }
+  if (item.column_type === 'number') {
+    if (numberValue != null && numberValue > 0) return { bg: `${groupColor}15`, text: groupColor, border: `${groupColor}30` };
+    if (numberValue === 0) return { bg: '#f9fafb', text: '#9ca3af', border: '#e5e7eb' };
+    return { bg: '#ffffff', text: '#d1d5db', border: '#f3f4f6' };
+  }
+  return { bg: '#ffffff', text: '#6b7280', border: '#e5e7eb' };
+}
+
+function statusSymbol(status: ApplicationStatus | null | undefined): string {
+  if (status === 'completed') return '\u2713';
+  if (status === 'pending') return '\u00d7';
+  if (status === 'not_applicable') return '\u2013';
+  return '';
+}
+
+// ツールチップコンポーネント
+function Tooltip({ text, children }: { text: string; children: React.ReactNode }) {
+  return (
+    <div className="relative group/tip">
+      {children}
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover/tip:block z-50 pointer-events-none">
+        <div className="bg-gray-800 text-white text-[10px] px-2 py-1 rounded shadow-lg whitespace-nowrap">
+          {text}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 編集ポップオーバー
+function EditPopover({
+  type,
+  value,
+  onChange,
+  onSave,
+  onCancel,
+  position,
+}: {
+  type: 'number' | 'date' | 'item-name' | 'deadline';
+  value: string;
+  onChange: (v: string) => void;
+  onSave: () => void;
+  onCancel: () => void;
+  position: { top: number; left: number };
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onCancel();
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [onCancel]);
+
+  return (
+    <div
+      ref={ref}
+      className="fixed z-[100] bg-white border border-gray-300 rounded-lg shadow-xl p-2"
+      style={{ top: position.top, left: position.left }}
+    >
+      <input
+        type={type === 'number' ? 'number' : type === 'deadline' ? 'date' : 'text'}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') onSave();
+          if (e.key === 'Escape') onCancel();
+        }}
+        autoFocus
+        className="w-28 px-2 py-1 text-xs border border-gray-200 rounded focus:ring-1 focus:ring-blue-400 focus:border-blue-400 outline-none"
+      />
+    </div>
+  );
 }
 
 export function CourseProgressTable({
@@ -67,14 +132,13 @@ export function CourseProgressTable({
   onItemNameChange,
   onItemDeadlineChange,
 }: CourseProgressTableProps) {
-  const [editingCell, setEditingCell] = useState<{ studentId: string; itemId: string } | null>(null);
+  const [editingCell, setEditingCell] = useState<{ studentId: string; itemId: string; type: 'number' | 'date' } | null>(null);
   const [editValue, setEditValue] = useState('');
-  // 項目名編集
-  const [editingItemName, setEditingItemName] = useState<string | null>(null);
-  const [editItemNameValue, setEditItemNameValue] = useState('');
-  // 期日編集
-  const [editingDeadline, setEditingDeadline] = useState<string | null>(null);
-  const [editDeadlineValue, setEditDeadlineValue] = useState('');
+  const [editPosition, setEditPosition] = useState({ top: 0, left: 0 });
+  // 項目名 / 期日編集
+  const [editingHeader, setEditingHeader] = useState<{ itemId: string; type: 'item-name' | 'deadline' } | null>(null);
+  const [editHeaderValue, setEditHeaderValue] = useState('');
+  const [headerEditPosition, setHeaderEditPosition] = useState({ top: 0, left: 0 });
 
   const progressMap = useMemo(() => {
     const map = new Map<string, StudentCourseProgress>();
@@ -88,6 +152,7 @@ export function CourseProgressTable({
     return [...students].sort((a, b) => (a.grade || 0) - (b.grade || 0));
   }, [students]);
 
+  // グループ分け
   const columnGroups = useMemo(() => {
     const groups: { key: string; label: string; color: string; items: CourseProgressItem[] }[] = [];
     const ungrouped: CourseProgressItem[] = [];
@@ -103,7 +168,7 @@ export function CourseProgressTable({
       }
     }
     if (ungrouped.length > 0) {
-      groups.push({ key: '_ungrouped', label: '', color: '#6b7280', items: ungrouped });
+      groups.push({ key: '_ungrouped', label: 'その他', color: '#6b7280', items: ungrouped });
     }
     for (const [key, groupItems] of Array.from(groupMap)) {
       const def = PROGRESS_COLUMN_GROUPS[key];
@@ -112,20 +177,36 @@ export function CourseProgressTable({
     return groups;
   }, [items]);
 
-  const itemCompletionRates = useMemo(() => {
-    const rates: Record<string, { completed: number; total: number }> = {};
-    for (const item of items) {
-      if (item.column_type !== 'check') continue;
-      let completed = 0;
-      for (const s of students) {
-        const d = progressMap.get(`${s.id}:${item.id}`);
-        if (d?.status === 'completed') completed++;
+  // アイテムごとのグループカラー
+  const itemGroupColor = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const g of columnGroups) {
+      for (const item of g.items) {
+        map[item.id] = g.color;
       }
-      rates[item.id] = { completed, total: students.length };
+    }
+    return map;
+  }, [columnGroups]);
+
+  // グループ別進捗率
+  const groupCompletionRates = useMemo(() => {
+    const rates: Record<string, { completed: number; total: number }> = {};
+    for (const g of columnGroups) {
+      const checkItems = g.items.filter((i) => i.column_type === 'check');
+      let completed = 0;
+      const total = checkItems.length * students.length;
+      for (const item of checkItems) {
+        for (const s of students) {
+          const d = progressMap.get(`${s.id}:${item.id}`);
+          if (d?.status === 'completed') completed++;
+        }
+      }
+      rates[g.key] = { completed, total };
     }
     return rates;
-  }, [items, students, progressMap]);
+  }, [columnGroups, students, progressMap]);
 
+  // 生徒ごとの全体完了率
   const studentCompletionRates = useMemo(() => {
     const checkItems = items.filter((i) => i.column_type === 'check');
     const rates: Record<string, { completed: number; total: number }> = {};
@@ -140,6 +221,26 @@ export function CourseProgressTable({
     return rates;
   }, [items, students, progressMap]);
 
+  // 生徒ごとのグループ別完了率
+  const studentGroupRates = useMemo(() => {
+    const rates: Record<string, Record<string, { completed: number; total: number }>> = {};
+    for (const s of students) {
+      rates[s.id] = {};
+      for (const g of columnGroups) {
+        const checkItems = g.items.filter((i) => i.column_type === 'check');
+        if (checkItems.length === 0) continue;
+        let completed = 0;
+        for (const item of checkItems) {
+          const d = progressMap.get(`${s.id}:${item.id}`);
+          if (d?.status === 'completed') completed++;
+        }
+        rates[s.id][g.key] = { completed, total: checkItems.length };
+      }
+    }
+    return rates;
+  }, [students, columnGroups, progressMap]);
+
+  // チェックセルクリック
   const handleCheckClick = useCallback(
     (studentId: string, itemId: string) => {
       if (!canEdit) return;
@@ -149,66 +250,66 @@ export function CourseProgressTable({
     [canEdit, progressMap, onStatusChange]
   );
 
-  const handleStartEdit = useCallback(
-    (studentId: string, itemId: string, currentValue: string) => {
+  // 数値/日付セルクリック
+  const handleCellClick = useCallback(
+    (e: React.MouseEvent, studentId: string, item: CourseProgressItem) => {
       if (!canEdit) return;
-      setEditingCell({ studentId, itemId });
-      setEditValue(currentValue);
+      if (item.auto_source && item.column_type === 'number') return; // auto は編集不可
+      if (item.column_type === 'check') return; // check は handleCheckClick で処理
+      const rect = (e.target as HTMLElement).getBoundingClientRect();
+      const d = progressMap.get(`${studentId}:${item.id}`);
+      const currentVal = item.column_type === 'number'
+        ? (d?.number_value != null ? String(d.number_value) : '')
+        : (d?.date_value || '');
+      setEditValue(currentVal);
+      setEditPosition({ top: rect.bottom + 4, left: rect.left });
+      setEditingCell({ studentId, itemId: item.id, type: item.column_type as 'number' | 'date' });
     },
-    [canEdit]
+    [canEdit, progressMap]
   );
 
-  const handleNumberBlur = useCallback(
-    (studentId: string, itemId: string) => {
-      setEditingCell(null);
+  // 数値/日付保存
+  const handleCellSave = useCallback(() => {
+    if (!editingCell) return;
+    const { studentId, itemId, type } = editingCell;
+    setEditingCell(null);
+    if (type === 'number') {
       const trimmed = editValue.trim();
       const val = trimmed === '' ? null : Number(trimmed);
       if (trimmed !== '' && isNaN(val as number)) return;
       onNumberChange(studentId, itemId, val);
-    },
-    [editValue, onNumberChange]
-  );
-
-  const handleDateBlur = useCallback(
-    (studentId: string, itemId: string) => {
-      setEditingCell(null);
+    } else {
       onDateChange(studentId, itemId, editValue.trim() || null);
+    }
+  }, [editingCell, editValue, onNumberChange, onDateChange]);
+
+  // ヘッダー編集
+  const handleHeaderClick = useCallback(
+    (e: React.MouseEvent, itemId: string, type: 'item-name' | 'deadline', currentValue: string) => {
+      if (!canEdit) return;
+      if (type === 'item-name' && !onItemNameChange) return;
+      if (type === 'deadline' && !onItemDeadlineChange) return;
+      const rect = (e.target as HTMLElement).getBoundingClientRect();
+      setEditHeaderValue(currentValue);
+      setHeaderEditPosition({ top: rect.bottom + 4, left: rect.left });
+      setEditingHeader({ itemId, type });
     },
-    [editValue, onDateChange]
+    [canEdit, onItemNameChange, onItemDeadlineChange]
   );
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent, studentId: string, itemId: string, type: 'number' | 'date') => {
-      if (e.key === 'Enter') {
-        if (type === 'number') handleNumberBlur(studentId, itemId);
-        else handleDateBlur(studentId, itemId);
-      } else if (e.key === 'Escape') {
-        setEditingCell(null);
-      }
-    },
-    [handleNumberBlur, handleDateBlur]
-  );
-
-  // 項目名保存
-  const handleItemNameSave = useCallback(
-    (itemId: string) => {
-      setEditingItemName(null);
-      const name = editItemNameValue.trim();
+  const handleHeaderSave = useCallback(() => {
+    if (!editingHeader) return;
+    const { itemId, type } = editingHeader;
+    setEditingHeader(null);
+    if (type === 'item-name') {
+      const name = editHeaderValue.trim();
       if (name && onItemNameChange) onItemNameChange(itemId, name);
-    },
-    [editItemNameValue, onItemNameChange]
-  );
+    } else {
+      if (onItemDeadlineChange) onItemDeadlineChange(itemId, editHeaderValue || null);
+    }
+  }, [editingHeader, editHeaderValue, onItemNameChange, onItemDeadlineChange]);
 
-  // 期日保存
-  const handleDeadlineSave = useCallback(
-    (itemId: string) => {
-      setEditingDeadline(null);
-      if (onItemDeadlineChange) onItemDeadlineChange(itemId, editDeadlineValue || null);
-    },
-    [editDeadlineValue, onItemDeadlineChange]
-  );
-
-  // 自動計算値を取得
+  // 自動計算値
   const getAutoValue = useCallback(
     (studentId: string, autoSource: string | null): number | null => {
       if (!autoSource || !autoValues) return null;
@@ -228,249 +329,358 @@ export function CourseProgressTable({
     return <div className="py-12 text-center text-sm text-gray-400 italic">進捗項目がありません。テンプレートから作成してください。</div>;
   }
 
-  let lastGrade: number | null = null;
+  // 左固定列の幅
+  const GRADE_W = 36;
+  const NAME_W = 88;
+  const PROGRESS_W = 72;
+  const LEFT_TOTAL = GRADE_W + NAME_W + PROGRESS_W;
 
   return (
-    <div className="overflow-x-auto border border-gray-200 rounded-lg">
-      <table className="w-full border-collapse text-xs">
-        <thead>
-          {/* 列グループヘッダー */}
-          <tr>
-            <th colSpan={2} className="border border-gray-200 bg-gray-50 px-2 py-1 sticky left-0 z-20" />
-            {columnGroups.map((g) => (
+    <>
+      <div className="overflow-x-auto border border-gray-200 rounded-xl bg-white shadow-sm">
+        <table className="border-collapse" style={{ minWidth: `${LEFT_TOTAL + items.length * 36}px` }}>
+          {/* ===== グループカラーバー ===== */}
+          <thead>
+            <tr>
+              {/* 左固定: 空欄 */}
               <th
-                key={g.key}
-                colSpan={g.items.length}
-                className="border border-gray-200 px-2 py-1 text-center text-[10px] font-medium"
-                style={{ backgroundColor: g.color + '15', color: g.color }}
+                colSpan={3}
+                className="sticky left-0 z-30 bg-white"
+                style={{ width: LEFT_TOTAL, minWidth: LEFT_TOTAL }}
+              />
+              {/* グループ別カラーバー */}
+              {columnGroups.map((g) => {
+                const rate = groupCompletionRates[g.key];
+                const pct = rate && rate.total > 0 ? Math.round((rate.completed / rate.total) * 100) : 0;
+                return (
+                  <th
+                    key={g.key}
+                    colSpan={g.items.length}
+                    className="px-1 py-1 text-center relative"
+                    style={{ backgroundColor: `${g.color}15` }}
+                  >
+                    {/* カラーバートップ */}
+                    <div
+                      className="absolute top-0 left-0 right-0 h-[3px]"
+                      style={{ backgroundColor: g.color }}
+                    />
+                    <div className="flex items-center justify-center gap-1 pt-0.5">
+                      <span className="text-[10px] font-semibold" style={{ color: g.color }}>{g.label}</span>
+                      {rate && rate.total > 0 && (
+                        <span
+                          className="text-[9px] px-1 rounded-full font-medium"
+                          style={{
+                            backgroundColor: `${g.color}20`,
+                            color: g.color,
+                          }}
+                        >
+                          {pct}%
+                        </span>
+                      )}
+                    </div>
+                  </th>
+                );
+              })}
+            </tr>
+
+            {/* ===== 項目名ヘッダー（縦書き風コンパクト） ===== */}
+            <tr className="bg-gray-50">
+              {/* 学年 */}
+              <th
+                className="sticky left-0 z-30 bg-gray-50 border-b border-gray-200 text-[10px] text-gray-400 font-normal px-1 py-1"
+                style={{ width: GRADE_W, minWidth: GRADE_W }}
               >
-                {g.label}
+                学年
               </th>
-            ))}
-            <th className="border border-gray-200 bg-gray-50 px-2 py-1 min-w-[80px]" />
-          </tr>
-          {/* 列ヘッダー（項目名 + 完了率） */}
-          <tr className="bg-gray-100">
-            <th className="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700 sticky left-0 bg-gray-100 z-20 min-w-[48px]">
-              学年
-            </th>
-            <th className="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700 sticky left-[48px] bg-gray-100 z-20 min-w-[80px]">
-              名前
-            </th>
-            {columnGroups.flatMap((g) =>
-              g.items.map((item) => (
-                <th
-                  key={item.id}
-                  className="border border-gray-200 px-1 py-2 text-center font-medium text-gray-700 min-w-[52px] whitespace-nowrap"
+              {/* 名前 */}
+              <th
+                className="sticky z-30 bg-gray-50 border-b border-gray-200 text-[10px] text-gray-600 font-medium text-left px-1 py-1"
+                style={{ left: GRADE_W, width: NAME_W, minWidth: NAME_W }}
+              >
+                生徒名
+              </th>
+              {/* 進捗 */}
+              <th
+                className="sticky z-30 bg-gray-50 border-b border-gray-200 text-[10px] text-gray-400 font-normal text-center px-1 py-1"
+                style={{ left: GRADE_W + NAME_W, width: PROGRESS_W, minWidth: PROGRESS_W }}
+              >
+                進捗
+              </th>
+              {/* 各項目 */}
+              {columnGroups.flatMap((g) =>
+                g.items.map((item) => {
+                  const isOverdue = item.deadline && new Date(item.deadline) < new Date();
+                  return (
+                    <th
+                      key={item.id}
+                      className="border-b border-gray-200 px-0 py-1 text-center"
+                      style={{ width: 36, minWidth: 36 }}
+                    >
+                      <Tooltip text={`${item.name}${item.deadline ? ` (期日: ${formatDeadline(item.deadline)})` : ''}${item.auto_source ? ' [自動]' : ''}`}>
+                        <div
+                          className={`text-[9px] leading-tight px-0.5 ${
+                            onItemNameChange && canEdit ? 'cursor-pointer hover:text-blue-600' : ''
+                          }`}
+                          style={{ color: itemGroupColor[item.id] }}
+                          onDoubleClick={(e) => {
+                            if (onItemNameChange && canEdit) {
+                              handleHeaderClick(e, item.id, 'item-name', item.name);
+                            }
+                          }}
+                        >
+                          {/* 項目名を短く表示（4文字まで） */}
+                          {item.name.length > 4 ? item.name.slice(0, 4) + '..' : item.name}
+                          {item.auto_source && <span className="text-blue-400 text-[8px]">A</span>}
+                        </div>
+                        {/* 期日バッジ */}
+                        <div
+                          className={`text-[8px] leading-none mt-0.5 ${
+                            isOverdue ? 'text-red-500 font-bold' : 'text-gray-400'
+                          } ${onItemDeadlineChange && canEdit ? 'cursor-pointer hover:underline' : ''}`}
+                          onClick={(e) => {
+                            if (onItemDeadlineChange && canEdit) {
+                              handleHeaderClick(e, item.id, 'deadline', item.deadline || '');
+                            }
+                          }}
+                        >
+                          {item.deadline ? formatDeadline(item.deadline) : ''}
+                        </div>
+                      </Tooltip>
+                    </th>
+                  );
+                })
+              )}
+            </tr>
+          </thead>
+
+          {/* ===== ボディ ===== */}
+          <tbody>
+            {sortedStudents.map((student, si) => {
+              const completion = studentCompletionRates[student.id];
+              const completionPct = completion && completion.total > 0 ? Math.round((completion.completed / completion.total) * 100) : 0;
+              const gRates = studentGroupRates[student.id] || {};
+              const isEven = si % 2 === 0;
+              const prevStudent = si > 0 ? sortedStudents[si - 1] : null;
+              const showGradeSep = !prevStudent || prevStudent.grade !== student.grade;
+
+              return (
+                <tr
+                  key={student.id}
+                  className={`${isEven ? 'bg-white' : 'bg-gray-50/50'} ${showGradeSep && si > 0 ? 'border-t-2 border-t-gray-300' : ''} hover:bg-blue-50/30`}
                 >
-                  {/* 項目名（ダブルクリックで編集） */}
-                  {editingItemName === item.id ? (
-                    <input
-                      type="text"
-                      value={editItemNameValue}
-                      onChange={(e) => setEditItemNameValue(e.target.value)}
-                      onBlur={() => handleItemNameSave(item.id)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleItemNameSave(item.id);
-                        if (e.key === 'Escape') setEditingItemName(null);
-                      }}
-                      autoFocus
-                      className="w-full px-1 py-0.5 text-[10px] border border-blue-300 rounded text-center"
-                    />
-                  ) : (
-                    <div
-                      className={`text-[10px] leading-tight ${canEdit && onItemNameChange ? 'cursor-pointer hover:text-blue-600' : ''}`}
-                      onDoubleClick={() => {
-                        if (canEdit && onItemNameChange) {
-                          setEditingItemName(item.id);
-                          setEditItemNameValue(item.name);
-                        }
-                      }}
-                      title={`${item.name}${item.auto_source ? ' (自動)' : ''}${item.deadline ? ` 期日:${item.deadline}` : ''}\nダブルクリックで名前を編集`}
-                    >
-                      {item.name}
-                      {item.auto_source && <span className="text-blue-400 ml-0.5" title="自動計算">A</span>}
-                    </div>
-                  )}
-                  {/* 期日表示 */}
-                  {editingDeadline === item.id ? (
-                    <input
-                      type="date"
-                      value={editDeadlineValue}
-                      onChange={(e) => setEditDeadlineValue(e.target.value)}
-                      onBlur={() => handleDeadlineSave(item.id)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleDeadlineSave(item.id);
-                        if (e.key === 'Escape') setEditingDeadline(null);
-                      }}
-                      autoFocus
-                      className="w-full px-0.5 py-0 text-[9px] border border-blue-300 rounded mt-0.5"
-                    />
-                  ) : (
-                    <div
-                      className={`text-[9px] mt-0.5 ${
-                        item.deadline
-                          ? new Date(item.deadline) < new Date()
-                            ? 'text-red-500 font-bold'
-                            : 'text-orange-500'
-                          : 'text-gray-300'
-                      } ${canEdit && onItemDeadlineChange ? 'cursor-pointer hover:underline' : ''}`}
-                      onClick={() => {
-                        if (canEdit && onItemDeadlineChange) {
-                          setEditingDeadline(item.id);
-                          setEditDeadlineValue(item.deadline || '');
-                        }
-                      }}
-                      title="クリックで期日を設定"
-                    >
-                      {item.deadline ? formatDeadline(item.deadline) : '期日'}
-                    </div>
-                  )}
-                  {/* チェック列の完了率 */}
-                  {item.column_type === 'check' && itemCompletionRates[item.id] && (
-                    <div className="mt-0.5">
-                      <span className={`text-[9px] px-1 rounded ${
-                        itemCompletionRates[item.id].completed === itemCompletionRates[item.id].total
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-gray-100 text-gray-500'
-                      }`}>
-                        {itemCompletionRates[item.id].completed}/{itemCompletionRates[item.id].total}
-                      </span>
-                    </div>
-                  )}
-                </th>
-              ))
-            )}
-            <th className="border border-gray-200 px-2 py-2 text-center font-medium text-gray-700 min-w-[80px]">
-              進捗
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {sortedStudents.map((student) => {
-            const showGradeSeparator = student.grade !== lastGrade;
-            lastGrade = student.grade || null;
-            const completion = studentCompletionRates[student.id];
-            const completionRate = completion && completion.total > 0 ? completion.completed / completion.total : 0;
-
-            return (
-              <tr key={student.id} className={`hover:bg-blue-50/30 ${showGradeSeparator ? 'border-t-2 border-t-gray-300' : ''}`}>
-                <td className="border border-gray-200 px-2 py-1 text-center text-xs text-gray-600 sticky left-0 bg-white z-10">
-                  {GRADE_LABELS[student.grade || 0] || ''}
-                </td>
-                <td className="border border-gray-200 px-2 py-1 sticky left-[48px] bg-white z-10">
-                  <span className="text-xs font-medium text-[#1e3a5f] whitespace-nowrap">
-                    {student.last_name} {student.first_name}
-                  </span>
-                </td>
-                {columnGroups.flatMap((g) =>
-                  g.items.map((item) => {
-                    const d = progressMap.get(`${student.id}:${item.id}`);
-                    const isEditing = editingCell?.studentId === student.id && editingCell?.itemId === item.id;
-
-                    // 自動計算列
-                    if (item.auto_source && item.column_type === 'number') {
-                      const autoVal = getAutoValue(student.id, item.auto_source);
-                      return (
-                        <td key={item.id} className="border border-gray-200 px-1 py-1 text-center bg-blue-50/30">
-                          <span className="text-xs text-blue-700 font-medium">{autoVal ?? 0}</span>
-                        </td>
-                      );
-                    }
-
-                    if (item.column_type === 'check') {
-                      return (
-                        <td
-                          key={item.id}
-                          className={`border border-gray-200 px-1 py-1 text-center cursor-pointer select-none ${statusBgClass(d?.status)}`}
-                          onClick={() => handleCheckClick(student.id, item.id)}
-                        >
-                          <span className={`text-sm ${statusTextClass(d?.status)}`}>{statusSymbol(d?.status)}</span>
-                        </td>
-                      );
-                    }
-
-                    if (item.column_type === 'number') {
-                      if (isEditing) {
-                        return (
-                          <td key={item.id} className="border border-gray-200 px-0 py-0">
-                            <input
-                              type="number"
-                              value={editValue}
-                              onChange={(e) => setEditValue(e.target.value)}
-                              onBlur={() => handleNumberBlur(student.id, item.id)}
-                              onKeyDown={(e) => handleKeyDown(e, student.id, item.id, 'number')}
-                              autoFocus
-                              className="w-full px-1 py-1 text-xs text-center border-0 focus:ring-1 focus:ring-[#3b82f6] outline-none"
-                            />
-                          </td>
-                        );
-                      }
-                      return (
-                        <td
-                          key={item.id}
-                          className="border border-gray-200 px-1 py-1 text-center cursor-pointer hover:bg-blue-50"
-                          onClick={() => handleStartEdit(student.id, item.id, d?.number_value != null ? String(d.number_value) : '')}
-                        >
-                          <span className="text-xs text-[#1e3a5f]">{d?.number_value != null ? d.number_value : ''}</span>
-                        </td>
-                      );
-                    }
-
-                    if (item.column_type === 'date') {
-                      if (isEditing) {
-                        return (
-                          <td key={item.id} className="border border-gray-200 px-0 py-0">
-                            <input
-                              type="date"
-                              value={editValue}
-                              onChange={(e) => setEditValue(e.target.value)}
-                              onBlur={() => handleDateBlur(student.id, item.id)}
-                              onKeyDown={(e) => handleKeyDown(e, student.id, item.id, 'date')}
-                              autoFocus
-                              className="w-full px-1 py-1 text-xs text-center border-0 focus:ring-1 focus:ring-[#3b82f6] outline-none"
-                            />
-                          </td>
-                        );
-                      }
-                      const dateStr = d?.date_value
-                        ? new Date(d.date_value).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })
-                        : '';
-                      return (
-                        <td
-                          key={item.id}
-                          className="border border-gray-200 px-1 py-1 text-center cursor-pointer hover:bg-blue-50"
-                          onClick={() => handleStartEdit(student.id, item.id, d?.date_value || '')}
-                        >
-                          <span className="text-xs text-[#1e3a5f]">{dateStr}</span>
-                        </td>
-                      );
-                    }
-
-                    return <td key={item.id} className="border border-gray-200" />;
-                  })
-                )}
-                <td className="border border-gray-200 px-2 py-1">
-                  <div className="flex items-center gap-1.5">
-                    <div className="flex-1 bg-gray-100 rounded-full h-1.5 min-w-[40px]">
-                      <div
-                        className="h-1.5 rounded-full transition-all"
-                        style={{
-                          width: `${Math.round(completionRate * 100)}%`,
-                          backgroundColor: completionRate >= 0.8 ? '#10b981' : completionRate >= 0.5 ? '#f59e0b' : '#ef4444',
-                        }}
-                      />
-                    </div>
-                    <span className="text-[10px] text-gray-400 whitespace-nowrap">
-                      {completion ? `${completion.completed}/${completion.total}` : ''}
+                  {/* 学年 */}
+                  <td
+                    className={`sticky left-0 z-10 px-1 py-0.5 text-center text-[10px] text-gray-400 border-b border-gray-100 ${isEven ? 'bg-white' : 'bg-gray-50/80'}`}
+                    style={{ width: GRADE_W, minWidth: GRADE_W }}
+                  >
+                    {GRADE_LABELS[student.grade || 0] || ''}
+                  </td>
+                  {/* 名前 */}
+                  <td
+                    className={`sticky z-10 px-1.5 py-0.5 border-b border-gray-100 ${isEven ? 'bg-white' : 'bg-gray-50/80'}`}
+                    style={{ left: GRADE_W, width: NAME_W, minWidth: NAME_W }}
+                  >
+                    <span className="text-[11px] font-medium text-[#1e3a5f] whitespace-nowrap">
+                      {student.last_name} {student.first_name}
                     </span>
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+                  </td>
+                  {/* 進捗バー + グループドット */}
+                  <td
+                    className={`sticky z-10 px-1 py-0.5 border-b border-gray-100 border-r border-r-gray-200 ${isEven ? 'bg-white' : 'bg-gray-50/80'}`}
+                    style={{ left: GRADE_W + NAME_W, width: PROGRESS_W, minWidth: PROGRESS_W }}
+                  >
+                    <div className="flex items-center gap-1">
+                      {/* メインバー */}
+                      <div className="flex-1 bg-gray-100 rounded-full h-1.5 min-w-[24px]">
+                        <div
+                          className="h-1.5 rounded-full transition-all"
+                          style={{
+                            width: `${completionPct}%`,
+                            backgroundColor: completionPct >= 80 ? '#10b981' : completionPct >= 50 ? '#f59e0b' : '#ef4444',
+                          }}
+                        />
+                      </div>
+                      <span className="text-[9px] text-gray-400 w-7 text-right shrink-0">{completionPct}%</span>
+                    </div>
+                    {/* グループ別ミニドット */}
+                    <div className="flex items-center gap-0.5 mt-0.5">
+                      {columnGroups.map((g) => {
+                        const gr = gRates[g.key];
+                        if (!gr) return null;
+                        const gPct = gr.total > 0 ? gr.completed / gr.total : 0;
+                        return (
+                          <Tooltip key={g.key} text={`${g.label}: ${gr.completed}/${gr.total}`}>
+                            <div
+                              className="w-2 h-2 rounded-full border"
+                              style={{
+                                backgroundColor: gPct >= 1 ? g.color : gPct > 0 ? `${g.color}40` : '#e5e7eb',
+                                borderColor: gPct > 0 ? g.color : '#d1d5db',
+                              }}
+                            />
+                          </Tooltip>
+                        );
+                      })}
+                    </div>
+                  </td>
+
+                  {/* ===== ヒートマップセル ===== */}
+                  {columnGroups.flatMap((g) =>
+                    g.items.map((item) => {
+                      const d = progressMap.get(`${student.id}:${item.id}`);
+                      const groupColor = g.color;
+
+                      // 自動計算
+                      if (item.auto_source && item.column_type === 'number') {
+                        const autoVal = getAutoValue(student.id, item.auto_source);
+                        return (
+                          <td
+                            key={item.id}
+                            className="border-b border-gray-100 p-0 text-center"
+                            style={{ width: 36, minWidth: 36 }}
+                          >
+                            <div
+                              className="w-full h-[30px] flex items-center justify-center text-[10px] font-semibold"
+                              style={{
+                                backgroundColor: `${groupColor}12`,
+                                color: groupColor,
+                              }}
+                            >
+                              {autoVal ?? 0}
+                            </div>
+                          </td>
+                        );
+                      }
+
+                      // チェック
+                      if (item.column_type === 'check') {
+                        const style = getCellStyle(item, d?.status, null, groupColor);
+                        return (
+                          <td
+                            key={item.id}
+                            className="border-b border-gray-100 p-0 text-center"
+                            style={{ width: 36, minWidth: 36 }}
+                          >
+                            <div
+                              className={`w-full h-[30px] flex items-center justify-center text-xs font-bold ${canEdit ? 'cursor-pointer' : ''} transition-colors`}
+                              style={{
+                                backgroundColor: style.bg,
+                                color: style.text,
+                                borderLeft: `1px solid ${style.border}`,
+                                borderRight: `1px solid ${style.border}`,
+                              }}
+                              onClick={() => handleCheckClick(student.id, item.id)}
+                            >
+                              {statusSymbol(d?.status)}
+                            </div>
+                          </td>
+                        );
+                      }
+
+                      // 数値
+                      if (item.column_type === 'number') {
+                        const style = getCellStyle(item, null, d?.number_value, groupColor);
+                        return (
+                          <td
+                            key={item.id}
+                            className="border-b border-gray-100 p-0 text-center"
+                            style={{ width: 36, minWidth: 36 }}
+                          >
+                            <div
+                              className={`w-full h-[30px] flex items-center justify-center text-[10px] font-medium ${canEdit ? 'cursor-pointer hover:ring-1 hover:ring-blue-300 hover:ring-inset' : ''} transition-all`}
+                              style={{
+                                backgroundColor: style.bg,
+                                color: style.text,
+                              }}
+                              onClick={(e) => handleCellClick(e, student.id, item)}
+                            >
+                              {d?.number_value != null ? d.number_value : ''}
+                            </div>
+                          </td>
+                        );
+                      }
+
+                      // 日付
+                      if (item.column_type === 'date') {
+                        const dateStr = d?.date_value
+                          ? new Date(d.date_value).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })
+                          : '';
+                        return (
+                          <td
+                            key={item.id}
+                            className="border-b border-gray-100 p-0 text-center"
+                            style={{ width: 36, minWidth: 36 }}
+                          >
+                            <div
+                              className={`w-full h-[30px] flex items-center justify-center text-[9px] ${canEdit ? 'cursor-pointer hover:ring-1 hover:ring-blue-300 hover:ring-inset' : ''} transition-all`}
+                              style={{
+                                backgroundColor: dateStr ? `${groupColor}10` : '#ffffff',
+                                color: dateStr ? groupColor : '#d1d5db',
+                              }}
+                              onClick={(e) => handleCellClick(e, student.id, item)}
+                            >
+                              {dateStr}
+                            </div>
+                          </td>
+                        );
+                      }
+
+                      return <td key={item.id} className="border-b border-gray-100" />;
+                    })
+                  )}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* 凡例 */}
+      <div className="mt-3 flex flex-wrap items-center gap-4 text-[10px] text-gray-500 px-1">
+        <span className="font-medium text-gray-600">凡例:</span>
+        <div className="flex items-center gap-1">
+          <div className="w-4 h-4 rounded flex items-center justify-center bg-green-50 text-green-600 text-[10px] font-bold border border-green-200">{'\u2713'}</div>
+          <span>完了</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-4 h-4 rounded flex items-center justify-center bg-yellow-50 text-yellow-600 text-[10px] font-bold border border-yellow-200">{'\u00d7'}</div>
+          <span>未完了</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-4 h-4 rounded flex items-center justify-center bg-gray-100 text-gray-400 text-[10px] border border-gray-200">{'\u2013'}</div>
+          <span>対象外</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-4 h-4 rounded flex items-center justify-center bg-white text-gray-300 text-[10px] border border-gray-100"></div>
+          <span>未入力</span>
+        </div>
+        <span className="text-gray-300">|</span>
+        <span>セルクリックで切替 / 数値はクリックで編集</span>
+        {onItemNameChange && <span>/ 項目名はダブルクリックで編集</span>}
+      </div>
+
+      {/* 数値/日付編集ポップオーバー */}
+      {editingCell && (
+        <EditPopover
+          type={editingCell.type}
+          value={editValue}
+          onChange={setEditValue}
+          onSave={handleCellSave}
+          onCancel={() => setEditingCell(null)}
+          position={editPosition}
+        />
+      )}
+
+      {/* ヘッダー編集ポップオーバー */}
+      {editingHeader && (
+        <EditPopover
+          type={editingHeader.type}
+          value={editHeaderValue}
+          onChange={setEditHeaderValue}
+          onSave={handleHeaderSave}
+          onCancel={() => setEditingHeader(null)}
+          position={headerEditPosition}
+        />
+      )}
+    </>
   );
 }
