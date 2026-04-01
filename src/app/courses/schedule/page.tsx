@@ -33,6 +33,20 @@ function getDefaultSeason(): SeasonType {
   return 'winter';
 }
 
+/** シーズンごとの全体期間 */
+function getSeasonFullRangeForInit(season: SeasonType, year: number): { start: Date; end: Date } {
+  switch (season) {
+    case 'spring':
+      return { start: new Date(year, 0, 1), end: new Date(year, 3, 30) };
+    case 'summer':
+      return { start: new Date(year, 3, 1), end: new Date(year, 7, 31) };
+    case 'winter':
+      return { start: new Date(year, 9, 1), end: new Date(year + 1, 0, 31) };
+    default:
+      return { start: new Date(year, 0, 1), end: new Date(year, 3, 30) };
+  }
+}
+
 const STORAGE_KEY = 'course_prep_season_year';
 
 function loadSavedSeasonYear(): { season: SeasonType; year: number } {
@@ -68,23 +82,22 @@ export default function CourseSchedulePage() {
   const setSeason = useCallback((s: SeasonType) => {
     setSeasonRaw(s);
     saveSavedSeasonYear(s, year);
+    setDateRange(getSeasonFullRangeForInit(s, year));
   }, [year]);
 
   const setYear = useCallback((y: number) => {
     setYearRaw(y);
     saveSavedSeasonYear(season, y);
+    setDateRange(getSeasonFullRangeForInit(season, y));
   }, [season]);
 
-  // ビューモード
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  // ビューモード（デフォルト: ガントチャート）
+  const [viewMode, setViewMode] = useState<ViewMode>('gantt');
 
-  // 表示期間（ガントチャート用）
+  // 表示期間（デフォルト: シーズン全体表示）
   const [dateRange, setDateRange] = useState<{ start: Date; end: Date }>(() => {
-    const now = new Date();
-    return {
-      start: new Date(now.getFullYear(), now.getMonth(), 1),
-      end: new Date(now.getFullYear(), now.getMonth() + 2, 0),
-    };
+    const saved = loadSavedSeasonYear();
+    return getSeasonFullRangeForInit(saved.season, saved.year);
   });
 
   // データ
@@ -445,7 +458,7 @@ export default function CourseSchedulePage() {
 
     if (
       !confirm(
-        `現在の工程表を他の${targetSchoolIds.length}教室に展開します。\n既存のタスクがある教室にはスキップされます。\nよろしいですか？`
+        `現在のスケジュールを他の${targetSchoolIds.length}教室に展開します。\n既存のタスクがある教室にはスキップされます。\nよろしいですか？`
       )
     ) {
       return;
@@ -510,7 +523,7 @@ export default function CourseSchedulePage() {
   }
 
   return (
-    <AdminLayout headerTitle="講習 工程表">
+    <AdminLayout headerTitle="講習 準備スケジュール">
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* ヘッダー */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
@@ -568,7 +581,7 @@ export default function CourseSchedulePage() {
                   <button
                     onClick={() => {
                       const seasonLabel = season === 'spring' ? '春期' : season === 'summer' ? '夏期' : '冬期';
-                      setSaveTemplateName(`${seasonLabel}${year} 工程表テンプレート`);
+                      setSaveTemplateName(`${seasonLabel}${year} 準備スケジュールテンプレート`);
                       setShowSaveTemplateDialog(true);
                     }}
                     className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600"
@@ -628,7 +641,7 @@ export default function CourseSchedulePage() {
           /* ガントチャート表示 */
           tasks.length === 0 ? (
             <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-              <p className="text-[#4b5563] mb-4">工程表タスクがありません。</p>
+              <p className="text-[#4b5563] mb-4">スケジュールがありません。</p>
               {isManagerOrAbove && (
                 <button
                   onClick={handleOpenTemplateDialog}
@@ -687,7 +700,7 @@ export default function CourseSchedulePage() {
             <div className="px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-bold text-[#1e3a5f]">テンプレートとして保存</h3>
               <p className="text-sm text-gray-500 mt-1">
-                現在の工程表（{tasks.length}タスク、日付含む）をテンプレートとして保存します
+                現在のスケジュール（{tasks.length}タスク、日付含む）をテンプレートとして保存します
               </p>
             </div>
             <div className="px-6 py-4">

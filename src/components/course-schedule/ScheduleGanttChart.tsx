@@ -299,7 +299,7 @@ export function ScheduleGanttChart({
   if (tasks.length === 0) {
     return (
       <div className="py-12 text-center text-sm text-gray-400 italic">
-        工程表タスクがありません。テンプレートから作成してください。
+        スケジュールがありません。テンプレートから作成してください。
       </div>
     );
   }
@@ -496,7 +496,7 @@ export function ScheduleGanttChart({
                         return (
                           <td
                             key={dateStr}
-                            className={`border-b border-r border-gray-100 px-0 py-0 text-center relative cursor-pointer min-w-[24px] h-[26px] ${
+                            className={`border-b border-r border-gray-100 px-0 py-0 text-center relative cursor-pointer min-w-[24px] h-[30px] ${
                               weekend && !inBar ? 'bg-gray-50/30' : ''
                             }`}
                             onClick={() => canEdit && onMarkerClick(task.id, dateStr, marker)}
@@ -508,11 +508,11 @@ export function ScheduleGanttChart({
                             {/* バー表示（期間タスク） */}
                             {inBar && !milestone && (
                               <div
-                                className={`absolute top-1/2 -translate-y-1/2 h-[10px] ${
+                                className={`absolute top-1/2 -translate-y-1/2 h-[16px] ${
                                   task.is_completed
-                                    ? 'bg-green-400/40'
-                                    : 'bg-[#3b82f6]/25'
-                                } ${barStart ? 'rounded-l-sm' : ''} ${barEnd ? 'rounded-r-sm' : ''}`}
+                                    ? 'bg-emerald-400/50 border border-emerald-500/30'
+                                    : 'bg-blue-400/35 border border-blue-500/20'
+                                } ${barStart ? 'rounded-l' : ''} ${barEnd ? 'rounded-r' : ''}`}
                                 style={{
                                   left: barStart ? '1px' : 0,
                                   right: barEnd ? '1px' : 0,
@@ -530,7 +530,7 @@ export function ScheduleGanttChart({
                             {/* マイルストーン表示 */}
                             {isMilestoneDay && (
                               <div className="absolute inset-0 flex items-center justify-center z-5">
-                                <span className={`text-[10px] ${task.is_completed ? 'text-green-500' : 'text-purple-500'}`}>
+                                <span className={`text-[13px] drop-shadow-sm ${task.is_completed ? 'text-emerald-500' : 'text-purple-500'}`}>
                                   &#9670;
                                 </span>
                               </div>
@@ -740,7 +740,7 @@ export function ScheduleGanttChart({
                           return (
                             <td
                               key={wi}
-                              className="border-b border-r border-gray-100 px-0 py-0 text-center relative h-[26px] min-w-[48px]"
+                              className="border-b border-r border-gray-100 px-0 py-0 text-center relative h-[30px] min-w-[48px]"
                             >
                               {hasToday && (
                                 <div className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-red-400 z-10 -translate-x-1/2" />
@@ -748,11 +748,11 @@ export function ScheduleGanttChart({
                               {/* 期間バー */}
                               {state.hasBar && !state.isMilestoneInWeek && (
                                 <div
-                                  className={`absolute top-1/2 -translate-y-1/2 h-[10px] ${
+                                  className={`absolute top-1/2 -translate-y-1/2 h-[16px] ${
                                     task.is_completed
-                                      ? 'bg-green-400/40'
-                                      : 'bg-[#3b82f6]/25'
-                                  } ${state.isStart ? 'rounded-l-sm' : ''} ${state.isEnd ? 'rounded-r-sm' : ''}`}
+                                      ? 'bg-emerald-400/50 border border-emerald-500/30'
+                                      : 'bg-blue-400/35 border border-blue-500/20'
+                                  } ${state.isStart ? 'rounded-l' : ''} ${state.isEnd ? 'rounded-r' : ''}`}
                                   style={{
                                     left: state.isStart ? '2px' : 0,
                                     right: state.isEnd ? '2px' : 0,
@@ -854,15 +854,15 @@ export function ScheduleGanttChart({
       {/* 凡例 */}
       <div className="flex items-center gap-4 px-1">
         <div className="flex items-center gap-1">
-          <div className="w-6 h-[10px] bg-[#3b82f6]/25 rounded-sm" />
+          <div className="w-8 h-[14px] bg-blue-400/35 border border-blue-500/20 rounded" />
           <span className="text-[10px] text-gray-400">期間タスク</span>
         </div>
         <div className="flex items-center gap-1">
-          <span className="text-[10px] text-purple-500">&#9670;</span>
+          <span className="text-[11px] text-purple-500">&#9670;</span>
           <span className="text-[10px] text-gray-400">マイルストーン（単日）</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-6 h-[10px] bg-green-400/40 rounded-sm" />
+          <div className="w-8 h-[14px] bg-emerald-400/50 border border-emerald-500/30 rounded" />
           <span className="text-[10px] text-gray-400">完了</span>
         </div>
         <div className="flex items-center gap-1">

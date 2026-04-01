@@ -305,7 +305,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                               : ''
                           }`}
                         >
-                          工程表
+                          準備スケジュール
                         </Link>
                       </div>
                     </div>
