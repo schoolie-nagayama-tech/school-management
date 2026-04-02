@@ -19,9 +19,11 @@ interface CourseProgressTableProps {
 }
 
 function nextStatus(current: ApplicationStatus | null | undefined): ApplicationStatus | null {
-  if (!current) return 'pending';
-  if (current === 'pending') return 'completed';
+  if (!current) return 'completed';
   if (current === 'completed') return 'not_applicable';
+  if (current === 'not_applicable') return null;
+  // pending(旧データ)は完了扱いにする
+  if (current === 'pending') return 'completed';
   return null;
 }
 
@@ -39,8 +41,7 @@ function getCellStyle(
   groupColor: string
 ): { bg: string; text: string; border: string } {
   if (item.column_type === 'check') {
-    if (status === 'completed') return { bg: `${groupColor}22`, text: groupColor, border: `${groupColor}44` };
-    if (status === 'pending') return { bg: '#fef3c7', text: '#d97706', border: '#fcd34d' };
+    if (status === 'completed' || status === 'pending') return { bg: `${groupColor}22`, text: groupColor, border: `${groupColor}44` };
     if (status === 'not_applicable') return { bg: '#f3f4f6', text: '#9ca3af', border: '#e5e7eb' };
     return { bg: '#ffffff', text: '#d1d5db', border: '#f3f4f6' };
   }
@@ -54,8 +55,8 @@ function getCellStyle(
 
 function statusSymbol(status: ApplicationStatus | null | undefined): string {
   if (status === 'completed') return '\u2713';
-  if (status === 'pending') return '\u00d7';
   if (status === 'not_applicable') return '\u2013';
+  if (status === 'pending') return '\u2713'; // 旧データ互換: pendingも完了表示
   return '';
 }
 

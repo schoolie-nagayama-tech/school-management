@@ -240,13 +240,18 @@ export async function GET(request: NextRequest) {
           weeksInPeriod = Math.max(1, Math.round(days / 7));
         }
 
-        // courseSessionsは週あたりのコマ数 × 週数
+        // course_sessions = 通常週回数 × 講習期間の週数
+        // （講習期間中も通常通り通う回数を計算）
         const result: Record<string, { regular_weekly: number; course_sessions: number }> = {};
         const allStudentIds = Array.from(new Set([...Object.keys(regularWeeklyMap), ...Object.keys(courseSessionsMap)]));
         for (const sid of allStudentIds) {
+          const weeklyCount = regularWeeklyMap[sid] || 0;
+          // 季節別パターンがあればそちらを優先、なければ通常回数を使用
+          const seasonalCount = courseSessionsMap[sid] || 0;
+          const baseCount = seasonalCount > 0 ? seasonalCount : weeklyCount;
           result[sid] = {
-            regular_weekly: regularWeeklyMap[sid] || 0,
-            course_sessions: (courseSessionsMap[sid] || 0) * weeksInPeriod,
+            regular_weekly: weeklyCount,
+            course_sessions: baseCount * weeksInPeriod,
           };
         }
 
@@ -339,9 +344,12 @@ export async function GET(request: NextRequest) {
             const autoResult: Record<string, { regular_weekly: number; course_sessions: number }> = {};
             const allIds = Array.from(new Set([...Object.keys(regularWeeklyMap), ...Object.keys(courseSessionsMap)]));
             for (const sid of allIds) {
+              const weeklyCount = regularWeeklyMap[sid] || 0;
+              const seasonalCount = courseSessionsMap[sid] || 0;
+              const baseCount = seasonalCount > 0 ? seasonalCount : weeklyCount;
               autoResult[sid] = {
-                regular_weekly: regularWeeklyMap[sid] || 0,
-                course_sessions: (courseSessionsMap[sid] || 0) * weeksInPeriod,
+                regular_weekly: weeklyCount,
+                course_sessions: baseCount * weeksInPeriod,
               };
             }
             batchResult.auto_values = autoResult;
