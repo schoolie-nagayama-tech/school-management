@@ -5,7 +5,6 @@ import { AdminLayout } from '@/components/layouts';
 import { CourseProgressDashboard, CourseProgressTable } from '@/components/course-progress';
 import { SeasonYearSelector } from '@/components/course-shared/SeasonYearSelector';
 import { TemplateApplyDialog } from '@/components/course-shared/TemplateApplyDialog';
-import { getStudents } from '@/lib/api/students';
 import { updateScheduleTask } from '@/lib/api/courseSchedule';
 import { supabase } from '@/lib/supabase';
 import { batchFetchCoursePrepApi } from '@/lib/api/coursePrepApi';
@@ -129,6 +128,7 @@ export default function CourseProgressPage() {
   const [newItemType, setNewItemType] = useState<ApplicationColumnType>('check');
   const [newItemGroup, setNewItemGroup] = useState<string>('');
   const [newItemAutoSource, setNewItemAutoSource] = useState<string>('');
+  const [dragItemId, setDragItemId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -142,14 +142,13 @@ export default function CourseProgressPage() {
       }
       const schoolId = schoolIds[0];
 
-      // バッチAPI: 5つのデータを1リクエストで取得 + 生徒データ
-      const [studentsData, batchData] = await Promise.all([
-        getStudents(undefined, schoolIds),
-        batchFetchCoursePrepApi(
-          { schoolId, season, year: String(year), includeHidden: String(showHidden) },
-          ['progress_items', 'student_progress', 'period', 'auto_values', 'schedule_tasks']
-        ),
-      ]);
+      // バッチAPI: 生徒を含む全データを1リクエストで取得
+      const batchData = await batchFetchCoursePrepApi(
+        { schoolId, season, year: String(year), includeHidden: String(showHidden) },
+        ['students', 'progress_items', 'student_progress', 'period', 'auto_values', 'schedule_tasks']
+      );
+
+      const studentsData = ((batchData.students as Record<string, unknown>[]) || []) as Student[];
 
       const itemsData = ((batchData.progress_items as Record<string, unknown>[]) || []).map((item) => ({
         ...item,
@@ -166,7 +165,7 @@ export default function CourseProgressPage() {
         date_value: d.date_value ?? null,
       })) as StudentCourseProgress[];
 
-      setStudents(studentsData.filter((s) => s.status !== 'withdrawn'));
+      setStudents(studentsData);
       setItems(itemsData);
       setProgressData(progressResult);
       setPeriod((batchData.period as CoursePrepPeriod) || null);
@@ -575,29 +574,34 @@ export default function CourseProgressPage() {
     [fetchData, getSelectedSchoolIds]
   );
 
-  // 項目並び替え
-  const handleReorderItem = useCallback(
-    async (itemId: string, direction: 'up' | 'down') => {
+  // 項目並び替え（D&D）
+  const handleDropItem = useCallback(
+    async (dragId: string, dropId: string) => {
+      if (dragId === dropId) return;
       const schoolIds = getSelectedSchoolIds();
       if (schoolIds.length === 0) return;
-      const idx = items.findIndex((i) => i.id === itemId);
-      if (idx < 0) return;
-      const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
-      if (swapIdx < 0 || swapIdx >= items.length) return;
-      const a = items[idx];
-      const b = items[swapIdx];
-      // ローカル即時反映
-      setItems((prev) => {
-        const next = [...prev];
-        next[idx] = { ...b, sort_order: a.sort_order };
-        next[swapIdx] = { ...a, sort_order: b.sort_order };
-        return next.sort((x, y) => x.sort_order - y.sort_order);
-      });
+      const dragIdx = items.findIndex((i) => i.id === dragId);
+      const dropIdx = items.findIndex((i) => i.id === dropId);
+      if (dragIdx < 0 || dropIdx < 0) return;
+
+      // 新しい並び順を作成
+      const reordered = [...items];
+      const [moved] = reordered.splice(dragIdx, 1);
+      reordered.splice(dropIdx, 0, moved);
+
+      // sort_orderを振り直し
+      const updates = reordered.map((item, i) => ({ ...item, sort_order: i }));
+      setItems(updates);
+
+      // 変更のあった項目だけAPIに送信
       try {
-        await Promise.all([
-          updateCourseProgressItem(a.id, schoolIds[0], { sort_order: b.sort_order }),
-          updateCourseProgressItem(b.id, schoolIds[0], { sort_order: a.sort_order }),
-        ]);
+        const changed = updates.filter((u) => {
+          const orig = items.find((o) => o.id === u.id);
+          return orig && orig.sort_order !== u.sort_order;
+        });
+        await Promise.all(
+          changed.map((c) => updateCourseProgressItem(c.id, schoolIds[0], { sort_order: c.sort_order }))
+        );
       } catch (err) {
         console.error('Error reordering items:', err);
         fetchData();
@@ -881,31 +885,23 @@ export default function CourseProgressPage() {
                   </div>
 
                   {/* 既存項目一覧 */}
-                  <div className="space-y-1 max-h-80 overflow-y-auto">
+                  <div className="space-y-0.5 max-h-80 overflow-y-auto">
                     {items.map((item) => {
                       const linkedTask = scheduleTasks.find((t) => t.linked_progress_item_id === item.id);
                       return (
                         <div
                           key={item.id}
-                          className={`flex items-center justify-between gap-2 px-2 py-1.5 rounded text-xs ${
+                          draggable
+                          onDragStart={() => setDragItemId(item.id)}
+                          onDragEnd={() => setDragItemId(null)}
+                          onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+                          onDrop={(e) => { e.preventDefault(); if (dragItemId) handleDropItem(dragItemId, item.id); }}
+                          className={`flex items-center justify-between gap-2 px-2 py-1.5 rounded text-xs transition-all ${
                             item.is_hidden ? 'bg-gray-50 text-gray-400' : ''
-                          }`}
+                          } ${dragItemId === item.id ? 'opacity-40 scale-95' : ''} ${dragItemId && dragItemId !== item.id ? 'border border-dashed border-blue-300' : 'border border-transparent'}`}
                         >
                           <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <div className="flex flex-col shrink-0">
-                              <button
-                                onClick={() => handleReorderItem(item.id, 'up')}
-                                disabled={items.indexOf(item) === 0}
-                                className="text-[9px] text-gray-400 hover:text-gray-700 disabled:opacity-20 leading-none"
-                                title="上へ"
-                              >▲</button>
-                              <button
-                                onClick={() => handleReorderItem(item.id, 'down')}
-                                disabled={items.indexOf(item) === items.length - 1}
-                                className="text-[9px] text-gray-400 hover:text-gray-700 disabled:opacity-20 leading-none"
-                                title="下へ"
-                              >▼</button>
-                            </div>
+                            <span className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 shrink-0 select-none" title="ドラッグで並び替え">⠿</span>
                             <span className="font-medium shrink-0">{item.name}</span>
                             <span className="text-[10px] text-gray-400 shrink-0">
                               {item.column_type === 'check'

@@ -286,6 +286,21 @@ export async function GET(request: NextRequest) {
         const batchResult: Record<string, unknown> = {};
         const promises: Promise<void>[] = [];
 
+        if (targets.includes('students')) {
+          promises.push((async () => {
+            const { data } = await supabaseAdmin
+              .from('students')
+              .select('*')
+              .eq('school_id', schoolId)
+              .is('deleted_at', null)
+              .neq('status', 'withdrawn')
+              .order('grade', { ascending: true })
+              .order('last_name_kana', { ascending: true, nullsFirst: false })
+              .order('first_name_kana', { ascending: true, nullsFirst: false });
+            batchResult.students = data || [];
+          })());
+        }
+
         if (targets.includes('progress_items')) {
           promises.push((async () => {
             let query = supabaseAdmin
