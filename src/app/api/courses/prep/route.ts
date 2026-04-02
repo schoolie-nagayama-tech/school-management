@@ -4,6 +4,17 @@ import { getApiAuth } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
 
+/** 期間内の各曜日の出現回数を正確にカウント (0=日〜6=土) */
+function countDayOccurrences(startDate: string, endDate: string): Record<number, number> {
+  const counts: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    counts[d.getDay()]++;
+  }
+  return counts;
+}
+
 function getSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -193,37 +204,42 @@ export async function GET(request: NextRequest) {
       }
 
       case 'get_auto_values': {
-        // 通塾日程から通常週回数を計算、講習期間から講習回数を計算
-        // student_id[] → { studentId: { regular_weekly: number, course_sessions: number } }
-        const periodSeason = season; // 'spring' | 'summer' | 'winter'
+        // 通塾日程から通常週回数を計算、講習期間から講習回数を正確に計算
+        const periodSeason = season;
 
-        // 1. 通常週回数: schedule_regular_patterns で period_type='regular', is_active=true
+        // 1. 通常パターン（曜日付き）
         const { data: regularPatterns } = await supabaseAdmin
           .from('schedule_regular_patterns')
-          .select('student_id, id')
+          .select('student_id, day_of_week')
           .eq('school_id', schoolId)
           .eq('period_type', 'regular')
           .eq('is_active', true);
 
+        // 週回数（曜日不問の総数）
         const regularWeeklyMap: Record<string, number> = {};
-        for (const p of (regularPatterns || []) as { student_id: string }[]) {
+        // 曜日別パターン数（生徒→曜日→コマ数）
+        const regularDayMap: Record<string, Record<number, number>> = {};
+        for (const p of (regularPatterns || []) as { student_id: string; day_of_week: number }[]) {
           regularWeeklyMap[p.student_id] = (regularWeeklyMap[p.student_id] || 0) + 1;
+          if (!regularDayMap[p.student_id]) regularDayMap[p.student_id] = {};
+          regularDayMap[p.student_id][p.day_of_week] = (regularDayMap[p.student_id][p.day_of_week] || 0) + 1;
         }
 
-        // 2. 講習回数: schedule_regular_patterns で period_type=seasonに対応するもの
+        // 2. 季節別パターン（曜日付き）
         const { data: seasonalPatterns } = await supabaseAdmin
           .from('schedule_regular_patterns')
-          .select('student_id, id')
+          .select('student_id, day_of_week')
           .eq('school_id', schoolId)
           .eq('period_type', periodSeason)
           .eq('is_active', true);
 
-        const courseSessionsMap: Record<string, number> = {};
-        for (const p of (seasonalPatterns || []) as { student_id: string }[]) {
-          courseSessionsMap[p.student_id] = (courseSessionsMap[p.student_id] || 0) + 1;
+        const seasonalDayMap: Record<string, Record<number, number>> = {};
+        for (const p of (seasonalPatterns || []) as { student_id: string; day_of_week: number }[]) {
+          if (!seasonalDayMap[p.student_id]) seasonalDayMap[p.student_id] = {};
+          seasonalDayMap[p.student_id][p.day_of_week] = (seasonalDayMap[p.student_id][p.day_of_week] || 0) + 1;
         }
 
-        // 3. 講習期間が設定されていれば、週数を掛けて総回数を推定
+        // 3. 講習期間の曜日別出現回数を正確にカウント
         const { data: periodData } = await supabaseAdmin
           .from('course_prep_periods')
           .select('schedule_start_date, schedule_end_date')
@@ -232,26 +248,32 @@ export async function GET(request: NextRequest) {
           .eq('year', year)
           .maybeSingle();
 
-        let weeksInPeriod = 1;
+        let dayCounts: Record<number, number> | null = null;
         if (periodData?.schedule_start_date && periodData?.schedule_end_date) {
-          const start = new Date(periodData.schedule_start_date);
-          const end = new Date(periodData.schedule_end_date);
-          const days = Math.max(1, Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
-          weeksInPeriod = Math.max(1, Math.round(days / 7));
+          dayCounts = countDayOccurrences(periodData.schedule_start_date, periodData.schedule_end_date);
         }
 
-        // course_sessions = 通常週回数 × 講習期間の週数
-        // （講習期間中も通常通り通う回数を計算）
+        // course_sessions = Σ(各曜日のパターン数 × その曜日の期間内出現回数)
         const result: Record<string, { regular_weekly: number; course_sessions: number }> = {};
-        const allStudentIds = Array.from(new Set([...Object.keys(regularWeeklyMap), ...Object.keys(courseSessionsMap)]));
+        const allStudentIds = Array.from(new Set([...Object.keys(regularWeeklyMap), ...Object.keys(seasonalDayMap)]));
         for (const sid of allStudentIds) {
           const weeklyCount = regularWeeklyMap[sid] || 0;
-          // 季節別パターンがあればそちらを優先、なければ通常回数を使用
-          const seasonalCount = courseSessionsMap[sid] || 0;
-          const baseCount = seasonalCount > 0 ? seasonalCount : weeklyCount;
+          // 季節別パターンがあればそちらを優先、なければ通常パターンを使用
+          const dayMap = Object.keys(seasonalDayMap[sid] || {}).length > 0
+            ? seasonalDayMap[sid]
+            : regularDayMap[sid] || {};
+          let sessions = 0;
+          if (dayCounts) {
+            for (const [day, patternCount] of Object.entries(dayMap)) {
+              sessions += patternCount * (dayCounts[Number(day)] || 0);
+            }
+          } else {
+            // 期間未設定時は週回数をそのまま返す
+            sessions = Object.values(dayMap).reduce((s, c) => s + c, 0);
+          }
           result[sid] = {
             regular_weekly: weeklyCount,
-            course_sessions: baseCount * weeksInPeriod,
+            course_sessions: sessions,
           };
         }
 
@@ -317,39 +339,49 @@ export async function GET(request: NextRequest) {
           promises.push((async () => {
             const [{ data: regularPatterns }, { data: seasonalPatterns }, { data: periodForAuto }] = await Promise.all([
               supabaseAdmin.from('schedule_regular_patterns')
-                .select('student_id, id')
+                .select('student_id, day_of_week')
                 .eq('school_id', schoolId).eq('period_type', 'regular').eq('is_active', true),
               supabaseAdmin.from('schedule_regular_patterns')
-                .select('student_id, id')
+                .select('student_id, day_of_week')
                 .eq('school_id', schoolId).eq('period_type', season).eq('is_active', true),
               supabaseAdmin.from('course_prep_periods')
                 .select('schedule_start_date, schedule_end_date')
                 .eq('school_id', schoolId).eq('season', season).eq('year', year).maybeSingle(),
             ]);
             const regularWeeklyMap: Record<string, number> = {};
-            for (const p of (regularPatterns || []) as { student_id: string }[]) {
+            const regularDayMap: Record<string, Record<number, number>> = {};
+            for (const p of (regularPatterns || []) as { student_id: string; day_of_week: number }[]) {
               regularWeeklyMap[p.student_id] = (regularWeeklyMap[p.student_id] || 0) + 1;
+              if (!regularDayMap[p.student_id]) regularDayMap[p.student_id] = {};
+              regularDayMap[p.student_id][p.day_of_week] = (regularDayMap[p.student_id][p.day_of_week] || 0) + 1;
             }
-            const courseSessionsMap: Record<string, number> = {};
-            for (const p of (seasonalPatterns || []) as { student_id: string }[]) {
-              courseSessionsMap[p.student_id] = (courseSessionsMap[p.student_id] || 0) + 1;
+            const seasonalDayMap: Record<string, Record<number, number>> = {};
+            for (const p of (seasonalPatterns || []) as { student_id: string; day_of_week: number }[]) {
+              if (!seasonalDayMap[p.student_id]) seasonalDayMap[p.student_id] = {};
+              seasonalDayMap[p.student_id][p.day_of_week] = (seasonalDayMap[p.student_id][p.day_of_week] || 0) + 1;
             }
-            let weeksInPeriod = 1;
+            let dayCounts: Record<number, number> | null = null;
             if (periodForAuto?.schedule_start_date && periodForAuto?.schedule_end_date) {
-              const s = new Date(periodForAuto.schedule_start_date);
-              const e = new Date(periodForAuto.schedule_end_date);
-              const days = Math.max(1, Math.round((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)));
-              weeksInPeriod = Math.max(1, Math.round(days / 7));
+              dayCounts = countDayOccurrences(periodForAuto.schedule_start_date, periodForAuto.schedule_end_date);
             }
             const autoResult: Record<string, { regular_weekly: number; course_sessions: number }> = {};
-            const allIds = Array.from(new Set([...Object.keys(regularWeeklyMap), ...Object.keys(courseSessionsMap)]));
+            const allIds = Array.from(new Set([...Object.keys(regularWeeklyMap), ...Object.keys(seasonalDayMap)]));
             for (const sid of allIds) {
               const weeklyCount = regularWeeklyMap[sid] || 0;
-              const seasonalCount = courseSessionsMap[sid] || 0;
-              const baseCount = seasonalCount > 0 ? seasonalCount : weeklyCount;
+              const dayMap = Object.keys(seasonalDayMap[sid] || {}).length > 0
+                ? seasonalDayMap[sid]
+                : regularDayMap[sid] || {};
+              let sessions = 0;
+              if (dayCounts) {
+                for (const [day, patternCount] of Object.entries(dayMap)) {
+                  sessions += patternCount * (dayCounts[Number(day)] || 0);
+                }
+              } else {
+                sessions = Object.values(dayMap).reduce((s, c) => s + c, 0);
+              }
               autoResult[sid] = {
                 regular_weekly: weeklyCount,
-                course_sessions: baseCount * weeksInPeriod,
+                course_sessions: sessions,
               };
             }
             batchResult.auto_values = autoResult;

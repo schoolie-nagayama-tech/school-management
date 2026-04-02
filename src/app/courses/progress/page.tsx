@@ -575,6 +575,37 @@ export default function CourseProgressPage() {
     [fetchData, getSelectedSchoolIds]
   );
 
+  // 項目並び替え
+  const handleReorderItem = useCallback(
+    async (itemId: string, direction: 'up' | 'down') => {
+      const schoolIds = getSelectedSchoolIds();
+      if (schoolIds.length === 0) return;
+      const idx = items.findIndex((i) => i.id === itemId);
+      if (idx < 0) return;
+      const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+      if (swapIdx < 0 || swapIdx >= items.length) return;
+      const a = items[idx];
+      const b = items[swapIdx];
+      // ローカル即時反映
+      setItems((prev) => {
+        const next = [...prev];
+        next[idx] = { ...b, sort_order: a.sort_order };
+        next[swapIdx] = { ...a, sort_order: b.sort_order };
+        return next.sort((x, y) => x.sort_order - y.sort_order);
+      });
+      try {
+        await Promise.all([
+          updateCourseProgressItem(a.id, schoolIds[0], { sort_order: b.sort_order }),
+          updateCourseProgressItem(b.id, schoolIds[0], { sort_order: a.sort_order }),
+        ]);
+      } catch (err) {
+        console.error('Error reordering items:', err);
+        fetchData();
+      }
+    },
+    [items, getSelectedSchoolIds, fetchData]
+  );
+
   // 項目名変更
   const handleItemNameChange = useCallback(
     async (itemId: string, name: string) => {
@@ -861,6 +892,20 @@ export default function CourseProgressPage() {
                           }`}
                         >
                           <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <div className="flex flex-col shrink-0">
+                              <button
+                                onClick={() => handleReorderItem(item.id, 'up')}
+                                disabled={items.indexOf(item) === 0}
+                                className="text-[9px] text-gray-400 hover:text-gray-700 disabled:opacity-20 leading-none"
+                                title="上へ"
+                              >▲</button>
+                              <button
+                                onClick={() => handleReorderItem(item.id, 'down')}
+                                disabled={items.indexOf(item) === items.length - 1}
+                                className="text-[9px] text-gray-400 hover:text-gray-700 disabled:opacity-20 leading-none"
+                                title="下へ"
+                              >▼</button>
+                            </div>
                             <span className="font-medium shrink-0">{item.name}</span>
                             <span className="text-[10px] text-gray-400 shrink-0">
                               {item.column_type === 'check'
