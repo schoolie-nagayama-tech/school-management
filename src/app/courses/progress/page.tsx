@@ -903,13 +903,26 @@ export default function CourseProgressPage() {
                           <div className="flex items-center gap-2 flex-1 min-w-0">
                             <span className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500 shrink-0 select-none" title="ドラッグで並び替え">⠿</span>
                             <span className="font-medium shrink-0">{item.name}</span>
-                            <span className="text-[10px] text-gray-400 shrink-0">
-                              {item.column_type === 'check'
-                                ? 'チェック'
-                                : item.column_type === 'number'
-                                ? '数値'
-                                : '日付'}
-                            </span>
+                            <select
+                              value={item.column_type}
+                              onChange={async (e) => {
+                                const schoolIds = getSelectedSchoolIds();
+                                if (schoolIds.length === 0) return;
+                                const newType = e.target.value as ApplicationColumnType;
+                                setItems((prev) => prev.map((i) => i.id === item.id ? { ...i, column_type: newType } : i));
+                                try {
+                                  await updateCourseProgressItem(item.id, schoolIds[0], { column_type: newType });
+                                } catch (err) {
+                                  console.error('Error updating type:', err);
+                                  fetchData();
+                                }
+                              }}
+                              className="text-[10px] px-1 py-0.5 border border-gray-200 rounded bg-white text-gray-500"
+                            >
+                              <option value="check">チェック</option>
+                              <option value="number">数値</option>
+                              <option value="date">日付</option>
+                            </select>
                             {item.column_group && (
                               <span
                                 className="text-[9px] px-1 py-0.5 rounded shrink-0"
