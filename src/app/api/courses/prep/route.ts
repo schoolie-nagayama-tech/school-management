@@ -166,7 +166,7 @@ export async function GET(request: NextRequest) {
           .map((t: { linked_progress_item_id: string | null }) => t.linked_progress_item_id)
           .filter((id: string | null): id is string => !!id);
 
-        let progressRateMap: Record<string, { total: number; completed: number }> = {};
+        const progressRateMap: Record<string, { total: number; completed: number }> = {};
         if (linkedItemIds.length > 0) {
           const uniqueItemIds = Array.from(new Set(linkedItemIds));
           const { data: progressData } = await supabaseAdmin
@@ -251,6 +251,151 @@ export async function GET(request: NextRequest) {
         }
 
         return NextResponse.json({ data: result });
+      }
+
+      // ===== バッチ取得: 複数データを1リクエストで取得 =====
+      case 'batch_get': {
+        const targets = (url.searchParams.get('targets') || '').split(',').filter(Boolean);
+        const batchResult: Record<string, unknown> = {};
+        const promises: Promise<void>[] = [];
+
+        if (targets.includes('progress_items')) {
+          promises.push((async () => {
+            let query = supabaseAdmin
+              .from('course_prep_progress_items')
+              .select('*')
+              .eq('school_id', schoolId)
+              .eq('season', season)
+              .eq('year', year)
+              .order('sort_order', { ascending: true });
+            if (!includeHidden) {
+              query = query.or('is_hidden.eq.false,is_hidden.is.null');
+            }
+            const { data } = await query;
+            batchResult.progress_items = data || [];
+          })());
+        }
+
+        if (targets.includes('student_progress')) {
+          promises.push((async () => {
+            const { data: items } = await supabaseAdmin
+              .from('course_prep_progress_items')
+              .select('id')
+              .eq('school_id', schoolId)
+              .eq('season', season)
+              .eq('year', year);
+            if (!items || items.length === 0) { batchResult.student_progress = []; return; }
+            const itemIds = items.map((i: { id: string }) => i.id);
+            const { data } = await supabaseAdmin
+              .from('course_prep_student_progress')
+              .select('*')
+              .eq('school_id', schoolId)
+              .in('item_id', itemIds);
+            batchResult.student_progress = data || [];
+          })());
+        }
+
+        if (targets.includes('period')) {
+          promises.push((async () => {
+            const { data } = await supabaseAdmin
+              .from('course_prep_periods')
+              .select('*')
+              .eq('school_id', schoolId)
+              .eq('season', season)
+              .eq('year', year)
+              .maybeSingle();
+            batchResult.period = data;
+          })());
+        }
+
+        if (targets.includes('auto_values')) {
+          promises.push((async () => {
+            const [{ data: regularPatterns }, { data: seasonalPatterns }, { data: periodForAuto }] = await Promise.all([
+              supabaseAdmin.from('schedule_regular_patterns')
+                .select('student_id, id')
+                .eq('school_id', schoolId).eq('period_type', 'regular').eq('is_active', true),
+              supabaseAdmin.from('schedule_regular_patterns')
+                .select('student_id, id')
+                .eq('school_id', schoolId).eq('period_type', season).eq('is_active', true),
+              supabaseAdmin.from('course_prep_periods')
+                .select('schedule_start_date, schedule_end_date')
+                .eq('school_id', schoolId).eq('season', season).eq('year', year).maybeSingle(),
+            ]);
+            const regularWeeklyMap: Record<string, number> = {};
+            for (const p of (regularPatterns || []) as { student_id: string }[]) {
+              regularWeeklyMap[p.student_id] = (regularWeeklyMap[p.student_id] || 0) + 1;
+            }
+            const courseSessionsMap: Record<string, number> = {};
+            for (const p of (seasonalPatterns || []) as { student_id: string }[]) {
+              courseSessionsMap[p.student_id] = (courseSessionsMap[p.student_id] || 0) + 1;
+            }
+            let weeksInPeriod = 1;
+            if (periodForAuto?.schedule_start_date && periodForAuto?.schedule_end_date) {
+              const s = new Date(periodForAuto.schedule_start_date);
+              const e = new Date(periodForAuto.schedule_end_date);
+              const days = Math.max(1, Math.round((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)));
+              weeksInPeriod = Math.max(1, Math.round(days / 7));
+            }
+            const autoResult: Record<string, { regular_weekly: number; course_sessions: number }> = {};
+            const allIds = Array.from(new Set([...Object.keys(regularWeeklyMap), ...Object.keys(courseSessionsMap)]));
+            for (const sid of allIds) {
+              autoResult[sid] = {
+                regular_weekly: regularWeeklyMap[sid] || 0,
+                course_sessions: (courseSessionsMap[sid] || 0) * weeksInPeriod,
+              };
+            }
+            batchResult.auto_values = autoResult;
+          })());
+        }
+
+        if (targets.includes('schedule_tasks')) {
+          promises.push((async () => {
+            const { data: tasks } = await supabaseAdmin
+              .from('course_prep_schedule_tasks')
+              .select('*')
+              .eq('school_id', schoolId)
+              .eq('season', season)
+              .eq('year', year)
+              .order('sort_order', { ascending: true });
+            if (!tasks || tasks.length === 0) { batchResult.schedule_tasks = []; return; }
+            const taskIds = tasks.map((t: { id: string }) => t.id);
+            const { data: markers } = await supabaseAdmin
+              .from('course_prep_schedule_markers')
+              .select('*')
+              .in('task_id', taskIds)
+              .order('marker_date', { ascending: true });
+            const markersByTask = new Map<string, unknown[]>();
+            for (const m of (markers || [])) {
+              const tid = (m as { task_id: string }).task_id;
+              if (!markersByTask.has(tid)) markersByTask.set(tid, []);
+              markersByTask.get(tid)!.push(m);
+            }
+            const linkedItemIds = tasks
+              .map((t: { linked_progress_item_id: string | null }) => t.linked_progress_item_id)
+              .filter((id: string | null): id is string => !!id);
+            const progressRateMap: Record<string, { total: number; completed: number }> = {};
+            if (linkedItemIds.length > 0) {
+              const uniqueIds = Array.from(new Set(linkedItemIds));
+              const { data: progressData } = await supabaseAdmin
+                .from('course_prep_student_progress')
+                .select('item_id, status')
+                .in('item_id', uniqueIds);
+              for (const itemId of uniqueIds) {
+                const related = (progressData || []).filter((p: { item_id: string }) => p.item_id === itemId);
+                const completed = related.filter((p: { status: string }) => p.status === 'completed').length;
+                progressRateMap[itemId] = { total: related.length, completed };
+              }
+            }
+            batchResult.schedule_tasks = tasks.map((t: { id: string; linked_progress_item_id: string | null }) => ({
+              ...t,
+              markers: markersByTask.get(t.id) || [],
+              linked_progress_rate: t.linked_progress_item_id ? progressRateMap[t.linked_progress_item_id] || null : null,
+            }));
+          })());
+        }
+
+        await Promise.all(promises);
+        return NextResponse.json({ data: batchResult });
       }
 
       default:

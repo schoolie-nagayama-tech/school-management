@@ -18,7 +18,7 @@ import {
   upsertScheduleMarker,
   deleteScheduleMarker,
 } from '@/lib/api/courseSchedule';
-import { getCourseProgressItems, getStudentCourseProgress } from '@/lib/api/courseProgress';
+import { batchFetchCoursePrepApi } from '@/lib/api/coursePrepApi';
 import { getTemplates, initializeScheduleFromTemplate, saveCurrentAsTemplate, deleteTemplate } from '@/lib/api/courseTemplates';
 import type { ScheduleTaskWithMarkers, ScheduleMarker, CourseTemplate, CourseProgressItem, StudentCourseProgress, SeasonType } from '@/types/database';
 import { useRequirePermission, useCanEdit } from '@/hooks/usePermissions';
@@ -142,11 +142,13 @@ export default function CourseSchedulePage() {
         setIsLoading(false);
         return;
       }
-      const [data, progressItems, studentProgress] = await Promise.all([
-        getScheduleTasks(ids[0], season, year),
-        getCourseProgressItems(ids[0], season, year, false),
-        getStudentCourseProgress(ids[0], season, year).catch(() => [] as StudentCourseProgress[]),
-      ]);
+      const batchData = await batchFetchCoursePrepApi(
+        { schoolId: ids[0], season, year: String(year) },
+        ['schedule_tasks', 'progress_items', 'student_progress']
+      );
+      const data = (batchData.schedule_tasks || []) as ScheduleTaskWithMarkers[];
+      const progressItems = (batchData.progress_items || []) as CourseProgressItem[];
+      const studentProgress = (batchData.student_progress || []) as StudentCourseProgress[];
       setTasks(data);
       setAllProgressItems(progressItems);
       setDeadlineItems(progressItems.filter((i) => i.deadline));

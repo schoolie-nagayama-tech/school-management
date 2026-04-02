@@ -56,3 +56,29 @@ export async function fetchCoursePrepApi(
   }
   return data;
 }
+
+/**
+ * バッチ取得: 複数データを1リクエストで取得（認証1回、DB並列実行）
+ * targets: 'progress_items' | 'student_progress' | 'period' | 'auto_values' | 'schedule_tasks'
+ */
+export async function batchFetchCoursePrepApi(
+  params: { schoolId: string; season: string; year: string; includeHidden?: string },
+  targets: string[]
+): Promise<Record<string, unknown>> {
+  const token = await getAccessToken();
+
+  const searchParams = new URLSearchParams({
+    action: 'batch_get',
+    ...params,
+    targets: targets.join(','),
+  });
+  const res = await fetch(`/api/courses/prep?${searchParams.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || '取得に失敗しました');
+  }
+  return data.data as Record<string, unknown>;
+}

@@ -6,8 +6,9 @@ import { CourseProgressDashboard, CourseProgressTable } from '@/components/cours
 import { SeasonYearSelector } from '@/components/course-shared/SeasonYearSelector';
 import { TemplateApplyDialog } from '@/components/course-shared/TemplateApplyDialog';
 import { getStudents } from '@/lib/api/students';
-import { getScheduleTasks, updateScheduleTask } from '@/lib/api/courseSchedule';
+import { updateScheduleTask } from '@/lib/api/courseSchedule';
 import { supabase } from '@/lib/supabase';
+import { batchFetchCoursePrepApi } from '@/lib/api/coursePrepApi';
 import {
   getCourseProgressItems,
   getStudentCourseProgress,
@@ -143,21 +144,36 @@ export default function CourseProgressPage() {
       }
       const schoolId = schoolIds[0];
 
-      const [studentsData, itemsData, progressResult, periodData, autoVals, scheduleData] = await Promise.all([
+      // バッチAPI: 5つのデータを1リクエストで取得 + 生徒データ
+      const [studentsData, batchData] = await Promise.all([
         getStudents(undefined, schoolIds),
-        getCourseProgressItems(schoolId, season, year, showHidden),
-        getStudentCourseProgress(schoolId, season, year),
-        getCoursePrepPeriod(schoolId, season, year),
-        getAutoValues(schoolId, season, year),
-        getScheduleTasks(schoolId, season, year).catch(() => [] as ScheduleTaskWithMarkers[]),
+        batchFetchCoursePrepApi(
+          { schoolId, season, year: String(year), includeHidden: String(showHidden) },
+          ['progress_items', 'student_progress', 'period', 'auto_values', 'schedule_tasks']
+        ),
       ]);
+
+      const itemsData = ((batchData.progress_items as Record<string, unknown>[]) || []).map((item) => ({
+        ...item,
+        column_type: (item.column_type as string) || 'check',
+        manager_only: item.manager_only === true,
+        is_hidden: item.is_hidden === true,
+        deadline: (item.deadline as string) || null,
+        auto_source: (item.auto_source as string) || null,
+      })) as CourseProgressItem[];
+
+      const progressResult = ((batchData.student_progress as Record<string, unknown>[]) || []).map((d) => ({
+        ...d,
+        number_value: d.number_value ?? null,
+        date_value: d.date_value ?? null,
+      })) as StudentCourseProgress[];
 
       setStudents(studentsData.filter((s) => s.status !== 'withdrawn'));
       setItems(itemsData);
       setProgressData(progressResult);
-      setPeriod(periodData);
-      setAutoValuesData(autoVals);
-      setScheduleTasks(scheduleData);
+      setPeriod((batchData.period as CoursePrepPeriod) || null);
+      setAutoValuesData((batchData.auto_values || {}) as AutoValues);
+      setScheduleTasks((batchData.schedule_tasks || []) as ScheduleTaskWithMarkers[]);
 
       // 項目が0件なら初回テンプレート適用を提案
       if (itemsData.length === 0 && isManagerOrAbove) {
@@ -418,8 +434,11 @@ export default function CourseProgressPage() {
           await updateScheduleTask(taskId, { linked_progress_item_id: itemId }, schoolIds[0]);
         }
         // 再取得
-        const updated = await getScheduleTasks(schoolIds[0], season, year);
-        setScheduleTasks(updated);
+        const batchResult = await batchFetchCoursePrepApi(
+          { schoolId: schoolIds[0], season, year: String(year) },
+          ['schedule_tasks']
+        );
+        setScheduleTasks((batchResult.schedule_tasks || []) as ScheduleTaskWithMarkers[]);
       } catch (err) {
         console.error('Error linking schedule task:', err);
       }
