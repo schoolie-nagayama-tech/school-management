@@ -10,8 +10,6 @@ import { updateScheduleTask } from '@/lib/api/courseSchedule';
 import { supabase } from '@/lib/supabase';
 import { batchFetchCoursePrepApi } from '@/lib/api/coursePrepApi';
 import {
-  getCourseProgressItems,
-  getStudentCourseProgress,
   getCoursePrepPeriod,
   upsertCoursePrepPeriod,
   updateStudentProgress,
