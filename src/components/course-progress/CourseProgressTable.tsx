@@ -120,6 +120,9 @@ function EditPopover({
   );
 }
 
+// 教科別グループの合計列キー
+const SUBJECT_GROUP_KEY = '教科別';
+
 export function CourseProgressTable({
   students,
   items,
@@ -176,6 +179,34 @@ export function CourseProgressTable({
     }
     return groups;
   }, [items]);
+
+  // 教科別グループがあるかチェック
+  const subjectGroup = useMemo(() => columnGroups.find((g) => g.key === SUBJECT_GROUP_KEY), [columnGroups]);
+  const hasSubjectTotal = !!subjectGroup && subjectGroup.items.some((i) => i.column_type === 'number');
+
+  // 教科別合計の計算（生徒ID→合計値）
+  const subjectTotals = useMemo(() => {
+    if (!hasSubjectTotal || !subjectGroup) return {};
+    const totals: Record<string, number> = {};
+    for (const s of students) {
+      let sum = 0;
+      for (const item of subjectGroup.items) {
+        if (item.column_type !== 'number') continue;
+        if (item.auto_source) {
+          const sv = autoValues?.[s.id];
+          if (sv) {
+            if (item.auto_source === 'regular_weekly') sum += sv.regular_weekly;
+            else if (item.auto_source === 'course_sessions') sum += sv.course_sessions;
+          }
+        } else {
+          const d = progressMap.get(`${s.id}:${item.id}`);
+          if (d?.number_value != null) sum += d.number_value;
+        }
+      }
+      totals[s.id] = sum;
+    }
+    return totals;
+  }, [hasSubjectTotal, subjectGroup, students, progressMap, autoValues]);
 
   // アイテムごとのグループカラー
   const itemGroupColor = useMemo(() => {
@@ -254,8 +285,8 @@ export function CourseProgressTable({
   const handleCellClick = useCallback(
     (e: React.MouseEvent, studentId: string, item: CourseProgressItem) => {
       if (!canEdit) return;
-      if (item.auto_source && item.column_type === 'number') return; // auto は編集不可
-      if (item.column_type === 'check') return; // check は handleCheckClick で処理
+      if (item.auto_source && item.column_type === 'number') return;
+      if (item.column_type === 'check') return;
       const rect = (e.target as HTMLElement).getBoundingClientRect();
       const d = progressMap.get(`${studentId}:${item.id}`);
       const currentVal = item.column_type === 'number'
@@ -343,10 +374,13 @@ export function CourseProgressTable({
   const PROGRESS_W = 72;
   const LEFT_TOTAL = GRADE_W + NAME_W + PROGRESS_W;
 
+  // 合計列の幅
+  const TOTAL_COL_W = hasSubjectTotal ? 40 : 0;
+
   // セル幅を動的計算: 残り幅を項目数で均等割り（最小28px）
   const MIN_CELL_W = 28;
   const itemCount = items.length;
-  const availableWidth = containerWidth > 0 ? containerWidth - LEFT_TOTAL : 0;
+  const availableWidth = containerWidth > 0 ? containerWidth - LEFT_TOTAL - TOTAL_COL_W : 0;
   const dynamicCellW = itemCount > 0 && availableWidth > 0
     ? Math.max(MIN_CELL_W, Math.floor(availableWidth / itemCount))
     : 36;
@@ -363,7 +397,7 @@ export function CourseProgressTable({
   return (
     <>
       <div ref={containerRef} className={`border border-gray-200 rounded-xl bg-white shadow-sm ${needsScroll ? 'overflow-x-auto' : 'overflow-hidden'}`}>
-        <table className="border-collapse w-full" style={needsScroll ? { minWidth: `${LEFT_TOTAL + itemCount * MIN_CELL_W}px` } : undefined}>
+        <table className="border-collapse w-full" style={needsScroll ? { minWidth: `${LEFT_TOTAL + itemCount * MIN_CELL_W + TOTAL_COL_W}px` } : undefined}>
           {/* ===== グループカラーバー ===== */}
           <thead>
             <tr>
@@ -377,10 +411,12 @@ export function CourseProgressTable({
               {columnGroups.map((g) => {
                 const rate = groupCompletionRates[g.key];
                 const pct = rate && rate.total > 0 ? Math.round((rate.completed / rate.total) * 100) : 0;
+                // 教科別は+1列（合計列）
+                const extraCols = (g.key === SUBJECT_GROUP_KEY && hasSubjectTotal) ? 1 : 0;
                 return (
                   <th
                     key={g.key}
-                    colSpan={g.items.length}
+                    colSpan={g.items.length + extraCols}
                     className="px-1 py-1 text-center relative"
                     style={{ backgroundColor: `${g.color}15` }}
                   >
@@ -408,7 +444,7 @@ export function CourseProgressTable({
               })}
             </tr>
 
-            {/* ===== 項目名ヘッダー（縦書き風コンパクト） ===== */}
+            {/* ===== 項目名ヘッダー ===== */}
             <tr className="bg-gray-50">
               {/* 学年 */}
               <th
@@ -431,19 +467,19 @@ export function CourseProgressTable({
               >
                 進捗
               </th>
-              {/* 各項目 */}
-              {columnGroups.flatMap((g) =>
-                g.items.map((item) => {
+              {/* 各項目 + 教科別合計 */}
+              {columnGroups.flatMap((g) => {
+                const headerCells = g.items.map((item) => {
                   const isOverdue = item.deadline && new Date(item.deadline) < new Date();
                   return (
                     <th
                       key={item.id}
-                      className="border-b border-gray-200 px-0 py-1 text-center"
+                      className="border-b border-gray-200 px-0 py-1 text-center align-top"
                       style={{ width: dynamicCellW, minWidth: MIN_CELL_W }}
                     >
                       <Tooltip text={`${item.name}${item.deadline ? ` (期日: ${formatDeadline(item.deadline)})` : ''}${item.auto_source ? ' [自動]' : ''}`}>
                         <div
-                          className={`text-[9px] leading-tight px-0.5 ${
+                          className={`text-[9px] leading-[1.2] px-0.5 min-h-[22px] flex items-center justify-center ${
                             onItemNameChange && canEdit ? 'cursor-pointer hover:text-blue-600' : ''
                           }`}
                           style={{ color: itemGroupColor[item.id] }}
@@ -453,12 +489,10 @@ export function CourseProgressTable({
                             }
                           }}
                         >
-                          {/* 項目名をセル幅に応じて表示 */}
-                          {(() => {
-                            const maxChars = dynamicCellW >= 60 ? 6 : dynamicCellW >= 44 ? 4 : 3;
-                            return item.name.length > maxChars ? item.name.slice(0, maxChars) + '..' : item.name;
-                          })()}
-                          {item.auto_source && <span className="text-blue-400 text-[8px]">A</span>}
+                          <span className="line-clamp-2 break-all text-center">
+                            {item.name}
+                            {item.auto_source && <span className="text-blue-400 text-[8px] ml-0.5">A</span>}
+                          </span>
                         </div>
                         {/* 期日バッジ */}
                         <div
@@ -476,8 +510,23 @@ export function CourseProgressTable({
                       </Tooltip>
                     </th>
                   );
-                })
-              )}
+                });
+                // 教科別グループの後に合計列を追加
+                if (g.key === SUBJECT_GROUP_KEY && hasSubjectTotal) {
+                  headerCells.push(
+                    <th
+                      key="_subject_total_header"
+                      className="border-b border-gray-200 px-0 py-1 text-center align-top bg-gray-100/50"
+                      style={{ width: TOTAL_COL_W, minWidth: TOTAL_COL_W }}
+                    >
+                      <div className="text-[9px] leading-[1.2] font-bold min-h-[22px] flex items-center justify-center" style={{ color: subjectGroup?.color }}>
+                        合計
+                      </div>
+                    </th>
+                  );
+                }
+                return headerCells;
+              })}
             </tr>
           </thead>
 
@@ -518,7 +567,6 @@ export function CourseProgressTable({
                     style={{ left: GRADE_W + NAME_W, width: PROGRESS_W, minWidth: PROGRESS_W }}
                   >
                     <div className="flex items-center gap-1">
-                      {/* メインバー */}
                       <div className="flex-1 bg-gray-100 rounded-full h-1.5 min-w-[24px]">
                         <div
                           className="h-1.5 rounded-full transition-all"
@@ -530,7 +578,6 @@ export function CourseProgressTable({
                       </div>
                       <span className="text-[9px] text-gray-400 w-7 text-right shrink-0">{completionPct}%</span>
                     </div>
-                    {/* グループ別ミニドット */}
                     <div className="flex items-center gap-0.5 mt-0.5">
                       {columnGroups.map((g) => {
                         const gr = gRates[g.key];
@@ -552,8 +599,8 @@ export function CourseProgressTable({
                   </td>
 
                   {/* ===== ヒートマップセル ===== */}
-                  {columnGroups.flatMap((g) =>
-                    g.items.map((item) => {
+                  {columnGroups.flatMap((g) => {
+                    const cells = g.items.map((item) => {
                       const d = progressMap.get(`${student.id}:${item.id}`);
                       const groupColor = g.color;
 
@@ -561,16 +608,10 @@ export function CourseProgressTable({
                       if (item.auto_source && item.column_type === 'number') {
                         const autoVal = getAutoValue(student.id, item.auto_source);
                         return (
-                          <td
-                            key={item.id}
-                            className="border-b border-gray-100 p-0 text-center"
-                          >
+                          <td key={item.id} className="border-b border-gray-100 p-0 text-center">
                             <div
                               className="w-full h-[30px] flex items-center justify-center text-[10px] font-semibold"
-                              style={{
-                                backgroundColor: `${groupColor}12`,
-                                color: groupColor,
-                              }}
+                              style={{ backgroundColor: `${groupColor}12`, color: groupColor }}
                             >
                               {autoVal ?? 0}
                             </div>
@@ -582,10 +623,7 @@ export function CourseProgressTable({
                       if (item.column_type === 'check') {
                         const style = getCellStyle(item, d?.status, null, groupColor);
                         return (
-                          <td
-                            key={item.id}
-                            className="border-b border-gray-100 p-0 text-center"
-                          >
+                          <td key={item.id} className="border-b border-gray-100 p-0 text-center">
                             <div
                               className={`w-full h-[30px] flex items-center justify-center text-xs font-bold ${canEdit ? 'cursor-pointer' : ''} transition-colors`}
                               style={{
@@ -606,16 +644,10 @@ export function CourseProgressTable({
                       if (item.column_type === 'number') {
                         const style = getCellStyle(item, null, d?.number_value, groupColor);
                         return (
-                          <td
-                            key={item.id}
-                            className="border-b border-gray-100 p-0 text-center"
-                          >
+                          <td key={item.id} className="border-b border-gray-100 p-0 text-center">
                             <div
                               className={`w-full h-[30px] flex items-center justify-center text-[10px] font-medium ${canEdit ? 'cursor-pointer hover:ring-1 hover:ring-blue-300 hover:ring-inset' : ''} transition-all`}
-                              style={{
-                                backgroundColor: style.bg,
-                                color: style.text,
-                              }}
+                              style={{ backgroundColor: style.bg, color: style.text }}
                               onClick={(e) => handleCellClick(e, student.id, item)}
                             >
                               {d?.number_value != null ? d.number_value : ''}
@@ -630,10 +662,7 @@ export function CourseProgressTable({
                           ? new Date(d.date_value).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })
                           : '';
                         return (
-                          <td
-                            key={item.id}
-                            className="border-b border-gray-100 p-0 text-center"
-                          >
+                          <td key={item.id} className="border-b border-gray-100 p-0 text-center">
                             <div
                               className={`w-full h-[30px] flex items-center justify-center text-[9px] ${canEdit ? 'cursor-pointer hover:ring-1 hover:ring-blue-300 hover:ring-inset' : ''} transition-all`}
                               style={{
@@ -649,8 +678,25 @@ export function CourseProgressTable({
                       }
 
                       return <td key={item.id} className="border-b border-gray-100" />;
-                    })
-                  )}
+                    });
+
+                    // 教科別グループの後に合計セル
+                    if (g.key === SUBJECT_GROUP_KEY && hasSubjectTotal) {
+                      const total = subjectTotals[student.id] ?? 0;
+                      cells.push(
+                        <td key="_subject_total" className="border-b border-gray-100 p-0 text-center bg-gray-50/80">
+                          <div
+                            className="w-full h-[30px] flex items-center justify-center text-[11px] font-bold"
+                            style={{ color: subjectGroup?.color }}
+                          >
+                            {total}
+                          </div>
+                        </td>
+                      );
+                    }
+
+                    return cells;
+                  })}
                 </tr>
               );
             })}
