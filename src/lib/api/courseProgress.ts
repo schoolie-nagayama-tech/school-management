@@ -29,12 +29,13 @@ export async function upsertCoursePrepPeriod(
   schoolId: string,
   season: SeasonType,
   year: number,
-  updates: Partial<Pick<CoursePrepPeriod, 'budget_koma' | 'schedule_start_date' | 'schedule_end_date'>>
+  updates: Partial<Pick<CoursePrepPeriod, 'budget_koma' | 'target_koma' | 'schedule_start_date' | 'schedule_end_date'>>
 ): Promise<void> {
   await callCoursePrepApi('upsert_period', schoolId, {
     season,
     year,
     budgetKoma: updates.budget_koma,
+    targetKoma: updates.target_koma,
     scheduleStartDate: updates.schedule_start_date,
     scheduleEndDate: updates.schedule_end_date,
   });

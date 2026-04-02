@@ -1029,7 +1029,7 @@ async function handleDeleteAllProgressItems(
 async function handleUpsertPeriod(
   supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
   schoolId: string,
-  params: { season: string; year: number; budgetKoma?: number; scheduleStartDate?: string; scheduleEndDate?: string }
+  params: { season: string; year: number; budgetKoma?: number; targetKoma?: number; scheduleStartDate?: string; scheduleEndDate?: string }
 ) {
   const { data: existing } = await supabaseAdmin
     .from('course_prep_periods')
@@ -1041,6 +1041,7 @@ async function handleUpsertPeriod(
 
   const updateData: Record<string, unknown> = {};
   if (params.budgetKoma !== undefined) updateData.budget_koma = params.budgetKoma;
+  if (params.targetKoma !== undefined) updateData.target_koma = params.targetKoma;
   if (params.scheduleStartDate !== undefined) updateData.schedule_start_date = params.scheduleStartDate;
   if (params.scheduleEndDate !== undefined) updateData.schedule_end_date = params.scheduleEndDate;
 

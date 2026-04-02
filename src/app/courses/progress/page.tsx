@@ -362,6 +362,23 @@ export default function CourseProgressPage() {
     [getSelectedSchoolIds, season, year]
   );
 
+  // 目標コマ変更
+  const handleTargetKomaChange = useCallback(
+    async (value: number) => {
+      const schoolIds = getSelectedSchoolIds();
+      if (schoolIds.length === 0) return;
+      try {
+        await upsertCoursePrepPeriod(schoolIds[0], season, year, {
+          target_koma: value,
+        });
+        setPeriod((prev) => prev ? { ...prev, target_koma: value } : prev);
+      } catch (err) {
+        console.error('Error updating target:', err);
+      }
+    },
+    [getSelectedSchoolIds, season, year]
+  );
+
   // 講習期間日付変更
   const handlePeriodDateChange = useCallback(
     async (updates: Partial<Pick<CoursePrepPeriod, 'schedule_start_date' | 'schedule_end_date'>>) => {
@@ -736,7 +753,9 @@ export default function CourseProgressPage() {
             items={displayItems}
             progressData={progressData}
             period={period}
+            autoValues={autoValuesData}
             onBudgetKomaChange={isOwnerOrAbove ? handleBudgetKomaChange : undefined}
+            onTargetKomaChange={isOwnerOrAbove ? handleTargetKomaChange : undefined}
             onPeriodDateChange={isOwnerOrAbove ? handlePeriodDateChange : undefined}
           />
         )}

@@ -3397,6 +3397,7 @@ export interface CoursePrepPeriod {
   season: SeasonType;
   year: number;
   budget_koma: number;
+  target_koma: number;
   schedule_start_date: string | null;
   schedule_end_date: string | null;
   created_at: string;
@@ -3415,7 +3416,7 @@ export interface CourseProgressItem {
   manager_only: boolean;
   column_group: string | null;
   deadline: string | null;
-  auto_source: 'regular_weekly' | 'course_sessions' | null;
+  auto_source: 'regular_weekly' | 'course_sessions' | 'proposed_extra' | null;
   created_at: string;
   updated_at: string;
 }
