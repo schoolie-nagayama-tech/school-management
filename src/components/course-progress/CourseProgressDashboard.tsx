@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import type { CourseProgressItem, StudentCourseProgress, CoursePrepPeriod } from '@/types/database';
 import type { Student } from '@/types/database';
 import { GRADE_LABELS } from '@/types/database';
@@ -40,6 +40,74 @@ const CATEGORY_COLORS: Record<SchoolCategory, { bg: string; border: string; text
   other: { bg: 'bg-gray-50', border: 'border-gray-200', text: 'text-gray-700', accent: '#6b7280' },
 };
 
+/** onBlurで保存するnumber input */
+function DebouncedNumberInput({
+  value,
+  onSave,
+  placeholder,
+  className,
+}: {
+  value: number;
+  onSave: (v: number) => void;
+  placeholder?: string;
+  className?: string;
+}) {
+  const [localValue, setLocalValue] = useState(String(value || ''));
+  const savedRef = useRef(value);
+
+  // 外部からの値変更を反映（自分が編集中でなければ）
+  useEffect(() => {
+    if (value !== savedRef.current) {
+      setLocalValue(String(value || ''));
+      savedRef.current = value;
+    }
+  }, [value]);
+
+  const handleBlur = useCallback(() => {
+    const num = Number(localValue) || 0;
+    if (num !== savedRef.current) {
+      savedRef.current = num;
+      onSave(num);
+    }
+  }, [localValue, onSave]);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        (e.target as HTMLInputElement).blur();
+      }
+    },
+    []
+  );
+
+  return (
+    <input
+      type="number"
+      value={localValue}
+      onChange={(e) => setLocalValue(e.target.value)}
+      onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
+      className={className}
+      placeholder={placeholder}
+    />
+  );
+}
+
+// 項目名を柔軟にマッチ（部分一致）
+function findItemByKeywords(items: CourseProgressItem[], keywords: string[]): CourseProgressItem | undefined {
+  // まず完全一致を試す
+  for (const kw of keywords) {
+    const exact = items.find((i) => i.name === kw);
+    if (exact) return exact;
+  }
+  // 部分一致（全キーワードを含む）
+  for (const kw of keywords) {
+    const partial = items.find((i) => i.name.includes(kw));
+    if (partial) return partial;
+  }
+  return undefined;
+}
+
 export function CourseProgressDashboard({
   students,
   items,
@@ -54,9 +122,26 @@ export function CourseProgressDashboard({
   const budgetKoma = period?.budget_koma || 0;
   const targetKoma = period?.target_koma || 0;
 
-  // 増コマ関連の項目を名前で検索
-  const proposedKomaItem = items.find((i) => i.name === '提示増コマ回数');
-  const decidedKomaItem = items.find((i) => i.name === '増コマ回数決定');
+  // 増コマ関連の項目を柔軟に検索
+  // 提案増コマ: auto_source='proposed_extra' または名前に「提案増コマ」「提示増コマ」を含む
+  const proposedKomaItem = useMemo(() => {
+    const byAutoSource = items.find((i) => i.auto_source === 'proposed_extra');
+    if (byAutoSource) return byAutoSource;
+    return findItemByKeywords(items, ['提案増コマ', '提示増コマ', '提案増コマ回数', '提示増コマ回数']);
+  }, [items]);
+
+  // 決定増コマ: 名前に「増コマ回数」を含む（ただし提案/提示を除く）
+  const decidedKomaItem = useMemo(() => {
+    return items.find(
+      (i) =>
+        i.id !== proposedKomaItem?.id &&
+        i.column_type === 'number' &&
+        (i.name.includes('増コマ回数') || i.name === '増コマ回数決定')
+    ) || findItemByKeywords(
+      items.filter((i) => i.id !== proposedKomaItem?.id),
+      ['増コマ回数決定', '増コマ決定', '決定コマ']
+    );
+  }, [items, proposedKomaItem]);
 
   // 教科別グループの数値項目合計（教科別コマ合計）
   const subjectItems = useMemo(
@@ -92,7 +177,6 @@ export function CourseProgressDashboard({
     for (const s of students) {
       if (proposedKomaItem) {
         if (proposedKomaItem.auto_source === 'proposed_extra') {
-          // 自動計算: 教科別合計 - 講習期間通常回数
           const subjectTotal = studentSubjectTotals[s.id] ?? 0;
           const courseSessions = autoValues?.[s.id]?.course_sessions ?? 0;
           vals[s.id] = Math.max(0, subjectTotal - courseSessions);
@@ -124,18 +208,12 @@ export function CourseProgressDashboard({
   // 全体集計
   const totalProposed = Object.values(studentProposedKoma).reduce((a, b) => a + b, 0);
   const totalDecided = Object.values(studentDecidedKoma).reduce((a, b) => a + b, 0);
-  // 提案に対する取得率（決定 / 提案）
   const acquisitionRate = totalProposed > 0 ? totalDecided / totalProposed : 0;
-  // 予想増コマ = 提案増コマ × 取得率
   const expectedKoma = Math.round(totalProposed * acquisitionRate);
-  // 予算達成率
   const budgetRate = budgetKoma > 0 ? totalDecided / budgetKoma : 0;
-  // 目標達成率
   const targetRate = targetKoma > 0 ? totalDecided / targetKoma : 0;
 
-  // 提案済み生徒数（提案 > 0）
   const proposedStudentCount = Object.values(studentProposedKoma).filter((v) => v > 0).length;
-  // 決定済み生徒数（決定 > 0）
   const decidedStudentCount = Object.values(studentDecidedKoma).filter((v) => v > 0).length;
 
   // 学校種別ごとの分析
@@ -151,7 +229,6 @@ export function CourseProgressDashboard({
       const catProposedCount = catStudents.filter((s) => (studentProposedKoma[s.id] ?? 0) > 0).length;
       const catDecidedCount = catStudents.filter((s) => (studentDecidedKoma[s.id] ?? 0) > 0).length;
 
-      // 学年別内訳
       const gradeBreakdown: { grade: number; label: string; count: number; proposed: number; decided: number }[] = [];
       const gradeSet = Array.from(new Set(catStudents.map((s) => s.grade))).sort((a, b) => a - b);
       for (const grade of gradeSet) {
@@ -182,8 +259,17 @@ export function CourseProgressDashboard({
     }).filter((x): x is Exclude<typeof x, null> => x !== null);
   }, [students, studentProposedKoma, studentDecidedKoma]);
 
-  // 講習期間表示
   const hasScheduleDates = period?.schedule_start_date && period?.schedule_end_date;
+
+  // デバッグ: どの項目がマッチしているか
+  const matchInfo = useMemo(() => {
+    const info: string[] = [];
+    if (proposedKomaItem) info.push(`提案: "${proposedKomaItem.name}"`);
+    else info.push('提案: 未検出');
+    if (decidedKomaItem) info.push(`決定: "${decidedKomaItem.name}"`);
+    else info.push('決定: 未検出');
+    return info.join(' / ');
+  }, [proposedKomaItem, decidedKomaItem]);
 
   return (
     <div className="space-y-4 mb-6">
@@ -218,7 +304,6 @@ export function CourseProgressDashboard({
           </div>
         </div>
       )}
-      {/* 講習期間表示（権限なし時） */}
       {!onPeriodDateChange && hasScheduleDates && (
         <div className="bg-white rounded-xl border border-gray-200 px-4 py-3">
           <div className="flex items-center gap-4">
@@ -233,6 +318,15 @@ export function CourseProgressDashboard({
         </div>
       )}
 
+      {/* マッチ項目の確認（提案 or 決定が未検出の場合のみ表示） */}
+      {(!proposedKomaItem || !decidedKomaItem) && (
+        <div className="text-[10px] text-amber-500 px-1">
+          ⚠ ダッシュボード集計: {matchInfo}
+          {!proposedKomaItem && <span className="ml-1">（項目名に「提案増コマ」または「提示増コマ」を含む数値項目が必要です）</span>}
+          {!decidedKomaItem && <span className="ml-1">（項目名に「増コマ回数」を含む数値項目が必要です）</span>}
+        </div>
+      )}
+
       {/* メイン指標カード */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* 増コマ達成度 */}
@@ -244,47 +338,55 @@ export function CourseProgressDashboard({
               / {budgetKoma > 0 ? budgetKoma : '–'} コマ
             </span>
           </div>
-          <div className="mt-2 w-full bg-gray-100 rounded-full h-2.5">
-            <div
-              className="h-2.5 rounded-full bg-[#3b82f6] transition-all"
-              style={{ width: `${Math.min(Math.round(budgetRate * 100), 100)}%` }}
-            />
-          </div>
-          <div className="flex items-center justify-between text-xs text-gray-400 mt-1">
-            {budgetKoma > 0 && <span>{Math.round(budgetRate * 100)}%</span>}
-          </div>
+          {budgetKoma > 0 && (
+            <>
+              <div className="mt-2 w-full bg-gray-100 rounded-full h-2.5">
+                <div
+                  className="h-2.5 rounded-full bg-[#3b82f6] transition-all"
+                  style={{ width: `${Math.min(Math.round(budgetRate * 100), 100)}%` }}
+                />
+              </div>
+              <div className="text-xs text-gray-400 mt-1">{Math.round(budgetRate * 100)}%</div>
+            </>
+          )}
           {(onBudgetKomaChange || onTargetKomaChange) && (
-            <div className="mt-2 flex items-center gap-3">
+            <div className="mt-3 space-y-2">
               {onBudgetKomaChange && (
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-gray-400">予算:</span>
-                  <input
-                    type="number"
-                    value={budgetKoma || ''}
-                    onChange={(e) => onBudgetKomaChange(Number(e.target.value) || 0)}
-                    className="w-16 px-1 py-0.5 text-xs border border-gray-200 rounded text-center"
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-gray-500 w-8">予算</span>
+                  <DebouncedNumberInput
+                    value={budgetKoma}
+                    onSave={onBudgetKomaChange}
                     placeholder="0"
+                    className="w-20 px-2 py-1 text-sm border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-1 focus:ring-blue-300"
                   />
+                  <span className="text-[10px] text-gray-400">コマ</span>
                 </div>
               )}
               {onTargetKomaChange && (
-                <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-gray-400">目標:</span>
-                  <input
-                    type="number"
-                    value={targetKoma || ''}
-                    onChange={(e) => onTargetKomaChange(Number(e.target.value) || 0)}
-                    className="w-16 px-1 py-0.5 text-xs border border-gray-200 rounded text-center"
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-gray-500 w-8">目標</span>
+                  <DebouncedNumberInput
+                    value={targetKoma}
+                    onSave={onTargetKomaChange}
                     placeholder="0"
+                    className="w-20 px-2 py-1 text-sm border border-gray-200 rounded-lg text-center focus:outline-none focus:ring-1 focus:ring-blue-300"
                   />
+                  <span className="text-[10px] text-gray-400">コマ</span>
                 </div>
               )}
+            </div>
+          )}
+          {!onBudgetKomaChange && !onTargetKomaChange && (
+            <div className="mt-2 space-y-0.5 text-xs text-gray-400">
+              {budgetKoma > 0 && <div>予算: {budgetKoma}コマ</div>}
+              {targetKoma > 0 && <div>目標: {targetKoma}コマ</div>}
             </div>
           )}
           {targetKoma > 0 && (
             <div className="mt-1.5 flex items-center gap-1">
               <span className="text-[10px] text-gray-400">目標達成:</span>
-              <span className={`text-[10px] font-medium ${targetRate >= 1 ? 'text-green-600' : targetRate >= 0.7 ? 'text-amber-600' : 'text-red-500'}`}>
+              <span className={`text-[11px] font-bold ${targetRate >= 1 ? 'text-green-600' : targetRate >= 0.7 ? 'text-amber-600' : 'text-red-500'}`}>
                 {Math.round(targetRate * 100)}%
               </span>
             </div>
@@ -298,7 +400,7 @@ export function CourseProgressDashboard({
             <span className="text-2xl font-bold text-[#f59e0b]">{expectedKoma}</span>
             <span className="text-sm text-gray-400">コマ</span>
           </div>
-          <div className="mt-2 text-xs text-gray-400 space-y-0.5">
+          <div className="mt-2 text-xs text-gray-400 space-y-1">
             <div className="flex justify-between">
               <span>提案合計</span>
               <span className="font-medium text-gray-600">{totalProposed}コマ</span>
@@ -311,6 +413,9 @@ export function CourseProgressDashboard({
               <span>決定済み</span>
               <span className="font-medium text-gray-600">{totalDecided}コマ</span>
             </div>
+          </div>
+          <div className="mt-2 pt-2 border-t border-gray-100 text-[10px] text-gray-400">
+            予想 = 提案合計 × 取得率
           </div>
         </div>
 
@@ -327,12 +432,19 @@ export function CourseProgressDashboard({
               style={{ width: `${students.length > 0 ? Math.round((proposedStudentCount / students.length) * 100) : 0}%` }}
             />
           </div>
-          <div className="mt-1 text-xs text-gray-400 flex justify-between">
-            <span>提案済: {proposedStudentCount}名</span>
-            <span>決定済: {decidedStudentCount}名</span>
-          </div>
-          <div className="mt-1 text-xs text-gray-400">
-            平均提案: {students.length > 0 ? (totalProposed / students.length).toFixed(1) : 0}コマ/人
+          <div className="mt-1.5 text-xs text-gray-400 space-y-0.5">
+            <div className="flex justify-between">
+              <span>提案済</span>
+              <span className="text-gray-600">{proposedStudentCount}名</span>
+            </div>
+            <div className="flex justify-between">
+              <span>決定済</span>
+              <span className="text-gray-600">{decidedStudentCount}名</span>
+            </div>
+            <div className="flex justify-between">
+              <span>平均提案</span>
+              <span className="text-gray-600">{students.length > 0 ? (totalProposed / students.length).toFixed(1) : 0}コマ/人</span>
+            </div>
           </div>
         </div>
 
@@ -373,7 +485,6 @@ export function CourseProgressDashboard({
                 </span>
               </div>
 
-              {/* 指標 */}
               <div className="grid grid-cols-3 gap-2 mb-3">
                 <div className="text-center">
                   <div className="text-[10px] text-gray-500">提案</div>
@@ -392,7 +503,6 @@ export function CourseProgressDashboard({
                 </div>
               </div>
 
-              {/* 取得率プログレスバー */}
               <div className="w-full bg-white/60 rounded-full h-1.5 mb-2">
                 <div
                   className="h-1.5 rounded-full transition-all"
@@ -403,7 +513,6 @@ export function CourseProgressDashboard({
                 />
               </div>
 
-              {/* 学年別内訳 */}
               {cat.gradeBreakdown.length > 1 && (
                 <div className="mt-2 space-y-0.5">
                   {cat.gradeBreakdown.map((g) => (
