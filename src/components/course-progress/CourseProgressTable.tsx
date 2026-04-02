@@ -715,23 +715,19 @@ export function CourseProgressTable({
       <div className="mt-3 flex flex-wrap items-center gap-4 text-[10px] text-gray-500 px-1">
         <span className="font-medium text-gray-600">凡例:</span>
         <div className="flex items-center gap-1">
-          <div className="w-4 h-4 rounded flex items-center justify-center bg-green-50 text-green-600 text-[10px] font-bold border border-green-200">{'\u2713'}</div>
-          <span>完了</span>
+          <div className="w-4 h-4 rounded flex items-center justify-center bg-white text-gray-300 text-[10px] border border-gray-100"></div>
+          <span>未入力</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-4 h-4 rounded flex items-center justify-center bg-yellow-50 text-yellow-600 text-[10px] font-bold border border-yellow-200">{'\u00d7'}</div>
-          <span>未完了</span>
+          <div className="w-4 h-4 rounded flex items-center justify-center bg-green-50 text-green-600 text-[10px] font-bold border border-green-200">{'\u2713'}</div>
+          <span>完了</span>
         </div>
         <div className="flex items-center gap-1">
           <div className="w-4 h-4 rounded flex items-center justify-center bg-gray-100 text-gray-400 text-[10px] border border-gray-200">{'\u2013'}</div>
           <span>対象外</span>
         </div>
-        <div className="flex items-center gap-1">
-          <div className="w-4 h-4 rounded flex items-center justify-center bg-white text-gray-300 text-[10px] border border-gray-100"></div>
-          <span>未入力</span>
-        </div>
         <span className="text-gray-300">|</span>
-        <span>セルクリックで切替 / 数値はクリックで編集</span>
+        <span>クリックで切替（空欄→完了→対象外→空欄）/ 数値はクリックで編集</span>
         {onItemNameChange && <span>/ 項目名はダブルクリックで編集</span>}
       </div>
 

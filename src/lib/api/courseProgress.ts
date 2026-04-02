@@ -153,7 +153,7 @@ export async function updateStudentProgress(
   await callCoursePrepApi('update_student_progress', schoolId, {
     studentId,
     itemId,
-    status: status || 'pending',
+    status,
   });
 }
 

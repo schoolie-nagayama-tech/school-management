@@ -699,7 +699,7 @@ async function handleDeleteProgressItem(
 
 async function handleUpdateStudentProgress(
   supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
-  params: { schoolId: string; studentId: string; itemId: string; status: string }
+  params: { schoolId: string; studentId: string; itemId: string; status: string | null }
 ) {
   const { schoolId, studentId, itemId, status } = params;
 
@@ -709,6 +709,18 @@ async function handleUpdateStudentProgress(
     .eq('student_id', studentId)
     .eq('item_id', itemId)
     .maybeSingle();
+
+  // statusがnullの場合はレコード削除（空欄に戻す）
+  if (!status) {
+    if (existing) {
+      const { error } = await supabaseAdmin
+        .from('course_prep_student_progress')
+        .delete()
+        .eq('id', existing.id);
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    return NextResponse.json({ success: true });
+  }
 
   if (existing) {
     const { error } = await supabaseAdmin
