@@ -161,9 +161,32 @@ export async function GET(request: NextRequest) {
           markersByTask.get(tid)!.push(m);
         }
 
-        const result = tasks.map((t: { id: string }) => ({
+        // リンクされた進捗項目の進捗率を計算
+        const linkedItemIds = tasks
+          .map((t: { linked_progress_item_id: string | null }) => t.linked_progress_item_id)
+          .filter((id: string | null): id is string => !!id);
+
+        let progressRateMap: Record<string, { total: number; completed: number }> = {};
+        if (linkedItemIds.length > 0) {
+          const uniqueItemIds = Array.from(new Set(linkedItemIds));
+          const { data: progressData } = await supabaseAdmin
+            .from('course_prep_student_progress')
+            .select('item_id, status')
+            .in('item_id', uniqueItemIds);
+
+          for (const itemId of uniqueItemIds) {
+            const related = (progressData || []).filter((p: { item_id: string }) => p.item_id === itemId);
+            const completed = related.filter((p: { status: string }) => p.status === 'completed').length;
+            progressRateMap[itemId] = { total: related.length, completed };
+          }
+        }
+
+        const result = tasks.map((t: { id: string; linked_progress_item_id: string | null }) => ({
           ...t,
           markers: markersByTask.get(t.id) || [],
+          linked_progress_rate: t.linked_progress_item_id
+            ? progressRateMap[t.linked_progress_item_id] || null
+            : null,
         }));
 
         return NextResponse.json({ data: result });

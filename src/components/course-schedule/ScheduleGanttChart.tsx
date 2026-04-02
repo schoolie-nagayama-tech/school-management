@@ -6,6 +6,7 @@ import type { ScheduleTaskWithMarkers, ScheduleMarker, CourseProgressItem, Seaso
 interface ScheduleGanttChartProps {
   tasks: ScheduleTaskWithMarkers[];
   deadlineItems?: CourseProgressItem[];
+  progressItems?: CourseProgressItem[];
   progressSummary?: { total: number; completed: number; itemSummaries?: { name: string; total: number; done: number }[] };
   startDate: Date;
   endDate: Date;
@@ -14,7 +15,7 @@ interface ScheduleGanttChartProps {
   canEdit: boolean;
   onToggleComplete: (taskId: string, completed: boolean) => void;
   onMarkerClick: (taskId: string, date: string, existing?: ScheduleMarker) => void;
-  onUpdateTask?: (taskId: string, updates: Partial<{ name: string; description: string | null; start_date: string | null; end_date: string | null }>) => void;
+  onUpdateTask?: (taskId: string, updates: Partial<{ name: string; description: string | null; start_date: string | null; end_date: string | null; linked_progress_item_id: string | null }>) => void;
   onDeleteTask?: (taskId: string) => void;
 }
 
@@ -119,15 +120,45 @@ function generateWeekHeaders(dates: Date[]): { weekLabel: string; days: Date[] }
 
 type ViewScale = 'day' | 'week';
 
-/** タスク名セル共通（日付を常時表示、期日超過を赤く） */
+/** 進捗率バッジ */
+function ProgressRateBadge({ rate }: { rate: { total: number; completed: number } }) {
+  const pct = rate.total > 0 ? Math.round((rate.completed / rate.total) * 100) : 0;
+  const color = pct >= 80 ? '#10b981' : pct >= 50 ? '#f59e0b' : '#ef4444';
+  return (
+    <span
+      className="text-[9px] px-1.5 py-0.5 rounded-full font-medium whitespace-nowrap shrink-0"
+      style={{ backgroundColor: `${color}18`, color, border: `1px solid ${color}40` }}
+      title={`進捗: ${rate.completed}/${rate.total} (${pct}%)`}
+    >
+      {rate.completed}/{rate.total}
+    </span>
+  );
+}
+
+/** タスク名セル共通（日付を常時表示、期日超過を赤く、進捗率バッジ表示） */
 function TaskNameCell({
   task, milestone, overdue, canEdit, onUpdateTask, onDeleteTask,
+  progressItems, onLinkProgressItem,
 }: {
   task: ScheduleTaskWithMarkers; milestone: boolean; overdue: boolean;
   canEdit: boolean;
   onUpdateTask?: ScheduleGanttChartProps['onUpdateTask'];
   onDeleteTask?: ScheduleGanttChartProps['onDeleteTask'];
+  progressItems?: CourseProgressItem[];
+  onLinkProgressItem?: (taskId: string, itemId: string | null) => void;
 }) {
+  const [showLinkMenu, setShowLinkMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showLinkMenu) return;
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setShowLinkMenu(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showLinkMenu]);
+
   const nameColor = overdue
     ? 'text-red-700 font-semibold'
     : task.is_completed
@@ -138,6 +169,10 @@ function TaskNameCell({
     ? milestone
       ? shortDate(task.start_date)
       : `${shortDate(task.start_date)}~${task.end_date ? shortDate(task.end_date) : ''}`
+    : null;
+
+  const linkedItemName = task.linked_progress_item_id && progressItems
+    ? progressItems.find((i) => i.id === task.linked_progress_item_id)?.name
     : null;
 
   return (
@@ -156,6 +191,54 @@ function TaskNameCell({
           className={`text-[11px] ${nameColor}`}
         />
       </div>
+      {/* 進捗率バッジ */}
+      {task.linked_progress_rate && (
+        <ProgressRateBadge rate={task.linked_progress_rate} />
+      )}
+      {/* リンクボタン */}
+      {canEdit && onLinkProgressItem && progressItems && progressItems.length > 0 && (
+        <div className="relative shrink-0">
+          <button
+            onClick={() => setShowLinkMenu(!showLinkMenu)}
+            className={`text-[9px] px-1 py-0.5 rounded transition-all shrink-0 ${
+              task.linked_progress_item_id
+                ? 'text-blue-600 bg-blue-50 hover:bg-blue-100'
+                : 'text-gray-400 hover:text-blue-500 opacity-0 group-hover/task:opacity-100'
+            }`}
+            title={linkedItemName ? `リンク: ${linkedItemName}` : '進捗項目をリンク'}
+          >
+            {task.linked_progress_item_id ? '🔗' : '🔗'}
+          </button>
+          {showLinkMenu && (
+            <div ref={menuRef} className="absolute top-full right-0 mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-xl py-1 min-w-[180px] max-h-48 overflow-y-auto">
+              <div className="px-2 py-1 text-[9px] text-gray-400 border-b border-gray-100">進捗項目をリンク</div>
+              {task.linked_progress_item_id && (
+                <button
+                  onClick={() => { onLinkProgressItem(task.id, null); setShowLinkMenu(false); }}
+                  className="w-full text-left px-2 py-1.5 text-[10px] text-red-500 hover:bg-red-50"
+                >
+                  リンク解除
+                </button>
+              )}
+              {progressItems.filter((i) => i.column_type === 'check').map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => { onLinkProgressItem(task.id, item.id); setShowLinkMenu(false); }}
+                  className={`w-full text-left px-2 py-1.5 text-[10px] hover:bg-blue-50 flex items-center gap-1.5 ${
+                    task.linked_progress_item_id === item.id ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
+                  }`}
+                >
+                  {task.linked_progress_item_id === item.id && <span className="text-blue-500">✓</span>}
+                  <span>{item.name}</span>
+                  {item.column_group && (
+                    <span className="text-[8px] text-gray-400">({item.column_group})</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       {/* 日付を常時表示 */}
       {dateLabel && (
         <span className={`text-[9px] shrink-0 whitespace-nowrap ${overdue ? 'text-red-400 font-medium' : 'text-gray-400'}`}>
@@ -174,7 +257,7 @@ function TaskNameCell({
 }
 
 export function ScheduleGanttChart({
-  tasks, deadlineItems = [], progressSummary,
+  tasks, deadlineItems = [], progressItems = [], progressSummary,
   startDate, endDate, canEdit,
   onToggleComplete, onMarkerClick, onUpdateTask, onDeleteTask,
 }: ScheduleGanttChartProps) {
@@ -227,6 +310,10 @@ export function ScheduleGanttChart({
   const toggleCategory = useCallback((cat: string) => {
     setCollapsedCategories((prev) => { const next = new Set(prev); if (next.has(cat)) next.delete(cat); else next.add(cat); return next; });
   }, []);
+
+  const handleLinkProgressItem = useCallback((taskId: string, itemId: string | null) => {
+    onUpdateTask?.(taskId, { linked_progress_item_id: itemId });
+  }, [onUpdateTask]);
 
   const isInBar = useCallback((task: ScheduleTaskWithMarkers, date: Date): boolean => {
     if (!task.start_date || !task.end_date) return false;
@@ -325,7 +412,7 @@ export function ScheduleGanttChart({
         </td>
         <td className={`sticky z-10 ${rowBg} border-b border-r border-gray-200 px-2 py-1 group/task`}
           style={{ left: LEFT_CHECK_W, minWidth: LEFT_NAME_W }}>
-          <TaskNameCell task={task} milestone={ms} overdue={od} canEdit={canEdit} onUpdateTask={onUpdateTask} onDeleteTask={onDeleteTask} />
+          <TaskNameCell task={task} milestone={ms} overdue={od} canEdit={canEdit} onUpdateTask={onUpdateTask} onDeleteTask={onDeleteTask} progressItems={progressItems} onLinkProgressItem={handleLinkProgressItem} />
         </td>
       </>
     );

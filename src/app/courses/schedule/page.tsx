@@ -103,6 +103,7 @@ export default function CourseSchedulePage() {
   // データ
   const [tasks, setTasks] = useState<ScheduleTaskWithMarkers[]>([]);
   const [deadlineItems, setDeadlineItems] = useState<CourseProgressItem[]>([]);
+  const [allProgressItems, setAllProgressItems] = useState<CourseProgressItem[]>([]);
   const [progressSummary, setProgressSummary] = useState<{ total: number; completed: number; itemSummaries?: { name: string; total: number; done: number }[] } | undefined>();
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
@@ -147,6 +148,7 @@ export default function CourseSchedulePage() {
         getStudentCourseProgress(ids[0], season, year).catch(() => [] as StudentCourseProgress[]),
       ]);
       setTasks(data);
+      setAllProgressItems(progressItems);
       setDeadlineItems(progressItems.filter((i) => i.deadline));
 
       // 進捗管理サマリーを計算
@@ -215,7 +217,7 @@ export default function CourseSchedulePage() {
     [fetchData, getSelectedSchoolIds]
   );
 
-  // タスク更新（ScheduleBoard用 - 名前/説明/日付/カテゴリ）
+  // タスク更新（ScheduleBoard用 - 名前/説明/日付/カテゴリ/リンク）
   const handleUpdateTask = useCallback(
     async (
       taskId: string,
@@ -226,6 +228,7 @@ export default function CourseSchedulePage() {
         end_date: string | null;
         major_category: string;
         sort_order: number;
+        linked_progress_item_id: string | null;
       }>
     ) => {
       const ids = getSelectedSchoolIds();
@@ -236,6 +239,10 @@ export default function CourseSchedulePage() {
       );
       try {
         await updateScheduleTask(taskId, updates, ids[0]);
+        // リンク変更時はサーバーから再取得（進捗率データが変わるため）
+        if ('linked_progress_item_id' in updates) {
+          fetchData();
+        }
       } catch (err) {
         console.error('Error updating task:', err);
         fetchData();
@@ -655,6 +662,7 @@ export default function CourseSchedulePage() {
             <ScheduleGanttChart
               tasks={tasks}
               deadlineItems={deadlineItems}
+              progressItems={allProgressItems}
               progressSummary={progressSummary}
               startDate={dateRange.start}
               endDate={dateRange.end}

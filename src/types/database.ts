@@ -3445,6 +3445,7 @@ export interface ScheduleTask {
   end_date: string | null;
   is_completed: boolean;
   sort_order: number;
+  linked_progress_item_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -3461,6 +3462,7 @@ export interface ScheduleMarker {
 
 export interface ScheduleTaskWithMarkers extends ScheduleTask {
   markers: ScheduleMarker[];
+  linked_progress_rate?: { total: number; completed: number } | null;
 }
 
 export interface CourseTemplate {

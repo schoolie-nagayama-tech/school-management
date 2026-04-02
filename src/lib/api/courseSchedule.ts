@@ -56,7 +56,7 @@ export async function createScheduleTask(
 
 export async function updateScheduleTask(
   id: string,
-  updates: Partial<Pick<ScheduleTask, 'major_category' | 'name' | 'description' | 'start_date' | 'end_date' | 'is_completed' | 'sort_order'>>,
+  updates: Partial<Pick<ScheduleTask, 'major_category' | 'name' | 'description' | 'start_date' | 'end_date' | 'is_completed' | 'sort_order' | 'linked_progress_item_id'>>,
   schoolId: string
 ): Promise<void> {
   await callCoursePrepApi('update_schedule_task', schoolId, {

@@ -6,6 +6,7 @@ import { CourseProgressDashboard, CourseProgressTable } from '@/components/cours
 import { SeasonYearSelector } from '@/components/course-shared/SeasonYearSelector';
 import { TemplateApplyDialog } from '@/components/course-shared/TemplateApplyDialog';
 import { getStudents } from '@/lib/api/students';
+import { getScheduleTasks, updateScheduleTask } from '@/lib/api/courseSchedule';
 import { supabase } from '@/lib/supabase';
 import {
   getCourseProgressItems,
@@ -35,6 +36,7 @@ import type {
   StudentCourseProgress,
   CoursePrepPeriod,
   CourseTemplate,
+  ScheduleTaskWithMarkers,
   ApplicationStatus,
   SeasonType,
   ApplicationColumnType,
@@ -109,6 +111,9 @@ export default function CourseProgressPage() {
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [templateLoading, setTemplateLoading] = useState(false);
 
+  // スケジュールタスク（リンク設定用）
+  const [scheduleTasks, setScheduleTasks] = useState<ScheduleTaskWithMarkers[]>([]);
+
   // テンプレート保存
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [saveTemplateName, setSaveTemplateName] = useState('');
@@ -138,12 +143,13 @@ export default function CourseProgressPage() {
       }
       const schoolId = schoolIds[0];
 
-      const [studentsData, itemsData, progressResult, periodData, autoVals] = await Promise.all([
+      const [studentsData, itemsData, progressResult, periodData, autoVals, scheduleData] = await Promise.all([
         getStudents(undefined, schoolIds),
         getCourseProgressItems(schoolId, season, year, showHidden),
         getStudentCourseProgress(schoolId, season, year),
         getCoursePrepPeriod(schoolId, season, year),
         getAutoValues(schoolId, season, year),
+        getScheduleTasks(schoolId, season, year).catch(() => [] as ScheduleTaskWithMarkers[]),
       ]);
 
       setStudents(studentsData.filter((s) => s.status !== 'withdrawn'));
@@ -151,6 +157,7 @@ export default function CourseProgressPage() {
       setProgressData(progressResult);
       setPeriod(periodData);
       setAutoValuesData(autoVals);
+      setScheduleTasks(scheduleData);
 
       // 項目が0件なら初回テンプレート適用を提案
       if (itemsData.length === 0 && isManagerOrAbove) {
@@ -394,6 +401,31 @@ export default function CourseProgressPage() {
       console.error('Error deleting template:', err);
     }
   }, [getSelectedSchoolIds, season]);
+
+  // スケジュールタスクとのリンク設定（進捗管理側から）
+  const handleLinkScheduleTask = useCallback(
+    async (itemId: string, taskId: string | null) => {
+      const schoolIds = getSelectedSchoolIds();
+      if (schoolIds.length === 0) return;
+      try {
+        // 既にこのitemIdにリンクされている別タスクがあれば解除
+        const linkedTasks = scheduleTasks.filter((t) => t.linked_progress_item_id === itemId);
+        for (const t of linkedTasks) {
+          await updateScheduleTask(t.id, { linked_progress_item_id: null }, schoolIds[0]);
+        }
+        // 新しいリンクを設定
+        if (taskId) {
+          await updateScheduleTask(taskId, { linked_progress_item_id: itemId }, schoolIds[0]);
+        }
+        // 再取得
+        const updated = await getScheduleTasks(schoolIds[0], season, year);
+        setScheduleTasks(updated);
+      } catch (err) {
+        console.error('Error linking schedule task:', err);
+      }
+    },
+    [getSelectedSchoolIds, scheduleTasks, season, year]
+  );
 
   // カレンダー同期
   const [syncing, setSyncing] = useState(false);
@@ -766,57 +798,76 @@ export default function CourseProgressPage() {
                   </div>
 
                   {/* 既存項目一覧 */}
-                  <div className="space-y-1 max-h-64 overflow-y-auto">
-                    {items.map((item) => (
-                      <div
-                        key={item.id}
-                        className={`flex items-center justify-between gap-2 px-2 py-1.5 rounded text-xs ${
-                          item.is_hidden ? 'bg-gray-50 text-gray-400' : ''
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{item.name}</span>
-                          <span className="text-[10px] text-gray-400">
-                            {item.column_type === 'check'
-                              ? 'チェック'
-                              : item.column_type === 'number'
-                              ? '数値'
-                              : '日付'}
-                          </span>
-                          {item.column_group && (
-                            <span
-                              className="text-[9px] px-1 py-0.5 rounded"
-                              style={{
-                                backgroundColor:
-                                  (PROGRESS_COLUMN_GROUPS[item.column_group]?.color || '#6b7280') + '20',
-                                color: PROGRESS_COLUMN_GROUPS[item.column_group]?.color || '#6b7280',
-                              }}
+                  <div className="space-y-1 max-h-80 overflow-y-auto">
+                    {items.map((item) => {
+                      const linkedTask = scheduleTasks.find((t) => t.linked_progress_item_id === item.id);
+                      return (
+                        <div
+                          key={item.id}
+                          className={`flex items-center justify-between gap-2 px-2 py-1.5 rounded text-xs ${
+                            item.is_hidden ? 'bg-gray-50 text-gray-400' : ''
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <span className="font-medium shrink-0">{item.name}</span>
+                            <span className="text-[10px] text-gray-400 shrink-0">
+                              {item.column_type === 'check'
+                                ? 'チェック'
+                                : item.column_type === 'number'
+                                ? '数値'
+                                : '日付'}
+                            </span>
+                            {item.column_group && (
+                              <span
+                                className="text-[9px] px-1 py-0.5 rounded shrink-0"
+                                style={{
+                                  backgroundColor:
+                                    (PROGRESS_COLUMN_GROUPS[item.column_group]?.color || '#6b7280') + '20',
+                                  color: PROGRESS_COLUMN_GROUPS[item.column_group]?.color || '#6b7280',
+                                }}
+                              >
+                                {PROGRESS_COLUMN_GROUPS[item.column_group]?.label || item.column_group}
+                              </span>
+                            )}
+                            {item.is_hidden && (
+                              <span className="text-[9px] px-1 py-0.5 bg-gray-200 text-gray-500 rounded shrink-0">
+                                非表示
+                              </span>
+                            )}
+                            {/* スケジュールリンク */}
+                            {item.column_type === 'check' && scheduleTasks.length > 0 && (
+                              <select
+                                value={linkedTask?.id || ''}
+                                onChange={(e) => handleLinkScheduleTask(item.id, e.target.value || null)}
+                                className="text-[10px] px-1 py-0.5 border border-gray-200 rounded bg-white text-gray-600 max-w-[140px] truncate"
+                                title={linkedTask ? `リンク: ${linkedTask.name}` : 'スケジュールタスクをリンク'}
+                              >
+                                <option value="">リンクなし</option>
+                                {scheduleTasks.map((t) => (
+                                  <option key={t.id} value={t.id}>
+                                    {t.major_category}: {t.name}
+                                  </option>
+                                ))}
+                              </select>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              onClick={() => handleToggleHideItem(item.id, item.is_hidden)}
+                              className="text-[10px] text-gray-400 hover:text-gray-600 px-1"
                             >
-                              {PROGRESS_COLUMN_GROUPS[item.column_group]?.label || item.column_group}
-                            </span>
-                          )}
-                          {item.is_hidden && (
-                            <span className="text-[9px] px-1 py-0.5 bg-gray-200 text-gray-500 rounded">
-                              非表示
-                            </span>
-                          )}
+                              {item.is_hidden ? '表示' : '非表示'}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteItem(item.id)}
+                              className="text-[10px] text-[#ef4444] hover:text-[#dc2626] px-1"
+                            >
+                              削除
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => handleToggleHideItem(item.id, item.is_hidden)}
-                            className="text-[10px] text-gray-400 hover:text-gray-600 px-1"
-                          >
-                            {item.is_hidden ? '表示' : '非表示'}
-                          </button>
-                          <button
-                            onClick={() => handleDeleteItem(item.id)}
-                            className="text-[10px] text-[#ef4444] hover:text-[#dc2626] px-1"
-                          >
-                            削除
-                          </button>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                     {items.length === 0 && (
                       <p className="text-xs text-gray-400 text-center py-4">
                         項目がありません。テンプレートから作成するか、手動で追加してください。
