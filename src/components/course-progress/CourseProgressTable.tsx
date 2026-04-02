@@ -348,9 +348,15 @@ export function CourseProgressTable({
       if (!sv) return 0;
       if (autoSource === 'regular_weekly') return sv.regular_weekly;
       if (autoSource === 'course_sessions') return sv.course_sessions;
+      // 提示増コマ = 教科別合計 - 講習期間通常回数
+      if (autoSource === 'proposed_extra') {
+        const subjectTotal = subjectTotals[studentId] ?? 0;
+        const courseSessions = sv.course_sessions ?? 0;
+        return Math.max(0, subjectTotal - courseSessions);
+      }
       return null;
     },
-    [autoValues]
+    [autoValues, subjectTotals]
   );
 
   // コンテナ幅を測定してセル幅を動的に計算
@@ -377,8 +383,8 @@ export function CourseProgressTable({
   // 合計列の幅
   const TOTAL_COL_W = hasSubjectTotal ? 40 : 0;
 
-  // セル幅を動的計算: 残り幅を項目数で均等割り（最小28px）
-  const MIN_CELL_W = 28;
+  // セル幅を動的計算: 残り幅を項目数で均等割り（最小36px）
+  const MIN_CELL_W = 36;
   const itemCount = items.length;
   const availableWidth = containerWidth > 0 ? containerWidth - LEFT_TOTAL - TOTAL_COL_W : 0;
   const dynamicCellW = itemCount > 0 && availableWidth > 0
@@ -479,7 +485,7 @@ export function CourseProgressTable({
                     >
                       <Tooltip text={`${item.name}${item.deadline ? ` (期日: ${formatDeadline(item.deadline)})` : ''}${item.auto_source ? ' [自動]' : ''}`}>
                         <div
-                          className={`text-[9px] leading-[1.2] px-0.5 min-h-[22px] flex items-center justify-center ${
+                          className={`text-[10px] leading-[1.3] px-0.5 min-h-[28px] flex items-center justify-center ${
                             onItemNameChange && canEdit ? 'cursor-pointer hover:text-blue-600' : ''
                           }`}
                           style={{ color: itemGroupColor[item.id] }}
@@ -489,7 +495,7 @@ export function CourseProgressTable({
                             }
                           }}
                         >
-                          <span className="line-clamp-2 break-all text-center">
+                          <span className="line-clamp-3 break-all text-center">
                             {item.name}
                             {item.auto_source && <span className="text-blue-400 text-[8px] ml-0.5">A</span>}
                           </span>

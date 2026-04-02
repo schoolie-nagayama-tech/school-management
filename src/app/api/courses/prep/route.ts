@@ -608,20 +608,24 @@ async function handleInitScheduleTemplate(
 async function handleCreateProgressItem(
   supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
   schoolId: string,
-  params: { season: string; year: number; name: string; columnType: string; sortOrder: number }
+  params: { season: string; year: number; name: string; columnType: string; columnGroup?: string | null; autoSource?: string | null; sortOrder: number }
 ) {
-  const { season, year, name, columnType, sortOrder } = params;
+  const { season, year, name, columnType, columnGroup, autoSource, sortOrder } = params;
+
+  const insertData: Record<string, unknown> = {
+    school_id: schoolId,
+    season,
+    year,
+    name,
+    column_type: columnType || 'check',
+    sort_order: sortOrder,
+  };
+  if (columnGroup) insertData.column_group = columnGroup;
+  if (autoSource) insertData.auto_source = autoSource;
 
   const { data, error } = await supabaseAdmin
     .from('course_prep_progress_items')
-    .insert({
-      school_id: schoolId,
-      season,
-      year,
-      name,
-      column_type: columnType || 'check',
-      sort_order: sortOrder,
-    })
+    .insert(insertData)
     .select()
     .single();
 

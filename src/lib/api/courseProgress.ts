@@ -73,6 +73,7 @@ export async function createCourseProgressItem(
     column_type?: ApplicationColumnType;
     manager_only?: boolean;
     column_group?: string | null;
+    auto_source?: string | null;
   },
   schoolId: string,
   season: SeasonType,
@@ -88,6 +89,8 @@ export async function createCourseProgressItem(
     year,
     name: item.name,
     columnType: item.column_type || 'check',
+    columnGroup: item.column_group || null,
+    autoSource: item.auto_source || null,
     sortOrder: maxSortOrder + 1,
   });
 

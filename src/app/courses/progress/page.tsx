@@ -128,6 +128,7 @@ export default function CourseProgressPage() {
   const [newItemName, setNewItemName] = useState('');
   const [newItemType, setNewItemType] = useState<ApplicationColumnType>('check');
   const [newItemGroup, setNewItemGroup] = useState<string>('');
+  const [newItemAutoSource, setNewItemAutoSource] = useState<string>('');
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -349,7 +350,6 @@ export default function CourseProgressPage() {
         await upsertCoursePrepPeriod(schoolIds[0], season, year, {
           budget_koma: value,
         });
-        // 期間とauto-valuesを再取得（期間日付変更時にcourse_sessionsが変わるため）
         const [updatedPeriod, autoVals] = await Promise.all([
           getCoursePrepPeriod(schoolIds[0], season, year),
           getAutoValues(schoolIds[0], season, year),
@@ -358,6 +358,26 @@ export default function CourseProgressPage() {
         setAutoValuesData(autoVals);
       } catch (err) {
         console.error('Error updating budget:', err);
+      }
+    },
+    [getSelectedSchoolIds, season, year]
+  );
+
+  // 講習期間日付変更
+  const handlePeriodDateChange = useCallback(
+    async (updates: Partial<Pick<CoursePrepPeriod, 'schedule_start_date' | 'schedule_end_date'>>) => {
+      const schoolIds = getSelectedSchoolIds();
+      if (schoolIds.length === 0) return;
+      try {
+        await upsertCoursePrepPeriod(schoolIds[0], season, year, updates);
+        const [updatedPeriod, autoVals] = await Promise.all([
+          getCoursePrepPeriod(schoolIds[0], season, year),
+          getAutoValues(schoolIds[0], season, year),
+        ]);
+        setPeriod(updatedPeriod);
+        setAutoValuesData(autoVals);
+      } catch (err) {
+        console.error('Error updating period dates:', err);
       }
     },
     [getSelectedSchoolIds, season, year]
@@ -500,8 +520,9 @@ export default function CourseProgressPage() {
       await createCourseProgressItem(
         {
           name: newItemName.trim(),
-          column_type: newItemType,
+          column_type: newItemAutoSource ? 'number' : newItemType,
           column_group: newItemGroup || null,
+          auto_source: newItemAutoSource || null,
         },
         schoolIds[0],
         season,
@@ -510,12 +531,13 @@ export default function CourseProgressPage() {
       setNewItemName('');
       setNewItemType('check');
       setNewItemGroup('');
+      setNewItemAutoSource('');
       await fetchData();
     } catch (err) {
       console.error('Error creating item:', err);
       setErrorMessage(getUserErrorMessage(err, '項目の作成に失敗しました'));
     }
-  }, [newItemName, newItemType, newItemGroup, getSelectedSchoolIds, season, year, fetchData]);
+  }, [newItemName, newItemType, newItemGroup, newItemAutoSource, getSelectedSchoolIds, season, year, fetchData]);
 
   // 項目削除
   const handleDeleteItem = useCallback(
@@ -680,6 +702,7 @@ export default function CourseProgressPage() {
             progressData={progressData}
             period={period}
             onBudgetKomaChange={isOwnerOrAbove ? handleBudgetKomaChange : undefined}
+            onPeriodDateChange={isOwnerOrAbove ? handlePeriodDateChange : undefined}
           />
         )}
 
@@ -804,6 +827,19 @@ export default function CourseProgressPage() {
                         ))}
                       </select>
                     </div>
+                    <div>
+                      <label className="text-[10px] text-gray-500 block mb-0.5">自動計算</label>
+                      <select
+                        value={newItemAutoSource}
+                        onChange={(e) => setNewItemAutoSource(e.target.value)}
+                        className="px-2 py-1.5 text-xs border border-gray-200 rounded-lg"
+                      >
+                        <option value="">手動入力</option>
+                        <option value="regular_weekly">通塾回数/週</option>
+                        <option value="course_sessions">講習期間通常回数</option>
+                        <option value="proposed_extra">提示増コマ (教科別計-通常回数)</option>
+                      </select>
+                    </div>
                     <button
                       onClick={handleAddItem}
                       disabled={!newItemName.trim()}
@@ -843,6 +879,13 @@ export default function CourseProgressPage() {
                                 }}
                               >
                                 {PROGRESS_COLUMN_GROUPS[item.column_group]?.label || item.column_group}
+                              </span>
+                            )}
+                            {item.auto_source && (
+                              <span className="text-[9px] px-1 py-0.5 bg-blue-100 text-blue-600 rounded shrink-0">
+                                {item.auto_source === 'regular_weekly' ? '通塾回数' :
+                                 item.auto_source === 'course_sessions' ? '通常回数' :
+                                 item.auto_source === 'proposed_extra' ? '提示増コマ' : '自動'}
                               </span>
                             )}
                             {item.is_hidden && (

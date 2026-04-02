@@ -3,13 +3,13 @@
 import type { CourseProgressItem, StudentCourseProgress, CoursePrepPeriod } from '@/types/database';
 import type { Student } from '@/types/database';
 import { PROGRESS_COLUMN_GROUPS } from '@/types/database';
-
 interface CourseProgressDashboardProps {
   students: Student[];
   items: CourseProgressItem[];
   progressData: StudentCourseProgress[];
   period: CoursePrepPeriod | null;
   onBudgetKomaChange?: (value: number) => void;
+  onPeriodDateChange?: (updates: Partial<Pick<CoursePrepPeriod, 'schedule_start_date' | 'schedule_end_date'>>) => void;
 }
 
 export function CourseProgressDashboard({
@@ -18,6 +18,7 @@ export function CourseProgressDashboard({
   progressData,
   period,
   onBudgetKomaChange,
+  onPeriodDateChange,
 }: CourseProgressDashboardProps) {
   // チェック項目のみの完了率
   const checkItems = items.filter((i) => i.column_type === 'check' && !i.is_hidden);
@@ -59,88 +60,139 @@ export function CourseProgressDashboard({
     };
   }).filter((g) => g.total > 0);
 
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      {/* 全体達成度 */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <div className="text-xs text-gray-500 mb-1">全体進捗</div>
-        <div className="text-2xl font-bold text-[#1e3a5f]">
-          {Math.round(overallRate * 100)}%
-        </div>
-        <div className="mt-2 w-full bg-gray-100 rounded-full h-2.5">
-          <div
-            className="h-2.5 rounded-full transition-all"
-            style={{
-              width: `${Math.round(overallRate * 100)}%`,
-              backgroundColor: overallRate >= 0.8 ? '#10b981' : overallRate >= 0.5 ? '#f59e0b' : '#ef4444',
-            }}
-          />
-        </div>
-        <div className="text-xs text-gray-400 mt-1">
-          {completedCheckCells} / {totalCheckCells} 完了
-        </div>
-      </div>
+  // 講習期間表示
+  const hasScheduleDates = period?.schedule_start_date && period?.schedule_end_date;
 
-      {/* 予算コマ */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <div className="text-xs text-gray-500 mb-1">増コマ達成度</div>
-        <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-bold text-[#1e3a5f]">{totalDecided}</span>
-          <span className="text-sm text-gray-400">
-            / {budgetKoma > 0 ? budgetKoma : '–'} コマ
-          </span>
+  return (
+    <div className="space-y-4 mb-6">
+      {/* 講習期間設定 */}
+      {onPeriodDateChange && (
+        <div className="bg-white rounded-xl border border-gray-200 px-4 py-3">
+          <div className="flex flex-wrap items-center gap-4">
+            <span className="text-xs text-gray-500 font-medium">講習期間</span>
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={period?.schedule_start_date || ''}
+                onChange={(e) => onPeriodDateChange({ schedule_start_date: e.target.value || null })}
+                className="px-2 py-1 text-xs border border-gray-200 rounded-lg"
+              />
+              <span className="text-xs text-gray-400">〜</span>
+              <input
+                type="date"
+                value={period?.schedule_end_date || ''}
+                onChange={(e) => onPeriodDateChange({ schedule_end_date: e.target.value || null })}
+                className="px-2 py-1 text-xs border border-gray-200 rounded-lg"
+              />
+            </div>
+            {hasScheduleDates && (
+              <span className="text-[10px] text-gray-400">
+                ({Math.max(1, Math.round((new Date(period!.schedule_end_date!).getTime() - new Date(period!.schedule_start_date!).getTime()) / (1000 * 60 * 60 * 24 * 7)))}週間)
+              </span>
+            )}
+            {!hasScheduleDates && (
+              <span className="text-[10px] text-amber-500">※ 講習期間を設定すると通常回数が自動計算されます</span>
+            )}
+          </div>
         </div>
-        <div className="mt-2 w-full bg-gray-100 rounded-full h-2.5">
-          <div
-            className="h-2.5 rounded-full bg-[#3b82f6] transition-all"
-            style={{ width: `${Math.min(Math.round(komaRate * 100), 100)}%` }}
-          />
+      )}
+      {/* 講習期間表示（権限なし時） */}
+      {!onPeriodDateChange && hasScheduleDates && (
+        <div className="bg-white rounded-xl border border-gray-200 px-4 py-3">
+          <div className="flex items-center gap-4">
+            <span className="text-xs text-gray-500 font-medium">講習期間</span>
+            <span className="text-xs text-[#1e3a5f]">
+              {period!.schedule_start_date} 〜 {period!.schedule_end_date}
+            </span>
+            <span className="text-[10px] text-gray-400">
+              ({Math.max(1, Math.round((new Date(period!.schedule_end_date!).getTime() - new Date(period!.schedule_start_date!).getTime()) / (1000 * 60 * 60 * 24 * 7)))}週間)
+            </span>
+          </div>
         </div>
-        <div className="flex items-center justify-between text-xs text-gray-400 mt-1">
-          <span>提示: {totalProposed}コマ</span>
-          {budgetKoma > 0 && <span>{Math.round(komaRate * 100)}%</span>}
-        </div>
-        {onBudgetKomaChange && (
-          <div className="mt-2 flex items-center gap-1">
-            <span className="text-[10px] text-gray-400">予算:</span>
-            <input
-              type="number"
-              value={budgetKoma || ''}
-              onChange={(e) => onBudgetKomaChange(Number(e.target.value) || 0)}
-              className="w-16 px-1 py-0.5 text-xs border border-gray-200 rounded text-center"
-              placeholder="0"
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* 全体達成度 */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="text-xs text-gray-500 mb-1">全体進捗</div>
+          <div className="text-2xl font-bold text-[#1e3a5f]">
+            {Math.round(overallRate * 100)}%
+          </div>
+          <div className="mt-2 w-full bg-gray-100 rounded-full h-2.5">
+            <div
+              className="h-2.5 rounded-full transition-all"
+              style={{
+                width: `${Math.round(overallRate * 100)}%`,
+                backgroundColor: overallRate >= 0.8 ? '#10b981' : overallRate >= 0.5 ? '#f59e0b' : '#ef4444',
+              }}
             />
           </div>
-        )}
-      </div>
-
-      {/* 在籍数 */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <div className="text-xs text-gray-500 mb-1">在籍生徒数</div>
-        <div className="text-2xl font-bold text-[#1e3a5f]">{students.length}名</div>
-        <div className="text-xs text-gray-400 mt-3">
-          チェック項目: {checkItems.length}項目
+          <div className="text-xs text-gray-400 mt-1">
+            {completedCheckCells} / {totalCheckCells} 完了
+          </div>
         </div>
-      </div>
 
-      {/* グループ別進捗 */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4">
-        <div className="text-xs text-gray-500 mb-2">カテゴリ別進捗</div>
-        <div className="space-y-2">
-          {groupStats.map((g) => (
-            <div key={g.key} className="flex items-center gap-2">
-              <span className="text-[10px] text-gray-500 w-12 shrink-0">{g.label.replace('関連', '').replace('情報', '').replace('処理', '').replace('別コマ', '')}</span>
-              <div className="flex-1 bg-gray-100 rounded-full h-1.5">
-                <div
-                  className="h-1.5 rounded-full transition-all"
-                  style={{ width: `${Math.round(g.rate * 100)}%`, backgroundColor: g.color }}
-                />
-              </div>
-              <span className="text-[10px] text-gray-400 w-8 text-right">
-                {Math.round(g.rate * 100)}%
-              </span>
+        {/* 予算コマ */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="text-xs text-gray-500 mb-1">増コマ達成度</div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-[#1e3a5f]">{totalDecided}</span>
+            <span className="text-sm text-gray-400">
+              / {budgetKoma > 0 ? budgetKoma : '–'} コマ
+            </span>
+          </div>
+          <div className="mt-2 w-full bg-gray-100 rounded-full h-2.5">
+            <div
+              className="h-2.5 rounded-full bg-[#3b82f6] transition-all"
+              style={{ width: `${Math.min(Math.round(komaRate * 100), 100)}%` }}
+            />
+          </div>
+          <div className="flex items-center justify-between text-xs text-gray-400 mt-1">
+            <span>提示: {totalProposed}コマ</span>
+            {budgetKoma > 0 && <span>{Math.round(komaRate * 100)}%</span>}
+          </div>
+          {onBudgetKomaChange && (
+            <div className="mt-2 flex items-center gap-1">
+              <span className="text-[10px] text-gray-400">予算:</span>
+              <input
+                type="number"
+                value={budgetKoma || ''}
+                onChange={(e) => onBudgetKomaChange(Number(e.target.value) || 0)}
+                className="w-16 px-1 py-0.5 text-xs border border-gray-200 rounded text-center"
+                placeholder="0"
+              />
             </div>
-          ))}
+          )}
+        </div>
+
+        {/* 在籍数 */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="text-xs text-gray-500 mb-1">在籍生徒数</div>
+          <div className="text-2xl font-bold text-[#1e3a5f]">{students.length}名</div>
+          <div className="text-xs text-gray-400 mt-3">
+            チェック項目: {checkItems.length}項目
+          </div>
+        </div>
+
+        {/* グループ別進捗 */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="text-xs text-gray-500 mb-2">カテゴリ別進捗</div>
+          <div className="space-y-2">
+            {groupStats.map((g) => (
+              <div key={g.key} className="flex items-center gap-2">
+                <span className="text-[10px] text-gray-500 w-12 shrink-0">{g.label.replace('関連', '').replace('情報', '').replace('処理', '').replace('別コマ', '')}</span>
+                <div className="flex-1 bg-gray-100 rounded-full h-1.5">
+                  <div
+                    className="h-1.5 rounded-full transition-all"
+                    style={{ width: `${Math.round(g.rate * 100)}%`, backgroundColor: g.color }}
+                  />
+                </div>
+                <span className="text-[10px] text-gray-400 w-8 text-right">
+                  {Math.round(g.rate * 100)}%
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
