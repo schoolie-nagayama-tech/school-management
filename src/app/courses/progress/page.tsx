@@ -77,8 +77,7 @@ export default function CourseProgressPage() {
   );
   const canEdit = useCanEdit('canEditApplications');
   const { getSelectedSchoolIds, selectedSchoolId, profile } = useAuth();
-  const isManagerOrAbove =
-    profile?.role === 'manager' ||
+  const isOwnerOrAbove =
     profile?.role === 'owner' ||
     profile?.role === 'admin';
 
@@ -174,7 +173,7 @@ export default function CourseProgressPage() {
       setScheduleTasks((batchData.schedule_tasks || []) as ScheduleTaskWithMarkers[]);
 
       // 項目が0件なら初回テンプレート適用を提案
-      if (itemsData.length === 0 && isManagerOrAbove) {
+      if (itemsData.length === 0 && isOwnerOrAbove) {
         const tpls = await getTemplates('progress', season, schoolId);
         setTemplates(tpls);
         if (tpls.length > 0) {
@@ -187,7 +186,7 @@ export default function CourseProgressPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [getSelectedSchoolIds, season, year, showHidden, isManagerOrAbove]);
+  }, [getSelectedSchoolIds, season, year, showHidden, isOwnerOrAbove]);
 
   useEffect(() => {
     if (selectedSchoolId !== null) {
@@ -621,7 +620,7 @@ export default function CourseProgressPage() {
             onYearChange={setYear}
           />
           <div className="flex items-center gap-2">
-            {isManagerOrAbove && (
+            {isOwnerOrAbove && (
               <>
                 <button
                   onClick={handleOpenTemplateDialog}
@@ -680,7 +679,7 @@ export default function CourseProgressPage() {
             items={displayItems}
             progressData={progressData}
             period={period}
-            onBudgetKomaChange={isManagerOrAbove ? handleBudgetKomaChange : undefined}
+            onBudgetKomaChange={isOwnerOrAbove ? handleBudgetKomaChange : undefined}
           />
         )}
 
@@ -699,7 +698,7 @@ export default function CourseProgressPage() {
               >
                 フィルター
               </button>
-              {isManagerOrAbove && (
+              {isOwnerOrAbove && (
                 <button
                   onClick={() => setSettingsTab('items')}
                   className={`px-4 py-2 text-xs font-medium transition-colors ${
@@ -738,7 +737,7 @@ export default function CourseProgressPage() {
                       </option>
                     ))}
                   </select>
-                  {isManagerOrAbove && (
+                  {isOwnerOrAbove && (
                     <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer">
                       <input
                         type="checkbox"
@@ -764,7 +763,7 @@ export default function CourseProgressPage() {
               )}
 
               {/* 列の追加・削除タブ */}
-              {settingsTab === 'items' && isManagerOrAbove && (
+              {settingsTab === 'items' && isOwnerOrAbove && (
                 <div>
                   {/* 新規追加 */}
                   <div className="flex flex-wrap items-end gap-2 mb-4 pb-4 border-b border-gray-100">
@@ -908,7 +907,7 @@ export default function CourseProgressPage() {
         ) : displayItems.length === 0 ? (
           <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
             <p className="text-[#4b5563] mb-4">進捗管理項目がありません。</p>
-            {isManagerOrAbove && (
+            {isOwnerOrAbove && (
               <button
                 onClick={handleOpenTemplateDialog}
                 className="px-4 py-2 text-sm bg-[#1e3a5f] text-white rounded-lg hover:bg-[#2c5282]"
@@ -927,8 +926,8 @@ export default function CourseProgressPage() {
             onStatusChange={handleStatusChange}
             onNumberChange={handleNumberChange}
             onDateChange={handleDateChange}
-            onItemNameChange={isManagerOrAbove ? handleItemNameChange : undefined}
-            onItemDeadlineChange={isManagerOrAbove ? handleItemDeadlineChange : undefined}
+            onItemNameChange={isOwnerOrAbove ? handleItemNameChange : undefined}
+            onItemDeadlineChange={isOwnerOrAbove ? handleItemDeadlineChange : undefined}
           />
         )}
       </div>

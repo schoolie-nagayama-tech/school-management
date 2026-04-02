@@ -72,8 +72,8 @@ export default function CourseSchedulePage() {
   );
   const canEdit = useCanEdit('canEditApplications');
   const { getSelectedSchoolIds, selectedSchoolId, profile, schoolIds, demoSchoolIds } = useAuth();
-  const isManagerOrAbove =
-    profile?.role === 'manager' || profile?.role === 'owner' || profile?.role === 'admin';
+  const isOwnerOrAbove =
+    profile?.role === 'owner' || profile?.role === 'admin';
 
   // 期・年（localStorageから復元）
   const [season, setSeasonRaw] = useState<SeasonType>(() => loadSavedSeasonYear().season);
@@ -180,7 +180,7 @@ export default function CourseSchedulePage() {
         setProgressSummary(undefined);
       }
 
-      if (data.length === 0 && isManagerOrAbove) {
+      if (data.length === 0 && isOwnerOrAbove) {
         const tpls = await getTemplates('schedule', season, ids[0]);
         setTemplates(tpls);
         if (tpls.length > 0) {
@@ -193,7 +193,7 @@ export default function CourseSchedulePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [getSelectedSchoolIds, season, year, isManagerOrAbove]);
+  }, [getSelectedSchoolIds, season, year, isOwnerOrAbove]);
 
   useEffect(() => {
     if (selectedSchoolId !== null) {
@@ -578,7 +578,7 @@ export default function CourseSchedulePage() {
               </button>
             </div>
 
-            {isManagerOrAbove && (
+            {isOwnerOrAbove && (
               <>
                 <button
                   onClick={handleOpenTemplateDialog}
@@ -651,7 +651,7 @@ export default function CourseSchedulePage() {
           tasks.length === 0 ? (
             <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
               <p className="text-[#4b5563] mb-4">スケジュールがありません。</p>
-              {isManagerOrAbove && (
+              {isOwnerOrAbove && (
                 <button
                   onClick={handleOpenTemplateDialog}
                   className="px-4 py-2 text-sm bg-[#1e3a5f] text-white rounded-lg hover:bg-[#2c5282]"
