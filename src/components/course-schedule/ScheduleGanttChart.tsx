@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import type { ScheduleTaskWithMarkers, ScheduleMarker, CourseProgressItem, SeasonType } from '@/types/database';
 
 interface ScheduleGanttChartProps {
@@ -367,8 +367,8 @@ export function ScheduleGanttChart({
   const LEFT_CHECK_W = 28;
   const LEFT_NAME_W = 220;
 
-  // ===== 共通: カテゴリヘッダーセル =====
-  const renderCategoryHeader = (category: string, catTasks: ScheduleTaskWithMarkers[], colSpan: number, colorIdx: number) => {
+  // ===== 共通: カテゴリヘッダー左セル =====
+  const renderCategoryLeftCells = (category: string, catTasks: ScheduleTaskWithMarkers[], colorIdx: number) => {
     const isCollapsed = collapsedCategories.has(category);
     const completedCount = catTasks.filter((t) => t.is_completed).length;
     const catPct = catTasks.length > 0 ? Math.round((completedCount / catTasks.length) * 100) : 0;
@@ -376,10 +376,9 @@ export function ScheduleGanttChart({
     const c = CATEGORY_COLORS[colorIdx % CATEGORY_COLORS.length];
     return (
       <td
-        colSpan={colSpan}
-        className="sticky left-0 z-20 border-b border-gray-200 px-3 py-2 cursor-pointer hover:brightness-95 transition-all"
+        colSpan={2}
+        className="sticky left-0 z-20 border-b border-gray-200 px-3 py-2"
         style={{ backgroundColor: c.bg, borderLeft: `3px solid ${c.border}` }}
-        onClick={() => toggleCategory(category)}
       >
         <div className="flex items-center gap-2">
           <span className="text-[9px] text-gray-400 transition-transform" style={{ transform: isCollapsed ? 'rotate(-90deg)' : '' }}>▼</span>
@@ -421,17 +420,17 @@ export function ScheduleGanttChart({
   // ===== 日表示 =====
   const renderDayView = () => (
     <table className="border-collapse text-xs min-w-max">
-      <thead>
+      <thead className="sticky top-0 z-40">
         <tr>
-          <th className="sticky left-0 z-30 bg-[#f8fafc] border-b border-r border-gray-200" style={{ minWidth: LEFT_CHECK_W }} />
-          <th className="sticky z-30 bg-[#f8fafc] border-b border-r border-gray-200" style={{ left: LEFT_CHECK_W, minWidth: LEFT_NAME_W }} />
+          <th className="sticky left-0 z-50 bg-[#f8fafc] border-b border-r border-gray-200" style={{ minWidth: LEFT_CHECK_W }} />
+          <th className="sticky z-50 bg-[#f8fafc] border-b border-r border-gray-200" style={{ left: LEFT_CHECK_W, minWidth: LEFT_NAME_W }} />
           {monthHeaders.map((m, i) => (
             <th key={i} colSpan={m.span} className="border-b border-r border-gray-200 bg-[#f8fafc] px-1 py-1.5 text-center text-[10px] font-semibold text-[#1e3a5f]">{m.label}</th>
           ))}
         </tr>
         <tr>
-          <th className="sticky left-0 z-30 bg-[#eef2f7] border-b border-r border-gray-200 px-1 py-1 text-center text-[9px] text-gray-400" style={{ minWidth: LEFT_CHECK_W }}>済</th>
-          <th className="sticky z-30 bg-[#eef2f7] border-b border-r border-gray-200 px-2 py-1 text-left text-[10px] text-gray-500 font-medium" style={{ left: LEFT_CHECK_W, minWidth: LEFT_NAME_W }}>タスク名</th>
+          <th className="sticky left-0 z-50 bg-[#eef2f7] border-b border-r border-gray-200 px-1 py-1 text-center text-[9px] text-gray-400" style={{ minWidth: LEFT_CHECK_W }}>済</th>
+          <th className="sticky z-50 bg-[#eef2f7] border-b border-r border-gray-200 px-2 py-1 text-left text-[10px] text-gray-500 font-medium" style={{ left: LEFT_CHECK_W, minWidth: LEFT_NAME_W }}>タスク名</th>
           {dates.map((d) => {
             const isToday = isSameDay(d, today);
             const weekend = isWeekend(d);
@@ -449,9 +448,17 @@ export function ScheduleGanttChart({
         {deadlineItems.length > 0 && (
           <>
             <tr>
-              <td colSpan={2 + dates.length} className="sticky left-0 z-20 bg-amber-50/80 border-b border-gray-200 px-3 py-1" style={{ borderLeft: '3px solid #f59e0b' }}>
+              <td colSpan={2} className="sticky left-0 z-20 bg-amber-50/80 border-b border-gray-200 px-3 py-1" style={{ borderLeft: '3px solid #f59e0b' }}>
                 <span className="text-[10px] text-amber-700 font-bold">進捗管理 期日</span>
               </td>
+              {dates.map((d) => {
+                const isToday = isSameDay(d, today);
+                return (
+                  <td key={formatDate(d)} className={`border-b border-gray-200 ${isToday ? 'bg-red-50/50' : 'bg-amber-50/40'}`}>
+                    {isToday && <div className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-red-400 z-10 -translate-x-1/2 relative" />}
+                  </td>
+                );
+              })}
             </tr>
             {deadlineItems.map((item) => (
               <tr key={`dl-${item.id}`}>
@@ -481,9 +488,22 @@ export function ScheduleGanttChart({
         )}
         {categories.map(({ category, tasks: catTasks }, catIdx) => {
           const isCollapsed = collapsedCategories.has(category);
+          const c = CATEGORY_COLORS[catIdx % CATEGORY_COLORS.length];
           return (
-            <tr key={`cat-${category}`} className="contents">
-              {renderCategoryHeader(category, catTasks, 2 + dates.length, catIdx)}
+            <React.Fragment key={`cat-${category}`}>
+              <tr onClick={() => toggleCategory(category)} className="cursor-pointer hover:brightness-95 transition-all">
+                {renderCategoryLeftCells(category, catTasks, catIdx)}
+                {dates.map((d) => {
+                  const isToday = isSameDay(d, today);
+                  const weekend = isWeekend(d);
+                  return (
+                    <td key={formatDate(d)} className={`border-b border-gray-200 relative ${isToday ? 'bg-red-50/50' : ''}`}
+                      style={{ backgroundColor: isToday ? undefined : weekend ? `${c.bg}80` : c.bg }}>
+                      {isToday && <div className="absolute top-0 bottom-0 left-1/2 w-[2px] bg-red-500/70 z-10 -translate-x-1/2" />}
+                    </td>
+                  );
+                })}
+              </tr>
               {!isCollapsed && catTasks.map((task, rowIdx) => {
                 const ms = isMilestone(task);
                 const od = isOverdue(task, today);
@@ -524,7 +544,7 @@ export function ScheduleGanttChart({
                   </tr>
                 );
               })}
-            </tr>
+            </React.Fragment>
           );
         })}
       </tbody>
@@ -543,17 +563,17 @@ export function ScheduleGanttChart({
 
     return (
       <table className="border-collapse text-xs min-w-max">
-        <thead>
+        <thead className="sticky top-0 z-40">
           <tr>
-            <th className="sticky left-0 z-30 bg-[#f8fafc] border-b border-r border-gray-200" style={{ minWidth: LEFT_CHECK_W }} />
-            <th className="sticky z-30 bg-[#f8fafc] border-b border-r border-gray-200" style={{ left: LEFT_CHECK_W, minWidth: LEFT_NAME_W }} />
+            <th className="sticky left-0 z-50 bg-[#f8fafc] border-b border-r border-gray-200" style={{ minWidth: LEFT_CHECK_W }} />
+            <th className="sticky z-50 bg-[#f8fafc] border-b border-r border-gray-200" style={{ left: LEFT_CHECK_W, minWidth: LEFT_NAME_W }} />
             {weekMonthHeaders.map((m, i) => (
               <th key={i} colSpan={m.span} className="border-b border-r border-gray-200 bg-[#f8fafc] px-1 py-1.5 text-center text-[10px] font-semibold text-[#1e3a5f]">{m.label}</th>
             ))}
           </tr>
           <tr>
-            <th className="sticky left-0 z-30 bg-[#eef2f7] border-b border-r border-gray-200 px-1 py-1 text-center text-[9px] text-gray-400" style={{ minWidth: LEFT_CHECK_W }}>済</th>
-            <th className="sticky z-30 bg-[#eef2f7] border-b border-r border-gray-200 px-2 py-1 text-left text-[10px] text-gray-500 font-medium" style={{ left: LEFT_CHECK_W, minWidth: LEFT_NAME_W }}>タスク名</th>
+            <th className="sticky left-0 z-50 bg-[#eef2f7] border-b border-r border-gray-200 px-1 py-1 text-center text-[9px] text-gray-400" style={{ minWidth: LEFT_CHECK_W }}>済</th>
+            <th className="sticky z-50 bg-[#eef2f7] border-b border-r border-gray-200 px-2 py-1 text-left text-[10px] text-gray-500 font-medium" style={{ left: LEFT_CHECK_W, minWidth: LEFT_NAME_W }}>タスク名</th>
             {weeks.map((w, i) => {
               const hasToday = w.days.some((d) => isSameDay(d, today));
               return (
@@ -569,9 +589,17 @@ export function ScheduleGanttChart({
           {deadlineItems.length > 0 && (
             <>
               <tr>
-                <td colSpan={2 + weeks.length} className="sticky left-0 z-20 bg-amber-50/80 border-b border-gray-200 px-3 py-1" style={{ borderLeft: '3px solid #f59e0b' }}>
+                <td colSpan={2} className="sticky left-0 z-20 bg-amber-50/80 border-b border-gray-200 px-3 py-1" style={{ borderLeft: '3px solid #f59e0b' }}>
                   <span className="text-[10px] text-amber-700 font-bold">進捗管理 期日</span>
                 </td>
+                {weeks.map((w, wi) => {
+                  const hasToday = w.days.some((d) => isSameDay(d, today));
+                  return (
+                    <td key={wi} className={`border-b border-gray-200 ${hasToday ? 'bg-red-50/50' : 'bg-amber-50/40'}`}>
+                      {hasToday && <div className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-red-400 z-10 -translate-x-1/2 relative" />}
+                    </td>
+                  );
+                })}
               </tr>
               {deadlineItems.map((item) => (
                 <tr key={`dl-${item.id}`}>
@@ -600,9 +628,21 @@ export function ScheduleGanttChart({
           )}
           {categories.map(({ category, tasks: catTasks }, catIdx) => {
             const isCollapsed = collapsedCategories.has(category);
+            const c = CATEGORY_COLORS[catIdx % CATEGORY_COLORS.length];
             return (
-              <tr key={`cat-${category}`} className="contents">
-                {renderCategoryHeader(category, catTasks, 2 + weeks.length, catIdx)}
+              <React.Fragment key={`cat-${category}`}>
+                <tr onClick={() => toggleCategory(category)} className="cursor-pointer hover:brightness-95 transition-all">
+                  {renderCategoryLeftCells(category, catTasks, catIdx)}
+                  {weeks.map((w, wi) => {
+                    const hasToday = w.days.some((d) => isSameDay(d, today));
+                    return (
+                      <td key={wi} className={`border-b border-gray-200 relative ${hasToday ? 'bg-red-50/50' : ''}`}
+                        style={{ backgroundColor: hasToday ? undefined : c.bg }}>
+                        {hasToday && <div className="absolute top-0 bottom-0 left-1/2 w-[2px] bg-red-500/70 z-10 -translate-x-1/2" />}
+                      </td>
+                    );
+                  })}
+                </tr>
                 {!isCollapsed && catTasks.map((task, rowIdx) => {
                   const ms = isMilestone(task);
                   const od = isOverdue(task, today);
@@ -633,7 +673,7 @@ export function ScheduleGanttChart({
                     </tr>
                   );
                 })}
-              </tr>
+              </React.Fragment>
             );
           })}
         </tbody>
@@ -712,7 +752,7 @@ export function ScheduleGanttChart({
       </div>
 
       {/* ガントチャート */}
-      <div ref={scrollRef} className="overflow-x-auto border border-gray-200 rounded-xl bg-white shadow-sm">
+      <div ref={scrollRef} className="overflow-auto border border-gray-200 rounded-xl bg-white shadow-sm" style={{ maxHeight: 'calc(100vh - 220px)' }}>
         {scale === 'day' ? renderDayView() : renderWeekView()}
       </div>
     </div>
