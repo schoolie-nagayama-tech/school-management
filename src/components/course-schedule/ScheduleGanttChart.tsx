@@ -682,27 +682,27 @@ export function ScheduleGanttChart({
   };
 
   return (
-    <div className="space-y-3">
-      {/* サマリーヘッダー */}
-      <div className="bg-white rounded-xl border border-gray-200 px-4 py-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-4">
+    <div className="space-y-2">
+      {/* サマリーヘッダー + 凡例（1行に統合） */}
+      <div className="bg-white rounded-xl border border-gray-200 px-4 py-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-500">準備進捗</span>
-              <div className="w-24 h-2.5 bg-gray-100 rounded-full overflow-hidden">
+              <span className="text-[11px] text-gray-500">準備進捗</span>
+              <div className="w-20 h-2 bg-gray-100 rounded-full overflow-hidden">
                 <div className="h-full rounded-full transition-all"
                   style={{ width: `${overallPct}%`, backgroundColor: overallPct >= 80 ? '#10b981' : overallPct >= 50 ? '#f59e0b' : '#ef4444' }} />
               </div>
-              <span className="text-xs font-bold text-[#1e3a5f]">{completedTotal}/{totalTasks}</span>
+              <span className="text-[11px] font-bold text-[#1e3a5f]">{completedTotal}/{totalTasks}</span>
             </div>
             {overdueCount > 0 && (
-              <span className="text-[11px] text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full font-medium">
-                {overdueCount}件 期日超過
+              <span className="text-[10px] text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full font-medium">
+                {overdueCount}件超過
               </span>
             )}
             {progressSummary && progressSummary.total > 0 && (
-              <div className="flex items-center gap-2 border-l border-gray-200 pl-4">
-                <span className="text-xs text-gray-500">進捗管理</span>
+              <div className="flex items-center gap-2 border-l border-gray-200 pl-3">
+                <span className="text-[11px] text-gray-500">進捗管理</span>
                 <ProgressBadge total={progressSummary.total} completed={progressSummary.completed} />
                 {progressSummary.itemSummaries && progressSummary.itemSummaries.length > 0 && (
                   <div className="flex items-center gap-1.5 ml-1">
@@ -713,6 +713,33 @@ export function ScheduleGanttChart({
                 )}
               </div>
             )}
+            {/* 凡例（インライン） */}
+            <div className="flex items-center gap-3 border-l border-gray-200 pl-3">
+              <div className="flex items-center gap-1">
+                <div className="w-5 h-[10px] bg-blue-500/30 border border-blue-500/25 rounded" />
+                <span className="text-[9px] text-gray-400">期間</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] text-purple-500">&#9670;</span>
+                <span className="text-[9px] text-gray-400">単日</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-5 h-[10px] bg-emerald-400/60 border border-emerald-500/40 rounded" />
+                <span className="text-[9px] text-gray-400">完了</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-5 h-[10px] bg-red-400/50 border border-red-500/40 rounded" />
+                <span className="text-[9px] text-gray-400">超過</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] text-amber-600">&#9670;</span>
+                <span className="text-[9px] text-gray-400">進捗期日</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-[2px] h-2.5 bg-red-500/70 rounded" />
+                <span className="text-[9px] text-gray-400">今日</span>
+              </div>
+            </div>
           </div>
           <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
             <button onClick={() => setScale('week')}
@@ -723,36 +750,8 @@ export function ScheduleGanttChart({
         </div>
       </div>
 
-      {/* 凡例 */}
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-1 px-1">
-        <div className="flex items-center gap-1.5">
-          <div className="w-8 h-[14px] bg-blue-500/30 border border-blue-500/25 rounded" />
-          <span className="text-[10px] text-gray-500">期間タスク</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-[12px] text-purple-500">&#9670;</span>
-          <span className="text-[10px] text-gray-500">単日タスク</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-8 h-[14px] bg-emerald-400/60 border border-emerald-500/40 rounded" />
-          <span className="text-[10px] text-gray-500">完了</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-8 h-[14px] bg-red-400/50 border border-red-500/40 rounded" />
-          <span className="text-[10px] text-gray-500">期日超過</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-[12px] text-amber-600">&#9670;</span>
-          <span className="text-[10px] text-gray-500">進捗管理 期日</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-[2px] h-3.5 bg-red-500/70 rounded" />
-          <span className="text-[10px] text-gray-500">今日</span>
-        </div>
-      </div>
-
       {/* ガントチャート */}
-      <div ref={scrollRef} className="overflow-auto border border-gray-200 rounded-xl bg-white shadow-sm" style={{ maxHeight: 'calc(100vh - 220px)' }}>
+      <div ref={scrollRef} className="overflow-auto border border-gray-200 rounded-xl bg-white shadow-sm" style={{ maxHeight: 'calc(100vh - 170px)' }}>
         {scale === 'day' ? renderDayView() : renderWeekView()}
       </div>
     </div>

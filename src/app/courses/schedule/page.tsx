@@ -532,10 +532,10 @@ export default function CourseSchedulePage() {
   }
 
   return (
-    <AdminLayout headerTitle="講習 準備スケジュール">
-      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <AdminLayout headerTitle="講習 準備スケジュール" fullWidth>
+      <div>
         {/* ヘッダー */}
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
           <div className="flex flex-wrap items-center gap-4">
             <SeasonYearSelector
               season={season}
