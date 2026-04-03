@@ -569,7 +569,12 @@ async function handleInitProgressTemplate(
     return NextResponse.json({ error: 'テンプレートが見つかりません' }, { status: 404 });
   }
 
-  const items = (template as { template_data: Array<{ name: string; column_type: string; sort_order: number; column_group?: string }> }).template_data;
+  type ProgressTemplateItem = {
+    name: string; column_type: string; sort_order: number;
+    column_group?: string; auto_source?: string; manager_only?: boolean;
+    deadline?: string; is_hidden?: boolean;
+  };
+  const items = (template as { template_data: ProgressTemplateItem[] }).template_data;
   if (!items || items.length === 0) {
     return NextResponse.json({ error: 'テンプレートに項目がありません' }, { status: 400 });
   }
@@ -582,7 +587,7 @@ async function handleInitProgressTemplate(
     .eq('season', season)
     .eq('year', year);
 
-  const insertData = items.map((item: { name: string; column_type: string; sort_order: number; column_group?: string; auto_source?: string; manager_only?: boolean }) => ({
+  const insertData = items.map((item: ProgressTemplateItem) => ({
     school_id: schoolId,
     season,
     year,
@@ -592,6 +597,8 @@ async function handleInitProgressTemplate(
     ...(item.column_group ? { column_group: item.column_group } : {}),
     ...(item.auto_source ? { auto_source: item.auto_source } : {}),
     ...(item.manager_only !== undefined ? { manager_only: item.manager_only } : {}),
+    ...(item.deadline ? { deadline: item.deadline } : {}),
+    ...(item.is_hidden !== undefined ? { is_hidden: item.is_hidden } : {}),
   }));
 
   const { error: insertError } = await supabaseAdmin
@@ -622,12 +629,28 @@ async function handleInitScheduleTemplate(
     return NextResponse.json({ error: 'テンプレートが見つかりません' }, { status: 404 });
   }
 
-  const tasks = (template as { template_data: Array<{ major_category: string; name: string; description?: string; sort_order: number; start_date?: string; end_date?: string }> }).template_data;
+  type ScheduleTemplateTask = {
+    major_category: string; name: string; description?: string; sort_order: number;
+    start_date?: string; end_date?: string; deadline?: string;
+    linked_progress_item_name?: string;
+    markers?: Array<{ marker_date: string; label: string; color: string | null }>;
+  };
+  const tasks = (template as { template_data: ScheduleTemplateTask[] }).template_data;
   if (!tasks || tasks.length === 0) {
     return NextResponse.json({ error: 'テンプレートにタスクがありません' }, { status: 400 });
   }
 
-  // 既存タスクを削除してから挿入（再適用対応）
+  // 既存タスク + マーカーを削除
+  const { data: existingTasks } = await supabaseAdmin
+    .from('course_prep_schedule_tasks')
+    .select('id')
+    .eq('school_id', schoolId)
+    .eq('season', season)
+    .eq('year', year);
+  if (existingTasks && existingTasks.length > 0) {
+    const existingIds = existingTasks.map((t: { id: string }) => t.id);
+    await supabaseAdmin.from('course_prep_schedule_markers').delete().in('task_id', existingIds);
+  }
   await supabaseAdmin
     .from('course_prep_schedule_tasks')
     .delete()
@@ -635,6 +658,23 @@ async function handleInitScheduleTemplate(
     .eq('season', season)
     .eq('year', year);
 
+  // リンク先進捗項目を名前で逆引き（同じ school/season/year の進捗項目から）
+  const linkedNames = tasks.map((t) => t.linked_progress_item_name).filter(Boolean) as string[];
+  const nameToItemId: Record<string, string> = {};
+  if (linkedNames.length > 0) {
+    const { data: progressItems } = await supabaseAdmin
+      .from('course_prep_progress_items')
+      .select('id, name')
+      .eq('school_id', schoolId)
+      .eq('season', season)
+      .eq('year', year)
+      .in('name', linkedNames);
+    for (const pi of (progressItems || []) as Array<{ id: string; name: string }>) {
+      nameToItemId[pi.name] = pi.id;
+    }
+  }
+
+  // タスクを挿入
   const insertData = tasks.map((task) => ({
     school_id: schoolId,
     season,
@@ -645,14 +685,40 @@ async function handleInitScheduleTemplate(
     sort_order: task.sort_order,
     ...(task.start_date ? { start_date: task.start_date } : {}),
     ...(task.end_date ? { end_date: task.end_date } : {}),
+    ...(task.deadline ? { deadline: task.deadline } : {}),
+    ...(task.linked_progress_item_name && nameToItemId[task.linked_progress_item_name]
+      ? { linked_progress_item_id: nameToItemId[task.linked_progress_item_name] }
+      : {}),
   }));
 
-  const { error: insertError } = await supabaseAdmin
+  const { data: insertedTasks, error: insertError } = await supabaseAdmin
     .from('course_prep_schedule_tasks')
-    .insert(insertData);
+    .insert(insertData)
+    .select('id, sort_order');
 
   if (insertError) {
     return NextResponse.json({ error: `適用失敗: ${insertError.message}` }, { status: 500 });
+  }
+
+  // マーカーを復元
+  const sortOrderToId: Record<number, string> = {};
+  for (const t of (insertedTasks || []) as Array<{ id: string; sort_order: number }>) {
+    sortOrderToId[t.sort_order] = t.id;
+  }
+
+  const markerInserts: Array<{ task_id: string; marker_date: string; label: string; color: string | null }> = [];
+  for (const task of tasks) {
+    if (task.markers && task.markers.length > 0) {
+      const taskId = sortOrderToId[task.sort_order];
+      if (taskId) {
+        for (const m of task.markers) {
+          markerInserts.push({ task_id: taskId, marker_date: m.marker_date, label: m.label, color: m.color });
+        }
+      }
+    }
+  }
+  if (markerInserts.length > 0) {
+    await supabaseAdmin.from('course_prep_schedule_markers').insert(markerInserts);
   }
 
   return NextResponse.json({ success: true, count: insertData.length });
@@ -955,26 +1021,68 @@ async function handleSaveTemplate(
   let templateData: Record<string, unknown>[];
 
   if (templateType === 'progress') {
+    // 進捗項目: 生徒実績以外の全フィールドを保存
     const { data, error } = await supabaseAdmin
       .from('course_prep_progress_items')
-      .select('name, column_type, sort_order')
+      .select('name, column_type, sort_order, column_group, auto_source, manager_only, deadline, is_hidden')
       .eq('school_id', schoolId)
       .eq('season', season)
       .eq('year', year)
-      .or('is_hidden.eq.false,is_hidden.is.null')
       .order('sort_order');
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     templateData = (data || []) as Record<string, unknown>[];
   } else {
-    const { data, error } = await supabaseAdmin
+    // スケジュールタスク: 全フィールド + マーカー + リンク先進捗項目名を保存
+    const { data: tasks, error } = await supabaseAdmin
       .from('course_prep_schedule_tasks')
-      .select('major_category, name, description, sort_order, start_date, end_date')
+      .select('id, major_category, name, description, sort_order, start_date, end_date, deadline, linked_progress_item_id')
       .eq('school_id', schoolId)
       .eq('season', season)
       .eq('year', year)
       .order('sort_order');
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    templateData = (data || []) as Record<string, unknown>[];
+
+    // マーカーを取得
+    const taskIds = (tasks || []).map((t: { id: string }) => t.id);
+    const markersMap: Record<string, Array<{ marker_date: string; label: string; color: string | null }>> = {};
+    if (taskIds.length > 0) {
+      const { data: markers } = await supabaseAdmin
+        .from('course_prep_schedule_markers')
+        .select('task_id, marker_date, label, color')
+        .in('task_id', taskIds)
+        .order('marker_date');
+      for (const m of (markers || []) as Array<{ task_id: string; marker_date: string; label: string; color: string | null }>) {
+        if (!markersMap[m.task_id]) markersMap[m.task_id] = [];
+        markersMap[m.task_id].push({ marker_date: m.marker_date, label: m.label, color: m.color });
+      }
+    }
+
+    // リンク先進捗項目のIDを名前に変換（別の期/年でも復元可能にする）
+    const linkedItemIds = (tasks || [])
+      .map((t: { linked_progress_item_id: string | null }) => t.linked_progress_item_id)
+      .filter(Boolean) as string[];
+    const itemNameMap: Record<string, string> = {};
+    if (linkedItemIds.length > 0) {
+      const { data: linkedItems } = await supabaseAdmin
+        .from('course_prep_progress_items')
+        .select('id, name')
+        .in('id', linkedItemIds);
+      for (const li of (linkedItems || []) as Array<{ id: string; name: string }>) {
+        itemNameMap[li.id] = li.name;
+      }
+    }
+
+    templateData = (tasks || []).map((t: { id: string; major_category: string; name: string; description: string | null; sort_order: number; start_date: string | null; end_date: string | null; deadline: string | null; linked_progress_item_id: string | null }) => ({
+      major_category: t.major_category,
+      name: t.name,
+      description: t.description,
+      sort_order: t.sort_order,
+      start_date: t.start_date,
+      end_date: t.end_date,
+      deadline: t.deadline,
+      linked_progress_item_name: t.linked_progress_item_id ? itemNameMap[t.linked_progress_item_id] || null : null,
+      markers: markersMap[t.id] || [],
+    }));
   }
 
   const { data, error } = await supabaseAdmin
