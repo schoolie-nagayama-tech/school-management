@@ -149,7 +149,7 @@ export default function StudentsPage() {
 
   // ページネーション
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 50;
+  const ITEMS_PER_PAGE = 100;
 
   // フィルター済みの生徒一覧
   const filteredStudents = useMemo(() => {
