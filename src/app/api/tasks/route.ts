@@ -326,11 +326,13 @@ export async function POST(request: NextRequest) {
         const monthEnd = `${year}-${String(month).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
 
         // 該当月に期間が重なるschedule_tasksを取得
+        // 条件: start_date <= monthEnd AND (end_date >= monthStart OR end_date IS NULL)
         const { data: scheduleTasks, error: stErr } = await supabaseAdmin
           .from('course_prep_schedule_tasks')
           .select('id, school_id, name, start_date, end_date, is_completed, major_category')
-          .or(`start_date.lte.${monthEnd},end_date.gte.${monthStart},start_date.gte.${monthStart}`)
-          .not('start_date', 'is', null);
+          .not('start_date', 'is', null)
+          .lte('start_date', monthEnd)
+          .or(`end_date.gte.${monthStart},end_date.is.null`);
 
         if (stErr) throw stErr;
         if (!scheduleTasks || scheduleTasks.length === 0) {
