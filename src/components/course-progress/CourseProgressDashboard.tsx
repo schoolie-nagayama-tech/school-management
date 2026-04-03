@@ -5,6 +5,7 @@ import type { CourseProgressItem, StudentCourseProgress, CoursePrepPeriod } from
 import type { Student } from '@/types/database';
 import { GRADE_LABELS } from '@/types/database';
 import type { AutoValues } from '@/lib/api/courseProgress';
+import { HelpTooltip } from '@/components/ui/Tooltip';
 
 interface CourseProgressDashboardProps {
   students: Student[];
@@ -168,6 +169,18 @@ export function CourseProgressDashboard({
           if (sv) {
             if (item.auto_source === 'regular_weekly') sum += sv.regular_weekly;
             else if (item.auto_source === 'course_sessions') sum += sv.course_sessions;
+            else if (item.auto_source === 'subject_proposal') {
+              // 科目名マッチング
+              const sp = sv.subject_proposals;
+              if (sp) {
+                if (sp[item.name] !== undefined) { sum += sp[item.name]; }
+                else {
+                  for (const [subject, count] of Object.entries(sp)) {
+                    if (item.name.includes(subject)) { sum += count; break; }
+                  }
+                }
+              }
+            }
           }
         } else {
           const d = progressData.find((p) => p.student_id === s.id && p.item_id === item.id);
@@ -349,7 +362,10 @@ export function CourseProgressDashboard({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* 増コマ達成度 */}
         <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <div className="text-xs text-gray-500 mb-1">増コマ達成度</div>
+          <div className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+            増コマ達成度
+            <HelpTooltip text={"決定コマ数の予算・目標に対する達成度。\n予算: 上限の目安\n目標: 達成したいコマ数"} size={10} />
+          </div>
           <div className="flex items-baseline gap-2">
             <span className="text-2xl font-bold text-[#1e3a5f]">{totalDecided}</span>
             <span className="text-sm text-gray-400">/ {budgetKoma > 0 ? budgetKoma : '–'} コマ</span>
@@ -395,7 +411,10 @@ export function CourseProgressDashboard({
 
         {/* 予想増コマ（想定 vs 実績） */}
         <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <div className="text-xs text-gray-500 mb-2">予想増コマ</div>
+          <div className="text-xs text-gray-500 mb-2 flex items-center gap-1">
+            予想増コマ
+            <HelpTooltip text={"想定: 提案合計 × 想定取得率\n実績: 実際の決定コマ合計\n想定取得率: 手動で設定する見込みの割合\n実績取得率: 決定コマ÷提案コマの実績"} size={10} />
+          </div>
           <div className="grid grid-cols-2 gap-3">
             {/* 想定 */}
             <div className="text-center">
@@ -440,7 +459,10 @@ export function CourseProgressDashboard({
 
         {/* 提案状況 */}
         <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <div className="text-xs text-gray-500 mb-1">提案状況</div>
+          <div className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+            提案状況
+            <HelpTooltip text={"提案済: 提案コマ数が1以上の生徒数\n決定済: 決定コマ数が1以上の生徒数\n平均提案: 全生徒の平均提案コマ数"} size={10} />
+          </div>
           <div className="flex items-baseline gap-2">
             <span className="text-2xl font-bold text-[#1e3a5f]">{proposedStudentCount}</span>
             <span className="text-sm text-gray-400">/ {students.length} 名</span>
@@ -478,6 +500,7 @@ export function CourseProgressDashboard({
           <div className="flex items-center gap-1.5 mb-1">
             {overdueData.list.length > 0 && <span className="text-red-500 text-xs">⚠</span>}
             <span className="text-xs text-gray-500">期日超過</span>
+            <HelpTooltip text={"項目に設定された期日を過ぎても\n未完了（チェックなし）の生徒とタスクを表示"} size={10} />
           </div>
           {overdueData.list.length === 0 ? (
             <div className="text-sm text-gray-400 mt-2">期日超過なし ✓</div>

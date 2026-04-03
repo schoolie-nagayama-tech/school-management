@@ -3417,7 +3417,7 @@ export interface CourseProgressItem {
   manager_only: boolean;
   column_group: string | null;
   deadline: string | null;
-  auto_source: 'regular_weekly' | 'course_sessions' | 'proposed_extra' | null;
+  auto_source: 'regular_weekly' | 'course_sessions' | 'proposed_extra' | 'subject_proposal' | null;
   created_at: string;
   updated_at: string;
 }

@@ -15,6 +15,145 @@ function countDayOccurrences(startDate: string, endDate: string): Record<number,
   return counts;
 }
 
+/**
+ * 科目別 proposal_count 集計
+ * student_textbooks → textbooks.subject → student_progress.proposal_count
+ * グループ先頭のみ集計（重複防止: updateGroupCounts() の仕様に準拠）
+ *
+ * 返り値: { [studentId]: { [subject]: totalProposalCount } }
+ */
+async function fetchSubjectProposals(
+  supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
+  schoolId: string,
+  season: string
+): Promise<Record<string, Record<string, number>>> {
+  try {
+    // 1. student_textbooks を season で取得
+    const { data: studentTextbooks, error: stError } = await supabaseAdmin
+      .from('student_textbooks')
+      .select('id, student_id, textbook_id')
+      .eq('school_id', schoolId)
+      .eq('season', season)
+      .eq('is_active', true);
+
+    if (stError) {
+      console.warn('[fetchSubjectProposals] student_textbooks query error:', stError.message);
+      return {};
+    }
+    if (!studentTextbooks || studentTextbooks.length === 0) return {};
+
+    // 2. textbook の subject を取得
+    const textbookIds = Array.from(new Set(
+      (studentTextbooks as { textbook_id: number }[]).map((st) => st.textbook_id)
+    ));
+    const { data: textbooks, error: tbError } = await supabaseAdmin
+      .from('textbooks')
+      .select('id, subject')
+      .in('id', textbookIds);
+
+    if (tbError) {
+      console.warn('[fetchSubjectProposals] textbooks query error:', tbError.message);
+      return {};
+    }
+
+    const subjectMap = new Map<number, string>();
+    for (const t of (textbooks || []) as { id: number; subject: string }[]) {
+      if (t.subject) subjectMap.set(t.id, t.subject);
+    }
+
+    // student_textbook_id → { student_id, subject }
+    const stInfoMap = new Map<string, { student_id: string; subject: string }>();
+    for (const st of studentTextbooks as { id: string; student_id: string; textbook_id: number }[]) {
+      const subject = subjectMap.get(st.textbook_id);
+      if (subject) {
+        stInfoMap.set(st.id, { student_id: st.student_id, subject });
+      }
+    }
+
+    if (stInfoMap.size === 0) return {};
+
+    // 3. student_progress の proposal_count を取得（proposal_count > 0 のみ）
+    const stIds = Array.from(stInfoMap.keys());
+
+    // Supabase .in() は最大数百件まで安全。大量の場合はバッチ分割
+    const BATCH_SIZE = 500;
+    type ProgressRow = {
+      student_textbook_id: string;
+      proposal_count: number | null;
+      group_number: number | null;
+      curriculum_item_id: string;
+    };
+    const allProgressData: ProgressRow[] = [];
+
+    for (let i = 0; i < stIds.length; i += BATCH_SIZE) {
+      const batch = stIds.slice(i, i + BATCH_SIZE);
+      const { data, error: pError } = await supabaseAdmin
+        .from('student_progress')
+        .select('student_textbook_id, proposal_count, group_number, curriculum_item_id')
+        .in('student_textbook_id', batch)
+        .gt('proposal_count', 0);
+
+      if (pError) {
+        console.warn('[fetchSubjectProposals] student_progress query error:', pError.message);
+        continue;
+      }
+      if (data) allProgressData.push(...(data as ProgressRow[]));
+    }
+
+    if (allProgressData.length === 0) return {};
+
+    // 4. student_textbook_id ごとにグルーピング
+    const grouped = new Map<string, ProgressRow[]>();
+    for (const row of allProgressData) {
+      const key = row.student_textbook_id;
+      const arr = grouped.get(key);
+      if (arr) arr.push(row);
+      else grouped.set(key, [row]);
+    }
+
+    // 5. グループ先頭のみ集計して student_id × subject で合算
+    const result: Record<string, Record<string, number>> = {};
+
+    grouped.forEach((rows, stId) => {
+      const info = stInfoMap.get(stId);
+      if (!info) return;
+
+      // グループ重複防止: group_number が同じ items は最小 curriculum_item_id のみカウント
+      // (updateGroupCounts() が先頭にだけ値をセットする仕様に準拠)
+      const groupLeaders = new Map<number, string>(); // group_number → min curriculum_item_id
+      for (const row of rows) {
+        if (row.group_number != null) {
+          const existing = groupLeaders.get(row.group_number);
+          if (!existing || row.curriculum_item_id < existing) {
+            groupLeaders.set(row.group_number, row.curriculum_item_id);
+          }
+        }
+      }
+
+      let subjectTotal = 0;
+      for (const row of rows) {
+        if (!row.proposal_count) continue;
+        // グループに属する場合、先頭以外はスキップ
+        if (row.group_number != null) {
+          if (groupLeaders.get(row.group_number) !== row.curriculum_item_id) continue;
+        }
+        subjectTotal += row.proposal_count;
+      }
+
+      if (subjectTotal > 0) {
+        if (!result[info.student_id]) result[info.student_id] = {};
+        result[info.student_id][info.subject] =
+          (result[info.student_id][info.subject] || 0) + subjectTotal;
+      }
+    });
+
+    return result;
+  } catch (err) {
+    console.error('[fetchSubjectProposals] unexpected error:', err);
+    return {};
+  }
+}
+
 function getSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -254,7 +393,7 @@ export async function GET(request: NextRequest) {
         }
 
         // course_sessions = Σ(各曜日のパターン数 × その曜日の期間内出現回数)
-        const result: Record<string, { regular_weekly: number; course_sessions: number }> = {};
+        const result: Record<string, { regular_weekly: number; course_sessions: number; subject_proposals?: Record<string, number> }> = {};
         const allStudentIds = Array.from(new Set([...Object.keys(regularWeeklyMap), ...Object.keys(seasonalDayMap)]));
         for (const sid of allStudentIds) {
           const weeklyCount = regularWeeklyMap[sid] || 0;
@@ -275,6 +414,15 @@ export async function GET(request: NextRequest) {
             regular_weekly: weeklyCount,
             course_sessions: sessions,
           };
+        }
+
+        // 科目別 proposal_count を集計して追加
+        const subjectProposalMap = await fetchSubjectProposals(supabaseAdmin, schoolId, season);
+        for (const sid of Object.keys(subjectProposalMap)) {
+          if (!result[sid]) {
+            result[sid] = { regular_weekly: 0, course_sessions: 0 };
+          }
+          result[sid].subject_proposals = subjectProposalMap[sid];
         }
 
         return NextResponse.json({ data: result });
@@ -379,7 +527,7 @@ export async function GET(request: NextRequest) {
             if (periodForAuto?.schedule_start_date && periodForAuto?.schedule_end_date) {
               dayCounts = countDayOccurrences(periodForAuto.schedule_start_date, periodForAuto.schedule_end_date);
             }
-            const autoResult: Record<string, { regular_weekly: number; course_sessions: number }> = {};
+            const autoResult: Record<string, { regular_weekly: number; course_sessions: number; subject_proposals?: Record<string, number> }> = {};
             const allIds = Array.from(new Set([...Object.keys(regularWeeklyMap), ...Object.keys(seasonalDayMap)]));
             for (const sid of allIds) {
               const weeklyCount = regularWeeklyMap[sid] || 0;
@@ -398,6 +546,14 @@ export async function GET(request: NextRequest) {
                 regular_weekly: weeklyCount,
                 course_sessions: sessions,
               };
+            }
+            // 科目別 proposal_count を集計して追加
+            const subjectProposalMap = await fetchSubjectProposals(supabaseAdmin, schoolId, season);
+            for (const sid of Object.keys(subjectProposalMap)) {
+              if (!autoResult[sid]) {
+                autoResult[sid] = { regular_weekly: 0, course_sessions: 0 };
+              }
+              autoResult[sid].subject_proposals = subjectProposalMap[sid];
             }
             batchResult.auto_values = autoResult;
           })());
@@ -516,6 +672,23 @@ export async function POST(request: NextRequest) {
         return await handleUpdateStudentDate(supabaseAdmin, { ...params, schoolId });
       case 'update_progress_item':
         return await handleUpdateProgressItem(supabaseAdmin, params);
+      case 'batch_reorder_items': {
+        // 複数項目の sort_order を一括更新（N回→1回）
+        const reorderItems = params.items as { id: string; sort_order: number }[];
+        if (!reorderItems || reorderItems.length === 0) {
+          return NextResponse.json({ error: 'items が必要です' }, { status: 400 });
+        }
+        await Promise.all(
+          reorderItems.map((item) =>
+            supabaseAdmin
+              .from('course_prep_progress_items')
+              .update({ sort_order: item.sort_order })
+              .eq('id', item.id)
+              .eq('school_id', schoolId)
+          )
+        );
+        return NextResponse.json({ success: true });
+      }
       case 'hide_progress_item':
         return await handleHideProgressItem(supabaseAdmin, params);
       case 'delete_progress_item':
@@ -524,6 +697,23 @@ export async function POST(request: NextRequest) {
         return await handleCreateScheduleTask(supabaseAdmin, schoolId, params);
       case 'update_schedule_task':
         return await handleUpdateScheduleTask(supabaseAdmin, params);
+      case 'batch_link_schedule_tasks': {
+        // 複数タスクのリンク解除＋1件リンク設定を1リクエストで（N+1回→1回）
+        const unlinkTaskIds = (params.unlinkTaskIds as string[]) || [];
+        const linkTaskId = params.linkTaskId as string | null;
+        const linkItemId = params.linkItemId as string | null;
+        for (const tid of unlinkTaskIds) {
+          await supabaseAdmin.from('course_prep_schedule_tasks')
+            .update({ linked_progress_item_id: null })
+            .eq('id', tid).eq('school_id', schoolId);
+        }
+        if (linkTaskId && linkItemId) {
+          await supabaseAdmin.from('course_prep_schedule_tasks')
+            .update({ linked_progress_item_id: linkItemId })
+            .eq('id', linkTaskId).eq('school_id', schoolId);
+        }
+        return NextResponse.json({ success: true });
+      }
       case 'delete_schedule_task':
         return await handleDeleteScheduleTask(supabaseAdmin, params);
       case 'save_template':

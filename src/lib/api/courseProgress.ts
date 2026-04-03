@@ -191,7 +191,7 @@ export async function updateStudentProgressDate(
 // 自動計算値（通常週回数・講習回数）
 // =============================================
 
-export type AutoValues = Record<string, { regular_weekly: number; course_sessions: number }>;
+export type AutoValues = Record<string, { regular_weekly: number; course_sessions: number; subject_proposals?: Record<string, number> }>;
 
 export async function getAutoValues(
   schoolId: string,

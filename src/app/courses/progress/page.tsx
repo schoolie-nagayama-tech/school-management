@@ -5,11 +5,9 @@ import { AdminLayout } from '@/components/layouts';
 import { CourseProgressDashboard, CourseProgressTable } from '@/components/course-progress';
 import { SeasonYearSelector } from '@/components/course-shared/SeasonYearSelector';
 import { TemplateApplyDialog } from '@/components/course-shared/TemplateApplyDialog';
-import { updateScheduleTask } from '@/lib/api/courseSchedule';
 import { supabase } from '@/lib/supabase';
-import { batchFetchCoursePrepApi } from '@/lib/api/coursePrepApi';
+import { batchFetchCoursePrepApi, callCoursePrepApi } from '@/lib/api/coursePrepApi';
 import {
-  getCoursePrepPeriod,
   upsertCoursePrepPeriod,
   updateStudentProgress,
   updateStudentProgressNumber,
@@ -19,7 +17,6 @@ import {
   deleteCourseProgressItem,
   hideCourseProgressItem,
   unhideCourseProgressItem,
-  getAutoValues,
   type AutoValues,
 } from '@/lib/api/courseProgress';
 import {
@@ -44,6 +41,7 @@ import { useRequirePermission, useCanEdit } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
+import { HelpTooltip } from '@/components/ui/Tooltip';
 
 // localStorage共通キー（工程表と共有）
 const STORAGE_KEY = 'course_prep_season_year';
@@ -388,19 +386,19 @@ export default function CourseProgressPage() {
     [getSelectedSchoolIds, season, year, fetchData]
   );
 
-  // 講習期間日付変更
+  // 講習期間日付変更 → upsert後にperiod+auto_valuesだけバッチ再取得（1リクエスト）
   const handlePeriodDateChange = useCallback(
     async (updates: Partial<Pick<CoursePrepPeriod, 'schedule_start_date' | 'schedule_end_date'>>) => {
       const schoolIds = getSelectedSchoolIds();
       if (schoolIds.length === 0) return;
       try {
         await upsertCoursePrepPeriod(schoolIds[0], season, year, updates);
-        const [updatedPeriod, autoVals] = await Promise.all([
-          getCoursePrepPeriod(schoolIds[0], season, year),
-          getAutoValues(schoolIds[0], season, year),
-        ]);
-        setPeriod(updatedPeriod);
-        setAutoValuesData(autoVals);
+        const batchResult = await batchFetchCoursePrepApi(
+          { schoolId: schoolIds[0], season, year: String(year) },
+          ['period', 'auto_values']
+        );
+        setPeriod((batchResult.period as CoursePrepPeriod) || null);
+        setAutoValuesData((batchResult.auto_values || {}) as AutoValues);
       } catch (err) {
         console.error('Error updating period dates:', err);
       }
@@ -460,21 +458,20 @@ export default function CourseProgressPage() {
     }
   }, [getSelectedSchoolIds, season]);
 
-  // スケジュールタスクとのリンク設定（進捗管理側から）
+  // スケジュールタスクとのリンク設定 → バッチ1リクエスト + 再取得1リクエスト
   const handleLinkScheduleTask = useCallback(
     async (itemId: string, taskId: string | null) => {
       const schoolIds = getSelectedSchoolIds();
       if (schoolIds.length === 0) return;
       try {
-        // 既にこのitemIdにリンクされている別タスクがあれば解除
-        const linkedTasks = scheduleTasks.filter((t) => t.linked_progress_item_id === itemId);
-        for (const t of linkedTasks) {
-          await updateScheduleTask(t.id, { linked_progress_item_id: null }, schoolIds[0]);
-        }
-        // 新しいリンクを設定
-        if (taskId) {
-          await updateScheduleTask(taskId, { linked_progress_item_id: itemId }, schoolIds[0]);
-        }
+        const unlinkTaskIds = scheduleTasks
+          .filter((t) => t.linked_progress_item_id === itemId)
+          .map((t) => t.id);
+        await callCoursePrepApi('batch_link_schedule_tasks', schoolIds[0], {
+          unlinkTaskIds,
+          linkTaskId: taskId,
+          linkItemId: itemId,
+        });
         // 再取得
         const batchResult = await batchFetchCoursePrepApi(
           { schoolId: schoolIds[0], season, year: String(year) },
@@ -536,6 +533,35 @@ export default function CourseProgressPage() {
     setShowTemplateDialog(true);
   }, [season, getSelectedSchoolIds]);
 
+  // 項目関連の部分再取得（項目+進捗だけ。生徒やauto_valuesは不変）
+  const refetchItems = useCallback(async () => {
+    const schoolIds = getSelectedSchoolIds();
+    if (schoolIds.length === 0) return;
+    try {
+      const batchResult = await batchFetchCoursePrepApi(
+        { schoolId: schoolIds[0], season, year: String(year), includeHidden: String(showHidden) },
+        ['progress_items', 'student_progress']
+      );
+      const itemsData = ((batchResult.progress_items as Record<string, unknown>[]) || []).map((item) => ({
+        ...item,
+        column_type: (item.column_type as string) || 'check',
+        manager_only: item.manager_only === true,
+        is_hidden: item.is_hidden === true,
+        deadline: (item.deadline as string) || null,
+        auto_source: (item.auto_source as string) || null,
+      })) as CourseProgressItem[];
+      const progressResult = ((batchResult.student_progress as Record<string, unknown>[]) || []).map((d) => ({
+        ...d,
+        number_value: d.number_value ?? null,
+        date_value: d.date_value ?? null,
+      })) as StudentCourseProgress[];
+      setItems(itemsData);
+      setProgressData(progressResult);
+    } catch (err) {
+      console.error('Error refetching items:', err);
+    }
+  }, [getSelectedSchoolIds, season, year, showHidden]);
+
   // 項目追加
   const handleAddItem = useCallback(async () => {
     if (!newItemName.trim()) return;
@@ -557,12 +583,12 @@ export default function CourseProgressPage() {
       setNewItemType('check');
       setNewItemGroup('');
       setNewItemAutoSource('');
-      await fetchData();
+      await refetchItems();
     } catch (err) {
       console.error('Error creating item:', err);
       setErrorMessage(getUserErrorMessage(err, '項目の作成に失敗しました'));
     }
-  }, [newItemName, newItemType, newItemGroup, newItemAutoSource, getSelectedSchoolIds, season, year, fetchData]);
+  }, [newItemName, newItemType, newItemGroup, newItemAutoSource, getSelectedSchoolIds, season, year, refetchItems]);
 
   // 項目削除
   const handleDeleteItem = useCallback(
@@ -572,13 +598,13 @@ export default function CourseProgressPage() {
       if (schoolIds.length === 0) return;
       try {
         await deleteCourseProgressItem(itemId, schoolIds[0]);
-        await fetchData();
+        await refetchItems();
       } catch (err) {
         console.error('Error deleting item:', err);
         setErrorMessage(getUserErrorMessage(err, '項目の削除に失敗しました'));
       }
     },
-    [fetchData, getSelectedSchoolIds]
+    [refetchItems, getSelectedSchoolIds]
   );
 
   // 項目非表示トグル
@@ -592,15 +618,15 @@ export default function CourseProgressPage() {
         } else {
           await hideCourseProgressItem(itemId, schoolIds[0]);
         }
-        await fetchData();
+        await refetchItems();
       } catch (err) {
         console.error('Error toggling item visibility:', err);
       }
     },
-    [fetchData, getSelectedSchoolIds]
+    [refetchItems, getSelectedSchoolIds]
   );
 
-  // 項目並び替え（D&D）
+  // 項目並び替え（D&D） → バッチ1リクエストで更新
   const handleDropItem = useCallback(
     async (dragId: string, dropId: string) => {
       if (dragId === dropId) return;
@@ -619,15 +645,17 @@ export default function CourseProgressPage() {
       const updates = reordered.map((item, i) => ({ ...item, sort_order: i }));
       setItems(updates);
 
-      // 変更のあった項目だけAPIに送信
+      // 変更のあった項目をバッチ1リクエストで送信
       try {
-        const changed = updates.filter((u) => {
-          const orig = items.find((o) => o.id === u.id);
-          return orig && orig.sort_order !== u.sort_order;
-        });
-        await Promise.all(
-          changed.map((c) => updateCourseProgressItem(c.id, schoolIds[0], { sort_order: c.sort_order }))
-        );
+        const changed = updates
+          .filter((u) => {
+            const orig = items.find((o) => o.id === u.id);
+            return orig && orig.sort_order !== u.sort_order;
+          })
+          .map((c) => ({ id: c.id, sort_order: c.sort_order }));
+        if (changed.length > 0) {
+          await callCoursePrepApi('batch_reorder_items', schoolIds[0], { items: changed });
+        }
       } catch (err) {
         console.error('Error reordering items:', err);
         fetchData();
@@ -892,7 +920,21 @@ export default function CourseProgressPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="text-[10px] text-gray-500 block mb-0.5">自動計算</label>
+                      <label className="text-[10px] text-gray-500 mb-0.5 flex items-center gap-1">
+                        自動計算
+                        <HelpTooltip
+                          text={
+                            "自動計算を設定すると値が自動で入ります（編集不可）\n\n" +
+                            "■ 通塾回数/週: 通塾パターンから週の回数\n" +
+                            "■ 講習期間通常回数: 講習期間中の通塾回数合計\n" +
+                            "■ 提示増コマ: 教科別コマ合計 - 講習期間通常回数\n" +
+                            "■ 進行表コマ数: 進行表の提案コマを科目名で自動集計\n" +
+                            "  ※ 項目名に科目名を含めてください（例: 英語, 数学）"
+                          }
+                          size={10}
+                          position="bottom"
+                        />
+                      </label>
                       <select
                         value={newItemAutoSource}
                         onChange={(e) => setNewItemAutoSource(e.target.value)}
@@ -902,6 +944,7 @@ export default function CourseProgressPage() {
                         <option value="regular_weekly">通塾回数/週</option>
                         <option value="course_sessions">講習期間通常回数</option>
                         <option value="proposed_extra">提示増コマ (教科別計-通常回数)</option>
+                        <option value="subject_proposal">進行表コマ数 (科目別)</option>
                       </select>
                     </div>
                     <button
@@ -968,7 +1011,8 @@ export default function CourseProgressPage() {
                               <span className="text-[9px] px-1 py-0.5 bg-blue-100 text-blue-600 rounded shrink-0">
                                 {item.auto_source === 'regular_weekly' ? '通塾回数' :
                                  item.auto_source === 'course_sessions' ? '通常回数' :
-                                 item.auto_source === 'proposed_extra' ? '提示増コマ' : '自動'}
+                                 item.auto_source === 'proposed_extra' ? '提示増コマ' :
+                                 item.auto_source === 'subject_proposal' ? '進行表コマ' : '自動'}
                               </span>
                             )}
                             {item.is_hidden && (

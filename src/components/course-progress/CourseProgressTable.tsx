@@ -4,6 +4,15 @@ import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import type { Student, CourseProgressItem, StudentCourseProgress, ApplicationStatus } from '@/types/database';
 import { GRADE_LABELS, PROGRESS_COLUMN_GROUPS } from '@/types/database';
 import type { AutoValues } from '@/lib/api/courseProgress';
+import { Tooltip } from '@/components/ui/Tooltip';
+
+/** auto_source の表示名と簡易説明 */
+const AUTO_SOURCE_LABELS: Record<string, { label: string; desc: string }> = {
+  regular_weekly: { label: '通塾回数/週', desc: '通塾パターンから自動計算' },
+  course_sessions: { label: '講習期間通常回数', desc: '講習期間中の通塾回数を自動計算' },
+  proposed_extra: { label: '提示増コマ', desc: '教科別計 - 通常回数' },
+  subject_proposal: { label: '進行表コマ数', desc: '進行表の提案コマ数を科目名で自動集計' },
+};
 
 interface CourseProgressTableProps {
   students: Student[];
@@ -33,6 +42,21 @@ function formatDeadline(deadline: string | null): string {
   return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
+/** 科目名マッチング: auto_source='subject_proposal' の列に対して、科目名→コマ数を返す */
+function getSubjectProposalValue(
+  subjectProposals: Record<string, number> | undefined,
+  itemName: string
+): number {
+  if (!subjectProposals) return 0;
+  // 完全一致
+  if (subjectProposals[itemName] !== undefined) return subjectProposals[itemName];
+  // 列名に科目名が含まれるか（例: "提示コマ(英語)" に "英語" が含まれる）
+  for (const [subject, count] of Object.entries(subjectProposals)) {
+    if (itemName.includes(subject)) return count;
+  }
+  return 0;
+}
+
 // ヒートマップセルの色を返す
 function getCellStyle(
   item: CourseProgressItem,
@@ -58,20 +82,6 @@ function statusSymbol(status: ApplicationStatus | null | undefined): string {
   if (status === 'not_applicable') return '\u2013';
   if (status === 'pending') return '\u2713'; // 旧データ互換: pendingも完了表示
   return '';
-}
-
-// ツールチップコンポーネント
-function Tooltip({ text, children }: { text: string; children: React.ReactNode }) {
-  return (
-    <div className="relative group/tip">
-      {children}
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover/tip:block z-50 pointer-events-none">
-        <div className="bg-gray-800 text-white text-[10px] px-2 py-1 rounded shadow-lg whitespace-nowrap">
-          {text}
-        </div>
-      </div>
-    </div>
-  );
 }
 
 // 編集ポップオーバー
@@ -198,6 +208,7 @@ export function CourseProgressTable({
           if (sv) {
             if (item.auto_source === 'regular_weekly') sum += sv.regular_weekly;
             else if (item.auto_source === 'course_sessions') sum += sv.course_sessions;
+            else if (item.auto_source === 'subject_proposal') sum += getSubjectProposalValue(sv.subject_proposals, item.name);
           }
         } else {
           const d = progressMap.get(`${s.id}:${item.id}`);
@@ -343,7 +354,7 @@ export function CourseProgressTable({
 
   // 自動計算値
   const getAutoValue = useCallback(
-    (studentId: string, autoSource: string | null): number | null => {
+    (studentId: string, autoSource: string | null, itemName?: string): number | null => {
       if (!autoSource || !autoValues) return null;
       const sv = autoValues[studentId];
       if (!sv) return 0;
@@ -354,6 +365,10 @@ export function CourseProgressTable({
         const subjectTotal = subjectTotals[studentId] ?? 0;
         const courseSessions = sv.course_sessions ?? 0;
         return Math.max(0, subjectTotal - courseSessions);
+      }
+      // 進行表コマ数（科目別）
+      if (autoSource === 'subject_proposal') {
+        return getSubjectProposalValue(sv.subject_proposals, itemName || '');
       }
       return null;
     },
@@ -484,7 +499,7 @@ export function CourseProgressTable({
                       className="border-b border-gray-200 px-0 py-1 text-center align-top"
                       style={{ width: dynamicCellW, minWidth: MIN_CELL_W }}
                     >
-                      <Tooltip text={`${item.name}${item.deadline ? ` (期日: ${formatDeadline(item.deadline)})` : ''}${item.auto_source ? ' [自動]' : ''}`}>
+                      <Tooltip text={`${item.name}${item.deadline ? ` (期日: ${formatDeadline(item.deadline)})` : ''}${item.auto_source ? ` [自動: ${AUTO_SOURCE_LABELS[item.auto_source]?.label || item.auto_source}]` : ''}`}>
                         <div
                           className={`text-[10px] leading-[1.3] px-0.5 min-h-[28px] flex items-center justify-center ${
                             onItemNameChange && canEdit ? 'cursor-pointer hover:text-blue-600' : ''
@@ -613,7 +628,7 @@ export function CourseProgressTable({
 
                       // 自動計算
                       if (item.auto_source && item.column_type === 'number') {
-                        const autoVal = getAutoValue(student.id, item.auto_source);
+                        const autoVal = getAutoValue(student.id, item.auto_source, item.name);
                         return (
                           <td key={item.id} className="border-b border-gray-100 p-0 text-center">
                             <div
