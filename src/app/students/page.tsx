@@ -40,6 +40,7 @@ import { AdminLayout } from '@/components/layouts';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertBoard } from '@/components/alerts';
+import { TaskOverdueBanner } from '@/components/monthly-tasks/TaskOverdueBanner';
 import { BulletinBoard } from '@/components/bulletin';
 import { NotificationFeed } from '@/components/notifications/NotificationFeed';
 import { useToast } from '@/hooks/useToast';
@@ -504,6 +505,9 @@ export default function StudentsPage() {
         <div className="mb-4">
           <BulletinBoard />
         </div>
+
+        {/* 業務タスク超過バナー（教室長以上のみ） */}
+        {!isTeacher && <TaskOverdueBanner />}
 
         {/* アラート＋通知フィード（2カラム） */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">

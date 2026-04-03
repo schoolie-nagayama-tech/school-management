@@ -3487,3 +3487,53 @@ export const PROGRESS_COLUMN_GROUPS: Record<string, { label: string; color: stri
   '事務': { label: '事務処理', color: '#10b981' },
   '教科別': { label: '教科別コマ', color: '#8b5cf6' },
 };
+
+// ========== 業務進捗管理表（月次タスク） ==========
+
+export type MonthlyTaskCategory = 'business' | 'course';
+
+export interface MonthlyTask {
+  id: string;
+  year: number;
+  month: number;
+  task_date: string;
+  category: MonthlyTaskCategory;
+  task_name: string;
+  note: string | null;
+  sort_order: number;
+  linked_schedule_task_id: string | null;
+  template_id: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MonthlyTaskCheck {
+  id: string;
+  task_id: string;
+  school_id: string;
+  is_completed: boolean;
+  completed_at: string | null;
+  completed_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MonthlyTaskTemplate {
+  id: string;
+  name: string;
+  description: string | null;
+  template_data: Array<{
+    day_of_month: number;
+    task_name: string;
+    category: MonthlyTaskCategory;
+    sort_order: number;
+  }>;
+  is_default: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MonthlyTaskWithChecks extends MonthlyTask {
+  checks: MonthlyTaskCheck[];
+}

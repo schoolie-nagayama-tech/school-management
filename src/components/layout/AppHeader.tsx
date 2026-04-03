@@ -408,7 +408,8 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                     className={`px-2.5 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 ${
                       pathname?.startsWith('/billing') ||
                       pathname?.startsWith('/ordering') ||
-                      pathname?.startsWith('/inventory')
+                      pathname?.startsWith('/inventory') ||
+                      pathname?.startsWith('/tasks')
                         ? 'bg-white text-[#d32f2f] font-semibold'
                         : 'text-white/90 hover:bg-white/10 hover:text-white'
                     }`}
@@ -450,6 +451,17 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                         }`}
                       >
                         教材・発注管理
+                      </Link>
+                      <Link
+                        href="/tasks"
+                        onClick={() => setShowBusinessDropdown(false)}
+                        className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
+                          pathname?.startsWith('/tasks')
+                            ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
+                            : ''
+                        }`}
+                      >
+                        業務進捗管理表
                       </Link>
                     </div>
                   </div>

@@ -1136,6 +1136,58 @@ async function handleUpdateScheduleTask(
     .eq('id', params.taskId);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // 双方向同期: is_completed が更新された場合、連動する monthly_task_checks も更新
+  if (params.updates.is_completed !== undefined) {
+    try {
+      const { data: linkedTask } = await supabaseAdmin
+        .from('monthly_tasks')
+        .select('id')
+        .eq('linked_schedule_task_id', params.taskId)
+        .maybeSingle();
+
+      if (linkedTask) {
+        const { data: scheduleTask } = await supabaseAdmin
+          .from('course_prep_schedule_tasks')
+          .select('school_id')
+          .eq('id', params.taskId)
+          .single();
+
+        if (scheduleTask) {
+          const isCompleted = params.updates.is_completed as boolean;
+          const { data: existing } = await supabaseAdmin
+            .from('monthly_task_checks')
+            .select('id')
+            .eq('task_id', linkedTask.id)
+            .eq('school_id', scheduleTask.school_id)
+            .maybeSingle();
+
+          if (existing) {
+            await supabaseAdmin
+              .from('monthly_task_checks')
+              .update({
+                is_completed: isCompleted,
+                completed_at: isCompleted ? new Date().toISOString() : null,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', existing.id);
+          } else {
+            await supabaseAdmin
+              .from('monthly_task_checks')
+              .insert({
+                task_id: linkedTask.id,
+                school_id: scheduleTask.school_id,
+                is_completed: isCompleted,
+                completed_at: isCompleted ? new Date().toISOString() : null,
+              });
+          }
+        }
+      }
+    } catch (syncErr) {
+      console.error('[courses/prep] monthly_task sync error:', syncErr);
+    }
+  }
+
   return NextResponse.json({ success: true });
 }
 
