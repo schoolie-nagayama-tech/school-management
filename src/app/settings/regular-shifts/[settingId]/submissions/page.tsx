@@ -17,6 +17,7 @@ import {
   allowRegularShiftEdit,
   resendRegularShiftEditEmail,
   deleteRegularShiftSubmission,
+  toggleRegularShiftSeatChartEntered,
 } from '@/lib/api/regular-shift';
 import type {
   RegularShiftSetting,
@@ -132,6 +133,23 @@ export default function RegularShiftSubmissionsPage() {
     }
   };
 
+  const handleToggleSeatChart = async (sub: RegularShiftSubmission) => {
+    const newValue = !sub.seat_chart_entered;
+    // 楽観的更新
+    setSubmissions((prev) =>
+      prev.map((s) => s.id === sub.id ? { ...s, seat_chart_entered: newValue } : s)
+    );
+    try {
+      await toggleRegularShiftSeatChartEntered(sub.id, newValue);
+    } catch (err) {
+      // エラー時にロールバック
+      setSubmissions((prev) =>
+        prev.map((s) => s.id === sub.id ? { ...s, seat_chart_entered: !newValue } : s)
+      );
+      error(err instanceof Error ? err.message : '更新に失敗しました');
+    }
+  };
+
   const openDetail = async (sub: RegularShiftSubmission) => {
     const requestId = ++openDetailRequestRef.current;
     const [full, slotSettingsData] = await Promise.all([
@@ -216,6 +234,7 @@ export default function RegularShiftSubmissionsPage() {
                   <th className="px-4 py-3 text-left font-semibold text-[#1f2937]">メール</th>
                   <th className="px-4 py-3 text-left font-semibold text-[#1f2937]">提出日時</th>
                   <th className="px-4 py-3 text-center font-semibold text-[#1f2937]">修正許可</th>
+                  <th className="px-4 py-3 text-center font-semibold text-[#1f2937]">座席表反映</th>
                   <th className="px-4 py-3 text-right font-semibold text-[#1f2937]">操作</th>
                 </tr>
               </thead>
@@ -255,6 +274,15 @@ export default function RegularShiftSubmissionsPage() {
                           {allowingId === sub.id ? '処理中...' : '修正許可'}
                         </Button>
                       )}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <input
+                        type="checkbox"
+                        checked={sub.seat_chart_entered}
+                        onChange={() => handleToggleSeatChart(sub)}
+                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        title={sub.seat_chart_entered ? '座席表反映済み' : '未反映'}
+                      />
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-2">

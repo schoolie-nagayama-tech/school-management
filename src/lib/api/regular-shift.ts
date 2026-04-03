@@ -269,6 +269,18 @@ export async function getRegularShiftTeacherSlotCounts(
     .sort((a, b) => b.count - a.count);
 }
 
+/** Toggle seat_chart_entered flag */
+export async function toggleRegularShiftSeatChartEntered(
+  submissionId: string,
+  entered: boolean
+): Promise<void> {
+  const { error } = await supabase
+    .from('regular_shift_submissions')
+    .update({ seat_chart_entered: entered, updated_at: new Date().toISOString() })
+    .eq('id', submissionId);
+  if (error) throw new Error(`座席表反映の更新に失敗しました: ${error.message}`);
+}
+
 /** Delete submission (slots are cascade deleted) */
 export async function deleteRegularShiftSubmission(submissionId: string): Promise<void> {
   const { error } = await supabase

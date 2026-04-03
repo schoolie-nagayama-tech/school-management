@@ -41,7 +41,9 @@ import type {
   ExamType,
   StudentTextbookExam,
   StudentProgress,
+  StudentProgressUpdate,
   StudentProgressLesson,
+  StudentProgressWithDetails,
   CurriculumItem,
   ProgressRowDisplay,
   SeasonalCourseWithDetails,
@@ -192,6 +194,65 @@ export default function StudentProgressPage() {
       setProgressData([]);
     }
   }, [selectedTextbookId, error]);
+
+  // 楽観的ローカル更新: APIレスポンスを使ってprogressDataを直接更新（再取得なし）
+  const updateProgressLocal = useCallback((
+    curriculumItemId: number,
+    updater: (prev: StudentProgressWithDetails | null) => StudentProgressWithDetails | null,
+  ) => {
+    setProgressData(prev => prev.map(item =>
+      item.id === curriculumItemId
+        ? { ...item, progress: updater(item.progress ?? null) }
+        : item
+    ));
+  }, []);
+
+  // progress フィールドを更新し、ローカルstateに反映（fetchProgressなし）
+  const saveAndUpdateProgress = useCallback(async (
+    progressId: string,
+    updates: StudentProgressUpdate,
+    curriculumItemId: number,
+  ) => {
+    try {
+      const updated = await updateStudentProgress(progressId, updates);
+      updateProgressLocal(curriculumItemId, (prev) =>
+        prev ? { ...prev, ...updated } : null
+      );
+    } catch (err) {
+      console.error('Error updating progress:', err);
+      await fetchProgress(); // エラー時のみ再取得
+    }
+  }, [updateProgressLocal, fetchProgress]);
+
+  // lesson を更新し、ローカルstateに反映
+  const saveAndUpdateLesson = useCallback(async (
+    progressId: string,
+    curriculumItemId: number,
+    lessonNumber: number,
+    lessonDate: string | null,
+    teacherName: string | null,
+  ) => {
+    try {
+      const updated = await upsertStudentProgressLesson({
+        student_progress_id: progressId,
+        lesson_number: lessonNumber,
+        lesson_date: lessonDate,
+        teacher_name: teacherName,
+      });
+      updateProgressLocal(curriculumItemId, (prev) => {
+        if (!prev) return null;
+        const lessons = prev.lessons || [];
+        const existing = lessons.findIndex(l => l.lesson_number === lessonNumber);
+        const newLessons = existing >= 0
+          ? lessons.map((l, i) => i === existing ? updated : l)
+          : [...lessons, updated];
+        return { ...prev, lessons: newLessons };
+      });
+    } catch (err) {
+      console.error('Error updating lesson:', err);
+      await fetchProgress();
+    }
+  }, [updateProgressLocal, fetchProgress]);
 
   // 表示用データ変換（グループ化対応）
   const displayRows = useMemo(() => {
@@ -1454,33 +1515,24 @@ export default function StudentProgressPage() {
                                   if (!selectedTextbookId) return;
                                   const value = parseInt(e.target.value, 10) || 0;
                                   const groupNumber = progress?.group_number;
-                                  
+
                                   if (groupNumber != null && row.isGroupStart) {
-                                    // グループの先頭行 → グループ全体の回数を更新（提案回数に連動して申込回数も更新）
                                     await updateGroupCounts(
-                                      selectedTextbookId,
-                                      groupNumber,
-                                      value,
-                                      value, // 申込回数も提案回数と同じ値に設定
-                                      row.curriculumItem.id
+                                      selectedTextbookId, groupNumber, value, value, row.curriculumItem.id
                                     );
+                                    await fetchProgress(); // グループ更新は複数行変更のため再取得
+                                  } else if (progress) {
+                                    await saveAndUpdateProgress(progress.id, {
+                                      proposal_count: value, application_count: value,
+                                    }, row.curriculumItem.id);
                                   } else {
-                                    // 単独行 → その行だけ更新（提案回数に連動して申込回数も更新）
-                                    if (progress) {
-                                      await updateStudentProgress(progress.id, {
-                                        proposal_count: value,
-                                        application_count: value, // 申込回数も提案回数と同じ値に設定
-                                      });
-                                    } else {
-                                      await upsertStudentProgress({
-                                        student_textbook_id: selectedTextbookId,
-                                        curriculum_item_id: row.curriculumItem.id,
-                                        proposal_count: value,
-                                        application_count: value, // 申込回数も提案回数と同じ値に設定
-                                      });
-                                    }
+                                    await upsertStudentProgress({
+                                      student_textbook_id: selectedTextbookId,
+                                      curriculum_item_id: row.curriculumItem.id,
+                                      proposal_count: value, application_count: value,
+                                    });
+                                    await fetchProgress(); // 新規作成時はID取得のため再取得
                                   }
-                                  await fetchProgress();
                                 }}
                                 className="w-16 px-2 py-1 border border-[#e5e7eb] rounded"
                               />
@@ -1500,31 +1552,22 @@ export default function StudentProgressPage() {
                                   if (!selectedTextbookId) return;
                                   const value = parseInt(e.target.value, 10) || 0;
                                   const groupNumber = progress?.group_number;
-                                  
+
                                   if (groupNumber != null && row.isGroupStart) {
-                                    // グループの先頭行 → グループ全体の回数を更新
                                     await updateGroupCounts(
-                                      selectedTextbookId,
-                                      groupNumber,
-                                      row.groupProposalCount,
-                                      value,
-                                      row.curriculumItem.id
+                                      selectedTextbookId, groupNumber, row.groupProposalCount, value, row.curriculumItem.id
                                     );
+                                    await fetchProgress();
+                                  } else if (progress) {
+                                    await saveAndUpdateProgress(progress.id, { application_count: value }, row.curriculumItem.id);
                                   } else {
-                                    // 単独行 → その行だけ更新
-                                    if (progress) {
-                                      await updateStudentProgress(progress.id, {
-                                        application_count: value,
-                                      });
-                                    } else {
-                                      await upsertStudentProgress({
-                                        student_textbook_id: selectedTextbookId,
-                                        curriculum_item_id: row.curriculumItem.id,
-                                        application_count: value,
-                                      });
-                                    }
+                                    await upsertStudentProgress({
+                                      student_textbook_id: selectedTextbookId,
+                                      curriculum_item_id: row.curriculumItem.id,
+                                      application_count: value,
+                                    });
+                                    await fetchProgress();
                                   }
-                                  await fetchProgress();
                                 }}
                                 className="w-16 px-2 py-1 border border-[#e5e7eb] rounded"
                               />
@@ -1536,10 +1579,9 @@ export default function StudentProgressPage() {
                                 value={progress?.exam_range_exam_type_id || ''}
                                 onChange={async (e) => {
                                   if (selectedTextbookId && progress) {
-                                    await updateStudentProgress(progress.id, {
+                                    await saveAndUpdateProgress(progress.id, {
                                       exam_range_exam_type_id: e.target.value || null,
-                                    });
-                                    await fetchProgress();
+                                    }, row.curriculumItem.id);
                                   } else if (selectedTextbookId) {
                                     await upsertStudentProgress({
                                       student_textbook_id: selectedTextbookId,
@@ -1567,10 +1609,9 @@ export default function StudentProgressPage() {
                                 value={progress?.school_progress_date || ''}
                                 onChange={async (e) => {
                                   if (selectedTextbookId && progress) {
-                                    await updateStudentProgress(progress.id, {
+                                    await saveAndUpdateProgress(progress.id, {
                                       school_progress_date: e.target.value || null,
-                                    });
-                                    await fetchProgress();
+                                    }, row.curriculumItem.id);
                                   } else if (selectedTextbookId) {
                                     await upsertStudentProgress({
                                       student_textbook_id: selectedTextbookId,
@@ -1592,7 +1633,6 @@ export default function StudentProgressPage() {
                                 onChange={async (e) => {
                                   if (selectedTextbookId) {
                                     let currentProgress = progress;
-                                    // progressが存在しない場合は先に作成
                                     if (!currentProgress) {
                                       currentProgress = await upsertStudentProgress({
                                         student_textbook_id: selectedTextbookId,
@@ -1600,13 +1640,10 @@ export default function StudentProgressPage() {
                                       });
                                     }
                                     const lesson = lessons.find((l) => l.lesson_number === 1);
-                                    await upsertStudentProgressLesson({
-                                      student_progress_id: currentProgress.id,
-                                      lesson_number: 1,
-                                      lesson_date: e.target.value || null,
-                                      teacher_name: lesson?.teacher_name || null,
-                                    });
-                                    await fetchProgress();
+                                    await saveAndUpdateLesson(
+                                      currentProgress.id, row.curriculumItem.id, 1,
+                                      e.target.value || null, lesson?.teacher_name || null,
+                                    );
                                   }
                                 }}
                                 className="w-32 px-2 py-1 border border-[#e5e7eb] rounded text-xs"
@@ -1621,7 +1658,6 @@ export default function StudentProgressPage() {
                                 onChange={async (e) => {
                                   if (selectedTextbookId) {
                                     let currentProgress = progress;
-                                    // progressが存在しない場合は先に作成
                                     if (!currentProgress) {
                                       currentProgress = await upsertStudentProgress({
                                         student_textbook_id: selectedTextbookId,
@@ -1629,13 +1665,10 @@ export default function StudentProgressPage() {
                                       });
                                     }
                                     const lesson = lessons.find((l) => l.lesson_number === 2);
-                                    await upsertStudentProgressLesson({
-                                      student_progress_id: currentProgress.id,
-                                      lesson_number: 2,
-                                      lesson_date: e.target.value || null,
-                                      teacher_name: lesson?.teacher_name || null,
-                                    });
-                                    await fetchProgress();
+                                    await saveAndUpdateLesson(
+                                      currentProgress.id, row.curriculumItem.id, 2,
+                                      e.target.value || null, lesson?.teacher_name || null,
+                                    );
                                   }
                                 }}
                                 className="w-32 px-2 py-1 border border-[#e5e7eb] rounded text-xs"
@@ -1650,7 +1683,6 @@ export default function StudentProgressPage() {
                                 onChange={async (e) => {
                                   if (selectedTextbookId) {
                                     let currentProgress = progress;
-                                    // progressが存在しない場合は先に作成
                                     if (!currentProgress) {
                                       currentProgress = await upsertStudentProgress({
                                         student_textbook_id: selectedTextbookId,
@@ -1658,13 +1690,10 @@ export default function StudentProgressPage() {
                                       });
                                     }
                                     const lesson = lessons.find((l) => l.lesson_number === 3);
-                                    await upsertStudentProgressLesson({
-                                      student_progress_id: currentProgress.id,
-                                      lesson_number: 3,
-                                      lesson_date: e.target.value || null,
-                                      teacher_name: lesson?.teacher_name || null,
-                                    });
-                                    await fetchProgress();
+                                    await saveAndUpdateLesson(
+                                      currentProgress.id, row.curriculumItem.id, 3,
+                                      e.target.value || null, lesson?.teacher_name || null,
+                                    );
                                   }
                                 }}
                                 className="w-32 px-2 py-1 border border-[#e5e7eb] rounded text-xs"
@@ -1683,10 +1712,9 @@ export default function StudentProgressPage() {
                                   }}
                                   onBlur={async (e) => {
                                     if (selectedTextbookId && progress) {
-                                      await updateStudentProgress(progress.id, {
+                                      await saveAndUpdateProgress(progress.id, {
                                         handover: e.target.value || null,
-                                      });
-                                      await fetchProgress();
+                                      }, row.curriculumItem.id);
                                     } else if (selectedTextbookId) {
                                       await upsertStudentProgress({
                                         student_textbook_id: selectedTextbookId,
@@ -1711,10 +1739,9 @@ export default function StudentProgressPage() {
                                   }}
                                   onBlur={async (e) => {
                                     if (selectedTextbookId && progress) {
-                                      await updateStudentProgress(progress.id, {
+                                      await saveAndUpdateProgress(progress.id, {
                                         teacher_name: e.target.value || null,
-                                      });
-                                      await fetchProgress();
+                                      }, row.curriculumItem.id);
                                     } else if (selectedTextbookId) {
                                       await upsertStudentProgress({
                                         student_textbook_id: selectedTextbookId,
