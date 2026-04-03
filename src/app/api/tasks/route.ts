@@ -325,13 +325,6 @@ export async function POST(request: NextRequest) {
         const daysInMonth = new Date(year, month, 0).getDate();
         const monthEnd = `${year}-${String(month).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`;
 
-        // 該当月のseasonを推定
-        const seasonMap: Record<number, string> = {
-          3: 'spring', 4: 'spring',
-          7: 'summer', 8: 'summer',
-          12: 'winter', 1: 'winter',
-        };
-
         // 該当月に期間が重なるschedule_tasksを取得
         const { data: scheduleTasks, error: stErr } = await supabaseAdmin
           .from('course_prep_schedule_tasks')

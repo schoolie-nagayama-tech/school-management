@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -16,7 +16,7 @@ import {
   saveTemplate,
   deleteTemplate as deleteTemplateApi,
 } from '@/lib/api/monthlyTasks';
-import type { MonthlyTaskWithChecks, MonthlyTaskTemplate, School, MonthlyTaskCategory } from '@/types/database';
+import type { MonthlyTaskWithChecks, MonthlyTaskTemplate, MonthlyTaskCategory } from '@/types/database';
 import { useToast } from '@/hooks/useToast';
 import { AlertSidebar } from './AlertSidebar';
 import { TaskTimeline } from './TaskTimeline';
@@ -25,10 +25,7 @@ import {
   ChevronLeft,
   ChevronRight,
   CalendarDays,
-  Plus,
   Download,
-  Save,
-  RefreshCw,
 } from 'lucide-react';
 
 export function MonthlyTaskPage() {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import type { MonthlyTaskWithChecks, School, MonthlyTaskCategory } from '@/types/database';
 import { TaskCheckboxRow } from './TaskCheckboxRow';
 import { ChevronDown, ChevronRight, Plus } from 'lucide-react';

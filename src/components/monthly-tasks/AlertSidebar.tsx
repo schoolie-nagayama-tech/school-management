@@ -18,7 +18,7 @@ function formatDate(dateStr: string) {
   return `${d.getMonth() + 1}/${day}(${weekdays[d.getDay()]})`;
 }
 
-export function AlertSidebar({ tasks, schools, year, month }: AlertSidebarProps) {
+export function AlertSidebar({ tasks, schools }: AlertSidebarProps) {
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   const tomorrow = new Date(today);
