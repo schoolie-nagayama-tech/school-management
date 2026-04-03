@@ -3398,6 +3398,7 @@ export interface CoursePrepPeriod {
   year: number;
   budget_koma: number;
   target_koma: number;
+  expected_rate: number;
   schedule_start_date: string | null;
   schedule_end_date: string | null;
   created_at: string;

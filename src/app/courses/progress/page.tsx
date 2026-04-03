@@ -345,21 +345,15 @@ export default function CourseProgressPage() {
     async (value: number) => {
       const schoolIds = getSelectedSchoolIds();
       if (schoolIds.length === 0) return;
+      setPeriod((prev) => prev ? { ...prev, budget_koma: value } : prev);
       try {
-        await upsertCoursePrepPeriod(schoolIds[0], season, year, {
-          budget_koma: value,
-        });
-        const [updatedPeriod, autoVals] = await Promise.all([
-          getCoursePrepPeriod(schoolIds[0], season, year),
-          getAutoValues(schoolIds[0], season, year),
-        ]);
-        setPeriod(updatedPeriod);
-        setAutoValuesData(autoVals);
+        await upsertCoursePrepPeriod(schoolIds[0], season, year, { budget_koma: value });
       } catch (err) {
         console.error('Error updating budget:', err);
+        fetchData();
       }
     },
-    [getSelectedSchoolIds, season, year]
+    [getSelectedSchoolIds, season, year, fetchData]
   );
 
   // 目標コマ変更
@@ -367,16 +361,31 @@ export default function CourseProgressPage() {
     async (value: number) => {
       const schoolIds = getSelectedSchoolIds();
       if (schoolIds.length === 0) return;
+      setPeriod((prev) => prev ? { ...prev, target_koma: value } : prev);
       try {
-        await upsertCoursePrepPeriod(schoolIds[0], season, year, {
-          target_koma: value,
-        });
-        setPeriod((prev) => prev ? { ...prev, target_koma: value } : prev);
+        await upsertCoursePrepPeriod(schoolIds[0], season, year, { target_koma: value });
       } catch (err) {
         console.error('Error updating target:', err);
+        fetchData();
       }
     },
-    [getSelectedSchoolIds, season, year]
+    [getSelectedSchoolIds, season, year, fetchData]
+  );
+
+  // 予想取得率変更
+  const handleExpectedRateChange = useCallback(
+    async (value: number) => {
+      const schoolIds = getSelectedSchoolIds();
+      if (schoolIds.length === 0) return;
+      setPeriod((prev) => prev ? { ...prev, expected_rate: value } : prev);
+      try {
+        await upsertCoursePrepPeriod(schoolIds[0], season, year, { expected_rate: value });
+      } catch (err) {
+        console.error('Error updating expected rate:', err);
+        fetchData();
+      }
+    },
+    [getSelectedSchoolIds, season, year, fetchData]
   );
 
   // 講習期間日付変更
@@ -756,6 +765,7 @@ export default function CourseProgressPage() {
             autoValues={autoValuesData}
             onBudgetKomaChange={isOwnerOrAbove ? handleBudgetKomaChange : undefined}
             onTargetKomaChange={isOwnerOrAbove ? handleTargetKomaChange : undefined}
+            onExpectedRateChange={isOwnerOrAbove ? handleExpectedRateChange : undefined}
             onPeriodDateChange={isOwnerOrAbove ? handlePeriodDateChange : undefined}
           />
         )}
