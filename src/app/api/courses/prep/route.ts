@@ -594,10 +594,10 @@ async function handleInitProgressTemplate(
     name: item.name,
     column_type: item.column_type || 'check',
     sort_order: item.sort_order,
-    ...(item.column_group ? { column_group: item.column_group } : {}),
-    ...(item.auto_source ? { auto_source: item.auto_source } : {}),
+    ...(item.column_group !== undefined ? { column_group: item.column_group } : {}),
+    ...(item.auto_source !== undefined ? { auto_source: item.auto_source } : {}),
     ...(item.manager_only !== undefined ? { manager_only: item.manager_only } : {}),
-    ...(item.deadline ? { deadline: item.deadline } : {}),
+    ...(item.deadline !== undefined ? { deadline: item.deadline } : {}),
     ...(item.is_hidden !== undefined ? { is_hidden: item.is_hidden } : {}),
   }));
 
@@ -681,11 +681,11 @@ async function handleInitScheduleTemplate(
     year,
     major_category: task.major_category,
     name: task.name,
-    description: task.description || null,
+    description: task.description ?? null,
     sort_order: task.sort_order,
-    ...(task.start_date ? { start_date: task.start_date } : {}),
-    ...(task.end_date ? { end_date: task.end_date } : {}),
-    ...(task.deadline ? { deadline: task.deadline } : {}),
+    ...(task.start_date !== undefined ? { start_date: task.start_date } : {}),
+    ...(task.end_date !== undefined ? { end_date: task.end_date } : {}),
+    ...(task.deadline !== undefined ? { deadline: task.deadline } : {}),
     ...(task.linked_progress_item_name && nameToItemId[task.linked_progress_item_name]
       ? { linked_progress_item_id: nameToItemId[task.linked_progress_item_name] }
       : {}),
