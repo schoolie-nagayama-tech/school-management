@@ -104,6 +104,13 @@ export async function POST(request: NextRequest) {
       console.warn('[portal/form-responses] 自動紐付けに失敗しました（無視します）:', e);
     }
 
+    // フォーム回答を請求データに自動反映（失敗しても回答は成功扱い）
+    try {
+      await autoSyncFormToBilling(supabaseAdmin, created.id, school_id, form_type);
+    } catch (e) {
+      console.warn('[portal/form-responses] 請求への自動反映に失敗しました（無視します）:', e);
+    }
+
     // 模試の振替受験 → Google Calendarにイベント作成（失敗しても回答は成功扱い）
     if (form_type === 'moshi') {
       try {
@@ -276,4 +283,103 @@ async function autoLinkAndUpdateApplication(
   }
 
   console.log(`[auto-link] 申込状況を自動更新: student=${matchedStudent.id}, item=${period.linked_application_item_id}`);
+}
+
+/**
+ * フォーム回答を請求データに自動反映する
+ *
+ * 1. 紐付け済みの生徒IDを取得
+ * 2. アクティブな請求期間で linked_form_type が一致する請求項目を検索
+ * 3. 該当生徒のフォーム回答数をカウントして student_billings に upsert
+ */
+async function autoSyncFormToBilling(
+  supabaseAdmin: SupabaseClient,
+  responseId: string,
+  schoolId: string,
+  formType: string
+) {
+  // 1. 紐付け後の回答データを取得（linked_student_id が設定されているか確認）
+  const { data: response } = await supabaseAdmin
+    .from('form_responses')
+    .select('linked_student_id')
+    .eq('id', responseId)
+    .single();
+
+  if (!response?.linked_student_id) return; // 紐付けされていなければスキップ
+
+  const studentId = response.linked_student_id;
+
+  // 2. アクティブな請求期間を取得
+  const { data: activePeriods } = await supabaseAdmin
+    .from('billing_periods')
+    .select('id, start_date, end_date')
+    .eq('school_id', schoolId)
+    .eq('is_active', true);
+
+  if (!activePeriods || activePeriods.length === 0) return;
+
+  for (const period of activePeriods) {
+    // 3. この期間で linked_form_type が一致する請求項目を検索
+    const { data: billingItems } = await supabaseAdmin
+      .from('billing_items')
+      .select('id')
+      .eq('billing_period_id', period.id)
+      .eq('school_id', schoolId)
+      .eq('linked_form_type', formType);
+
+    if (!billingItems || billingItems.length === 0) continue;
+
+    // 4. 期間内のこの生徒の回答数をカウント
+    const periodEndPlusOne = (() => {
+      const d = new Date(period.end_date);
+      d.setDate(d.getDate() + 1);
+      return d.toISOString().split('T')[0];
+    })();
+
+    const { count, error: countError } = await supabaseAdmin
+      .from('form_responses')
+      .select('id', { count: 'exact', head: true })
+      .eq('form_type', formType)
+      .eq('linked_student_id', studentId)
+      .eq('school_id', schoolId)
+      .gte('created_at', `${period.start_date}T00:00:00`)
+      .lt('created_at', `${periodEndPlusOne}T00:00:00`);
+
+    if (countError) {
+      console.warn(`[auto-billing] 回答数カウントに失敗: ${countError.message}`);
+      continue;
+    }
+
+    const responseCount = count || 0;
+    if (responseCount <= 0) continue;
+
+    // 5. 各請求項目に対して student_billings を upsert
+    for (const item of billingItems) {
+      const { data: existing } = await supabaseAdmin
+        .from('student_billings')
+        .select('id')
+        .eq('student_id', studentId)
+        .eq('billing_item_id', item.id)
+        .maybeSingle();
+
+      if (existing) {
+        await supabaseAdmin
+          .from('student_billings')
+          .update({ value_number: responseCount, updated_at: new Date().toISOString() })
+          .eq('id', existing.id);
+      } else {
+        await supabaseAdmin
+          .from('student_billings')
+          .insert({
+            school_id: schoolId,
+            student_id: studentId,
+            billing_item_id: item.id,
+            is_billed: false,
+            value_number: responseCount,
+          });
+      }
+    }
+
+    console.log(`[auto-billing] 請求自動反映: student=${studentId}, form_type=${formType}, count=${responseCount}`);
+  }
 }

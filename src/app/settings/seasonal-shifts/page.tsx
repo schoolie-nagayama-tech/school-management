@@ -26,7 +26,7 @@ import AccessDenied from '@/components/AccessDenied';
 type TabType = 'seasonal' | 'regular';
 
 export default function SeasonalShiftsPage() {
-  const { getSelectedSchoolIds } = useAuth();
+  const { selectedSchoolId, getSelectedSchoolIds } = useAuth();
   const { toasts, removeToast, success, error } = useToast();
   const { confirm, ConfirmDialog } = useConfirm();
   const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
@@ -69,7 +69,8 @@ export default function SeasonalShiftsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [getSelectedSchoolIds]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [getSelectedSchoolIds, selectedSchoolId]);
 
   const fetchRegularData = useCallback(async () => {
     const schoolIds = getSelectedSchoolIds();
@@ -93,7 +94,8 @@ export default function SeasonalShiftsPage() {
     } finally {
       setIsRegularLoading(false);
     }
-  }, [getSelectedSchoolIds]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [getSelectedSchoolIds, selectedSchoolId]);
 
   useEffect(() => {
     fetchSeasonalData();
