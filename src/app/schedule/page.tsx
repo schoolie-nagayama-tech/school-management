@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
@@ -15,8 +15,7 @@ import {
   ScheduleDialogs,
 } from '@/components/schedule';
 import { fetchWithAuth } from '@/lib/api/auth';
-import { getSchools } from '@/lib/api/schools';
-import { getSubjects } from '@/lib/api/subjects';
+import { useMasterData } from '@/contexts/MasterDataContext';
 import { getStudents } from '@/lib/api/students';
 import {
   getActiveTimeSlots,
@@ -36,7 +35,7 @@ import {
   cancelFutureEntriesByRegularPatternId,
 } from '@/lib/api/schedule';
 import type { ScheduleEntry, ScheduleEntryFormData, ScheduleTimeSlot } from '@/types/schedule';
-import type { School, Student } from '@/types/database';
+import type { School, Student, Subject } from '@/types/database';
 import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
@@ -78,6 +77,7 @@ function getWeekDates(weekStart: Date): string[] {
 
 export default function SchedulePage() {
   const { profile, isLoading: authLoading, selectedSchoolId, getSelectedSchoolIds } = useAuth();
+  const { schools: masterSchools, subjects: masterSubjects } = useMasterData();
   const { toasts, removeToast, success, error: toastError } = useToast();
   const [schools, setSchools] = useState<School[]>([]);
   const [selectedSchoolIdLocal, setSelectedSchoolIdLocal] = useState<string>('');
@@ -100,9 +100,10 @@ export default function SchedulePage() {
       available_slot_numbers_by_day?: Record<string, number[]> | null;
     }>
   >([]);
-  const [subjects, setSubjects] = useState<Awaited<ReturnType<typeof getSubjects>>>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [students, setStudents] = useState<Awaited<ReturnType<typeof getStudents>>>([]);
   const [entriesLoading, setEntriesLoading] = useState(false);
+  const regularPatternsRef = useRef<Awaited<ReturnType<typeof getRegularPatterns>>>([]);
 
   const [actionModalEntry, setActionModalEntry] = useState<ScheduleEntry | null>(null);
   const [studentDetailStudent, setStudentDetailStudent] = useState<Student | null>(null);
@@ -191,7 +192,7 @@ export default function SchedulePage() {
         getClosedDays(schoolId, { from: weekStartStr, to: weekEndStr }),
       ]);
       let list = initialList;
-      const patterns = await getRegularPatterns(schoolId);
+      const patterns = regularPatternsRef.current;
       // 通塾日程に登録したコマを週スケジュールにデフォルト表示：エントリが0件かつ通塾日程がある場合は自動生成
       if (list.length === 0 && patterns.length > 0) {
         await generateWeeklySchedule(schoolId, weekStartStr, profile?.id ?? undefined);
@@ -225,42 +226,36 @@ export default function SchedulePage() {
   }, [schoolId, weekStartStr, weekEndStr, toastError, profile?.id]);
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const data = await getSchools();
-        const ids = getSelectedSchoolIds();
-        const filtered = ids.length > 0 ? data.filter((s) => ids.includes(s.id)) : data;
-        setSchools(filtered);
-        if (filtered.length > 0 && !selectedSchoolIdLocal) {
-          setSelectedSchoolIdLocal(filtered[0].id);
-        }
-      } catch {
-        // ignore
+    if (masterSchools.length > 0) {
+      const ids = getSelectedSchoolIds();
+      const filtered = ids.length > 0 ? masterSchools.filter((s) => ids.includes(s.id)) : masterSchools;
+      setSchools(filtered);
+      if (filtered.length > 0 && !selectedSchoolIdLocal) {
+        setSelectedSchoolIdLocal(filtered[0].id);
       }
-    };
-    load();
-  }, [getSelectedSchoolIds]);
+    }
+  }, [masterSchools, getSelectedSchoolIds, selectedSchoolIdLocal]);
 
   useEffect(() => {
     if (!schoolId) return;
+    setSubjects(masterSubjects);
     Promise.all([
       getActiveTimeSlots(schoolId),
       getRegularPatterns(schoolId),
-      getSubjects(),
       fetchWithAuth('/api/admin/users?role=teacher').then((r) => r.json()).then((d) => d.users || []),
     ])
-      .then(([slots, patterns, subj, users]) => {
+      .then(([slots, patterns, users]) => {
         setTimeSlots(slots);
         setTimeSlotsCount(slots.length);
         setPatternsCount(patterns.length);
-        setSubjects(subj);
+        regularPatternsRef.current = patterns;
         setTeachers(users);
       })
       .catch(() => {
         setTimeSlotsCount(0);
         setPatternsCount(0);
       });
-  }, [schoolId]);
+  }, [schoolId, masterSubjects]);
 
   useEffect(() => {
     if (!schoolId) return;

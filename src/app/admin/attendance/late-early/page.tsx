@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, Button, SelectShadcn as Selec
 import { ToastContainer } from '@/components/ui';
 import { ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
-import { getSchools } from '@/lib/api/schools';
+import { useMasterData } from '@/contexts/MasterDataContext';
 import { getLateEarlyList } from '@/lib/api/attendance';
 import {
   getCurrentYearMonth,
@@ -36,19 +36,12 @@ export default function LateEarlyListPage() {
   const [records, setRecords] = useState<LateEarlyRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 教室一覧を取得
+  const { schools: masterSchools } = useMasterData();
+
+  // 教室一覧をコンテキストから取得
   useEffect(() => {
-    async function fetchSchools() {
-      try {
-        const data = await getSchools();
-        setSchools(data);
-      } catch (error) {
-        console.error('Failed to fetch schools:', error);
-        toastError('教室の取得に失敗しました');
-      }
-    }
-    fetchSchools();
-  }, [toastError]);
+    if (masterSchools.length > 0) setSchools(masterSchools);
+  }, [masterSchools]);
 
   // 遅刻早退データを取得
   useEffect(() => {

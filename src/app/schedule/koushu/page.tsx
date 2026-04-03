@@ -19,12 +19,13 @@ import {
   type KoushuCourse,
   type KoushuEnrollment,
 } from '@/lib/api/seasonalCourses';
-import { getSubjects } from '@/lib/api/subjects';
+import { useMasterData } from '@/contexts/MasterDataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Subject } from '@/types/database';
 
 export default function KoushuPage() {
   const { selectedSchoolId } = useAuth();
+  const { subjects: masterSubjects } = useMasterData();
   const schoolId = selectedSchoolId ?? '';
 
   const [courses, setCourses] = useState<KoushuCourse[]>([]);
@@ -52,16 +53,13 @@ export default function KoushuPage() {
     if (!schoolId) return;
     setLoading(true);
     try {
-      const [c, s] = await Promise.all([
-        getSchoolKoushu(schoolId),
-        getSubjects(),
-      ]);
+      const c = await getSchoolKoushu(schoolId);
       setCourses(c);
-      setSubjects(s);
+      setSubjects(masterSubjects);
     } finally {
       setLoading(false);
     }
-  }, [schoolId]);
+  }, [schoolId, masterSubjects]);
 
   useEffect(() => { loadCourses(); }, [loadCourses]);
 

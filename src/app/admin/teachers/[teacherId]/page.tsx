@@ -9,8 +9,7 @@ import { ToastContainer } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import { useAuth } from '@/contexts/AuthContext';
 import { addUserToSchool, removeUserFromSchool, fetchWithAuth } from '@/lib/api/auth';
-import { getSchools } from '@/lib/api/schools';
-import { getSubjects } from '@/lib/api/subjects';
+import { useMasterData } from '@/contexts/MasterDataContext';
 import { getActiveTimeSlots } from '@/lib/api/schedule';
 import type { School, UserProfile, Subject } from '@/types/database';
 import type { ScheduleTimeSlot } from '@/types/schedule';
@@ -94,6 +93,7 @@ export default function TeacherEditPage() {
   const router = useRouter();
   const teacherId = params?.teacherId as string | undefined;
   const { getSelectedSchoolIds } = useAuth();
+  const { schools: masterSchools, subjects: masterSubjects } = useMasterData();
   const { toasts, removeToast, success, error: toastError } = useToast();
   const isManager = useAuth().profile?.role === 'manager';
 
@@ -119,11 +119,7 @@ export default function TeacherEditPage() {
       setNotFound(false);
       try {
         // 講師1件だけ取得（teachable_subject_ids, available_days_of_week を含む最新の状態）
-        const [teacherRes, schoolsData, subjectsData] = await Promise.all([
-          fetchWithAuth(`/api/admin/users/${teacherId}`),
-          getSchools(),
-          getSubjects(),
-        ]);
+        const teacherRes = await fetchWithAuth(`/api/admin/users/${teacherId}`);
         if (!teacherRes.ok) {
           if (teacherRes.status === 404) {
             setNotFound(true);
@@ -134,8 +130,8 @@ export default function TeacherEditPage() {
         }
         const found: TeacherWithDetails = await teacherRes.json();
         setTeacher(found);
-        setSchools(schoolsData);
-        setSubjects(subjectsData);
+        setSchools(masterSchools);
+        setSubjects(masterSubjects);
 
         setEditDisplayName(found.display_name || '');
         const teacherSchoolIds = found.user_schools?.map((us) => us.school_id) || [];
@@ -158,7 +154,7 @@ export default function TeacherEditPage() {
       }
     };
     load();
-  }, [teacherId, isManager, getSelectedSchoolIds, toastError]);
+  }, [teacherId, isManager, getSelectedSchoolIds, toastError, masterSchools, masterSubjects]);
 
   // 担当教室の座席表コマ時間を取得（講師の出勤可能コマ選択用）
   useEffect(() => {

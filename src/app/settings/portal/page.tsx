@@ -21,7 +21,7 @@ import { AdminLayout } from '@/components/layouts';
 import { Button, ToastContainer } from '@/components/ui';
 import { PortalMenuEditModal, SortableMenuRow } from '@/components/portal';
 import { useToast } from '@/hooks/useToast';
-import { getSchools } from '@/lib/api/schools';
+import { useMasterData } from '@/contexts/MasterDataContext';
 import { initializePortalMenus, getPortalMenus, togglePortalMenuVisibility } from '@/lib/api/portal';
 import { getFormPeriods } from '@/lib/api/form-periods';
 import { reorderPortalMenus } from '@/lib/api/portal';
@@ -59,6 +59,7 @@ export default function PortalSettingsPage() {
     (p) => p.canAccessSettings
   );
   const { getSelectedSchoolIds, selectedSchoolId, schoolIds } = useAuth();
+  const { schools: masterSchools } = useMasterData();
 
   const [menus, setMenus] = useState<PortalMenu[]>([]);
   const [formPeriods, setFormPeriods] = useState<FormPeriod[]>([]);
@@ -84,13 +85,12 @@ export default function PortalSettingsPage() {
       }
 
       // すべての教室を取得（コード表示用）
-      const allSchoolsData = await getSchools();
-      setAllSchools(allSchoolsData);
+      setAllSchools(masterSchools);
 
       // 教室コードを取得
       const codes: Record<string, string> = {};
       for (const schoolId of selectedSchoolIds) {
-        const school = allSchoolsData.find(s => s.id === schoolId);
+        const school = masterSchools.find(s => s.id === schoolId);
         if (school?.code) {
           codes[schoolId] = school.code;
         }
@@ -99,7 +99,7 @@ export default function PortalSettingsPage() {
 
       // 複数教室が選択されている場合は最初の教室を使用（ポータル管理は単一教室のみ）
       const schoolId = selectedSchoolIds[0];
-      const school = allSchoolsData.find(s => s.id === schoolId);
+      const school = masterSchools.find(s => s.id === schoolId);
 
       if (!school) {
         throw new Error('教室が見つかりません');
@@ -124,7 +124,7 @@ export default function PortalSettingsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [getSelectedSchoolIds]);
+  }, [getSelectedSchoolIds, masterSchools]);
 
   // 初回読み込みと教室選択変更時の再読み込み
   useEffect(() => {

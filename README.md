@@ -11,7 +11,23 @@
 
 ## 現在の機能
 
-### v5.1（最新）
+### v5.2（最新）
+
+- ✅ **マスターデータキャッシュ（MasterDataContext）**
+  - `schools` と `subjects` をアプリ全体で1回だけ取得し、Context経由でキャッシュ提供
+  - 新コンテキスト: `src/contexts/MasterDataContext.tsx`（`useMasterData` フック）
+  - `MasterDataProvider` を `layout.tsx` に追加（AuthProvider内側）
+  - 15ページの `getSchools()` 直接呼び出しを `useMasterData()` に置換
+  - 4ページの `getSubjects()` 直接呼び出しを `useMasterData()` に置換
+  - 教室CRUD操作後は `refreshSchools()` でキャッシュを自動更新
+  - ログアウト時にキャッシュを自動リセット
+
+- ✅ **スケジュールページのAPI呼び出し最適化**
+  - `getRegularPatterns` の重複取得を除去（初期ロードとrefreshEntriesで2回→1回）
+  - `regularPatternsRef` でパターンデータを保持し、再取得を回避
+  - `getSubjects` を `Promise.all` から除外し、コンテキストキャッシュから取得
+
+### v5.1
 
 - ✅ **アラート表示のスクロール＆コンパクト化**
   - アラート一覧にmax-height+スクロール追加（レスポンシブ対応: 400px/500px）
@@ -336,6 +352,9 @@ src/
 │       ├── TeacherCard.tsx
 │       ├── StudentCard.tsx
 │       └── ...
+├── contexts/
+│   ├── AuthContext.tsx      # 認証コンテキスト（ユーザー・権限・教室選択）
+│   └── MasterDataContext.tsx # マスターデータキャッシュ（schools, subjects）
 ├── lib/
 │   ├── supabase.ts         # Supabaseクライアント
 │   ├── utils/
@@ -896,6 +915,9 @@ schedule_entries
 
 - **JOIN回避**: SupabaseのPostgRESTで直接JOINが困難な場合、別々に取得してマッピング
 - **Promise.all**: 複数の関連データを並列取得してパフォーマンス向上
+- **MasterDataContext**: `schools` と `subjects` をContext経由で全ページ共有キャッシュ（v5.2で導入）
+  - ページ遷移時の重複API呼び出しを排除（getSchools: 15回→1回、getSubjects: 4回→1回）
+  - `useMasterData()` フックで取得。教室CRUD後は `refreshSchools()` で再取得
 
 ## v3.0の詳細機能
 
@@ -1294,6 +1316,26 @@ Vもぎ模擬試験のお申込みフォームです。日程・会場選択機�
 
 詳細は後述のデータベーススキーマを参照してください。
 
+## v5.2の設計メモ
+
+### MasterDataContext（マスターデータキャッシュ）
+
+- **課題**: `getSchools()` が15ページ、`getSubjects()` が4ページで毎回Supabaseに個別リクエストしており、ページ遷移のたびに同じデータを再取得していた
+- **解決**: `MasterDataContext` を導入し、ログイン後に1回だけ取得してContext経由でキャッシュ提供
+- **構成**:
+  - `src/contexts/MasterDataContext.tsx` — Provider + `useMasterData()` フック
+  - `layout.tsx` で `AuthProvider` の内側に `MasterDataProvider` を配置
+- **キャッシュ更新**:
+  - 教室の作成/更新/削除時は `refreshSchools()` を呼び出してキャッシュを再取得
+  - ログアウト時は `fetchedRef` をリセットし、データをクリア
+- **影響ファイル**: 15ページの `getSchools()` + 4ページの `getSubjects()` を `useMasterData()` に置換
+
+### スケジュールページAPI最適化
+
+- **課題**: `getRegularPatterns(schoolId)` が初期ロードの `useEffect` と `refreshEntries` の両方で呼ばれ、同じデータを2回取得していた
+- **解決**: `useRef` でパターンデータを保持し、`refreshEntries` では `regularPatternsRef.current` を参照
+- `getSubjects()` もコンテキストから取得するよう変更し、`Promise.all` から除外
+
 ## v5.0の設計メモ
 
 ### 複数通知メールアドレス
@@ -1345,6 +1387,8 @@ Vもぎ模擬試験のお申込みフォームです。日程・会場選択機�
 - [x] アラート期日3日前表示＆段階色分け（v5.1で実装済み）
 - [x] リリースノート機能（v5.1で実装済み）
 - [x] 生徒情報更新履歴ボード（v5.1で実装済み）
+- [x] マスターデータキャッシュ（v5.2で実装済み — schools/subjectsの全ページ共有キャッシュ）
+- [x] スケジュールページAPI最適化（v5.2で実装済み — 重複取得の除去）
 - [ ] Googleカレンダー連携（面談予定のカレンダー追加）
 - [ ] Slack連携（新着申込・タスク期限・アラート通知）
 

@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { useAuth } from '@/contexts/AuthContext';
 import { updateUserProfile, fetchWithAuth } from '@/lib/api/auth';
-import { getSchools, createSchool, updateSchool, deleteSchool } from '@/lib/api/schools';
+import { createSchool, updateSchool, deleteSchool } from '@/lib/api/schools';
+import { useMasterData } from '@/contexts/MasterDataContext';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui';
@@ -35,6 +36,7 @@ interface UserWithDetails extends UserProfile {
 
 export default function UsersPage() {
   const { user, profile, permissions, isLoading: authLoading, schoolIds: mySchoolIds } = useAuth();
+  const { schools: masterSchools, refreshSchools } = useMasterData();
   const { toasts, removeToast, success, error: toastError } = useToast();
   const [activeTab, setActiveTab] = useState<TabType>('users');
   const [users, setUsers] = useState<UserWithDetails[]>([]);
@@ -90,10 +92,7 @@ export default function UsersPage() {
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [usersResponse, schoolsData] = await Promise.all([
-        fetchWithAuth(`/api/admin/users?t=${Date.now()}`, { cache: 'no-store' } as RequestInit),
-        getSchools(),
-      ]);
+      const usersResponse = await fetchWithAuth(`/api/admin/users?t=${Date.now()}`, { cache: 'no-store' } as RequestInit);
 
       if (!usersResponse.ok) {
         const errBody = await usersResponse.json().catch(() => ({}));
@@ -102,6 +101,7 @@ export default function UsersPage() {
       }
       const usersData = await usersResponse.json();
       const list = Array.isArray(usersData?.users) ? usersData.users : [];
+      const schoolsData = masterSchools;
 
       // 講師を除外（念のため）
       let filteredUsers = list.filter((user: UserWithDetails) =>
@@ -137,7 +137,7 @@ export default function UsersPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [toastError, isAdmin, isOwner, mySchoolIds, profile?.id]);
+  }, [toastError, isAdmin, isOwner, isManager, mySchoolIds, profile?.id, masterSchools]);
 
   // データ取得（認証完了後および権限が決まったあとで実行）
   useEffect(() => {
@@ -340,6 +340,7 @@ export default function UsersPage() {
       setSchoolCode('');
       setNotificationEmail('');
       setShowSchoolForm(false);
+      await refreshSchools();
       await loadData();
       success('教室を作成しました');
     } catch (err: any) {
@@ -374,6 +375,7 @@ export default function UsersPage() {
       setSchoolCode('');
       setNotificationEmail('');
       setShowSchoolForm(false);
+      await refreshSchools();
       await loadData();
       success('教室を更新しました');
     } catch (err: any) {
@@ -395,6 +397,7 @@ export default function UsersPage() {
     setIsDeletingSchool(true);
     try {
       await deleteSchool(schoolToDelete.id);
+      await refreshSchools();
       await loadData();
       setSchoolToDelete(null);
       success('教室を削除しました');

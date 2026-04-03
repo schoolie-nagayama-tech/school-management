@@ -10,7 +10,7 @@ import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, A
 import { ToastContainer } from '@/components/ui';
 import { TimeSlotForm, TimeSlotTable } from '@/components/schedule';
 import { useToast } from '@/hooks/useToast';
-import { getSchools } from '@/lib/api/schools';
+import { useMasterData } from '@/contexts/MasterDataContext';
 import {
   getTimeSlots,
   createTimeSlot,
@@ -35,18 +35,14 @@ export default function TimeSlotsSettingsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingSlot, setDeletingSlot] = useState<ScheduleTimeSlot | null>(null);
 
+  const { schools: masterSchools } = useMasterData();
+
   useEffect(() => {
-    const load = async () => {
-      try {
-        const data = await getSchools();
-        setSchools(data);
-        if (data.length > 0 && !selectedSchoolId) setSelectedSchoolId(data[0].id);
-      } catch {
-        toastError('教室の取得に失敗しました');
-      }
-    };
-    load();
-  }, [toastError]);
+    if (masterSchools.length > 0) {
+      setSchools(masterSchools);
+      if (!selectedSchoolId) setSelectedSchoolId(masterSchools[0].id);
+    }
+  }, [masterSchools, selectedSchoolId]);
 
   useEffect(() => {
     if (!selectedSchoolId) return;

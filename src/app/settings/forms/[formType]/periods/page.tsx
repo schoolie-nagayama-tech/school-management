@@ -34,7 +34,7 @@ import { useToast } from '@/hooks/useToast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
-import { getSchools } from '@/lib/api/schools';
+import { useMasterData } from '@/contexts/MasterDataContext';
 
 const SUPPORTED_FORM_TYPES: FormType[] = [
   'zoukoma',
@@ -49,6 +49,7 @@ export default function FormPeriodsPage() {
   const params = useParams();
   const formType = params.formType as string;
   const { getSelectedSchoolIds } = useAuth();
+  const { schools: masterSchools } = useMasterData();
   const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
     (p) => p.canAccessSettings
   );
@@ -71,15 +72,11 @@ export default function FormPeriodsPage() {
       setAllowedSchoolsList([]);
       return;
     }
-    getSchools()
-      .then((schools) => {
-        const list = schools
-          .filter((s) => selectedSchoolIds.includes(s.id))
-          .map((s) => ({ id: s.id, name: s.name }));
-        setAllowedSchoolsList(list);
-      })
-      .catch(console.error);
-  }, [isMultiSchool, selectedSchoolIds.join(',')]);
+    const list = masterSchools
+      .filter((s) => selectedSchoolIds.includes(s.id))
+      .map((s) => ({ id: s.id, name: s.name }));
+    setAllowedSchoolsList(list);
+  }, [isMultiSchool, selectedSchoolIds.join(','), masterSchools]);
   const formTypeValid = SUPPORTED_FORM_TYPES.includes(formType as FormType);
   const formLabel = FORM_TYPE_LABELS[formType as FormType] ?? formType;
 

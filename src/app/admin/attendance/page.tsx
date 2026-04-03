@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, Button, SelectShadcn as Selec
 import { ToastContainer } from '@/components/ui';
 import { ChevronLeft, ChevronRight, CheckCircle, ExternalLink, Download, RotateCcw } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
-import { getSchools } from '@/lib/api/schools';
+import { useMasterData } from '@/contexts/MasterDataContext';
 import {
   getAttendanceSummary,
   getAllAttendanceTypes,
@@ -69,19 +69,12 @@ export default function AttendanceManagementPage() {
   // アクセス可能な教室のみ（他教室の出勤簿を見せない）
   const allowedSchools = schools.filter((s) => userSchoolIds.includes(s.id));
 
-  // 教室一覧を取得
+  const { schools: masterSchools } = useMasterData();
+
+  // 教室一覧をコンテキストから取得
   useEffect(() => {
-    async function fetchSchools() {
-      try {
-        const data = await getSchools();
-        setSchools(data);
-      } catch (error) {
-        console.error('Failed to fetch schools:', error);
-        toastError('教室の取得に失敗しました');
-      }
-    }
-    fetchSchools();
-  }, [toastError]);
+    if (masterSchools.length > 0) setSchools(masterSchools);
+  }, [masterSchools]);
 
   // アクセス可能な教室が1つのときはその教室を初期選択
   useEffect(() => {

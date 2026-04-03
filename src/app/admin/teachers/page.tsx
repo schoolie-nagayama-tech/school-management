@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { useAuth } from '@/contexts/AuthContext';
 import { updateUserProfile, fetchWithAuth } from '@/lib/api/auth';
-import { getSchools } from '@/lib/api/schools';
+import { useMasterData } from '@/contexts/MasterDataContext';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui';
@@ -35,6 +35,7 @@ interface TeacherWithDetails extends UserProfile {
 
 export default function TeachersPage() {
   const { user, profile, permissions, isLoading: authLoading, getSelectedSchoolIds, demoSchoolIds } = useAuth();
+  const { schools: masterSchools } = useMasterData();
   const { toasts, removeToast, success, error: toastError } = useToast();
   const [teachers, setTeachers] = useState<TeacherWithDetails[]>([]);
   const [schools, setSchools] = useState<School[]>([]);
@@ -76,14 +77,12 @@ export default function TeachersPage() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [teachersResponse, schoolsData] = await Promise.all([
-        fetchWithAuth(`/api/admin/users?role=teacher&t=${Date.now()}`),
-        getSchools(),
-      ]);
-      
+      const teachersResponse = await fetchWithAuth(`/api/admin/users?role=teacher&t=${Date.now()}`);
+
       if (!teachersResponse.ok) throw new Error('Failed to fetch teachers');
       const teachersData = await teachersResponse.json();
       let teachersList: TeacherWithDetails[] = teachersData.users || [];
+      const schoolsData = masterSchools;
 
       // 権限が講師かつ、その教室に所属する人のみ表示（選択中の教室に紐づく講師に絞る）
       const userSchoolIds = getSelectedSchoolIds();

@@ -20,7 +20,7 @@ import {
   bulkDeleteStudents,
   moveStudentsToSchool,
 } from '@/lib/api/students';
-import { getSchools } from '@/lib/api/schools';
+import { useMasterData } from '@/contexts/MasterDataContext';
 import type { School } from '@/types/database';
 import type { Student, StudentInsert, StudentUpdate, Subject } from '@/types/database';
 import {
@@ -53,6 +53,7 @@ export default function StudentsPage() {
     (p) => p.canAccessStudents
   );
   const { getSelectedSchoolIds, selectedSchoolId, profile } = useAuth();
+  const { schools: masterSchools } = useMasterData();
   const router = useRouter();
   const searchParams = useSearchParams();
   
@@ -411,15 +412,9 @@ export default function StudentsPage() {
   }, [selectedIds, moveTargetSchoolId, fetchStudents, searchQuery]);
 
   // 教室移動モーダルを開くときに教室一覧を取得
-  const handleOpenMoveSelectedModal = async () => {
-    try {
-      const allSchools = await getSchools();
-      setSchools(allSchools.filter((s) => !s.is_demo));
-      setIsMoveSelectedModalOpen(true);
-    } catch (error) {
-      console.error('Error fetching schools:', error);
-      setErrorMessage('教室一覧の取得に失敗しました');
-    }
+  const handleOpenMoveSelectedModal = () => {
+    setSchools(masterSchools.filter((s) => !s.is_demo));
+    setIsMoveSelectedModalOpen(true);
   };
 
   // 削除（論理削除、詳細モーダルから呼ばれる場合もある）

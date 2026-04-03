@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AdminLayout } from '@/components/layouts';
 import { getFormResponses, type FormResponseWithStudent } from '@/lib/api/form-responses';
 import { getFormPeriods } from '@/lib/api/form-periods';
-import { getSchools } from '@/lib/api/schools';
+import { useMasterData } from '@/contexts/MasterDataContext';
 import type { FormType, FormPeriod } from '@/types/database';
 import { FORM_TYPE_LABELS, GRADE_LABELS } from '@/types/database';
 import { useRequirePermission } from '@/hooks/usePermissions';
@@ -158,6 +158,7 @@ export default function ResponsesPage() {
     (p) => p.canAccessApplications
   );
   const { getSelectedSchoolIds, selectedSchoolId, profile } = useAuth();
+  const { schools: masterSchools } = useMasterData();
   const searchParams = useSearchParams();
   const router = useRouter();
   const [responses, setResponses] = useState<FormResponseWithStudent[]>([]);
@@ -317,9 +318,8 @@ export default function ResponsesPage() {
       setFormPeriods(periodsData);
 
       // 教室名マップを取得（一覧で教室名表示用）
-      const schools = await getSchools();
       const map: Record<string, string> = {};
-      schools.forEach((s) => { map[s.id] = s.name; });
+      masterSchools.forEach((s) => { map[s.id] = s.name; });
       setSchoolsMap(map);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -329,7 +329,7 @@ export default function ResponsesPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [getSelectedSchoolIds, filterFormType, filterPeriod, filterGrade, filterLinkedStatus, profile?.role]);
+  }, [getSelectedSchoolIds, filterFormType, filterPeriod, filterGrade, filterLinkedStatus, profile?.role, masterSchools]);
 
   useEffect(() => {
     if (selectedSchoolId !== null) {

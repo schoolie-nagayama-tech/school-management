@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { OrderStatusSection } from '@/components/ordering/OrderStatusSection';
 import { getOrders, updateOrderStatus, deleteOrder } from '@/lib/api/ordering';
-import { getSchools } from '@/lib/api/schools';
+import { useMasterData } from '@/contexts/MasterDataContext';
 import type { MaterialOrderWithDetails, OrderStatus } from '@/types/database';
 import { useRequirePermission, useCanEdit } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
@@ -40,6 +40,7 @@ export default function OrderHistoryPage() {
   const { hasPermission, isLoading: permLoading } = useRequirePermission((p) => p.canAccessOrdering);
   const canEdit = useCanEdit('canEditOrdering');
   const { getSelectedSchoolIds, selectedSchoolId } = useAuth();
+  const { schools: masterSchools } = useMasterData();
   const { success, error: toastError } = useToast();
 
   const [orders, setOrders] = useState<MaterialOrderWithDetails[]>([]);
@@ -51,14 +52,11 @@ export default function OrderHistoryPage() {
     if (schoolIds.length === 0) return;
     setLoading(true);
     try {
-      const [ordersData, schoolsData] = await Promise.all([
-        getOrders(schoolIds),
-        getSchools(),
-      ]);
+      const ordersData = await getOrders(schoolIds);
       setOrders(ordersData);
       // Build school id -> name map
       const map: Record<string, string> = {};
-      for (const school of schoolsData) {
+      for (const school of masterSchools) {
         map[school.id] = school.name;
       }
       setSchoolMap(map);
@@ -67,7 +65,7 @@ export default function OrderHistoryPage() {
     } finally {
       setLoading(false);
     }
-  }, [getSelectedSchoolIds, toastError]);
+  }, [getSelectedSchoolIds, toastError, masterSchools]);
 
   useEffect(() => {
     if (selectedSchoolId !== null) fetchData();

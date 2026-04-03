@@ -11,8 +11,7 @@ import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, A
 import { RegularPatternForm, RegularPatternTable } from '@/components/schedule';
 import { useToast } from '@/hooks/useToast';
 import { fetchWithAuth } from '@/lib/api/auth';
-import { getSchools } from '@/lib/api/schools';
-import { getSubjects } from '@/lib/api/subjects';
+import { useMasterData } from '@/contexts/MasterDataContext';
 import { getStudents } from '@/lib/api/students';
 import {
   getTimeSlots,
@@ -59,37 +58,22 @@ export default function RegularPatternsPage() {
   const [dayFilter, setDayFilter] = useState<string>('all');
   const [periodFilter, setPeriodFilter] = useState<string>('regular');
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const data = await getSchools();
-        const ids = getSelectedSchoolIds();
-        const filtered = ids.length > 0 ? data.filter((s) => ids.includes(s.id)) : data;
-        setSchools(filtered);
-        if (filtered.length > 0 && !selectedSchoolId) {
-          const initial = schoolIdFromUrl && filtered.some((s) => s.id === schoolIdFromUrl)
-            ? schoolIdFromUrl
-            : filtered[0].id;
-          setSelectedSchoolId(initial);
-        }
-      } catch {
-        toastError('教室の取得に失敗しました');
-      }
-    };
-    load();
-  }, [getSelectedSchoolIds, toastError, schoolIdFromUrl]);
+  const { schools: masterSchools, subjects: masterSubjects } = useMasterData();
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const [subjData] = await Promise.all([getSubjects()]);
-        setSubjects(subjData);
-      } catch {
-        toastError('科目の取得に失敗しました');
+    if (masterSchools.length > 0) {
+      const ids = getSelectedSchoolIds();
+      const filtered = ids.length > 0 ? masterSchools.filter((s) => ids.includes(s.id)) : masterSchools;
+      setSchools(filtered);
+      if (filtered.length > 0 && !selectedSchoolId) {
+        const initial = schoolIdFromUrl && filtered.some((s) => s.id === schoolIdFromUrl)
+          ? schoolIdFromUrl
+          : filtered[0].id;
+        setSelectedSchoolId(initial);
       }
-    };
-    load();
-  }, [toastError]);
+    }
+    setSubjects(masterSubjects);
+  }, [masterSchools, masterSubjects, getSelectedSchoolIds, selectedSchoolId, schoolIdFromUrl]);
 
   useEffect(() => {
     if (!selectedSchoolId) return;

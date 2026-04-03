@@ -10,7 +10,7 @@ import { Label } from '@/components/ui';
 import { ToastContainer } from '@/components/ui';
 import { ClosedDayForm, ClosedDayList } from '@/components/schedule';
 import { useToast } from '@/hooks/useToast';
-import { getSchools } from '@/lib/api/schools';
+import { useMasterData } from '@/contexts/MasterDataContext';
 import { getClosedDays, createClosedDay, deleteClosedDay } from '@/lib/api/schedule';
 import type { ScheduleClosedDay, ScheduleClosedDayFormData } from '@/types/schedule';
 import type { School } from '@/types/database';
@@ -38,18 +38,14 @@ export default function ClosedDaysPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
 
+  const { schools: masterSchools } = useMasterData();
+
   useEffect(() => {
-    const load = async () => {
-      try {
-        const data = await getSchools();
-        setSchools(data);
-        if (data.length > 0 && !selectedSchoolId) setSelectedSchoolId(data[0].id);
-      } catch {
-        toastError('教室の取得に失敗しました');
-      }
-    };
-    load();
-  }, [toastError]);
+    if (masterSchools.length > 0) {
+      setSchools(masterSchools);
+      if (!selectedSchoolId) setSelectedSchoolId(masterSchools[0].id);
+    }
+  }, [masterSchools, selectedSchoolId]);
 
   useEffect(() => {
     if (!selectedSchoolId) return;

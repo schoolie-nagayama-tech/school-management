@@ -62,7 +62,7 @@ import {
   deleteAttendanceType,
   updateAttendanceTypeOrder,
 } from '@/lib/api/attendance';
-import { getSchools } from '@/lib/api/schools';
+import { useMasterData } from '@/contexts/MasterDataContext';
 import type { AttendanceType, AttendanceTypeFormData } from '@/types/attendance';
 import type { School } from '@/types/database';
 
@@ -85,22 +85,15 @@ export default function AttendanceTypesPage() {
     is_active: true,
   });
 
-  // 教室一覧を取得
+  const { schools: masterSchools } = useMasterData();
+
+  // 教室一覧をコンテキストから取得
   useEffect(() => {
-    async function fetchSchools() {
-      try {
-        const data = await getSchools();
-        setSchools(data);
-        if (data.length > 0) {
-          setSelectedSchoolId(data[0].id);
-        }
-      } catch (error) {
-        console.error('Failed to fetch schools:', error);
-        toastError('教室の取得に失敗しました');
-      }
+    if (masterSchools.length > 0) {
+      setSchools(masterSchools);
+      if (!selectedSchoolId) setSelectedSchoolId(masterSchools[0].id);
     }
-    fetchSchools();
-  }, [toastError]);
+  }, [masterSchools, selectedSchoolId]);
 
   // コマ種別を取得
   useEffect(() => {
