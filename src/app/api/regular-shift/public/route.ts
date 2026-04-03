@@ -27,6 +27,31 @@ function getSupabaseAdmin() {
   });
 }
 
+async function invokeNotification(
+  supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
+  type: 'submitted' | 'allow_edit',
+  submissionId: string
+) {
+  const { data, error } = await supabaseAdmin.functions.invoke(
+    'send-form-notification',
+    {
+      body: {
+        notificationType: 'regular-shift',
+        type,
+        submissionId,
+      },
+    }
+  );
+
+  if (error) {
+    throw new Error(error.message || 'notification_failed');
+  }
+
+  if (data && typeof data === 'object' && 'error' in data) {
+    throw new Error(String((data as { error: unknown }).error || 'notification_failed'));
+  }
+}
+
 function normalizeSlots(input: PublicSubmissionRequest['slots']) {
   if (!Array.isArray(input)) return [];
 
@@ -137,6 +162,13 @@ export async function POST(request: NextRequest) {
       if (slotError) {
         throw slotError;
       }
+    }
+
+    // 講師＆教室に確認メール送信
+    try {
+      await invokeNotification(supabaseAdmin, 'submitted', submission.id);
+    } catch (notifyError) {
+      console.warn('[regular-shift/public] notify failed:', notifyError);
     }
 
     return NextResponse.json({ submission });
