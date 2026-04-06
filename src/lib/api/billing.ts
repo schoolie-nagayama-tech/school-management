@@ -405,8 +405,46 @@ export async function autoFillFifthWeekBilling(
 
   // 2. Get 5th week days
   const fifthWeekDows = getFifthWeekDays(year, month);
+
+  // 5週目がない月 → 全生徒に0を入力
   if (fifthWeekDows.length === 0) {
-    return { updated: 0, skipped: 0 };
+    const { data: students, error: studentsError } = await supabase
+      .from('students')
+      .select('id, school_id')
+      .in('school_id', targetSchoolIds)
+      .eq('is_deleted', false);
+
+    if (studentsError) throw new Error(`生徒の取得に失敗: ${studentsError.message}`);
+    if (!students || students.length === 0) return { updated: 0, skipped: 0 };
+
+    let updated = 0;
+    for (const student of students) {
+      const { data: existing } = await supabase
+        .from('student_billings')
+        .select('id')
+        .eq('student_id', student.id)
+        .eq('billing_item_id', billingItemId)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase
+          .from('student_billings')
+          .update({ is_billed: false, quantity: 0 })
+          .eq('id', existing.id);
+      } else {
+        await supabase
+          .from('student_billings')
+          .insert({
+            school_id: student.school_id,
+            student_id: student.id,
+            billing_item_id: billingItemId,
+            is_billed: false,
+            quantity: 0,
+          });
+      }
+      updated++;
+    }
+    return { updated, skipped: 0 };
   }
 
   // 3. Fetch regular patterns for all schools
@@ -849,25 +887,9 @@ export async function calcFifthWeekBilling(
 
   // 2. Get 5th week days for the NEXT month
   const fifthWeekDows = getFifthWeekDays(targetYear, targetMonth);
-  if (fifthWeekDows.length === 0) {
-    return { updated: 0, skipped: 0 };
-  }
+  const hasFifthWeek = fifthWeekDows.length > 0;
 
-  // 3. Fetch regular patterns for all schools
-  const { data: patterns, error: patternError } = await supabase
-    .from('schedule_regular_patterns')
-    .select('student_id, day_of_week, is_active')
-    .in('school_id', targetSchoolIds)
-    .eq('is_active', true)
-    .eq('period_type', 'regular');
-
-  if (patternError) throw new Error(`通塾日程の取得に失敗: ${patternError.message}`);
-  if (!patterns || patterns.length === 0) return { updated: 0, skipped: 0 };
-
-  // 4. Calculate slots per student
-  const slotMap = calcFifthWeekSlots(patterns, fifthWeekDows);
-
-  // 5. Find the 5週目 billing_item for this period
+  // 3. Find the 5週目 billing_item for this period
   const { data: fifthWeekItems, error: itemError } = await supabase
     .from('billing_items')
     .select('id')
@@ -880,22 +902,85 @@ export async function calcFifthWeekBilling(
     return { updated: 0, skipped: 0 };
   }
 
+  // 4. 5週目がない月（4週のみ）→ 全生徒に0を入力
+  if (!hasFifthWeek) {
+    // 対象の全生徒を取得
+    const { data: students, error: studentsError } = await supabase
+      .from('students')
+      .select('id, school_id')
+      .in('school_id', targetSchoolIds)
+      .eq('is_deleted', false);
+
+    if (studentsError) throw new Error(`生徒の取得に失敗: ${studentsError.message}`);
+    if (!students || students.length === 0) return { updated: 0, skipped: 0 };
+
+    let updated = 0;
+    for (const item of fifthWeekItems) {
+      for (const student of students) {
+        const { data: existing } = await supabase
+          .from('student_billings')
+          .select('id')
+          .eq('student_id', student.id)
+          .eq('billing_item_id', item.id)
+          .maybeSingle();
+
+        if (existing) {
+          await supabase
+            .from('student_billings')
+            .update({ value_number: 0, updated_at: new Date().toISOString() })
+            .eq('id', existing.id);
+        } else {
+          await supabase
+            .from('student_billings')
+            .insert({
+              school_id: student.school_id,
+              student_id: student.id,
+              billing_item_id: item.id,
+              is_billed: false,
+              value_number: 0,
+            });
+        }
+        updated++;
+      }
+    }
+
+    return { updated, skipped: 0 };
+  }
+
+  // 5. 5週目がある月 → 通塾日程からコマ数を計算
+  const { data: patterns, error: patternError } = await supabase
+    .from('schedule_regular_patterns')
+    .select('student_id, day_of_week, is_active')
+    .in('school_id', targetSchoolIds)
+    .eq('is_active', true)
+    .eq('period_type', 'regular');
+
+  if (patternError) throw new Error(`通塾日程の取得に失敗: ${patternError.message}`);
+
+  // 通塾日程に含まれる全生徒＋通塾日程がない生徒も0にする
+  const { data: allStudents, error: allStudentsError } = await supabase
+    .from('students')
+    .select('id, school_id')
+    .in('school_id', targetSchoolIds)
+    .eq('is_deleted', false);
+
+  if (allStudentsError) throw new Error(`生徒の取得に失敗: ${allStudentsError.message}`);
+  if (!allStudents || allStudents.length === 0) return { updated: 0, skipped: 0 };
+
+  const slotMap = calcFifthWeekSlots(patterns || [], fifthWeekDows);
+
   // 6. Upsert student_billings with value_number
   let updated = 0;
   let skipped = 0;
 
   for (const item of fifthWeekItems) {
-    const entries = Array.from(slotMap.entries());
-    for (const [studentId, quantity] of entries) {
-      if (quantity <= 0) {
-        skipped++;
-        continue;
-      }
+    for (const student of allStudents) {
+      const quantity = slotMap.get(student.id) || 0;
 
       const { data: existing } = await supabase
         .from('student_billings')
         .select('id')
-        .eq('student_id', studentId)
+        .eq('student_id', student.id)
         .eq('billing_item_id', item.id)
         .maybeSingle();
 
@@ -905,23 +990,15 @@ export async function calcFifthWeekBilling(
           .update({ value_number: quantity, updated_at: new Date().toISOString() })
           .eq('id', existing.id);
       } else {
-        const { data: studentData } = await supabase
-          .from('students')
-          .select('school_id')
-          .eq('id', studentId)
-          .single();
-
-        if (studentData) {
-          await supabase
-            .from('student_billings')
-            .insert({
-              school_id: studentData.school_id,
-              student_id: studentId,
-              billing_item_id: item.id,
-              is_billed: false,
-              value_number: quantity,
-            });
-        }
+        await supabase
+          .from('student_billings')
+          .insert({
+            school_id: student.school_id,
+            student_id: student.id,
+            billing_item_id: item.id,
+            is_billed: false,
+            value_number: quantity,
+          });
       }
       updated++;
     }

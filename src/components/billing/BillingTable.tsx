@@ -244,14 +244,13 @@ export function BillingTable({
 
     const dayLabels = getFifthWeekDayLabels(year, month);
 
-    if (!dayLabels) {
-      toastError(`${year}年${month}月には5週目がありません`);
-      return;
-    }
+    const description = dayLabels
+      ? `翌月（${year}年${month}月）の5週目コマ数を通塾日程から自動計算しますか？\n\n${year}年${month}月は${dayLabels}曜日に5週目があります。`
+      : `${year}年${month}月には5週目がありません。\n全生徒に「0」を入力します。`;
 
     const confirmed = await confirm({
       title: '5週目自動計算（翌月分）',
-      description: `翌月（${year}年${month}月）の5週目コマ数を通塾日程から自動計算しますか？\n\n${year}年${month}月は${dayLabels}曜日に5週目があります。`,
+      description,
       confirmLabel: '自動計算',
       variant: 'default',
     });
@@ -260,7 +259,11 @@ export function BillingTable({
     setAutoFilling(true);
     try {
       const result = await calcFifthWeekBilling(billingPeriodId, schoolIds);
-      success(`${result.updated}名の5週目コマ数を自動計算しました`);
+      if (!dayLabels) {
+        success(`${result.updated}名に5週目 = 0 を入力しました`);
+      } else {
+        success(`${result.updated}名の5週目コマ数を自動計算しました`);
+      }
       onItemsChange?.();
     } catch (err) {
       toastError(err instanceof Error ? err.message : '5週目の自動計算に失敗しました');
@@ -280,14 +283,13 @@ export function BillingTable({
     if (month > 12) { month = 1; year++; }
     const dayLabels = getFifthWeekDayLabels(year, month);
 
-    if (!dayLabels) {
-      toastError(`${year}年${month}月には5週目がありません`);
-      return;
-    }
+    const description = dayLabels
+      ? `翌月（${year}年${month}月）の5週目コマ数を通塾日程から自動計算しますか？\n\n${year}年${month}月は${dayLabels}曜日に5週目があります。`
+      : `${year}年${month}月には5週目がありません。\n全生徒に「0」を入力します。`;
 
     const confirmed = await confirm({
       title: '5週目自動計算（翌月分）',
-      description: `翌月（${year}年${month}月）の5週目コマ数を通塾日程から自動計算しますか？\n\n${year}年${month}月は${dayLabels}曜日に5週目があります。`,
+      description,
       confirmLabel: '自動計算',
       variant: 'default',
     });
@@ -297,7 +299,11 @@ export function BillingTable({
     setAutoFilling(true);
     try {
       const result = await autoFillFifthWeekBilling(itemId, periodStartDate, schoolIds);
-      success(`${result.updated}名の5週目コマ数を自動計算しました`);
+      if (!dayLabels) {
+        success(`${result.updated}名に5週目 = 0 を入力しました`);
+      } else {
+        success(`${result.updated}名の5週目コマ数を自動計算しました`);
+      }
       onItemsChange?.();
     } catch (err) {
       toastError(err instanceof Error ? err.message : '5週目の自動計算に失敗しました');
