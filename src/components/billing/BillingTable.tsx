@@ -1,8 +1,8 @@
 'use client';
 
 import type { Student, BillingItem, StudentBilling } from '@/types/database';
-import { GRADE_LABELS, BILLING_SOURCE_TYPE_LABELS } from '@/types/database';
-import { toggleStudentBilling, updateBillingItem, deleteBillingItem, syncApplicationToBilling, syncOrdersToBilling, autoFillFifthWeekBilling, updateBillingValue, syncFormToBilling, calcFifthWeekBilling } from '@/lib/api/billing';
+import { GRADE_LABELS } from '@/types/database';
+import { toggleStudentBilling, updateBillingItem, deleteBillingItem, syncOrdersToBilling, autoFillFifthWeekBilling, updateBillingValue, syncFormToBilling, calcFifthWeekBilling } from '@/lib/api/billing';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { getFifthWeekDayLabels } from '@/lib/utils/fifthWeek';
 import { useAuth } from '@/contexts/AuthContext';
@@ -319,7 +319,6 @@ export function BillingTable({
                 名前
               </th>
               {items.map((item) => {
-                const sourceLabel = BILLING_SOURCE_TYPE_LABELS[item.source_type] || item.source_type;
                 const isFifthWeekItem = item.name.includes('5週目');
                 const showAutoFillButton = isFifthWeekItem && onBillingChange && isManagerOrAbove && periodStartDate && schoolIds;
                 return (
@@ -420,93 +419,64 @@ export function BillingTable({
                             <span className="text-xs text-white">{item.name}</span>
                           )}
                         </div>
-                        <div className="flex items-center gap-1">
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                            item.source_type === 'free'
-                              ? 'bg-white/20 text-white/70'
-                              : item.source_type === 'form_charged'
-                              ? 'bg-blue-400/30 text-blue-200'
-                              : 'bg-purple-400/30 text-purple-200'
-                          }`}>
-                            {sourceLabel}
-                          </span>
-                          {showAutoFillButton && (
-                            <button
-                              className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-400/30 text-amber-200 hover:bg-amber-400/50 transition-colors disabled:opacity-50"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (billingPeriodId) {
-                                  handleCalcFifthWeek();
-                                } else {
-                                  handleAutoFillFifthWeek(item.id);
-                                }
-                              }}
-                              disabled={autoFilling}
-                              title="通塾日程から5週目コマ数を自動計算"
-                            >
-                              {autoFilling ? '...' : '⚡自動計算'}
-                            </button>
-                          )}
-                          {item.linked_form_type && !isTeacher && billingPeriodId && schoolIds && (
-                            <button
-                              className="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-400/30 text-cyan-200 hover:bg-cyan-400/50 transition-colors disabled:opacity-50"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleFormSync(item.id);
-                              }}
-                              disabled={syncing}
-                              title="フォーム回答から同期"
-                            >
-                              {syncing ? '...' : '🔄同期'}
-                            </button>
-                          )}
-                          {item.source_type === 'form_charged' && !isTeacher && periodStartDate && schoolIds && (
-                            <button
-                              className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-400/30 text-blue-200 hover:bg-blue-400/50 transition-colors"
-                              title="申込状況から同期"
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                if (!await confirm({
-                                  title: '申込状況から同期',
-                                  description: `「${item.name}」を申込状況から自動同期しますか？\n申込済み（✓）の生徒が請求に反映されます。`,
-                                  confirmLabel: '同期する',
-                                })) return;
-                                try {
-                                  const result = await syncApplicationToBilling(item.id, item.name, schoolIds);
-                                  success(`${result.synced}名の申込状況を同期しました`);
-                                  onItemsChange?.();
-                                } catch (err) {
-                                  toastError(getUserErrorMessage(err, '同期に失敗しました'));
-                                }
-                              }}
-                            >
-                              🔄同期
-                            </button>
-                          )}
-                          {item.source_type === 'order' && !isTeacher && periodStartDate && schoolIds && (
-                            <button
-                              className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-400/30 text-purple-200 hover:bg-purple-400/50 transition-colors"
-                              title="発注管理から同期"
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                if (!await confirm({
-                                  title: '発注管理から同期',
-                                  description: `「${item.name}」を発注管理から自動同期しますか？\n期間内の発注が請求に反映されます。`,
-                                  confirmLabel: '同期する',
-                                })) return;
-                                try {
-                                  const result = await syncOrdersToBilling(item.id, schoolIds, periodStartDate, periodEndDate || periodStartDate);
-                                  success(`${result.synced}名の発注を同期しました`);
-                                  onItemsChange?.();
-                                } catch (err) {
-                                  toastError(getUserErrorMessage(err, '同期に失敗しました'));
-                                }
-                              }}
-                            >
-                              🔄同期
-                            </button>
-                          )}
-                        </div>
+                        {/* アクションボタン（1列に1つだけ） */}
+                        {(showAutoFillButton || (item.linked_form_type && !isTeacher && billingPeriodId && schoolIds) || (item.source_type === 'order' && !isTeacher && periodStartDate && schoolIds)) && (
+                          <div className="flex items-center gap-1">
+                            {showAutoFillButton && (
+                              <button
+                                className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-400/30 text-amber-200 hover:bg-amber-400/50 transition-colors disabled:opacity-50"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (billingPeriodId) {
+                                    handleCalcFifthWeek();
+                                  } else {
+                                    handleAutoFillFifthWeek(item.id);
+                                  }
+                                }}
+                                disabled={autoFilling}
+                                title="通塾日程から5週目コマ数を自動計算"
+                              >
+                                {autoFilling ? '...' : '⚡ 自動計算'}
+                              </button>
+                            )}
+                            {item.linked_form_type && !isTeacher && billingPeriodId && schoolIds && (
+                              <button
+                                className="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-400/30 text-cyan-200 hover:bg-cyan-400/50 transition-colors disabled:opacity-50"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleFormSync(item.id);
+                                }}
+                                disabled={syncing}
+                                title="フォーム回答から件数を同期"
+                              >
+                                {syncing ? '...' : '📥 同期'}
+                              </button>
+                            )}
+                            {item.source_type === 'order' && !isTeacher && periodStartDate && schoolIds && (
+                              <button
+                                className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-400/30 text-purple-200 hover:bg-purple-400/50 transition-colors"
+                                title="発注管理から同期"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (!await confirm({
+                                    title: '発注管理から同期',
+                                    description: `「${item.name}」を発注管理から自動同期しますか？\n期間内の発注が請求に反映されます。`,
+                                    confirmLabel: '同期する',
+                                  })) return;
+                                  try {
+                                    const result = await syncOrdersToBilling(item.id, schoolIds, periodStartDate, periodEndDate || periodStartDate);
+                                    success(`${result.synced}名の発注を同期しました`);
+                                    onItemsChange?.();
+                                  } catch (err) {
+                                    toastError(getUserErrorMessage(err, '同期に失敗しました'));
+                                  }
+                                }}
+                              >
+                                📥 同期
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
                   </th>
@@ -525,39 +495,32 @@ export function BillingTable({
                   key={summary.itemId}
                   className="px-3 py-1.5 text-center text-[#4b5563] text-[11px] border-r border-[#e5e7eb] bg-[#f0f4f8]"
                 >
-                  <div className="flex flex-col gap-0.5">
-                    {summary.valueType === 'number' ? (
-                      <>
-                        <span className="text-[11px] text-[#4b5563]">
-                          対象: <strong className="text-[#1e3a5f]">{summary.numberHasValueCount}</strong>名
-                          {summary.numberSum > 0 && <span className="ml-1">（合計: {summary.numberSum}）</span>}
+                  {summary.valueType === 'number' ? (
+                    <div className="flex flex-col items-center">
+                      <span className="text-[11px] font-bold text-[#1e3a5f]">{summary.numberHasValueCount}名</span>
+                      <span className={`text-[10px] ${summary.numberBilledCount === summary.numberHasValueCount && summary.numberHasValueCount > 0 ? 'text-green-600' : 'text-orange-500'}`}>
+                        計上 {summary.numberBilledCount}/{summary.numberHasValueCount}
+                      </span>
+                    </div>
+                  ) : summary.valueType === 'text' ? (
+                    <div className="flex flex-col items-center">
+                      <span className="text-[11px] font-bold text-[#1e3a5f]">{summary.textHasValueCount}名</span>
+                      <span className={`text-[10px] ${summary.textBilledCount === summary.textHasValueCount && summary.textHasValueCount > 0 ? 'text-green-600' : 'text-orange-500'}`}>
+                        計上 {summary.textBilledCount}/{summary.textHasValueCount}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center">
+                      <span className="text-[11px] font-bold text-[#1e3a5f]">
+                        {summary.billedCount}/{summary.totalStudents}
+                      </span>
+                      {summary.hasQuantityData && (
+                        <span className="text-[10px] text-[#4b5563]">
+                          計{summary.quantitySum}コマ
                         </span>
-                        <span className={`text-[11px] font-semibold ${summary.numberBilledCount > 0 ? 'text-green-600' : 'text-orange-500'}`}>
-                          計上: {summary.numberBilledCount}/{summary.numberHasValueCount}
-                        </span>
-                      </>
-                    ) : summary.valueType === 'text' ? (
-                      <>
-                        <span className="text-[11px] text-[#4b5563]">
-                          対象: <strong className="text-[#1e3a5f]">{summary.textHasValueCount}</strong>名
-                        </span>
-                        <span className={`text-[11px] font-semibold ${summary.textBilledCount > 0 ? 'text-green-600' : 'text-orange-500'}`}>
-                          計上: {summary.textBilledCount}/{summary.textHasValueCount}
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-[11px] font-semibold text-[#1e3a5f]">
-                          済: {summary.billedCount}/{summary.totalStudents} ({summary.billedRate}%)
-                        </span>
-                        {summary.hasQuantityData && (
-                          <span className="text-[10px] text-[#4b5563]">
-                            合計: {summary.quantitySum}コマ
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </div>
+                      )}
+                    </div>
+                  )}
                 </td>
               ))}
             </tr>
