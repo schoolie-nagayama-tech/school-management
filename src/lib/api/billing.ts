@@ -971,7 +971,7 @@ export async function calcFifthWeekBilling(
 
   // 6. Upsert student_billings with value_number
   let updated = 0;
-  let skipped = 0;
+  const skipped = 0;
 
   for (const item of fifthWeekItems) {
     for (const student of allStudents) {
