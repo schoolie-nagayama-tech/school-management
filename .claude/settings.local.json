@@ -160,7 +160,8 @@
       "Bash(mv 20260323_embed_tokens.sql 20260323040000_embed_tokens.sql)",
       "Bash(mv 20260324_billing_inventory_ordering.sql 20260324030000_billing_inventory_ordering.sql)",
       "Bash(mv 20260325_billing_extended.sql 20260325010000_billing_extended.sql)",
-      "Bash(find /c/Users/ytaka/Desktop/student-management -path ./.next -prune -o -type f -name *Dashboard*.tsx -print)"
+      "Bash(find /c/Users/ytaka/Desktop/student-management -path ./.next -prune -o -type f -name *Dashboard*.tsx -print)",
+      "Bash(ls -la /c/Users/ytaka/Desktop/student-management/src/app/seasonal-shift/[settingId]/)"
     ]
   }
 }

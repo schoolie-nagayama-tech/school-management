@@ -112,7 +112,7 @@ function hasMeaningfulChanges(log: StudentLogEntry): boolean {
 
 // ── 型定義 ──
 
-type FeedItemType = 'response' | 'update';
+type FeedItemType = 'response' | 'update' | 'shift';
 
 interface FeedItem {
   id: string;
@@ -127,6 +127,11 @@ interface FeedItem {
   action?: string;
   changeSummary?: string;
   studentId?: string;
+  // shift 系
+  shiftType?: 'seasonal' | 'regular';
+  shiftSettingId?: string;
+  shiftSettingName?: string;
+  teacherEmail?: string;
   // 共通
   studentName: string;
   gradeLabel?: string;
@@ -147,7 +152,7 @@ interface StudentLogEntry {
   } | null;
 }
 
-type FilterType = 'all' | 'response' | 'update';
+type FilterType = 'all' | 'response' | 'update' | 'shift';
 
 // ── localStorage ──
 
@@ -234,7 +239,7 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
       since.setDate(since.getDate() - 7);
 
       // 並行取得
-      const [responsesResult, logsResult] = await Promise.allSettled([
+      const [responsesResult, logsResult, seasonalShiftResult, regularShiftResult] = await Promise.allSettled([
         getRecentUnprocessedResponses(schoolIds, 7, 20),
         supabase
           .from('student_logs')
@@ -244,9 +249,24 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
           .gte('created_at', since.toISOString())
           .order('created_at', { ascending: false })
           .limit(20),
+        supabase
+          .from('seasonal_shift_submissions')
+          .select('id, setting_id, school_id, teacher_name, teacher_email, submitted_at, created_at, setting:seasonal_shift_settings!seasonal_shift_submissions_setting_id_fkey(name)')
+          .in('school_id', schoolIds)
+          .gte('created_at', since.toISOString())
+          .order('created_at', { ascending: false })
+          .limit(20),
+        supabase
+          .from('regular_shift_submissions')
+          .select('id, setting_id, school_id, teacher_name, teacher_email, submitted_at, created_at, setting:regular_shift_settings!regular_shift_submissions_setting_id_fkey(name)')
+          .in('school_id', schoolIds)
+          .gte('created_at', since.toISOString())
+          .order('created_at', { ascending: false })
+          .limit(20),
       ]);
 
       const items: FeedItem[] = [];
+      const allSchoolIdsToFetch: string[] = [];
 
       // 回答データ → FeedItem
       if (responsesResult.status === 'fulfilled') {
@@ -266,18 +286,9 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
           });
         });
 
-        // 教室名を取得
-        const uniqueSchoolIds = Array.from(new Set(responses.map((r) => r.school_id)));
-        const nameMap: Record<string, string> = {};
-        await Promise.all(
-          uniqueSchoolIds.map(async (sid) => {
-            try {
-              const school = await getSchool(sid);
-              if (school) nameMap[sid] = school.name;
-            } catch { /* ignore */ }
-          })
-        );
-        setSchoolNames(nameMap);
+        // 教室名を取得（後でシフト分も追加）
+        const responseSchoolIds = responses.map((r) => r.school_id);
+        allSchoolIdsToFetch.push(...responseSchoolIds);
       }
 
       // 更新ログ → FeedItem
@@ -299,6 +310,57 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
               studentName: student ? `${student.last_name} ${student.first_name}` : '(不明)',
             });
           });
+      }
+
+      // シフト申請 → FeedItem
+      const processShiftResult = (
+        result: PromiseSettledResult<{ data: unknown[] | null; error: unknown }>,
+        shiftType: 'seasonal' | 'regular',
+      ) => {
+        if (result.status !== 'fulfilled' || result.value.error) return;
+        const submissions = (result.value.data || []) as Array<{
+          id: string;
+          setting_id: string;
+          school_id: string;
+          teacher_name: string;
+          teacher_email: string;
+          submitted_at: string;
+          created_at: string;
+          setting: { name: string } | null;
+        }>;
+        submissions.forEach((s) => {
+          items.push({
+            id: `shift_${shiftType}_${s.id}`,
+            type: 'shift',
+            timestamp: s.created_at,
+            shiftType,
+            shiftSettingId: s.setting_id,
+            shiftSettingName: s.setting?.name ?? '',
+            teacherEmail: s.teacher_email,
+            schoolId: s.school_id,
+            studentName: s.teacher_name, // 講師名を共通フィールドで表示
+          });
+        });
+      };
+      processShiftResult(seasonalShiftResult, 'seasonal');
+      processShiftResult(regularShiftResult, 'regular');
+
+      // シフト申請の教室IDも収集
+      items.filter((i) => i.type === 'shift' && i.schoolId).forEach((i) => allSchoolIdsToFetch.push(i.schoolId!));
+
+      // 教室名を一括取得
+      const uniqueSchoolIds = Array.from(new Set(allSchoolIdsToFetch));
+      if (uniqueSchoolIds.length > 0) {
+        const nameMap: Record<string, string> = {};
+        await Promise.all(
+          uniqueSchoolIds.map(async (sid) => {
+            try {
+              const school = await getSchool(sid);
+              if (school) nameMap[sid] = school.name;
+            } catch { /* ignore */ }
+          })
+        );
+        setSchoolNames(nameMap);
       }
 
       // 時系列ソート（新しい順）
@@ -332,6 +394,7 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
       all: undismissed.length,
       response: undismissed.filter((i) => i.type === 'response').length,
       update: undismissed.filter((i) => i.type === 'update').length,
+      shift: undismissed.filter((i) => i.type === 'shift').length,
     };
   }, [feedItems, dismissedIds]);
 
@@ -370,7 +433,7 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
       .filter((item) => filter === 'all' || item.type === filter);
     if (targetItems.length === 0) return;
 
-    const filterLabel = filter === 'all' ? '通知' : filter === 'response' ? '新着申込' : '更新履歴';
+    const filterLabel = filter === 'all' ? '通知' : filter === 'response' ? '新着申込' : filter === 'update' ? '更新履歴' : 'シフト申請';
     const confirmed = await confirm({
       title: '一括確認',
       description: `${filterLabel} ${targetItems.length}件 をすべて確認済みにしますか？`,
@@ -414,6 +477,7 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
     { key: 'all', label: 'すべて', count: counts.all },
     { key: 'response', label: '申込', count: counts.response },
     { key: 'update', label: '更新履歴', count: counts.update },
+    { key: 'shift', label: 'シフト', count: counts.shift },
   ];
 
   return (
@@ -481,7 +545,7 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
           <div className="max-h-[350px] overflow-y-auto divide-y divide-gray-100">
             {visibleItems.length === 0 ? (
               <div className="p-6 text-center text-sm text-gray-400 italic">
-                {filter === 'all' ? '表示する通知はありません' : `${filter === 'response' ? '申込' : '更新履歴'}はありません`}
+                {filter === 'all' ? '表示する通知はありません' : `${filter === 'response' ? '申込' : filter === 'update' ? '更新履歴' : 'シフト申請'}はありません`}
               </div>
             ) : (
               visibleItems.map((item) => (
@@ -516,6 +580,9 @@ interface FeedItemRowProps {
 function FeedItemRow({ item, schoolNames, schoolColorBySchoolId, onDismiss, onStudentClick }: FeedItemRowProps) {
   if (item.type === 'response') {
     return <ResponseRow item={item} schoolNames={schoolNames} schoolColorBySchoolId={schoolColorBySchoolId} onDismiss={onDismiss} onStudentClick={onStudentClick} />;
+  }
+  if (item.type === 'shift') {
+    return <ShiftRow item={item} schoolNames={schoolNames} schoolColorBySchoolId={schoolColorBySchoolId} onDismiss={onDismiss} />;
   }
   return <UpdateRow item={item} onDismiss={onDismiss} onStudentClick={onStudentClick} />;
 }
@@ -561,6 +628,56 @@ function ResponseRow({
         )}
         {item.gradeLabel && (
           <span className="text-xs text-gray-500 whitespace-nowrap shrink-0">{item.gradeLabel}</span>
+        )}
+        {schoolName && schoolColor && (
+          <span className={`px-1.5 py-0.5 rounded text-[11px] font-medium whitespace-nowrap shrink-0 ${schoolColor.bg} ${schoolColor.text}`}>
+            {schoolName}
+          </span>
+        )}
+      </div>
+      <button
+        onClick={() => onDismiss(item.id)}
+        className="flex items-center text-gray-400 hover:text-green-600 p-1 rounded hover:bg-green-50 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
+        title="確認済みにする"
+      >
+        <Check className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+}
+
+function ShiftRow({
+  item,
+  schoolNames,
+  schoolColorBySchoolId,
+  onDismiss,
+}: {
+  item: FeedItem;
+  schoolNames: Record<string, string>;
+  schoolColorBySchoolId: Record<string, { bg: string; text: string }>;
+  onDismiss: (id: string) => void;
+}) {
+  const shiftLabel = item.shiftType === 'seasonal' ? '講習シフト' : '通常シフト';
+  const href = item.shiftType === 'seasonal'
+    ? `/settings/seasonal-shifts/${item.shiftSettingId}/submissions`
+    : `/settings/regular-shifts/${item.shiftSettingId}/submissions`;
+  const schoolName = item.schoolId ? schoolNames[item.schoolId] : undefined;
+  const schoolColor = item.schoolId ? schoolColorBySchoolId[item.schoolId] : undefined;
+
+  return (
+    <div className="flex items-center gap-2 px-4 py-2 hover:bg-cyan-50 transition-colors group">
+      <span className="text-xs text-gray-400 whitespace-nowrap w-[72px] shrink-0">
+        {formatDateTime(item.timestamp)}
+      </span>
+      <Link href={href} className="px-1.5 py-0.5 bg-cyan-100 text-cyan-800 text-[11px] font-medium rounded whitespace-nowrap shrink-0 hover:opacity-80">
+        {shiftLabel}
+      </Link>
+      <div className="flex items-center gap-2 flex-1 min-w-0">
+        <span className="text-sm text-[#1a1a1a] font-medium shrink-0">{item.studentName}</span>
+        {item.shiftSettingName && (
+          <span className="text-xs text-gray-500 truncate" title={item.shiftSettingName}>
+            {item.shiftSettingName}
+          </span>
         )}
         {schoolName && schoolColor && (
           <span className={`px-1.5 py-0.5 rounded text-[11px] font-medium whitespace-nowrap shrink-0 ${schoolColor.bg} ${schoolColor.text}`}>
