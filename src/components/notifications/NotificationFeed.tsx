@@ -10,7 +10,7 @@ import { ChevronDown, ChevronUp, Check, CheckCheck, Trash2 } from 'lucide-react'
 import { getSchool } from '@/lib/api/schools';
 import { useConfirm } from '@/hooks/useConfirm';
 import { supabase } from '@/lib/supabase';
-import { deleteTask } from '@/lib/api/monthlyTasks';
+import { deleteTask as deleteMonthlyTaskApi } from '@/lib/api/monthlyTasks';
 
 // ── 定数 ──
 
@@ -528,7 +528,7 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
   const handleDeleteMonthlyTask = useCallback(
     async (feedId: string, taskId: string) => {
       try {
-        await deleteTask(taskId);
+        await deleteMonthlyTaskApi(taskId);
         // フィードからも除去
         setFeedItems((prev) => prev.filter((item) => item.id !== feedId));
       } catch {
