@@ -190,6 +190,56 @@ export async function createCalendarEvent(
 }
 
 // ============================================
+// カレンダーイベント取得
+// ============================================
+
+export interface CalendarEvent {
+  id: string;
+  summary: string;
+  start: string; // ISO string
+  end: string;   // ISO string
+  allDay: boolean;
+}
+
+export async function listCalendarEvents(
+  userId: string,
+  timeMin: string,
+  timeMax: string
+): Promise<{ success: boolean; events?: CalendarEvent[]; error?: string }> {
+  const oauth2Client = await getAuthenticatedClient(userId);
+  if (!oauth2Client) {
+    return { success: false, error: 'Google Calendar未連携' };
+  }
+
+  const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+
+  try {
+    const { data } = await calendar.events.list({
+      calendarId: 'primary',
+      timeMin,
+      timeMax,
+      singleEvents: true,
+      orderBy: 'startTime',
+      maxResults: 100,
+      timeZone: 'Asia/Tokyo',
+    });
+
+    const events: CalendarEvent[] = (data.items || []).map((item) => ({
+      id: item.id || '',
+      summary: item.summary || '(無題)',
+      start: item.start?.dateTime || item.start?.date || '',
+      end: item.end?.dateTime || item.end?.date || '',
+      allDay: !item.start?.dateTime,
+    }));
+
+    return { success: true, events };
+  } catch (error) {
+    console.error('[google-calendar] イベント取得失敗:', error);
+    return { success: false, error: 'カレンダーイベントの取得に失敗しました' };
+  }
+}
+
+// ============================================
 // 連携状態確認
 // ============================================
 

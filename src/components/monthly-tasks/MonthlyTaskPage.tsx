@@ -59,6 +59,7 @@ export function MonthlyTaskPage() {
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [templates, setTemplates] = useState<MonthlyTaskTemplate[]>([]);
   const [poolItems, setPoolItems] = useState<PoolItem[]>([]);
+  const [googleCalendarEmail, setGoogleCalendarEmail] = useState<string | null>(null);
 
   // 編集権限
   const canEdit = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
@@ -85,6 +86,23 @@ export function MonthlyTaskPage() {
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
+
+  // Googleカレンダー連携状態を取得
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/integrations/google/calendar/status', {
+          headers: { Authorization: `Bearer ${(await (await import('@/lib/supabase')).supabase.auth.getSession()).data.session?.access_token}` },
+        });
+        if (res.ok) {
+          const { data } = await res.json();
+          if (data?.connected && data?.email) {
+            setGoogleCalendarEmail(data.email);
+          }
+        }
+      } catch { /* ignore */ }
+    })();
+  }, []);
 
   // 初回: 今日を選択
   useEffect(() => {
@@ -380,6 +398,7 @@ export function MonthlyTaskPage() {
               schools={activeSchools}
               year={year}
               month={month}
+              googleCalendarId={googleCalendarEmail || undefined}
             />
           </div>
         </div>
