@@ -196,6 +196,21 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true });
       }
 
+      case 'delete_course_tasks': {
+        if (!canEdit) return NextResponse.json({ error: '権限がありません' }, { status: 403 });
+        const { year: delYear, month: delMonth } = body;
+        if (!delYear || !delMonth) return NextResponse.json({ error: 'year, month は必須です' }, { status: 400 });
+        const { data: deleted, error: delError } = await supabaseAdmin
+          .from('monthly_tasks')
+          .delete()
+          .eq('year', delYear)
+          .eq('month', delMonth)
+          .eq('category', 'course')
+          .select('id');
+        if (delError) throw delError;
+        return NextResponse.json({ success: true, deleted: deleted?.length || 0 });
+      }
+
       case 'toggle_check': {
         if (!canEdit) return NextResponse.json({ error: '権限がありません' }, { status: 403 });
         const { taskId: checkTaskId, schoolId, isCompleted } = body;

@@ -92,6 +92,11 @@ export async function syncCourseTasks(year: number, month: number) {
   return result.data as { imported: number };
 }
 
+export async function deleteCourseTasks(year: number, month: number) {
+  const result = await postTaskApi({ action: 'delete_course_tasks', year, month });
+  return result as { deleted: number };
+}
+
 export async function saveTemplate(year: number, month: number, name: string) {
   const result = await postTaskApi({ action: 'save_template', year, month, name });
   return result.data as MonthlyTaskTemplate;

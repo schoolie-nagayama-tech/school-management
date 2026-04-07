@@ -8,6 +8,7 @@ import {
   toggleCheck,
   generateFromTemplate,
   syncCourseTasks,
+  deleteCourseTasks,
   getTemplates,
   saveTemplate,
   deleteTemplate as deleteTemplateApi,
@@ -22,9 +23,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
+  Trash2,
   Settings,
   AlertTriangle,
 } from 'lucide-react';
+import { useConfirm } from '@/hooks/useConfirm';
 
 interface PoolItem {
   task_name: string;
@@ -37,6 +40,7 @@ export function MonthlyTaskPage() {
   const { schools } = useMasterData();
   const { getSelectedSchoolIds, profile } = useAuth();
   const { success, error: toastError } = useToast();
+  const { confirm } = useConfirm();
 
   // 月選択
   const now = new Date();
@@ -182,6 +186,25 @@ export function MonthlyTaskPage() {
     finally { setIsSyncing(false); }
   };
 
+  // 講習タスク一括削除
+  const courseTaskCount = useMemo(() => tasks.filter(t => t.category === 'course').length, [tasks]);
+
+  const handleDeleteCourseTasks = async () => {
+    if (courseTaskCount === 0) { toastError('削除対象の講習タスクがありません'); return; }
+    const confirmed = await confirm({
+      title: '講習タスク一括削除',
+      description: `${year}年${month}月の講習タスク${courseTaskCount}件をすべて削除しますか？\nこの操作は元に戻せません。`,
+      confirmLabel: `${courseTaskCount}件を削除`,
+      variant: 'danger',
+    });
+    if (!confirmed) return;
+    try {
+      const result = await deleteCourseTasks(year, month);
+      success(`${result.deleted}件の講習タスクを削除しました`);
+      fetchTasks();
+    } catch { toastError('講習タスクの削除に失敗しました'); }
+  };
+
   // テンプレート操作
   const handleOpenTemplateDialog = async () => {
     try { const tpls = await getTemplates(); setTemplates(tpls); }
@@ -268,6 +291,15 @@ export function MonthlyTaskPage() {
               <Download className="w-3.5 h-3.5" />
               {isSyncing ? '取込中...' : '講習取込'}
             </button>
+            {courseTaskCount > 0 && (
+              <button
+                onClick={handleDeleteCourseTasks}
+                className="flex items-center gap-1 px-3 py-1.5 text-xs bg-red-50 text-red-600 hover:bg-red-100 rounded transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                講習削除({courseTaskCount})
+              </button>
+            )}
             <button
               onClick={handleOpenTemplateDialog}
               className="flex items-center gap-1 px-3 py-1.5 text-xs bg-gray-50 text-gray-700 hover:bg-gray-100 rounded transition-colors"
