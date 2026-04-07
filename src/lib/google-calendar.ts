@@ -147,6 +147,7 @@ interface CalendarEventParams {
   date: string;          // YYYY-MM-DD
   startTime: string;     // HH:mm
   durationMinutes: number;
+  allDay?: boolean;      // 終日イベント
 }
 
 export async function createCalendarEvent(
@@ -160,26 +161,33 @@ export async function createCalendarEvent(
 
   const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
-  // 開始・終了時間を計算
-  const startDate = new Date(`${params.date}T${params.startTime}:00+09:00`);
-  const endDate = new Date(startDate.getTime() + params.durationMinutes * 60 * 1000);
-
   try {
+    // 終日イベント or 時間指定イベント
+    const requestBody = params.allDay
+      ? {
+          summary: params.summary,
+          description: params.description,
+          start: { date: params.date },
+          end: { date: params.date },
+          transparency: 'transparent' as const,
+        }
+      : {
+          summary: params.summary,
+          description: params.description,
+          start: {
+            dateTime: new Date(`${params.date}T${params.startTime}:00+09:00`).toISOString(),
+            timeZone: 'Asia/Tokyo',
+          },
+          end: {
+            dateTime: new Date(new Date(`${params.date}T${params.startTime}:00+09:00`).getTime() + params.durationMinutes * 60 * 1000).toISOString(),
+            timeZone: 'Asia/Tokyo',
+          },
+          transparency: 'transparent' as const,
+        };
+
     const { data: event } = await calendar.events.insert({
       calendarId: 'primary',
-      requestBody: {
-        summary: params.summary,
-        description: params.description,
-        start: {
-          dateTime: startDate.toISOString(),
-          timeZone: 'Asia/Tokyo',
-        },
-        end: {
-          dateTime: endDate.toISOString(),
-          timeZone: 'Asia/Tokyo',
-        },
-        transparency: 'transparent', // 「予定なし」として登録
-      },
+      requestBody,
     });
 
     return { success: true, eventId: event.id || undefined };

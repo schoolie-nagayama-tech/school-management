@@ -88,22 +88,36 @@ export function MonthlyTaskPage() {
     fetchTasks();
   }, [fetchTasks]);
 
-  // Googleカレンダー連携状態を取得
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch('/api/integrations/google/calendar/status', {
-          headers: { Authorization: `Bearer ${(await (await import('@/lib/supabase')).supabase.auth.getSession()).data.session?.access_token}` },
-        });
-        if (res.ok) {
-          const { data } = await res.json();
-          if (data?.connected && data?.email) {
-            setGoogleCalendarEmail(data.email);
-          }
+  // Googleカレンダー連携状態＋イベントを1回のAPI呼び出しで取得
+  const [calendarEvents, setCalendarEvents] = useState<Array<{ id: string; summary: string; start: string; end: string; allDay: boolean }>>([]);
+  const [calendarLoading, setCalendarLoading] = useState(false);
+
+  const fetchCalendarData = useCallback(async () => {
+    setCalendarLoading(true);
+    try {
+      const session = (await (await import('@/lib/supabase')).supabase.auth.getSession()).data.session;
+      if (!session) return;
+      const lastDay = new Date(year, month, 0).getDate();
+      const timeMin = `${year}-${String(month).padStart(2, '0')}-01T00:00:00+09:00`;
+      const timeMax = `${year}-${String(month).padStart(2, '0')}-${lastDay}T23:59:59+09:00`;
+      const params = new URLSearchParams({ timeMin, timeMax, includeStatus: 'true' });
+      const res = await fetch(`/api/integrations/google/calendar/events?${params}`, {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.status?.connected && json.status?.email) {
+          setGoogleCalendarEmail(json.status.email);
         }
-      } catch { /* ignore */ }
-    })();
-  }, []);
+        setCalendarEvents(json.data || []);
+      }
+    } catch { /* ignore */ }
+    finally { setCalendarLoading(false); }
+  }, [year, month]);
+
+  useEffect(() => {
+    fetchCalendarData();
+  }, [fetchCalendarData]);
 
   // 初回: 今日を選択
   useEffect(() => {
@@ -431,6 +445,9 @@ export function MonthlyTaskPage() {
               year={year}
               month={month}
               googleCalendarId={googleCalendarEmail || undefined}
+              calendarEvents={calendarEvents}
+              calendarLoading={calendarLoading}
+              onRefreshCalendar={fetchCalendarData}
             />
           </div>
         </div>

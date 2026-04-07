@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useEffect, useCallback } from 'react';
+import { useMemo, useState } from 'react';
 import type { MonthlyTaskWithChecks, School } from '@/types/database';
 import {
   AlertTriangle,
@@ -9,6 +9,8 @@ import {
   Calendar as CalendarIcon,
   ExternalLink,
   RefreshCw,
+  Plus,
+  X,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
@@ -25,7 +27,10 @@ interface TaskSummaryPanelProps {
   schools: School[];
   year: number;
   month: number;
-  googleCalendarId?: string; // connected email
+  googleCalendarId?: string;
+  calendarEvents?: CalendarEvent[];
+  calendarLoading?: boolean;
+  onRefreshCalendar?: () => void;
 }
 
 function getToday() {
@@ -36,9 +41,10 @@ function getToday() {
 export function TaskSummaryPanel({
   tasks,
   schools,
-  year,
-  month,
   googleCalendarId,
+  calendarEvents = [],
+  calendarLoading = false,
+  onRefreshCalendar,
 }: TaskSummaryPanelProps) {
   const today = getToday();
   const weekLater = (() => {
@@ -94,50 +100,12 @@ export function TaskSummaryPanel({
     }).sort((a, b) => a.task_date.localeCompare(b.task_date));
   }, [tasks, today, weekLater, schoolIds]);
 
-  // Google Calendar events
-  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
-  const [calendarLoading, setCalendarLoading] = useState(false);
-  const [calendarError, setCalendarError] = useState<string | null>(null);
-
-  const fetchCalendarEvents = useCallback(async () => {
-    if (!googleCalendarId) return;
-    setCalendarLoading(true);
-    setCalendarError(null);
-    try {
-      const session = (await supabase.auth.getSession()).data.session;
-      if (!session) return;
-      const timeMin = `${year}-${String(month).padStart(2, '0')}-01T00:00:00+09:00`;
-      const lastDay = new Date(year, month, 0).getDate();
-      const timeMax = `${year}-${String(month).padStart(2, '0')}-${lastDay}T23:59:59+09:00`;
-      const res = await fetch(
-        `/api/integrations/google/calendar/events?timeMin=${encodeURIComponent(timeMin)}&timeMax=${encodeURIComponent(timeMax)}`,
-        { headers: { Authorization: `Bearer ${session.access_token}` } }
-      );
-      if (res.ok) {
-        const { data } = await res.json();
-        setCalendarEvents(data || []);
-      } else {
-        const err = await res.json();
-        setCalendarError(err.error || '取得に失敗しました');
-      }
-    } catch {
-      setCalendarError('カレンダーの取得に失敗しました');
-    } finally {
-      setCalendarLoading(false);
-    }
-  }, [googleCalendarId, year, month]);
-
-  useEffect(() => {
-    fetchCalendarEvents();
-  }, [fetchCalendarEvents]);
-
   // 週間表示用 state
-  const [weekOffset, setWeekOffset] = useState(0); // 0=今週, -1=先週, +1=来週
+  const [weekOffset, setWeekOffset] = useState(0);
 
-  // 今週の月曜日を基準に weekOffset 分ずらした週の日付配列 (月〜日)
   const weekDays = useMemo(() => {
     const d = new Date(today + 'T00:00:00');
-    const dayOfWeek = d.getDay(); // 0=日
+    const dayOfWeek = d.getDay();
     const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
     d.setDate(d.getDate() + mondayOffset + weekOffset * 7);
     const days: string[] = [];
@@ -159,6 +127,52 @@ export function TaskSummaryPanel({
     }
     return map;
   }, [calendarEvents]);
+
+  // 予定追加フォーム
+  const [showAddEvent, setShowAddEvent] = useState(false);
+  const [newEventSummary, setNewEventSummary] = useState('');
+  const [newEventDate, setNewEventDate] = useState('');
+  const [newEventAllDay, setNewEventAllDay] = useState(false);
+  const [newEventStartTime, setNewEventStartTime] = useState('09:00');
+  const [newEventDuration, setNewEventDuration] = useState(60);
+  const [isCreatingEvent, setIsCreatingEvent] = useState(false);
+
+  const handleOpenAddEvent = (presetDate?: string) => {
+    setNewEventSummary('');
+    setNewEventDate(presetDate || today);
+    setNewEventAllDay(false);
+    setNewEventStartTime('09:00');
+    setNewEventDuration(60);
+    setShowAddEvent(true);
+  };
+
+  const handleCreateEvent = async () => {
+    if (!newEventSummary.trim() || !newEventDate) return;
+    setIsCreatingEvent(true);
+    try {
+      const session = (await supabase.auth.getSession()).data.session;
+      if (!session) return;
+      const res = await fetch('/api/integrations/google/calendar/events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          summary: newEventSummary.trim(),
+          date: newEventDate,
+          allDay: newEventAllDay,
+          startTime: newEventStartTime,
+          durationMinutes: newEventDuration,
+        }),
+      });
+      if (res.ok) {
+        setShowAddEvent(false);
+        onRefreshCalendar?.();
+      }
+    } catch { /* ignore */ }
+    finally { setIsCreatingEvent(false); }
+  };
 
   return (
     <div className="flex flex-col h-full gap-3">
@@ -270,6 +284,15 @@ export function TaskSummaryPanel({
           </div>
           {googleCalendarId && (
             <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => handleOpenAddEvent()}
+                className="flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                title="予定を追加"
+              >
+                <Plus className="w-3 h-3" />
+                追加
+              </button>
+              <span className="w-px h-3 bg-gray-200" />
               <button onClick={() => setWeekOffset(w => w - 1)} className="px-1 py-0.5 text-gray-400 hover:text-gray-600 text-xs">◀</button>
               <button
                 onClick={() => setWeekOffset(0)}
@@ -280,7 +303,7 @@ export function TaskSummaryPanel({
               <button onClick={() => setWeekOffset(w => w + 1)} className="px-1 py-0.5 text-gray-400 hover:text-gray-600 text-xs">▶</button>
               <span className="w-px h-3 bg-gray-200" />
               <button
-                onClick={fetchCalendarEvents}
+                onClick={onRefreshCalendar}
                 disabled={calendarLoading}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
                 title="更新"
@@ -300,6 +323,82 @@ export function TaskSummaryPanel({
           )}
         </div>
 
+        {/* 予定追加フォーム */}
+        {showAddEvent && (
+          <div className="px-3 py-2 bg-blue-50 border-b border-blue-200 flex-shrink-0">
+            <div className="flex items-center gap-2 mb-1.5">
+              <input
+                type="text"
+                placeholder="予定のタイトル"
+                value={newEventSummary}
+                onChange={(e) => setNewEventSummary(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.nativeEvent.isComposing) handleCreateEvent();
+                  if (e.key === 'Escape') setShowAddEvent(false);
+                }}
+                className="flex-1 text-xs px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+                disabled={isCreatingEvent}
+                autoFocus
+              />
+              <button
+                onClick={() => setShowAddEvent(false)}
+                className="text-gray-400 hover:text-gray-600 p-0.5"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={newEventDate}
+                onChange={(e) => setNewEventDate(e.target.value)}
+                className="text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+                disabled={isCreatingEvent}
+              />
+              <label className="flex items-center gap-1 text-xs text-gray-600">
+                <input
+                  type="checkbox"
+                  checked={newEventAllDay}
+                  onChange={(e) => setNewEventAllDay(e.target.checked)}
+                  className="rounded text-blue-600"
+                  disabled={isCreatingEvent}
+                />
+                終日
+              </label>
+              {!newEventAllDay && (
+                <>
+                  <input
+                    type="time"
+                    value={newEventStartTime}
+                    onChange={(e) => setNewEventStartTime(e.target.value)}
+                    className="text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+                    disabled={isCreatingEvent}
+                  />
+                  <select
+                    value={newEventDuration}
+                    onChange={(e) => setNewEventDuration(Number(e.target.value))}
+                    className="text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+                    disabled={isCreatingEvent}
+                  >
+                    <option value={30}>30分</option>
+                    <option value={60}>1時間</option>
+                    <option value={90}>1.5時間</option>
+                    <option value={120}>2時間</option>
+                    <option value={180}>3時間</option>
+                  </select>
+                </>
+              )}
+              <button
+                onClick={handleCreateEvent}
+                disabled={!newEventSummary.trim() || isCreatingEvent}
+                className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors ml-auto"
+              >
+                {isCreatingEvent ? '追加中...' : '追加'}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* カレンダー本体 */}
         <div className="flex-1 overflow-hidden">
           {!googleCalendarId ? (
@@ -314,14 +413,9 @@ export function TaskSummaryPanel({
             <div className="flex items-center justify-center h-32">
               <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
             </div>
-          ) : calendarError ? (
-            <div className="flex flex-col items-center justify-center h-32 text-gray-400 p-4">
-              <div className="text-xs text-red-500 mb-2">{calendarError}</div>
-              <button onClick={fetchCalendarEvents} className="text-[11px] text-blue-600 hover:text-blue-800">再試行</button>
-            </div>
           ) : (
             <div className="grid grid-cols-7 h-full">
-              {weekDays.map((dateStr, i) => {
+              {weekDays.map((dateStr) => {
                 const d = new Date(dateStr + 'T00:00:00');
                 const dayNum = d.getDate();
                 const dow = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
@@ -339,15 +433,19 @@ export function TaskSummaryPanel({
                     key={dateStr}
                     className={`flex flex-col border-r last:border-r-0 ${
                       isToday ? 'bg-blue-50/50' : ''
-                    } ${i === 0 ? '' : ''}`}
+                    }`}
                   >
                     {/* 曜日ヘッダー */}
-                    <div className={`text-center py-1 border-b text-[10px] font-medium ${
-                      isToday ? 'bg-blue-100 text-blue-700' :
-                      isSun ? 'text-red-500 bg-gray-50' :
-                      isSat ? 'text-blue-500 bg-gray-50' :
-                      'text-gray-500 bg-gray-50'
-                    }`}>
+                    <div
+                      className={`text-center py-1 border-b text-[10px] font-medium cursor-pointer hover:bg-gray-100 ${
+                        isToday ? 'bg-blue-100 text-blue-700' :
+                        isSun ? 'text-red-500 bg-gray-50' :
+                        isSat ? 'text-blue-500 bg-gray-50' :
+                        'text-gray-500 bg-gray-50'
+                      }`}
+                      onClick={() => handleOpenAddEvent(dateStr)}
+                      title="クリックで予定を追加"
+                    >
                       <div>{dow}</div>
                       <div className={`text-sm font-bold leading-tight ${
                         isToday ? 'text-blue-700' : 'text-gray-700'
