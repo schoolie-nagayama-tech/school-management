@@ -1041,6 +1041,12 @@ async function handleUpdateStudentProgress(
         .eq('id', existing.id);
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     }
+    // 進捗クリア時もスケジュールタスクの完了状態を再評価
+    try {
+      await syncScheduleTaskCompletionFromProgress(supabaseAdmin, schoolId, itemId);
+    } catch (syncErr) {
+      console.error('[courses/prep] auto-complete sync error (clear):', syncErr);
+    }
     return NextResponse.json({ success: true });
   }
 
@@ -1055,6 +1061,13 @@ async function handleUpdateStudentProgress(
       .from('course_prep_student_progress')
       .insert({ school_id: schoolId, student_id: studentId, item_id: itemId, status });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  // 自動完了同期: 進捗アイテムにリンクされたスケジュールタスクの完了状態を自動更新
+  try {
+    await syncScheduleTaskCompletionFromProgress(supabaseAdmin, schoolId, itemId);
+  } catch (syncErr) {
+    console.error('[courses/prep] auto-complete sync error:', syncErr);
   }
 
   return NextResponse.json({ success: true });
@@ -1143,6 +1156,91 @@ async function handleCreateScheduleTask(
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ data });
+}
+
+/**
+ * 進捗管理の全生徒完了チェック → リンクされたスケジュールタスク自動完了 → 業務進捗にカスケード
+ * itemId: course_prep_progress_items.id
+ */
+async function syncScheduleTaskCompletionFromProgress(
+  supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
+  schoolId: string,
+  itemId: string
+) {
+  // 1. このitemIdにリンクされたスケジュールタスクを取得
+  const { data: scheduleTasks } = await supabaseAdmin
+    .from('course_prep_schedule_tasks')
+    .select('id, is_completed')
+    .eq('linked_progress_item_id', itemId)
+    .eq('school_id', schoolId);
+
+  if (!scheduleTasks || scheduleTasks.length === 0) return;
+
+  // 2. 対象教室のアクティブ生徒数を取得
+  const { count: totalStudents } = await supabaseAdmin
+    .from('students')
+    .select('id', { count: 'exact', head: true })
+    .eq('school_id', schoolId)
+    .is('deleted_at', null);
+
+  if (!totalStudents || totalStudents === 0) return;
+
+  // 3. このitemIdの完了済み生徒数を取得
+  const { count: completedCount } = await supabaseAdmin
+    .from('course_prep_student_progress')
+    .select('id', { count: 'exact', head: true })
+    .eq('item_id', itemId)
+    .eq('school_id', schoolId)
+    .eq('status', 'completed');
+
+  const allCompleted = (completedCount || 0) >= totalStudents;
+
+  // 4. 各スケジュールタスクの完了状態を更新（変更がある場合のみ）
+  for (const task of scheduleTasks) {
+    if (task.is_completed === allCompleted) continue; // 変更なし
+
+    // スケジュールタスクを更新
+    await supabaseAdmin
+      .from('course_prep_schedule_tasks')
+      .update({ is_completed: allCompleted, updated_at: new Date().toISOString() })
+      .eq('id', task.id);
+
+    // 5. 業務進捗にカスケード同期
+    const { data: linkedMonthlyTask } = await supabaseAdmin
+      .from('monthly_tasks')
+      .select('id')
+      .eq('linked_schedule_task_id', task.id)
+      .maybeSingle();
+
+    if (linkedMonthlyTask) {
+      const { data: existingCheck } = await supabaseAdmin
+        .from('monthly_task_checks')
+        .select('id')
+        .eq('task_id', linkedMonthlyTask.id)
+        .eq('school_id', schoolId)
+        .maybeSingle();
+
+      if (existingCheck) {
+        await supabaseAdmin
+          .from('monthly_task_checks')
+          .update({
+            is_completed: allCompleted,
+            completed_at: allCompleted ? new Date().toISOString() : null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existingCheck.id);
+      } else if (allCompleted) {
+        await supabaseAdmin
+          .from('monthly_task_checks')
+          .insert({
+            task_id: linkedMonthlyTask.id,
+            school_id: schoolId,
+            is_completed: true,
+            completed_at: new Date().toISOString(),
+          });
+      }
+    }
+  }
 }
 
 async function handleUpdateScheduleTask(
