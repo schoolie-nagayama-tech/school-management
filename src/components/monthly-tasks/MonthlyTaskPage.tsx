@@ -20,6 +20,8 @@ import type { MonthlyTaskWithChecks, MonthlyTaskTemplate, MonthlyTaskCategory } 
 import { useToast } from '@/hooks/useToast';
 import { TaskCalendar } from './TaskCalendar';
 import { TaskDayPanel } from './TaskDayPanel';
+import { TaskListPanel } from './TaskListPanel';
+import { TaskSummaryPanel } from './TaskSummaryPanel';
 import { TaskPool } from './TaskPool';
 import { TemplateDialog } from './TemplateDialog';
 import {
@@ -29,6 +31,8 @@ import {
   Settings,
   AlertTriangle,
   Building2,
+  List,
+  Calendar as CalendarIcon,
 } from 'lucide-react';
 
 interface PoolItem {
@@ -58,6 +62,7 @@ export function MonthlyTaskPage() {
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [templates, setTemplates] = useState<MonthlyTaskTemplate[]>([]);
   const [poolItems, setPoolItems] = useState<PoolItem[]>([]);
+  const [layoutMode, setLayoutMode] = useState<'list' | 'calendar'>('list');
 
   // 編集権限
   const canEdit = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
@@ -339,34 +344,123 @@ export function MonthlyTaskPage() {
           </div>
         )}
 
-        {/* アクション */}
-        {canEdit && (
-          <div className="flex items-center gap-2 ml-auto">
+        {/* レイアウト切替 + アクション */}
+        <div className="flex items-center gap-2 ml-auto">
+          {/* レイアウト切替 */}
+          <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
             <button
-              onClick={handleSyncCourse}
-              disabled={isSyncing}
-              className="flex items-center gap-1 px-3 py-1.5 text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 rounded transition-colors disabled:opacity-50"
+              onClick={() => setLayoutMode('list')}
+              className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded-md transition-colors ${
+                layoutMode === 'list' ? 'bg-white shadow text-gray-900 font-medium' : 'text-gray-500 hover:text-gray-700'
+              }`}
+              title="タスクリスト + カレンダー"
             >
-              <Download className="w-3.5 h-3.5" />
-              {isSyncing ? '取込中...' : '講習取込'}
+              <List className="w-3.5 h-3.5" />
+              リスト
             </button>
             <button
-              onClick={handleOpenTemplateDialog}
-              className="flex items-center gap-1 px-3 py-1.5 text-xs bg-gray-50 text-gray-700 hover:bg-gray-100 rounded transition-colors"
+              onClick={() => setLayoutMode('calendar')}
+              className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded-md transition-colors ${
+                layoutMode === 'calendar' ? 'bg-white shadow text-gray-900 font-medium' : 'text-gray-500 hover:text-gray-700'
+              }`}
+              title="カレンダー表示"
             >
-              <Settings className="w-3.5 h-3.5" />
-              テンプレート
+              <CalendarIcon className="w-3.5 h-3.5" />
+              カレンダー
             </button>
           </div>
-        )}
+
+          {canEdit && (
+            <>
+              <button
+                onClick={handleSyncCourse}
+                disabled={isSyncing}
+                className="flex items-center gap-1 px-3 py-1.5 text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 rounded transition-colors disabled:opacity-50"
+              >
+                <Download className="w-3.5 h-3.5" />
+                {isSyncing ? '取込中...' : '講習取込'}
+              </button>
+              <button
+                onClick={handleOpenTemplateDialog}
+                className="flex items-center gap-1 px-3 py-1.5 text-xs bg-gray-50 text-gray-700 hover:bg-gray-100 rounded transition-colors"
+              >
+                <Settings className="w-3.5 h-3.5" />
+                テンプレート
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
-      {/* メインコンテンツ: カレンダー + パネル */}
+      {/* メインコンテンツ */}
       {isLoading ? (
         <div className="flex-1 flex items-center justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#d32f2f]" />
         </div>
+      ) : layoutMode === 'list' ? (
+        /* === リストモード（案C）: タスクリスト + サマリー＆Googleカレンダー === */
+        <div className="flex-1 flex gap-3 pt-3 min-h-0">
+          {/* 左カラム: タスクリスト */}
+          <div className="w-[360px] flex-shrink-0 flex flex-col gap-3 min-h-0">
+            <div className="flex-1 min-h-0">
+              <TaskListPanel
+                tasks={tasks}
+                schools={activeSchools}
+                year={year}
+                month={month}
+                selectedDate={selectedDate}
+                onSelectDate={setSelectedDate}
+                canEdit={canEdit}
+              />
+            </div>
+            {/* タスクプール（リストモードでも利用可能） */}
+            {canEdit && (
+              <TaskPool
+                templates={templates.length > 0 ? templates : []}
+                onLoadTemplate={handleLoadTemplateToCalendar}
+                onDropPoolItem={() => {}}
+                canEdit={canEdit}
+                poolItems={poolItems}
+                onSetPoolItems={setPoolItems}
+              />
+            )}
+          </div>
+
+          {/* 中央カラム: 選択日のタスク詳細 */}
+          <div className="w-[340px] flex-shrink-0 border border-gray-200 rounded-lg bg-white overflow-hidden">
+            {selectedDate ? (
+              <TaskDayPanel
+                date={selectedDate}
+                tasks={tasks}
+                schools={activeSchools}
+                year={year}
+                month={month}
+                canEdit={canEdit}
+                onToggleCheck={handleToggleCheck}
+                onCreateTask={handleCreateTask}
+                onUpdateTask={handleUpdateTask}
+                onDeleteTask={handleDeleteTask}
+                onUpdateNote={handleUpdateNote}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+                左のリストからタスクを選択してください
+              </div>
+            )}
+          </div>
+
+          {/* 右カラム: サマリー + Googleカレンダー */}
+          <div className="flex-1 min-w-[320px]">
+            <TaskSummaryPanel
+              tasks={tasks}
+              schools={activeSchools}
+              year={year}
+              month={month}
+            />
+          </div>
+        </div>
       ) : (
+        /* === カレンダーモード（従来表示） === */
         <div className="flex-1 flex gap-4 pt-3 min-h-0">
           {/* 左カラム: カレンダー + 教室別進捗 + プール */}
           <div className="w-[420px] flex-shrink-0 flex flex-col gap-3 overflow-y-auto">
