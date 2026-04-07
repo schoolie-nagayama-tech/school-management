@@ -22,6 +22,7 @@ interface BillingTableProps {
   schoolIds?: string | string[];  // For 5th week auto-calc
   billingPeriodId?: string;  // For form sync and 5th week calc
   billingPeriodName?: string;  // For 5th week dialog display
+  onStockChange?: (itemName: string, delta: number) => void;  // 在庫増減通知（計上時-1, 解除時+1）
 }
 
 export function BillingTable({
@@ -36,6 +37,7 @@ export function BillingTable({
   schoolIds,
   billingPeriodId,
   billingPeriodName,
+  onStockChange,
 }: BillingTableProps) {
   const { profile } = useAuth();
   const isTeacher = profile?.role === 'teacher';
@@ -196,8 +198,19 @@ export function BillingTable({
     const key = `${studentId}-${itemId}`;
     setUpdatingCells((prev) => new Set(prev).add(key));
     try {
-      await updateBillingValue(studentId, itemId, { is_billed: !currentBilling?.is_billed });
-      onBillingChange(studentId, itemId, !currentBilling?.is_billed);
+      const newIsBilled = !currentBilling?.is_billed;
+      await updateBillingValue(studentId, itemId, { is_billed: newIsBilled });
+      onBillingChange(studentId, itemId, newIsBilled);
+
+      // 単語練習帳の計上/解除時に在庫を連動
+      if (onStockChange) {
+        const item = items.find(i => i.id === itemId);
+        if (item && item.name === '単語練習帳') {
+          // 計上時: 在庫 -1, 解除時: 在庫 +1
+          const qty = (currentBilling?.value_number ?? 1);
+          onStockChange(item.name, newIsBilled ? -qty : qty);
+        }
+      }
     } catch (err) {
       toastError(err instanceof Error ? err.message : '計上の更新に失敗しました');
     } finally {
@@ -697,9 +710,9 @@ export function BillingTable({
                             />
                           ) : (
                             <div className="flex flex-col items-center gap-0.5">
-                              {/* テキスト表示 */}
+                              {/* テキスト表示（複数行対応） */}
                               <span
-                                className={`text-xs truncate max-w-[80px] ${
+                                className={`text-xs whitespace-pre-wrap break-all text-left leading-tight ${
                                   hasValue ? (isBilled ? 'text-green-700' : 'text-[#1e3a5f]') : 'text-gray-300'
                                 }`}
                               >

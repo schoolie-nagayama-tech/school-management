@@ -7,6 +7,7 @@ import {
   BillingPeriodSelector,
   BillingTable,
   BillingItemAccordion,
+  VocabBookStockCard,
 } from '@/components/billing';
 import type { BillingFilters } from '@/components/billing';
 import { StudentDetailModal } from '@/components/students';
@@ -52,6 +53,9 @@ export default function BillingPage() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // 単語練習帳の在庫変動累積値
+  const [stockDelta, setStockDelta] = useState(0);
 
   // フィルター状態
   const [filters, setFilters] = useState<BillingFilters>({
@@ -341,19 +345,31 @@ export default function BillingPage() {
           )}
         </div>
       ) : (
-        <BillingTable
-          students={filteredStudents}
-          items={items}
-          billings={billings}
-          onBillingChange={canEdit ? handleBillingChange : undefined}
-          onStudentClick={handleStudentClick}
-          onItemsChange={handleItemsUpdated}
-          periodStartDate={periods.find(p => p.id === selectedPeriodId)?.start_date}
-          periodEndDate={periods.find(p => p.id === selectedPeriodId)?.end_date}
-          schoolIds={getSelectedSchoolIds()}
-          billingPeriodId={selectedPeriodId || undefined}
-          billingPeriodName={periods.find(p => p.id === selectedPeriodId)?.name}
-        />
+        <>
+          {/* 単語練習帳在庫カード */}
+          {schoolIds.length > 0 && (
+            <div className="mb-3">
+              <VocabBookStockCard
+                schoolIds={schoolIds}
+                stockDelta={stockDelta}
+              />
+            </div>
+          )}
+          <BillingTable
+            students={filteredStudents}
+            items={items}
+            billings={billings}
+            onBillingChange={canEdit ? handleBillingChange : undefined}
+            onStudentClick={handleStudentClick}
+            onItemsChange={handleItemsUpdated}
+            periodStartDate={periods.find(p => p.id === selectedPeriodId)?.start_date}
+            periodEndDate={periods.find(p => p.id === selectedPeriodId)?.end_date}
+            schoolIds={getSelectedSchoolIds()}
+            billingPeriodId={selectedPeriodId || undefined}
+            billingPeriodName={periods.find(p => p.id === selectedPeriodId)?.name}
+            onStockChange={(_itemName, delta) => setStockDelta(prev => prev + delta)}
+          />
+        </>
       )}
 
       {/* 生徒詳細モーダル */}
