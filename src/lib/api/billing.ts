@@ -412,7 +412,7 @@ export async function autoFillFifthWeekBilling(
       .from('students')
       .select('id, school_id')
       .in('school_id', targetSchoolIds)
-      .eq('is_deleted', false);
+      .is('deleted_at', null);
 
     if (studentsError) throw new Error(`生徒の取得に失敗: ${studentsError.message}`);
     if (!students || students.length === 0) return { updated: 0, skipped: 0 };
@@ -452,7 +452,7 @@ export async function autoFillFifthWeekBilling(
     .from('students')
     .select('id, school_id')
     .in('school_id', targetSchoolIds)
-    .eq('is_deleted', false);
+    .is('deleted_at', null);
 
   if (studentsError) throw new Error(`生徒の取得に失敗: ${studentsError.message}`);
   if (!allStudents || allStudents.length === 0) return { updated: 0, skipped: 0 };
@@ -902,7 +902,7 @@ export async function calcFifthWeekBilling(
       .from('students')
       .select('id, school_id')
       .in('school_id', targetSchoolIds)
-      .eq('is_deleted', false);
+      .is('deleted_at', null);
 
     if (studentsError) throw new Error(`生徒の取得に失敗: ${studentsError.message}`);
     if (!students || students.length === 0) return { updated: 0, skipped: 0 };
@@ -955,7 +955,7 @@ export async function calcFifthWeekBilling(
     .from('students')
     .select('id, school_id')
     .in('school_id', targetSchoolIds)
-    .eq('is_deleted', false);
+    .is('deleted_at', null);
 
   if (allStudentsError) throw new Error(`生徒の取得に失敗: ${allStudentsError.message}`);
   if (!allStudents || allStudents.length === 0) return { updated: 0, skipped: 0 };
