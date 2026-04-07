@@ -220,6 +220,23 @@ export function MonthlyTaskPage() {
     [fetchTasks, success, toastError]
   );
 
+  // タスク日付移動（ドラッグ&ドロップ）
+  const handleMoveTask = useCallback(
+    async (taskId: string, newDate: string) => {
+      // 楽観的更新
+      setTasks((prev) =>
+        prev.map((t) => (t.id === taskId ? { ...t, task_date: newDate } : t))
+      );
+      try {
+        await updateTask(taskId, { task_date: newDate });
+      } catch {
+        toastError('タスクの移動に失敗しました');
+        fetchTasks();
+      }
+    },
+    [fetchTasks, toastError]
+  );
+
   // タスク削除
   const handleDeleteTask = useCallback(
     async (taskId: string) => {
@@ -389,6 +406,7 @@ export function MonthlyTaskPage() {
                 onCreateTask={handleCreateTask}
                 onDeleteTask={handleDeleteTask}
                 onUpdateTask={handleUpdateTask}
+                onMoveTask={handleMoveTask}
                 canEdit={canEdit}
               />
             </div>

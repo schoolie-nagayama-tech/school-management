@@ -441,12 +441,13 @@ export async function POST(request: NextRequest) {
           return NextResponse.json({ error: 'year, month, name は必須です' }, { status: 400 });
         }
 
-        // 現在の月のタスクを取得
+        // 現在の月の業務タスクのみ取得（講習タスクはテンプレートに含めない）
         const { data: tasks, error: taskErr } = await supabaseAdmin
           .from('monthly_tasks')
           .select('task_date, task_name, category, sort_order')
           .eq('year', year)
           .eq('month', month)
+          .eq('category', 'business')
           .order('task_date')
           .order('sort_order');
 

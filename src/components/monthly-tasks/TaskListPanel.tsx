@@ -15,6 +15,7 @@ interface TaskListPanelProps {
   onCreateTask?: (taskDate: string, taskName: string, category: 'business' | 'course', note?: string, url?: string) => Promise<void>;
   onDeleteTask?: (taskId: string) => Promise<void>;
   onUpdateTask?: (taskId: string, updates: Record<string, unknown>) => Promise<void>;
+  onMoveTask?: (taskId: string, newDate: string) => Promise<void>;
   canEdit: boolean;
 }
 
@@ -39,6 +40,7 @@ export function TaskListPanel({
   onCreateTask,
   onDeleteTask,
   onUpdateTask,
+  onMoveTask,
   canEdit,
 }: TaskListPanelProps) {
   const [filter, setFilter] = useState<'all' | 'incomplete' | 'overdue'>('all');
@@ -54,6 +56,8 @@ export function TaskListPanel({
   const [editUrl, setEditUrl] = useState('');
   const [editNote, setEditNote] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [dragOverDate, setDragOverDate] = useState<string | null>(null);
+  const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
   const addInputRef = useRef<HTMLInputElement>(null);
   const today = getToday();
   const schoolIds = schools.map(s => s.id);
@@ -109,6 +113,39 @@ export function TaskListPanel({
       setExpandedTaskId(null);
     } catch { /* handled by parent */ }
     finally { setIsSaving(false); }
+  };
+
+  // ドラッグ&ドロップ: タスクを別の日付に移動
+  const handleDragStart = (e: React.DragEvent, taskId: string, sourceDate: string) => {
+    e.dataTransfer.setData('taskId', taskId);
+    e.dataTransfer.setData('sourceDate', sourceDate);
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggingTaskId(taskId);
+  };
+
+  const handleDragOver = (e: React.DragEvent, date: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverDate(date);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverDate(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetDate: string) => {
+    e.preventDefault();
+    setDragOverDate(null);
+    setDraggingTaskId(null);
+    const taskId = e.dataTransfer.getData('taskId');
+    const sourceDate = e.dataTransfer.getData('sourceDate');
+    if (!taskId || sourceDate === targetDate || !onMoveTask) return;
+    await onMoveTask(taskId, targetDate);
+  };
+
+  const handleDragEnd = () => {
+    setDragOverDate(null);
+    setDraggingTaskId(null);
   };
 
   const filtered = useMemo(() => {
@@ -299,9 +336,10 @@ export function TaskListPanel({
 
             return (
               <div key={date}>
-                {/* Date header */}
+                {/* Date header (drop target) */}
                 <div
-                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-bold border-b sticky top-0 z-10 cursor-pointer select-none ${
+                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-bold border-b sticky top-0 z-10 cursor-pointer select-none transition-all ${
+                    dragOverDate === date ? 'bg-blue-100 border-blue-400 ring-1 ring-blue-400' :
                     isToday ? 'bg-blue-50 text-blue-700 border-blue-200' :
                     isSelected ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
                     isOverdue && !allDateDone ? 'bg-red-50 text-red-600 border-red-100' :
@@ -311,6 +349,9 @@ export function TaskListPanel({
                     onSelectDate(date);
                     toggleCollapse(date);
                   }}
+                  onDragOver={(e) => handleDragOver(e, date)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, date)}
                 >
                   {isCollapsed ? (
                     <ChevronRight className="w-3 h-3" />
@@ -341,10 +382,13 @@ export function TaskListPanel({
                       <div
                         className={`flex items-center gap-2 px-3 py-2 border-b border-gray-50 transition-colors group cursor-pointer ${
                           isSelected ? 'bg-blue-50/30' : 'hover:bg-gray-50'
-                        } ${isExpanded ? 'bg-blue-50/50' : ''}`}
+                        } ${isExpanded ? 'bg-blue-50/50' : ''} ${draggingTaskId === task.id ? 'opacity-40' : ''}`}
                         onClick={() => handleExpandTask(task)}
+                        draggable={canEdit && !!onMoveTask}
+                        onDragStart={(e) => handleDragStart(e, task.id, task.task_date)}
+                        onDragEnd={handleDragEnd}
                       >
-                        <GripVertical className="w-3 h-3 text-gray-300 flex-shrink-0" />
+                        <GripVertical className={`w-3 h-3 flex-shrink-0 ${canEdit && onMoveTask ? 'text-gray-400 cursor-grab active:cursor-grabbing' : 'text-gray-300'}`} />
                         {/* 完了トグル */}
                         <button
                           onClick={(e) => {
