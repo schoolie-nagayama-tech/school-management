@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import type { MonthlyTaskWithChecks, School } from '@/types/database';
-import { CheckCircle2, Circle, GripVertical, Plus, ChevronDown, ChevronRight } from 'lucide-react';
+import { CheckCircle2, Circle, GripVertical, Plus, ChevronDown, ChevronRight, Trash2 } from 'lucide-react';
 
 interface TaskListPanelProps {
   tasks: MonthlyTaskWithChecks[];
@@ -12,6 +12,8 @@ interface TaskListPanelProps {
   selectedDate: string | null;
   onSelectDate: (date: string) => void;
   onToggleCheck: (taskId: string, schoolId: string, isCompleted: boolean) => void;
+  onCreateTask?: (taskDate: string, taskName: string, category: 'business' | 'course') => Promise<void>;
+  onDeleteTask?: (taskId: string) => Promise<void>;
   canEdit: boolean;
 }
 
@@ -28,17 +30,52 @@ function getToday() {
 export function TaskListPanel({
   tasks,
   schools,
-  year: _year,
-  month: _month,
+  year,
+  month,
   selectedDate,
   onSelectDate,
   onToggleCheck,
+  onCreateTask,
+  onDeleteTask,
   canEdit,
 }: TaskListPanelProps) {
   const [filter, setFilter] = useState<'all' | 'incomplete' | 'overdue'>('all');
   const [collapsedDates, setCollapsedDates] = useState<Set<string>>(new Set());
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newTaskName, setNewTaskName] = useState('');
+  const [newTaskDate, setNewTaskDate] = useState('');
+  const [newTaskCategory, setNewTaskCategory] = useState<'business' | 'course'>('business');
+  const [isCreating, setIsCreating] = useState(false);
+  const addInputRef = useRef<HTMLInputElement>(null);
   const today = getToday();
   const schoolIds = schools.map(s => s.id);
+
+  // フォームを開いたらフォーカス
+  useEffect(() => {
+    if (showAddForm && addInputRef.current) {
+      addInputRef.current.focus();
+    }
+  }, [showAddForm]);
+
+  const handleOpenAddForm = () => {
+    // デフォルト日付: 選択中の日付 or 今日
+    const defaultDate = selectedDate || `${year}-${String(month).padStart(2, '0')}-01`;
+    setNewTaskDate(defaultDate);
+    setNewTaskName('');
+    setNewTaskCategory('business');
+    setShowAddForm(true);
+  };
+
+  const handleAddTask = async () => {
+    if (!newTaskName.trim() || !newTaskDate || !onCreateTask) return;
+    setIsCreating(true);
+    try {
+      await onCreateTask(newTaskDate, newTaskName.trim(), newTaskCategory);
+      setShowAddForm(false);
+      setNewTaskName('');
+    } catch { /* handled by parent */ }
+    finally { setIsCreating(false); }
+  };
 
   const filtered = useMemo(() => {
     return tasks.filter(t => {
@@ -117,16 +154,65 @@ export function TaskListPanel({
         {canEdit && (
           <button
             className="flex items-center gap-1 px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors ml-auto"
-            onClick={() => {
-              // 選択中の日付のタスク追加へ
-              if (selectedDate) onSelectDate(selectedDate);
-            }}
+            onClick={handleOpenAddForm}
           >
             <Plus className="w-3 h-3" />
             追加
           </button>
         )}
       </div>
+
+      {/* 追加フォーム */}
+      {showAddForm && (
+        <div className="px-3 py-2 bg-blue-50 border-b border-blue-200">
+          <div className="flex items-center gap-2 mb-1.5">
+            <input
+              ref={addInputRef}
+              type="text"
+              placeholder="タスク名を入力..."
+              value={newTaskName}
+              onChange={(e) => setNewTaskName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.nativeEvent.isComposing) handleAddTask();
+                if (e.key === 'Escape') setShowAddForm(false);
+              }}
+              className="flex-1 text-xs px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+              disabled={isCreating}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={newTaskDate}
+              onChange={(e) => setNewTaskDate(e.target.value)}
+              className="text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+              disabled={isCreating}
+            />
+            <select
+              value={newTaskCategory}
+              onChange={(e) => setNewTaskCategory(e.target.value as 'business' | 'course')}
+              className="text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+              disabled={isCreating}
+            >
+              <option value="business">業務</option>
+              <option value="course">講習</option>
+            </select>
+            <button
+              onClick={handleAddTask}
+              disabled={!newTaskName.trim() || isCreating}
+              className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              {isCreating ? '追加中...' : '追加'}
+            </button>
+            <button
+              onClick={() => setShowAddForm(false)}
+              className="text-xs px-2 py-1 text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              キャンセル
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Task list */}
       <div className="flex-1 overflow-y-auto">
@@ -192,7 +278,7 @@ export function TaskListPanel({
                   return (
                     <div
                       key={task.id}
-                      className={`flex items-center gap-2 px-3 py-2 border-b border-gray-50 transition-colors ${
+                      className={`flex items-center gap-2 px-3 py-2 border-b border-gray-50 transition-colors group ${
                         isSelected ? 'bg-blue-50/30' : 'hover:bg-gray-50'
                       }`}
                     >
@@ -248,6 +334,19 @@ export function TaskListPanel({
                           );
                         })}
                       </div>
+                      {/* 削除ボタン（リンクされていないタスクのみ） */}
+                      {canEdit && !task.linked_schedule_task_id && onDeleteTask && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteTask(task.id);
+                          }}
+                          className="flex-shrink-0 p-0.5 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                          title="削除"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
                     </div>
                   );
                 })}

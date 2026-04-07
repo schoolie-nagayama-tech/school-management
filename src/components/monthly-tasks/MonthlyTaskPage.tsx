@@ -6,6 +6,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import {
   getMonthlyTasks,
   toggleCheck,
+  createTask,
+  deleteTask,
   generateFromTemplate,
   syncCourseTasks,
   deleteCourseTasks,
@@ -175,6 +177,30 @@ export function MonthlyTaskPage() {
     [fetchTasks, toastError]
   );
 
+  // タスク追加
+  const handleCreateTask = useCallback(
+    async (taskDate: string, taskName: string, category: 'business' | 'course') => {
+      try {
+        await createTask({ year, month, task_date: taskDate, category, task_name: taskName });
+        success('タスクを追加しました');
+        fetchTasks();
+      } catch { toastError('タスクの追加に失敗しました'); }
+    },
+    [year, month, fetchTasks, success, toastError]
+  );
+
+  // タスク削除
+  const handleDeleteTask = useCallback(
+    async (taskId: string) => {
+      try {
+        await deleteTask(taskId);
+        setTasks((prev) => prev.filter((t) => t.id !== taskId));
+        success('タスクを削除しました');
+      } catch { toastError('タスクの削除に失敗しました'); }
+    },
+    [success, toastError]
+  );
+
   // 講習タスク取り込み
   const handleSyncCourse = async () => {
     setIsSyncing(true);
@@ -329,6 +355,8 @@ export function MonthlyTaskPage() {
                 selectedDate={selectedDate}
                 onSelectDate={setSelectedDate}
                 onToggleCheck={handleToggleCheck}
+                onCreateTask={handleCreateTask}
+                onDeleteTask={handleDeleteTask}
                 canEdit={canEdit}
               />
             </div>
