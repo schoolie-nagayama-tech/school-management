@@ -319,6 +319,16 @@ export async function GET(request: NextRequest) {
         const progressRateMap: Record<string, { total: number; completed: number }> = {};
         if (linkedItemIds.length > 0) {
           const uniqueItemIds = Array.from(new Set(linkedItemIds));
+
+          // 対象生徒数を母数にする
+          const { count: studentCount } = await supabaseAdmin
+            .from('students')
+            .select('id', { count: 'exact', head: true })
+            .eq('school_id', schoolId)
+            .is('deleted_at', null);
+
+          const totalStudents = studentCount || 0;
+
           const { data: progressData } = await supabaseAdmin
             .from('course_prep_student_progress')
             .select('item_id, status')
@@ -327,7 +337,7 @@ export async function GET(request: NextRequest) {
           for (const itemId of uniqueItemIds) {
             const related = (progressData || []).filter((p: { item_id: string }) => p.item_id === itemId);
             const completed = related.filter((p: { status: string }) => p.status === 'completed').length;
-            progressRateMap[itemId] = { total: related.length, completed };
+            progressRateMap[itemId] = { total: totalStudents, completed };
           }
         }
 
@@ -587,6 +597,15 @@ export async function GET(request: NextRequest) {
             const progressRateMap: Record<string, { total: number; completed: number }> = {};
             if (linkedItemIds.length > 0) {
               const uniqueIds = Array.from(new Set(linkedItemIds));
+
+              // 対象生徒数を母数にする
+              const { count: studentCount } = await supabaseAdmin
+                .from('students')
+                .select('id', { count: 'exact', head: true })
+                .eq('school_id', schoolId)
+                .is('deleted_at', null);
+              const totalStudents = studentCount || 0;
+
               const { data: progressData } = await supabaseAdmin
                 .from('course_prep_student_progress')
                 .select('item_id, status')
@@ -594,7 +613,7 @@ export async function GET(request: NextRequest) {
               for (const itemId of uniqueIds) {
                 const related = (progressData || []).filter((p: { item_id: string }) => p.item_id === itemId);
                 const completed = related.filter((p: { status: string }) => p.status === 'completed').length;
-                progressRateMap[itemId] = { total: related.length, completed };
+                progressRateMap[itemId] = { total: totalStudents, completed };
               }
             }
             batchResult.schedule_tasks = tasks.map((t: { id: string; linked_progress_item_id: string | null }) => ({

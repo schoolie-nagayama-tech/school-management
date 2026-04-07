@@ -38,11 +38,11 @@ function isOverdue(task: ScheduleTaskWithMarkers, today: Date): boolean {
   if (task.is_completed) return false;
   const deadline = task.end_date || task.start_date;
   if (!deadline) return false;
-  return new Date(deadline) < today;
+  return new Date(deadline + 'T00:00:00') < today;
 }
 /** 日付の短縮表示 */
 function shortDate(dateStr: string): string {
-  const d = new Date(dateStr);
+  const d = new Date(dateStr + 'T00:00:00');
   return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
@@ -315,16 +315,21 @@ export function ScheduleGanttChart({
     onUpdateTask?.(taskId, { linked_progress_item_id: itemId });
   }, [onUpdateTask]);
 
+  // 日付文字列をローカルタイムゾーンのDateに変換（UTCズレ防止）
+  const toLocalDate = useCallback((dateStr: string): Date => {
+    return new Date(dateStr + 'T00:00:00');
+  }, []);
+
   const isInBar = useCallback((task: ScheduleTaskWithMarkers, date: Date): boolean => {
     if (!task.start_date || !task.end_date) return false;
-    return date >= new Date(task.start_date) && date <= new Date(task.end_date);
-  }, []);
+    return date >= toLocalDate(task.start_date) && date <= toLocalDate(task.end_date);
+  }, [toLocalDate]);
   const isBarStart = useCallback((task: ScheduleTaskWithMarkers, date: Date): boolean => {
-    return task.start_date ? isSameDay(new Date(task.start_date), date) : false;
-  }, []);
+    return task.start_date ? isSameDay(toLocalDate(task.start_date), date) : false;
+  }, [toLocalDate]);
   const isBarEnd = useCallback((task: ScheduleTaskWithMarkers, date: Date): boolean => {
-    return task.end_date ? isSameDay(new Date(task.end_date), date) : false;
-  }, []);
+    return task.end_date ? isSameDay(toLocalDate(task.end_date), date) : false;
+  }, [toLocalDate]);
   const getMarker = useCallback((task: ScheduleTaskWithMarkers, dateStr: string): ScheduleMarker | undefined => {
     return task.markers.find((m) => m.marker_date === dateStr);
   }, []);
