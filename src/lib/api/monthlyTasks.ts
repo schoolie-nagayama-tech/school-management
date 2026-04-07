@@ -59,7 +59,7 @@ async function postTaskApi(body: Record<string, unknown>): Promise<Record<string
 }
 
 export async function createTask(params: {
-  year: number; month: number; task_date: string; category: string; task_name: string; sort_order?: number;
+  year: number; month: number; task_date: string; category: string; task_name: string; sort_order?: number; note?: string; url?: string;
 }) {
   const result = await postTaskApi({ action: 'create_task', ...params });
   return result.data as MonthlyTaskWithChecks;

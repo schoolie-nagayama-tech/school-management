@@ -7,6 +7,7 @@ import {
   getMonthlyTasks,
   toggleCheck,
   createTask,
+  updateTask,
   deleteTask,
   generateFromTemplate,
   syncCourseTasks,
@@ -197,14 +198,26 @@ export function MonthlyTaskPage() {
 
   // タスク追加
   const handleCreateTask = useCallback(
-    async (taskDate: string, taskName: string, category: 'business' | 'course') => {
+    async (taskDate: string, taskName: string, category: 'business' | 'course', note?: string, url?: string) => {
       try {
-        await createTask({ year, month, task_date: taskDate, category, task_name: taskName });
+        await createTask({ year, month, task_date: taskDate, category, task_name: taskName, note, url });
         success('タスクを追加しました');
         fetchTasks();
       } catch { toastError('タスクの追加に失敗しました'); }
     },
     [year, month, fetchTasks, success, toastError]
+  );
+
+  // タスク更新
+  const handleUpdateTask = useCallback(
+    async (taskId: string, updates: Record<string, unknown>) => {
+      try {
+        await updateTask(taskId, updates);
+        success('タスクを更新しました');
+        fetchTasks();
+      } catch { toastError('タスクの更新に失敗しました'); }
+    },
+    [fetchTasks, success, toastError]
   );
 
   // タスク削除
@@ -375,6 +388,7 @@ export function MonthlyTaskPage() {
                 onToggleCheck={handleToggleCheck}
                 onCreateTask={handleCreateTask}
                 onDeleteTask={handleDeleteTask}
+                onUpdateTask={handleUpdateTask}
                 canEdit={canEdit}
               />
             </div>

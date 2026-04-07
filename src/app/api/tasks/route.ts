@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
     switch (action) {
       case 'create_task': {
         if (!canEdit) return NextResponse.json({ error: '権限がありません' }, { status: 403 });
-        const { year, month, task_date, category, task_name, sort_order } = body;
+        const { year, month, task_date, category, task_name, sort_order, note, url } = body;
         if (!year || !month || !task_date || !category || !task_name) {
           return NextResponse.json({ error: '必須項目が不足しています' }, { status: 400 });
         }
@@ -154,6 +154,8 @@ export async function POST(request: NextRequest) {
           .insert({
             year, month, task_date, category, task_name,
             sort_order: sort_order ?? 0,
+            note: note || null,
+            url: url || null,
             created_by: auth.userId,
           })
           .select()
@@ -167,7 +169,7 @@ export async function POST(request: NextRequest) {
         const { taskId, updates } = body;
         if (!taskId) return NextResponse.json({ error: 'taskId は必須です' }, { status: 400 });
 
-        const allowedFields = ['task_name', 'task_date', 'category', 'note', 'sort_order'];
+        const allowedFields = ['task_name', 'task_date', 'category', 'note', 'url', 'sort_order'];
         const filteredUpdates: Record<string, unknown> = {};
         for (const key of allowedFields) {
           if (updates[key] !== undefined) filteredUpdates[key] = updates[key];
