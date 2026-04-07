@@ -128,6 +128,53 @@ export function TaskSummaryPanel({
     return map;
   }, [calendarEvents]);
 
+  // D&D: タスクカード → カレンダー
+  const [calDropDate, setCalDropDate] = useState<string | null>(null);
+  const [isTaskDragging, setIsTaskDragging] = useState(false);
+
+  const handleTaskDragStart = (e: React.DragEvent, taskName: string, taskDate: string) => {
+    e.dataTransfer.setData('text/task-name', taskName);
+    e.dataTransfer.setData('text/task-date', taskDate);
+    e.dataTransfer.effectAllowed = 'copy';
+    setIsTaskDragging(true);
+  };
+
+  const handleTaskDragEnd = () => {
+    setIsTaskDragging(false);
+    setCalDropDate(null);
+  };
+
+  const handleCalDragOver = (e: React.DragEvent, dateStr: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    setCalDropDate(dateStr);
+  };
+
+  const handleCalDragLeave = () => {
+    setCalDropDate(null);
+  };
+
+  const handleCalDrop = async (e: React.DragEvent, dateStr: string) => {
+    e.preventDefault();
+    setCalDropDate(null);
+    setIsTaskDragging(false);
+    const taskName = e.dataTransfer.getData('text/task-name');
+    if (!taskName || !googleCalendarId) return;
+    // 終日イベントとして即作成
+    try {
+      const session = (await supabase.auth.getSession()).data.session;
+      if (!session) return;
+      const res = await fetch('/api/integrations/google/calendar/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ summary: taskName, date: dateStr, allDay: true }),
+      });
+      if (res.ok) {
+        onRefreshCalendar?.();
+      }
+    } catch { /* ignore */ }
+  };
+
   // 予定追加フォーム
   const [showAddEvent, setShowAddEvent] = useState(false);
   const [newEventSummary, setNewEventSummary] = useState('');
@@ -249,6 +296,9 @@ export function TaskSummaryPanel({
           <Clock className="w-3.5 h-3.5 text-gray-500" />
           <span className="text-xs font-bold text-gray-600">今後7日間のタスク</span>
           <span className="text-[10px] text-gray-400">({upcomingTasks.length}件)</span>
+          {googleCalendarId && upcomingTasks.length > 0 && !isTaskDragging && (
+            <span className="text-[9px] text-gray-300 ml-auto">カレンダーにD&D可</span>
+          )}
         </div>
         {upcomingTasks.length === 0 ? (
           <div className="text-xs text-gray-400">今後7日間に未完了タスクはありません</div>
@@ -259,11 +309,17 @@ export function TaskSummaryPanel({
               return (
                 <div
                   key={task.id}
+                  draggable={!!googleCalendarId}
+                  onDragStart={(e) => handleTaskDragStart(e, task.task_name, task.task_date)}
+                  onDragEnd={handleTaskDragEnd}
                   className={`flex items-center gap-1.5 px-2 py-1 rounded text-[11px] border ${
+                    googleCalendarId ? 'cursor-grab active:cursor-grabbing' : ''
+                  } ${
                     task.category === 'business'
                       ? 'bg-orange-50 border-orange-200 text-orange-700'
                       : 'bg-purple-50 border-purple-200 text-purple-700'
                   }`}
+                  title={googleCalendarId ? 'カレンダーにD&Dで予定追加' : ''}
                 >
                   <span className="font-medium">{dayNum}日</span>
                   <span>{task.task_name}</span>
@@ -431,13 +487,18 @@ export function TaskSummaryPanel({
                 return (
                   <div
                     key={dateStr}
-                    className={`flex flex-col border-r last:border-r-0 ${
+                    className={`flex flex-col border-r last:border-r-0 transition-colors ${
+                      calDropDate === dateStr ? 'bg-green-50 ring-2 ring-inset ring-green-400' :
                       isToday ? 'bg-blue-50/50' : ''
                     }`}
+                    onDragOver={(e) => handleCalDragOver(e, dateStr)}
+                    onDragLeave={handleCalDragLeave}
+                    onDrop={(e) => handleCalDrop(e, dateStr)}
                   >
                     {/* 曜日ヘッダー */}
                     <div
                       className={`text-center py-1 border-b text-[10px] font-medium cursor-pointer hover:bg-gray-100 ${
+                        calDropDate === dateStr ? 'bg-green-100 text-green-700' :
                         isToday ? 'bg-blue-100 text-blue-700' :
                         isSun ? 'text-red-500 bg-gray-50' :
                         isSat ? 'text-blue-500 bg-gray-50' :
