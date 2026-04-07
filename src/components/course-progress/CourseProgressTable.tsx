@@ -590,6 +590,81 @@ export function CourseProgressTable({
                 return headerCells;
               })}
             </tr>
+
+            {/* ===== 列集計行（ヘッダー下） ===== */}
+            <tr className="bg-gray-100/60">
+              <th
+                colSpan={3}
+                className="sticky left-0 z-30 bg-gray-100 px-2 py-0.5 text-[9px] font-bold text-gray-500 border-b border-gray-300 text-left"
+                style={{ width: LEFT_TOTAL, minWidth: LEFT_TOTAL }}
+              >
+                集計
+              </th>
+              {columnGroups.flatMap((g) => {
+                const cells = g.items.map((item) => {
+                  const agg = columnAggregates[item.id];
+                  const groupColor = g.color;
+
+                  if (item.column_type === 'check') {
+                    const pct = agg && agg.total > 0 ? Math.round((agg.completed / agg.total) * 100) : 0;
+                    return (
+                      <th key={item.id} className="border-b border-gray-300 p-0 text-center font-normal">
+                        <Tooltip text={`${agg?.completed ?? 0}/${agg?.total ?? 0} 完了`}>
+                          <div className="w-full py-0.5 flex flex-col items-center justify-center">
+                            <span className="text-[9px] font-bold" style={{ color: pct >= 80 ? '#10b981' : pct >= 50 ? '#f59e0b' : '#ef4444' }}>
+                              {pct}%
+                            </span>
+                            <span className="text-[8px] text-gray-400 leading-none">{agg?.completed ?? 0}/{agg?.total ?? 0}</span>
+                          </div>
+                        </Tooltip>
+                      </th>
+                    );
+                  }
+
+                  if (item.column_type === 'number') {
+                    return (
+                      <th key={item.id} className="border-b border-gray-300 p-0 text-center font-normal">
+                        <Tooltip text={`合計: ${agg?.sum ?? 0}（${agg?.filled ?? 0}名入力済み）`}>
+                          <div className="w-full py-0.5 flex flex-col items-center justify-center">
+                            <span className="text-[9px] font-bold" style={{ color: groupColor }}>{agg?.sum ?? 0}</span>
+                            <span className="text-[8px] text-gray-400 leading-none">{agg?.filled ?? 0}名</span>
+                          </div>
+                        </Tooltip>
+                      </th>
+                    );
+                  }
+
+                  if (item.column_type === 'date') {
+                    return (
+                      <th key={item.id} className="border-b border-gray-300 p-0 text-center font-normal">
+                        <Tooltip text={`${agg?.filled ?? 0}/${students.length}名 入力済み`}>
+                          <div className="w-full py-0.5 flex flex-col items-center justify-center">
+                            <span className="text-[9px] font-bold" style={{ color: groupColor }}>
+                              {agg?.filled ?? 0}/{students.length}
+                            </span>
+                          </div>
+                        </Tooltip>
+                      </th>
+                    );
+                  }
+
+                  return <th key={item.id} className="border-b border-gray-300" />;
+                });
+
+                if (g.key === SUBJECT_GROUP_KEY && hasSubjectTotal) {
+                  const grandTotal = Object.values(subjectTotals).reduce((a, b) => a + b, 0);
+                  cells.push(
+                    <th key="_subject_total_agg" className="border-b border-gray-300 p-0 text-center bg-gray-100 font-normal">
+                      <div className="w-full py-0.5">
+                        <span className="text-[9px] font-bold" style={{ color: subjectGroup?.color }}>{grandTotal}</span>
+                      </div>
+                    </th>
+                  );
+                }
+
+                return cells;
+              })}
+            </tr>
           </thead>
 
           {/* ===== ボディ ===== */}
@@ -764,86 +839,6 @@ export function CourseProgressTable({
             })}
           </tbody>
 
-          {/* ===== 集計フッター ===== */}
-          <tfoot>
-            <tr className="bg-gray-100/80 border-t-2 border-gray-300">
-              {/* 左固定: ラベル */}
-              <td
-                colSpan={3}
-                className="sticky left-0 z-20 bg-gray-100 px-2 py-1.5 text-[10px] font-bold text-gray-600 border-b border-gray-200"
-                style={{ width: LEFT_TOTAL, minWidth: LEFT_TOTAL }}
-              >
-                列集計
-              </td>
-              {/* 各列の集計値 */}
-              {columnGroups.flatMap((g) => {
-                const cells = g.items.map((item) => {
-                  const agg = columnAggregates[item.id];
-                  const groupColor = g.color;
-
-                  if (item.column_type === 'check') {
-                    const pct = agg && agg.total > 0 ? Math.round((agg.completed / agg.total) * 100) : 0;
-                    return (
-                      <td key={item.id} className="border-b border-gray-200 p-0 text-center">
-                        <Tooltip text={`${agg?.completed ?? 0}/${agg?.total ?? 0} 完了`}>
-                          <div className="w-full py-1 flex flex-col items-center justify-center gap-0.5">
-                            <span className="text-[10px] font-bold" style={{ color: pct >= 80 ? '#10b981' : pct >= 50 ? '#f59e0b' : '#ef4444' }}>
-                              {pct}%
-                            </span>
-                            <span className="text-[8px] text-gray-400">{agg?.completed ?? 0}/{agg?.total ?? 0}</span>
-                          </div>
-                        </Tooltip>
-                      </td>
-                    );
-                  }
-
-                  if (item.column_type === 'number') {
-                    return (
-                      <td key={item.id} className="border-b border-gray-200 p-0 text-center">
-                        <Tooltip text={`合計: ${agg?.sum ?? 0}（${agg?.filled ?? 0}名入力済み）`}>
-                          <div className="w-full py-1 flex flex-col items-center justify-center gap-0.5">
-                            <span className="text-[10px] font-bold" style={{ color: groupColor }}>{agg?.sum ?? 0}</span>
-                            <span className="text-[8px] text-gray-400">{agg?.filled ?? 0}名</span>
-                          </div>
-                        </Tooltip>
-                      </td>
-                    );
-                  }
-
-                  if (item.column_type === 'date') {
-                    return (
-                      <td key={item.id} className="border-b border-gray-200 p-0 text-center">
-                        <Tooltip text={`${agg?.filled ?? 0}/${students.length}名 入力済み`}>
-                          <div className="w-full py-1 flex flex-col items-center justify-center gap-0.5">
-                            <span className="text-[10px] font-bold" style={{ color: groupColor }}>
-                              {agg?.filled ?? 0}/{students.length}
-                            </span>
-                            <span className="text-[8px] text-gray-400">入力済</span>
-                          </div>
-                        </Tooltip>
-                      </td>
-                    );
-                  }
-
-                  return <td key={item.id} className="border-b border-gray-200" />;
-                });
-
-                // 教科別合計列の集計
-                if (g.key === SUBJECT_GROUP_KEY && hasSubjectTotal) {
-                  const grandTotal = Object.values(subjectTotals).reduce((a, b) => a + b, 0);
-                  cells.push(
-                    <td key="_subject_total_footer" className="border-b border-gray-200 p-0 text-center bg-gray-100">
-                      <div className="w-full py-1">
-                        <span className="text-[10px] font-bold" style={{ color: subjectGroup?.color }}>{grandTotal}</span>
-                      </div>
-                    </td>
-                  );
-                }
-
-                return cells;
-              })}
-            </tr>
-          </tfoot>
         </table>
       </div>
 
