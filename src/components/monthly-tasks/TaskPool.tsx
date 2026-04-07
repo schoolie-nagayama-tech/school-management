@@ -72,21 +72,41 @@ export function TaskPool({
   return (
     <div className="border border-gray-200 rounded-lg bg-white">
       {/* ヘッダー */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50 transition-colors"
-      >
-        {isExpanded ? (
-          <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
-        ) : (
-          <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
-        )}
-        <Layers className="w-3.5 h-3.5 text-gray-500" />
-        <span className="text-xs font-bold text-gray-700">タスクプール</span>
+      <div className="flex items-center">
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex-1 flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50 transition-colors"
+        >
+          {isExpanded ? (
+            <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
+          ) : (
+            <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
+          )}
+          <Layers className="w-3.5 h-3.5 text-gray-500" />
+          <span className="text-xs font-bold text-gray-700">タスクプール</span>
+          {poolItems.length > 0 && (
+            <span className="text-[10px] text-gray-400 ml-auto">{poolItems.length}件</span>
+          )}
+        </button>
+        {/* ゴミ箱ドロップゾーン（ヘッダー横に常設、ドラッグ中に目立つ） */}
         {poolItems.length > 0 && (
-          <span className="text-[10px] text-gray-400 ml-auto">{poolItems.length}件</span>
+          <div
+            onDragOver={(e) => { e.preventDefault(); setTrashOver(true); }}
+            onDragLeave={() => setTrashOver(false)}
+            onDrop={handleTrashDrop}
+            className={`flex items-center gap-1 px-3 py-2 mr-1 rounded transition-all ${
+              trashOver
+                ? 'bg-red-100 text-red-600 scale-110'
+                : isDragging
+                  ? 'bg-red-50 text-red-400 animate-pulse'
+                  : 'text-gray-300 hover:text-gray-400'
+            }`}
+            title="ドロップで削除"
+          >
+            <Trash2 className={`w-4 h-4 transition-transform ${trashOver ? 'scale-125' : ''}`} />
+          </div>
         )}
-      </button>
+      </div>
 
       {isExpanded && (
         <div className="px-3 pb-3 space-y-2">
@@ -149,22 +169,6 @@ export function TaskPool({
                   <span className="text-[10px] text-gray-400 flex-shrink-0">{item.day_of_month}日</span>
                 </div>
               ))}
-              {/* ゴミ箱ドロップゾーン（ドラッグ中のみ表示） */}
-              {isDragging && (
-                <div
-                  onDragOver={(e) => { e.preventDefault(); setTrashOver(true); }}
-                  onDragLeave={() => setTrashOver(false)}
-                  onDrop={handleTrashDrop}
-                  className={`flex items-center justify-center gap-1.5 py-2 mt-1 border-2 border-dashed rounded-lg transition-colors ${
-                    trashOver
-                      ? 'border-red-400 bg-red-50 text-red-600'
-                      : 'border-gray-300 bg-gray-50 text-gray-400'
-                  }`}
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span className="text-[10px] font-medium">ここにドロップで削除</span>
-                </div>
-              )}
             </div>
           )}
 
