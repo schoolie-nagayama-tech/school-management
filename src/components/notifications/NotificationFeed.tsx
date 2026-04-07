@@ -112,7 +112,7 @@ function hasMeaningfulChanges(log: StudentLogEntry): boolean {
 
 // ── 型定義 ──
 
-type FeedItemType = 'response' | 'update' | 'shift';
+type FeedItemType = 'response' | 'update' | 'shift' | 'deadline';
 
 interface FeedItem {
   id: string;
@@ -132,6 +132,11 @@ interface FeedItem {
   shiftSettingId?: string;
   shiftSettingName?: string;
   teacherEmail?: string;
+  // deadline 系
+  deadlineType?: 'overdue' | 'upcoming';
+  deadlineSource?: 'monthly' | 'schedule';
+  deadlineDate?: string;
+  deadlineHref?: string;
   // 共通
   studentName: string;
   gradeLabel?: string;
@@ -152,7 +157,7 @@ interface StudentLogEntry {
   } | null;
 }
 
-type FilterType = 'all' | 'response' | 'update' | 'shift';
+type FilterType = 'all' | 'response' | 'update' | 'shift' | 'deadline';
 
 // ── localStorage ──
 
@@ -238,8 +243,16 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
       const since = new Date();
       since.setDate(since.getDate() - 7);
 
+      // 期日計算用
+      const todayStr = new Date().toISOString().split('T')[0];
+      const upcomingDate = new Date();
+      upcomingDate.setDate(upcomingDate.getDate() + 3); // 3日以内
+      const upcomingStr = upcomingDate.toISOString().split('T')[0];
+      const currentYear = new Date().getFullYear();
+      const currentMonth = new Date().getMonth() + 1;
+
       // 並行取得
-      const [responsesResult, logsResult, seasonalShiftResult, regularShiftResult] = await Promise.allSettled([
+      const [responsesResult, logsResult, seasonalShiftResult, regularShiftResult, monthlyTasksResult, scheduleTasksResult] = await Promise.allSettled([
         getRecentUnprocessedResponses(schoolIds, 7, 20),
         supabase
           .from('student_logs')
@@ -263,6 +276,25 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
           .gte('created_at', since.toISOString())
           .order('created_at', { ascending: false })
           .limit(20),
+        // 業務進捗: 超過 + 3日以内の期日タスク
+        (async () => {
+          const { data: tasks } = await supabase
+            .from('monthly_tasks')
+            .select('id, task_date, task_name, category, checks:monthly_task_checks(task_id, school_id, is_completed)')
+            .eq('year', currentYear)
+            .eq('month', currentMonth)
+            .lte('task_date', upcomingStr);
+          return tasks || [];
+        })(),
+        // 講習準備スケジュール: 期日超過 + 3日以内
+        (async () => {
+          const { data: tasks } = await supabase
+            .from('course_prep_schedule_tasks')
+            .select('id, name, deadline, end_date, is_completed, school_id')
+            .in('school_id', schoolIds)
+            .eq('is_completed', false);
+          return tasks || [];
+        })(),
       ]);
 
       const items: FeedItem[] = [];
@@ -345,6 +377,70 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
       processShiftResult(seasonalShiftResult, 'seasonal');
       processShiftResult(regularShiftResult, 'regular');
 
+      // 業務進捗: 超過 + 期日3日以内の未完了タスク
+      if (monthlyTasksResult.status === 'fulfilled') {
+        const tasks = monthlyTasksResult.value as Array<{
+          id: string; task_date: string; task_name: string; category: string;
+          checks: Array<{ task_id: string; school_id: string; is_completed: boolean }>;
+        }>;
+        tasks.forEach((task) => {
+          // 対象教室のいずれかが未完了か
+          const isIncomplete = schoolIds.some((sid) => {
+            const check = task.checks?.find((c) => c.school_id === sid);
+            return !check || !check.is_completed;
+          });
+          if (!isIncomplete) return;
+
+          const isOverdue = task.task_date < todayStr;
+          const isUpcoming = !isOverdue && task.task_date <= upcomingStr;
+          if (!isOverdue && !isUpcoming) return;
+
+          items.push({
+            id: `deadline_monthly_${task.id}`,
+            type: 'deadline',
+            timestamp: task.task_date + 'T00:00:00',
+            deadlineType: isOverdue ? 'overdue' : 'upcoming',
+            deadlineSource: 'monthly',
+            deadlineDate: task.task_date,
+            deadlineHref: '/tasks',
+            studentName: task.task_name,
+          });
+        });
+      }
+
+      // 講習準備スケジュール: 期日超過 + 期日3日以内の未完了タスク
+      if (scheduleTasksResult.status === 'fulfilled') {
+        const tasks = scheduleTasksResult.value as Array<{
+          id: string; name: string; deadline: string | null; end_date: string | null;
+          is_completed: boolean; school_id: string;
+        }>;
+        // タスク名でグループ化（同名タスクは1つに集約）
+        const seenNames = new Set<string>();
+        tasks.forEach((task) => {
+          if (task.is_completed) return;
+          const dueDate = task.deadline || task.end_date;
+          if (!dueDate) return;
+          if (seenNames.has(task.name)) return;
+
+          const isOverdue = dueDate < todayStr;
+          const isUpcoming = !isOverdue && dueDate <= upcomingStr;
+          if (!isOverdue && !isUpcoming) return;
+
+          seenNames.add(task.name);
+          items.push({
+            id: `deadline_schedule_${task.id}`,
+            type: 'deadline',
+            timestamp: dueDate + 'T00:00:00',
+            deadlineType: isOverdue ? 'overdue' : 'upcoming',
+            deadlineSource: 'schedule',
+            deadlineDate: dueDate,
+            deadlineHref: '/courses/schedule',
+            schoolId: task.school_id,
+            studentName: task.name,
+          });
+        });
+      }
+
       // シフト申請の教室IDも収集
       items.filter((i) => i.type === 'shift' && i.schoolId).forEach((i) => allSchoolIdsToFetch.push(i.schoolId!));
 
@@ -395,6 +491,7 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
       response: undismissed.filter((i) => i.type === 'response').length,
       update: undismissed.filter((i) => i.type === 'update').length,
       shift: undismissed.filter((i) => i.type === 'shift').length,
+      deadline: undismissed.filter((i) => i.type === 'deadline').length,
     };
   }, [feedItems, dismissedIds]);
 
@@ -433,7 +530,7 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
       .filter((item) => filter === 'all' || item.type === filter);
     if (targetItems.length === 0) return;
 
-    const filterLabel = filter === 'all' ? '通知' : filter === 'response' ? '新着申込' : filter === 'update' ? '更新履歴' : 'シフト申請';
+    const filterLabel = filter === 'all' ? '通知' : filter === 'response' ? '新着申込' : filter === 'update' ? '更新履歴' : filter === 'shift' ? 'シフト申請' : '期日';
     const confirmed = await confirm({
       title: '一括確認',
       description: `${filterLabel} ${targetItems.length}件 をすべて確認済みにしますか？`,
@@ -476,8 +573,9 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
   const filterChips: Array<{ key: FilterType; label: string; count: number }> = [
     { key: 'all', label: 'すべて', count: counts.all },
     { key: 'response', label: '申込', count: counts.response },
-    { key: 'update', label: '更新履歴', count: counts.update },
+    { key: 'update', label: '更新', count: counts.update },
     { key: 'shift', label: 'シフト', count: counts.shift },
+    { key: 'deadline', label: '期日', count: counts.deadline },
   ];
 
   return (
@@ -495,7 +593,7 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
               <button
                 key={chip.key}
                 onClick={() => setFilter(chip.key)}
-                className={`text-[11px] px-2.5 py-1 rounded-full transition-colors ${
+                className={`text-[10px] px-1.5 py-0.5 rounded-full transition-colors leading-tight ${
                   filter === chip.key
                     ? 'bg-[#1e3a5f] text-white'
                     : 'bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200'
@@ -503,7 +601,7 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
               >
                 {chip.label}
                 {chip.count > 0 && (
-                  <span className={`ml-1 ${filter === chip.key ? 'text-white/80' : 'text-gray-400'}`}>
+                  <span className={`ml-0.5 ${filter === chip.key ? 'text-white/80' : 'text-gray-400'}`}>
                     {chip.count}
                   </span>
                 )}
@@ -545,7 +643,7 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
           <div className="max-h-[350px] overflow-y-auto divide-y divide-gray-100">
             {visibleItems.length === 0 ? (
               <div className="p-6 text-center text-sm text-gray-400 italic">
-                {filter === 'all' ? '表示する通知はありません' : `${filter === 'response' ? '申込' : filter === 'update' ? '更新履歴' : 'シフト申請'}はありません`}
+                {filter === 'all' ? '表示する通知はありません' : `${filter === 'response' ? '申込' : filter === 'update' ? '更新履歴' : filter === 'shift' ? 'シフト申請' : '期日通知'}はありません`}
               </div>
             ) : (
               visibleItems.map((item) => (
@@ -583,6 +681,9 @@ function FeedItemRow({ item, schoolNames, schoolColorBySchoolId, onDismiss, onSt
   }
   if (item.type === 'shift') {
     return <ShiftRow item={item} schoolNames={schoolNames} schoolColorBySchoolId={schoolColorBySchoolId} onDismiss={onDismiss} />;
+  }
+  if (item.type === 'deadline') {
+    return <DeadlineRow item={item} schoolNames={schoolNames} schoolColorBySchoolId={schoolColorBySchoolId} onDismiss={onDismiss} />;
   }
   return <UpdateRow item={item} onDismiss={onDismiss} onStudentClick={onStudentClick} />;
 }
@@ -730,6 +831,74 @@ function UpdateRow({
         {item.changeSummary && (
           <span className="text-xs text-gray-500 truncate" title={item.changeSummary}>
             {item.changeSummary}
+          </span>
+        )}
+      </div>
+      <button
+        onClick={() => onDismiss(item.id)}
+        className="flex items-center text-gray-400 hover:text-green-600 p-1 rounded hover:bg-green-50 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
+        title="確認済みにする"
+      >
+        <Check className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+}
+
+function DeadlineRow({
+  item,
+  schoolNames,
+  schoolColorBySchoolId,
+  onDismiss,
+}: {
+  item: FeedItem;
+  schoolNames: Record<string, string>;
+  schoolColorBySchoolId: Record<string, { bg: string; text: string }>;
+  onDismiss: (id: string) => void;
+}) {
+  const isOverdue = item.deadlineType === 'overdue';
+  const sourceLabel = item.deadlineSource === 'monthly' ? '業務' : '講習準備';
+  const statusLabel = isOverdue ? '超過' : '期日近';
+  const badgeClass = isOverdue
+    ? 'bg-red-100 text-red-700'
+    : 'bg-amber-100 text-amber-700';
+  const hoverClass = isOverdue ? 'hover:bg-red-50' : 'hover:bg-amber-50';
+  const schoolName = item.schoolId ? schoolNames[item.schoolId] : undefined;
+  const schoolColor = item.schoolId ? schoolColorBySchoolId[item.schoolId] : undefined;
+
+  const dateDisplay = item.deadlineDate
+    ? (() => {
+        const d = new Date(item.deadlineDate + 'T00:00:00');
+        return `${d.getMonth() + 1}/${d.getDate()}`;
+      })()
+    : '';
+
+  return (
+    <div className={`flex items-center gap-2 px-4 py-2 ${hoverClass} transition-colors group`}>
+      <span className="text-xs text-gray-400 whitespace-nowrap w-[72px] shrink-0">
+        {dateDisplay}
+      </span>
+      <span className={`px-1.5 py-0.5 rounded text-[11px] font-medium whitespace-nowrap shrink-0 ${badgeClass}`}>
+        {statusLabel}
+      </span>
+      <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[11px] font-medium whitespace-nowrap shrink-0">
+        {sourceLabel}
+      </span>
+      <div className="flex items-center gap-2 flex-1 min-w-0">
+        {item.deadlineHref ? (
+          <Link
+            href={item.deadlineHref}
+            className="text-sm text-[#1a1a1a] hover:text-[#3b82f6] hover:underline font-medium truncate"
+            title={item.studentName}
+          >
+            {item.studentName}
+          </Link>
+        ) : (
+          <span className="text-sm text-[#1a1a1a] font-medium truncate">{item.studentName}</span>
+        )}
+        {schoolName && schoolColor && (
+          <span className={`px-1.5 py-0.5 rounded text-[11px] font-medium whitespace-nowrap shrink-0 ${schoolColor.bg} ${schoolColor.text}`}>
+            {schoolName}
           </span>
         )}
       </div>
