@@ -65,13 +65,13 @@ export async function createTask(params: {
   return result.data as MonthlyTaskWithChecks;
 }
 
-export async function updateTask(taskId: string, updates: Record<string, unknown>) {
-  const result = await postTaskApi({ action: 'update_task', taskId, updates });
+export async function updateTask(taskId: string, updates: Record<string, unknown>, schoolId?: string) {
+  const result = await postTaskApi({ action: 'update_task', taskId, updates, ...(schoolId ? { schoolId } : {}) });
   return result.data;
 }
 
-export async function deleteTask(taskId: string) {
-  await postTaskApi({ action: 'delete_task', taskId });
+export async function deleteTask(taskId: string, schoolId?: string) {
+  await postTaskApi({ action: 'delete_task', taskId, ...(schoolId ? { schoolId } : {}) });
 }
 
 export async function toggleCheck(taskId: string, schoolId: string, isCompleted: boolean) {

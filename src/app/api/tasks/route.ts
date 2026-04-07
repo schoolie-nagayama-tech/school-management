@@ -55,10 +55,21 @@ export async function GET(request: NextRequest) {
           checks = checkData || [];
         }
 
-        // タスクにチェック情報を付与
+        // 教室別オーバーライドを一括取得
+        let overrides: Array<Record<string, unknown>> = [];
+        if (taskIds.length > 0) {
+          const { data: overrideData } = await supabaseAdmin
+            .from('monthly_task_overrides')
+            .select('*')
+            .in('task_id', taskIds);
+          overrides = overrideData || [];
+        }
+
+        // タスクにチェック情報とオーバーライドを付与
         const tasksWithChecks = (tasks || []).map((task: Record<string, unknown>) => ({
           ...task,
           checks: checks.filter((c) => c.task_id === task.id),
+          overrides: overrides.filter((o) => o.task_id === task.id),
         }));
 
         return NextResponse.json({ data: tasksWithChecks });
@@ -166,9 +177,30 @@ export async function POST(request: NextRequest) {
 
       case 'update_task': {
         if (!canEdit) return NextResponse.json({ error: '権限がありません' }, { status: 403 });
-        const { taskId, updates } = body;
+        const { taskId, updates, schoolId } = body;
         if (!taskId) return NextResponse.json({ error: 'taskId は必須です' }, { status: 400 });
 
+        // schoolId が指定されている場合 → 教室別オーバーライドとして保存
+        if (schoolId) {
+          const overrideFields = ['task_name', 'task_date', 'category', 'note', 'url'];
+          const overrideData: Record<string, unknown> = {
+            task_id: taskId,
+            school_id: schoolId,
+            updated_at: new Date().toISOString(),
+          };
+          for (const key of overrideFields) {
+            if (updates[key] !== undefined) overrideData[key] = updates[key];
+          }
+          const { data, error } = await supabaseAdmin
+            .from('monthly_task_overrides')
+            .upsert(overrideData, { onConflict: 'task_id,school_id' })
+            .select()
+            .single();
+          if (error) throw error;
+          return NextResponse.json({ data, type: 'override' });
+        }
+
+        // schoolId なし → ベースタスクを更新（全教室共通）
         const allowedFields = ['task_name', 'task_date', 'category', 'note', 'url', 'sort_order'];
         const filteredUpdates: Record<string, unknown> = {};
         for (const key of allowedFields) {
@@ -188,8 +220,22 @@ export async function POST(request: NextRequest) {
 
       case 'delete_task': {
         if (!canEdit) return NextResponse.json({ error: '権限がありません' }, { status: 403 });
-        const { taskId: deleteId } = body;
+        const { taskId: deleteId, schoolId: deleteSchoolId } = body;
         if (!deleteId) return NextResponse.json({ error: 'taskId は必須です' }, { status: 400 });
+
+        // schoolId が指定されている場合 → その教室だけ非表示にする
+        if (deleteSchoolId) {
+          const { error } = await supabaseAdmin
+            .from('monthly_task_overrides')
+            .upsert(
+              { task_id: deleteId, school_id: deleteSchoolId, is_hidden: true, updated_at: new Date().toISOString() },
+              { onConflict: 'task_id,school_id' }
+            );
+          if (error) throw error;
+          return NextResponse.json({ success: true, type: 'hidden' });
+        }
+
+        // schoolId なし → タスク自体を削除（全教室）
         const { error } = await supabaseAdmin
           .from('monthly_tasks')
           .delete()

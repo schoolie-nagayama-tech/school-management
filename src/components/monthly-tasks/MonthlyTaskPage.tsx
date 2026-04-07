@@ -222,45 +222,54 @@ export function MonthlyTaskPage() {
     [year, month, fetchTasks, success, toastError]
   );
 
-  // タスク更新
+  // 教室が1つだけ選択されている場合のみ教室IDを返す（教室別オーバーライド用）
+  const singleSchoolId = useMemo(() => {
+    return activeSchools.length === 1 ? activeSchools[0].id : undefined;
+  }, [activeSchools]);
+
+  // タスク更新（教室別オーバーライド対応）
   const handleUpdateTask = useCallback(
     async (taskId: string, updates: Record<string, unknown>) => {
       try {
-        await updateTask(taskId, updates);
-        success('タスクを更新しました');
+        await updateTask(taskId, updates, singleSchoolId);
+        success(singleSchoolId ? 'この教室のタスクを更新しました' : 'タスクを更新しました');
         fetchTasks();
       } catch { toastError('タスクの更新に失敗しました'); }
     },
-    [fetchTasks, success, toastError]
+    [fetchTasks, success, toastError, singleSchoolId]
   );
 
   // タスク日付移動（ドラッグ&ドロップ）
   const handleMoveTask = useCallback(
     async (taskId: string, newDate: string) => {
-      // 楽観的更新
       setTasks((prev) =>
         prev.map((t) => (t.id === taskId ? { ...t, task_date: newDate } : t))
       );
       try {
-        await updateTask(taskId, { task_date: newDate });
+        await updateTask(taskId, { task_date: newDate }, singleSchoolId);
       } catch {
         toastError('タスクの移動に失敗しました');
         fetchTasks();
       }
     },
-    [fetchTasks, toastError]
+    [fetchTasks, toastError, singleSchoolId]
   );
 
-  // タスク削除
+  // タスク削除（教室別非表示対応）
   const handleDeleteTask = useCallback(
     async (taskId: string) => {
       try {
-        await deleteTask(taskId);
-        setTasks((prev) => prev.filter((t) => t.id !== taskId));
+        await deleteTask(taskId, singleSchoolId);
+        if (singleSchoolId) {
+          // オーバーライド非表示の場合、ローカルでも反映
+          fetchTasks();
+        } else {
+          setTasks((prev) => prev.filter((t) => t.id !== taskId));
+        }
         success('タスクを削除しました');
       } catch { toastError('タスクの削除に失敗しました'); }
     },
-    [success, toastError]
+    [success, toastError, singleSchoolId, fetchTasks]
   );
 
   // 講習タスク取り込み
@@ -421,6 +430,7 @@ export function MonthlyTaskPage() {
                 onDeleteTask={handleDeleteTask}
                 onUpdateTask={handleUpdateTask}
                 onMoveTask={handleMoveTask}
+                singleSchoolId={singleSchoolId}
                 canEdit={canEdit}
               />
             </div>

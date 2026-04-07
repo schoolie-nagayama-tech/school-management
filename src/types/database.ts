@@ -3535,6 +3535,20 @@ export interface MonthlyTaskTemplate {
   updated_at: string;
 }
 
+export interface MonthlyTaskOverride {
+  task_id: string;
+  school_id: string;
+  task_name: string | null;
+  task_date: string | null;
+  category: string | null;
+  note: string | null;
+  url: string | null;
+  is_hidden: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface MonthlyTaskWithChecks extends MonthlyTask {
   checks: MonthlyTaskCheck[];
+  overrides?: MonthlyTaskOverride[];
 }

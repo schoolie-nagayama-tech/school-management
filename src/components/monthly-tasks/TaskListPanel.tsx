@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useRef, useEffect } from 'react';
-import type { MonthlyTaskWithChecks, School } from '@/types/database';
+import type { MonthlyTaskWithChecks, MonthlyTaskOverride, School } from '@/types/database';
 import { CheckCircle2, Circle, GripVertical, Plus, ChevronDown, ChevronRight, Trash2, ExternalLink, StickyNote, Link2 } from 'lucide-react';
 
 interface TaskListPanelProps {
@@ -16,7 +16,25 @@ interface TaskListPanelProps {
   onDeleteTask?: (taskId: string) => Promise<void>;
   onUpdateTask?: (taskId: string, updates: Record<string, unknown>) => Promise<void>;
   onMoveTask?: (taskId: string, newDate: string) => Promise<void>;
+  singleSchoolId?: string;
   canEdit: boolean;
+}
+
+/** オーバーライドを適用したタスクを返す */
+function applyOverride(task: MonthlyTaskWithChecks, schoolId?: string): MonthlyTaskWithChecks & { _overridden?: boolean } {
+  if (!schoolId || !task.overrides?.length) return task;
+  const ov = task.overrides.find((o: MonthlyTaskOverride) => o.school_id === schoolId);
+  if (!ov) return task;
+  if (ov.is_hidden) return { ...task, _hidden: true } as MonthlyTaskWithChecks & { _hidden: boolean };
+  return {
+    ...task,
+    task_name: ov.task_name ?? task.task_name,
+    task_date: ov.task_date ?? task.task_date,
+    category: (ov.category ?? task.category) as MonthlyTaskWithChecks['category'],
+    note: ov.note !== undefined ? ov.note : task.note,
+    url: ov.url !== undefined ? ov.url : task.url,
+    _overridden: true,
+  };
 }
 
 function formatDow(dateStr: string) {
@@ -41,6 +59,7 @@ export function TaskListPanel({
   onDeleteTask,
   onUpdateTask,
   onMoveTask,
+  singleSchoolId,
   canEdit,
 }: TaskListPanelProps) {
   const [filter, setFilter] = useState<'all' | 'incomplete' | 'overdue'>('all');
@@ -157,8 +176,15 @@ export function TaskListPanel({
     setDraggingTaskId(null);
   };
 
+  // オーバーライド適用済みタスク（教室別非表示を除外）
+  const resolvedTasks = useMemo(() => {
+    return tasks
+      .map(t => applyOverride(t, singleSchoolId))
+      .filter(t => !('_hidden' in t && (t as { _hidden?: boolean })._hidden));
+  }, [tasks, singleSchoolId]);
+
   const filtered = useMemo(() => {
-    return tasks.filter(t => {
+    return resolvedTasks.filter(t => {
       const allDone = schoolIds.every(sid =>
         t.checks.find(c => c.school_id === sid)?.is_completed
       );
@@ -166,7 +192,7 @@ export function TaskListPanel({
       if (filter === 'overdue') return t.task_date < today && !allDone;
       return true;
     });
-  }, [tasks, filter, today, schoolIds]);
+  }, [resolvedTasks, filter, today, schoolIds]);
 
   // Group by date
   const grouped = useMemo(() => {
@@ -194,18 +220,18 @@ export function TaskListPanel({
   };
 
   const filterCounts = useMemo(() => {
-    const allCount = tasks.length;
-    const incompleteCount = tasks.filter(t =>
+    const allCount = resolvedTasks.length;
+    const incompleteCount = resolvedTasks.filter(t =>
       !schoolIds.every(sid => t.checks.find(c => c.school_id === sid)?.is_completed)
     ).length;
-    const overdueCount = tasks.filter(t => {
+    const overdueCount = resolvedTasks.filter(t => {
       const allDone = schoolIds.every(sid =>
         t.checks.find(c => c.school_id === sid)?.is_completed
       );
       return t.task_date < today && !allDone;
     }).length;
     return { allCount, incompleteCount, overdueCount };
-  }, [tasks, today, schoolIds]);
+  }, [resolvedTasks, today, schoolIds]);
 
   return (
     <div className="flex flex-col h-full bg-white rounded-lg border border-gray-200 overflow-hidden">
