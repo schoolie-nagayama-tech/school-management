@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type { MonthlyTaskTemplate } from '@/types/database';
-import { GripVertical, ChevronDown, ChevronRight, Layers } from 'lucide-react';
+import { GripVertical, ChevronDown, ChevronRight, Layers, Trash2 } from 'lucide-react';
 
 interface PoolItem {
   task_name: string;
@@ -29,6 +29,8 @@ export function TaskPool({
 }: TaskPoolProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [trashOver, setTrashOver] = useState(false);
 
   // テンプレートをプールに読み込み
   const handleLoadTemplate = (tpl: MonthlyTaskTemplate) => {
@@ -45,7 +47,26 @@ export function TaskPool({
   // プールアイテムをドラッグ
   const handleDragStart = (e: React.DragEvent, item: PoolItem, index: number) => {
     e.dataTransfer.setData('text/pool-item', JSON.stringify({ ...item, poolIndex: index }));
-    e.dataTransfer.effectAllowed = 'copy';
+    e.dataTransfer.effectAllowed = 'move';
+    setIsDragging(true);
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+    setTrashOver(false);
+  };
+
+  const handleTrashDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setTrashOver(false);
+    setIsDragging(false);
+    const raw = e.dataTransfer.getData('text/pool-item');
+    if (!raw) return;
+    try {
+      const data = JSON.parse(raw);
+      const idx = data.poolIndex as number;
+      onSetPoolItems(poolItems.filter((_, i) => i !== idx));
+    } catch { /* ignore */ }
   };
 
   return (
@@ -111,6 +132,7 @@ export function TaskPool({
                   key={`${item.task_name}-${idx}`}
                   draggable={canEdit}
                   onDragStart={(e) => handleDragStart(e, item, idx)}
+                  onDragEnd={handleDragEnd}
                   className={`flex items-center gap-1 text-xs px-2 py-1.5 border rounded-lg transition-colors ${
                     canEdit ? 'cursor-grab active:cursor-grabbing hover:shadow-sm hover:border-blue-300' : ''
                   } ${
@@ -127,6 +149,22 @@ export function TaskPool({
                   <span className="text-[10px] text-gray-400 flex-shrink-0">{item.day_of_month}日</span>
                 </div>
               ))}
+              {/* ゴミ箱ドロップゾーン（ドラッグ中のみ表示） */}
+              {isDragging && (
+                <div
+                  onDragOver={(e) => { e.preventDefault(); setTrashOver(true); }}
+                  onDragLeave={() => setTrashOver(false)}
+                  onDrop={handleTrashDrop}
+                  className={`flex items-center justify-center gap-1.5 py-2 mt-1 border-2 border-dashed rounded-lg transition-colors ${
+                    trashOver
+                      ? 'border-red-400 bg-red-50 text-red-600'
+                      : 'border-gray-300 bg-gray-50 text-gray-400'
+                  }`}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span className="text-[10px] font-medium">ここにドロップで削除</span>
+                </div>
+              )}
             </div>
           )}
 
