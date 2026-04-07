@@ -351,6 +351,8 @@ export default function BillingPage() {
           periodStartDate={periods.find(p => p.id === selectedPeriodId)?.start_date}
           periodEndDate={periods.find(p => p.id === selectedPeriodId)?.end_date}
           schoolIds={getSelectedSchoolIds()}
+          billingPeriodId={selectedPeriodId || undefined}
+          billingPeriodName={periods.find(p => p.id === selectedPeriodId)?.name}
         />
       )}
 

@@ -21,6 +21,7 @@ interface BillingTableProps {
   periodEndDate?: string;    // For order sync
   schoolIds?: string | string[];  // For 5th week auto-calc
   billingPeriodId?: string;  // For form sync and 5th week calc
+  billingPeriodName?: string;  // For 5th week dialog display
 }
 
 export function BillingTable({
@@ -34,6 +35,7 @@ export function BillingTable({
   periodEndDate,
   schoolIds,
   billingPeriodId,
+  billingPeriodName,
 }: BillingTableProps) {
   const { profile } = useAuth();
   const isTeacher = profile?.role === 'teacher';
@@ -232,21 +234,34 @@ export function BillingTable({
 
   // 5th week calc handler (new version using calcFifthWeekBilling)
   // 5週目は翌月分（月謝は翌月分を請求するため）
+  // 表示月は calcFifthWeekBilling と同じロジックで算出（期間名ベース）
   const handleCalcFifthWeek = async () => {
-    if (!billingPeriodId || !schoolIds || !periodStartDate) return;
+    if (!billingPeriodId || !schoolIds) return;
 
-    const [yearStr, monthStr] = periodStartDate.split('-');
-    let year = Number(yearStr);
-    let month = Number(monthStr);
-    // 翌月の5週目を計算（月謝は翌月分）
-    month++;
-    if (month > 12) { month = 1; year++; }
+    // billingPeriodNameから年月を取得（例: "2026年4月請求" → 2026, 4）
+    // calcFifthWeekBillingと同じロジック: 請求月 + 1 = 対象月
+    let baseYear: number;
+    let baseMonth: number;
+    const nameMatch = billingPeriodName?.match(/(\d{4})年(\d{1,2})月/);
+    if (nameMatch) {
+      baseYear = Number(nameMatch[1]);
+      baseMonth = Number(nameMatch[2]) + 1; // 翌月が対象
+      if (baseMonth > 12) { baseMonth -= 12; baseYear++; }
+    } else if (periodStartDate) {
+      // フォールバック: periodStartDateから+2ヶ月
+      const [yearStr, monthStr] = periodStartDate.split('-');
+      baseYear = Number(yearStr);
+      baseMonth = Number(monthStr) + 2;
+      if (baseMonth > 12) { baseMonth -= 12; baseYear++; }
+    } else {
+      return;
+    }
 
-    const dayLabels = getFifthWeekDayLabels(year, month);
+    const dayLabels = getFifthWeekDayLabels(baseYear, baseMonth);
 
     const description = dayLabels
-      ? `翌月（${year}年${month}月）の5週目コマ数を通塾日程から自動計算しますか？\n\n${year}年${month}月は${dayLabels}曜日に5週目があります。`
-      : `${year}年${month}月には5週目がありません。\n全生徒に「0」を入力します。`;
+      ? `${baseYear}年${baseMonth}月の5週目コマ数を通塾日程から自動計算しますか？\n\n${baseYear}年${baseMonth}月は${dayLabels}曜日に5週目があります。`
+      : `${baseYear}年${baseMonth}月には5週目がありません。\n全生徒に「0」を入力します。`;
 
     const confirmed = await confirm({
       title: '5週目自動計算（翌月分）',
@@ -274,13 +289,25 @@ export function BillingTable({
 
   // 5週目自動計算ハンドラ (legacy) - 翌月分
   const handleAutoFillFifthWeek = async (itemId: string) => {
-    if (!periodStartDate || !schoolIds) return;
+    if (!schoolIds) return;
 
-    const [yearStr, monthStr] = periodStartDate.split('-');
-    let year = Number(yearStr);
-    let month = Number(monthStr);
-    month++;
-    if (month > 12) { month = 1; year++; }
+    // billingPeriodNameから年月を取得（請求月 + 1 = 対象月）
+    let year: number;
+    let month: number;
+    const nameMatch = billingPeriodName?.match(/(\d{4})年(\d{1,2})月/);
+    if (nameMatch) {
+      year = Number(nameMatch[1]);
+      month = Number(nameMatch[2]) + 1; // 翌月が対象
+      if (month > 12) { month = 1; year++; }
+    } else if (periodStartDate) {
+      // フォールバック: periodStartDateから+2ヶ月
+      const [yearStr, monthStr] = periodStartDate.split('-');
+      year = Number(yearStr);
+      month = Number(monthStr) + 2;
+      if (month > 12) { month -= 12; year++; }
+    } else {
+      return;
+    }
     const dayLabels = getFifthWeekDayLabels(year, month);
 
     const description = dayLabels
@@ -298,7 +325,7 @@ export function BillingTable({
 
     setAutoFilling(true);
     try {
-      const result = await autoFillFifthWeekBilling(itemId, periodStartDate, schoolIds);
+      const result = await autoFillFifthWeekBilling(itemId, periodStartDate!, schoolIds);
       if (!dayLabels) {
         success(`${result.updated}名に5週目 = 0 を入力しました`);
       } else {
