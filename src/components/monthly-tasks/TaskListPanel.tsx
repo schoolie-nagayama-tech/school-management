@@ -53,6 +53,9 @@ export function TaskListPanel({
   const [newTaskNote, setNewTaskNote] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editDate, setEditDate] = useState('');
+  const [editCategory, setEditCategory] = useState<'business' | 'course'>('business');
   const [editUrl, setEditUrl] = useState('');
   const [editNote, setEditNote] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -97,16 +100,22 @@ export function TaskListPanel({
       setExpandedTaskId(null);
     } else {
       setExpandedTaskId(task.id);
+      setEditName(task.task_name);
+      setEditDate(task.task_date);
+      setEditCategory(task.category as 'business' | 'course');
       setEditUrl(task.url || '');
       setEditNote(task.note || '');
     }
   };
 
   const handleSaveTaskDetail = async (taskId: string) => {
-    if (!onUpdateTask) return;
+    if (!onUpdateTask || !editName.trim()) return;
     setIsSaving(true);
     try {
       await onUpdateTask(taskId, {
+        task_name: editName.trim(),
+        task_date: editDate,
+        category: editCategory,
         url: editUrl.trim() || null,
         note: editNote.trim() || null,
       });
@@ -472,10 +481,42 @@ export function TaskListPanel({
                           </button>
                         )}
                       </div>
-                      {/* 展開詳細: URL・メモ編集 */}
+                      {/* 展開詳細: タスク編集 */}
                       {isExpanded && canEdit && (
-                        <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
-                          <div className="flex items-center gap-1.5 mb-1.5">
+                        <div className="px-3 py-2 bg-gray-50 border-b border-gray-100 space-y-1.5">
+                          {/* タスク名 */}
+                          <input
+                            type="text"
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                            placeholder="タスク名"
+                            className="w-full text-xs px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-400 font-medium"
+                            disabled={isSaving}
+                          />
+                          {/* 日付・カテゴリ */}
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="date"
+                              value={editDate}
+                              onChange={(e) => setEditDate(e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+                              disabled={isSaving}
+                            />
+                            <select
+                              value={editCategory}
+                              onChange={(e) => setEditCategory(e.target.value as 'business' | 'course')}
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+                              disabled={isSaving}
+                            >
+                              <option value="business">業務</option>
+                              <option value="course">講習</option>
+                            </select>
+                          </div>
+                          {/* URL */}
+                          <div className="flex items-center gap-1.5">
                             <Link2 className="w-3 h-3 text-gray-400 flex-shrink-0" />
                             <input
                               type="url"
@@ -491,6 +532,7 @@ export function TaskListPanel({
                                 href={editUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
                                 className="p-1 text-blue-500 hover:text-blue-700"
                                 title="リンクを開く"
                               >
@@ -498,7 +540,8 @@ export function TaskListPanel({
                               </a>
                             )}
                           </div>
-                          <div className="flex items-center gap-1.5 mb-2">
+                          {/* メモ */}
+                          <div className="flex items-center gap-1.5">
                             <StickyNote className="w-3 h-3 text-gray-400 flex-shrink-0" />
                             <input
                               type="text"
@@ -510,7 +553,8 @@ export function TaskListPanel({
                               disabled={isSaving}
                             />
                           </div>
-                          <div className="flex justify-end gap-2">
+                          {/* ボタン */}
+                          <div className="flex justify-end gap-2 pt-0.5">
                             <button
                               onClick={(e) => { e.stopPropagation(); setExpandedTaskId(null); }}
                               className="text-xs px-2 py-1 text-gray-500 hover:text-gray-700 transition-colors"
@@ -519,7 +563,7 @@ export function TaskListPanel({
                             </button>
                             <button
                               onClick={(e) => { e.stopPropagation(); handleSaveTaskDetail(task.id); }}
-                              disabled={isSaving}
+                              disabled={isSaving || !editName.trim()}
                               className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
                             >
                               {isSaving ? '保存中...' : '保存'}
