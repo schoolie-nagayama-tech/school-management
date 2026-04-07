@@ -27,8 +27,8 @@ function getToday() {
 export function TaskListPanel({
   tasks,
   schools,
-  year,
-  month,
+  year: _year,
+  month: _month,
   selectedDate,
   onSelectDate,
   canEdit,
@@ -185,7 +185,6 @@ export function TaskListPanel({
                   const allDone = schoolIds.every(sid =>
                     task.checks.find(c => c.school_id === sid)?.is_completed
                   );
-                  const someDone = !allDone && task.checks.some(c => c.is_completed);
                   const taskIsOverdue = task.task_date < today && !allDone;
 
                   return (
