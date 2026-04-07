@@ -401,7 +401,7 @@ export function MonthlyTaskPage() {
         /* === リストモード（案C）: タスクリスト + サマリー＆Googleカレンダー === */
         <div className="flex-1 flex gap-3 pt-3 min-h-0">
           {/* 左カラム: タスクリスト */}
-          <div className="w-[360px] flex-shrink-0 flex flex-col gap-3 min-h-0">
+          <div className="w-[400px] flex-shrink-0 flex flex-col gap-3 min-h-0">
             <div className="flex-1 min-h-0">
               <TaskListPanel
                 tasks={tasks}
@@ -423,29 +423,6 @@ export function MonthlyTaskPage() {
                 poolItems={poolItems}
                 onSetPoolItems={setPoolItems}
               />
-            )}
-          </div>
-
-          {/* 中央カラム: 選択日のタスク詳細 */}
-          <div className="w-[340px] flex-shrink-0 border border-gray-200 rounded-lg bg-white overflow-hidden">
-            {selectedDate ? (
-              <TaskDayPanel
-                date={selectedDate}
-                tasks={tasks}
-                schools={activeSchools}
-                year={year}
-                month={month}
-                canEdit={canEdit}
-                onToggleCheck={handleToggleCheck}
-                onCreateTask={handleCreateTask}
-                onUpdateTask={handleUpdateTask}
-                onDeleteTask={handleDeleteTask}
-                onUpdateNote={handleUpdateNote}
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full text-gray-400 text-sm">
-                左のリストからタスクを選択してください
-              </div>
             )}
           </div>
 

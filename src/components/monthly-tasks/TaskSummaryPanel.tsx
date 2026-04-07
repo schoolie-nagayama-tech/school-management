@@ -23,12 +23,6 @@ function getToday() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
 
-function addDays(dateStr: string, days: number) {
-  const d = new Date(dateStr + 'T00:00:00');
-  d.setDate(d.getDate() + days);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
 export function TaskSummaryPanel({
   tasks,
   schools,
@@ -37,7 +31,11 @@ export function TaskSummaryPanel({
   googleCalendarId,
 }: TaskSummaryPanelProps) {
   const today = getToday();
-  const weekLater = addDays(today, 7);
+  const weekLater = (() => {
+    const d = new Date(today + 'T00:00:00');
+    d.setDate(d.getDate() + 7);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  })();
   const schoolIds = schools.map(s => s.id);
 
   const stats = useMemo(() => {
