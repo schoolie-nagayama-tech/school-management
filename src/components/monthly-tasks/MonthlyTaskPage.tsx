@@ -5,21 +5,15 @@ import { useMasterData } from '@/contexts/MasterDataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   getMonthlyTasks,
-  createTask,
-  updateTask,
-  deleteTask,
   toggleCheck,
-  updateNote,
   generateFromTemplate,
   syncCourseTasks,
   getTemplates,
   saveTemplate,
   deleteTemplate as deleteTemplateApi,
 } from '@/lib/api/monthlyTasks';
-import type { MonthlyTaskWithChecks, MonthlyTaskTemplate, MonthlyTaskCategory } from '@/types/database';
+import type { MonthlyTaskWithChecks, MonthlyTaskTemplate } from '@/types/database';
 import { useToast } from '@/hooks/useToast';
-import { TaskCalendar } from './TaskCalendar';
-import { TaskDayPanel } from './TaskDayPanel';
 import { TaskListPanel } from './TaskListPanel';
 import { TaskSummaryPanel } from './TaskSummaryPanel';
 import { TaskPool } from './TaskPool';
@@ -30,9 +24,6 @@ import {
   Download,
   Settings,
   AlertTriangle,
-  Building2,
-  List,
-  Calendar as CalendarIcon,
 } from 'lucide-react';
 
 interface PoolItem {
@@ -62,7 +53,6 @@ export function MonthlyTaskPage() {
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [templates, setTemplates] = useState<MonthlyTaskTemplate[]>([]);
   const [poolItems, setPoolItems] = useState<PoolItem[]>([]);
-  const [layoutMode, setLayoutMode] = useState<'list' | 'calendar'>('list');
 
   // 編集権限
   const canEdit = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
@@ -152,16 +142,6 @@ export function MonthlyTaskPage() {
     }).length;
   }, [tasks, activeSchools, now]);
 
-  // 教室別進捗
-  const schoolProgress = useMemo(() => {
-    return activeSchools.map((school) => {
-      const total = tasks.length;
-      const completed = tasks.filter((t) =>
-        t.checks.find((c) => c.school_id === school.id)?.is_completed
-      ).length;
-      return { school, total, completed, percent: total > 0 ? Math.round((completed / total) * 100) : 0 };
-    });
-  }, [tasks, activeSchools]);
 
   // タスク操作
   const handleToggleCheck = useCallback(
@@ -189,73 +169,6 @@ export function MonthlyTaskPage() {
       catch { toastError('チェックの更新に失敗しました'); fetchTasks(); }
     },
     [fetchTasks, toastError]
-  );
-
-  const handleCreateTask = useCallback(
-    async (taskDate: string, category: MonthlyTaskCategory, taskName: string, sortOrder: number) => {
-      try {
-        const newTask = await createTask({ year, month, task_date: taskDate, category, task_name: taskName, sort_order: sortOrder });
-        setTasks((prev) => {
-          const updated = [...prev, { ...newTask, checks: newTask.checks || [] }];
-          updated.sort((a, b) => a.task_date.localeCompare(b.task_date) || a.sort_order - b.sort_order);
-          return updated;
-        });
-        success('タスクを追加しました');
-      } catch { toastError('タスクの追加に失敗しました'); }
-    },
-    [year, month, success, toastError]
-  );
-
-  const handleUpdateTask = useCallback(
-    async (taskId: string, updates: Record<string, unknown>) => {
-      try {
-        await updateTask(taskId, updates);
-        setTasks((prev) => {
-          const updated = prev.map((t) => (t.id === taskId ? { ...t, ...updates } : t));
-          if (updates.task_date) {
-            updated.sort((a, b) => a.task_date.localeCompare(b.task_date) || a.sort_order - b.sort_order);
-          }
-          return updated;
-        });
-      } catch { toastError('タスクの更新に失敗しました'); }
-    },
-    [toastError]
-  );
-
-  const handleDeleteTask = useCallback(
-    async (taskId: string) => {
-      try { await deleteTask(taskId); setTasks((prev) => prev.filter((t) => t.id !== taskId)); success('タスクを削除しました'); }
-      catch { toastError('タスクの削除に失敗しました'); }
-    },
-    [success, toastError]
-  );
-
-  const handleUpdateNote = useCallback(
-    async (taskId: string, note: string | null) => {
-      try { await updateNote(taskId, note); setTasks((prev) => prev.map((t) => (t.id === taskId ? { ...t, note } : t))); }
-      catch { toastError('補足の更新に失敗しました'); }
-    },
-    [toastError]
-  );
-
-  // カレンダーD&D: タスクを別日へ移動
-  const handleDropTask = useCallback(
-    (taskId: string, newDate: string) => {
-      handleUpdateTask(taskId, { task_date: newDate });
-    },
-    [handleUpdateTask]
-  );
-
-  // プールアイテムD&D: カレンダーにドロップ → タスク作成
-  const handleDropPoolItem = useCallback(
-    (item: { task_name: string; category: string; sort_order: number; poolIndex?: number }, date: string) => {
-      handleCreateTask(date, item.category as MonthlyTaskCategory, item.task_name, item.sort_order);
-      // プールから削除
-      if (item.poolIndex !== undefined) {
-        setPoolItems((prev) => prev.filter((_, i) => i !== item.poolIndex));
-      }
-    },
-    [handleCreateTask]
   );
 
   // 講習タスク取り込み
@@ -344,52 +257,26 @@ export function MonthlyTaskPage() {
           </div>
         )}
 
-        {/* レイアウト切替 + アクション */}
-        <div className="flex items-center gap-2 ml-auto">
-          {/* レイアウト切替 */}
-          <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+        {/* アクション */}
+        {canEdit && (
+          <div className="flex items-center gap-2 ml-auto">
             <button
-              onClick={() => setLayoutMode('list')}
-              className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded-md transition-colors ${
-                layoutMode === 'list' ? 'bg-white shadow text-gray-900 font-medium' : 'text-gray-500 hover:text-gray-700'
-              }`}
-              title="タスクリスト + カレンダー"
+              onClick={handleSyncCourse}
+              disabled={isSyncing}
+              className="flex items-center gap-1 px-3 py-1.5 text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 rounded transition-colors disabled:opacity-50"
             >
-              <List className="w-3.5 h-3.5" />
-              リスト
+              <Download className="w-3.5 h-3.5" />
+              {isSyncing ? '取込中...' : '講習取込'}
             </button>
             <button
-              onClick={() => setLayoutMode('calendar')}
-              className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded-md transition-colors ${
-                layoutMode === 'calendar' ? 'bg-white shadow text-gray-900 font-medium' : 'text-gray-500 hover:text-gray-700'
-              }`}
-              title="カレンダー表示"
+              onClick={handleOpenTemplateDialog}
+              className="flex items-center gap-1 px-3 py-1.5 text-xs bg-gray-50 text-gray-700 hover:bg-gray-100 rounded transition-colors"
             >
-              <CalendarIcon className="w-3.5 h-3.5" />
-              カレンダー
+              <Settings className="w-3.5 h-3.5" />
+              テンプレート
             </button>
           </div>
-
-          {canEdit && (
-            <>
-              <button
-                onClick={handleSyncCourse}
-                disabled={isSyncing}
-                className="flex items-center gap-1 px-3 py-1.5 text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 rounded transition-colors disabled:opacity-50"
-              >
-                <Download className="w-3.5 h-3.5" />
-                {isSyncing ? '取込中...' : '講習取込'}
-              </button>
-              <button
-                onClick={handleOpenTemplateDialog}
-                className="flex items-center gap-1 px-3 py-1.5 text-xs bg-gray-50 text-gray-700 hover:bg-gray-100 rounded transition-colors"
-              >
-                <Settings className="w-3.5 h-3.5" />
-                テンプレート
-              </button>
-            </>
-          )}
-        </div>
+        )}
       </div>
 
       {/* メインコンテンツ */}
@@ -397,8 +284,7 @@ export function MonthlyTaskPage() {
         <div className="flex-1 flex items-center justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#d32f2f]" />
         </div>
-      ) : layoutMode === 'list' ? (
-        /* === リストモード（案C）: タスクリスト + サマリー＆Googleカレンダー === */
+      ) : (
         <div className="flex-1 flex gap-3 pt-3 min-h-0">
           {/* 左カラム: タスクリスト */}
           <div className="w-[400px] flex-shrink-0 flex flex-col gap-3 min-h-0">
@@ -410,10 +296,11 @@ export function MonthlyTaskPage() {
                 month={month}
                 selectedDate={selectedDate}
                 onSelectDate={setSelectedDate}
+                onToggleCheck={handleToggleCheck}
                 canEdit={canEdit}
               />
             </div>
-            {/* タスクプール（リストモードでも利用可能） */}
+            {/* タスクプール */}
             {canEdit && (
               <TaskPool
                 templates={templates.length > 0 ? templates : []}
@@ -434,85 +321,6 @@ export function MonthlyTaskPage() {
               year={year}
               month={month}
             />
-          </div>
-        </div>
-      ) : (
-        /* === カレンダーモード（従来表示） === */
-        <div className="flex-1 flex gap-4 pt-3 min-h-0">
-          {/* 左カラム: カレンダー + 教室別進捗 + プール */}
-          <div className="w-[420px] flex-shrink-0 flex flex-col gap-3 overflow-y-auto">
-            <TaskCalendar
-              tasks={tasks}
-              schools={activeSchools}
-              year={year}
-              month={month}
-              selectedDate={selectedDate}
-              onSelectDate={setSelectedDate}
-              onDropTask={handleDropTask}
-              onDropPoolItem={handleDropPoolItem}
-              canEdit={canEdit}
-            />
-
-            {/* 教室別進捗 */}
-            {schoolProgress.length > 0 && (
-              <div className="border border-gray-200 rounded-lg p-3 bg-white">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <Building2 className="w-3.5 h-3.5 text-gray-500" />
-                  <span className="text-xs font-bold text-gray-600">教室別進捗</span>
-                </div>
-                <div className="space-y-1.5">
-                  {schoolProgress.map(({ school, completed, total, percent }) => (
-                    <div key={school.id} className="flex items-center gap-2">
-                      <span className="text-[11px] text-gray-600 w-20 truncate">{school.name}</span>
-                      <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all ${
-                            percent >= 80 ? 'bg-green-500' : percent >= 50 ? 'bg-yellow-500' : 'bg-red-400'
-                          }`}
-                          style={{ width: `${percent}%` }}
-                        />
-                      </div>
-                      <span className="text-[10px] text-gray-400 w-12 text-right">{completed}/{total}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* タスクプール */}
-            {canEdit && (
-              <TaskPool
-                templates={templates.length > 0 ? templates : []}
-                onLoadTemplate={handleLoadTemplateToCalendar}
-                onDropPoolItem={() => {}}
-                canEdit={canEdit}
-                poolItems={poolItems}
-                onSetPoolItems={setPoolItems}
-              />
-            )}
-          </div>
-
-          {/* 右カラム: 選択日のタスク詳細 */}
-          <div className="flex-1 min-w-0 border border-gray-200 rounded-lg bg-white overflow-hidden">
-            {selectedDate ? (
-              <TaskDayPanel
-                date={selectedDate}
-                tasks={tasks}
-                schools={activeSchools}
-                year={year}
-                month={month}
-                canEdit={canEdit}
-                onToggleCheck={handleToggleCheck}
-                onCreateTask={handleCreateTask}
-                onUpdateTask={handleUpdateTask}
-                onDeleteTask={handleDeleteTask}
-                onUpdateNote={handleUpdateNote}
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full text-gray-400 text-sm">
-                カレンダーの日付をクリックしてください
-              </div>
-            )}
           </div>
         </div>
       )}

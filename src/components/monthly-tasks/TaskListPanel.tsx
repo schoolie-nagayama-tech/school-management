@@ -11,6 +11,7 @@ interface TaskListPanelProps {
   month: number;
   selectedDate: string | null;
   onSelectDate: (date: string) => void;
+  onToggleCheck: (taskId: string, schoolId: string, isCompleted: boolean) => void;
   canEdit: boolean;
 }
 
@@ -31,6 +32,7 @@ export function TaskListPanel({
   month: _month,
   selectedDate,
   onSelectDate,
+  onToggleCheck,
   canEdit,
 }: TaskListPanelProps) {
   const [filter, setFilter] = useState<'all' | 'incomplete' | 'overdue'>('all');
@@ -190,17 +192,32 @@ export function TaskListPanel({
                   return (
                     <div
                       key={task.id}
-                      onClick={() => onSelectDate(date)}
-                      className={`flex items-center gap-2 px-3 py-2 border-b border-gray-50 cursor-pointer transition-colors ${
+                      className={`flex items-center gap-2 px-3 py-2 border-b border-gray-50 transition-colors ${
                         isSelected ? 'bg-blue-50/30' : 'hover:bg-gray-50'
                       }`}
                     >
                       <GripVertical className="w-3 h-3 text-gray-300 flex-shrink-0" />
-                      {allDone ? (
-                        <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
-                      ) : (
-                        <Circle className={`w-4 h-4 flex-shrink-0 ${taskIsOverdue ? 'text-red-400' : 'text-gray-300'}`} />
-                      )}
+                      {/* 完了トグル: クリックで全教室の完了/未完了を切り替え */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const newState = !allDone;
+                          for (const s of schools) {
+                            const check = task.checks.find(c => c.school_id === s.id);
+                            if ((check?.is_completed ?? false) !== newState) {
+                              onToggleCheck(task.id, s.id, newState);
+                            }
+                          }
+                        }}
+                        className="flex-shrink-0 hover:scale-110 transition-transform"
+                        title={allDone ? '未完了に戻す' : '完了にする'}
+                      >
+                        {allDone ? (
+                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <Circle className={`w-4 h-4 ${taskIsOverdue ? 'text-red-400' : 'text-gray-300'}`} />
+                        )}
+                      </button>
                       <div className="flex-1 min-w-0">
                         <div className={`text-xs truncate ${allDone ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
                           {task.task_name}
