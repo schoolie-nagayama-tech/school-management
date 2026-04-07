@@ -231,6 +231,46 @@ export function CourseProgressTable({
     return map;
   }, [columnGroups]);
 
+  // 列ごとの集計（check: 完了数/対象数, number: 合計, date: 入力済み数）
+  const columnAggregates = useMemo(() => {
+    const agg: Record<string, { completed: number; total: number; sum: number; filled: number }> = {};
+    for (const item of items) {
+      let completed = 0;
+      let total = 0;
+      let sum = 0;
+      let filled = 0;
+      for (const s of students) {
+        if (item.auto_source && item.column_type === 'number') {
+          const sv = autoValues?.[s.id];
+          let v = 0;
+          if (sv) {
+            if (item.auto_source === 'regular_weekly') v = sv.regular_weekly;
+            else if (item.auto_source === 'course_sessions') v = sv.course_sessions;
+            else if (item.auto_source === 'proposed_extra') {
+              const st = subjectTotals[s.id] ?? 0;
+              v = Math.max(0, st - (sv.course_sessions ?? 0));
+            }
+            else if (item.auto_source === 'subject_proposal') v = getSubjectProposalValue(sv.subject_proposals, item.name);
+          }
+          sum += v;
+          filled++;
+        } else {
+          const d = progressMap.get(`${s.id}:${item.id}`);
+          if (item.column_type === 'check') {
+            if (d?.status !== 'not_applicable') total++;
+            if (d?.status === 'completed') completed++;
+          } else if (item.column_type === 'number') {
+            if (d?.number_value != null) { sum += d.number_value; filled++; }
+          } else if (item.column_type === 'date') {
+            if (d?.date_value) filled++;
+          }
+        }
+      }
+      agg[item.id] = { completed, total, sum, filled };
+    }
+    return agg;
+  }, [items, students, progressMap, autoValues, subjectTotals]);
+
   // グループ別進捗率
   const groupCompletionRates = useMemo(() => {
     const rates: Record<string, { completed: number; total: number }> = {};
@@ -723,6 +763,87 @@ export function CourseProgressTable({
               );
             })}
           </tbody>
+
+          {/* ===== 集計フッター ===== */}
+          <tfoot>
+            <tr className="bg-gray-100/80 border-t-2 border-gray-300">
+              {/* 左固定: ラベル */}
+              <td
+                colSpan={3}
+                className="sticky left-0 z-20 bg-gray-100 px-2 py-1.5 text-[10px] font-bold text-gray-600 border-b border-gray-200"
+                style={{ width: LEFT_TOTAL, minWidth: LEFT_TOTAL }}
+              >
+                列集計
+              </td>
+              {/* 各列の集計値 */}
+              {columnGroups.flatMap((g) => {
+                const cells = g.items.map((item) => {
+                  const agg = columnAggregates[item.id];
+                  const groupColor = g.color;
+
+                  if (item.column_type === 'check') {
+                    const pct = agg && agg.total > 0 ? Math.round((agg.completed / agg.total) * 100) : 0;
+                    return (
+                      <td key={item.id} className="border-b border-gray-200 p-0 text-center">
+                        <Tooltip text={`${agg?.completed ?? 0}/${agg?.total ?? 0} 完了`}>
+                          <div className="w-full py-1 flex flex-col items-center justify-center gap-0.5">
+                            <span className="text-[10px] font-bold" style={{ color: pct >= 80 ? '#10b981' : pct >= 50 ? '#f59e0b' : '#ef4444' }}>
+                              {pct}%
+                            </span>
+                            <span className="text-[8px] text-gray-400">{agg?.completed ?? 0}/{agg?.total ?? 0}</span>
+                          </div>
+                        </Tooltip>
+                      </td>
+                    );
+                  }
+
+                  if (item.column_type === 'number') {
+                    return (
+                      <td key={item.id} className="border-b border-gray-200 p-0 text-center">
+                        <Tooltip text={`合計: ${agg?.sum ?? 0}（${agg?.filled ?? 0}名入力済み）`}>
+                          <div className="w-full py-1 flex flex-col items-center justify-center gap-0.5">
+                            <span className="text-[10px] font-bold" style={{ color: groupColor }}>{agg?.sum ?? 0}</span>
+                            <span className="text-[8px] text-gray-400">{agg?.filled ?? 0}名</span>
+                          </div>
+                        </Tooltip>
+                      </td>
+                    );
+                  }
+
+                  if (item.column_type === 'date') {
+                    return (
+                      <td key={item.id} className="border-b border-gray-200 p-0 text-center">
+                        <Tooltip text={`${agg?.filled ?? 0}/${students.length}名 入力済み`}>
+                          <div className="w-full py-1 flex flex-col items-center justify-center gap-0.5">
+                            <span className="text-[10px] font-bold" style={{ color: groupColor }}>
+                              {agg?.filled ?? 0}/{students.length}
+                            </span>
+                            <span className="text-[8px] text-gray-400">入力済</span>
+                          </div>
+                        </Tooltip>
+                      </td>
+                    );
+                  }
+
+                  return <td key={item.id} className="border-b border-gray-200" />;
+                });
+
+                // 教科別合計列の集計
+                if (g.key === SUBJECT_GROUP_KEY && hasSubjectTotal) {
+                  const grandTotal = Object.values(subjectTotals).reduce((a, b) => a + b, 0);
+                  cells.push(
+                    <td key="_subject_total_footer" className="border-b border-gray-200 p-0 text-center bg-gray-100">
+                      <div className="w-full py-1">
+                        <span className="text-[10px] font-bold" style={{ color: subjectGroup?.color }}>{grandTotal}</span>
+                      </div>
+                    </td>
+                  );
+                }
+
+                return cells;
+              })}
+            </tr>
+          </tfoot>
         </table>
       </div>
 
