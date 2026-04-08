@@ -12,7 +12,7 @@ import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { ChevronUp, ChevronDown, ChevronsUpDown, Search, X } from 'lucide-react';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 // フォーム種別 → フォーム詳細URLパス（/forms/responses/[path]/[period]）
@@ -181,6 +181,11 @@ export default function ResponsesPage() {
   const [filterLinkedStatus, setFilterLinkedStatus] = useState<
     'all' | 'linked' | 'unlinked'
   >((searchParams.get('linked') as 'all' | 'linked' | 'unlinked') || 'all');
+  const [filterChargedStatus, setFilterChargedStatus] = useState<
+    'all' | 'charged' | 'not_charged'
+  >((searchParams.get('charged') as 'all' | 'charged' | 'not_charged') || 'all');
+  const [searchName, setSearchName] = useState(searchParams.get('search') || '');
+  const [searchInput, setSearchInput] = useState(searchParams.get('search') || '');
 
   // ソート
   const [sortKey, setSortKey] = useState<SortKey>(
@@ -197,12 +202,14 @@ export default function ResponsesPage() {
     if (filterPeriod !== 'all') params.set('period', filterPeriod);
     if (filterGrade !== 'all') params.set('grade', String(filterGrade));
     if (filterLinkedStatus !== 'all') params.set('linked', filterLinkedStatus);
+    if (filterChargedStatus !== 'all') params.set('charged', filterChargedStatus);
+    if (searchName) params.set('search', searchName);
     if (sortKey !== 'created_at') params.set('sort', sortKey);
     if (sortOrder !== 'desc') params.set('order', sortOrder);
     const qs = params.toString();
     const newUrl = qs ? `?${qs}` : '/responses';
     router.replace(newUrl, { scroll: false });
-  }, [filterFormType, filterPeriod, filterGrade, filterLinkedStatus, sortKey, sortOrder, router]);
+  }, [filterFormType, filterPeriod, filterGrade, filterLinkedStatus, filterChargedStatus, searchName, sortKey, sortOrder, router]);
 
   const handleSort = useCallback((key: SortKey) => {
     setSortKey((prev) => {
@@ -294,6 +301,12 @@ export default function ResponsesPage() {
       if (filterLinkedStatus !== 'all') {
         filters.linkedStatus = filterLinkedStatus;
       }
+      if (filterChargedStatus !== 'all') {
+        filters.chargedStatus = filterChargedStatus;
+      }
+      if (searchName.trim()) {
+        filters.search = searchName.trim();
+      }
 
       // 複数教室の期間を取得してperiod_keyで重複排除
       const fetchPeriods = async () => {
@@ -329,7 +342,7 @@ export default function ResponsesPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [getSelectedSchoolIds, filterFormType, filterPeriod, filterGrade, filterLinkedStatus, profile?.role, masterSchools]);
+  }, [getSelectedSchoolIds, filterFormType, filterPeriod, filterGrade, filterLinkedStatus, filterChargedStatus, searchName, profile?.role, masterSchools]);
 
   useEffect(() => {
     if (selectedSchoolId !== null) {
@@ -390,9 +403,54 @@ export default function ResponsesPage() {
           </div>
         )}
 
+        {/* 名前検索 */}
+        <div className="mb-4 bg-white rounded-xl border border-[#e5e7eb] p-4">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              setSearchName(searchInput.trim());
+            }}
+            className="flex items-center gap-3"
+          >
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="生徒名で検索（例：田中）"
+                className="w-full pl-10 pr-10 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-[#3b82f6] placeholder:text-gray-400"
+              />
+              {searchInput && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchInput('');
+                    setSearchName('');
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-[#1e3a5f] text-white rounded-lg text-sm hover:bg-[#2c4f7c] transition-colors"
+            >
+              検索
+            </button>
+          </form>
+          {searchName && (
+            <p className="mt-2 text-sm text-gray-500">
+              「{searchName}」の検索結果: {responses.length}件
+            </p>
+          )}
+        </div>
+
         {/* フィルター */}
         <div className="mb-6 bg-white rounded-xl border border-[#e5e7eb] p-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div>
               <label className="block text-sm font-medium text-[#1f2937] mb-2">
                 フォーム種別
@@ -457,7 +515,7 @@ export default function ResponsesPage() {
 
             <div>
               <label className="block text-sm font-medium text-[#1f2937] mb-2">
-                処理状態
+                紐付け状態
               </label>
               <select
                 value={filterLinkedStatus}
@@ -471,9 +529,29 @@ export default function ResponsesPage() {
                 <option value="unlinked">未紐付け</option>
               </select>
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[#1f2937] mb-2">
+                計上状態
+              </label>
+              <select
+                value={filterChargedStatus}
+                onChange={(e) =>
+                  setFilterChargedStatus(e.target.value as 'all' | 'charged' | 'not_charged')
+                }
+                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+              >
+                <option value="all">すべて</option>
+                <option value="charged">計上済み</option>
+                <option value="not_charged">未計上</option>
+              </select>
+            </div>
           </div>
-          {(filterFormType !== 'all' || filterPeriod !== 'all' || filterGrade !== 'all' || filterLinkedStatus !== 'all') && (
-            <div className="mt-3 text-right">
+          {(filterFormType !== 'all' || filterPeriod !== 'all' || filterGrade !== 'all' || filterLinkedStatus !== 'all' || filterChargedStatus !== 'all' || searchName) && (
+            <div className="mt-3 flex items-center justify-between">
+              <p className="text-sm text-gray-500">
+                {responses.length}件表示
+              </p>
               <button
                 type="button"
                 onClick={() => {
@@ -481,6 +559,9 @@ export default function ResponsesPage() {
                   setFilterPeriod('all');
                   setFilterGrade('all');
                   setFilterLinkedStatus('all');
+                  setFilterChargedStatus('all');
+                  setSearchInput('');
+                  setSearchName('');
                 }}
                 className="text-sm text-blue-600 hover:text-blue-800 cursor-pointer"
               >
