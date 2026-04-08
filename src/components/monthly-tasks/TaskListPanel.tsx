@@ -170,6 +170,18 @@ export function TaskListPanel({
     e.preventDefault();
     setDragOverDate(null);
     setDraggingTaskId(null);
+
+    // プールアイテムからのドロップ
+    const poolRaw = e.dataTransfer.getData('text/pool-item');
+    if (poolRaw && onCreateTask) {
+      try {
+        const poolItem = JSON.parse(poolRaw);
+        await onCreateTask(targetDate, poolItem.task_name, poolItem.category);
+      } catch { /* ignore */ }
+      return;
+    }
+
+    // 既存タスクの移動
     const taskId = e.dataTransfer.getData('taskId');
     const sourceDate = e.dataTransfer.getData('sourceDate');
     if (!taskId || sourceDate === targetDate || !onMoveTask) return;

@@ -89,6 +89,16 @@ export function MonthlyTaskPage() {
     fetchTasks();
   }, [fetchTasks]);
 
+  // テンプレートを初回ロード（タスクプール表示用）
+  useEffect(() => {
+    (async () => {
+      try {
+        const tpls = await getTemplates();
+        setTemplates(tpls);
+      } catch { /* ignore */ }
+    })();
+  }, []);
+
   // Googleカレンダー連携状態＋イベントを1回のAPI呼び出しで取得
   const [calendarEvents, setCalendarEvents] = useState<Array<{ id: string; summary: string; start: string; end: string; allDay: boolean }>>([]);
   const [calendarLoading, setCalendarLoading] = useState(false);
@@ -552,9 +562,14 @@ export function MonthlyTaskPage() {
                 templates={templates.length > 0 ? templates : []}
                 onLoadTemplate={handleLoadTemplateToCalendar}
                 onDropPoolItem={() => {}}
+                onAddPoolItemAsTask={async (item, targetDate) => {
+                  await handleCreateTask(targetDate, item.task_name, item.category);
+                }}
                 canEdit={canEdit}
                 poolItems={poolItems}
                 onSetPoolItems={setPoolItems}
+                year={year}
+                month={month}
               />
             )}
           </div>
