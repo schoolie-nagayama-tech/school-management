@@ -102,6 +102,10 @@ export async function saveTemplate(year: number, month: number, name: string) {
   return result.data as MonthlyTaskTemplate;
 }
 
+export async function setGoogleEventId(taskId: string, googleEventId: string | null) {
+  await postTaskApi({ action: 'set_google_event_id', taskId, googleEventId });
+}
+
 export async function deleteTemplate(templateId: string) {
   await postTaskApi({ action: 'delete_template', templateId });
 }

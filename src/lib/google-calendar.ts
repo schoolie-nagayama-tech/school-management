@@ -148,6 +148,7 @@ interface CalendarEventParams {
   startTime: string;     // HH:mm
   durationMinutes: number;
   allDay?: boolean;      // 終日イベント
+  reminders?: Array<{ method: 'popup' | 'email'; minutes: number }>;
 }
 
 export async function createCalendarEvent(
@@ -170,6 +171,9 @@ export async function createCalendarEvent(
           start: { date: params.date },
           end: { date: params.date },
           transparency: 'transparent' as const,
+          ...(params.reminders?.length ? {
+            reminders: { useDefault: false, overrides: params.reminders },
+          } : {}),
         }
       : {
           summary: params.summary,
@@ -183,6 +187,9 @@ export async function createCalendarEvent(
             timeZone: 'Asia/Tokyo',
           },
           transparency: 'transparent' as const,
+          ...(params.reminders?.length ? {
+            reminders: { useDefault: false, overrides: params.reminders },
+          } : {}),
         };
 
     const { data: event } = await calendar.events.insert({
@@ -194,6 +201,35 @@ export async function createCalendarEvent(
   } catch (error) {
     console.error('[google-calendar] イベント作成失敗:', error);
     return { success: false, error: 'カレンダーイベントの作成に失敗しました' };
+  }
+}
+
+// ============================================
+// カレンダーイベント更新（タイトル変更等）
+// ============================================
+
+export async function updateCalendarEvent(
+  userId: string,
+  eventId: string,
+  updates: { summary?: string }
+): Promise<{ success: boolean; error?: string }> {
+  const oauth2Client = await getAuthenticatedClient(userId);
+  if (!oauth2Client) {
+    return { success: false, error: 'Google Calendar未連携' };
+  }
+
+  const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+
+  try {
+    await calendar.events.patch({
+      calendarId: 'primary',
+      eventId,
+      requestBody: updates,
+    });
+    return { success: true };
+  } catch (error) {
+    console.error('[google-calendar] イベント更新失敗:', error);
+    return { success: false, error: 'カレンダーイベントの更新に失敗しました' };
   }
 }
 

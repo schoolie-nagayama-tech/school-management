@@ -15,6 +15,7 @@ import {
   getTemplates,
   saveTemplate,
   deleteTemplate as deleteTemplateApi,
+  setGoogleEventId,
 } from '@/lib/api/monthlyTasks';
 import type { MonthlyTaskWithChecks, MonthlyTaskTemplate } from '@/types/database';
 import { useToast } from '@/hooks/useToast';
@@ -182,9 +183,45 @@ export function MonthlyTaskPage() {
   }, [tasks, activeSchools, now]);
 
 
+  // Unicode取り消し線を適用/除去する関数
+  const applyStrikethrough = (text: string) =>
+    text.split('').map(c => c + '\u0336').join('');
+  const removeStrikethrough = (text: string) =>
+    text.replace(/\u0336/g, '');
+
+  // Googleカレンダーイベントのタイトルを更新（完了時に取り消し線）
+  const updateCalendarEventTitle = useCallback(
+    async (task: MonthlyTaskWithChecks, allCompleted: boolean) => {
+      if (!task.google_event_id) return;
+      try {
+        const session = (await (await import('@/lib/supabase')).supabase.auth.getSession()).data.session;
+        if (!session) return;
+
+        const cleanName = removeStrikethrough(task.task_name);
+        const newSummary = allCompleted ? applyStrikethrough(cleanName) : cleanName;
+
+        await fetch('/api/integrations/google/calendar/events', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            eventId: task.google_event_id,
+            summary: newSummary,
+          }),
+        });
+      } catch {
+        // カレンダー更新失敗は無視（メインのチェック処理を妨げない）
+      }
+    },
+    []
+  );
+
   // タスク操作
   const handleToggleCheck = useCallback(
     async (taskId: string, schoolId: string, isCompleted: boolean) => {
+      let updatedTask: MonthlyTaskWithChecks | undefined;
       setTasks((prev) =>
         prev.map((t) => {
           if (t.id !== taskId) return t;
@@ -201,13 +238,25 @@ export function MonthlyTaskPage() {
                   completed_at: isCompleted ? new Date().toISOString() : null, completed_by: null,
                   created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
               ];
-          return { ...t, checks: updatedChecks };
+          updatedTask = { ...t, checks: updatedChecks };
+          return updatedTask;
         })
       );
-      try { await toggleCheck(taskId, schoolId, isCompleted); }
+      try {
+        await toggleCheck(taskId, schoolId, isCompleted);
+
+        // Googleカレンダーイベントの取り消し線を更新
+        if (updatedTask?.google_event_id) {
+          const schoolIds = activeSchools.map(s => s.id);
+          const allDone = schoolIds.every(sid =>
+            updatedTask!.checks.find(c => c.school_id === sid)?.is_completed
+          );
+          updateCalendarEventTitle(updatedTask, allDone);
+        }
+      }
       catch { toastError('チェックの更新に失敗しました'); fetchTasks(); }
     },
-    [fetchTasks, toastError]
+    [fetchTasks, toastError, activeSchools, updateCalendarEventTitle]
   );
 
   // タスク追加
@@ -270,6 +319,67 @@ export function MonthlyTaskPage() {
       } catch { toastError('タスクの削除に失敗しました'); }
     },
     [success, toastError, singleSchoolId, fetchTasks]
+  );
+
+  // Googleカレンダーにタスク登録
+  const handleSyncTaskToCalendar = useCallback(
+    async (taskId: string) => {
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+
+      try {
+        const session = (await (await import('@/lib/supabase')).supabase.auth.getSession()).data.session;
+        if (!session) { toastError('認証が必要です'); return; }
+
+        // 既に登録済みの場合は何もしない
+        if (task.google_event_id) {
+          success('既にカレンダーに登録済みです');
+          return;
+        }
+
+        // 13:00に0分のイベントとして作成（予定なし + リマインダーのみ）
+        const res = await fetch('/api/integrations/google/calendar/events', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            summary: task.task_name,
+            description: task.note || '',
+            date: task.task_date,
+            startTime: '13:00',
+            durationMinutes: 0,
+            allDay: false,
+            reminders: [
+              { method: 'popup', minutes: 1440 }, // 前日13:00
+              { method: 'popup', minutes: 0 },    // 当日13:00
+            ],
+          }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'カレンダー登録に失敗しました');
+        }
+
+        const { data } = await res.json();
+
+        // google_event_id をタスクに保存
+        await setGoogleEventId(taskId, data.eventId);
+
+        // ローカルステート更新
+        setTasks(prev => prev.map(t =>
+          t.id === taskId ? { ...t, google_event_id: data.eventId } : t
+        ));
+
+        success('Googleカレンダーに登録しました');
+        fetchCalendarData();
+      } catch (e) {
+        toastError(e instanceof Error ? e.message : 'カレンダー登録に失敗しました');
+      }
+    },
+    [tasks, toastError, success, fetchCalendarData]
   );
 
   // 講習タスク取り込み
@@ -430,8 +540,10 @@ export function MonthlyTaskPage() {
                 onDeleteTask={handleDeleteTask}
                 onUpdateTask={handleUpdateTask}
                 onMoveTask={handleMoveTask}
+                onSyncToCalendar={handleSyncTaskToCalendar}
                 singleSchoolId={singleSchoolId}
                 canEdit={canEdit}
+                googleCalendarConnected={!!googleCalendarEmail}
               />
             </div>
             {/* タスクプール */}

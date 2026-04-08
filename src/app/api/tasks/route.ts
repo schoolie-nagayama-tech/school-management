@@ -516,6 +516,18 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ data });
       }
 
+      case 'set_google_event_id': {
+        if (!canEdit) return NextResponse.json({ error: '権限がありません' }, { status: 403 });
+        const { taskId: eventTaskId, googleEventId } = body;
+        if (!eventTaskId) return NextResponse.json({ error: 'taskId は必須です' }, { status: 400 });
+        const { error: eventIdError } = await supabaseAdmin
+          .from('monthly_tasks')
+          .update({ google_event_id: googleEventId || null, updated_at: new Date().toISOString() })
+          .eq('id', eventTaskId);
+        if (eventIdError) throw eventIdError;
+        return NextResponse.json({ success: true });
+      }
+
       case 'delete_template': {
         if (!canEdit) return NextResponse.json({ error: '権限がありません' }, { status: 403 });
         const { templateId: delTplId } = body;

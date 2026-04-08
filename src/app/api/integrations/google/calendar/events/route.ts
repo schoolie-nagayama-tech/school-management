@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getApiAuth } from '@/lib/api-auth';
-import { listCalendarEvents, createCalendarEvent, getCalendarConnectionStatus } from '@/lib/google-calendar';
+import { listCalendarEvents, createCalendarEvent, updateCalendarEvent, getCalendarConnectionStatus } from '@/lib/google-calendar';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { summary, description, date, startTime, durationMinutes, allDay } = body;
+  const { summary, description, date, startTime, durationMinutes, allDay, reminders } = body;
 
   if (!summary || !date) {
     return NextResponse.json({ error: 'summary と date は必須です' }, { status: 400 });
@@ -76,6 +76,7 @@ export async function POST(request: NextRequest) {
     startTime: startTime || '09:00',
     durationMinutes: durationMinutes || 60,
     allDay: !!allDay,
+    reminders: reminders || undefined,
   });
 
   if (!result.success) {
@@ -83,4 +84,31 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({ data: { eventId: result.eventId } });
+}
+
+/**
+ * Google Calendar イベント更新（タイトル変更等）
+ * PATCH /api/integrations/google/calendar/events
+ * Body: { eventId, summary }
+ */
+export async function PATCH(request: NextRequest) {
+  const { auth } = await getApiAuth(request);
+  if (!auth) {
+    return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
+  }
+
+  const body = await request.json();
+  const { eventId, summary } = body;
+
+  if (!eventId) {
+    return NextResponse.json({ error: 'eventId は必須です' }, { status: 400 });
+  }
+
+  const result = await updateCalendarEvent(auth.userId, eventId, { summary });
+
+  if (!result.success) {
+    return NextResponse.json({ error: result.error }, { status: 400 });
+  }
+
+  return NextResponse.json({ data: { success: true } });
 }

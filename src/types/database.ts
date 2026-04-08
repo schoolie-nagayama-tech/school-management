@@ -3501,6 +3501,7 @@ export interface MonthlyTask {
   task_name: string;
   note: string | null;
   url: string | null;
+  google_event_id: string | null;
   sort_order: number;
   linked_schedule_task_id: string | null;
   template_id: string | null;

@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react';
 import type { MonthlyTaskWithChecks, MonthlyTaskOverride, School } from '@/types/database';
-import { CheckCircle2, Circle, GripVertical, Plus, ChevronDown, ChevronRight, Trash2, ExternalLink, StickyNote, Link2 } from 'lucide-react';
+import { CheckCircle2, Circle, GripVertical, Plus, ChevronDown, ChevronRight, Trash2, ExternalLink, StickyNote, Link2, Calendar, Loader2 } from 'lucide-react';
 
 interface TaskListPanelProps {
   tasks: MonthlyTaskWithChecks[];
@@ -16,8 +16,10 @@ interface TaskListPanelProps {
   onDeleteTask?: (taskId: string) => Promise<void>;
   onUpdateTask?: (taskId: string, updates: Record<string, unknown>) => Promise<void>;
   onMoveTask?: (taskId: string, newDate: string) => Promise<void>;
+  onSyncToCalendar?: (taskId: string) => Promise<void>;
   singleSchoolId?: string;
   canEdit: boolean;
+  googleCalendarConnected?: boolean;
 }
 
 /** オーバーライドを適用したタスクを返す */
@@ -59,8 +61,10 @@ export function TaskListPanel({
   onDeleteTask,
   onUpdateTask,
   onMoveTask,
+  onSyncToCalendar,
   singleSchoolId,
   canEdit,
+  googleCalendarConnected,
 }: TaskListPanelProps) {
   const [filter, setFilter] = useState<'all' | 'incomplete' | 'overdue'>('all');
   const [collapsedDates, setCollapsedDates] = useState<Set<string>>(new Set());
@@ -78,6 +82,7 @@ export function TaskListPanel({
   const [editUrl, setEditUrl] = useState('');
   const [editNote, setEditNote] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [syncingTaskId, setSyncingTaskId] = useState<string | null>(null);
   const [dragOverDate, setDragOverDate] = useState<string | null>(null);
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
   const addInputRef = useRef<HTMLInputElement>(null);
@@ -493,6 +498,31 @@ export function TaskListPanel({
                             );
                           })}
                         </div>
+                        {/* Googleカレンダー登録ボタン */}
+                        {googleCalendarConnected && onSyncToCalendar && (
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (syncingTaskId === task.id) return;
+                              setSyncingTaskId(task.id);
+                              try { await onSyncToCalendar(task.id); }
+                              finally { setSyncingTaskId(null); }
+                            }}
+                            disabled={syncingTaskId === task.id}
+                            className={`flex-shrink-0 p-0.5 transition-all ${
+                              task.google_event_id
+                                ? 'text-blue-500 hover:text-blue-700'
+                                : 'text-gray-300 hover:text-blue-500 opacity-0 group-hover:opacity-100'
+                            }`}
+                            title={task.google_event_id ? 'カレンダー登録済み' : 'Googleカレンダーに登録'}
+                          >
+                            {syncingTaskId === task.id ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Calendar className={`w-3 h-3 ${task.google_event_id ? 'fill-current' : ''}`} />
+                            )}
+                          </button>
+                        )}
                         {/* 削除ボタン */}
                         {canEdit && !task.linked_schedule_task_id && onDeleteTask && (
                           <button
