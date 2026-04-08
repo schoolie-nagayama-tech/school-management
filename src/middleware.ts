@@ -36,6 +36,15 @@ function getClientIp(request: NextRequest): string {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // セッション更新が不要な静的メタファイルはスキップ（Edge の無駄な getSession を削減）
+  if (
+    pathname === '/robots.txt' ||
+    pathname === '/sitemap.xml' ||
+    pathname.endsWith('.webmanifest')
+  ) {
+    return NextResponse.next();
+  }
+
   // ── 公開APIレート制限 ──
   for (const rule of PUBLIC_RATE_LIMITS) {
     if (pathname.startsWith(rule.path)) {

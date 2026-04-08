@@ -1,9 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import type { BulletinPost, BulletinLabel } from '@/types/bulletin';
 import type { School } from '@/types/database';
-import { Modal, Button, Input, RichTextEditor } from '@/components/ui';
+import { Modal, Button, Input } from '@/components/ui';
+
+const RichTextEditor = dynamic(
+  () => import('@/components/ui/RichTextEditor').then((m) => m.RichTextEditor),
+  {
+    loading: () => (
+      <div className="min-h-[200px] flex items-center justify-center text-sm text-gray-500 border rounded-lg">
+        エディタを読み込み中...
+      </div>
+    ),
+  }
+);
 
 interface BulletinPostModalProps {
   isOpen: boolean;

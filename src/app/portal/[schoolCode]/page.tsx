@@ -5,7 +5,8 @@ import { getActiveFormPeriod } from '@/lib/api/form-periods';
 import { PortalMenuList } from '@/components/portal';
 import type { FormType, PortalMenu } from '@/types/database';
 
-// 管理画面での公開/非公開の切り替えを保護者ポータルに即反映するためキャッシュしない
+// 管理画面での公開/非公開の切り替えを保護者ポータルに即反映するため ISR は使わない。
+// 負荷対策はエッジ・DB・参照クエリの最適化で行う（ここで revalidate を上げるとメニューが遅れて見える）。
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 

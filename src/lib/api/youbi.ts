@@ -217,7 +217,7 @@ export async function submitYoubiResponse(
  * 曜日変更回答一覧を取得
  */
 export async function getYoubiResponses(
-  schoolId: string,
+  schoolId: string | string[],
   periodKey: string,
   filters?: YoubiResponseFilters
 ): Promise<YoubiResponse[]> {
@@ -257,7 +257,7 @@ export async function getYoubiResponses(
  * 曜日変更集計データを取得
  */
 export async function getYoubiStats(
-  schoolId: string,
+  schoolId: string | string[],
   periodKey: string
 ): Promise<YoubiStats> {
   const responses = await getYoubiResponses(schoolId, periodKey);

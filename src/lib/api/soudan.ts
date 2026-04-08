@@ -217,7 +217,7 @@ export async function submitSoudanResponse(
  * お客様相談回答一覧を取得
  */
 export async function getSoudanResponses(
-  schoolId: string,
+  schoolId: string | string[],
   periodKey: string,
   filters?: SoudanResponseFilters
 ): Promise<SoudanResponse[]> {
@@ -260,7 +260,7 @@ export async function getSoudanResponses(
  * お客様相談集計データを取得
  */
 export async function getSoudanStats(
-  schoolId: string,
+  schoolId: string | string[],
   periodKey: string
 ): Promise<SoudanStats> {
   const responses = await getSoudanResponses(schoolId, periodKey);

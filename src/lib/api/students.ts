@@ -9,6 +9,12 @@ import type {
 import { setStudentSubjects } from './subjects';
 import { getDefaultSchoolId } from './schools';
 
+/** 一覧取得用（Row の列と一致。将来の列追加時は型と同期すること） */
+const STUDENT_LIST_COLUMNS =
+  'id,school_id,student_code,last_name,first_name,last_name_kana,first_name_kana,grade,status,school_name,class_name,club,subject_other,deleted_at,created_at,updated_at';
+
+const SUBJECT_LIST_COLUMNS = 'id,name,grade_category,sort_order,duration_minutes,created_at';
+
 // ログを記録する関数
 async function logStudentAction(
   studentId: string,
@@ -47,23 +53,37 @@ export interface SchedulePatternSummary {
   subject_names: string[];
 }
 
-export async function getStudents(
-  searchQuery?: string,
-  schoolIds?: string[] // 複数教室IDを指定可能（未指定の場合はデフォルト教室）
-): Promise<(Student & { subjects: Subject[]; schedulePatterns: SchedulePatternSummary[] })[]> {
-  // schoolIdsが指定されていない場合はデフォルト教室を使用
-  const targetSchoolIds = schoolIds && schoolIds.length > 0 
-    ? schoolIds 
-    : [getDefaultSchoolId()];
+export type EnrichedStudent = Student & {
+  subjects: Subject[];
+  schedulePatterns: SchedulePatternSummary[];
+};
 
-  // 基本クエリ: school_idで絞り込み、deleted_at is nullのみ
-  let query = supabase
-    .from('students')
-    .select('*')
-    .in('school_id', targetSchoolIds)
-    .is('deleted_at', null);
+type StudentListFilterOptions = {
+  activeOnly?: boolean;
+  grade?: number | 'all';
+};
 
-  // 検索クエリがある場合
+function buildStudentsBaseQuery(
+  searchQuery: string | undefined,
+  targetSchoolIds: string[],
+  listFilters: StudentListFilterOptions,
+  selectClause: string | { count: 'exact' }
+) {
+  // count 付き select は文字列 + 第2引数
+  let query =
+    typeof selectClause === 'string'
+      ? supabase.from('students').select(selectClause)
+      : supabase.from('students').select(STUDENT_LIST_COLUMNS, selectClause);
+
+  query = query.in('school_id', targetSchoolIds).is('deleted_at', null);
+
+  if (listFilters.activeOnly) {
+    query = query.eq('status', 'active');
+  }
+  if (listFilters.grade !== undefined && listFilters.grade !== 'all') {
+    query = query.eq('grade', listFilters.grade);
+  }
+
   if (searchQuery && searchQuery.trim()) {
     const trimmed = searchQuery.trim();
     query = query.or(
@@ -71,38 +91,30 @@ export async function getStudents(
     );
   }
 
-  // DB側でgrade/kana/nameを先にソート（nullsは最後）
-  query = query
+  // PostgreSQL の文字列順で active < inactive < withdrawn（従来の JS ソートと一致）
+  return query
+    .order('status', { ascending: true })
     .order('grade', { ascending: true })
     .order('last_name_kana', { ascending: true, nullsFirst: false })
     .order('first_name_kana', { ascending: true, nullsFirst: false })
     .order('last_name', { ascending: true })
     .order('first_name', { ascending: true })
     .order('student_code', { ascending: true });
+}
 
-  const { data: students, error } = await query;
-
-  if (error) {
-    console.error('Error fetching students:', error);
-    throw new Error('生徒一覧の取得に失敗しました');
-  }
-
-  if (!students || students.length === 0) return [];
-
-  const studentsTyped = students as Student[];
-
-  // status順のみJS側でソート（active→inactive→withdrawn）、DB順を安定ソートで保持
-  const statusOrder: Record<string, number> = { active: 1, inactive: 2, withdrawn: 3 };
-  studentsTyped.sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
+async function enrichStudentsWithRelations(
+  studentsTyped: Student[]
+): Promise<EnrichedStudent[]> {
+  if (studentsTyped.length === 0) return [];
 
   const studentIds = studentsTyped.map((s) => s.id);
-  const emptyResult = () => studentsTyped.map((student) => ({
-    ...student,
-    subjects: [] as Subject[],
-    schedulePatterns: [] as SchedulePatternSummary[],
-  }));
+  const emptyResult = (): EnrichedStudent[] =>
+    studentsTyped.map((student) => ({
+      ...student,
+      subjects: [] as Subject[],
+      schedulePatterns: [] as SchedulePatternSummary[],
+    }));
 
-  // 受講科目と通塾日程パターンを並列取得
   const [ssResult, patternsResult] = await Promise.all([
     supabase.from('student_subjects').select('student_id, subject_id').in('student_id', studentIds),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -121,21 +133,29 @@ export async function getStudents(
   }
   const studentSubjects = ssResult.data || [];
 
-  // 全科目IDを収集（受講科目＋通塾日程の科目）
   const allSubjectIdSet = new Set<string>();
-  studentSubjects.forEach((ss) => { if (ss.subject_id) allSubjectIdSet.add(ss.subject_id); });
-  const rawPatterns = (patternsResult.data || []) as { student_id: string; day_of_week: number; subject_ids: string[] }[];
-  rawPatterns.forEach((p) => { (p.subject_ids || []).forEach((id: string) => allSubjectIdSet.add(id)); });
+  studentSubjects.forEach((ss) => {
+    if (ss.subject_id) allSubjectIdSet.add(ss.subject_id);
+  });
+  const rawPatterns = (patternsResult.data || []) as {
+    student_id: string;
+    day_of_week: number;
+    subject_ids: string[];
+  }[];
+  rawPatterns.forEach((p) => {
+    (p.subject_ids || []).forEach((id: string) => allSubjectIdSet.add(id));
+  });
 
-  // 全科目を一括取得
   const allSubjectIds = Array.from(allSubjectIdSet);
   const subjectsMap = new Map<string, Subject>();
   if (allSubjectIds.length > 0) {
-    const { data: subjects } = await supabase.from('subjects').select('*').in('id', allSubjectIds);
+    const { data: subjects } = await supabase
+      .from('subjects')
+      .select(SUBJECT_LIST_COLUMNS)
+      .in('id', allSubjectIds);
     ((subjects || []) as Subject[]).forEach((s) => subjectsMap.set(s.id, s));
   }
 
-  // 生徒×受講科目マップ
   const studentSubjectsMap = new Map<string, string[]>();
   studentSubjects.forEach((ss) => {
     if (ss.student_id && ss.subject_id) {
@@ -144,7 +164,6 @@ export async function getStudents(
     }
   });
 
-  // 生徒×通塾日程パターンマップ
   const patternsMap = new Map<string, SchedulePatternSummary[]>();
   for (const p of rawPatterns) {
     if (!patternsMap.has(p.student_id)) patternsMap.set(p.student_id, []);
@@ -166,6 +185,124 @@ export async function getStudents(
       schedulePatterns: patternsMap.get(student.id) || [],
     };
   });
+}
+
+export interface GetStudentsPageOptions {
+  searchQuery?: string;
+  schoolIds?: string[];
+  activeOnly?: boolean;
+  grade?: number | 'all';
+  offset: number;
+  limit: number;
+}
+
+export interface GetStudentsPageResult {
+  rows: EnrichedStudent[];
+  totalCount: number;
+}
+
+/**
+ * 生徒名簿タブ用ページング（他機能は従来どおり getStudents の全件を利用）
+ */
+export async function getStudentsPage(opts: GetStudentsPageOptions): Promise<GetStudentsPageResult> {
+  const targetSchoolIds =
+    opts.schoolIds && opts.schoolIds.length > 0 ? opts.schoolIds : [getDefaultSchoolId()];
+  const { offset, limit } = opts;
+  if (limit <= 0) {
+    return { rows: [], totalCount: 0 };
+  }
+
+  const listFilters: StudentListFilterOptions = {
+    activeOnly: opts.activeOnly,
+    grade: opts.grade,
+  };
+
+  const query = buildStudentsBaseQuery(opts.searchQuery, targetSchoolIds, listFilters, {
+    count: 'exact',
+  }).range(offset, offset + limit - 1);
+
+  const { data: students, error, count } = await query;
+
+  if (error) {
+    console.error('Error fetching students page:', error);
+    throw new Error('生徒一覧の取得に失敗しました');
+  }
+
+  const studentsTyped = (students || []) as Student[];
+  const rows = await enrichStudentsWithRelations(studentsTyped);
+  return { rows, totalCount: count ?? 0 };
+}
+
+/** CSV インポートの重複チェック用（軽量） */
+export async function getStudentCodesInSchools(schoolIds: string[]): Promise<Set<string>> {
+  if (schoolIds.length === 0) return new Set();
+  const { data, error } = await supabase
+    .from('students')
+    .select('student_code')
+    .in('school_id', schoolIds)
+    .is('deleted_at', null)
+    .not('student_code', 'is', null);
+
+  if (error) {
+    console.error('Error fetching student codes:', error);
+    throw new Error('生徒コードの取得に失敗しました');
+  }
+  return new Set(
+    (data || []).map((r) => r.student_code).filter((c): c is string => typeof c === 'string' && c.length > 0)
+  );
+}
+
+/** 休会・退会の件数（トースト用・ページング時の名簿でも利用） */
+export async function countNonActiveStudents(
+  searchQuery: string | undefined,
+  schoolIds: string[] | undefined,
+  listFilters: StudentListFilterOptions
+): Promise<number> {
+  const targetSchoolIds =
+    schoolIds && schoolIds.length > 0 ? schoolIds : [getDefaultSchoolId()];
+  let query = supabase
+    .from('students')
+    .select('*', { count: 'exact', head: true })
+    .in('school_id', targetSchoolIds)
+    .is('deleted_at', null)
+    .neq('status', 'active');
+
+  if (listFilters.grade !== undefined && listFilters.grade !== 'all') {
+    query = query.eq('grade', listFilters.grade);
+  }
+  if (searchQuery && searchQuery.trim()) {
+    const trimmed = searchQuery.trim();
+    query = query.or(
+      `last_name.ilike.%${trimmed}%,first_name.ilike.%${trimmed}%,last_name_kana.ilike.%${trimmed}%,first_name_kana.ilike.%${trimmed}%,student_code.ilike.%${trimmed}%`
+    );
+  }
+
+  const { count, error } = await query;
+  if (error) {
+    console.error('Error counting non-active students:', error);
+    return 0;
+  }
+  return count ?? 0;
+}
+
+export async function getStudents(
+  searchQuery?: string,
+  schoolIds?: string[] // 複数教室IDを指定可能（未指定の場合はデフォルト教室）
+): Promise<EnrichedStudent[]> {
+  const targetSchoolIds =
+    schoolIds && schoolIds.length > 0 ? schoolIds : [getDefaultSchoolId()];
+
+  const query = buildStudentsBaseQuery(searchQuery, targetSchoolIds, {}, STUDENT_LIST_COLUMNS);
+  const { data: students, error } = await query;
+
+  if (error) {
+    console.error('Error fetching students:', error);
+    throw new Error('生徒一覧の取得に失敗しました');
+  }
+
+  if (!students || students.length === 0) return [];
+
+  return enrichStudentsWithRelations(students as Student[]);
 }
 
 /**
@@ -201,7 +338,7 @@ export async function getStudent(
 
   const { data, error } = await supabase
     .from('students')
-    .select('*')
+    .select(STUDENT_LIST_COLUMNS)
     .eq('id', id)
     .in('school_id', targetSchoolIds)
     .is('deleted_at', null)

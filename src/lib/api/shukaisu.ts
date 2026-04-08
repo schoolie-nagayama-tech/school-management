@@ -217,7 +217,7 @@ export async function submitShukaisuResponse(
  * 週回数変更回答一覧を取得
  */
 export async function getShukaisuResponses(
-  schoolId: string,
+  schoolId: string | string[],
   periodKey: string,
   filters?: ShukaisuResponseFilters
 ): Promise<ShukaisuResponse[]> {
@@ -257,7 +257,7 @@ export async function getShukaisuResponses(
  * 週回数変更集計データを取得
  */
 export async function getShukaisuStats(
-  schoolId: string,
+  schoolId: string | string[],
   periodKey: string
 ): Promise<ShukaisuStats> {
   const responses = await getShukaisuResponses(schoolId, periodKey);

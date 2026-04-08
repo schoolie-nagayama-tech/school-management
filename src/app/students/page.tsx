@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import { Button, Modal } from '@/components/ui';
 import {
   StudentForm,
@@ -10,10 +11,13 @@ import {
   StudentScores,
   StudentRegularScheduleList,
   RegularScheduleFormModal,
-  BulkGradeUpdateModal,
 } from '@/components/students';
 import {
   getStudents,
+  getStudentsPage,
+  getStudent,
+  getStudentCodesInSchools,
+  countNonActiveStudents,
   createStudent,
   updateStudent,
   deleteStudent,
@@ -21,7 +25,6 @@ import {
   moveStudentsToSchool,
 } from '@/lib/api/students';
 import { useMasterData } from '@/contexts/MasterDataContext';
-import type { School } from '@/types/database';
 import type { Student, StudentInsert, StudentUpdate, Subject } from '@/types/database';
 import {
   generateStudentCSV,
@@ -29,7 +32,6 @@ import {
   generateInterviewCSV,
   downloadCSV,
 } from '@/lib/utils/csvUtils';
-import { StudentCsvImportModal } from '@/components/csv/StudentCsvImportModal';
 import { listAssessmentsBySchool } from '@/lib/api/assessments';
 import { getInterviewsBySchool } from '@/lib/api/interviews';
 import type { ScheduleRegularPattern, ScheduleTimeSlot } from '@/types/schedule';
@@ -46,7 +48,26 @@ import { NotificationFeed } from '@/components/notifications/NotificationFeed';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
-import { ScoreListView } from '@/components/score-list';
+
+const ScoreListView = dynamic(
+  () => import('@/components/score-list').then((m) => m.ScoreListView),
+  {
+    loading: () => (
+      <div className="py-12 text-center text-sm text-gray-500">成績一覧を読み込み中...</div>
+    ),
+  }
+);
+
+const StudentCsvImportModalDynamic = dynamic(
+  () => import('@/components/csv/StudentCsvImportModal').then((m) => m.StudentCsvImportModal),
+  { loading: () => null }
+);
+
+const BulkGradeUpdateModalDynamic = dynamic(
+  () =>
+    import('@/components/students/BulkGradeUpdateModal').then((m) => m.BulkGradeUpdateModal),
+  { loading: () => null }
+);
 
 export default function StudentsPage() {
   // 権限チェック
@@ -61,8 +82,13 @@ export default function StudentsPage() {
   // 講師かどうかを判定
   const isTeacher = profile?.role === 'teacher';
   const { toasts, removeToast, success } = useToast();
-  // 状態管理
-  const [students, setStudents] = useState<(Student & { subjects?: Subject[] })[]>([]);
+  // 状態管理（名簿タブはサーバページング、成績タブは従来どおり全件）
+  const [rosterRows, setRosterRows] = useState<(Student & { subjects?: Subject[] })[]>([]);
+  const [rosterTotalCount, setRosterTotalCount] = useState(0);
+  const [studentsForScores, setStudentsForScores] = useState<(Student & { subjects?: Subject[] })[]>(
+    []
+  );
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -71,6 +97,9 @@ export default function StudentsPage() {
   
   // 学年フィルター
   const [selectedGrade, setSelectedGrade] = useState<number | 'all'>('all');
+
+  const ITEMS_PER_PAGE = 100;
+  const [currentPage, setCurrentPage] = useState(1);
 
   // タブ切り替え
   type TabType = 'roster' | 'report_card' | 'regular_test' | 'mock';
@@ -112,99 +141,156 @@ export default function StudentsPage() {
   // 選択生徒の教室移動
   const [isMoveSelectedModalOpen, setIsMoveSelectedModalOpen] = useState(false);
   const [moveTargetSchoolId, setMoveTargetSchoolId] = useState('');
-  const [schools, setSchools] = useState<School[]>([]);
+  const moveSchoolOptions = useMemo(
+    () => masterSchools.filter((s) => !s.is_demo),
+    [masterSchools]
+  );
 
   // エラーメッセージ
   const [errorMessage, setErrorMessage] = useState('');
 
-  // 生徒一覧を取得
-  const fetchStudents = useCallback(async (query?: string) => {
+  const [existingStudentCodes, setExistingStudentCodes] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
+
+  const reloadRosterPage = useCallback(async () => {
     setIsLoading(true);
     setErrorMessage('');
     try {
       const schoolIds = getSelectedSchoolIds();
-      const data = await getStudents(query, schoolIds);
-      setStudents(data);
+      if (schoolIds.length === 0) {
+        setRosterRows([]);
+        setRosterTotalCount(0);
+        setIsLoading(false);
+        return;
+      }
+      const { rows, totalCount } = await getStudentsPage({
+        searchQuery: debouncedSearch,
+        schoolIds,
+        activeOnly: !showInactive,
+        grade: selectedGrade,
+        offset: (currentPage - 1) * ITEMS_PER_PAGE,
+        limit: ITEMS_PER_PAGE,
+      });
+      setRosterRows(rows);
+      setRosterTotalCount(totalCount);
     } catch (error) {
-      console.error('Error fetching students:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, '生徒一覧の取得に失敗しました')
-      );
+      console.error('Error fetching roster:', error);
+      setErrorMessage(getUserErrorMessage(error, '生徒一覧の取得に失敗しました'));
     } finally {
       setIsLoading(false);
     }
+  }, [getSelectedSchoolIds, debouncedSearch, showInactive, selectedGrade, currentPage]);
+
+  const reloadScoresStudents = useCallback(async () => {
+    setIsLoading(true);
+    setErrorMessage('');
+    try {
+      const schoolIds = getSelectedSchoolIds();
+      if (schoolIds.length === 0) {
+        setStudentsForScores([]);
+        setIsLoading(false);
+        return;
+      }
+      const data = await getStudents(debouncedSearch, schoolIds);
+      setStudentsForScores(data);
+    } catch (error) {
+      console.error('Error fetching students for scores:', error);
+      setErrorMessage(getUserErrorMessage(error, '生徒一覧の取得に失敗しました'));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [getSelectedSchoolIds, debouncedSearch]);
+
+  const refreshCodes = useCallback(() => {
+    const schoolIds = getSelectedSchoolIds();
+    if (schoolIds.length === 0) {
+      setExistingStudentCodes(new Set());
+      return;
+    }
+    getStudentCodesInSchools(schoolIds)
+      .then(setExistingStudentCodes)
+      .catch(() => setExistingStudentCodes(new Set()));
   }, [getSelectedSchoolIds]);
+
+  useEffect(() => {
+    refreshCodes();
+  }, [refreshCodes, selectedSchoolId]);
+
+  const syncListsAfterMutation = useCallback(async () => {
+    if (activeTab === 'roster') {
+      await reloadRosterPage();
+    } else {
+      await reloadScoresStudents();
+    }
+    refreshCodes();
+  }, [activeTab, reloadRosterPage, reloadScoresStudents, refreshCodes]);
+
+  // 検索のデバウンス後 & 名簿用フィルタ・ページ変更で再取得
+  useEffect(() => {
+    if (selectedSchoolId === null || activeTab !== 'roster') return;
+    void reloadRosterPage();
+  }, [
+    selectedSchoolId,
+    activeTab,
+    debouncedSearch,
+    currentPage,
+    showInactive,
+    selectedGrade,
+    reloadRosterPage,
+  ]);
+
+  useEffect(() => {
+    if (selectedSchoolId === null || activeTab === 'roster') return;
+    void reloadScoresStudents();
+  }, [selectedSchoolId, activeTab, debouncedSearch, reloadScoresStudents]);
 
   // URLパラメータ ?edit=studentId で編集モーダルを自動起動
   useEffect(() => {
     const editId = searchParams.get('edit');
-    if (editId && students.length > 0 && !isLoading) {
-      const student = students.find((s) => s.id === editId);
+    if (!editId || isLoading) return;
+
+    const openEdit = async () => {
+      const pools = [...rosterRows, ...studentsForScores];
+      let student: Student | null | undefined = pools.find((s) => s.id === editId);
+      if (!student) {
+        student = await getStudent(editId, getSelectedSchoolIds());
+      }
       if (student) {
         setSelectedStudent(student);
         setIsEditModalOpen(true);
-        // URLからパラメータを消す
         router.replace('/students', { scroll: false });
       }
-    }
-  }, [searchParams, students, isLoading, router]);
+    };
 
-  // ページネーション
-  const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 100;
+    void openEdit();
+  }, [searchParams, rosterRows, studentsForScores, isLoading, router, getSelectedSchoolIds]);
 
-  // フィルター済みの生徒一覧
+  // 成績タブ用（クライアント側で在籍・学年フィルタ）
   const filteredStudents = useMemo(() => {
-    let filtered = students;
+    let filtered = studentsForScores;
 
-    // 在籍状況フィルター
     if (!showInactive) {
       filtered = filtered.filter((student) => student.status === 'active');
     }
 
-    // 学年フィルター
     if (selectedGrade !== 'all') {
       filtered = filtered.filter((student) => student.grade === selectedGrade);
     }
 
     return filtered;
-  }, [students, showInactive, selectedGrade]);
+  }, [studentsForScores, showInactive, selectedGrade]);
 
-  // フィルタ変更時にページリセット
+  // フィルタ・検索変更時は名簿のページを先頭へ
   useEffect(() => {
     setCurrentPage(1);
   }, [showInactive, selectedGrade, searchQuery]);
 
-  // 既存の生徒コード（CSVインポート時の重複チェック用）
-  const existingStudentCodes = useMemo(() => {
-    return new Set(
-      students
-        .map((s) => s.student_code)
-        .filter((c): c is string => !!c)
-    );
-  }, [students]);
-
-  // ページネーション適用
-  const totalPages = Math.max(1, Math.ceil(filteredStudents.length / ITEMS_PER_PAGE));
-  const paginatedStudents = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredStudents.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredStudents, currentPage]);
-
-  // 初回読み込みと教室選択変更時の再読み込み
-  useEffect(() => {
-    if (selectedSchoolId !== null) {
-      fetchStudents();
-    }
-  }, [fetchStudents, selectedSchoolId]);
-
-  // 検索（デバウンス処理）
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchStudents(searchQuery);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery, fetchStudents]);
+  const rosterTotalPages = Math.max(1, Math.ceil(rosterTotalCount / ITEMS_PER_PAGE));
+  const paginatedStudents = rosterRows;
 
   // エクスポートメニュー外クリックで閉じる
   useEffect(() => {
@@ -217,12 +303,14 @@ export default function StudentsPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // CSVエクスポート: 生徒一覧
-  const handleExportStudents = useCallback(() => {
+  // CSVエクスポート: 常に全件取得（ページングの影響を受けない）
+  const handleExportStudents = useCallback(async () => {
     setIsExporting(true);
     setExportMenuOpen(false);
     try {
-      const csv = generateStudentCSV(students);
+      const schoolIds = getSelectedSchoolIds();
+      const full = await getStudents(searchQuery, schoolIds);
+      const csv = generateStudentCSV(full);
       const date = new Date().toISOString().slice(0, 10);
       downloadCSV(csv, `生徒一覧_${date}.csv`);
     } catch (err) {
@@ -230,16 +318,16 @@ export default function StudentsPage() {
     } finally {
       setIsExporting(false);
     }
-  }, [students]);
+  }, [searchQuery, getSelectedSchoolIds]);
 
-  // CSVエクスポート: 成績
   const handleExportAssessments = useCallback(async () => {
     setIsExporting(true);
     setExportMenuOpen(false);
     try {
       const schoolIds = getSelectedSchoolIds();
+      const full = await getStudents(searchQuery, schoolIds);
       const map = await listAssessmentsBySchool(schoolIds);
-      const csv = generateAssessmentCSV(students, map);
+      const csv = generateAssessmentCSV(full, map);
       const date = new Date().toISOString().slice(0, 10);
       downloadCSV(csv, `成績一覧_${date}.csv`);
     } catch (err) {
@@ -247,16 +335,16 @@ export default function StudentsPage() {
     } finally {
       setIsExporting(false);
     }
-  }, [students, getSelectedSchoolIds]);
+  }, [searchQuery, getSelectedSchoolIds]);
 
-  // CSVエクスポート: 面談記録
   const handleExportInterviews = useCallback(async () => {
     setIsExporting(true);
     setExportMenuOpen(false);
     try {
       const schoolIds = getSelectedSchoolIds();
+      const full = await getStudents(searchQuery, schoolIds);
       const map = await getInterviewsBySchool(schoolIds);
-      const csv = generateInterviewCSV(students, map);
+      const csv = generateInterviewCSV(full, map);
       const date = new Date().toISOString().slice(0, 10);
       downloadCSV(csv, `面談記録_${date}.csv`);
     } catch (err) {
@@ -264,7 +352,7 @@ export default function StudentsPage() {
     } finally {
       setIsExporting(false);
     }
-  }, [students, getSelectedSchoolIds]);
+  }, [searchQuery, getSelectedSchoolIds]);
 
   // 新規登録モーダルを開く
   const handleOpenCreateModal = useCallback(() => {
@@ -294,7 +382,7 @@ export default function StudentsPage() {
     try {
       await createStudent(data as StudentInsert, subjectIds);
       setIsCreateModalOpen(false);
-      await fetchStudents(searchQuery);
+      await syncListsAfterMutation();
     } catch (error) {
       console.error('Error creating student:', error);
       setErrorMessage(
@@ -303,7 +391,7 @@ export default function StudentsPage() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [fetchStudents, searchQuery]);
+  }, [syncListsAfterMutation]);
 
   // 更新
   const handleUpdate = useCallback(async (
@@ -329,7 +417,7 @@ export default function StudentsPage() {
         success('生徒情報を更新しました');
       }
       setSelectedStudent(null);
-      await fetchStudents(searchQuery);
+      await syncListsAfterMutation();
     } catch (error) {
       console.error('Error updating student:', error);
       setErrorMessage(
@@ -338,7 +426,7 @@ export default function StudentsPage() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [selectedStudent, showInactive, success, fetchStudents, searchQuery]);
+  }, [selectedStudent, showInactive, success, syncListsAfterMutation]);
 
   // 詳細モーダルを開く
   const handleOpenDetailModal = useCallback((student: Student) => {
@@ -378,7 +466,7 @@ export default function StudentsPage() {
       await bulkDeleteStudents(Array.from(selectedIds));
       setIsBulkDeleteDialogOpen(false);
       setSelectedIds(new Set());
-      await fetchStudents(searchQuery);
+      await syncListsAfterMutation();
     } catch (error) {
       console.error('Error bulk deleting students:', error);
       setErrorMessage(
@@ -387,7 +475,7 @@ export default function StudentsPage() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [selectedIds, fetchStudents, searchQuery]);
+  }, [selectedIds, syncListsAfterMutation]);
 
   // 選択した生徒を教室移動
   const handleMoveSelected = useCallback(async () => {
@@ -400,7 +488,7 @@ export default function StudentsPage() {
       setMoveTargetSchoolId('');
       setSelectedIds(new Set());
       if (count > 0) {
-        await fetchStudents(searchQuery);
+        await syncListsAfterMutation();
       }
     } catch (error) {
       console.error('Error moving students:', error);
@@ -410,11 +498,9 @@ export default function StudentsPage() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [selectedIds, moveTargetSchoolId, fetchStudents, searchQuery]);
+  }, [selectedIds, moveTargetSchoolId, syncListsAfterMutation]);
 
-  // 教室移動モーダルを開くときに教室一覧を取得
   const handleOpenMoveSelectedModal = () => {
-    setSchools(masterSchools.filter((s) => !s.is_demo));
     setIsMoveSelectedModalOpen(true);
   };
 
@@ -428,7 +514,7 @@ export default function StudentsPage() {
       await deleteStudent(selectedStudent.id);
       setIsDeleteDialogOpen(false);
       setSelectedStudent(null);
-      await fetchStudents(searchQuery);
+      await syncListsAfterMutation();
     } catch (error) {
       console.error('Error deleting student:', error);
       setErrorMessage(
@@ -437,7 +523,7 @@ export default function StudentsPage() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [selectedStudent, fetchStudents, searchQuery]);
+  }, [selectedStudent, syncListsAfterMutation]);
 
   // 権限チェック中
   if (permissionLoading) {
@@ -515,27 +601,31 @@ export default function StudentsPage() {
           {!isTeacher && (
             <NotificationFeed
               onStudentClick={({ studentId, studentName, schoolId }) => {
-                // 1. IDで検索
-                let student = studentId
-                  ? students.find((s) => s.id === studentId)
-                  : undefined;
-                // 2. 名前+教室で検索（スペースを正規化して比較）
-                if (!student && studentName) {
-                  const normalize = (s: string) => s.replace(/[\s\u3000]+/g, '');
-                  const normalizedInput = normalize(studentName);
-                  student = students.find((s) => {
-                    const normalizedFull = normalize(`${s.last_name}${s.first_name}`);
-                    return normalizedFull === normalizedInput && (!schoolId || s.school_id === schoolId);
-                  });
-                  // 3. 教室をまたいで名前だけで検索（フォールバック）
-                  if (!student) {
-                    student = students.find((s) => {
+                void (async () => {
+                  const pools = [...rosterRows, ...studentsForScores];
+                  let student: Student | undefined = studentId
+                    ? pools.find((s) => s.id === studentId)
+                    : undefined;
+                  if (!student && studentName) {
+                    const normalize = (s: string) => s.replace(/[\s\u3000]+/g, '');
+                    const normalizedInput = normalize(studentName);
+                    student = pools.find((s) => {
                       const normalizedFull = normalize(`${s.last_name}${s.first_name}`);
-                      return normalizedFull === normalizedInput;
+                      return normalizedFull === normalizedInput && (!schoolId || s.school_id === schoolId);
                     });
+                    if (!student) {
+                      student = pools.find((s) => {
+                        const normalizedFull = normalize(`${s.last_name}${s.first_name}`);
+                        return normalizedFull === normalizedInput;
+                      });
+                    }
                   }
-                }
-                if (student) handleOpenDetailModal(student);
+                  if (!student && studentId) {
+                    const loaded = await getStudent(studentId, getSelectedSchoolIds());
+                    if (loaded) student = loaded;
+                  }
+                  if (student) handleOpenDetailModal(student);
+                })();
               }}
             />
           )}
@@ -644,14 +734,19 @@ export default function StudentsPage() {
             {!isTeacher && (
               <button
                 onClick={() => {
-                  const next = !showInactive;
-                  setShowInactive(next);
-                  if (next) {
-                    const inactiveCount = students.filter((s) => s.status !== 'active').length;
-                    if (inactiveCount === 0) {
-                      success('現在、休会・退会の生徒はいません');
+                  void (async () => {
+                    const next = !showInactive;
+                    setShowInactive(next);
+                    if (next) {
+                      const schoolIds = getSelectedSchoolIds();
+                      const inactiveCount = await countNonActiveStudents(searchQuery, schoolIds, {
+                        grade: selectedGrade,
+                      });
+                      if (inactiveCount === 0) {
+                        success('現在、休会・退会の生徒はいません');
+                      }
                     }
-                  }
+                  })();
                 }}
                 className={`
                   inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors
@@ -810,10 +905,11 @@ export default function StudentsPage() {
         />
 
         {/* ページネーション */}
-        {totalPages > 1 && (
+        {rosterTotalPages > 1 && (
           <div className="flex items-center justify-between mt-4 px-2">
             <span className="text-sm text-gray-500">
-              {filteredStudents.length}件中 {(currentPage - 1) * ITEMS_PER_PAGE + 1}〜{Math.min(currentPage * ITEMS_PER_PAGE, filteredStudents.length)}件を表示
+              {rosterTotalCount}件中 {(currentPage - 1) * ITEMS_PER_PAGE + 1}〜
+              {Math.min(currentPage * ITEMS_PER_PAGE, rosterTotalCount)}件を表示
             </span>
             <div className="flex items-center gap-1">
               <button
@@ -831,18 +927,18 @@ export default function StudentsPage() {
                 ‹ 前
               </button>
               <span className="px-3 py-1 text-sm text-[#1e3a5f] font-medium">
-                {currentPage} / {totalPages}
+                {currentPage} / {rosterTotalPages}
               </span>
               <button
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => Math.min(rosterTotalPages, p + 1))}
+                disabled={currentPage === rosterTotalPages}
                 className="px-3 py-1 text-sm rounded border border-gray-200 disabled:opacity-40 hover:bg-gray-50"
               >
                 次 ›
               </button>
               <button
-                onClick={() => setCurrentPage(totalPages)}
-                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(rosterTotalPages)}
+                disabled={currentPage === rosterTotalPages}
                 className="px-2 py-1 text-sm rounded border border-gray-200 disabled:opacity-40 hover:bg-gray-50"
               >
                 »
@@ -853,11 +949,11 @@ export default function StudentsPage() {
         </>}
 
       {/* CSVインポートモーダル */}
-      <StudentCsvImportModal
+      <StudentCsvImportModalDynamic
         isOpen={isCsvImportModalOpen}
         onClose={() => setIsCsvImportModalOpen(false)}
         schoolId={getSelectedSchoolIds()[0] ?? ''}
-        onImportComplete={() => fetchStudents(searchQuery)}
+        onImportComplete={() => void syncListsAfterMutation()}
         existingStudentCodes={existingStudentCodes}
       />
 
@@ -923,7 +1019,7 @@ export default function StudentsPage() {
                 await deleteStudent(student.id);
                 setSelectedStudent(null);
                 setIsDetailModalOpen(false);
-                await fetchStudents(searchQuery);
+                await syncListsAfterMutation();
               }
             : undefined
         }
@@ -942,7 +1038,7 @@ export default function StudentsPage() {
           teachers={addScheduleFormContext.teachers}
           subjects={addScheduleFormContext.subjects}
           onSuccess={() => {
-            fetchStudents(searchQuery);
+            void syncListsAfterMutation();
             setAddScheduleFormContext(null);
           }}
         />
@@ -964,7 +1060,7 @@ export default function StudentsPage() {
             schoolId={scheduleModalStudent.school_id ?? ''}
             studentName={`${scheduleModalStudent.last_name} ${scheduleModalStudent.first_name}`}
             studentGrade={scheduleModalStudent.grade}
-            onRefresh={() => fetchStudents(searchQuery)}
+            onRefresh={() => void syncListsAfterMutation()}
             onOpenAddForm={(ctx) => {
               setIsScheduleModalOpen(false);
               setAddScheduleFormContext({
@@ -1068,7 +1164,7 @@ export default function StudentsPage() {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-[#1a1a1a] focus:ring-2 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f]"
             >
               <option value="">教室を選択...</option>
-              {schools.map((school) => (
+              {moveSchoolOptions.map((school) => (
                 <option key={school.id} value={school.id}>
                   {school.name}
                 </option>
@@ -1097,10 +1193,10 @@ export default function StudentsPage() {
       </Modal>
 
       {/* 一括学年更新モーダル */}
-      <BulkGradeUpdateModal
+      <BulkGradeUpdateModalDynamic
         isOpen={isBulkGradeUpdateModalOpen}
         onClose={() => setIsBulkGradeUpdateModalOpen(false)}
-        onSuccess={fetchStudents}
+        onSuccess={() => void syncListsAfterMutation()}
         schoolIds={getSelectedSchoolIds()}
       />
     </AdminLayout>

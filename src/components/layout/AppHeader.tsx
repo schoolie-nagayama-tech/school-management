@@ -2,12 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { getSchools } from '@/lib/api/schools';
+import { useEffect, useMemo, useState } from 'react';
 import { getUnreadCount } from '@/lib/api/bulletin';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMasterData } from '@/contexts/MasterDataContext';
 import { USER_ROLE_LABELS } from '@/types/database';
-import type { School } from '@/types/database';
 import { SubjectSettings } from '@/components/settings';
 
 interface AppHeaderProps {
@@ -23,16 +22,19 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
   const pathname = usePathname();
   const router = useRouter();
   const { profile, permissions, signOut, isLoading: authLoading, schoolIds, selectedSchoolId, setSelectedSchoolId, getSelectedSchoolIds } = useAuth();
+  const { schools: masterSchools } = useMasterData();
 
   const handleSchoolChange = (schoolId: string | 'all') => {
     setSelectedSchoolId(schoolId);
     setShowSchoolDropdown(false);
     router.refresh();
   };
-  // schools: ユーザーが担当する全教室（表示名解決に使用）
-  const [schools, setSchools] = useState<School[]>([]);
-  // displaySchools: ドロップダウンに表示する教室（デモ教室を除外）
-  const [displaySchools, setDisplaySchools] = useState<School[]>([]);
+  // MasterData の教室一覧から担当教室だけを表示（getSchools の三重取得を避ける）
+  const schools = useMemo(
+    () => masterSchools.filter((school) => schoolIds.includes(school.id)),
+    [masterSchools, schoolIds]
+  );
+  const displaySchools = schools;
   const [showSchoolDropdown, setShowSchoolDropdown] = useState(false);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
   const [isSubjectSettingsOpen, setIsSubjectSettingsOpen] = useState(false);
@@ -45,25 +47,6 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
   // permissionsがnullの場合は、すべてのリンクを表示（ローディング中の場合）
   const showAllLinks = !permissions || authLoading;
 
-  useEffect(() => {
-    const fetchSchools = async () => {
-      try {
-        const allSchools = await getSchools();
-        const userSchools = allSchools.filter(school => schoolIds.includes(school.id));
-        setSchools(userSchools);
-        // ドロップダウンには全教室を表示（デモ教室も選択可能にする）
-        setDisplaySchools(userSchools);
-      } catch (error) {
-        console.error('Error fetching schools:', error);
-        // エラーが発生してもアプリは動作し続ける
-      }
-    };
-
-    if (schoolIds.length > 0) {
-      fetchSchools();
-    }
-  }, [schoolIds]);
-
   // 連絡掲示板未読件数（講師のみ）
   useEffect(() => {
     const schoolIdsList = getSelectedSchoolIds();
@@ -74,10 +57,10 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
     let cancelled = false;
     (async () => {
       try {
-        let total = 0;
-        for (const schoolId of schoolIdsList) {
-          total += await getUnreadCount(schoolId, profile.id);
-        }
+        const counts = await Promise.all(
+          schoolIdsList.map((schoolId) => getUnreadCount(schoolId, profile.id))
+        );
+        const total = counts.reduce((a, b) => a + b, 0);
         if (!cancelled) setBulletinUnreadCount(total);
       } catch {
         if (!cancelled) setBulletinUnreadCount(0);
@@ -93,11 +76,10 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
       if (!profile?.id || schoolIdsList.length === 0) return;
       (async () => {
         try {
-          let total = 0;
-          for (const schoolId of schoolIdsList) {
-            total += await getUnreadCount(schoolId, profile!.id);
-          }
-          setBulletinUnreadCount(total);
+          const counts = await Promise.all(
+            schoolIdsList.map((schoolId) => getUnreadCount(schoolId, profile!.id))
+          );
+          setBulletinUnreadCount(counts.reduce((a, b) => a + b, 0));
         } catch {
           setBulletinUnreadCount(0);
         }

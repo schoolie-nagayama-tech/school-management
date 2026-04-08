@@ -538,14 +538,15 @@ export async function unarchiveResponsesByPeriod(
  * アーカイブ済み回答数を取得
  */
 export async function getArchivedCount(
-  schoolId: string,
+  schoolId: string | string[],
   formType: FormType,
   periodKey?: string
 ): Promise<number> {
+  const schoolIds = Array.isArray(schoolId) ? schoolId : [schoolId];
   let query = supabase
     .from('form_responses')
     .select('id', { count: 'exact', head: true })
-    .eq('school_id', schoolId)
+    .in('school_id', schoolIds)
     .eq('form_type', formType)
     .eq('is_archived', true);
 

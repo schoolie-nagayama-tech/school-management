@@ -52,7 +52,7 @@ export default function ZoukomaResponsePage() {
     setErrorMessage('');
     try {
       const schoolIds = getSelectedSchoolIds();
-      const schoolId = schoolIdParam || (schoolIds.length > 0 ? schoolIds[0] : getDefaultSchoolId());
+      const schoolId: string | string[] = schoolIdParam || (schoolIds.length > 0 ? schoolIds : getDefaultSchoolId());
       const [responsesData, statsData] = await Promise.all([
         getZoukomaResponses(schoolId, periodKey, filters),
         getZoukomaStats(schoolId, periodKey),

@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import { getDefaultSchoolId, getSchool } from '@/lib/api/schools';
 import { getZoukomaPeriodByKey } from '@/lib/api/zoukoma';
 import { getMoshiPeriodByKey } from '@/lib/api/moshi';
@@ -7,13 +8,8 @@ import { getMogiPeriodByKey } from '@/lib/api/mogi';
 import { getShukaisuPeriodByKey } from '@/lib/api/shukaisu';
 import { getSoudanPeriodByKey } from '@/lib/api/soudan';
 import { getYoubiPeriodByKey } from '@/lib/api/youbi';
-import { ZoukomaForm } from '@/components/forms/zoukoma/ZoukomaForm';
-import { MoshiForm } from '@/components/forms/moshi';
-import { MogiForm } from '@/components/forms/mogi';
-import { ShukaisuForm } from '@/components/forms/shukaisu';
-import { SoudanForm } from '@/components/forms/soudan';
-import { YoubiForm } from '@/components/forms/youbi';
 import type { FormType } from '@/types/database';
+import type { School } from '@/types/database';
 import type { ZoukomaPeriod } from '@/types/forms/zoukoma';
 import type { MoshiPeriod } from '@/types/forms/moshi';
 import type { MogiPeriod } from '@/types/forms/mogi';
@@ -31,6 +27,42 @@ const FORM_TYPE_LABELS: Record<string, string> = {
   soudan: 'お客様相談',
   youbi: '曜日変更',
 };
+
+/** 1リサイスト1フォーム種別のみ動的 import（バンドル分割） */
+async function renderPreviewForm(
+  formType: string,
+  school: School,
+  period: unknown
+): Promise<ReactNode> {
+  switch (formType) {
+    case 'zoukoma': {
+      const { ZoukomaForm } = await import('@/components/forms/zoukoma/ZoukomaForm');
+      return <ZoukomaForm school={school} period={period as ZoukomaPeriod} isPreview />;
+    }
+    case 'moshi': {
+      const { MoshiForm } = await import('@/components/forms/moshi');
+      return <MoshiForm school={school} period={period as MoshiPeriod} isPreview />;
+    }
+    case 'mogi': {
+      const { MogiForm } = await import('@/components/forms/mogi');
+      return <MogiForm school={school} period={period as MogiPeriod} isPreview />;
+    }
+    case 'shukaisu': {
+      const { ShukaisuForm } = await import('@/components/forms/shukaisu');
+      return <ShukaisuForm school={school} period={period as ShukaisuPeriod} isPreview />;
+    }
+    case 'soudan': {
+      const { SoudanForm } = await import('@/components/forms/soudan');
+      return <SoudanForm school={school} period={period as SoudanPeriod} isPreview />;
+    }
+    case 'youbi': {
+      const { YoubiForm } = await import('@/components/forms/youbi');
+      return <YoubiForm school={school} period={period as YoubiPeriod} isPreview />;
+    }
+    default:
+      return null;
+  }
+}
 
 interface FormPreviewPageProps {
   params: Promise<{ formType: string; periodKey: string }>;
@@ -84,6 +116,8 @@ export default async function FormPeriodPreviewPage({
   }
 
   const formLabel = FORM_TYPE_LABELS[formType] ?? formType;
+  const formNode = await renderPreviewForm(formType, school, period);
+  if (!formNode) notFound();
 
   return (
     <div className="min-h-screen bg-[#f3f4f6]">
@@ -107,26 +141,7 @@ export default async function FormPeriodPreviewPage({
           </div>
         </header>
 
-        <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
-          {formType === 'zoukoma' && (
-            <ZoukomaForm school={school} period={period as ZoukomaPeriod} isPreview />
-          )}
-          {formType === 'moshi' && (
-            <MoshiForm school={school} period={period as MoshiPeriod} isPreview />
-          )}
-          {formType === 'mogi' && (
-            <MogiForm school={school} period={period as MogiPeriod} isPreview />
-          )}
-          {formType === 'shukaisu' && (
-            <ShukaisuForm school={school} period={period as ShukaisuPeriod} isPreview />
-          )}
-          {formType === 'soudan' && (
-            <SoudanForm school={school} period={period as SoudanPeriod} isPreview />
-          )}
-          {formType === 'youbi' && (
-            <YoubiForm school={school} period={period as YoubiPeriod} isPreview />
-          )}
-        </div>
+        <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">{formNode}</div>
       </div>
     </div>
   );

@@ -1,11 +1,24 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
 import { Button, ToastContainer } from '@/components/ui';
-import { ScoreChart, type ChartDataPoint } from '@/components/scores/ScoreChart';
+import type { ChartDataPoint } from '@/components/scores/ScoreChart';
+
+const ScoreChart = dynamic(
+  () => import('@/components/scores/ScoreChart').then((m) => m.ScoreChart),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-64 flex items-center justify-center text-sm text-gray-500">
+        グラフを読み込み中...
+      </div>
+    ),
+  }
+);
 import { ScoreTable } from '@/components/scores/ScoreTable';
 import {
   listAssessments,

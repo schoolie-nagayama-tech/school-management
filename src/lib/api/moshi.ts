@@ -217,7 +217,7 @@ export async function submitMoshiResponse(
  * 模試回答一覧を取得
  */
 export async function getMoshiResponses(
-  schoolId: string,
+  schoolId: string | string[],
   periodKey: string,
   filters?: MoshiResponseFilters
 ): Promise<MoshiResponse[]> {
@@ -250,7 +250,7 @@ export async function getMoshiResponses(
  * 模試集計データを取得
  */
 export async function getMoshiStats(
-  schoolId: string,
+  schoolId: string | string[],
   periodKey: string
 ): Promise<MoshiStats> {
   const responses = await getMoshiResponses(schoolId, periodKey);

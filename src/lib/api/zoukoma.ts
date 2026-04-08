@@ -248,7 +248,7 @@ export async function submitZoukomaResponse(data: {
  * 増コマ申込回答一覧を取得
  */
 export async function getZoukomaResponses(
-  schoolId: string,
+  schoolId: string | string[],
   periodKey: string,
   filters?: ZoukomaResponseFilters
 ): Promise<ZoukomaResponse[]> {
@@ -294,7 +294,7 @@ export async function getZoukomaResponses(
  * 増コマ申込集計データを取得
  */
 export async function getZoukomaStats(
-  schoolId: string,
+  schoolId: string | string[],
   periodKey: string
 ): Promise<ZoukomaStats> {
   const responses = await getZoukomaResponses(schoolId, periodKey);

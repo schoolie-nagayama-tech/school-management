@@ -53,8 +53,10 @@ export async function getSchoolByCode(code: string): Promise<School | null> {
   return data as School | null;
 }
 
-// 教室一覧を取得
-export async function getSchools(): Promise<School[]> {
+/** 同時並列の getSchools を1本のリクエストにまとめる（Auth / Master / ヘッダー等） */
+let getSchoolsInflight: Promise<School[]> | null = null;
+
+async function fetchSchoolsFromSupabase(): Promise<School[]> {
   const { data, error } = await supabase
     .from('schools')
     .select('*')
@@ -66,6 +68,16 @@ export async function getSchools(): Promise<School[]> {
   }
 
   return (data || []) as School[];
+}
+
+// 教室一覧を取得
+export async function getSchools(): Promise<School[]> {
+  if (!getSchoolsInflight) {
+    getSchoolsInflight = fetchSchoolsFromSupabase().finally(() => {
+      getSchoolsInflight = null;
+    });
+  }
+  return getSchoolsInflight;
 }
 
 // 教室を作成

@@ -69,7 +69,7 @@ export default function ShukaisuResponsePage() {
     setErrorMessage('');
     try {
       const schoolIds = getSelectedSchoolIds();
-      const schoolId = schoolIdParam || (schoolIds.length > 0 ? schoolIds[0] : getDefaultSchoolId());
+      const schoolId: string | string[] = schoolIdParam || (schoolIds.length > 0 ? schoolIds : getDefaultSchoolId());
       const filters: ShukaisuResponseFilters = {
         grade: filterGrade === 'all' ? undefined : filterGrade,
         handledStatus: filterHandledStatus === 'all' ? undefined : filterHandledStatus,

@@ -80,7 +80,7 @@ export default function MogiResponsePage() {
     setErrorMessage('');
     try {
       const schoolIds = getSelectedSchoolIds();
-      const schoolId = schoolIdParam || (schoolIds.length > 0 ? schoolIds[0] : getDefaultSchoolId());
+      const schoolId: string | string[] = schoolIdParam || (schoolIds.length > 0 ? schoolIds : getDefaultSchoolId());
       const filters: MogiResponseFilters = {
         grade: filterGrade === 'all' ? undefined : filterGrade,
         dateId: filterDateId === 'all' ? undefined : filterDateId,

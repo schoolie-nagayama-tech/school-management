@@ -214,7 +214,7 @@ export async function submitMogiResponse(
  * Vもぎ回答一覧を取得
  */
 export async function getMogiResponses(
-  schoolId: string,
+  schoolId: string | string[],
   periodKey: string,
   filters?: MogiResponseFilters
 ): Promise<MogiResponse[]> {
@@ -263,13 +263,14 @@ export async function getMogiResponses(
  * Vもぎ集計データを取得
  */
 export async function getMogiStats(
-  schoolId: string,
+  schoolId: string | string[],
   periodKey: string
 ): Promise<MogiStats> {
   const responses = await getMogiResponses(schoolId, periodKey);
 
   // 期間設定を取得して日程・会場のマスタを取得
-  const periods = await getMogiPeriods(schoolId);
+  const firstSchoolId = Array.isArray(schoolId) ? schoolId[0] : schoolId;
+  const periods = await getMogiPeriods(firstSchoolId);
   const period = periods.find((p) => p.period_key === periodKey);
 
   if (!period || !period.settings.dates) {

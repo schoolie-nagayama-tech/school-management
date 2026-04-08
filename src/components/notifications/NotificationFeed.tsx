@@ -721,7 +721,9 @@ function ResponseRow({
   onStudentClick?: (info: StudentClickInfo) => void;
 }) {
   const path = FORM_TYPE_TO_PATH[item.formType ?? ''] ?? item.formType;
-  const href = `/forms/responses/${path}/${item.formPeriod}`;
+  const href = item.schoolId
+    ? `/forms/responses/${path}/${item.formPeriod}?schoolId=${item.schoolId}`
+    : `/forms/responses/${path}/${item.formPeriod}`;
   const color = FORM_TYPE_COLORS[item.formType ?? ''] ?? { bg: 'bg-gray-100', text: 'text-gray-700' };
   const schoolName = item.schoolId ? schoolNames[item.schoolId] : undefined;
   const schoolColor = item.schoolId ? schoolColorBySchoolId[item.schoolId] : undefined;
