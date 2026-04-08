@@ -528,6 +528,23 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true });
       }
 
+      case 'update_template': {
+        if (!canEdit) return NextResponse.json({ error: '権限がありません' }, { status: 403 });
+        const { templateId: updTplId, name: updTplName, template_data: updTplData } = body;
+        if (!updTplId) return NextResponse.json({ error: 'templateId は必須です' }, { status: 400 });
+        const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+        if (updTplName !== undefined) updates.name = updTplName;
+        if (updTplData !== undefined) updates.template_data = updTplData;
+        const { data: updatedTpl, error: updTplErr } = await supabaseAdmin
+          .from('monthly_task_templates')
+          .update(updates)
+          .eq('id', updTplId)
+          .select()
+          .single();
+        if (updTplErr) throw updTplErr;
+        return NextResponse.json({ data: updatedTpl });
+      }
+
       case 'delete_template': {
         if (!canEdit) return NextResponse.json({ error: '権限がありません' }, { status: 403 });
         const { templateId: delTplId } = body;

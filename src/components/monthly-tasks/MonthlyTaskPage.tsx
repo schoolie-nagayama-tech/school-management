@@ -15,6 +15,7 @@ import {
   getTemplates,
   saveTemplate,
   deleteTemplate as deleteTemplateApi,
+  updateTemplate as updateTemplateApi,
   setGoogleEventId,
 } from '@/lib/api/monthlyTasks';
 import type { MonthlyTaskWithChecks, MonthlyTaskTemplate } from '@/types/database';
@@ -269,14 +270,42 @@ export function MonthlyTaskPage() {
     [fetchTasks, toastError, activeSchools, updateCalendarEventTitle]
   );
 
-  // タスク追加
+  // タスク追加（楽観的更新）
   const handleCreateTask = useCallback(
     async (taskDate: string, taskName: string, category: 'business' | 'course', note?: string, url?: string) => {
+      // 楽観的にローカルに追加
+      const tempId = `temp-${Date.now()}`;
+      const optimisticTask: MonthlyTaskWithChecks = {
+        id: tempId,
+        year,
+        month,
+        task_date: taskDate,
+        task_name: taskName,
+        category,
+        sort_order: 999,
+        note: note || null,
+        url: url || null,
+        google_event_id: null,
+        linked_schedule_task_id: null,
+        template_id: null,
+        created_by: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        checks: [],
+        overrides: [],
+      };
+      setTasks((prev) => [...prev, optimisticTask]);
+
       try {
         await createTask({ year, month, task_date: taskDate, category, task_name: taskName, note, url });
         success('タスクを追加しました');
+        // サーバーから正しいデータを取得して差し替え
         fetchTasks();
-      } catch { toastError('タスクの追加に失敗しました'); }
+      } catch {
+        // 失敗時はロールバック
+        setTasks((prev) => prev.filter((t) => t.id !== tempId));
+        toastError('タスクの追加に失敗しました');
+      }
     },
     [year, month, fetchTasks, success, toastError]
   );
@@ -448,6 +477,14 @@ export function MonthlyTaskPage() {
     catch { toastError('テンプレートの削除に失敗しました'); }
   };
 
+  const handleUpdateTemplate = async (templateId: string, updates: { name?: string; template_data?: Array<{ day_of_month: number; task_name: string; category: string; sort_order: number }> }) => {
+    try {
+      const updated = await updateTemplateApi(templateId, updates);
+      setTemplates((prev) => prev.map((t) => (t.id === templateId ? updated : t)));
+      success('テンプレートを更新しました');
+    } catch { toastError('テンプレートの更新に失敗しました'); }
+  };
+
   // テンプレートプール: 一括配置
   const handleLoadTemplateToCalendar = async (templateId: string) => {
     await handleGenerateFromTemplate(templateId);
@@ -597,6 +634,7 @@ export function MonthlyTaskPage() {
           onGenerate={handleGenerateFromTemplate}
           onSave={handleSaveTemplate}
           onDelete={handleDeleteTemplate}
+          onUpdateTemplate={handleUpdateTemplate}
           onClose={() => setShowTemplateDialog(false)}
           hasExistingTasks={tasks.length > 0}
         />

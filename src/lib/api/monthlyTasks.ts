@@ -106,6 +106,14 @@ export async function setGoogleEventId(taskId: string, googleEventId: string | n
   await postTaskApi({ action: 'set_google_event_id', taskId, googleEventId });
 }
 
+export async function updateTemplate(
+  templateId: string,
+  updates: { name?: string; template_data?: Array<{ day_of_month: number; task_name: string; category: string; sort_order: number }> }
+) {
+  const result = await postTaskApi({ action: 'update_template', templateId, ...updates });
+  return result.data as MonthlyTaskTemplate;
+}
+
 export async function deleteTemplate(templateId: string) {
   await postTaskApi({ action: 'delete_template', templateId });
 }
