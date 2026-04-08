@@ -493,22 +493,44 @@ export function TaskListPanel({
                         }`}>
                           {task.category === 'business' ? '業務' : '講習'}
                         </span>
-                        {/* School completion dots */}
-                        <div className="flex gap-0.5 flex-shrink-0">
-                          {schools.map(s => {
-                            const check = task.checks.find(c => c.school_id === s.id);
-                            return (
-                              <div
-                                key={s.id}
-                                className={`w-2 h-2 rounded-full ${
-                                  check?.is_completed
-                                    ? 'bg-green-400'
-                                    : taskIsOverdue ? 'bg-red-300' : 'bg-gray-200'
-                                }`}
-                                title={`${s.name}: ${check?.is_completed ? '完了' : '未完了'}`}
-                              />
-                            );
-                          })}
+                        {/* School completion indicators */}
+                        <div className="flex gap-0.5 flex-shrink-0 items-center">
+                          {schools.length > 1 ? (
+                            /* 複数教室: 頭文字+色で表示 */
+                            schools.map(s => {
+                              const check = task.checks.find(c => c.school_id === s.id);
+                              const initial = s.name.replace(/校$/, '').slice(0, 2);
+                              return (
+                                <span
+                                  key={s.id}
+                                  className={`text-[9px] leading-none px-1 py-0.5 rounded font-medium ${
+                                    check?.is_completed
+                                      ? 'bg-green-100 text-green-700'
+                                      : taskIsOverdue ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-400'
+                                  }`}
+                                  title={`${s.name}: ${check?.is_completed ? '完了' : '未完了'}`}
+                                >
+                                  {initial}
+                                </span>
+                              );
+                            })
+                          ) : (
+                            /* 1教室: ドットのみ */
+                            schools.map(s => {
+                              const check = task.checks.find(c => c.school_id === s.id);
+                              return (
+                                <div
+                                  key={s.id}
+                                  className={`w-2 h-2 rounded-full ${
+                                    check?.is_completed
+                                      ? 'bg-green-400'
+                                      : taskIsOverdue ? 'bg-red-300' : 'bg-gray-200'
+                                  }`}
+                                  title={`${s.name}: ${check?.is_completed ? '完了' : '未完了'}`}
+                                />
+                              );
+                            })
+                          )}
                         </div>
                         {/* Googleカレンダー登録ボタン */}
                         {googleCalendarConnected && onSyncToCalendar && (
