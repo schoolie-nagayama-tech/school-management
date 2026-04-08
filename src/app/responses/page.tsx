@@ -12,7 +12,7 @@ import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ChevronUp, ChevronDown, ChevronsUpDown, Search, X } from 'lucide-react';
+import { ChevronUp, ChevronDown, ChevronsUpDown, Search, X, Filter, List, Users } from 'lucide-react';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 // フォーム種別 → フォーム詳細URLパス（/forms/responses/[path]/[period]）
@@ -28,6 +28,58 @@ const FORM_TYPE_TO_PATH: Record<string, string> = {
 
 type SortKey = 'created_at' | 'form_type' | 'form_period' | 'school' | 'student_name' | 'grade' | 'status';
 type SortOrder = 'asc' | 'desc';
+
+interface QuickFilter {
+  label: string;
+  color: string;
+  activeColor: string;
+  filters: {
+    formType: FormType | 'all';
+    period: string;
+    grade: number | 'all';
+    linkedStatus: 'all' | 'linked' | 'unlinked';
+    chargedStatus: 'all' | 'charged' | 'not_charged';
+  };
+}
+
+const QUICK_FILTERS: QuickFilter[] = [
+  {
+    label: '未処理',
+    color: 'border-yellow-300 text-yellow-800 bg-yellow-50 hover:bg-yellow-100',
+    activeColor: 'bg-yellow-500 text-white border-yellow-500',
+    filters: { formType: 'all', period: 'all', grade: 'all', linkedStatus: 'unlinked', chargedStatus: 'all' },
+  },
+  {
+    label: '未計上',
+    color: 'border-red-300 text-red-700 bg-red-50 hover:bg-red-100',
+    activeColor: 'bg-red-500 text-white border-red-500',
+    filters: { formType: 'all', period: 'all', grade: 'all', linkedStatus: 'all', chargedStatus: 'not_charged' },
+  },
+  {
+    label: '計上済み',
+    color: 'border-green-300 text-green-700 bg-green-50 hover:bg-green-100',
+    activeColor: 'bg-green-500 text-white border-green-500',
+    filters: { formType: 'all', period: 'all', grade: 'all', linkedStatus: 'all', chargedStatus: 'charged' },
+  },
+  {
+    label: '増コマ・未計上',
+    color: 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50',
+    activeColor: 'bg-[#1e3a5f] text-white border-[#1e3a5f]',
+    filters: { formType: 'zoukoma', period: 'all', grade: 'all', linkedStatus: 'all', chargedStatus: 'not_charged' },
+  },
+  {
+    label: '模試・未計上',
+    color: 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50',
+    activeColor: 'bg-[#1e3a5f] text-white border-[#1e3a5f]',
+    filters: { formType: 'moshi', period: 'all', grade: 'all', linkedStatus: 'all', chargedStatus: 'not_charged' },
+  },
+  {
+    label: 'Vもぎ・未計上',
+    color: 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50',
+    activeColor: 'bg-[#1e3a5f] text-white border-[#1e3a5f]',
+    filters: { formType: 'mogi', period: 'all', grade: 'all', linkedStatus: 'all', chargedStatus: 'not_charged' },
+  },
+];
 
 function getSortIcon(currentKey: SortKey, key: SortKey, order: SortOrder) {
   if (currentKey !== key) return <ChevronsUpDown className="h-4 w-4 inline-block ml-1 opacity-50" />;
@@ -186,6 +238,9 @@ export default function ResponsesPage() {
   >((searchParams.get('charged') as 'all' | 'charged' | 'not_charged') || 'all');
   const [searchName, setSearchName] = useState(searchParams.get('search') || '');
   const [searchInput, setSearchInput] = useState(searchParams.get('search') || '');
+  const [viewMode, setViewMode] = useState<'list' | 'grouped'>(
+    (searchParams.get('view') as 'list' | 'grouped') || 'grouped'
+  );
 
   // ソート
   const [sortKey, setSortKey] = useState<SortKey>(
@@ -204,12 +259,13 @@ export default function ResponsesPage() {
     if (filterLinkedStatus !== 'all') params.set('linked', filterLinkedStatus);
     if (filterChargedStatus !== 'all') params.set('charged', filterChargedStatus);
     if (searchName) params.set('search', searchName);
+    if (viewMode !== 'grouped') params.set('view', viewMode);
     if (sortKey !== 'created_at') params.set('sort', sortKey);
     if (sortOrder !== 'desc') params.set('order', sortOrder);
     const qs = params.toString();
     const newUrl = qs ? `?${qs}` : '/responses';
     router.replace(newUrl, { scroll: false });
-  }, [filterFormType, filterPeriod, filterGrade, filterLinkedStatus, filterChargedStatus, searchName, sortKey, sortOrder, router]);
+  }, [filterFormType, filterPeriod, filterGrade, filterLinkedStatus, filterChargedStatus, searchName, viewMode, sortKey, sortOrder, router]);
 
   const handleSort = useCallback((key: SortKey) => {
     setSortKey((prev) => {
@@ -221,6 +277,29 @@ export default function ResponsesPage() {
       return key;
     });
   }, []);
+
+  // クイックフィルター適用
+  const applyQuickFilter = useCallback((qf: QuickFilter) => {
+    setFilterFormType(qf.filters.formType);
+    setFilterPeriod(qf.filters.period);
+    setFilterGrade(qf.filters.grade);
+    setFilterLinkedStatus(qf.filters.linkedStatus);
+    setFilterChargedStatus(qf.filters.chargedStatus);
+    setSearchInput('');
+    setSearchName('');
+  }, []);
+
+  // 現在のフィルター状態がクイックフィルターと一致するか
+  const isQuickFilterActive = useCallback((qf: QuickFilter) => {
+    return (
+      filterFormType === qf.filters.formType &&
+      filterPeriod === qf.filters.period &&
+      filterGrade === qf.filters.grade &&
+      filterLinkedStatus === qf.filters.linkedStatus &&
+      filterChargedStatus === qf.filters.chargedStatus &&
+      !searchName
+    );
+  }, [filterFormType, filterPeriod, filterGrade, filterLinkedStatus, filterChargedStatus, searchName]);
 
   // ソート済み一覧
   const sortedResponses = useMemo(() => {
@@ -275,6 +354,50 @@ export default function ResponsesPage() {
     });
     return list;
   }, [responses, sortKey, sortOrder, schoolsMap]);
+
+  // 生徒ごとにグルーピング
+  interface StudentGroup {
+    studentKey: string;
+    studentName: string;
+    grade: number;
+    schoolName: string;
+    schoolId: string;
+    responses: FormResponseWithStudent[];
+    hasUncharged: boolean;
+    hasUnprocessed: boolean;
+  }
+
+  const groupedByStudent = useMemo((): StudentGroup[] => {
+    const map = new Map<string, StudentGroup>();
+    for (const r of sortedResponses) {
+      // 紐付け済みならlinked_student_idでグルーピング、なければstudent_name+school_idで
+      const name = r.linked_student
+        ? `${r.linked_student.last_name} ${r.linked_student.first_name}`
+        : r.student_name ?? '不明';
+      const key = r.linked_student_id
+        ? `linked_${r.linked_student_id}`
+        : `name_${name}_${r.school_id}`;
+
+      if (!map.has(key)) {
+        map.set(key, {
+          studentKey: key,
+          studentName: name,
+          grade: r.grade,
+          schoolName: schoolsMap[r.school_id] ?? '-',
+          schoolId: r.school_id,
+          responses: [],
+          hasUncharged: false,
+          hasUnprocessed: false,
+        });
+      }
+      const group = map.get(key)!;
+      group.responses.push(r);
+      const sc = (r.status_checks as Record<string, boolean> | undefined) ?? {};
+      if (!sc.charged) group.hasUncharged = true;
+      if (isUnprocessed(r)) group.hasUnprocessed = true;
+    }
+    return Array.from(map.values());
+  }, [sortedResponses, schoolsMap]);
 
   // データ取得
   const fetchData = useCallback(async () => {
@@ -402,6 +525,36 @@ export default function ResponsesPage() {
             <p className="text-sm text-[#ef4444]">{errorMessage}</p>
           </div>
         )}
+
+        {/* クイックフィルター */}
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <Filter className="h-4 w-4 text-gray-400 mr-1" />
+          {QUICK_FILTERS.map((qf) => {
+            const active = isQuickFilterActive(qf);
+            return (
+              <button
+                key={qf.label}
+                type="button"
+                onClick={() => {
+                  if (active) {
+                    setFilterFormType('all');
+                    setFilterPeriod('all');
+                    setFilterGrade('all');
+                    setFilterLinkedStatus('all');
+                    setFilterChargedStatus('all');
+                  } else {
+                    applyQuickFilter(qf);
+                  }
+                }}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                  active ? qf.activeColor : qf.color
+                }`}
+              >
+                {qf.label}
+              </button>
+            );
+          })}
+        </div>
 
         {/* 名前検索 */}
         <div className="mb-4 bg-white rounded-xl border border-[#e5e7eb] p-4">
@@ -599,12 +752,107 @@ export default function ResponsesPage() {
 
         {/* 回答一覧 */}
         <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
-          <h2 className="text-lg font-bold text-[#1f2937] mb-4">回答一覧</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-[#1f2937]">回答一覧</h2>
+            <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setViewMode('grouped')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors ${
+                  viewMode === 'grouped'
+                    ? 'bg-[#1e3a5f] text-white'
+                    : 'bg-white text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <Users className="h-4 w-4" />
+                生徒別
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('list')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors ${
+                  viewMode === 'list'
+                    ? 'bg-[#1e3a5f] text-white'
+                    : 'bg-white text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <List className="h-4 w-4" />
+                一覧
+              </button>
+            </div>
+          </div>
           {isLoading ? (
             <div className="text-center py-8 text-[#4b5563]">読み込み中...</div>
           ) : responses.length === 0 ? (
             <div className="text-center py-8 text-[#4b5563]">回答がありません。フィルターを変更するか、フォームの公開後に回答が届くとここに表示されます。</div>
+          ) : viewMode === 'grouped' ? (
+            /* 生徒別ビュー */
+            <div className="space-y-3">
+              <p className="text-sm text-gray-500 mb-2">{groupedByStudent.length}名の生徒 / {responses.length}件の回答</p>
+              {groupedByStudent.map((group) => (
+                <div
+                  key={group.studentKey}
+                  className={`border rounded-lg overflow-hidden ${
+                    group.hasUncharged ? 'border-red-200' : 'border-gray-200'
+                  }`}
+                >
+                  {/* 生徒ヘッダー */}
+                  <div className={`px-4 py-3 flex items-center justify-between ${
+                    group.hasUncharged ? 'bg-red-50' : 'bg-gray-50'
+                  }`}>
+                    <div className="flex items-center gap-3">
+                      <span className="font-semibold text-[#1f2937]">{group.studentName}</span>
+                      <span className="text-xs text-gray-500 bg-white px-2 py-0.5 rounded border border-gray-200">
+                        {GRADE_LABELS[group.grade] || group.grade}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {group.schoolName}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-500">{group.responses.length}件</span>
+                      {group.hasUncharged && (
+                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">未計上あり</span>
+                      )}
+                      {group.hasUnprocessed && (
+                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">未処理あり</span>
+                      )}
+                    </div>
+                  </div>
+                  {/* 回答リスト */}
+                  <table className="w-full text-sm">
+                    <tbody>
+                      {group.responses.map((response) => (
+                        <tr key={response.id} className="border-t border-gray-100 table-row-hover">
+                          <td className="px-4 py-2 w-24 text-gray-500">
+                            {formatDateTime(response.created_at)}
+                          </td>
+                          <td className="px-4 py-2 w-32 font-medium">
+                            {FORM_TYPE_LABELS[response.form_type]}
+                          </td>
+                          <td className="px-4 py-2 w-28 text-gray-500">
+                            {response.form_period}
+                          </td>
+                          <td className="px-4 py-2">
+                            <ResponseStatusBadges response={response} />
+                          </td>
+                          <td className="px-4 py-2 w-16 text-right">
+                            <Link
+                              href={`/forms/responses/${FORM_TYPE_TO_PATH[response.form_type] ?? response.form_type}/${response.form_period}?schoolId=${response.school_id}`}
+                              className="text-sm text-blue-600 hover:text-blue-800"
+                            >
+                              詳細
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ))}
+            </div>
           ) : (
+            /* 一覧ビュー */
             <div className="overflow-x-auto">
               <table className="w-full border-collapse border border-[#e5e7eb] text-sm">
                 <thead>
