@@ -73,16 +73,16 @@ export function MonthlyTaskPage() {
     return schools.filter((s) => selectedIds.includes(s.id) && !s.is_demo);
   }, [schools, getSelectedSchoolIds]);
 
-  // データ取得
-  const fetchTasks = useCallback(async () => {
-    setIsLoading(true);
+  // データ取得（silent=true: ローディング表示なしでバックグラウンド同期）
+  const fetchTasks = useCallback(async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const data = await getMonthlyTasks(year, month);
       setTasks(data);
     } catch {
-      toastError('タスクの取得に失敗しました');
+      if (!silent) toastError('タスクの取得に失敗しました');
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   }, [year, month, toastError]);
 
@@ -299,8 +299,8 @@ export function MonthlyTaskPage() {
       try {
         await createTask({ year, month, task_date: taskDate, category, task_name: taskName, note, url });
         success('タスクを追加しました');
-        // サーバーから正しいデータを取得して差し替え
-        fetchTasks();
+        // サーバーから正しいデータをバックグラウンド同期（スピナーなし）
+        fetchTasks(true);
       } catch {
         // 失敗時はロールバック
         setTasks((prev) => prev.filter((t) => t.id !== tempId));
@@ -318,11 +318,18 @@ export function MonthlyTaskPage() {
   // タスク更新（教室別オーバーライド対応）
   const handleUpdateTask = useCallback(
     async (taskId: string, updates: Record<string, unknown>) => {
+      // 楽観的にローカル更新
+      setTasks((prev) =>
+        prev.map((t) => (t.id === taskId ? { ...t, ...updates } : t))
+      );
       try {
         await updateTask(taskId, updates, singleSchoolId);
         success(singleSchoolId ? 'この教室のタスクを更新しました' : 'タスクを更新しました');
+        fetchTasks(true);
+      } catch {
+        toastError('タスクの更新に失敗しました');
         fetchTasks();
-      } catch { toastError('タスクの更新に失敗しました'); }
+      }
     },
     [fetchTasks, success, toastError, singleSchoolId]
   );
@@ -346,16 +353,18 @@ export function MonthlyTaskPage() {
   // タスク削除（教室別非表示対応）
   const handleDeleteTask = useCallback(
     async (taskId: string) => {
+      // 楽観的にローカル削除
+      setTasks((prev) => prev.filter((t) => t.id !== taskId));
       try {
         await deleteTask(taskId, singleSchoolId);
         if (singleSchoolId) {
-          // オーバーライド非表示の場合、ローカルでも反映
-          fetchTasks();
-        } else {
-          setTasks((prev) => prev.filter((t) => t.id !== taskId));
+          fetchTasks(true);
         }
         success('タスクを削除しました');
-      } catch { toastError('タスクの削除に失敗しました'); }
+      } catch {
+        toastError('タスクの削除に失敗しました');
+        fetchTasks();
+      }
     },
     [success, toastError, singleSchoolId, fetchTasks]
   );

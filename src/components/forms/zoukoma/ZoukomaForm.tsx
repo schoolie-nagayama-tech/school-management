@@ -3,6 +3,7 @@
 import { useState, useMemo, useRef } from 'react';
 import { Input, Select } from '@/components/ui';
 import type { School } from '@/types/database';
+import { validateStudentName } from '@/lib/utils/validation';
 import type {
   ZoukomaPeriod,
   ZoukomaResponseData,
@@ -88,8 +89,9 @@ export function ZoukomaForm({ school, period, isPreview }: ZoukomaFormProps) {
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!studentName.trim()) {
-      newErrors.studentName = '生徒名を入力してください';
+    const nameError = validateStudentName(studentName);
+    if (nameError) {
+      newErrors.studentName = nameError;
     }
 
     if (!selectedGrade) {

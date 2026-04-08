@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { Input, Select } from '@/components/ui';
 import type { School } from '@/types/database';
+import { validateStudentName } from '@/lib/utils/validation';
 import type {
   MogiPeriod,
   MogiResponseData,
@@ -46,8 +47,9 @@ export function MogiForm({ school, period, isPreview }: MogiFormProps) {
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!studentName.trim()) {
-      newErrors.studentName = '生徒名を入力してください';
+    const nameError = validateStudentName(studentName);
+    if (nameError) {
+      newErrors.studentName = nameError;
     }
 
     if (!selectedGrade) {

@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Input, Select, Button } from '@/components/ui';
 import type { School } from '@/types/database';
+import { validateStudentName } from '@/lib/utils/validation';
 import type {
   SoudanPeriod,
   SoudanResponseData,
@@ -66,6 +67,14 @@ export function SoudanForm({ school, period, isPreview }: SoudanFormProps) {
 
     if (selectedCategories.length === 0) {
       newErrors.categories = '相談区分を1つ以上選択してください';
+    }
+
+    // 生徒名は任意だが、入力された場合はメールアドレス等でないことをチェック
+    if (studentName.trim()) {
+      const nameError = validateStudentName(studentName);
+      if (nameError && nameError !== '生徒名を入力してください') {
+        newErrors.studentName = nameError;
+      }
     }
 
     if (content.trim().length < 10) {

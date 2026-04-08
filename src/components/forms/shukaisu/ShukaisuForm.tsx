@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Input, Select, Button } from '@/components/ui';
 import { ToastContainer } from '@/components/ui/Toast';
 import type { School } from '@/types/database';
+import { validateStudentName } from '@/lib/utils/validation';
 import type {
   ShukaisuPeriod,
   ShukaisuResponseData,
@@ -229,8 +230,9 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    if (!studentName.trim()) {
-      newErrors.studentName = '生徒名を入力してください';
+    const nameError = validateStudentName(studentName);
+    if (nameError) {
+      newErrors.studentName = nameError;
     }
 
     if (!selectedGrade) {

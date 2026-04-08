@@ -25,6 +25,7 @@ import { useRequirePermission, useCanEdit } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
+import { exportProgressToPDF } from '@/lib/utils/pdfExport';
 
 function getDefaultSeason(): SeasonType {
   const month = new Date().getMonth() + 1;
@@ -122,6 +123,9 @@ export default function CourseSchedulePage() {
     date: string;
     existing?: ScheduleMarker;
   } | null>(null);
+
+  // PDF出力
+  const [isExporting, setIsExporting] = useState(false);
 
   // 全教室展開
   const [deployLoading, setDeployLoading] = useState(false);
@@ -448,6 +452,24 @@ export default function CourseSchedulePage() {
     }
   }, [getSelectedSchoolIds, season]);
 
+  // PDF出力
+  const handleExportPDF = useCallback(async () => {
+    setIsExporting(true);
+    try {
+      const seasonLabel = season === 'spring' ? '春期' : season === 'summer' ? '夏期' : '冬期';
+      const filename = `${seasonLabel}${year}_準備スケジュール.pdf`;
+      await exportProgressToPDF('schedule-content', filename, {
+        orientation: viewMode === 'gantt' ? 'landscape' : 'portrait',
+        expandScrollable: true,
+      });
+    } catch (err) {
+      console.error('PDF export error:', err);
+      setErrorMessage('PDF出力に失敗しました');
+    } finally {
+      setIsExporting(false);
+    }
+  }, [season, year, viewMode]);
+
   // 全教室に展開
   const handleDeployToAllSchools = useCallback(async () => {
     if (tasks.length === 0) {
@@ -578,6 +600,23 @@ export default function CourseSchedulePage() {
               </button>
             </div>
 
+            {tasks.length > 0 && (
+              <button
+                onClick={handleExportPDF}
+                disabled={isExporting}
+                className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 disabled:opacity-50 flex items-center gap-1"
+              >
+                {isExporting ? (
+                  <>
+                    <span className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                    出力中...
+                  </>
+                ) : (
+                  'PDF出力'
+                )}
+              </button>
+            )}
+
             {isOwnerOrAbove && (
               <>
                 <button
@@ -626,6 +665,7 @@ export default function CourseSchedulePage() {
         )}
 
         {/* メインコンテンツ */}
+        <div id="schedule-content">
         {isLoading ? (
           <div className="bg-white rounded-xl border border-gray-200 p-8">
             <div className="flex items-center justify-center">
@@ -678,6 +718,7 @@ export default function CourseSchedulePage() {
             />
           )
         )}
+        </div>
       </div>
 
       {/* マーカー入力ポップオーバー（ガントチャート用） */}

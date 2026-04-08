@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Input, Select } from '@/components/ui';
 import type { FormWithFields, FormField } from '@/types/database';
+import { validateStudentName } from '@/lib/utils/validation';
 import { GRADE_LABELS } from '@/types/database';
 import { submitFormResponse } from '@/lib/api/forms';
 
@@ -38,8 +39,9 @@ export function PublicFormRenderer({
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!studentName.trim()) {
-      newErrors.studentName = '生徒名を入力してください';
+    const nameError = validateStudentName(studentName);
+    if (nameError) {
+      newErrors.studentName = nameError;
     }
 
     if (grade === '' || typeof grade !== 'number') {

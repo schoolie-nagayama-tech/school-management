@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Input, Select } from '@/components/ui';
 import type { FormWithFields } from '@/types/database';
+import { validateStudentName } from '@/lib/utils/validation';
 import { KOMA_GRADE_OPTIONS } from '@/lib/forms/grade-converter';
 import { generateSlots, groupSlotsByDate } from '@/lib/forms/slots';
 import { getPriceByGradeNumber } from '@/lib/forms/pricing';
@@ -72,8 +73,9 @@ export function KomaFormRenderer({
   const validate = async () => {
     const newErrors: Record<string, string> = {};
 
-    if (!studentName.trim()) {
-      newErrors.studentName = '生徒名を入力してください';
+    const nameError = validateStudentName(studentName);
+    if (nameError) {
+      newErrors.studentName = nameError;
     }
 
     if (grade === '' || typeof grade !== 'number') {
