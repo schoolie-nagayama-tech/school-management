@@ -3,6 +3,7 @@ import "./globals.css";
 import { AuthProvider } from '@/contexts/AuthContext';
 import { MasterDataProvider } from '@/contexts/MasterDataContext';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
   title: "NEST",
@@ -21,6 +22,7 @@ export default function RootLayout({
           <AuthProvider>
             <MasterDataProvider>
               {children}
+              <SpeedInsights />
             </MasterDataProvider>
           </AuthProvider>
         </ErrorBoundary>
