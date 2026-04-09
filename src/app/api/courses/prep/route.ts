@@ -1205,12 +1205,31 @@ async function syncScheduleTaskCompletionFromProgress(
       .update({ is_completed: allCompleted, updated_at: new Date().toISOString() })
       .eq('id', task.id);
 
-    // 5. 業務進捗にカスケード同期
-    const { data: linkedMonthlyTask } = await supabaseAdmin
-      .from('monthly_tasks')
-      .select('id')
-      .eq('linked_schedule_task_id', task.id)
-      .maybeSingle();
+    // 5. 業務進捗にカスケード同期（教室横断: 同名タスクのIDすべてで検索）
+    const { data: taskInfo } = await supabaseAdmin
+      .from('course_prep_schedule_tasks')
+      .select('name, season, year')
+      .eq('id', task.id)
+      .single();
+
+    let linkedMonthlyTask: { id: string } | null = null;
+    if (taskInfo) {
+      const { data: allRelatedSts } = await supabaseAdmin
+        .from('course_prep_schedule_tasks')
+        .select('id')
+        .eq('name', taskInfo.name)
+        .eq('season', taskInfo.season)
+        .eq('year', taskInfo.year);
+
+      const relatedIds = (allRelatedSts || []).map((s: { id: string }) => s.id);
+      const { data: found } = await supabaseAdmin
+        .from('monthly_tasks')
+        .select('id')
+        .in('linked_schedule_task_id', relatedIds)
+        .eq('category', 'course')
+        .maybeSingle();
+      linkedMonthlyTask = found;
+    }
 
     if (linkedMonthlyTask) {
       const { data: existingCheck } = await supabaseAdmin
@@ -1257,20 +1276,33 @@ async function handleUpdateScheduleTask(
   // 双方向同期: is_completed が更新された場合、連動する monthly_task_checks も更新
   if (params.updates.is_completed !== undefined) {
     try {
-      const { data: linkedTask } = await supabaseAdmin
-        .from('monthly_tasks')
-        .select('id')
-        .eq('linked_schedule_task_id', params.taskId)
-        .maybeSingle();
+      // 更新されたスケジュールタスクの情報を取得
+      const { data: scheduleTask } = await supabaseAdmin
+        .from('course_prep_schedule_tasks')
+        .select('name, season, year, school_id')
+        .eq('id', params.taskId)
+        .single();
 
-      if (linkedTask) {
-        const { data: scheduleTask } = await supabaseAdmin
+      if (scheduleTask) {
+        // 同名の全教室のスケジュールタスクIDを取得
+        const { data: allRelatedSts } = await supabaseAdmin
           .from('course_prep_schedule_tasks')
-          .select('school_id')
-          .eq('id', params.taskId)
-          .single();
+          .select('id')
+          .eq('name', scheduleTask.name)
+          .eq('season', scheduleTask.season)
+          .eq('year', scheduleTask.year);
 
-        if (scheduleTask) {
+        const relatedIds = (allRelatedSts || []).map((s: { id: string }) => s.id);
+
+        // linked_schedule_task_id がいずれかのIDに一致する月次タスクを検索
+        const { data: linkedTask } = await supabaseAdmin
+          .from('monthly_tasks')
+          .select('id')
+          .in('linked_schedule_task_id', relatedIds)
+          .eq('category', 'course')
+          .maybeSingle();
+
+        if (linkedTask) {
           const isCompleted = params.updates.is_completed as boolean;
           const { data: existing } = await supabaseAdmin
             .from('monthly_task_checks')

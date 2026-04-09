@@ -299,17 +299,28 @@ export async function POST(request: NextRequest) {
         // 双方向同期: 講習スケジュールタスクのis_completedも更新
         const { data: task } = await supabaseAdmin
           .from('monthly_tasks')
-          .select('linked_schedule_task_id')
+          .select('linked_schedule_task_id, task_name, category')
           .eq('id', checkTaskId)
           .single();
 
-        if (task?.linked_schedule_task_id) {
-          // 該当教室のschedule_taskを更新
-          await supabaseAdmin
+        if (task?.linked_schedule_task_id && task.category === 'course') {
+          // リンク先のスケジュールタスクからseason/yearを取得
+          const { data: linkedSt } = await supabaseAdmin
             .from('course_prep_schedule_tasks')
-            .update({ is_completed: isCompleted, updated_at: new Date().toISOString() })
+            .select('name, season, year')
             .eq('id', task.linked_schedule_task_id)
-            .eq('school_id', schoolId);
+            .single();
+
+          if (linkedSt) {
+            // 同名・同シーズン・該当教室のスケジュールタスクを更新（教室横断対応）
+            await supabaseAdmin
+              .from('course_prep_schedule_tasks')
+              .update({ is_completed: isCompleted, updated_at: new Date().toISOString() })
+              .eq('name', linkedSt.name)
+              .eq('season', linkedSt.season)
+              .eq('year', linkedSt.year)
+              .eq('school_id', schoolId);
+          }
         }
 
         return NextResponse.json({ success: true });
