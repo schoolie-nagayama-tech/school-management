@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import type { ScheduleTaskWithMarkers, ScheduleMarker, CourseProgressItem, SeasonType } from '@/types/database';
 
 interface ScheduleGanttChartProps {
@@ -149,15 +150,28 @@ function TaskNameCell({
 }) {
   const [showLinkMenu, setShowLinkMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const linkBtnRef = useRef<HTMLButtonElement>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
 
   useEffect(() => {
     if (!showLinkMenu) return;
     const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setShowLinkMenu(false);
+      if (menuRef.current && !menuRef.current.contains(e.target as Node) &&
+          linkBtnRef.current && !linkBtnRef.current.contains(e.target as Node)) {
+        setShowLinkMenu(false);
+      }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [showLinkMenu]);
+
+  const openLinkMenu = useCallback(() => {
+    if (linkBtnRef.current) {
+      const rect = linkBtnRef.current.getBoundingClientRect();
+      setMenuPos({ top: rect.bottom + 4, left: Math.max(rect.right - 180, 8) });
+    }
+    setShowLinkMenu((v) => !v);
+  }, []);
 
   const nameColor = overdue
     ? 'text-red-700 font-semibold'
@@ -197,9 +211,10 @@ function TaskNameCell({
       )}
       {/* リンクボタン */}
       {canEdit && onLinkProgressItem && progressItems && progressItems.length > 0 && (
-        <div className="relative shrink-0">
+        <div className="shrink-0">
           <button
-            onClick={() => setShowLinkMenu(!showLinkMenu)}
+            ref={linkBtnRef}
+            onClick={openLinkMenu}
             className={`text-[9px] px-1 py-0.5 rounded transition-all shrink-0 ${
               task.linked_progress_item_id
                 ? 'text-blue-600 bg-blue-50 hover:bg-blue-100'
@@ -209,8 +224,8 @@ function TaskNameCell({
           >
             {task.linked_progress_item_id ? '🔗' : '🔗'}
           </button>
-          {showLinkMenu && (
-            <div ref={menuRef} className="absolute top-full right-0 mt-1 z-[100] bg-white border border-gray-200 rounded-lg shadow-xl py-1 min-w-[180px] max-h-48 overflow-y-auto">
+          {showLinkMenu && createPortal(
+            <div ref={menuRef} className="fixed z-[9999] bg-white border border-gray-200 rounded-lg shadow-xl py-1 min-w-[180px] max-h-48 overflow-y-auto" style={{ top: menuPos.top, left: menuPos.left }}>
               <div className="px-2 py-1 text-[9px] text-gray-400 border-b border-gray-100">進捗項目をリンク</div>
               {task.linked_progress_item_id && (
                 <button
@@ -235,7 +250,8 @@ function TaskNameCell({
                   )}
                 </button>
               ))}
-            </div>
+            </div>,
+            document.body
           )}
         </div>
       )}

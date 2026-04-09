@@ -20,6 +20,8 @@ export interface FormResponseFilters {
   showArchived?: boolean;
   search?: string;
   chargedStatus?: 'all' | 'charged' | 'not_charged';
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 export interface FormResponseWithStudent extends FormResponse {
@@ -74,6 +76,14 @@ export async function getFormResponses(
     query = query.eq('status_checks->>charged', 'true');
   } else if (filters?.chargedStatus === 'not_charged') {
     query = query.or('status_checks->>charged.is.null,status_checks->>charged.eq.false');
+  }
+
+  // 申込日フィルター
+  if (filters?.dateFrom) {
+    query = query.gte('created_at', filters.dateFrom + 'T00:00:00');
+  }
+  if (filters?.dateTo) {
+    query = query.lte('created_at', filters.dateTo + 'T23:59:59');
   }
 
   query = query.order('created_at', { ascending: false });

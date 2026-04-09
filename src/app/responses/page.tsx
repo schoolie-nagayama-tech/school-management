@@ -236,6 +236,8 @@ export default function ResponsesPage() {
   const [filterChargedStatus, setFilterChargedStatus] = useState<
     'all' | 'charged' | 'not_charged'
   >((searchParams.get('charged') as 'all' | 'charged' | 'not_charged') || 'all');
+  const [filterDateFrom, setFilterDateFrom] = useState(searchParams.get('dateFrom') || '');
+  const [filterDateTo, setFilterDateTo] = useState(searchParams.get('dateTo') || '');
   const [searchName, setSearchName] = useState(searchParams.get('search') || '');
   const [searchInput, setSearchInput] = useState(searchParams.get('search') || '');
   const [viewMode, setViewMode] = useState<'list' | 'grouped'>(
@@ -430,6 +432,12 @@ export default function ResponsesPage() {
       if (searchName.trim()) {
         filters.search = searchName.trim();
       }
+      if (filterDateFrom) {
+        filters.dateFrom = filterDateFrom;
+      }
+      if (filterDateTo) {
+        filters.dateTo = filterDateTo;
+      }
 
       // 複数教室の期間を取得してperiod_keyで重複排除
       const fetchPeriods = async () => {
@@ -465,7 +473,7 @@ export default function ResponsesPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [getSelectedSchoolIds, filterFormType, filterPeriod, filterGrade, filterLinkedStatus, filterChargedStatus, searchName, profile?.role, masterSchools]);
+  }, [getSelectedSchoolIds, filterFormType, filterPeriod, filterGrade, filterLinkedStatus, filterChargedStatus, filterDateFrom, filterDateTo, searchName, profile?.role, masterSchools]);
 
   useEffect(() => {
     if (selectedSchoolId !== null) {
@@ -603,7 +611,7 @@ export default function ResponsesPage() {
 
         {/* フィルター */}
         <div className="mb-6 bg-white rounded-xl border border-[#e5e7eb] p-4">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <div>
               <label className="block text-sm font-medium text-[#1f2937] mb-2">
                 フォーム種別
@@ -699,8 +707,29 @@ export default function ResponsesPage() {
                 <option value="not_charged">未計上</option>
               </select>
             </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[#1f2937] mb-2">
+                申込日
+              </label>
+              <div className="flex items-center gap-1">
+                <input
+                  type="date"
+                  value={filterDateFrom}
+                  onChange={(e) => setFilterDateFrom(e.target.value)}
+                  className="w-full px-2 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                />
+                <span className="text-xs text-gray-400 shrink-0">〜</span>
+                <input
+                  type="date"
+                  value={filterDateTo}
+                  onChange={(e) => setFilterDateTo(e.target.value)}
+                  className="w-full px-2 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                />
+              </div>
+            </div>
           </div>
-          {(filterFormType !== 'all' || filterPeriod !== 'all' || filterGrade !== 'all' || filterLinkedStatus !== 'all' || filterChargedStatus !== 'all' || searchName) && (
+          {(filterFormType !== 'all' || filterPeriod !== 'all' || filterGrade !== 'all' || filterLinkedStatus !== 'all' || filterChargedStatus !== 'all' || filterDateFrom || filterDateTo || searchName) && (
             <div className="mt-3 flex items-center justify-between">
               <p className="text-sm text-gray-500">
                 {responses.length}件表示
@@ -713,6 +742,8 @@ export default function ResponsesPage() {
                   setFilterGrade('all');
                   setFilterLinkedStatus('all');
                   setFilterChargedStatus('all');
+                  setFilterDateFrom('');
+                  setFilterDateTo('');
                   setSearchInput('');
                   setSearchName('');
                 }}
