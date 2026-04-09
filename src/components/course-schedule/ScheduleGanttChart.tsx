@@ -210,7 +210,7 @@ function TaskNameCell({
             {task.linked_progress_item_id ? '🔗' : '🔗'}
           </button>
           {showLinkMenu && (
-            <div ref={menuRef} className="absolute top-full right-0 mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-xl py-1 min-w-[180px] max-h-48 overflow-y-auto">
+            <div ref={menuRef} className="absolute top-full right-0 mt-1 z-[100] bg-white border border-gray-200 rounded-lg shadow-xl py-1 min-w-[180px] max-h-48 overflow-y-auto">
               <div className="px-2 py-1 text-[9px] text-gray-400 border-b border-gray-100">進捗項目をリンク</div>
               {task.linked_progress_item_id && (
                 <button

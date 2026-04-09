@@ -20,6 +20,8 @@ export function ResponseList({ responses, formId, onRefresh }: ResponseListProps
   const { confirm, ConfirmDialog } = useConfirm();
   const [gradeFilter, setGradeFilter] = useState<number | ''>('');
   const [linkedFilter, setLinkedFilter] = useState<'all' | 'linked' | 'unlinked'>('all');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [selectedResponse, setSelectedResponse] = useState<FormResponse | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
@@ -35,6 +37,12 @@ export function ResponseList({ responses, formId, onRefresh }: ResponseListProps
       return false;
     }
     if (linkedFilter === 'unlinked' && response.linked_student_id) {
+      return false;
+    }
+    if (dateFrom && response.created_at < dateFrom) {
+      return false;
+    }
+    if (dateTo && response.created_at > dateTo + 'T23:59:59') {
       return false;
     }
     return true;
@@ -77,7 +85,7 @@ export function ResponseList({ responses, formId, onRefresh }: ResponseListProps
         )}
 
         {/* フィルター */}
-        <div className="flex gap-4 items-center">
+        <div className="flex gap-4 items-center flex-wrap">
           <div className="flex items-center gap-2">
             <label className="text-sm text-[#4b5563]">学年:</label>
             <Select
@@ -100,6 +108,22 @@ export function ResponseList({ responses, formId, onRefresh }: ResponseListProps
                 { value: 'unlinked', label: '未紐付け' },
                 { value: 'linked', label: '紐付け済み' },
               ]}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-[#4b5563]">申込日:</label>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="px-2 py-1 border border-gray-300 rounded text-sm"
+            />
+            <span className="text-sm text-gray-400">〜</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="px-2 py-1 border border-gray-300 rounded text-sm"
             />
           </div>
         </div>

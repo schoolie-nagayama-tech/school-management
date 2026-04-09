@@ -3485,7 +3485,7 @@ export const PROGRESS_COLUMN_GROUPS: Record<string, { label: string; color: stri
   '面談': { label: '面談関連', color: '#3b82f6' },
   '増コマ': { label: '増コマ関連', color: '#f59e0b' },
   '事務': { label: '事務処理', color: '#10b981' },
-  '教科別': { label: '教科別コマ', color: '#8b5cf6' },
+  '教科別': { label: '提案コマ教科別', color: '#8b5cf6' },
 };
 
 // ========== 業務進捗管理表（月次タスク） ==========

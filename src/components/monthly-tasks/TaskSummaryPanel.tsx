@@ -38,6 +38,11 @@ function getToday() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
 
+function formatDate(dateStr: string) {
+  const [, m, d] = dateStr.split('-');
+  return `${Number(m)}/${Number(d)}`;
+}
+
 export function TaskSummaryPanel({
   tasks,
   schools,
@@ -76,8 +81,19 @@ export function TaskSummaryPanel({
     }
 
     const percent = totalChecks > 0 ? Math.round((completedChecks / totalChecks) * 100) : 0;
-    return { totalChecks, completedChecks, percent, overdueTasks, totalTasks: tasks.length };
+    return { totalChecks, completedChecks, percent, overdueCount: overdueTasks, totalTasks: tasks.length };
   }, [tasks, schoolIds, today]);
+
+  const overdueTasks = useMemo(() =>
+    tasks.filter((t) => {
+      if (t.task_date >= today) return false;
+      return schoolIds.some((sid) => {
+        const check = t.checks.find((c) => c.school_id === sid);
+        return !check || !check.is_completed;
+      });
+    }),
+    [tasks, today, schoolIds]
+  );
 
   const schoolProgress = useMemo(() => {
     return schools.map(school => {
@@ -246,20 +262,41 @@ export function TaskSummaryPanel({
 
         {/* Overdue */}
         <div className={`rounded-lg border p-3 ${
-          stats.overdueTasks > 0 ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200'
+          stats.overdueCount > 0 ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200'
         }`}>
           <div className="text-[10px] text-gray-500 mb-1">超過タスク</div>
           <div className="flex items-end gap-2">
-            <span className={`text-2xl font-bold ${stats.overdueTasks > 0 ? 'text-red-600' : 'text-gray-800'}`}>
-              {stats.overdueTasks}
+            <span className={`text-2xl font-bold ${stats.overdueCount > 0 ? 'text-red-600' : 'text-gray-800'}`}>
+              {stats.overdueCount}
             </span>
             <span className="text-xs text-gray-400 pb-1">件</span>
           </div>
-          {stats.overdueTasks > 0 && (
-            <div className="mt-1 text-[10px] text-red-500 flex items-center gap-1">
-              <AlertTriangle className="w-3 h-3" />
-              早めに対応してください
-            </div>
+          {stats.overdueCount > 0 && (
+            <>
+              <div className="mt-1 text-[10px] text-red-500 flex items-center gap-1">
+                <AlertTriangle className="w-3 h-3" />
+                早めに対応してください
+              </div>
+              <div className="mt-2 space-y-1 max-h-36 overflow-y-auto">
+                {overdueTasks.map((task) => {
+                  const incompleteSchools = schools.filter((s) => {
+                    const check = task.checks.find((c) => c.school_id === s.id);
+                    return !check || !check.is_completed;
+                  });
+                  return (
+                    <div key={task.id} className="text-xs p-1.5 bg-white rounded border border-red-100">
+                      <div className="font-medium text-red-800 truncate">{task.task_name}</div>
+                      <div className="text-red-500 mt-0.5 flex items-center justify-between">
+                        <span>{formatDate(task.task_date)}</span>
+                        <span className="text-[10px]">
+                          未: {incompleteSchools.map((s) => s.name.slice(0, 3)).join(', ')}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           )}
         </div>
 

@@ -458,15 +458,15 @@ export function CourseProgressTable({
 
   return (
     <>
-      <div ref={containerRef} className={`border border-gray-200 rounded-xl bg-white shadow-sm ${needsScroll ? 'overflow-x-auto' : 'overflow-hidden'}`}>
+      <div ref={containerRef} className={`border border-gray-200 rounded-xl bg-white shadow-sm overflow-auto max-h-[80vh]`}>
         <table className="border-collapse w-full" style={needsScroll ? { minWidth: `${LEFT_TOTAL + itemCount * MIN_CELL_W + TOTAL_COL_W}px` } : undefined}>
           {/* ===== グループカラーバー ===== */}
-          <thead>
+          <thead className="sticky top-0 z-40">
             <tr>
               {/* 左固定: 空欄 */}
               <th
                 colSpan={3}
-                className="sticky left-0 z-30 bg-white"
+                className="sticky left-0 z-50 bg-white"
                 style={{ width: LEFT_TOTAL, minWidth: LEFT_TOTAL }}
               />
               {/* グループ別カラーバー */}
@@ -510,21 +510,21 @@ export function CourseProgressTable({
             <tr className="bg-gray-50">
               {/* 学年 */}
               <th
-                className="sticky left-0 z-30 bg-gray-50 border-b border-gray-200 text-[10px] text-gray-400 font-normal px-1 py-1"
+                className="sticky left-0 z-50 bg-gray-50 border-b border-gray-200 text-[10px] text-gray-400 font-normal px-1 py-1"
                 style={{ width: GRADE_W, minWidth: GRADE_W }}
               >
                 学年
               </th>
               {/* 名前 */}
               <th
-                className="sticky z-30 bg-gray-50 border-b border-gray-200 text-[10px] text-gray-600 font-medium text-left px-1 py-1"
+                className="sticky z-50 bg-gray-50 border-b border-gray-200 text-[10px] text-gray-600 font-medium text-left px-1 py-1"
                 style={{ left: GRADE_W, width: NAME_W, minWidth: NAME_W }}
               >
                 生徒名
               </th>
               {/* 進捗 */}
               <th
-                className="sticky z-30 bg-gray-50 border-b border-gray-200 text-[10px] text-gray-400 font-normal text-center px-1 py-1"
+                className="sticky z-50 bg-gray-50 border-b border-gray-200 text-[10px] text-gray-400 font-normal text-center px-1 py-1"
                 style={{ left: GRADE_W + NAME_W, width: PROGRESS_W, minWidth: PROGRESS_W }}
               >
                 進捗

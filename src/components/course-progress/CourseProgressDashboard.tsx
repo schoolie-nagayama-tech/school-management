@@ -368,42 +368,42 @@ export function CourseProgressDashboard({
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-2xl font-bold text-[#1e3a5f]">{totalDecided}</span>
-            <span className="text-sm text-gray-400">/ {budgetKoma > 0 ? budgetKoma : '–'} コマ</span>
+            <span className="text-sm text-gray-400">/ {targetKoma > 0 ? targetKoma : '–'} コマ</span>
           </div>
-          {budgetKoma > 0 && (
+          {targetKoma > 0 && (
             <>
               <div className="mt-2 w-full bg-gray-100 rounded-full h-2">
-                <div className="h-2 rounded-full bg-[#3b82f6] transition-all" style={{ width: `${Math.min(Math.round(budgetRate * 100), 100)}%` }} />
+                <div className="h-2 rounded-full bg-[#3b82f6] transition-all" style={{ width: `${Math.min(Math.round(targetRate * 100), 100)}%` }} />
               </div>
-              <div className="text-xs text-gray-400 mt-1">予算比 {Math.round(budgetRate * 100)}%</div>
+              <div className="text-xs text-gray-400 mt-1">目標比 {Math.round(targetRate * 100)}%</div>
             </>
           )}
           {(onBudgetKomaChange || onTargetKomaChange) ? (
             <div className="mt-3 space-y-1.5">
-              {onBudgetKomaChange && (
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-gray-500 w-8 shrink-0">予算</span>
-                  <BlurSaveInput value={budgetKoma} onSave={onBudgetKomaChange} placeholder="0" className={inputClass} suffix="コマ" />
-                </div>
-              )}
               {onTargetKomaChange && (
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] text-gray-500 w-8 shrink-0">目標</span>
                   <BlurSaveInput value={targetKoma} onSave={onTargetKomaChange} placeholder="0" className={inputClass} suffix="コマ" />
                 </div>
               )}
+              {onBudgetKomaChange && (
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-gray-500 w-8 shrink-0">予算</span>
+                  <BlurSaveInput value={budgetKoma} onSave={onBudgetKomaChange} placeholder="0" className={inputClass} suffix="コマ" />
+                </div>
+              )}
             </div>
           ) : (
             <div className="mt-2 space-y-0.5 text-xs text-gray-400">
-              {budgetKoma > 0 && <div>予算: {budgetKoma}コマ</div>}
               {targetKoma > 0 && <div>目標: {targetKoma}コマ</div>}
+              {budgetKoma > 0 && <div>予算: {budgetKoma}コマ</div>}
             </div>
           )}
-          {targetKoma > 0 && (
+          {budgetKoma > 0 && (
             <div className="mt-1.5 flex items-center gap-1">
-              <span className="text-[10px] text-gray-400">目標達成:</span>
-              <span className={`text-[11px] font-bold ${targetRate >= 1 ? 'text-green-600' : targetRate >= 0.7 ? 'text-amber-600' : 'text-red-500'}`}>
-                {Math.round(targetRate * 100)}%
+              <span className="text-[10px] text-gray-400">予算達成:</span>
+              <span className={`text-[11px] font-bold ${budgetRate >= 1 ? 'text-green-600' : budgetRate >= 0.7 ? 'text-amber-600' : 'text-red-500'}`}>
+                {Math.round(budgetRate * 100)}%
               </span>
             </div>
           )}

@@ -33,7 +33,7 @@ export function TaskPool({
   year,
   month,
 }: TaskPoolProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [trashOver, setTrashOver] = useState(false);
