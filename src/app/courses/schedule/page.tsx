@@ -459,8 +459,9 @@ export default function CourseSchedulePage() {
       const seasonLabel = season === 'spring' ? '春期' : season === 'summer' ? '夏期' : '冬期';
       const filename = `${seasonLabel}${year}_準備スケジュール.pdf`;
       await exportProgressToPDF('schedule-content', filename, {
-        orientation: viewMode === 'gantt' ? 'landscape' : 'portrait',
+        orientation: 'landscape',
         expandScrollable: true,
+        pageSize: 'a3',
       });
     } catch (err) {
       console.error('PDF export error:', err);

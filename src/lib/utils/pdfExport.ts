@@ -7,9 +7,10 @@ export async function exportProgressToPDF(
     fitToPage?: boolean; // 1ページに収めるかどうか
     orientation?: 'portrait' | 'landscape'; // 縦向き or 横向き
     expandScrollable?: boolean; // スクロール領域を展開して全体をキャプチャするか
+    pageSize?: 'a4' | 'a3'; // 用紙サイズ（デフォルト: a4）
   }
 ): Promise<void> {
-  const { fitToPage = false, orientation = 'portrait', expandScrollable = false } = options || {};
+  const { fitToPage = false, orientation = 'portrait', expandScrollable = false, pageSize = 'a4' } = options || {};
 
   // html2canvas と jspdf を動的インポート
   const [html2canvasModule, jsPDFModule] = await Promise.all([
@@ -36,6 +37,9 @@ export async function exportProgressToPDF(
     overflowY: el.style.overflowY,
   };
 
+  const isLandscape = orientation === 'landscape';
+  const isA3 = pageSize === 'a3';
+
   try {
     // スクロール領域を展開：max-height/overflow を解除して全体をキャプチャ
     if (expandScrollable) {
@@ -47,7 +51,10 @@ export async function exportProgressToPDF(
 
     if (fitToPage) {
       // 1ページに収める場合：フォントサイズ縮小・表が切れないよう体裁を整える
-      element.style.width = orientation === 'landscape' ? '1400px' : '800px';
+      const fitWidth = isA3
+        ? (isLandscape ? '2000px' : '1400px')
+        : (isLandscape ? '1400px' : '800px');
+      element.style.width = fitWidth;
       const tables = element.querySelectorAll('table');
       tables.forEach(table => {
         (table as HTMLElement).style.fontSize = '9px';
@@ -66,7 +73,7 @@ export async function exportProgressToPDF(
       });
     } else {
       // 通常モード：幅を固定
-      element.style.width = '800px';
+      element.style.width = isA3 ? (isLandscape ? '1600px' : '1100px') : '800px';
     }
 
     // HTML要素をCanvasに変換
@@ -78,16 +85,19 @@ export async function exportProgressToPDF(
     });
 
     // PDFのサイズ設定
-    const isLandscape = orientation === 'landscape';
-    const pageWidth = isLandscape ? 297 : 210; // A4横向き幅（mm）or 縦向き幅
-    const pageHeight = isLandscape ? 210 : 297; // A4横向き高さ（mm）or 縦向き高さ
+    const pageWidth = isLandscape
+      ? (isA3 ? 420 : 297)   // A3横: 420mm, A4横: 297mm
+      : (isA3 ? 297 : 210);  // A3縦: 297mm, A4縦: 210mm
+    const pageHeight = isLandscape
+      ? (isA3 ? 297 : 210)   // A3横: 297mm, A4横: 210mm
+      : (isA3 ? 420 : 297);  // A3縦: 420mm, A4縦: 297mm
 
     // Canvas画像のサイズを計算
     const imgWidth = pageWidth - 10; // マージン5mm x 2
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
     // PDFを作成
-    const pdf = new jsPDF(isLandscape ? 'l' : 'p', 'mm', 'a4');
+    const pdf = new jsPDF(isLandscape ? 'l' : 'p', 'mm', pageSize);
 
     if (fitToPage && imgHeight > pageHeight - 10) {
       // 1ページに収まらない場合、スケールを調整
