@@ -17,14 +17,12 @@ import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 interface ApplicationItemAccordionProps {
   schoolId?: string;
   items: ApplicationItem[];
-  showHidden: boolean;
   onUpdated: () => void;
 }
 
 export function ApplicationItemAccordion({
-  schoolId: _schoolId,
+  schoolId,
   items,
-  showHidden,
   onUpdated,
 }: ApplicationItemAccordionProps) {
   const { success, error: toastError } = useToast();
@@ -45,7 +43,7 @@ export function ApplicationItemAccordion({
       return;
     }
 
-    if (!_schoolId) {
+    if (!schoolId) {
       toastError('教室が選択されていません');
       return;
     }
@@ -59,7 +57,7 @@ export function ApplicationItemAccordion({
           due_date: newItemDueDate || null,
           manager_only: newItemManagerOnly,
         },
-        _schoolId
+        schoolId
       );
       success('項目を追加しました');
       setNewItemName('');
@@ -185,7 +183,7 @@ export function ApplicationItemAccordion({
   };
 
   // 表示する項目
-  const visibleItems = showHidden ? items : items.filter((i) => !i.is_hidden);
+  const visibleItems = items.filter((i) => !i.is_hidden);
   const hiddenItems = items.filter((i) => i.is_hidden);
 
   return (
@@ -271,12 +269,10 @@ export function ApplicationItemAccordion({
           {/* 表示中の項目 */}
           <div>
             <h3 className="text-sm font-medium text-[#1f2937] mb-3">
-              表示中の項目（{visibleItems.filter((i) => !i.is_hidden).length}件）
+              表示中の項目（{visibleItems.length}件）
             </h3>
             <div className="space-y-2">
-              {visibleItems
-                .filter((i) => !i.is_hidden)
-                .map((item) => (
+              {visibleItems.map((item) => (
                   <div
                     key={item.id}
                     className="flex items-center justify-between p-3 bg-[#f3f4f6] rounded-lg border border-[#e5e7eb]"
@@ -389,7 +385,7 @@ export function ApplicationItemAccordion({
                     )}
                   </div>
                 ))}
-              {visibleItems.filter((i) => !i.is_hidden).length === 0 && (
+              {visibleItems.length === 0 && (
                 <p className="text-[#4b5563]/60 text-sm py-4 text-center">
                   表示中の項目がありません
                 </p>

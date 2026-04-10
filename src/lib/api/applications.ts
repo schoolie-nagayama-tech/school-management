@@ -84,16 +84,17 @@ export async function createApplicationItem(
     .select()
     .single();
 
-  if (error) {
-    throw new Error(`申込項目の作成に失敗しました: ${error.message}`);
+  if (error || !data) {
+    throw new Error(`申込項目の作成に失敗しました: ${error?.message ?? 'no data'}`);
   }
 
+  const row = data as ApplicationItem;
   return {
-    ...(data as any),
-    column_type: (data as any).column_type || 'check',
-    due_date: (data as any).due_date || null,
-    manager_only: (data as any).manager_only === true,
-  } as ApplicationItem;
+    ...row,
+    column_type: row.column_type || 'check',
+    due_date: row.due_date || null,
+    manager_only: row.manager_only === true,
+  };
 }
 
 /**
@@ -110,16 +111,17 @@ export async function updateApplicationItem(
     .select()
     .single();
 
-  if (error) {
-    throw new Error(`申込項目の更新に失敗しました: ${error.message}`);
+  if (error || !data) {
+    throw new Error(`申込項目の更新に失敗しました: ${error?.message ?? 'no data'}`);
   }
 
+  const row = data as ApplicationItem;
   return {
-    ...(data as any),
-    column_type: (data as any).column_type || 'check',
-    due_date: (data as any).due_date || null,
-    manager_only: (data as any).manager_only === true,
-  } as ApplicationItem;
+    ...row,
+    column_type: row.column_type || 'check',
+    due_date: row.due_date || null,
+    manager_only: row.manager_only === true,
+  };
 }
 
 /**
@@ -230,11 +232,14 @@ export async function getStudentApplications(
     throw new Error(`申込状況の取得に失敗しました: ${error.message}`);
   }
 
-  return (data || []).map((app: Record<string, unknown>) => ({
-    ...app,
-    number_value: app.number_value ?? null,
-    date_value: app.date_value ?? null,
-  })) as StudentApplication[];
+  return (data || []).map((raw) => {
+    const app = raw as StudentApplication;
+    return {
+      ...app,
+      number_value: app.number_value ?? null,
+      date_value: app.date_value ?? null,
+    };
+  });
 }
 
 /**
@@ -297,15 +302,16 @@ export async function updateStudentApplication(
       .select()
       .single();
 
-    if (error) {
-      throw new Error(`申込状況の更新に失敗しました: ${error.message}`);
+    if (error || !data) {
+      throw new Error(`申込状況の更新に失敗しました: ${error?.message ?? 'no data'}`);
     }
 
+    const row = data as StudentApplication;
     return {
-      ...(data as any),
-      number_value: (data as any).number_value ?? null,
-      date_value: (data as any).date_value ?? null,
-    } as StudentApplication;
+      ...row,
+      number_value: row.number_value ?? null,
+      date_value: row.date_value ?? null,
+    };
   } else {
     // 作成
     const { data, error } = await supabase
@@ -319,15 +325,16 @@ export async function updateStudentApplication(
       .select()
       .single();
 
-    if (error) {
-      throw new Error(`申込状況の作成に失敗しました: ${error.message}`);
+    if (error || !data) {
+      throw new Error(`申込状況の作成に失敗しました: ${error?.message ?? 'no data'}`);
     }
 
+    const row = data as StudentApplication;
     return {
-      ...(data as any),
-      number_value: (data as any).number_value ?? null,
-      date_value: (data as any).date_value ?? null,
-    } as StudentApplication;
+      ...row,
+      number_value: row.number_value ?? null,
+      date_value: row.date_value ?? null,
+    };
   }
 }
 
@@ -382,48 +389,50 @@ export async function updateStudentApplicationNumber(
     console.warn('既存レコードの確認に失敗しました（新規作成として処理します）:', existingError);
   }
 
-    if (existing) {
-      // 更新
-      const { data, error } = await supabase
-        .from('student_applications')
-        .update({ number_value: numberValue } as any)
-        .eq('id', existing.id)
-        .select()
-        .single();
+  if (existing) {
+    // 更新
+    const { data, error } = await supabase
+      .from('student_applications')
+      .update({ number_value: numberValue })
+      .eq('id', existing.id)
+      .select()
+      .single();
 
-      if (error) {
-        throw new Error(`申込状況の更新に失敗しました: ${error.message}`);
-      }
-
-      return {
-        ...(data as any),
-        number_value: (data as any).number_value ?? null,
-        date_value: (data as any).date_value ?? null,
-      } as StudentApplication;
-    } else {
-      // 作成
-      const { data, error } = await supabase
-        .from('student_applications')
-        .insert({
-          school_id: schoolId,
-          student_id: studentId,
-          item_id: itemId,
-          status: null as any,
-          number_value: numberValue,
-        } as any)
-        .select()
-        .single();
-
-      if (error) {
-        throw new Error(`申込状況の作成に失敗しました: ${error.message}`);
-      }
-
-      return {
-        ...(data as any),
-        number_value: (data as any).number_value ?? null,
-        date_value: (data as any).date_value ?? null,
-      } as StudentApplication;
+    if (error || !data) {
+      throw new Error(`申込状況の更新に失敗しました: ${error?.message ?? 'no data'}`);
     }
+
+    const row = data as StudentApplication;
+    return {
+      ...row,
+      number_value: row.number_value ?? null,
+      date_value: row.date_value ?? null,
+    };
+  } else {
+    // 作成
+    const { data, error } = await supabase
+      .from('student_applications')
+      .insert({
+        school_id: schoolId,
+        student_id: studentId,
+        item_id: itemId,
+        status: null,
+        number_value: numberValue,
+      })
+      .select()
+      .single();
+
+    if (error || !data) {
+      throw new Error(`申込状況の作成に失敗しました: ${error?.message ?? 'no data'}`);
+    }
+
+    const row = data as StudentApplication;
+    return {
+      ...row,
+      number_value: row.number_value ?? null,
+      date_value: row.date_value ?? null,
+    };
+  }
 }
 
 /**
@@ -477,46 +486,48 @@ export async function updateStudentApplicationDate(
     console.warn('既存レコードの確認に失敗しました（新規作成として処理します）:', existingError);
   }
 
-    if (existing) {
-      // 更新
-      const { data, error } = await supabase
-        .from('student_applications')
-        .update({ date_value: dateValue } as any)
-        .eq('id', existing.id)
-        .select()
-        .single();
+  if (existing) {
+    // 更新
+    const { data, error } = await supabase
+      .from('student_applications')
+      .update({ date_value: dateValue })
+      .eq('id', existing.id)
+      .select()
+      .single();
 
-      if (error) {
-        throw new Error(`申込状況の更新に失敗しました: ${error.message}`);
-      }
-
-      return {
-        ...(data as any),
-        number_value: (data as any).number_value ?? null,
-        date_value: (data as any).date_value ?? null,
-      } as StudentApplication;
-    } else {
-      // 作成
-      const { data, error } = await supabase
-        .from('student_applications')
-        .insert({
-          school_id: schoolId,
-          student_id: studentId,
-          item_id: itemId,
-          status: null as any,
-          date_value: dateValue,
-        } as any)
-        .select()
-        .single();
-
-      if (error) {
-        throw new Error(`申込状況の作成に失敗しました: ${error.message}`);
-      }
-
-      return {
-        ...(data as any),
-        number_value: (data as any).number_value ?? null,
-        date_value: (data as any).date_value ?? null,
-      } as StudentApplication;
+    if (error || !data) {
+      throw new Error(`申込状況の更新に失敗しました: ${error?.message ?? 'no data'}`);
     }
+
+    const row = data as StudentApplication;
+    return {
+      ...row,
+      number_value: row.number_value ?? null,
+      date_value: row.date_value ?? null,
+    };
+  } else {
+    // 作成
+    const { data, error } = await supabase
+      .from('student_applications')
+      .insert({
+        school_id: schoolId,
+        student_id: studentId,
+        item_id: itemId,
+        status: null,
+        date_value: dateValue,
+      })
+      .select()
+      .single();
+
+    if (error || !data) {
+      throw new Error(`申込状況の作成に失敗しました: ${error?.message ?? 'no data'}`);
+    }
+
+    const row = data as StudentApplication;
+    return {
+      ...row,
+      number_value: row.number_value ?? null,
+      date_value: row.date_value ?? null,
+    };
+  }
 }

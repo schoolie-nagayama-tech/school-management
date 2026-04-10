@@ -3,8 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
-import { Button } from '@/components/ui';
-import { ApplicationTable, ApplicationItemSettings, ApplicationFiltersPanel, ApplicationItemAccordion } from '@/components/applications';
+import { ApplicationTable, ApplicationFiltersPanel, ApplicationItemAccordion } from '@/components/applications';
 import { StudentDetailModal } from '@/components/students';
 import {
   getStudents,
@@ -44,7 +43,6 @@ export default function ApplicationsPage() {
   const [items, setItems] = useState<ApplicationItem[]>([]);
   const [applications, setApplications] = useState<StudentApplication[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
@@ -186,12 +184,12 @@ export default function ApplicationsPage() {
               school_id: students.find((s) => s.id === studentId)?.school_id || '',
               student_id: studentId,
               item_id: itemId,
-              status: status as any,
-              number_value: null as any,
-              date_value: null as any,
+              status,
+              number_value: null,
+              date_value: null,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
-            } as StudentApplication;
+            };
             return [...prev, newApp];
           }
         });
@@ -227,12 +225,12 @@ export default function ApplicationsPage() {
               school_id: students.find((s) => s.id === studentId)?.school_id || '',
               student_id: studentId,
               item_id: itemId,
-              status: null as any,
-              number_value: numberValue as any,
-              date_value: null as any,
+              status: null,
+              number_value: numberValue,
+              date_value: null,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
-            } as StudentApplication;
+            };
             return [...prev, newApp];
           }
         });
@@ -268,12 +266,12 @@ export default function ApplicationsPage() {
               school_id: students.find((s) => s.id === studentId)?.school_id || '',
               student_id: studentId,
               item_id: itemId,
-              status: null as any,
-              number_value: null as any,
-              date_value: dateValue as any,
+              status: null,
+              number_value: null,
+              date_value: dateValue,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
-            } as StudentApplication;
+            };
             return [...prev, newApp];
           }
         });
@@ -281,12 +279,6 @@ export default function ApplicationsPage() {
     },
     [students]
   );
-
-  // 項目設定が閉じられたときに再取得
-  const handleSettingsClose = () => {
-    setIsSettingsModalOpen(false);
-    fetchData();
-  };
 
   // 生徒詳細を開く
   const handleStudentClick = (student: Student) => {
@@ -352,7 +344,6 @@ export default function ApplicationsPage() {
           <ApplicationItemAccordion
             schoolId={schoolId}
             items={items}
-            showHidden={filters.showHidden ?? false}
             onUpdated={fetchData}
           />
         );
@@ -398,11 +389,11 @@ export default function ApplicationsPage() {
           </div>
         ) : tableItems.length === 0 ? (
           <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 text-center">
-            <p className="text-[#4b5563] mb-4">申込項目がありません。</p>
+            <p className="text-[#4b5563]">申込項目がありません。</p>
             {canEdit && isManagerOrAbove && (
-              <Button onClick={() => setIsSettingsModalOpen(true)}>
-                項目設定を開く
-              </Button>
+              <p className="text-[#4b5563]/80 text-sm mt-2">
+                上部の「項目管理」から新しい項目を追加してください。
+              </p>
             )}
         </div>
       ) : (
@@ -417,15 +408,6 @@ export default function ApplicationsPage() {
           onItemsChange={fetchData}
         />
       )}
-
-      {/* 項目設定モーダル（既存）- 室長以上のみ（列の追加・削除・名前変更） */}
-      {canEdit && isManagerOrAbove && (
-        <ApplicationItemSettings
-          isOpen={isSettingsModalOpen}
-          onClose={handleSettingsClose}
-        />
-      )}
-
 
       {/* 生徒詳細モーダル */}
       {selectedStudent && (
