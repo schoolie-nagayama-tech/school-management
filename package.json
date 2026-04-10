@@ -9,6 +9,12 @@
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset",
+    "db:status": "supabase status",
+    "db:dump": "supabase db dump --linked --schema public -f /tmp/prod_schema.sql && node -e \"const fs=require('fs');const body=fs.readFileSync('/tmp/prod_schema.sql','utf8');const header='-- ============================================================\\n-- BASE SCHEMA (本番DBからdump - ローカル開発/テスト用)\\n-- ============================================================\\n-- supabase db dump --linked --schema public で生成。\\n-- 本番環境には push しないこと（本番に既に適用済み）。\\n-- 再生成: npm run db:dump\\n-- ============================================================\\n\\n';fs.writeFileSync('supabase/migrations/00000000000000_base_schema.sql', header+body);\"",
+    "db:prod-push": "echo '本番push前: _archived_for_local_dev から migrations/ に戻してください' && exit 1",
     "analyze": "cross-env ANALYZE=true next build"
   },
   "dependencies": {
