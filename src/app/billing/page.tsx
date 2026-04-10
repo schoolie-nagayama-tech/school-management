@@ -81,18 +81,13 @@ export default function BillingPage() {
       // 退会（withdrawn）の生徒は請求管理に表示しない
       setStudents(studentsData.filter((s) => s.status !== 'withdrawn'));
       setPeriods(periodsData);
-
-      // 期間が選択されていない場合、最初の期間を自動選択
-      if (!selectedPeriodId && periodsData.length > 0) {
-        setSelectedPeriodId(periodsData[0].id);
-      }
     } catch (error) {
       console.error('Error fetching base data:', error);
       setErrorMessage(getUserErrorMessage(error, 'データの取得に失敗しました'));
     } finally {
       setIsLoading(false);
     }
-  }, [getSelectedSchoolIds, selectedPeriodId]);
+  }, [getSelectedSchoolIds]);
 
   // 期間選択時に項目と請求状況を取得
   const fetchPeriodData = useCallback(async () => {
@@ -124,6 +119,13 @@ export default function BillingPage() {
       fetchBaseData();
     }
   }, [fetchBaseData, selectedSchoolId]);
+
+  // 期間一覧の更新時、未選択なら先頭を自動選択（fetchBaseDataのdepsから切り離してループを防ぐ）
+  useEffect(() => {
+    if (!selectedPeriodId && periods.length > 0) {
+      setSelectedPeriodId(periods[0].id);
+    }
+  }, [periods, selectedPeriodId]);
 
   // 期間変更時に項目・請求状況を再取得
   useEffect(() => {

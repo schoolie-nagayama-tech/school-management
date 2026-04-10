@@ -6,7 +6,6 @@ import { Button } from '@/components/ui';
 import {
   MaterialForm,
   StockTransactionModal,
-  StockHistoryDrawer,
 } from '@/components/inventory';
 import type { MaterialFormData } from '@/components/inventory';
 import Link from 'next/link';
@@ -30,7 +29,6 @@ import { getTextbooks } from '@/lib/api/textbooks';
 import type {
   Material,
   MaterialOrderWithDetails,
-  StockTransactionType,
   BillingPeriod,
   Textbook,
 } from '@/types/database';
@@ -64,8 +62,6 @@ export default function OrderingPage() {
   const [stockTxnMaterial, setStockTxnMaterial] = useState<Material | null>(null);
   const [stockTxnMode, setStockTxnMode] = useState<'in' | 'out' | 'adjust'>('in');
   const [isStockTxnOpen, setIsStockTxnOpen] = useState(false);
-  const [historyMaterial, setHistoryMaterial] = useState<Material | null>(null);
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
   // Fetch all data
   const fetchData = useCallback(async () => {
@@ -153,7 +149,7 @@ export default function OrderingPage() {
     await createStockTransaction({
       school_id: schoolId,
       material_id: stockTxnMaterial.id,
-      transaction_type: stockTxnMode as StockTransactionType,
+      transaction_type: stockTxnMode,
       quantity: txnData.quantity,
       reason: txnData.reason || null,
     });
@@ -209,7 +205,7 @@ export default function OrderingPage() {
         await createStockTransaction({
           school_id: schoolId,
           material_id: material.id,
-          transaction_type: 'out' as StockTransactionType,
+          transaction_type: 'out',
           quantity,
           reason: '発注による自動出庫',
         });
@@ -273,7 +269,7 @@ export default function OrderingPage() {
           await createStockTransaction({
             school_id: schoolId,
             material_id: entry.material_id,
-            transaction_type: 'out' as StockTransactionType,
+            transaction_type: 'out',
             quantity: entry.quantity,
             reason: '発注による自動出庫',
           });
@@ -410,18 +406,6 @@ export default function OrderingPage() {
           material={stockTxnMaterial}
           mode={stockTxnMode}
           onSubmit={handleStockTransaction}
-        />
-      )}
-
-      {/* Stock History Drawer */}
-      {isHistoryOpen && historyMaterial && (
-        <StockHistoryDrawer
-          isOpen={isHistoryOpen}
-          onClose={() => {
-            setIsHistoryOpen(false);
-            setHistoryMaterial(null);
-          }}
-          material={historyMaterial}
         />
       )}
     </AdminLayout>
