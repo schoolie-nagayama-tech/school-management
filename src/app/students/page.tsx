@@ -248,26 +248,26 @@ export default function StudentsPage() {
     void reloadScoresStudents();
   }, [selectedSchoolId, activeTab, debouncedSearch, reloadScoresStudents]);
 
-  // URLパラメータ ?edit=studentId で編集モーダルを自動起動
+  // URLパラメータ ?edit=studentId で編集モーダルを自動起動（1 editId につき 1 回のみ）
+  const handledEditIdRef = useRef<string | null>(null);
   useEffect(() => {
     const editId = searchParams.get('edit');
-    if (!editId || isLoading) return;
+    if (!editId) {
+      handledEditIdRef.current = null;
+      return;
+    }
+    if (handledEditIdRef.current === editId) return;
+    handledEditIdRef.current = editId;
 
-    const openEdit = async () => {
-      const pools = [...rosterRows, ...studentsForScores];
-      let student: Student | null | undefined = pools.find((s) => s.id === editId);
-      if (!student) {
-        student = await getStudent(editId, getSelectedSchoolIds());
-      }
+    void (async () => {
+      const student = await getStudent(editId, getSelectedSchoolIds());
       if (student) {
         setSelectedStudent(student);
         setIsEditModalOpen(true);
         router.replace('/students', { scroll: false });
       }
-    };
-
-    void openEdit();
-  }, [searchParams, rosterRows, studentsForScores, isLoading, router, getSelectedSchoolIds]);
+    })();
+  }, [searchParams, router, getSelectedSchoolIds]);
 
   // 成績タブ用（クライアント側で在籍・学年フィルタ）
   const filteredStudents = useMemo(() => {
@@ -290,10 +290,10 @@ export default function StudentsPage() {
   }, [showInactive, selectedGrade, searchQuery]);
 
   const rosterTotalPages = Math.max(1, Math.ceil(rosterTotalCount / ITEMS_PER_PAGE));
-  const paginatedStudents = rosterRows;
 
-  // エクスポートメニュー外クリックで閉じる
+  // エクスポートメニュー外クリックで閉じる（開いている間だけリスナーを貼る）
   useEffect(() => {
+    if (!exportMenuOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
       if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
         setExportMenuOpen(false);
@@ -301,58 +301,66 @@ export default function StudentsPage() {
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [exportMenuOpen]);
 
-  // CSVエクスポート: 常に全件取得（ページングの影響を受けない）
-  const handleExportStudents = useCallback(async () => {
-    setIsExporting(true);
-    setExportMenuOpen(false);
-    try {
-      const schoolIds = getSelectedSchoolIds();
-      const full = await getStudents(searchQuery, schoolIds);
-      const csv = generateStudentCSV(full);
-      const date = new Date().toISOString().slice(0, 10);
-      downloadCSV(csv, `生徒一覧_${date}.csv`);
-    } catch (err) {
-      setErrorMessage(getUserErrorMessage(err, '生徒一覧のエクスポートに失敗しました'));
-    } finally {
-      setIsExporting(false);
-    }
-  }, [searchQuery, getSelectedSchoolIds]);
+  // CSVエクスポート: ページングは無視するが、画面の在籍/学年フィルタは適用する
+  const runExport = useCallback(
+    async (
+      errorLabel: string,
+      build: (
+        students: (Student & { subjects?: Subject[] })[],
+        schoolIds: string[]
+      ) => Promise<{ csv: string; filename: string }> | { csv: string; filename: string }
+    ) => {
+      setIsExporting(true);
+      setExportMenuOpen(false);
+      try {
+        const schoolIds = getSelectedSchoolIds();
+        const all = await getStudents(searchQuery, schoolIds);
+        const filtered = all.filter((s) => {
+          if (!showInactive && s.status !== 'active') return false;
+          if (selectedGrade !== 'all' && s.grade !== selectedGrade) return false;
+          return true;
+        });
+        const { csv, filename } = await build(filtered, schoolIds);
+        downloadCSV(csv, filename);
+      } catch (err) {
+        setErrorMessage(getUserErrorMessage(err, errorLabel));
+      } finally {
+        setIsExporting(false);
+      }
+    },
+    [searchQuery, getSelectedSchoolIds, showInactive, selectedGrade]
+  );
 
-  const handleExportAssessments = useCallback(async () => {
-    setIsExporting(true);
-    setExportMenuOpen(false);
-    try {
-      const schoolIds = getSelectedSchoolIds();
-      const full = await getStudents(searchQuery, schoolIds);
-      const map = await listAssessmentsBySchool(schoolIds);
-      const csv = generateAssessmentCSV(full, map);
-      const date = new Date().toISOString().slice(0, 10);
-      downloadCSV(csv, `成績一覧_${date}.csv`);
-    } catch (err) {
-      setErrorMessage(getUserErrorMessage(err, '成績データのエクスポートに失敗しました'));
-    } finally {
-      setIsExporting(false);
-    }
-  }, [searchQuery, getSelectedSchoolIds]);
+  const handleExportStudents = useCallback(
+    () =>
+      runExport('生徒一覧のエクスポートに失敗しました', (students) => {
+        const date = new Date().toISOString().slice(0, 10);
+        return { csv: generateStudentCSV(students), filename: `生徒一覧_${date}.csv` };
+      }),
+    [runExport]
+  );
 
-  const handleExportInterviews = useCallback(async () => {
-    setIsExporting(true);
-    setExportMenuOpen(false);
-    try {
-      const schoolIds = getSelectedSchoolIds();
-      const full = await getStudents(searchQuery, schoolIds);
-      const map = await getInterviewsBySchool(schoolIds);
-      const csv = generateInterviewCSV(full, map);
-      const date = new Date().toISOString().slice(0, 10);
-      downloadCSV(csv, `面談記録_${date}.csv`);
-    } catch (err) {
-      setErrorMessage(getUserErrorMessage(err, '面談記録のエクスポートに失敗しました'));
-    } finally {
-      setIsExporting(false);
-    }
-  }, [searchQuery, getSelectedSchoolIds]);
+  const handleExportAssessments = useCallback(
+    () =>
+      runExport('成績データのエクスポートに失敗しました', async (students, schoolIds) => {
+        const map = await listAssessmentsBySchool(schoolIds);
+        const date = new Date().toISOString().slice(0, 10);
+        return { csv: generateAssessmentCSV(students, map), filename: `成績一覧_${date}.csv` };
+      }),
+    [runExport]
+  );
+
+  const handleExportInterviews = useCallback(
+    () =>
+      runExport('面談記録のエクスポートに失敗しました', async (students, schoolIds) => {
+        const map = await getInterviewsBySchool(schoolIds);
+        const date = new Date().toISOString().slice(0, 10);
+        return { csv: generateInterviewCSV(students, map), filename: `面談記録_${date}.csv` };
+      }),
+    [runExport]
+  );
 
   // 新規登録モーダルを開く
   const handleOpenCreateModal = useCallback(() => {
@@ -891,7 +899,7 @@ export default function StudentsPage() {
 
         {/* 生徒一覧テーブル */}
         <StudentTable
-          students={paginatedStudents}
+          students={rosterRows}
           onEdit={!isTeacher ? handleOpenEditModal : undefined}
           onDelete={!isTeacher ? handleOpenDeleteDialog : undefined}
           onRowClick={handleOpenDetailModal}

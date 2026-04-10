@@ -115,16 +115,22 @@ async function enrichStudentsWithRelations(
       schedulePatterns: [] as SchedulePatternSummary[],
     }));
 
+  type PatternRow = {
+    student_id: string;
+    day_of_week: number;
+    subject_ids: string[];
+  };
+
   const [ssResult, patternsResult] = await Promise.all([
     supabase.from('student_subjects').select('student_id, subject_id').in('student_id', studentIds),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    supabase
       .from('schedule_regular_patterns')
       .select('student_id, day_of_week, subject_ids')
       .in('student_id', studentIds)
       .eq('period_type', 'regular')
       .eq('is_active', true)
-      .order('day_of_week', { ascending: true }),
+      .order('day_of_week', { ascending: true })
+      .returns<PatternRow[]>(),
   ]);
 
   if (ssResult.error) {
@@ -137,11 +143,7 @@ async function enrichStudentsWithRelations(
   studentSubjects.forEach((ss) => {
     if (ss.subject_id) allSubjectIdSet.add(ss.subject_id);
   });
-  const rawPatterns = (patternsResult.data || []) as {
-    student_id: string;
-    day_of_week: number;
-    subject_ids: string[];
-  }[];
+  const rawPatterns = patternsResult.data || [];
   rawPatterns.forEach((p) => {
     (p.subject_ids || []).forEach((id: string) => allSubjectIdSet.add(id));
   });
@@ -594,20 +596,21 @@ export async function updateStudent(
       ? 'status_changed'
       : 'updated';
 
-  // ログを記録
+  // ログを記録（実際に DB に送った updateData を基準に差分を取る）
   const diff: Record<string, unknown> = {};
   if (oldTyped) {
-    Object.keys(student).forEach((key) => {
-      const typedKey = key as keyof StudentUpdate;
-      if (student[typedKey] !== undefined && oldTyped[typedKey] !== student[typedKey]) {
-        diff[key] = {
+    (Object.keys(updateData) as (keyof StudentUpdate)[]).forEach((typedKey) => {
+      const newValue = updateData[typedKey];
+      if (newValue === undefined) return;
+      if (oldTyped[typedKey] !== newValue) {
+        diff[typedKey as string] = {
           old: oldTyped[typedKey],
-          new: student[typedKey],
+          new: newValue,
         };
       }
     });
   } else {
-    diff.newValues = student;
+    diff.newValues = updateData;
   }
 
   await logStudentAction(studentData.id, studentData.school_id, action, diff);
