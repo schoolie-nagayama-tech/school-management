@@ -1206,13 +1206,15 @@ async function syncScheduleTaskCompletionFromProgress(
       .eq('id', task.id);
 
     // 5. 業務進捗にカスケード同期（教室横断: 同名タスクのIDすべてで検索）
+    // 同じschedule_taskから複数月のmonthly_tasks(Feb/Mar/Apr/May)が生成されうるため
+    // ヒットした全monthly_tasksを更新する
     const { data: taskInfo } = await supabaseAdmin
       .from('course_prep_schedule_tasks')
       .select('name, season, year')
       .eq('id', task.id)
       .single();
 
-    let linkedMonthlyTask: { id: string } | null = null;
+    let linkedMonthlyTasks: { id: string }[] = [];
     if (taskInfo) {
       const { data: allRelatedSts } = await supabaseAdmin
         .from('course_prep_schedule_tasks')
@@ -1222,16 +1224,17 @@ async function syncScheduleTaskCompletionFromProgress(
         .eq('year', taskInfo.year);
 
       const relatedIds = (allRelatedSts || []).map((s: { id: string }) => s.id);
-      const { data: found } = await supabaseAdmin
-        .from('monthly_tasks')
-        .select('id')
-        .in('linked_schedule_task_id', relatedIds)
-        .eq('category', 'course')
-        .maybeSingle();
-      linkedMonthlyTask = found;
+      if (relatedIds.length > 0) {
+        const { data: found } = await supabaseAdmin
+          .from('monthly_tasks')
+          .select('id')
+          .in('linked_schedule_task_id', relatedIds)
+          .eq('category', 'course');
+        linkedMonthlyTasks = found || [];
+      }
     }
 
-    if (linkedMonthlyTask) {
+    for (const linkedMonthlyTask of linkedMonthlyTasks) {
       const { data: existingCheck } = await supabaseAdmin
         .from('monthly_task_checks')
         .select('id')
@@ -1295,15 +1298,17 @@ async function handleUpdateScheduleTask(
         const relatedIds = (allRelatedSts || []).map((s: { id: string }) => s.id);
 
         // linked_schedule_task_id がいずれかのIDに一致する月次タスクを検索
-        const { data: linkedTask } = await supabaseAdmin
-          .from('monthly_tasks')
-          .select('id')
-          .in('linked_schedule_task_id', relatedIds)
-          .eq('category', 'course')
-          .maybeSingle();
+        // 同じschedule_taskから複数月(Feb/Mar/Apr/May)のmonthly_tasksが生成されうるため全件処理する
+        const { data: linkedTasks } = relatedIds.length > 0
+          ? await supabaseAdmin
+              .from('monthly_tasks')
+              .select('id')
+              .in('linked_schedule_task_id', relatedIds)
+              .eq('category', 'course')
+          : { data: [] as { id: string }[] };
 
-        if (linkedTask) {
-          const isCompleted = params.updates.is_completed as boolean;
+        const isCompleted = params.updates.is_completed as boolean;
+        for (const linkedTask of linkedTasks || []) {
           const { data: existing } = await supabaseAdmin
             .from('monthly_task_checks')
             .select('id')

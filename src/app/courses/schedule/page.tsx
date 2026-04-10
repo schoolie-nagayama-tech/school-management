@@ -26,13 +26,7 @@ import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { exportProgressToPDF } from '@/lib/utils/pdfExport';
-
-function getDefaultSeason(): SeasonType {
-  const month = new Date().getMonth() + 1;
-  if (month >= 2 && month <= 5) return 'spring';
-  if (month >= 6 && month <= 9) return 'summer';
-  return 'winter';
-}
+import { loadSavedSeasonYear, saveSavedSeasonYear } from '@/lib/utils/coursePrepStorage';
 
 /** シーズンごとの全体期間 */
 function getSeasonFullRangeForInit(season: SeasonType, year: number): { start: Date; end: Date } {
@@ -46,23 +40,6 @@ function getSeasonFullRangeForInit(season: SeasonType, year: number): { start: D
     default:
       return { start: new Date(year, 0, 1), end: new Date(year, 3, 30) };
   }
-}
-
-const STORAGE_KEY = 'course_prep_season_year';
-
-function loadSavedSeasonYear(): { season: SeasonType; year: number } {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed.season && parsed.year) return parsed;
-    }
-  } catch { /* ignore */ }
-  return { season: getDefaultSeason(), year: new Date().getFullYear() };
-}
-
-function saveSavedSeasonYear(season: SeasonType, year: number) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ season, year })); } catch { /* ignore */ }
 }
 
 type ViewMode = 'list' | 'gantt';
@@ -469,7 +446,7 @@ export default function CourseSchedulePage() {
     } finally {
       setIsExporting(false);
     }
-  }, [season, year, viewMode]);
+  }, [season, year]);
 
   // 全教室に展開
   const handleDeployToAllSchools = useCallback(async () => {

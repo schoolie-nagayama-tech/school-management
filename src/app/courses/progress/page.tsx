@@ -42,31 +42,7 @@ import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { HelpTooltip } from '@/components/ui/Tooltip';
-
-// localStorage共通キー（工程表と共有）
-const STORAGE_KEY = 'course_prep_season_year';
-
-function getDefaultSeason(): SeasonType {
-  const month = new Date().getMonth() + 1;
-  if (month >= 2 && month <= 5) return 'spring';
-  if (month >= 6 && month <= 9) return 'summer';
-  return 'winter';
-}
-
-function loadSavedSeasonYear(): { season: SeasonType; year: number } {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed.season && parsed.year) return parsed;
-    }
-  } catch { /* ignore */ }
-  return { season: getDefaultSeason(), year: new Date().getFullYear() };
-}
-
-function saveSavedSeasonYear(season: SeasonType, year: number) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ season, year })); } catch { /* ignore */ }
-}
+import { loadSavedSeasonYear, saveSavedSeasonYear } from '@/lib/utils/coursePrepStorage';
 
 export default function CourseProgressPage() {
   const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
