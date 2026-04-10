@@ -29,6 +29,7 @@ import {
   type AttendanceType,
   type AttendanceRecord,
   type AttendanceNote,
+  type AttendanceSheet,
   type AttendanceSheetStatus,
 } from '@/types/attendance';
 
@@ -39,7 +40,7 @@ export default function AttendanceSheetDetailPage() {
   const { toasts, removeToast, success, error: toastError } = useToast();
   const sheetId = params.sheetId as string;
 
-  const [sheet, setSheet] = useState<any>(null);
+  const [sheet, setSheet] = useState<AttendanceSheet | null>(null);
   const [attendanceTypes, setAttendanceTypes] = useState<AttendanceType[]>([]);
   const [records, setRecords] = useState<Map<string, number>>(new Map());
   const [notes, setNotes] = useState<Map<string, { lateEarly: string; note: string }>>(

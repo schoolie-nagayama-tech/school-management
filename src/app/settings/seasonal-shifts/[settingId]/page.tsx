@@ -16,32 +16,7 @@ import type { SeasonalShiftSetting } from '@/types/seasonal-shift';
 import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
 import { ShiftSlotMatrix, type SlotSettingRow } from '@/components/seasonal-shift/ShiftSlotMatrix';
-
-function generateDefaultSlotSettings(
-  startDate: string,
-  endDate: string,
-  timeSlots: string[]
-): SlotSettingRow[] {
-  const rows: SlotSettingRow[] = [];
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  const current = new Date(start);
-  while (current <= end) {
-    const d = new Date(current);
-    const day = d.getDay();
-    if (day === 0) {
-      current.setDate(current.getDate() + 1);
-      continue;
-    }
-    const isOpen = day !== 6;
-    const dateStr = d.toISOString().slice(0, 10);
-    timeSlots.forEach((time_slot) => {
-      rows.push({ slot_date: dateStr, time_slot, is_open: isOpen });
-    });
-    current.setDate(current.getDate() + 1);
-  }
-  return rows;
-}
+import { generateDefaultSlotSettings } from '@/lib/utils/seasonalShiftSlots';
 
 export default function SeasonalShiftDetailPage() {
   const params = useParams();
@@ -112,6 +87,10 @@ export default function SeasonalShiftDetailPage() {
     fetchData();
   }, [fetchData]);
 
+  const timeSlotsArray = form.weekday_slots
+    ? form.weekday_slots.split(',').map((s) => s.trim()).filter(Boolean)
+    : [];
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!settingId) return;
@@ -158,10 +137,6 @@ export default function SeasonalShiftDetailPage() {
     success('URLをコピーしました');
     setTimeout(() => setCopied(false), 2000);
   };
-
-  const timeSlotsArray = form.weekday_slots
-    ? form.weekday_slots.split(',').map((s) => s.trim()).filter(Boolean)
-    : [];
 
   if (permissionLoading || isLoading) {
     return (

@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { AdminLayout } from '@/components/layouts';
 import { Card, CardContent, CardHeader, CardTitle, Button, SelectShadcn as Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui';
 import { ToastContainer } from '@/components/ui';
 import { ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
+import { useAuth } from '@/contexts/AuthContext';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { getLateEarlyList } from '@/lib/api/attendance';
 import {
@@ -30,6 +31,7 @@ interface LateEarlyRecord {
 
 export default function LateEarlyListPage() {
   const { toasts, removeToast, success, error: toastError } = useToast();
+  const { schoolIds: userSchoolIds } = useAuth();
   const [schools, setSchools] = useState<School[]>([]);
   const [selectedSchoolId, setSelectedSchoolId] = useState<string>('all');
   const [yearMonth, setYearMonth] = useState(getCurrentYearMonth());
@@ -42,6 +44,12 @@ export default function LateEarlyListPage() {
   useEffect(() => {
     if (masterSchools.length > 0) setSchools(masterSchools);
   }, [masterSchools]);
+
+  // ユーザーがアクセスできる教室のみに絞り込み（参照安定化）
+  const allowedSchools = useMemo(
+    () => schools.filter((s) => userSchoolIds.includes(s.id)),
+    [schools, userSchoolIds]
+  );
 
   // 遅刻早退データを取得
   useEffect(() => {
@@ -80,7 +88,7 @@ export default function LateEarlyListPage() {
 
     const headers = ['日付', '教室', '講師名', '遅刻早退', '備考'];
     const rows = records.map((record) => [
-      record.date,
+      formatDate(record.date),
       record.sheet?.school?.name || '',
       record.sheet?.teacher?.name || '',
       record.late_early,
@@ -130,12 +138,12 @@ export default function LateEarlyListPage() {
                   <Select value={selectedSchoolId} onValueChange={setSelectedSchoolId}>
                     <SelectTrigger>
                       <SelectValue placeholder="教室を選択">
-                        {selectedSchoolId === 'all' ? '全教室' : schools.find(s => s.id === selectedSchoolId)?.name}
+                        {selectedSchoolId === 'all' ? '全教室' : allowedSchools.find(s => s.id === selectedSchoolId)?.name}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">全教室</SelectItem>
-                      {schools.map((school) => (
+                      {allowedSchools.map((school) => (
                         <SelectItem key={school.id} value={school.id}>
                           {school.name}
                         </SelectItem>

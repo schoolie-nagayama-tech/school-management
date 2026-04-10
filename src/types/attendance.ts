@@ -31,12 +31,12 @@ export interface AttendanceSheet {
   teacher?: {
     id: string;
     name: string;
-  };
+  } | null;
   school?: {
     id: string;
     name: string;
-    code: string;
-  };
+    code: string | null;
+  } | null;
 }
 
 // 出勤簿明細

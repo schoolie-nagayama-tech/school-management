@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { useAuth } from '@/contexts/AuthContext';
@@ -69,12 +69,7 @@ export default function TeachersPage() {
   // CSV
   const [isCsvImportModalOpen, setIsCsvImportModalOpen] = useState(false);
 
-  // データ取得
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
       const teachersResponse = await fetchWithAuth(`/api/admin/users?role=teacher&t=${Date.now()}`);
@@ -82,7 +77,6 @@ export default function TeachersPage() {
       if (!teachersResponse.ok) throw new Error('Failed to fetch teachers');
       const teachersData = await teachersResponse.json();
       let teachersList: TeacherWithDetails[] = teachersData.users || [];
-      const schoolsData = masterSchools;
 
       // 権限が講師かつ、その教室に所属する人のみ表示（選択中の教室に紐づく講師に絞る）
       const userSchoolIds = getSelectedSchoolIds();
@@ -96,15 +90,14 @@ export default function TeachersPage() {
 
       // デモ教室を除外し、教室長の場合はさらに権限ある教室のみ表示
       const demoSet = new Set(demoSchoolIds);
-      let availableSchools = schoolsData.filter((s) => !demoSet.has(s.id));
+      let availableSchools = masterSchools.filter((s) => !demoSet.has(s.id));
       if (isManager) {
-        const userSchoolIds = getSelectedSchoolIds();
         availableSchools = availableSchools.filter(school => userSchoolIds.includes(school.id));
       }
       setSchools(availableSchools);
-      
-      if (availableSchools.length > 0 && !formData.schoolId) {
-        setFormData(prev => ({ ...prev, schoolId: availableSchools[0].id }));
+
+      if (availableSchools.length > 0) {
+        setFormData(prev => prev.schoolId ? prev : { ...prev, schoolId: availableSchools[0].id });
       }
     } catch (err) {
       console.error('Error loading data:', err);
@@ -112,7 +105,14 @@ export default function TeachersPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [getSelectedSchoolIds, masterSchools, demoSchoolIds, isManager, toastError]);
+
+  // データ取得: 教室切替や master データ更新時に再読込
+  // （loadData は getSelectedSchoolIds 経由で selectedSchoolId に依存しているため、
+  //   教室切替時に loadData の ID が変わって再実行される）
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   // 講師作成
   const handleCreate = async () => {
@@ -162,9 +162,9 @@ export default function TeachersPage() {
       });
       await loadData();
       success('講師を作成しました');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to create teacher:', error);
-      toastError(error.message || '講師の作成に失敗しました');
+      toastError(error instanceof Error ? error.message : '講師の作成に失敗しました');
     } finally {
       setIsSubmitting(false);
     }

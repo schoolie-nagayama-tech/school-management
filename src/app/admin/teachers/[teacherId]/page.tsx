@@ -92,10 +92,10 @@ export default function TeacherEditPage() {
   const params = useParams();
   const router = useRouter();
   const teacherId = params?.teacherId as string | undefined;
-  const { getSelectedSchoolIds } = useAuth();
+  const { getSelectedSchoolIds, profile } = useAuth();
   const { schools: masterSchools, subjects: masterSubjects } = useMasterData();
   const { toasts, removeToast, success, error: toastError } = useToast();
-  const isManager = useAuth().profile?.role === 'manager';
+  const isManager = profile?.role === 'manager';
 
   const [teacher, setTeacher] = useState<TeacherWithDetails | null>(null);
   const [schools, setSchools] = useState<School[]>([]);

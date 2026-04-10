@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
 import { Card, CardContent, CardHeader, CardTitle, Button, SelectShadcn as Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge, Checkbox, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Textarea, Label, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui';
@@ -66,10 +66,14 @@ export default function AttendanceManagementPage() {
   const [isReopenDialogOpen, setIsReopenDialogOpen] = useState(false);
   const [reopeningSheet, setReopeningSheet] = useState<SummaryRow | null>(null);
 
-  // アクセス可能な教室のみ（他教室の出勤簿を見せない）
-  const allowedSchools = schools.filter((s) => userSchoolIds.includes(s.id));
-
   const { schools: masterSchools } = useMasterData();
+
+  // アクセス可能な教室のみ（他教室の出勤簿を見せない）
+  // useMemo 化して参照安定化（以前は毎レンダー新配列で effects が毎回走っていた）
+  const allowedSchools = useMemo(
+    () => schools.filter((s) => userSchoolIds.includes(s.id)),
+    [schools, userSchoolIds]
+  );
 
   // 教室一覧をコンテキストから取得
   useEffect(() => {
@@ -83,29 +87,32 @@ export default function AttendanceManagementPage() {
     }
   }, [allowedSchools, selectedSchoolId]);
 
-  // 出勤簿一覧を取得（getAttendanceSummary で統合データ取得）
-  useEffect(() => {
-    async function fetchData() {
-      setIsLoading(true);
-      try {
-        const schoolId = selectedSchoolId === 'all' ? null : selectedSchoolId;
-        const allowedIds = schoolId ? undefined : (userSchoolIds.length > 0 ? userSchoolIds : undefined);
-        const [typesData, summaryResult] = await Promise.all([
-          getAllAttendanceTypes(schoolId ? [schoolId] : (userSchoolIds.length > 0 ? userSchoolIds : undefined)),
-          getAttendanceSummary(schoolId, yearMonth, allowedIds),
-        ]);
-        setAttendanceTypes(typesData);
-        setSheets(summaryResult);
-        setSelectedIds(new Set());
-      } catch (error) {
-        console.error('Failed to fetch data:', error);
-        toastError('データの取得に失敗しました');
-      } finally {
-        setIsLoading(false);
-      }
+  // 出勤簿一覧 + 勤怠種別を取得（初回 & 承認/差戻し後の refetch 両方で使用）
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const schoolId = selectedSchoolId === 'all' ? null : selectedSchoolId;
+      const schoolIdsForTypes =
+        schoolId ? [schoolId] : (userSchoolIds.length > 0 ? userSchoolIds : undefined);
+      const allowedIds = schoolId ? undefined : (userSchoolIds.length > 0 ? userSchoolIds : undefined);
+      const [typesData, summaryResult] = await Promise.all([
+        getAllAttendanceTypes(schoolIdsForTypes),
+        getAttendanceSummary(schoolId, yearMonth, allowedIds),
+      ]);
+      setAttendanceTypes(typesData);
+      setSheets(summaryResult);
+      setSelectedIds(new Set());
+    } catch (err) {
+      console.error('Failed to fetch data:', err);
+      toastError('データの取得に失敗しました');
+    } finally {
+      setIsLoading(false);
     }
+  }, [selectedSchoolId, yearMonth, userSchoolIds, toastError]);
+
+  useEffect(() => {
     fetchData();
-  }, [selectedSchoolId, yearMonth, toastError, userSchoolIds]);
+  }, [fetchData]);
 
   // 教室変更時（selectedSchoolの更新）
   useEffect(() => {
@@ -143,17 +150,6 @@ export default function AttendanceManagementPage() {
     }
   };
 
-  const refetchData = async () => {
-    const schoolId = selectedSchoolId === 'all' ? null : selectedSchoolId;
-    const allowedIds = schoolId ? undefined : (userSchoolIds.length > 0 ? userSchoolIds : undefined);
-    const [typesData, summaryResult] = await Promise.all([
-      getAllAttendanceTypes(schoolId ? [schoolId] : (userSchoolIds.length > 0 ? userSchoolIds : undefined)),
-      getAttendanceSummary(schoolId, yearMonth, allowedIds),
-    ]);
-    setAttendanceTypes(typesData);
-    setSheets(summaryResult);
-  };
-
   // 個別承認
   const handleApprove = async (sheet: SummaryRow) => {
     if (!profile) return;
@@ -161,7 +157,7 @@ export default function AttendanceManagementPage() {
     try {
       await approveAttendanceSheet(sheet.id, profile.id);
       success(`${sheet.teacher?.name ?? '不明'}の出勤簿を承認しました`);
-      await refetchData();
+      await fetchData();
     } catch (error) {
       console.error('Failed to approve:', error);
       toastError('承認に失敗しました');
@@ -184,7 +180,7 @@ export default function AttendanceManagementPage() {
       success(`${rejectingSheet.teacher?.name ?? '不明'}の出勤簿を修正しました`);
       setIsRejectDialogOpen(false);
       setRejectingSheet(null);
-      await refetchData();
+      await fetchData();
     } catch (error) {
       console.error('Failed to reject:', error);
       toastError('修正に失敗しました');
@@ -206,7 +202,7 @@ export default function AttendanceManagementPage() {
       success(`${reopeningSheet.teacher?.name ?? '不明'}の出勤簿の承認を取り消しました`);
       setIsReopenDialogOpen(false);
       setReopeningSheet(null);
-      await refetchData();
+      await fetchData();
     } catch (error) {
       console.error('Failed to reopen:', error);
       toastError('承認取消に失敗しました');
@@ -221,7 +217,7 @@ export default function AttendanceManagementPage() {
       await bulkApproveAttendanceSheets(Array.from(selectedIds), profile.id);
       success(`${selectedIds.size}件の出勤簿を承認しました`);
       setSelectedIds(new Set());
-      await refetchData();
+      await fetchData();
     } catch (error) {
       console.error('Failed to bulk approve:', error);
       toastError('一括承認に失敗しました');
