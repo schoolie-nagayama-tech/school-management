@@ -72,7 +72,7 @@ describe('API認証ガード', () => {
   it('未認証で /api/admin/users/[userId] にアクセスすると 401 が返る', async () => {
     const { GET } = await import('@/app/api/admin/users/[userId]/route');
     const req = new NextRequest('http://localhost:3000/api/admin/users/fake-id');
-    const res = await GET(req, { params: Promise.resolve({ userId: 'fake-id' }) });
+    const res = await GET(req, { params: { userId: 'fake-id' } });
     expect(res.status).toBe(401);
   });
 

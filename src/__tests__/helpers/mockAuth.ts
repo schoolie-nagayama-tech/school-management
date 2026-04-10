@@ -1,3 +1,5 @@
+import { vi } from 'vitest';
+
 /**
  * API認証ガードのモックヘルパー
  *
