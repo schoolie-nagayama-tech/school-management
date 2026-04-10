@@ -9,6 +9,7 @@ import { getShukaisuPeriodByKey } from '@/lib/api/shukaisu';
 import { getSoudanPeriodByKey } from '@/lib/api/soudan';
 import { getYoubiPeriodByKey } from '@/lib/api/youbi';
 import type { FormType } from '@/types/database';
+import { FORM_TYPE_LABELS } from '@/types/database';
 import type { School } from '@/types/database';
 import type { ZoukomaPeriod } from '@/types/forms/zoukoma';
 import type { MoshiPeriod } from '@/types/forms/moshi';
@@ -18,15 +19,6 @@ import type { SoudanPeriod } from '@/types/forms/soudan';
 import type { YoubiPeriod } from '@/types/forms/youbi';
 
 export const dynamic = 'force-dynamic';
-
-const FORM_TYPE_LABELS: Record<string, string> = {
-  zoukoma: '増コマ申込',
-  moshi: '模試申込',
-  mogi: 'Vもぎ申込',
-  shukaisu: '週回数変更',
-  soudan: 'お客様相談',
-  youbi: '曜日変更',
-};
 
 /** 1リサイスト1フォーム種別のみ動的 import（バンドル分割） */
 async function renderPreviewForm(
@@ -115,7 +107,7 @@ export default async function FormPeriodPreviewPage({
     notFound();
   }
 
-  const formLabel = FORM_TYPE_LABELS[formType] ?? formType;
+  const formLabel = FORM_TYPE_LABELS[formType as FormType] ?? formType;
   const formNode = await renderPreviewForm(formType, school, period);
   if (!formNode) notFound();
 

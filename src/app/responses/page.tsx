@@ -202,14 +202,12 @@ function SummaryCard({
   );
 }
 
-// TODO: ResponseSummary, ResponseDetailModal, LinkStudentModalコンポーネントを作成
-
 export default function ResponsesPage() {
   // 権限チェック
   const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
     (p) => p.canAccessApplications
   );
-  const { getSelectedSchoolIds, selectedSchoolId, profile } = useAuth();
+  const { getSelectedSchoolIds, selectedSchoolId } = useAuth();
   const { schools: masterSchools } = useMasterData();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -260,6 +258,8 @@ export default function ResponsesPage() {
     if (filterGrade !== 'all') params.set('grade', String(filterGrade));
     if (filterLinkedStatus !== 'all') params.set('linked', filterLinkedStatus);
     if (filterChargedStatus !== 'all') params.set('charged', filterChargedStatus);
+    if (filterDateFrom) params.set('dateFrom', filterDateFrom);
+    if (filterDateTo) params.set('dateTo', filterDateTo);
     if (searchName) params.set('search', searchName);
     if (viewMode !== 'grouped') params.set('view', viewMode);
     if (sortKey !== 'created_at') params.set('sort', sortKey);
@@ -267,7 +267,7 @@ export default function ResponsesPage() {
     const qs = params.toString();
     const newUrl = qs ? `?${qs}` : '/responses';
     router.replace(newUrl, { scroll: false });
-  }, [filterFormType, filterPeriod, filterGrade, filterLinkedStatus, filterChargedStatus, searchName, viewMode, sortKey, sortOrder, router]);
+  }, [filterFormType, filterPeriod, filterGrade, filterLinkedStatus, filterChargedStatus, filterDateFrom, filterDateTo, searchName, viewMode, sortKey, sortOrder, router]);
 
   const handleSort = useCallback((key: SortKey) => {
     setSortKey((prev) => {
@@ -473,7 +473,7 @@ export default function ResponsesPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [getSelectedSchoolIds, filterFormType, filterPeriod, filterGrade, filterLinkedStatus, filterChargedStatus, filterDateFrom, filterDateTo, searchName, profile?.role, masterSchools]);
+  }, [getSelectedSchoolIds, filterFormType, filterPeriod, filterGrade, filterLinkedStatus, filterChargedStatus, filterDateFrom, filterDateTo, searchName, masterSchools]);
 
   useEffect(() => {
     if (selectedSchoolId !== null) {

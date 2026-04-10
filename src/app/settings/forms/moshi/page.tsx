@@ -11,6 +11,7 @@ import { useConfirm } from '@/hooks/useConfirm';
 import type { MoshiPeriod } from '@/types/forms/moshi';
 import { getDefaultSchoolId } from '@/lib/api/schools';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
+import { getFormPeriodStatus } from '@/lib/utils/formPeriodStatus';
 
 export default function MoshiSettingsPage() {
   const [periods, setPeriods] = useState<MoshiPeriod[]>([]);
@@ -68,29 +69,7 @@ export default function MoshiSettingsPage() {
   };
 
   // 期間ステータスの取得
-  const getPeriodStatus = (period: MoshiPeriod) => {
-    if (period.is_archived) {
-      return { label: 'アーカイブ', color: 'gray' };
-    }
-
-    const now = new Date();
-    const start = period.publish_start ? new Date(period.publish_start) : null;
-    const end = period.publish_end ? new Date(period.publish_end) : null;
-
-    if (!start) {
-      return { label: '未設定', color: 'gray' };
-    }
-    if (start > now) {
-      return { label: '公開前', color: 'yellow' };
-    }
-    if (!end) {
-      return { label: '公開中（常時）', color: 'green' };
-    }
-    if (end < now) {
-      return { label: '公開終了', color: 'gray' };
-    }
-    return { label: '公開中', color: 'green' };
-  };
+  const getPeriodStatus = getFormPeriodStatus;
 
   const activePeriods = periods.filter((p) => !p.is_archived);
   const archivedPeriods = periods.filter((p) => p.is_archived);

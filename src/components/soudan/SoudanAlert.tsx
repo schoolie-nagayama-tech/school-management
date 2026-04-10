@@ -46,10 +46,10 @@ export function SoudanAlert() {
     return null;
   }
 
-  // リンク先を決定（最新の期間がある場合はその期間の回答一覧、なければフォーム回答一覧）
-  const linkHref = latestPeriodKey 
+  // リンク先を決定（最新の期間がある場合はその期間の回答一覧、なければ相談の未処理一覧）
+  const linkHref = latestPeriodKey
     ? `/forms/responses/soudan/${latestPeriodKey}`
-    : '/forms/responses';
+    : '/responses?type=soudan&linked=unlinked';
 
   return (
     <div className="mb-6 bg-[#ef4444] border-2 border-[#e5e7eb] rounded-lg p-4 shadow-lg animate-pulse">
