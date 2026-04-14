@@ -14,7 +14,8 @@ import { Button } from '@/components/ui';
 import { Input } from '@/components/ui';
 import { Label } from '@/components/ui';
 import { SelectShadcn as Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui';
-import { Copy, Check, Eye, EyeOff, Trash2 } from 'lucide-react';
+import { Copy, Check, Eye, EyeOff, Trash2, LogIn } from 'lucide-react';
+import { impersonateUser } from '@/lib/impersonate';
 import type { School, UserProfile, TeacherBadge, TeacherBadgeAssignment } from '@/types/database';
 import { BADGE_RANK_CONFIG } from '@/types/database';
 import { generateTeacherCSV, downloadCSV, type TeacherExportRow } from '@/lib/utils/csvUtils';
@@ -504,6 +505,24 @@ export default function TeachersPage() {
                             >
                               {teacher.is_active ? '無効化' : '有効化'}
                             </Button>
+                            {profile?.role === 'admin' && teacher.id !== profile?.id && (
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  if (!confirm(`${teacher.display_name || teacher.email}としてログインしますか？\n（元のアカウントにはバナーから戻れます）`)) return;
+                                  try {
+                                    await impersonateUser(teacher.id);
+                                  } catch (e) {
+                                    toastError((e as Error).message);
+                                  }
+                                }}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:border-amber-400 transition-colors cursor-pointer"
+                                title="この講師としてログイン"
+                              >
+                                <LogIn className="h-3 w-3" />
+                                ログイン
+                              </button>
+                            )}
                             <Button
                               variant="ghost"
                               onClick={() => {
