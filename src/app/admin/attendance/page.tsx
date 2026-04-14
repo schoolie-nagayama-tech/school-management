@@ -15,6 +15,7 @@ import {
   rejectAttendanceSheet,
   bulkApproveAttendanceSheets,
   reopenAttendanceSheet,
+  getLateEarlyList,
 } from '@/lib/api/attendance';
 import {
   getCurrentYearMonth,
@@ -30,6 +31,18 @@ import {
   type AttendanceSheetStatus,
 } from '@/types/attendance';
 import type { School } from '@/types/database';
+
+interface LateEarlyRecord {
+  id: string;
+  date: string;
+  late_early: string | null;
+  note: string | null;
+  sheet: {
+    id: string;
+    teacher: { id: string; name: string } | null;
+    school: { id: string; name: string } | null;
+  };
+}
 
 interface SummaryRow {
   id: string;
@@ -65,6 +78,7 @@ export default function AttendanceManagementPage() {
   const [rejectReason, setRejectReason] = useState('');
   const [isReopenDialogOpen, setIsReopenDialogOpen] = useState(false);
   const [reopeningSheet, setReopeningSheet] = useState<SummaryRow | null>(null);
+  const [lateEarlyRecords, setLateEarlyRecords] = useState<LateEarlyRecord[]>([]);
 
   const { schools: masterSchools } = useMasterData();
 
@@ -95,12 +109,14 @@ export default function AttendanceManagementPage() {
       const schoolIdsForTypes =
         schoolId ? [schoolId] : (userSchoolIds.length > 0 ? userSchoolIds : undefined);
       const allowedIds = schoolId ? undefined : (userSchoolIds.length > 0 ? userSchoolIds : undefined);
-      const [typesData, summaryResult] = await Promise.all([
+      const [typesData, summaryResult, lateEarlyResult] = await Promise.all([
         getAllAttendanceTypes(schoolIdsForTypes),
         getAttendanceSummary(schoolId, yearMonth, allowedIds),
+        getLateEarlyList(schoolId, yearMonth),
       ]);
       setAttendanceTypes(typesData);
       setSheets(summaryResult);
+      setLateEarlyRecords(lateEarlyResult);
       setSelectedIds(new Set());
     } catch (err) {
       console.error('Failed to fetch data:', err);
@@ -296,6 +312,42 @@ export default function AttendanceManagementPage() {
 
   const submittedCount = sheets.filter((s) => s.status === 'submitted').length;
   const showSchoolColumn = selectedSchoolId === 'all';
+
+  // 遅刻早退の日付フォーマット
+  const formatLateEarlyDate = (dateStr: string): string => {
+    const date = new Date(dateStr);
+    const dayLabels = ['日', '月', '火', '水', '木', '金', '土'];
+    return `${date.getMonth() + 1}/${date.getDate()}(${dayLabels[date.getDay()]})`;
+  };
+
+  // 遅刻早退のCSVエクスポート
+  const handleExportLateEarlyCSV = () => {
+    if (lateEarlyRecords.length === 0) {
+      toastError('エクスポートするデータがありません');
+      return;
+    }
+    const headers = ['日付', '教室', '講師名', '遅刻早退', '備考'];
+    const rows = lateEarlyRecords.map((record) => [
+      formatLateEarlyDate(record.date),
+      record.sheet?.school?.name || '',
+      record.sheet?.teacher?.name || '',
+      record.late_early || '',
+      record.note || '',
+    ]);
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((row) => row.map((cell) => `"${cell}"`).join(',')),
+    ].join('\n');
+    const bom = new Uint8Array([0xef, 0xbb, 0xbf]);
+    const blob = new Blob([bom, csvContent], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `遅刻早退一覧_${yearMonth}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    success('CSVをダウンロードしました');
+  };
 
   // 表示用の種別リスト（重複排除）
   const displayTypes = attendanceTypes.filter((type, index, self) =>
@@ -519,6 +571,74 @@ export default function AttendanceManagementPage() {
                       </TableCell>
                       <TableCell />
                     </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* 遅刻・早退一覧 */}
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <CardTitle>
+                遅刻・早退一覧
+                {lateEarlyRecords.length > 0 && (
+                  <span className="text-[#4b5563] font-normal text-sm ml-2">
+                    （{lateEarlyRecords.length}件）
+                  </span>
+                )}
+              </CardTitle>
+              <Button
+                variant="secondary"
+                onClick={handleExportLateEarlyCSV}
+                disabled={lateEarlyRecords.length === 0}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                CSVエクスポート
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <div className="text-[#4b5563]">読み込み中...</div>
+              </div>
+            ) : lateEarlyRecords.length === 0 ? (
+              <div className="text-center py-8 text-[#4b5563]">
+                遅刻・早退のデータがありません
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>日付</TableHead>
+                      {showSchoolColumn && <TableHead>教室</TableHead>}
+                      <TableHead>講師名</TableHead>
+                      <TableHead>遅刻早退</TableHead>
+                      <TableHead>備考</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {lateEarlyRecords.map((record) => (
+                      <TableRow key={record.id}>
+                        <TableCell>{formatLateEarlyDate(record.date)}</TableCell>
+                        {showSchoolColumn && (
+                          <TableCell>{record.sheet?.school?.name}</TableCell>
+                        )}
+                        <TableCell className="font-medium">
+                          {record.sheet?.teacher?.name}
+                        </TableCell>
+                        <TableCell className="text-red-600 font-medium">
+                          {record.late_early}
+                        </TableCell>
+                        <TableCell className="text-[#4b5563]">
+                          {record.note || '-'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </div>
