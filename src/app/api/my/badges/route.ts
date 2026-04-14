@@ -43,9 +43,15 @@ export async function GET(request: NextRequest) {
 
     if (assignError) throw assignError;
 
+    // アクティブテンプレートに紐づく付与のみに絞り込み（管理者画面と一致させる）
+    const activeBadgeIds = new Set((badges || []).map((b: { id: string }) => b.id));
+    const filteredAssignments = (assignments || []).filter(
+      (a: { badge_id: string }) => activeBadgeIds.has(a.badge_id)
+    );
+
     return NextResponse.json({
       badges: badges || [],
-      assignments: assignments || [],
+      assignments: filteredAssignments,
     });
   } catch (err) {
     console.error('GET /api/my/badges error:', err);
