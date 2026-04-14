@@ -9,6 +9,8 @@ import { useMasterData } from '@/contexts/MasterDataContext';
 import { USER_ROLE_LABELS } from '@/types/database';
 import { SubjectSettings } from '@/components/settings';
 import { Megaphone } from 'lucide-react';
+import { TierMedal } from '@/components/teacher/TierMedal';
+import { useTeacherBadgeCount } from '@/hooks/useTeacherBadgeCount';
 
 interface AppHeaderProps {
   title: string;
@@ -47,6 +49,10 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
 
   // permissionsがnullの場合は、すべてのリンクを表示（ローディング中の場合）
   const showAllLinks = !permissions || authLoading;
+
+  // 講師のみ: バッジ獲得数に応じてヘッダーにティアメダルを表示
+  const isTeacher = profile?.role === 'teacher';
+  const badgeCount = useTeacherBadgeCount();
 
   // 連絡掲示板未読件数（講師のみ）
   useEffect(() => {
@@ -541,6 +547,9 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
               <div className="text-xs font-medium text-gray-700 px-3 py-1.5 bg-gray-100 rounded-lg">
                 {schoolDisplayName}
               </div>
+            )}
+            {isTeacher && badgeCount !== null && (
+              <TierMedal count={badgeCount} />
             )}
             {profile && !authLoading && (
               <div className="flex items-center gap-2 text-right">

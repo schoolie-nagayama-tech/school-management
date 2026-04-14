@@ -9,6 +9,9 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Send, Undo2 } from 'lucide-react'
 import { useToast } from '@/hooks/useToast';
 import { getSchoolByCode } from '@/lib/api/schools';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
+import { useTeacherBadgeCount } from '@/hooks/useTeacherBadgeCount';
+import { getTier } from '@/lib/teacher-tier';
 import {
   getActiveAttendanceTypes,
   getOrCreateAttendanceSheet,
@@ -42,6 +45,11 @@ export default function TeacherAttendancePage() {
   const teacherId = params.teacherId as string;
 
   const { toasts, removeToast, success, error: toastError } = useToast();
+  const { profile } = useAuth();
+  const badgeCount = useTeacherBadgeCount();
+  // 閲覧者が本人の場合のみ演出を適用 (他者のデータを覗くときは通常表示)
+  const isOwner = profile?.role === 'teacher' && profile.id === teacherId;
+  const tierKey = isOwner && badgeCount !== null ? getTier(badgeCount).key : null;
   const [school, setSchool] = useState<{ id: string; name: string } | null>(null);
   const [teacher, setTeacher] = useState<{ id: string; name: string } | null>(null);
   const [yearMonth, setYearMonth] = useState(
@@ -298,7 +306,10 @@ export default function TeacherAttendancePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div
+      className={`min-h-screen bg-gray-50${tierKey ? ' tier-attendance' : ''}`}
+      data-teacher-tier={tierKey ?? undefined}
+    >
       <AppHeader title="講師勤怠" />
       {/* ヘッダー */}
       <header className="bg-white border-b sticky top-0 z-10">
@@ -333,7 +344,7 @@ export default function TeacherAttendancePage() {
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>
-          <span className="text-lg font-medium">
+          <span className={`text-lg font-medium${tierKey ? ' tier-ym' : ''}`}>
             {formatYearMonth(yearMonth)}
           </span>
           <Button
@@ -459,7 +470,7 @@ export default function TeacherAttendancePage() {
                 );
               })}
               {/* 合計行 */}
-              <tr className="bg-gray-100 font-medium">
+              <tr className={`bg-gray-100 font-medium${tierKey ? ' tier-totals' : ''}`}>
                 <td className="px-2 py-2 border-b sticky left-0 bg-gray-100">
                   合計
                 </td>

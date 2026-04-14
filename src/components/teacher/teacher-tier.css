@@ -1,0 +1,583 @@
+/* 講師バッジ数ティアのメダル + 画面内アクセント用のクラス。
+   グローバルに使えるよう :global でエクスポート。 */
+
+.tier-medal {
+  --mc1: oklch(38% 0.08 260);
+  --mc2: oklch(46% 0.10 260);
+  --mc-text: white;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px 4px 6px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--mc1), var(--mc2));
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--mc-text);
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s ease;
+  text-decoration: none;
+  line-height: 1;
+}
+.tier-medal:hover {
+  transform: translateY(-1px);
+}
+.tier-medal-core {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.18);
+  color: inherit;
+  position: relative;
+  z-index: 1;
+}
+.tier-medal-ring {
+  position: absolute;
+  inset: -3px;
+  border-radius: 999px;
+  pointer-events: none;
+}
+.tier-medal-txt {
+  display: inline-flex;
+  flex-direction: column;
+  line-height: 1;
+  gap: 2px;
+  padding-right: 2px;
+}
+.tier-medal-count {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+.tier-medal-next {
+  font-size: 0.5625rem;
+  opacity: 0.85;
+  letter-spacing: 0.02em;
+}
+.tier-medal-next b {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 700;
+  margin: 0 1px;
+}
+.tier-medal-next-max {
+  color: oklch(92% 0.10 85);
+  text-shadow: 0 0 6px rgba(255, 215, 120, 0.5);
+}
+
+/* ── 階梯別の配色 ── */
+.tier-medal-zero {
+  --mc1: oklch(32% 0.07 260);
+  --mc2: oklch(42% 0.10 260);
+}
+
+.tier-medal-slate {
+  --mc1: oklch(46% 0.02 240);
+  --mc2: oklch(58% 0.03 240);
+}
+
+.tier-medal-emerald {
+  --mc1: oklch(48% 0.12 170);
+  --mc2: oklch(60% 0.13 185);
+}
+.tier-medal-emerald .tier-medal-ring {
+  box-shadow:
+    0 0 0 2px oklch(88% 0.14 175 / 0.35),
+    0 0 14px oklch(72% 0.16 175 / 0.3);
+}
+
+.tier-medal-purple {
+  --mc1: oklch(42% 0.16 290);
+  --mc2: oklch(56% 0.17 275);
+}
+.tier-medal-purple::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.35) 50%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  animation: tier-shimmer 3.6s linear infinite;
+  mix-blend-mode: overlay;
+}
+@keyframes tier-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.tier-medal-gold {
+  --mc1: oklch(72% 0.16 80);
+  --mc2: oklch(82% 0.15 70);
+  --mc-text: oklch(25% 0.06 60);
+  border-color: oklch(90% 0.12 85);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 0 0 1px oklch(88% 0.14 80 / 0.4);
+}
+.tier-medal-gold .tier-medal-core {
+  background: oklch(62% 0.15 65);
+  color: oklch(96% 0.06 85);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.25);
+}
+.tier-medal-gold::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    100deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 65%
+  );
+  background-size: 250% 100%;
+  animation: tier-shimmer 4.2s ease-in-out infinite;
+}
+
+.tier-medal-mythic {
+  --mc-text: white;
+  background: linear-gradient(
+    135deg,
+    oklch(78% 0.16 85) 0%,
+    oklch(66% 0.20 15) 35%,
+    oklch(56% 0.22 300) 75%,
+    oklch(60% 0.18 250) 100%
+  );
+  background-size: 200% 200%;
+  animation: tier-mythic-hue 8s ease-in-out infinite;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+.tier-medal-mythic .tier-medal-core {
+  background: rgba(255, 255, 255, 0.3);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.5),
+    0 0 10px rgba(255, 255, 255, 0.4);
+  animation: tier-mythic-pulse 2.6s ease-in-out infinite;
+}
+.tier-medal-mythic .tier-medal-ring {
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.35),
+    0 0 16px oklch(82% 0.2 55 / 0.6);
+  animation: tier-mythic-ring 2.6s ease-in-out infinite;
+}
+@keyframes tier-mythic-hue {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+@keyframes tier-mythic-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+@keyframes tier-mythic-ring {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 2px rgba(255, 255, 255, 0.35),
+      0 0 10px oklch(82% 0.2 55 / 0.4);
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px rgba(255, 255, 255, 0.5),
+      0 0 22px oklch(82% 0.2 55 / 0.8);
+  }
+}
+
+/* ── アクセント用 (3 箇所に目立たない変化を入れる) ── */
+
+/* (1) 小さなティア色ドット — 表示名の前などに置く */
+.tier-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  vertical-align: middle;
+  background: oklch(42% 0.10 260);
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.5);
+}
+.tier-dot-zero {
+  background: oklch(42% 0.10 260);
+}
+.tier-dot-slate {
+  background: oklch(58% 0.03 240);
+}
+.tier-dot-emerald {
+  background: oklch(60% 0.13 185);
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.5), 0 0 6px oklch(72% 0.16 175 / 0.55);
+}
+.tier-dot-purple {
+  background: oklch(56% 0.17 275);
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.55), 0 0 8px oklch(70% 0.17 290 / 0.6);
+}
+.tier-dot-gold {
+  background: oklch(78% 0.15 75);
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.7), 0 0 6px oklch(86% 0.15 80 / 0.7);
+}
+.tier-dot-mythic {
+  background: oklch(70% 0.18 30);
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.8), 0 0 10px oklch(82% 0.2 55 / 0.8);
+  animation: tier-dot-mythic 2.6s ease-in-out infinite;
+}
+@keyframes tier-dot-mythic {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.7), 0 0 5px oklch(82% 0.2 55 / 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.9), 0 0 12px oklch(82% 0.2 55 / 0.9);
+  }
+}
+
+/* (2) 閲覧専用モード バッジのティア化 */
+.tier-pill {
+  --tp-bg: oklch(96% 0.02 260);
+  --tp-fg: oklch(42% 0.10 260);
+  --tp-bd: oklch(88% 0.04 260);
+  background: var(--tp-bg);
+  color: var(--tp-fg);
+  border: 1px solid var(--tp-bd);
+}
+.tier-pill-zero {
+  --tp-bg: oklch(96% 0.02 260);
+  --tp-fg: oklch(38% 0.08 260);
+  --tp-bd: oklch(88% 0.03 260);
+}
+.tier-pill-slate {
+  --tp-bg: oklch(96% 0.01 240);
+  --tp-fg: oklch(42% 0.02 240);
+  --tp-bd: oklch(88% 0.02 240);
+}
+.tier-pill-emerald {
+  --tp-bg: oklch(96% 0.04 175);
+  --tp-fg: oklch(42% 0.12 175);
+  --tp-bd: oklch(86% 0.07 175);
+}
+.tier-pill-purple {
+  --tp-bg: oklch(96% 0.04 290);
+  --tp-fg: oklch(42% 0.16 290);
+  --tp-bd: oklch(86% 0.06 290);
+}
+.tier-pill-gold {
+  --tp-bg: oklch(96% 0.05 85);
+  --tp-fg: oklch(42% 0.10 75);
+  --tp-bd: oklch(84% 0.10 80);
+}
+.tier-pill-mythic {
+  --tp-bg: oklch(96% 0.04 30);
+  --tp-fg: oklch(40% 0.14 30);
+  --tp-bd: oklch(82% 0.12 40);
+}
+
+/* (3) 連絡掲示板カードのヘアライン
+   BulletinBoard のルート要素に付けると、上辺 1px にティア色が入る。 */
+.tier-hairline {
+  box-shadow: inset 0 2px 0 0 oklch(42% 0.10 260 / 0.55);
+}
+.tier-hairline-zero {
+  box-shadow: inset 0 2px 0 0 oklch(42% 0.10 260 / 0.55);
+}
+.tier-hairline-slate {
+  box-shadow: inset 0 2px 0 0 oklch(58% 0.03 240 / 0.55);
+}
+.tier-hairline-emerald {
+  box-shadow: inset 0 2px 0 0 oklch(60% 0.13 185 / 0.6);
+}
+.tier-hairline-purple {
+  box-shadow: inset 0 2px 0 0 oklch(56% 0.17 275 / 0.6);
+}
+.tier-hairline-gold {
+  box-shadow: inset 0 2px 0 0 oklch(78% 0.15 75 / 0.7);
+}
+.tier-hairline-mythic {
+  box-shadow: inset 0 2px 0 0 oklch(70% 0.18 30 / 0.75);
+  animation: tier-hairline-mythic 5s ease-in-out infinite;
+}
+@keyframes tier-hairline-mythic {
+  0%,
+  100% {
+    box-shadow: inset 0 2px 0 0 oklch(70% 0.18 30 / 0.6);
+  }
+  33% {
+    box-shadow: inset 0 2px 0 0 oklch(66% 0.20 310 / 0.7);
+  }
+  66% {
+    box-shadow: inset 0 2px 0 0 oklch(78% 0.15 75 / 0.75);
+  }
+}
+
+/* ==================================================
+   出勤簿 (オーナーのみ): 大胆な階梯別演出
+   親要素に data-teacher-tier="..." を付けて配下で発火
+   ================================================== */
+
+/* (A) ページ全体に薄いオーラ。階梯が上がるほど彩度と数を増やす */
+.tier-attendance {
+  position: relative;
+  isolation: isolate;
+}
+.tier-attendance::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  transition: opacity 0.6s ease;
+  opacity: 0;
+}
+[data-teacher-tier='slate'].tier-attendance::before {
+  opacity: 1;
+  background: radial-gradient(circle at 15% 0%, oklch(58% 0.03 240 / 0.06), transparent 55%);
+}
+[data-teacher-tier='emerald'].tier-attendance::before {
+  opacity: 1;
+  background:
+    radial-gradient(circle at 85% 10%, oklch(72% 0.16 175 / 0.10), transparent 50%),
+    radial-gradient(circle at 15% 95%, oklch(60% 0.13 185 / 0.08), transparent 55%);
+}
+[data-teacher-tier='purple'].tier-attendance::before {
+  opacity: 1;
+  background:
+    radial-gradient(circle at 85% 5%, oklch(68% 0.17 290 / 0.14), transparent 50%),
+    radial-gradient(circle at 10% 95%, oklch(56% 0.17 275 / 0.10), transparent 55%);
+}
+[data-teacher-tier='gold'].tier-attendance::before {
+  opacity: 1;
+  background:
+    radial-gradient(circle at 50% 0%, oklch(86% 0.15 80 / 0.18), transparent 55%),
+    radial-gradient(circle at 10% 95%, oklch(78% 0.15 75 / 0.10), transparent 55%);
+  animation: tier-aura-gold 8s ease-in-out infinite;
+}
+@keyframes tier-aura-gold {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.08); }
+}
+[data-teacher-tier='mythic'].tier-attendance::before {
+  opacity: 1;
+  background:
+    radial-gradient(circle at 20% 10%, oklch(78% 0.16 85 / 0.20), transparent 50%),
+    radial-gradient(circle at 85% 15%, oklch(66% 0.20 15 / 0.18), transparent 50%),
+    radial-gradient(circle at 50% 100%, oklch(56% 0.22 300 / 0.22), transparent 55%);
+  animation: tier-aura-mythic 12s ease-in-out infinite;
+}
+@keyframes tier-aura-mythic {
+  0%, 100% { filter: hue-rotate(0deg) brightness(1); }
+  50% { filter: hue-rotate(25deg) brightness(1.1); }
+}
+.tier-attendance > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* (B) 年月見出しのタイポグラフィ + 下線フラリッシュ */
+.tier-ym {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  position: relative;
+  padding: 2px 14px 6px;
+  display: inline-block;
+}
+.tier-ym::after {
+  content: '';
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: oklch(42% 0.10 260);
+  opacity: 0.25;
+}
+[data-teacher-tier='slate'] .tier-ym::after {
+  background: oklch(58% 0.03 240);
+  opacity: 0.35;
+}
+[data-teacher-tier='emerald'] .tier-ym {
+  color: oklch(36% 0.12 175);
+}
+[data-teacher-tier='emerald'] .tier-ym::after {
+  background: linear-gradient(90deg, oklch(60% 0.13 185), oklch(70% 0.14 160), oklch(60% 0.13 185));
+  opacity: 0.8;
+}
+[data-teacher-tier='purple'] .tier-ym {
+  color: oklch(38% 0.17 285);
+}
+[data-teacher-tier='purple'] .tier-ym::after {
+  background: linear-gradient(90deg, oklch(56% 0.17 275), oklch(62% 0.18 300), oklch(56% 0.17 275));
+  box-shadow: 0 0 10px oklch(68% 0.18 285 / 0.6);
+  opacity: 1;
+  height: 2px;
+}
+[data-teacher-tier='gold'] .tier-ym {
+  color: oklch(35% 0.09 65);
+  text-shadow: 0 1px 0 oklch(96% 0.08 85);
+}
+[data-teacher-tier='gold'] .tier-ym::after {
+  background: linear-gradient(90deg, oklch(72% 0.16 80), oklch(90% 0.14 80), oklch(72% 0.16 80));
+  background-size: 200% 100%;
+  animation: tier-shimmer 4.2s ease-in-out infinite;
+  height: 3px;
+  box-shadow: 0 0 12px oklch(82% 0.15 80 / 0.6);
+  opacity: 1;
+}
+[data-teacher-tier='mythic'] .tier-ym {
+  color: oklch(30% 0.12 10);
+  text-shadow: 0 0 1px oklch(96% 0.02 20);
+}
+[data-teacher-tier='mythic'] .tier-ym::after {
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    oklch(66% 0.20 15),
+    oklch(56% 0.22 300),
+    oklch(78% 0.16 85),
+    oklch(66% 0.20 15)
+  );
+  background-size: 200% 100%;
+  animation: tier-mythic-hue 6s ease-in-out infinite;
+  box-shadow: 0 0 14px oklch(66% 0.20 15 / 0.6);
+  opacity: 1;
+}
+
+/* (C) 合計行: 階梯に応じた帯と数値色 */
+.tier-totals td {
+  transition: background 0.4s ease;
+}
+[data-teacher-tier='slate'] .tier-totals td {
+  background: linear-gradient(90deg, oklch(96% 0.008 240), oklch(94% 0.012 240)) !important;
+}
+[data-teacher-tier='emerald'] .tier-totals td {
+  background: linear-gradient(90deg, oklch(96% 0.03 175), oklch(93% 0.05 185)) !important;
+  color: oklch(32% 0.12 175);
+}
+[data-teacher-tier='purple'] .tier-totals td {
+  background: linear-gradient(90deg, oklch(95% 0.03 285), oklch(92% 0.06 275)) !important;
+  color: oklch(32% 0.15 285);
+}
+[data-teacher-tier='gold'] .tier-totals td {
+  background:
+    linear-gradient(90deg, oklch(96% 0.05 85), oklch(90% 0.09 75), oklch(96% 0.05 85)) !important;
+  background-size: 200% 100% !important;
+  animation: tier-shimmer 5s ease-in-out infinite;
+  color: oklch(32% 0.10 65);
+  font-weight: 700;
+}
+[data-teacher-tier='mythic'] .tier-totals td {
+  background:
+    linear-gradient(
+      90deg,
+      oklch(94% 0.06 15),
+      oklch(92% 0.08 300),
+      oklch(94% 0.08 85),
+      oklch(94% 0.06 15)
+    ) !important;
+  background-size: 200% 100% !important;
+  animation: tier-mythic-hue 6s ease-in-out infinite;
+  color: oklch(30% 0.14 10);
+  font-weight: 700;
+}
+
+/* (D) 提出ボタン: 階梯グラデーションに置換 */
+.tier-submit {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.tier-submit:hover {
+  transform: translateY(-1px);
+}
+[data-teacher-tier='emerald'] .tier-submit {
+  background: linear-gradient(135deg, oklch(48% 0.12 170), oklch(60% 0.13 185)) !important;
+  color: white !important;
+  box-shadow: 0 4px 14px oklch(60% 0.13 185 / 0.35);
+}
+[data-teacher-tier='purple'] .tier-submit {
+  background: linear-gradient(135deg, oklch(42% 0.16 290), oklch(56% 0.17 275)) !important;
+  color: white !important;
+  box-shadow: 0 4px 18px oklch(56% 0.17 275 / 0.45);
+}
+[data-teacher-tier='purple'] .tier-submit::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.4) 50%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  animation: tier-shimmer 3s linear infinite;
+  pointer-events: none;
+}
+[data-teacher-tier='gold'] .tier-submit {
+  background:
+    linear-gradient(135deg, oklch(72% 0.16 80), oklch(88% 0.14 75)) !important;
+  color: oklch(25% 0.06 60) !important;
+  font-weight: 700;
+  box-shadow:
+    0 4px 18px oklch(82% 0.15 75 / 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  border: 1px solid oklch(90% 0.12 85) !important;
+}
+[data-teacher-tier='gold'] .tier-submit::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 65%
+  );
+  background-size: 250% 100%;
+  animation: tier-shimmer 4.2s ease-in-out infinite;
+  pointer-events: none;
+}
+[data-teacher-tier='mythic'] .tier-submit {
+  background:
+    linear-gradient(
+      135deg,
+      oklch(78% 0.16 85) 0%,
+      oklch(66% 0.20 15) 35%,
+      oklch(56% 0.22 300) 75%,
+      oklch(60% 0.18 250) 100%
+    ) !important;
+  background-size: 200% 200% !important;
+  animation: tier-mythic-hue 6s ease-in-out infinite;
+  color: white !important;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 0 4px 22px oklch(66% 0.20 15 / 0.55);
+}
+.tier-submit > * {
+  position: relative;
+  z-index: 1;
+}

@@ -598,19 +598,23 @@ export default function StudentsPage() {
           </div>
         )}
 
-        {/* 連絡掲示板（横いっぱい） */}
-        <div className="mb-4">
-          <BulletinBoard />
-        </div>
-
         {/* 業務タスク超過バナー（教室長以上のみ） */}
         {!isTeacher && <TaskOverdueBanner />}
 
-        {/* アラート＋通知フィード（2カラム） */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-          <AlertBoard />
-          {!isTeacher && (
-            <NotificationFeed
+        {/* 講師: 連絡掲示板 ↔ アラート を横並び / 管理側: 従来のレイアウト */}
+        {isTeacher ? (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+            <BulletinBoard />
+            <AlertBoard />
+          </div>
+        ) : (
+          <>
+            <div className="mb-4">
+              <BulletinBoard />
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+              <AlertBoard />
+              <NotificationFeed
               onStudentClick={({ studentId, studentName, schoolId }) => {
                 void (async () => {
                   const pools = [...rosterRows, ...studentsForScores];
@@ -639,8 +643,9 @@ export default function StudentsPage() {
                 })();
               }}
             />
-          )}
-        </div>
+            </div>
+          </>
+        )}
 
         {/* タブナビゲーション */}
         <div className="flex items-center gap-0 border-b border-gray-200 mb-6">

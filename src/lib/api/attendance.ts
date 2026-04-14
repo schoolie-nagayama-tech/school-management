@@ -130,48 +130,37 @@ export async function getTeachersWithAttendance(
   const teacherIds = Array.from(new Set((userSchools || []).map((u: { user_id?: string }) => u.user_id).filter((id): id is string => Boolean(id))));
   if (teacherIds.length === 0) return [];
 
-  const { data: teacherProfiles, error: teachersError } = await supabase
-    .from('user_profiles')
-    .select('id, display_name, email, role, is_active')
-    .in('id', teacherIds)
-    .eq('role', 'teacher')
-    .eq('is_active', true);
+  // user_profiles と attendance_sheets は互いに独立 → 並列化
+  const [profilesRes, sheetsRes] = await Promise.all([
+    supabase
+      .from('user_profiles')
+      .select('id, display_name, email, role, is_active')
+      .in('id', teacherIds)
+      .eq('role', 'teacher')
+      .eq('is_active', true),
+    supabase
+      .from('attendance_sheets')
+      .select('*')
+      .eq('school_id', schoolId)
+      .eq('year_month', yearMonth),
+  ]);
 
-  if (teachersError) {
-    console.error('Error fetching teachers:', teachersError);
+  if (profilesRes.error) {
+    console.error('Error fetching teachers:', profilesRes.error);
     throw new Error('講師一覧の取得に失敗しました');
+  }
+  if (sheetsRes.error) {
+    console.error('Error fetching attendance sheets:', sheetsRes.error);
+    throw new Error('出勤簿の取得に失敗しました');
   }
 
   const teachers =
-    teacherProfiles?.map((t) => ({
+    profilesRes.data?.map((t) => ({
       id: t.id,
       name: t.display_name || t.email || '未設定',
     })) || [];
 
-  // 出勤簿を取得
-  const { data: sheetsData, error: sheetsError } = await supabase
-    .from('attendance_sheets')
-    .select('*')
-    .eq('school_id', schoolId)
-    .eq('year_month', yearMonth);
-  const sheets = (sheetsData || []) as AttendanceSheet[];
-
-  if (sheetsError) {
-    console.error('Error fetching attendance sheets:', sheetsError);
-    throw new Error('出勤簿の取得に失敗しました');
-  }
-
-  // コマ種別を取得
-  const { data: _types, error: typesError } = await supabase
-    .from('attendance_types')
-    .select('id')
-    .eq('school_id', schoolId)
-    .eq('is_active', true);
-
-  if (typesError) {
-    console.error('Error fetching attendance types:', typesError);
-    throw new Error('コマ種別の取得に失敗しました');
-  }
+  const sheets = (sheetsRes.data || []) as AttendanceSheet[];
 
   // 全シートの出勤レコードを一括取得
   const allSheetIds = (sheets || []).map((s) => s.id);
@@ -266,63 +255,55 @@ export async function getAttendanceSheetDetail(sheetId: string) {
   }
   const sheet = sheetData as AttendanceSheet;
 
-  // 講師情報
-  let teacher: { id: string; name: string } | null = null;
-  if (sheet.teacher_id) {
-    const { data: teacherData, error: teacherError } = await supabase
-      .from('user_profiles')
-      .select('id, display_name, email')
-      .eq('id', sheet.teacher_id)
-      .maybeSingle();
-    if (teacherError) {
-      console.error('Error fetching teacher:', teacherError);
-    } else {
-      teacher = teacherData
-        ? {
-            id: teacherData.id,
-            name: teacherData.display_name || teacherData.email || '未設定',
-          }
-        : null;
-    }
-  }
+  // 講師・教室・明細・備考を並列取得
+  const [teacherRes, schoolRes, recordsRes, notesRes] = await Promise.all([
+    sheet.teacher_id
+      ? supabase
+          .from('user_profiles')
+          .select('id, display_name, email')
+          .eq('id', sheet.teacher_id)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null } as const),
+    sheet.school_id
+      ? supabase
+          .from('schools')
+          .select('id, name, code')
+          .eq('id', sheet.school_id)
+          .maybeSingle()
+      : Promise.resolve({ data: null, error: null } as const),
+    supabase
+      .from('attendance_records')
+      .select(`
+        *,
+        attendance_type:attendance_types(*)
+      `)
+      .eq('sheet_id', sheetId),
+    supabase
+      .from('attendance_notes')
+      .select('*')
+      .eq('sheet_id', sheetId),
+  ]);
 
-  // 教室情報
-  let school: { id: string; name: string; code: string | null } | null = null;
-  if (sheet.school_id) {
-    const { data: schoolData, error: schoolError } = await supabase
-      .from('schools')
-      .select('id, name, code')
-      .eq('id', sheet.school_id)
-      .maybeSingle();
-    if (schoolError) {
-      console.error('Error fetching school:', schoolError);
-    } else {
-      school = schoolData || null;
-    }
-  }
-
-  const { data: records, error: recordsError } = await supabase
-    .from('attendance_records')
-    .select(`
-      *,
-      attendance_type:attendance_types(*)
-    `)
-    .eq('sheet_id', sheetId);
-
-  if (recordsError) {
-    console.error('Error fetching attendance records:', recordsError);
+  if (recordsRes.error) {
+    console.error('Error fetching attendance records:', recordsRes.error);
     throw new Error('出勤簿明細の取得に失敗しました');
   }
-
-  const { data: notes, error: notesError } = await supabase
-    .from('attendance_notes')
-    .select('*')
-    .eq('sheet_id', sheetId);
-
-  if (notesError) {
-    console.error('Error fetching attendance notes:', notesError);
+  if (notesRes.error) {
+    console.error('Error fetching attendance notes:', notesRes.error);
     throw new Error('備考の取得に失敗しました');
   }
+  if (teacherRes.error) console.error('Error fetching teacher:', teacherRes.error);
+  if (schoolRes.error) console.error('Error fetching school:', schoolRes.error);
+
+  const teacher = teacherRes.data
+    ? {
+        id: teacherRes.data.id,
+        name: teacherRes.data.display_name || teacherRes.data.email || '未設定',
+      }
+    : null;
+  const school = schoolRes.data || null;
+  const records = recordsRes.data;
+  const notes = notesRes.data;
 
   return {
     sheet: {

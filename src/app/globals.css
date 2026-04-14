@@ -1,3 +1,5 @@
+@import '../components/teacher/teacher-tier.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
