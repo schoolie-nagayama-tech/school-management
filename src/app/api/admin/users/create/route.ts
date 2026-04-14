@@ -32,7 +32,28 @@ export async function POST(request: NextRequest) {
     if (!auth) return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
     const supabaseAdmin = getSupabaseAdmin();
     const body = await request.json();
-    const { email, password, displayName, role, schoolId } = body;
+    const {
+      email,
+      password,
+      displayName,
+      role,
+      schoolId,
+      // 任意の拡張フィールド（CSVインポート等で使用）
+      additionalSchoolIds,
+      teachableSubjectIds,
+      availableDaysOfWeek,
+      isActive,
+    }: {
+      email?: string;
+      password?: string;
+      displayName?: string;
+      role?: string;
+      schoolId?: string;
+      additionalSchoolIds?: string[];
+      teachableSubjectIds?: string[];
+      availableDaysOfWeek?: number[];
+      isActive?: boolean;
+    } = body;
 
     // バリデーション
     if (!password || !displayName || !role || !schoolId) {
@@ -47,6 +68,19 @@ export async function POST(request: NextRequest) {
         { error: '指定された教室への操作権限がありません' },
         { status: 403 }
       );
+    }
+
+    // 追加教室のスコープチェック
+    const extraSchoolIds = Array.isArray(additionalSchoolIds)
+      ? additionalSchoolIds.filter((id) => id && id !== schoolId)
+      : [];
+    for (const sid of extraSchoolIds) {
+      if (!isSchoolInScope(sid, auth.schoolIds)) {
+        return NextResponse.json(
+          { error: `教室ID ${sid} への操作権限がありません` },
+          { status: 403 }
+        );
+      }
     }
 
     // メールアドレスが未指定の場合は自動生成（UUIDを使用）
@@ -107,6 +141,15 @@ export async function POST(request: NextRequest) {
       .eq('id', authData.user.id)
       .maybeSingle();
 
+    const profileExtras: Record<string, unknown> = {};
+    if (Array.isArray(teachableSubjectIds) && teachableSubjectIds.length > 0) {
+      profileExtras.teachable_subject_ids = teachableSubjectIds;
+    }
+    if (Array.isArray(availableDaysOfWeek) && availableDaysOfWeek.length > 0) {
+      profileExtras.available_days_of_week = availableDaysOfWeek;
+    }
+    const effectiveIsActive = typeof isActive === 'boolean' ? isActive : true;
+
     if (!existingProfileAfterAuth) {
       const { error: profileError } = await supabaseAdmin
         .from('user_profiles')
@@ -115,7 +158,8 @@ export async function POST(request: NextRequest) {
           email: finalEmail,
           display_name: displayName,
           role,
-          is_active: true,
+          is_active: effectiveIsActive,
+          ...profileExtras,
         });
 
       if (profileError) {
@@ -134,7 +178,8 @@ export async function POST(request: NextRequest) {
           email: finalEmail,
           display_name: displayName,
           role,
-          is_active: true,
+          is_active: effectiveIsActive,
+          ...profileExtras,
         })
         .eq('id', authData.user.id);
 
@@ -172,6 +217,21 @@ export async function POST(request: NextRequest) {
           { error: '教室の紐付けに失敗しました' },
           { status: 400 }
         );
+      }
+    }
+
+    // 追加教室の紐付け（重複はスキップ）
+    if (extraSchoolIds.length > 0) {
+      const { data: existingRows } = await supabaseAdmin
+        .from('user_schools')
+        .select('school_id')
+        .eq('user_id', authData.user.id);
+      const existingSet = new Set((existingRows || []).map((r) => r.school_id));
+      const toInsert = extraSchoolIds
+        .filter((sid) => !existingSet.has(sid))
+        .map((sid) => ({ user_id: authData.user.id, school_id: sid }));
+      if (toInsert.length > 0) {
+        await supabaseAdmin.from('user_schools').insert(toInsert);
       }
     }
 

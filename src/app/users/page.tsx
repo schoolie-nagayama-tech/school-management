@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui';
 import { Button } from '@/components/ui';
-import { Trash2 } from 'lucide-react';
+import { Trash2, LogIn } from 'lucide-react';
 import type { School, UserRole, UserProfile } from '@/types/database';
 import { USER_ROLE_LABELS, USER_ROLE_LEVELS } from '@/types/database';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
@@ -536,13 +536,13 @@ export default function UsersPage() {
               <div className="flex-1 min-h-0 overflow-auto">
                 <table className="w-full table-fixed">
                   <colgroup>
-                    <col style={{ width: '12%' }} />
-                    <col style={{ width: '20%' }} />
-                    <col style={{ width: '12%' }} />
-                    <col style={{ width: '25%' }} />
-                    <col style={{ width: '8%' }} />
                     <col style={{ width: '11%' }} />
-                    <col style={{ width: '12%' }} />
+                    <col style={{ width: '16%' }} />
+                    <col style={{ width: '11%' }} />
+                    <col style={{ width: '22%' }} />
+                    <col style={{ width: '7%' }} />
+                    <col style={{ width: '10%' }} />
+                    <col style={{ width: '23%' }} />
                   </colgroup>
                   <thead className="bg-[#f3f4f6] border-b border-[#e5e7eb]">
                     <tr>
@@ -601,27 +601,27 @@ export default function UsersPage() {
                         <td className="px-3 py-2 text-sm text-[#4b5563] whitespace-nowrap">
                           {user.last_login_at ? new Date(user.last_login_at).toLocaleDateString('ja-JP') : '-'}
                         </td>
-                        <td className="px-3 py-2 text-right whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-2">
+                        <td className="px-3 py-2 text-right">
+                          <div className="flex items-center justify-end gap-1.5 flex-wrap">
                             {canEditUser(user) && (
                               <>
                                 <Button
                                   variant="ghost"
                                   onClick={() => setEditingUser(user)}
-                                  className="p-2"
+                                  className="px-2 py-1 text-xs"
                                 >
                                   編集
                                 </Button>
                                 <Button
                                   variant="ghost"
                                   onClick={() => handleToggleActive(user)}
-                                  className="p-2"
+                                  className="px-2 py-1 text-xs"
                                 >
                                   {user.is_active ? '無効化' : '有効化'}
                                 </Button>
                                 {isAdmin && user.id !== profile?.id && (
-                                  <Button
-                                    variant="ghost"
+                                  <button
+                                    type="button"
                                     onClick={async () => {
                                       if (!confirm(`${user.display_name || user.email}としてログインしますか？\n（元のアカウントにはバナーから戻れます）`)) return;
                                       try {
@@ -630,11 +630,12 @@ export default function UsersPage() {
                                         toastError((e as Error).message);
                                       }
                                     }}
-                                    className="p-2 text-amber-600 hover:text-amber-700"
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:border-amber-400 transition-colors cursor-pointer"
                                     title="このユーザーとしてログイン"
                                   >
-                                    スイッチ
-                                  </Button>
+                                    <LogIn className="h-3 w-3" />
+                                    ログイン
+                                  </button>
                                 )}
                                 {user.id !== profile?.id && (
                                   <Button

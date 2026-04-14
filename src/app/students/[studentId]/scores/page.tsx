@@ -238,7 +238,7 @@ export default function StudentScoresPage() {
 
   if (permissionLoading) {
     return (
-      <AdminLayout>
+      <AdminLayout headerTitle="成績表">
         <div className="flex items-center justify-center min-h-[60vh]">
           <p className="text-[var(--paragraph)]">読み込み中...</p>
         </div>
@@ -248,14 +248,14 @@ export default function StudentScoresPage() {
 
   if (!hasPermission) {
     return (
-      <AdminLayout>
+      <AdminLayout headerTitle="成績表">
         <AccessDenied message="成績の閲覧・編集権限がありません" />
       </AdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
+    <AdminLayout headerTitle="成績表">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="space-y-6 bg-white">
         {/* 操作バー（PDFには含めない） */}

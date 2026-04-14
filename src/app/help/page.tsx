@@ -189,7 +189,7 @@ function FaqAccordion({ category }: { category: FaqCategory }) {
 
 export default function HelpPage() {
   return (
-    <AdminLayout>
+    <AdminLayout headerTitle="ヘルプ">
       <div className="space-y-6">
         {/* ヘッダー */}
         <div className="flex items-center justify-between">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { Modal, Button, Input, Label } from '@/components/ui';
 import { SelectShadcn as Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui';
 import {
@@ -10,7 +10,10 @@ import {
   type TeacherCSVRow,
 } from '@/lib/utils/csvUtils';
 import { fetchWithAuth } from '@/lib/api/auth';
+import { useMasterData } from '@/contexts/MasterDataContext';
 import type { School } from '@/types/database';
+
+const DAY_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
 
 type Step = 'upload' | 'preview' | 'importing' | 'done';
 
@@ -34,6 +37,26 @@ export function TeacherCsvImportModal({
   schools,
   onImportComplete,
 }: Props) {
+  const { subjects, schools: allSchools } = useMasterData();
+  // 教室コード/名前 → ID のマップ（大文字小文字・前後空白を正規化）
+  const schoolLookup = useMemo(() => {
+    const byCode = new Map<string, string>();
+    const byName = new Map<string, string>();
+    for (const s of allSchools) {
+      if (s.code) byCode.set(s.code.trim().toLowerCase(), s.id);
+      if (s.name) byName.set(s.name.trim().toLowerCase(), s.id);
+    }
+    return { byCode, byName };
+  }, [allSchools]);
+  // 科目名 → ID のマップ
+  const subjectLookup = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const s of subjects) {
+      if (s.name) map.set(s.name.trim().toLowerCase(), s.id);
+    }
+    return map;
+  }, [subjects]);
+
   const [step, setStep] = useState<Step>('upload');
   const [rows, setRows] = useState<TeacherCSVRow[]>([]);
   const [parseError, setParseError] = useState<string>('');
@@ -110,15 +133,47 @@ export function TeacherCsvImportModal({
     for (let i = 0; i < validRows.length; i++) {
       const row = validRows[i];
       try {
+        // CSV 行の担当教室（コード/名前）→ ID に解決
+        const resolvedSchoolIds: string[] = [];
+        const unknownSchools: string[] = [];
+        for (const raw of row.school_codes_raw) {
+          const key = raw.trim().toLowerCase();
+          const id = schoolLookup.byCode.get(key) ?? schoolLookup.byName.get(key);
+          if (id) resolvedSchoolIds.push(id);
+          else unknownSchools.push(raw);
+        }
+        if (unknownSchools.length > 0) {
+          throw new Error(`不明な教室: ${unknownSchools.join(', ')}`);
+        }
+        // CSV 行の指導科目名 → ID
+        const resolvedSubjectIds: string[] = [];
+        const unknownSubjects: string[] = [];
+        for (const raw of row.subject_names_raw) {
+          const id = subjectLookup.get(raw.trim().toLowerCase());
+          if (id) resolvedSubjectIds.push(id);
+          else unknownSubjects.push(raw);
+        }
+        if (unknownSubjects.length > 0) {
+          throw new Error(`不明な科目: ${unknownSubjects.join(', ')}`);
+        }
+
+        // 主教室: CSV に複数指定があれば 1 つ目、なければモーダル選択を使用
+        const primarySchoolId = resolvedSchoolIds[0] ?? selectedSchoolId;
+        const additional = resolvedSchoolIds.slice(1);
+
         const response = await fetchWithAuth('/api/admin/users/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             email: row.email || undefined,
-            password: defaultPassword,
+            password: row.password || defaultPassword,
             displayName: row.display_name,
             role: 'teacher',
-            schoolId: selectedSchoolId,
+            schoolId: primarySchoolId,
+            additionalSchoolIds: additional.length > 0 ? additional : undefined,
+            teachableSubjectIds: resolvedSubjectIds.length > 0 ? resolvedSubjectIds : undefined,
+            availableDaysOfWeek: row.available_days_of_week ?? undefined,
+            isActive: row.is_active,
           }),
         });
 
@@ -162,7 +217,7 @@ export function TeacherCsvImportModal({
             <div>
               <p className="text-sm font-medium text-[#1f2937]">CSVテンプレート</p>
               <p className="text-xs text-[#4b5563] mt-0.5">
-                列: 表示名, メールアドレス（任意）
+                列: 表示名 / メール（任意） / パスワード（任意） / 担当教室（コード・/区切り） / 指導科目（名前・/区切り） / 出勤可能曜日（日月火水木金土・/区切り） / 状態（有効・無効）
               </p>
             </div>
             <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
@@ -276,10 +331,10 @@ export function TeacherCsvImportModal({
               <table className="w-full text-xs">
                 <thead className="bg-[#f9fafb]">
                   <tr>
-                    {['行', '表示名', 'メール'].map((h) => (
+                    {['行', '表示名', 'メール', 'PW', '担当教室', '指導科目', '出勤曜日', '状態'].map((h) => (
                       <th
                         key={h}
-                        className="px-3 py-2 text-left text-[#4b5563] font-medium"
+                        className="px-3 py-2 text-left text-[#4b5563] font-medium whitespace-nowrap"
                       >
                         {h}
                       </th>
@@ -292,6 +347,19 @@ export function TeacherCsvImportModal({
                       <td className="px-3 py-2 text-[#4b5563]">{r.rowIndex}</td>
                       <td className="px-3 py-2">{r.display_name}</td>
                       <td className="px-3 py-2 text-[#4b5563]">{r.email ?? '（自動生成）'}</td>
+                      <td className="px-3 py-2 text-[#4b5563]">{r.password ? '個別' : '共通'}</td>
+                      <td className="px-3 py-2 text-[#4b5563]">
+                        {r.school_codes_raw.length > 0 ? r.school_codes_raw.join(' / ') : '（選択教室）'}
+                      </td>
+                      <td className="px-3 py-2 text-[#4b5563]">
+                        {r.subject_names_raw.length > 0 ? r.subject_names_raw.join(' / ') : '—'}
+                      </td>
+                      <td className="px-3 py-2 text-[#4b5563]">
+                        {r.available_days_of_week && r.available_days_of_week.length > 0
+                          ? r.available_days_of_week.map((d) => DAY_LABELS[d]).join('/')
+                          : '—'}
+                      </td>
+                      <td className="px-3 py-2 text-[#4b5563]">{r.is_active ? '有効' : '無効'}</td>
                     </tr>
                   ))}
                 </tbody>

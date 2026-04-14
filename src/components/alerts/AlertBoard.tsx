@@ -269,7 +269,7 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
 
       {/* アラート一覧（生徒ごとにカードヘッダーで区切り） */}
       {isExpanded && (
-        <div className="p-3 space-y-2 max-h-[400px] lg:max-h-[500px] overflow-y-auto">
+        <div className="p-3 space-y-2 max-h-[640px] overflow-y-auto">
           {studentAlerts.map((studentAlert) => (
             <div key={studentAlert.student_id} className="rounded-lg border border-gray-200 overflow-hidden bg-white">
               {/* カードヘッダー：生徒名・学年 */}

@@ -260,9 +260,29 @@ export function generateTeacherCSV(teachers: TeacherExportRow[]): string {
   return rows.join('\r\n');
 }
 
-/** 講師CSVテンプレート（ヘッダー行のみ） */
+/** 講師CSVインポート用ヘッダー（新仕様） */
+export const TEACHER_IMPORT_CSV_HEADERS = [
+  '表示名',
+  'メールアドレス（任意）',
+  'パスワード（任意）',
+  '担当教室（教室コード、複数は/区切り）',
+  '指導科目（科目名、複数は/区切り）',
+  '出勤可能曜日（日月火水木金土のうち複数は/区切り）',
+  '状態（有効/無効、省略時は有効）',
+] as const;
+
+/** 講師CSVテンプレート（ヘッダー行 + サンプル1行） */
 export function getTeacherCSVTemplate(): string {
-  return csvRow(['表示名', 'メールアドレス（任意）']) + '\r\n';
+  const sample = [
+    '山田 太郎',
+    'taro@example.com',
+    '',
+    'SCH001/SCH002',
+    '英語/数学',
+    '月/水/金',
+    '有効',
+  ];
+  return csvRow([...TEACHER_IMPORT_CSV_HEADERS]) + '\r\n' + csvRow(sample) + '\r\n';
 }
 
 // ─────────────────────────────────────────────
@@ -273,7 +293,28 @@ export interface TeacherCSVRow {
   rowIndex: number;
   display_name: string;
   email: string | null;
+  password: string | null;
+  /** 生の担当教室文字列（コードまたは名前。/区切り） */
+  school_codes_raw: string[];
+  /** 生の指導科目名（/区切り） */
+  subject_names_raw: string[];
+  /** 出勤可能曜日（0=日〜6=土） */
+  available_days_of_week: number[] | null;
+  /** true=有効、false=無効 */
+  is_active: boolean;
   errors: string[];
+}
+
+const DAY_OF_WEEK_MAP: Record<string, number> = {
+  '日': 0, '月': 1, '火': 2, '水': 3, '木': 4, '金': 5, '土': 6,
+  '日曜': 0, '月曜': 1, '火曜': 2, '水曜': 3, '木曜': 4, '金曜': 5, '土曜': 6,
+};
+
+function splitMulti(value: string): string[] {
+  return value
+    .split(/[\/／,，、]/)
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
 
 /**
@@ -302,14 +343,48 @@ export function parseTeacherCSV(file: File): Promise<TeacherCSVRow[]> {
           const errors: string[] = [];
           const display_name = cols[0]?.trim() ?? '';
           const emailRaw = cols[1]?.trim() ?? '';
-          const email = emailRaw || null;
+          const passwordRaw = cols[2]?.trim() ?? '';
+          const schoolsRaw = cols[3]?.trim() ?? '';
+          const subjectsRaw = cols[4]?.trim() ?? '';
+          const daysRaw = cols[5]?.trim() ?? '';
+          const statusRaw = cols[6]?.trim() ?? '';
 
           if (!display_name) errors.push('表示名が空です');
+
+          // 曜日パース
+          let available_days_of_week: number[] | null = null;
+          if (daysRaw) {
+            const days: number[] = [];
+            for (const d of splitMulti(daysRaw)) {
+              const n = DAY_OF_WEEK_MAP[d];
+              if (n === undefined) {
+                errors.push(`曜日「${d}」が認識できません`);
+              } else if (!days.includes(n)) {
+                days.push(n);
+              }
+            }
+            available_days_of_week = days.length > 0 ? days : null;
+          }
+
+          // 状態パース
+          let is_active = true;
+          if (statusRaw) {
+            if (statusRaw === '無効' || statusRaw === 'false' || statusRaw === '0') {
+              is_active = false;
+            } else if (statusRaw !== '有効' && statusRaw !== 'true' && statusRaw !== '1') {
+              errors.push(`状態「${statusRaw}」は「有効」または「無効」を指定してください`);
+            }
+          }
 
           return {
             rowIndex: i + 1,
             display_name,
-            email,
+            email: emailRaw || null,
+            password: passwordRaw || null,
+            school_codes_raw: splitMulti(schoolsRaw),
+            subject_names_raw: splitMulti(subjectsRaw),
+            available_days_of_week,
+            is_active,
             errors,
           };
         });
