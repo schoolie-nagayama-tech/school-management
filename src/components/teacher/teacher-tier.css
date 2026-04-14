@@ -108,47 +108,18 @@
   background: oklch(62% 0.15 65);
   color: oklch(96% 0.06 85);
 }
-.tier-medal-gold-disabled::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  background: linear-gradient(
-    100deg,
-    transparent 35%,
-    rgba(255, 255, 255, 0.55) 50%,
-    transparent 65%
-  );
-  background-size: 250% 100%;
-  animation: tier-shimmer 4.2s ease-in-out infinite;
-}
-
 .tier-medal-mythic {
   --mc-text: white;
   background: linear-gradient(
     135deg,
-    oklch(78% 0.16 85) 0%,
-    oklch(66% 0.20 15) 35%,
-    oklch(56% 0.22 300) 75%,
-    oklch(60% 0.18 250) 100%
+    oklch(72% 0.14 85) 0%,
+    oklch(62% 0.16 15) 50%,
+    oklch(54% 0.17 300) 100%
   );
-  background-size: 200% 200%;
-  animation: tier-mythic-hue 8s ease-in-out infinite;
-  border-color: rgba(255, 255, 255, 0.4);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 .tier-medal-mythic .tier-medal-core {
-  background: rgba(255, 255, 255, 0.3);
-  box-shadow:
-    inset 0 0 0 2px rgba(255, 255, 255, 0.5),
-    0 0 10px rgba(255, 255, 255, 0.4);
-  animation: tier-mythic-pulse 2.6s ease-in-out infinite;
-}
-.tier-medal-mythic .tier-medal-ring {
-  box-shadow:
-    0 0 0 2px rgba(255, 255, 255, 0.35),
-    0 0 16px oklch(82% 0.2 55 / 0.6);
-  animation: tier-mythic-ring 2.6s ease-in-out infinite;
+  background: rgba(255, 255, 255, 0.22);
 }
 @keyframes tier-mythic-hue {
   0%,
@@ -159,29 +130,6 @@
     background-position: 100% 50%;
   }
 }
-@keyframes tier-mythic-pulse {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.08);
-  }
-}
-@keyframes tier-mythic-ring {
-  0%,
-  100% {
-    box-shadow:
-      0 0 0 2px rgba(255, 255, 255, 0.35),
-      0 0 10px oklch(82% 0.2 55 / 0.4);
-  }
-  50% {
-    box-shadow:
-      0 0 0 3px rgba(255, 255, 255, 0.5),
-      0 0 22px oklch(82% 0.2 55 / 0.8);
-  }
-}
-
 /* ── アクセント用 (3 箇所に目立たない変化を入れる) ── */
 
 /* (1) 小さなティア色ドット — 表示名の前などに置く */
@@ -437,44 +385,6 @@
   animation: tier-mythic-hue 6s ease-in-out infinite;
   box-shadow: 0 0 14px oklch(66% 0.20 15 / 0.6);
   opacity: 1;
-}
-
-/* (C) 合計行: 階梯に応じた帯と数値色 */
-.tier-totals td {
-  transition: background 0.4s ease;
-}
-[data-teacher-tier='slate'] .tier-totals td {
-  background: linear-gradient(90deg, oklch(96% 0.008 240), oklch(94% 0.012 240)) !important;
-}
-[data-teacher-tier='emerald'] .tier-totals td {
-  background: linear-gradient(90deg, oklch(96% 0.03 175), oklch(93% 0.05 185)) !important;
-  color: oklch(32% 0.12 175);
-}
-[data-teacher-tier='purple'] .tier-totals td {
-  background: linear-gradient(90deg, oklch(95% 0.03 285), oklch(92% 0.06 275)) !important;
-  color: oklch(32% 0.15 285);
-}
-[data-teacher-tier='gold'] .tier-totals td {
-  background:
-    linear-gradient(90deg, oklch(96% 0.05 85), oklch(90% 0.09 75), oklch(96% 0.05 85)) !important;
-  background-size: 200% 100% !important;
-  animation: tier-shimmer 5s ease-in-out infinite;
-  color: oklch(32% 0.10 65);
-  font-weight: 700;
-}
-[data-teacher-tier='mythic'] .tier-totals td {
-  background:
-    linear-gradient(
-      90deg,
-      oklch(94% 0.06 15),
-      oklch(92% 0.08 300),
-      oklch(94% 0.08 85),
-      oklch(94% 0.06 15)
-    ) !important;
-  background-size: 200% 100% !important;
-  animation: tier-mythic-hue 6s ease-in-out infinite;
-  color: oklch(30% 0.14 10);
-  font-weight: 700;
 }
 
 /* (D) 提出ボタン: 階梯グラデーションに置換 */

@@ -9,6 +9,7 @@ import { useMasterData } from '@/contexts/MasterDataContext';
 import { fetchWithAuth } from '@/lib/api/auth';
 import { getActiveTimeSlots } from '@/lib/api/schedule';
 import { getTeacherBadges, getTeacherBadgeAssignments } from '@/lib/api/teacher-badges';
+import { onTeacherBadgesChanged } from '@/lib/teacher-badge-events';
 import type { School, UserProfile, Subject, TeacherBadge, TeacherBadgeAssignment, BadgeRank } from '@/types/database';
 import { BADGE_RANK_CONFIG, USER_ROLE_LABELS } from '@/types/database';
 import type { ScheduleTimeSlot } from '@/types/schedule';
@@ -93,16 +94,32 @@ export default function TeacherDetailPage() {
   // バッジ情報
   useEffect(() => {
     if (!teacherId) return;
-    (async () => {
+    let cancelled = false;
+    const loadBadges = async () => {
       try {
         const [badges, assignments] = await Promise.all([
           getTeacherBadges(),
           getTeacherBadgeAssignments(teacherId),
         ]);
+        if (cancelled) return;
         setAllBadges(badges);
         setBadgeAssignments(assignments);
       } catch {}
-    })();
+    };
+    loadBadges();
+    // 他画面でバッジが変更されたら再取得
+    const offEvent = onTeacherBadgesChanged((changedId) => {
+      if (changedId === teacherId) loadBadges();
+    });
+    const onFocus = () => loadBadges();
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onFocus);
+    return () => {
+      cancelled = true;
+      offEvent();
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onFocus);
+    };
   }, [teacherId]);
 
   // スロット情報（出勤可能コマ表示用）

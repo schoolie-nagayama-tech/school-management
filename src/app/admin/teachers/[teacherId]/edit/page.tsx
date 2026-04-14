@@ -12,6 +12,7 @@ import { addUserToSchool, removeUserFromSchool, fetchWithAuth } from '@/lib/api/
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { getActiveTimeSlots } from '@/lib/api/schedule';
 import { getTeacherBadges, getTeacherBadgeAssignments, toggleTeacherBadge } from '@/lib/api/teacher-badges';
+import { emitTeacherBadgesChanged } from '@/lib/teacher-badge-events';
 import type { School, UserProfile, Subject, TeacherBadge, TeacherBadgeAssignment } from '@/types/database';
 import type { ScheduleTimeSlot } from '@/types/schedule';
 import { BadgeGrid } from '@/components/teacher-badges/BadgeGrid';
@@ -208,6 +209,8 @@ export default function TeacherEditPage() {
           prev.map((a) => (a.badge_id === badge.id && a.id.startsWith('temp-') ? result.assignment! : a))
         );
       }
+      // 他画面（一覧・詳細）へ同期通知
+      emitTeacherBadgesChanged(teacherId);
     } catch {
       // ロールバック
       if (isEarned) {

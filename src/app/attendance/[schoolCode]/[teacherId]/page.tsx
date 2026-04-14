@@ -468,7 +468,7 @@ export default function TeacherAttendancePage() {
                 );
               })}
               {/* 合計行 */}
-              <tr className={`bg-gray-100 font-medium${tierKey ? ' tier-totals' : ''}`}>
+              <tr className="bg-gray-100 font-medium">
                 <td className="px-2 py-2 border-b sticky left-0 bg-gray-100">
                   合計
                 </td>

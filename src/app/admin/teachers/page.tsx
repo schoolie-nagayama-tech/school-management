@@ -21,7 +21,8 @@ import { BADGE_RANK_CONFIG } from '@/types/database';
 import { generateTeacherCSV, downloadCSV, type TeacherExportRow } from '@/lib/utils/csvUtils';
 import { TeacherCsvImportModal } from '@/components/csv/TeacherCsvImportModal';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
-import { getTeacherBadges } from '@/lib/api/teacher-badges';
+import { getTeacherBadges, getTeacherBadgeAssignments } from '@/lib/api/teacher-badges';
+import { onTeacherBadgesChanged } from '@/lib/teacher-badge-events';
 import { BadgeIcon } from '@/components/teacher-badges/BadgeIcon';
 
 interface TeacherWithDetails extends UserProfile {
@@ -144,6 +145,31 @@ export default function TeachersPage() {
   //   教室切替時に loadData の ID が変わって再実行される）
   useEffect(() => {
     loadData();
+  }, [loadData]);
+
+  // 編集ページでバッジがトグルされたら対象講師のバッジのみ再取得
+  useEffect(() => {
+    const refetchBadgesForTeacher = async (teacherId: string) => {
+      try {
+        const assignments = await getTeacherBadgeAssignments(teacherId);
+        setTeacherBadgeMap((prev) => {
+          const next = new Map(prev);
+          next.set(teacherId, assignments);
+          return next;
+        });
+      } catch { /* noop */ }
+    };
+    const offEvent = onTeacherBadgesChanged((tid) => {
+      refetchBadgesForTeacher(tid);
+    });
+    const onFocus = () => loadData();
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onFocus);
+    return () => {
+      offEvent();
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onFocus);
+    };
   }, [loadData]);
 
   // 講師作成
