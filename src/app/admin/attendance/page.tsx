@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
 import { Card, CardContent, CardHeader, CardTitle, Button, SelectShadcn as Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge, Checkbox, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Textarea, Label, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui';
 import { ToastContainer } from '@/components/ui';
-import { ChevronLeft, ChevronRight, CheckCircle, ExternalLink, Download, RotateCcw } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle, ExternalLink, Download, RotateCcw, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import {
@@ -79,6 +79,7 @@ export default function AttendanceManagementPage() {
   const [isReopenDialogOpen, setIsReopenDialogOpen] = useState(false);
   const [reopeningSheet, setReopeningSheet] = useState<SummaryRow | null>(null);
   const [lateEarlyRecords, setLateEarlyRecords] = useState<LateEarlyRecord[]>([]);
+  const [prevMonthUnsubmitted, setPrevMonthUnsubmitted] = useState<SummaryRow[]>([]);
 
   const { schools: masterSchools } = useMasterData();
 
@@ -109,14 +110,23 @@ export default function AttendanceManagementPage() {
       const schoolIdsForTypes =
         schoolId ? [schoolId] : (userSchoolIds.length > 0 ? userSchoolIds : undefined);
       const allowedIds = schoolId ? undefined : (userSchoolIds.length > 0 ? userSchoolIds : undefined);
-      const [typesData, summaryResult, lateEarlyResult] = await Promise.all([
+      // 現実の前月（表示中の月ではなく、今日基準）の未提出チェック用
+      const realPrevMonth = getPrevMonth(getCurrentYearMonth());
+      const [typesData, summaryResult, lateEarlyResult, prevMonthSummary] = await Promise.all([
         getAllAttendanceTypes(schoolIdsForTypes),
         getAttendanceSummary(schoolId, yearMonth, allowedIds),
         getLateEarlyList(schoolId, yearMonth),
+        getAttendanceSummary(schoolId, realPrevMonth, allowedIds),
       ]);
       setAttendanceTypes(typesData);
       setSheets(summaryResult);
       setLateEarlyRecords(lateEarlyResult);
+      // draft / rejected のまま残っている前月シート
+      setPrevMonthUnsubmitted(
+        prevMonthSummary.filter(
+          (s: SummaryRow) => s.status === 'draft' || s.status === 'rejected'
+        )
+      );
       setSelectedIds(new Set());
     } catch (err) {
       console.error('Failed to fetch data:', err);
@@ -357,6 +367,30 @@ export default function AttendanceManagementPage() {
   return (
     <AdminLayout headerTitle="講師勤怠">
       <div className="space-y-6">
+        {prevMonthUnsubmitted.length > 0 && (
+          <div className="flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4">
+            <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-amber-900">
+                前月（{formatYearMonth(getPrevMonth(getCurrentYearMonth()))}）の出勤簿が未提出の講師が{prevMonthUnsubmitted.length}名います
+              </p>
+              <p className="text-xs text-amber-800 mt-1 break-all">
+                {prevMonthUnsubmitted
+                  .map((s) => s.teacher?.name ?? '不明')
+                  .join('、')}
+              </p>
+              <div className="mt-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => setYearMonth(getPrevMonth(getCurrentYearMonth()))}
+                >
+                  前月を表示
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">出勤簿管理</h1>
           <div className="flex items-center gap-2">

@@ -198,6 +198,26 @@ export async function getTeachersWithAttendance(
   return result;
 }
 
+// 出勤簿を取得（存在しなければ null、作成はしない）
+export async function findAttendanceSheet(
+  teacherId: string,
+  schoolId: string,
+  yearMonth: string
+): Promise<AttendanceSheet | null> {
+  const { data, error } = await supabase
+    .from('attendance_sheets')
+    .select('*')
+    .eq('teacher_id', teacherId)
+    .eq('school_id', schoolId)
+    .eq('year_month', yearMonth)
+    .maybeSingle();
+  if (error && error.code !== 'PGRST116') {
+    console.error('Error finding attendance sheet:', error);
+    return null;
+  }
+  return (data as AttendanceSheet) || null;
+}
+
 // 出勤簿を取得または作成
 export async function getOrCreateAttendanceSheet(
   teacherId: string,

@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Button, Input, Badge, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui';
 import { ToastContainer } from '@/components/ui';
 import { AppHeader } from '@/components/layout/AppHeader';
-import { ArrowLeft, ChevronLeft, ChevronRight, Send, Undo2 } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Send, Undo2, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { getSchoolByCode } from '@/lib/api/schools';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
@@ -20,6 +20,7 @@ import {
   saveAttendanceNote,
   submitAttendanceSheet,
   withdrawAttendanceSheet,
+  findAttendanceSheet,
 } from '@/lib/api/attendance';
 import {
   getCurrentYearMonth,
@@ -68,6 +69,7 @@ export default function TeacherAttendancePage() {
   const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false);
   const [isWithdrawDialogOpen, setIsWithdrawDialogOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [prevMonthUnsubmitted, setPrevMonthUnsubmitted] = useState<string | null>(null);
 
   const dates = getMonthDates(yearMonth);
 
@@ -120,6 +122,16 @@ export default function TeacherAttendancePage() {
       setSheetId(sheet.id);
       setStatus(sheet.status as AttendanceSheetStatus);
       setRejectionReason(sheet.rejection_reason ?? null);
+
+      // 前月のシートが未提出かチェック（今日の前月が基準）
+      const realPrevMonth = getPrevMonth(getCurrentYearMonth());
+      findAttendanceSheet(teacherId, schoolData.id, realPrevMonth).then((prev) => {
+        if (prev && (prev.status === 'draft' || prev.status === 'rejected')) {
+          setPrevMonthUnsubmitted(realPrevMonth);
+        } else {
+          setPrevMonthUnsubmitted(null);
+        }
+      });
 
       // 明細と備考を取得
       const detail = await getAttendanceSheetDetail(sheet.id);
@@ -331,6 +343,25 @@ export default function TeacherAttendancePage() {
           </div>
         </div>
       </header>
+
+      {/* 前月未提出アラート */}
+      {prevMonthUnsubmitted && prevMonthUnsubmitted !== yearMonth && (
+        <div className="bg-amber-50 border-b border-amber-300">
+          <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0" />
+            <p className="text-sm text-amber-900 flex-1">
+              {formatYearMonth(prevMonthUnsubmitted)}の出勤簿がまだ提出されていません
+            </p>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => handleMonthChange(prevMonthUnsubmitted)}
+            >
+              {formatYearMonth(prevMonthUnsubmitted)}を開く
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* 年月選択 */}
       <div className="bg-white border-b">
