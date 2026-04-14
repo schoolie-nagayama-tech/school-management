@@ -657,7 +657,7 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
 
         {/* フィードリスト */}
         {isExpanded && (
-          <div className="max-h-[350px] overflow-y-auto divide-y divide-gray-100">
+          <div className="max-h-[640px] overflow-y-auto divide-y divide-gray-100">
             {visibleItems.length === 0 ? (
               <div className="p-6 text-center text-sm text-gray-400 italic">
                 {filter === 'all' ? '表示する通知はありません' : `${filter === 'response' ? '申込' : filter === 'update' ? '更新履歴' : filter === 'shift' ? 'シフト申請' : '期日通知'}はありません`}

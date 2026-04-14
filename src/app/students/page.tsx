@@ -156,15 +156,16 @@ export default function StudentsPage() {
     return () => clearTimeout(t);
   }, [searchQuery]);
 
-  const reloadRosterPage = useCallback(async () => {
-    setIsLoading(true);
+  const reloadRosterPage = useCallback(async (options?: { silent?: boolean }) => {
+    const silent = options?.silent ?? false;
+    if (!silent) setIsLoading(true);
     setErrorMessage('');
     try {
       const schoolIds = getSelectedSchoolIds();
       if (schoolIds.length === 0) {
         setRosterRows([]);
         setRosterTotalCount(0);
-        setIsLoading(false);
+        if (!silent) setIsLoading(false);
         return;
       }
       const { rows, totalCount } = await getStudentsPage({
@@ -181,18 +182,19 @@ export default function StudentsPage() {
       console.error('Error fetching roster:', error);
       setErrorMessage(getUserErrorMessage(error, '生徒一覧の取得に失敗しました'));
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   }, [getSelectedSchoolIds, debouncedSearch, showInactive, selectedGrade, currentPage]);
 
-  const reloadScoresStudents = useCallback(async () => {
-    setIsLoading(true);
+  const reloadScoresStudents = useCallback(async (options?: { silent?: boolean }) => {
+    const silent = options?.silent ?? false;
+    if (!silent) setIsLoading(true);
     setErrorMessage('');
     try {
       const schoolIds = getSelectedSchoolIds();
       if (schoolIds.length === 0) {
         setStudentsForScores([]);
-        setIsLoading(false);
+        if (!silent) setIsLoading(false);
         return;
       }
       const data = await getStudents(debouncedSearch, schoolIds);
@@ -201,7 +203,7 @@ export default function StudentsPage() {
       console.error('Error fetching students for scores:', error);
       setErrorMessage(getUserErrorMessage(error, '生徒一覧の取得に失敗しました'));
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   }, [getSelectedSchoolIds, debouncedSearch]);
 
@@ -221,10 +223,11 @@ export default function StudentsPage() {
   }, [refreshCodes, selectedSchoolId]);
 
   const syncListsAfterMutation = useCallback(async () => {
+    // silent: ローディング表示を出さずに再取得することでスクロール位置を保持
     if (activeTab === 'roster') {
-      await reloadRosterPage();
+      await reloadRosterPage({ silent: true });
     } else {
-      await reloadScoresStudents();
+      await reloadScoresStudents({ silent: true });
     }
     refreshCodes();
   }, [activeTab, reloadRosterPage, reloadScoresStudents, refreshCodes]);
