@@ -80,27 +80,29 @@ export default function TeacherAttendancePage() {
     setError(null);
 
     try {
-      // 教室取得
-      const schoolData = await getSchoolByCode(schoolCode);
+      // 教室 + 講師は互いに独立 → 並列
+      const supabase = getSupabaseBrowserClient();
+      const [schoolData, teacherRes] = await Promise.all([
+        getSchoolByCode(schoolCode),
+        supabase
+          .from('user_profiles')
+          .select('id, display_name, email, role, is_active')
+          .eq('id', teacherId)
+          .eq('role', 'teacher')
+          .maybeSingle(),
+      ]);
+
       if (!schoolData) {
         setError('教室が見つかりません');
         return;
       }
       setSchool(schoolData);
 
-      // 講師取得（user_profilesベース）
-      const supabase = getSupabaseBrowserClient();
-      const { data: teacherData, error: teacherError } = await supabase
-        .from('user_profiles')
-        .select('id, display_name, email, role, is_active')
-        .eq('id', teacherId)
-        .eq('role', 'teacher')
-        .maybeSingle();
-
-      if (teacherError) {
-        console.error('Error fetching teacher:', teacherError);
+      if (teacherRes.error) {
+        console.error('Error fetching teacher:', teacherRes.error);
         throw new Error('講師情報の取得に失敗しました');
       }
+      const teacherData = teacherRes.data;
       if (!teacherData || teacherData.is_active === false) {
         throw new Error('講師情報の取得に失敗しました');
       }
@@ -109,16 +111,12 @@ export default function TeacherAttendancePage() {
         name: teacherData.display_name || teacherData.email || '未設定',
       });
 
-      // コマ種別取得
-      const types = await getActiveAttendanceTypes(schoolData.id);
+      // コマ種別 + 出勤簿（取得 or 作成）を並列
+      const [types, sheet] = await Promise.all([
+        getActiveAttendanceTypes(schoolData.id),
+        getOrCreateAttendanceSheet(teacherId, schoolData.id, yearMonth),
+      ]);
       setAttendanceTypes(types);
-
-      // 出勤簿取得または作成
-      const sheet = await getOrCreateAttendanceSheet(
-        teacherId,
-        schoolData.id,
-        yearMonth
-      );
       setSheetId(sheet.id);
       setStatus(sheet.status as AttendanceSheetStatus);
       setRejectionReason(sheet.rejection_reason ?? null);
