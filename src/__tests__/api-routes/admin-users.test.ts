@@ -4,7 +4,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest, NextResponse } from 'next/server';
-import { createMockSupabaseAdmin, createMockChain, authSuccessMocks, authFailMocks } from './helpers';
+import { createMockSupabaseAdmin, createMockChain, authSuccessMocks } from './helpers';
 
 const mockAdmin = createMockSupabaseAdmin();
 

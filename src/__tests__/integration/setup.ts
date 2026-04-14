@@ -3,7 +3,7 @@
  * ローカルSupabaseに接続し、テスト用データを管理する
  */
 import { createClient } from '@supabase/supabase-js';
-import { beforeAll, afterAll } from 'vitest';
+import { beforeAll } from 'vitest';
 import * as dotenv from 'dotenv';
 import path from 'path';
 
