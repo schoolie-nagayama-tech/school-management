@@ -178,7 +178,16 @@ export default function TeacherDetailPage() {
     .filter((s): s is School => s !== undefined);
 
   const teacherSchools = schools;
-  const initials = (teacher.display_name || teacher.email || '?').charAt(0).toUpperCase();
+  // バッジ数に応じて背景を変化させる（隠し要素）
+  const heroBgClass = (() => {
+    const n = earnedBadges.length;
+    if (n >= 14) return 'bg-gradient-to-br from-amber-400 via-rose-500 to-indigo-600 animate-[pulse_6s_ease-in-out_infinite]';
+    if (n >= 10) return 'bg-gradient-to-br from-yellow-500 via-amber-500 to-orange-600';
+    if (n >= 7) return 'bg-gradient-to-br from-fuchsia-700 via-purple-700 to-indigo-800';
+    if (n >= 4) return 'bg-gradient-to-br from-emerald-700 via-teal-700 to-cyan-800';
+    if (n >= 1) return 'bg-gradient-to-br from-slate-600 via-slate-700 to-slate-800';
+    return 'bg-gradient-to-br from-[#1e3a5f] to-[#2a4a6f]';
+  })();
 
   return (
     <AdminLayout
@@ -201,11 +210,8 @@ export default function TeacherDetailPage() {
       }
     >
       {/* ヒーローカード */}
-      <div className="bg-gradient-to-br from-[#1e3a5f] to-[#2a4a6f] rounded-2xl p-6 mb-6 shadow-lg text-white">
+      <div className={`${heroBgClass} rounded-2xl p-6 mb-6 shadow-lg text-white transition-colors duration-500`}>
         <div className="flex items-center gap-5">
-          <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-3xl font-bold shadow-inner">
-            {initials}
-          </div>
           <div className="flex-1 min-w-0">
             <h1 className="text-2xl font-bold truncate">{teacher.display_name || '(未設定)'}</h1>
             <p className="text-sm text-white/70 truncate">{teacher.email}</p>
@@ -312,7 +318,7 @@ export default function TeacherDetailPage() {
         {/* 右カラム */}
         <div className="space-y-6">
           {/* バッジ獲得状況 */}
-          <Panel title="バッジ / トロフィー">
+          <Panel title="バッジ">
             <div className="mb-4">
               <div className="flex items-end justify-between mb-1.5">
                 <span className="text-xs text-gray-500">獲得数</span>
