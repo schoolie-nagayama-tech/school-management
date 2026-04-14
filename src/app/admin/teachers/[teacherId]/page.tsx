@@ -181,7 +181,7 @@ export default function TeacherDetailPage() {
   // バッジ数に応じて背景を変化させる（隠し要素）
   const heroBgClass = (() => {
     const n = earnedBadges.length;
-    if (n >= 14) return 'bg-gradient-to-br from-amber-400 via-rose-500 to-indigo-600 animate-[pulse_6s_ease-in-out_infinite]';
+    if (n >= 14) return 'bg-gradient-to-br from-amber-400 via-rose-500 to-indigo-600 hero-shine';
     if (n >= 10) return 'bg-gradient-to-br from-yellow-500 via-amber-500 to-orange-600';
     if (n >= 7) return 'bg-gradient-to-br from-fuchsia-700 via-purple-700 to-indigo-800';
     if (n >= 4) return 'bg-gradient-to-br from-emerald-700 via-teal-700 to-cyan-800';
@@ -210,7 +210,7 @@ export default function TeacherDetailPage() {
       }
     >
       {/* ヒーローカード */}
-      <div className={`${heroBgClass} rounded-2xl p-6 mb-6 shadow-lg text-white transition-colors duration-500`}>
+      <div className={`${heroBgClass} relative overflow-hidden rounded-2xl p-6 mb-6 shadow-lg text-white transition-colors duration-500`}>
         <div className="flex items-center gap-5">
           <div className="flex-1 min-w-0">
             <h1 className="text-2xl font-bold truncate">{teacher.display_name || '(未設定)'}</h1>

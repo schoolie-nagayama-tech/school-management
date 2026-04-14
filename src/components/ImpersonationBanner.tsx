@@ -29,15 +29,15 @@ export function ImpersonationBanner() {
   };
 
   return (
-    <div className="fixed top-0 inset-x-0 z-[100] bg-amber-500 text-white text-xs sm:text-sm px-4 py-2 flex items-center justify-center gap-3 shadow-md">
-      <span className="font-semibold">⚠ 別アカウントにスイッチ中です</span>
-      <button
-        onClick={handleStop}
-        disabled={busy}
-        className="px-3 py-1 bg-white text-amber-700 rounded-md font-medium hover:bg-amber-50 disabled:opacity-50"
-      >
-        {busy ? '戻り中...' : '元の管理者に戻る'}
-      </button>
-    </div>
+    <button
+      onClick={handleStop}
+      disabled={busy}
+      title="元の管理者アカウントに戻る"
+      className="fixed bottom-6 right-6 z-[100] flex items-center gap-2 px-5 py-3 rounded-full bg-amber-500 hover:bg-amber-600 text-white font-semibold shadow-2xl ring-4 ring-amber-300/40 hover:ring-amber-300/60 disabled:opacity-60 transition-all text-sm sm:text-base"
+    >
+      <span className="text-lg leading-none">⚠</span>
+      <span className="hidden sm:inline">別アカウントにスイッチ中 —</span>
+      <span>{busy ? '戻り中...' : '元の管理者に戻る'}</span>
+    </button>
   );
 }
