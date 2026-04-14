@@ -64,7 +64,7 @@ interface TeacherWithDetails extends UserProfile {
 export default function TeacherDetailPage() {
   const params = useParams();
   const teacherId = params?.teacherId as string | undefined;
-  const { profile } = useAuth();
+  useAuth();
   const { schools: masterSchools, subjects: masterSubjects } = useMasterData();
 
   const [teacher, setTeacher] = useState<TeacherWithDetails | null>(null);
