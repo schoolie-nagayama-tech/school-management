@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { useAuth } from '@/contexts/AuthContext';
 import { updateUserProfile, fetchWithAuth } from '@/lib/api/auth';
+import { impersonateUser } from '@/lib/impersonate';
 import { createSchool, updateSchool, deleteSchool } from '@/lib/api/schools';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { useToast } from '@/hooks/useToast';
@@ -618,6 +619,23 @@ export default function UsersPage() {
                                 >
                                   {user.is_active ? '無効化' : '有効化'}
                                 </Button>
+                                {isAdmin && user.id !== profile?.id && (
+                                  <Button
+                                    variant="ghost"
+                                    onClick={async () => {
+                                      if (!confirm(`${user.display_name || user.email}としてログインしますか？\n（元のアカウントにはバナーから戻れます）`)) return;
+                                      try {
+                                        await impersonateUser(user.id);
+                                      } catch (e) {
+                                        toastError((e as Error).message);
+                                      }
+                                    }}
+                                    className="p-2 text-amber-600 hover:text-amber-700"
+                                    title="このユーザーとしてログイン"
+                                  >
+                                    スイッチ
+                                  </Button>
+                                )}
                                 {user.id !== profile?.id && (
                                   <Button
                                     variant="ghost"

@@ -1,0 +1,112 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+import { requireAdmin } from '@/lib/api-auth';
+
+export const dynamic = 'force-dynamic';
+
+function getSupabaseAdmin() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+}
+
+/**
+ * 管理者（admin）専用: 他ユーザーにアカウントスイッチする
+ *
+ * Body: { userId: string, currentRefreshToken: string }
+ * Response: { actionLink: string }
+ *
+ * 流れ:
+ * 1. requireAdmin で呼び出し元が admin であることを検証
+ * 2. 対象ユーザーの email を取得
+ * 3. Supabase admin.generateLink でマジックリンクを発行
+ * 4. 呼び出し元 admin の refresh_token を httpOnly cookie に保存（戻れるように）
+ * 5. actionLink を返却 → クライアントが遷移 → 対象ユーザーとして認証される
+ */
+export async function POST(request: NextRequest) {
+  try {
+    // admin ロールのみ許可（owner も除外、システム管理者のみ）
+    const authError = await requireAdmin(request);
+    if (authError) return authError;
+
+    // ただし requireAdmin は admin/owner を通すため、さらに admin に絞る
+    const { userId, currentRefreshToken } = await request.json();
+    if (!userId || !currentRefreshToken) {
+      return NextResponse.json({ error: 'userId と currentRefreshToken が必要です' }, { status: 400 });
+    }
+
+    const db = getSupabaseAdmin();
+
+    // 呼び出し元を厳密に admin チェック
+    const callerAuthHeader = request.headers.get('Authorization');
+    const callerToken = callerAuthHeader?.startsWith('Bearer ') ? callerAuthHeader.slice(7) : null;
+    if (!callerToken) {
+      return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
+    }
+    const { data: { user: callerUser } } = await db.auth.getUser(callerToken);
+    if (!callerUser) {
+      return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
+    }
+    const { data: callerProfile } = await db
+      .from('user_profiles')
+      .select('role')
+      .eq('id', callerUser.id)
+      .maybeSingle();
+    if (callerProfile?.role !== 'admin') {
+      return NextResponse.json({ error: 'システム管理者のみ実行できます' }, { status: 403 });
+    }
+
+    // 対象ユーザーの email を取得
+    const { data: targetProfile } = await db
+      .from('user_profiles')
+      .select('id, email')
+      .eq('id', userId)
+      .maybeSingle();
+    if (!targetProfile?.email) {
+      return NextResponse.json({ error: '対象ユーザーが見つかりません' }, { status: 404 });
+    }
+
+    // マジックリンクを発行
+    const { data: linkData, error: linkError } = await db.auth.admin.generateLink({
+      type: 'magiclink',
+      email: targetProfile.email,
+    });
+    if (linkError || !linkData?.properties?.action_link) {
+      console.error('generateLink error:', linkError);
+      return NextResponse.json({ error: 'マジックリンクの発行に失敗しました' }, { status: 500 });
+    }
+
+    const actionLink = linkData.properties.action_link;
+
+    // 監査ログ
+    console.log(JSON.stringify({
+      type: 'IMPERSONATE',
+      adminId: callerUser.id,
+      targetId: userId,
+      timestamp: new Date().toISOString(),
+    }));
+
+    // 呼び出し元 admin の refresh_token を httpOnly cookie に保存
+    const res = NextResponse.json({ actionLink });
+    res.cookies.set('impersonator_refresh_token', currentRefreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 4, // 4時間
+    });
+    res.cookies.set('impersonator_user_id', callerUser.id, {
+      httpOnly: false, // クライアントからバナー表示に使用
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 60 * 60 * 4,
+    });
+    return res;
+  } catch (err) {
+    console.error('POST /api/admin/impersonate error:', err);
+    return NextResponse.json({ error: 'スイッチに失敗しました' }, { status: 500 });
+  }
+}

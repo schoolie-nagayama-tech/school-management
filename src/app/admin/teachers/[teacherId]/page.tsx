@@ -2,52 +2,25 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
-import { Button, Input, Label } from '@/components/ui';
-import { ToastContainer } from '@/components/ui';
-import { useToast } from '@/hooks/useToast';
 import { useAuth } from '@/contexts/AuthContext';
-import { addUserToSchool, removeUserFromSchool, fetchWithAuth } from '@/lib/api/auth';
 import { useMasterData } from '@/contexts/MasterDataContext';
+import { fetchWithAuth } from '@/lib/api/auth';
 import { getActiveTimeSlots } from '@/lib/api/schedule';
-import { getTeacherBadges, getTeacherBadgeAssignments, toggleTeacherBadge } from '@/lib/api/teacher-badges';
-import type { School, UserProfile, Subject, TeacherBadge, TeacherBadgeAssignment } from '@/types/database';
+import { getTeacherBadges, getTeacherBadgeAssignments } from '@/lib/api/teacher-badges';
+import type { School, UserProfile, Subject, TeacherBadge, TeacherBadgeAssignment, BadgeRank } from '@/types/database';
+import { BADGE_RANK_CONFIG, USER_ROLE_LABELS } from '@/types/database';
 import type { ScheduleTimeSlot } from '@/types/schedule';
-import { BadgeGrid } from '@/components/teacher-badges/BadgeGrid';
-import { BadgeProgress } from '@/components/teacher-badges/BadgeProgress';
-import type { BadgeRank } from '@/types/database';
+import { BadgeIcon } from '@/components/teacher-badges/BadgeIcon';
 
-const DAY_LABELS: { value: number; label: string }[] = [
-  { value: 0, label: '日' },
-  { value: 1, label: '月' },
-  { value: 2, label: '火' },
-  { value: 3, label: '水' },
-  { value: 4, label: '木' },
-  { value: 5, label: '金' },
-  { value: 6, label: '土' },
-];
-
+const DAY_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
 const GRADE_CATEGORY_LABELS: Record<string, string> = {
   elementary: '小学',
   middle: '中学',
   high: '高校',
 };
 
-function groupSubjectsByGradeCategory(subjects: Subject[]): { label: string; items: Subject[] }[] {
-  const order: ('elementary' | 'middle' | 'high')[] = ['elementary', 'middle', 'high'];
-  const map = new Map<string, Subject[]>();
-  for (const s of subjects) {
-    const cat = s.grade_category ?? 'middle';
-    if (!map.has(cat)) map.set(cat, []);
-    map.get(cat)!.push(s);
-  }
-  return order
-    .filter((cat) => map.has(cat))
-    .map((cat) => ({ label: GRADE_CATEGORY_LABELS[cat] ?? cat, items: map.get(cat)! }));
-}
-
-/** API/DB が配列 or 文字列で返す場合に JS 配列に正規化 */
 function normalizeToStrArray(v: unknown): string[] {
   if (Array.isArray(v)) return v.map((x) => String(x));
   if (typeof v === 'string') {
@@ -68,14 +41,11 @@ function normalizeToNumArray(v: unknown): number[] {
   return [];
 }
 
-/** 曜日別コマを Record<string, number[]> に正規化（キー "0"〜"6"、値は 1〜7） */
 function normalizeToSlotNumbersByDay(v: unknown): Record<string, number[]> {
   if (v !== null && typeof v === 'object' && !Array.isArray(v)) {
     const out: Record<string, number[]> = {};
     for (const key of Object.keys(v as object)) {
-      const arr = normalizeToNumArray((v as Record<string, unknown>)[key]).filter(
-        (n) => n >= 1 && n <= 7
-      );
+      const arr = normalizeToNumArray((v as Record<string, unknown>)[key]).filter((n) => n >= 1 && n <= 7);
       if (arr.length > 0) out[key] = arr;
     }
     return out;
@@ -86,86 +56,44 @@ function normalizeToSlotNumbersByDay(v: unknown): Record<string, number[]> {
 interface TeacherWithDetails extends UserProfile {
   user_schools?: Array<{
     id: string;
-    user_id: string;
     school_id: string;
     school?: { id: string; name: string; code: string | null };
   }>;
 }
 
-export default function TeacherEditPage() {
+export default function TeacherDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const teacherId = params?.teacherId as string | undefined;
-  const { getSelectedSchoolIds, profile } = useAuth();
+  const { profile } = useAuth();
   const { schools: masterSchools, subjects: masterSubjects } = useMasterData();
-  const { toasts, removeToast, success, error: toastError } = useToast();
-  const isManager = profile?.role === 'manager';
 
   const [teacher, setTeacher] = useState<TeacherWithDetails | null>(null);
-  const [schools, setSchools] = useState<School[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [scheduleTimeSlots, setScheduleTimeSlots] = useState<ScheduleTimeSlot[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [notFound, setNotFound] = useState(false);
-
-  const [editDisplayName, setEditDisplayName] = useState('');
-  const [editSchoolIds, setEditSchoolIds] = useState<string[]>([]);
-  const [editTeachableSubjectIds, setEditTeachableSubjectIds] = useState<string[]>([]);
-  const [editAvailableSlotNumbersByDay, setEditAvailableSlotNumbersByDay] = useState<
-    Record<string, number[]>
-  >({});
   const [allBadges, setAllBadges] = useState<TeacherBadge[]>([]);
   const [badgeAssignments, setBadgeAssignments] = useState<TeacherBadgeAssignment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     if (!teacherId) return;
-    const load = async () => {
-      setIsLoading(true);
-      setNotFound(false);
+    (async () => {
       try {
-        // 講師1件だけ取得（teachable_subject_ids, available_days_of_week を含む最新の状態）
-        const teacherRes = await fetchWithAuth(`/api/admin/users/${teacherId}`);
-        if (!teacherRes.ok) {
-          if (teacherRes.status === 404) {
-            setNotFound(true);
-            setTeacher(null);
-            return;
-          }
-          throw new Error('講師の取得に失敗しました');
+        const res = await fetchWithAuth(`/api/admin/users/${teacherId}`);
+        if (!res.ok) {
+          if (res.status === 404) setNotFound(true);
+          return;
         }
-        const found: TeacherWithDetails = await teacherRes.json();
-        setTeacher(found);
-        setSchools(masterSchools);
-        setSubjects(masterSubjects);
-
-        setEditDisplayName(found.display_name || '');
-        const teacherSchoolIds = found.user_schools?.map((us) => us.school_id) || [];
-        if (isManager) {
-          const userSchoolIds = getSelectedSchoolIds();
-          setEditSchoolIds(teacherSchoolIds.filter((id) => userSchoolIds.includes(id)));
-        } else {
-          setEditSchoolIds(teacherSchoolIds);
-        }
-        // 保存済みの値を表示（API は配列で返すが、文字列等で返る場合にも正規化）
-        const subjectIds = normalizeToStrArray(found.teachable_subject_ids);
-        setEditTeachableSubjectIds(subjectIds);
-        setEditAvailableSlotNumbersByDay(
-          normalizeToSlotNumbersByDay(found.available_slot_numbers_by_day)
-        );
-      } catch (e) {
-        toastError((e as Error).message);
+        setTeacher(await res.json());
       } finally {
         setIsLoading(false);
       }
-    };
-    load();
-  }, [teacherId, isManager, getSelectedSchoolIds, toastError, masterSchools, masterSubjects]);
+    })();
+  }, [teacherId]);
 
-  // バッジデータ取得
+  // バッジ情報
   useEffect(() => {
     if (!teacherId) return;
-    const loadBadges = async () => {
+    (async () => {
       try {
         const [badges, assignments] = await Promise.all([
           getTeacherBadges(),
@@ -173,159 +101,40 @@ export default function TeacherEditPage() {
         ]);
         setAllBadges(badges);
         setBadgeAssignments(assignments);
-      } catch {
-        // バッジ取得失敗は致命的ではない
-      }
-    };
-    loadBadges();
+      } catch {}
+    })();
   }, [teacherId]);
 
-  const handleBadgeToggle = async (badge: TeacherBadge) => {
-    if (!teacherId) return;
-    const isEarned = badgeAssignments.some((a) => a.badge_id === badge.id);
-
-    // 楽観的更新
-    if (isEarned) {
-      setBadgeAssignments((prev) => prev.filter((a) => a.badge_id !== badge.id));
-    } else {
-      const optimistic: TeacherBadgeAssignment = {
-        id: `temp-${Date.now()}`,
-        teacher_id: teacherId,
-        badge_id: badge.id,
-        completed_at: new Date().toISOString().split('T')[0],
-        note: null,
-        assigned_by: null,
-        created_at: new Date().toISOString(),
-        badge,
-      };
-      setBadgeAssignments((prev) => [...prev, optimistic]);
-    }
-
-    try {
-      const result = await toggleTeacherBadge(teacherId, { badgeId: badge.id });
-      if (result.action === 'assigned' && result.assignment) {
-        setBadgeAssignments((prev) =>
-          prev.map((a) => (a.badge_id === badge.id && a.id.startsWith('temp-') ? result.assignment! : a))
-        );
-      }
-    } catch {
-      // ロールバック
-      if (isEarned) {
-        const [assignments] = await Promise.all([getTeacherBadgeAssignments(teacherId)]);
-        setBadgeAssignments(assignments);
-      } else {
-        setBadgeAssignments((prev) => prev.filter((a) => !a.id.startsWith('temp-')));
-      }
-      toastError('バッジの更新に失敗しました');
-    }
-  };
-
-  // 担当教室の座席表コマ時間を取得（講師の出勤可能コマ選択用）
+  // スロット情報（出勤可能コマ表示用）
+  const teacherSchoolIds = teacher?.user_schools?.map((us) => us.school_id) || [];
   useEffect(() => {
-    if (editSchoolIds.length === 0) {
-      setScheduleTimeSlots([]);
-      return;
-    }
-    const load = async () => {
+    if (teacherSchoolIds.length === 0) return;
+    (async () => {
       try {
-        const allSlots: ScheduleTimeSlot[] = [];
+        const all: ScheduleTimeSlot[] = [];
         const seen = new Set<number>();
-        for (const schoolId of editSchoolIds) {
-          const slots = await getActiveTimeSlots(schoolId);
+        for (const sid of teacherSchoolIds) {
+          const slots = await getActiveTimeSlots(sid);
           for (const s of slots) {
             if (!seen.has(s.slot_number)) {
               seen.add(s.slot_number);
-              allSlots.push(s);
+              all.push(s);
             }
           }
         }
-        allSlots.sort((a, b) => a.slot_number - b.slot_number);
-        setScheduleTimeSlots(allSlots);
-      } catch {
-        setScheduleTimeSlots([]);
-      }
-    };
-    load();
-  }, [editSchoolIds]);
-
-  const handleSave = async () => {
-    if (!teacher) return;
-    setIsSaving(true);
-    try {
-      // 出勤可能曜日はグリッドから自動導出（選択したコマがある曜日）
-      const derivedDays = new Set<number>();
-      for (const [dayKey, slotNums] of Object.entries(editAvailableSlotNumbersByDay)) {
-        if (slotNums?.length) derivedDays.add(parseInt(dayKey, 10));
-      }
-      const available_days_of_week = Array.from(derivedDays).sort((a, b) => a - b);
-
-      // プロファイル（表示名・指導可能科目・出勤可能曜日・出勤可能コマ）は API 経由で RPC 更新
-      const profileRes = await fetchWithAuth(`/api/admin/users/${teacher.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        cache: 'no-store',
-        body: JSON.stringify({
-          display_name: editDisplayName,
-          teachable_subject_ids: editTeachableSubjectIds,
-          available_days_of_week,
-          available_slot_numbers_by_day: editAvailableSlotNumbersByDay,
-        }),
-      });
-      const errBody = (await profileRes.json().catch(() => ({}))) as {
-        error?: string;
-        details?: string;
-      };
-      if (!profileRes.ok) {
-        const msg = errBody.details
-          ? `${errBody.error ?? 'プロファイルの更新に失敗しました'}（${errBody.details}）`
-          : errBody.error || 'プロファイルの更新に失敗しました';
-        throw new Error(msg);
-      }
-
-      const currentSchoolIds = teacher.user_schools?.map((us) => us.school_id) || [];
-      const toAdd = editSchoolIds.filter((id) => !currentSchoolIds.includes(id));
-      const toRemove = currentSchoolIds.filter((id) => !editSchoolIds.includes(id));
-
-      for (const schoolId of toAdd) {
-        await addUserToSchool(teacher.id, schoolId);
-      }
-      for (const schoolId of toRemove) {
-        await removeUserFromSchool(teacher.id, schoolId);
-      }
-
-      success('講師を更新しました');
-      router.push('/admin/teachers');
-    } catch (err) {
-      console.error('Error updating teacher:', err);
-      toastError('講師の更新に失敗しました');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const availableSchools = isManager
-    ? schools.filter((s) => getSelectedSchoolIds().includes(s.id))
-    : schools;
-
-  if (!teacherId) {
-    return (
-      <AdminLayout headerTitle="講師詳細">
-        <div className="p-6">
-          <p className="text-[#2a2a2a]">講師IDが指定されていません。</p>
-          <Link href="/admin/teachers">
-            <Button variant="secondary" className="mt-4">
-              講師一覧に戻る
-            </Button>
-          </Link>
-        </div>
-      </AdminLayout>
-    );
-  }
+        all.sort((a, b) => a.slot_number - b.slot_number);
+        setScheduleTimeSlots(all);
+      } catch {}
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [teacher?.id]);
 
   if (isLoading) {
     return (
       <AdminLayout headerTitle="講師詳細">
-        <div className="p-6 text-center text-[#2a2a2a]">読み込み中...</div>
+        <div className="flex justify-center py-16">
+          <div className="w-8 h-8 border-2 border-gray-300 border-t-[#1e3a5f] rounded-full animate-spin" />
+        </div>
       </AdminLayout>
     );
   }
@@ -333,285 +142,287 @@ export default function TeacherEditPage() {
   if (notFound || !teacher) {
     return (
       <AdminLayout headerTitle="講師詳細">
-        <div className="p-6">
-          <p className="text-[#2a2a2a]">講師が見つかりません。</p>
-          <Link href="/admin/teachers">
-            <Button variant="secondary" className="mt-4">
-              講師一覧に戻る
-            </Button>
+        <div className="text-center py-16">
+          <p className="text-gray-500 mb-4">講師が見つかりませんでした</p>
+          <Link href="/admin/teachers" className="text-[#1e3a5f] hover:underline">
+            講師一覧へ戻る
           </Link>
         </div>
       </AdminLayout>
     );
   }
 
+  const subjectIds = normalizeToStrArray(teacher.teachable_subject_ids);
+  const teachableSubjects = masterSubjects.filter((s) => subjectIds.includes(s.id));
+  const subjectsByCategory: Record<string, Subject[]> = {};
+  for (const s of teachableSubjects) {
+    const cat = s.grade_category ?? 'middle';
+    if (!subjectsByCategory[cat]) subjectsByCategory[cat] = [];
+    subjectsByCategory[cat].push(s);
+  }
+
+  const slotsByDay = normalizeToSlotNumbersByDay(teacher.available_slot_numbers_by_day);
+  const totalAvailableSlots = Object.values(slotsByDay).reduce((sum, arr) => sum + arr.length, 0);
+
+  const earnedBadges = badgeAssignments
+    .map((a) => allBadges.find((b) => b.id === a.badge_id))
+    .filter((b): b is TeacherBadge => b !== undefined);
+
+  const rankCounts: Record<BadgeRank, number> = {
+    neutral: 0, bronze: 0, silver: 0, gold: 0, platinum: 0,
+  };
+  for (const b of earnedBadges) rankCounts[b.rank] = (rankCounts[b.rank] || 0) + 1;
+
+  const schools: School[] = (teacher.user_schools || [])
+    .map((us) => masterSchools.find((s) => s.id === us.school_id))
+    .filter((s): s is School => s !== undefined);
+
+  const teacherSchools = schools;
+  const initials = (teacher.display_name || teacher.email || '?').charAt(0).toUpperCase();
+
   return (
-    <AdminLayout headerTitle="講師詳細">
-      <div className="p-6 max-w-6xl mx-auto">
-        {/* ヘッダー */}
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Link
-              href="/admin/teachers"
-              className="flex items-center gap-2 text-[#4b5563] hover:text-[#ff8e3c] transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              講師一覧に戻る
-            </Link>
-            <h1 className="text-2xl font-bold text-[#1f2937]">講師詳細</h1>
-          </div>
-          <div className="flex gap-3">
-            <Link href="/admin/teachers">
-              <Button variant="secondary">キャンセル</Button>
-            </Link>
-            <Button onClick={handleSave} disabled={isSaving}>
-              {isSaving ? '保存中...' : '保存'}
-            </Button>
-          </div>
+    <AdminLayout
+      headerTitle="講師詳細"
+      actions={
+        <div className="flex gap-2">
+          <Link
+            href="/admin/teachers"
+            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg bg-white"
+          >
+            一覧に戻る
+          </Link>
+          <Link
+            href={`/admin/teachers/${teacher.id}/edit`}
+            className="px-4 py-2 text-sm font-medium text-white bg-[#1e3a5f] rounded-lg hover:bg-[#2a4a6f]"
+          >
+            編集
+          </Link>
         </div>
-
-        {/* 2カラムレイアウト */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* 左カラム: 基本情報 */}
-          <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 shadow-sm">
-              <h2 className="text-base font-semibold text-[#1f2937] mb-4 pb-2 border-b border-[#e5e7eb]">
-                基本情報
-              </h2>
-              <div className="space-y-4">
-                <div>
-                  <Label className="block text-sm font-medium text-[#6b7280] mb-1.5">メールアドレス</Label>
-                  <Input
-                    value={teacher.email}
-                    disabled
-                    className="w-full bg-[#f9fafb] text-[#4b5563]"
-                  />
-                </div>
-                <div>
-                  <Label className="block text-sm font-medium text-[#6b7280] mb-1.5">表示名</Label>
-                  <Input
-                    value={editDisplayName}
-                    onChange={(e) => setEditDisplayName(e.target.value)}
-                    placeholder="山田 太郎"
-                    className="w-full"
-                  />
-                </div>
-                <div>
-                  <Label className="block text-sm font-medium text-[#6b7280] mb-1.5">担当教室</Label>
-                  <div className="space-y-2 max-h-40 overflow-y-auto border border-[#e5e7eb] rounded-lg p-3 bg-[#fafafa]">
-                    {availableSchools.map((school) => (
-                      <label key={school.id} className="flex items-center gap-2 cursor-pointer hover:bg-[#f3f4f6] rounded px-2 py-1 -mx-2 -my-1">
-                        <input
-                          type="checkbox"
-                          checked={editSchoolIds.includes(school.id)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setEditSchoolIds([...editSchoolIds, school.id]);
-                            } else {
-                              setEditSchoolIds(editSchoolIds.filter((id) => id !== school.id));
-                            }
-                          }}
-                          className="rounded border-[#9ca3af] text-[#ff8e3c] focus:ring-[#ff8e3c]"
-                        />
-                        <span className="text-sm text-[#1f2937]">{school.name}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
+      }
+    >
+      {/* ヒーローカード */}
+      <div className="bg-gradient-to-br from-[#1e3a5f] to-[#2a4a6f] rounded-2xl p-6 mb-6 shadow-lg text-white">
+        <div className="flex items-center gap-5">
+          <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center text-3xl font-bold shadow-inner">
+            {initials}
           </div>
-
-          {/* 右カラム: 指導・勤務設定 */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 shadow-sm">
-              <h2 className="text-base font-semibold text-[#1f2937] mb-2 pb-2 border-b border-[#e5e7eb]">
-                指導可能科目
-              </h2>
-              <p className="text-xs text-[#6b7280] mb-3">
-                選択した科目のみ指導可能です。未選択の科目は指導できません。
-              </p>
-              {subjects.length > 0 && (
-                <div className="flex gap-2 mb-3">
-                  <button
-                    type="button"
-                    onClick={() => setEditTeachableSubjectIds(subjects.map((s) => s.id))}
-                    className="text-xs px-3 py-1.5 rounded-md border border-[#e5e7eb] hover:bg-[#f9fafb] hover:border-[#ff8e3c]/50 text-[#6b7280]"
-                  >
-                    全科目選択
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEditTeachableSubjectIds([])}
-                    className="text-xs px-3 py-1.5 rounded-md border border-[#e5e7eb] hover:bg-[#f9fafb] hover:border-[#ff8e3c]/50 text-[#6b7280]"
-                  >
-                    全科目解除
-                  </button>
-                </div>
-              )}
-              <div className="space-y-4 max-h-56 overflow-y-auto">
-                {subjects.length === 0 ? (
-                  <p className="text-sm text-[#9ca3af]">科目が登録されていません</p>
-                ) : (
-                  groupSubjectsByGradeCategory(subjects).map(({ label, items }) => (
-                    <div key={label}>
-                      <div className="flex items-center justify-between mb-2">
-                        <p className="text-xs font-semibold text-[#6b7280] uppercase tracking-wide">{label}</p>
-                        <div className="flex gap-1">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const ids = items.map((s) => s.id);
-                              setEditTeachableSubjectIds((prev) =>
-                                [...prev.filter((id) => !ids.includes(id)), ...ids]
-                              );
-                            }}
-                            className="text-[10px] px-2 py-0.5 rounded border border-[#e5e7eb] hover:bg-[#f9fafb] text-[#6b7280]"
-                          >
-                            全選択
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setEditTeachableSubjectIds((prev) =>
-                                prev.filter((id) => !items.some((s) => s.id === id))
-                              )
-                            }
-                            className="text-[10px] px-2 py-0.5 rounded border border-[#e5e7eb] hover:bg-[#f9fafb] text-[#6b7280]"
-                          >
-                            全解除
-                          </button>
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-x-4 gap-y-2">
-                        {items.map((subject) => (
-                          <label key={subject.id} className="flex items-center gap-2 cursor-pointer hover:text-[#ff8e3c]">
-                            <input
-                              type="checkbox"
-                              checked={editTeachableSubjectIds.includes(subject.id)}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  setEditTeachableSubjectIds([...editTeachableSubjectIds, subject.id]);
-                                } else {
-                                  setEditTeachableSubjectIds(
-                                    editTeachableSubjectIds.filter((id) => id !== subject.id)
-                                  );
-                                }
-                              }}
-                              className="rounded border-[#9ca3af] text-[#ff8e3c] focus:ring-[#ff8e3c]"
-                            />
-                            <span className="text-sm">{subject.name}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl font-bold truncate">{teacher.display_name || '(未設定)'}</h1>
+            <p className="text-sm text-white/70 truncate">{teacher.email}</p>
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              <span className="text-xs font-semibold bg-white/20 backdrop-blur px-2.5 py-1 rounded-full">
+                {USER_ROLE_LABELS[teacher.role] || teacher.role}
+              </span>
+              {teacherSchools.map((s) => (
+                <span key={s.id} className="text-xs bg-white/15 backdrop-blur px-2.5 py-1 rounded-full">
+                  {s.name}
+                </span>
+              ))}
             </div>
-
-            <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 shadow-sm">
-              <h2 className="text-base font-semibold text-[#1f2937] mb-4 pb-2 border-b border-[#e5e7eb]">
-                出勤可能コマ
-              </h2>
-              <p className="text-xs text-[#6b7280] mb-4">
-                担当教室の座席表に設定されているコマのみ表示されます。各曜日で出勤可能なコマを選択してください。選択した曜日・コマのみ座席表に表示され、未選択の曜日・コマは表示されません。
-              </p>
-              {scheduleTimeSlots.length === 0 ? (
-                <p className="text-sm text-[#9ca3af] py-4">
-                  担当教室を選択するか、担当教室の座席表でコマ時間を設定すると表示されます。
-                </p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[360px] text-sm">
-                    <thead>
-                      <tr className="border-b border-[#e5e7eb]">
-                        <th className="text-left py-2 pr-4 font-medium text-[#6b7280] w-10">曜日</th>
-                        {scheduleTimeSlots.map((slot) => (
-                          <th key={slot.id} className="text-center py-2 px-1 font-medium text-[#6b7280] min-w-[5rem]">
-                            <div>{slot.slot_number}限</div>
-                            <div className="text-[10px] font-normal text-[#9ca3af] tabular-nums mt-0.5">
-                              {slot.start_time?.slice(0, 5)}〜{slot.end_time?.slice(0, 5)}
-                            </div>
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {DAY_LABELS.map((d) => {
-                        const dayKey = String(d.value);
-                        const slotNums = editAvailableSlotNumbersByDay[dayKey] ?? [];
-                        const toggleSlot = (n: number) => {
-                          setEditAvailableSlotNumbersByDay((prev) => {
-                            const arr = prev[dayKey] ?? [];
-                            const next = arr.includes(n) ? arr.filter((x) => x !== n) : [...arr, n].sort((a, b) => a - b);
-                            const nextMap = { ...prev };
-                            if (next.length === 0) delete nextMap[dayKey];
-                            else nextMap[dayKey] = next;
-                            return nextMap;
-                          });
-                        };
-                        return (
-                          <tr key={d.value} className="border-b border-[#e5e7eb]/50 hover:bg-[#f9fafb]">
-                            <td className="py-2 pr-4 font-medium text-[#1f2937]">{d.label}</td>
-                            {scheduleTimeSlots.map((slot) => (
-                              <td key={slot.id} className="py-2 px-1 text-center">
-                                <label className="flex items-center justify-center cursor-pointer">
-                                  <input
-                                    type="checkbox"
-                                    checked={slotNums.includes(slot.slot_number)}
-                                    onChange={() => toggleSlot(slot.slot_number)}
-                                    className="rounded border-[#9ca3af] text-[#ff8e3c] focus:ring-[#ff8e3c] w-4 h-4"
-                                  />
-                                </label>
-                              </td>
-                            ))}
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-
-            {/* バッジ / トロフィー */}
-            {allBadges.length > 0 && (
-              <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#e5e7eb]">
-                  <h2 className="text-base font-semibold text-[#1f2937]">
-                    バッジ / トロフィー
-                  </h2>
-                </div>
-                <div className="mb-4">
-                  <BadgeProgress
-                    earned={badgeAssignments.length}
-                    total={allBadges.length}
-                    rankCounts={badgeAssignments.reduce((acc, a) => {
-                      const rank = a.badge?.rank || allBadges.find((b) => b.id === a.badge_id)?.rank;
-                      if (rank) acc[rank] = (acc[rank] || 0) + 1;
-                      return acc;
-                    }, {} as Partial<Record<BadgeRank, number>>)}
-                  />
-                </div>
-                <p className="text-xs text-gray-500 mb-3">
-                  クリックでバッジの付与 / 剥奪を切り替えます
-                </p>
-                <BadgeGrid
-                  badges={allBadges}
-                  assignments={badgeAssignments}
-                  onBadgeClick={(badge) => handleBadgeToggle(badge)}
-                  interactive
-                  groupByCategory
-                />
-              </div>
-            )}
           </div>
         </div>
       </div>
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
+
+      {/* 統計サマリー */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <StatCard label="担当教室" value={teacherSchools.length} unit="校" />
+        <StatCard label="指導可能科目" value={teachableSubjects.length} unit="科目" />
+        <StatCard label="出勤可能コマ" value={totalAvailableSlots} unit="コマ/週" />
+        <StatCard label="獲得バッジ" value={earnedBadges.length} unit={`/ ${allBadges.length}`} />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* 左カラム */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* 指導可能科目 */}
+          <Panel title="指導可能科目">
+            {teachableSubjects.length === 0 ? (
+              <EmptyText>未設定</EmptyText>
+            ) : (
+              <div className="space-y-3">
+                {(['elementary', 'middle', 'high'] as const).map((cat) => {
+                  const items = subjectsByCategory[cat];
+                  if (!items || items.length === 0) return null;
+                  return (
+                    <div key={cat}>
+                      <div className="text-xs font-semibold text-gray-500 mb-1.5">{GRADE_CATEGORY_LABELS[cat]}</div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {items.map((s) => (
+                          <span
+                            key={s.id}
+                            className="px-2.5 py-1 text-xs font-medium text-sky-800 bg-sky-50 border border-sky-200 rounded-md"
+                          >
+                            {s.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Panel>
+
+          {/* 出勤可能コマ マトリクス */}
+          <Panel title="出勤可能コマ">
+            {scheduleTimeSlots.length === 0 || totalAvailableSlots === 0 ? (
+              <EmptyText>未設定</EmptyText>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-xs">
+                  <thead>
+                    <tr>
+                      <th className="p-2 border border-gray-200 bg-gray-50 text-left font-semibold text-gray-600">コマ</th>
+                      {DAY_LABELS.map((d, i) => (
+                        <th key={i} className="p-2 border border-gray-200 bg-gray-50 text-center font-semibold text-gray-600 min-w-[42px]">
+                          {d}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {scheduleTimeSlots.map((slot) => (
+                      <tr key={slot.slot_number}>
+                        <td className="p-2 border border-gray-200 text-gray-700 whitespace-nowrap">
+                          <span className="font-semibold">{slot.slot_number}</span>
+                          <span className="ml-1 text-gray-400">{slot.start_time}〜{slot.end_time}</span>
+                        </td>
+                        {DAY_LABELS.map((_, dayIdx) => {
+                          const available = (slotsByDay[String(dayIdx)] || []).includes(slot.slot_number);
+                          return (
+                            <td
+                              key={dayIdx}
+                              className={`p-2 border border-gray-200 text-center ${
+                                available ? 'bg-emerald-50' : 'bg-white'
+                              }`}
+                            >
+                              {available && <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Panel>
+        </div>
+
+        {/* 右カラム */}
+        <div className="space-y-6">
+          {/* バッジ獲得状況 */}
+          <Panel title="バッジ / トロフィー">
+            <div className="mb-4">
+              <div className="flex items-end justify-between mb-1.5">
+                <span className="text-xs text-gray-500">獲得数</span>
+                <span className="text-sm font-bold text-gray-900">
+                  {earnedBadges.length} <span className="text-xs font-normal text-gray-400">/ {allBadges.length}</span>
+                </span>
+              </div>
+              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-sky-500 to-emerald-500 rounded-full transition-all"
+                  style={{ width: `${allBadges.length ? (earnedBadges.length / allBadges.length) * 100 : 0}%` }}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-4 gap-1.5 mb-4">
+              {(['platinum', 'gold', 'silver', 'bronze'] as BadgeRank[]).map((r) => {
+                const cfg = BADGE_RANK_CONFIG[r];
+                return (
+                  <div
+                    key={r}
+                    className="text-center py-2 rounded-lg border"
+                    style={{ borderColor: `${cfg.color}40`, backgroundColor: `${cfg.color}08` }}
+                  >
+                    <div className="text-lg font-bold" style={{ color: cfg.color }}>{rankCounts[r]}</div>
+                    <div className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: cfg.color }}>
+                      {cfg.label}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {earnedBadges.length === 0 ? (
+              <EmptyText>まだバッジがありません</EmptyText>
+            ) : (
+              <div className="grid grid-cols-4 gap-2">
+                {earnedBadges.slice(0, 12).map((b) => {
+                  const cfg = BADGE_RANK_CONFIG[b.rank];
+                  return (
+                    <div key={b.id} className="flex flex-col items-center text-center" title={b.name}>
+                      <div
+                        className="w-10 h-10 rounded-lg flex items-center justify-center text-white shadow-sm"
+                        style={{ background: `linear-gradient(135deg, ${cfg.color}, ${cfg.color}88)` }}
+                      >
+                        <BadgeIcon icon={b.icon} size={18} />
+                      </div>
+                      <div className="text-[10px] text-gray-600 mt-1 truncate w-full">{b.name}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {earnedBadges.length > 12 && (
+              <div className="mt-2 text-center text-xs text-gray-400">
+                +{earnedBadges.length - 12} 件
+              </div>
+            )}
+          </Panel>
+
+          {/* 基本情報 */}
+          <Panel title="基本情報">
+            <dl className="text-sm space-y-2">
+              <div className="flex justify-between">
+                <dt className="text-gray-500">メール</dt>
+                <dd className="font-medium text-gray-800 truncate ml-2">{teacher.email}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-gray-500">役割</dt>
+                <dd className="font-medium text-gray-800">{USER_ROLE_LABELS[teacher.role] || teacher.role}</dd>
+              </div>
+              {teacher.created_at && (
+                <div className="flex justify-between">
+                  <dt className="text-gray-500">登録日</dt>
+                  <dd className="font-medium text-gray-800">
+                    {new Date(teacher.created_at).toLocaleDateString('ja-JP')}
+                  </dd>
+                </div>
+              )}
+            </dl>
+          </Panel>
+        </div>
+      </div>
     </AdminLayout>
   );
+}
+
+// ============================================
+// Subcomponents
+// ============================================
+
+function StatCard({ label, value, unit }: { label: string; value: number; unit?: string }) {
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl p-4">
+      <div className="text-xs text-gray-500 mb-1">{label}</div>
+      <div className="flex items-baseline gap-1">
+        <span className="text-2xl font-bold text-gray-900">{value}</span>
+        {unit && <span className="text-xs text-gray-400">{unit}</span>}
+      </div>
+    </div>
+  );
+}
+
+function Panel({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl p-5">
+      <h2 className="text-sm font-bold text-gray-800 mb-3">{title}</h2>
+      {children}
+    </div>
+  );
+}
+
+function EmptyText({ children }: { children: React.ReactNode }) {
+  return <p className="text-sm text-gray-400 py-2">{children}</p>;
 }
