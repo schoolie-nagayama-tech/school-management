@@ -77,8 +77,8 @@ describe('BulletinPostCard', () => {
 
   it('ピン留めアイコンが表示される', () => {
     const pinnedPost = { ...basePost, is_pinned: true };
-    render(<BulletinPostCard {...defaultProps} post={pinnedPost} />);
-    expect(screen.getByText('📌')).toBeInTheDocument();
+    const { container } = render(<BulletinPostCard {...defaultProps} post={pinnedPost} />);
+    expect(container.querySelector('.lucide-pin')).toBeInTheDocument();
   });
 
   it('教室名が渡された場合に表示される', () => {
