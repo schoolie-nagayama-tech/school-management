@@ -377,7 +377,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                   )}
                 </div>
               ) : (
-                /* 講師は自分の出勤簿とマイトロフィーへのリンク */
+                /* 講師は自分の出勤簿へのリンク（マイトロフィーは右上のバッジメダルから） */
                 <>
                   {schools.length > 0 && schools[0]?.code && profile?.id && (
                     <Link
@@ -391,16 +391,6 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                       出勤簿
                     </Link>
                   )}
-                  <Link
-                    href="/my/badges"
-                    className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
-                      pathname === '/my/badges'
-                        ? 'bg-white text-[#d32f2f] font-semibold'
-                        : 'text-white/90 hover:bg-white/10 hover:text-white'
-                    }`}
-                  >
-                    マイトロフィー
-                  </Link>
                 </>
               )}
               {/* 業務管理（教室長以上のみ） */}
