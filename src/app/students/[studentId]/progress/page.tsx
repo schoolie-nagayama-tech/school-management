@@ -28,6 +28,7 @@ import { getExamTypes } from '@/lib/api/textbooks';
 import { getStudent } from '@/lib/api/students';
 import { getDefaultSchoolId } from '@/lib/api/schools';
 import { exportProgressToPDF } from '@/lib/utils/pdfExport';
+import { ClipboardList, Package } from 'lucide-react';
 import ParentProgressTable from '@/components/students/ParentProgressTable';
 import {
   getSeasonalCourses,
@@ -901,7 +902,7 @@ export default function StudentProgressPage() {
               onClick={handleOpenApplyCourseModal}
               className="px-4 py-2 rounded-lg font-medium whitespace-nowrap bg-[#3b82f6] text-white hover:bg-[#60a5fa]"
             >
-              📋 コース適用
+              <ClipboardList className="inline h-4 w-4 mr-1" />コース適用
             </button>
             {/* 非表示テキスト（アーカイブ置き場） */}
             {studentTextbooks.filter((st) => !st.is_active).length > 0 && (
@@ -910,7 +911,7 @@ export default function StudentProgressPage() {
                 className="ml-auto px-3 py-2 rounded text-sm text-[#4b5563]/40 hover:text-[#4b5563] hover:bg-[#f3f4f6] transition-colors flex items-center gap-1"
                 title={`アーカイブ (${studentTextbooks.filter((st) => !st.is_active).length}件)`}
               >
-                <span>📦</span>
+                <Package className="h-4 w-4" />
                 <span className="text-xs">({studentTextbooks.filter((st) => !st.is_active).length})</span>
               </button>
             )}

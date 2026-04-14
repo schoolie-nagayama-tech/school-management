@@ -6,6 +6,7 @@ import { getPendingTasks, completeTask } from '@/lib/api/interviews';
 import { useToast } from '@/hooks/useToast';
 import { getDefaultSchoolId } from '@/lib/api/schools';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
+import { AlertTriangle } from 'lucide-react';
 
 interface TaskWithStudent extends StudentInterview {
   student: { last_name: string; first_name: string };
@@ -88,7 +89,7 @@ export function TaskAlert({ schoolId, onTaskClick }: TaskAlertProps) {
         className="w-full px-4 py-3 flex items-center justify-between hover:bg-[#ef4444]/20 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <span className="text-[#ef4444] text-xl">⚠️</span>
+          <AlertTriangle className="text-[#ef4444] w-5 h-5" />
           <span className="font-medium text-[#ef4444]">
             未完了のタスクが {tasks.length} 件あります
           </span>

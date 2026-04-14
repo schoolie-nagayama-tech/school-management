@@ -448,7 +448,7 @@ export default function UsersPage() {
 
   return (
     <AdminLayout headerTitle="ユーザー管理">
-      <div className="flex flex-col h-[calc(100vh-6.5rem)] max-w-7xl mx-auto">
+      <div className="flex flex-col h-[calc(100vh-6.5rem)] max-w-[1600px] mx-auto">
         {/* ヘッダー */}
         <div className="flex items-center justify-between mb-4 flex-shrink-0">
           <div className="flex items-center gap-4">

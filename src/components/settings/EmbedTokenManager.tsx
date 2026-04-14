@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { supabase } from '@/lib/supabase';
-import { Copy, Trash2, Plus, ExternalLink, Eye, EyeOff, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
+import { Copy, Trash2, Plus, ExternalLink, Eye, EyeOff, ChevronDown, ChevronUp, RefreshCw, ClipboardList } from 'lucide-react';
 
 interface EmbedToken {
   id: string;
@@ -245,7 +245,7 @@ export function EmbedTokenManager() {
               {previewTokenId === token.id && (
                 <div className="mt-3 border border-gray-200 rounded-lg overflow-hidden">
                   <div className="flex items-center justify-between bg-gray-50 px-3 py-1.5 border-b">
-                    <span className="text-[11px] text-gray-500 font-medium">📋 プレビュー</span>
+                    <span className="text-[11px] text-gray-500 font-medium flex items-center gap-1"><ClipboardList className="h-3 w-3" />プレビュー</span>
                     <button
                       onClick={() => setPreviewKey((k) => k + 1)}
                       className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-700 px-1.5 py-0.5 rounded hover:bg-gray-200"

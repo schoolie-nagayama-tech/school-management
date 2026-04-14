@@ -6,7 +6,7 @@ import { Button } from '@/components/ui';
 import { Input } from '@/components/ui';
 import { Label } from '@/components/ui';
 import { SelectShadcn as Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui';
-import { Copy, Check, Eye, EyeOff } from 'lucide-react';
+import { Copy, Check, Eye, EyeOff, AlertTriangle } from 'lucide-react';
 import type { School, UserRole } from '@/types/database';
 
 interface UserCreateDialogsProps {
@@ -229,7 +229,7 @@ export function UserCreateDialogs({
                 </div>
                 <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
                   <p className="text-sm text-yellow-800">
-                    ⚠️ パスワードはこの画面を閉じると再表示できません。必ずメモしてください。
+                    <AlertTriangle className="inline h-4 w-4 mr-1" />パスワードはこの画面を閉じると再表示できません。必ずメモしてください。
                   </p>
                 </div>
               </>

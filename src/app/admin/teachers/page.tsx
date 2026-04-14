@@ -14,7 +14,7 @@ import { Button } from '@/components/ui';
 import { Input } from '@/components/ui';
 import { Label } from '@/components/ui';
 import { SelectShadcn as Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui';
-import { Copy, Check, Eye, EyeOff, Trash2, LogIn } from 'lucide-react';
+import { Copy, Check, Eye, EyeOff, Trash2, LogIn, AlertTriangle } from 'lucide-react';
 import { impersonateUser } from '@/lib/impersonate';
 import type { School, UserProfile, TeacherBadge, TeacherBadgeAssignment } from '@/types/database';
 import { BADGE_RANK_CONFIG } from '@/types/database';
@@ -299,7 +299,7 @@ export default function TeachersPage() {
 
   return (
     <AdminLayout headerTitle="講師管理">
-      <div className="p-6 max-w-7xl mx-auto">
+      <div className="p-6 max-w-[1600px] mx-auto">
         {/* ヘッダー */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
@@ -704,7 +704,7 @@ export default function TeachersPage() {
                   </div>
                   <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3">
                     <p className="text-sm text-yellow-800">
-                      ⚠️ パスワードはこの画面を閉じると再表示できません。必ずメモしてください。
+                      <AlertTriangle className="inline h-4 w-4 mr-1" />パスワードはこの画面を閉じると再表示できません。必ずメモしてください。
                     </p>
                   </div>
                 </>

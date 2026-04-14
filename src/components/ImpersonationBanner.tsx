@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { LogOut } from 'lucide-react';
 import { isImpersonating, stopImpersonation } from '@/lib/impersonate';
 
 /**
@@ -35,7 +36,7 @@ export function ImpersonationBanner() {
       title="元の管理者アカウントに戻る"
       className="fixed bottom-6 right-6 z-[100] flex items-center gap-2 px-5 py-3 rounded-full bg-amber-500 hover:bg-amber-600 text-white font-semibold shadow-2xl ring-4 ring-amber-300/40 hover:ring-amber-300/60 disabled:opacity-60 transition-all text-sm sm:text-base"
     >
-      <span className="text-lg leading-none">⚠</span>
+      <LogOut className="h-4 w-4" />
       <span className="hidden sm:inline">別アカウントにスイッチ中 —</span>
       <span>{busy ? '戻り中...' : '元の管理者に戻る'}</span>
     </button>

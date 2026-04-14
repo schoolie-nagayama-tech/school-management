@@ -259,7 +259,7 @@ export default function SeasonalShiftSubmissionsPage() {
   return (
     <AdminLayout headerTitle="講習シフト 提出一覧">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <div className="max-w-6xl">
+      <div className="max-w-[1600px]">
         <Link
           href={`/settings/seasonal-shifts/${settingId}`}
           className="text-sm text-[#3b82f6] hover:underline mb-4 inline-block"

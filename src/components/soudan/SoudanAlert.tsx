@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { getUnhandledSoudanCount, getSoudanPeriods } from '@/lib/api/soudan';
 import { getDefaultSchoolId } from '@/lib/api/schools';
+import { AlertTriangle } from 'lucide-react';
 
 export function SoudanAlert() {
   const [unhandledCount, setUnhandledCount] = useState<number | null>(null);
@@ -55,7 +56,7 @@ export function SoudanAlert() {
     <div className="mb-6 bg-[#ef4444] border-2 border-[#e5e7eb] rounded-lg p-4 shadow-lg animate-pulse">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="text-2xl">⚠️</div>
+          <AlertTriangle className="w-7 h-7 text-white" />
           <div>
             <h3 className="text-lg font-bold text-white mb-1">
               未対応のお客様相談があります

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Button, Input, Modal } from '@/components/ui';
+import { Pencil, Trash2 } from 'lucide-react';
 import {
   getFormTemplate,
   createFormTemplate,
@@ -313,7 +314,7 @@ export function TemplateEditor({
                               className="p-1.5 text-[#4b5563] hover:text-[#3b82f6] disabled:opacity-50"
                               title="編集"
                             >
-                              ✏️
+                              <Pencil className="w-4 h-4" />
                             </button>
                             <button
                               onClick={() => handleDeleteField(field.id)}
@@ -321,7 +322,7 @@ export function TemplateEditor({
                               className="p-1.5 text-[#4b5563] hover:text-[#ef4444] disabled:opacity-50"
                               title="削除"
                             >
-                              🗑️
+                              <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
                         </div>

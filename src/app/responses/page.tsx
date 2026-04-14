@@ -527,7 +527,7 @@ export default function ResponsesPage() {
 
   return (
     <AdminLayout headerTitle="回答管理">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {errorMessage && (
           <div className="mb-4 p-4 bg-[#ef4444]/20 border border-[#ef4444] rounded-lg">
             <p className="text-sm text-[#ef4444]">{errorMessage}</p>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { ClipboardList } from 'lucide-react';
 
 // ── 型定義 ──
 type ApplicationStatus = 'pending' | 'completed' | 'not_applicable';
@@ -311,7 +312,7 @@ export default function EmbedApplicationsPage() {
       {/* ヘッダー */}
       <div className="sticky top-0 z-30 bg-[#1e3a5f] text-white px-3 py-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="font-bold text-sm">📋 申込状況</span>
+          <span className="font-bold text-sm flex items-center gap-1"><ClipboardList className="h-4 w-4" />申込状況</span>
           {schoolName && <span className="text-xs opacity-80">（{schoolName}）</span>}
           {readOnly && <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded">閲覧専用</span>}
         </div>

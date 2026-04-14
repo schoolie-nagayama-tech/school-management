@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { ToastContainer } from '@/components/ui';
+import { Mail } from 'lucide-react';
 
 // Google認証を許可するロール
 const GOOGLE_AUTH_ALLOWED_ROLES = ['admin', 'owner', 'manager'];
@@ -209,7 +210,7 @@ export default function AccountSettingsPage() {
               {/* メール/パスワード */}
               <div className="flex items-center justify-between p-4 bg-[#f3f4f6] rounded-lg">
                 <div className="flex items-center gap-3">
-                  <span className="text-2xl">📧</span>
+                  <Mail className="w-6 h-6 text-gray-600" />
                   <div>
                     <p className="font-medium text-[#1f2937]">メール/パスワード</p>
                     <p className="text-sm text-[#4b5563]">{user?.email || '未設定'}</p>

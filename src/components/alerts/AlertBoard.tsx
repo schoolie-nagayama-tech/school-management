@@ -7,7 +7,7 @@ import type { StudentAlerts, Alert } from '@/types/alerts';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
 import { GRADE_LABELS } from '@/types/database';
-import { ChevronDown, ChevronUp, Info } from 'lucide-react';
+import { ChevronDown, ChevronUp, Info, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { dismissAlert } from '@/lib/api/alerts';
 import { completeTask } from '@/lib/api/interviews';
@@ -185,7 +185,7 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
       {/* ヘッダー */}
       <div className="flex items-center justify-between p-4 bg-[#ffebee] border-b border-[#ffcdd2]">
         <div className="flex items-center gap-2">
-          <span className="text-lg">⚠️</span>
+          <AlertTriangle className="w-5 h-5 text-[#d32f2f]" />
           <span className="font-bold text-[#1a1a1a]">
             アラート（{totalAlerts}件）
           </span>

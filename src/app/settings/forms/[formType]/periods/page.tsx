@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
 import { Button, ToastContainer } from '@/components/ui';
+import { Lightbulb } from 'lucide-react';
 import { PeriodListTable } from '@/components/settings/forms';
 import {
   getFormPeriods,
@@ -241,7 +242,7 @@ export default function FormPeriodsPage() {
             </div>
           )}
           <div className="mb-6 p-4 bg-[#eff6ff] border border-[#3b82f6]/30 rounded-lg text-sm text-[#1e40af]">
-            <p className="font-medium mb-1">💡 公開できる期間は1つだけです。</p>
+            <p className="font-medium mb-1 flex items-center gap-1"><Lightbulb className="h-4 w-4" />公開できる期間は1つだけです。</p>
             <p>
               新しい期間を公開すると、現在公開中の期間は自動で非公開になります。
             </p>

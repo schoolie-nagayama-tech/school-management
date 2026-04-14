@@ -6,6 +6,7 @@ import type { Student } from '@/types/database';
 import { GRADE_LABELS } from '@/types/database';
 import type { AutoValues } from '@/lib/api/courseProgress';
 import { HelpTooltip } from '@/components/ui/Tooltip';
+import { AlertTriangle } from 'lucide-react';
 
 interface CourseProgressDashboardProps {
   students: Student[];
@@ -352,7 +353,7 @@ export function CourseProgressDashboard({
       {/* 項目マッチ警告 */}
       {(!proposedKomaItem || !decidedKomaItem) && (
         <div className="text-[10px] text-amber-500 px-1">
-          ⚠ ダッシュボード集計: {matchInfo}
+          <AlertTriangle className="inline h-3 w-3 mr-1" />ダッシュボード集計: {matchInfo}
           {!proposedKomaItem && <span className="ml-1">（「提案増コマ」「提示増コマ」を含む数値項目が必要）</span>}
           {!decidedKomaItem && <span className="ml-1">（「増コマ回数」を含む数値項目が必要）</span>}
         </div>
@@ -498,7 +499,7 @@ export function CourseProgressDashboard({
         {/* 進捗・期日超過 */}
         <div className={`bg-white rounded-xl border ${overdueData.list.length > 0 ? 'border-red-200' : 'border-gray-200'} p-4`}>
           <div className="flex items-center gap-1.5 mb-1">
-            {overdueData.list.length > 0 && <span className="text-red-500 text-xs">⚠</span>}
+            {overdueData.list.length > 0 && <AlertTriangle className="text-red-500 w-3 h-3" />}
             <span className="text-xs text-gray-500">期日超過</span>
             <HelpTooltip text={"項目に設定された期日を過ぎても\n未完了（チェックなし）の生徒とタスクを表示"} size={10} />
           </div>

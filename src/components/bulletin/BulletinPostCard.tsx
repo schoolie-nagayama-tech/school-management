@@ -3,7 +3,7 @@
 import DOMPurify from 'isomorphic-dompurify';
 import type { BulletinPost } from '@/types/bulletin';
 import { Button } from '@/components/ui';
-import { Edit2, Trash2, Users, Check } from 'lucide-react';
+import { Edit2, Trash2, Users, Check, Pin } from 'lucide-react';
 
 /** 本文が HTML かどうか（タグを含むか） */
 function isHtmlContent(content: string): boolean {
@@ -59,7 +59,7 @@ export function BulletinPostCard({
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          {post.is_pinned && <span className="text-sm shrink-0">📌</span>}
+          {post.is_pinned && <Pin className="w-4 h-4 shrink-0 text-[#d32f2f]" />}
           {canRead && !post.is_read && <span className="text-sm shrink-0">●</span>}
           {post.label && (
             <span

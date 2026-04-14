@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui';
+import { Pencil, Trash2, Calendar } from 'lucide-react';
 import { RegularScheduleFormModal } from './RegularScheduleFormModal';
 import { fetchWithAuth } from '@/lib/api/auth';
 import {
@@ -213,7 +214,7 @@ export function StudentRegularScheduleList({
                         className="text-[var(--paragraph)] hover:text-[var(--primary)]"
                         aria-label="編集"
                       >
-                        ✏️
+                        <Pencil className="w-4 h-4" />
                       </button>
                       <button
                         type="button"
@@ -221,7 +222,7 @@ export function StudentRegularScheduleList({
                         className="text-[var(--paragraph)] hover:text-[#c62828]"
                         aria-label="削除"
                       >
-                        🗑
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </td>
@@ -234,7 +235,7 @@ export function StudentRegularScheduleList({
 
       {patterns.length > 0 && (
         <p className="text-xs text-[var(--paragraph-light)]">
-          📅 週{patterns.length}回通塾
+          <Calendar className="inline h-4 w-4 mr-1" />週{patterns.length}回通塾
         </p>
       )}
 

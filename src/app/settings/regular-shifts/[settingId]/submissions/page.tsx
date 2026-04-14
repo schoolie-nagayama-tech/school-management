@@ -196,7 +196,7 @@ export default function RegularShiftSubmissionsPage() {
   return (
     <AdminLayout headerTitle="通常シフト 提出一覧">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <div className="max-w-6xl">
+      <div className="max-w-[1600px]">
         <Link
           href={`/settings/regular-shifts/${settingId}`}
           className="text-sm text-[#3b82f6] hover:underline mb-4 inline-block"

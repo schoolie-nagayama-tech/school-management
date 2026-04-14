@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { USER_ROLE_LABELS } from '@/types/database';
 import { SubjectSettings } from '@/components/settings';
+import { Megaphone } from 'lucide-react';
 
 interface AppHeaderProps {
   title: string;
@@ -734,7 +735,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
             href="/students"
             className="block py-2 px-4 bg-amber-400 text-amber-950 font-bold text-sm text-center hover:bg-amber-500 transition-colors"
           >
-            📢 連絡掲示板に未読が{bulletinUnreadCount}件あります
+            <Megaphone className="inline h-4 w-4 mr-1" />連絡掲示板に未読が{bulletinUnreadCount}件あります
           </Link>
         )}
       </div>

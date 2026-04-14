@@ -207,7 +207,7 @@ export default function TextbookMasterPage() {
 
   return (
     <AdminLayout headerTitle="教材マスタ管理">
-      <div className="max-w-5xl mx-auto py-6 px-4">
+      <div className="max-w-[1600px] mx-auto py-6 px-4">
         {/* Header */}
         <div className="mb-6">
           <Link href="/settings" className="inline-flex items-center text-sm text-[#6b7280] hover:text-[#374151] mb-4">

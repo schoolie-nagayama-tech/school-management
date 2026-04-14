@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useState } from 'react';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
+import { Pencil, Trash2, Zap, Inbox } from 'lucide-react';
 
 interface BillingTableProps {
   students: Student[];
@@ -419,9 +420,7 @@ export function BillingTable({
                                 title="クリックして編集"
                               >
                                 <span className="text-xs text-white">{item.name}</span>
-                                <span className="text-[10px] text-white/40 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  ✏️
-                                </span>
+                                <Pencil className="h-3 w-3 text-white/40 opacity-0 group-hover:opacity-100 transition-opacity" />
                               </div>
                               <button
                                 className="text-[10px] text-red-300 hover:text-red-200 opacity-0 group-hover:opacity-100 transition-opacity px-1 py-0.5 rounded hover:bg-red-500/20"
@@ -457,7 +456,7 @@ export function BillingTable({
                                 {deletingItemId === item.id ? (
                                   <span className="text-xs">...</span>
                                 ) : (
-                                  <span>🗑️</span>
+                                  <Trash2 className="h-3 w-3" />
                                 )}
                               </button>
                             </>
@@ -482,7 +481,7 @@ export function BillingTable({
                                 disabled={autoFilling}
                                 title="通塾日程から5週目コマ数を自動計算"
                               >
-                                {autoFilling ? '...' : '⚡ 自動計算'}
+                                {autoFilling ? '...' : (<><Zap className="inline h-3 w-3 mr-0.5" />自動計算</>)}
                               </button>
                             )}
                             {item.linked_form_type && !isTeacher && billingPeriodId && schoolIds && (
@@ -495,7 +494,7 @@ export function BillingTable({
                                 disabled={syncing}
                                 title="フォーム回答から件数を同期"
                               >
-                                {syncing ? '...' : '📥 同期'}
+                                {syncing ? '...' : (<><Inbox className="inline h-3 w-3 mr-0.5" />同期</>)}
                               </button>
                             )}
                             {item.source_type === 'order' && !isTeacher && periodStartDate && schoolIds && (
@@ -518,7 +517,7 @@ export function BillingTable({
                                   }
                                 }}
                               >
-                                📥 同期
+                                <Inbox className="inline h-3 w-3 mr-0.5" />同期
                               </button>
                             )}
                           </div>

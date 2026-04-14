@@ -142,7 +142,7 @@ export function ApplicationItemAccordion({
     if (
       !(await confirm({
         title: '削除確認',
-        description: `「${name}」を削除しますか？\n\n⚠️ この項目に関連する全ての申込データも削除されます。この操作は取り消せません。`,
+        description: `「${name}」を削除しますか？\n\n注意: この項目に関連する全ての申込データも削除されます。この操作は取り消せません。`,
         confirmLabel: '削除',
         variant: 'danger',
       }))

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { StudentSelector } from './StudentSelector';
 import type { Material } from '@/types/database';
+import { Package, Inbox, Send, ClipboardList, ShoppingCart } from 'lucide-react';
 
 interface StudentOption {
   id: string;
@@ -78,7 +79,7 @@ export function MaterialCard({
       <div className="px-4 pt-4 pb-2 flex items-start justify-between">
         <div className="flex-1 min-w-0">
           <h3 className="text-sm font-semibold text-gray-900 truncate flex items-center gap-1.5">
-            <span className="text-base">📦</span>
+            <Package className="w-4 h-4 text-gray-600" />
             {material.name}
           </h3>
           <div className="mt-0.5 flex items-center gap-2 text-xs text-gray-500">
@@ -151,20 +152,20 @@ export function MaterialCard({
           disabled={!canEdit}
           className="flex-1 text-xs py-1.5 rounded-lg border border-green-200 text-green-700 hover:bg-green-50 disabled:opacity-50 transition-colors"
         >
-          📥 入庫
+          <Inbox className="inline h-3 w-3 mr-1" />入庫
         </button>
         <button
           onClick={() => onStockOut(material)}
           disabled={!canEdit}
           className="flex-1 text-xs py-1.5 rounded-lg border border-orange-200 text-orange-700 hover:bg-orange-50 disabled:opacity-50 transition-colors"
         >
-          📤 出庫
+          <Send className="inline h-3 w-3 mr-1" />出庫
         </button>
         <button
           onClick={() => onHistory(material)}
           className="flex-1 text-xs py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
         >
-          📋 履歴
+          <ClipboardList className="inline h-3 w-3 mr-1" />履歴
         </button>
       </div>
 
@@ -238,7 +239,7 @@ export function MaterialCard({
                 : 'bg-[#1e3a5f] text-white hover:bg-[#162d4a] disabled:opacity-50 disabled:cursor-not-allowed'
             }`}
           >
-            {isOrdering ? '発注中...' : orderSuccess ? '発注しました!' : '🛒 発注する'}
+            {isOrdering ? '発注中...' : orderSuccess ? '発注しました!' : (<><ShoppingCart className="inline h-4 w-4 mr-1" />発注する</>)}
           </button>
         </div>
       )}

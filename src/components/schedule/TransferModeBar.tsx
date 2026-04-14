@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui';
+import { RefreshCw } from 'lucide-react';
 import type { ScheduleEntry } from '@/types/schedule';
 
 function gradeLabel(g: number): string {
@@ -32,7 +33,7 @@ export function TransferModeBar({ entry, slotLabel, onCancel }: TransferModeBarP
   return (
     <div className="bg-blue-50 border border-blue-200 rounded px-2 py-1.5 mb-2 flex flex-wrap justify-between items-center gap-2">
       <div className="flex items-center gap-1.5">
-        <span className="text-blue-600 text-sm">🔄</span>
+        <RefreshCw className="text-blue-600 w-4 h-4" />
         <span className="text-xs text-[var(--headline)]">
           <strong>振替モード:</strong> {studentName} {dateLabel} {slot} → 振替先の講師ブロックをクリック
         </span>

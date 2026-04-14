@@ -9,6 +9,7 @@ import {
   DialogFooter,
 } from '@/components/ui';
 import { Button } from '@/components/ui';
+import { AlertTriangle } from 'lucide-react';
 import type { ScheduleEntry, ScheduleTimeSlot } from '@/types/schedule';
 
 function gradeLabel(grade: number): string {
@@ -121,7 +122,7 @@ export function DeleteScheduleEntryModal({
 
           {deleteType === 'regular' && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-700">
-              ⚠️ 通常授業から削除すると、以降の週からもこの授業がなくなります。
+              <AlertTriangle className="inline h-4 w-4 mr-1" />通常授業から削除すると、以降の週からもこの授業がなくなります。
             </div>
           )}
         </div>

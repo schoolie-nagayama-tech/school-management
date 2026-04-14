@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import type { ScheduleTaskWithMarkers, ScheduleMarker, CourseProgressItem, SeasonType } from '@/types/database';
+import { Link2 } from 'lucide-react';
 
 interface ScheduleGanttChartProps {
   tasks: ScheduleTaskWithMarkers[];
@@ -222,7 +223,7 @@ function TaskNameCell({
             }`}
             title={linkedItemName ? `リンク: ${linkedItemName}` : '進捗項目をリンク'}
           >
-            {task.linked_progress_item_id ? '🔗' : '🔗'}
+            <Link2 className="h-3 w-3" />
           </button>
           {showLinkMenu && createPortal(
             <div ref={menuRef} className="fixed z-[9999] bg-white border border-gray-200 rounded-lg shadow-xl py-1 min-w-[180px] max-h-48 overflow-y-auto" style={{ top: menuPos.top, left: menuPos.left }}>

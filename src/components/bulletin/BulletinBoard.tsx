@@ -18,7 +18,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { Button } from '@/components/ui';
-import { ChevronDown, ChevronUp, Plus, Check } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, Check, Megaphone } from 'lucide-react';
 import { RELEASE_NOTES } from '@/lib/data/releaseNotes';
 
 const UPDATES_LAST_SEEN_KEY = 'updatesBoard_lastSeenDate';
@@ -228,7 +228,7 @@ export function BulletinBoard({ className = '' }: BulletinBoardProps) {
           onClick={() => setIsExpanded(!isExpanded)}
         >
           <div className="flex items-center gap-2">
-            <span className="text-lg">📢</span>
+            <Megaphone className="w-5 h-5 text-[#1a1a1a]" />
             <span className="font-bold text-[#1a1a1a]">
               連絡掲示板
               {canRead && unreadCount > 0 && (
