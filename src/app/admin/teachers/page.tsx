@@ -81,7 +81,7 @@ export default function TeachersPage() {
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const teachersResponse = await fetchWithAuth(`/api/admin/users?role=teacher&t=${Date.now()}`);
+      const teachersResponse = await fetchWithAuth(`/api/admin/users?role=teacher`);
 
       if (!teachersResponse.ok) throw new Error('Failed to fetch teachers');
       const teachersData = await teachersResponse.json();
@@ -109,24 +109,25 @@ export default function TeachersPage() {
         setFormData(prev => prev.schoolId ? prev : { ...prev, schoolId: availableSchools[0].id });
       }
 
-      // バッジデータ取得
+      // バッジデータ取得（バッジ一覧と講師別付与情報を並列取得）
       try {
-        const badges = await getTeacherBadges();
+        const teacherIds = teachersList.map((t) => t.id);
+        const [badges, batchRes] = await Promise.all([
+          getTeacherBadges(),
+          teacherIds.length > 0
+            ? fetchWithAuth(`/api/admin/teachers/badges/batch?teacherIds=${teacherIds.join(',')}`)
+            : Promise.resolve(null),
+        ]);
         setAllBadges(badges);
 
-        // 全講師のバッジ付与情報を一括取得
         const badgeMap = new Map<string, TeacherBadgeAssignment[]>();
-        await Promise.all(
-          teachersList.map(async (t) => {
-            try {
-              const res = await fetchWithAuth(`/api/admin/teachers/${t.id}/badges?t=${Date.now()}`);
-              if (res.ok) {
-                const data = await res.json();
-                badgeMap.set(t.id, data.assignments || []);
-              }
-            } catch { /* skip */ }
-          })
-        );
+        if (batchRes && batchRes.ok) {
+          const data = await batchRes.json();
+          const byTeacher: Record<string, TeacherBadgeAssignment[]> = data.assignmentsByTeacher || {};
+          for (const [tid, assignments] of Object.entries(byTeacher)) {
+            badgeMap.set(tid, assignments);
+          }
+        }
         setTeacherBadgeMap(badgeMap);
       } catch { /* バッジ取得失敗は致命的ではない */ }
     } catch (err) {
