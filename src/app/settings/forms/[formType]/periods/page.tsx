@@ -185,7 +185,7 @@ export default function FormPeriodsPage() {
 
   if (permissionLoading) {
     return (
-      <AdminLayout>
+      <AdminLayout narrow>
         <div className="flex items-center justify-center min-h-[60vh]">
           <p className="text-[#4b5563]">読み込み中...</p>
         </div>
@@ -195,7 +195,7 @@ export default function FormPeriodsPage() {
 
   if (!hasPermission) {
     return (
-      <AdminLayout>
+      <AdminLayout narrow>
         <AccessDenied message="設定ページは教室長以上のみアクセス可能です" />
       </AdminLayout>
     );
@@ -203,7 +203,7 @@ export default function FormPeriodsPage() {
 
   if (!formTypeValid) {
     return (
-      <AdminLayout>
+      <AdminLayout narrow>
         <div className="max-w-3xl mx-auto px-4 py-8">
           <p className="text-[#ef4444]">このフォーム種別は期間管理に対応していません。</p>
           <Link href="/settings/portal" className="text-[#3b82f6] hover:underline mt-2 inline-block">
@@ -217,7 +217,7 @@ export default function FormPeriodsPage() {
   return (
     <>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <AdminLayout headerTitle={`${formLabel} - 期間管理`}>
+      <AdminLayout headerTitle={`${formLabel} - 期間管理`} narrow>
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Link
             href="/settings/portal"

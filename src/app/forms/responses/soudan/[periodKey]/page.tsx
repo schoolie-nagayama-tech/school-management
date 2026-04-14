@@ -275,7 +275,7 @@ export default function SoudanResponsePage() {
   return (
     <>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <AdminLayout headerTitle={`${periodKey} お客様相談 回答一覧`}>
+      <AdminLayout headerTitle={`${periodKey} お客様相談 回答一覧`} narrow>
         {errorMessage && (
           <div className="mb-6 p-4 bg-[#ef4444]/10 border border-[#ef4444] rounded-lg">
             <p className="text-sm text-[#ef4444]">{errorMessage}</p>

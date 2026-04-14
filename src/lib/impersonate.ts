@@ -19,9 +19,33 @@ export async function impersonateUser(userId: string): Promise<void> {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error || 'スイッチに失敗しました');
   }
-  const { actionLink } = await res.json();
-  // 対象ユーザーのマジックリンクへ遷移 → 対象ユーザーとしてログインされる
-  window.location.href = actionLink;
+  const { hashedToken, actionLink } = await res.json();
+
+  // hashed_token があれば verifyOtp でその場でセッション確立（リダイレクト不要 & 確実）
+  if (hashedToken) {
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      token_hash: hashedToken,
+      type: 'magiclink',
+    });
+    if (verifyError) {
+      // フォールバック: アクションリンクへ遷移
+      if (actionLink) {
+        window.location.href = actionLink;
+        return;
+      }
+      throw verifyError;
+    }
+    // セッションが切り替わったので全ページリロードして AuthContext を再初期化
+    window.location.href = '/';
+    return;
+  }
+
+  // 旧パス: アクションリンクへ遷移
+  if (actionLink) {
+    window.location.href = actionLink;
+    return;
+  }
+  throw new Error('スイッチ用のトークンが取得できませんでした');
 }
 
 /**

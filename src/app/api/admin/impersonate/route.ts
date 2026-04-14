@@ -68,17 +68,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '対象ユーザーが見つかりません' }, { status: 404 });
     }
 
-    // マジックリンクを発行
+    // マジックリンクを発行（hashed_token を verifyOtp でクライアント側に渡して即座にセッション確立する）
     const { data: linkData, error: linkError } = await db.auth.admin.generateLink({
       type: 'magiclink',
       email: targetProfile.email,
     });
-    if (linkError || !linkData?.properties?.action_link) {
+    if (linkError || !linkData?.properties?.hashed_token) {
       console.error('generateLink error:', linkError);
       return NextResponse.json({ error: 'マジックリンクの発行に失敗しました' }, { status: 500 });
     }
 
     const actionLink = linkData.properties.action_link;
+    const hashedToken = linkData.properties.hashed_token;
+    const targetEmail = targetProfile.email;
 
     // 監査ログ
     console.log(JSON.stringify({
@@ -89,7 +91,7 @@ export async function POST(request: NextRequest) {
     }));
 
     // 呼び出し元 admin の refresh_token を httpOnly cookie に保存
-    const res = NextResponse.json({ actionLink });
+    const res = NextResponse.json({ actionLink, hashedToken, email: targetEmail });
     res.cookies.set('impersonator_refresh_token', currentRefreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

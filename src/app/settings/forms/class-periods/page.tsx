@@ -71,7 +71,7 @@ export default function ClassPeriodsSettingsPage() {
 
   if (permissionLoading) {
     return (
-      <AdminLayout>
+      <AdminLayout narrow>
         <div className="flex items-center justify-center min-h-[60vh]">
           <p className="text-[#4b5563]">読み込み中...</p>
         </div>
@@ -81,7 +81,7 @@ export default function ClassPeriodsSettingsPage() {
 
   if (!hasPermission) {
     return (
-      <AdminLayout>
+      <AdminLayout narrow>
         <AccessDenied message="設定ページは教室長以上のみアクセス可能です" />
       </AdminLayout>
     );
@@ -90,7 +90,7 @@ export default function ClassPeriodsSettingsPage() {
   return (
     <div>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <AdminLayout headerTitle="授業の時間帯">
+      <AdminLayout headerTitle="授業の時間帯" narrow>
         <div className="max-w-2xl">
           <div className="mb-4">
             <Link

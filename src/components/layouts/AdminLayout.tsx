@@ -14,6 +14,7 @@ interface AdminLayoutProps {
   title?: string;
   actions?: ReactNode; // 右上のボタン類
   fullWidth?: boolean; // コンテナ幅制限を解除
+  narrow?: boolean; // 従来の max-w-7xl 幅（フォーム系ページ向け）
 }
 
 export function AdminLayout({
@@ -24,7 +25,8 @@ export function AdminLayout({
   headerOnBulkGradeUpdateClick,
   title,
   actions,
-  fullWidth
+  fullWidth,
+  narrow,
 }: AdminLayoutProps) {
   useAuth();
 
@@ -38,7 +40,13 @@ export function AdminLayout({
           onBulkGradeUpdateClick={headerOnBulkGradeUpdateClick}
         />
       )}
-      <div className={`${fullWidth ? 'max-w-full px-4' : 'max-w-7xl px-4 sm:px-6 lg:px-8'} mx-auto py-6`}>
+      <div className={`${
+        fullWidth
+          ? 'max-w-full px-4'
+          : narrow
+            ? 'max-w-7xl px-4 sm:px-6 lg:px-8'
+            : 'max-w-[1600px] px-4 sm:px-6 lg:px-8'
+      } mx-auto py-6`}>
         {/* ページヘッダー */}
         {(title || actions) && (
           <div className="flex justify-between items-center mb-6">
