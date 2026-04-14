@@ -28,7 +28,7 @@ describe('POST /api/admin/users/create', () => {
     vi.clearAllMocks();
     // デフォルト: メール重複なし → Auth成功 → profile作成 → user_schools挿入 → 一覧返却
     let callCount = 0;
-    mockAdmin.from.mockImplementation((table: string) => {
+    mockAdmin.from.mockImplementation(((table: string) => {
       callCount++;
       if (table === 'user_profiles' && callCount <= 2) {
         // 1回目: メール重複チェック → null（重複なし）
@@ -40,7 +40,7 @@ describe('POST /api/admin/users/create', () => {
       }
       // 最後: 作成済みユーザー返却
       return createMockChain({ id: 'new-user-id', email: 'test@example.com', display_name: 'テスト', role: 'teacher' }) as never;
-    });
+    }) as unknown as () => Record<string, ReturnType<typeof vi.fn>>);
     mockAdmin.auth.admin.createUser.mockResolvedValue({
       data: { user: { id: 'new-user-id', email: 'test@example.com' } },
       error: null,

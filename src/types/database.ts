@@ -3184,6 +3184,8 @@ export interface Permission {
   canEditInventory: boolean;
   canAccessOrdering: boolean;
   canEditOrdering: boolean;
+  canAccessTeacherBadges: boolean;
+  canEditTeacherBadges: boolean;
 }
 
 // 権限定義
@@ -3213,6 +3215,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission> = {
     canEditInventory: true,
     canAccessOrdering: true,
     canEditOrdering: true,
+    canAccessTeacherBadges: true,
+    canEditTeacherBadges: true,
   },
   owner: {
     canAccessStudents: true,
@@ -3239,6 +3243,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission> = {
     canEditInventory: true,
     canAccessOrdering: true,
     canEditOrdering: true,
+    canAccessTeacherBadges: true,
+    canEditTeacherBadges: true,
   },
   manager: {
     canAccessStudents: true,
@@ -3265,6 +3271,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission> = {
     canEditInventory: true,
     canAccessOrdering: true,
     canEditOrdering: true,
+    canAccessTeacherBadges: true,
+    canEditTeacherBadges: true,
   },
   teacher: {
     canAccessStudents: true,
@@ -3291,6 +3299,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission> = {
     canEditInventory: false,
     canAccessOrdering: false,
     canEditOrdering: false,
+    canAccessTeacherBadges: true,
+    canEditTeacherBadges: false,
   },
   parent: {
     canAccessStudents: false,
@@ -3317,6 +3327,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission> = {
     canEditInventory: false,
     canAccessOrdering: false,
     canEditOrdering: false,
+    canAccessTeacherBadges: false,
+    canEditTeacherBadges: false,
   },
 };
 
@@ -3329,6 +3341,59 @@ export function getPermissions(role: UserRole): Permission {
 export function hasHigherOrEqualRole(userRole: UserRole, requiredRole: UserRole): boolean {
   return USER_ROLE_LEVELS[userRole] >= USER_ROLE_LEVELS[requiredRole];
 }
+
+// ============================================
+// 講師バッジ / トロフィーシステム
+// ============================================
+
+export type BadgeCategory = 'training' | 'skill' | 'achievement';
+export type BadgeRank = 'bronze' | 'silver' | 'gold' | 'platinum';
+
+export interface TeacherBadge {
+  id: string;
+  name: string;
+  category: BadgeCategory;
+  rank: BadgeRank;
+  icon: string;
+  description: string | null;
+  sort_order: number;
+  is_active: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TeacherBadgeAssignment {
+  id: string;
+  teacher_id: string;
+  badge_id: string;
+  completed_at: string | null;
+  note: string | null;
+  assigned_by: string | null;
+  created_at: string;
+  badge?: TeacherBadge;
+}
+
+export const BADGE_RANK_CONFIG: Record<BadgeRank, { label: string; order: number; color: string; bg: string; border: string; gradient: string }> = {
+  bronze:   { label: 'Bronze',   order: 1, color: '#b45309', bg: 'bg-amber-50',  border: 'border-amber-300',  gradient: 'from-amber-700 to-amber-500' },
+  silver:   { label: 'Silver',   order: 2, color: '#6b7280', bg: 'bg-gray-50',   border: 'border-gray-300',   gradient: 'from-gray-400 to-gray-300' },
+  gold:     { label: 'Gold',     order: 3, color: '#ca8a04', bg: 'bg-yellow-50', border: 'border-yellow-400', gradient: 'from-yellow-500 to-yellow-300' },
+  platinum: { label: 'Platinum', order: 4, color: '#0284c7', bg: 'bg-sky-50',    border: 'border-sky-300',    gradient: 'from-sky-400 to-cyan-300' },
+};
+
+export const BADGE_CATEGORY_CONFIG: Record<BadgeCategory, { label: string }> = {
+  training:    { label: '研修' },
+  skill:       { label: 'スキル' },
+  achievement: { label: '実績' },
+};
+
+export const BADGE_ICON_OPTIONS = [
+  'star', 'trophy', 'award', 'target', 'book', 'graduation',
+  'lightning', 'shield', 'heart', 'flag', 'rocket', 'gem',
+  'crown', 'medal', 'certificate', 'compass', 'key', 'puzzle',
+] as const;
+
+export type BadgeIcon = typeof BADGE_ICON_OPTIONS[number];
 
 // ============================================
 // 在庫管理 (Inventory)

@@ -11,8 +11,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { addUserToSchool, removeUserFromSchool, fetchWithAuth } from '@/lib/api/auth';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { getActiveTimeSlots } from '@/lib/api/schedule';
-import type { School, UserProfile, Subject } from '@/types/database';
+import { getTeacherBadges, getTeacherBadgeAssignments, toggleTeacherBadge } from '@/lib/api/teacher-badges';
+import type { School, UserProfile, Subject, TeacherBadge, TeacherBadgeAssignment } from '@/types/database';
 import type { ScheduleTimeSlot } from '@/types/schedule';
+import { BadgeGrid } from '@/components/teacher-badges/BadgeGrid';
+import { BadgeProgress } from '@/components/teacher-badges/BadgeProgress';
+import type { BadgeRank } from '@/types/database';
 
 const DAY_LABELS: { value: number; label: string }[] = [
   { value: 0, label: '日' },
@@ -111,6 +115,8 @@ export default function TeacherEditPage() {
   const [editAvailableSlotNumbersByDay, setEditAvailableSlotNumbersByDay] = useState<
     Record<string, number[]>
   >({});
+  const [allBadges, setAllBadges] = useState<TeacherBadge[]>([]);
+  const [badgeAssignments, setBadgeAssignments] = useState<TeacherBadgeAssignment[]>([]);
 
   useEffect(() => {
     if (!teacherId) return;
@@ -155,6 +161,64 @@ export default function TeacherEditPage() {
     };
     load();
   }, [teacherId, isManager, getSelectedSchoolIds, toastError, masterSchools, masterSubjects]);
+
+  // バッジデータ取得
+  useEffect(() => {
+    if (!teacherId) return;
+    const loadBadges = async () => {
+      try {
+        const [badges, assignments] = await Promise.all([
+          getTeacherBadges(),
+          getTeacherBadgeAssignments(teacherId),
+        ]);
+        setAllBadges(badges);
+        setBadgeAssignments(assignments);
+      } catch {
+        // バッジ取得失敗は致命的ではない
+      }
+    };
+    loadBadges();
+  }, [teacherId]);
+
+  const handleBadgeToggle = async (badge: TeacherBadge) => {
+    if (!teacherId) return;
+    const isEarned = badgeAssignments.some((a) => a.badge_id === badge.id);
+
+    // 楽観的更新
+    if (isEarned) {
+      setBadgeAssignments((prev) => prev.filter((a) => a.badge_id !== badge.id));
+    } else {
+      const optimistic: TeacherBadgeAssignment = {
+        id: `temp-${Date.now()}`,
+        teacher_id: teacherId,
+        badge_id: badge.id,
+        completed_at: new Date().toISOString().split('T')[0],
+        note: null,
+        assigned_by: null,
+        created_at: new Date().toISOString(),
+        badge,
+      };
+      setBadgeAssignments((prev) => [...prev, optimistic]);
+    }
+
+    try {
+      const result = await toggleTeacherBadge(teacherId, { badgeId: badge.id });
+      if (result.action === 'assigned' && result.assignment) {
+        setBadgeAssignments((prev) =>
+          prev.map((a) => (a.badge_id === badge.id && a.id.startsWith('temp-') ? result.assignment! : a))
+        );
+      }
+    } catch {
+      // ロールバック
+      if (isEarned) {
+        const [assignments] = await Promise.all([getTeacherBadgeAssignments(teacherId)]);
+        setBadgeAssignments(assignments);
+      } else {
+        setBadgeAssignments((prev) => prev.filter((a) => !a.id.startsWith('temp-')));
+      }
+      toastError('バッジの更新に失敗しました');
+    }
+  };
 
   // 担当教室の座席表コマ時間を取得（講師の出勤可能コマ選択用）
   useEffect(() => {
@@ -512,6 +576,38 @@ export default function TeacherEditPage() {
                 </div>
               )}
             </div>
+
+            {/* バッジ / トロフィー */}
+            {allBadges.length > 0 && (
+              <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#e5e7eb]">
+                  <h2 className="text-base font-semibold text-[#1f2937]">
+                    バッジ / トロフィー
+                  </h2>
+                </div>
+                <div className="mb-4">
+                  <BadgeProgress
+                    earned={badgeAssignments.length}
+                    total={allBadges.length}
+                    rankCounts={badgeAssignments.reduce((acc, a) => {
+                      const rank = a.badge?.rank || allBadges.find((b) => b.id === a.badge_id)?.rank;
+                      if (rank) acc[rank] = (acc[rank] || 0) + 1;
+                      return acc;
+                    }, {} as Partial<Record<BadgeRank, number>>)}
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mb-3">
+                  クリックでバッジの付与 / 剥奪を切り替えます
+                </p>
+                <BadgeGrid
+                  badges={allBadges}
+                  assignments={badgeAssignments}
+                  onBadgeClick={(badge) => handleBadgeToggle(badge)}
+                  interactive
+                  groupByCategory
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>

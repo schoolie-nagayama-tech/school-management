@@ -8,9 +8,6 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     exclude: ['src/__tests__/integration/**', 'node_modules/**'],
-    environmentMatchGlobs: [
-      ['src/__tests__/components/**', 'jsdom'],
-    ],
     setupFiles: ['./src/__tests__/setup.ts'],
     env: {
       NEXT_PUBLIC_SUPABASE_URL: 'https://test.supabase.co',

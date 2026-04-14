@@ -301,6 +301,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                     className={`px-2.5 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 ${
                       pathname?.startsWith('/admin/teachers') ||
                       pathname?.startsWith('/admin/attendance') ||
+                      pathname?.startsWith('/admin/teacher-badges') ||
                       pathname === '/settings/seasonal-shifts' ||
                       pathname?.startsWith('/settings/seasonal-shifts')
                         ? 'bg-white text-[#d32f2f] font-semibold'
@@ -364,24 +365,46 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                       >
                         シフト設定
                       </Link>
+                      <Link
+                        href="/admin/teacher-badges"
+                        className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
+                          pathname === '/admin/teacher-badges' || pathname?.startsWith('/admin/teacher-badges')
+                            ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
+                            : ''
+                        }`}
+                      >
+                        バッジ管理
+                      </Link>
                     </div>
                   </div>
                   )}
                 </div>
               ) : (
-                /* 講師は自分の出勤簿へのリンクのみ */
-                schools.length > 0 && schools[0]?.code && profile?.id && (
+                /* 講師は自分の出勤簿とマイトロフィーへのリンク */
+                <>
+                  {schools.length > 0 && schools[0]?.code && profile?.id && (
+                    <Link
+                      href={`/attendance/${schools[0].code}/${profile.id}`}
+                      className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                        pathname?.startsWith('/attendance/')
+                          ? 'bg-white text-[#d32f2f] font-semibold'
+                          : 'text-white/90 hover:bg-white/10 hover:text-white'
+                      }`}
+                    >
+                      出勤簿
+                    </Link>
+                  )}
                   <Link
-                    href={`/attendance/${schools[0].code}/${profile.id}`}
+                    href="/my/badges"
                     className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
-                      pathname?.startsWith('/attendance/')
+                      pathname === '/my/badges'
                         ? 'bg-white text-[#d32f2f] font-semibold'
                         : 'text-white/90 hover:bg-white/10 hover:text-white'
                     }`}
                   >
-                    出勤簿
+                    マイトロフィー
                   </Link>
-                )
+                </>
               )}
               {/* 業務管理（教室長以上のみ） */}
               {(showAllLinks || permissions?.canAccessBilling) && (

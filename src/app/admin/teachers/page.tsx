@@ -15,10 +15,13 @@ import { Input } from '@/components/ui';
 import { Label } from '@/components/ui';
 import { SelectShadcn as Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui';
 import { Copy, Check, Eye, EyeOff, Trash2 } from 'lucide-react';
-import type { School, UserProfile } from '@/types/database';
+import type { School, UserProfile, TeacherBadge, TeacherBadgeAssignment } from '@/types/database';
+import { BADGE_RANK_CONFIG } from '@/types/database';
 import { generateTeacherCSV, downloadCSV, type TeacherExportRow } from '@/lib/utils/csvUtils';
 import { TeacherCsvImportModal } from '@/components/csv/TeacherCsvImportModal';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
+import { getTeacherBadges } from '@/lib/api/teacher-badges';
+import { BadgeIcon } from '@/components/teacher-badges/BadgeIcon';
 
 interface TeacherWithDetails extends UserProfile {
   user_schools?: Array<{
@@ -69,6 +72,12 @@ export default function TeachersPage() {
   // CSV
   const [isCsvImportModalOpen, setIsCsvImportModalOpen] = useState(false);
 
+  // バッジ
+  const [allBadges, setAllBadges] = useState<TeacherBadge[]>([]);
+  const [teacherBadgeMap, setTeacherBadgeMap] = useState<Map<string, TeacherBadgeAssignment[]>>(new Map());
+  const [badgeFilter, setBadgeFilter] = useState<string>('all');
+  const [sortByBadges, setSortByBadges] = useState(false);
+
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -99,6 +108,27 @@ export default function TeachersPage() {
       if (availableSchools.length > 0) {
         setFormData(prev => prev.schoolId ? prev : { ...prev, schoolId: availableSchools[0].id });
       }
+
+      // バッジデータ取得
+      try {
+        const badges = await getTeacherBadges();
+        setAllBadges(badges);
+
+        // 全講師のバッジ付与情報を一括取得
+        const badgeMap = new Map<string, TeacherBadgeAssignment[]>();
+        await Promise.all(
+          teachersList.map(async (t) => {
+            try {
+              const res = await fetchWithAuth(`/api/admin/teachers/${t.id}/badges?t=${Date.now()}`);
+              if (res.ok) {
+                const data = await res.json();
+                badgeMap.set(t.id, data.assignments || []);
+              }
+            } catch { /* skip */ }
+          })
+        );
+        setTeacherBadgeMap(badgeMap);
+      } catch { /* バッジ取得失敗は致命的ではない */ }
     } catch (err) {
       console.error('Error loading data:', err);
       toastError('データの取得に失敗しました');
@@ -331,6 +361,34 @@ export default function TeachersPage() {
         ) : (
           <div className="space-y-6">
             {/* 講師一覧 */}
+            {/* フィルタ */}
+            {allBadges.length > 0 && (
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-500">バッジ:</span>
+                  <select
+                    value={badgeFilter}
+                    onChange={(e) => setBadgeFilter(e.target.value)}
+                    className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                  >
+                    <option value="all">すべて</option>
+                    {allBadges.map((b) => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={sortByBadges}
+                    onChange={(e) => setSortByBadges(e.target.checked)}
+                    className="rounded border-gray-300 text-[#1e3a5f] focus:ring-[#1e3a5f]"
+                  />
+                  バッジ数でソート
+                </label>
+              </div>
+            )}
+
             <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
               <div className="p-4 bg-[#f3f4f6] border-b border-[#e5e7eb]">
                 <h2 className="font-bold text-[#1f2937]">登録済み講師 ({teachers.length})</h2>
@@ -342,13 +400,30 @@ export default function TeachersPage() {
                       <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937]">名前</th>
                       <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937]">メール</th>
                       <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937]">担当教室</th>
+                      {allBadges.length > 0 && (
+                        <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937]">バッジ</th>
+                      )}
                       <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937]">状態</th>
                       <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937]">最終ログイン</th>
                       <th className="px-4 py-3 text-right text-sm font-bold text-[#1f2937]">操作</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#e5e7eb]/10">
-                    {teachers.map(teacher => (
+                    {(() => {
+                      let list = [...teachers];
+                      // バッジフィルタ
+                      if (badgeFilter !== 'all') {
+                        list = list.filter((t) => {
+                          const assignments = teacherBadgeMap.get(t.id) || [];
+                          return assignments.some((a) => a.badge_id === badgeFilter);
+                        });
+                      }
+                      // バッジ数ソート
+                      if (sortByBadges) {
+                        list.sort((a, b) => (teacherBadgeMap.get(b.id)?.length || 0) - (teacherBadgeMap.get(a.id)?.length || 0));
+                      }
+                      return list;
+                    })().map(teacher => (
                       <tr key={teacher.id} className="hover:bg-[#f3f4f6]/50">
                         <td className="px-4 py-3 text-sm text-[#1f2937]">
                           {teacher.display_name || '-'}
@@ -367,6 +442,39 @@ export default function TeachersPage() {
                             <span className="text-[#4b5563]/50">なし</span>
                           )}
                         </td>
+                        {allBadges.length > 0 && (
+                          <td className="px-4 py-3">
+                            {(() => {
+                              const assignments = teacherBadgeMap.get(teacher.id) || [];
+                              if (assignments.length === 0) return <span className="text-xs text-gray-300">-</span>;
+                              const show = assignments.slice(0, 3);
+                              const rest = assignments.length - 3;
+                              return (
+                                <div className="flex items-center gap-1 flex-wrap">
+                                  {show.map((a) => {
+                                    const badge = a.badge || allBadges.find((b) => b.id === a.badge_id);
+                                    if (!badge) return null;
+                                    const rankConfig = BADGE_RANK_CONFIG[badge.rank];
+                                    return (
+                                      <span
+                                        key={a.id}
+                                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium border"
+                                        style={{ color: rankConfig.color, borderColor: `${rankConfig.color}40` }}
+                                        title={badge.name}
+                                      >
+                                        <BadgeIcon icon={badge.icon} size={12} />
+                                        {badge.name}
+                                      </span>
+                                    );
+                                  })}
+                                  {rest > 0 && (
+                                    <span className="text-[10px] text-gray-400">+{rest}</span>
+                                  )}
+                                </div>
+                              );
+                            })()}
+                          </td>
+                        )}
                         <td className="px-4 py-3">
                           {teacher.is_active ? (
                             <span className="inline-block px-2 py-1 text-xs font-bold bg-green-100 text-green-700 rounded">
