@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import type { TeacherBadge, TeacherBadgeAssignment, BadgeRank } from '@/types/database';
 import { BADGE_RANK_CONFIG } from '@/types/database';
 import { getMyBadges } from '@/lib/api/teacher-badges';
+import { AppHeader } from '@/components/layout/AppHeader';
 import { BadgeGrid } from '@/components/teacher-badges/BadgeGrid';
 import { BadgeProgress } from '@/components/teacher-badges/BadgeProgress';
 
@@ -41,16 +41,9 @@ export default function MyBadgesPage() {
 
   return (
     <div className="min-h-screen bg-[#f8f9fa]">
+      <AppHeader title="マイトロフィー" />
       <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* ヘッダー */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-            <Link href="/students" className="hover:text-[#1e3a5f]">ホーム</Link>
-            <span>/</span>
-            <span>マイトロフィー</span>
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900">マイトロフィー</h1>
-        </div>
+        <h1 className="text-2xl font-bold text-gray-900 mb-8">マイトロフィー</h1>
 
         {loading ? (
           <div className="flex justify-center py-20">

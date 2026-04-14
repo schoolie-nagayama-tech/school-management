@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
+import { AdminLayout } from '@/components/layouts';
 import type { TeacherBadge, BadgeCategory } from '@/types/database';
 import { BADGE_CATEGORY_CONFIG, BADGE_RANK_CONFIG } from '@/types/database';
 import { getTeacherBadges, createTeacherBadge, updateTeacherBadge, deleteTeacherBadge } from '@/lib/api/teacher-badges';
@@ -74,25 +74,18 @@ export default function TeacherBadgesPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#f8f9fa]">
-      <div className="max-w-5xl mx-auto px-4 py-8">
-        {/* ヘッダー */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-              <Link href="/students" className="hover:text-[#1e3a5f]">ホーム</Link>
-              <span>/</span>
-              <span>バッジ管理</span>
-            </div>
-            <h1 className="text-xl font-bold text-gray-900">バッジ / スキル管理</h1>
-          </div>
-          <button
-            onClick={handleCreate}
-            className="px-4 py-2 text-sm font-medium text-white bg-[#1e3a5f] rounded-lg hover:bg-[#2a4a6f] transition-colors"
-          >
-            + 新規作成
-          </button>
-        </div>
+    <AdminLayout
+      headerTitle="バッジ / スキル管理"
+      title="バッジ / スキル管理"
+      actions={
+        <button
+          onClick={handleCreate}
+          className="px-4 py-2 text-sm font-medium text-white bg-[#1e3a5f] rounded-lg hover:bg-[#2a4a6f] transition-colors"
+        >
+          + 新規作成
+        </button>
+      }
+    >
 
         {/* カテゴリタブ */}
         <div className="flex gap-1 mb-6 p-1 bg-gray-100 rounded-lg w-fit">
@@ -195,14 +188,13 @@ export default function TeacherBadgesPage() {
             </table>
           </div>
         )}
-      </div>
 
-      <BadgeTemplateDialog
-        open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-        onSave={handleSave}
-        initial={editTarget}
-      />
-    </div>
+        <BadgeTemplateDialog
+          open={dialogOpen}
+          onClose={() => setDialogOpen(false)}
+          onSave={handleSave}
+          initial={editTarget}
+        />
+    </AdminLayout>
   );
 }
