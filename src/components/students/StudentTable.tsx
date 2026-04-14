@@ -166,9 +166,16 @@ export function StudentTable({
                   </td>
                 )}
                 <td className="px-4 py-3">
+                  <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-[#1a1a1a]">
-                    {student.last_name} {student.first_name}
-                  </span>
+                      {student.last_name} {student.first_name}
+                    </span>
+                    {student.is_programming && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium rounded bg-purple-100 text-purple-700 border border-purple-200">
+                        プログラミング
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-sm text-[#4b5563]">
                   {student.last_name_kana} {student.first_name_kana}

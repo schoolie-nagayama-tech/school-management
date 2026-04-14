@@ -56,6 +56,7 @@ export type Database = {
           class_name: string | null;
           club: string | null;
           subject_other: string | null;
+          is_programming: boolean;
           deleted_at: string | null;
           created_at: string;
           updated_at: string;
@@ -74,6 +75,7 @@ export type Database = {
           class_name?: string | null;
           club?: string | null;
           subject_other?: string | null;
+          is_programming?: boolean;
           deleted_at?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -92,6 +94,7 @@ export type Database = {
           class_name?: string | null;
           club?: string | null;
           subject_other?: string | null;
+          is_programming?: boolean;
           deleted_at?: string | null;
           created_at?: string;
           updated_at?: string;

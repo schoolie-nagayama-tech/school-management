@@ -59,6 +59,7 @@ export function StudentForm({
     class_name: student?.class_name || '',
     club: student?.club || '',
     subject_other: student?.subject_other || '',
+    is_programming: student?.is_programming ?? false,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -86,6 +87,7 @@ export function StudentForm({
         class_name: student.class_name || '',
         club: student.club || '',
         subject_other: student.subject_other || '',
+        is_programming: student.is_programming ?? false,
       });
     }
   }, [student]);
@@ -348,6 +350,19 @@ export function StudentForm({
             ))}
           </div>
         )}
+      </div>
+
+      {/* プログラミングコース */}
+      <div>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={formData.is_programming}
+            onChange={(e) => setFormData((prev) => ({ ...prev, is_programming: e.target.checked }))}
+            className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6]"
+          />
+          <span className="text-sm font-medium text-[#1f2937]">プログラミングコース受講</span>
+        </label>
       </div>
 
       {/* 受講科目その他（「その他」が選択されている場合のみ表示） */}
