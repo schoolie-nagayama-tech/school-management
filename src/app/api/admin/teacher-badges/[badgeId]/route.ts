@@ -58,14 +58,23 @@ export async function DELETE(
 
     const { badgeId } = await params;
     const db = getSupabaseAdmin();
+    const hard = request.nextUrl.searchParams.get('hard') === '1';
 
-    // 論理削除
-    const { error } = await db
-      .from('teacher_badges')
-      .update({ is_active: false })
-      .eq('id', badgeId);
-
-    if (error) throw error;
+    if (hard) {
+      // 完全削除（割り当ても CASCADE で消える）
+      const { error } = await db
+        .from('teacher_badges')
+        .delete()
+        .eq('id', badgeId);
+      if (error) throw error;
+    } else {
+      // 論理削除（無効化）
+      const { error } = await db
+        .from('teacher_badges')
+        .update({ is_active: false })
+        .eq('id', badgeId);
+      if (error) throw error;
+    }
 
     return NextResponse.json({ success: true });
   } catch (err) {

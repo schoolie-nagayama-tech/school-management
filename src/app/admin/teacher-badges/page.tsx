@@ -19,7 +19,7 @@ export default function TeacherBadgesPage() {
 
   const fetchBadges = useCallback(async () => {
     try {
-      const data = await getTeacherBadges();
+      const data = await getTeacherBadges(undefined, { includeInactive: true });
       setBadges(data);
     } catch (err) {
       console.error(err);
@@ -57,9 +57,20 @@ export default function TeacherBadgesPage() {
     }
   };
 
-  const handleDelete = async (badge: TeacherBadge) => {
-    if (!confirm(`「${badge.name}」を無効化しますか？`)) return;
+  const handleDisable = async (badge: TeacherBadge) => {
+    if (!confirm(`「${badge.name}」を無効化しますか？\n（付与済みのデータは残りますが、新規付与はできなくなります）`)) return;
     await deleteTeacherBadge(badge.id);
+    setBadges((prev) => prev.map((b) => (b.id === badge.id ? { ...b, is_active: false } : b)));
+  };
+
+  const handleEnable = async (badge: TeacherBadge) => {
+    const updated = await updateTeacherBadge(badge.id, { is_active: true });
+    setBadges((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
+  };
+
+  const handleHardDelete = async (badge: TeacherBadge) => {
+    if (!confirm(`「${badge.name}」を完全に削除しますか？\n付与済みの全データも削除されます。この操作は取り消せません。`)) return;
+    await deleteTeacherBadge(badge.id, { hard: true });
     setBadges((prev) => prev.filter((b) => b.id !== badge.id));
   };
 
@@ -134,8 +145,9 @@ export default function TeacherBadgesPage() {
               <tbody className="divide-y divide-gray-100">
                 {filtered.map((badge) => {
                   const rankConfig = BADGE_RANK_CONFIG[badge.rank];
+                  const inactive = !badge.is_active;
                   return (
-                    <tr key={badge.id} className="hover:bg-gray-50/50 transition-colors">
+                    <tr key={badge.id} className={`hover:bg-gray-50/50 transition-colors ${inactive ? 'opacity-50' : ''}`}>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           <div
@@ -146,7 +158,12 @@ export default function TeacherBadgesPage() {
                           >
                             <BadgeIcon icon={badge.icon} size={18} />
                           </div>
-                          <span className="text-sm font-medium text-gray-900">{badge.name}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-gray-900">{badge.name}</span>
+                            {inactive && (
+                              <span className="text-[10px] font-semibold text-gray-500 bg-gray-200 px-1.5 py-0.5 rounded">無効</span>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="px-4 py-3">
@@ -166,18 +183,33 @@ export default function TeacherBadgesPage() {
                         {badge.description || '-'}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <div className="flex justify-end gap-2">
+                        <div className="flex justify-end gap-3">
                           <button
                             onClick={() => handleEdit(badge)}
                             className="text-xs text-[#1e3a5f] hover:underline"
                           >
                             編集
                           </button>
+                          {inactive ? (
+                            <button
+                              onClick={() => handleEnable(badge)}
+                              className="text-xs text-emerald-600 hover:underline"
+                            >
+                              再有効化
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleDisable(badge)}
+                              className="text-xs text-amber-600 hover:underline"
+                            >
+                              無効化
+                            </button>
+                          )}
                           <button
-                            onClick={() => handleDelete(badge)}
+                            onClick={() => handleHardDelete(badge)}
                             className="text-xs text-red-500 hover:underline"
                           >
-                            無効化
+                            削除
                           </button>
                         </div>
                       </td>

@@ -22,14 +22,17 @@ export async function GET(request: NextRequest) {
 
     const db = getSupabaseAdmin();
     const category = request.nextUrl.searchParams.get('category');
+    const includeInactive = request.nextUrl.searchParams.get('includeInactive') === '1';
 
     let query = db
       .from('teacher_badges')
       .select('*')
-      .eq('is_active', true)
       .order('sort_order')
       .order('created_at');
 
+    if (!includeInactive) {
+      query = query.eq('is_active', true);
+    }
     if (category) {
       query = query.eq('category', category);
     }

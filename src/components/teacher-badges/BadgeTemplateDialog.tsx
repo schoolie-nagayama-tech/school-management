@@ -22,7 +22,7 @@ interface BadgeTemplateDialogProps {
 export function BadgeTemplateDialog({ open, onClose, onSave, initial }: BadgeTemplateDialogProps) {
   const [name, setName] = useState('');
   const [category, setCategory] = useState<BadgeCategory>('training');
-  const [rank, setRank] = useState<BadgeRank>('bronze');
+  const [rank, setRank] = useState<BadgeRank>('neutral');
   const [icon, setIcon] = useState('star');
   const [description, setDescription] = useState('');
   const [sortOrder, setSortOrder] = useState(0);
@@ -39,7 +39,7 @@ export function BadgeTemplateDialog({ open, onClose, onSave, initial }: BadgeTem
     } else {
       setName('');
       setCategory('training');
-      setRank('bronze');
+      setRank('neutral');
       setIcon('star');
       setDescription('');
       setSortOrder(0);

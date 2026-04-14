@@ -3347,7 +3347,7 @@ export function hasHigherOrEqualRole(userRole: UserRole, requiredRole: UserRole)
 // ============================================
 
 export type BadgeCategory = 'training' | 'skill' | 'achievement';
-export type BadgeRank = 'bronze' | 'silver' | 'gold' | 'platinum';
+export type BadgeRank = 'neutral' | 'bronze' | 'silver' | 'gold' | 'platinum';
 
 export interface TeacherBadge {
   id: string;
@@ -3375,6 +3375,7 @@ export interface TeacherBadgeAssignment {
 }
 
 export const BADGE_RANK_CONFIG: Record<BadgeRank, { label: string; order: number; color: string; bg: string; border: string; gradient: string }> = {
+  neutral:  { label: 'スキル',   order: 0, color: '#475569', bg: 'bg-slate-50',  border: 'border-slate-300',  gradient: 'from-slate-500 to-slate-400' },
   bronze:   { label: 'Bronze',   order: 1, color: '#b45309', bg: 'bg-amber-50',  border: 'border-amber-300',  gradient: 'from-amber-700 to-amber-500' },
   silver:   { label: 'Silver',   order: 2, color: '#6b7280', bg: 'bg-gray-50',   border: 'border-gray-300',   gradient: 'from-gray-400 to-gray-300' },
   gold:     { label: 'Gold',     order: 3, color: '#ca8a04', bg: 'bg-yellow-50', border: 'border-yellow-400', gradient: 'from-yellow-500 to-yellow-300' },

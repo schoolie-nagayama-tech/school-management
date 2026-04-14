@@ -5,9 +5,13 @@ import type { TeacherBadge, TeacherBadgeAssignment } from '@/types/database';
 // バッジテンプレート（マスタ）
 // =====================================================
 
-export async function getTeacherBadges(category?: string): Promise<TeacherBadge[]> {
+export async function getTeacherBadges(
+  category?: string,
+  options?: { includeInactive?: boolean }
+): Promise<TeacherBadge[]> {
   const params = new URLSearchParams({ t: String(Date.now()) });
   if (category) params.set('category', category);
+  if (options?.includeInactive) params.set('includeInactive', '1');
   const res = await fetchWithAuth(`/api/admin/teacher-badges?${params}`);
   if (!res.ok) throw new Error('バッジ一覧の取得に失敗しました');
   const json = await res.json();
@@ -60,8 +64,12 @@ export async function updateTeacherBadge(
   return json.badge;
 }
 
-export async function deleteTeacherBadge(badgeId: string): Promise<void> {
-  const res = await fetchWithAuth(`/api/admin/teacher-badges/${badgeId}`, {
+export async function deleteTeacherBadge(
+  badgeId: string,
+  options?: { hard?: boolean }
+): Promise<void> {
+  const qs = options?.hard ? '?hard=1' : '';
+  const res = await fetchWithAuth(`/api/admin/teacher-badges/${badgeId}${qs}`, {
     method: 'DELETE',
   });
   if (!res.ok) throw new Error('バッジの削除に失敗しました');

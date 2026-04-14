@@ -5,6 +5,11 @@ import { BADGE_RANK_CONFIG } from '@/types/database';
 import { BadgeIcon } from './BadgeIcon';
 
 const rankStyles: Record<BadgeRank, { card: string; iconBg: string; text: string }> = {
+  neutral: {
+    card: 'border-slate-200 bg-white shadow-slate-100',
+    iconBg: 'bg-slate-500 text-white shadow-sm shadow-slate-200',
+    text: 'text-slate-700',
+  },
   bronze: {
     card: 'border-amber-300 bg-gradient-to-b from-amber-50 to-white shadow-amber-100',
     iconBg: 'bg-gradient-to-br from-amber-600 to-amber-400 text-white shadow-lg shadow-amber-200',
