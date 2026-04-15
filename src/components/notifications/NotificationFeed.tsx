@@ -65,6 +65,7 @@ const FIELD_LABELS: Record<string, string> = {
   club: '部活',
   student_code: '生徒コード',
   subject_other: 'その他科目',
+  is_programming: 'プログラミング受講',
 };
 
 // ── ユーティリティ ──
@@ -78,6 +79,8 @@ function formatValue(key: string, value: unknown): string {
   if (value === null || value === undefined || value === '') return '(なし)';
   if (key === 'grade' && typeof value === 'number') return GRADE_LABELS[value] ?? String(value);
   if (key === 'status' && typeof value === 'string') return STATUS_LABELS[value as keyof typeof STATUS_LABELS] ?? value;
+  if (key === 'is_programming') return value === true ? '受講中' : '未受講';
+  if (typeof value === 'boolean') return value ? 'あり' : 'なし';
   return String(value);
 }
 
@@ -113,7 +116,7 @@ function hasMeaningfulChanges(log: StudentLogEntry): boolean {
 
 // ── 型定義 ──
 
-type FeedItemType = 'response' | 'update' | 'shift' | 'deadline';
+type FeedItemType = 'response' | 'update' | 'shift' | 'deadline' | 'transcript';
 
 interface FeedItem {
   id: string;
@@ -138,6 +141,9 @@ interface FeedItem {
   deadlineSource?: 'monthly' | 'schedule';
   deadlineDate?: string;
   deadlineHref?: string;
+  // transcript 系
+  transcriptId?: string;
+  transcriptTitle?: string;
   // 共通
   studentName: string;
   gradeLabel?: string;
@@ -158,7 +164,7 @@ interface StudentLogEntry {
   } | null;
 }
 
-type FilterType = 'all' | 'response' | 'update' | 'shift' | 'deadline';
+type FilterType = 'all' | 'response' | 'update' | 'shift' | 'deadline' | 'transcript';
 
 // ── localStorage ──
 
@@ -253,7 +259,7 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
       const currentMonth = new Date().getMonth() + 1;
 
       // 並行取得
-      const [responsesResult, logsResult, seasonalShiftResult, regularShiftResult, monthlyTasksResult, scheduleTasksResult] = await Promise.allSettled([
+      const [responsesResult, logsResult, seasonalShiftResult, regularShiftResult, monthlyTasksResult, scheduleTasksResult, transcriptsResult] = await Promise.allSettled([
         getRecentUnprocessedResponses(schoolIds, 7, 20),
         supabase
           .from('student_logs')
@@ -296,6 +302,14 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
             .eq('is_completed', false);
           return tasks || [];
         })(),
+        supabase
+          .from('notta_transcripts')
+          .select('id, title, school_id, linked_student_id, linked_at, student:students!notta_transcripts_linked_student_id_fkey(last_name, first_name, grade)')
+          .in('school_id', schoolIds)
+          .not('linked_at', 'is', null)
+          .gte('linked_at', since.toISOString())
+          .order('linked_at', { ascending: false })
+          .limit(20),
       ]);
 
       const items: FeedItem[] = [];
@@ -442,8 +456,36 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
         });
       }
 
+      // 文字起こし紐付け → FeedItem
+      if (transcriptsResult.status === 'fulfilled' && !transcriptsResult.value.error) {
+        const transcripts = (transcriptsResult.value.data || []) as unknown as Array<{
+          id: string;
+          title: string | null;
+          school_id: string;
+          linked_student_id: string | null;
+          linked_at: string;
+          student: { last_name: string; first_name: string; grade: number } | null;
+        }>;
+        transcripts.forEach((t) => {
+          if (!t.student) return;
+          items.push({
+            id: `transcript_${t.id}`,
+            type: 'transcript',
+            timestamp: t.linked_at,
+            transcriptId: t.id,
+            transcriptTitle: t.title ?? '(無題)',
+            studentId: t.linked_student_id ?? undefined,
+            schoolId: t.school_id,
+            studentName: `${t.student.last_name} ${t.student.first_name}`,
+            gradeLabel: GRADE_LABELS[t.student.grade] ?? `学年${t.student.grade}`,
+          });
+        });
+      }
+
       // シフト申請の教室IDも収集
       items.filter((i) => i.type === 'shift' && i.schoolId).forEach((i) => allSchoolIdsToFetch.push(i.schoolId!));
+      // 文字起こしの教室IDも収集
+      items.filter((i) => i.type === 'transcript' && i.schoolId).forEach((i) => allSchoolIdsToFetch.push(i.schoolId!));
 
       // 教室名を一括取得
       const uniqueSchoolIds = Array.from(new Set(allSchoolIdsToFetch));
@@ -493,6 +535,7 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
       update: undismissed.filter((i) => i.type === 'update').length,
       shift: undismissed.filter((i) => i.type === 'shift').length,
       deadline: undismissed.filter((i) => i.type === 'deadline').length,
+      transcript: undismissed.filter((i) => i.type === 'transcript').length,
     };
   }, [feedItems, dismissedIds]);
 
@@ -545,7 +588,7 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
       .filter((item) => filter === 'all' || item.type === filter);
     if (targetItems.length === 0) return;
 
-    const filterLabel = filter === 'all' ? '通知' : filter === 'response' ? '新着申込' : filter === 'update' ? '更新履歴' : filter === 'shift' ? 'シフト申請' : '期日';
+    const filterLabel = filter === 'all' ? '通知' : filter === 'response' ? '新着申込' : filter === 'update' ? '更新履歴' : filter === 'shift' ? 'シフト申請' : filter === 'transcript' ? '面談紐付け' : '期日';
     const confirmed = await confirm({
       title: '一括確認',
       description: `${filterLabel} ${targetItems.length}件 をすべて確認済みにしますか？`,
@@ -591,6 +634,7 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
     { key: 'update', label: '更新', count: counts.update },
     { key: 'shift', label: 'シフト', count: counts.shift },
     { key: 'deadline', label: '期日', count: counts.deadline },
+    { key: 'transcript', label: '面談紐付け', count: counts.transcript },
   ];
 
   return (
@@ -660,7 +704,7 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
           <div className="max-h-[640px] overflow-y-auto divide-y divide-gray-100">
             {visibleItems.length === 0 ? (
               <div className="p-6 text-center text-sm text-gray-400 italic">
-                {filter === 'all' ? '表示する通知はありません' : `${filter === 'response' ? '申込' : filter === 'update' ? '更新履歴' : filter === 'shift' ? 'シフト申請' : '期日通知'}はありません`}
+                {filter === 'all' ? '表示する通知はありません' : `${filter === 'response' ? '申込' : filter === 'update' ? '更新履歴' : filter === 'shift' ? 'シフト申請' : filter === 'transcript' ? '面談紐付け' : '期日通知'}はありません`}
               </div>
             ) : (
               visibleItems.map((item) => (
@@ -704,7 +748,71 @@ function FeedItemRow({ item, schoolNames, schoolColorBySchoolId, onDismiss, onDe
   if (item.type === 'deadline') {
     return <DeadlineRow item={item} schoolNames={schoolNames} schoolColorBySchoolId={schoolColorBySchoolId} onDismiss={onDismiss} onDeleteMonthlyTask={onDeleteMonthlyTask} />;
   }
+  if (item.type === 'transcript') {
+    return <TranscriptRow item={item} schoolNames={schoolNames} schoolColorBySchoolId={schoolColorBySchoolId} onDismiss={onDismiss} onStudentClick={onStudentClick} />;
+  }
   return <UpdateRow item={item} onDismiss={onDismiss} onStudentClick={onStudentClick} />;
+}
+
+function TranscriptRow({
+  item,
+  schoolNames,
+  schoolColorBySchoolId,
+  onDismiss,
+  onStudentClick,
+}: {
+  item: FeedItem;
+  schoolNames: Record<string, string>;
+  schoolColorBySchoolId: Record<string, { bg: string; text: string }>;
+  onDismiss: (id: string) => void;
+  onStudentClick?: (info: StudentClickInfo) => void;
+}) {
+  const schoolName = item.schoolId ? schoolNames[item.schoolId] : undefined;
+  const schoolColor = item.schoolId ? schoolColorBySchoolId[item.schoolId] : undefined;
+
+  return (
+    <div className="flex items-center gap-2 px-4 py-2 hover:bg-indigo-50 transition-colors group">
+      <span className="text-xs text-gray-400 whitespace-nowrap w-[72px] shrink-0">
+        {formatDateTime(item.timestamp)}
+      </span>
+      <Link href="/transcriptions" className="px-1.5 py-0.5 bg-indigo-100 text-indigo-800 text-[11px] font-medium rounded whitespace-nowrap shrink-0 hover:opacity-80">
+        面談紐付け
+      </Link>
+      <div className="flex items-center gap-2 flex-1 min-w-0">
+        {onStudentClick ? (
+          <button
+            type="button"
+            onClick={() => onStudentClick({ studentId: item.studentId, studentName: item.studentName, schoolId: item.schoolId })}
+            className="text-sm text-[#1a1a1a] hover:text-[#3b82f6] hover:underline cursor-pointer font-medium shrink-0"
+          >
+            {item.studentName}
+          </button>
+        ) : (
+          <span className="text-sm text-[#1a1a1a] font-medium shrink-0">{item.studentName}</span>
+        )}
+        {item.gradeLabel && (
+          <span className="text-xs text-gray-500 whitespace-nowrap shrink-0">{item.gradeLabel}</span>
+        )}
+        {item.transcriptTitle && (
+          <span className="text-xs text-gray-500 truncate" title={item.transcriptTitle}>
+            {item.transcriptTitle}
+          </span>
+        )}
+        {schoolName && schoolColor && (
+          <span className={`px-1.5 py-0.5 rounded text-[11px] font-medium whitespace-nowrap shrink-0 ${schoolColor.bg} ${schoolColor.text}`}>
+            {schoolName}
+          </span>
+        )}
+      </div>
+      <button
+        onClick={() => onDismiss(item.id)}
+        className="flex items-center text-gray-400 hover:text-green-600 p-1 rounded hover:bg-green-50 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
+        title="確認済みにする"
+      >
+        <Check className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
 }
 
 function ResponseRow({
