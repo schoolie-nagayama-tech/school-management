@@ -90,21 +90,45 @@ export default function TranscriptionsPage() {
   return (
     <AdminLayout>
       <div className="p-4 md:p-6 max-w-7xl mx-auto">
-        <div className="mb-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-[#1f2937]">Notta 文字起こし</h1>
-            <p className="text-xs text-[#4b5563]/70 mt-1">
-              Zapier経由でNottaから受信した文字起こしを、生徒の面談記録に紐付けます。
-            </p>
+        {/* ページヘッダー */}
+        <div className="mb-5 pb-4 border-b border-[#e5e7eb]">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-[#d32f2f]/10 flex items-center justify-center text-lg">
+                🎙️
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-[#1f2937]">面談文字起こし</h1>
+                <p className="text-xs text-[#4b5563]/70 mt-0.5">
+                  Slack経由でNottaから受信したAI要約を、生徒の面談記録に紐付けます
+                </p>
+              </div>
+            </div>
+            <Button variant="secondary" onClick={load} disabled={isLoading}>
+              {isLoading ? '読み込み中...' : '再読込'}
+            </Button>
           </div>
-          <Button variant="secondary" onClick={load} disabled={isLoading}>
-            {isLoading ? '読み込み中...' : '再読込'}
-          </Button>
+
+          {/* カウントバッジ */}
+          <div className="flex flex-wrap gap-2 mt-4">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs bg-yellow-50 text-yellow-800 border border-yellow-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
+              未紐付け {items.filter((t) => !t.linked_student_id && !t.is_archived).length}
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs bg-green-50 text-green-800 border border-green-200">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+              紐付け済み {items.filter((t) => t.linked_student_id).length}
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs bg-gray-50 text-gray-600 border border-gray-200">
+              合計 {items.length}
+            </span>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 mb-4 p-3 bg-[#f9fafb] border border-[#e5e7eb] rounded">
+        {/* フィルタバー */}
+        <div className="flex flex-wrap items-center gap-4 mb-4 p-3 bg-[#f9fafb] border border-[#e5e7eb] rounded-lg">
           <div className="flex items-center gap-2">
-            <label className="text-sm text-[#4b5563]">紐付け状態</label>
+            <label className="text-xs font-medium text-[#4b5563]">紐付け状態</label>
             <Select
               value={linkedFilter}
               onChange={(e) => setLinkedFilter(e.target.value as LinkedFilter)}
@@ -115,7 +139,7 @@ export default function TranscriptionsPage() {
               ]}
             />
           </div>
-          <label className="flex items-center gap-2 text-sm text-[#4b5563]">
+          <label className="flex items-center gap-2 text-xs text-[#4b5563] cursor-pointer select-none">
             <input
               type="checkbox"
               checked={showArchived}
@@ -132,10 +156,14 @@ export default function TranscriptionsPage() {
         )}
 
         {isLoading ? (
-          <div className="text-center py-12 text-[#4b5563]/60">読み込み中...</div>
+          <div className="text-center py-16 text-[#4b5563]/60 text-sm">読み込み中...</div>
         ) : items.length === 0 ? (
-          <div className="text-center py-12 text-[#4b5563]/60 text-sm">
-            該当する文字起こしがありません
+          <div className="text-center py-16 border border-dashed border-[#e5e7eb] rounded-lg bg-[#fafafa]">
+            <div className="text-3xl mb-2">📭</div>
+            <div className="text-sm text-[#4b5563]">該当する文字起こしがありません</div>
+            <div className="text-xs text-[#4b5563]/60 mt-1">
+              NottaがSlackに投稿するとここに表示されます
+            </div>
           </div>
         ) : (
           <div className="overflow-x-auto border border-[#e5e7eb] rounded">

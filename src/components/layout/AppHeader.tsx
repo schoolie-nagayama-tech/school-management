@@ -190,7 +190,8 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                       pathname?.startsWith('/responses') ||
                       pathname?.startsWith('/forms/responses') ||
                       pathname === '/settings/portal' ||
-                      pathname?.startsWith('/settings/portal')
+                      pathname?.startsWith('/settings/portal') ||
+                      pathname?.startsWith('/transcriptions')
                         ? 'bg-white text-[#d32f2f] font-semibold'
                         : 'text-white/90 hover:bg-white/10 hover:text-white'
                     }`}
@@ -221,6 +222,17 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                       }`}
                     >
                       回答一覧
+                    </Link>
+                    <Link
+                      href="/transcriptions"
+                      onClick={() => setShowFormDropdown(false)}
+                      className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
+                        pathname?.startsWith('/transcriptions')
+                          ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
+                          : ''
+                      }`}
+                    >
+                      面談文字起こし
                     </Link>
                     {(showAllLinks || permissions?.canAccessPortal) && (
                       <Link
