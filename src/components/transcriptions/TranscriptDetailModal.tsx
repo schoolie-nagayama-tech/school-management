@@ -49,7 +49,7 @@ export function TranscriptDetailModal({ isOpen, onClose, transcript }: Props) {
                 rel="noopener noreferrer"
                 className="text-blue-600 underline break-all"
               >
-                🎧 Nottaで開く
+                Nottaで開く
               </a>
             </div>
           )}

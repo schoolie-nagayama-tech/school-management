@@ -93,16 +93,11 @@ export default function TranscriptionsPage() {
         {/* ページヘッダー */}
         <div className="mb-5 pb-4 border-b border-[#e5e7eb]">
           <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-[#d32f2f]/10 flex items-center justify-center text-lg">
-                🎙️
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-[#1f2937]">面談文字起こし</h1>
-                <p className="text-xs text-[#4b5563]/70 mt-0.5">
-                  Slack経由でNottaから受信したAI要約を、生徒の面談記録に紐付けます
-                </p>
-              </div>
+            <div>
+              <h1 className="text-xl font-bold text-[#1f2937]">面談文字起こし</h1>
+              <p className="text-xs text-[#4b5563]/70 mt-0.5">
+                Slack経由でNottaから受信したAI要約を、生徒の面談記録に紐付けます
+              </p>
             </div>
             <Button variant="secondary" onClick={load} disabled={isLoading}>
               {isLoading ? '読み込み中...' : '再読込'}
@@ -159,7 +154,6 @@ export default function TranscriptionsPage() {
           <div className="text-center py-16 text-[#4b5563]/60 text-sm">読み込み中...</div>
         ) : items.length === 0 ? (
           <div className="text-center py-16 border border-dashed border-[#e5e7eb] rounded-lg bg-[#fafafa]">
-            <div className="text-3xl mb-2">📭</div>
             <div className="text-sm text-[#4b5563]">該当する文字起こしがありません</div>
             <div className="text-xs text-[#4b5563]/60 mt-1">
               NottaがSlackに投稿するとここに表示されます
