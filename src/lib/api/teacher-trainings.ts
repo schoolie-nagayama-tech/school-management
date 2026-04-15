@@ -15,6 +15,7 @@ export interface TeacherTrainingInput {
   period_label?: string | null;
   attended_on?: string | null;
   note?: string | null;
+  training_master_id?: string | null;
 }
 
 export type TeacherTrainingPatch = Partial<Omit<TeacherTrainingInput, 'teacher_id'>>;
@@ -52,6 +53,7 @@ export async function createTeacherTraining(
     period_label: input.period_label ?? null,
     attended_on: input.attended_on ?? null,
     note: input.note ?? null,
+    training_master_id: input.training_master_id ?? null,
   };
 
   const { data, error } = await db

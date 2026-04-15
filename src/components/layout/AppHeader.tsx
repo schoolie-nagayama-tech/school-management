@@ -370,7 +370,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                             : ''
                         }`}
                       >
-                        バッジ管理
+                        研修バッジ管理
                       </Link>
                     </div>
                   </div>

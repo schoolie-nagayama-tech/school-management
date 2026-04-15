@@ -1004,6 +1004,66 @@ export type Database = {
         };
         Relationships: [];
       };
+      notta_transcripts: {
+        Row: {
+          id: string;
+          school_id: string;
+          title: string | null;
+          recorded_at: string | null;
+          duration_seconds: number | null;
+          transcript: string;
+          audio_url: string | null;
+          speakers: unknown;
+          raw_payload: unknown;
+          external_id: string | null;
+          linked_student_id: string | null;
+          linked_interview_id: string | null;
+          linked_at: string | null;
+          is_archived: boolean;
+          archived_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          title?: string | null;
+          recorded_at?: string | null;
+          duration_seconds?: number | null;
+          transcript: string;
+          audio_url?: string | null;
+          speakers?: unknown;
+          raw_payload?: unknown;
+          external_id?: string | null;
+          linked_student_id?: string | null;
+          linked_interview_id?: string | null;
+          linked_at?: string | null;
+          is_archived?: boolean;
+          archived_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          title?: string | null;
+          recorded_at?: string | null;
+          duration_seconds?: number | null;
+          transcript?: string;
+          audio_url?: string | null;
+          speakers?: unknown;
+          raw_payload?: unknown;
+          external_id?: string | null;
+          linked_student_id?: string | null;
+          linked_interview_id?: string | null;
+          linked_at?: string | null;
+          is_archived?: boolean;
+          archived_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       attendance_types: {
         Row: {
           id: string;
@@ -2938,6 +2998,44 @@ export const INTERVIEW_TYPE_COLORS: Record<InterviewType, string> = {
 };
 
 // ============================================
+// Notta 文字起こし連携（Zapier webhook経由）
+// ============================================
+
+export interface NottaSpeaker {
+  name?: string;
+  segments?: Array<{ start?: number; end?: number; text?: string }>;
+}
+
+export interface NottaTranscript {
+  id: string;
+  school_id: string;
+  title: string | null;
+  recorded_at: string | null;
+  duration_seconds: number | null;
+  transcript: string;
+  audio_url: string | null;
+  speakers: NottaSpeaker[] | null;
+  raw_payload: Record<string, unknown> | null;
+  external_id: string | null;
+  linked_student_id: string | null;
+  linked_interview_id: string | null;
+  linked_at: string | null;
+  is_archived: boolean;
+  archived_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NottaTranscriptWithStudent extends NottaTranscript {
+  student?: {
+    id: string;
+    last_name: string;
+    first_name: string;
+    grade: number;
+  } | null;
+}
+
+// ============================================
 // テキスト進行管理関連
 // ============================================
 
@@ -3384,8 +3482,21 @@ export interface TeacherTraining {
   period_label: string | null;
   attended_on: string | null;
   note: string | null;
+  training_master_id: string | null;
   created_by: string | null;
   created_at: string;
+}
+
+export interface TrainingMaster {
+  id: string;
+  name: string;
+  period_label: string | null;
+  description: string | null;
+  sort_order: number;
+  is_active: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export const BADGE_RANK_CONFIG: Record<BadgeRank, { label: string; order: number; color: string; bg: string; border: string; gradient: string }> = {

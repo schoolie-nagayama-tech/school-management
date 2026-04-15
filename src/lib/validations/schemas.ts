@@ -62,6 +62,21 @@ export const portalFormResponseSchema = z.object({
 
 export type PortalFormResponseData = z.infer<typeof portalFormResponseSchema>;
 
+// ── Notta 文字起こし（Zapier webhook） ──
+
+export const nottaWebhookSchema = z.object({
+  school_id: z.string().uuid('無効な教室IDです'),
+  external_id: z.string().optional(),
+  title: z.string().optional(),
+  recorded_at: z.string().optional(),
+  duration_seconds: z.number().int().nonnegative().optional(),
+  transcript: z.string().min(1, '文字起こし本文は必須です'),
+  audio_url: z.string().url().optional().or(z.literal('')),
+  speakers: z.array(z.record(z.unknown())).optional(),
+});
+
+export type NottaWebhookPayload = z.infer<typeof nottaWebhookSchema>;
+
 // ── 面談 ──
 
 export const interviewSchema = z.object({

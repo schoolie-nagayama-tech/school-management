@@ -14,6 +14,7 @@ import {
   Clock,
   Link2,
   BookOpen,
+  GraduationCap,
 } from 'lucide-react';
 
 interface SettingsItem {
@@ -58,6 +59,13 @@ const settingsItems: SettingsItem[] = [
     icon: <BookOpen className="w-5 h-5" />,
     label: '教材マスタ管理',
     description: '教材・カリキュラムの登録・編集',
+    requiresManager: true,
+  },
+  {
+    href: '/settings/trainings',
+    icon: <GraduationCap className="w-5 h-5" />,
+    label: '研修マスタ管理',
+    description: '研修・講習のマスタ登録',
     requiresManager: true,
   },
   {

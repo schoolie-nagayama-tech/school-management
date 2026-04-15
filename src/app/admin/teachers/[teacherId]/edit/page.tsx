@@ -13,7 +13,8 @@ import {
   createTeacherTraining,
   deleteTeacherTraining,
 } from '@/lib/api/teacher-trainings';
-import type { TeacherTraining } from '@/types/database';
+import { getTrainingMasters } from '@/lib/api/training-masters';
+import type { TeacherTraining, TrainingMaster } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
 import { addUserToSchool, removeUserFromSchool, fetchWithAuth } from '@/lib/api/auth';
 import { useMasterData } from '@/contexts/MasterDataContext';
@@ -128,11 +129,26 @@ export default function TeacherEditPage() {
   const [badgeAssignments, setBadgeAssignments] = useState<TeacherBadgeAssignment[]>([]);
 
   const [trainings, setTrainings] = useState<TeacherTraining[]>([]);
+  const [trainingMasters, setTrainingMasters] = useState<TrainingMaster[]>([]);
+  const [newTrainingMasterId, setNewTrainingMasterId] = useState('');
   const [newTrainingTitle, setNewTrainingTitle] = useState('');
   const [newTrainingPeriodLabel, setNewTrainingPeriodLabel] = useState('');
   const [newTrainingAttendedOn, setNewTrainingAttendedOn] = useState('');
   const [newTrainingNote, setNewTrainingNote] = useState('');
   const [isTrainingSaving, setIsTrainingSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const list = await getTrainingMasters(true);
+        if (!cancelled) setTrainingMasters(list);
+      } catch {}
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!teacherId) return;
@@ -163,6 +179,7 @@ export default function TeacherEditPage() {
         period_label: newTrainingPeriodLabel.trim() || null,
         attended_on: newTrainingAttendedOn || null,
         note: newTrainingNote.trim() || null,
+        training_master_id: newTrainingMasterId || null,
       });
       setTrainings((prev) =>
         [created, ...prev].sort((a, b) => {
@@ -174,6 +191,7 @@ export default function TeacherEditPage() {
           return a.created_at < b.created_at ? 1 : -1;
         })
       );
+      setNewTrainingMasterId('');
       setNewTrainingTitle('');
       setNewTrainingPeriodLabel('');
       setNewTrainingAttendedOn('');
@@ -708,16 +726,44 @@ export default function TeacherEditPage() {
               {/* 追加フォーム */}
               <div className="mb-4 space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <Label htmlFor="training-title" className="text-xs">
+                  <div className="md:col-span-2">
+                    <Label htmlFor="training-master" className="text-xs">
                       研修名 <span className="text-red-500">*</span>
                     </Label>
-                    <Input
-                      id="training-title"
-                      value={newTrainingTitle}
-                      onChange={(e) => setNewTrainingTitle(e.target.value)}
-                      placeholder="例: 新人研修 2026春"
-                    />
+                    {trainingMasters.length === 0 ? (
+                      <div className="mt-1 text-xs text-gray-500">
+                        研修マスタが未登録です。
+                        <Link href="/settings/trainings" className="text-[#1e3a5f] hover:underline ml-1">
+                          設定 &gt; 研修マスタ管理
+                        </Link>
+                        で登録してください。
+                      </div>
+                    ) : (
+                      <select
+                        id="training-master"
+                        value={newTrainingMasterId}
+                        onChange={(e) => {
+                          const id = e.target.value;
+                          setNewTrainingMasterId(id);
+                          const m = trainingMasters.find((x) => x.id === id);
+                          if (m) {
+                            setNewTrainingTitle(m.name);
+                            if (m.period_label) setNewTrainingPeriodLabel(m.period_label);
+                          } else {
+                            setNewTrainingTitle('');
+                          }
+                        }}
+                        className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-[#1e3a5f] focus:outline-none focus:ring-1 focus:ring-[#1e3a5f]"
+                      >
+                        <option value="">-- 研修を選択 --</option>
+                        {trainingMasters.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.name}
+                            {m.period_label ? ` (${m.period_label})` : ''}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="training-period" className="text-xs">
