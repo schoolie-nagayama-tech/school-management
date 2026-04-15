@@ -9,8 +9,9 @@ import { useMasterData } from '@/contexts/MasterDataContext';
 import { fetchWithAuth } from '@/lib/api/auth';
 import { getActiveTimeSlots } from '@/lib/api/schedule';
 import { getTeacherBadges, getTeacherBadgeAssignments } from '@/lib/api/teacher-badges';
+import { getTeacherTrainings } from '@/lib/api/teacher-trainings';
 import { onTeacherBadgesChanged } from '@/lib/teacher-badge-events';
-import type { School, UserProfile, Subject, TeacherBadge, TeacherBadgeAssignment, BadgeRank } from '@/types/database';
+import type { School, UserProfile, Subject, TeacherBadge, TeacherBadgeAssignment, BadgeRank, TeacherTraining } from '@/types/database';
 import { BADGE_RANK_CONFIG, USER_ROLE_LABELS } from '@/types/database';
 import type { ScheduleTimeSlot } from '@/types/schedule';
 import { BadgeIcon } from '@/components/teacher-badges/BadgeIcon';
@@ -72,6 +73,7 @@ export default function TeacherDetailPage() {
   const [scheduleTimeSlots, setScheduleTimeSlots] = useState<ScheduleTimeSlot[]>([]);
   const [allBadges, setAllBadges] = useState<TeacherBadge[]>([]);
   const [badgeAssignments, setBadgeAssignments] = useState<TeacherBadgeAssignment[]>([]);
+  const [trainings, setTrainings] = useState<TeacherTraining[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
@@ -119,6 +121,21 @@ export default function TeacherDetailPage() {
       offEvent();
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onFocus);
+    };
+  }, [teacherId]);
+
+  // 研修参加履歴
+  useEffect(() => {
+    if (!teacherId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const list = await getTeacherTrainings(teacherId);
+        if (!cancelled) setTrainings(list);
+      } catch {}
+    })();
+    return () => {
+      cancelled = true;
     };
   }, [teacherId]);
 
@@ -328,6 +345,35 @@ export default function TeacherDetailPage() {
                   </tbody>
                 </table>
               </div>
+            )}
+          </Panel>
+          {/* 研修参加履歴 */}
+          <Panel title="研修参加履歴">
+            {trainings.length === 0 ? (
+              <EmptyText>まだ研修の参加履歴がありません</EmptyText>
+            ) : (
+              <ul className="divide-y divide-gray-100">
+                {trainings.map((t) => (
+                  <li key={t.id} className="py-2.5">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-gray-800 truncate">{t.title}</p>
+                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5 text-xs text-gray-500">
+                          {t.period_label && <span>{t.period_label}</span>}
+                          {t.attended_on && (
+                            <span>
+                              {new Date(t.attended_on).toLocaleDateString('ja-JP')}
+                            </span>
+                          )}
+                        </div>
+                        {t.note && (
+                          <p className="text-xs text-gray-600 mt-1 whitespace-pre-wrap">{t.note}</p>
+                        )}
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             )}
           </Panel>
         </div>

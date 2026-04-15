@@ -7,6 +7,13 @@ import { AdminLayout } from '@/components/layouts';
 import { Button, Input, Label } from '@/components/ui';
 import { ToastContainer } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
+import { useConfirm } from '@/hooks/useConfirm';
+import {
+  getTeacherTrainings,
+  createTeacherTraining,
+  deleteTeacherTraining,
+} from '@/lib/api/teacher-trainings';
+import type { TeacherTraining } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
 import { addUserToSchool, removeUserFromSchool, fetchWithAuth } from '@/lib/api/auth';
 import { useMasterData } from '@/contexts/MasterDataContext';
@@ -100,6 +107,7 @@ export default function TeacherEditPage() {
   const { getSelectedSchoolIds, profile } = useAuth();
   const { schools: masterSchools, subjects: masterSubjects } = useMasterData();
   const { toasts, removeToast, success, error: toastError } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
   const isManager = profile?.role === 'manager';
 
   const [teacher, setTeacher] = useState<TeacherWithDetails | null>(null);
@@ -118,6 +126,85 @@ export default function TeacherEditPage() {
   >({});
   const [allBadges, setAllBadges] = useState<TeacherBadge[]>([]);
   const [badgeAssignments, setBadgeAssignments] = useState<TeacherBadgeAssignment[]>([]);
+
+  const [trainings, setTrainings] = useState<TeacherTraining[]>([]);
+  const [newTrainingTitle, setNewTrainingTitle] = useState('');
+  const [newTrainingPeriodLabel, setNewTrainingPeriodLabel] = useState('');
+  const [newTrainingAttendedOn, setNewTrainingAttendedOn] = useState('');
+  const [newTrainingNote, setNewTrainingNote] = useState('');
+  const [isTrainingSaving, setIsTrainingSaving] = useState(false);
+
+  useEffect(() => {
+    if (!teacherId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const list = await getTeacherTrainings(teacherId);
+        if (!cancelled) setTrainings(list);
+      } catch {}
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [teacherId]);
+
+  const handleAddTraining = async () => {
+    if (!teacherId) return;
+    const title = newTrainingTitle.trim();
+    if (!title) {
+      toastError('研修名を入力してください');
+      return;
+    }
+    setIsTrainingSaving(true);
+    try {
+      const created = await createTeacherTraining({
+        teacher_id: teacherId,
+        title,
+        period_label: newTrainingPeriodLabel.trim() || null,
+        attended_on: newTrainingAttendedOn || null,
+        note: newTrainingNote.trim() || null,
+      });
+      setTrainings((prev) =>
+        [created, ...prev].sort((a, b) => {
+          const aDate = a.attended_on ?? '';
+          const bDate = b.attended_on ?? '';
+          if (aDate && !bDate) return -1;
+          if (!aDate && bDate) return 1;
+          if (aDate !== bDate) return aDate < bDate ? 1 : -1;
+          return a.created_at < b.created_at ? 1 : -1;
+        })
+      );
+      setNewTrainingTitle('');
+      setNewTrainingPeriodLabel('');
+      setNewTrainingAttendedOn('');
+      setNewTrainingNote('');
+      success('研修参加履歴を追加しました');
+    } catch (e) {
+      toastError(e instanceof Error ? e.message : '追加に失敗しました');
+    } finally {
+      setIsTrainingSaving(false);
+    }
+  };
+
+  const handleDeleteTraining = async (t: TeacherTraining) => {
+    if (
+      !(await confirm({
+        title: '削除確認',
+        description: `「${t.title}」を削除しますか？`,
+        confirmLabel: '削除',
+        variant: 'danger',
+      }))
+    ) {
+      return;
+    }
+    try {
+      await deleteTeacherTraining(t.id);
+      setTrainings((prev) => prev.filter((x) => x.id !== t.id));
+      success('削除しました');
+    } catch (e) {
+      toastError(e instanceof Error ? e.message : '削除に失敗しました');
+    }
+  };
 
   useEffect(() => {
     if (!teacherId) return;
@@ -611,10 +698,107 @@ export default function TeacherEditPage() {
                 />
               </div>
             )}
+
+            {/* 研修参加履歴 */}
+            <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#e5e7eb]">
+                <h2 className="text-base font-semibold text-[#1f2937]">研修参加履歴</h2>
+              </div>
+
+              {/* 追加フォーム */}
+              <div className="mb-4 space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="training-title" className="text-xs">
+                      研修名 <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="training-title"
+                      value={newTrainingTitle}
+                      onChange={(e) => setNewTrainingTitle(e.target.value)}
+                      placeholder="例: 新人研修 2026春"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="training-period" className="text-xs">
+                      期・ラベル
+                    </Label>
+                    <Input
+                      id="training-period"
+                      value={newTrainingPeriodLabel}
+                      onChange={(e) => setNewTrainingPeriodLabel(e.target.value)}
+                      placeholder="例: 2026Q1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="training-date" className="text-xs">
+                      参加日
+                    </Label>
+                    <Input
+                      id="training-date"
+                      type="date"
+                      value={newTrainingAttendedOn}
+                      onChange={(e) => setNewTrainingAttendedOn(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="training-note" className="text-xs">
+                      メモ
+                    </Label>
+                    <Input
+                      id="training-note"
+                      value={newTrainingNote}
+                      onChange={(e) => setNewTrainingNote(e.target.value)}
+                      placeholder="任意"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <Button
+                    onClick={handleAddTraining}
+                    disabled={isTrainingSaving || !newTrainingTitle.trim()}
+                  >
+                    {isTrainingSaving ? '追加中…' : '追加'}
+                  </Button>
+                </div>
+              </div>
+
+              {/* 一覧 */}
+              {trainings.length === 0 ? (
+                <p className="text-sm text-gray-400 py-2">まだ研修の参加履歴がありません</p>
+              ) : (
+                <ul className="divide-y divide-gray-100 border-t border-gray-100">
+                  {trainings.map((t) => (
+                    <li key={t.id} className="py-3 flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-gray-800 truncate">{t.title}</p>
+                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5 text-xs text-gray-500">
+                          {t.period_label && <span>{t.period_label}</span>}
+                          {t.attended_on && (
+                            <span>{new Date(t.attended_on).toLocaleDateString('ja-JP')}</span>
+                          )}
+                        </div>
+                        {t.note && (
+                          <p className="text-xs text-gray-600 mt-1 whitespace-pre-wrap">{t.note}</p>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteTraining(t)}
+                        className="text-xs text-red-600 hover:text-red-700 hover:underline flex-shrink-0"
+                      >
+                        削除
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
         </div>
       </div>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
+      {ConfirmDialog}
     </AdminLayout>
   );
 }

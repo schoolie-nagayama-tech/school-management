@@ -3377,6 +3377,17 @@ export interface TeacherBadgeAssignment {
   badge?: TeacherBadge;
 }
 
+export interface TeacherTraining {
+  id: string;
+  teacher_id: string;
+  title: string;
+  period_label: string | null;
+  attended_on: string | null;
+  note: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
 export const BADGE_RANK_CONFIG: Record<BadgeRank, { label: string; order: number; color: string; bg: string; border: string; gradient: string }> = {
   neutral:  { label: 'スキル',   order: 0, color: '#475569', bg: 'bg-slate-50',  border: 'border-slate-300',  gradient: 'from-slate-500 to-slate-400' },
   bronze:   { label: 'Bronze',   order: 1, color: '#b45309', bg: 'bg-amber-50',  border: 'border-amber-300',  gradient: 'from-amber-700 to-amber-500' },

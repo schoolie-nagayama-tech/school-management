@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { TeacherBadge, TeacherBadgeAssignment, BadgeRank } from '@/types/database';
+import type { TeacherBadge, TeacherBadgeAssignment, BadgeRank, TeacherTraining } from '@/types/database';
 import { BADGE_RANK_CONFIG } from '@/types/database';
 import { getMyBadges } from '@/lib/api/teacher-badges';
+import { getMyTrainings } from '@/lib/api/teacher-trainings';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { BadgeGrid } from '@/components/teacher-badges/BadgeGrid';
 import { BadgeProgress } from '@/components/teacher-badges/BadgeProgress';
@@ -11,14 +12,19 @@ import { BadgeProgress } from '@/components/teacher-badges/BadgeProgress';
 export default function MyBadgesPage() {
   const [badges, setBadges] = useState<TeacherBadge[]>([]);
   const [assignments, setAssignments] = useState<TeacherBadgeAssignment[]>([]);
+  const [trainings, setTrainings] = useState<TeacherTraining[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await getMyBadges();
+        const [data, trainingList] = await Promise.all([
+          getMyBadges(),
+          getMyTrainings().catch(() => [] as TeacherTraining[]),
+        ]);
         setBadges(data.badges);
         setAssignments(data.assignments);
+        setTrainings(trainingList);
       } catch (err) {
         console.error(err);
       } finally {
@@ -152,6 +158,33 @@ export default function MyBadgesPage() {
                   );
                 })}
               </div>
+            </div>
+
+            {/* 研修参加履歴 */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+              <h2 className="text-sm font-bold text-gray-600 mb-4 uppercase tracking-wider">
+                研修参加履歴
+              </h2>
+              {trainings.length === 0 ? (
+                <p className="text-sm text-gray-400 py-2">まだ研修の参加履歴がありません</p>
+              ) : (
+                <ul className="divide-y divide-gray-100">
+                  {trainings.map((t) => (
+                    <li key={t.id} className="py-3">
+                      <p className="text-sm font-medium text-gray-800">{t.title}</p>
+                      <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5 text-xs text-gray-500">
+                        {t.period_label && <span>{t.period_label}</span>}
+                        {t.attended_on && (
+                          <span>{new Date(t.attended_on).toLocaleDateString('ja-JP')}</span>
+                        )}
+                      </div>
+                      {t.note && (
+                        <p className="text-xs text-gray-600 mt-1 whitespace-pre-wrap">{t.note}</p>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
         )}
