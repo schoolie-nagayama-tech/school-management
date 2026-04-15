@@ -84,9 +84,47 @@ interface SlackEventPayload {
 }
 
 /**
+ * Slack blocks / 任意のネスト構造から "text" フィールドを再帰的に抽出。
+ * rich_text blocks (nested elements) にも対応。
+ */
+function collectTextFromBlocks(value: unknown, out: string[]): void {
+  if (!value) return;
+  if (typeof value === 'string') {
+    out.push(value);
+    return;
+  }
+  if (Array.isArray(value)) {
+    for (const v of value) collectTextFromBlocks(v, out);
+    return;
+  }
+  if (typeof value === 'object') {
+    const obj = value as Record<string, unknown>;
+    // "text" が文字列なら直接採用 (rich_text の text element など)
+    if (typeof obj.text === 'string') {
+      out.push(obj.text as string);
+    } else if (obj.text) {
+      // text が object (section block 等) なら中を再帰
+      collectTextFromBlocks(obj.text, out);
+    }
+    // elements / fields / blocks など再帰対象を辿る
+    for (const k of ['elements', 'fields', 'blocks']) {
+      if (obj[k]) collectTextFromBlocks(obj[k], out);
+    }
+    // その他のキーで配列/オブジェクトがあれば辿る
+    for (const [k, v] of Object.entries(obj)) {
+      if (k === 'text' || k === 'elements' || k === 'fields' || k === 'blocks') continue;
+      if (Array.isArray(v) || (v && typeof v === 'object')) {
+        collectTextFromBlocks(v, out);
+      }
+    }
+    // URL も抽出対象にする（rich_text_link 要素の url フィールド）
+    if (typeof obj.url === 'string') out.push(obj.url as string);
+  }
+}
+
+/**
  * Slack の message イベントから、ブロック・アタッチメント・text を結合した
- * 完全なテキストを取り出す。Notta の投稿はフォーマット方法が分からないので
- * 全部を連結してパーサーに渡す。
+ * 完全なテキストを取り出す。
  */
 function extractFullText(event: SlackMessageEvent): string {
   const parts: string[] = [];
@@ -98,15 +136,8 @@ function extractFullText(event: SlackMessageEvent): string {
       if (att.fallback) parts.push(att.fallback);
     }
   }
-  if (event.blocks && Array.isArray(event.blocks)) {
-    for (const b of event.blocks as Array<Record<string, unknown>>) {
-      const text = b.text as { text?: string } | undefined;
-      if (text?.text) parts.push(text.text);
-      const fields = b.fields as Array<{ text?: string }> | undefined;
-      if (Array.isArray(fields)) {
-        for (const f of fields) if (f.text) parts.push(f.text);
-      }
-    }
+  if (event.blocks) {
+    collectTextFromBlocks(event.blocks, parts);
   }
   return parts.join('\n');
 }
@@ -139,23 +170,50 @@ export async function POST(request: NextRequest) {
   }
 
   if (payload.type !== 'event_callback' || !payload.event) {
+    console.log('[slack-notta] non-event payload', { type: payload.type });
     return NextResponse.json({ ok: true });
   }
 
   const event = payload.event;
+  console.log('[slack-notta] event received', {
+    type: event.type,
+    subtype: event.subtype,
+    channel: event.channel,
+    ts: event.ts,
+    hasText: !!event.text,
+    textLen: event.text?.length,
+    hasAttachments: !!event.attachments?.length,
+    attachmentsCount: event.attachments?.length,
+    hasBlocks: Array.isArray(event.blocks) && event.blocks.length > 0,
+  });
 
   // message イベント以外、編集/削除はスキップ
   if (event.type !== 'message') return NextResponse.json({ ok: true });
-  if (event.subtype && event.subtype !== 'bot_message') {
+  // 編集/削除/スレッド返信以外の bot 投稿と通常投稿は受け付ける
+  // Notta は incoming webhook / bot の可能性があるので subtype=bot_message も許可
+  if (
+    event.subtype &&
+    event.subtype !== 'bot_message' &&
+    event.subtype !== 'file_share'
+  ) {
+    console.log('[slack-notta] skipped subtype', event.subtype);
     return NextResponse.json({ ok: true });
   }
   if (!event.channel || !event.ts) return NextResponse.json({ ok: true });
 
   const fullText = extractFullText(event);
+  console.log('[slack-notta] extracted text preview', {
+    len: fullText.length,
+    preview: fullText.slice(0, 200),
+  });
   if (!fullText.trim()) return NextResponse.json({ ok: true });
 
   // Notta 特有のキーワードが無ければ無視（他の bot 投稿に巻き込まれないため）
   if (!/タイトル[:：]/.test(fullText) && !/AI Notes/.test(fullText)) {
+    console.log('[slack-notta] not a notta message, skipped', {
+      channel: event.channel,
+      preview: fullText.slice(0, 120),
+    });
     return NextResponse.json({ ok: true, skipped: 'not a notta message' });
   }
 
