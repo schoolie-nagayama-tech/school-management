@@ -100,7 +100,7 @@ export function BillingPeriodSelector({
     }
 
     // 期間名を自動生成
-    const name = `${newYear}年${newMonth}月請求`;
+    const name = `${newYear}年${newMonth}月分請求`;
 
     // 重複チェック
     const exists = periods.some(
