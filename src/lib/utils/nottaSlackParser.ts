@@ -86,13 +86,29 @@ function parseDuration(raw: string): number | null {
 export function parseNottaSlackMessage(rawText: string): ParsedNottaSlackMessage {
   const text = stripSlackFormatting(rawText);
 
-  const titleMatch = text.match(/タイトル[:：]\s*(.+)/);
-  const dateMatch = text.match(/日時[:：]\s*(.+)/);
-  const durMatch = text.match(/長さ[:：]\s*(.+)/);
+  // Slack 版は「タイトル:」ラベルが無く、bold (*...*) がタイトル。
+  // `日時:` より前の部分からタイトルを抽出する。
+  // Zapier 版は `タイトル: xxx` 形式なので両方対応。
+  let title: string | null = null;
+  const explicitTitle = text.match(/タイトル[:：]\s*(.+)/);
+  if (explicitTitle) {
+    title = explicitTitle[1].trim();
+  } else {
+    // `日時:` より前の文字列をタイトル候補とする
+    const beforeDate = text.split(/\*?\s*日時[:：]/)[0] || '';
+    const cleaned = beforeDate
+      .replace(/\*/g, ' ') // mrkdwn の bold 記号を除去
+      .replace(/\s+/g, ' ') // 連続空白を圧縮
+      .trim();
+    if (cleaned) title = cleaned;
+  }
 
-  const title = titleMatch ? titleMatch[1].trim() : null;
-  const recordedAt = dateMatch ? parseNottaDate(dateMatch[1].trim()) : null;
-  const durationSeconds = durMatch ? parseDuration(durMatch[1].trim()) : null;
+  // 日時: 次のラベル(`長さ`) or `文字起こし` or 改行まで
+  const dateMatch = text.match(/日時[:：]\*?\s*(.+?)(?=\*?\s*(?:長さ|文字起こし|\n)|$)/);
+  const durMatch = text.match(/長さ[:：]\*?\s*(.+?)(?=\*?\s*(?:文字起こし|AI Notes|\n)|$)/);
+
+  const recordedAt = dateMatch ? parseNottaDate(dateMatch[1].replace(/\*/g, '').trim()) : null;
+  const durationSeconds = durMatch ? parseDuration(durMatch[1].replace(/\*/g, '').trim()) : null;
 
   // 音声URL: "文字起こしとAI要約を確認" 行のリンク、または先頭部で最初に見つかる URL
   const linkLineMatch = rawText.match(/文字起こしとAI要約を確認[\s\S]*?(<https?:\/\/[^|>]+(?:\|[^>]+)?>|https?:\/\/\S+)/);

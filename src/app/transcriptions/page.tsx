@@ -88,8 +88,8 @@ export default function TranscriptionsPage() {
   };
 
   return (
-    <AdminLayout>
-      <div className="p-4 md:p-6 max-w-7xl mx-auto">
+    <AdminLayout headerTitle="面談文字起こし" narrow>
+      <div>
         {/* ページヘッダー */}
         <div className="mb-5 pb-4 border-b border-[#e5e7eb]">
           <div className="flex items-start justify-between gap-4">
