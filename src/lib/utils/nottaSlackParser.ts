@@ -2,19 +2,19 @@
  * Notta が Slack に自動投稿するメッセージをパースして
  * notta_transcripts に入れる形に整形する。
  *
- * 想定フォーマット:
- *   タイトル: <title>
- *   日時: Apr 10,2026 02:29 PM(GMT+0900)
- *   長さ: 22min 34s
- *   文字起こしとAI要約を確認  ← link (audio_url)
+ * 想定フォーマット (Slack 直連携):
+ *   *<title>*
+ *   *日時:* Apr 10,2026 02:29 PM(GMT+0900)
+ *   *長さ:* 22min 34s
+ *   <url|文字起こしとAI要約を確認>
  *
  *   AI Notes
+ *   ...
  *
- *   前回の確認
+ * Zapier 経由の場合:
+ *   タイトル: <title>
+ *   日時: ...
  *   ...
- *   塾からの報告
- *   ...
- *   （以下セクション続く）
  */
 
 export interface ParsedNottaSlackMessage {
@@ -25,10 +25,12 @@ export interface ParsedNottaSlackMessage {
   summary: string; // AI Notes 部分を整形したもの
 }
 
+// タイトル抽出時に「これはタイトルではない」と判定するラベル一覧
+const KNOWN_LABELS = ['タイトル', '日時', '長さ', '時間', '録音', '文字起こし', 'AI Notes'];
+const LABEL_SPLIT_REGEX = /(?:タイトル|日時|長さ|時間|録音|文字起こし|AI Notes)[:：]?/;
+
 /**
  * Slack の mrkdwn から URL とプレーンテキストを抽出して整形する。
- * `<https://url|label>` → `label (https://url)` 形式ではなく、
- * Notta のリンクは "文字起こしとAI要約を確認" の直後に現れるため別途抽出する。
  */
 function stripSlackFormatting(text: string): string {
   return text
@@ -40,6 +42,17 @@ function stripSlackFormatting(text: string): string {
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&amp;/g, '&');
+}
+
+/**
+ * mrkdwn の bold マーカー (*...*) を除去し、空白を正規化する。
+ * タイトル抽出用のクリーンテキストを返す。
+ */
+function stripBoldMarkers(text: string): string {
+  return text
+    .replace(/\*+/g, ' ')          // * を空白化
+    .replace(/\r\n/g, '\n')
+    .replace(/[ \t]+/g, ' ');      // 連続スペース圧縮（改行は維持）
 }
 
 /**
@@ -55,14 +68,12 @@ function extractFirstUrl(raw: string): string | null {
 
 /**
  * "Apr 10,2026 02:29 PM(GMT+0900)" のような表記を ISO 8601 に変換する。
- * 失敗したら null。
  */
 function parseNottaDate(raw: string): string | null {
   if (!raw) return null;
-  // タイムゾーン部 (GMT+0900) を +09:00 形式に直す
   const cleaned = raw
     .replace(/\(GMT([+-])(\d{2})(\d{2})\)/, '$1$2:$3')
-    .replace(/,(\d)/, ', $1'); // "10,2026" → "10, 2026"
+    .replace(/,(\d)/, ', $1');
   const d = new Date(cleaned);
   if (!isNaN(d.getTime())) return d.toISOString();
   return null;
@@ -83,44 +94,71 @@ function parseDuration(raw: string): number | null {
   return seconds > 0 ? seconds : null;
 }
 
-export function parseNottaSlackMessage(rawText: string): ParsedNottaSlackMessage {
-  const text = stripSlackFormatting(rawText);
-
-  // Slack 版は「タイトル:」ラベルが無く、bold (*...*) がタイトル。
-  // `日時:` より前の部分からタイトルを抽出する。
-  // Zapier 版は `タイトル: xxx` 形式なので両方対応。
-  let title: string | null = null;
-  const explicitTitle = text.match(/タイトル[:：]\s*(.+)/);
-  if (explicitTitle) {
-    title = explicitTitle[1].trim();
-  } else {
-    // `日時:` より前の文字列をタイトル候補とする
-    const beforeDate = text.split(/\*?\s*日時[:：]/)[0] || '';
-    const cleaned = beforeDate
-      .replace(/\*/g, ' ') // mrkdwn の bold 記号を除去
-      .replace(/\s+/g, ' ') // 連続空白を圧縮
-      .trim();
-    if (cleaned) title = cleaned;
+/**
+ * クリーンテキスト（*除去済み）からタイトル候補を抽出する。
+ *
+ * 優先順:
+ *   1. `タイトル: xxx` 形式 (Zapier)
+ *   2. 既知ラベル (日時/長さ/…) より前の最初の非空行
+ *   3. 既知ラベルで始まらない最初の非空行
+ */
+function extractTitle(cleanedText: string): string | null {
+  // 1) 明示タイトル
+  const explicit = cleanedText.match(/タイトル[:：]\s*(.+)/);
+  if (explicit) {
+    const t = explicit[1].split('\n')[0].trim();
+    if (t) return t;
   }
 
-  // 日時: 次のラベル(`長さ`) or `文字起こし` or 改行まで
-  const dateMatch = text.match(/日時[:：]\*?\s*(.+?)(?=\*?\s*(?:長さ|文字起こし|\n)|$)/);
-  const durMatch = text.match(/長さ[:：]\*?\s*(.+?)(?=\*?\s*(?:文字起こし|AI Notes|\n)|$)/);
+  // 2) 既知ラベルより前の部分（最初の非空行）
+  const beforeLabel = cleanedText.split(LABEL_SPLIT_REGEX)[0] || '';
+  const beforeLines = beforeLabel
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean);
+  if (beforeLines.length > 0) {
+    return beforeLines[0];
+  }
 
-  const recordedAt = dateMatch ? parseNottaDate(dateMatch[1].replace(/\*/g, '').trim()) : null;
-  const durationSeconds = durMatch ? parseDuration(durMatch[1].replace(/\*/g, '').trim()) : null;
+  // 3) 最後のフォールバック: 既知ラベルで始まらない最初の行
+  const allLines = cleanedText
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean);
+  for (const line of allLines) {
+    const isLabel = KNOWN_LABELS.some((l) => line.startsWith(l));
+    if (!isLabel) return line;
+  }
 
-  // 音声URL: "文字起こしとAI要約を確認" 行のリンク、または先頭部で最初に見つかる URL
+  return null;
+}
+
+export function parseNottaSlackMessage(rawText: string): ParsedNottaSlackMessage {
+  const text = stripSlackFormatting(rawText);
+  const cleaned = stripBoldMarkers(text);
+
+  // タイトル抽出
+  const rawTitle = extractTitle(cleaned);
+  const title = rawTitle
+    ? rawTitle.replace(/\s+/g, ' ').trim().slice(0, 200) || null
+    : null;
+
+  // 日時 / 長さ（cleaned で * を気にせず抽出）
+  const dateMatch = cleaned.match(/日時[:：]\s*(.+?)(?=\s*(?:長さ|時間|文字起こし|AI Notes|\n)|$)/);
+  const durMatch = cleaned.match(/(?:長さ|時間)[:：]\s*(.+?)(?=\s*(?:文字起こし|AI Notes|\n)|$)/);
+
+  const recordedAt = dateMatch ? parseNottaDate(dateMatch[1].trim()) : null;
+  const durationSeconds = durMatch ? parseDuration(durMatch[1].trim()) : null;
+
+  // 音声URL
   const linkLineMatch = rawText.match(/文字起こしとAI要約を確認[\s\S]*?(<https?:\/\/[^|>]+(?:\|[^>]+)?>|https?:\/\/\S+)/);
   const audioUrl = linkLineMatch
     ? extractFirstUrl(linkLineMatch[1])
     : extractFirstUrl(rawText);
 
-  // AI Notes 以降を summary とする。見つからなければ全文。
-  const aiIdx = text.indexOf('AI Notes');
-  let summary = aiIdx >= 0 ? text.slice(aiIdx + 'AI Notes'.length).trim() : text.trim();
-
-  // 冒頭の空行を整理
+  // AI Notes 以降を summary とする
+  const aiIdx = cleaned.indexOf('AI Notes');
+  let summary = aiIdx >= 0 ? cleaned.slice(aiIdx + 'AI Notes'.length).trim() : cleaned.trim();
   summary = summary.replace(/^\s+/, '');
 
   return {

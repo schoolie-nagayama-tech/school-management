@@ -100,17 +100,18 @@ export async function listAssessmentsBySchool(
 
 /**
  * 生徒の成績一覧を取得（カテゴリ別）
+ *
+ * 注: student_id はグローバルに一意で1生徒は必ず1教室に属するため、
+ * 追加で school_id フィルタは不要。NEXT_PUBLIC_DEFAULT_SCHOOL_ID と
+ * 実際の生徒所属校が異なるケース（マルチ教室）で空結果になる不具合を回避。
  */
 export async function listAssessments(
   studentId: string,
   category?: 'regular_test' | 'report_card' | 'mock'
 ): Promise<AssessmentWithScores[]> {
-  const schoolId = getDefaultSchoolId();
-
   let query = supabase
     .from('assessments')
     .select('*')
-    .eq('school_id', schoolId)
     .eq('student_id', studentId)
     .order('grade', { ascending: false }) // 学年の高い順（変遷可視化のため）
     .order('exam_month', { ascending: false, nullsFirst: false })
@@ -164,7 +165,16 @@ export async function createAssessmentRow(
   grade: number,
   examMonth?: string | null // YYYY-MM形式
 ): Promise<AssessmentWithScores> {
-  const schoolId = getDefaultSchoolId();
+  // 生徒の実 school_id を取得（マルチ教室対応）。取得失敗時は DEFAULT にフォールバック
+  let schoolId = getDefaultSchoolId();
+  const { data: studentRow } = await supabase
+    .from('students')
+    .select('school_id')
+    .eq('id', studentId)
+    .maybeSingle();
+  if (studentRow && (studentRow as { school_id?: string }).school_id) {
+    schoolId = (studentRow as { school_id: string }).school_id;
+  }
 
   // YYYY-MMをYYYY-MM-01に変換
   const examMonthDate = examMonth ? `${examMonth}-01` : null;
