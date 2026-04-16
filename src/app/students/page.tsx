@@ -385,13 +385,12 @@ export default function StudentsPage() {
 
   // 新規登録
   const handleCreate = useCallback(async (
-    data: StudentInsert | StudentUpdate,
-    subjectIds?: string[]
+    data: StudentInsert | StudentUpdate
   ) => {
     setIsSubmitting(true);
     setErrorMessage('');
     try {
-      await createStudent(data as StudentInsert, subjectIds);
+      await createStudent(data as StudentInsert);
       setIsCreateModalOpen(false);
       await syncListsAfterMutation();
     } catch (error) {
@@ -406,8 +405,7 @@ export default function StudentsPage() {
 
   // 更新
   const handleUpdate = useCallback(async (
-    data: StudentInsert | StudentUpdate,
-    subjectIds?: string[]
+    data: StudentInsert | StudentUpdate
   ) => {
     if (!selectedStudent) return;
 
@@ -415,7 +413,7 @@ export default function StudentsPage() {
     setErrorMessage('');
     try {
       const update = data as StudentUpdate;
-      await updateStudent(selectedStudent.id, update, subjectIds);
+      await updateStudent(selectedStudent.id, update);
       setIsEditModalOpen(false);
       // ステータス変更時のトースト案内
       if (update.status && update.status !== selectedStudent.status) {

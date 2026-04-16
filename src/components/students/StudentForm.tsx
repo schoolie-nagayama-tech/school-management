@@ -1,13 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
 import { Button, Input, Select } from '@/components/ui';
-import type { Student, StudentInsert, StudentUpdate, Subject } from '@/types/database';
-import { Calendar, X } from 'lucide-react';
+import type { Student, StudentInsert, StudentUpdate } from '@/types/database';
+import { X } from 'lucide-react';
 import { GRADE_LABELS, STATUS_LABELS, ORDER_STATUS_LABELS } from '@/types/database';
-import { getSubjects } from '@/lib/api/subjects';
-import { getStudentSubjects } from '@/lib/api/subjects';
 import { getDefaultSchoolId } from '@/lib/api/schools';
 import { getStudentTextbooks, deleteOrder } from '@/lib/api/ordering';
 import type { StudentTextbook } from '@/lib/api/ordering';
@@ -15,7 +12,7 @@ import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 interface StudentFormProps {
   student?: Student | null;
-  onSubmit: (data: StudentInsert | StudentUpdate, subjectIds?: string[]) => Promise<void>;
+  onSubmit: (data: StudentInsert | StudentUpdate) => Promise<void>;
   onCancel: () => void;
   isLoading?: boolean;
 }
@@ -31,13 +28,6 @@ const statusOptions = Object.entries(STATUS_LABELS).map(([value, label]) => ({
   value,
   label,
 }));
-
-// 学年からカテゴリを取得
-function getGradeCategory(grade: number): 'elementary' | 'middle' | 'high' {
-  if (grade <= 6) return 'elementary';
-  if (grade <= 9) return 'middle';
-  return 'high';
-}
 
 export function StudentForm({
   student,
@@ -58,14 +48,10 @@ export function StudentForm({
     school_name: student?.school_name || '',
     class_name: student?.class_name || '',
     club: student?.club || '',
-    subject_other: student?.subject_other || '',
     is_programming: student?.is_programming ?? false,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [availableSubjects, setAvailableSubjects] = useState<Subject[]>([]);
-  const [selectedSubjectIds, setSelectedSubjectIds] = useState<string[]>([]);
-  const [isLoadingSubjects, setIsLoadingSubjects] = useState(false);
 
   // 所持教材
   const [textbooks, setTextbooks] = useState<StudentTextbook[]>([]);
@@ -86,7 +72,6 @@ export function StudentForm({
         school_name: student.school_name || '',
         class_name: student.class_name || '',
         club: student.club || '',
-        subject_other: student.subject_other || '',
         is_programming: student.is_programming ?? false,
       });
     }
@@ -122,55 +107,6 @@ export function StudentForm({
       setTextbookError(getUserErrorMessage(err, '削除に失敗しました'));
     }
   };
-
-  // 学年に応じて科目を取得
-  useEffect(() => {
-    const fetchSubjects = async () => {
-      setIsLoadingSubjects(true);
-      try {
-        const category = getGradeCategory(formData.grade);
-        const subjects = await getSubjects(category);
-        setAvailableSubjects(subjects);
-      } catch (error) {
-        console.error('Error fetching subjects:', error);
-      } finally {
-        setIsLoadingSubjects(false);
-      }
-    };
-
-    fetchSubjects();
-  }, [formData.grade]);
-
-  // 編集時に既存の科目を取得
-  useEffect(() => {
-    if (isEdit && student) {
-      const fetchStudentSubjects = async () => {
-        try {
-          const studentSubjects = await getStudentSubjects(student.id);
-          setSelectedSubjectIds(studentSubjects.map((ss) => ss.subject_id));
-        } catch (error) {
-          console.error('Error fetching student subjects:', error);
-        }
-      };
-      fetchStudentSubjects();
-    }
-  }, [isEdit, student]);
-
-  // 科目選択の変更
-  const handleSubjectToggle = (subjectId: string) => {
-    setSelectedSubjectIds((prev) => {
-      if (prev.includes(subjectId)) {
-        return prev.filter((id) => id !== subjectId);
-      } else {
-        return [...prev, subjectId];
-      }
-    });
-  };
-
-  // 「その他」が選択されているかチェック
-  const hasOtherSubject = availableSubjects.some(
-    (s) => s.name === 'その他' && selectedSubjectIds.includes(s.id)
-  );
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -220,7 +156,7 @@ export function StudentForm({
       ? (formData as StudentUpdate)
       : ({ ...formData, school_id: getDefaultSchoolId() } as StudentInsert);
 
-    await onSubmit(submitData, selectedSubjectIds);
+    await onSubmit(submitData);
   };
 
   return (
@@ -321,37 +257,6 @@ export function StudentForm({
         placeholder="例: サッカー部"
       />
 
-      {/* 受講科目 */}
-      <div>
-        <label className="block text-sm font-medium text-[#1f2937] mb-2">
-          受講科目
-        </label>
-        {isLoadingSubjects ? (
-          <p className="text-sm text-[#4b5563]">読み込み中...</p>
-        ) : availableSubjects.length === 0 ? (
-          <p className="text-sm text-[#4b5563]">
-            この学年カテゴリには科目が登録されていません
-          </p>
-        ) : (
-          <div className="space-y-2 border border-[#e5e7eb] rounded-lg p-3 max-h-48 overflow-y-auto bg-white">
-            {availableSubjects.map((subject) => (
-              <label
-                key={subject.id}
-                className="flex items-center gap-2 cursor-pointer hover:bg-[#f3f4f6] p-2 rounded"
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedSubjectIds.includes(subject.id)}
-                  onChange={() => handleSubjectToggle(subject.id)}
-                  className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6]"
-                />
-                <span className="text-sm text-[#1f2937]">{subject.name}</span>
-              </label>
-            ))}
-          </div>
-        )}
-      </div>
-
       {/* プログラミングコース */}
       <div>
         <label className="flex items-center gap-2 cursor-pointer">
@@ -364,18 +269,6 @@ export function StudentForm({
           <span className="text-sm font-medium text-[#1f2937]">プログラミングコース受講</span>
         </label>
       </div>
-
-      {/* 受講科目その他（「その他」が選択されている場合のみ表示） */}
-      {hasOtherSubject && (
-        <Input
-          label="受講科目その他"
-          name="subject_other"
-          value={formData.subject_other}
-          onChange={handleChange}
-          error={errors.subject_other}
-          placeholder="例: 物理"
-        />
-      )}
 
       {/* 所持教材 */}
       {isEdit && student?.id && (
@@ -431,22 +324,6 @@ export function StudentForm({
           </p>
         </div>
       )}
-
-      {/* 通塾日程 */}
-      <div className="border-t border-[#0d0d0d] pt-4">
-        {isEdit && student?.id && student?.school_id ? (
-          <Link href={`/schedule/regular-patterns?studentId=${student.id}&schoolId=${student.school_id}`}>
-            <Button type="button" variant="secondary" className="w-full sm:w-auto">
-              <Calendar className="mr-2 h-4 w-4" />
-              通塾日程を管理
-            </Button>
-          </Link>
-        ) : (
-          <p className="text-sm text-[#2a2a2a]/80">
-            通塾日程は保存後、生徒詳細の「通塾日程」タブまたは座席表メニューから登録できます。
-          </p>
-        )}
-      </div>
 
       {/* ボタン */}
       <div className="flex justify-end gap-3 pt-4 border-t border-[#e5e7eb]">
