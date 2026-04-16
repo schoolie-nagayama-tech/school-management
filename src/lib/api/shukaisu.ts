@@ -10,6 +10,7 @@ import {
   unarchivePeriod,
 } from './form-periods';
 import { createPublicFormResponse, getFormResponses, getFormResponse, updateFormResponseStatus } from './form-responses';
+import { syncFormResponseToBilling } from './billing';
 import { getDefaultSchoolId, getSchoolByCode } from './schools';
 import type {
   FormPeriodInsert,
@@ -285,6 +286,14 @@ export async function updateShukaisuStatusCheck(
   if (!response) throw new Error('回答が見つかりません');
   const current = (response.status_checks || {}) as Record<string, boolean>;
   await updateFormResponseStatus(responseId, { ...current, ...statusChecks });
+  // charged が含まれる場合のみ請求側へ同期
+  if (statusChecks.charged !== undefined) {
+    try {
+      await syncFormResponseToBilling(responseId);
+    } catch (err) {
+      console.warn('請求への計上同期に失敗:', err);
+    }
+  }
 }
 
 /**

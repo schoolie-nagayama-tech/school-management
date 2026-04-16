@@ -14,6 +14,7 @@ import {
   createPublicFormResponse,
   updateFormResponseStatus,
 } from './form-responses';
+import { syncFormResponseToBilling } from './billing';
 import { getDefaultSchoolId, getSchoolByCode } from './schools';
 import type {
   FormPeriodInsert,
@@ -348,6 +349,14 @@ export async function updateZoukomaResponseStatus(
   };
 
   const updated = await updateFormResponseStatus(responseId, newStatus);
+  // charged が含まれる場合のみ請求側へ同期
+  if (statusChecks.charged !== undefined) {
+    try {
+      await syncFormResponseToBilling(responseId);
+    } catch (err) {
+      console.warn('請求への計上同期に失敗:', err);
+    }
+  }
   return {
     ...updated,
     response_data: updated.response_data as unknown as ZoukomaResponseData,

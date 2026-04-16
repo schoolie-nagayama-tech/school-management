@@ -10,6 +10,7 @@ import {
   unarchivePeriod,
 } from './form-periods';
 import { createPublicFormResponse, getFormResponses, getFormResponse, updateFormResponseStatus } from './form-responses';
+import { syncFormResponseToBilling } from './billing';
 import { getDefaultSchoolId, getSchoolByCode } from './schools';
 import type {
   FormPeriodInsert,
@@ -285,6 +286,12 @@ export async function updateMoshiChargedStatus(
   const response = await getFormResponse(responseId);
   const current = (response?.status_checks || {}) as Record<string, boolean>;
   await updateFormResponseStatus(responseId, { ...current, charged });
+  // 請求側の is_billed へ同期（AND判定）
+  try {
+    await syncFormResponseToBilling(responseId);
+  } catch (err) {
+    console.warn('請求への計上同期に失敗:', err);
+  }
 }
 
 /**

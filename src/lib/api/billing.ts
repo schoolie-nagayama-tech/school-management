@@ -345,6 +345,7 @@ export async function toggleStudentBilling(
     console.warn('既存レコードの確認に失敗しました（新規作成として処理します）:', existingError);
   }
 
+  let result: StudentBilling;
   if (existing) {
     // 更新
     const { data, error } = await supabase
@@ -358,7 +359,7 @@ export async function toggleStudentBilling(
       throw new Error(`請求状況の更新に失敗しました: ${error.message}`);
     }
 
-    return data as StudentBilling;
+    result = data as StudentBilling;
   } else {
     // 作成
     const { data, error } = await supabase
@@ -376,8 +377,17 @@ export async function toggleStudentBilling(
       throw new Error(`請求状況の作成に失敗しました: ${error.message}`);
     }
 
-    return data as StudentBilling;
+    result = data as StudentBilling;
   }
+
+  // フォーム回答の計上状態へ同期（失敗してもメイン処理は通す）
+  try {
+    await syncBillingToFormResponses(studentId, billingItemId, isBilled);
+  } catch (syncErr) {
+    console.warn('フォーム回答への計上同期に失敗:', syncErr);
+  }
+
+  return result;
 }
 
 // ============================================
@@ -770,6 +780,160 @@ export async function syncFormToBilling(
   return { synced };
 }
 
+// ============================================
+// 計上ボタン双方向同期 (Charged ↔ Billed Sync)
+// ============================================
+
+/**
+ * 請求の is_billed → フォーム回答の status_checks.charged へ同期
+ *
+ * 該当 billing_item に linked_form_type が設定されている場合、
+ * その期間内・同じ生徒・同じ form_type のフォーム回答全件の
+ * status_checks.charged を isBilled の値に揃える。
+ *
+ * linked_form_type が無い billing_item は何もしない（連動不要）。
+ */
+export async function syncBillingToFormResponses(
+  studentId: string,
+  billingItemId: string,
+  isBilled: boolean
+): Promise<void> {
+  const { data: item, error: itemError } = await supabase
+    .from('billing_items')
+    .select('linked_form_type, billing_period_id, school_id')
+    .eq('id', billingItemId)
+    .maybeSingle();
+  if (itemError || !item || !item.linked_form_type) return;
+
+  const { data: period, error: periodError } = await supabase
+    .from('billing_periods')
+    .select('start_date, end_date')
+    .eq('id', item.billing_period_id)
+    .maybeSingle();
+  if (periodError || !period) return;
+
+  // end_date の 23:59:59 までを含むため +1 日
+  const periodEndPlusOne = (() => {
+    const d = new Date(period.end_date);
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().split('T')[0];
+  })();
+
+  const { data: responses, error: respError } = await supabase
+    .from('form_responses')
+    .select('id, status_checks')
+    .eq('linked_student_id', studentId)
+    .eq('form_type', item.linked_form_type)
+    .gte('created_at', `${period.start_date}T00:00:00`)
+    .lt('created_at', `${periodEndPlusOne}T00:00:00`);
+
+  if (respError || !responses || responses.length === 0) return;
+
+  // 既に同じ値のものは更新しない（無駄なwrite & 再同期ループ防止）
+  for (const r of responses) {
+    const current = (r.status_checks || {}) as Record<string, boolean>;
+    if (current.charged === isBilled) continue;
+    await supabase
+      .from('form_responses')
+      .update({ status_checks: { ...current, charged: isBilled } })
+      .eq('id', r.id);
+  }
+}
+
+/**
+ * フォーム回答の status_checks.charged → 請求の is_billed へ同期
+ *
+ * 該当 form_response の form_type と一致する linked_form_type を持つ
+ * billing_item（同じ school、回答日を含む billing_period 内）を探し、
+ * その生徒の同期間・同 form_type の全回答が charged=true なら is_billed=true、
+ * 1件でも未計上なら is_billed=false に設定（AND判定）。
+ *
+ * 紐付け先生徒なし、または対応する billing_item が見つからない場合は何もしない。
+ */
+export async function syncFormResponseToBilling(responseId: string): Promise<void> {
+  const { data: response, error: respError } = await supabase
+    .from('form_responses')
+    .select('id, form_type, linked_student_id, school_id, created_at')
+    .eq('id', responseId)
+    .maybeSingle();
+  if (respError || !response || !response.linked_student_id) return;
+
+  const createdDate = String(response.created_at).split('T')[0];
+
+  // 回答日を含む billing_period を探す
+  const { data: periods } = await supabase
+    .from('billing_periods')
+    .select('id, start_date, end_date')
+    .eq('school_id', response.school_id)
+    .lte('start_date', createdDate)
+    .gte('end_date', createdDate)
+    .limit(1);
+
+  if (!periods || periods.length === 0) return;
+  const period = periods[0];
+
+  // form_type に紐付く billing_item を探す
+  const { data: items } = await supabase
+    .from('billing_items')
+    .select('id')
+    .eq('billing_period_id', period.id)
+    .eq('school_id', response.school_id)
+    .eq('linked_form_type', response.form_type)
+    .limit(1);
+
+  if (!items || items.length === 0) return;
+  const itemId = items[0].id;
+
+  const periodEndPlusOne = (() => {
+    const d = new Date(period.end_date);
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().split('T')[0];
+  })();
+
+  // 同じ生徒・同 form_type・同期間の全回答を取得
+  const { data: siblings } = await supabase
+    .from('form_responses')
+    .select('id, status_checks')
+    .eq('linked_student_id', response.linked_student_id)
+    .eq('form_type', response.form_type)
+    .gte('created_at', `${period.start_date}T00:00:00`)
+    .lt('created_at', `${periodEndPlusOne}T00:00:00`);
+
+  if (!siblings || siblings.length === 0) return;
+
+  // AND判定: 全件 charged=true なら計上、1件でも未計上なら未計上
+  const allCharged = siblings.every((r) => {
+    const sc = (r.status_checks || {}) as Record<string, boolean>;
+    return sc.charged === true;
+  });
+
+  // student_billings の is_billed を upsert
+  const { data: existing } = await supabase
+    .from('student_billings')
+    .select('id, is_billed')
+    .eq('student_id', response.linked_student_id)
+    .eq('billing_item_id', itemId)
+    .maybeSingle();
+
+  if (existing) {
+    if (existing.is_billed !== allCharged) {
+      await supabase
+        .from('student_billings')
+        .update({ is_billed: allCharged, updated_at: new Date().toISOString() })
+        .eq('id', existing.id);
+    }
+  } else {
+    await supabase
+      .from('student_billings')
+      .insert({
+        school_id: response.school_id,
+        student_id: response.linked_student_id,
+        billing_item_id: itemId,
+        is_billed: allCharged,
+      });
+  }
+}
+
 /**
  * 請求セルの値を更新（upsert）
  *
@@ -804,6 +968,7 @@ export async function updateBillingValue(
     .eq('billing_item_id', billingItemId)
     .maybeSingle();
 
+  let result: StudentBilling;
   if (existing) {
     const { data, error } = await supabase
       .from('student_billings')
@@ -813,7 +978,7 @@ export async function updateBillingValue(
       .single();
 
     if (error) throw new Error(`請求値の更新に失敗しました: ${error.message}`);
-    return data as StudentBilling;
+    result = data as StudentBilling;
   } else {
     const { data, error } = await supabase
       .from('student_billings')
@@ -829,8 +994,19 @@ export async function updateBillingValue(
       .single();
 
     if (error) throw new Error(`請求値の作成に失敗しました: ${error.message}`);
-    return data as StudentBilling;
+    result = data as StudentBilling;
   }
+
+  // is_billed が変更された場合のみフォーム回答へ同期
+  if (updates.is_billed !== undefined) {
+    try {
+      await syncBillingToFormResponses(studentId, billingItemId, updates.is_billed);
+    } catch (syncErr) {
+      console.warn('フォーム回答への計上同期に失敗:', syncErr);
+    }
+  }
+
+  return result;
 }
 
 /**
