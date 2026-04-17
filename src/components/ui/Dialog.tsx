@@ -1,14 +1,19 @@
 'use client';
 
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, useId, createContext, useContext } from 'react';
+
+const DialogTitleIdContext = createContext<string | undefined>(undefined);
 
 interface DialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   children: ReactNode;
+  /** スクリーンリーダー用のラベル。DialogTitle を使わない場合に指定 */
+  ariaLabel?: string;
 }
 
-export function Dialog({ open, onOpenChange, children }: DialogProps) {
+export function Dialog({ open, onOpenChange, children, ariaLabel }: DialogProps) {
+  const titleId = useId();
   useEffect(() => {
     if (open) {
       document.body.style.overflow = 'hidden';
@@ -43,8 +48,14 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
         onClick={() => onOpenChange(false)}
         aria-hidden="true"
       />
-      <div className="relative z-50 w-full max-w-lg bg-white rounded-xl shadow-2xl max-h-[95vh] overflow-hidden flex flex-col">
-        {children}
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={ariaLabel ? undefined : titleId}
+        aria-label={ariaLabel}
+        className="relative z-50 w-full max-w-lg bg-white rounded-xl shadow-2xl max-h-[95vh] overflow-hidden flex flex-col"
+      >
+        <DialogTitleIdContext.Provider value={titleId}>{children}</DialogTitleIdContext.Provider>
       </div>
     </div>
   );
@@ -78,8 +89,9 @@ interface DialogTitleProps {
 }
 
 export function DialogTitle({ children, className = '' }: DialogTitleProps) {
+  const titleId = useContext(DialogTitleIdContext);
   return (
-    <h2 className={`text-lg font-semibold text-[#1f2937] ${className}`}>
+    <h2 id={titleId} className={`text-lg font-semibold text-[#1f2937] ${className}`}>
       {children}
     </h2>
   );

@@ -54,11 +54,25 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--headline);
 }
 
-/* フォーム入力のフォーカススタイル */
+/* フォーム入力のフォーカススタイル
+   マウス操作時はアウトラインを抑えつつ、キーボード操作（:focus-visible）では
+   明確なフォーカスリングを表示する。WCAG 2.4.7 Focus Visible 対応。 */
 input:focus,
 select:focus,
-textarea:focus {
+textarea:focus,
+button:focus {
   outline: none;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 /* テーブル行のホバー */
@@ -197,6 +211,11 @@ textarea:focus {
 }
 .rich-text-editor .ProseMirror:focus {
   outline: none;
+}
+.rich-text-editor .ProseMirror:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 .rich-text-editor .ProseMirror p {
   margin: 0.25em 0;

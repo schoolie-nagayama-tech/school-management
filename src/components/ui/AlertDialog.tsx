@@ -1,6 +1,10 @@
 'use client';
 
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, useId, createContext, useContext } from 'react';
+
+const AlertDialogIdsContext = createContext<{ titleId: string; descId: string } | undefined>(
+  undefined
+);
 
 interface AlertDialogProps {
   open: boolean;
@@ -11,6 +15,8 @@ interface AlertDialogProps {
 }
 
 export function AlertDialog({ open, onOpenChange, children, overlayClassName }: AlertDialogProps) {
+  const titleId = useId();
+  const descId = useId();
   useEffect(() => {
     if (open) {
       document.body.style.overflow = 'hidden';
@@ -45,8 +51,16 @@ export function AlertDialog({ open, onOpenChange, children, overlayClassName }: 
         onClick={() => onOpenChange(false)}
         aria-hidden="true"
       />
-      <div className="relative z-50 w-full max-w-lg bg-white rounded-xl shadow-2xl border border-[#e5e7eb] max-h-[95vh] overflow-hidden flex flex-col">
-        {children}
+      <div
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={descId}
+        className="relative z-50 w-full max-w-lg bg-white rounded-xl shadow-2xl border border-[#e5e7eb] max-h-[95vh] overflow-hidden flex flex-col"
+      >
+        <AlertDialogIdsContext.Provider value={{ titleId, descId }}>
+          {children}
+        </AlertDialogIdsContext.Provider>
       </div>
     </div>
   );
@@ -80,8 +94,9 @@ interface AlertDialogTitleProps {
 }
 
 export function AlertDialogTitle({ children, className = '' }: AlertDialogTitleProps) {
+  const ids = useContext(AlertDialogIdsContext);
   return (
-    <h2 className={`text-lg font-semibold text-[#1f2937] ${className}`}>
+    <h2 id={ids?.titleId} className={`text-lg font-semibold text-[#1f2937] ${className}`}>
       {children}
     </h2>
   );
@@ -93,8 +108,9 @@ interface AlertDialogDescriptionProps {
 }
 
 export function AlertDialogDescription({ children, className = '' }: AlertDialogDescriptionProps) {
+  const ids = useContext(AlertDialogIdsContext);
   return (
-    <p className={`text-sm text-[#4b5563] mt-2 ${className}`}>
+    <p id={ids?.descId} className={`text-sm text-[#4b5563] mt-2 ${className}`}>
       {children}
     </p>
   );
