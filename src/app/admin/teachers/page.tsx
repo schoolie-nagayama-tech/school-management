@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { useAuth } from '@/contexts/AuthContext';
@@ -46,6 +46,10 @@ export default function TeachersPage() {
   const [teachers, setTeachers] = useState<TeacherWithDetails[]>([]);
   const [schools, setSchools] = useState<School[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  // 直近の読み込み時刻（フォーカス復帰時のスロットル判定用）
+  const lastLoadAtRef = useRef<number>(0);
+  /** フォーカス復帰時に再読込をスキップする閾値 (ms)。30秒以内なら何もしない。 */
+  const FOCUS_REFRESH_MIN_INTERVAL_MS = 30_000;
   
   // 教室長かどうかを判定
   const isManager = profile?.role === 'manager';
@@ -84,7 +88,12 @@ export default function TeachersPage() {
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const teachersResponse = await fetchWithAuth(`/api/admin/users?role=teacher`);
+      // 講師一覧とバッジ一覧は相互依存しないので並列化（B案）
+      const [teachersResponse, badges] = await Promise.all([
+        fetchWithAuth(`/api/admin/users?role=teacher`),
+        getTeacherBadges().catch(() => [] as TeacherBadge[]),
+      ]);
+      setAllBadges(badges);
 
       if (!teachersResponse.ok) throw new Error('Failed to fetch teachers');
       const teachersData = await teachersResponse.json();
@@ -112,27 +121,28 @@ export default function TeachersPage() {
         setFormData(prev => prev.schoolId ? prev : { ...prev, schoolId: availableSchools[0].id });
       }
 
-      // バッジデータ取得（バッジ一覧と講師別付与情報を並列取得）
+      // バッジ割当（teacherIds が必要なので講師取得後に実行）
       try {
         const teacherIds = teachersList.map((t) => t.id);
-        const [badges, batchRes] = await Promise.all([
-          getTeacherBadges(),
-          teacherIds.length > 0
-            ? fetchWithAuth(`/api/admin/teachers/badges/batch?teacherIds=${teacherIds.join(',')}`)
-            : Promise.resolve(null),
-        ]);
-        setAllBadges(badges);
-
-        const badgeMap = new Map<string, TeacherBadgeAssignment[]>();
-        if (batchRes && batchRes.ok) {
-          const data = await batchRes.json();
-          const byTeacher: Record<string, TeacherBadgeAssignment[]> = data.assignmentsByTeacher || {};
-          for (const [tid, assignments] of Object.entries(byTeacher)) {
-            badgeMap.set(tid, assignments);
+        if (teacherIds.length > 0) {
+          const batchRes = await fetchWithAuth(
+            `/api/admin/teachers/badges/batch?teacherIds=${teacherIds.join(',')}`
+          );
+          const badgeMap = new Map<string, TeacherBadgeAssignment[]>();
+          if (batchRes.ok) {
+            const data = await batchRes.json();
+            const byTeacher: Record<string, TeacherBadgeAssignment[]> = data.assignmentsByTeacher || {};
+            for (const [tid, assignments] of Object.entries(byTeacher)) {
+              badgeMap.set(tid, assignments);
+            }
           }
+          setTeacherBadgeMap(badgeMap);
+        } else {
+          setTeacherBadgeMap(new Map());
         }
-        setTeacherBadgeMap(badgeMap);
-      } catch { /* バッジ取得失敗は致命的ではない */ }
+      } catch { /* バッジ割当取得失敗は致命的ではない */ }
+
+      lastLoadAtRef.current = Date.now();
     } catch (err) {
       console.error('Error loading data:', err);
       toastError('データの取得に失敗しました');
@@ -163,7 +173,14 @@ export default function TeachersPage() {
     const offEvent = onTeacherBadgesChanged((tid) => {
       refetchBadgesForTeacher(tid);
     });
-    const onFocus = () => loadData();
+    // フォーカス/可視化復帰時の再読込は、直近の読み込みから 30 秒以内ならスキップ（A案）
+    // タブ切替や別ウィンドウから戻るたびに全件再フェッチされる挙動を抑制
+    const onFocus = () => {
+      if (document.visibilityState === 'hidden') return;
+      const since = Date.now() - lastLoadAtRef.current;
+      if (since < FOCUS_REFRESH_MIN_INTERVAL_MS) return;
+      loadData();
+    };
     window.addEventListener('focus', onFocus);
     document.addEventListener('visibilitychange', onFocus);
     return () => {
