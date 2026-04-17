@@ -47,6 +47,12 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
   const [showCourseDropdown, setShowCourseDropdown] = useState(false);
   const [showTeacherDropdown, setShowTeacherDropdown] = useState(false);
   const [showBusinessDropdown, setShowBusinessDropdown] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+
+  // ルート変更時にモバイルメニューを自動で閉じる
+  useEffect(() => {
+    setShowMobileMenu(false);
+  }, [pathname]);
 
   // permissionsがnullの場合は、すべてのリンクを表示（ローディング中の場合）
   const showAllLinks = !permissions || authLoading;
@@ -151,14 +157,31 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14">
           <div className="flex items-center gap-4">
+            {/* ハンバーガー（lg 未満で表示） */}
+            <button
+              type="button"
+              onClick={() => setShowMobileMenu((v) => !v)}
+              aria-expanded={showMobileMenu}
+              aria-controls="mobile-nav"
+              aria-label={showMobileMenu ? 'メニューを閉じる' : 'メニューを開く'}
+              className="lg:hidden p-1.5 text-white hover:bg-white/10 rounded-lg transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {showMobileMenu ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
             {/* NESTロゴ */}
             <Link href="/students" className="shrink-0">
               <span className="text-white font-black text-2xl tracking-[0.4em] pr-[0.4em] select-none">
                 NEST
               </span>
             </Link>
-            <div className="h-6 w-px bg-white/30"></div>
-            <nav className="flex items-center gap-3">
+            <div className="hidden lg:block h-6 w-px bg-white/30"></div>
+            <nav className="hidden lg:flex items-center gap-3">
               {(showAllLinks || permissions?.canAccessStudents) && (
                 <Link
                   href="/students"
@@ -545,7 +568,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
               <TierMedal count={badgeCount} />
             )}
             {profile && !authLoading && (
-              <div className="flex items-center gap-2 text-right">
+              <div className="hidden md:flex items-center gap-2 text-right">
                 <div>
                   <div className="text-xs font-semibold text-white leading-tight">
                     {profile.display_name || profile.email}
