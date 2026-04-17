@@ -84,17 +84,18 @@
   --surface-raised: oklch(25% 0.013 27);
   --surface-hover: oklch(28% 0.014 27);
 
-  /* Text: ダーク時はコントラスト比を上げつつ純白を避ける */
+  /* Text: ダーク時はコントラスト比を上げつつ純白を避ける
+     faint は退塾/休塾マーカーの text-gray-400 を引き上げるため 62% で可読性確保 */
   --text-heading: oklch(96% 0.005 27);
   --text-body: oklch(86% 0.006 27);
-  --text-muted: oklch(68% 0.008 27);
-  --text-faint: oklch(52% 0.008 27);
+  --text-muted: oklch(72% 0.008 27);
+  --text-faint: oklch(62% 0.008 27);
   --text-on-primary: oklch(18% 0.02 27);
 
-  /* Border */
-  --border-default: oklch(32% 0.012 27);
-  --border-subtle: oklch(26% 0.01 27);
-  --border-strong: oklch(42% 0.014 27);
+  /* Border: 暗背景での視認性を優先し、light mode より大幅に明度を上げる */
+  --border-default: oklch(42% 0.014 27);
+  --border-subtle: oklch(34% 0.011 27);
+  --border-strong: oklch(54% 0.016 27);
 
   /* Status（ダーク用に彩度・明度再調整） */
   --success: oklch(68% 0.15 145);
@@ -134,7 +135,9 @@ body {
 :root.dark .bg-gray-50,
 :root.dark .bg-\[\#f8f8f8\],
 :root.dark .bg-\[\#f9fafb\],
-:root.dark .bg-\[\#fafafa\] {
+:root.dark .bg-\[\#fafafa\],
+:root.dark .bg-\[\#f8fafc\],
+:root.dark .bg-\[\#f1f5f9\] {
   background-color: var(--surface);
 }
 :root.dark .bg-gray-100,
@@ -204,7 +207,11 @@ body {
 /* ホバー・選択状態 */
 :root.dark .hover\:bg-gray-50:hover,
 :root.dark .hover\:bg-gray-100:hover,
-:root.dark .hover\:bg-\[\#f3f4f6\]:hover {
+:root.dark .hover\:bg-\[\#f3f4f6\]:hover,
+:root.dark .hover\:bg-\[\#f8fafc\]:hover,
+:root.dark .hover\:bg-\[\#f1f5f9\]:hover,
+:root.dark .hover\:bg-\[\#e8f0fe\]:hover,
+:root.dark .hover\:bg-\[\#eff6ff\]:hover {
   background-color: var(--surface-hover);
 }
 
