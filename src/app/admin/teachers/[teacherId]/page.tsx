@@ -251,11 +251,14 @@ export default function TeacherDetailPage() {
             <h1 className="text-2xl font-bold truncate">{teacher.display_name || '(未設定)'}</h1>
             <p className="text-sm text-white/70 truncate">{displayLoginId(teacher.email)}</p>
             <div className="flex flex-wrap items-center gap-2 mt-2">
-              <span className="text-xs font-semibold bg-white/20 backdrop-blur px-2.5 py-1 rounded-full">
+              <span className="text-xs font-semibold text-white bg-black/30 px-2.5 py-1 rounded-full">
                 {USER_ROLE_LABELS[teacher.role] || teacher.role}
               </span>
               {teacherSchools.map((s) => (
-                <span key={s.id} className="text-xs bg-white/15 backdrop-blur px-2.5 py-1 rounded-full">
+                <span
+                  key={s.id}
+                  className="text-xs text-white bg-black/20 px-2.5 py-1 rounded-full"
+                >
                   {s.name}
                 </span>
               ))}
