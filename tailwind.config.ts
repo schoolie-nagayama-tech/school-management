@@ -8,6 +8,26 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: [
+          "var(--font-sans-jp)",
+          "var(--font-geist-sans)",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "Hiragino Kaku Gothic ProN",
+          "Meiryo",
+          "sans-serif",
+        ],
+        mono: [
+          "var(--font-geist-mono)",
+          "ui-monospace",
+          "SFMono-Regular",
+          "Menlo",
+          "Consolas",
+          "monospace",
+        ],
+      },
       colors: {
         /* Base */
         background: "var(--background)",
