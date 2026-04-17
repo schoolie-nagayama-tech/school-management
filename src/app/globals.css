@@ -128,19 +128,22 @@ a:focus-visible {
   }
 }
 
-/* 進行表のグループ化セル */
+/* 進行表のグループ化セル
+   rowspan セルを primary 色の1pxボックスで囲むことで単元グループを可視化。
+   （色ストライプではなく構造的グルーピングのため、全4辺で枠を形成する） */
 .progress-table td[rowspan] {
   vertical-align: middle;
-  border-left: 3px solid #d32f2f;
-  border-right: 3px solid #d32f2f;
+  background-color: color-mix(in oklch, var(--primary) 6%, transparent);
+  border-left: 1px solid var(--primary);
+  border-right: 1px solid var(--primary);
 }
 
 .progress-table tr:first-child td[rowspan] {
-  border-top: 3px solid #d32f2f;
+  border-top: 1px solid var(--primary);
 }
 
 .progress-table tr:last-child td[rowspan] {
-  border-bottom: 3px solid #d32f2f;
+  border-bottom: 1px solid var(--primary);
 }
 
 /* グループの背景色 */
@@ -302,12 +305,13 @@ a:focus-visible {
 }
 
 .progress-table-parent td[rowspan] {
-  border-left: 2px solid #d32f2f;
-  border-right: 2px solid #d32f2f;
+  background-color: color-mix(in oklch, var(--primary) 6%, transparent);
+  border-left: 1px solid var(--primary);
+  border-right: 1px solid var(--primary);
 }
 
 .progress-table-parent tbody tr:last-child td[rowspan] {
-  border-bottom: 2px solid #d32f2f;
+  border-bottom: 1px solid var(--primary);
 }
 
 /* 講師ヒーローカード（バッジ14+）用きらめきアニメ */

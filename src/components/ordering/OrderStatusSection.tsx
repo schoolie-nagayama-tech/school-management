@@ -6,12 +6,12 @@ import type { MaterialOrderWithDetails, OrderStatus } from '@/types/database';
 import { GRADE_LABELS } from '@/types/database';
 
 // Section style config per status
-const SECTION_STYLES: Record<string, { border: string; bg: string }> = {
-  unconfirmed: { border: 'border-l-yellow-400', bg: 'bg-yellow-50' },
-  ordered: { border: 'border-l-blue-400', bg: 'bg-blue-50' },
-  delivered: { border: 'border-l-green-400', bg: 'bg-green-50' },
-  distributed: { border: 'border-l-gray-400', bg: 'bg-gray-50' },
-  cancelled: { border: 'border-l-gray-400', bg: 'bg-gray-50' },
+const SECTION_STYLES: Record<string, { dot: string; bg: string }> = {
+  unconfirmed: { dot: 'bg-yellow-400', bg: 'bg-yellow-50' },
+  ordered: { dot: 'bg-blue-400', bg: 'bg-blue-50' },
+  delivered: { dot: 'bg-green-400', bg: 'bg-green-50' },
+  distributed: { dot: 'bg-gray-400', bg: 'bg-gray-50' },
+  cancelled: { dot: 'bg-gray-400', bg: 'bg-gray-50' },
 };
 
 const NEXT_STATUS: Record<string, OrderStatus> = {
@@ -93,10 +93,14 @@ export function OrderStatusSection({
       {/* Section Header */}
       <button
         onClick={() => setOpen(!open)}
-        className={`w-full flex items-center justify-between px-4 py-3 border-l-4 ${style.border} ${style.bg} rounded-t-lg ${!open ? 'rounded-b-lg' : ''} hover:opacity-90 transition-opacity`}
+        className={`w-full flex items-center justify-between px-4 py-3 border border-gray-200 ${style.bg} rounded-t-lg ${!open ? 'rounded-b-lg' : ''} hover:opacity-90 transition-opacity`}
       >
         <div className="flex items-center gap-2">
           {open ? <ChevronDown className="w-4 h-4 text-gray-500" /> : <ChevronRight className="w-4 h-4 text-gray-500" />}
+          <span
+            aria-hidden="true"
+            className={`w-2 h-2 rounded-full ${style.dot}`}
+          />
           <span className="font-medium text-sm text-gray-800">
             {STATUS_LABELS[status]}
           </span>

@@ -50,11 +50,9 @@ export function BulletinPostCard({
   return (
     <div
       className={`p-3 rounded-lg border ${
-        canRead && post.is_read
-          ? 'bg-white border border-gray-200'
-          : canRead && !post.is_read
-          ? 'bg-white border border-gray-200 border-l-4 border-l-[#d32f2f] shadow-sm'
-          : 'bg-white border border-gray-200'
+        canRead && !post.is_read
+          ? 'bg-[color-mix(in_oklch,var(--primary)_4%,white)] border-gray-300 shadow-sm'
+          : 'bg-white border-gray-200'
       }`}
     >
       <div className="flex items-start justify-between gap-2 mb-2">

@@ -34,14 +34,14 @@ interface TextbookCatalogProps {
 const ITEMS_PER_PAGE = 60;
 
 // ─── Subject Color Coding ─────────────────────────────────
-const SUBJECT_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  '英語': { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-l-blue-500' },
-  '数学': { bg: 'bg-red-50', text: 'text-red-700', border: 'border-l-red-500' },
-  '国語': { bg: 'bg-green-50', text: 'text-green-700', border: 'border-l-green-500' },
-  '理科': { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-l-purple-500' },
-  '社会': { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-l-orange-500' },
+const SUBJECT_COLORS: Record<string, { bg: string; text: string }> = {
+  '英語': { bg: 'bg-blue-50', text: 'text-blue-700' },
+  '数学': { bg: 'bg-red-50', text: 'text-red-700' },
+  '国語': { bg: 'bg-green-50', text: 'text-green-700' },
+  '理科': { bg: 'bg-purple-50', text: 'text-purple-700' },
+  '社会': { bg: 'bg-orange-50', text: 'text-orange-700' },
 };
-const DEFAULT_COLOR = { bg: 'bg-gray-50', text: 'text-gray-700', border: 'border-l-gray-400' };
+const DEFAULT_COLOR = { bg: 'bg-gray-50', text: 'text-gray-700' };
 
 function getSubjectColor(subject: string | null) {
   if (!subject) return DEFAULT_COLOR;
@@ -106,7 +106,7 @@ function TextbookProductCard({ textbook, students, canEdit, stockQuantity, onAdd
             : 'text-[#1e3a5f]';
 
   return (
-    <div className={`rounded-lg border ${stockQuantity !== null && stockQuantity >= 10 ? 'border-red-300' : stockQuantity !== null && stockQuantity >= 5 ? 'border-orange-300' : 'border-gray-200'} border-l-4 ${color.border} hover:shadow-md transition-shadow flex flex-col overflow-hidden`}>
+    <div className={`rounded-lg border ${stockQuantity !== null && stockQuantity >= 10 ? 'border-red-300' : stockQuantity !== null && stockQuantity >= 5 ? 'border-orange-300' : 'border-gray-200'} hover:shadow-md transition-shadow flex flex-col overflow-hidden`}>
       {/* Header: 学年 + 科目（色付き帯） */}
       <div className={`flex items-center justify-between px-3 py-1.5 ${color.bg}`}>
         {textbook.grade ? (
@@ -269,7 +269,7 @@ function CartDrawer({
               return (
                 <div
                   key={item.id}
-                  className={`flex items-start gap-3 p-3 rounded-lg border border-gray-200 border-l-4 ${color.border} bg-white`}
+                  className={`flex items-start gap-3 p-3 rounded-lg border border-gray-200 bg-white`}
                 >
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-gray-900 truncate">{item.textbook.name}</div>

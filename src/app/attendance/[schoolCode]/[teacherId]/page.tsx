@@ -393,7 +393,7 @@ export default function TeacherAttendancePage() {
             <p className="text-red-700 text-sm">
               <strong>差し戻し：</strong>内容を修正して再提出してください
               {rejectionReason && (
-                <span className="block mt-2 pl-4 border-l-2 border-red-300">
+                <span className="block mt-2 px-3 py-2 bg-red-50 rounded text-red-800">
                   {rejectionReason}
                 </span>
               )}
