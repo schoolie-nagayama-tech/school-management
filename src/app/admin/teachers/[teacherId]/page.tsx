@@ -15,6 +15,7 @@ import type { School, UserProfile, Subject, TeacherBadge, TeacherBadgeAssignment
 import { BADGE_RANK_CONFIG, USER_ROLE_LABELS } from '@/types/database';
 import type { ScheduleTimeSlot } from '@/types/schedule';
 import { BadgeIcon } from '@/components/teacher-badges/BadgeIcon';
+import { displayLoginId } from '@/lib/utils/loginId';
 
 const DAY_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
 const GRADE_CATEGORY_LABELS: Record<string, string> = {
@@ -248,7 +249,7 @@ export default function TeacherDetailPage() {
         <div className="flex items-center gap-5">
           <div className="flex-1 min-w-0">
             <h1 className="text-2xl font-bold truncate">{teacher.display_name || '(未設定)'}</h1>
-            <p className="text-sm text-white/70 truncate">{teacher.email}</p>
+            <p className="text-sm text-white/70 truncate">{displayLoginId(teacher.email)}</p>
             <div className="flex flex-wrap items-center gap-2 mt-2">
               <span className="text-xs font-semibold bg-white/20 backdrop-blur px-2.5 py-1 rounded-full">
                 {USER_ROLE_LABELS[teacher.role] || teacher.role}
@@ -444,8 +445,8 @@ export default function TeacherDetailPage() {
           <Panel title="基本情報">
             <dl className="text-sm space-y-2">
               <div className="flex justify-between">
-                <dt className="text-gray-500">メール</dt>
-                <dd className="font-medium text-gray-800 truncate ml-2">{teacher.email}</dd>
+                <dt className="text-gray-500">ログインID</dt>
+                <dd className="font-medium text-gray-800 truncate ml-2">{displayLoginId(teacher.email)}</dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-gray-500">役割</dt>

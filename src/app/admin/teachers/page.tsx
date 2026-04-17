@@ -20,6 +20,7 @@ import type { School, UserProfile, TeacherBadge, TeacherBadgeAssignment } from '
 import { BADGE_RANK_CONFIG } from '@/types/database';
 import { generateTeacherCSV, downloadCSV, type TeacherExportRow } from '@/lib/utils/csvUtils';
 import { TeacherCsvImportModal } from '@/components/csv/TeacherCsvImportModal';
+import { displayLoginId } from '@/lib/utils/loginId';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { getTeacherBadges, getTeacherBadgeAssignments } from '@/lib/api/teacher-badges';
 import { onTeacherBadgesChanged } from '@/lib/teacher-badge-events';
@@ -357,7 +358,8 @@ export default function TeachersPage() {
               onClick={() => {
                 const exportRows: TeacherExportRow[] = teachers.map((t) => ({
                   display_name: t.display_name,
-                  email: t.email,
+                  // 内部ドメインを除いてIDだけエクスポート（再インポート時に normalizeLoginEmail で復元される）
+                  email: displayLoginId(t.email),
                   school_names: (t.user_schools || []).map((us) => us.school?.name ?? '').filter(Boolean),
                   is_active: t.is_active ?? true,
                 }));
@@ -426,7 +428,7 @@ export default function TeachersPage() {
                   <thead className="bg-[#f3f4f6] border-b border-[#e5e7eb]">
                     <tr>
                       <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937]">名前</th>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937]">メール</th>
+                      <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937]">ログインID</th>
                       <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937]">担当教室</th>
                       {allBadges.length > 0 && (
                         <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937]">バッジ</th>
@@ -456,7 +458,7 @@ export default function TeachersPage() {
                         <td className="px-4 py-3 text-sm text-[#1f2937]">
                           {teacher.display_name || '-'}
                         </td>
-                        <td className="px-4 py-3 text-sm text-[#4b5563]">{teacher.email}</td>
+                        <td className="px-4 py-3 text-sm text-[#4b5563]">{displayLoginId(teacher.email)}</td>
                         <td className="px-4 py-3 text-sm text-[#4b5563]">
                           {teacher.user_schools && teacher.user_schools.length > 0 ? (
                             <div className="flex flex-wrap gap-1">
@@ -535,7 +537,7 @@ export default function TeachersPage() {
                               <button
                                 type="button"
                                 onClick={async () => {
-                                  if (!confirm(`${teacher.display_name || teacher.email}としてログインしますか？\n（元のアカウントにはバナーから戻れます）`)) return;
+                                  if (!confirm(`${teacher.display_name || displayLoginId(teacher.email)}としてログインしますか？\n（元のアカウントにはバナーから戻れます）`)) return;
                                   try {
                                     await impersonateUser(teacher.id);
                                   } catch (e) {
@@ -678,12 +680,12 @@ export default function TeachersPage() {
                     <Input value={createdTeacher.displayName} readOnly />
                   </div>
                   <div className="space-y-2">
-                    <Label>メールアドレス（ID）</Label>
+                    <Label>ログインID</Label>
                     <div className="flex items-center gap-2">
-                      <Input value={createdTeacher.email} readOnly className="flex-1" />
+                      <Input value={displayLoginId(createdTeacher.email)} readOnly className="flex-1" />
                       <Button
                         variant="ghost"
-                        onClick={() => handleCopy(createdTeacher.email, 'email')}
+                        onClick={() => handleCopy(displayLoginId(createdTeacher.email), 'email')}
                         className="p-2"
                       >
                         {copiedField === 'email' ? (

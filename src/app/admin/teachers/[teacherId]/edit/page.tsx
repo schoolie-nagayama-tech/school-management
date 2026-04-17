@@ -17,6 +17,7 @@ import { getTrainingMasters } from '@/lib/api/training-masters';
 import type { TeacherTraining, TrainingMaster } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
 import { addUserToSchool, removeUserFromSchool, fetchWithAuth } from '@/lib/api/auth';
+import { displayLoginId } from '@/lib/utils/loginId';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { getActiveTimeSlots } from '@/lib/api/schedule';
 import { getTeacherBadges, getTeacherBadgeAssignments, toggleTeacherBadge } from '@/lib/api/teacher-badges';
@@ -490,9 +491,9 @@ export default function TeacherEditPage() {
               </h2>
               <div className="space-y-4">
                 <div>
-                  <Label className="block text-sm font-medium text-[#6b7280] mb-1.5">メールアドレス</Label>
+                  <Label className="block text-sm font-medium text-[#6b7280] mb-1.5">ログインID</Label>
                   <Input
-                    value={teacher.email}
+                    value={displayLoginId(teacher.email)}
                     disabled
                     className="w-full bg-[#f9fafb] text-[#4b5563]"
                   />

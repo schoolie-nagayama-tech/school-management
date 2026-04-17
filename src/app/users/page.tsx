@@ -19,6 +19,7 @@ import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { UserEditModal } from '@/components/users/UserEditModal';
 import { SchoolFormModal } from '@/components/users/SchoolFormModal';
 import { UserCreateDialogs } from '@/components/users/UserCreateDialogs';
+import { displayLoginId } from '@/lib/utils/loginId';
 
 type TabType = 'users' | 'schools';
 
@@ -547,7 +548,7 @@ export default function UsersPage() {
                   <thead className="bg-[#f3f4f6] border-b border-[#e5e7eb]">
                     <tr>
                       <th className="px-3 py-2 text-left text-sm font-bold text-[#1f2937] truncate">名前</th>
-                      <th className="px-3 py-2 text-left text-sm font-bold text-[#1f2937] truncate">メール</th>
+                      <th className="px-3 py-2 text-left text-sm font-bold text-[#1f2937] truncate">ログインID</th>
                       <th className="px-3 py-2 text-left text-sm font-bold text-[#1f2937] truncate">権限</th>
                       <th className="px-3 py-2 text-left text-sm font-bold text-[#1f2937]">担当教室</th>
                       <th className="px-3 py-2 text-left text-sm font-bold text-[#1f2937] truncate">状態</th>
@@ -561,7 +562,7 @@ export default function UsersPage() {
                         <td className="px-3 py-2 text-sm text-[#1f2937] truncate" title={user.display_name || '-'}>
                           {user.display_name || '-'}
                         </td>
-                        <td className="px-3 py-2 text-sm text-[#4b5563] truncate" title={user.email}>{user.email}</td>
+                        <td className="px-3 py-2 text-sm text-[#4b5563] truncate" title={displayLoginId(user.email)}>{displayLoginId(user.email)}</td>
                         <td className="px-3 py-2 whitespace-nowrap">
                           <span className="inline-block px-2 py-1 text-xs font-bold bg-[#3b82f6]/20 text-[#1f2937] rounded">
                             {USER_ROLE_LABELS[user.role as UserRole] ?? '未設定'}
@@ -623,7 +624,7 @@ export default function UsersPage() {
                                   <button
                                     type="button"
                                     onClick={async () => {
-                                      if (!confirm(`${user.display_name || user.email}としてログインしますか？\n（元のアカウントにはバナーから戻れます）`)) return;
+                                      if (!confirm(`${user.display_name || displayLoginId(user.email)}としてログインしますか？\n（元のアカウントにはバナーから戻れます）`)) return;
                                       try {
                                         await impersonateUser(user.id);
                                       } catch (e) {
