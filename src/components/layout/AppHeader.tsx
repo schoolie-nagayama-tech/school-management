@@ -11,6 +11,7 @@ import { SubjectSettings } from '@/components/settings';
 import { Megaphone } from 'lucide-react';
 import { TierMedal } from '@/components/teacher/TierMedal';
 import { useTeacherBadgeCount } from '@/hooks/useTeacherBadgeCount';
+import { ThemeToggle } from './ThemeToggle';
 
 interface AppHeaderProps {
   title: string;
@@ -555,6 +556,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                 </div>
               </div>
             )}
+            <ThemeToggle />
             <Link
               href="/help"
               className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"

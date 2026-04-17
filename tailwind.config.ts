@@ -1,6 +1,7 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  darkMode: "class",
   content: [
     "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -29,45 +30,52 @@ const config: Config = {
         ],
       },
       colors: {
-        /* Base */
-        background: "var(--background)",
-        foreground: "var(--foreground)",
-        "base-section": "var(--base-section)",
-        border: "var(--border)",
-        /* Primary (Navy) */
+        /* Surfaces */
+        bg: "var(--bg)",
+        background: "var(--bg)",
+        surface: "var(--surface)",
+        "surface-raised": "var(--surface-raised)",
+        "surface-hover": "var(--surface-hover)",
+        /* Text */
+        foreground: "var(--text-body)",
+        "text-heading": "var(--text-heading)",
+        "text-body": "var(--text-body)",
+        "text-muted": "var(--text-muted)",
+        "text-faint": "var(--text-faint)",
+        "text-on-primary": "var(--text-on-primary)",
+        /* Borders */
+        border: "var(--border-default)",
+        "border-subtle": "var(--border-subtle)",
+        "border-strong": "var(--border-strong)",
+        /* Primary */
         primary: {
-          DEFAULT: "var(--primary-main)",
-          main: "var(--primary-main)",
+          DEFAULT: "var(--primary)",
           light: "var(--primary-light)",
           dark: "var(--primary-dark)",
+          subtle: "var(--primary-subtle)",
+          contrast: "var(--primary-contrast)",
         },
-        /* Functional */
+        /* Status */
         success: {
-          DEFAULT: "var(--success-main)",
-          main: "var(--success-main)",
-          light: "var(--success-light)",
-          dark: "var(--success-dark)",
+          DEFAULT: "var(--success)",
+          subtle: "var(--success-subtle)",
         },
         warning: {
-          DEFAULT: "var(--warning-main)",
-          main: "var(--warning-main)",
-          light: "var(--warning-light)",
-          dark: "var(--warning-dark)",
+          DEFAULT: "var(--warning)",
+          subtle: "var(--warning-subtle)",
+        },
+        danger: {
+          DEFAULT: "var(--danger)",
+          subtle: "var(--danger-subtle)",
         },
         error: {
-          DEFAULT: "var(--error-main)",
-          main: "var(--error-main)",
-          light: "var(--error-light)",
-          dark: "var(--error-dark)",
+          DEFAULT: "var(--danger)",
+          subtle: "var(--danger-subtle)",
         },
         info: {
-          DEFAULT: "var(--info-main)",
-          main: "var(--info-main)",
-          light: "var(--info-light)",
-          dark: "var(--info-dark)",
+          DEFAULT: "var(--info)",
+          subtle: "var(--info-subtle)",
         },
-        /* Text */
-        "text-muted": "var(--text-muted)",
       },
     },
   },

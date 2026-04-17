@@ -4,6 +4,7 @@ import { Noto_Sans_JP } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from '@/contexts/AuthContext';
 import { MasterDataProvider } from '@/contexts/MasterDataContext';
+import { ThemeProvider, themeInitScript } from '@/contexts/ThemeContext';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ImpersonationBanner } from '@/components/ImpersonationBanner';
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -44,16 +45,22 @@ export default function RootLayout({
     <html
       lang="ja"
       className={`${notoSansJP.variable} ${geistSans.variable} ${geistMono.variable}`}
+      suppressHydrationWarning
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body className="antialiased">
         <ErrorBoundary>
-          <AuthProvider>
-            <MasterDataProvider>
-              <ImpersonationBanner />
-              {children}
-              <SpeedInsights />
-            </MasterDataProvider>
-          </AuthProvider>
+          <ThemeProvider>
+            <AuthProvider>
+              <MasterDataProvider>
+                <ImpersonationBanner />
+                {children}
+                <SpeedInsights />
+              </MasterDataProvider>
+            </AuthProvider>
+          </ThemeProvider>
         </ErrorBoundary>
       </body>
     </html>

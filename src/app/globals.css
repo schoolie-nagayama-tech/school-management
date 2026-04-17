@@ -4,42 +4,107 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+  カラートークン
+  ─────────────────────────────────────────────
+  OKLCH ベースで Light / Dark 2系統を定義。
+  - プライマリの基準: oklch(55% 0.19 27)（既存 #d32f2f に近似）
+  - ニュートラルは赤寄りに微 tint（chroma 0.006）し、ブランドと馴染ませる
+  - Dark は反転ではなく独立パレット。極端な黒を避け、彩度と明度を再調整
+  - 互換性のため旧変数（--background, --paragraph 等）も残す
+*/
 :root {
-  /* ベース（白メイン） */
-  --background: #ffffff;
-  --surface: #f8f8f8;
-  --surface-hover: #f0f0f0;
-  --headline: #1a1a1a;
-  --paragraph: #4a4a4a;
-  --paragraph-light: #777777;
+  color-scheme: light;
 
-  /* テーマカラー（明るい赤） */
-  --primary: #d32f2f;
-  --primary-light: #ef5350;
-  --primary-dark: #b71c1c;
-  --primary-subtle: #ffebee;
+  /* === Primary（赤） === */
+  --primary: oklch(55% 0.19 27);
+  --primary-light: oklch(65% 0.18 27);
+  --primary-dark: oklch(45% 0.18 27);
+  --primary-subtle: oklch(96% 0.03 27);
+  --primary-contrast: oklch(98% 0.005 27);
 
-  /* ボーダー */
-  --stroke: #e0e0e0;
-  --stroke-light: #eeeeee;
+  /* === Background layers === */
+  --bg: oklch(99% 0.002 27);        /* 最下層 */
+  --surface: oklch(97% 0.003 27);   /* カード */
+  --surface-raised: oklch(100% 0 0); /* フローティング要素 */
+  --surface-hover: oklch(95% 0.004 27);
 
-  /* ステータス */
-  --danger: #c62828;
-  --warning: #f9a825;
-  --info: #1976d2;
-  --success: #2e7d32;
+  /* === Text === */
+  --text-heading: oklch(22% 0.01 27);
+  --text-body: oklch(38% 0.008 27);
+  --text-muted: oklch(55% 0.008 27);
+  --text-faint: oklch(68% 0.006 27);
+  --text-on-primary: oklch(98% 0.005 27);
 
-  /* ボタン */
-  --button-bg: #d32f2f;
-  --button-text: #ffffff;
-  --button-hover: #b71c1c;
+  /* === Border === */
+  --border-default: oklch(90% 0.005 27);
+  --border-subtle: oklch(94% 0.004 27);
+  --border-strong: oklch(82% 0.008 27);
 
-  /* 互換性 */
-  --foreground: var(--paragraph);
+  /* === Status === */
+  --success: oklch(55% 0.14 145);
+  --success-subtle: oklch(95% 0.04 145);
+  --warning: oklch(72% 0.15 80);
+  --warning-subtle: oklch(96% 0.05 80);
+  --danger: oklch(55% 0.19 27);
+  --danger-subtle: oklch(96% 0.03 27);
+  --info: oklch(55% 0.15 250);
+  --info-subtle: oklch(96% 0.03 250);
+
+  /* === 互換レイヤー（既存コードで参照中） === */
+  --background: var(--bg);
+  --headline: var(--text-heading);
+  --paragraph: var(--text-body);
+  --paragraph-light: var(--text-muted);
+  --stroke: var(--border-default);
+  --stroke-light: var(--border-subtle);
+  --button-bg: var(--primary);
+  --button-text: var(--text-on-primary);
+  --button-hover: var(--primary-dark);
+  --foreground: var(--text-body);
   --highlight: var(--primary);
   --secondary: var(--surface);
   --tertiary: var(--danger);
-  --main: var(--background);
+  --main: var(--bg);
+}
+
+:root.dark {
+  color-scheme: dark;
+
+  /* Primary: ダークでは彩度を少し落とし、明度を上げて視認性を確保 */
+  --primary: oklch(68% 0.17 27);
+  --primary-light: oklch(75% 0.14 27);
+  --primary-dark: oklch(58% 0.18 27);
+  --primary-subtle: oklch(28% 0.06 27);
+  --primary-contrast: oklch(18% 0.02 27);
+
+  /* Background: 純黒ではなく微 tint。段階の段差を強めて奥行きを出す */
+  --bg: oklch(17% 0.01 27);
+  --surface: oklch(21% 0.012 27);
+  --surface-raised: oklch(25% 0.013 27);
+  --surface-hover: oklch(28% 0.014 27);
+
+  /* Text: ダーク時はコントラスト比を上げつつ純白を避ける */
+  --text-heading: oklch(96% 0.005 27);
+  --text-body: oklch(86% 0.006 27);
+  --text-muted: oklch(68% 0.008 27);
+  --text-faint: oklch(52% 0.008 27);
+  --text-on-primary: oklch(18% 0.02 27);
+
+  /* Border */
+  --border-default: oklch(32% 0.012 27);
+  --border-subtle: oklch(26% 0.01 27);
+  --border-strong: oklch(42% 0.014 27);
+
+  /* Status（ダーク用に彩度・明度再調整） */
+  --success: oklch(68% 0.15 145);
+  --success-subtle: oklch(30% 0.06 145);
+  --warning: oklch(78% 0.15 80);
+  --warning-subtle: oklch(30% 0.06 80);
+  --danger: oklch(68% 0.17 27);
+  --danger-subtle: oklch(30% 0.07 27);
+  --info: oklch(70% 0.14 250);
+  --info-subtle: oklch(30% 0.06 250);
 }
 
 body {
