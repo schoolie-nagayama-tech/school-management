@@ -1,12 +1,191 @@
 'use client';
 
+import { memo, useCallback } from 'react';
 import type { Student, Subject } from '@/types/database';
 import { GRADE_LABELS, STATUS_LABELS, STATUS_COLORS } from '@/types/database';
 import type { SchedulePatternSummary } from '@/lib/api/students';
 import { DAY_OF_WEEK_LABELS } from '@/types/schedule';
 
+type StudentRow = Student & {
+  subjects?: Subject[];
+  schedulePatterns?: SchedulePatternSummary[];
+};
+
+interface StudentTableRowProps {
+  student: StudentRow;
+  selectable: boolean;
+  isChecked: boolean;
+  onToggle: (id: string) => void;
+  onRowClick?: (student: Student) => void;
+  onEdit?: (student: Student) => void;
+  onDelete?: (student: Student) => void;
+  onScores?: (student: Student) => void;
+  onInterviews?: (student: Student) => void;
+  onProgress?: (student: Student) => void;
+  onSchedule?: (student: Student) => void;
+}
+
+const StudentTableRow = memo(function StudentTableRow({
+  student,
+  selectable,
+  isChecked,
+  onToggle,
+  onRowClick,
+  onEdit,
+  onDelete,
+  onScores,
+  onInterviews,
+  onProgress,
+  onSchedule,
+}: StudentTableRowProps) {
+  const schedulePatterns = student.schedulePatterns || [];
+  return (
+    <tr
+      className={`transition-colors duration-150 ${
+        isChecked ? 'bg-[#1e3a5f]/5' : ''
+      } ${onRowClick ? 'cursor-pointer hover:bg-gray-50' : ''}`}
+      onClick={() => onRowClick?.(student)}
+    >
+      {selectable && (
+        <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
+          <input
+            type="checkbox"
+            checked={isChecked}
+            onChange={() => onToggle(student.id)}
+            className="w-4 h-4 rounded border-gray-300 text-[#1e3a5f] focus:ring-[#1e3a5f]/30"
+          />
+        </td>
+      )}
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-[#1a1a1a]">
+            {student.last_name} {student.first_name}
+          </span>
+          {student.is_programming && (
+            <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium rounded bg-purple-100 text-purple-700 border border-purple-200">
+              プログラミング
+            </span>
+          )}
+        </div>
+      </td>
+      <td className="px-4 py-3 text-sm text-[#4b5563]">
+        {student.last_name_kana} {student.first_name_kana}
+      </td>
+      <td className="px-4 py-3 text-sm text-[#4b5563]">
+        {GRADE_LABELS[student.grade] || student.grade}
+      </td>
+      <td className="px-4 py-3 text-sm text-[#4b5563]">
+        {student.school_name || <span className="text-[#4b5563]/30">-</span>}
+      </td>
+      <td className="px-4 py-3 text-sm text-[#4b5563]">
+        {schedulePatterns.length > 0 ? (
+          <div className="flex flex-wrap gap-x-2 gap-y-0.5 items-center">
+            {schedulePatterns.map((p, i) => (
+              <span key={i} className="inline-flex text-xs">
+                <span className="text-[#6b7280]">{DAY_OF_WEEK_LABELS[p.day_of_week]}</span>
+                {p.subject_names?.[0] && (
+                  <span className="text-[#3b82f6] ml-0.5">{p.subject_names[0]}</span>
+                )}
+              </span>
+            ))}
+            <span className="text-[10px] text-[#9ca3af]">週{schedulePatterns.length}回</span>
+          </div>
+        ) : (
+          <span className="text-[#4b5563]/30">-</span>
+        )}
+      </td>
+      <td className="px-4 py-3">
+        <span
+          className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${STATUS_COLORS[student.status]}`}
+        >
+          {STATUS_LABELS[student.status]}
+        </span>
+      </td>
+      <td className="px-4 py-3 text-right">
+        <div className="flex justify-end gap-3" onClick={(e) => e.stopPropagation()}>
+          {onScores && (
+            <button
+              onClick={() => onScores(student)}
+              aria-label="成績"
+              className="flex flex-col items-center gap-1 p-1.5 text-gray-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/10 rounded-lg transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span className="text-[10px] leading-tight">成績</span>
+            </button>
+          )}
+          {onInterviews && (
+            <button
+              onClick={() => onInterviews(student)}
+              aria-label="面談"
+              className="flex flex-col items-center gap-1 p-1.5 text-[#4b5563] hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              <span className="text-[10px] leading-tight">面談</span>
+            </button>
+          )}
+          {onProgress && (
+            <button
+              onClick={() => onProgress(student)}
+              aria-label="進行表"
+              className="flex flex-col items-center gap-1 p-1.5 text-gray-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/10 rounded-lg transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+              <span className="text-[10px] leading-tight">進行表</span>
+            </button>
+          )}
+          {onSchedule && (
+            <button
+              onClick={() => onSchedule(student)}
+              aria-label="通塾日程"
+              className="flex flex-col items-center gap-1 p-1.5 text-gray-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/10 rounded-lg transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span className="text-[10px] leading-tight">通塾日程</span>
+            </button>
+          )}
+          {onEdit && (
+            <button
+              onClick={() => onEdit(student)}
+              aria-label="編集"
+              className="flex flex-col items-center gap-1 p-1.5 text-gray-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/10 rounded-lg transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              <span className="text-[10px] leading-tight">編集</span>
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(student);
+              }}
+              aria-label="削除"
+              className="flex flex-col items-center gap-1 p-1.5 text-[#4b5563] hover:text-[#ef4444] hover:bg-[#ef4444]/10 rounded-lg transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              <span className="text-[10px] leading-tight">削除</span>
+            </button>
+          )}
+        </div>
+      </td>
+    </tr>
+  );
+});
+
 interface StudentTableProps {
-  students: (Student & { subjects?: Subject[]; schedulePatterns?: SchedulePatternSummary[] })[];
+  students: StudentRow[];
   onEdit?: (student: Student) => void;
   onDelete?: (student: Student) => void;
   onRowClick?: (student: Student) => void;
@@ -51,16 +230,19 @@ export function StudentTable({
     }
   };
 
-  const handleToggle = (id: string) => {
-    if (!onSelectionChange || !selectedIds) return;
-    const next = new Set(selectedIds);
-    if (next.has(id)) {
-      next.delete(id);
-    } else {
-      next.add(id);
-    }
-    onSelectionChange(next);
-  };
+  const handleToggle = useCallback(
+    (id: string) => {
+      if (!onSelectionChange || !selectedIds) return;
+      const next = new Set(selectedIds);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      onSelectionChange(next);
+    },
+    [onSelectionChange, selectedIds]
+  );
 
   if (isLoading) {
     return (
@@ -142,216 +324,22 @@ export function StudentTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {students.map((student) => {
-              const schedulePatterns = student.schedulePatterns || [];
-              const isChecked = selectable && selectedIds.has(student.id);
-              return (
-                <tr
-                  key={student.id}
-                  className={`transition-colors duration-150 ${
-                    isChecked ? 'bg-[#1e3a5f]/5' : ''
-                  } ${
-                    onRowClick ? 'cursor-pointer hover:bg-gray-50' : ''
-                  }`}
-                  onClick={() => onRowClick?.(student)}
-                >
-                {selectable && (
-                  <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
-                    <input
-                      type="checkbox"
-                      checked={isChecked}
-                      onChange={() => handleToggle(student.id)}
-                      className="w-4 h-4 rounded border-gray-300 text-[#1e3a5f] focus:ring-[#1e3a5f]/30"
-                    />
-                  </td>
-                )}
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-[#1a1a1a]">
-                      {student.last_name} {student.first_name}
-                    </span>
-                    {student.is_programming && (
-                      <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium rounded bg-purple-100 text-purple-700 border border-purple-200">
-                        プログラミング
-                      </span>
-                    )}
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-sm text-[#4b5563]">
-                  {student.last_name_kana} {student.first_name_kana}
-                </td>
-                <td className="px-4 py-3 text-sm text-[#4b5563]">
-                  {GRADE_LABELS[student.grade] || student.grade}
-                </td>
-                <td className="px-4 py-3 text-sm text-[#4b5563]">
-                  {student.school_name || <span className="text-[#4b5563]/30">-</span>}
-                </td>
-                <td className="px-4 py-3 text-sm text-[#4b5563]">
-                  {schedulePatterns.length > 0 ? (
-                    <div className="flex flex-wrap gap-x-2 gap-y-0.5 items-center">
-                      {schedulePatterns.map((p, i) => (
-                        <span key={i} className="inline-flex text-xs">
-                          <span className="text-[#6b7280]">{DAY_OF_WEEK_LABELS[p.day_of_week]}</span>
-                          {p.subject_names?.[0] && (
-                            <span className="text-[#3b82f6] ml-0.5">{p.subject_names[0]}</span>
-                          )}
-                        </span>
-                      ))}
-                      <span className="text-[10px] text-[#9ca3af]">週{schedulePatterns.length}回</span>
-                    </div>
-                  ) : (
-                    <span className="text-[#4b5563]/30">-</span>
-                  )}
-                </td>
-                <td className="px-4 py-3">
-                  <span
-                    className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${STATUS_COLORS[student.status]}`}
-                  >
-                    {STATUS_LABELS[student.status]}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <div className="flex justify-end gap-3" onClick={(e) => e.stopPropagation()}>
-                    {onScores && (
-                      <button
-                        onClick={() => onScores(student)}
-                        aria-label="成績"
-                        className="flex flex-col items-center gap-1 p-1.5 text-gray-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/10 rounded-lg transition-colors"
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                          />
-                        </svg>
-                        <span className="text-[10px] leading-tight">成績</span>
-                      </button>
-                    )}
-                    {onInterviews && (
-                      <button
-                        onClick={() => onInterviews(student)}
-                        aria-label="面談"
-                        className="flex flex-col items-center gap-1 p-1.5 text-[#4b5563] hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                          />
-                        </svg>
-                        <span className="text-[10px] leading-tight">面談</span>
-                      </button>
-                    )}
-                    {onProgress && (
-                      <button
-                        onClick={() => onProgress(student)}
-                        aria-label="進行表"
-                        className="flex flex-col items-center gap-1 p-1.5 text-gray-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/10 rounded-lg transition-colors"
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                          />
-                        </svg>
-                        <span className="text-[10px] leading-tight">進行表</span>
-                      </button>
-                    )}
-                    {onSchedule && (
-                      <button
-                        onClick={() => onSchedule(student)}
-                        aria-label="通塾日程"
-                        className="flex flex-col items-center gap-1 p-1.5 text-gray-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/10 rounded-lg transition-colors"
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                          />
-                        </svg>
-                        <span className="text-[10px] leading-tight">通塾日程</span>
-                      </button>
-                    )}
-                    {onEdit && (
-                      <button
-                        onClick={() => onEdit(student)}
-                        aria-label="編集"
-                        className="flex flex-col items-center gap-1 p-1.5 text-gray-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/10 rounded-lg transition-colors"
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                          />
-                        </svg>
-                        <span className="text-[10px] leading-tight">編集</span>
-                      </button>
-                    )}
-                    {onDelete && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDelete(student);
-                        }}
-                        aria-label="削除"
-                        className="flex flex-col items-center gap-1 p-1.5 text-[#4b5563] hover:text-[#ef4444] hover:bg-[#ef4444]/10 rounded-lg transition-colors"
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                          />
-                        </svg>
-                        <span className="text-[10px] leading-tight">削除</span>
-                      </button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-              );
-            })}
+            {students.map((student) => (
+              <StudentTableRow
+                key={student.id}
+                student={student}
+                selectable={selectable}
+                isChecked={!!selectedIds?.has(student.id)}
+                onToggle={handleToggle}
+                onRowClick={onRowClick}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onScores={onScores}
+                onInterviews={onInterviews}
+                onProgress={onProgress}
+                onSchedule={onSchedule}
+              />
+            ))}
           </tbody>
         </table>
       </div>
