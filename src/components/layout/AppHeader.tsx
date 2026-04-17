@@ -755,6 +755,56 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
             )}
           </div>
         </div>
+        {/* モバイルメニュー（lg 未満で展開） */}
+        {showMobileMenu && (
+          <nav
+            id="mobile-nav"
+            className="lg:hidden border-t border-white/20 py-2 space-y-0.5"
+          >
+            {[
+              { href: '/students', label: '生徒管理', show: showAllLinks || permissions?.canAccessStudents },
+              { href: '/applications', label: '申込状況', show: showAllLinks || permissions?.canAccessApplications },
+              { href: '/responses', label: '回答一覧', show: showAllLinks || permissions?.canAccessPortal },
+              { href: '/forms/responses', label: 'フォーム回答', show: showAllLinks || permissions?.canAccessPortal },
+              { href: '/settings/portal', label: 'ポータル設定', show: showAllLinks || permissions?.canAccessPortal },
+              { href: '/transcriptions', label: '文字起こし', show: showAllLinks || permissions?.canAccessPortal },
+              { href: '/courses', label: '講習一覧', show: showAllLinks || permissions?.canAccessPortal },
+              { href: '/courses/progress', label: '講習進行', show: showAllLinks || permissions?.canAccessPortal },
+              { href: '/courses/schedule', label: '講習日程', show: showAllLinks || permissions?.canAccessPortal },
+              { href: '/admin/teachers', label: '講師一覧', show: showAllLinks || permissions?.canAccessUsers },
+              { href: '/billing', label: '請求管理', show: showAllLinks || permissions?.canAccessBilling },
+              { href: '/ordering', label: '教材・発注管理', show: showAllLinks || permissions?.canAccessBilling },
+              { href: '/tasks', label: '業務進捗', show: showAllLinks || permissions?.canAccessBilling },
+            ]
+              .filter((item) => item.show)
+              .map((item) => {
+                const active =
+                  pathname === item.href ||
+                  (item.href !== '/' && pathname?.startsWith(item.href + '/'));
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`block px-4 py-2 text-sm transition-colors ${
+                      active
+                        ? 'bg-white text-[#d32f2f] font-semibold'
+                        : 'text-white hover:bg-white/10'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            {profile && (
+              <div className="px-4 pt-2 mt-1 border-t border-white/20 text-[11px] text-white/80">
+                <div className="font-semibold text-white">
+                  {profile.display_name || profile.email}
+                </div>
+                <div>{USER_ROLE_LABELS[profile.role]}</div>
+              </div>
+            )}
+          </nav>
+        )}
         {/* 連絡掲示板未読アラート（講師のみ） */}
         {bulletinUnreadCount > 0 && (
           <Link
