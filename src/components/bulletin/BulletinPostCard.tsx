@@ -51,7 +51,7 @@ export function BulletinPostCard({
     <div
       className={`p-3 rounded-lg border ${
         canRead && !post.is_read
-          ? 'bg-[color-mix(in_oklch,var(--primary)_4%,white)] border-gray-300 shadow-sm'
+          ? 'bg-primary-subtle border-gray-300 shadow-sm'
           : 'bg-white border-gray-200'
       }`}
     >

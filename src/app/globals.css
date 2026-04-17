@@ -115,6 +115,133 @@ body {
   font-feature-settings: "palt" 1;
 }
 
+/*
+  ダークモード互換レイヤー
+  ─────────────────────────────────────────────
+  既存コードベースには Tailwind の生色クラス（bg-white, text-[#1a1a1a] 等）
+  が 300+ 箇所存在し、すべてを dark: 修飾に書き換えるのは現実的でない。
+  そこで、ダーク時によく使われる中立色のみ token 値にリマップして、
+  ブランド色（赤・青の強調バッジ等）はそのまま残す。
+  段階的にコンポーネント側を書き換えていくための "土台" としての役割。
+*/
+:root.dark .bg-white {
+  background-color: var(--surface-raised);
+}
+:root.dark .bg-\[\#ffffff\],
+:root.dark .bg-\[\#fff\] {
+  background-color: var(--surface-raised);
+}
+:root.dark .bg-gray-50,
+:root.dark .bg-\[\#f8f8f8\],
+:root.dark .bg-\[\#f9fafb\],
+:root.dark .bg-\[\#fafafa\] {
+  background-color: var(--surface);
+}
+:root.dark .bg-gray-100,
+:root.dark .bg-\[\#f3f4f6\],
+:root.dark .bg-\[\#f0f0f0\] {
+  background-color: var(--surface-hover);
+}
+:root.dark .bg-gray-200,
+:root.dark .bg-\[\#e5e7eb\] {
+  background-color: var(--border-default);
+}
+
+:root.dark .text-\[\#1a1a1a\],
+:root.dark .text-gray-900,
+:root.dark .text-\[\#111827\],
+:root.dark .text-\[\#1f2937\],
+:root.dark .text-black {
+  color: var(--text-heading);
+}
+:root.dark .text-gray-800,
+:root.dark .text-\[\#374151\],
+:root.dark .text-\[\#1e3a5f\] {
+  color: var(--text-heading);
+}
+:root.dark .text-gray-700,
+:root.dark .text-\[\#4a4a4a\],
+:root.dark .text-\[\#4b5563\] {
+  color: var(--text-body);
+}
+:root.dark .text-gray-600,
+:root.dark .text-\[\#6b7280\],
+:root.dark .text-\[\#777\],
+:root.dark .text-\[\#777777\] {
+  color: var(--text-muted);
+}
+:root.dark .text-gray-500 {
+  color: var(--text-muted);
+}
+:root.dark .text-gray-400 {
+  color: var(--text-faint);
+}
+:root.dark .text-gray-300 {
+  color: var(--text-faint);
+}
+
+:root.dark .border-gray-100,
+:root.dark .border-\[\#eeeeee\],
+:root.dark .border-\[\#f3f4f6\] {
+  border-color: var(--border-subtle);
+}
+:root.dark .border-gray-200,
+:root.dark .border-\[\#e0e0e0\],
+:root.dark .border-\[\#e5e7eb\] {
+  border-color: var(--border-default);
+}
+:root.dark .border-gray-300,
+:root.dark .border-\[\#d1d5db\] {
+  border-color: var(--border-strong);
+}
+:root.dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--border-subtle);
+}
+:root.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--border-default);
+}
+
+/* ホバー・選択状態 */
+:root.dark .hover\:bg-gray-50:hover,
+:root.dark .hover\:bg-gray-100:hover,
+:root.dark .hover\:bg-\[\#f3f4f6\]:hover {
+  background-color: var(--surface-hover);
+}
+
+/* ステータス系の淡いtint背景はダーク用の subtle トークンへ */
+:root.dark .bg-red-50,
+:root.dark .bg-\[\#ffebee\],
+:root.dark .bg-\[\#fef2f2\] { background-color: var(--danger-subtle); }
+:root.dark .bg-yellow-50,
+:root.dark .bg-\[\#fefce8\] { background-color: var(--warning-subtle); }
+:root.dark .bg-green-50,
+:root.dark .bg-\[\#e8f5e9\],
+:root.dark .bg-\[\#f0fdf4\] { background-color: var(--success-subtle); }
+:root.dark .bg-blue-50,
+:root.dark .bg-\[\#eff6ff\] { background-color: var(--info-subtle); }
+:root.dark .bg-orange-50,
+:root.dark .bg-\[\#fff7ed\] { background-color: var(--warning-subtle); }
+:root.dark .bg-purple-50,
+:root.dark .bg-\[\#faf5ff\] { background-color: oklch(30% 0.06 300); }
+:root.dark .bg-pink-50,
+:root.dark .bg-\[\#fdf2f8\] { background-color: oklch(30% 0.06 340); }
+
+/* Material 系 100 番のトーン（連絡掲示板ヘッダ等で多用） */
+:root.dark .bg-\[\#ffcdd2\] { background-color: var(--danger-subtle); }
+:root.dark .border-\[\#ffcdd2\] { border-color: color-mix(in oklch, var(--danger) 40%, transparent); }
+:root.dark .border-red-200,
+:root.dark .border-green-200,
+:root.dark .border-blue-200,
+:root.dark .border-yellow-200,
+:root.dark .border-orange-200 {
+  border-color: color-mix(in oklch, currentColor 20%, transparent);
+}
+
+/* スクロールバー（ダーク時は暗色系に） */
+:root.dark ::-webkit-scrollbar-track { background: var(--surface); }
+:root.dark ::-webkit-scrollbar-thumb { background: var(--border-strong); }
+:root.dark ::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+
 h1, h2, h3, h4, h5, h6 {
   color: var(--headline);
 }
