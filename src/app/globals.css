@@ -137,7 +137,8 @@ body {
 :root.dark .bg-\[\#f9fafb\],
 :root.dark .bg-\[\#fafafa\],
 :root.dark .bg-\[\#f8fafc\],
-:root.dark .bg-\[\#f1f5f9\] {
+:root.dark .bg-\[\#f1f5f9\],
+:root.dark .bg-\[\#f0f4f8\] {
   background-color: var(--surface);
 }
 :root.dark .bg-gray-100,
@@ -159,7 +160,9 @@ body {
 }
 :root.dark .text-gray-800,
 :root.dark .text-\[\#374151\],
-:root.dark .text-\[\#1e3a5f\] {
+:root.dark .text-\[\#1e3a5f\],
+:root.dark .text-\[\#2c5282\],
+:root.dark .text-\[\#2d4a6f\] {
   color: var(--text-heading);
 }
 :root.dark .text-gray-700,
@@ -176,10 +179,12 @@ body {
 :root.dark .text-gray-500 {
   color: var(--text-muted);
 }
-:root.dark .text-gray-400 {
+:root.dark .text-gray-400,
+:root.dark .text-\[\#9ca3af\] {
   color: var(--text-faint);
 }
-:root.dark .text-gray-300 {
+:root.dark .text-gray-300,
+:root.dark .text-\[\#d1d5db\] {
   color: var(--text-faint);
 }
 
@@ -196,6 +201,18 @@ body {
 :root.dark .border-gray-300,
 :root.dark .border-\[\#d1d5db\] {
   border-color: var(--border-strong);
+}
+
+/* Navy ブランド色をダーク背景で視認可能な明度に引き上げる */
+:root.dark .bg-\[\#1e3a5f\],
+:root.dark .bg-\[\#2a4a6f\],
+:root.dark .bg-\[\#2c5282\],
+:root.dark .bg-\[\#2d4a6f\] {
+  background-color: oklch(55% 0.10 250);
+}
+:root.dark .border-\[\#1e3a5f\],
+:root.dark .border-\[\#2d4a6f\] {
+  border-color: oklch(65% 0.11 250);
 }
 :root.dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]) {
   border-color: var(--border-subtle);
