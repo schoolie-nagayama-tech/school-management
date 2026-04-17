@@ -13,7 +13,7 @@ import {
   AddStudentToSlotModal,
   DeleteScheduleEntryModal,
 } from '@/components/schedule';
-import { StudentDetailModal } from '@/components/students';
+import { StudentDetailModal } from '@/components/students/StudentDetailModal';
 import { Calendar, Settings, Loader2 } from 'lucide-react';
 import type { ScheduleEntry, ScheduleEntryFormData, ScheduleTimeSlot } from '@/types/schedule';
 import type { Student } from '@/types/database';

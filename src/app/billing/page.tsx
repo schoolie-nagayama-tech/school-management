@@ -10,7 +10,7 @@ import {
   VocabBookStockCard,
 } from '@/components/billing';
 import type { BillingFilters } from '@/components/billing';
-import { StudentDetailModal } from '@/components/students';
+import { StudentDetailModal } from '@/components/students/StudentDetailModal';
 import { getStudents } from '@/lib/api/students';
 import {
   getBillingPeriods,

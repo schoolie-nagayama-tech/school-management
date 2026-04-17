@@ -8,7 +8,8 @@ import { SelectShadcn as Select, SelectTrigger, SelectValue, SelectContent, Sele
 import { Button } from '@/components/ui';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui';
 import { ToastContainer } from '@/components/ui';
-import { TimeSlotForm, TimeSlotTable } from '@/components/schedule';
+import { TimeSlotForm } from '@/components/schedule/TimeSlotForm';
+import { TimeSlotTable } from '@/components/schedule/TimeSlotTable';
 import { useToast } from '@/hooks/useToast';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import {

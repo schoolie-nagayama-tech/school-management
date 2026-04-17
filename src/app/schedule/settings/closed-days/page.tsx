@@ -8,7 +8,8 @@ import { SelectShadcn as Select, SelectTrigger, SelectValue, SelectContent, Sele
 import { Input } from '@/components/ui';
 import { Label } from '@/components/ui';
 import { ToastContainer } from '@/components/ui';
-import { ClosedDayForm, ClosedDayList } from '@/components/schedule';
+import { ClosedDayForm } from '@/components/schedule/ClosedDayForm';
+import { ClosedDayList } from '@/components/schedule/ClosedDayList';
 import { useToast } from '@/hooks/useToast';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { getClosedDays, createClosedDay, deleteClosedDay } from '@/lib/api/schedule';

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
 import { ApplicationTable, ApplicationFiltersPanel, ApplicationItemAccordion } from '@/components/applications';
-import { StudentDetailModal } from '@/components/students';
+import { StudentDetailModal } from '@/components/students/StudentDetailModal';
 import {
   getStudents,
 } from '@/lib/api/students';
