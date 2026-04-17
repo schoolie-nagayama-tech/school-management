@@ -34,14 +34,14 @@ interface TextbookCatalogProps {
 const ITEMS_PER_PAGE = 60;
 
 // ─── Subject Color Coding ─────────────────────────────────
-const SUBJECT_COLORS: Record<string, { bg: string; text: string }> = {
-  '英語': { bg: 'bg-blue-50', text: 'text-blue-700' },
-  '数学': { bg: 'bg-red-50', text: 'text-red-700' },
-  '国語': { bg: 'bg-green-50', text: 'text-green-700' },
-  '理科': { bg: 'bg-purple-50', text: 'text-purple-700' },
-  '社会': { bg: 'bg-orange-50', text: 'text-orange-700' },
+const SUBJECT_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
+  '英語': { bg: 'bg-blue-50', text: 'text-blue-700', dot: 'bg-blue-500' },
+  '数学': { bg: 'bg-red-50', text: 'text-red-700', dot: 'bg-red-500' },
+  '国語': { bg: 'bg-green-50', text: 'text-green-700', dot: 'bg-green-500' },
+  '理科': { bg: 'bg-purple-50', text: 'text-purple-700', dot: 'bg-purple-500' },
+  '社会': { bg: 'bg-orange-50', text: 'text-orange-700', dot: 'bg-orange-500' },
 };
-const DEFAULT_COLOR = { bg: 'bg-gray-50', text: 'text-gray-700' };
+const DEFAULT_COLOR = { bg: 'bg-gray-50', text: 'text-gray-700', dot: 'bg-gray-400' };
 
 function getSubjectColor(subject: string | null) {
   if (!subject) return DEFAULT_COLOR;
@@ -208,7 +208,7 @@ function SubjectLegend() {
           key={subject}
           className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${colors.bg} ${colors.text}`}
         >
-          <span className={`w-2.5 h-2.5 rounded-full ${colors.border.replace('border-l-', 'bg-')}`} />
+          <span className={`w-2.5 h-2.5 rounded-full ${colors.dot}`} />
           {subject}
         </span>
       ))}
