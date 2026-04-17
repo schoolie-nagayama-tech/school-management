@@ -43,11 +43,23 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertBoard } from '@/components/alerts';
 import { TaskOverdueBanner } from '@/components/monthly-tasks/TaskOverdueBanner';
-import { BulletinBoard } from '@/components/bulletin';
-import { NotificationFeed } from '@/components/notifications/NotificationFeed';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
+
+const BulletinBoard = dynamic(
+  () => import('@/components/bulletin/BulletinBoard').then((m) => m.BulletinBoard),
+  {
+    loading: () => <div className="h-64 rounded-xl bg-gray-50 border border-gray-200" />,
+  }
+);
+
+const NotificationFeed = dynamic(
+  () => import('@/components/notifications/NotificationFeed').then((m) => m.NotificationFeed),
+  {
+    loading: () => <div className="h-48 rounded-xl bg-gray-50 border border-gray-200" />,
+  }
+);
 
 const ScoreListView = dynamic(
   () => import('@/components/score-list').then((m) => m.ScoreListView),
