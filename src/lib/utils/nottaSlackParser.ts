@@ -103,10 +103,17 @@ function parseDuration(raw: string): number | null {
  *   3. 既知ラベルで始まらない最初の非空行
  */
 function extractTitle(cleanedText: string): string | null {
-  // 1) 明示タイトル
-  const explicit = cleanedText.match(/タイトル[:：]\s*(.+)/);
+  // 次ラベルで停止する共通の終了パターン
+  // 改行・本文末・次の既知ラベル(日時/長さ/…)の手前で必ず止める
+  const STOP = /(?=\s*(?:日時|長さ|時間|録音|文字起こし|AI Notes)[:：]?|\n|$)/;
+
+  // 1) 明示タイトル（Zapier or Slack 直連携の「タイトル: xxx」）
+  //    `.+?` を使い、次ラベル直前で止めて余計な本文を飲み込まない
+  const explicit = cleanedText.match(
+    new RegExp(`タイトル[:：]\\s*(.+?)${STOP.source}`)
+  );
   if (explicit) {
-    const t = explicit[1].split('\n')[0].trim();
+    const t = explicit[1].trim();
     if (t) return t;
   }
 

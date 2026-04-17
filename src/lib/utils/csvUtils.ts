@@ -271,18 +271,36 @@ export const TEACHER_IMPORT_CSV_HEADERS = [
   '状態（有効/無効、省略時は有効）',
 ] as const;
 
-/** 講師CSVテンプレート（ヘッダー行 + サンプル1行） */
+/** 講師CSVテンプレート（ヘッダー行 + サンプル行） */
 export function getTeacherCSVTemplate(): string {
-  const sample = [
+  // サンプル1: 通常メール + 個別パスワード
+  const sample1 = [
     '山田 太郎',
     'taro@example.com',
-    '',
+    'Yamada2024!',
     'SCH001/SCH002',
     '英語/数学',
     '月/水/金',
     '有効',
   ];
-  return csvRow([...TEACHER_IMPORT_CSV_HEADERS]) + '\r\n' + csvRow(sample) + '\r\n';
+  // サンプル2: 既存システムのID + 個別パスワード（@なしでもOK）
+  const sample2 = [
+    '鈴木 花子',
+    'suzuki123',
+    'Suzuki@Pw',
+    'SCH001',
+    '国語',
+    '火/木',
+    '有効',
+  ];
+  return (
+    csvRow([...TEACHER_IMPORT_CSV_HEADERS]) +
+    '\r\n' +
+    csvRow(sample1) +
+    '\r\n' +
+    csvRow(sample2) +
+    '\r\n'
+  );
 }
 
 // ─────────────────────────────────────────────

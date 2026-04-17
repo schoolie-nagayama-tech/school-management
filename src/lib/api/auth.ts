@@ -1,5 +1,6 @@
 import { createSupabaseBrowserClient } from '@/lib/supabase';
 import type { UserProfile, UserSchool, UserInvitation, UserWithDetails, UserRole } from '@/types/database';
+import { normalizeLoginEmail, normalizePassword } from '@/lib/utils/loginId';
 
 // =====================================================
 // 認証
@@ -9,19 +10,21 @@ import type { UserProfile, UserSchool, UserInvitation, UserWithDetails, UserRole
 export async function signUpWithEmail(email: string, password: string) {
   const supabase = createSupabaseBrowserClient();
   const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
+    email: normalizeLoginEmail(email),
+    password: normalizePassword(password),
   });
   if (error) throw error;
   return data;
 }
 
 // メール+パスワードでログイン
+// `@` を含まない入力は内部ドメインを付加（既存システムのIDをそのまま使えるように）
+// 短いパスワードは内部的に 6 文字にパディング（Supabase の最低6文字制約を透過的に回避）
 export async function signInWithEmail(email: string, password: string) {
   const supabase = createSupabaseBrowserClient();
   const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
+    email: normalizeLoginEmail(email),
+    password: normalizePassword(password),
   });
   if (error) throw error;
   return data;
@@ -50,9 +53,12 @@ export async function signOut() {
 // パスワードリセットメール送信
 export async function sendPasswordResetEmail(email: string) {
   const supabase = createSupabaseBrowserClient();
-  const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/auth/reset-password`,
-  });
+  const { data, error } = await supabase.auth.resetPasswordForEmail(
+    normalizeLoginEmail(email),
+    {
+      redirectTo: `${window.location.origin}/auth/reset-password`,
+    }
+  );
   if (error) throw error;
   return data;
 }

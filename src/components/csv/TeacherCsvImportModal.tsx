@@ -10,6 +10,7 @@ import {
   type TeacherCSVRow,
 } from '@/lib/utils/csvUtils';
 import { fetchWithAuth } from '@/lib/api/auth';
+import { normalizeLoginEmail, normalizePassword } from '@/lib/utils/loginId';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import type { School } from '@/types/database';
 
@@ -109,6 +110,11 @@ export function TeacherCsvImportModal({
   const errorRows = rows.filter((r) => r.errors.length > 0);
   const previewRows = rows.slice(0, 5);
 
+  // 全行に個別PWが入っていれば共通PWは不要
+  const allRowsHaveOwnPassword =
+    validRows.length > 0 && validRows.every((r) => (r.password?.length ?? 0) >= 4);
+  const commonPasswordRequired = !allRowsHaveOwnPassword;
+
   // インポート実行
   const handleImport = async () => {
     setErrorMessage('');
@@ -116,8 +122,8 @@ export function TeacherCsvImportModal({
       setErrorMessage('所属教室を選択してください');
       return;
     }
-    if (defaultPassword.length < 4) {
-      setErrorMessage('初期パスワードは4文字以上で入力してください');
+    if (commonPasswordRequired && defaultPassword.length < 4) {
+      setErrorMessage('初期パスワードは4文字以上で入力してください（CSVの全行にパスワードが入っていれば省略可）');
       return;
     }
 
@@ -161,12 +167,21 @@ export function TeacherCsvImportModal({
         const primarySchoolId = resolvedSchoolIds[0] ?? selectedSchoolId;
         const additional = resolvedSchoolIds.slice(1);
 
+        // メール欄が空 → APIで自動生成
+        // メール欄が ID（@なし）→ 内部ドメインを付加して email 化
+        // メール欄が通常メール → そのまま
+        const emailForCreate = row.email ? normalizeLoginEmail(row.email) : undefined;
+        // パスワードは Supabase の最低 6 文字制約に合わせて透過的にパディング
+        // 例: 4文字 `6ni3` → 内部的に `6ni300`。ログイン時も同じ変換を適用するので講師は元のPWで入れる
+        const rawPassword = row.password || defaultPassword;
+        const passwordForCreate = normalizePassword(rawPassword);
+
         const response = await fetchWithAuth('/api/admin/users/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            email: row.email || undefined,
-            password: row.password || defaultPassword,
+            email: emailForCreate,
+            password: passwordForCreate,
             displayName: row.display_name,
             role: 'teacher',
             schoolId: primarySchoolId,
@@ -217,7 +232,13 @@ export function TeacherCsvImportModal({
             <div>
               <p className="text-sm font-medium text-[#1f2937]">CSVテンプレート</p>
               <p className="text-xs text-[#4b5563] mt-0.5">
-                列: 表示名 / メール（任意） / パスワード（任意） / 担当教室（コード・/区切り） / 指導科目（名前・/区切り） / 出勤可能曜日（日月火水木金土・/区切り） / 状態（有効・無効）
+                列: 表示名 / メール or ID（任意） / パスワード（任意） / 担当教室（コード・/区切り） / 指導科目（名前・/区切り） / 出勤可能曜日（日月火水木金土・/区切り） / 状態（有効・無効）
+              </p>
+              <p className="text-[11px] text-[#6b7280] mt-1">
+                ※ メール欄は既存システムのID（例: <code className="bg-white px-1 rounded">tanaka123</code>）をそのまま入力してOK。講師はそのIDでログインできます。
+              </p>
+              <p className="text-[11px] text-[#6b7280] mt-0.5">
+                ※ パスワード欄も講師ごとに個別指定できます（4文字以上）。空欄の行は右の「初期パスワード」が適用されます。全行に入れる場合は右の欄は省略可。
               </p>
             </div>
             <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
@@ -246,16 +267,23 @@ export function TeacherCsvImportModal({
               </Select>
             </div>
             <div>
-              <Label htmlFor="import-password">初期パスワード（全員共通） *</Label>
+              <Label htmlFor="import-password">
+                初期パスワード（全員共通）
+                {commonPasswordRequired ? (
+                  <span className="text-[#ef4444]"> *</span>
+                ) : (
+                  <span className="text-[11px] text-[#6b7280] font-normal ml-1">（任意・全行に個別PWあり）</span>
+                )}
+              </Label>
               <Input
                 id="import-password"
                 type="password"
                 value={defaultPassword}
                 onChange={(e) => setDefaultPassword(e.target.value)}
-                placeholder="4文字以上"
+                placeholder={commonPasswordRequired ? '4文字以上' : '省略可（CSVの個別PWが使われます）'}
               />
               <p className="text-xs text-[#4b5563] mt-1">
-                登録後、各講師が変更できます
+                CSVのパスワード欄が空の行にのみ適用されます。登録後、各講師が変更可。
               </p>
             </div>
           </div>
@@ -304,7 +332,16 @@ export function TeacherCsvImportModal({
           {/* 設定確認 */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
             <p>所属教室: <strong>{schools.find((s) => s.id === selectedSchoolId)?.name ?? '—'}</strong></p>
-            <p>初期パスワード: <strong>{'•'.repeat(defaultPassword.length)}</strong></p>
+            <p>
+              パスワード:{' '}
+              <strong>
+                {allRowsHaveOwnPassword
+                  ? 'CSVから個別適用（全員）'
+                  : defaultPassword
+                  ? `共通 (${'•'.repeat(defaultPassword.length)}) + 個別`
+                  : '—'}
+              </strong>
+            </p>
           </div>
 
           {/* エラー行 */}

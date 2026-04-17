@@ -162,7 +162,12 @@
       "Bash(mv 20260325_billing_extended.sql 20260325010000_billing_extended.sql)",
       "Bash(find /c/Users/ytaka/Desktop/student-management -path ./.next -prune -o -type f -name *Dashboard*.tsx -print)",
       "Bash(ls -la /c/Users/ytaka/Desktop/student-management/src/app/seasonal-shift/[settingId]/)",
-      "mcp__c1fc4002-5f49-5f9d-a4e5-93c4ef5d6a75__google_drive_search"
+      "mcp__c1fc4002-5f49-5f9d-a4e5-93c4ef5d6a75__google_drive_search",
+      "Read(//c/Users/ytaka/.claude/**)",
+      "Read(//c/Users/ytaka/.claude/plugins/**)",
+      "Bash(python -m markitdown \"C:\\\\Users\\\\ytaka\\\\Desktop\\\\NEST_features.pptx\")",
+      "Bash(node .agents/skills/i-impeccable/scripts/cleanup-deprecated.mjs)",
+      "Bash(node /c/Users/ytaka/.claude/skills/i-impeccable/scripts/cleanup-deprecated.mjs)"
     ]
   }
 }
