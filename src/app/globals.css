@@ -51,6 +51,11 @@
   --info: oklch(55% 0.15 250);
   --info-subtle: oklch(96% 0.03 250);
 
+  /* === Accents（管理画面の副系ブランド色） ===
+     旧 #1e3a5f（dark navy）の役割を継承。見出し強調・バッジ・選択中状態などに使用 */
+  --accent-ink: oklch(30% 0.07 257);
+  --accent-ink-subtle: oklch(95% 0.02 257);
+
   /* === 互換レイヤー（既存コードで参照中） === */
   --background: var(--bg);
   --headline: var(--text-heading);
@@ -106,6 +111,10 @@
   --danger-subtle: oklch(30% 0.07 27);
   --info: oklch(70% 0.14 250);
   --info-subtle: oklch(30% 0.06 250);
+
+  /* Accents: ダーク時は暗背景で沈まないよう明度を上げ、彩度も少し維持 */
+  --accent-ink: oklch(70% 0.10 257);
+  --accent-ink-subtle: oklch(30% 0.05 257);
 }
 
 body {
@@ -203,7 +212,8 @@ body {
   border-color: var(--border-strong);
 }
 
-/* Navy ブランド色をダーク背景で視認可能な明度に引き上げる */
+/* Navy ブランド色 (#1e3a5f 系) は --accent-ink トークン経由でテーマ切替に対応。
+   ダーク時は明度を上げて沈まないようにしたいので、--accent-ink の dark 定義を参照する */
 :root.dark .bg-\[\#1e3a5f\],
 :root.dark .bg-\[\#2a4a6f\],
 :root.dark .bg-\[\#2c5282\],

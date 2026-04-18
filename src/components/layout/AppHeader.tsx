@@ -153,7 +153,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
   }, [showSchoolDropdown, showSettingsDropdown, showBusinessDropdown, showFormDropdown, showCourseDropdown, showTeacherDropdown]);
 
   return (
-    <header className="bg-[#d32f2f] shadow-md">
+    <header className="bg-primary shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14">
           <div className="flex items-center gap-4">
@@ -187,7 +187,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                   href="/students"
                   className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
                     pathname === '/students'
-                      ? 'bg-white text-[#d32f2f] font-semibold'
+                      ? 'bg-white text-primary font-semibold'
                       : 'text-white/90 hover:bg-white/10 hover:text-white'
                   }`}
                 >
@@ -199,7 +199,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                   href="/applications"
                   className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
                     pathname === '/applications'
-                      ? 'bg-white text-[#d32f2f] font-semibold'
+                      ? 'bg-white text-primary font-semibold'
                       : 'text-white/90 hover:bg-white/10 hover:text-white'
                   }`}
                 >
@@ -216,7 +216,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                       pathname === '/settings/portal' ||
                       pathname?.startsWith('/settings/portal') ||
                       pathname?.startsWith('/transcriptions')
-                        ? 'bg-white text-[#d32f2f] font-semibold'
+                        ? 'bg-white text-primary font-semibold'
                         : 'text-white/90 hover:bg-white/10 hover:text-white'
                     }`}
                     onClick={() => setShowFormDropdown(!showFormDropdown)}
@@ -241,7 +241,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                       onClick={() => setShowFormDropdown(false)}
                       className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                         pathname?.startsWith('/responses') || pathname?.startsWith('/forms/responses')
-                          ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
+                          ? 'bg-primary/10 text-primary font-semibold'
                           : ''
                       }`}
                     >
@@ -252,7 +252,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                       onClick={() => setShowFormDropdown(false)}
                       className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                         pathname?.startsWith('/transcriptions')
-                          ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
+                          ? 'bg-primary/10 text-primary font-semibold'
                           : ''
                       }`}
                     >
@@ -264,7 +264,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                         onClick={() => setShowFormDropdown(false)}
                         className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                           pathname === '/settings/portal' || pathname?.startsWith('/settings/portal')
-                            ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
+                            ? 'bg-primary/10 text-primary font-semibold'
                             : ''
                         }`}
                       >
@@ -281,7 +281,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                   <button
                     className={`px-2.5 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 ${
                       pathname === '/courses' || pathname?.startsWith('/courses/')
-                        ? 'bg-white text-[#d32f2f] font-semibold'
+                        ? 'bg-white text-primary font-semibold'
                         : 'text-white/90 hover:bg-white/10 hover:text-white'
                     }`}
                     onClick={() => setShowCourseDropdown(!showCourseDropdown)}
@@ -304,7 +304,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                           onClick={() => setShowCourseDropdown(false)}
                           className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                             pathname === '/courses' && !pathname?.startsWith('/courses/')
-                              ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
+                              ? 'bg-primary/10 text-primary font-semibold'
                               : ''
                           }`}
                         >
@@ -315,7 +315,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                           onClick={() => setShowCourseDropdown(false)}
                           className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                             pathname?.startsWith('/courses/progress')
-                              ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
+                              ? 'bg-primary/10 text-primary font-semibold'
                               : ''
                           }`}
                         >
@@ -326,7 +326,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                           onClick={() => setShowCourseDropdown(false)}
                           className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                             pathname?.startsWith('/courses/schedule')
-                              ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
+                              ? 'bg-primary/10 text-primary font-semibold'
                               : ''
                           }`}
                         >
@@ -347,7 +347,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                       pathname?.startsWith('/admin/teacher-badges') ||
                       pathname === '/settings/seasonal-shifts' ||
                       pathname?.startsWith('/settings/seasonal-shifts')
-                        ? 'bg-white text-[#d32f2f] font-semibold'
+                        ? 'bg-white text-primary font-semibold'
                         : 'text-white/90 hover:bg-white/10 hover:text-white'
                     }`}
                     onClick={() => setShowTeacherDropdown(!showTeacherDropdown)}
@@ -371,7 +371,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                         href="/admin/teachers"
                         className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                           pathname === '/admin/teachers' || pathname?.startsWith('/admin/teachers')
-                            ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
+                            ? 'bg-primary/10 text-primary font-semibold'
                             : ''
                         }`}
                       >
@@ -382,7 +382,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                         className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                           pathname === '/admin/attendance' ||
                           pathname?.startsWith('/admin/attendance/')
-                            ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
+                            ? 'bg-primary/10 text-primary font-semibold'
                             : ''
                         }`}
                       >
@@ -392,7 +392,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                         href="/settings/seasonal-shifts"
                         className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                           pathname === '/settings/seasonal-shifts' || pathname?.startsWith('/settings/seasonal-shifts')
-                            ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
+                            ? 'bg-primary/10 text-primary font-semibold'
                             : ''
                         }`}
                       >
@@ -402,7 +402,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                         href="/admin/teacher-badges"
                         className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                           pathname === '/admin/teacher-badges' || pathname?.startsWith('/admin/teacher-badges')
-                            ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
+                            ? 'bg-primary/10 text-primary font-semibold'
                             : ''
                         }`}
                       >
@@ -420,7 +420,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                       href={`/attendance/${schools[0].code}/${profile.id}`}
                       className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
                         pathname?.startsWith('/attendance/')
-                          ? 'bg-white text-[#d32f2f] font-semibold'
+                          ? 'bg-white text-primary font-semibold'
                           : 'text-white/90 hover:bg-white/10 hover:text-white'
                       }`}
                     >
@@ -438,7 +438,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                       pathname?.startsWith('/ordering') ||
                       pathname?.startsWith('/inventory') ||
                       pathname?.startsWith('/tasks')
-                        ? 'bg-white text-[#d32f2f] font-semibold'
+                        ? 'bg-white text-primary font-semibold'
                         : 'text-white/90 hover:bg-white/10 hover:text-white'
                     }`}
                     onClick={() => setShowBusinessDropdown(!showBusinessDropdown)}
@@ -463,7 +463,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                         onClick={() => setShowBusinessDropdown(false)}
                         className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                           pathname?.startsWith('/billing')
-                            ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
+                            ? 'bg-primary/10 text-primary font-semibold'
                             : ''
                         }`}
                       >
@@ -474,7 +474,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                         onClick={() => setShowBusinessDropdown(false)}
                         className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                           pathname?.startsWith('/ordering') || pathname?.startsWith('/inventory')
-                            ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
+                            ? 'bg-primary/10 text-primary font-semibold'
                             : ''
                         }`}
                       >
@@ -485,7 +485,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                         onClick={() => setShowBusinessDropdown(false)}
                         className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                           pathname?.startsWith('/tasks')
-                            ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
+                            ? 'bg-primary/10 text-primary font-semibold'
                             : ''
                         }`}
                       >
@@ -530,7 +530,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                           handleSchoolChange('all');
                         }}
                         className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
-                          selectedSchoolId === 'all' ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold' : ''
+                          selectedSchoolId === 'all' ? 'bg-primary/10 text-primary font-semibold' : ''
                         }`}
                       >
                         すべての教室
@@ -543,7 +543,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                             handleSchoolChange(school.id);
                           }}
                           className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors flex items-center gap-2 ${
-                            selectedSchoolId === school.id ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold' : ''
+                            selectedSchoolId === school.id ? 'bg-primary/10 text-primary font-semibold' : ''
                           }`}
                         >
                           <span>{school.code === 'DEFAULT' ? 'デフォルト' : school.name}</span>
@@ -651,7 +651,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                         href="/settings"
                         className={`block px-3 py-2 text-xs font-medium hover:bg-gray-50 transition-colors ${
                           pathname === '/settings'
-                            ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
+                            ? 'bg-primary/10 text-primary font-semibold'
                             : 'text-[#1f2937]'
                         }`}
                         onClick={() => setShowSettingsDropdown(false)}
@@ -698,7 +698,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                           href="/users"
                           className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                             pathname === '/users' || pathname?.startsWith('/users/')
-                              ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
+                              ? 'bg-primary/10 text-primary font-semibold'
                               : ''
                           }`}
                           onClick={() => setShowSettingsDropdown(false)}
@@ -711,7 +711,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                           href="/admin/settings/attendance-types"
                           className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                             pathname?.startsWith('/admin/settings/attendance-types')
-                              ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
+                              ? 'bg-primary/10 text-primary font-semibold'
                               : ''
                           }`}
                           onClick={() => setShowSettingsDropdown(false)}
@@ -724,7 +724,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                           href="/admin/settings/security"
                           className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                             pathname === '/admin/settings/security' || pathname?.startsWith('/admin/settings/security')
-                              ? 'bg-[#d32f2f]/10 text-[#d32f2f] font-semibold'
+                              ? 'bg-primary/10 text-primary font-semibold'
                               : ''
                           }`}
                           onClick={() => setShowSettingsDropdown(false)}
@@ -743,7 +743,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                 href="/schedule"
                 className={`p-1.5 rounded-lg transition-colors ${
                   pathname === '/schedule' || pathname?.startsWith('/schedule')
-                    ? 'bg-white text-[#d32f2f]'
+                    ? 'bg-white text-primary'
                     : 'text-white/80 hover:text-white hover:bg-white/10'
                 }`}
                 title="座席表（開発中）"
@@ -787,7 +787,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                     href={item.href}
                     className={`block px-4 py-2 text-sm transition-colors ${
                       active
-                        ? 'bg-white text-[#d32f2f] font-semibold'
+                        ? 'bg-white text-primary font-semibold'
                         : 'text-white hover:bg-white/10'
                     }`}
                   >

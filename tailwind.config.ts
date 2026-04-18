@@ -55,6 +55,11 @@ const config: Config = {
           subtle: "var(--primary-subtle)",
           contrast: "var(--primary-contrast)",
         },
+        /* Accent Ink（管理画面の副系ブランド色、旧 #1e3a5f の後継） */
+        ink: {
+          DEFAULT: "var(--accent-ink)",
+          subtle: "var(--accent-ink-subtle)",
+        },
         /* Status */
         success: {
           DEFAULT: "var(--success)",
