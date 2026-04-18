@@ -252,6 +252,33 @@
   }
 }
 
+/* "NEW" マーカー用の優しいパルス（acquire直後のバッジ向け） */
+@keyframes badge-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 oklch(55% 0.19 27 / 0.55);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 0 0 5px oklch(55% 0.19 27 / 0);
+  }
+}
+
+/* prefers-reduced-motion: 装飾アニメーション一式を静止させる（機能は維持） */
+@media (prefers-reduced-motion: reduce) {
+  .tier-dot-mythic,
+  .tier-hairline-mythic,
+  [data-teacher-tier='gold'].tier-attendance::before,
+  [data-teacher-tier='mythic'].tier-attendance::before,
+  [data-teacher-tier='gold'] .tier-ym::after,
+  [data-teacher-tier='mythic'] .tier-ym::after,
+  [data-teacher-tier='purple'] .tier-submit::before,
+  [data-teacher-tier='gold'] .tier-submit::after,
+  [data-teacher-tier='mythic'] .tier-submit {
+    animation: none !important;
+  }
+}
+
 /* ==================================================
    出勤簿 (オーナーのみ): 大胆な階梯別演出
    親要素に data-teacher-tier="..." を付けて配下で発火

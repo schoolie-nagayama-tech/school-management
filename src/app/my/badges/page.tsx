@@ -8,6 +8,27 @@ import { getMyTrainings } from '@/lib/api/teacher-trainings';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { BadgeGrid } from '@/components/teacher-badges/BadgeGrid';
 import { BadgeProgress } from '@/components/teacher-badges/BadgeProgress';
+import { getTier, getNextTier, type TierKey } from '@/lib/teacher-tier';
+
+const TIER_LABEL: Record<TierKey, string> = {
+  zero: '見習い',
+  slate: 'スレート',
+  emerald: 'エメラルド',
+  purple: 'アメジスト',
+  gold: 'ゴールド',
+  mythic: 'ミシカル',
+};
+
+const TIER_SUBLABEL: Record<TierKey, string> = {
+  zero: 'ここから始めよう',
+  slate: '積み重ねの第一歩',
+  emerald: '実績が光ってきた',
+  purple: '一目置かれる存在',
+  gold: '殿堂入りの風格',
+  mythic: '伝説の講師',
+};
+
+const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 export default function MyBadgesPage() {
   const [badges, setBadges] = useState<TeacherBadge[]>([]);
@@ -45,29 +66,77 @@ export default function MyBadgesPage() {
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 3);
 
+  const tier = getTier(assignments.length);
+  const nextTier = getNextTier(assignments.length);
+  const remaining = nextTier ? nextTier.threshold - assignments.length : 0;
+
   return (
-    <div className="min-h-screen bg-[#f8f9fa]">
+    <div
+      className="min-h-screen bg-[#f8f9fa] tier-attendance"
+      data-teacher-tier={tier.key}
+    >
       <AppHeader title="マイトロフィー" />
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-8">マイトロフィー</h1>
-
         {loading ? (
           <div className="flex justify-center py-20">
             <div className="w-8 h-8 border-2 border-gray-300 border-t-[#1e3a5f] rounded-full animate-spin" />
           </div>
         ) : badges.length === 0 ? (
-          <div className="text-center py-20 text-gray-400">
-            <p>バッジがまだ設定されていません</p>
+          <div className="bg-white rounded-2xl border border-gray-200 p-10 text-center shadow-sm">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-[color:var(--primary-subtle)] text-[color:var(--primary)] mb-4">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+                <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+                <path d="M4 22h16" />
+                <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20 7 22" />
+                <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20 17 22" />
+                <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+              </svg>
+            </div>
+            <h2 className="text-lg font-bold text-gray-800 mb-2">まだトロフィーの準備中です</h2>
+            <p className="text-sm text-gray-500">
+              管理者がバッジを設定すると、獲得状況がここに並びます。
+            </p>
           </div>
         ) : (
           <div className="space-y-8">
-            {/* サマリーカード */}
+            {/* Tier Hero */}
             <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-gray-800">獲得状況</h2>
-                <span className="text-2xl font-bold text-gray-900 tabular-nums">
-                  {assignments.length}<span className="text-sm text-gray-400 font-normal"> / {badges.length}</span>
+              <div className="flex items-start justify-between gap-4 mb-5">
+                <div>
+                  <p className="text-[11px] font-semibold tracking-[0.18em] text-gray-500 uppercase mb-1">
+                    現在のティア
+                  </p>
+                  <h1 className="text-[26px] sm:text-[28px] font-bold text-gray-900 leading-tight tracking-tight">
+                    {TIER_LABEL[tier.key]}
+                  </h1>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {TIER_SUBLABEL[tier.key]}
+                  </p>
+                </div>
+                <span className={`tier-dot tier-dot-${tier.key} !w-3 !h-3 mt-2`} aria-hidden />
+              </div>
+              <div className="flex items-baseline justify-between gap-4 mb-3">
+                <span className="text-[40px] font-bold text-gray-900 tabular-nums leading-none">
+                  {assignments.length}
+                  <span className="text-lg text-gray-400 font-normal ml-1">
+                    / {badges.length}
+                  </span>
                 </span>
+                {nextTier ? (
+                  <span className="text-xs text-gray-500 text-right leading-tight">
+                    次のティアまで<br />
+                    <b className="text-gray-900 text-sm font-bold tabular-nums">
+                      あと {remaining} 個
+                    </b>
+                  </span>
+                ) : (
+                  <span className="text-xs text-right leading-tight">
+                    <span className={`tier-pill tier-pill-${tier.key} px-2 py-1 rounded-full font-bold`}>
+                      最高位
+                    </span>
+                  </span>
+                )}
               </div>
               <BadgeProgress
                 earned={assignments.length}
@@ -81,15 +150,27 @@ export default function MyBadgesPage() {
               <div>
                 <h2 className="text-sm font-bold text-gray-600 mb-3 uppercase tracking-wider">最近の獲得</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {recentEarned.map((a) => {
+                  {recentEarned.map((a, idx) => {
                     const badge = a.badge || badges.find((b) => b.id === a.badge_id);
                     if (!badge) return null;
                     const rankConfig = BADGE_RANK_CONFIG[badge.rank];
+                    const earnedAt = a.created_at ? new Date(a.created_at).getTime() : 0;
+                    const isNew = earnedAt && Date.now() - earnedAt < ONE_WEEK_MS;
                     return (
                       <div
                         key={a.id}
-                        className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-200 shadow-sm"
+                        className={`relative flex items-center gap-3 p-3 bg-white rounded-xl border shadow-sm transition-all hover:shadow-md hover:-translate-y-[1px] ${
+                          idx === 0 ? 'border-[color:var(--primary)]/20' : 'border-gray-200'
+                        }`}
                       >
+                        {isNew && (
+                          <span
+                            className="absolute -top-1.5 -right-1.5 px-1.5 py-0.5 text-[9px] font-bold bg-[color:var(--primary)] text-white rounded-full shadow-sm"
+                            style={{ animation: 'badge-pulse 2.2s ease-in-out infinite' }}
+                          >
+                            NEW
+                          </span>
+                        )}
                         <div
                           className="w-10 h-10 rounded-lg flex items-center justify-center text-white shadow-sm flex-shrink-0"
                           style={{ background: `linear-gradient(135deg, ${rankConfig.color}, ${rankConfig.color}88)` }}
