@@ -13,6 +13,14 @@ import { submitMogiResponse } from '@/lib/api/mogi';
 import { GRADE_NAME_TO_NUMBER } from '@/types/forms/mogi';
 import { DateVenueSelector } from './DateVenueSelector';
 import { CancelAgreement } from './CancelAgreement';
+import {
+  PortalFormHeader,
+  PortalFormSection,
+  PortalFormActions,
+  PortalCompletionView,
+  PortalErrorBanner,
+  PortalPreviewBanner,
+} from '@/components/forms/shared';
 
 interface MogiFormProps {
   school: School;
@@ -144,81 +152,26 @@ export function MogiForm({ school, period, isPreview }: MogiFormProps) {
   // 送信完了画面
   if (isSubmitted) {
     return (
-      <div className="bg-white rounded-2xl border border-[#e5e7eb] p-8 sm:p-10 text-center">
-        <div className="mb-6">
-          <div className="w-14 h-14 rounded-full bg-[color:var(--primary-subtle)] ring-1 ring-[color:var(--primary)]/20 flex items-center justify-center mx-auto mb-6">
-            <svg
-              className="w-7 h-7 text-[color:var(--primary)]"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <h2 className="text-[22px] font-bold text-[#1a1a1a] mb-3 tracking-tight">
-            お申込みありがとうございます
-          </h2>
-          <p className="text-sm text-[#4b5563] leading-relaxed">
-            受付完了メールを保護者様宛にお送りしました。
-          </p>
-          {settings.completion_message && (
-            <div className="mt-6 p-4 bg-[#f8f8f8] rounded-lg text-left border border-[#e5e7eb]">
-              <p className="text-sm text-[#4b5563] whitespace-pre-line leading-relaxed">
-                {settings.completion_message}
-              </p>
-            </div>
-          )}
-        </div>
-        <a
-          href={`/portal/${school.code}`}
-          className="inline-block px-6 py-3 bg-[color:var(--primary)] text-white font-semibold rounded-lg hover:bg-[color:var(--primary-dark)] transition-colors"
-        >
-          ポータルに戻る
-        </a>
-      </div>
+      <PortalCompletionView
+        schoolCode={school.code ?? ''}
+        completionMessage={settings.completion_message}
+      />
     );
   }
 
   return (
     <div className="space-y-5">
-      {/* ヘッダー（青グラデ撤廃・エディトリアル寄り） */}
-      <header className="pt-2 pb-1">
-        <p className="text-[11px] font-semibold tracking-[0.18em] text-[color:var(--primary)] uppercase mb-2">
-          Vもぎ 申込
-        </p>
-        <h1 className="text-[26px] sm:text-[28px] font-bold text-[#1a1a1a] leading-tight tracking-tight">
-          {period.title}
-        </h1>
-        <div className="mt-3 h-[2px] w-10 bg-[color:var(--primary)] rounded-full" />
-        {settings.description && (
-          <p className="mt-4 text-[13.5px] text-[#4b5563] leading-relaxed whitespace-pre-line">
-            {settings.description}
-          </p>
-        )}
-      </header>
+      <PortalFormHeader
+        eyebrow="Vもぎ 申込"
+        title={period.title}
+        description={settings.description}
+      />
 
-      {/* フォーム */}
       <form onSubmit={handleSubmit} className="space-y-5">
-        {isPreview && (
-          <div className="p-3 bg-amber-50 border border-amber-300 rounded-lg">
-            <p className="text-xs text-amber-900 font-medium">
-              ＜プレビューモード＞ 管理者確認用です。実際の回答は送信されません。
-            </p>
-          </div>
-        )}
-        {errorMessage && (
-          <div
-            role="alert"
-            className="bg-[color:var(--primary-subtle)] border border-[color:var(--primary)]/30 rounded-lg p-4"
-          >
-            <p className="text-sm text-[color:var(--primary-dark)]">{errorMessage}</p>
-          </div>
-        )}
+        {isPreview && <PortalPreviewBanner />}
+        {errorMessage && <PortalErrorBanner message={errorMessage} />}
 
-        {/* セクション1: 基本情報 */}
-        <section className="bg-white rounded-2xl border border-[#e5e7eb] p-5 sm:p-6">
-          <SectionHeading number="01" title="基本情報" />
+        <PortalFormSection title="基本情報">
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-[#1a1a1a] mb-2">
@@ -271,14 +224,12 @@ export function MogiForm({ school, period, isPreview }: MogiFormProps) {
               )}
             </div>
           </div>
-        </section>
+        </PortalFormSection>
 
-        {/* セクション2: 日程・会場 */}
-        <section className="bg-white rounded-2xl border border-[#e5e7eb] p-5 sm:p-6">
-          <SectionHeading number="02" title="受験日程・会場選択" />
-          <p className="text-xs text-[#6b7280] mb-4 -mt-2">
-            受験する日程と会場を選択してください（複数選択可）
-          </p>
+        <PortalFormSection
+          title="受験日程・会場選択"
+          description="受験する日程と会場を選択してください（複数選択可）"
+        >
           <DateVenueSelector
             dates={dates}
             selections={selections}
@@ -288,49 +239,23 @@ export function MogiForm({ school, period, isPreview }: MogiFormProps) {
           {errors.selections && (
             <p className="text-xs text-[color:var(--primary-dark)] mt-3">{errors.selections}</p>
           )}
-        </section>
+        </PortalFormSection>
 
-        {/* セクション3: 同意 */}
-        <section className="bg-white rounded-2xl border border-[#e5e7eb] p-5 sm:p-6">
-          <SectionHeading number="03" title="キャンセル不可の同意" />
+        <PortalFormSection title="キャンセル不可の同意">
           <CancelAgreement
             agreed={cancelAgreed}
             onChange={setCancelAgreed}
             disabled={isSubmitting}
             error={errors.cancelAgreed}
           />
-        </section>
+        </PortalFormSection>
 
-        {/* 送信ボタン */}
-        <div className="flex gap-3 pt-1">
-          <button
-            type="button"
-            onClick={handleReset}
-            disabled={isSubmitting}
-            className="px-5 py-3 text-sm text-[#4b5563] font-medium rounded-lg border border-[#e5e7eb] hover:bg-[#f8f8f8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            リセット
-          </button>
-          <button
-            type="submit"
-            disabled={isSubmitting || !cancelAgreed}
-            className="flex-1 px-6 py-3 bg-[color:var(--primary)] text-white font-semibold rounded-lg hover:bg-[color:var(--primary-dark)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-          >
-            {isSubmitting ? '送信中...' : '申し込む'}
-          </button>
-        </div>
+        <PortalFormActions
+          onReset={handleReset}
+          isSubmitting={isSubmitting}
+          submitDisabled={!cancelAgreed}
+        />
       </form>
-    </div>
-  );
-}
-
-function SectionHeading({ number, title }: { number: string; title: string }) {
-  return (
-    <div className="flex items-baseline gap-3 mb-5">
-      <span className="font-mono text-[11px] text-[color:var(--primary)] font-semibold tracking-widest">
-        {number}
-      </span>
-      <h2 className="text-[15px] font-bold text-[#1a1a1a] tracking-tight">{title}</h2>
     </div>
   );
 }

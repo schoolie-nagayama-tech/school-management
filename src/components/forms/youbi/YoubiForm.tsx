@@ -1,9 +1,16 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import { Input, Select, Button } from '@/components/ui';
+import { Input, Select } from '@/components/ui';
 import { ToastContainer } from '@/components/ui/Toast';
+import {
+  PortalFormHeader,
+  PortalFormSection,
+  PortalFormActions,
+  PortalCompletionView,
+  PortalErrorBanner,
+  PortalPreviewBanner,
+} from '@/components/forms/shared';
 import type { School } from '@/types/database';
 import { validateStudentName } from '@/lib/utils/validation';
 import type {
@@ -33,7 +40,6 @@ function gradeToCategory(gradeLabel: string): 'elementary' | 'middle' | 'high' |
 }
 
 export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
-  const router = useRouter();
   const { toasts, removeToast, success, error } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submittingRef = useRef(false);
@@ -297,24 +303,14 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
   // 送信完了画面
   if (isSubmitted) {
     return (
-      <div className="max-w-md mx-auto p-6">
+      <>
         <ToastContainer toasts={toasts} onRemove={removeToast} />
-        <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
-          <div className="text-4xl mb-4">✓</div>
-          <h2 className="text-xl font-bold text-green-800 mb-4">
-            申請を受け付けました
-          </h2>
-          <p className="text-green-700 whitespace-pre-wrap text-sm">
-            {settings.completion_message}
-          </p>
-          <button
-            onClick={() => router.push(`/portal/${school.code}`)}
-            className="mt-6 text-green-600 hover:underline text-sm"
-          >
-            ポータルに戻る
-          </button>
-        </div>
-      </div>
+        <PortalCompletionView
+          schoolCode={school.code ?? ''}
+          title="申請を受け付けました"
+          completionMessage={settings.completion_message}
+        />
+      </>
     );
   }
 
@@ -384,45 +380,19 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
   );
 
   return (
-    <div className="max-w-md mx-auto p-4">
+    <div className="space-y-5">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      {/* ヘッダー */}
-      <div className="flex items-center justify-between mb-6">
-        <button
-          onClick={() => router.push(`/portal/${school.code}`)}
-          className="text-[#4b5563] hover:text-[#1f2937]"
-        >
-          ← 戻る
-        </button>
-        <h1 className="text-xl font-bold text-[#1f2937]">曜日変更</h1>
-        <div className="w-12"></div>
-      </div>
+      <PortalFormHeader
+        eyebrow="曜日変更 申込"
+        title={period.title || '曜日変更'}
+        description={settings.description}
+      />
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {isPreview && (
-          <div className="p-3 bg-amber-100 border border-amber-400 rounded-lg">
-            <p className="text-sm text-amber-800 font-medium">＜プレビューモード＞ このページは管理者確認用です。実際の回答は送信されません。</p>
-          </div>
-        )}
-        {errorMessage && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-            {errorMessage}
-          </div>
-        )}
-        {/* 説明文 */}
-        {settings.description && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-blue-800 whitespace-pre-wrap text-sm">
-              {settings.description}
-            </p>
-          </div>
-        )}
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {isPreview && <PortalPreviewBanner />}
+        {errorMessage && <PortalErrorBanner message={errorMessage} />}
 
-        {/* 基本情報 */}
-        <section>
-          <h3 className="text-sm font-semibold text-[#1f2937] mb-3 border-b border-[#e5e7eb] pb-1">
-            基本情報
-          </h3>
+        <PortalFormSection title="基本情報">
           <div className="space-y-3">
             <div>
               <label className="block text-sm font-medium mb-1 text-[#1f2937]">
@@ -472,37 +442,25 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
               )}
             </div>
           </div>
-        </section>
+        </PortalFormSection>
 
-        {/* 現状 */}
-        <section>
-          <h3 className="text-sm font-semibold text-[#1f2937] mb-3 border-b border-[#e5e7eb] pb-1">
-            現在の通塾情報 <span className="text-red-500">*</span>
-          </h3>
+        <PortalFormSection title="現在の通塾情報">
           {renderSlotInput(current, setCurrent, '現在通っている曜日・時間・科目')}
-        </section>
+        </PortalFormSection>
 
-        {/* 変更希望 */}
-        <section>
-          <h3 className="text-sm font-semibold text-[#1f2937] mb-3 border-b border-[#e5e7eb] pb-1">
-            変更希望 <span className="text-red-500">*</span>
-          </h3>
+        <PortalFormSection title="変更希望">
           <div className="space-y-3">
             {renderSlotInput(
               request1,
               setRequest1,
               '第1希望',
-              'border-[#3b82f6] bg-orange-50'
+              'border-[color:var(--primary)] bg-[color:var(--primary-subtle)]'
             )}
             {renderSlotInput(request2, setRequest2, '第2希望', 'border-gray-300 bg-white', true)}
           </div>
-        </section>
+        </PortalFormSection>
 
-        {/* 変更希望日 */}
-        <section>
-          <h3 className="text-sm font-semibold text-[#1f2937] mb-3 border-b border-[#e5e7eb] pb-1">
-            変更希望日 <span className="text-red-500">*</span>
-          </h3>
+        <PortalFormSection title="変更希望日">
           <div>
             <label className="block text-sm font-medium mb-1 text-[#1f2937]">
               いつから変更を希望しますか？
@@ -520,24 +478,19 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
               <p className="text-red-500 text-xs mt-1">{errors.changeFrom}</p>
             )}
           </div>
-        </section>
+        </PortalFormSection>
 
-        {/* 備考 */}
-        <section>
-          <label className="block text-sm font-medium mb-1 text-[#1f2937]">備考</label>
+        <PortalFormSection title="備考">
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="ご要望等あればご記入ください"
             rows={3}
-            className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 resize-y text-sm"
+            className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 resize-y text-sm focus:ring-2 focus:ring-[color:var(--primary)] focus:border-[color:var(--primary)]"
           />
-        </section>
+        </PortalFormSection>
 
-        {/* 送信ボタン */}
-        <Button type="submit" disabled={isSubmitting} className="w-full">
-          {isSubmitting ? '送信中...' : '申請する'}
-        </Button>
+        <PortalFormActions isSubmitting={isSubmitting} submitLabel="申請する" />
       </form>
     </div>
   );

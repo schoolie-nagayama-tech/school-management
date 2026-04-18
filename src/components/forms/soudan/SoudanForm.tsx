@@ -1,8 +1,15 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import { Input, Select, Button } from '@/components/ui';
+import { Input, Select } from '@/components/ui';
+import {
+  PortalFormHeader,
+  PortalFormSection,
+  PortalFormActions,
+  PortalCompletionView,
+  PortalErrorBanner,
+  PortalPreviewBanner,
+} from '@/components/forms/shared';
 import type { School } from '@/types/database';
 import { validateStudentName } from '@/lib/utils/validation';
 import type {
@@ -21,7 +28,6 @@ interface SoudanFormProps {
 const GRADES = ['小1', '小2', '小3', '小4', '小5', '小6', '中1', '中2', '中3', '高1', '高2', '高3'];
 
 export function SoudanForm({ school, period, isPreview }: SoudanFormProps) {
-  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submittingRef = useRef(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -139,56 +145,26 @@ export function SoudanForm({ school, period, isPreview }: SoudanFormProps) {
   // 送信完了画面
   if (isSubmitted) {
     return (
-      <div className="max-w-md mx-auto p-6">
-        <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
-          <div className="text-4xl mb-4">✓</div>
-          <h2 className="text-xl font-bold text-green-800 mb-4">
-            送信完了
-          </h2>
-          <p className="text-green-700 whitespace-pre-wrap text-sm">
-            {settings.completion_message}
-          </p>
-          <button
-            onClick={() => router.push(`/portal/${school.code}`)}
-            className="mt-6 text-green-600 hover:underline text-sm"
-          >
-            ポータルに戻る
-          </button>
-        </div>
-      </div>
+      <PortalCompletionView
+        schoolCode={school.code ?? ''}
+        title="送信完了"
+        completionMessage={settings.completion_message}
+      />
     );
   }
 
   return (
-    <div className="max-w-md mx-auto p-4">
-      {/* ヘッダー */}
-      <div className="flex items-center justify-between mb-6">
-        <button
-          onClick={() => router.push(`/portal/${school.code}`)}
-          className="text-[#4b5563] hover:text-[#1f2937]"
-        >
-          ← 戻る
-        </button>
-        <h1 className="text-xl font-bold text-[#1f2937]">お客様相談</h1>
-        <div className="w-12"></div>
-      </div>
+    <div className="space-y-5">
+      <PortalFormHeader
+        eyebrow="お客様相談"
+        title={period.title || 'お客様相談'}
+        description={settings.description}
+      />
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {isPreview && (
-          <div className="p-3 bg-amber-100 border border-amber-400 rounded-lg">
-            <p className="text-sm text-amber-800 font-medium">＜プレビューモード＞ このページは管理者確認用です。実際の回答は送信されません。</p>
-          </div>
-        )}
-        {/* 説明文 */}
-        {settings.description && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-blue-800 whitespace-pre-wrap text-sm">
-              {settings.description}
-            </p>
-          </div>
-        )}
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {isPreview && <PortalPreviewBanner />}
 
-        {/* 基本情報 */}
+        <PortalFormSection title="基本情報">
         <div className="space-y-4">
           {/* 生徒名 */}
           <div>
@@ -248,19 +224,16 @@ export function SoudanForm({ school, period, isPreview }: SoudanFormProps) {
             />
           </div>
         </div>
+        </PortalFormSection>
 
-        {/* 相談区分 */}
-        <div>
-          <label className="block text-sm font-medium mb-2 text-[#1f2937]">
-            相談区分 <span className="text-red-500">*</span>
-          </label>
+        <PortalFormSection title="相談区分">
           <div className="space-y-2">
             {settings.categories.map((cat) => (
               <label
                 key={cat}
                 className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
                   selectedCategories.includes(cat)
-                    ? 'border-[#3b82f6] bg-orange-50'
+                    ? 'border-[color:var(--primary)] bg-[color:var(--primary-subtle)]'
                     : 'border-gray-300 hover:bg-gray-50'
                 }`}
               >
@@ -277,13 +250,13 @@ export function SoudanForm({ school, period, isPreview }: SoudanFormProps) {
           {errors.categories && (
             <p className="text-red-500 text-xs mt-1">{errors.categories}</p>
           )}
-        </div>
+        </PortalFormSection>
 
-        {/* 相談内容 */}
-        <div>
-          <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-            相談内容 <span className="text-red-500">*</span>
-          </label>
+        <PortalFormSection title="相談内容">
+          <div>
+            <label className="sr-only">
+              相談内容 <span className="text-red-500">*</span>
+            </label>
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
@@ -301,23 +274,12 @@ export function SoudanForm({ school, period, isPreview }: SoudanFormProps) {
           {errors.content && (
             <p className="text-red-500 text-xs mt-1">{errors.content}</p>
           )}
-        </div>
-
-        {/* エラーメッセージ */}
-        {errorMessage && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-800 text-sm">{errorMessage}</p>
           </div>
-        )}
+        </PortalFormSection>
 
-        {/* 送信ボタン */}
-        <Button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full"
-        >
-          {isSubmitting ? '送信中...' : '送信する'}
-        </Button>
+        {errorMessage && <PortalErrorBanner message={errorMessage} />}
+
+        <PortalFormActions isSubmitting={isSubmitting} submitLabel="送信する" />
       </form>
     </div>
   );

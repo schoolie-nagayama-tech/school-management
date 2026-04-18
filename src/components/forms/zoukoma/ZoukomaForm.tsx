@@ -16,6 +16,14 @@ import {
 import { SubjectInput } from './SubjectInput';
 import { PriceQuote } from './PriceQuote';
 import { SlotTable } from './SlotTable';
+import {
+  PortalFormHeader,
+  PortalFormSection,
+  PortalFormActions,
+  PortalCompletionView,
+  PortalErrorBanner,
+  PortalPreviewBanner,
+} from '@/components/forms/shared';
 
 interface ZoukomaFormProps {
   school: School;
@@ -218,60 +226,25 @@ export function ZoukomaForm({ school, period, isPreview }: ZoukomaFormProps) {
 
   if (isSubmitted) {
     return (
-      <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 text-center">
-        <div className="mb-6">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg
-              className="w-8 h-8 text-green-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          </div>
-          <h2 className="text-2xl font-bold text-[#1f2937] mb-4">
-            お申込みありがとうございます
-          </h2>
-          <p className="text-[#4b5563] mb-4">
-            受付完了メールを保護者様宛にお送りしました。
-          </p>
-          {settings.completion_message && (
-            <div className="mt-6 p-4 bg-[#f3f4f6] rounded-lg text-left">
-              <p className="text-sm text-[#4b5563] whitespace-pre-line">
-                {settings.completion_message}
-              </p>
-            </div>
-          )}
-        </div>
-        <a
-          href={`/portal/${school.code}`}
-          className="inline-block px-6 py-3 bg-[#3b82f6] text-white font-medium rounded-lg hover:bg-[#60a5fa] transition-colors"
-        >
-          ポータルに戻る
-        </a>
-      </div>
+      <PortalCompletionView
+        schoolCode={school.code ?? ''}
+        completionMessage={settings.completion_message}
+      />
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-        {isPreview && (
-          <div className="p-3 bg-amber-100 border border-amber-400 rounded-lg mb-4">
-            <p className="text-sm text-amber-800 font-medium">
-              ＜プレビューモード＞ このページは管理者確認用です。実際の回答は送信されません。
-            </p>
-          </div>
-        )}
-        {/* セクション1: 基本情報 */}
-        <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 space-y-4">
-          <h2 className="text-xl font-bold text-[#1f2937] mb-4">基本情報</h2>
+    <div className="space-y-5">
+      <PortalFormHeader
+        eyebrow="増コマ 申込"
+        title={period.title || '増コマ申込'}
+        description={settings.description}
+      />
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {isPreview && <PortalPreviewBanner />}
 
+        <PortalFormSection title="基本情報">
+          <div className="space-y-4">
           <Input
             label="生徒名"
             type="text"
@@ -304,20 +277,16 @@ export function ZoukomaForm({ school, period, isPreview }: ZoukomaFormProps) {
             required
             disabled={isSubmitting}
           />
-        </div>
+          </div>
+        </PortalFormSection>
 
-        {/* セクション2: 申込科目とコマ数 */}
-        <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 space-y-4">
-          <h2 className="text-xl font-bold text-[#1f2937] mb-2">
-            申込科目とコマ数
-          </h2>
-          <p className="text-sm text-[#4b5563] mb-4">
-            必要な科目に必要なコマ数を入力してください
-          </p>
-
+        <PortalFormSection
+          title="申込科目とコマ数"
+          description="必要な科目に必要なコマ数を入力してください"
+        >
           {errors.subjects && (
-            <div className="p-3 bg-[#ef4444]/10 border border-[#ef4444] rounded-lg">
-              <p className="text-sm text-[#ef4444]">{errors.subjects}</p>
+            <div className="p-3 bg-[color:var(--primary-subtle)] border border-[color:var(--primary)]/30 rounded-lg mb-4">
+              <p className="text-sm text-[color:var(--primary-dark)]">{errors.subjects}</p>
             </div>
           )}
 
@@ -343,26 +312,21 @@ export function ZoukomaForm({ school, period, isPreview }: ZoukomaFormProps) {
           <p className="text-sm text-[#4b5563] mt-4">
             テスト対策の日程が決まりましたら、Growより保護者様へご連絡いたします。
           </p>
-        </div>
+        </PortalFormSection>
 
-        {/* セクション3: 出席可能日程 */}
-        <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 space-y-4">
-          <h2 className="text-xl font-bold text-[#1f2937] mb-2">
-            出席可能日程
-          </h2>
-          <p className="text-sm text-[#4b5563] mb-4">
-            出席できる日程を選んでください
-          </p>
-
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+        <PortalFormSection
+          title="出席可能日程"
+          description="出席できる日程を選んでください"
+        >
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
             <p className="text-sm text-[#4b5563]">
               出席可能な日程は多めに選択してください。申込コマ数と同じ数だけ日程をお選びいただいた場合、他の生徒さんとの調整ができず授業を組めない場合があります。
             </p>
           </div>
 
           {errors.slots && (
-            <div className="p-3 bg-[#ef4444]/10 border border-[#ef4444] rounded-lg mb-4">
-              <p className="text-sm text-[#ef4444]">{errors.slots}</p>
+            <div className="p-3 bg-[color:var(--primary-subtle)] border border-[color:var(--primary)]/30 rounded-lg mb-4">
+              <p className="text-sm text-[color:var(--primary-dark)]">{errors.slots}</p>
             </div>
           )}
 
@@ -375,45 +339,23 @@ export function ZoukomaForm({ school, period, isPreview }: ZoukomaFormProps) {
           <p className="text-sm text-[#4b5563] mt-4">
             日程が決まりましたら、Growよりご連絡いたします。
           </p>
-        </div>
+        </PortalFormSection>
 
-        {/* セクション4: 備考 */}
-        <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 space-y-4">
-          <h2 className="text-xl font-bold text-[#1f2937] mb-2">備考</h2>
+        <PortalFormSection title="備考">
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="例：部活の都合で土日は夕方のみ希望"
-            className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:ring-2 focus:ring-[#3b82f6] focus:border-[#3b82f6] disabled:opacity-50"
+            className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:ring-2 focus:ring-[color:var(--primary)] focus:border-[color:var(--primary)] disabled:opacity-50"
             rows={4}
             disabled={isSubmitting}
           />
-        </div>
+        </PortalFormSection>
 
-        {errorMessage && (
-          <div className="bg-[#ef4444]/10 border border-[#ef4444] rounded-lg p-4">
-            <p className="text-sm text-[#ef4444]">{errorMessage}</p>
-          </div>
-        )}
+        {errorMessage && <PortalErrorBanner message={errorMessage} />}
 
-        {/* 送信ボタン */}
-        <div className="flex gap-4 justify-end">
-          <button
-            type="button"
-            onClick={handleReset}
-            disabled={isSubmitting}
-            className="px-6 py-3 bg-white text-[#4b5563] font-medium rounded-lg border border-[#e5e7eb] hover:bg-[#f3f4f6] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            リセット
-          </button>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="px-6 py-3 bg-[#3b82f6] text-white font-medium rounded-lg hover:bg-[#60a5fa] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isSubmitting ? '送信中...' : '申し込む'}
-          </button>
-        </div>
-    </form>
+        <PortalFormActions onReset={handleReset} isSubmitting={isSubmitting} />
+      </form>
+    </div>
   );
 }

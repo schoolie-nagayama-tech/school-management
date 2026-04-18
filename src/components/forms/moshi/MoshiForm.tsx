@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import { Input, Select, Button } from '@/components/ui';
+import { Input, Select } from '@/components/ui';
 import type { School } from '@/types/database';
 import { validateStudentName } from '@/lib/utils/validation';
 import type {
@@ -11,6 +10,14 @@ import type {
 } from '@/types/forms/moshi';
 import { submitMoshiResponse } from '@/lib/api/moshi';
 import { MOSHI_GRADE_NAME_TO_NUMBER } from '@/types/forms/moshi';
+import {
+  PortalFormHeader,
+  PortalFormSection,
+  PortalFormActions,
+  PortalCompletionView,
+  PortalErrorBanner,
+  PortalPreviewBanner,
+} from '@/components/forms/shared';
 
 interface MoshiFormProps {
   school: School;
@@ -21,7 +28,6 @@ interface MoshiFormProps {
 type ExamType = 'regular' | 'furikae';
 
 export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
-  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submittingRef = useRef(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -174,23 +180,10 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
   // 送信完了画面
   if (isSubmitted) {
     return (
-      <div className="max-w-md mx-auto p-6">
-        <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
-          <div className="text-4xl mb-4">✓</div>
-          <h2 className="text-xl font-bold text-green-800 mb-4">
-            お申し込みを受け付けました
-          </h2>
-          <p className="text-green-700 whitespace-pre-wrap text-sm">
-            {settings.completion_message}
-          </p>
-          <button
-            onClick={() => router.push(`/portal/${school.code}`)}
-            className="mt-6 text-green-600 hover:underline text-sm"
-          >
-            ポータルに戻る
-          </button>
-        </div>
-      </div>
+      <PortalCompletionView
+        schoolCode={school.code ?? ''}
+        completionMessage={settings.completion_message}
+      />
     );
   }
 
@@ -202,42 +195,17 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
   });
 
   return (
-    <div className="max-w-md mx-auto p-4">
-      {/* ヘッダー */}
-      <div className="flex items-center justify-between mb-4">
-        <button
-          onClick={() => router.push(`/portal/${school.code}`)}
-          className="text-[#4b5563] hover:text-[#1f2937]"
-        >
-          ← 戻る
-        </button>
-        <div className="w-12"></div>
-      </div>
+    <div className="space-y-5">
+      <PortalFormHeader
+        eyebrow="模試 申込"
+        title={period.title || '模試申込'}
+        description={settings.description}
+      />
 
-      {/* タイトルカード */}
-      <div className="bg-white rounded-xl border-2 border-[#e5e7eb] shadow-sm p-6 mb-6">
-        <h1 className="text-xl font-bold text-[#1f2937] text-center">模試申込</h1>
-        {period.title && (
-          <p className="text-sm text-[#4b5563] text-center mt-1">{period.title}</p>
-        )}
-      </div>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {isPreview && <PortalPreviewBanner />}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {isPreview && (
-          <div className="p-3 bg-amber-100 border border-amber-400 rounded-lg">
-            <p className="text-sm text-amber-800 font-medium">＜プレビューモード＞ このページは管理者確認用です。実際の回答は送信されません。</p>
-          </div>
-        )}
-        {/* 説明文 */}
-        {settings.description && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-blue-800 whitespace-pre-wrap text-sm">
-              {settings.description}
-            </p>
-          </div>
-        )}
-
-        {/* 基本情報 */}
+        <PortalFormSection title="基本情報">
         <div className="space-y-4">
           {/* 生徒名 */}
           <div>
@@ -301,10 +269,11 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
             )}
           </div>
         </div>
+        </PortalFormSection>
 
-        {/* 受験方法選択 */}
+        <PortalFormSection title="受験方法">
         <div>
-          <label className="block text-sm font-medium mb-3 text-[#1f2937]">
+          <label className="sr-only">
             受験方法 <span className="text-red-500">*</span>
           </label>
 
@@ -440,22 +409,11 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
             </div>
           )}
         </div>
+        </PortalFormSection>
 
-        {/* エラーメッセージ */}
-        {errorMessage && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-800 text-sm">{errorMessage}</p>
-          </div>
-        )}
+        {errorMessage && <PortalErrorBanner message={errorMessage} />}
 
-        {/* 送信ボタン */}
-        <Button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full"
-        >
-          {isSubmitting ? '送信中...' : '申し込む'}
-        </Button>
+        <PortalFormActions isSubmitting={isSubmitting} />
       </form>
     </div>
   );
