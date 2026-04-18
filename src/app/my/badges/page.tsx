@@ -8,25 +8,7 @@ import { getMyTrainings } from '@/lib/api/teacher-trainings';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { BadgeGrid } from '@/components/teacher-badges/BadgeGrid';
 import { BadgeProgress } from '@/components/teacher-badges/BadgeProgress';
-import { getTier, getNextTier, type TierKey } from '@/lib/teacher-tier';
-
-const TIER_LABEL: Record<TierKey, string> = {
-  zero: '見習い',
-  slate: 'スレート',
-  emerald: 'エメラルド',
-  purple: 'アメジスト',
-  gold: 'ゴールド',
-  mythic: 'ミシカル',
-};
-
-const TIER_SUBLABEL: Record<TierKey, string> = {
-  zero: 'ここから始めよう',
-  slate: '積み重ねの第一歩',
-  emerald: '実績が光ってきた',
-  purple: '一目置かれる存在',
-  gold: '殿堂入りの風格',
-  mythic: '伝説の講師',
-};
+import { getTier, getNextTier } from '@/lib/teacher-tier';
 
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -100,21 +82,13 @@ export default function MyBadgesPage() {
           </div>
         ) : (
           <div className="space-y-8">
-            {/* Tier Hero */}
+            {/* 獲得状況 */}
             <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
               <div className="flex items-start justify-between gap-4 mb-5">
-                <div>
-                  <p className="text-[11px] font-semibold tracking-[0.18em] text-gray-500 uppercase mb-1">
-                    現在のティア
-                  </p>
-                  <h1 className="text-[26px] sm:text-[28px] font-bold text-gray-900 leading-tight tracking-tight">
-                    {TIER_LABEL[tier.key]}
-                  </h1>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {TIER_SUBLABEL[tier.key]}
-                  </p>
-                </div>
-                <span className={`tier-dot tier-dot-${tier.key} !w-3 !h-3 mt-2`} aria-hidden />
+                <p className="text-[11px] font-semibold tracking-[0.18em] text-gray-500 uppercase">
+                  獲得状況
+                </p>
+                <span className={`tier-dot tier-dot-${tier.key} !w-3 !h-3 mt-1`} aria-hidden />
               </div>
               <div className="flex items-baseline justify-between gap-4 mb-3">
                 <span className="text-[40px] font-bold text-gray-900 tabular-nums leading-none">
@@ -123,18 +97,12 @@ export default function MyBadgesPage() {
                     / {badges.length}
                   </span>
                 </span>
-                {nextTier ? (
+                {nextTier && (
                   <span className="text-xs text-gray-500 text-right leading-tight">
-                    次のティアまで<br />
+                    次の節目まで<br />
                     <b className="text-gray-900 text-sm font-bold tabular-nums">
                       あと {remaining} 個
                     </b>
-                  </span>
-                ) : (
-                  <span className="text-xs text-right leading-tight">
-                    <span className={`tier-pill tier-pill-${tier.key} px-2 py-1 rounded-full font-bold`}>
-                      最高位
-                    </span>
                   </span>
                 )}
               </div>
