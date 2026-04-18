@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import type { Student, Subject } from '@/types/database';
 import { GRADE_LABELS, STATUS_LABELS, STATUS_COLORS } from '@/types/database';
 import type { SchedulePatternSummary } from '@/lib/api/students';
@@ -23,6 +23,177 @@ interface StudentTableRowProps {
   onInterviews?: (student: Student) => void;
   onProgress?: (student: Student) => void;
   onSchedule?: (student: Student) => void;
+}
+
+interface StudentRowActionsProps {
+  student: Student;
+  onEdit?: (student: Student) => void;
+  onDelete?: (student: Student) => void;
+  onScores?: (student: Student) => void;
+  onInterviews?: (student: Student) => void;
+  onProgress?: (student: Student) => void;
+  onSchedule?: (student: Student) => void;
+}
+
+/**
+ * 生徒1行ぶんのアクション群。
+ *
+ * 以前は 6 アイコン × ラベル を全て横に並べていて認知負荷が高かった。
+ * 編集だけインラインに残し、残りは ⋯ メニューへ集約。
+ * 行クリック自体が詳細モーダル表示を担うので、それで 7 経路確保している形。
+ */
+function StudentRowActions({
+  student,
+  onEdit,
+  onDelete,
+  onScores,
+  onInterviews,
+  onProgress,
+  onSchedule,
+}: StudentRowActionsProps) {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [open]);
+
+  type MenuItem = {
+    label: string;
+    onClick: () => void;
+    danger?: boolean;
+    path: string;
+  };
+
+  const menuItems: MenuItem[] = [];
+  if (onScores)
+    menuItems.push({
+      label: '成績',
+      onClick: () => onScores(student),
+      path: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+    });
+  if (onProgress)
+    menuItems.push({
+      label: '進行表',
+      onClick: () => onProgress(student),
+      path: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253',
+    });
+  if (onInterviews)
+    menuItems.push({
+      label: '面談',
+      onClick: () => onInterviews(student),
+      path: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z',
+    });
+  if (onSchedule)
+    menuItems.push({
+      label: '通塾日程',
+      onClick: () => onSchedule(student),
+      path: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
+    });
+  if (onDelete)
+    menuItems.push({
+      label: '削除',
+      onClick: () => onDelete(student),
+      danger: true,
+      path: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16',
+    });
+
+  const handleMenuClick = (item: MenuItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOpen(false);
+    item.onClick();
+  };
+
+  return (
+    <div
+      className="flex justify-end gap-1 items-center"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {onEdit && (
+        <button
+          onClick={() => onEdit(student)}
+          aria-label="編集"
+          title="編集"
+          className="inline-flex items-center justify-center w-9 h-9 text-gray-600 hover:text-ink hover:bg-ink-subtle rounded-lg transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+            />
+          </svg>
+        </button>
+      )}
+
+      {menuItems.length > 0 && (
+        <div ref={menuRef} className="relative">
+          <button
+            onClick={() => setOpen((v) => !v)}
+            aria-label="その他の操作"
+            aria-haspopup="menu"
+            aria-expanded={open}
+            title="その他の操作"
+            className="inline-flex items-center justify-center w-9 h-9 text-gray-600 hover:text-ink hover:bg-ink-subtle rounded-lg transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+              />
+            </svg>
+          </button>
+          {open && (
+            <div
+              role="menu"
+              className="absolute right-0 top-full mt-1 min-w-[160px] bg-white rounded-lg border border-gray-200 shadow-lg z-10 py-1"
+            >
+              {menuItems.map((item) => (
+                <button
+                  key={item.label}
+                  role="menuitem"
+                  type="button"
+                  onClick={(e) => handleMenuClick(item, e)}
+                  className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2.5 transition-colors ${
+                    item.danger
+                      ? 'text-[#ef4444] hover:bg-[#ef4444]/10'
+                      : 'text-gray-700 hover:bg-ink-subtle hover:text-ink'
+                  }`}
+                >
+                  <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d={item.path}
+                    />
+                  </svg>
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 const StudentTableRow = memo(function StudentTableRow({
@@ -102,83 +273,15 @@ const StudentTableRow = memo(function StudentTableRow({
         </span>
       </td>
       <td className="px-4 py-3 text-right">
-        <div className="flex justify-end gap-3" onClick={(e) => e.stopPropagation()}>
-          {onScores && (
-            <button
-              onClick={() => onScores(student)}
-              aria-label="成績"
-              className="flex flex-col items-center gap-1 p-1.5 text-gray-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/10 rounded-lg transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <span className="text-[10px] leading-tight">成績</span>
-            </button>
-          )}
-          {onInterviews && (
-            <button
-              onClick={() => onInterviews(student)}
-              aria-label="面談"
-              className="flex flex-col items-center gap-1 p-1.5 text-[#4b5563] hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
-              <span className="text-[10px] leading-tight">面談</span>
-            </button>
-          )}
-          {onProgress && (
-            <button
-              onClick={() => onProgress(student)}
-              aria-label="進行表"
-              className="flex flex-col items-center gap-1 p-1.5 text-gray-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/10 rounded-lg transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-              </svg>
-              <span className="text-[10px] leading-tight">進行表</span>
-            </button>
-          )}
-          {onSchedule && (
-            <button
-              onClick={() => onSchedule(student)}
-              aria-label="通塾日程"
-              className="flex flex-col items-center gap-1 p-1.5 text-gray-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/10 rounded-lg transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <span className="text-[10px] leading-tight">通塾日程</span>
-            </button>
-          )}
-          {onEdit && (
-            <button
-              onClick={() => onEdit(student)}
-              aria-label="編集"
-              className="flex flex-col items-center gap-1 p-1.5 text-gray-600 hover:text-[#1e3a5f] hover:bg-[#1e3a5f]/10 rounded-lg transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-              <span className="text-[10px] leading-tight">編集</span>
-            </button>
-          )}
-          {onDelete && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(student);
-              }}
-              aria-label="削除"
-              className="flex flex-col items-center gap-1 p-1.5 text-[#4b5563] hover:text-[#ef4444] hover:bg-[#ef4444]/10 rounded-lg transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-              <span className="text-[10px] leading-tight">削除</span>
-            </button>
-          )}
-        </div>
+        <StudentRowActions
+          student={student}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onScores={onScores}
+          onInterviews={onInterviews}
+          onProgress={onProgress}
+          onSchedule={onSchedule}
+        />
       </td>
     </tr>
   );
