@@ -274,7 +274,8 @@
   [data-teacher-tier='mythic'] .tier-ym::after,
   [data-teacher-tier='purple'] .tier-submit::before,
   [data-teacher-tier='gold'] .tier-submit::after,
-  [data-teacher-tier='mythic'] .tier-submit {
+  [data-teacher-tier='mythic'] .tier-submit,
+  [style*="badge-pulse"] {
     animation: none !important;
   }
 }

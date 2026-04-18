@@ -37,7 +37,7 @@ export function PortalFormActions({
       >
         {isSubmitting && (
           <svg
-            className="w-4 h-4 animate-spin"
+            className="w-4 h-4 animate-spin motion-reduce:animate-none"
             aria-hidden="true"
             fill="none"
             viewBox="0 0 24 24"
