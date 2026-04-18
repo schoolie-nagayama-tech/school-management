@@ -43,7 +43,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertBoard } from '@/components/alerts';
 import { TaskOverdueBanner } from '@/components/monthly-tasks/TaskOverdueBanner';
-import { ClassroomTrophy } from '@/components/students/ClassroomTrophy';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
@@ -607,18 +606,6 @@ export default function StudentsPage() {
             </svg>
             <span className="text-xs font-medium text-blue-600">閲覧専用モード</span>
           </div>
-        )}
-
-        {/* 教室ステータス・ヒーロー（教室長以上のみ / roster タブ時のみ） */}
-        {!isTeacher && activeTab === 'roster' && (
-          <ClassroomTrophy
-            activeCount={rosterTotalCount}
-            schoolLabel={
-              selectedSchoolId === 'all'
-                ? 'すべての教室'
-                : masterSchools.find((s) => s.id === selectedSchoolId)?.name
-            }
-          />
         )}
 
         {/* 業務タスク超過バナー（教室長以上のみ） */}
