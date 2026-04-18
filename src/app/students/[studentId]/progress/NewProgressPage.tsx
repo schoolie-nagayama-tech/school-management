@@ -477,43 +477,53 @@ function TableView({
   const isMeeting = viewMode === 'meeting';
   const activeExam = activeExamOf(textbook);
 
-  // 面談モードの行可視化: 生徒×教科書ごとに localStorage に保存（都度編集しやすいように）
-  const hiddenKey = `meeting-hidden:${studentId}:${textbook.id}`;
-  const [hiddenRowIds, setHiddenRowIds] = useState<Set<string>>(new Set());
-  // 「設定モード」: 非表示行も薄く表示してトグル可 / OFF: 非表示行は本当に消える（プレゼン用）
-  const [setupMode, setSetupMode] = useState(true);
+  // 面談モードの列可視化: 生徒×教科書ごとに localStorage に保存（都度編集しやすいように）
+  // 対象列は保護者に見せる/見せないを選びやすい 6 列のみ。他の講師向け列（引継ぎ/講師名/提案コマ数）は
+  // isMeeting 時は常に非表示。申込コマ数も面談では非表示（内部営業指標のため）。
+  type MeetingCol = 'proposal' | 'examRange' | 'schoolProgress' | 'lesson1' | 'lesson2' | 'lesson3';
+  const colsKey = `meeting-cols:${studentId}:${textbook.id}`;
+  const DEFAULT_COLS: Record<MeetingCol, boolean> = {
+    proposal: true,
+    examRange: true,
+    schoolProgress: true,
+    lesson1: true,
+    lesson2: true,
+    lesson3: true,
+  };
+  const [meetingCols, setMeetingCols] = useState<Record<MeetingCol, boolean>>(DEFAULT_COLS);
+  const [colMenuOpen, setColMenuOpen] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
-      const stored = window.localStorage.getItem(hiddenKey);
-      if (stored) setHiddenRowIds(new Set(JSON.parse(stored) as string[]));
-      else setHiddenRowIds(new Set());
+      const stored = window.localStorage.getItem(colsKey);
+      if (stored) {
+        const parsed = JSON.parse(stored) as Partial<Record<MeetingCol, boolean>>;
+        setMeetingCols({ ...DEFAULT_COLS, ...parsed });
+      } else {
+        setMeetingCols(DEFAULT_COLS);
+      }
     } catch {
-      setHiddenRowIds(new Set());
+      setMeetingCols(DEFAULT_COLS);
     }
-  }, [hiddenKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [colsKey]);
 
-  const toggleHidden = (itemId: string) => {
-    setHiddenRowIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(itemId)) next.delete(itemId);
-      else next.add(itemId);
+  const toggleCol = (col: MeetingCol) => {
+    setMeetingCols((prev) => {
+      const next = { ...prev, [col]: !prev[col] };
       if (typeof window !== 'undefined') {
-        window.localStorage.setItem(hiddenKey, JSON.stringify([...next]));
+        window.localStorage.setItem(colsKey, JSON.stringify(next));
       }
       return next;
     });
   };
-  const resetHidden = () => {
-    setHiddenRowIds(new Set());
-    if (typeof window !== 'undefined') window.localStorage.removeItem(hiddenKey);
+  const resetCols = () => {
+    setMeetingCols(DEFAULT_COLS);
+    if (typeof window !== 'undefined') window.localStorage.removeItem(colsKey);
   };
 
-  // 面談モードで実際に表示する行
-  const visibleProgress = isMeeting && !setupMode
-    ? progress.filter((r) => !hiddenRowIds.has(r.id))
-    : progress;
+  const hiddenColCount = Object.values(meetingCols).filter((v) => !v).length;
 
   // ─── 記録モード ───
   // 1コマで複数単元を進む実情に合わせた一括入力モード
@@ -729,39 +739,63 @@ function TableView({
       {/* 進め方 / 宿題 — 常時表示（面談モードは読み取り専用） */}
       <TextbookSettingsSection textbookId={textbook.id} isMeeting={isMeeting} success={success} toastError={toastError} />
 
-      {/* 面談モード: 行可視化コントロール */}
+      {/* 面談モード: 列可視化コントロール（列ごとに保護者に見せる/隠す） */}
       {isMeeting && (
         <div className="mb-2 px-3 py-2 bg-[#fff7ed] border border-[#fb923c]/30 rounded-lg flex items-center justify-between flex-wrap gap-2">
           <div className="text-xs text-[#9a3412]">
             <strong>面談モード：</strong>
-            {setupMode ? (
-              <>表示する行を設定中（非表示は薄く表示）。保護者に見せる前に「プレゼン表示」に切替えてください。</>
+            列ごとに保護者に見せる/隠すを切替可。{hiddenColCount > 0 ? (
+              <span> 現在 <strong>{hiddenColCount}列</strong> を非表示中。</span>
             ) : (
-              <>プレゼン表示中。非表示の <strong>{hiddenRowIds.size}件</strong> は保護者に見えません。</>
+              <span> 全ての対象列を表示中。</span>
             )}
-            <span className="ml-2">
-              {hiddenRowIds.size > 0 && `（非表示 ${hiddenRowIds.size}件 / 全 ${progress.length}件）`}
-            </span>
           </div>
-          <div className="flex items-center gap-2">
-            {hiddenRowIds.size > 0 && (
+          <div className="flex items-center gap-2 relative">
+            {hiddenColCount > 0 && (
               <button
-                onClick={resetHidden}
+                onClick={resetCols}
                 className="px-2 py-1 text-[11px] bg-white border border-[#fb923c]/30 text-[#9a3412] rounded hover:bg-[#fef3c7]"
               >
-                全て表示に戻す
+                全列を表示
               </button>
             )}
             <button
-              onClick={() => setSetupMode(!setupMode)}
-              className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-                setupMode
-                  ? 'bg-[#1e3a5f] text-white hover:bg-[#2a4d7a]'
-                  : 'bg-white text-[#9a3412] border border-[#fb923c]/30 hover:bg-[#fef3c7]'
-              }`}
+              onClick={() => setColMenuOpen((v) => !v)}
+              className="px-3 py-1 text-xs font-medium bg-[#1e3a5f] text-white rounded hover:bg-[#2a4d7a]"
             >
-              {setupMode ? 'プレゼン表示に切替' : '設定モードに戻る'}
+              列の表示設定 ▾
             </button>
+            {colMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setColMenuOpen(false)} />
+                <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-[#e5e7eb] rounded-lg shadow-lg z-20 overflow-hidden">
+                  <div className="px-3 py-2 text-[10px] text-[#6b7280] uppercase tracking-wider border-b border-[#f3f4f6] bg-[#f9fafb]">
+                    保護者に見せる列を選択
+                  </div>
+                  {([
+                    { key: 'proposal', label: '提案コマ数' },
+                    { key: 'examRange', label: '試験範囲' },
+                    { key: 'schoolProgress', label: '学校進度' },
+                    { key: 'lesson1', label: '1回目' },
+                    { key: 'lesson2', label: '2回目' },
+                    { key: 'lesson3', label: '3回目' },
+                  ] as { key: MeetingCol; label: string }[]).map((c) => (
+                    <label key={c.key} className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-[#f9fafb] cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={meetingCols[c.key]}
+                        onChange={() => toggleCol(c.key)}
+                        className="w-4 h-4 accent-[#1e3a5f]"
+                      />
+                      <span className={meetingCols[c.key] ? 'text-[#1f2937]' : 'text-[#9ca3af]'}>{c.label}</span>
+                    </label>
+                  ))}
+                  <div className="px-3 py-2 text-[10px] text-[#6b7280] border-t border-[#f3f4f6] bg-[#f9fafb]">
+                    ※ 引継ぎ・講師名・申込コマ数は面談では常に非表示
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -812,41 +846,36 @@ function TableView({
           <thead className="bg-[#f9fafb] border-b border-[#e5e7eb] text-[#6b7280] text-xs">
             <tr>
               {recording && !isMeeting && <th className="px-2 py-2 w-10"></th>}
-              {isMeeting && setupMode && <th className="px-2 py-2 w-10"></th>}
               <th className="px-3 py-2 text-left w-10">#</th>
               <th className="px-3 py-2 text-left min-w-[180px]">単元名</th>
-              {!isMeeting && <th className="px-3 py-2 text-left w-20">提案</th>}
+              {/* 提案: 管理モード常時 / 面談モードは列設定に従う */}
+              {(!isMeeting || meetingCols.proposal) && <th className="px-3 py-2 text-left w-20">提案</th>}
               {!isMeeting && <th className="px-3 py-2 text-left w-20">申込</th>}
-              <th className="px-3 py-2 text-left w-32">試験範囲</th>
-              <th className="px-3 py-2 text-left w-28">学校進度</th>
-              <th className="px-3 py-2 text-left w-28">1回目</th>
-              <th className="px-3 py-2 text-left w-28">2回目</th>
-              <th className="px-3 py-2 text-left w-28">3回目</th>
+              {(!isMeeting || meetingCols.examRange) && <th className="px-3 py-2 text-left w-32">試験範囲</th>}
+              {(!isMeeting || meetingCols.schoolProgress) && <th className="px-3 py-2 text-left w-28">学校進度</th>}
+              {(!isMeeting || meetingCols.lesson1) && <th className="px-3 py-2 text-left w-28">1回目</th>}
+              {(!isMeeting || meetingCols.lesson2) && <th className="px-3 py-2 text-left w-28">2回目</th>}
+              {(!isMeeting || meetingCols.lesson3) && <th className="px-3 py-2 text-left w-28">3回目</th>}
               {!isMeeting && <th className="px-3 py-2 text-left min-w-[160px]">引継ぎ</th>}
               {!isMeeting && <th className="px-3 py-2 text-left w-24">講師名</th>}
             </tr>
           </thead>
           <tbody>
-            {visibleProgress.map((row) => {
-              const hidden = hiddenRowIds.has(row.id);
-              return (
-                <ProgressRow
-                  key={row.id}
-                  row={row}
-                  examTypes={examTypes}
-                  isMeeting={isMeeting}
-                  hidden={hidden}
-                  setupMode={setupMode}
-                  recording={recording && !isMeeting}
-                  selected={selectedIds.has(row.id)}
-                  onToggleSelect={() => toggleSelect(row.id)}
-                  onToggleHidden={() => toggleHidden(row.id)}
-                  onLocalPatch={(patch) => updateLocal(row.id, patch)}
-                  onSaveProgress={(patch) => saveProgressField(row, patch)}
-                  onSaveLesson={(n, date) => saveLessonField(row, n, date)}
-                />
-              );
-            })}
+            {progress.map((row) => (
+              <ProgressRow
+                key={row.id}
+                row={row}
+                examTypes={examTypes}
+                isMeeting={isMeeting}
+                meetingCols={meetingCols}
+                recording={recording && !isMeeting}
+                selected={selectedIds.has(row.id)}
+                onToggleSelect={() => toggleSelect(row.id)}
+                onLocalPatch={(patch) => updateLocal(row.id, patch)}
+                onSaveProgress={(patch) => saveProgressField(row, patch)}
+                onSaveLesson={(n, date) => saveLessonField(row, n, date)}
+              />
+            ))}
           </tbody>
         </table>
       </div>
@@ -862,16 +891,16 @@ function TableView({
 // ─────────────────────────────────────────────
 // 進行表の1行
 // ─────────────────────────────────────────────
+type MeetingColMap = { proposal: boolean; examRange: boolean; schoolProgress: boolean; lesson1: boolean; lesson2: boolean; lesson3: boolean };
+
 function ProgressRow({
   row,
   examTypes,
   isMeeting,
-  hidden = false,
-  setupMode = false,
+  meetingCols,
   recording = false,
   selected = false,
   onToggleSelect,
-  onToggleHidden,
   onLocalPatch,
   onSaveProgress,
   onSaveLesson,
@@ -879,12 +908,10 @@ function ProgressRow({
   row: CurriculumItemWithProgress;
   examTypes: ExamType[];
   isMeeting: boolean;
-  hidden?: boolean;
-  setupMode?: boolean;
+  meetingCols: MeetingColMap;
   recording?: boolean;
   selected?: boolean;
   onToggleSelect?: () => void;
-  onToggleHidden?: () => void;
   onLocalPatch: (patch: Partial<CurriculumItemWithProgress['progress']>) => void;
   onSaveProgress: (patch: Record<string, unknown>) => Promise<void>;
   onSaveLesson: (lessonNumber: 1 | 2 | 3, date: string | null) => Promise<void>;
@@ -896,11 +923,16 @@ function ProgressRow({
   const examRangeName = examTypes.find((et) => et.id === p?.exam_range_exam_type_id)?.name ?? '';
   const rowClass = selected
     ? 'border-b border-[#f3f4f6] bg-[#fff7ed] cursor-pointer'
-    : hidden && setupMode
-      ? 'border-b border-[#f3f4f6] opacity-40 bg-[#fafafa]'
-      : recording
-        ? 'border-b border-[#f3f4f6] hover:bg-[#f9fafb] cursor-pointer'
-        : 'border-b border-[#f3f4f6] hover:bg-[#f9fafb]';
+    : recording
+      ? 'border-b border-[#f3f4f6] hover:bg-[#f9fafb] cursor-pointer'
+      : 'border-b border-[#f3f4f6] hover:bg-[#f9fafb]';
+
+  // 列表示判定ヘルパ
+  const showProposal = !isMeeting || meetingCols.proposal;
+  const showExamRange = !isMeeting || meetingCols.examRange;
+  const showSchoolProgress = !isMeeting || meetingCols.schoolProgress;
+  const showLesson = (n: 1 | 2 | 3) =>
+    !isMeeting || (n === 1 ? meetingCols.lesson1 : n === 2 ? meetingCols.lesson2 : meetingCols.lesson3);
 
   return (
     <tr
@@ -918,21 +950,6 @@ function ProgressRow({
           />
         </td>
       )}
-      {isMeeting && setupMode && (
-        <td className="px-2 py-2.5 text-center">
-          <button
-            onClick={onToggleHidden}
-            title={hidden ? '面談で表示する' : '面談で非表示にする'}
-            className="w-6 h-6 rounded hover:bg-[#f3f4f6] flex items-center justify-center text-sm"
-          >
-            {hidden ? (
-              <span className="text-[#9ca3af]">非</span>
-            ) : (
-              <span className="text-[#1e3a5f] font-bold">表</span>
-            )}
-          </button>
-        </td>
-      )}
       <td className="px-3 py-2.5 text-[#6b7280] text-xs">{row.item_number ?? ''}</td>
       <td className="px-3 py-2.5 text-[#1f2937]">
         <div className="flex items-center gap-1.5">
@@ -940,21 +957,27 @@ function ProgressRow({
           <span>{row.title}</span>
         </div>
       </td>
-      {!isMeeting && (
+      {/* 提案: 管理モードは常時編集 / 面談モードは列設定に従う読み取り */}
+      {showProposal && (
         <td className="px-3 py-2.5">
-          <input
-            type="number"
-            min={0}
-            defaultValue={p?.proposal_count ?? ''}
-            onBlur={(e) => {
-              const v = e.target.value === '' ? null : Number(e.target.value);
-              onLocalPatch({ proposal_count: v ?? undefined });
-              onSaveProgress({ proposal_count: v });
-            }}
-            className="w-14 px-1.5 py-1 text-xs bg-transparent border border-transparent hover:border-[#e5e7eb] focus:border-[#1e3a5f] focus:bg-white rounded outline-none text-center"
-          />
+          {isMeeting ? (
+            <span className="text-[#1f2937] text-xs">{p?.proposal_count != null ? `${p.proposal_count}コマ` : '—'}</span>
+          ) : (
+            <input
+              type="number"
+              min={0}
+              defaultValue={p?.proposal_count ?? ''}
+              onBlur={(e) => {
+                const v = e.target.value === '' ? null : Number(e.target.value);
+                onLocalPatch({ proposal_count: v ?? undefined });
+                onSaveProgress({ proposal_count: v });
+              }}
+              className="w-14 px-1.5 py-1 text-xs bg-transparent border border-transparent hover:border-[#e5e7eb] focus:border-[#1e3a5f] focus:bg-white rounded outline-none text-center"
+            />
+          )}
         </td>
       )}
+      {/* 申込: 管理モードのみ */}
       {!isMeeting && (
         <td className="px-3 py-2.5">
           <input
@@ -970,65 +993,71 @@ function ProgressRow({
           />
         </td>
       )}
-      {/* 試験範囲（既存 exam_range_exam_type_id を select） */}
-      <td className="px-3 py-2.5 text-xs">
-        {isMeeting ? (
-          examRangeName ? (
-            <span className="inline-block px-2 py-0.5 bg-[#eff6ff] text-[#1e40af] rounded-full border border-[#dbeafe] text-[11px]">
-              {examRangeName}
-            </span>
-          ) : (
-            <span className="text-[#d1d5db]">—</span>
-          )
-        ) : (
-          <select
-            defaultValue={p?.exam_range_exam_type_id ?? ''}
-            onChange={(e) => {
-              const v = e.target.value || null;
-              onLocalPatch({ exam_range_exam_type_id: v ?? undefined });
-              onSaveProgress({ exam_range_exam_type_id: v });
-            }}
-            className="w-full px-1.5 py-1 text-xs bg-transparent border border-transparent hover:border-[#e5e7eb] focus:border-[#1e3a5f] focus:bg-white rounded outline-none"
-          >
-            <option value="">—</option>
-            {examTypes.map((et) => (
-              <option key={et.id} value={et.id}>{et.name}</option>
-            ))}
-          </select>
-        )}
-      </td>
-      {/* 学校進度 */}
-      <td className="px-3 py-2.5 text-xs">
-        {isMeeting ? (
-          <span className="text-[#4b5563]">{p?.school_progress_date ?? '—'}</span>
-        ) : (
-          <input
-            type="date"
-            defaultValue={p?.school_progress_date ?? ''}
-            onBlur={(e) => {
-              const v = e.target.value || null;
-              onLocalPatch({ school_progress_date: v ?? undefined });
-              onSaveProgress({ school_progress_date: v });
-            }}
-            className="w-full px-1.5 py-1 text-xs bg-transparent border border-transparent hover:border-[#e5e7eb] focus:border-[#1e3a5f] focus:bg-white rounded outline-none"
-          />
-        )}
-      </td>
-      {/* 1回目 / 2回目 / 3回目 */}
-      {([1, 2, 3] as const).map((n) => (
-        <td key={n} className="px-3 py-2.5 text-xs">
+      {/* 試験範囲 */}
+      {showExamRange && (
+        <td className="px-3 py-2.5 text-xs">
           {isMeeting ? (
-            <span className="text-[#1f2937]">{(lessonDate(n) || '').replace(/^\d{4}-/, '') || '—'}</span>
+            examRangeName ? (
+              <span className="inline-block px-2 py-0.5 bg-[#eff6ff] text-[#1e40af] rounded-full border border-[#dbeafe] text-[11px]">
+                {examRangeName}
+              </span>
+            ) : (
+              <span className="text-[#d1d5db]">—</span>
+            )
+          ) : (
+            <select
+              defaultValue={p?.exam_range_exam_type_id ?? ''}
+              onChange={(e) => {
+                const v = e.target.value || null;
+                onLocalPatch({ exam_range_exam_type_id: v ?? undefined });
+                onSaveProgress({ exam_range_exam_type_id: v });
+              }}
+              className="w-full px-1.5 py-1 text-xs bg-transparent border border-transparent hover:border-[#e5e7eb] focus:border-[#1e3a5f] focus:bg-white rounded outline-none"
+            >
+              <option value="">—</option>
+              {examTypes.map((et) => (
+                <option key={et.id} value={et.id}>{et.name}</option>
+              ))}
+            </select>
+          )}
+        </td>
+      )}
+      {/* 学校進度 */}
+      {showSchoolProgress && (
+        <td className="px-3 py-2.5 text-xs">
+          {isMeeting ? (
+            <span className="text-[#4b5563]">{p?.school_progress_date ?? '—'}</span>
           ) : (
             <input
               type="date"
-              defaultValue={lessonDate(n)}
-              onBlur={(e) => onSaveLesson(n, e.target.value || null)}
+              defaultValue={p?.school_progress_date ?? ''}
+              onBlur={(e) => {
+                const v = e.target.value || null;
+                onLocalPatch({ school_progress_date: v ?? undefined });
+                onSaveProgress({ school_progress_date: v });
+              }}
               className="w-full px-1.5 py-1 text-xs bg-transparent border border-transparent hover:border-[#e5e7eb] focus:border-[#1e3a5f] focus:bg-white rounded outline-none"
             />
           )}
         </td>
-      ))}
+      )}
+      {/* 1回目 / 2回目 / 3回目 */}
+      {([1, 2, 3] as const).map((n) =>
+        showLesson(n) ? (
+          <td key={n} className="px-3 py-2.5 text-xs">
+            {isMeeting ? (
+              <span className="text-[#1f2937]">{(lessonDate(n) || '').replace(/^\d{4}-/, '') || '—'}</span>
+            ) : (
+              <input
+                type="date"
+                defaultValue={lessonDate(n)}
+                onBlur={(e) => onSaveLesson(n, e.target.value || null)}
+                className="w-full px-1.5 py-1 text-xs bg-transparent border border-transparent hover:border-[#e5e7eb] focus:border-[#1e3a5f] focus:bg-white rounded outline-none"
+              />
+            )}
+          </td>
+        ) : null
+      )}
       {!isMeeting && (
         <td className="px-3 py-2.5">
           <input
