@@ -9,6 +9,7 @@ import {
   PortalCompletionView,
   PortalErrorBanner,
   PortalPreviewBanner,
+  usePortalFormDraft,
 } from '@/components/forms/shared';
 import type { School } from '@/types/database';
 import { validateStudentName } from '@/lib/utils/validation';
@@ -46,6 +47,21 @@ export function SoudanForm({ school, period, isPreview }: SoudanFormProps) {
 
   // 設定を取得
   const settings = period.settings;
+
+  // ドラフト自動保存
+  const { clearDraft } = usePortalFormDraft({
+    storageKey: `soudan:${school.id}:${period.period_key}`,
+    enabled: !isPreview,
+    value: { studentName, selectedGrade, email, phone, selectedCategories, content },
+    onRestore: (d) => {
+      if (d.studentName) setStudentName(d.studentName);
+      if (d.selectedGrade) setSelectedGrade(d.selectedGrade);
+      if (d.email) setEmail(d.email);
+      if (d.phone) setPhone(d.phone);
+      if (d.selectedCategories?.length) setSelectedCategories(d.selectedCategories);
+      if (d.content) setContent(d.content);
+    },
+  });
 
   // 学年を数値に変換
   const gradeToNumber = (gradeStr: string): number | undefined => {
@@ -128,6 +144,7 @@ export function SoudanForm({ school, period, isPreview }: SoudanFormProps) {
         response_data: responseData,
       });
 
+      clearDraft();
       setIsSubmitted(true);
     } catch (error) {
       console.error('Failed to submit:', error);
@@ -204,10 +221,10 @@ export function SoudanForm({ school, period, isPreview }: SoudanFormProps) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="example@email.com"
-              className={errors.email ? 'border-red-500' : ''}
+              className={errors.email ? 'border-[color:var(--primary)]' : ''}
             />
             {errors.email && (
-              <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+              <p className="text-[color:var(--primary)] text-xs mt-1">{errors.email}</p>
             )}
           </div>
 
@@ -248,14 +265,14 @@ export function SoudanForm({ school, period, isPreview }: SoudanFormProps) {
             ))}
           </div>
           {errors.categories && (
-            <p className="text-red-500 text-xs mt-1">{errors.categories}</p>
+            <p className="text-[color:var(--primary)] text-xs mt-1">{errors.categories}</p>
           )}
         </PortalFormSection>
 
         <PortalFormSection title="相談内容">
           <div>
             <label className="sr-only">
-              相談内容 <span className="text-red-500">*</span>
+              相談内容 <span className="text-[color:var(--primary)]">*</span>
             </label>
           <textarea
             value={content}
@@ -263,16 +280,16 @@ export function SoudanForm({ school, period, isPreview }: SoudanFormProps) {
             placeholder="ご相談内容をご記入ください"
             rows={6}
             className={`w-full border border-[#e5e7eb] rounded-lg px-3 py-2 resize-y min-h-[120px] text-sm ${
-              errors.content ? 'border-red-500' : ''
+              errors.content ? 'border-[color:var(--primary)]' : ''
             }`}
           />
           <p className={`text-xs mt-1 ${
-            content.length < 10 ? 'text-red-500' : 'text-[#4b5563]/60'
+            content.length < 10 ? 'text-[color:var(--primary)]' : 'text-[#4b5563]/60'
           }`}>
             {content.length}文字（10文字以上）
           </p>
           {errors.content && (
-            <p className="text-red-500 text-xs mt-1">{errors.content}</p>
+            <p className="text-[color:var(--primary)] text-xs mt-1">{errors.content}</p>
           )}
           </div>
         </PortalFormSection>

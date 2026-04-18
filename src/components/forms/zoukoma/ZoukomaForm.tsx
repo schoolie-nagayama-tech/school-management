@@ -23,6 +23,7 @@ import {
   PortalCompletionView,
   PortalErrorBanner,
   PortalPreviewBanner,
+  usePortalFormDraft,
 } from '@/components/forms/shared';
 
 interface ZoukomaFormProps {
@@ -52,7 +53,22 @@ export function ZoukomaForm({ school, period, isPreview }: ZoukomaFormProps) {
 
   // 設定を取得
   const settings = period.settings;
-  
+
+  // ドラフト自動保存
+  const { clearDraft } = usePortalFormDraft({
+    storageKey: `zoukoma:${school.id}:${period.period_key}`,
+    enabled: !isPreview,
+    value: { studentName, selectedGrade, email, subjectValues, selectedSlots, note },
+    onRestore: (d) => {
+      if (d.studentName) setStudentName(d.studentName);
+      if (d.selectedGrade) setSelectedGrade(d.selectedGrade);
+      if (d.email) setEmail(d.email);
+      if (d.subjectValues) setSubjectValues(d.subjectValues);
+      if (d.selectedSlots?.length) setSelectedSlots(d.selectedSlots);
+      if (d.note) setNote(d.note);
+    },
+  });
+
   // デフォルト設定
   const grades = settings.grades || [
     '中1',
@@ -210,6 +226,7 @@ export function ZoukomaForm({ school, period, isPreview }: ZoukomaFormProps) {
         response_data: responseData,
       });
 
+      clearDraft();
       setIsSubmitted(true);
     } catch (error) {
       console.error('Error submitting form:', error);

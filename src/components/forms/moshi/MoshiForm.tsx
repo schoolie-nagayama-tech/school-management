@@ -17,6 +17,7 @@ import {
   PortalCompletionView,
   PortalErrorBanner,
   PortalPreviewBanner,
+  usePortalFormDraft,
 } from '@/components/forms/shared';
 
 interface MoshiFormProps {
@@ -46,6 +47,21 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
 
   // 設定を取得
   const settings = period.settings;
+
+  // ドラフト自動保存
+  const { clearDraft } = usePortalFormDraft({
+    storageKey: `moshi:${school.id}:${period.period_key}`,
+    enabled: !isPreview,
+    value: { studentName, selectedGrade, email, examType, furikaeDate, furikaeTime },
+    onRestore: (d) => {
+      if (d.studentName) setStudentName(d.studentName);
+      if (d.selectedGrade) setSelectedGrade(d.selectedGrade);
+      if (d.email) setEmail(d.email);
+      if (d.examType) setExamType(d.examType);
+      if (d.furikaeDate) setFurikaeDate(d.furikaeDate);
+      if (d.furikaeTime) setFurikaeTime(d.furikaeTime);
+    },
+  });
 
   // 受験日が土曜日かどうか
   const examDayOfWeek = settings.exam_date ? new Date(settings.exam_date).getDay() : -1;
@@ -163,6 +179,7 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
         response_data: responseData,
       });
 
+      clearDraft();
       setIsSubmitted(true);
     } catch (error) {
       console.error('Failed to submit:', error);
@@ -210,7 +227,7 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
           {/* 生徒名 */}
           <div>
             <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-              生徒名 <span className="text-red-500">*</span>
+              生徒名 <span className="text-[color:var(--primary)]">*</span>
             </label>
             <Input
               type="text"
@@ -220,17 +237,17 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
                 if (errors.studentName) setErrors((prev) => { const n = { ...prev }; delete n.studentName; return n; });
               }}
               placeholder="例：山田 太郎"
-              className={errors.studentName ? 'border-red-500' : ''}
+              className={errors.studentName ? 'border-[color:var(--primary)]' : ''}
             />
             {errors.studentName && (
-              <p className="text-red-500 text-xs mt-1">{errors.studentName}</p>
+              <p className="text-[color:var(--primary)] text-xs mt-1">{errors.studentName}</p>
             )}
           </div>
 
           {/* 学年 */}
           <div>
             <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-              学年 <span className="text-red-500">*</span>
+              学年 <span className="text-[color:var(--primary)]">*</span>
             </label>
             <Select
               value={selectedGrade}
@@ -242,17 +259,17 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
                 { value: '', label: '選択してください' },
                 ...sortedGrades.map((g) => ({ value: g, label: g })),
               ]}
-              className={errors.grade ? 'border-red-500' : ''}
+              className={errors.grade ? 'border-[color:var(--primary)]' : ''}
             />
             {errors.grade && (
-              <p className="text-red-500 text-xs mt-1">{errors.grade}</p>
+              <p className="text-[color:var(--primary)] text-xs mt-1">{errors.grade}</p>
             )}
           </div>
 
           {/* メールアドレス */}
           <div>
             <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-              メールアドレス <span className="text-red-500">*</span>
+              メールアドレス <span className="text-[color:var(--primary)]">*</span>
             </label>
             <Input
               type="email"
@@ -262,10 +279,10 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
                 if (errors.email) setErrors((prev) => { const n = { ...prev }; delete n.email; return n; });
               }}
               placeholder="example@email.com"
-              className={errors.email ? 'border-red-500' : ''}
+              className={errors.email ? 'border-[color:var(--primary)]' : ''}
             />
             {errors.email && (
-              <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+              <p className="text-[color:var(--primary)] text-xs mt-1">{errors.email}</p>
             )}
           </div>
         </div>
@@ -274,14 +291,14 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
         <PortalFormSection title="受験方法">
         <div>
           <label className="sr-only">
-            受験方法 <span className="text-red-500">*</span>
+            受験方法 <span className="text-[color:var(--primary)]">*</span>
           </label>
 
           {/* 通常受験 */}
           <label
             className={`block p-4 border rounded-lg mb-3 cursor-pointer transition-colors ${
               examType === 'regular'
-                ? 'border-[#3b82f6] bg-orange-50'
+                ? 'border-[color:var(--primary)] bg-[color:var(--primary-subtle)]'
                 : 'border-gray-300 hover:bg-gray-50'
             }`}
           >
@@ -314,7 +331,7 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
             <label
               className={`block p-4 border rounded-lg cursor-pointer transition-colors ${
                 examType === 'furikae'
-                  ? 'border-[#3b82f6] bg-orange-50'
+                  ? 'border-[color:var(--primary)] bg-[color:var(--primary-subtle)]'
                   : 'border-gray-300 hover:bg-gray-50'
               }`}
             >
@@ -341,7 +358,7 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
           )}
 
           {errors.examType && (
-            <p className="text-red-500 text-xs mt-1">{errors.examType}</p>
+            <p className="text-[color:var(--primary)] text-xs mt-1">{errors.examType}</p>
           )}
 
           {/* 振替受験詳細入力 */}
@@ -369,7 +386,7 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
               {/* 希望日 */}
               <div className="mb-4">
                 <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-                  希望日 <span className="text-red-500">*</span>
+                  希望日 <span className="text-[color:var(--primary)]">*</span>
                 </label>
                 <Input
                   type="date"
@@ -378,17 +395,17 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
                     setFurikaeDate(e.target.value);
                     if (errors.furikaeDate) setErrors((prev) => { const n = { ...prev }; delete n.furikaeDate; return n; });
                   }}
-                  className={errors.furikaeDate ? 'border-red-500' : ''}
+                  className={errors.furikaeDate ? 'border-[color:var(--primary)]' : ''}
                 />
                 {errors.furikaeDate && (
-                  <p className="text-red-500 text-xs mt-1">{errors.furikaeDate}</p>
+                  <p className="text-[color:var(--primary)] text-xs mt-1">{errors.furikaeDate}</p>
                 )}
               </div>
 
               {/* 希望時間 */}
               <div>
                 <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-                  希望時間 <span className="text-red-500">*</span>
+                  希望時間 <span className="text-[color:var(--primary)]">*</span>
                 </label>
                 <Select
                   value={furikaeTime}
@@ -400,10 +417,10 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
                     { value: '', label: '選択してください' },
                     ...timeOptions.map((time) => ({ value: time, label: `${time}〜` })),
                   ]}
-                  className={errors.furikaeTime ? 'border-red-500' : ''}
+                  className={errors.furikaeTime ? 'border-[color:var(--primary)]' : ''}
                 />
                 {errors.furikaeTime && (
-                  <p className="text-red-500 text-xs mt-1">{errors.furikaeTime}</p>
+                  <p className="text-[color:var(--primary)] text-xs mt-1">{errors.furikaeTime}</p>
                 )}
               </div>
             </div>

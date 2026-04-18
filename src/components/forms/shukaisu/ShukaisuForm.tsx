@@ -9,6 +9,7 @@ import {
   PortalFormActions,
   PortalCompletionView,
   PortalPreviewBanner,
+  usePortalFormDraft,
 } from '@/components/forms/shared';
 import type { School } from '@/types/database';
 import { validateStudentName } from '@/lib/utils/validation';
@@ -76,6 +77,34 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
 
   // 設定を取得
   const settings = period.settings;
+
+  // ドラフト自動保存
+  const { clearDraft } = usePortalFormDraft({
+    storageKey: `shukaisu:${school.id}:${period.period_key}`,
+    enabled: !isPreview,
+    value: {
+      studentName,
+      selectedGrade,
+      email,
+      currentWeekly,
+      currentSlots,
+      requestedWeekly,
+      requestedSlots,
+      changeFrom,
+      note,
+    },
+    onRestore: (d) => {
+      if (d.studentName) setStudentName(d.studentName);
+      if (d.selectedGrade) setSelectedGrade(d.selectedGrade);
+      if (d.email) setEmail(d.email);
+      if (d.currentWeekly) setCurrentWeekly(d.currentWeekly);
+      if (d.currentSlots?.length) setCurrentSlots(d.currentSlots);
+      if (d.requestedWeekly) setRequestedWeekly(d.requestedWeekly);
+      if (d.requestedSlots?.length) setRequestedSlots(d.requestedSlots);
+      if (d.changeFrom) setChangeFrom(d.changeFrom);
+      if (d.note) setNote(d.note);
+    },
+  });
 
   // 学年変更時に共通科目を取得（科目設定＝subjects テーブルを常に参照し自動更新）
   useEffect(() => {
@@ -308,6 +337,7 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
         response_data: responseData,
       });
 
+      clearDraft();
       setIsSubmitted(true);
       success('申請を受け付けました');
     } catch (err) {
@@ -406,22 +436,22 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
           <div className="space-y-3">
             <div>
               <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-                生徒名 <span className="text-red-500">*</span>
+                生徒名 <span className="text-[color:var(--primary)]">*</span>
               </label>
               <Input
                 type="text"
                 value={studentName}
                 onChange={(e) => setStudentName(e.target.value)}
                 placeholder="例：山田 太郎"
-                className={errors.studentName ? 'border-red-500' : ''}
+                className={errors.studentName ? 'border-[color:var(--primary)]' : ''}
               />
               {errors.studentName && (
-                <p className="text-red-500 text-xs mt-1">{errors.studentName}</p>
+                <p className="text-[color:var(--primary)] text-xs mt-1">{errors.studentName}</p>
               )}
             </div>
             <div>
               <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-                学年 <span className="text-red-500">*</span>
+                学年 <span className="text-[color:var(--primary)]">*</span>
               </label>
               <Select
                 value={selectedGrade}
@@ -430,25 +460,25 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
                   { value: '', label: '選択してください' },
                   ...GRADES.map((g) => ({ value: g, label: g })),
                 ]}
-                className={errors.grade ? 'border-red-500' : ''}
+                className={errors.grade ? 'border-[color:var(--primary)]' : ''}
               />
               {errors.grade && (
-                <p className="text-red-500 text-xs mt-1">{errors.grade}</p>
+                <p className="text-[color:var(--primary)] text-xs mt-1">{errors.grade}</p>
               )}
             </div>
             <div>
               <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-                メールアドレス <span className="text-red-500">*</span>
+                メールアドレス <span className="text-[color:var(--primary)]">*</span>
               </label>
               <Input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="example@email.com"
-                className={errors.email ? 'border-red-500' : ''}
+                className={errors.email ? 'border-[color:var(--primary)]' : ''}
               />
               {errors.email && (
-                <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+                <p className="text-[color:var(--primary)] text-xs mt-1">{errors.email}</p>
               )}
             </div>
           </div>
@@ -457,7 +487,7 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
         <PortalFormSection title="現在の通塾状況">
           <div className="mb-3">
             <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-              週回数 <span className="text-red-500">*</span>
+              週回数 <span className="text-[color:var(--primary)]">*</span>
             </label>
             <Select
               value={currentWeekly.toString()}
@@ -474,7 +504,7 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
         <PortalFormSection title="変更希望">
           <div className="mb-3">
             <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-              週回数 <span className="text-red-500">*</span>
+              週回数 <span className="text-[color:var(--primary)]">*</span>
             </label>
             <Select
               value={requestedWeekly.toString()}
@@ -491,19 +521,19 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
         <PortalFormSection title="変更希望日">
           <div>
             <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-              いつから変更を希望しますか？ <span className="text-red-500">*</span>
+              いつから変更を希望しますか？ <span className="text-[color:var(--primary)]">*</span>
             </label>
             <Input
               type="date"
               value={changeFrom}
               onChange={(e) => setChangeFrom(e.target.value)}
-              className={errors.changeFrom ? 'border-red-500' : ''}
+              className={errors.changeFrom ? 'border-[color:var(--primary)]' : ''}
             />
             {changeFrom && (
               <p className="text-sm text-[#4b5563] mt-1">→ {formatDateLabel(changeFrom)}</p>
             )}
             {errors.changeFrom && (
-              <p className="text-red-500 text-xs mt-1">{errors.changeFrom}</p>
+              <p className="text-[color:var(--primary)] text-xs mt-1">{errors.changeFrom}</p>
             )}
           </div>
           <div className="mt-4 p-4 bg-amber-50 border border-amber-300 rounded-lg">

@@ -10,6 +10,7 @@ import {
   PortalCompletionView,
   PortalErrorBanner,
   PortalPreviewBanner,
+  usePortalFormDraft,
 } from '@/components/forms/shared';
 import type { School } from '@/types/database';
 import { validateStudentName } from '@/lib/utils/validation';
@@ -89,6 +90,23 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
 
   // 設定を取得
   const settings = period.settings;
+
+  // ドラフト自動保存
+  const { clearDraft } = usePortalFormDraft({
+    storageKey: `youbi:${school.id}:${period.period_key}`,
+    enabled: !isPreview,
+    value: { studentName, selectedGrade, email, current, request1, request2, changeFrom, note },
+    onRestore: (d) => {
+      if (d.studentName) setStudentName(d.studentName);
+      if (d.selectedGrade) setSelectedGrade(d.selectedGrade);
+      if (d.email) setEmail(d.email);
+      if (d.current) setCurrent(d.current);
+      if (d.request1) setRequest1(d.request1);
+      if (d.request2) setRequest2(d.request2);
+      if (d.changeFrom) setChangeFrom(d.changeFrom);
+      if (d.note) setNote(d.note);
+    },
+  });
 
   // 学年変更時に共通科目を取得（科目設定＝subjects テーブルを常に参照し自動更新）
   useEffect(() => {
@@ -285,6 +303,7 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
         response_data: responseData,
       });
 
+      clearDraft();
       setIsSubmitted(true);
       success('申請を受け付けました');
     } catch (err) {
@@ -328,7 +347,7 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
       }`}
     >
       <p className="text-sm font-medium text-[#1f2937] mb-3">
-        {label}{required && <span className="text-red-500 ml-1">*</span>}
+        {label}{required && <span className="text-[color:var(--primary)] ml-1">*</span>}
       </p>
       <div className="grid grid-cols-3 gap-2">
         <div>
@@ -396,22 +415,22 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
           <div className="space-y-3">
             <div>
               <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-                生徒名 <span className="text-red-500">*</span>
+                生徒名 <span className="text-[color:var(--primary)]">*</span>
               </label>
               <Input
                 type="text"
                 value={studentName}
                 onChange={(e) => setStudentName(e.target.value)}
                 placeholder="例：山田 太郎"
-                className={errors.studentName ? 'border-red-500' : ''}
+                className={errors.studentName ? 'border-[color:var(--primary)]' : ''}
               />
               {errors.studentName && (
-                <p className="text-red-500 text-xs mt-1">{errors.studentName}</p>
+                <p className="text-[color:var(--primary)] text-xs mt-1">{errors.studentName}</p>
               )}
             </div>
             <div>
               <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-                学年 <span className="text-red-500">*</span>
+                学年 <span className="text-[color:var(--primary)]">*</span>
               </label>
               <Select
                 value={selectedGrade}
@@ -420,25 +439,25 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
                   { value: '', label: '選択してください' },
                   ...GRADES.map((g) => ({ value: g, label: g })),
                 ]}
-                className={errors.grade ? 'border-red-500' : ''}
+                className={errors.grade ? 'border-[color:var(--primary)]' : ''}
               />
               {errors.grade && (
-                <p className="text-red-500 text-xs mt-1">{errors.grade}</p>
+                <p className="text-[color:var(--primary)] text-xs mt-1">{errors.grade}</p>
               )}
             </div>
             <div>
               <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-                メールアドレス <span className="text-red-500">*</span>
+                メールアドレス <span className="text-[color:var(--primary)]">*</span>
               </label>
               <Input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="example@email.com"
-                className={errors.email ? 'border-red-500' : ''}
+                className={errors.email ? 'border-[color:var(--primary)]' : ''}
               />
               {errors.email && (
-                <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+                <p className="text-[color:var(--primary)] text-xs mt-1">{errors.email}</p>
               )}
             </div>
           </div>
@@ -469,13 +488,13 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
               type="date"
               value={changeFrom}
               onChange={(e) => setChangeFrom(e.target.value)}
-              className={errors.changeFrom ? 'border-red-500' : ''}
+              className={errors.changeFrom ? 'border-[color:var(--primary)]' : ''}
             />
             {changeFrom && (
               <p className="text-sm text-[#4b5563] mt-1">→ {formatDateLabel(changeFrom)}</p>
             )}
             {errors.changeFrom && (
-              <p className="text-red-500 text-xs mt-1">{errors.changeFrom}</p>
+              <p className="text-[color:var(--primary)] text-xs mt-1">{errors.changeFrom}</p>
             )}
           </div>
         </PortalFormSection>

@@ -20,6 +20,7 @@ import {
   PortalCompletionView,
   PortalErrorBanner,
   PortalPreviewBanner,
+  usePortalFormDraft,
 } from '@/components/forms/shared';
 
 interface MogiFormProps {
@@ -46,6 +47,20 @@ export function MogiForm({ school, period, isPreview }: MogiFormProps) {
 
   // 設定を取得
   const settings = period.settings;
+
+  // ドラフト自動保存
+  const { clearDraft } = usePortalFormDraft({
+    storageKey: `mogi:${school.id}:${period.period_key}`,
+    enabled: !isPreview,
+    value: { studentName, selectedGrade, email, selections, cancelAgreed },
+    onRestore: (d) => {
+      if (d.studentName) setStudentName(d.studentName);
+      if (d.selectedGrade) setSelectedGrade(d.selectedGrade);
+      if (d.email) setEmail(d.email);
+      if (d.selections?.length) setSelections(d.selections);
+      if (d.cancelAgreed) setCancelAgreed(d.cancelAgreed);
+    },
+  });
 
   // デフォルト設定
   const grades = settings.grades || ['中3'];
@@ -124,6 +139,7 @@ export function MogiForm({ school, period, isPreview }: MogiFormProps) {
         response_data: responseData,
       });
 
+      clearDraft();
       setIsSubmitted(true);
     } catch (error) {
       console.error('Error submitting mogi response:', error);
