@@ -38,10 +38,16 @@ interface StudentRowActionsProps {
 /**
  * 生徒1行ぶんのアクション群。
  *
- * 以前は 6 アイコン × ラベル を全て横に並べていて認知負荷が高かった。
- * 編集だけインラインに残し、残りは ⋯ メニューへ集約。
- * 行クリック自体が詳細モーダル表示を担うので、それで 7 経路確保している形。
+ * 毎日使う業務導線（成績・進行表・面談・通塾日程）は**インライン**で
+ * 0クリック到達を維持する。編集・削除は頻度の低い管理操作なので
+ * ⋯ メニューに格納してインラインの視覚ノイズを抑える。
  */
+type PrimaryAction = {
+  label: string;
+  onClick: () => void;
+  path: string;
+};
+
 function StudentRowActions({
   student,
   onEdit,
@@ -72,37 +78,41 @@ function StudentRowActions({
     };
   }, [open]);
 
-  type MenuItem = {
-    label: string;
-    onClick: () => void;
-    danger?: boolean;
-    path: string;
-  };
-
-  const menuItems: MenuItem[] = [];
+  // インラインのメイン業務導線
+  const primaryActions: PrimaryAction[] = [];
   if (onScores)
-    menuItems.push({
+    primaryActions.push({
       label: '成績',
       onClick: () => onScores(student),
       path: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
     });
   if (onProgress)
-    menuItems.push({
+    primaryActions.push({
       label: '進行表',
       onClick: () => onProgress(student),
       path: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253',
     });
   if (onInterviews)
-    menuItems.push({
+    primaryActions.push({
       label: '面談',
       onClick: () => onInterviews(student),
       path: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z',
     });
   if (onSchedule)
-    menuItems.push({
+    primaryActions.push({
       label: '通塾日程',
       onClick: () => onSchedule(student),
       path: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
+    });
+
+  // ⋯ メニューに収納する管理操作（頻度低め）
+  type MenuItem = { label: string; onClick: () => void; danger?: boolean; path: string };
+  const menuItems: MenuItem[] = [];
+  if (onEdit)
+    menuItems.push({
+      label: '編集',
+      onClick: () => onEdit(student),
+      path: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z',
     });
   if (onDelete)
     menuItems.push({
@@ -120,35 +130,32 @@ function StudentRowActions({
 
   return (
     <div
-      className="flex justify-end gap-1 items-center"
+      className="flex justify-end gap-0.5 items-center"
       onClick={(e) => e.stopPropagation()}
     >
-      {onEdit && (
+      {primaryActions.map((action) => (
         <button
-          onClick={() => onEdit(student)}
-          aria-label="編集"
-          title="編集"
-          className="inline-flex items-center justify-center w-9 h-9 text-gray-600 hover:text-ink hover:bg-ink-subtle rounded-lg transition-colors"
+          key={action.label}
+          onClick={action.onClick}
+          aria-label={action.label}
+          title={action.label}
+          className="inline-flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 text-gray-600 hover:text-ink hover:bg-ink-subtle rounded-lg transition-colors"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={action.path} />
           </svg>
+          <span className="text-[10px] leading-none">{action.label}</span>
         </button>
-      )}
+      ))}
 
       {menuItems.length > 0 && (
-        <div ref={menuRef} className="relative">
+        <div ref={menuRef} className="relative ml-1">
           <button
             onClick={() => setOpen((v) => !v)}
             aria-label="その他の操作"
             aria-haspopup="menu"
             aria-expanded={open}
-            title="その他の操作"
+            title="編集・削除"
             className="inline-flex items-center justify-center w-9 h-9 text-gray-600 hover:text-ink hover:bg-ink-subtle rounded-lg transition-colors"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -163,7 +170,7 @@ function StudentRowActions({
           {open && (
             <div
               role="menu"
-              className="absolute right-0 top-full mt-1 min-w-[160px] bg-white rounded-lg border border-gray-200 shadow-lg z-10 py-1"
+              className="absolute right-0 top-full mt-1 min-w-[140px] bg-white rounded-lg border border-gray-200 shadow-lg z-10 py-1"
             >
               {menuItems.map((item) => (
                 <button
@@ -178,12 +185,7 @@ function StudentRowActions({
                   }`}
                 >
                   <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d={item.path}
-                    />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.path} />
                   </svg>
                   {item.label}
                 </button>
