@@ -8,7 +8,7 @@ import { createClient } from '@supabase/supabase-js';
 import { config } from 'dotenv';
 config({ path: '.env.local' });
 
-const SCHOOL_ID = 'd187f7a3-633a-46ce-8d32-c56c85d17bac'; // 永山
+const SCHOOL_ID = process.env.MIGRATE_SCHOOL_ID || 'd187f7a3-633a-46ce-8d32-c56c85d17bac';
 const supa = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY,

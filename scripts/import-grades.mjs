@@ -12,7 +12,7 @@ import { createClient } from '@supabase/supabase-js';
 import { config } from 'dotenv';
 config({ path: '.env.local' });
 
-const SCHOOL_ID = 'd187f7a3-633a-46ce-8d32-c56c85d17bac';
+const SCHOOL_ID = process.env.MIGRATE_SCHOOL_ID || 'd187f7a3-633a-46ce-8d32-c56c85d17bac';
 const GWS = 'C:\\Users\\ytaka\\AppData\\Roaming\\npm\\gws.cmd';
 const DRY = !process.argv.includes('--go');
 const ONLY = (() => { const i = process.argv.indexOf('--only'); return i > 0 ? process.argv[i+1] : null; })();

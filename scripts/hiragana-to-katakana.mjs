@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 import { config } from 'dotenv';
 config({ path: '.env.local' });
 
-const SCHOOL_ID = 'd187f7a3-633a-46ce-8d32-c56c85d17bac';
+const SCHOOL_ID = process.env.MIGRATE_SCHOOL_ID || 'd187f7a3-633a-46ce-8d32-c56c85d17bac';
 const DRY = !process.argv.includes('--go');
 const ALL_SCHOOLS = process.argv.includes('--all');
 

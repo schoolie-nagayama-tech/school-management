@@ -5,13 +5,9 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 
-const PARENT = '1oBX0Z2N06HwvvTQZhweE_Q68-U7Wvp_L'; // 永山
-const TARGET_FOLDERS = {
-  '中学生': '1QfOgX25voehxQqWcyXTunWhlT3UYrJwV',
-  '小学生': '1M7skjpzXZrZSZCcTEumZrKFiDD-C9RWm',
-  '高校生': '1rVcG9pXF_80Eczz49XDgWyZtnmKE8rCS',
-  'HAL':    '1Thb6MfB1gmnBKGL6vRydhDeStsbKflKW',
-};
+// 親フォルダ直下の「中学生/小学生/高校生/HAL」フォルダを自動検出する
+// env.MIGRATE_PARENT で切替。デフォルトは永山
+const PARENT = process.env.MIGRATE_PARENT || '1oBX0Z2N06HwvvTQZhweE_Q68-U7Wvp_L';
 
 const GWS_CMD = 'C:\\Users\\ytaka\\AppData\\Roaming\\npm\\gws.cmd';
 function gws(args) {
@@ -122,6 +118,25 @@ function countMendan(rows) {
   }
   return n;
 }
+
+// 親直下のサブフォルダを自動検出（中学生/小学生/高校生/HAL を名前で拾う。存在するものだけ）
+function discoverTargetFolders(parent) {
+  const res = gws([
+    'drive','files','list',
+    '--params', JSON.stringify({
+      q: `'${parent}' in parents and trashed=false and mimeType='application/vnd.google-apps.folder'`,
+      fields: 'files(id,name)',
+      pageSize: 200,
+    }),
+  ]);
+  const map = {};
+  for (const f of (res.files || [])) {
+    if (['中学生','小学生','高校生','HAL'].includes(f.name)) map[f.name] = f.id;
+  }
+  return map;
+}
+const TARGET_FOLDERS = discoverTargetFolders(PARENT);
+console.error('TARGET_FOLDERS:', TARGET_FOLDERS);
 
 const report = [];
 let idx = 0;

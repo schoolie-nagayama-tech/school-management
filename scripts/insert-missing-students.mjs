@@ -5,7 +5,7 @@ import { config } from 'dotenv';
 import { writeFileSync, readFileSync } from 'node:fs';
 config({ path: '.env.local' });
 
-const SCHOOL_ID = 'd187f7a3-633a-46ce-8d32-c56c85d17bac';
+const SCHOOL_ID = process.env.MIGRATE_SCHOOL_ID || 'd187f7a3-633a-46ce-8d32-c56c85d17bac';
 const DRY_RUN = process.argv.includes('--dry-run');
 
 const supa = createClient(

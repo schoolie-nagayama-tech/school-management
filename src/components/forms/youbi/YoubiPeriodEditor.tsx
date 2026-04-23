@@ -5,7 +5,7 @@ import { Modal, Input, Button, Select } from '@/components/ui';
 import { createYoubiPeriod, updateYoubiPeriod } from '@/lib/api/youbi';
 import { createFormPeriodForSchools, updateFormPeriodForSchools } from '@/lib/api/form-periods';
 import { getApplicationItems } from '@/lib/api/applications';
-import { getClassPeriods, formatPeriodsToText } from '@/lib/api/class-periods';
+import { getClassPeriods } from '@/lib/api/class-periods';
 import type { YoubiPeriod, YoubiSettings } from '@/types/forms/youbi';
 import type { ApplicationItem } from '@/types/database';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
@@ -27,13 +27,6 @@ const DEFAULT_DESCRIPTION = `曜日・時間・科目の変更をご希望の方
 
 ※変更が決まりましたら、Growにてご連絡いたします。`;
 
-const DEFAULT_PERIODS = [
-  { code: '4', label: '4限(14:25-15:55)' },
-  { code: '5', label: '5限(16:20-17:50)' },
-  { code: '6', label: '6限(18:00-19:30)' },
-  { code: '7', label: '7限(19:40-21:10)' },
-];
-
 export function YoubiPeriodEditor({
   isOpen,
   period,
@@ -54,9 +47,6 @@ export function YoubiPeriodEditor({
   const [title, setTitle] = useState('曜日変更');
   const [description, setDescription] = useState(DEFAULT_DESCRIPTION);
   const [daysText, setDaysText] = useState('月\n火\n水\n木\n金\n土');
-  const [periodsText, setPeriodsText] = useState(
-    DEFAULT_PERIODS.map((p) => `${p.code},${p.label}`).join('\n')
-  );
   const [publishStart, setPublishStart] = useState('');
   const [publishEnd, setPublishEnd] = useState('');
   const [completionMessage, setCompletionMessage] = useState(
@@ -81,13 +71,6 @@ export function YoubiPeriodEditor({
       .filter((line) => line.length > 0);
   };
 
-  const parsePeriods = (text: string): Array<{ code: string; label: string }> => {
-    return parseLines(text).map((line) => {
-      const [code, ...rest] = line.split(',');
-      return { code: code.trim(), label: rest.join(',').trim() || code.trim() };
-    });
-  };
-
   // 初期値の設定
   useEffect(() => {
     if (isOpen) {
@@ -100,10 +83,6 @@ export function YoubiPeriodEditor({
         setTitle(period.title);
         setDescription(settings.description || DEFAULT_DESCRIPTION);
         setDaysText(settings.available_days?.join('\n') || '月\n火\n水\n木\n金\n土');
-        setPeriodsText(
-          settings.available_periods?.map((p) => `${p.code},${p.label}`).join('\n') ||
-          DEFAULT_PERIODS.map((p) => `${p.code},${p.label}`).join('\n')
-        );
         setPublishStart(
           period.publish_start
             ? new Date(period.publish_start).toISOString().slice(0, 16)
@@ -120,12 +99,11 @@ export function YoubiPeriodEditor({
         );
         setLinkedApplicationItemId(period.linked_application_item_id || '');
       } else {
-        // 新規作成モード（共通設定の授業の時間帯を初期値に）
+        // 新規作成モード
         setPeriodKey(generatePeriodKey());
         setTitle('曜日変更');
         setDescription(DEFAULT_DESCRIPTION);
         setDaysText('月\n火\n水\n木\n金\n土');
-        setPeriodsText(formatPeriodsToText(getClassPeriods(schoolId)));
         setPublishStart('');
         setPublishEnd('');
         setCompletionMessage('変更申請を受け付けました。\n内容を確認の上、Growにてご連絡いたします。');
@@ -155,8 +133,8 @@ export function YoubiPeriodEditor({
       setError('曜日を入力してください');
       return false;
     }
-    if (parsePeriods(periodsText).length === 0) {
-      setError('時限を入力してください');
+    if (getClassPeriods(schoolId).length === 0) {
+      setError('共通設定で時限を登録してください');
       return false;
     }
     setError('');
@@ -174,7 +152,7 @@ export function YoubiPeriodEditor({
       const settings: YoubiSettings = {
         description: description.trim(),
         available_days: parseLines(daysText),
-        available_periods: parsePeriods(periodsText),
+        available_periods: getClassPeriods(schoolId),
         available_subjects: [], // 科目はフォームで科目テーブルを学年別に自動参照
         completion_message: completionMessage.trim(),
       };
@@ -345,17 +323,17 @@ export function YoubiPeriodEditor({
 
           <div className="mb-4">
             <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-              時限（1行1時限: コード,ラベル） <span className="text-red-500">*</span>
+              時限（共通設定を使用）
             </label>
-            <textarea
-              value={periodsText}
-              onChange={(e) => setPeriodsText(e.target.value)}
-              placeholder="4,4限(14:25-15:55)&#10;5,5限(16:20-17:50)"
-              rows={4}
-              className="w-full border border-[#e5e7eb] rounded-lg px-3 py-2 font-mono text-sm resize-y"
-            />
-            <p className="text-xs text-[#4b5563]/60 mt-1">
-              例: 4,4限(14:25-15:55) のように「コード,ラベル」の形式で1行に1時限ずつ入力
+            <div className="border border-[#e5e7eb] rounded-lg bg-[#f9fafb] px-3 py-2 text-sm font-mono space-y-0.5">
+              {getClassPeriods(schoolId).map((p) => (
+                <div key={p.code} className="text-[#1f2937]">
+                  {p.code} : {p.label}
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-[#4b5563]/70 mt-1">
+              時限は<a href="/settings/forms/class-periods" target="_blank" rel="noopener noreferrer" className="text-[#1e40af] underline">共通設定（授業の時間帯）</a>で管理します。保存時に最新の共通設定が適用されます。
             </p>
           </div>
         </section>

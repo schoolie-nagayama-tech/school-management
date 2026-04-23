@@ -600,6 +600,8 @@ export async function applyCoursesToStudents(
             student_textbook_id: stId,
             curriculum_item_id: setting.curriculum_item_id,
             proposal_count: setting.proposal_count,
+            // 申込回数は提案回数と同期（コース適用時は両方にセット）
+            application_count: setting.proposal_count,
             group_number: setting.group_number,
             updated_at: now,
           });
@@ -616,10 +618,10 @@ export async function applyCoursesToStudents(
     // 加算モード: 既存 student_progress を一括取得してから差分計算
     const { data: existingProgress } = await supabase
       .from('student_progress')
-      .select('id, student_textbook_id, curriculum_item_id, proposal_count, group_number')
+      .select('id, student_textbook_id, curriculum_item_id, proposal_count, application_count, group_number')
       .in('student_textbook_id', allStIds);
 
-    type ExistingProgress = { id: string; student_textbook_id: string; curriculum_item_id: number; proposal_count: number | null; group_number: number | null };
+    type ExistingProgress = { id: string; student_textbook_id: string; curriculum_item_id: number; proposal_count: number | null; application_count: number | null; group_number: number | null };
     const progressMap = new Map<string, ExistingProgress>(
       ((existingProgress || []) as ExistingProgress[]).map((p) => [
         `${p.student_textbook_id}:${p.curriculum_item_id}`,
@@ -628,7 +630,7 @@ export async function applyCoursesToStudents(
     );
 
     const toInsert = [];
-    const toUpdate: { id: string; proposal_count: number; group_number: number | null }[] = [];
+    const toUpdate: { id: string; proposal_count: number; application_count: number; group_number: number | null }[] = [];
 
     for (const studentId of studentIds) {
       for (const ct of course.textbooks) {
@@ -641,6 +643,8 @@ export async function applyCoursesToStudents(
             toUpdate.push({
               id: existing.id,
               proposal_count: (existing.proposal_count || 0) + setting.proposal_count,
+              // 申込も提案と同じだけ加算（コース適用）
+              application_count: (existing.application_count || 0) + setting.proposal_count,
               group_number: setting.group_number,
             });
           } else {
@@ -648,6 +652,8 @@ export async function applyCoursesToStudents(
               student_textbook_id: stId,
               curriculum_item_id: setting.curriculum_item_id,
               proposal_count: setting.proposal_count,
+              // 新規作成時は両方に同じ値
+              application_count: setting.proposal_count,
               group_number: setting.group_number,
             });
           }
@@ -662,7 +668,7 @@ export async function applyCoursesToStudents(
       ...toUpdate.map((u) =>
         supabase
           .from('student_progress')
-          .update({ proposal_count: u.proposal_count, group_number: u.group_number, updated_at: now } as never)
+          .update({ proposal_count: u.proposal_count, application_count: u.application_count, group_number: u.group_number, updated_at: now } as never)
           .eq('id', u.id)
       ),
     ]);

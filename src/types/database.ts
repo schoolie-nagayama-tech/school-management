@@ -678,6 +678,7 @@ export type Database = {
           handover: string | null;
           teacher_name: string | null;
           group_number: number | null;
+          intent_tag: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -692,6 +693,7 @@ export type Database = {
           handover?: string | null;
           teacher_name?: string | null;
           group_number?: number | null;
+          intent_tag?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -706,6 +708,7 @@ export type Database = {
           handover?: string | null;
           teacher_name?: string | null;
           group_number?: number | null;
+          intent_tag?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -3062,6 +3065,58 @@ export type StudentTextbookSettingUpdate = Database['public']['Tables']['student
 export type StudentTextbookExam = Database['public']['Tables']['student_textbook_exams']['Row'];
 export type StudentTextbookExamInsert = Database['public']['Tables']['student_textbook_exams']['Insert'];
 export type StudentTextbookExamUpdate = Database['public']['Tables']['student_textbook_exams']['Update'];
+
+// student_textbook_exam_ranges (試験範囲): 教科書 × 試験名 に対して項目範囲を保持
+// 試験目標 (student_textbook_exams) とは独立した独立テーブル。
+export interface StudentTextbookExamRange {
+  id: string;
+  student_textbook_id: string;
+  exam_type_id: string;
+  range_start_item_number: number;
+  range_end_item_number: number;
+  created_at: string | null;
+  updated_at: string | null;
+}
+export interface StudentTextbookExamRangeInsert {
+  student_textbook_id: string;
+  exam_type_id: string;
+  range_start_item_number: number;
+  range_end_item_number: number;
+}
+export interface StudentTextbookExamRangeUpdate {
+  range_start_item_number?: number;
+  range_end_item_number?: number;
+}
+
+// action_goals (行動目標): 試験目標配下の達成行動。生成スキーマには未追加のため手書き型。
+export interface ActionGoal {
+  id: string;
+  student_textbook_exam_id: string;
+  title: string;
+  counter_target: number | null;
+  counter_current: number | null;
+  achieved: boolean | null;
+  achieved_at: string | null;
+  sort_order: number | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+export interface ActionGoalInsert {
+  student_textbook_exam_id: string;
+  title: string;
+  counter_target?: number | null;
+  counter_current?: number | null;
+  achieved?: boolean | null;
+  sort_order?: number | null;
+}
+export interface ActionGoalUpdate {
+  title?: string;
+  counter_target?: number | null;
+  counter_current?: number | null;
+  achieved?: boolean | null;
+  achieved_at?: string | null;
+  sort_order?: number | null;
+}
 
 export type StudentProgress = Database['public']['Tables']['student_progress']['Row'];
 export type StudentProgressInsert = Database['public']['Tables']['student_progress']['Insert'];
