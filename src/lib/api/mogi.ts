@@ -235,6 +235,13 @@ export async function getMogiResponses(
     response_data: r.response_data as unknown as MogiResponseData,
   }));
 
+  // 模試種別フィルター
+  if (filters?.examType) {
+    filtered = filtered.filter((r) =>
+      r.response_data.selections.some((s) => s.exam_type === filters.examType)
+    );
+  }
+
   // 日程フィルター
   if (filters?.dateId) {
     filtered = filtered.filter((r) =>
@@ -303,10 +310,32 @@ export async function getMogiStats(
     return {
       date_id: date.id,
       date_label: date.label,
+      exam_type: date.exam_type,
       venue_counts: venueCounts,
       total,
     };
   });
+
+  // 種別ごとの回答数（選択ベース）
+  const typeBuckets: Record<string, number> = {};
+  for (const r of responses) {
+    for (const s of r.response_data.selections) {
+      const key = s.exam_type ?? 'unclassified';
+      typeBuckets[key] = (typeBuckets[key] ?? 0) + 1;
+    }
+  }
+  const { MOGI_EXAM_TYPE_LABELS: typeLabels, MOGI_EXAM_TYPE_OPTIONS: typeOpts } =
+    await import('@/types/forms/mogi');
+  const typeCounts = [
+    ...typeOpts.map((o) => ({
+      exam_type: o.value,
+      label: typeLabels[o.value],
+      count: typeBuckets[o.value] ?? 0,
+    })),
+    ...(typeBuckets['unclassified']
+      ? [{ exam_type: 'unclassified' as const, label: '未分類', count: typeBuckets['unclassified'] }]
+      : []),
+  ].filter((t) => t.count > 0);
 
   const chargedCount = responses.filter(
     (r) => r.status_checks?.charged === true
@@ -318,6 +347,7 @@ export async function getMogiStats(
   return {
     total_responses: responses.length,
     date_venue_counts: dateVenueCounts,
+    type_counts: typeCounts,
     charged_count: chargedCount,
     linked_count: linkedCount,
   };

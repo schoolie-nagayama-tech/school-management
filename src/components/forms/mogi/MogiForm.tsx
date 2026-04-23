@@ -244,7 +244,7 @@ export function MogiForm({ school, period, isPreview }: MogiFormProps) {
 
         <PortalFormSection
           title="受験日程・会場選択"
-          description="受験する日程と会場を選択してください（複数選択可）"
+          description="受験する日程と会場を選択してください（複数選択可・1日につき1種別まで）"
         >
           <DateVenueSelector
             dates={dates}

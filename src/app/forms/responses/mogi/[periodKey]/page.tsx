@@ -24,7 +24,8 @@ import type { MogiResponse, MogiResponseFilters } from '@/types/forms/mogi';
 import type { Student } from '@/types/database';
 import { getDefaultSchoolId } from '@/lib/api/schools';
 import { useAuth } from '@/contexts/AuthContext';
-import { GRADE_NUMBER_TO_NAME } from '@/types/forms/mogi';
+import { GRADE_NUMBER_TO_NAME, MOGI_EXAM_TYPE_OPTIONS, MOGI_EXAM_TYPE_LABELS } from '@/types/forms/mogi';
+import type { MogiExamType } from '@/types/forms/mogi';
 import { MogiStats } from '@/components/forms/mogi/MogiStats';
 import { MogiResponseDetailModal } from '@/components/forms/mogi/MogiResponseDetailModal';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
@@ -41,6 +42,7 @@ export default function MogiResponsePage() {
     date_venue_counts: [] as Array<{
       date_id: string;
       date_label: string;
+      exam_type?: MogiExamType;
       venue_counts: Array<{
         venue_id: string;
         venue_label: string;
@@ -62,6 +64,7 @@ export default function MogiResponsePage() {
 
   // フィルター
   const [filterGrade, setFilterGrade] = useState<number | 'all'>('all');
+  const [filterExamType, setFilterExamType] = useState<MogiExamType | 'all'>('all');
   const [filterDateId, setFilterDateId] = useState<string>('all');
   const [filterVenueId, setFilterVenueId] = useState<string>('all');
   const [filterChargedStatus, setFilterChargedStatus] = useState<
@@ -83,6 +86,7 @@ export default function MogiResponsePage() {
       const schoolId: string | string[] = schoolIdParam || (schoolIds.length > 0 ? schoolIds : getDefaultSchoolId());
       const filters: MogiResponseFilters = {
         grade: filterGrade === 'all' ? undefined : filterGrade,
+        examType: filterExamType === 'all' ? undefined : filterExamType,
         dateId: filterDateId === 'all' ? undefined : filterDateId,
         venueId: filterVenueId === 'all' ? undefined : filterVenueId,
         chargedStatus: filterChargedStatus === 'all' ? undefined : filterChargedStatus,
@@ -107,7 +111,7 @@ export default function MogiResponsePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [getSelectedSchoolIds, schoolIdParam, periodKey, filterGrade, filterDateId, filterVenueId, filterChargedStatus, filterLinkedStatus, showArchived]);
+  }, [getSelectedSchoolIds, schoolIdParam, periodKey, filterGrade, filterExamType, filterDateId, filterVenueId, filterChargedStatus, filterLinkedStatus, showArchived]);
 
   useEffect(() => {
     if (periodKey) {
@@ -293,7 +297,7 @@ export default function MogiResponsePage() {
 
         {/* フィルター */}
         <div className="mb-6 bg-white rounded-xl border border-[#e5e7eb] p-4">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-[#1f2937] mb-2">
                 学年
@@ -318,6 +322,28 @@ export default function MogiResponsePage() {
 
             <div>
               <label className="block text-sm font-medium text-[#1f2937] mb-2">
+                模試種別
+              </label>
+              <select
+                value={filterExamType}
+                onChange={(e) => {
+                  const next = e.target.value as MogiExamType | 'all';
+                  setFilterExamType(next);
+                  setFilterDateId('all');
+                }}
+                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563]"
+              >
+                <option value="all">全て</option>
+                {MOGI_EXAM_TYPE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[#1f2937] mb-2">
                 日程
               </label>
               <select
@@ -326,11 +352,13 @@ export default function MogiResponsePage() {
                 className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563]"
               >
                 <option value="all">全て</option>
-                {stats.date_venue_counts.map((d) => (
-                  <option key={d.date_id} value={d.date_id}>
-                    {d.date_label}
-                  </option>
-                ))}
+                {stats.date_venue_counts
+                  .filter((d) => filterExamType === 'all' || d.exam_type === filterExamType)
+                  .map((d) => (
+                    <option key={d.date_id} value={d.date_id}>
+                      {d.exam_type ? `[${MOGI_EXAM_TYPE_LABELS[d.exam_type]}] ` : ''}{d.date_label}
+                    </option>
+                  ))}
               </select>
             </div>
 

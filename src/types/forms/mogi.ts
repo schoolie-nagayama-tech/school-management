@@ -137,6 +137,7 @@ export interface MogiResponse {
 // フィルター
 export interface MogiResponseFilters {
   grade?: number;
+  examType?: MogiExamType;
   dateId?: string;
   venueId?: string;
   chargedStatus?: 'charged' | 'not_charged';
@@ -150,12 +151,19 @@ export interface MogiStats {
   date_venue_counts: Array<{
     date_id: string;
     date_label: string;
+    exam_type?: MogiExamType;
     venue_counts: Array<{
       venue_id: string;
       venue_label: string;
       count: number;
     }>;
     total: number;
+  }>;
+  /** 種別ごとの回答数（exam_type 未設定は 'unclassified' に集計） */
+  type_counts?: Array<{
+    exam_type: MogiExamType | 'unclassified';
+    label: string;
+    count: number;
   }>;
   charged_count: number;
   linked_count: number;

@@ -17,8 +17,18 @@ export function DateVenueSelector({
   onChange,
   disabled = false,
 }: DateVenueSelectorProps) {
+  // 指定日付の日程を特定するためのヘルパー（id または exam_type で一意）
+  const dateKeyOf = (d: MogiDate) => d.id.includes('__') ? d.id.split('__')[0] : d.id;
+
   const handleDateToggle = (date: MogiDate, checked: boolean) => {
     if (checked) {
+      // 同じ日付の他種別が既に選ばれていれば自動解除（1日1種別）
+      const sameDateKey = dateKeyOf(date);
+      const withoutSameDate = selections.filter((s) => {
+        const existing = dates.find((d) => d.id === s.date_id);
+        return existing ? dateKeyOf(existing) !== sameDateKey : true;
+      });
+
       // 日程を選択した場合、最初の会場を自動選択
       const firstVenue = date.venues[0];
       if (firstVenue) {
@@ -30,7 +40,7 @@ export function DateVenueSelector({
           venue_id: firstVenue.id,
           venue_label: firstVenue.label,
         };
-        onChange([...selections, newSelection]);
+        onChange([...withoutSameDate, newSelection]);
       }
     } else {
       // 日程を解除した場合、その日程の選択を削除

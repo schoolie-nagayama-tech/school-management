@@ -162,7 +162,8 @@ export function MogiPeriodEditor({
         // 日程エントリ復元（固有会場は空で開始し、選択状態のみ保持）
         setDateEntries(
           settings.dates?.map((d) => ({
-            date: d.id,
+            // id が `YYYY-MM-DD__type` 形式の場合は date 部分だけ取り出す
+            date: d.id.includes('__') ? d.id.split('__')[0] : d.id,
             examType: d.exam_type ?? '',
             selectedVenueIds: d.venues.map((v) => v.id),
             extraVenueText: '',
@@ -277,20 +278,6 @@ export function MogiPeriodEditor({
       typeDateSeen.add(key);
     }
 
-    // 同日は1種別のみ（異なる種別でも同じ日付はNG）
-    const dateSeen = new Map<string, MogiExamType>();
-    for (const [idx, entry] of Array.from(dateEntries.entries())) {
-      if (!entry.examType) continue;
-      const existing = dateSeen.get(entry.date);
-      if (existing && existing !== entry.examType) {
-        setError(
-          `日程${idx + 1}: ${entry.date} には既に${MOGI_EXAM_TYPE_LABELS[existing]}が設定されています（同じ日に異なる種別は設定できません）`
-        );
-        return;
-      }
-      dateSeen.set(entry.date, entry.examType);
-    }
-
     setIsSubmitting(true);
     try {
     // venueText / extraVenueText 変更に伴う選択クリーンアップ
@@ -302,8 +289,10 @@ export function MogiPeriodEditor({
         grades: [...MOGI_GRADES],
         dates: cleanedEntries.map((entry, idx) => {
           const venuesForDate = getVenuesForDate(entry, idx);
+          // 同じ日付に複数種別を許すため ID は date+type で一意化
+          const id = entry.examType ? `${entry.date}__${entry.examType}` : entry.date;
           return {
-            id: entry.date,
+            id,
             label: formatDateLabel(entry.date),
             exam_type: (entry.examType || undefined) as MogiExamType | undefined,
             venues: venuesForDate.filter((v) => entry.selectedVenueIds.includes(v.id)),
