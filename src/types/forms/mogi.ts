@@ -39,10 +39,27 @@ export interface Venue {
   label: string;
 }
 
+// Vもぎ種別
+export type MogiExamType = 'toritsu_v' | 'shiritsu_v' | 'jikousakusei';
+
+export const MOGI_EXAM_TYPE_LABELS: Record<MogiExamType, string> = {
+  toritsu_v: '都立Vもぎ',
+  shiritsu_v: '私立Vもぎ',
+  jikousakusei: '都立自校作成対策もぎ',
+};
+
+export const MOGI_EXAM_TYPE_OPTIONS: Array<{ value: MogiExamType; label: string }> = [
+  { value: 'toritsu_v', label: MOGI_EXAM_TYPE_LABELS.toritsu_v },
+  { value: 'shiritsu_v', label: MOGI_EXAM_TYPE_LABELS.shiritsu_v },
+  { value: 'jikousakusei', label: MOGI_EXAM_TYPE_LABELS.jikousakusei },
+];
+
 // 日程情報
 export interface MogiDate {
   id: string; // YYYY-MM-DD形式
   label: string; // 表示用ラベル（例: "10月6日（日）"）
+  /** 模試種別（都立V/私立V/都立自校作成）。既存データとの互換のため optional。 */
+  exam_type?: MogiExamType;
   venues: Venue[];
 }
 
@@ -58,6 +75,9 @@ export interface MogiSettings {
 export interface DateVenueSelection {
   date_id: string;
   date_label: string;
+  /** 日程の模試種別。既存データとの互換のため optional。 */
+  exam_type?: MogiExamType;
+  exam_type_label?: string;
   venue_id: string;
   venue_label: string;
 }

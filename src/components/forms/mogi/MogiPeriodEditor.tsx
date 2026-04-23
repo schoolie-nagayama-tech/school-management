@@ -5,7 +5,8 @@ import { Modal, Input, Button, Select } from '@/components/ui';
 import { createMogiPeriod, updateMogiPeriod } from '@/lib/api/mogi';
 import { createFormPeriodForSchools, updateFormPeriodForSchools } from '@/lib/api/form-periods';
 import { getApplicationItems } from '@/lib/api/applications';
-import type { MogiPeriod, MogiSettings, Venue } from '@/types/forms/mogi';
+import type { MogiPeriod, MogiSettings, Venue, MogiExamType } from '@/types/forms/mogi';
+import { MOGI_EXAM_TYPE_OPTIONS, MOGI_EXAM_TYPE_LABELS } from '@/types/forms/mogi';
 import type { ApplicationItem } from '@/types/database';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
@@ -39,6 +40,7 @@ export function MogiPeriodEditor({
   // 共通会場テキストと日程エントリ
   interface DateEntry {
     date: string; // YYYY-MM-DD
+    examType: MogiExamType | '';
     selectedVenueIds: string[];
     extraVenueText: string; // 日程固有の会場（改行区切り）
   }
@@ -161,6 +163,7 @@ export function MogiPeriodEditor({
         setDateEntries(
           settings.dates?.map((d) => ({
             date: d.id,
+            examType: d.exam_type ?? '',
             selectedVenueIds: d.venues.map((v) => v.id),
             extraVenueText: '',
           })) || []
@@ -247,16 +250,45 @@ export function MogiPeriodEditor({
       return;
     }
 
-    // 各日程に日付と最低1つの会場が必要
+    // 各日程に日付・種別・最低1つの会場が必要
     for (const [idx, entry] of Array.from(dateEntries.entries())) {
       if (!entry.date) {
         setError(`日程${idx + 1}の日付を入力してください`);
+        return;
+      }
+      if (!entry.examType) {
+        setError(`日程${idx + 1}の模試種別を選択してください`);
         return;
       }
       if (entry.selectedVenueIds.length === 0) {
         setError(`日程${idx + 1}の会場を1つ以上選択してください`);
         return;
       }
+    }
+
+    // 同日・同種別の重複チェック（同じ日に同じ種別は1回のみ）
+    const typeDateSeen = new Set<string>();
+    for (const [idx, entry] of Array.from(dateEntries.entries())) {
+      const key = `${entry.date}|${entry.examType}`;
+      if (typeDateSeen.has(key)) {
+        setError(`日程${idx + 1}: 同じ日付・種別の組み合わせが重複しています`);
+        return;
+      }
+      typeDateSeen.add(key);
+    }
+
+    // 同日は1種別のみ（異なる種別でも同じ日付はNG）
+    const dateSeen = new Map<string, MogiExamType>();
+    for (const [idx, entry] of Array.from(dateEntries.entries())) {
+      if (!entry.examType) continue;
+      const existing = dateSeen.get(entry.date);
+      if (existing && existing !== entry.examType) {
+        setError(
+          `日程${idx + 1}: ${entry.date} には既に${MOGI_EXAM_TYPE_LABELS[existing]}が設定されています（同じ日に異なる種別は設定できません）`
+        );
+        return;
+      }
+      dateSeen.set(entry.date, entry.examType);
     }
 
     setIsSubmitting(true);
@@ -273,6 +305,7 @@ export function MogiPeriodEditor({
           return {
             id: entry.date,
             label: formatDateLabel(entry.date),
+            exam_type: (entry.examType || undefined) as MogiExamType | undefined,
             venues: venuesForDate.filter((v) => entry.selectedVenueIds.includes(v.id)),
           };
         }),
@@ -354,15 +387,23 @@ export function MogiPeriodEditor({
   };
 
   // 日程を追加
-  const handleAddDate = () => {
+  const handleAddDate = (examType: MogiExamType | '' = '') => {
     setDateEntries([
       ...dateEntries,
       {
         date: '',
+        examType,
         selectedVenueIds: [],
         extraVenueText: '',
       },
     ]);
+  };
+
+  // 種別を更新
+  const handleUpdateExamType = (index: number, value: MogiExamType | '') => {
+    const updated = [...dateEntries];
+    updated[index] = { ...updated[index], examType: value };
+    setDateEntries(updated);
   };
 
   // 日程を削除
@@ -557,19 +598,27 @@ export function MogiPeriodEditor({
             ※改行で区切って入力。日程ごとに会場を選択できます。
           </p>
 
-          <div className="flex items-center justify-between my-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 my-4">
             <span className="block text-sm font-medium text-[#1f2937]">
               日程・会場設定 <span className="text-[#ef4444]">*</span>
+              <span className="block text-xs font-normal text-[#6b7280] mt-0.5">
+                模試種別ごとに日程を追加します。同じ日付に異なる種別は設定できません。
+              </span>
             </span>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={handleAddDate}
-              disabled={isSubmitting}
-            >
-              + 日程を追加
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              {MOGI_EXAM_TYPE_OPTIONS.map((opt) => (
+                <Button
+                  key={opt.value}
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => handleAddDate(opt.value)}
+                  disabled={isSubmitting}
+                >
+                  + {opt.label}
+                </Button>
+              ))}
+            </div>
           </div>
 
           <div className="space-y-4">
@@ -579,11 +628,24 @@ export function MogiPeriodEditor({
               return (
                 <div
                   key={index}
-                  className="border border-[#e5e7eb] rounded-lg p-4 bg-[#f3f4f6]"
+                  className={`border rounded-lg p-4 ${
+                    entry.examType === 'toritsu_v'
+                      ? 'border-[#1e40af]/30 bg-[#eff6ff]'
+                      : entry.examType === 'shiritsu_v'
+                        ? 'border-[#a16207]/30 bg-[#fefce8]'
+                        : entry.examType === 'jikousakusei'
+                          ? 'border-[#be185d]/30 bg-[#fdf2f8]'
+                          : 'border-[#e5e7eb] bg-[#f3f4f6]'
+                  }`}
                 >
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-sm font-medium text-[#1f2937]">
                       日程{index + 1}
+                      {entry.examType && (
+                        <span className="ml-2 text-xs text-[#6b7280]">
+                          — {MOGI_EXAM_TYPE_LABELS[entry.examType]}
+                        </span>
+                      )}
                     </span>
                     <Button
                       type="button"
@@ -597,6 +659,23 @@ export function MogiPeriodEditor({
                   </div>
 
                   <div className="space-y-3">
+                    <Select
+                      label="模試種別"
+                      value={entry.examType}
+                      onChange={(e) =>
+                        handleUpdateExamType(index, e.target.value as MogiExamType | '')
+                      }
+                      options={[
+                        { value: '', label: '選択してください' },
+                        ...MOGI_EXAM_TYPE_OPTIONS.map((o) => ({
+                          value: o.value,
+                          label: o.label,
+                        })),
+                      ]}
+                      disabled={isSubmitting}
+                      required
+                    />
+
                     <Input
                       label="日付（YYYY-MM-DD）"
                       type="date"

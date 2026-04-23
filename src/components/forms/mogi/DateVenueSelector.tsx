@@ -1,7 +1,8 @@
 ﻿'use client';
 
 import { Select } from '@/components/ui';
-import type { MogiDate, DateVenueSelection } from '@/types/forms/mogi';
+import type { MogiDate, DateVenueSelection, MogiExamType } from '@/types/forms/mogi';
+import { MOGI_EXAM_TYPE_LABELS, MOGI_EXAM_TYPE_OPTIONS } from '@/types/forms/mogi';
 
 interface DateVenueSelectorProps {
   dates: MogiDate[];
@@ -24,6 +25,8 @@ export function DateVenueSelector({
         const newSelection: DateVenueSelection = {
           date_id: date.id,
           date_label: date.label,
+          exam_type: date.exam_type,
+          exam_type_label: date.exam_type ? MOGI_EXAM_TYPE_LABELS[date.exam_type] : undefined,
           venue_id: firstVenue.id,
           venue_label: firstVenue.label,
         };
@@ -65,52 +68,84 @@ export function DateVenueSelector({
     return selection?.venue_id || '';
   };
 
+  // 種別ごとにグループ化（未設定は最後）
+  const groupedByType: Array<{ type: MogiExamType | null; label: string; dates: MogiDate[] }> = [];
+  for (const opt of MOGI_EXAM_TYPE_OPTIONS) {
+    const matched = dates.filter((d) => d.exam_type === opt.value);
+    if (matched.length > 0) {
+      groupedByType.push({ type: opt.value, label: opt.label, dates: matched });
+    }
+  }
+  const unclassified = dates.filter((d) => !d.exam_type);
+  if (unclassified.length > 0) {
+    groupedByType.push({ type: null, label: 'その他の日程', dates: unclassified });
+  }
+
   return (
-    <div className="space-y-4">
-      {dates.map((date) => {
-        const isSelected = isDateSelected(date.id);
-        const selectedVenueId = getSelectedVenueId(date.id);
-
-        return (
-          <div
-            key={date.id}
-            className="border border-[#e5e7eb] rounded-lg p-4 bg-white"
+    <div className="space-y-5">
+      {groupedByType.map((group) => (
+        <div key={group.type ?? 'other'} className="space-y-2">
+          <h4
+            className={`text-sm font-semibold px-2 py-1 rounded ${
+              group.type === 'toritsu_v'
+                ? 'text-[#1e40af] bg-[#eff6ff]'
+                : group.type === 'shiritsu_v'
+                  ? 'text-[#a16207] bg-[#fefce8]'
+                  : group.type === 'jikousakusei'
+                    ? 'text-[#be185d] bg-[#fdf2f8]'
+                    : 'text-[#6b7280] bg-[#f3f4f6]'
+            }`}
           >
-            <div className="flex items-center gap-3 mb-3">
-              <input
-                type="checkbox"
-                id={`date-${date.id}`}
-                checked={isSelected}
-                onChange={(e) => handleDateToggle(date, e.target.checked)}
-                disabled={disabled}
-                className="w-5 h-5 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6] cursor-pointer"
-              />
-              <label
-                htmlFor={`date-${date.id}`}
-                className="text-base font-medium text-[#1f2937] cursor-pointer flex-1"
-              >
-                {date.label}
-              </label>
-            </div>
+            {group.label}
+          </h4>
+          <div className="space-y-2">
+            {group.dates.map((date) => {
+              const isSelected = isDateSelected(date.id);
+              const selectedVenueId = getSelectedVenueId(date.id);
 
-            {isSelected && (
-              <div className="ml-8">
-                <Select
-                  label="会場"
-                  value={selectedVenueId}
-                  onChange={(e) => handleVenueChange(date.id, e.target.value)}
-                  options={[
-                    { value: '', label: '選択してください' },
-                    ...date.venues.map((venue) => ({ value: venue.id, label: venue.label }))
-                  ]}
-                  disabled={disabled}
-                  required
-                />
-              </div>
-            )}
+              return (
+                <div
+                  key={date.id}
+                  className="border border-[#e5e7eb] rounded-lg p-4 bg-white"
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <input
+                      type="checkbox"
+                      id={`date-${date.id}`}
+                      checked={isSelected}
+                      onChange={(e) => handleDateToggle(date, e.target.checked)}
+                      disabled={disabled}
+                      className="w-5 h-5 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6] cursor-pointer"
+                    />
+                    <label
+                      htmlFor={`date-${date.id}`}
+                      className="text-base font-medium text-[#1f2937] cursor-pointer flex-1"
+                    >
+                      {date.label}
+                    </label>
+                  </div>
+
+                  {isSelected && (
+                    <div className="ml-8">
+                      <Select
+                        label="会場"
+                        value={selectedVenueId}
+                        onChange={(e) => handleVenueChange(date.id, e.target.value)}
+                        options={[
+                          { value: '', label: '選択してください' },
+                          ...date.venues.map((venue) => ({ value: venue.id, label: venue.label }))
+                        ]}
+                        disabled={disabled}
+                        required
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
-        );
-      })}
+        </div>
+      ))}
     </div>
   );
 }

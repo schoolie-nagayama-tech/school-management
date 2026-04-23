@@ -82,6 +82,7 @@ export function MogiResponseDetailModal({
             <table className="w-full border-collapse border border-[#e5e7eb] text-sm">
               <thead>
                 <tr className="bg-[#f3f4f6]">
+                  <th className="border border-[#e5e7eb] px-4 py-2 text-left">種別</th>
                   <th className="border border-[#e5e7eb] px-4 py-2 text-left">日程</th>
                   <th className="border border-[#e5e7eb] px-4 py-2 text-left">会場</th>
                 </tr>
@@ -89,6 +90,9 @@ export function MogiResponseDetailModal({
               <tbody>
                 {response.response_data.selections.map((selection, index) => (
                   <tr key={index} className="hover:bg-[#f3f4f6]">
+                    <td className="border border-[#e5e7eb] px-4 py-2 text-xs text-[#4b5563]">
+                      {selection.exam_type_label ?? '—'}
+                    </td>
                     <td className="border border-[#e5e7eb] px-4 py-2">
                       {selection.date_label}
                     </td>
