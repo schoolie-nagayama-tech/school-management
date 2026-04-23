@@ -10,6 +10,7 @@ import { ASSESSMENT_NAME_OPTIONS } from '@/types/database';
 import type { AssessmentWithScores, Student, Subject } from '@/types/database';
 import type { NaishinType } from '@/lib/utils/convertedNaishin';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMasterData } from '@/contexts/MasterDataContext';
 import { ScoreListTable } from './ScoreListTable';
 
 // ── ソート定義 ──
@@ -111,7 +112,16 @@ interface ScoreListViewProps {
 
 export function ScoreListView({ category, students, schoolIds }: ScoreListViewProps) {
   const { permissions } = useAuth();
+  const { schools } = useMasterData();
   const canEdit = !!permissions?.canEditScores;
+
+  // 学校名マップ（複数校選択時のみ表示）
+  const schoolNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const s of schools) map.set(s.id, s.name);
+    return map;
+  }, [schools]);
+  const showSchoolName = schoolIds.length > 1 || schools.length > 1;
 
   // データ
   const [assessmentsByStudent, setAssessmentsByStudent] = useState<Map<string, AssessmentWithScores[]>>(new Map());
@@ -311,13 +321,12 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
 
   return (
     <div>
-      {/* ツールバー */}
-      <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+      {/* ツールバー（1行・必要に応じて横スクロール） */}
+      <div className="mb-3 flex items-center gap-3 overflow-x-auto pb-1">
         {/* 絞り込み */}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500 whitespace-nowrap">
-            <SlidersHorizontal className="w-3.5 h-3.5 shrink-0" />
-            <span>絞り込み</span>
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1 text-gray-400 shrink-0" title="絞り込み">
+            <SlidersHorizontal className="w-3.5 h-3.5" />
           </div>
 
           {/* 氏名・フリガナ */}
@@ -379,13 +388,12 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
         </div>
 
         {/* 区切り */}
-        <div className="h-5 w-px bg-gray-200 hidden sm:block" />
+        <div className="h-5 w-px bg-gray-200 shrink-0" />
 
         {/* 並び替え */}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500 whitespace-nowrap">
-            <ArrowUpDown className="w-3.5 h-3.5 shrink-0" />
-            <span>並び替え</span>
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1 text-gray-400 shrink-0" title="並び替え">
+            <ArrowUpDown className="w-3.5 h-3.5" />
           </div>
           <select
             value={sortKey}
@@ -402,7 +410,7 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
         </div>
 
         {/* 件数 & 表示設定（右端） */}
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex items-center gap-3 shrink-0 pl-2">
           <span className="text-xs text-gray-500">
             {hasActiveFilter ? (
               <>
@@ -453,6 +461,7 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
         onCellBlur={handleCellBlur}
         onCancelEdit={handleCancelEdit}
         naishinType={category === 'report_card' ? naishinType : undefined}
+        schoolNameById={showSchoolName ? schoolNameById : undefined}
       />
 
       {/* ページネーション */}

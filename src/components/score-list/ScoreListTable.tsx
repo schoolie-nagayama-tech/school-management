@@ -69,6 +69,8 @@ interface ScoreListTableProps {
   onCellBlur: (assessmentId: string, subject: string) => void;
   onCancelEdit: () => void;
   naishinType?: NaishinType;
+  /** 学校名マップ（undefined で学校列を非表示） */
+  schoolNameById?: Map<string, string>;
 }
 
 // ── コンポーネント ──
@@ -84,6 +86,7 @@ export function ScoreListTable({
   onCellBlur,
   onCancelEdit,
   naishinType,
+  schoolNameById,
 }: ScoreListTableProps) {
   const columns = getColumns(category);
 
@@ -140,6 +143,7 @@ export function ScoreListTable({
               onCellChange={onCellChange}
               onCellBlur={onCellBlur}
               onCancelEdit={onCancelEdit}
+              schoolName={schoolNameById?.get(student.schoolId)}
             />
           ))}
         </tbody>
@@ -161,6 +165,7 @@ function StudentGroup({
   onCellChange,
   onCellBlur,
   onCancelEdit,
+  schoolName,
 }: {
   student: ScoreListStudent;
   category: ScoreListCategory;
@@ -172,6 +177,7 @@ function StudentGroup({
   onCellChange: (value: string) => void;
   onCellBlur: (assessmentId: string, subject: string) => void;
   onCancelEdit: () => void;
+  schoolName?: string;
 }) {
   const rowCount = student.rows.length;
 
@@ -199,10 +205,15 @@ function StudentGroup({
             >
               <Link
                 href={`/students/${student.studentId}/scores`}
-                className="text-xs font-medium text-[#1e3a5f] hover:text-[#3b82f6] hover:underline whitespace-nowrap"
+                className="text-xs font-medium text-[#1e3a5f] hover:text-[#3b82f6] hover:underline whitespace-nowrap block"
               >
                 {student.lastName} {student.firstName}
               </Link>
+              {schoolName && (
+                <div className="text-[10px] text-gray-500 whitespace-nowrap mt-0.5">
+                  {schoolName}
+                </div>
+              )}
             </td>
           )}
           {/* 学期 / テスト名 */}
