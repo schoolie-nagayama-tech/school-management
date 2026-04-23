@@ -47,7 +47,6 @@ import { getStudent } from '@/lib/api/students';
 import { getExamTypes, getTextbooks } from '@/lib/api/textbooks';
 import {
   getActionGoalsByExams,
-  getActionGoals,
   createActionGoal,
   updateActionGoal,
   deleteActionGoal,
@@ -101,7 +100,7 @@ const INTENT_TAG_COLOR: Record<IntentTag, string> = {
 };
 
 /** タグから面談用の根拠文を自動生成 */
-const INTENT_TAG_RATIONALE: Record<IntentTag, string> = {
+const _INTENT_TAG_RATIONALE: Record<IntentTag, string> = {
   '苦手補強': '過去のテストで失点が多い単元。重点的に演習を重ねて定着を図ります。',
   '既習の定着': '学校で学習済みの範囲。理解の確認と典型問題の再演習で得点源に。',
   '未習の先取り': '学校の進度より前倒しで学習。基礎定着から段階的に進めます。',
@@ -838,8 +837,8 @@ function TextbookCard({
   subjectColumn,
   activeExam,
   actionGoals,
-  role,
-  isMeeting,
+  role: _role,
+  isMeeting: _isMeeting,
   onOpen,
   canMoveUp,
   canMoveDown,
@@ -990,7 +989,7 @@ function TableView({
   setExamRangesForTextbook,
   textbookTabs,
   onSelectTab,
-  role,
+  role: _role,
   viewMode,
   studentId,
   selfName,
@@ -2011,7 +2010,7 @@ function ProgressRow({
   selected = false,
   selfName = '',
   paintActive = false,
-  paintMode = null,
+  paintMode: _paintMode = null,
   isPaintStart = false,
   isPaintCandidate = false,
   onPaintRowClick,
@@ -2639,7 +2638,7 @@ function ActionGoalRow({
 function TextbookSettingsSection({
   textbookId,
   isMeeting,
-  success,
+  success: _success,
   toastError,
 }: {
   textbookId: string;
@@ -2691,7 +2690,7 @@ function TextbookSettingsSection({
 // 教科書に設定済みの範囲をチップで一覧 + 追加/編集/削除
 // ─────────────────────────────────────────────
 function ExamRangesSection({
-  textbookId,
+  textbookId: _textbookId,
   examTypes,
   ranges,
   progress,
