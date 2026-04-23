@@ -335,7 +335,7 @@ export default function NewProgressPage() {
         <div>
           <div className="text-xs text-[#6b7280]">生徒詳細 › 進捗管理</div>
           <h1 className="text-lg font-bold text-[#1f2937]">
-            {student?.name ?? '—'}
+            {student ? `${student.last_name} ${student.first_name}` : '—'}
             {student?.grade && (
               <span className="text-sm font-normal text-[#6b7280] ml-2">
                 {gradeLabel(student.grade)}
@@ -571,10 +571,15 @@ function seasonLabel(season: string | null | undefined): string | null {
   return null;
 }
 
+type LessonLike = { lesson_date?: string | null };
+type CurriculumItemLike = { lessons?: LessonLike[] };
+type TextbookWithItems = StudentTextbookWithDetails & { curriculum_items?: CurriculumItemLike[] };
+
 // 停滞判定（最終授業日から14日経過）
 function isStalled(tb: StudentTextbookWithDetails): { stalled: boolean; lastDate: string | null } {
   let last: string | null = null;
-  const lessons = (tb.curriculum_items || []).flatMap((ci) => ci.lessons || []);
+  const items = (tb as TextbookWithItems).curriculum_items || [];
+  const lessons = items.flatMap((ci) => ci.lessons || []);
   for (const l of lessons) {
     if (l.lesson_date && (!last || l.lesson_date > last)) last = l.lesson_date;
   }
@@ -584,7 +589,7 @@ function isStalled(tb: StudentTextbookWithDetails): { stalled: boolean; lastDate
 }
 
 function progressStats(tb: StudentTextbookWithDetails): { total: number; done: number } {
-  const items = tb.curriculum_items || [];
+  const items = (tb as TextbookWithItems).curriculum_items || [];
   const total = items.length;
   const done = items.filter((ci) => (ci.lessons || []).some((l) => l.lesson_date)).length;
   return { total, done };
@@ -1000,7 +1005,7 @@ function TableView({
 }: {
   textbook: StudentTextbookWithDetails;
   progress: CurriculumItemWithProgress[];
-  setProgress: (rows: CurriculumItemWithProgress[]) => void;
+  setProgress: React.Dispatch<React.SetStateAction<CurriculumItemWithProgress[]>>;
   examTypes: ExamType[];
   actionGoalsByExam: Record<string, ActionGoal[]>;
   setActionGoalsByExam: React.Dispatch<React.SetStateAction<Record<string, ActionGoal[]>>>;
@@ -1098,12 +1103,12 @@ function TableView({
   // 一括塗りを適用: progress 配列のインデックス [lo..hi] の行に paintValue を設定
   const applyPaint = useCallback(async (startRowId: string, endRowId: string) => {
     if (!paintMode || !paintValue) return;
-    const sIdx = progress.findIndex((r) => r.id === startRowId);
-    const eIdx = progress.findIndex((r) => r.id === endRowId);
+    const sIdx = progress.findIndex((r) => String(r.id) === startRowId);
+    const eIdx = progress.findIndex((r) => String(r.id) === endRowId);
     if (sIdx < 0 || eIdx < 0) return;
     const lo = Math.min(sIdx, eIdx);
     const hi = Math.max(sIdx, eIdx);
-    const sliceIds = new Set(progress.slice(lo, hi + 1).map((r) => r.id));
+    const sliceIds = new Set(progress.slice(lo, hi + 1).map((r) => String(r.id)));
     try {
       if (paintMode === 'examRange') {
         // 独立テーブル登録用: スライスの中で item_number を持つ行から min/max を算出
@@ -1125,7 +1130,7 @@ function TableView({
         // per-row 同期: スライス内は付与のみ。スライス外は他セグメントを保護するため解除しない
         await Promise.all(
           progress.map(async (row) => {
-            const inSlice = sliceIds.has(row.id);
+            const inSlice = sliceIds.has(String(row.id));
             if (!inSlice) return;
             const hasThis = row.progress?.exam_range_exam_type_id === paintValue;
             if (hasThis) return;
@@ -1220,7 +1225,7 @@ function TableView({
       toastError('授業日を入力してください');
       return;
     }
-    const targets = progress.filter((r) => selectedIds.has(r.id));
+    const targets = progress.filter((r) => selectedIds.has(String(r.id)));
     let okCount = 0;
     let ngCount = 0;
     for (const row of targets) {
@@ -1272,7 +1277,7 @@ function TableView({
   const updateLocal = (itemId: string, patch: Partial<CurriculumItemWithProgress['progress']>) => {
     setProgress(
       progress.map((row) =>
-        row.id === itemId
+        String(row.id) === itemId
           ? {
               ...row,
               progress: row.progress
@@ -1299,7 +1304,7 @@ function TableView({
         }
         // 保存結果を local state に反映（id や null→record への昇格を確定させる）
         if (saved) {
-          setProgress((prev) => prev.map((r) =>
+          setProgress((prev: CurriculumItemWithProgress[]) => prev.map((r) =>
             r.id === row.id
               ? { ...r, progress: { ...(r.progress || {}), ...(saved as object) } as CurriculumItemWithProgress['progress'] }
               : r
@@ -1674,7 +1679,7 @@ function TableView({
             </select>
           )}
           {paintMode && paintValue && (() => {
-            const startRow = paintStart ? progress.find((r) => r.id === paintStart) : null;
+            const startRow = paintStart ? progress.find((r) => String(r.id) === paintStart) : null;
             const startLabel = startRow
               ? (itemNo(startRow) != null ? `項目${itemNo(startRow)}` : (startRow.title ?? '選択中の行'))
               : null;
@@ -1741,7 +1746,8 @@ function TableView({
                   ? (groupIntentMap.get(curGroup) ?? null)
                   : null;
                 const paintActive = !!paintMode && !!paintValue;
-                const isPaintStart = paintStart != null && row.id === paintStart;
+                const rowIdStr = String(row.id);
+                const isPaintStart = paintStart != null && rowIdStr === paintStart;
                 const isPaintCandidate = paintActive && paintStart != null;
                 return (
                   <ProgressRow
@@ -1753,15 +1759,15 @@ function TableView({
                     groupStart={groupStart}
                     inheritedIntentTag={inheritedTag}
                     recording={recording && !isMeeting}
-                    selected={selectedIds.has(row.id)}
+                    selected={selectedIds.has(rowIdStr)}
                     selfName={selfName}
                     paintActive={paintActive}
                     paintMode={paintMode}
                     isPaintStart={isPaintStart}
                     isPaintCandidate={isPaintCandidate}
-                    onPaintRowClick={() => handlePaintRowClick(row.id)}
-                    onToggleSelect={() => toggleSelect(row.id)}
-                    onLocalPatch={(patch) => updateLocal(row.id, patch)}
+                    onPaintRowClick={() => handlePaintRowClick(rowIdStr)}
+                    onToggleSelect={() => toggleSelect(rowIdStr)}
+                    onLocalPatch={(patch) => updateLocal(rowIdStr, patch)}
                     onSaveProgress={(patch) => saveProgressField(row, patch)}
                     onSaveLesson={(n, date) => saveLessonField(row, n, date)}
                   />
@@ -2044,7 +2050,7 @@ function ProgressRow({
 }) {
   const p = row.progress;
   const lessonDate = (n: 1 | 2 | 3) =>
-    (row.lessons || []).find((l) => l.lesson_number === n)?.lesson_date ?? '';
+    (p?.lessons || []).find((l) => l.lesson_number === n)?.lesson_date ?? '';
   const groupBadge = p?.group_number ? `G${p.group_number}` : '';
   const examRangeName = examTypes.find((et) => et.id === p?.exam_range_exam_type_id)?.name ?? '';
   const rowClass = isPaintStart
@@ -2649,7 +2655,7 @@ function TextbookSettingsSection({
   // TODO: 既存の getStudentTextbookSettings で初期値取得・upsert で保存
   const save = async (patch: { approach?: string; homework_style?: string }) => {
     try {
-      await upsertStudentTextbookSettings({ student_textbook_id: textbookId, ...patch });
+      await upsertStudentTextbookSettings(textbookId, patch);
     } catch (e) {
       console.error(e);
       toastError('保存に失敗しました');
@@ -2852,12 +2858,12 @@ function ExamRangeModal({
       }
       const inRangeIds = new Set<string>();
       if (startIdx >= 0 && endIdx >= 0) {
-        for (let i = startIdx; i <= endIdx; i++) inRangeIds.add(progress[i].id);
+        for (let i = startIdx; i <= endIdx; i++) inRangeIds.add(String(progress[i].id));
       }
       const tasks: Promise<unknown>[] = [];
       for (const row of progress) {
         const n = itemNo(row);
-        const inRange = inRangeIds.has(row.id);
+        const inRange = inRangeIds.has(String(row.id));
         const hasThis = row.progress?.exam_range_exam_type_id === examTypeId;
         if (inRange && !hasThis) {
           if (row.progress?.id) {
