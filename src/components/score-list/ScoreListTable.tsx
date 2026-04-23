@@ -69,6 +69,8 @@ interface ScoreListTableProps {
   onCellBlur: (assessmentId: string, subject: string) => void;
   onCancelEdit: () => void;
   naishinType?: NaishinType;
+  /** 教室名マップ（複数教室選択時のみ渡す。undefined で非表示） */
+  classroomNameById?: Map<string, string>;
 }
 
 // ── コンポーネント ──
@@ -84,6 +86,7 @@ export function ScoreListTable({
   onCellBlur,
   onCancelEdit,
   naishinType,
+  classroomNameById,
 }: ScoreListTableProps) {
   const columns = getColumns(category);
 
@@ -100,7 +103,7 @@ export function ScoreListTable({
       <table className="w-full border-collapse text-xs">
         <thead>
           <tr className="bg-gray-100">
-            <th className="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700 min-w-[120px] whitespace-nowrap">
+            <th className="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700 w-[72px] min-w-[72px] max-w-[96px]">
               学校
             </th>
             <th className="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700 min-w-[48px]">
@@ -143,6 +146,7 @@ export function ScoreListTable({
               onCellChange={onCellChange}
               onCellBlur={onCellBlur}
               onCancelEdit={onCancelEdit}
+              classroomName={classroomNameById?.get(student.schoolId)}
             />
           ))}
         </tbody>
@@ -164,6 +168,7 @@ function StudentGroup({
   onCellChange,
   onCellBlur,
   onCancelEdit,
+  classroomName,
 }: {
   student: ScoreListStudent;
   category: ScoreListCategory;
@@ -175,6 +180,7 @@ function StudentGroup({
   onCellChange: (value: string) => void;
   onCellBlur: (assessmentId: string, subject: string) => void;
   onCancelEdit: () => void;
+  classroomName?: string;
 }) {
   const rowCount = student.rows.length;
 
@@ -188,10 +194,17 @@ function StudentGroup({
           {/* 学校（最初の行のみ） */}
           {rowIdx === 0 && (
             <td
-              className="border border-gray-200 px-2 py-1 text-xs text-gray-700 whitespace-nowrap bg-white"
+              className="border border-gray-200 px-2 py-1 text-[11px] text-gray-700 bg-white align-top"
               rowSpan={rowCount}
             >
-              {student.schoolName || <span className="text-gray-300">—</span>}
+              <div className="leading-tight break-words" title={student.schoolName ?? undefined}>
+                {student.schoolName || <span className="text-gray-300">—</span>}
+              </div>
+              {classroomName && (
+                <div className="text-[10px] text-gray-400 mt-0.5 break-words" title={classroomName}>
+                  {classroomName}
+                </div>
+              )}
             </td>
           )}
           {/* 学年（最初の行のみ） */}

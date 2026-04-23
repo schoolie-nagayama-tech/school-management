@@ -10,6 +10,7 @@ import { ASSESSMENT_NAME_OPTIONS } from '@/types/database';
 import type { AssessmentWithScores, Student, Subject } from '@/types/database';
 import type { NaishinType } from '@/lib/utils/convertedNaishin';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMasterData } from '@/contexts/MasterDataContext';
 import { ScoreListTable } from './ScoreListTable';
 
 // ── ソート定義 ──
@@ -111,7 +112,16 @@ interface ScoreListViewProps {
 
 export function ScoreListView({ category, students, schoolIds }: ScoreListViewProps) {
   const { permissions } = useAuth();
+  const { schools } = useMasterData();
   const canEdit = !!permissions?.canEditScores;
+
+  // 複数教室が選択されているときだけ教室名サブテキストを表示
+  const schoolNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const s of schools) map.set(s.id, s.name);
+    return map;
+  }, [schools]);
+  const showClassroomSubtitle = schoolIds.length > 1;
 
   // データ
   const [assessmentsByStudent, setAssessmentsByStudent] = useState<Map<string, AssessmentWithScores[]>>(new Map());
@@ -197,7 +207,7 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
     const q = searchQuery.trim().toLowerCase();
     const filtered = q
       ? baseStudents.filter((s) => {
-          const hay = `${s.lastName}${s.firstName}${s.lastNameKana}${s.firstNameKana}`.toLowerCase();
+          const hay = `${s.lastName}${s.firstName}${s.lastNameKana}${s.firstNameKana}${s.schoolName ?? ''}`.toLowerCase();
           return hay.includes(q);
         })
       : baseStudents;
@@ -328,9 +338,9 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="氏名・フリガナ"
-              aria-label="氏名・フリガナで絞り込み"
-              className="w-48 pl-7 pr-7 py-1.5 border border-gray-300 rounded-md text-xs bg-white text-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f] placeholder:text-gray-400"
+              placeholder="氏名・フリガナ・学校名"
+              aria-label="氏名・フリガナ・学校名で絞り込み"
+              className="w-56 pl-7 pr-7 py-1.5 border border-gray-300 rounded-md text-xs bg-white text-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f] placeholder:text-gray-400"
             />
             {searchQuery && (
               <button
@@ -451,6 +461,7 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
         onCellBlur={handleCellBlur}
         onCancelEdit={handleCancelEdit}
         naishinType={category === 'report_card' ? naishinType : undefined}
+        classroomNameById={showClassroomSubtitle ? schoolNameById : undefined}
       />
 
       {/* ページネーション */}
