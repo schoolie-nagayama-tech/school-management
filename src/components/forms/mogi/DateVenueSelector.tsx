@@ -22,13 +22,6 @@ export function DateVenueSelector({
 
   const handleDateToggle = (date: MogiDate, checked: boolean) => {
     if (checked) {
-      // 同じ日付の他種別が既に選ばれていれば自動解除（1日1種別）
-      const sameDateKey = dateKeyOf(date);
-      const withoutSameDate = selections.filter((s) => {
-        const existing = dates.find((d) => d.id === s.date_id);
-        return existing ? dateKeyOf(existing) !== sameDateKey : true;
-      });
-
       // 日程を選択した場合、最初の会場を自動選択
       const firstVenue = date.venues[0];
       if (firstVenue) {
@@ -40,12 +33,23 @@ export function DateVenueSelector({
           venue_id: firstVenue.id,
           venue_label: firstVenue.label,
         };
-        onChange([...withoutSameDate, newSelection]);
+        onChange([...selections, newSelection]);
       }
     } else {
       // 日程を解除した場合、その日程の選択を削除
       onChange(selections.filter((s) => s.date_id !== date.id));
     }
+  };
+
+  // 同じ日付で他の種別が既に選択されているか
+  const getBlockingSelection = (date: MogiDate): DateVenueSelection | null => {
+    const key = dateKeyOf(date);
+    for (const s of selections) {
+      if (s.date_id === date.id) continue; // 自分自身は除外
+      const other = dates.find((d) => d.id === s.date_id);
+      if (other && dateKeyOf(other) === key) return s;
+    }
+    return null;
   };
 
   const handleVenueChange = (dateId: string, venueId: string) => {
@@ -112,11 +116,17 @@ export function DateVenueSelector({
             {group.dates.map((date) => {
               const isSelected = isDateSelected(date.id);
               const selectedVenueId = getSelectedVenueId(date.id);
+              const blocking = !isSelected ? getBlockingSelection(date) : null;
+              const isBlocked = !!blocking;
 
               return (
                 <div
                   key={date.id}
-                  className="border border-[#e5e7eb] rounded-lg p-4 bg-white"
+                  className={`border rounded-lg p-4 transition-opacity ${
+                    isBlocked
+                      ? 'border-[#e5e7eb] bg-[#f9fafb] opacity-60'
+                      : 'border-[#e5e7eb] bg-white'
+                  }`}
                 >
                   <div className="flex items-center gap-3 mb-3">
                     <input
@@ -124,16 +134,30 @@ export function DateVenueSelector({
                       id={`date-${date.id}`}
                       checked={isSelected}
                       onChange={(e) => handleDateToggle(date, e.target.checked)}
-                      disabled={disabled}
-                      className="w-5 h-5 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6] cursor-pointer"
+                      disabled={disabled || isBlocked}
+                      className="w-5 h-5 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6] disabled:cursor-not-allowed cursor-pointer"
                     />
                     <label
                       htmlFor={`date-${date.id}`}
-                      className="text-base font-medium text-[#1f2937] cursor-pointer flex-1"
+                      className={`text-base font-medium flex-1 ${
+                        isBlocked
+                          ? 'text-[#9ca3af] cursor-not-allowed'
+                          : 'text-[#1f2937] cursor-pointer'
+                      }`}
                     >
                       {date.label}
                     </label>
                   </div>
+
+                  {isBlocked && blocking && (
+                    <p className="ml-8 text-xs text-[#6b7280] -mt-1 mb-2">
+                      同じ日に
+                      <span className="font-medium text-[#4b5563]">
+                        「{blocking.exam_type_label ?? 'その他の日程'}」
+                      </span>
+                      を選択中のため申し込みできません（1日1種別まで）
+                    </p>
+                  )}
 
                   {isSelected && (
                     <div className="ml-8">
