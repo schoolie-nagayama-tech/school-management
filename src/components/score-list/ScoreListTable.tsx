@@ -69,8 +69,6 @@ interface ScoreListTableProps {
   onCellBlur: (assessmentId: string, subject: string) => void;
   onCancelEdit: () => void;
   naishinType?: NaishinType;
-  /** 学校名マップ（undefined で学校列を非表示） */
-  schoolNameById?: Map<string, string>;
 }
 
 // ── コンポーネント ──
@@ -86,7 +84,6 @@ export function ScoreListTable({
   onCellBlur,
   onCancelEdit,
   naishinType,
-  schoolNameById,
 }: ScoreListTableProps) {
   const columns = getColumns(category);
 
@@ -103,10 +100,13 @@ export function ScoreListTable({
       <table className="w-full border-collapse text-xs">
         <thead>
           <tr className="bg-gray-100">
-            <th className="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700 sticky left-0 bg-gray-100 z-10 min-w-[48px]">
+            <th className="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700 min-w-[120px] whitespace-nowrap">
+              学校
+            </th>
+            <th className="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700 min-w-[48px]">
               学年
             </th>
-            <th className="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700 sticky left-[48px] bg-gray-100 z-10 min-w-[80px]">
+            <th className="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700 min-w-[80px]">
               名前（リンク）
             </th>
             <th className="border border-gray-200 px-2 py-2 text-center font-medium text-gray-700 min-w-[80px]">
@@ -143,7 +143,6 @@ export function ScoreListTable({
               onCellChange={onCellChange}
               onCellBlur={onCellBlur}
               onCancelEdit={onCancelEdit}
-              schoolName={schoolNameById?.get(student.schoolId)}
             />
           ))}
         </tbody>
@@ -165,7 +164,6 @@ function StudentGroup({
   onCellChange,
   onCellBlur,
   onCancelEdit,
-  schoolName,
 }: {
   student: ScoreListStudent;
   category: ScoreListCategory;
@@ -177,7 +175,6 @@ function StudentGroup({
   onCellChange: (value: string) => void;
   onCellBlur: (assessmentId: string, subject: string) => void;
   onCancelEdit: () => void;
-  schoolName?: string;
 }) {
   const rowCount = student.rows.length;
 
@@ -188,10 +185,19 @@ function StudentGroup({
           key={row.assessmentId}
           className={`${rowIdx === rowCount - 1 ? 'border-b-2 border-b-gray-300' : ''} hover:bg-blue-50/30`}
         >
+          {/* 学校（最初の行のみ） */}
+          {rowIdx === 0 && (
+            <td
+              className="border border-gray-200 px-2 py-1 text-xs text-gray-700 whitespace-nowrap bg-white"
+              rowSpan={rowCount}
+            >
+              {student.schoolName || <span className="text-gray-300">—</span>}
+            </td>
+          )}
           {/* 学年（最初の行のみ） */}
           {rowIdx === 0 && (
             <td
-              className="border border-gray-200 px-2 py-1 text-center text-xs font-medium text-gray-600 sticky left-0 bg-white z-10"
+              className="border border-gray-200 px-2 py-1 text-center text-xs font-medium text-gray-600 bg-white"
               rowSpan={rowCount}
             >
               {getGradeLabel(student.grade)}
@@ -200,20 +206,15 @@ function StudentGroup({
           {/* 名前（最初の行のみ） */}
           {rowIdx === 0 && (
             <td
-              className="border border-gray-200 px-2 py-1 sticky left-[48px] bg-white z-10"
+              className="border border-gray-200 px-2 py-1 bg-white"
               rowSpan={rowCount}
             >
               <Link
                 href={`/students/${student.studentId}/scores`}
-                className="text-xs font-medium text-[#1e3a5f] hover:text-[#3b82f6] hover:underline whitespace-nowrap block"
+                className="text-xs font-medium text-[#1e3a5f] hover:text-[#3b82f6] hover:underline whitespace-nowrap"
               >
                 {student.lastName} {student.firstName}
               </Link>
-              {schoolName && (
-                <div className="text-[10px] text-gray-500 whitespace-nowrap mt-0.5">
-                  {schoolName}
-                </div>
-              )}
             </td>
           )}
           {/* 学期 / テスト名 */}

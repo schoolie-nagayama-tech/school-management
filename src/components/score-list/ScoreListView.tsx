@@ -10,7 +10,6 @@ import { ASSESSMENT_NAME_OPTIONS } from '@/types/database';
 import type { AssessmentWithScores, Student, Subject } from '@/types/database';
 import type { NaishinType } from '@/lib/utils/convertedNaishin';
 import { useAuth } from '@/contexts/AuthContext';
-import { useMasterData } from '@/contexts/MasterDataContext';
 import { ScoreListTable } from './ScoreListTable';
 
 // ── ソート定義 ──
@@ -112,16 +111,7 @@ interface ScoreListViewProps {
 
 export function ScoreListView({ category, students, schoolIds }: ScoreListViewProps) {
   const { permissions } = useAuth();
-  const { schools } = useMasterData();
   const canEdit = !!permissions?.canEditScores;
-
-  // 学校名マップ（複数校選択時のみ表示）
-  const schoolNameById = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const s of schools) map.set(s.id, s.name);
-    return map;
-  }, [schools]);
-  const showSchoolName = schoolIds.length > 1 || schools.length > 1;
 
   // データ
   const [assessmentsByStudent, setAssessmentsByStudent] = useState<Map<string, AssessmentWithScores[]>>(new Map());
@@ -461,7 +451,6 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
         onCellBlur={handleCellBlur}
         onCancelEdit={handleCancelEdit}
         naishinType={category === 'report_card' ? naishinType : undefined}
-        schoolNameById={showSchoolName ? schoolNameById : undefined}
       />
 
       {/* ページネーション */}

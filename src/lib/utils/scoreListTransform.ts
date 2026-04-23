@@ -41,6 +41,8 @@ export interface ScoreListStudent {
   firstNameKana: string;
   grade: number;
   schoolId: string;
+  /** 生徒の通う学校名（例: 〇〇中学校） */
+  schoolName: string | null;
   rows: ScoreListRow[];
 }
 
@@ -188,6 +190,7 @@ export function transformToScoreList(
       firstNameKana: student.first_name_kana,
       grade: student.grade,
       schoolId: student.school_id,
+      schoolName: student.school_name ?? null,
       rows,
     });
   }
