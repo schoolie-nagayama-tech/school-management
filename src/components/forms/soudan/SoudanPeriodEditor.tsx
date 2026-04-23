@@ -238,7 +238,7 @@ export function SoudanPeriodEditor({
       isOpen={isOpen}
       onClose={onClose}
       title={period ? 'お客様相談 期間編集' : 'お客様相談 期間作成'}
-      size="lg"
+      size="2xl"
       minHeight="80vh"
     >
       <div className="space-y-6">

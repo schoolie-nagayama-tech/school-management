@@ -264,7 +264,7 @@ export function MoshiPeriodEditor({
       isOpen={isOpen}
       onClose={onClose}
       title={period ? 'オープン模試申し込み 期間編集' : 'オープン模試申し込み 期間作成'}
-      size="lg"
+      size="2xl"
       minHeight="80vh"
     >
       <div className="space-y-6">

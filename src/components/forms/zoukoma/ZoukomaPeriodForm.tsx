@@ -262,7 +262,7 @@ export function ZoukomaPeriodForm({
       isOpen={isOpen}
       onClose={onClose}
       title={period ? '期間の編集' : '期間の新規作成'}
-      size="xl"
+      size="2xl"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && (

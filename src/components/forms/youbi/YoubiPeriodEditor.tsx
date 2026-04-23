@@ -223,7 +223,7 @@ export function YoubiPeriodEditor({
       isOpen={isOpen}
       onClose={onClose}
       title={period ? '曜日変更 期間編集' : '曜日変更 期間作成'}
-      size="lg"
+      size="2xl"
       minHeight="80vh"
     >
       <div className="space-y-6">

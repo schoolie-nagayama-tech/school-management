@@ -268,7 +268,7 @@ export function ShukaisuPeriodEditor({
       isOpen={isOpen}
       onClose={onClose}
       title={period ? '週回数変更 期間編集' : '週回数変更 期間作成'}
-      size="lg"
+      size="2xl"
       minHeight="80vh"
     >
       <div className="space-y-6">
