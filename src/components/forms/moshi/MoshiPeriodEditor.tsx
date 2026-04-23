@@ -263,7 +263,7 @@ export function MoshiPeriodEditor({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={period ? '模試申込 期間編集' : '模試申込 期間作成'}
+      title={period ? 'オープン模試申し込み 期間編集' : 'オープン模試申し込み 期間作成'}
       size="lg"
       minHeight="80vh"
     >
@@ -303,7 +303,7 @@ export function MoshiPeriodEditor({
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="例: 2月度 模試申込"
+                placeholder="例: 2月度 オープン模試申し込み"
               />
             </div>
           </div>

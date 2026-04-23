@@ -157,8 +157,8 @@ export async function initializePortalMenus(schoolId: string): Promise<void> {
     {
       school_id: schoolId,
       menu_key: 'zoukoma',
-      title: '増コマ申し込み',
-      description: '追加授業のお申込みはこちら',
+      title: 'テスト対策増コマ申し込み',
+      description: '定期テスト対策の追加授業のお申込みはこちら',
       is_visible: true,
       link_type: 'internal',
       link_url: getLinkUrl('zoukoma'),
@@ -168,8 +168,8 @@ export async function initializePortalMenus(schoolId: string): Promise<void> {
     {
       school_id: schoolId,
       menu_key: 'moshi',
-      title: '模試申し込み',
-      description: '模擬試験のお申込みはこちら',
+      title: 'オープン模試申し込み',
+      description: 'オープン模試のお申込みはこちら',
       is_visible: true,
       link_type: 'internal',
       link_url: getLinkUrl('moshi'),

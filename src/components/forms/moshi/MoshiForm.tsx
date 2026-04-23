@@ -214,8 +214,8 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
   return (
     <div className="space-y-5">
       <PortalFormHeader
-        eyebrow="模試 申込"
-        title={period.title || '模試申込'}
+        eyebrow="オープン模試 申し込み"
+        title={period.title || 'オープン模試申し込み'}
         description={settings.description}
       />
 

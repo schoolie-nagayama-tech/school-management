@@ -2840,9 +2840,9 @@ export type FormPeriodUpdate = Partial<Omit<FormPeriod, 'id' | 'school_id' | 'fo
 
 // フォーム種別のラベル
 export const FORM_TYPE_LABELS: Record<FormType, string> = {
-  zoukoma: '増コマ申込',
-  moshi: '模試申込',
-  mogi: 'Vもぎ申込',
+  zoukoma: 'テスト対策増コマ申し込み',
+  moshi: 'オープン模試申し込み',
+  mogi: 'Vもぎ申し込み',
   shukaisu: '週回数変更',
   youbi: '曜日変更',
   kyozai: '教材販売',

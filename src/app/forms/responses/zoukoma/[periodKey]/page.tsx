@@ -150,7 +150,7 @@ export default function ZoukomaResponsePage() {
   return (
     <>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <AdminLayout headerTitle={`${periodKey} 増コマ申込 回答一覧`} narrow>
+      <AdminLayout headerTitle={`${periodKey} テスト対策増コマ申し込み 回答一覧`} narrow>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {errorMessage && (
           <div className="mb-4 p-4 bg-[#ef4444]/20 border border-[#ef4444] rounded-lg">

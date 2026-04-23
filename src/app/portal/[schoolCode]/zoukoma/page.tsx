@@ -28,10 +28,10 @@ export default async function ZoukomaPortalPage({
           // 公開期間外
           <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 text-center">
             <h1 className="text-2xl font-bold text-[#1f2937] mb-4">
-              増コマ申込
+              テスト対策増コマ申し込み
             </h1>
             <p className="text-[#4b5563] mb-6">
-              現在、増コマ申込の受付は行っておりません。
+              現在、テスト対策増コマ申し込みの受付は行っておりません。
             </p>
             <a
               href={`/portal/${schoolCode}`}

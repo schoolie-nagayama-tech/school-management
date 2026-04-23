@@ -253,8 +253,8 @@ export function ZoukomaForm({ school, period, isPreview }: ZoukomaFormProps) {
   return (
     <div className="space-y-5">
       <PortalFormHeader
-        eyebrow="増コマ 申込"
-        title={period.title || '増コマ申込'}
+        eyebrow="テスト対策 増コマ申し込み"
+        title={period.title || 'テスト対策増コマ申し込み'}
         description={settings.description}
       />
       <form onSubmit={handleSubmit} className="space-y-5">

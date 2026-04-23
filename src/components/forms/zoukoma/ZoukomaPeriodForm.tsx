@@ -327,7 +327,7 @@ export function ZoukomaPeriodForm({
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="例: 10月度 増コマ申込"
+              placeholder="例: 10月度 テスト対策増コマ申し込み"
               required
               disabled={isSubmitting}
             />
