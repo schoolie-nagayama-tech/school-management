@@ -63,10 +63,6 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
     },
   });
 
-  // 受験日が土曜日かどうか
-  const examDayOfWeek = settings.exam_date ? new Date(settings.exam_date).getDay() : -1;
-  const isExamOnSaturday = examDayOfWeek === 6;
-
   // 日付から曜日を取得
   const getDayOfWeek = (dateStr: string): string => {
     if (!dateStr) return '';
@@ -91,6 +87,15 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
     const day = date.getDay();
     return day >= 1 && day <= 5; // 月〜金
   };
+
+  // 振替日の最小値: 受験日の翌日（YYYY-MM-DD）
+  const minFurikaeDate = (() => {
+    if (!settings.exam_date) return '';
+    const d = new Date(settings.exam_date);
+    if (isNaN(d.getTime())) return '';
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().slice(0, 10);
+  })();
 
   // 時間選択肢
   const timeOptions = [
@@ -124,12 +129,10 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
     if (examType === 'furikae') {
       if (!furikaeDate) {
         newErrors.furikaeDate = '振替希望日を入力してください';
-      } else {
-        // 土曜日試験の場合、受験当日（同じ日）のみ時間変更として許可
-        const isExamDay = isExamOnSaturday && furikaeDate === settings.exam_date;
-        if (!isWeekday(furikaeDate) && !isExamDay) {
-          newErrors.furikaeDate = '振替受験は平日のみ可能です';
-        }
+      } else if (settings.exam_date && furikaeDate <= settings.exam_date) {
+        newErrors.furikaeDate = '振替受験日は受験日より後の日付を選択してください';
+      } else if (!isWeekday(furikaeDate)) {
+        newErrors.furikaeDate = '振替受験は平日のみ可能です';
       }
       if (!furikaeTime) {
         newErrors.furikaeTime = '希望時間を選択してください';
@@ -371,9 +374,6 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
                   {settings.furikae?.note && (
                     <li>{settings.furikae.note}</li>
                   )}
-                  {isExamOnSaturday && (
-                    <li>受験当日（{settings.exam_date_label}）の時間変更もこちらからお申し込みください。</li>
-                  )}
                   <li>
                     小学生の目安時間：<strong>{settings.furikae?.time_guide?.elementary ?? '約2時間'}</strong>
                   </li>
@@ -391,12 +391,18 @@ export function MoshiForm({ school, period, isPreview }: MoshiFormProps) {
                 <Input
                   type="date"
                   value={furikaeDate}
+                  min={minFurikaeDate || undefined}
                   onChange={(e) => {
                     setFurikaeDate(e.target.value);
                     if (errors.furikaeDate) setErrors((prev) => { const n = { ...prev }; delete n.furikaeDate; return n; });
                   }}
                   className={errors.furikaeDate ? 'border-[color:var(--primary)]' : ''}
                 />
+                {minFurikaeDate && (
+                  <p className="text-xs text-[#6b7280] mt-1">
+                    ※ 受験日（{settings.exam_date_label || settings.exam_date}）より後の日付を選択してください。
+                  </p>
+                )}
                 {errors.furikaeDate && (
                   <p className="text-[color:var(--primary)] text-xs mt-1">{errors.furikaeDate}</p>
                 )}
