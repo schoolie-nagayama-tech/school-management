@@ -299,22 +299,52 @@ function createApplicantEmail(
   let mogiNextStepsBlock = ''
   if (formType === 'mogi') {
     const region = periodSettings?.region ?? 'tokyo'
-    const tokyoLotteryNote =
-      region === 'tokyo'
-        ? `<li><strong>会場の確定:</strong> 定員に達し次第、抽選で会場が決まります。抽選に漏れた場合は、進学研究会が近隣の別会場に割り振ります。</li>`
-        : ''
+    let stepsHtml = ''
+    let contactHtml = ''
+    if (region === 'tokyo') {
+      // 東京版（進研Vもぎ）: 進学研究会のWeb受験票、会場抽選、直通連絡先
+      stepsHtml = `
+          <li><strong>会場の確定:</strong> 定員に達し次第、抽選で会場が決まります。抽選に漏れた場合は、進学研究会が近隣の別会場に割り振ります。</li>
+          <li><strong>受験票のお受け取り:</strong> 会場確定後、進研Vもぎのマイページから受験票（PDF）をダウンロードし、ご家庭で印刷してお持ちください。</li>
+          <li><strong>当日の持参物:</strong> 上記の申込内容に記載の持参物をご持参ください（会場ごとに異なる場合があります）。</li>
+          <li><strong>成績表のお渡し:</strong> 採点結果の成績表は後日、教室でお渡しします。</li>
+      `
+      contactHtml = `
+        <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed #fed7aa;">
+          <p style="margin: 0 0 4px; font-weight: 600; color: #9a3412;">進学研究会（進研Vもぎ 直通）</p>
+          <p style="margin: 0; font-size: 15px; color: #1f2937;">TEL: <strong>03-3952-4171</strong></p>
+          <p style="margin: 6px 0 0; font-size: 12px; color: #6b7280; line-height: 1.6;">
+            月〜金（祝を除く）9:30〜18:00 ／ 試験日前日 13:00〜16:00 ／ 試験当日 7:00〜13:00<br>
+            ※会場校へのもぎに関してのお問合せはできません。<br>
+            その他ご不明点は教室までお問い合わせください。
+          </p>
+        </div>
+      `
+    } else {
+      // 神奈川版（全県模試）: 受験票は教室からお渡し、連絡先は教室
+      stepsHtml = `
+          <li><strong>受験票のお渡し:</strong> 受験日が近づきましたら、教室から受験票をお渡しします。</li>
+          <li><strong>当日の持参物:</strong> 上記の申込内容に記載の持参物をご持参ください（会場ごとに異なる場合があります）。</li>
+          <li><strong>成績表のお渡し:</strong> 採点結果の成績表は後日、教室でお渡しします。</li>
+      `
+      contactHtml = `
+        <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed #fed7aa;">
+          <p style="margin: 0; font-size: 12px; color: #6b7280; line-height: 1.6;">
+            ご不明点は教室までお問い合わせください。
+          </p>
+        </div>
+      `
+    }
     mogiNextStepsBlock = `
       <div style="background: #fff7ed; padding: 16px; border-radius: 8px; margin: 20px 0; border: 1px solid #fed7aa;">
         <h3 style="margin-top: 0; color: #9a3412;">お申し込み後の流れ</h3>
         <ol style="padding-left: 20px; color: #333; line-height: 1.7;">
-          ${tokyoLotteryNote}
-          <li><strong>受験票のお渡し:</strong> 受験日が近づきましたら、教室から受験票をお渡しします。</li>
-          <li><strong>当日の持参物:</strong> 上記の申込内容に記載の持参物をご持参ください（会場ごとに異なる場合があります）。</li>
-          <li><strong>結果のお知らせ:</strong> 採点結果は後日教室からお渡しします。</li>
+${stepsHtml}
         </ol>
         <p style="font-size: 12px; color: #9a3412; margin-bottom: 0;">
           ※ 申込後のキャンセル・返金はできません。やむを得ない事情がある場合は教室までご相談ください。
         </p>
+        ${contactHtml}
       </div>
     `
   }
