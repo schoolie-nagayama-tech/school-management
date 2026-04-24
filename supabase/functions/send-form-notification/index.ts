@@ -105,7 +105,7 @@ function formatResponseDetails(formType: string, responseData: any, periodSettin
     case 'mogi':
       if (responseData.selections?.length > 0) {
         details += '<p><strong>選択した日程・会場:</strong></p><ul>'
-        // 会場別の持参物を探すため periodSettings.dates から bring_items を取得
+        // 会場別の上履き持参要否を periodSettings.dates から参照
         const venueById: Record<string, any> = {}
         if (periodSettings?.dates) {
           for (const d of periodSettings.dates) {
@@ -117,8 +117,10 @@ function formatResponseDetails(formType: string, responseData: any, periodSettin
         for (const sel of responseData.selections) {
           const typeLabel = sel.exam_type_label ? `[${sel.exam_type_label}] ` : ''
           const venue = venueById[sel.venue_id]
-          const bring = venue?.bring_items ? `<br><span style="font-size:12px;color:#9a3412;">持参物: ${venue.bring_items}</span>` : ''
-          details += `<li>${typeLabel}${sel.date_label} - ${sel.venue_label}${bring}</li>`
+          const uwabaki = venue?.requires_uwabaki
+            ? `<br><span style="font-size:12px;color:#9a3412;font-weight:600;">※この会場は上履きが必要です。</span>`
+            : ''
+          details += `<li>${typeLabel}${sel.date_label} - ${sel.venue_label}${uwabaki}</li>`
         }
         details += '</ul>'
       }
@@ -306,7 +308,6 @@ function createApplicantEmail(
       stepsHtml = `
           <li><strong>会場の確定:</strong> 定員に達し次第、抽選で会場が決まります。抽選に漏れた場合は、進学研究会が近隣の別会場に割り振ります。</li>
           <li><strong>受験票のお受け取り:</strong> 会場確定後、進研Vもぎのマイページから受験票（PDF）をダウンロードし、ご家庭で印刷してお持ちください。</li>
-          <li><strong>当日の持参物:</strong> 上記の申込内容に記載の持参物をご持参ください（会場ごとに異なる場合があります）。</li>
           <li><strong>成績表のお渡し:</strong> 採点結果の成績表は後日、教室でお渡しします。</li>
       `
       contactHtml = `
@@ -315,25 +316,17 @@ function createApplicantEmail(
           <p style="margin: 0; font-size: 15px; color: #1f2937;">TEL: <strong>03-3952-4171</strong></p>
           <p style="margin: 6px 0 0; font-size: 12px; color: #6b7280; line-height: 1.6;">
             月〜金（祝を除く）9:30〜18:00 ／ 試験日前日 13:00〜16:00 ／ 試験当日 7:00〜13:00<br>
-            ※会場校へのもぎに関してのお問合せはできません。<br>
-            その他ご不明点は教室までお問い合わせください。
+            ※会場校へのもぎに関してのお問合せはできません。
           </p>
         </div>
       `
     } else {
-      // 神奈川版（全県模試）: 受験票は教室からお渡し、連絡先は教室
+      // 神奈川版（全県模試）: マイページから受験票確認、成績は教室
       stepsHtml = `
-          <li><strong>受験票のお渡し:</strong> 受験日が近づきましたら、教室から受験票をお渡しします。</li>
-          <li><strong>当日の持参物:</strong> 上記の申込内容に記載の持参物をご持参ください（会場ごとに異なる場合があります）。</li>
+          <li><strong>受験票のお受け取り:</strong> マイページからご確認ください。</li>
           <li><strong>成績表のお渡し:</strong> 採点結果の成績表は後日、教室でお渡しします。</li>
       `
-      contactHtml = `
-        <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed #fed7aa;">
-          <p style="margin: 0; font-size: 12px; color: #6b7280; line-height: 1.6;">
-            ご不明点は教室までお問い合わせください。
-          </p>
-        </div>
-      `
+      contactHtml = ''
     }
     mogiNextStepsBlock = `
       <div style="background: #fff7ed; padding: 16px; border-radius: 8px; margin: 20px 0; border: 1px solid #fed7aa;">
@@ -342,7 +335,7 @@ function createApplicantEmail(
 ${stepsHtml}
         </ol>
         <p style="font-size: 12px; color: #9a3412; margin-bottom: 0;">
-          ※ 申込後のキャンセル・返金はできません。やむを得ない事情がある場合は教室までご相談ください。
+          ※ 申込後のキャンセル・返金はできません。
         </p>
         ${contactHtml}
       </div>
@@ -367,7 +360,7 @@ ${stepsHtml}
         ${formatResponseDetails(formType, responseData, (formType === 'moshi' || formType === 'mogi') ? periodSettings : undefined)}
       </div>
       ${mogiNextStepsBlock}
-      <p>ご不明点がございましたら、教室までお問い合わせください。</p>
+      ${formType !== 'mogi' ? '<p>ご不明点がございましたら、教室までお問い合わせください。</p>' : ''}
       ${showGrowLine ? '<p>日程が決まりましたらGrowから確認してください。</p>' : ''}
       <p style="margin-top: 30px; color: #666;">${schoolName}</p>
       ${EMAIL_FOOTER}

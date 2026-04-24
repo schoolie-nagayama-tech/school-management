@@ -178,10 +178,10 @@ export function DateVenueSelector({
                       />
                       {(() => {
                         const venue = date.venues.find((v) => v.id === selectedVenueId);
-                        if (!venue?.bring_items) return null;
+                        if (!venue?.requires_uwabaki) return null;
                         return (
                           <div className="text-xs bg-[#fff7ed] border border-[#fed7aa] text-[#9a3412] rounded px-3 py-2">
-                            <span className="font-medium">持参物:</span> {venue.bring_items}
+                            <span className="font-medium">この会場は上履きが必要です。</span>
                           </div>
                         );
                       })()}

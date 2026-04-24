@@ -37,7 +37,9 @@ export const GRADE_NUMBER_TO_NAME: Record<number, string> = {
 export interface Venue {
   id: string;
   label: string;
-  /** 持参物（受験票必要/不要など。会場ごとに異なるため） */
+  /** 上履きが必要な会場かどうか（他の持参物は全会場共通のため、差分のみ保持） */
+  requires_uwabaki?: boolean;
+  /** @deprecated 旧フリーテキスト版。現状は requires_uwabaki のみ使用 */
   bring_items?: string;
 }
 

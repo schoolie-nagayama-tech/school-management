@@ -62,8 +62,8 @@ export function MogiPeriodEditor({
   const [linkedApplicationItemId, setLinkedApplicationItemId] = useState<string>('');
   const [applicationItems, setApplicationItems] = useState<ApplicationItem[]>([]);
   const [useDefaultInsert, setUseDefaultInsert] = useState(false);
-  // 会場ごとの持参物（venue_id → 持参物テキスト）
-  const [venueBringItems, setVenueBringItems] = useState<Record<string, string>>({});
+  // 会場ごとに上履き持参が必要か（venue_id → bool）
+  const [venueRequiresUwabaki, setVenueRequiresUwabaki] = useState<Record<string, boolean>>({});
 
   const regionExamTypeOptions = MOGI_EXAM_TYPE_OPTIONS_BY_REGION[region];
 
@@ -163,15 +163,17 @@ export function MogiPeriodEditor({
         );
         // 会場テキスト復元（全日程の会場を集約してユニーク化）
         const venueMap = new Map<string, string>();
-        const bringMap: Record<string, string> = {};
+        const uwabakiMap: Record<string, boolean> = {};
         settings.dates?.forEach((d) => {
           d.venues.forEach((v) => {
             venueMap.set(v.id, v.label);
-            if (v.bring_items) bringMap[v.id] = v.bring_items;
+            // 新フィールド優先、旧 bring_items に「上履き」が含まれる場合もマイグレーション的に拾う
+            if (v.requires_uwabaki) uwabakiMap[v.id] = true;
+            else if (v.bring_items?.includes('上履き')) uwabakiMap[v.id] = true;
           });
         });
         setVenueText(Array.from(venueMap.values()).join('\n'));
-        setVenueBringItems(bringMap);
+        setVenueRequiresUwabaki(uwabakiMap);
         // 日程エントリ復元（固有会場は空で開始し、選択状態のみ保持）
         setDateEntries(
           settings.dates?.map((d) => ({
@@ -198,7 +200,7 @@ export function MogiPeriodEditor({
         setPublishStart(now.toISOString().slice(0, 16));
         setPublishEnd(endDate.toISOString().slice(0, 16));
         setVenueText('');
-        setVenueBringItems({});
+        setVenueRequiresUwabaki({});
         setDateEntries([]);
         setCompletionMessage('');
         setLinkedApplicationItemId('');
@@ -314,8 +316,10 @@ export function MogiPeriodEditor({
             venues: venuesForDate
               .filter((v) => entry.selectedVenueIds.includes(v.id))
               .map((v) => {
-                const bring = venueBringItems[v.id]?.trim();
-                return bring ? { ...v, bring_items: bring } : { id: v.id, label: v.label };
+                const needsUwabaki = !!venueRequiresUwabaki[v.id];
+                const base: Venue = { id: v.id, label: v.label };
+                if (needsUwabaki) base.requires_uwabaki = true;
+                return base;
               }),
           };
         }),
@@ -651,30 +655,31 @@ export function MogiPeriodEditor({
             ※改行で区切って入力。日程ごとに会場を選択できます。
           </p>
 
-          {/* 会場ごとの持参物 */}
+          {/* 会場ごとの上履き持参チェック */}
           {parseVenues(venueText).length > 0 && (
             <div className="mt-4 p-3 bg-white border border-[#e5e7eb] rounded-lg">
-              <p className="text-sm font-medium text-[#1f2937] mb-1">会場ごとの持参物（任意）</p>
+              <p className="text-sm font-medium text-[#1f2937] mb-1">上履き持参が必要な会場</p>
               <p className="text-xs text-[#6b7280] mb-3">
-                会場によって持参物が異なる場合に入力してください。保護者の申込画面と通知メールに表示されます。
+                当日の持参物は全会場共通ですが、上履き持参の要否だけ会場ごとに指定できます。保護者の申込画面と通知メールに反映されます。
               </p>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 {parseVenues(venueText).map((v) => (
-                  <div key={v.id} className="flex items-center gap-2">
-                    <span className="text-sm text-[#1f2937] min-w-[140px] truncate" title={v.label}>
-                      {v.label}
-                    </span>
+                  <label
+                    key={v.id}
+                    className="flex items-center gap-2 p-2 rounded hover:bg-[#f9fafb] cursor-pointer"
+                  >
                     <input
-                      type="text"
-                      value={venueBringItems[v.id] ?? ''}
+                      type="checkbox"
+                      checked={!!venueRequiresUwabaki[v.id]}
                       onChange={(e) =>
-                        setVenueBringItems((prev) => ({ ...prev, [v.id]: e.target.value }))
+                        setVenueRequiresUwabaki((prev) => ({ ...prev, [v.id]: e.target.checked }))
                       }
                       disabled={isSubmitting}
-                      placeholder="例: 受験票、筆記用具、昼食（この会場のみ必要）"
-                      className="flex-1 px-3 py-1.5 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                      className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6]"
                     />
-                  </div>
+                    <span className="text-sm text-[#1f2937]">{v.label}</span>
+                    <span className="text-xs text-[#6b7280]">— 上履き持参</span>
+                  </label>
                 ))}
               </div>
             </div>
