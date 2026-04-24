@@ -455,20 +455,20 @@ export default function StudentsPage() {
     setIsDetailModalOpen(true);
   }, []);
 
-  // 進行表を開く
+  // 進行表を新しいタブで開く
   const handleOpenProgress = useCallback((student: Student) => {
-    router.push(`/students/${student.id}/progress`);
-  }, [router]);
+    window.open(`/students/${student.id}/progress`, '_blank', 'noopener,noreferrer');
+  }, []);
 
-  // 面談記録を開く（直接面談記録ページに遷移）
+  // 面談記録を新しいタブで開く
   const handleOpenInterviews = useCallback((student: Student) => {
-    router.push(`/students/${student.id}/interviews`);
-  }, [router]);
+    window.open(`/students/${student.id}/interviews`, '_blank', 'noopener,noreferrer');
+  }, []);
 
-  // 成績推移ページへ遷移
+  // 成績推移ページを新しいタブで開く
   const handleOpenScores = useCallback((student: Student) => {
-    router.push(`/students/${student.id}/scores`);
-  }, [router]);
+    window.open(`/students/${student.id}/scores`, '_blank', 'noopener,noreferrer');
+  }, []);
 
   // 通塾日程モーダルを直接開く（その生徒の授業設定）
   const handleOpenSchedule = useCallback((student: Student) => {
