@@ -11,9 +11,9 @@ const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
 
 // フォーム種別の日本語名
 const FORM_TYPE_LABELS: Record<string, string> = {
-  zoukoma: '増コマ申込',
-  moshi: '模試申込',
-  mogi: 'Vもぎ申込',
+  zoukoma: 'テスト対策増コマ申し込み',
+  moshi: 'オープン模試申し込み',
+  mogi: 'Vもぎ申し込み',
   shukaisu: '週回数変更',
   youbi: '曜日変更',
   kyozai: '教材販売',
