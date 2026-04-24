@@ -9,8 +9,7 @@ import {
   DeleteConfirmDialog,
   StudentDetailModal,
   StudentScores,
-  StudentRegularScheduleList,
-  RegularScheduleFormModal,
+  AttendanceMatrix,
 } from '@/components/students';
 import {
   getStudents,
@@ -34,7 +33,6 @@ import {
 } from '@/lib/utils/csvUtils';
 import { listAssessmentsBySchool } from '@/lib/api/assessments';
 import { getInterviewsBySchool } from '@/lib/api/interviews';
-import type { ScheduleRegularPattern, ScheduleTimeSlot } from '@/types/schedule';
 import { GRADE_LABELS } from '@/types/database';
 import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
@@ -130,13 +128,6 @@ export default function StudentsPage() {
   const [isBulkGradeUpdateModalOpen, setIsBulkGradeUpdateModalOpen] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [scheduleModalStudent, setScheduleModalStudent] = useState<Student | null>(null);
-  const [addScheduleFormContext, setAddScheduleFormContext] = useState<{
-    student: Student;
-    timeSlots: { id: string; slot_number: number; start_time: string; end_time: string }[];
-    teachers: { id: string; display_name: string | null; email: string | null }[];
-    subjects: Subject[];
-    pattern?: ScheduleRegularPattern | null;
-  } | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCsvImportModalOpen, setIsCsvImportModalOpen] = useState(false);
@@ -1051,26 +1042,7 @@ export default function StudentsPage() {
         }
       />
 
-      {/* 通塾日程 追加/編集フォーム（モーダル外で表示・重なり防止） */}
-      {addScheduleFormContext && (
-        <RegularScheduleFormModal
-          open={true}
-          onClose={() => setAddScheduleFormContext(null)}
-          studentId={addScheduleFormContext.student.id}
-          schoolId={addScheduleFormContext.student.school_id ?? ''}
-          studentGrade={addScheduleFormContext.student.grade}
-          pattern={addScheduleFormContext.pattern ?? null}
-          timeSlots={addScheduleFormContext.timeSlots as ScheduleTimeSlot[]}
-          teachers={addScheduleFormContext.teachers}
-          subjects={addScheduleFormContext.subjects}
-          onSuccess={() => {
-            void syncListsAfterMutation();
-            setAddScheduleFormContext(null);
-          }}
-        />
-      )}
-
-      {/* 通塾日程モーダル（生徒の授業設定を直接編集） */}
+      {/* 通塾日程モーダル（D&Dマトリクスで直接編集） */}
       <Modal
         isOpen={isScheduleModalOpen}
         onClose={() => {
@@ -1078,34 +1050,15 @@ export default function StudentsPage() {
           setScheduleModalStudent(null);
         }}
         title={scheduleModalStudent ? `${scheduleModalStudent.last_name} ${scheduleModalStudent.first_name} の通塾日程` : '通塾日程'}
-        size="lg"
+        size="2xl"
       >
         {scheduleModalStudent && (
-          <StudentRegularScheduleList
+          <AttendanceMatrix
             studentId={scheduleModalStudent.id}
             schoolId={scheduleModalStudent.school_id ?? ''}
-            studentName={`${scheduleModalStudent.last_name} ${scheduleModalStudent.first_name}`}
             studentGrade={scheduleModalStudent.grade}
-            onRefresh={() => void syncListsAfterMutation()}
-            onOpenAddForm={(ctx) => {
-              setIsScheduleModalOpen(false);
-              setAddScheduleFormContext({
-                student: scheduleModalStudent,
-                timeSlots: ctx.timeSlots,
-                teachers: ctx.teachers,
-                subjects: ctx.subjects,
-              });
-            }}
-            onOpenEditForm={(ctx) => {
-              setIsScheduleModalOpen(false);
-              setAddScheduleFormContext({
-                student: scheduleModalStudent,
-                timeSlots: ctx.timeSlots,
-                teachers: ctx.teachers,
-                subjects: ctx.subjects,
-                pattern: ctx.pattern,
-              });
-            }}
+            canEdit={!isTeacher}
+            onPatternChange={() => void syncListsAfterMutation()}
           />
         )}
       </Modal>

@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
-import { StudentRegularScheduleList } from '@/components/students/StudentRegularScheduleList';
+import { AttendanceMatrix } from '@/components/students/AttendanceMatrix';
 import { getStudent } from '@/lib/api/students';
 import { useAuth } from '@/contexts/AuthContext';
 import AccessDenied from '@/components/AccessDenied';
@@ -94,12 +94,12 @@ export default function StudentSchedulePage() {
             <CardTitle>通塾日程</CardTitle>
           </CardHeader>
           <CardContent>
-            <StudentRegularScheduleList
+            <AttendanceMatrix
               studentId={studentId}
               schoolId={schoolId}
-              studentName={studentName}
               studentGrade={student.grade}
-              onRefresh={loadStudent}
+              canEdit={profile?.role !== 'teacher'}
+              onPatternChange={loadStudent}
             />
           </CardContent>
         </Card>
