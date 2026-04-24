@@ -198,7 +198,14 @@ export function AttendanceMatrix({ studentId, schoolId, studentGrade, canEdit, o
   }
 
   if (timeSlots.length === 0) {
-    return <p className="text-sm text-[#2a2a2a]/60">コマ時間が未設定です。設定 → コマ時間設定から登録してください。</p>;
+    return (
+      <div className="text-sm text-[#2a2a2a]/80 space-y-1">
+        <p>この教室にコマ時間が登録されていません。</p>
+        <p className="text-xs text-[#6b7280]">
+          設定 → コマ時間設定 で、この生徒の教室（school_id: <code className="px-1 bg-gray-100 rounded">{schoolId || '（なし）'}</code>）にコマ時間を登録してください。
+        </p>
+      </div>
+    );
   }
 
   // 90分科目と45分科目に分類
