@@ -199,10 +199,14 @@ export function AttendanceMatrix({ studentId, schoolId, studentGrade, canEdit, o
 
   if (timeSlots.length === 0) {
     return (
-      <div className="text-sm text-[#2a2a2a]/80 space-y-1">
-        <p>この教室にコマ時間が登録されていません。</p>
+      <div className="text-sm text-[#2a2a2a]/80 space-y-2 p-4 bg-[#fff7ed] border border-[#fed7aa] rounded-lg">
+        <p className="font-medium">この生徒の教室にコマ時間が登録されていません。</p>
         <p className="text-xs text-[#6b7280]">
-          設定 → コマ時間設定 で、この生徒の教室（school_id: <code className="px-1 bg-gray-100 rounded">{schoolId || '（なし）'}</code>）にコマ時間を登録してください。
+          設定 → コマ時間設定 を開くと、現在選択中の教室（ヘッダーの教室）が初期表示されます。
+          その教室にコマ時間を登録すると、このマトリクスに反映されます。
+        </p>
+        <p className="text-[10px] text-[#9ca3af]">
+          school_id: <code className="px-1 bg-white rounded">{schoolId || '（なし）'}</code>
         </p>
       </div>
     );

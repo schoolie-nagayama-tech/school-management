@@ -25,7 +25,7 @@ import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function TimeSlotsSettingsPage() {
-  const { profile } = useAuth();
+  const { profile, selectedSchoolId: headerSelectedSchoolId, getSelectedSchoolIds } = useAuth();
   const { toasts, removeToast, success, error: toastError } = useToast();
   const [schools, setSchools] = useState<School[]>([]);
   const [selectedSchoolId, setSelectedSchoolId] = useState<string>('');
@@ -41,9 +41,19 @@ export default function TimeSlotsSettingsPage() {
   useEffect(() => {
     if (masterSchools.length > 0) {
       setSchools(masterSchools);
-      if (!selectedSchoolId) setSelectedSchoolId(masterSchools[0].id);
+      if (!selectedSchoolId) {
+        // ヘッダーで特定の教室が選ばれていればそれを優先。'all' やなしの場合は先頭。
+        const headerIds = getSelectedSchoolIds();
+        const preferred =
+          headerSelectedSchoolId && headerSelectedSchoolId !== 'all'
+            ? headerSelectedSchoolId
+            : headerIds.length > 0
+              ? headerIds[0]
+              : masterSchools[0].id;
+        setSelectedSchoolId(preferred);
+      }
     }
-  }, [masterSchools, selectedSchoolId]);
+  }, [masterSchools, selectedSchoolId, headerSelectedSchoolId, getSelectedSchoolIds]);
 
   useEffect(() => {
     if (!selectedSchoolId) return;
