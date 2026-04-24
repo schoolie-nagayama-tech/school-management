@@ -39,20 +39,55 @@ export interface Venue {
   label: string;
 }
 
-// Vもぎ種別
-export type MogiExamType = 'toritsu_v' | 'shiritsu_v' | 'jikousakusei';
+// 地域（東京 = Vもぎ / 神奈川 = 全県模試）
+export type MogiRegion = 'tokyo' | 'kanagawa';
+
+export const MOGI_REGION_LABELS: Record<MogiRegion, string> = {
+  tokyo: '東京（Vもぎ）',
+  kanagawa: '神奈川（全県模試）',
+};
+
+// 申込フォーム上の呼称（eyebrow / 見出し用）
+export const MOGI_REGION_FORM_TITLES: Record<MogiRegion, { eyebrow: string; title: string }> = {
+  tokyo: { eyebrow: 'Vもぎ 申込', title: 'Vもぎ申し込み' },
+  kanagawa: { eyebrow: '全県模試 申込', title: '神奈川全県模試 申し込み' },
+};
+
+// Vもぎ種別（東京 + 神奈川の両地域の種別を含むフラットなユニオン）
+export type MogiExamType =
+  | 'toritsu_v'
+  | 'shiritsu_v'
+  | 'jikousakusei'
+  | 'zenken'
+  | 'tokushoku';
 
 export const MOGI_EXAM_TYPE_LABELS: Record<MogiExamType, string> = {
   toritsu_v: '都立Vもぎ',
   shiritsu_v: '私立Vもぎ',
   jikousakusei: '都立自校作成対策もぎ',
+  zenken: '神奈川全県模試',
+  tokushoku: '特色検査対策模試',
 };
 
-export const MOGI_EXAM_TYPE_OPTIONS: Array<{ value: MogiExamType; label: string }> = [
-  { value: 'toritsu_v', label: MOGI_EXAM_TYPE_LABELS.toritsu_v },
-  { value: 'shiritsu_v', label: MOGI_EXAM_TYPE_LABELS.shiritsu_v },
-  { value: 'jikousakusei', label: MOGI_EXAM_TYPE_LABELS.jikousakusei },
-];
+// 地域ごとの選択肢
+export const MOGI_EXAM_TYPE_OPTIONS_BY_REGION: Record<
+  MogiRegion,
+  Array<{ value: MogiExamType; label: string }>
+> = {
+  tokyo: [
+    { value: 'toritsu_v', label: MOGI_EXAM_TYPE_LABELS.toritsu_v },
+    { value: 'shiritsu_v', label: MOGI_EXAM_TYPE_LABELS.shiritsu_v },
+    { value: 'jikousakusei', label: MOGI_EXAM_TYPE_LABELS.jikousakusei },
+  ],
+  kanagawa: [
+    { value: 'zenken', label: MOGI_EXAM_TYPE_LABELS.zenken },
+    { value: 'tokushoku', label: MOGI_EXAM_TYPE_LABELS.tokushoku },
+  ],
+};
+
+// 後方互換用（東京の種別をデフォルトとして公開）
+export const MOGI_EXAM_TYPE_OPTIONS: Array<{ value: MogiExamType; label: string }> =
+  MOGI_EXAM_TYPE_OPTIONS_BY_REGION.tokyo;
 
 // 日程情報
 export interface MogiDate {
@@ -67,6 +102,7 @@ export interface MogiDate {
 export interface MogiSettings {
   description?: string;
   grades?: string[]; // 例: ["中3", "高1"]
+  region?: MogiRegion; // 東京 or 神奈川（未設定は tokyo として扱う）
   dates?: MogiDate[];
   completion_message?: string;
 }

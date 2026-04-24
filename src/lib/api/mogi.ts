@@ -324,13 +324,13 @@ export async function getMogiStats(
       typeBuckets[key] = (typeBuckets[key] ?? 0) + 1;
     }
   }
-  const { MOGI_EXAM_TYPE_LABELS: typeLabels, MOGI_EXAM_TYPE_OPTIONS: typeOpts } =
-    await import('@/types/forms/mogi');
+  const { MOGI_EXAM_TYPE_LABELS: typeLabels } = await import('@/types/forms/mogi');
+  const allTypeKeys = Object.keys(typeLabels) as (keyof typeof typeLabels)[];
   const typeCounts = [
-    ...typeOpts.map((o) => ({
-      exam_type: o.value,
-      label: typeLabels[o.value],
-      count: typeBuckets[o.value] ?? 0,
+    ...allTypeKeys.map((key) => ({
+      exam_type: key,
+      label: typeLabels[key],
+      count: typeBuckets[key] ?? 0,
     })),
     ...(typeBuckets['unclassified']
       ? [{ exam_type: 'unclassified' as const, label: '未分類', count: typeBuckets['unclassified'] }]

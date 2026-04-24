@@ -2,7 +2,16 @@
 
 import { Select } from '@/components/ui';
 import type { MogiDate, DateVenueSelection, MogiExamType } from '@/types/forms/mogi';
-import { MOGI_EXAM_TYPE_LABELS, MOGI_EXAM_TYPE_OPTIONS } from '@/types/forms/mogi';
+import { MOGI_EXAM_TYPE_LABELS } from '@/types/forms/mogi';
+
+// 種別ごとのヘッダー色（全地域の種別に対応）
+const GROUP_HEADER_CLASSES: Record<MogiExamType, string> = {
+  toritsu_v: 'text-[#1e40af] bg-[#eff6ff]',
+  shiritsu_v: 'text-[#a16207] bg-[#fefce8]',
+  jikousakusei: 'text-[#be185d] bg-[#fdf2f8]',
+  zenken: 'text-[#047857] bg-[#ecfdf5]',
+  tokushoku: 'text-[#7c3aed] bg-[#f5f3ff]',
+};
 
 interface DateVenueSelectorProps {
   dates: MogiDate[];
@@ -82,12 +91,13 @@ export function DateVenueSelector({
     return selection?.venue_id || '';
   };
 
-  // 種別ごとにグループ化（未設定は最後）
+  // 種別ごとにグループ化（全地域の種別をラベル順で、dates にある種別だけ表示）
   const groupedByType: Array<{ type: MogiExamType | null; label: string; dates: MogiDate[] }> = [];
-  for (const opt of MOGI_EXAM_TYPE_OPTIONS) {
-    const matched = dates.filter((d) => d.exam_type === opt.value);
+  const allTypes = Object.keys(MOGI_EXAM_TYPE_LABELS) as MogiExamType[];
+  for (const type of allTypes) {
+    const matched = dates.filter((d) => d.exam_type === type);
     if (matched.length > 0) {
-      groupedByType.push({ type: opt.value, label: opt.label, dates: matched });
+      groupedByType.push({ type, label: MOGI_EXAM_TYPE_LABELS[type], dates: matched });
     }
   }
   const unclassified = dates.filter((d) => !d.exam_type);
@@ -101,13 +111,7 @@ export function DateVenueSelector({
         <div key={group.type ?? 'other'} className="space-y-2">
           <h4
             className={`text-sm font-semibold px-2 py-1 rounded ${
-              group.type === 'toritsu_v'
-                ? 'text-[#1e40af] bg-[#eff6ff]'
-                : group.type === 'shiritsu_v'
-                  ? 'text-[#a16207] bg-[#fefce8]'
-                  : group.type === 'jikousakusei'
-                    ? 'text-[#be185d] bg-[#fdf2f8]'
-                    : 'text-[#6b7280] bg-[#f3f4f6]'
+              group.type ? GROUP_HEADER_CLASSES[group.type] : 'text-[#6b7280] bg-[#f3f4f6]'
             }`}
           >
             {group.label}

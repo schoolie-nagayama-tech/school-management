@@ -10,7 +10,7 @@ import type {
   DateVenueSelection,
 } from '@/types/forms/mogi';
 import { submitMogiResponse } from '@/lib/api/mogi';
-import { GRADE_NAME_TO_NUMBER } from '@/types/forms/mogi';
+import { GRADE_NAME_TO_NUMBER, MOGI_REGION_FORM_TITLES } from '@/types/forms/mogi';
 import { DateVenueSelector } from './DateVenueSelector';
 import { CancelAgreement } from './CancelAgreement';
 import {
@@ -178,8 +178,8 @@ export function MogiForm({ school, period, isPreview }: MogiFormProps) {
   return (
     <div className="space-y-5">
       <PortalFormHeader
-        eyebrow="Vもぎ 申込"
-        title={period.title}
+        eyebrow={MOGI_REGION_FORM_TITLES[settings.region ?? 'tokyo'].eyebrow}
+        title={period.title || MOGI_REGION_FORM_TITLES[settings.region ?? 'tokyo'].title}
         description={settings.description}
       />
 

@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import type { MogiStats as MogiStatsType, MogiExamType } from '@/types/forms/mogi';
-import { MOGI_EXAM_TYPE_LABELS, MOGI_EXAM_TYPE_OPTIONS } from '@/types/forms/mogi';
+import { MOGI_EXAM_TYPE_LABELS } from '@/types/forms/mogi';
 
 interface MogiStatsProps {
   stats: MogiStatsType;
@@ -11,6 +11,8 @@ const TYPE_CHIP_CLASS: Record<MogiExamType | 'unclassified', string> = {
   toritsu_v: 'bg-[#eff6ff] text-[#1e40af] border-[#bfdbfe]',
   shiritsu_v: 'bg-[#fefce8] text-[#a16207] border-[#fde68a]',
   jikousakusei: 'bg-[#fdf2f8] text-[#be185d] border-[#fbcfe8]',
+  zenken: 'bg-[#ecfdf5] text-[#047857] border-[#a7f3d0]',
+  tokushoku: 'bg-[#f5f3ff] text-[#7c3aed] border-[#ddd6fe]',
   unclassified: 'bg-[#f3f4f6] text-[#6b7280] border-[#e5e7eb]',
 };
 
@@ -21,9 +23,10 @@ export function MogiStats({ stats }: MogiStatsProps) {
     label: string;
     dates: MogiStatsType['date_venue_counts'];
   }> = [];
-  for (const opt of MOGI_EXAM_TYPE_OPTIONS) {
-    const matched = stats.date_venue_counts.filter((d) => d.exam_type === opt.value);
-    if (matched.length > 0) groups.push({ key: opt.value, label: opt.label, dates: matched });
+  const allTypes = Object.keys(MOGI_EXAM_TYPE_LABELS) as MogiExamType[];
+  for (const type of allTypes) {
+    const matched = stats.date_venue_counts.filter((d) => d.exam_type === type);
+    if (matched.length > 0) groups.push({ key: type, label: MOGI_EXAM_TYPE_LABELS[type], dates: matched });
   }
   const unclassified = stats.date_venue_counts.filter((d) => !d.exam_type);
   if (unclassified.length > 0) {
