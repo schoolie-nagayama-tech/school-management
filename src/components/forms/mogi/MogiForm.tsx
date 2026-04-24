@@ -246,6 +246,14 @@ export function MogiForm({ school, period, isPreview }: MogiFormProps) {
           title="受験日程・会場選択"
           description="受験する日程と会場を選択してください（複数選択可・1日につき1種別まで）"
         >
+          {(settings.region ?? 'tokyo') === 'tokyo' && (
+            <div className="mb-4 p-3 bg-[#fff7ed] border border-[#fed7aa] rounded-lg text-sm text-[#9a3412]">
+              <p className="font-semibold mb-1">会場選択についてのご注意</p>
+              <p className="text-xs leading-relaxed">
+                定員に達し次第、抽選で会場が決まります。抽選に漏れた場合は、進学研究会が近隣の別会場に割り振ります。
+              </p>
+            </div>
+          )}
           <DateVenueSelector
             dates={dates}
             selections={selections}

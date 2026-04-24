@@ -37,6 +37,8 @@ export const GRADE_NUMBER_TO_NAME: Record<number, string> = {
 export interface Venue {
   id: string;
   label: string;
+  /** 持参物（受験票必要/不要など。会場ごとに異なるため） */
+  bring_items?: string;
 }
 
 // 地域（東京 = Vもぎ / 神奈川 = 全県模試）

@@ -62,6 +62,8 @@ export function MogiPeriodEditor({
   const [linkedApplicationItemId, setLinkedApplicationItemId] = useState<string>('');
   const [applicationItems, setApplicationItems] = useState<ApplicationItem[]>([]);
   const [useDefaultInsert, setUseDefaultInsert] = useState(false);
+  // 会場ごとの持参物（venue_id → 持参物テキスト）
+  const [venueBringItems, setVenueBringItems] = useState<Record<string, string>>({});
 
   const regionExamTypeOptions = MOGI_EXAM_TYPE_OPTIONS_BY_REGION[region];
 
@@ -161,12 +163,15 @@ export function MogiPeriodEditor({
         );
         // 会場テキスト復元（全日程の会場を集約してユニーク化）
         const venueMap = new Map<string, string>();
+        const bringMap: Record<string, string> = {};
         settings.dates?.forEach((d) => {
           d.venues.forEach((v) => {
             venueMap.set(v.id, v.label);
+            if (v.bring_items) bringMap[v.id] = v.bring_items;
           });
         });
         setVenueText(Array.from(venueMap.values()).join('\n'));
+        setVenueBringItems(bringMap);
         // 日程エントリ復元（固有会場は空で開始し、選択状態のみ保持）
         setDateEntries(
           settings.dates?.map((d) => ({
@@ -193,6 +198,7 @@ export function MogiPeriodEditor({
         setPublishStart(now.toISOString().slice(0, 16));
         setPublishEnd(endDate.toISOString().slice(0, 16));
         setVenueText('');
+        setVenueBringItems({});
         setDateEntries([]);
         setCompletionMessage('');
         setLinkedApplicationItemId('');
@@ -305,7 +311,12 @@ export function MogiPeriodEditor({
             id,
             label: formatDateLabel(entry.date),
             exam_type: (entry.examType || undefined) as MogiExamType | undefined,
-            venues: venuesForDate.filter((v) => entry.selectedVenueIds.includes(v.id)),
+            venues: venuesForDate
+              .filter((v) => entry.selectedVenueIds.includes(v.id))
+              .map((v) => {
+                const bring = venueBringItems[v.id]?.trim();
+                return bring ? { ...v, bring_items: bring } : { id: v.id, label: v.label };
+              }),
           };
         }),
         completion_message: completionMessage.trim() || undefined,
@@ -639,6 +650,35 @@ export function MogiPeriodEditor({
           <p className="text-xs text-[#4b5563]/60 mt-1">
             ※改行で区切って入力。日程ごとに会場を選択できます。
           </p>
+
+          {/* 会場ごとの持参物 */}
+          {parseVenues(venueText).length > 0 && (
+            <div className="mt-4 p-3 bg-white border border-[#e5e7eb] rounded-lg">
+              <p className="text-sm font-medium text-[#1f2937] mb-1">会場ごとの持参物（任意）</p>
+              <p className="text-xs text-[#6b7280] mb-3">
+                会場によって持参物が異なる場合に入力してください。保護者の申込画面と通知メールに表示されます。
+              </p>
+              <div className="space-y-2">
+                {parseVenues(venueText).map((v) => (
+                  <div key={v.id} className="flex items-center gap-2">
+                    <span className="text-sm text-[#1f2937] min-w-[140px] truncate" title={v.label}>
+                      {v.label}
+                    </span>
+                    <input
+                      type="text"
+                      value={venueBringItems[v.id] ?? ''}
+                      onChange={(e) =>
+                        setVenueBringItems((prev) => ({ ...prev, [v.id]: e.target.value }))
+                      }
+                      disabled={isSubmitting}
+                      placeholder="例: 受験票、筆記用具、昼食（この会場のみ必要）"
+                      className="flex-1 px-3 py-1.5 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-wrap items-center justify-between gap-2 my-4">
             <span className="block text-sm font-medium text-[#1f2937]">

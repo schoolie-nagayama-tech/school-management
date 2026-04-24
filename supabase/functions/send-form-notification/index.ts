@@ -105,8 +105,20 @@ function formatResponseDetails(formType: string, responseData: any, periodSettin
     case 'mogi':
       if (responseData.selections?.length > 0) {
         details += '<p><strong>選択した日程・会場:</strong></p><ul>'
+        // 会場別の持参物を探すため periodSettings.dates から bring_items を取得
+        const venueById: Record<string, any> = {}
+        if (periodSettings?.dates) {
+          for (const d of periodSettings.dates) {
+            for (const v of d.venues ?? []) {
+              venueById[v.id] = v
+            }
+          }
+        }
         for (const sel of responseData.selections) {
-          details += `<li>${sel.date_label} - ${sel.venue_label}</li>`
+          const typeLabel = sel.exam_type_label ? `[${sel.exam_type_label}] ` : ''
+          const venue = venueById[sel.venue_id]
+          const bring = venue?.bring_items ? `<br><span style="font-size:12px;color:#9a3412;">持参物: ${venue.bring_items}</span>` : ''
+          details += `<li>${typeLabel}${sel.date_label} - ${sel.venue_label}${bring}</li>`
         }
         details += '</ul>'
       }
@@ -283,6 +295,30 @@ function createApplicantEmail(
         </div>`
       : ''
 
+  // Vもぎ/全県模試: 申込後の流れ
+  let mogiNextStepsBlock = ''
+  if (formType === 'mogi') {
+    const region = periodSettings?.region ?? 'tokyo'
+    const tokyoLotteryNote =
+      region === 'tokyo'
+        ? `<li><strong>会場の確定:</strong> 定員に達し次第、抽選で会場が決まります。抽選に漏れた場合は、進学研究会が近隣の別会場に割り振ります。</li>`
+        : ''
+    mogiNextStepsBlock = `
+      <div style="background: #fff7ed; padding: 16px; border-radius: 8px; margin: 20px 0; border: 1px solid #fed7aa;">
+        <h3 style="margin-top: 0; color: #9a3412;">お申し込み後の流れ</h3>
+        <ol style="padding-left: 20px; color: #333; line-height: 1.7;">
+          ${tokyoLotteryNote}
+          <li><strong>受験票のお渡し:</strong> 受験日が近づきましたら、教室から受験票をお渡しします。</li>
+          <li><strong>当日の持参物:</strong> 上記の申込内容に記載の持参物をご持参ください（会場ごとに異なる場合があります）。</li>
+          <li><strong>結果のお知らせ:</strong> 採点結果は後日教室からお渡しします。</li>
+        </ol>
+        <p style="font-size: 12px; color: #9a3412; margin-bottom: 0;">
+          ※ 申込後のキャンセル・返金はできません。やむを得ない事情がある場合は教室までご相談ください。
+        </p>
+      </div>
+    `
+  }
+
   const html = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
       <h2 style="color: #ff8e3c;">お申し込み受付完了</h2>
@@ -298,8 +334,9 @@ function createApplicantEmail(
         <hr style="border: none; border-top: 1px solid #ddd; margin: 15px 0;">
         <h3>フォームのご記入内容</h3>
         <p style="color: #555; margin-bottom: 12px;">お申し込み時にご記入いただいた内容は以下のとおりです。</p>
-        ${formatResponseDetails(formType, responseData, formType === 'moshi' ? periodSettings : undefined)}
+        ${formatResponseDetails(formType, responseData, (formType === 'moshi' || formType === 'mogi') ? periodSettings : undefined)}
       </div>
+      ${mogiNextStepsBlock}
       <p>ご不明点がございましたら、教室までお問い合わせください。</p>
       ${showGrowLine ? '<p>日程が決まりましたらGrowから確認してください。</p>' : ''}
       <p style="margin-top: 30px; color: #666;">${schoolName}</p>
@@ -349,7 +386,7 @@ function createManagerEmail(
         <p><strong>メールアドレス:</strong> ${email || '未設定'}</p>
         <hr style="border: none; border-top: 1px solid #ddd; margin: 15px 0;">
         <h3>フォームの記入内容</h3>
-        ${formatResponseDetails(formType, responseData, formType === 'moshi' ? periodSettings : undefined)}
+        ${formatResponseDetails(formType, responseData, (formType === 'moshi' || formType === 'mogi') ? periodSettings : undefined)}
       </div>
       <p>
         <a href="${SITE_URL}/forms/responses/${formType}/${formPeriod}"

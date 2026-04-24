@@ -164,7 +164,7 @@ export function DateVenueSelector({
                   )}
 
                   {isSelected && (
-                    <div className="ml-8">
+                    <div className="ml-8 space-y-2">
                       <Select
                         label="会場"
                         value={selectedVenueId}
@@ -176,6 +176,15 @@ export function DateVenueSelector({
                         disabled={disabled}
                         required
                       />
+                      {(() => {
+                        const venue = date.venues.find((v) => v.id === selectedVenueId);
+                        if (!venue?.bring_items) return null;
+                        return (
+                          <div className="text-xs bg-[#fff7ed] border border-[#fed7aa] text-[#9a3412] rounded px-3 py-2">
+                            <span className="font-medium">持参物:</span> {venue.bring_items}
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>
