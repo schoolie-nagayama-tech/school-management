@@ -324,7 +324,7 @@ export function StudentDetailModal({
                         { value: '', label: filteredMasterTextbooks.length === 0 ? '候補なし' : '選択してください' },
                         ...filteredMasterTextbooks.map((t) => ({
                           value: String(t.id),
-                          label: `${t.name}${t.subject ? `（${t.subject}）` : ''}`,
+                          label: [t.grade, t.name, t.publisher].filter(Boolean).join(' / '),
                         })),
                       ]}
                       disabled={isAddingTextbook || filteredMasterTextbooks.length === 0}
