@@ -55,22 +55,34 @@ export function AttendanceMatrix({ studentId, schoolId, studentGrade, canEdit, o
   const [dragOverCell, setDragOverCell] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const gradeCategory = studentGrade ? gradeToCategory(studentGrade) : undefined;
-      const [pats, slots, subs] = await Promise.all([
-        getRegularPatterns(schoolId, { studentId }),
-        getTimeSlots(schoolId),
-        getSubjects(gradeCategory),
-      ]);
-      setPatterns(pats);
-      setTimeSlots(slots.filter((s) => s.is_active));
-      setSubjects(subs);
-    } catch (err) {
-      console.error('Error fetching attendance data:', err);
-    } finally {
+    if (!schoolId) {
       setIsLoading(false);
+      return;
     }
+    setIsLoading(true);
+    const gradeCategory = studentGrade ? gradeToCategory(studentGrade) : undefined;
+    // Promise.allSettled にして 1 つ失敗しても他のデータは表示できるように
+    const [patsRes, slotsRes, subsRes] = await Promise.allSettled([
+      getRegularPatterns(schoolId, { studentId }),
+      getTimeSlots(schoolId),
+      getSubjects(gradeCategory),
+    ]);
+    if (patsRes.status === 'fulfilled') {
+      setPatterns(patsRes.value);
+    } else {
+      console.error('Error fetching regular patterns:', patsRes.reason);
+    }
+    if (slotsRes.status === 'fulfilled') {
+      setTimeSlots(slotsRes.value.filter((s) => s.is_active));
+    } else {
+      console.error('Error fetching time slots:', slotsRes.reason);
+    }
+    if (subsRes.status === 'fulfilled') {
+      setSubjects(subsRes.value);
+    } else {
+      console.error('Error fetching subjects:', subsRes.reason);
+    }
+    setIsLoading(false);
   }, [schoolId, studentId, studentGrade]);
 
   useEffect(() => {
