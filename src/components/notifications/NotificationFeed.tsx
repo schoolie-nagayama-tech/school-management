@@ -6,11 +6,11 @@ import { getRecentUnprocessedResponses } from '@/lib/api/form-responses';
 import type { FormResponseWithStudent } from '@/lib/api/form-responses';
 import { FORM_TYPE_LABELS, GRADE_LABELS, STATUS_LABELS } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
-import { ChevronDown, ChevronUp, Check, CheckCheck, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Check, CheckCheck, AlertTriangle } from 'lucide-react';
 import { getSchool } from '@/lib/api/schools';
 import { useConfirm } from '@/hooks/useConfirm';
 import { supabase } from '@/lib/supabase';
-import { deleteTask as deleteMonthlyTaskApi } from '@/lib/api/monthlyTasks';
+import { toggleCheck as toggleMonthlyTaskCheckApi } from '@/lib/api/monthlyTasks';
 
 // ── 定数 ──
 
@@ -141,6 +141,7 @@ interface FeedItem {
   deadlineSource?: 'monthly' | 'schedule';
   deadlineDate?: string;
   deadlineHref?: string;
+  incompleteSchoolIds?: string[];
   // transcript 系
   transcriptId?: string;
   transcriptTitle?: string;
@@ -399,12 +400,12 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
           checks: Array<{ task_id: string; school_id: string; is_completed: boolean }>;
         }>;
         tasks.forEach((task) => {
-          // 対象教室のいずれかが未完了か
-          const isIncomplete = schoolIds.some((sid) => {
+          // 対象教室のうち未完了の school_id を収集
+          const incompleteSchoolIds = schoolIds.filter((sid) => {
             const check = task.checks?.find((c) => c.school_id === sid);
             return !check || !check.is_completed;
           });
-          if (!isIncomplete) return;
+          if (incompleteSchoolIds.length === 0) return;
 
           const isOverdue = task.task_date < todayStr;
           const isUpcoming = !isOverdue && task.task_date <= upcomingStr;
@@ -419,6 +420,7 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
             deadlineDate: task.task_date,
             deadlineHref: '/tasks',
             studentName: task.task_name,
+            incompleteSchoolIds,
           });
         });
       }
@@ -567,15 +569,17 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
     [dismissedIds, user?.id]
   );
 
-  // 業務タスクをDBから削除
-  const handleDeleteMonthlyTask = useCallback(
-    async (feedId: string, taskId: string) => {
+  // 業務タスクを実施済みにする（未完了の全教室分）
+  const handleCompleteMonthlyTask = useCallback(
+    async (feedId: string, taskId: string, incompleteSchoolIds: string[]) => {
       try {
-        await deleteMonthlyTaskApi(taskId);
+        await Promise.all(
+          incompleteSchoolIds.map((sid) => toggleMonthlyTaskCheckApi(taskId, sid, true))
+        );
         // フィードからも除去
         setFeedItems((prev) => prev.filter((item) => item.id !== feedId));
       } catch {
-        console.error('Failed to delete monthly task');
+        console.error('Failed to complete monthly task');
       }
     },
     []
@@ -714,7 +718,7 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
                   schoolNames={schoolNames}
                   schoolColorBySchoolId={schoolColorBySchoolId}
                   onDismiss={handleDismiss}
-                  onDeleteMonthlyTask={handleDeleteMonthlyTask}
+                  onCompleteMonthlyTask={handleCompleteMonthlyTask}
                   onStudentClick={onStudentClick}
                 />
               ))
@@ -734,11 +738,11 @@ interface FeedItemRowProps {
   schoolNames: Record<string, string>;
   schoolColorBySchoolId: Record<string, { bg: string; text: string }>;
   onDismiss: (id: string) => void;
-  onDeleteMonthlyTask: (feedId: string, taskId: string) => void;
+  onCompleteMonthlyTask: (feedId: string, taskId: string, incompleteSchoolIds: string[]) => void;
   onStudentClick?: (info: StudentClickInfo) => void;
 }
 
-function FeedItemRow({ item, schoolNames, schoolColorBySchoolId, onDismiss, onDeleteMonthlyTask, onStudentClick }: FeedItemRowProps) {
+function FeedItemRow({ item, schoolNames, schoolColorBySchoolId, onDismiss, onCompleteMonthlyTask, onStudentClick }: FeedItemRowProps) {
   if (item.type === 'response') {
     return <ResponseRow item={item} schoolNames={schoolNames} schoolColorBySchoolId={schoolColorBySchoolId} onDismiss={onDismiss} onStudentClick={onStudentClick} />;
   }
@@ -746,7 +750,7 @@ function FeedItemRow({ item, schoolNames, schoolColorBySchoolId, onDismiss, onDe
     return <ShiftRow item={item} schoolNames={schoolNames} schoolColorBySchoolId={schoolColorBySchoolId} onDismiss={onDismiss} />;
   }
   if (item.type === 'deadline') {
-    return <DeadlineRow item={item} schoolNames={schoolNames} schoolColorBySchoolId={schoolColorBySchoolId} onDismiss={onDismiss} onDeleteMonthlyTask={onDeleteMonthlyTask} />;
+    return <DeadlineRow item={item} schoolNames={schoolNames} schoolColorBySchoolId={schoolColorBySchoolId} onDismiss={onDismiss} onCompleteMonthlyTask={onCompleteMonthlyTask} />;
   }
   if (item.type === 'transcript') {
     return <TranscriptRow item={item} schoolNames={schoolNames} schoolColorBySchoolId={schoolColorBySchoolId} onDismiss={onDismiss} onStudentClick={onStudentClick} />;
@@ -979,22 +983,28 @@ function DeadlineRow({
   schoolNames,
   schoolColorBySchoolId,
   onDismiss,
-  onDeleteMonthlyTask,
+  onCompleteMonthlyTask,
 }: {
   item: FeedItem;
   schoolNames: Record<string, string>;
   schoolColorBySchoolId: Record<string, { bg: string; text: string }>;
   onDismiss: (id: string) => void;
-  onDeleteMonthlyTask: (feedId: string, taskId: string) => void;
+  onCompleteMonthlyTask: (feedId: string, taskId: string, incompleteSchoolIds: string[]) => void;
 }) {
   const isOverdue = item.deadlineType === 'overdue';
   const isMonthly = item.deadlineSource === 'monthly';
   const sourceLabel = isMonthly ? '業務' : '講習準備';
   const statusLabel = isOverdue ? '超過' : '期日近';
   const badgeClass = isOverdue
-    ? 'bg-red-100 text-red-700'
+    ? 'bg-red-600 text-white shadow-sm ring-1 ring-red-700'
     : 'bg-amber-100 text-amber-700';
-  const hoverClass = isOverdue ? 'hover:bg-red-50' : 'hover:bg-amber-50';
+  const rowClass = isOverdue
+    ? 'bg-red-50/60 hover:bg-red-100 border-l-4 border-red-500'
+    : 'hover:bg-amber-50';
+  const dateClass = isOverdue ? 'text-red-700 font-bold' : 'text-gray-400';
+  const inlineDateClass = isOverdue
+    ? 'bg-red-100 text-red-700 font-semibold'
+    : 'bg-amber-50 text-amber-700';
   const schoolName = item.schoolId ? schoolNames[item.schoolId] : undefined;
   const schoolColor = item.schoolId ? schoolColorBySchoolId[item.schoolId] : undefined;
 
@@ -1009,11 +1019,12 @@ function DeadlineRow({
     : '';
 
   return (
-    <div className={`flex items-center gap-2 px-4 py-2 ${hoverClass} transition-colors group`}>
-      <span className="text-xs text-gray-400 whitespace-nowrap w-[72px] shrink-0">
+    <div className={`flex items-center gap-2 px-4 py-2 ${rowClass} transition-colors group`}>
+      <span className={`text-xs whitespace-nowrap w-[72px] shrink-0 ${dateClass}`}>
         {dateDisplay}
       </span>
-      <span className={`px-1.5 py-0.5 rounded text-[11px] font-medium whitespace-nowrap shrink-0 ${badgeClass}`}>
+      <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-bold whitespace-nowrap shrink-0 ${badgeClass}`}>
+        {isOverdue && <AlertTriangle className="w-3 h-3" />}
         {statusLabel}
       </span>
       <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[11px] font-medium whitespace-nowrap shrink-0">
@@ -1031,6 +1042,11 @@ function DeadlineRow({
         ) : (
           <span className="text-sm text-[#1a1a1a] font-medium truncate">{item.studentName}</span>
         )}
+        {dateDisplay && (
+          <span className={`px-1.5 py-0.5 rounded text-[11px] whitespace-nowrap shrink-0 ${inlineDateClass}`}>
+            期日 {dateDisplay}
+          </span>
+        )}
         {schoolName && schoolColor && (
           <span className={`px-1.5 py-0.5 rounded text-[11px] font-medium whitespace-nowrap shrink-0 ${schoolColor.bg} ${schoolColor.text}`}>
             {schoolName}
@@ -1038,13 +1054,13 @@ function DeadlineRow({
         )}
       </div>
       {isMonthly ? (
-        /* 業務タスク → DBから削除 */
+        /* 業務タスク → 実施済みにする */
         <button
-          onClick={() => onDeleteMonthlyTask(item.id, actualTaskId)}
-          className="flex items-center text-gray-400 hover:text-red-600 p-1 rounded hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
-          title="タスクを削除"
+          onClick={() => onCompleteMonthlyTask(item.id, actualTaskId, item.incompleteSchoolIds ?? [])}
+          className="flex items-center text-gray-400 hover:text-green-600 p-1 rounded hover:bg-green-50 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
+          title="実施済みにする"
         >
-          <Trash2 className="w-3.5 h-3.5" />
+          <Check className="w-3.5 h-3.5" />
         </button>
       ) : (
         /* 準備スケジュール → 確認済み（非表示） */

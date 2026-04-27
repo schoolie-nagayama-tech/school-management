@@ -29,6 +29,8 @@ const FORM_TYPE_TO_PATH: Record<string, string> = {
 type SortKey = 'created_at' | 'form_type' | 'form_period' | 'school' | 'student_name' | 'grade' | 'status';
 type SortOrder = 'asc' | 'desc';
 
+type ProcessStatus = 'all' | 'unprocessed' | 'processed';
+
 interface QuickFilter {
   label: string;
   color: string;
@@ -39,6 +41,7 @@ interface QuickFilter {
     grade: number | 'all';
     linkedStatus: 'all' | 'linked' | 'unlinked';
     chargedStatus: 'all' | 'charged' | 'not_charged';
+    processStatus: ProcessStatus;
   };
 }
 
@@ -47,37 +50,37 @@ const QUICK_FILTERS: QuickFilter[] = [
     label: '未処理',
     color: 'border-yellow-300 text-yellow-800 bg-yellow-50 hover:bg-yellow-100',
     activeColor: 'bg-yellow-500 text-white border-yellow-500',
-    filters: { formType: 'all', period: 'all', grade: 'all', linkedStatus: 'unlinked', chargedStatus: 'all' },
+    filters: { formType: 'all', period: 'all', grade: 'all', linkedStatus: 'all', chargedStatus: 'all', processStatus: 'unprocessed' },
   },
   {
     label: '未計上',
     color: 'border-red-300 text-red-700 bg-red-50 hover:bg-red-100',
     activeColor: 'bg-red-500 text-white border-red-500',
-    filters: { formType: 'all', period: 'all', grade: 'all', linkedStatus: 'all', chargedStatus: 'not_charged' },
+    filters: { formType: 'all', period: 'all', grade: 'all', linkedStatus: 'all', chargedStatus: 'not_charged', processStatus: 'all' },
   },
   {
     label: '計上済み',
     color: 'border-green-300 text-green-700 bg-green-50 hover:bg-green-100',
     activeColor: 'bg-green-500 text-white border-green-500',
-    filters: { formType: 'all', period: 'all', grade: 'all', linkedStatus: 'all', chargedStatus: 'charged' },
+    filters: { formType: 'all', period: 'all', grade: 'all', linkedStatus: 'all', chargedStatus: 'charged', processStatus: 'all' },
   },
   {
     label: '増コマ・未計上',
     color: 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50',
     activeColor: 'bg-[#1e3a5f] text-white border-[#1e3a5f]',
-    filters: { formType: 'zoukoma', period: 'all', grade: 'all', linkedStatus: 'all', chargedStatus: 'not_charged' },
+    filters: { formType: 'zoukoma', period: 'all', grade: 'all', linkedStatus: 'all', chargedStatus: 'not_charged', processStatus: 'all' },
   },
   {
     label: '模試・未計上',
     color: 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50',
     activeColor: 'bg-[#1e3a5f] text-white border-[#1e3a5f]',
-    filters: { formType: 'moshi', period: 'all', grade: 'all', linkedStatus: 'all', chargedStatus: 'not_charged' },
+    filters: { formType: 'moshi', period: 'all', grade: 'all', linkedStatus: 'all', chargedStatus: 'not_charged', processStatus: 'all' },
   },
   {
     label: 'Vもぎ・未計上',
     color: 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50',
     activeColor: 'bg-[#1e3a5f] text-white border-[#1e3a5f]',
-    filters: { formType: 'mogi', period: 'all', grade: 'all', linkedStatus: 'all', chargedStatus: 'not_charged' },
+    filters: { formType: 'mogi', period: 'all', grade: 'all', linkedStatus: 'all', chargedStatus: 'not_charged', processStatus: 'all' },
   },
 ];
 
@@ -90,23 +93,22 @@ function getSortIcon(currentKey: SortKey, key: SortKey, order: SortOrder) {
   );
 }
 
-/** 一覧で「未処理」バッジが付くか（詳細のチェックと同一条件） */
+/** 一覧で「未処理」バッジが付くか（計上・座席・発注のいずれかが未チェック） */
 function isUnprocessed(response: FormResponseWithStudent): boolean {
   const sc = (response.status_checks as Record<string, boolean> | undefined) ?? {};
-  const linked = !!response.linked_student_id;
   switch (response.form_type) {
     case 'moshi':
-      return !linked && !sc.charged && !sc.order;
+      return !sc.charged || !sc.order;
     case 'zoukoma':
     case 'youbi':
     case 'shukaisu':
-      return !linked && !sc.charged && !sc.seated;
+      return !sc.charged || !sc.seated;
     case 'mogi':
-      return !linked && !sc.charged;
+      return !sc.charged;
     case 'soudan':
-      return !linked && !sc.handled;
+      return !sc.handled;
     default:
-      return !linked;
+      return false;
   }
 }
 
@@ -128,7 +130,7 @@ function ResponseStatusBadges({ response }: { response: FormResponseWithStudent 
           {linked && badge('紐付け済み', 'bg-green-100 text-green-800')}
           {sc.charged && badge('計上済み', 'bg-blue-100 text-blue-800')}
           {sc.order && badge('発注済み', 'bg-purple-100 text-purple-800')}
-          {!linked && !sc.charged && !sc.order && badge('未処理', 'bg-yellow-100 text-yellow-800')}
+          {(!sc.charged || !sc.order) && badge('未処理', 'bg-yellow-100 text-yellow-800')}
         </span>
       );
     case 'zoukoma':
@@ -139,7 +141,7 @@ function ResponseStatusBadges({ response }: { response: FormResponseWithStudent 
           {linked && badge('紐付け済み', 'bg-green-100 text-green-800')}
           {sc.charged && badge('計上済み', 'bg-blue-100 text-blue-800')}
           {sc.seated && badge('座席済み', 'bg-indigo-100 text-indigo-800')}
-          {!linked && !sc.charged && !sc.seated && badge('未処理', 'bg-yellow-100 text-yellow-800')}
+          {(!sc.charged || !sc.seated) && badge('未処理', 'bg-yellow-100 text-yellow-800')}
         </span>
       );
     case 'mogi':
@@ -147,7 +149,7 @@ function ResponseStatusBadges({ response }: { response: FormResponseWithStudent 
         <span className="inline-flex flex-wrap items-center gap-1">
           {linked && badge('紐付け済み', 'bg-green-100 text-green-800')}
           {sc.charged && badge('計上済み', 'bg-blue-100 text-blue-800')}
-          {!linked && !sc.charged && badge('未処理', 'bg-yellow-100 text-yellow-800')}
+          {!sc.charged && badge('未処理', 'bg-yellow-100 text-yellow-800')}
         </span>
       );
     case 'soudan':
@@ -155,14 +157,14 @@ function ResponseStatusBadges({ response }: { response: FormResponseWithStudent 
         <span className="inline-flex flex-wrap items-center gap-1">
           {linked && badge('紐付け済み', 'bg-green-100 text-green-800')}
           {sc.handled && badge('対応済み', 'bg-blue-100 text-blue-800')}
-          {!linked && !sc.handled && badge('未処理', 'bg-yellow-100 text-yellow-800')}
+          {!sc.handled && badge('未処理', 'bg-yellow-100 text-yellow-800')}
         </span>
       );
     default:
-      // kyozai など、詳細で status_checks を使わないフォーム
+      // kyozai など、計上/座席/発注のチェックを持たないフォーム
       return (
         <span className="inline-flex flex-wrap items-center gap-1">
-          {linked ? badge('紐付け済み', 'bg-green-100 text-green-800') : badge('未処理', 'bg-yellow-100 text-yellow-800')}
+          {linked && badge('紐付け済み', 'bg-green-100 text-green-800')}
         </span>
       );
   }
@@ -234,6 +236,9 @@ export default function ResponsesPage() {
   const [filterChargedStatus, setFilterChargedStatus] = useState<
     'all' | 'charged' | 'not_charged'
   >((searchParams.get('charged') as 'all' | 'charged' | 'not_charged') || 'all');
+  const [filterProcessStatus, setFilterProcessStatus] = useState<ProcessStatus>(
+    (searchParams.get('process') as ProcessStatus) || 'unprocessed'
+  );
   const [filterDateFrom, setFilterDateFrom] = useState(searchParams.get('dateFrom') || '');
   const [filterDateTo, setFilterDateTo] = useState(searchParams.get('dateTo') || '');
   const [searchName, setSearchName] = useState(searchParams.get('search') || '');
@@ -258,6 +263,7 @@ export default function ResponsesPage() {
     if (filterGrade !== 'all') params.set('grade', String(filterGrade));
     if (filterLinkedStatus !== 'all') params.set('linked', filterLinkedStatus);
     if (filterChargedStatus !== 'all') params.set('charged', filterChargedStatus);
+    if (filterProcessStatus !== 'unprocessed') params.set('process', filterProcessStatus);
     if (filterDateFrom) params.set('dateFrom', filterDateFrom);
     if (filterDateTo) params.set('dateTo', filterDateTo);
     if (searchName) params.set('search', searchName);
@@ -267,7 +273,7 @@ export default function ResponsesPage() {
     const qs = params.toString();
     const newUrl = qs ? `?${qs}` : '/responses';
     router.replace(newUrl, { scroll: false });
-  }, [filterFormType, filterPeriod, filterGrade, filterLinkedStatus, filterChargedStatus, filterDateFrom, filterDateTo, searchName, viewMode, sortKey, sortOrder, router]);
+  }, [filterFormType, filterPeriod, filterGrade, filterLinkedStatus, filterChargedStatus, filterProcessStatus, filterDateFrom, filterDateTo, searchName, viewMode, sortKey, sortOrder, router]);
 
   const handleSort = useCallback((key: SortKey) => {
     setSortKey((prev) => {
@@ -287,6 +293,7 @@ export default function ResponsesPage() {
     setFilterGrade(qf.filters.grade);
     setFilterLinkedStatus(qf.filters.linkedStatus);
     setFilterChargedStatus(qf.filters.chargedStatus);
+    setFilterProcessStatus(qf.filters.processStatus);
     setSearchInput('');
     setSearchName('');
   }, []);
@@ -299,13 +306,21 @@ export default function ResponsesPage() {
       filterGrade === qf.filters.grade &&
       filterLinkedStatus === qf.filters.linkedStatus &&
       filterChargedStatus === qf.filters.chargedStatus &&
+      filterProcessStatus === qf.filters.processStatus &&
       !searchName
     );
-  }, [filterFormType, filterPeriod, filterGrade, filterLinkedStatus, filterChargedStatus, searchName]);
+  }, [filterFormType, filterPeriod, filterGrade, filterLinkedStatus, filterChargedStatus, filterProcessStatus, searchName]);
+
+  // 処理状態フィルタを適用
+  const processFilteredResponses = useMemo(() => {
+    if (filterProcessStatus === 'all') return responses;
+    if (filterProcessStatus === 'unprocessed') return responses.filter((r) => isUnprocessed(r));
+    return responses.filter((r) => !isUnprocessed(r));
+  }, [responses, filterProcessStatus]);
 
   // ソート済み一覧
   const sortedResponses = useMemo(() => {
-    const list = [...responses];
+    const list = [...processFilteredResponses];
     list.sort((a, b) => {
       let aVal: string | number | boolean;
       let bVal: string | number | boolean;
@@ -355,7 +370,7 @@ export default function ResponsesPage() {
       return sortOrder === 'asc' ? cmp : -cmp;
     });
     return list;
-  }, [responses, sortKey, sortOrder, schoolsMap]);
+  }, [processFilteredResponses, sortKey, sortOrder, schoolsMap]);
 
   // 生徒ごとにグルーピング
   interface StudentGroup {
@@ -555,6 +570,7 @@ export default function ResponsesPage() {
                     setFilterGrade('all');
                     setFilterLinkedStatus('all');
                     setFilterChargedStatus('all');
+                    setFilterProcessStatus('all');
                   } else {
                     applyQuickFilter(qf);
                   }
@@ -609,7 +625,7 @@ export default function ResponsesPage() {
           </form>
           {searchName && (
             <p className="mt-2 text-sm text-gray-500">
-              「{searchName}」の検索結果: {responses.length}件
+              「{searchName}」の検索結果: {processFilteredResponses.length}件
             </p>
           )}
         </div>
@@ -715,6 +731,21 @@ export default function ResponsesPage() {
 
             <div>
               <label className="block text-sm font-medium text-[#1f2937] mb-2">
+                処理状態
+              </label>
+              <select
+                value={filterProcessStatus}
+                onChange={(e) => setFilterProcessStatus(e.target.value as ProcessStatus)}
+                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+              >
+                <option value="unprocessed">未処理のみ</option>
+                <option value="processed">処理済みのみ</option>
+                <option value="all">すべて</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[#1f2937] mb-2">
                 申込日
               </label>
               <div className="flex items-center gap-1">
@@ -734,10 +765,10 @@ export default function ResponsesPage() {
               </div>
             </div>
           </div>
-          {(filterFormType !== 'all' || filterPeriod !== 'all' || filterGrade !== 'all' || filterLinkedStatus !== 'all' || filterChargedStatus !== 'all' || filterDateFrom || filterDateTo || searchName) && (
+          {(filterFormType !== 'all' || filterPeriod !== 'all' || filterGrade !== 'all' || filterLinkedStatus !== 'all' || filterChargedStatus !== 'all' || filterProcessStatus !== 'unprocessed' || filterDateFrom || filterDateTo || searchName) && (
             <div className="mt-3 flex items-center justify-between">
               <p className="text-sm text-gray-500">
-                {responses.length}件表示
+                {processFilteredResponses.length}件表示
               </p>
               <button
                 type="button"
@@ -747,6 +778,7 @@ export default function ResponsesPage() {
                   setFilterGrade('all');
                   setFilterLinkedStatus('all');
                   setFilterChargedStatus('all');
+                  setFilterProcessStatus('unprocessed');
                   setFilterDateFrom('');
                   setFilterDateTo('');
                   setSearchInput('');
@@ -819,12 +851,12 @@ export default function ResponsesPage() {
           </div>
           {isLoading ? (
             <div className="text-center py-8 text-[#4b5563]">読み込み中...</div>
-          ) : responses.length === 0 ? (
-            <div className="text-center py-8 text-[#4b5563]">回答がありません。フィルターを変更するか、フォームの公開後に回答が届くとここに表示されます。</div>
+          ) : processFilteredResponses.length === 0 ? (
+            <div className="text-center py-8 text-[#4b5563]">該当する回答がありません。フィルターを変更してください。</div>
           ) : viewMode === 'grouped' ? (
             /* 生徒別ビュー */
             <div className="space-y-3">
-              <p className="text-sm text-gray-500 mb-2">{groupedByStudent.length}名の生徒 / {responses.length}件の回答</p>
+              <p className="text-sm text-gray-500 mb-2">{groupedByStudent.length}名の生徒 / {processFilteredResponses.length}件の回答</p>
               {groupedByStudent.map((group) => (
                 <div
                   key={group.studentKey}
