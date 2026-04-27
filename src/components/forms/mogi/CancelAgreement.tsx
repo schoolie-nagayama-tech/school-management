@@ -1,10 +1,14 @@
 'use client';
 
+import type { MogiRegion } from '@/types/forms/mogi';
+
 interface CancelAgreementProps {
   agreed: boolean;
   onChange: (agreed: boolean) => void;
   disabled?: boolean;
   error?: string;
+  /** 地域（東京=Vもぎ / 神奈川=全県模試）— 未指定は tokyo 扱い */
+  region?: MogiRegion;
 }
 
 export function CancelAgreement({
@@ -12,7 +16,10 @@ export function CancelAgreement({
   onChange,
   disabled = false,
   error,
+  region = 'tokyo',
 }: CancelAgreementProps) {
+  // 地域に応じた呼称（Vもぎ ⇔ 全県模試）
+  const examLabel = region === 'kanagawa' ? '全県模試' : 'Vもぎ';
   return (
     <div className="space-y-4">
       {/* 注意書きボックス */}
@@ -20,13 +27,13 @@ export function CancelAgreement({
         <p className="text-sm text-[#1f2937] leading-relaxed">
           <strong className="font-semibold">重要:</strong>
           <br />
-          Vもぎは申込後のキャンセル・返金ができません。日程・会場をよくご確認の上、お申し込みください。
+          {examLabel}は申込後のキャンセル・返金ができません。日程・会場をよくご確認の上、お申し込みください。
         </p>
         <p className="text-sm text-[#1f2937] leading-relaxed">
           申込後受験票はご家庭で印刷をお願いいたします。
         </p>
         <p className="text-sm text-[#1f2937] leading-relaxed">
-          ご不明点はVもぎまでご連絡をお願いします。
+          ご不明点は{examLabel}までご連絡をお願いします。
         </p>
       </div>
 

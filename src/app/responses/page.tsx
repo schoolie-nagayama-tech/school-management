@@ -110,6 +110,25 @@ function isUnprocessed(response: FormResponseWithStudent): boolean {
   }
 }
 
+/** 全件完了（紐付け済み + 計上/対応 済み）の判定。サマリーカードを非表示にする条件 */
+function isFullyDone(response: FormResponseWithStudent): boolean {
+  const sc = (response.status_checks as Record<string, boolean> | undefined) ?? {};
+  const linked = !!response.linked_student_id;
+  if (!linked) return false;
+  switch (response.form_type) {
+    case 'moshi':
+    case 'zoukoma':
+    case 'youbi':
+    case 'shukaisu':
+    case 'mogi':
+      return !!sc.charged;
+    case 'soudan':
+      return !!sc.handled;
+    default:
+      return true; // kyozai など計上の概念がないフォームは紐付けで完了扱い
+  }
+}
+
 /** 一覧の処理状態（詳細ページのチェックと同一の status_checks を表示） */
 function ResponseStatusBadges({ response }: { response: FormResponseWithStudent }) {
   const sc = (response.status_checks as Record<string, boolean> | undefined) ?? {};
@@ -487,19 +506,31 @@ export default function ResponsesPage() {
   };
 
   // サマリー計算（未処理＝一覧で「未処理」バッジが付く件数）
+  // 全件が「計上済み + 申込紐付け済み」になった期間はカードを非表示にする
   const summary = (() => {
-    const byFormType: Record<string, { total: number; unprocessed: number }> = {};
+    const byFormType: Record<
+      string,
+      { total: number; unprocessed: number; fullyDone: number }
+    > = {};
     responses.forEach((response) => {
       const key = `${response.form_type}_${response.form_period}`;
       if (!byFormType[key]) {
-        byFormType[key] = { total: 0, unprocessed: 0 };
+        byFormType[key] = { total: 0, unprocessed: 0, fullyDone: 0 };
       }
       byFormType[key].total++;
       if (isUnprocessed(response)) {
         byFormType[key].unprocessed++;
       }
+      if (isFullyDone(response)) {
+        byFormType[key].fullyDone++;
+      }
     });
-    return byFormType;
+    // 全件が完了した期間はサマリーから除外
+    return Object.fromEntries(
+      Object.entries(byFormType).filter(
+        ([, stats]) => stats.total === 0 || stats.fullyDone < stats.total
+      )
+    );
   })();
 
   // 権限チェック中

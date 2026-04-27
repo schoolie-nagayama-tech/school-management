@@ -20,6 +20,15 @@ const FORM_TYPE_LABELS: Record<string, string> = {
   soudan: 'お客様相談',
 }
 
+// Vもぎは地域（東京/神奈川）で呼称が変わる
+function resolveFormTypeLabel(formType: string, periodSettings?: any): string {
+  if (formType === 'mogi') {
+    const region = periodSettings?.region ?? 'tokyo'
+    return region === 'kanagawa' ? '神奈川全県模試申し込み' : 'Vもぎ申し込み'
+  }
+  return FORM_TYPE_LABELS[formType] || formType
+}
+
 // 学年ラベル
 const GRADE_LABELS: Record<number, string> = {
   1: '小1', 2: '小2', 3: '小3', 4: '小4', 5: '小5', 6: '小6',
@@ -279,7 +288,7 @@ function createApplicantEmail(
   periodTitle?: string,
   periodSettings?: any
 ): { subject: string; html: string } {
-  const formTypeLabel = FORM_TYPE_LABELS[formType] || formType
+  const formTypeLabel = resolveFormTypeLabel(formType, periodSettings)
   const gradeLabel = GRADE_LABELS[grade] || `${grade}年`
   const dateStr = new Date(createdAt).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })
 
@@ -382,7 +391,7 @@ function createManagerEmail(
   periodTitle?: string,
   periodSettings?: any
 ): { subject: string; html: string } {
-  const formTypeLabel = FORM_TYPE_LABELS[formType] || formType
+  const formTypeLabel = resolveFormTypeLabel(formType, periodSettings)
   const gradeLabel = GRADE_LABELS[grade] || `${grade}年`
   const dateStr = new Date(createdAt).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })
 

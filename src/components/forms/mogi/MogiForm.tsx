@@ -271,6 +271,7 @@ export function MogiForm({ school, period, isPreview }: MogiFormProps) {
             onChange={setCancelAgreed}
             disabled={isSubmitting}
             error={errors.cancelAgreed}
+            region={settings.region ?? 'tokyo'}
           />
         </PortalFormSection>
 
