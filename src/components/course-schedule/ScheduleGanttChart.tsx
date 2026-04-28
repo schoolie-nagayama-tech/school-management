@@ -216,7 +216,7 @@ function TaskNameCell({
           <button
             ref={linkBtnRef}
             onClick={openLinkMenu}
-            className={`text-[9px] px-1 py-0.5 rounded transition-all shrink-0 ${
+            className={`text-[9px] px-1 py-0.5 rounded transition-[opacity,background-color,color] duration-150 ease-out shrink-0 ${
               task.linked_progress_item_id
                 ? 'text-blue-600 bg-blue-50 hover:bg-blue-100'
                 : 'text-gray-400 hover:text-blue-500 opacity-0 group-hover/task:opacity-100'
@@ -407,7 +407,7 @@ export function ScheduleGanttChart({
           <span className="text-xs font-bold" style={{ color: c.text }}>{category}</span>
           <span className="text-[10px] text-gray-400">{completedCount}/{catTasks.length}</span>
           <div className="w-16 h-1.5 bg-white/60 rounded-full overflow-hidden ml-1">
-            <div className="h-full rounded-full transition-all" style={{ width: `${catPct}%`, backgroundColor: c.border }} />
+            <div className="h-full rounded-full transition-[width] duration-500 ease-out" style={{ width: `${catPct}%`, backgroundColor: c.border }} />
           </div>
           <span className="text-[10px] font-medium" style={{ color: c.border }}>{catPct}%</span>
           {catOverdue > 0 && (
@@ -513,7 +513,7 @@ export function ScheduleGanttChart({
           const c = CATEGORY_COLORS[catIdx % CATEGORY_COLORS.length];
           return (
             <React.Fragment key={`cat-${category}`}>
-              <tr onClick={() => toggleCategory(category)} className="cursor-pointer hover:brightness-95 transition-all">
+              <tr onClick={() => toggleCategory(category)} className="cursor-pointer hover:brightness-95 transition-colors duration-150">
                 {renderCategoryLeftCells(category, catTasks, catIdx)}
                 {dates.map((d) => {
                   const isToday = isSameDay(d, today);
@@ -653,7 +653,7 @@ export function ScheduleGanttChart({
             const c = CATEGORY_COLORS[catIdx % CATEGORY_COLORS.length];
             return (
               <React.Fragment key={`cat-${category}`}>
-                <tr onClick={() => toggleCategory(category)} className="cursor-pointer hover:brightness-95 transition-all">
+                <tr onClick={() => toggleCategory(category)} className="cursor-pointer hover:brightness-95 transition-colors duration-150">
                   {renderCategoryLeftCells(category, catTasks, catIdx)}
                   {weeks.map((w, wi) => {
                     const hasToday = w.days.some((d) => isSameDay(d, today));
@@ -712,7 +712,7 @@ export function ScheduleGanttChart({
             <div className="flex items-center gap-2">
               <span className="text-[11px] text-gray-500">準備進捗</span>
               <div className="w-20 h-2 bg-gray-100 rounded-full overflow-hidden">
-                <div className="h-full rounded-full transition-all"
+                <div className="h-full rounded-full transition-[width,background-color] duration-500 ease-out"
                   style={{ width: `${overallPct}%`, backgroundColor: overallPct >= 80 ? '#10b981' : overallPct >= 50 ? '#f59e0b' : '#ef4444' }} />
               </div>
               <span className="text-[11px] font-bold text-[#1e3a5f]">{completedTotal}/{totalTasks}</span>

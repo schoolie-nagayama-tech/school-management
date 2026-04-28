@@ -72,7 +72,7 @@ export const StudentCard = React.memo(function StudentCard({
       }}
       className={`
         px-1.5 py-1 rounded-lg border text-left shadow-sm
-        cursor-pointer hover:shadow-md transition-all duration-150
+        cursor-pointer hover:shadow-md transition-[box-shadow,border-color,background-color] duration-150
         ${colorClass}
         ${isTransferredOut ? 'opacity-60 line-through' : ''}
       `}

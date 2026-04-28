@@ -706,7 +706,7 @@ export function CourseProgressTable({
                     <div className="flex items-center gap-1">
                       <div className="flex-1 bg-gray-100 rounded-full h-1.5 min-w-[24px]">
                         <div
-                          className="h-1.5 rounded-full transition-all"
+                          className="h-1.5 rounded-full transition-[width] duration-500 ease-out"
                           style={{
                             width: `${completionPct}%`,
                             backgroundColor: completionPct >= 80 ? '#10b981' : completionPct >= 50 ? '#f59e0b' : '#ef4444',
@@ -783,7 +783,7 @@ export function CourseProgressTable({
                         return (
                           <td key={item.id} className="border-b border-gray-100 p-0 text-center">
                             <div
-                              className={`w-full h-[30px] flex items-center justify-center text-[10px] font-medium ${canEdit ? 'cursor-pointer hover:ring-1 hover:ring-blue-300 hover:ring-inset' : ''} transition-all`}
+                              className={`w-full h-[30px] flex items-center justify-center text-[10px] font-medium ${canEdit ? 'cursor-pointer hover:ring-1 hover:ring-blue-300 hover:ring-inset' : ''} transition-[box-shadow] duration-150`}
                               style={{ backgroundColor: style.bg, color: style.text }}
                               onClick={(e) => handleCellClick(e, student.id, item)}
                             >
@@ -801,7 +801,7 @@ export function CourseProgressTable({
                         return (
                           <td key={item.id} className="border-b border-gray-100 p-0 text-center">
                             <div
-                              className={`w-full h-[30px] flex items-center justify-center text-[9px] ${canEdit ? 'cursor-pointer hover:ring-1 hover:ring-blue-300 hover:ring-inset' : ''} transition-all`}
+                              className={`w-full h-[30px] flex items-center justify-center text-[9px] ${canEdit ? 'cursor-pointer hover:ring-1 hover:ring-blue-300 hover:ring-inset' : ''} transition-[box-shadow] duration-150`}
                               style={{
                                 backgroundColor: dateStr ? `${groupColor}10` : '#ffffff',
                                 color: dateStr ? groupColor : '#d1d5db',

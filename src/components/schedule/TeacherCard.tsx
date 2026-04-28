@@ -141,7 +141,7 @@ export const TeacherCard = React.memo(function TeacherCard({
   return (
     <div
       className={`
-        group relative rounded-xl border transition-all duration-150
+        group relative rounded-xl border transition-[box-shadow,background-color,border-color] duration-150 ease-out
         border-[color:color-mix(in_oklch,var(--primary)_25%,#e5e7eb)] bg-white shadow-sm hover:shadow-md hover:bg-gray-50
         ${transferMode ? 'cursor-pointer hover:border-[var(--primary)]/40 hover:bg-gray-50/50' : ''}
         ${isOverAndCanDrop ? 'ring-2 ring-green-400 bg-green-50/50' : ''}

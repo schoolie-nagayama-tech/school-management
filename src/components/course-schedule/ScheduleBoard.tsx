@@ -301,7 +301,7 @@ function TaskRow({
           <div className="relative h-4 bg-gray-100 rounded-full overflow-hidden">
             {bar && (
               <div
-                className={`absolute top-0 h-full rounded-full transition-all ${
+                className={`absolute top-0 h-full rounded-full transition-[width,background-color] duration-500 ease-out ${
                   isCompleted ? 'bg-green-400' : 'bg-[#3b82f6]'
                 }`}
                 style={{ left: `${bar.left}%`, width: `${bar.width}%` }}
@@ -653,7 +653,7 @@ function CategorySection({
         <div className="flex items-center gap-2">
           <div className="w-20 h-1.5 bg-gray-100 rounded-full overflow-hidden">
             <div
-              className="h-full rounded-full transition-all"
+              className="h-full rounded-full transition-[width] duration-500 ease-out"
               style={{
                 width: `${Math.round(progress * 100)}%`,
                 backgroundColor: progress >= 0.8 ? '#10b981' : progress >= 0.5 ? '#f59e0b' : '#ef4444',
@@ -791,7 +791,7 @@ export function ScheduleBoard({
             </div>
             <div className="flex-1 bg-gray-100 rounded-full h-2.5 max-w-md">
               <div
-                className="h-2.5 rounded-full transition-all"
+                className="h-2.5 rounded-full transition-[width,background-color] duration-500 ease-out"
                 style={{
                   width: `${Math.round(completionRate * 100)}%`,
                   backgroundColor:

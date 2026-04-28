@@ -307,7 +307,7 @@ export function AttendanceMatrix({ studentId, schoolId, studentGrade, canEdit, o
                     return (
                       <td
                         key={key}
-                        className={`border border-gray-200 px-0.5 py-0.5 text-center transition-all relative h-[36px] ${
+                        className={`border border-gray-200 px-0.5 py-0.5 text-center transition-[background-color,box-shadow] duration-150 ease-out relative h-[36px] ${
                           isSaving ? 'opacity-50' : ''
                         } ${isDragOver ? 'bg-blue-100 ring-2 ring-inset ring-blue-400' : ''} ${
                           !isOn && !isDragOver ? 'bg-white' : ''

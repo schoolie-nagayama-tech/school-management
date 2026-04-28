@@ -395,7 +395,7 @@ export default function TeacherDetailPage() {
               </div>
               <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-sky-500 to-emerald-500 rounded-full transition-all"
+                  className="h-full bg-gradient-to-r from-sky-500 to-emerald-500 rounded-full transition-[width] duration-500 ease-out"
                   style={{ width: `${allBadges.length ? (earnedBadges.length / allBadges.length) * 100 : 0}%` }}
                 />
               </div>

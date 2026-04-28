@@ -944,7 +944,7 @@ export default function CourseProgressPage() {
                           onDragEnd={() => setDragItemId(null)}
                           onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
                           onDrop={(e) => { e.preventDefault(); if (dragItemId) handleDropItem(dragItemId, item.id); }}
-                          className={`flex items-center justify-between gap-2 px-2 py-1.5 rounded text-xs transition-all ${
+                          className={`flex items-center justify-between gap-2 px-2 py-1.5 rounded text-xs transition-[opacity,transform,border-color,background-color] duration-150 ease-out ${
                             item.is_hidden ? 'bg-gray-50 text-gray-400' : ''
                           } ${dragItemId === item.id ? 'opacity-40 scale-95' : ''} ${dragItemId && dragItemId !== item.id ? 'border border-dashed border-blue-300' : 'border border-transparent'}`}
                         >
