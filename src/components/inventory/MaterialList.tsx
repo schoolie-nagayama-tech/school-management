@@ -1,5 +1,6 @@
 'use client';
 
+import { Pencil, Plus, Minus, Clock } from 'lucide-react';
 import type { Material } from '@/types/database';
 
 interface MaterialListProps {
@@ -100,19 +101,7 @@ export function MaterialList({
                             className="p-1.5 text-[#4b5563] hover:text-[#1e3a5f] hover:bg-[#f3f4f6] rounded-lg transition-colors"
                             title="編集"
                           >
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                              />
-                            </svg>
+                            <Pencil className="w-4 h-4" />
                           </button>
                           {/* 入庫 */}
                           <button
@@ -120,19 +109,7 @@ export function MaterialList({
                             className="p-1.5 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-colors"
                             title="入庫"
                           >
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 6v12m6-6H6"
-                              />
-                            </svg>
+                            <Plus className="w-4 h-4" />
                           </button>
                           {/* 出庫 */}
                           <button
@@ -140,19 +117,7 @@ export function MaterialList({
                             className="p-1.5 text-[#ef4444] hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
                             title="出庫"
                           >
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M18 12H6"
-                              />
-                            </svg>
+                            <Minus className="w-4 h-4" />
                           </button>
                         </>
                       )}
@@ -162,19 +127,7 @@ export function MaterialList({
                         className="p-1.5 text-[#4b5563] hover:text-[#1e3a5f] hover:bg-[#f3f4f6] rounded-lg transition-colors"
                         title="履歴"
                       >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
+                        <Clock className="w-4 h-4" />
                       </button>
                     </div>
                   </td>

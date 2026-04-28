@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { USER_ROLE_LABELS } from '@/types/database';
 import { SubjectSettings } from '@/components/settings';
-import { Megaphone, ChevronDown } from 'lucide-react';
+import { Megaphone, ChevronDown, X, Menu, HelpCircle, LogOut, Settings, LayoutDashboard } from 'lucide-react';
 import { TierMedal } from '@/components/teacher/TierMedal';
 import { useTeacherBadgeCount } from '@/hooks/useTeacherBadgeCount';
 import { ThemeToggle } from './ThemeToggle';
@@ -166,13 +166,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
               aria-label={showMobileMenu ? 'メニューを閉じる' : 'メニューを開く'}
               className="lg:hidden p-1.5 text-white hover:bg-white/10 rounded-lg transition-colors"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                {showMobileMenu ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                )}
-              </svg>
+              {showMobileMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
             {/* NESTロゴ */}
             <Link href="/students" className="shrink-0">
@@ -550,9 +544,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
               className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
               title="ヘルプ"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <HelpCircle className="w-4 h-4" />
             </Link>
             {profile && !authLoading && (
               <button
@@ -560,19 +552,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                 className="p-1 text-[10px] font-medium bg-white/20 text-white border border-white/30 rounded hover:bg-white/30 transition-colors flex items-center gap-0.5"
                 title="ログアウト"
               >
-                <svg
-                  className="w-2.5 h-2.5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                  />
-                </svg>
+                <LogOut className="w-2.5 h-2.5" />
                 <span className="hidden sm:inline">ログアウト</span>
               </button>
             )}
@@ -586,25 +566,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                   className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
                   title="設定"
                 >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                  </svg>
+                  <Settings className="w-4 h-4" />
                 </button>
                 {showSettingsDropdown && (
                   <div
@@ -713,9 +675,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                 }`}
                 title="座席表（開発中）"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-                </svg>
+                <LayoutDashboard className="w-4 h-4" aria-hidden />
               </Link>
             )}
           </div>

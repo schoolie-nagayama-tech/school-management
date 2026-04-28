@@ -14,7 +14,7 @@ import { Button } from '@/components/ui';
 import { Input } from '@/components/ui';
 import { Label } from '@/components/ui';
 import { SelectShadcn as Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui';
-import { Copy, Check, Eye, EyeOff, Trash2, LogIn, AlertTriangle } from 'lucide-react';
+import { Copy, Check, Eye, EyeOff, Trash2, LogIn, AlertTriangle, Home } from 'lucide-react';
 import { impersonateUser } from '@/lib/impersonate';
 import type { School, UserProfile, TeacherBadge, TeacherBadgeAssignment } from '@/types/database';
 import { BADGE_RANK_CONFIG } from '@/types/database';
@@ -352,19 +352,7 @@ export default function TeachersPage() {
               className="flex items-center gap-2 text-[#1f2937] hover:text-[#3b82f6] transition-colors"
               title="ホームに戻る"
             >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-                />
-              </svg>
+              <Home className="w-5 h-5" />
             </Link>
             <h1 className="text-2xl font-bold text-[#1f2937]">講師管理</h1>
           </div>
