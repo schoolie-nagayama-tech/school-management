@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getFormBySlug } from '@/lib/api/forms';
 import { PublicFormRenderer, KomaFormRenderer } from '@/components/forms';
+import { CircleCheck } from 'lucide-react';
 
 interface FormPageProps {
   params: Promise<{ schoolCode: string; formSlug: string }>;
@@ -39,19 +40,7 @@ export default async function FormPage({ params, searchParams }: FormPageProps) 
         <div className="max-w-lg mx-auto px-4 py-8 w-full">
           <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 text-center">
             <div className="mb-6">
-              <svg
-                className="w-16 h-16 mx-auto text-[#3b82f6]"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
+              <CircleCheck className="w-16 h-16 mx-auto text-[#3b82f6]" />
             </div>
             <h2 className="text-2xl font-bold text-[#1f2937] mb-4">送信完了</h2>
             {form.completion_message && (

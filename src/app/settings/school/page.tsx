@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import AccessDenied from '@/components/AccessDenied';
 import type { School } from '@/types/database';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, ImageIcon, X, Plus } from 'lucide-react';
 
 export default function SchoolSettingsPage() {
   const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
@@ -229,9 +229,7 @@ export default function SchoolSettingsPage() {
                   />
                 ) : (
                   <div className="w-16 h-16 rounded-xl bg-[#f3f4f6] border border-dashed border-[#d1d5db] flex items-center justify-center">
-                    <svg className="w-6 h-6 text-[#9ca3af]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
+                    <ImageIcon className="w-6 h-6 text-[#9ca3af]" />
                   </div>
                 )}
                 <div className="flex flex-col gap-2">
@@ -295,9 +293,7 @@ export default function SchoolSettingsPage() {
                         className="shrink-0 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
                         title="削除"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+                        <X className="w-4 h-4" />
                       </button>
                     </div>
                   ))}
@@ -312,9 +308,7 @@ export default function SchoolSettingsPage() {
                   onClick={addEmail}
                   className="mt-2 flex items-center gap-1.5 text-sm text-[#1e3a5f] hover:text-[#2a4f7f] font-medium transition-colors"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
+                  <Plus className="w-4 h-4" />
                   メールアドレスを追加
                 </button>
 

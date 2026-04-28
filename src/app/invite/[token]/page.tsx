@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { getInvitationByToken, signUpWithEmail } from '@/lib/api/auth';
+import { X } from 'lucide-react';
 import type { UserInvitation } from '@/types/database';
 import { USER_ROLE_LABELS } from '@/types/database';
 
@@ -111,9 +112,7 @@ export default function InvitePage() {
         <div className="max-w-md w-full bg-white rounded-xl border border-[#e5e7eb] p-8">
           <div className="text-center">
             <div className="w-16 h-16 bg-[#ef4444]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-[#ef4444]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              <X className="w-8 h-8 text-[#ef4444]" />
             </div>
             <h2 className="text-xl font-bold text-[#1f2937] mb-2">招待が無効です</h2>
             <p className="text-[#4b5563] mb-6">{error}</p>

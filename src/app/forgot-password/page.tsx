@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { sendPasswordResetEmail } from '@/lib/api/auth';
+import { Check } from 'lucide-react';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -40,9 +41,7 @@ export default function ForgotPasswordPage() {
           {isSent ? (
             <div className="text-center">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+                <Check className="w-8 h-8 text-green-600" />
               </div>
               <h2 className="text-xl font-bold text-[#1f2937] mb-2">メールを送信しました</h2>
               <p className="text-[#4b5563] mb-6">
