@@ -527,6 +527,7 @@ export type Database = {
           textbook_id: number;
           is_active: boolean;
           is_draft: boolean;
+          track_progress: boolean;
           season: 'spring' | 'summer' | 'winter' | null;
           sort_order: number | null;
           created_at: string;
@@ -539,6 +540,7 @@ export type Database = {
           textbook_id: number;
           is_active?: boolean;
           is_draft?: boolean;
+          track_progress?: boolean;
           season?: 'spring' | 'summer' | 'winter' | null;
           sort_order?: number | null;
           created_at?: string;
@@ -550,6 +552,7 @@ export type Database = {
           student_id?: string;
           textbook_id?: number;
           is_active?: boolean;
+          track_progress?: boolean;
           is_draft?: boolean;
           season?: 'spring' | 'summer' | 'winter' | null;
           sort_order?: number | null;

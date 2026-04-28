@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Student, AssessmentWithScores } from '@/types/database';
 import {
   listAssessments,
@@ -21,6 +21,7 @@ import { Modal } from '@/components/ui/Modal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfirm } from '@/hooks/useConfirm';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
+import { getAssessmentSubjects, type AssessmentSubject } from '@/lib/api/assessmentSubjects';
 
 interface StudentScoresProps {
   student: Student;
@@ -78,6 +79,9 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  // 高校生（grade>=10）はマスタから動的科目を取得
+  const isHighSchool = (student.grade ?? 0) >= 10;
+  const [hsSubjects, setHsSubjects] = useState<AssessmentSubject[]>([]);
   const [editingCell, setEditingCell] = useState<{
     assessmentId: string;
     subject: string;
@@ -121,6 +125,49 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
       fetchAssessments();
     }
   }, [isOpen, student.id, fetchAssessments]);
+
+  // 高校生のとき、マスタから科目リストを取得（学年で絞り込み）
+  useEffect(() => {
+    if (!isOpen || !isHighSchool) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const list = await getAssessmentSubjects({ schoolType: '高校', grade: student.grade });
+        if (!cancelled) setHsSubjects(list);
+      } catch (e) {
+        console.error('評価科目マスタの取得に失敗:', e);
+        if (!cancelled) setHsSubjects([]);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isOpen, isHighSchool, student.grade]);
+
+  /** 学校種別ごとに表示する科目コードを返す。HS は登録済みコードも含めて末尾に追加（自由記述や旧データを救済） */
+  const getSubjectsForCategory = (category: AssessmentCategory): string[] => {
+    if (isHighSchool) {
+      const set = new Set<string>(hsSubjects.map((s) => s.code));
+      // 登録済みコードもマスタ外として末尾に
+      const tail: string[] = [];
+      for (const a of assessments[category]) {
+        for (const s of a.scores ?? []) {
+          if (s.subject && !set.has(s.subject)) {
+            if (!tail.includes(s.subject)) tail.push(s.subject);
+          }
+        }
+      }
+      return [...hsSubjects.map((s) => s.code), ...tail];
+    }
+    return category === 'mock' ? Array.from(MOCK_SUBJECTS) : Array.from(COMMON_9_SUBJECTS);
+  };
+
+  /** 科目コード → 表示ラベル */
+  const labelOfSubject = (code: string): string => {
+    if (isHighSchool) {
+      const meta = hsSubjects.find((s) => s.code === code);
+      if (meta) return meta.short_name ?? meta.name;
+    }
+    return SUBJECT_LABELS[code] ?? code;
+  };
 
   // セル編集開始
   const handleCellClick = (assessmentId: string, subject: string, currentValue: number | null) => {
@@ -253,8 +300,8 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
 
   // セクションをレンダリング
   const renderSection = (category: AssessmentCategory, assessments: AssessmentWithScores[]) => {
-    const subjects =
-      category === 'mock' ? MOCK_SUBJECTS : COMMON_9_SUBJECTS;
+    const subjects = getSubjectsForCategory(category);
+    const showAggregateColumns = !isHighSchool; // 5科/9科の合計は中学までのみ
     const isAdding = addingRowCategory === category;
 
     return (
@@ -376,15 +423,19 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
                 <th className="border border-[#e5e7eb] px-3 py-2 text-left text-sm font-semibold text-[#1f2937]">
                   年月
                 </th>
-                {subjects.map((subj) => (
-                  <th
-                    key={subj}
-                    className="border border-[#e5e7eb] px-3 py-2 text-center text-sm font-semibold text-[#1f2937] min-w-[80px]"
-                  >
-                    {SUBJECT_LABELS[subj]}
-                  </th>
-                ))}
-                {category === 'mock' ? (
+                {subjects.map((subj) => {
+                  const isCustom = isHighSchool && !hsSubjects.some((s) => s.code === subj);
+                  return (
+                    <th
+                      key={subj}
+                      className={`border border-[#e5e7eb] px-3 py-2 text-center text-sm font-semibold min-w-[80px] ${isCustom ? 'text-amber-700 italic' : 'text-[#1f2937]'}`}
+                      title={isCustom ? '（マスタ外の科目／旧データ）' : labelOfSubject(subj)}
+                    >
+                      {labelOfSubject(subj)}
+                    </th>
+                  );
+                })}
+                {showAggregateColumns && (category === 'mock' ? (
                   <>
                     <th className="border border-[#e5e7eb] px-3 py-2 text-center text-sm font-semibold text-[#1f2937]">
                       3科平均
@@ -402,7 +453,7 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
                       9科合計
                     </th>
                   </>
-                )}
+                ))}
                 <th className="border border-[#e5e7eb] px-3 py-2 text-center text-sm font-semibold text-[#1f2937]">
                   操作
                 </th>
@@ -412,9 +463,7 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
               {assessments.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={
-                      subjects.length + (category === 'mock' ? 6 : 6)
-                    }
+                    colSpan={subjects.length + 3 + (showAggregateColumns ? 2 : 0) + (permissions?.canEditScores ? 1 : 0)}
                     className="border border-[#e5e7eb] px-3 py-4 text-center text-[#4b5563]"
                   >
                     データがありません
@@ -473,7 +522,7 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
                         </td>
                       );
                     })}
-                    {category === 'mock' ? (
+                    {showAggregateColumns && (category === 'mock' ? (
                       <>
                         <td className="border border-[#e5e7eb] px-3 py-2 text-center text-sm text-[#4b5563] font-medium">
                           {getCalculatedValue(assessment, 'three_avg')}
@@ -491,7 +540,7 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
                           {getCalculatedValue(assessment, 'nine_sum')}
                         </td>
                       </>
-                    )}
+                    ))}
                     {permissions?.canEditScores && (
                       <td className="border border-[#e5e7eb] px-3 py-2 text-center">
                         <Button

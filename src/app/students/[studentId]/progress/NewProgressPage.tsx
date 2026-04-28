@@ -159,7 +159,9 @@ export default function NewProgressPage() {
           getExamTypes(),
         ]);
         setStudent(s);
-        const filteredTbs = isTeacher ? (tbs || []).filter((tb) => !tb.is_draft) : (tbs || []);
+        // 進行表で管理しないものは除外（所持教材一覧では別途扱う）
+        const baseTbs = (tbs || []).filter((tb) => (tb as { track_progress?: boolean }).track_progress === true);
+        const filteredTbs = isTeacher ? baseTbs.filter((tb) => !tb.is_draft) : baseTbs;
         setStudentTextbooks(filteredTbs);
         setExamTypes(ets || []);
         // 全教科書の active な試験目標の行動目標を一括取得
@@ -273,7 +275,8 @@ export default function NewProgressPage() {
           is_active: true,
         });
         const tbs = await getStudentTextbooks(studentId);
-        const filteredTbs = isTeacher ? (tbs || []).filter((tb) => !tb.is_draft) : (tbs || []);
+        const baseTbs = (tbs || []).filter((tb) => (tb as { track_progress?: boolean }).track_progress === true);
+        const filteredTbs = isTeacher ? baseTbs.filter((tb) => !tb.is_draft) : baseTbs;
         setStudentTextbooks(filteredTbs);
         setIsAddTextbookModalOpen(false);
         success('テキストを追加しました');

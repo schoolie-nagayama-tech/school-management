@@ -46,6 +46,7 @@ export async function getStudentTextbooksExamsBySchool(
     .select('*, textbook:textbooks(*)')
     .in('school_id', schoolIds)
     .eq('is_active', true)
+    .eq('track_progress', true)
     .order('created_at', { ascending: false });
 
   if (stError) {

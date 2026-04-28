@@ -7,6 +7,7 @@ import {
   getStudentTextbooks as getStudentTextbooksForProgress,
   createStudentTextbook,
   deleteStudentTextbook,
+  updateStudentTextbook,
 } from '@/lib/api/progress';
 import { getTextbooks } from '@/lib/api/textbooks';
 import { listAssessments } from '@/lib/api/assessments';
@@ -337,37 +338,75 @@ export function StudentDetailModal({
               {isLoading ? (
                 <p className="text-sm text-[#4b5563]">読み込み中...</p>
               ) : textbooks.length > 0 ? (
-                <div className="space-y-1.5">
-                  {textbooks.map((tb) => (
-                    <div
-                      key={tb.id}
-                      className="flex items-center justify-between px-3 py-1.5 bg-white rounded-lg border border-[#e5e7eb]"
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-sm text-[#1f2937] truncate">
-                          {tb.textbook
-                            ? [tb.textbook.school_type, tb.textbook.grade, tb.textbook.name, tb.textbook.publisher].filter(Boolean).join(' / ')
-                            : '（不明な教材）'}
-                        </span>
-                        {tb.season && (
-                          <span className="text-[10px] text-[#4b5563] bg-gray-100 px-1.5 py-0.5 rounded">
-                            {tb.season === 'spring' ? '春期' : tb.season === 'summer' ? '夏期' : '冬期'}
-                          </span>
-                        )}
-                      </div>
-                      {!isTeacher && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveTextbook(tb)}
-                          className="p-1 text-gray-400 hover:text-red-500 rounded transition-colors"
-                          aria-label="教材を削除"
+                <>
+                  <p className="text-[11px] text-[#6b7280] mb-2">
+                    「進行表で管理」を ON にすると、進行表ページにこの教材の進捗欄が表示されます。授業で使わない教材は OFF にしておけます。
+                  </p>
+                  <div className="space-y-1.5">
+                    {textbooks.map((tb) => {
+                      const tracked = (tb as { track_progress?: boolean }).track_progress ?? false;
+                      return (
+                        <div
+                          key={tb.id}
+                          className="flex items-center justify-between px-3 py-1.5 bg-white rounded-lg border border-[#e5e7eb]"
                         >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-sm text-[#1f2937] truncate">
+                              {tb.textbook
+                                ? [tb.textbook.school_type, tb.textbook.grade, tb.textbook.name, tb.textbook.publisher].filter(Boolean).join(' / ')
+                                : '（不明な教材）'}
+                            </span>
+                            {tb.season && (
+                              <span className="text-[10px] text-[#4b5563] bg-gray-100 px-1.5 py-0.5 rounded">
+                                {tb.season === 'spring' ? '春期' : tb.season === 'summer' ? '夏期' : '冬期'}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {!isTeacher && (
+                              <label
+                                className="flex items-center gap-1 text-[11px] text-[#4b5563] cursor-pointer select-none"
+                                title="進行表ページに表示するか"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={tracked}
+                                  onChange={async (e) => {
+                                    const next = e.target.checked;
+                                    setTextbooks((prev) =>
+                                      prev.map((row) =>
+                                        row.id === tb.id ? { ...row, track_progress: next } as typeof row : row
+                                      )
+                                    );
+                                    try {
+                                      await updateStudentTextbook(tb.id, { track_progress: next });
+                                    } catch (err) {
+                                      console.error('track_progress 更新失敗:', err);
+                                      // 失敗時は再読み込みでロールバック
+                                      if (student) await loadTextbooks(student.id);
+                                    }
+                                  }}
+                                  className="w-3.5 h-3.5 accent-[#1e3a5f]"
+                                />
+                                進行表で管理
+                              </label>
+                            )}
+                            {!isTeacher && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveTextbook(tb)}
+                                className="p-1 text-gray-400 hover:text-red-500 rounded transition-colors"
+                                aria-label="教材を削除"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
               ) : (
                 <p className="text-sm text-[#4b5563]/60">登録された教材はありません</p>
               )}
