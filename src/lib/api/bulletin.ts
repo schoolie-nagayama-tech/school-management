@@ -309,6 +309,7 @@ export async function createBulletinPost(
     content: string;
     label_id?: string | null;
     is_pinned?: boolean;
+    link_url?: string | null;
   },
   userId?: string
 ): Promise<BulletinPost> {
@@ -319,6 +320,7 @@ export async function createBulletinPost(
       label_id: data.label_id || null,
       title: data.title,
       content: data.content,
+      link_url: data.link_url || null,
       is_pinned: data.is_pinned || false,
       created_by: userId || null,
       updated_by: userId || null,
@@ -357,6 +359,7 @@ export async function updateBulletinPost(
     content?: string;
     label_id?: string | null;
     is_pinned?: boolean;
+    link_url?: string | null;
   },
   userId?: string
 ): Promise<BulletinPost> {

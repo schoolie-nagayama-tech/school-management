@@ -16,6 +16,7 @@ import {
   Link2,
   BookOpen,
   GraduationCap,
+  Bell,
 } from 'lucide-react';
 
 interface SettingsItem {
@@ -88,6 +89,13 @@ const settingsItems: SettingsItem[] = [
     icon: <Clock className="w-5 h-5" />,
     label: 'コマ種別設定',
     description: '授業コマの種別（通常・補習など）',
+    requiresManager: true,
+  },
+  {
+    href: '/settings/alerts',
+    icon: <Bell className="w-5 h-5" />,
+    label: 'アラート設定',
+    description: '成績低下・面談・申込・宿題未実施・遅刻などの発火条件',
     requiresManager: true,
   },
   {

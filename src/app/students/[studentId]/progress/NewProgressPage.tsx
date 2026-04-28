@@ -1034,11 +1034,12 @@ function TableView({
 
   // 列可視化: 管理モード / 面談モード共通の1つの設定として保存。
   // 申込・引継ぎ・講師名は面談モードでは列設定に関係なく常時非表示（内部情報のため）。
-  type MeetingCol = 'proposal' | 'application' | 'examRange' | 'schoolProgress' | 'lesson1' | 'lesson2' | 'lesson3' | 'handover' | 'teacherName';
+  type MeetingCol = 'proposal' | 'application' | 'examRange' | 'schoolProgress' | 'lesson1' | 'lesson2' | 'lesson3' | 'handover' | 'homeworkNotDone' | 'tardy' | 'teacherName';
   const colsKey = `progress-cols:${studentId}:${textbook.id}`;
   const DEFAULT_COLS: Record<MeetingCol, boolean> = {
     proposal: true, application: true, examRange: true, schoolProgress: true,
-    lesson1: true, lesson2: true, lesson3: true, handover: true, teacherName: true,
+    lesson1: true, lesson2: true, lesson3: true, handover: true,
+    homeworkNotDone: true, tardy: true, teacherName: true,
   };
   const [meetingCols, setMeetingCols] = useState<Record<MeetingCol, boolean>>(DEFAULT_COLS);
   const [colMenuOpen, setColMenuOpen] = useState(false);
@@ -1083,6 +1084,8 @@ function TableView({
     { key: 'lesson2', label: '2回目' },
     { key: 'lesson3', label: '3回目' },
     { key: 'handover', label: '引継ぎ', meetingOnlyHidden: true },
+    { key: 'homeworkNotDone', label: '宿題未実施', meetingOnlyHidden: true },
+    { key: 'tardy', label: '遅刻', meetingOnlyHidden: true },
     { key: 'teacherName', label: '講師名', meetingOnlyHidden: true },
   ];
   const hiddenColCount = colOptions.filter((o) => !meetingCols[o.key]).length;
@@ -1408,7 +1411,7 @@ function TableView({
         <div className="mb-4">
           <button
             onClick={() => { setGoalModalEditingId(null); setGoalModalOpen(true); }}
-            className="w-full p-4 border border-dashed border-[#d1d5db] rounded-xl text-sm text-[#6b7280] hover:bg-[#f9fafb] hover:border-[#1e3a5f] hover:text-[#1e3a5f] transition-colors"
+            className="w-full p-4 border border-dashed border-[#d1d5db] rounded-xl text-sm text-[#6b7280] hover:bg-[#f9fafb] hover:border-[#1e3a5f] hover:text-[#1e3a5f] transition-colors duration-150"
           >
             ＋ 試験目標を設定
           </button>
@@ -1427,7 +1430,7 @@ function TableView({
             {!isMeeting && (
               <button
                 onClick={() => { setGoalModalEditingId(activeExam.id); setGoalModalOpen(true); }}
-                className="px-2.5 py-1 text-xs bg-white border border-[#1e40af]/20 rounded text-[#1e40af] hover:bg-[#1e40af] hover:text-white transition-colors"
+                className="px-2.5 py-1 text-xs bg-white border border-[#1e40af]/20 rounded text-[#1e40af] hover:bg-[#1e40af] hover:text-white transition-colors duration-150"
               >
                 目標を編集
               </button>
@@ -1720,6 +1723,8 @@ function TableView({
               {meetingCols.lesson2 && <th className="px-3 py-2 text-left w-28">2回目</th>}
               {meetingCols.lesson3 && <th className="px-3 py-2 text-left w-28">3回目</th>}
               {!isMeeting && meetingCols.handover && <th className="px-3 py-2 text-left min-w-[160px]">引継ぎ</th>}
+              {!isMeeting && meetingCols.homeworkNotDone && <th className="px-3 py-2 text-center w-16">宿題未</th>}
+              {!isMeeting && meetingCols.tardy && <th className="px-3 py-2 text-center w-16">遅刻</th>}
               {!isMeeting && meetingCols.teacherName && <th className="px-3 py-2 text-left w-24">講師名</th>}
             </tr>
           </thead>
@@ -1999,7 +2004,8 @@ function ExamGoalEditModal({
 // ─────────────────────────────────────────────
 type MeetingColMap = {
   proposal: boolean; application: boolean; examRange: boolean; schoolProgress: boolean;
-  lesson1: boolean; lesson2: boolean; lesson3: boolean; handover: boolean; teacherName: boolean;
+  lesson1: boolean; lesson2: boolean; lesson3: boolean; handover: boolean;
+  homeworkNotDone: boolean; tardy: boolean; teacherName: boolean;
 };
 
 /** 今日の日付 (YYYY-MM-DD) */
@@ -2073,6 +2079,8 @@ function ProgressRow({
   const showLesson = (n: 1 | 2 | 3) =>
     n === 1 ? meetingCols.lesson1 : n === 2 ? meetingCols.lesson2 : meetingCols.lesson3;
   const showHandover = !isMeeting && meetingCols.handover;
+  const showHomeworkNotDone = !isMeeting && meetingCols.homeworkNotDone;
+  const showTardy = !isMeeting && meetingCols.tardy;
   const showTeacherName = !isMeeting && meetingCols.teacherName;
 
   return (
@@ -2242,6 +2250,36 @@ function ProgressRow({
               onSaveProgress({ handover: e.target.value || null });
             }}
             className="w-full px-1.5 py-1 text-xs bg-transparent border border-transparent hover:border-[#e5e7eb] focus:border-[#1e3a5f] focus:bg-white rounded outline-none"
+          />
+        </td>
+      )}
+      {showHomeworkNotDone && (
+        <td className="px-3 py-2.5 text-center">
+          <input
+            type="checkbox"
+            checked={!!p?.homework_not_done}
+            onChange={(e) => {
+              const next = e.target.checked;
+              onLocalPatch({ homework_not_done: next });
+              onSaveProgress({ homework_not_done: next });
+            }}
+            className="w-4 h-4 accent-[#d97706] cursor-pointer"
+            title="宿題未実施"
+          />
+        </td>
+      )}
+      {showTardy && (
+        <td className="px-3 py-2.5 text-center">
+          <input
+            type="checkbox"
+            checked={!!p?.tardy}
+            onChange={(e) => {
+              const next = e.target.checked;
+              onLocalPatch({ tardy: next });
+              onSaveProgress({ tardy: next });
+            }}
+            className="w-4 h-4 accent-[#d97706] cursor-pointer"
+            title="遅刻"
           />
         </td>
       )}
@@ -2722,7 +2760,7 @@ function ExamRangesSection({
         {!isMeeting && (
           <button
             onClick={() => onOpenEdit(null, null)}
-            className="px-2.5 py-1 text-xs bg-white border border-[#1e3a5f]/20 rounded text-[#1e3a5f] hover:bg-[#1e3a5f] hover:text-white transition-colors"
+            className="px-2.5 py-1 text-xs bg-white border border-[#1e3a5f]/20 rounded text-[#1e3a5f] hover:bg-[#1e3a5f] hover:text-white transition-colors duration-150"
           >
             ＋ 範囲を追加
           </button>

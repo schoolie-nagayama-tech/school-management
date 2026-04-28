@@ -676,6 +676,8 @@ export type Database = {
           exam_range_exam_type_id: string | null;
           school_progress_date: string | null;
           handover: string | null;
+          homework_not_done: boolean;
+          tardy: boolean;
           teacher_name: string | null;
           group_number: number | null;
           intent_tag: string | null;
@@ -691,6 +693,8 @@ export type Database = {
           exam_range_exam_type_id?: string | null;
           school_progress_date?: string | null;
           handover?: string | null;
+          homework_not_done?: boolean;
+          tardy?: boolean;
           teacher_name?: string | null;
           group_number?: number | null;
           intent_tag?: string | null;
@@ -706,6 +710,8 @@ export type Database = {
           exam_range_exam_type_id?: string | null;
           school_progress_date?: string | null;
           handover?: string | null;
+          homework_not_done?: boolean;
+          tardy?: boolean;
           teacher_name?: string | null;
           group_number?: number | null;
           intent_tag?: string | null;

@@ -1,10 +1,12 @@
-export type AlertType = 
+export type AlertType =
   | 'score_drop'        // 成績低下
   | 'score_missing'     // 成績未入力
   | 'interview_overdue' // 面談未更新
   | 'application_overdue' // 申込未提出
   | 'interview_task'    // 面談タスク
-  | 'exam_overdue';     // テスト未更新
+  | 'exam_overdue'      // テスト未更新
+  | 'homework_not_done' // 宿題未実施
+  | 'tardy';            // 遅刻
 
 export const ALERT_TYPE_LABELS: Record<AlertType, string> = {
   score_drop: '成績低下',
@@ -13,6 +15,8 @@ export const ALERT_TYPE_LABELS: Record<AlertType, string> = {
   application_overdue: '申込未提出',
   interview_task: 'タスク',
   exam_overdue: '目標未設定',
+  homework_not_done: '宿題未実施',
+  tardy: '遅刻',
 };
 
 /** アラートラベル用：明るいトーンに統一 */
@@ -23,7 +27,12 @@ export const ALERT_TYPE_COLORS: Record<AlertType, string> = {
   application_overdue: 'bg-purple-100 text-purple-700',
   interview_task: 'bg-blue-100 text-blue-700',
   exam_overdue: 'bg-rose-100 text-rose-700',
+  homework_not_done: 'bg-yellow-100 text-yellow-800',
+  tardy: 'bg-orange-100 text-orange-700',
 };
+
+/** 段階レベル（バッジの色や強調表現に使用） */
+export type AlertSeverity = 'info' | 'warning' | 'danger';
 
 export interface Alert {
   id: string;  // 一意なID（student_id + alert_type + alert_key）
@@ -49,7 +58,15 @@ export interface Alert {
     exam_date?: string;
     exam_name?: string;
     textbook_name?: string;
+    /** score_drop の小区分（定期テスト / 模試 / 通知表）と連続下降回数 */
+    score_category?: 'regular_test' | 'mock' | 'report_card';
+    consecutive_drops?: number;
+    trend?: 'declining_long_term' | null;
+    /** 宿題未実施・遅刻の発生回数 */
+    occurrence_count?: number;
   };
+  /** 段階表示（色だけでなく文言にも使用） */
+  severity?: AlertSeverity;
 }
 
 export interface AlertDismissal {
@@ -69,4 +86,42 @@ export interface StudentAlerts {
   student_name: string;
   grade: number;
   alerts: Alert[];
+}
+
+/** アラートのしきい値設定（教室ごと） */
+export interface AlertThresholds {
+  score_drop_regular?: number;       // 定期テスト：N点以上下落で発火（デフォ 10）
+  score_drop_mock?: number;          // 模試：偏差値 N 以上下落（デフォ 5）
+  score_drop_report?: number;        // 通知表：N 段階以上下落（デフォ 1）
+  interview_overdue_days?: number;   // 面談：N日経過（デフォ 30）
+  application_warn_days?: number;    // 申込：N日前から黄（デフォ 7）
+  application_alert_days?: number;   // 申込：N日前から橙（デフォ 3）
+  exam_overdue_days?: number;        // 目標未設定：テスト日からN日経過（デフォ 1）
+  homework_warn_count?: number;      // 宿題未実施：N回で黄（デフォ 1）
+  homework_danger_count?: number;    // 宿題未実施：N回で赤（デフォ 3）
+  tardy_warn_count?: number;         // 遅刻：N回で黄（デフォ 1）
+  tardy_danger_count?: number;       // 遅刻：N回で赤（デフォ 3）
+  trend_window_months?: number;      // 長期トレンド判定の月数（デフォ 6）
+}
+
+export const DEFAULT_ALERT_THRESHOLDS: Required<AlertThresholds> = {
+  score_drop_regular: 10,
+  score_drop_mock: 5,
+  score_drop_report: 1,
+  interview_overdue_days: 30,
+  application_warn_days: 7,
+  application_alert_days: 3,
+  exam_overdue_days: 1,
+  homework_warn_count: 1,
+  homework_danger_count: 3,
+  tardy_warn_count: 1,
+  tardy_danger_count: 3,
+  trend_window_months: 6,
+};
+
+export interface AlertSetting {
+  school_id: string;
+  alert_type: AlertType;
+  enabled: boolean;
+  thresholds: AlertThresholds;
 }

@@ -46,6 +46,7 @@ export function BulletinPostModal({
 }: BulletinPostModalProps) {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
   const [labelId, setLabelId] = useState<string | null>(null);
   const [isPinned, setIsPinned] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -58,11 +59,13 @@ export function BulletinPostModal({
     if (post) {
       setTitle(post.title);
       setContent(post.content);
+      setLinkUrl(post.link_url ?? '');
       setLabelId(post.label_id);
       setIsPinned(post.is_pinned);
     } else {
       setTitle('');
       setContent('');
+      setLinkUrl('');
       setLabelId(null);
       setIsPinned(false);
     }
@@ -72,6 +75,24 @@ export function BulletinPostModal({
     const text = html.replace(/<[^>]*>/g, '').trim();
     return text.length === 0;
   };
+
+  const normalizeLinkUrl = (raw: string): string | null => {
+    const trimmed = raw.trim();
+    if (!trimmed) return null;
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    return `https://${trimmed}`;
+  };
+
+  const isInvalidLinkUrl = (() => {
+    const trimmed = linkUrl.trim();
+    if (!trimmed) return false;
+    try {
+      const url = new URL(/^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`);
+      return !(url.hostname && url.hostname.includes('.'));
+    } catch {
+      return true;
+    }
+  })();
 
   const handleSubmit = async () => {
     if (!title.trim() || isContentEmpty(content)) {
@@ -92,10 +113,12 @@ export function BulletinPostModal({
       const { data: { user } } = await supabase.auth.getUser();
       const userId = user?.id;
 
+        const normalizedLink = normalizeLinkUrl(linkUrl);
         if (post) {
         await updateBulletinPost(post.id, {
           title: title.trim(),
           content: content,
+          link_url: normalizedLink,
           label_id: labelId,
           is_pinned: isPinned,
         }, userId);
@@ -103,6 +126,7 @@ export function BulletinPostModal({
         const payload = {
           title: title.trim(),
           content,
+          link_url: normalizedLink,
           label_id: targetSchoolIds.length === 1 ? labelId : null,
           is_pinned: isPinned,
         };
@@ -227,6 +251,22 @@ export function BulletinPostModal({
           />
         </div>
 
+        <div>
+          <label className="block text-sm font-medium text-[#1f2937] mb-1">
+            リンク URL（任意）
+          </label>
+          <Input
+            type="url"
+            value={linkUrl}
+            onChange={(e) => setLinkUrl(e.target.value)}
+            placeholder="https://example.com"
+            className="w-full"
+          />
+          {isInvalidLinkUrl && (
+            <p className="mt-1 text-xs text-[#ef4444]">URL の形式が正しくありません</p>
+          )}
+        </div>
+
         <div className="flex items-center gap-2">
           <input
             type="checkbox"
@@ -249,6 +289,7 @@ export function BulletinPostModal({
             disabled={
               !title.trim() ||
               isContentEmpty(content) ||
+              isInvalidLinkUrl ||
               isSubmitting ||
               (!post && showSchoolSelector && selectedSchoolIds.length === 0)
             }

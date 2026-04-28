@@ -317,7 +317,7 @@ export function StudentDetailModal({
                         { value: '', label: filteredMasterTextbooks.length === 0 ? '候補なし' : '選択してください' },
                         ...filteredMasterTextbooks.map((t) => ({
                           value: String(t.id),
-                          label: [t.grade, t.name, t.publisher].filter(Boolean).join(' / '),
+                          label: [t.school_type, t.grade, t.name, t.publisher].filter(Boolean).join(' / '),
                         })),
                       ]}
                       disabled={isAddingTextbook || filteredMasterTextbooks.length === 0}
@@ -346,7 +346,7 @@ export function StudentDetailModal({
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="text-sm text-[#1f2937] truncate">
                           {tb.textbook
-                            ? [tb.textbook.grade, tb.textbook.name, tb.textbook.publisher].filter(Boolean).join(' / ')
+                            ? [tb.textbook.school_type, tb.textbook.grade, tb.textbook.name, tb.textbook.publisher].filter(Boolean).join(' / ')
                             : '（不明な教材）'}
                         </span>
                         {tb.season && (

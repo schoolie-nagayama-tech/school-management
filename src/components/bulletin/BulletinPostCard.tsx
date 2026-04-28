@@ -3,7 +3,7 @@
 import DOMPurify from 'isomorphic-dompurify';
 import type { BulletinPost } from '@/types/bulletin';
 import { Button } from '@/components/ui';
-import { Edit2, Trash2, Users, Check, Pin } from 'lucide-react';
+import { Edit2, Trash2, Users, Check, Pin, ExternalLink } from 'lucide-react';
 
 /** 本文が HTML かどうか（タグを含むか） */
 function isHtmlContent(content: string): boolean {
@@ -84,6 +84,19 @@ export function BulletinPostCard({
             ? { dangerouslySetInnerHTML: { __html: sanitizeBulletinHtml(post.content) } }
             : { style: { whiteSpace: 'pre-wrap' }, children: post.content })}
         />
+      )}
+
+      {/* 添付リンク */}
+      {post.link_url && (
+        <a
+          href={post.link_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 mb-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg text-sm text-blue-700 transition-colors duration-150 group"
+        >
+          <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate group-hover:underline">{post.link_url}</span>
+        </a>
       )}
 
       <div className="flex items-center justify-between text-xs text-gray-500 mb-2">

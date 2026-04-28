@@ -15,6 +15,7 @@ export interface BulletinPost {
   label_id: string | null;
   title: string;
   content: string;
+  link_url: string | null;
   is_pinned: boolean;
   is_archived: boolean;
   archived_at: string | null;

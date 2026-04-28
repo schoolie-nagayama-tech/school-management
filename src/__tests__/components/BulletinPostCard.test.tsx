@@ -23,6 +23,7 @@ const basePost: BulletinPost = {
   label_id: null,
   title: 'テスト投稿タイトル',
   content: 'テスト投稿の本文です。',
+  link_url: null,
   is_pinned: false,
   is_archived: false,
   archived_at: null,
