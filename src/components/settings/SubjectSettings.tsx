@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button, Input, Modal } from '@/components/ui';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, ChevronUp, Pencil, Trash2, Plus } from 'lucide-react';
 import {
   getSubjects,
   createSubject,
@@ -213,19 +213,7 @@ export function SubjectSettings({ isOpen, onClose }: SubjectSettingsProps) {
                         className="p-1.5 text-[#4b5563] hover:text-[#1f2937] disabled:opacity-50 disabled:cursor-not-allowed"
                         title="上に移動"
                       >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M5 15l7-7 7 7"
-                          />
-                        </svg>
+                        <ChevronUp className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleMoveDown(subject)}
@@ -241,19 +229,7 @@ export function SubjectSettings({ isOpen, onClose }: SubjectSettingsProps) {
                         className="p-1.5 text-[#4b5563] hover:text-[#3b82f6] disabled:opacity-50"
                         title="編集"
                       >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                          />
-                        </svg>
+                        <Pencil className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(subject.id)}
@@ -261,19 +237,7 @@ export function SubjectSettings({ isOpen, onClose }: SubjectSettingsProps) {
                         className="p-1.5 text-[#4b5563] hover:text-[#ef4444] disabled:opacity-50"
                         title="削除"
                       >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                          />
-                        </svg>
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
@@ -285,19 +249,7 @@ export function SubjectSettings({ isOpen, onClose }: SubjectSettingsProps) {
           {/* 追加ボタン */}
           <div className="flex justify-end pt-4 border-t border-[#e5e7eb]">
             <Button onClick={handleAdd} disabled={isSubmitting}>
-              <svg
-                className="w-4 h-4 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
+              <Plus className="w-4 h-4 mr-2" />
               科目を追加
             </Button>
           </div>

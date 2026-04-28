@@ -1,3 +1,5 @@
+import { Check } from 'lucide-react';
+
 interface PortalCompletionViewProps {
   /** 戻り先ポータルの教室コード */
   schoolCode: string;
@@ -23,14 +25,7 @@ export function PortalCompletionView({
     <div className="bg-white rounded-2xl border border-[#e5e7eb] p-8 sm:p-10 text-center">
       <div className="mb-6">
         <div className="w-14 h-14 rounded-full bg-[color:var(--primary-subtle)] ring-1 ring-[color:var(--primary)]/20 flex items-center justify-center mx-auto mb-6">
-          <svg
-            className="w-7 h-7 text-[color:var(--primary)]"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M5 13l4 4L19 7" />
-          </svg>
+          <Check className="w-7 h-7 text-[color:var(--primary)]" />
         </div>
         <h2 className="text-[22px] font-bold text-[#1a1a1a] mb-3 tracking-tight">{title}</h2>
         <p className="text-sm text-[#4b5563] leading-relaxed">{message}</p>

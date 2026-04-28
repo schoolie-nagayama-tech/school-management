@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Input, Button } from '@/components/ui';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, ChevronUp, X } from 'lucide-react';
 
 interface SubjectListEditorProps {
   subjects: string[];
@@ -97,19 +97,7 @@ export function SubjectListEditor({
                   className="p-1 text-[#4b5563] hover:text-[#1f2937] disabled:opacity-50 disabled:cursor-not-allowed"
                   title="上へ"
                 >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 15l7-7 7 7"
-                    />
-                  </svg>
+                  <ChevronUp className="w-4 h-4" />
                 </button>
                 <button
                   type="button"
@@ -127,19 +115,7 @@ export function SubjectListEditor({
                   className="p-1 text-[#ef4444] hover:text-[#c02650] disabled:opacity-50 disabled:cursor-not-allowed"
                   title="削除"
                 >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
+                  <X className="w-4 h-4" />
                 </button>
               </div>
             </div>

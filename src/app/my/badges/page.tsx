@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Trophy, Star } from 'lucide-react';
 import type { TeacherBadge, TeacherBadgeAssignment, BadgeRank, TeacherTraining } from '@/types/database';
 import { BADGE_RANK_CONFIG } from '@/types/database';
 import { getMyBadges } from '@/lib/api/teacher-badges';
@@ -66,14 +67,7 @@ export default function MyBadgesPage() {
         ) : badges.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-200 p-10 text-center shadow-sm">
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-[color:var(--primary-subtle)] text-[color:var(--primary)] mb-4">
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
-                <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
-                <path d="M4 22h16" />
-                <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20 7 22" />
-                <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20 17 22" />
-                <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
-              </svg>
+              <Trophy className="w-7 h-7" />
             </div>
             <h2 className="text-lg font-bold text-gray-800 mb-2">まだトロフィーの準備中です</h2>
             <p className="text-sm text-gray-500">
@@ -143,20 +137,11 @@ export default function MyBadgesPage() {
                           className="w-10 h-10 rounded-lg flex items-center justify-center text-white shadow-sm flex-shrink-0"
                           style={{ background: `linear-gradient(135deg, ${rankConfig.color}, ${rankConfig.color}88)` }}
                         >
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                            {badge.icon === 'trophy' ? (
-                              <>
-                                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
-                                <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
-                                <path d="M4 22h16" />
-                                <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20 7 22" />
-                                <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20 17 22" />
-                                <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
-                              </>
-                            ) : (
-                              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                            )}
-                          </svg>
+                          {badge.icon === 'trophy' ? (
+                            <Trophy className="w-5 h-5" />
+                          ) : (
+                            <Star className="w-5 h-5" />
+                          )}
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-gray-800 truncate">{badge.name}</p>
