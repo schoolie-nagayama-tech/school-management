@@ -240,7 +240,7 @@ export function ApplicationTable({
                                 title="クリックして編集"
                               >
                                 <span className="text-xs text-white">{item.name}</span>
-                                <Pencil className="h-3 w-3 text-white/50 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <Pencil className="h-3 w-3 text-white/50 opacity-0 group-hover:opacity-100 transition-opacity duration-150" />
                               </div>
                               <button
                                 className="text-[10px] text-red-300 hover:text-red-200 opacity-0 group-hover:opacity-100 transition-opacity px-1 py-0.5 rounded hover:bg-red-500/20"

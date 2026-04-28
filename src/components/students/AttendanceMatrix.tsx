@@ -327,7 +327,7 @@ export function AttendanceMatrix({ studentId, schoolId, studentGrade, canEdit, o
                             {canEdit && (
                               <button
                                 onClick={(e) => handleRemovePattern(e, day, slot.id)}
-                                className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-gray-400 hover:bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-gray-400 hover:bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150"
                               >
                                 <X className="w-2.5 h-2.5" />
                               </button>

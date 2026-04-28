@@ -125,7 +125,7 @@ export function TaskCheckboxRow({
             ) : (
               <button
                 onClick={() => setShowDeleteConfirm(true)}
-                className="flex-shrink-0 text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="flex-shrink-0 text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
               >
                 <Trash2 className="w-3 h-3" />
               </button>

@@ -180,7 +180,7 @@ export default function CoursesPage() {
             <Link
               key={course.id}
               href={`/courses/${course.id}`}
-              className="bg-white rounded-xl border border-[#e5e7eb] p-6 hover:shadow-lg transition-shadow"
+              className="bg-white rounded-xl border border-[#e5e7eb] p-6 hover:shadow-lg transition-shadow duration-150"
             >
               <div className="flex items-start justify-between mb-3">
                 <h3 className="text-lg font-bold text-[#1f2937] flex-1">

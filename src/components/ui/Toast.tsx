@@ -83,7 +83,7 @@ function ToastItem({ toast, onRemove }: ToastItemProps) {
           setIsVisible(false);
           setTimeout(() => onRemove(toast.id), 200);
         }}
-        className="flex-shrink-0 opacity-70 hover:opacity-100 transition-opacity"
+        className="flex-shrink-0 opacity-70 hover:opacity-100 transition-opacity duration-150"
         aria-label="閉じる"
       >
         <X className="w-4 h-4" />

@@ -325,7 +325,7 @@ export default function TextbookMasterPage() {
                         </div>
 
                         {/* Actions */}
-                        <div className="flex items-center gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
                           <button
                             onClick={(e) => openEditModal(e, t)}
                             className="p-1.5 text-[#9ca3af] hover:text-[#1e3a5f] hover:bg-white rounded transition-colors duration-150"

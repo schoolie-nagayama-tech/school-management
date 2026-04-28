@@ -340,7 +340,7 @@ function TaskRow({
               onClick={() => {
                 if (confirm(`「${task.name}」を削除しますか？`)) onDeleteTask(task.id);
               }}
-              className="text-[10px] text-[#ef4444] hover:text-[#dc2626] px-1 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="text-[10px] text-[#ef4444] hover:text-[#dc2626] px-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
               title="削除"
             >
               ✕
@@ -642,7 +642,7 @@ function CategorySection({
         className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50/50 transition-colors duration-150"
       >
         <div className="flex items-center gap-3">
-          <span className="text-xs text-gray-400 transition-transform" style={{ transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}>
+          <span className="text-xs text-gray-400 transition-transform duration-150" style={{ transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}>
             ▼
           </span>
           <h3 className="text-sm font-bold text-[#1e3a5f]">{category}</h3>

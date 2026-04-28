@@ -137,7 +137,7 @@ export default function AttendancePortalPage() {
             {teachers.map((teacher) => (
               <Card
                 key={teacher.id}
-                className="cursor-pointer hover:shadow-md transition-shadow"
+                className="cursor-pointer hover:shadow-md transition-shadow duration-150"
                 onClick={() => handleTeacherClick(teacher.id)}
               >
                 <CardContent className="p-4 text-center">

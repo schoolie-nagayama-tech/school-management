@@ -453,7 +453,7 @@ export function TaskListPanel({
                               }
                             }
                           }}
-                          className="flex-shrink-0 hover:scale-110 transition-transform"
+                          className="flex-shrink-0 hover:scale-110 transition-transform duration-150"
                           title={allDone ? '未完了に戻す' : '完了にする'}
                         >
                           {allDone ? (

@@ -403,7 +403,7 @@ export function ScheduleGanttChart({
         style={{ backgroundColor: c.bg, borderLeft: `3px solid ${c.border}` }}
       >
         <div className="flex items-center gap-2">
-          <span className="text-[9px] text-gray-400 transition-transform" style={{ transform: isCollapsed ? 'rotate(-90deg)' : '' }}>▼</span>
+          <span className="text-[9px] text-gray-400 transition-transform duration-150" style={{ transform: isCollapsed ? 'rotate(-90deg)' : '' }}>▼</span>
           <span className="text-xs font-bold" style={{ color: c.text }}>{category}</span>
           <span className="text-[10px] text-gray-400">{completedCount}/{catTasks.length}</span>
           <div className="w-16 h-1.5 bg-white/60 rounded-full overflow-hidden ml-1">
