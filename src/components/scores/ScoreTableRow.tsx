@@ -85,7 +85,7 @@ export function ScoreTableRow({
           />
         ) : (
           <div
-            className="min-h-[28px] flex items-center justify-center text-sm text-[var(--paragraph)] cursor-pointer hover:bg-[var(--surface)] rounded"
+            className="min-h-[28px] flex items-center justify-center text-sm text-[var(--paragraph)] cursor-pointer hover:bg-[var(--surface)] rounded transition-colors duration-150"
             onClick={() => onCellClick(assessment.id, subject, value)}
           >
             {value !== null && value !== undefined ? value : '—'}
@@ -101,7 +101,7 @@ export function ScoreTableRow({
 
   if (category === 'mock') {
     return (
-      <tr className="hover:bg-[var(--surface)]">
+      <tr className="hover:bg-[var(--surface)] transition-colors duration-150">
         <td className="border border-gray-200 px-2 py-1.5 text-sm text-[var(--headline)] whitespace-nowrap">
           {GRADE_LABELS[assessment.grade] ?? assessment.grade}
         </td>

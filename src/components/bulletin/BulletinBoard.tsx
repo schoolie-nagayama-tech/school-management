@@ -224,7 +224,7 @@ export function BulletinBoard({ className = '' }: BulletinBoardProps) {
       <div className={`bg-[#f8f8f8] rounded-xl border border-gray-200 overflow-hidden ${className}`}>
         {/* ヘッダー */}
         <div
-          className="flex items-center justify-between p-4 bg-[#ffebee] border-b border-[#ffcdd2] cursor-pointer hover:bg-[#ffcdd2]/40 transition-colors"
+          className="flex items-center justify-between p-4 bg-[#ffebee] border-b border-[#ffcdd2] cursor-pointer hover:bg-[#ffcdd2]/40 transition-colors duration-150"
           onClick={() => setIsExpanded(!isExpanded)}
         >
           <div className="flex items-center gap-2">
@@ -252,7 +252,7 @@ export function BulletinBoard({ className = '' }: BulletinBoardProps) {
                 新規投稿
               </Button>
             )}
-            <button className="text-gray-500 hover:text-gray-700 transition-colors">
+            <button className="text-gray-500 hover:text-gray-700 transition-colors duration-150">
               {isExpanded ? (
                 <ChevronUp className="w-5 h-5" />
               ) : (
@@ -278,7 +278,7 @@ export function BulletinBoard({ className = '' }: BulletinBoardProps) {
                   {hasUpdateUnread && (
                     <button
                       onClick={handleMarkUpdateRead}
-                      className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-700 px-1.5 py-0.5 rounded hover:bg-green-100 transition-colors"
+                      className="flex items-center gap-1 text-[10px] text-gray-500 hover:text-gray-700 px-1.5 py-0.5 rounded hover:bg-green-100 transition-colors duration-150"
                     >
                       <Check className="w-3 h-3" />
                       確認済み

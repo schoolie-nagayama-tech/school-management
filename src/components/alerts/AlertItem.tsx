@@ -24,7 +24,7 @@ export function AlertItem({ alert, onDismiss, canDismiss = false }: AlertItemPro
   const urgencyStyle = getAlertUrgencyStyle(alert);
 
   return (
-    <div className={`flex items-center justify-between gap-2 py-1 px-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors ${urgencyStyle}`}>
+    <div className={`flex items-center justify-between gap-2 py-1 px-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors duration-150 ${urgencyStyle}`}>
       <div className="flex items-center gap-2 flex-1 min-w-0">
         <span className={`shrink-0 px-1.5 py-0.5 rounded text-xs font-medium ${ALERT_TYPE_COLORS[alert.alert_type]}`}>
           {ALERT_TYPE_LABELS[alert.alert_type]}

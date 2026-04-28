@@ -131,7 +131,7 @@ export function ScoreTable({
                     <button
                       type="button"
                       onClick={() => setNaishinType('tokyo')}
-                      className={`px-1.5 py-0.5 text-[10px] rounded transition-colors ${
+                      className={`px-1.5 py-0.5 text-[10px] rounded transition-colors duration-150 ${
                         naishinType === 'tokyo'
                           ? 'bg-[#1e3a5f] text-white'
                           : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
@@ -142,7 +142,7 @@ export function ScoreTable({
                     <button
                       type="button"
                       onClick={() => setNaishinType('kanagawa')}
-                      className={`px-1.5 py-0.5 text-[10px] rounded transition-colors ${
+                      className={`px-1.5 py-0.5 text-[10px] rounded transition-colors duration-150 ${
                         naishinType === 'kanagawa'
                           ? 'bg-[#1e3a5f] text-white'
                           : 'bg-gray-200 text-gray-600 hover:bg-gray-300'

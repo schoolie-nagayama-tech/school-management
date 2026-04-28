@@ -377,7 +377,7 @@ export function MoshiPeriodEditor({
             {ALL_GRADES.map((grade) => (
               <label
                 key={grade}
-                className={`px-4 py-2 rounded-lg border cursor-pointer transition-colors ${
+                className={`px-4 py-2 rounded-lg border cursor-pointer transition-colors duration-150 ${
                   selectedGrades.includes(grade)
                     ? 'bg-[#3b82f6] text-white border-[#3b82f6]'
                     : 'bg-white hover:bg-gray-50 border-gray-300'

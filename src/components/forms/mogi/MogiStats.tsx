@@ -131,7 +131,7 @@ export function MogiStats({ stats }: MogiStatsProps) {
                   {group.dates.map((date) => (
                     <tr
                       key={date.date_id}
-                      className="border-b border-[#e5e7eb]/20 hover:bg-[#f3f4f6]"
+                      className="border-b border-[#e5e7eb]/20 hover:bg-[#f3f4f6] transition-colors duration-150"
                     >
                       <td className="px-4 py-3 text-sm font-medium text-[#1f2937] border-r border-[#e5e7eb]/20">
                         {date.date_label}

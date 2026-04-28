@@ -135,7 +135,7 @@ export function OperationsDashboard({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 text-left text-sm font-medium text-slate-700"
+        className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 text-left text-sm font-medium text-slate-700 transition-colors duration-150"
       >
         <span>運営判断用ダッシュボード</span>
         <span className="text-slate-400 text-xs">

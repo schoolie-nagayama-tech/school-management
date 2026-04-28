@@ -194,7 +194,7 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
               e.stopPropagation();
               setShowInfoPopup(!showInfoPopup);
             }}
-            className="ml-2 text-gray-500 hover:text-gray-700 transition-colors"
+            className="ml-2 text-gray-500 hover:text-gray-700 transition-colors duration-150"
             title="アラート内容の説明"
           >
             <Info className="w-4 h-4" />
@@ -202,7 +202,7 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
         </div>
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="text-gray-400 hover:text-gray-600 transition-colors"
+          className="text-gray-400 hover:text-gray-600 transition-colors duration-150"
         >
           {isExpanded ? (
             <ChevronUp className="w-5 h-5" />
@@ -250,7 +250,7 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
           <button
             type="button"
             onClick={retryHeavyAlerts}
-            className="px-3 py-1.5 text-sm font-medium text-amber-800 bg-amber-100 hover:bg-amber-200 rounded-md transition-colors"
+            className="px-3 py-1.5 text-sm font-medium text-amber-800 bg-amber-100 hover:bg-amber-200 rounded-md transition-colors duration-150"
           >
             再読み込み
           </button>

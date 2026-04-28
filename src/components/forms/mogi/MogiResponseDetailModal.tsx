@@ -89,7 +89,7 @@ export function MogiResponseDetailModal({
               </thead>
               <tbody>
                 {response.response_data.selections.map((selection, index) => (
-                  <tr key={index} className="hover:bg-[#f3f4f6]">
+                  <tr key={index} className="hover:bg-[#f3f4f6] transition-colors duration-150">
                     <td className="border border-[#e5e7eb] px-4 py-2 text-xs text-[#4b5563]">
                       {selection.exam_type_label ?? '—'}
                     </td>

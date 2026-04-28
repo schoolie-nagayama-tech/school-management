@@ -189,7 +189,7 @@ function StudentGroup({
       {student.rows.map((row, rowIdx) => (
         <tr
           key={row.assessmentId}
-          className={`${rowIdx === rowCount - 1 ? 'border-b-2 border-b-gray-300' : ''} hover:bg-blue-50/30`}
+          className={`${rowIdx === rowCount - 1 ? 'border-b-2 border-b-gray-300' : ''} hover:bg-blue-50/30 transition-colors duration-150`}
         >
           {/* 学校（最初の行のみ） */}
           {rowIdx === 0 && (
@@ -224,7 +224,7 @@ function StudentGroup({
             >
               <Link
                 href={`/students/${student.studentId}/scores`}
-                className="text-xs font-medium text-[#1e3a5f] hover:text-[#3b82f6] hover:underline whitespace-nowrap"
+                className="text-xs font-medium text-[#1e3a5f] hover:text-[#3b82f6] hover:underline whitespace-nowrap transition-colors duration-150"
               >
                 {student.lastName} {student.firstName}
               </Link>

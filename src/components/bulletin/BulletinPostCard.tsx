@@ -93,7 +93,7 @@ export function BulletinPostCard({
         {canEdit && (
           <button
             onClick={onShowReaders}
-            className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors"
+            className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors duration-150"
           >
             <Users className="w-3 h-3" />
             <span>既読: {post.read_count}人</span>

@@ -535,7 +535,7 @@ export function MogiPeriodEditor({
                   setRegion(r);
                 }}
                 disabled={isSubmitting}
-                className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                className={`px-3 py-1 text-sm rounded-md transition-colors duration-150 ${
                   region === r
                     ? 'bg-white text-[#1e3a5f] font-medium shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'
@@ -666,7 +666,7 @@ export function MogiPeriodEditor({
                 {parseVenues(venueText).map((v) => (
                   <label
                     key={v.id}
-                    className="flex items-center gap-2 p-2 rounded hover:bg-[#f9fafb] cursor-pointer"
+                    className="flex items-center gap-2 p-2 rounded hover:bg-[#f9fafb] cursor-pointer transition-colors duration-150"
                   >
                     <input
                       type="checkbox"
@@ -797,7 +797,7 @@ export function MogiPeriodEditor({
                             {commonVenues.map((venue) => (
                               <label
                                 key={venue.id}
-                                className="flex items-center gap-2 p-2 hover:bg-[#f3f4f6] rounded cursor-pointer transition-colors"
+                                className="flex items-center gap-2 p-2 hover:bg-[#f3f4f6] rounded cursor-pointer transition-colors duration-150"
                               >
                                 <input
                                   type="checkbox"
@@ -847,7 +847,7 @@ export function MogiPeriodEditor({
                           {parseExtraVenues(entry.extraVenueText, index).map((venue) => (
                             <label
                               key={venue.id}
-                              className="flex items-center gap-2 p-2 hover:bg-white rounded cursor-pointer"
+                              className="flex items-center gap-2 p-2 hover:bg-white rounded cursor-pointer transition-colors duration-150"
                             >
                               <input
                                 type="checkbox"

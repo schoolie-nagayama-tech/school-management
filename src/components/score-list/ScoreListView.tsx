@@ -346,7 +346,7 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute inset-y-0 right-0 pr-2 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                className="absolute inset-y-0 right-0 pr-2 flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-150"
                 aria-label="検索をクリア"
               >
                 <X className="w-3.5 h-3.5" />
@@ -380,7 +380,7 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
                 setSearchQuery('');
                 setNameCodeFilter('all');
               }}
-              className="text-[11px] text-gray-500 hover:text-[#1e3a5f] underline underline-offset-2 transition-colors whitespace-nowrap"
+              className="text-[11px] text-gray-500 hover:text-[#1e3a5f] underline underline-offset-2 transition-colors duration-150 whitespace-nowrap"
             >
               クリア
             </button>
@@ -435,7 +435,7 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
                   onClick={() => setNaishinType(type)}
                   role="radio"
                   aria-checked={naishinType === type}
-                  className={`px-2.5 py-0.5 text-xs rounded transition-colors ${
+                  className={`px-2.5 py-0.5 text-xs rounded transition-colors duration-150 ${
                     naishinType === type
                       ? 'bg-white text-[#1e3a5f] font-medium shadow-sm'
                       : 'text-gray-500 hover:text-gray-700'
@@ -476,14 +476,14 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
             <button
               onClick={() => setCurrentPage(1)}
               disabled={currentPage === 1}
-              className="px-2 py-1 text-sm rounded border border-gray-200 disabled:opacity-40 hover:bg-gray-50"
+              className="px-2 py-1 text-sm rounded border border-gray-200 disabled:opacity-40 hover:bg-gray-50 transition-colors duration-150"
             >
               «
             </button>
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="px-3 py-1 text-sm rounded border border-gray-200 disabled:opacity-40 hover:bg-gray-50"
+              className="px-3 py-1 text-sm rounded border border-gray-200 disabled:opacity-40 hover:bg-gray-50 transition-colors duration-150"
             >
               ‹ 前
             </button>
@@ -493,14 +493,14 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="px-3 py-1 text-sm rounded border border-gray-200 disabled:opacity-40 hover:bg-gray-50"
+              className="px-3 py-1 text-sm rounded border border-gray-200 disabled:opacity-40 hover:bg-gray-50 transition-colors duration-150"
             >
               次 ›
             </button>
             <button
               onClick={() => setCurrentPage(totalPages)}
               disabled={currentPage === totalPages}
-              className="px-2 py-1 text-sm rounded border border-gray-200 disabled:opacity-40 hover:bg-gray-50"
+              className="px-2 py-1 text-sm rounded border border-gray-200 disabled:opacity-40 hover:bg-gray-50 transition-colors duration-150"
             >
               »
             </button>
