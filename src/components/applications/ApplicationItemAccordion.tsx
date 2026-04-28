@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { ApplicationItem, ApplicationColumnType } from '@/types/database';
+import { ChevronDown } from 'lucide-react';
 import {
   createApplicationItem,
   updateApplicationItem,
@@ -194,19 +195,7 @@ export function ApplicationItemAccordion({
         className="w-full flex items-center justify-between px-4 py-3 bg-[#f3f4f6] hover:bg-[#f3f4f6]/80 transition-colors"
       >
         <span className="text-sm font-semibold text-[#1f2937]">項目管理</span>
-        <svg
-          className={`w-5 h-5 text-[#4b5563] transition-transform ${isOpen ? 'rotate-180' : ''}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 9l-7 7-7-7"
-          />
-        </svg>
+        <ChevronDown className={`w-5 h-5 text-[#4b5563] transition-[transform] duration-150 ease-out ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {/* アコーディオンコンテンツ — CSS grid trick でスムーズに開閉 */}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button, Input, Modal } from '@/components/ui';
+import { ChevronDown } from 'lucide-react';
 import {
   getSubjects,
   createSubject,
@@ -232,19 +233,7 @@ export function SubjectSettings({ isOpen, onClose }: SubjectSettingsProps) {
                         className="p-1.5 text-[#4b5563] hover:text-[#1f2937] disabled:opacity-50 disabled:cursor-not-allowed"
                         title="下に移動"
                       >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 9l-7 7-7-7"
-                          />
-                        </svg>
+                        <ChevronDown className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleEdit(subject)}

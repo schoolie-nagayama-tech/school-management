@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { USER_ROLE_LABELS } from '@/types/database';
 import { SubjectSettings } from '@/components/settings';
-import { Megaphone } from 'lucide-react';
+import { Megaphone, ChevronDown } from 'lucide-react';
 import { TierMedal } from '@/components/teacher/TierMedal';
 import { useTeacherBadgeCount } from '@/hooks/useTeacherBadgeCount';
 import { ThemeToggle } from './ThemeToggle';
@@ -222,14 +222,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                     onClick={() => setShowFormDropdown(!showFormDropdown)}
                                       >
                   フォーム管理
-                  <svg
-                    className={`w-3 h-3 transition-transform ${showFormDropdown ? 'rotate-180' : ''}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+                  <ChevronDown className={`w-3 h-3 transition-[transform] duration-150 ease-out ${showFormDropdown ? 'rotate-180' : ''}`} />
                 </button>
                 {showFormDropdown && (
                 <div
@@ -287,14 +280,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                     onClick={() => setShowCourseDropdown(!showCourseDropdown)}
                   >
                     講習管理
-                    <svg
-                      className={`w-3 h-3 transition-transform ${showCourseDropdown ? 'rotate-180' : ''}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
+                    <ChevronDown className={`w-3 h-3 transition-[transform] duration-150 ease-out ${showCourseDropdown ? 'rotate-180' : ''}`} />
                   </button>
                   {showCourseDropdown && (
                     <div className="absolute top-full left-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-xl z-50 min-w-[150px] dropdown-menu">
@@ -353,14 +339,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                     onClick={() => setShowTeacherDropdown(!showTeacherDropdown)}
                                       >
                     講師
-                    <svg
-                      className={`w-3 h-3 transition-transform ${showTeacherDropdown ? 'rotate-180' : ''}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
+                    <ChevronDown className={`w-3 h-3 transition-[transform] duration-150 ease-out ${showTeacherDropdown ? 'rotate-180' : ''}`} />
                   </button>
                   {showTeacherDropdown && (
                   <div
@@ -444,14 +423,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                     onClick={() => setShowBusinessDropdown(!showBusinessDropdown)}
                                       >
                     業務管理
-                    <svg
-                      className={`w-3 h-3 transition-transform ${showBusinessDropdown ? 'rotate-180' : ''}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
+                    <ChevronDown className={`w-3 h-3 transition-[transform] duration-150 ease-out ${showBusinessDropdown ? 'rotate-180' : ''}`} />
                   </button>
                   {showBusinessDropdown && (
                   <div
@@ -509,14 +481,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                   className="text-white px-3 py-1.5 bg-white/20 rounded-lg hover:bg-white/30 transition-colors flex items-center gap-1 text-xs font-medium"
                 >
                   <span>{schoolDisplayName}</span>
-                  <svg
-                    className={`w-3 h-3 transition-transform ${showSchoolDropdown ? 'rotate-180' : ''}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+                  <ChevronDown className={`w-3 h-3 transition-[transform] duration-150 ease-out ${showSchoolDropdown ? 'rotate-180' : ''}`} />
                 </button>
                 {showSchoolDropdown && (
                   <div

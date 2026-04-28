@@ -6,7 +6,7 @@ import type { Student } from '@/types/database';
 import { GRADE_LABELS } from '@/types/database';
 import type { AutoValues } from '@/lib/api/courseProgress';
 import { HelpTooltip } from '@/components/ui/Tooltip';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, ChevronDown } from 'lucide-react';
 
 interface CourseProgressDashboardProps {
   students: Student[];
@@ -548,12 +548,7 @@ export function CourseProgressDashboard({
                 </span>
               ))}
             </div>
-            <svg
-              className={`w-4 h-4 text-gray-400 transition-transform ${categoryOpen ? 'rotate-180' : ''}`}
-              fill="none" stroke="currentColor" viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
+            <ChevronDown className={`w-4 h-4 text-gray-400 transition-[transform] duration-150 ease-out ${categoryOpen ? 'rotate-180' : ''}`} />
           </button>
 
           {categoryOpen && (
