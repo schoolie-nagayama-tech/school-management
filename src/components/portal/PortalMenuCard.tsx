@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { ChevronRight as ChevronRightIcon, ExternalLink } from 'lucide-react';
 import type { PortalMenu } from '@/types/database';
 
 interface PortalMenuCardProps {
@@ -13,7 +14,7 @@ interface PortalMenuCardProps {
 // アクティブカード（白背景+左線アクセント）
 function ActiveCard({ children, className = '' }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`bg-white rounded-xl border border-[#e5e7eb] shadow-sm hover:shadow-md hover:border-[#d1d5db] active:scale-[0.99] transition-all duration-150 ${className}`}>
+    <div className={`bg-white rounded-xl border border-[#e5e7eb] shadow-sm hover:shadow-md hover:border-[#d1d5db] active:scale-[0.99] transition-[transform,box-shadow,border-color] duration-150 ease-out ${className}`}>
       {children}
     </div>
   );
@@ -25,24 +26,6 @@ function DisabledCard({ children }: { children: React.ReactNode }) {
     <div className="bg-[#f3f4f6] rounded-xl border border-[#e5e7eb] opacity-60 cursor-not-allowed">
       {children}
     </div>
-  );
-}
-
-// 矢印アイコン
-function ChevronRight() {
-  return (
-    <svg className="w-4 h-4 text-[#9ca3af] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-    </svg>
-  );
-}
-
-// 外部リンクアイコン
-function ExternalIcon() {
-  return (
-    <svg className="w-3.5 h-3.5 text-[#9ca3af] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-    </svg>
   );
 }
 
@@ -79,7 +62,7 @@ export function PortalMenuCard({ menu, schoolCode, isFormActive = false, isVisib
         )}
       </div>
       <StatusBadge active={isFormActive && !showAsDisabled} />
-      {isFormActive && !showAsDisabled && <ChevronRight />}
+      {isFormActive && !showAsDisabled && <ChevronRightIcon className="w-4 h-4 text-[#9ca3af] flex-shrink-0" />}
     </div>
   );
 
@@ -105,7 +88,7 @@ export function PortalMenuCard({ menu, schoolCode, isFormActive = false, isVisib
               className="flex items-center gap-3 p-4"
             >
               <span className="flex-1 text-[15px] font-medium text-[#1a1a1a]">{link.label}</span>
-              <ExternalIcon />
+              <ExternalLink className="w-3.5 h-3.5 text-[#9ca3af] flex-shrink-0" />
             </a>
           </ActiveCard>
         ))}
@@ -128,7 +111,7 @@ export function PortalMenuCard({ menu, schoolCode, isFormActive = false, isVisib
             {menu.description && <p className="text-[13px] text-[#6b7280] truncate">{menu.description}</p>}
           </div>
           <StatusBadge active />
-          <ExternalIcon />
+          <ExternalLink className="w-3.5 h-3.5 text-[#9ca3af] flex-shrink-0" />
         </a>
       </ActiveCard>
     );
@@ -157,7 +140,7 @@ export function PortalMenuCard({ menu, schoolCode, isFormActive = false, isVisib
             {menu.description && <p className="text-[13px] text-[#6b7280] truncate">{menu.description}</p>}
           </div>
           <StatusBadge active />
-          <ChevronRight />
+          <ChevronRightIcon className="w-4 h-4 text-[#9ca3af] flex-shrink-0" />
         </Link>
       </ActiveCard>
     );

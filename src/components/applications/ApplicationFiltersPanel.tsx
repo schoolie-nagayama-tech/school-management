@@ -3,6 +3,7 @@
 import { ApplicationFilters, ApplicationItem } from '@/types/database';
 import { Select } from '@/components/ui';
 import { GRADE_LABELS } from '@/types/database';
+import { X } from 'lucide-react';
 
 interface ApplicationFiltersPanelProps {
   filters: ApplicationFilters;
@@ -101,7 +102,7 @@ export function ApplicationFiltersPanel({
         {hasActiveFilters && (
           <button
             onClick={onReset}
-            className="text-sm text-[#4b5563] hover:text-[#3b82f6] underline transition-colors"
+            className="text-sm text-[#4b5563] hover:text-[#3b82f6] underline transition-colors duration-150"
           >
             リセット
           </button>
@@ -110,15 +111,15 @@ export function ApplicationFiltersPanel({
 
       {/* アクティブなフィルター表示 */}
       {hasActiveFilters && (
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-3 flex flex-wrap gap-2 slide-in-bar">
           {filters.search && (
             <span className="inline-flex items-center gap-1 px-2 py-1 bg-[#3b82f6]/20 text-[#1f2937] text-sm rounded">
               検索: {filters.search}
               <button
                 onClick={() => onChange({ search: '' })}
-                className="hover:text-[#3b82f6]"
+                className="hover:text-[#3b82f6] transition-colors duration-150"
               >
-                ×
+                <X className="w-3 h-3" />
               </button>
             </span>
           )}
@@ -127,9 +128,9 @@ export function ApplicationFiltersPanel({
               学年: {GRADE_LABELS[filters.grade]}
               <button
                 onClick={() => onChange({ grade: null })}
-                className="hover:text-[#3b82f6]"
+                className="hover:text-[#3b82f6] transition-colors duration-150"
               >
-                ×
+                <X className="w-3 h-3" />
               </button>
             </span>
           )}
@@ -138,9 +139,9 @@ export function ApplicationFiltersPanel({
               項目: {items.find((i) => i.id === filters.itemId)?.name}
               <button
                 onClick={() => onChange({ itemId: null })}
-                className="hover:text-[#3b82f6]"
+                className="hover:text-[#3b82f6] transition-colors duration-150"
               >
-                ×
+                <X className="w-3 h-3" />
               </button>
             </span>
           )}
