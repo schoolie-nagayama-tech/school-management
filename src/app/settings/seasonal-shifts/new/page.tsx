@@ -202,7 +202,7 @@ export default function NewSeasonalShiftPage() {
             </select>
           </div>
           <div className="flex gap-3 pt-4">
-            <Button type="submit" disabled={isSubmitting} className="bg-[#d32f2f] hover:bg-[#b71c1c] text-white">
+            <Button type="submit" disabled={isSubmitting} className="bg-[#d32f2f] hover:bg-[#b71c1c] text-white transition-colors duration-150">
               {isSubmitting ? '作成中...' : '作成'}
             </Button>
             <Link href="/settings/seasonal-shifts">

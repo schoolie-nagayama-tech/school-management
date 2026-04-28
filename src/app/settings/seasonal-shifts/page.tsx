@@ -190,7 +190,7 @@ export default function SeasonalShiftsPage() {
             <div className="flex justify-between items-center mb-6">
               <h1 className="text-2xl font-bold text-[#1f2937]">講習期間シフト設定</h1>
               <Link href="/settings/seasonal-shifts/new">
-                <Button className="bg-[#d32f2f] hover:bg-[#b71c1c] text-white">
+                <Button className="bg-[#d32f2f] hover:bg-[#b71c1c] text-white transition-colors duration-150">
                   新規作成
                 </Button>
               </Link>
@@ -223,7 +223,7 @@ export default function SeasonalShiftsPage() {
                   </thead>
                   <tbody>
                     {settings.map((s) => (
-                      <tr key={s.id} className="border-b border-[#e5e7eb]/60 hover:bg-[#f9fafb]">
+                      <tr key={s.id} className="border-b border-[#e5e7eb]/60 hover:bg-[#f9fafb] transition-colors duration-150">
                         <td className="px-4 py-3 font-medium text-[#1f2937]">{s.name}</td>
                         <td className="px-4 py-3 text-[#4b5563]">
                           {formatDate(s.start_date)} 〜 {formatDate(s.end_date)}
@@ -279,7 +279,7 @@ export default function SeasonalShiftsPage() {
             <div className="flex justify-between items-center mb-6">
               <h1 className="text-2xl font-bold text-[#1f2937]">通常シフト設定</h1>
               <Link href="/settings/regular-shifts/new">
-                <Button className="bg-[#d32f2f] hover:bg-[#b71c1c] text-white">
+                <Button className="bg-[#d32f2f] hover:bg-[#b71c1c] text-white transition-colors duration-150">
                   新規作成
                 </Button>
               </Link>
@@ -311,7 +311,7 @@ export default function SeasonalShiftsPage() {
                   </thead>
                   <tbody>
                     {regularSettings.map((s) => (
-                      <tr key={s.id} className="border-b border-[#e5e7eb]/60 hover:bg-[#f9fafb]">
+                      <tr key={s.id} className="border-b border-[#e5e7eb]/60 hover:bg-[#f9fafb] transition-colors duration-150">
                         <td className="px-4 py-3 font-medium text-[#1f2937]">{s.name}</td>
                         <td className="px-4 py-3 text-[#4b5563]">
                           {s.deadline ? formatDate(s.deadline) : '-'}

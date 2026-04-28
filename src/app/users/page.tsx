@@ -486,7 +486,7 @@ export default function UsersPage() {
         <div className="flex gap-2 mb-4 border-b border-[#e5e7eb]/20 flex-shrink-0">
           <button
             onClick={() => setActiveTab('users')}
-            className={`px-4 py-2 font-medium transition-colors ${
+            className={`px-4 py-2 font-medium transition-colors duration-150 ${
               activeTab === 'users'
                 ? 'text-[#1f2937] border-b-2 border-[#3b82f6]'
                 : 'text-[#4b5563] hover:text-[#1f2937]'
@@ -497,7 +497,7 @@ export default function UsersPage() {
           {canAccessSchoolSettings && (
             <button
               onClick={() => setActiveTab('schools')}
-              className={`px-4 py-2 font-medium transition-colors ${
+              className={`px-4 py-2 font-medium transition-colors duration-150 ${
                 activeTab === 'schools'
                   ? 'text-[#1f2937] border-b-2 border-[#3b82f6]'
                   : 'text-[#4b5563] hover:text-[#1f2937]'
@@ -546,7 +546,7 @@ export default function UsersPage() {
                   </thead>
                   <tbody className="divide-y divide-[#e5e7eb]/10">
                     {users.map(user => (
-                      <tr key={user.id} className="hover:bg-[#f3f4f6]/50">
+                      <tr key={user.id} className="hover:bg-[#f3f4f6]/50 transition-colors duration-150">
                         <td className="px-3 py-2 text-sm text-[#1f2937] truncate" title={user.display_name || '-'}>
                           {user.display_name || '-'}
                         </td>
@@ -619,7 +619,7 @@ export default function UsersPage() {
                                         toastError((e as Error).message);
                                       }
                                     }}
-                                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:border-amber-400 transition-colors cursor-pointer"
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:border-amber-400 transition-colors duration-150 cursor-pointer"
                                     title="このユーザーとしてログイン"
                                   >
                                     <LogIn className="h-3 w-3" />

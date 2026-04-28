@@ -214,7 +214,7 @@ export default function TimeSlotsSettingsPage() {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
-              className="bg-[#d9376e] text-white hover:bg-[#c02d5a]"
+              className="bg-[#d9376e] text-white hover:bg-[#c02d5a] transition-colors duration-150"
             >
               削除
             </AlertDialogAction>

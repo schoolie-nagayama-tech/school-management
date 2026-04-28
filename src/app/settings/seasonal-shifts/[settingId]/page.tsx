@@ -180,7 +180,7 @@ export default function SeasonalShiftDetailPage() {
               value={publicUrl}
               className="flex-1 px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-[#f9fafb]"
             />
-            <Button type="button" onClick={copyUrl} className="bg-[#1f2937] hover:bg-[#111827] text-white">
+            <Button type="button" onClick={copyUrl} className="bg-[#1f2937] hover:bg-[#111827] text-white transition-colors duration-150">
               {copied ? 'コピー済み' : 'コピー'}
             </Button>
           </div>
@@ -284,7 +284,7 @@ export default function SeasonalShiftDetailPage() {
           </div>
 
           <div className="flex gap-3 pt-4">
-            <Button type="submit" disabled={isSubmitting} className="bg-[#d32f2f] hover:bg-[#b71c1c] text-white">
+            <Button type="submit" disabled={isSubmitting} className="bg-[#d32f2f] hover:bg-[#b71c1c] text-white transition-colors duration-150">
               {isSubmitting ? '保存中...' : '保存'}
             </Button>
             <Link href={`/settings/seasonal-shifts/${settingId}/submissions`}>

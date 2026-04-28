@@ -240,7 +240,7 @@ export default function RegularShiftSubmissionsPage() {
               </thead>
               <tbody>
                 {submissions.map((sub) => (
-                  <tr key={sub.id} className="border-b border-[#e5e7eb]/60 hover:bg-[#f9fafb]">
+                  <tr key={sub.id} className="border-b border-[#e5e7eb]/60 hover:bg-[#f9fafb] transition-colors duration-150">
                     <td className="px-4 py-3 font-medium text-[#1f2937]">{sub.teacher_name}</td>
                     <td className="px-4 py-3 text-[#4b5563]">{sub.teacher_email}</td>
                     <td className="px-4 py-3 text-[#4b5563]">{formatDate(sub.submitted_at)}</td>
