@@ -290,7 +290,7 @@ export default function SchoolSettingsPage() {
                       <button
                         type="button"
                         onClick={() => removeEmail(index)}
-                        className="shrink-0 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                        className="shrink-0 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors duration-150"
                         title="削除"
                       >
                         <X className="w-4 h-4" />
@@ -306,7 +306,7 @@ export default function SchoolSettingsPage() {
                 <button
                   type="button"
                   onClick={addEmail}
-                  className="mt-2 flex items-center gap-1.5 text-sm text-[#1e3a5f] hover:text-[#2a4f7f] font-medium transition-colors"
+                  className="mt-2 flex items-center gap-1.5 text-sm text-[#1e3a5f] hover:text-[#2a4f7f] font-medium transition-colors duration-150"
                 >
                   <Plus className="w-4 h-4" />
                   メールアドレスを追加

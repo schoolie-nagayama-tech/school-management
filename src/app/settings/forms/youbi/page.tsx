@@ -188,7 +188,7 @@ export default function YoubiSettingsPage() {
                   setEditingPeriod(null);
                   setIsEditorOpen(true);
                 }}
-                className="px-4 py-2 bg-[#3b82f6] text-white font-medium rounded-lg hover:bg-[#60a5fa] transition-colors"
+                className="px-4 py-2 bg-[#3b82f6] text-white font-medium rounded-lg hover:bg-[#60a5fa] transition-colors duration-150"
               >
                 新規作成
               </button>

@@ -240,7 +240,7 @@ export default function SeasonalShiftFormPage() {
                   type="button"
                   onClick={() => toggleColumn(slot)}
                   title={`${slot}を一括選択`}
-                  className="px-2 py-1.5 text-xs font-medium rounded-lg border border-[#e5e7eb] bg-white text-[#1f2937] hover:bg-[#f3f4f6] active:bg-[#e5e7eb] transition-colors"
+                  className="px-2 py-1.5 text-xs font-medium rounded-lg border border-[#e5e7eb] bg-white text-[#1f2937] hover:bg-[#f3f4f6] active:bg-[#e5e7eb] transition-colors duration-150"
                 >
                   {slot}
                 </button>
@@ -324,7 +324,7 @@ export default function SeasonalShiftFormPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-6 py-3 bg-[#d32f2f] hover:bg-[#b71c1c] disabled:opacity-50 text-white font-semibold rounded-lg transition-colors"
+            className="px-6 py-3 bg-[#d32f2f] hover:bg-[#b71c1c] disabled:opacity-50 text-white font-semibold rounded-lg transition-colors duration-150"
           >
             {isSubmitting ? '送信中...' : '提出する'}
           </button>

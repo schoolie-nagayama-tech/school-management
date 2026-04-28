@@ -75,7 +75,7 @@ export default function MoshiPortalPage() {
           <p className="text-[#4b5563] mb-6">{errorMessage || '現在受付していません'}</p>
           <Link
             href={`/portal/${schoolCode}`}
-            className="inline-block px-6 py-3 bg-[#3b82f6] text-white font-medium rounded-lg hover:bg-[#60a5fa] transition-colors"
+            className="inline-block px-6 py-3 bg-[#3b82f6] text-white font-medium rounded-lg hover:bg-[#60a5fa] transition-colors duration-150"
           >
             ポータルに戻る
           </Link>
@@ -98,7 +98,7 @@ export default function MoshiPortalPage() {
             </p>
             <a
               href={`/portal/${schoolCode}`}
-              className="inline-block px-6 py-3 bg-[#3b82f6] text-white font-medium rounded-lg hover:bg-[#60a5fa] transition-colors"
+              className="inline-block px-6 py-3 bg-[#3b82f6] text-white font-medium rounded-lg hover:bg-[#60a5fa] transition-colors duration-150"
             >
               ポータルに戻る
             </a>

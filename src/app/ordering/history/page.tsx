@@ -142,7 +142,7 @@ export default function OrderHistoryPage() {
       <div className="flex items-center justify-between mb-6">
         <Link
           href="/ordering"
-          className="flex items-center gap-1.5 text-sm text-[#3b82f6] hover:text-[#1e3a5f] transition-colors"
+          className="flex items-center gap-1.5 text-sm text-[#3b82f6] hover:text-[#1e3a5f] transition-colors duration-150"
         >
           <ArrowLeft className="w-4 h-4" />
           教材・発注管理に戻る

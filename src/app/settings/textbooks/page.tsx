@@ -343,7 +343,7 @@ export default function TextbookMasterPage() {
                         </div>
 
                         {/* Arrow */}
-                        <ChevronRight className="w-4 h-4 text-[#d1d5db] group-hover:text-[#9ca3af] flex-shrink-0 transition-colors" />
+                        <ChevronRight className="w-4 h-4 text-[#d1d5db] group-hover:text-[#9ca3af] flex-shrink-0 transition-colors duration-150" />
                       </div>
                     ))}
                   </div>

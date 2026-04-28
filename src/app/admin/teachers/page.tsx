@@ -349,7 +349,7 @@ export default function TeachersPage() {
           <div className="flex items-center gap-4">
             <Link
               href="/students"
-              className="flex items-center gap-2 text-[#1f2937] hover:text-[#3b82f6] transition-colors"
+              className="flex items-center gap-2 text-[#1f2937] hover:text-[#3b82f6] transition-colors duration-150"
               title="ホームに戻る"
             >
               <Home className="w-5 h-5" />

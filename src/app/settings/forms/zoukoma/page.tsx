@@ -183,7 +183,7 @@ export default function ZoukomaSettingsPage() {
                   setEditingPeriod(null);
                   setIsEditorOpen(true);
                 }}
-                className="px-4 py-2 bg-[#3b82f6] text-white font-medium rounded-lg hover:bg-[#60a5fa] transition-colors"
+                className="px-4 py-2 bg-[#3b82f6] text-white font-medium rounded-lg hover:bg-[#60a5fa] transition-colors duration-150"
               >
                 新規作成
               </button>
@@ -256,7 +256,7 @@ export default function ZoukomaSettingsPage() {
                               setEditingPeriod(period);
                               setIsEditorOpen(true);
                             }}
-                            className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] transition-colors"
+                            className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] transition-colors duration-150"
                             disabled={isSubmitting}
                           >
                             編集
@@ -269,7 +269,7 @@ export default function ZoukomaSettingsPage() {
                                 '_blank'
                               );
                             }}
-                            className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] transition-colors"
+                            className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] transition-colors duration-150"
                           >
                             プレビュー
                           </button>
@@ -277,20 +277,20 @@ export default function ZoukomaSettingsPage() {
                             onClick={() => {
                               window.location.href = `/forms/responses/zoukoma/${period.period_key}`;
                             }}
-                            className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] transition-colors"
+                            className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] transition-colors duration-150"
                           >
                             回答一覧
                           </button>
                           <button
                             onClick={() => handleArchive(period)}
-                            className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] transition-colors"
+                            className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] transition-colors duration-150"
                             disabled={isSubmitting}
                           >
                             アーカイブ
                           </button>
                           <button
                             onClick={() => handleDelete(period)}
-                            className="px-3 py-1 text-xs bg-[#ef4444] text-white rounded hover:bg-[#dc2626] transition-colors"
+                            className="px-3 py-1 text-xs bg-[#ef4444] text-white rounded hover:bg-[#dc2626] transition-colors duration-150"
                             disabled={isSubmitting}
                           >
                             削除
@@ -328,20 +328,20 @@ export default function ZoukomaSettingsPage() {
                                 '_blank'
                               );
                             }}
-                            className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] transition-colors"
+                            className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] transition-colors duration-150"
                           >
                             プレビュー
                           </button>
                           <button
                             onClick={() => handleUnarchive(period)}
-                            className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] transition-colors"
+                            className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] transition-colors duration-150"
                             disabled={isSubmitting}
                           >
                             元に戻す
                           </button>
                           <button
                             onClick={() => handleDelete(period)}
-                            className="px-3 py-1 text-xs bg-[#ef4444] text-white rounded hover:bg-[#dc2626] transition-colors"
+                            className="px-3 py-1 text-xs bg-[#ef4444] text-white rounded hover:bg-[#dc2626] transition-colors duration-150"
                             disabled={isSubmitting}
                           >
                             削除

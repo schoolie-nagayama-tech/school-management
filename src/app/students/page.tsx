@@ -786,7 +786,7 @@ export default function StudentsPage() {
                       <button
                         key={item.label}
                         onClick={item.onClick}
-                        className="w-full text-left px-4 py-2 text-sm text-[#1f2937] hover:bg-[#f3f4f6] transition-colors"
+                        className="w-full text-left px-4 py-2 text-sm text-[#1f2937] hover:bg-[#f3f4f6] transition-colors duration-150"
                       >
                         {item.label}
                       </button>

@@ -50,7 +50,7 @@ export default async function FormPage({ params, searchParams }: FormPageProps) 
             )}
             <Link
               href={`/portal/${schoolCode}`}
-              className="inline-block px-6 py-3 bg-[#3b82f6] text-white font-semibold rounded-lg hover:bg-[#60a5fa] transition-colors"
+              className="inline-block px-6 py-3 bg-[#3b82f6] text-white font-semibold rounded-lg hover:bg-[#60a5fa] transition-colors duration-150"
             >
               ポータルメニューに戻る
             </Link>

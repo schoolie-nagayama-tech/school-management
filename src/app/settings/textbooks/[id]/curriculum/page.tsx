@@ -276,20 +276,20 @@ export default function CurriculumPage() {
           <div className="flex items-center gap-2 mb-4">
             <button
               onClick={openAddModal}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#1e3a5f] text-white text-sm rounded-lg hover:bg-[#2c4f7c] transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#1e3a5f] text-white text-sm rounded-lg hover:bg-[#2c4f7c] transition-colors duration-150"
             >
               <Plus className="w-4 h-4" />項目を追加
             </button>
             <button
               onClick={() => setShowBulkModal(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-2 border border-[#d1d5db] text-sm text-[#374151] rounded-lg hover:bg-[#f9fafb] transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-2 border border-[#d1d5db] text-sm text-[#374151] rounded-lg hover:bg-[#f9fafb] transition-colors duration-150"
             >
               <Upload className="w-4 h-4" />一括登録
             </button>
             {items.length > 0 && (
               <button
                 onClick={handleExport}
-                className="inline-flex items-center gap-1.5 px-3 py-2 border border-[#d1d5db] text-sm text-[#374151] rounded-lg hover:bg-[#f9fafb] transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-2 border border-[#d1d5db] text-sm text-[#374151] rounded-lg hover:bg-[#f9fafb] transition-colors duration-150"
               >
                 <Download className="w-4 h-4" />CSV出力
               </button>
@@ -348,13 +348,13 @@ export default function CurriculumPage() {
                         <div className="flex items-center justify-center gap-1">
                           <button
                             onClick={() => openEditModal(item)}
-                            className="p-1.5 text-[#6b7280] hover:text-[#1e3a5f] hover:bg-[#f3f4f6] rounded transition-colors"
+                            className="p-1.5 text-[#6b7280] hover:text-[#1e3a5f] hover:bg-[#f3f4f6] rounded transition-colors duration-150"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => handleDelete(item.id)}
-                            className="p-1.5 text-[#6b7280] hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                            className="p-1.5 text-[#6b7280] hover:text-red-600 hover:bg-red-50 rounded transition-colors duration-150"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>

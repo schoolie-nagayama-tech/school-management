@@ -1876,7 +1876,7 @@ export default function LegacyProgressPage() {
                   {filteredTextbooks.map((textbook) => (
                     <div
                       key={textbook.id}
-                      className="p-3 bg-[#f3f4f6] rounded-lg border border-[#e5e7eb] hover:bg-[#e5e7eb] transition-colors"
+                      className="p-3 bg-[#f3f4f6] rounded-lg border border-[#e5e7eb] hover:bg-[#e5e7eb] transition-colors duration-150"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
