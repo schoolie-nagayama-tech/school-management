@@ -18,6 +18,7 @@ import type { TeacherTraining, TrainingMaster } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
 import { addUserToSchool, removeUserFromSchool, fetchWithAuth } from '@/lib/api/auth';
 import { displayLoginId } from '@/lib/utils/loginId';
+import { ChevronLeft } from 'lucide-react';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { getActiveTimeSlots } from '@/lib/api/schedule';
 import { getTeacherBadges, getTeacherBadgeAssignments, toggleTeacherBadge } from '@/lib/api/teacher-badges';
@@ -462,11 +463,9 @@ export default function TeacherEditPage() {
           <div className="flex items-center gap-4">
             <Link
               href="/admin/teachers"
-              className="flex items-center gap-2 text-[#4b5563] hover:text-[#ff8e3c] transition-colors"
+              className="flex items-center gap-2 text-[#4b5563] hover:text-[#ff8e3c] transition-colors duration-150"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
+              <ChevronLeft className="w-4 h-4" />
               講師一覧に戻る
             </Link>
             <h1 className="text-2xl font-bold text-[#1f2937]">講師詳細</h1>

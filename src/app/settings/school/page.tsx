@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import AccessDenied from '@/components/AccessDenied';
 import type { School } from '@/types/database';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
+import { ChevronLeft } from 'lucide-react';
 
 export default function SchoolSettingsPage() {
   const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
@@ -204,10 +205,8 @@ export default function SchoolSettingsPage() {
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="max-w-2xl mx-auto">
         <div className="mb-4">
-          <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-[#6b7280] hover:text-[#1f2937] transition-colors">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+          <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-[#6b7280] hover:text-[#1f2937] transition-colors duration-150">
+            <ChevronLeft className="w-4 h-4" />
             設定に戻る
           </Link>
         </div>

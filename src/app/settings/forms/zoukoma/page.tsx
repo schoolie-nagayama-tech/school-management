@@ -10,6 +10,7 @@ import { getDefaultSchoolId } from '@/lib/api/schools';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { ToastContainer } from '@/components/ui';
+import { ChevronLeft } from 'lucide-react';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 export default function ZoukomaSettingsPage() {
@@ -146,10 +147,8 @@ export default function ZoukomaSettingsPage() {
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <AdminLayout headerTitle="テスト対策増コマ申し込み 設定" narrow>
         <div className="mb-4">
-          <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-[#6b7280] hover:text-[#1f2937] transition-colors">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+          <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-[#6b7280] hover:text-[#1f2937] transition-colors duration-150">
+            <ChevronLeft className="w-4 h-4" />
             設定に戻る
           </Link>
         </div>
