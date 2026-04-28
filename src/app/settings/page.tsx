@@ -17,6 +17,7 @@ import {
   BookOpen,
   GraduationCap,
   Bell,
+  ListChecks,
 } from 'lucide-react';
 
 interface SettingsItem {
@@ -89,6 +90,13 @@ const settingsItems: SettingsItem[] = [
     icon: <Clock className="w-5 h-5" />,
     label: 'コマ種別設定',
     description: '授業コマの種別（通常・補習など）',
+    requiresManager: true,
+  },
+  {
+    href: '/settings/subjects',
+    icon: <ListChecks className="w-5 h-5" />,
+    label: '評価科目マスタ',
+    description: '成績ページで使う科目の追加・編集・削除',
     requiresManager: true,
   },
   {
