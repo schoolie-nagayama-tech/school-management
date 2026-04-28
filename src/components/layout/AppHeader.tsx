@@ -233,7 +233,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                 </button>
                 {showFormDropdown && (
                 <div
-                  className="absolute top-full left-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-xl z-50 min-w-[150px]"
+                  className="absolute top-full left-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-xl z-50 min-w-[150px] dropdown-menu"
                 >
                   <div className="py-1">
                     <Link
@@ -297,7 +297,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                     </svg>
                   </button>
                   {showCourseDropdown && (
-                    <div className="absolute top-full left-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-xl z-50 min-w-[150px]">
+                    <div className="absolute top-full left-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-xl z-50 min-w-[150px] dropdown-menu">
                       <div className="py-1">
                         <Link
                           href="/courses"
@@ -364,7 +364,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                   </button>
                   {showTeacherDropdown && (
                   <div
-                    className="absolute top-full left-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-xl z-50 min-w-[180px]"
+                    className="absolute top-full left-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-xl z-50 min-w-[180px] dropdown-menu"
                   >
                     <div className="py-1">
                       <Link
@@ -455,7 +455,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                   </button>
                   {showBusinessDropdown && (
                   <div
-                    className="absolute top-full left-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-xl z-[9999] min-w-[150px]"
+                    className="absolute top-full left-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-xl z-[9999] min-w-[150px] dropdown-menu"
                   >
                     <div className="py-1">
                       <Link
@@ -520,7 +520,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                 </button>
                 {showSchoolDropdown && (
                   <div
-                    className="absolute right-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-xl ring-1 ring-black/5 z-50 min-w-[200px]"
+                    className="absolute right-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-xl ring-1 ring-black/5 z-50 min-w-[200px] dropdown-menu dropdown-menu-right"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="py-1">
@@ -643,7 +643,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                 </button>
                 {showSettingsDropdown && (
                   <div
-                    className="absolute right-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-xl z-50 min-w-[160px]"
+                    className="absolute right-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-xl z-50 min-w-[160px] dropdown-menu dropdown-menu-right"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="py-1">

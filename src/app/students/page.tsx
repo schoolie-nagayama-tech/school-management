@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { Button, Modal } from '@/components/ui';
+import { Plus } from 'lucide-react';
 import {
   StudentForm,
   StudentTable,
@@ -833,7 +834,7 @@ export default function StudentsPage() {
                   {isExporting ? 'エクスポート中...' : 'CSVエクスポート ▾'}
                 </Button>
                 {exportMenuOpen && (
-                  <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-[#e5e7eb] z-50 min-w-[140px] overflow-hidden">
+                  <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-[#e5e7eb] z-50 min-w-[140px] overflow-hidden dropdown-menu dropdown-menu-right">
                     {[
                       { label: '生徒一覧', onClick: handleExportStudents },
                       { label: '成績', onClick: handleExportAssessments },
@@ -858,19 +859,7 @@ export default function StudentsPage() {
                 CSVインポート
               </Button>
 <Button onClick={handleOpenCreateModal}>
-                <svg
-                  className="w-4 h-4 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
+                <Plus className="w-4 h-4 mr-2" />
                 新規登録
               </Button>
             </div>
@@ -879,7 +868,7 @@ export default function StudentsPage() {
 
         {/* 一括操作バー */}
         {!isTeacher && selectedIds.size > 0 && (
-          <div className="mb-4 flex items-center gap-3 p-3 bg-[#1e3a5f]/5 border border-[#1e3a5f]/20 rounded-lg">
+          <div className="mb-4 flex items-center gap-3 p-3 bg-[#1e3a5f]/5 border border-[#1e3a5f]/20 rounded-lg slide-in-bar">
             <span className="text-sm font-medium text-[#1e3a5f]">
               {selectedIds.size}件選択中
             </span>

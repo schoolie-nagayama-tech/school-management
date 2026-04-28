@@ -7,7 +7,7 @@ import type { StudentAlerts, Alert } from '@/types/alerts';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
 import { GRADE_LABELS } from '@/types/database';
-import { ChevronDown, ChevronUp, Info, AlertTriangle } from 'lucide-react';
+import { ChevronDown, ChevronUp, Info, AlertTriangle, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { dismissAlert } from '@/lib/api/alerts';
 import { completeTask } from '@/lib/api/interviews';
@@ -215,16 +215,14 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
       {/* アラート内容説明ポップアップ */}
       {showInfoPopup && (
         <div className="relative">
-          <div className="absolute top-2 left-4 z-10 bg-white border border-gray-200 rounded-xl shadow-xl p-4 min-w-[300px]">
+          <div className="absolute top-2 left-4 z-10 bg-white border border-gray-200 rounded-xl shadow-xl p-4 min-w-[300px] dropdown-menu">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-semibold text-[#1a1a1a]">アラート内容一覧</h3>
               <button
                 onClick={() => setShowInfoPopup(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-gray-400 hover:text-gray-600 transition-colors duration-150"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+                <X className="w-4 h-4" />
               </button>
             </div>
             <div className="space-y-2">

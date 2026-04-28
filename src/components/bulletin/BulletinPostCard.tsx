@@ -49,7 +49,7 @@ export function BulletinPostCard({
 
   return (
     <div
-      className={`p-3 rounded-lg border ${
+      className={`p-3 rounded-lg border transition-colors duration-200 ${
         canRead && !post.is_read
           ? 'bg-primary-subtle border-gray-300 shadow-sm'
           : 'bg-white border-gray-200'

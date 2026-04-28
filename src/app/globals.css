@@ -607,3 +607,54 @@ a:focus-visible {
     transition: none;
   }
 }
+
+/*
+  ドロップダウンメニューの enter アニメーション
+  ─────────────────────────────────────────────
+  React は {open && <div>} で DOM に挿入するため @starting-style が毎回発火する。
+  transform-origin: top left がデフォルト。右寄せの場合は .dropdown-menu-right を併用。
+*/
+.dropdown-menu {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  transition:
+    opacity 150ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
+  transform-origin: top left;
+}
+.dropdown-menu-right {
+  transform-origin: top right;
+}
+
+@starting-style {
+  .dropdown-menu {
+    opacity: 0;
+    transform: scale(0.95) translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dropdown-menu { transition: none; }
+}
+
+/*
+  スライドイン通知バー（一括選択バー・バナー類）
+*/
+.slide-in-bar {
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 200ms ease-out,
+    transform 200ms ease-out;
+}
+
+@starting-style {
+  .slide-in-bar {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slide-in-bar { transition: none; }
+}

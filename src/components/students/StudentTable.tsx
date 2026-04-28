@@ -170,7 +170,7 @@ function StudentRowActions({
           {open && (
             <div
               role="menu"
-              className="absolute right-0 top-full mt-1 min-w-[140px] bg-white rounded-lg border border-gray-200 shadow-lg z-10 py-1"
+              className="absolute right-0 top-full mt-1 min-w-[140px] bg-white rounded-lg border border-gray-200 shadow-lg z-10 py-1 dropdown-menu dropdown-menu-right"
             >
               {menuItems.map((item) => (
                 <button
