@@ -65,7 +65,7 @@ export function BillingFiltersPanel({
         {hasActiveFilters && (
           <button
             onClick={onReset}
-            className="text-sm text-[#4b5563] hover:text-[#3b82f6] underline transition-colors"
+            className="text-sm text-[#4b5563] hover:text-[#3b82f6] underline transition-colors duration-150"
           >
             リセット
           </button>

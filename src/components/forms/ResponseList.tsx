@@ -165,7 +165,7 @@ export function ResponseList({ responses, formId, onRefresh }: ResponseListProps
                   filteredResponses.map((response) => (
                     <tr
                       key={response.id}
-                      className="border-b border-[#e5e7eb] hover:bg-[#f3f4f6]/30"
+                      className="border-b border-[#e5e7eb] hover:bg-[#f3f4f6]/30 transition-colors duration-150"
                     >
                       <td className="px-4 py-3 text-[#4b5563] border-r border-[#e5e7eb]">
                         {formatDateTime(response.created_at)}

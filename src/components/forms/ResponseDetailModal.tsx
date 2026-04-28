@@ -127,7 +127,7 @@ export function ResponseDetailModal({
             <div className="flex justify-end pt-4 border-t border-[#e5e7eb]">
               <button
                 onClick={onClose}
-                className="px-4 py-2 bg-[#f3f4f6] text-[#4b5563] rounded-lg hover:bg-white transition-colors"
+                className="px-4 py-2 bg-[#f3f4f6] text-[#4b5563] rounded-lg hover:bg-white transition-colors duration-150"
               >
                 閉じる
               </button>

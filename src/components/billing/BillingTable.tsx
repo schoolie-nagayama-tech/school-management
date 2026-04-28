@@ -412,7 +412,7 @@ export function BillingTable({
                           {onBillingChange && isManagerOrAbove ? (
                             <>
                               <div
-                                className="flex-1 flex items-center justify-center gap-1 cursor-pointer hover:bg-white/10 rounded px-1 py-0.5 transition-colors"
+                                className="flex-1 flex items-center justify-center gap-1 cursor-pointer hover:bg-white/10 rounded px-1 py-0.5 transition-colors duration-150"
                                 onClick={() => {
                                   setEditingItemId(item.id);
                                   setEditingName(item.name);
@@ -469,7 +469,7 @@ export function BillingTable({
                           <div className="flex items-center gap-1">
                             {showAutoFillButton && (
                               <button
-                                className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-400/30 text-amber-200 hover:bg-amber-400/50 transition-colors disabled:opacity-50"
+                                className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-400/30 text-amber-200 hover:bg-amber-400/50 transition-colors duration-150 disabled:opacity-50"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   if (billingPeriodId) {
@@ -486,7 +486,7 @@ export function BillingTable({
                             )}
                             {item.linked_form_type && !isTeacher && billingPeriodId && schoolIds && (
                               <button
-                                className="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-400/30 text-cyan-200 hover:bg-cyan-400/50 transition-colors disabled:opacity-50"
+                                className="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-400/30 text-cyan-200 hover:bg-cyan-400/50 transition-colors duration-150 disabled:opacity-50"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleFormSync(item.id);
@@ -499,7 +499,7 @@ export function BillingTable({
                             )}
                             {item.source_type === 'order' && !isTeacher && periodStartDate && schoolIds && (
                               <button
-                                className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-400/30 text-purple-200 hover:bg-purple-400/50 transition-colors"
+                                className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-400/30 text-purple-200 hover:bg-purple-400/50 transition-colors duration-150"
                                 title="発注管理から同期"
                                 onClick={async (e) => {
                                   e.stopPropagation();
@@ -576,13 +576,13 @@ export function BillingTable({
               return (
                 <tr
                   key={student.id}
-                  className={`border-b border-[#e5e7eb] hover:bg-[#e8f0fe] ${rowBg}`}
+                  className={`border-b border-[#e5e7eb] hover:bg-[#e8f0fe] transition-colors duration-150 ${rowBg}`}
                 >
                   <td className={`px-3 py-2 text-xs text-[#4b5563] border-r border-[#e5e7eb] sticky left-0 ${rowBg} z-20 w-[60px]`}>
                     {GRADE_LABELS[student.grade] || student.grade}
                   </td>
                   <td
-                    className={`px-3 py-2 text-xs text-[#1f2937] border-r border-[#e5e7eb] sticky left-[60px] ${rowBg} z-20 w-[160px] whitespace-nowrap ${
+                    className={`px-3 py-2 text-xs text-[#1f2937] border-r border-[#e5e7eb] sticky left-[60px] ${rowBg} z-20 w-[160px] whitespace-nowrap transition-colors duration-150 ${
                       onStudentClick ? 'cursor-pointer hover:text-[#3b82f6]' : ''
                     }`}
                     style={{ boxShadow: '4px 0 6px -2px rgba(0,0,0,0.08)' }}
@@ -610,7 +610,7 @@ export function BillingTable({
                       return (
                         <td
                           key={item.id}
-                          className={`px-1 py-1 text-center border-r border-[#e5e7eb] transition-colors relative ${bgClass} ${
+                          className={`px-1 py-1 text-center border-r border-[#e5e7eb] transition-colors duration-150 relative ${bgClass} ${
                             isUpdating ? 'opacity-50' : ''
                           } ${canEditCell && onBillingChange && !isEditingThis ? 'cursor-pointer hover:bg-blue-50' : ''}`}
                           onClick={() => {
@@ -681,7 +681,7 @@ export function BillingTable({
                       return (
                         <td
                           key={item.id}
-                          className={`px-1 py-1 text-center border-r border-[#e5e7eb] transition-colors relative ${bgClass} ${
+                          className={`px-1 py-1 text-center border-r border-[#e5e7eb] transition-colors duration-150 relative ${bgClass} ${
                             isUpdating ? 'opacity-50' : ''
                           } ${canEditCell && onBillingChange && !isEditingThis ? 'cursor-pointer hover:bg-blue-50' : ''}`}
                           onClick={() => {
@@ -747,7 +747,7 @@ export function BillingTable({
                     return (
                       <td
                         key={item.id}
-                        className={`px-3 py-2 text-center border-r border-[#e5e7eb] transition-colors ${
+                        className={`px-3 py-2 text-center border-r border-[#e5e7eb] transition-colors duration-150 ${
                           isBilled ? 'bg-green-100' : ''
                         } ${
                           isUpdating

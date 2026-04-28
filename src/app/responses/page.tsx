@@ -192,7 +192,7 @@ function SummaryCard({
 
   return (
     <Link href={href}>
-      <div className="p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 cursor-pointer transition-colors">
+      <div className="p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 cursor-pointer transition-colors duration-150">
         <h3 className="font-semibold text-gray-900">
           {formTypeLabel} ({periodLabel})
         </h3>
@@ -575,7 +575,7 @@ export default function ResponsesPage() {
                     applyQuickFilter(qf);
                   }
                 }}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors duration-150 ${
                   active ? qf.activeColor : qf.color
                 }`}
               >
@@ -618,7 +618,7 @@ export default function ResponsesPage() {
             </div>
             <button
               type="submit"
-              className="px-4 py-2 bg-[#1e3a5f] text-white rounded-lg text-sm hover:bg-[#2c4f7c] transition-colors"
+              className="px-4 py-2 bg-[#1e3a5f] text-white rounded-lg text-sm hover:bg-[#2c4f7c] transition-colors duration-150"
             >
               検索
             </button>
@@ -784,7 +784,7 @@ export default function ResponsesPage() {
                   setSearchInput('');
                   setSearchName('');
                 }}
-                className="text-sm text-blue-600 hover:text-blue-800 cursor-pointer"
+                className="text-sm text-blue-600 hover:text-blue-800 cursor-pointer transition-colors duration-150"
               >
                 フィルターをリセット
               </button>
@@ -826,7 +826,7 @@ export default function ResponsesPage() {
               <button
                 type="button"
                 onClick={() => setViewMode('grouped')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors duration-150 ${
                   viewMode === 'grouped'
                     ? 'bg-[#1e3a5f] text-white'
                     : 'bg-white text-gray-600 hover:bg-gray-50'
@@ -838,7 +838,7 @@ export default function ResponsesPage() {
               <button
                 type="button"
                 onClick={() => setViewMode('list')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors duration-150 ${
                   viewMode === 'list'
                     ? 'bg-[#1e3a5f] text-white'
                     : 'bg-white text-gray-600 hover:bg-gray-50'
@@ -929,7 +929,7 @@ export default function ResponsesPage() {
                       <button
                         type="button"
                         onClick={() => handleSort('created_at')}
-                        className="font-medium text-[#1f2937] hover:text-[#3b82f6] flex items-center"
+                        className="font-medium text-[#1f2937] hover:text-[#3b82f6] flex items-center transition-colors duration-150"
                       >
                         日時
                         {getSortIcon(sortKey, 'created_at', sortOrder)}
@@ -939,7 +939,7 @@ export default function ResponsesPage() {
                       <button
                         type="button"
                         onClick={() => handleSort('form_type')}
-                        className="font-medium text-[#1f2937] hover:text-[#3b82f6] flex items-center"
+                        className="font-medium text-[#1f2937] hover:text-[#3b82f6] flex items-center transition-colors duration-150"
                       >
                         種別
                         {getSortIcon(sortKey, 'form_type', sortOrder)}
@@ -949,7 +949,7 @@ export default function ResponsesPage() {
                       <button
                         type="button"
                         onClick={() => handleSort('form_period')}
-                        className="font-medium text-[#1f2937] hover:text-[#3b82f6] flex items-center"
+                        className="font-medium text-[#1f2937] hover:text-[#3b82f6] flex items-center transition-colors duration-150"
                       >
                         期間
                         {getSortIcon(sortKey, 'form_period', sortOrder)}
@@ -959,7 +959,7 @@ export default function ResponsesPage() {
                       <button
                         type="button"
                         onClick={() => handleSort('school')}
-                        className="font-medium text-[#1f2937] hover:text-[#3b82f6] flex items-center"
+                        className="font-medium text-[#1f2937] hover:text-[#3b82f6] flex items-center transition-colors duration-150"
                       >
                         教室
                         {getSortIcon(sortKey, 'school', sortOrder)}
@@ -969,7 +969,7 @@ export default function ResponsesPage() {
                       <button
                         type="button"
                         onClick={() => handleSort('student_name')}
-                        className="font-medium text-[#1f2937] hover:text-[#3b82f6] flex items-center"
+                        className="font-medium text-[#1f2937] hover:text-[#3b82f6] flex items-center transition-colors duration-150"
                       >
                         生徒名
                         {getSortIcon(sortKey, 'student_name', sortOrder)}
@@ -979,7 +979,7 @@ export default function ResponsesPage() {
                       <button
                         type="button"
                         onClick={() => handleSort('grade')}
-                        className="font-medium text-[#1f2937] hover:text-[#3b82f6] flex items-center"
+                        className="font-medium text-[#1f2937] hover:text-[#3b82f6] flex items-center transition-colors duration-150"
                       >
                         学年
                         {getSortIcon(sortKey, 'grade', sortOrder)}
@@ -989,7 +989,7 @@ export default function ResponsesPage() {
                       <button
                         type="button"
                         onClick={() => handleSort('status')}
-                        className="font-medium text-[#1f2937] hover:text-[#3b82f6] flex items-center mx-auto"
+                        className="font-medium text-[#1f2937] hover:text-[#3b82f6] flex items-center mx-auto transition-colors duration-150"
                       >
                         処理状態
                         {getSortIcon(sortKey, 'status', sortOrder)}

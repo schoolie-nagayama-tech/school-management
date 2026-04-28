@@ -232,7 +232,7 @@ export function ApplicationTable({
                           {onStatusChange && !isTeacher ? (
                             <>
                               <div
-                                className="flex-1 flex items-center justify-center gap-1 cursor-pointer hover:bg-white/10 rounded px-1 py-0.5 transition-colors"
+                                className="flex-1 flex items-center justify-center gap-1 cursor-pointer hover:bg-white/10 rounded px-1 py-0.5 transition-colors duration-150"
                                 onClick={() => {
                                   setEditingItemId(item.id);
                                   setEditingName(item.name);
@@ -374,7 +374,7 @@ export function ApplicationTable({
                             }
                           }
                         }}
-                        className="flex-1 px-2 py-1 text-xs bg-[#3b82f6] text-white rounded hover:bg-[#60a5fa] transition-colors"
+                        className="flex-1 px-2 py-1 text-xs bg-[#3b82f6] text-white rounded hover:bg-[#60a5fa] transition-colors duration-150"
                       >
                         追加
                       </button>
@@ -386,7 +386,7 @@ export function ApplicationTable({
                           setNewItemDueDate('');
                           setNewItemManagerOnly(false);
                         }}
-                        className="flex-1 px-2 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] transition-colors"
+                        className="flex-1 px-2 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] transition-colors duration-150"
                       >
                         キャンセル
                       </button>
@@ -400,7 +400,7 @@ export function ApplicationTable({
                       setNewItemColumnType('check');
                       setNewItemDueDate('');
                     }}
-                    className="w-full px-2 py-1 text-sm text-[#4b5563] hover:bg-[#3b82f6]/10 rounded transition-colors border border-dashed border-[#e5e7eb] hover:border-[#3b82f6]"
+                    className="w-full px-2 py-1 text-sm text-[#4b5563] hover:bg-[#3b82f6]/10 rounded transition-colors duration-150 border border-dashed border-[#e5e7eb] hover:border-[#3b82f6]"
                     title="新しい列を追加"
                   >
                     + 追加
@@ -464,13 +464,13 @@ export function ApplicationTable({
               return (
               <tr
                 key={student.id}
-                className={`border-b border-[#e5e7eb] hover:bg-[#e8f0fe] ${rowBg}`}
+                className={`border-b border-[#e5e7eb] hover:bg-[#e8f0fe] transition-colors duration-150 ${rowBg}`}
               >
                 <td className={`px-3 py-2 text-xs text-[#4b5563] border-r border-[#e5e7eb] sticky left-0 ${rowBg} z-20 w-[60px]`}>
                   {GRADE_LABELS[student.grade] || student.grade}
                 </td>
                 <td
-                  className={`px-3 py-2 text-xs text-[#1f2937] border-r border-[#e5e7eb] sticky left-[60px] ${rowBg} z-20 w-[160px] whitespace-nowrap ${
+                  className={`px-3 py-2 text-xs text-[#1f2937] border-r border-[#e5e7eb] sticky left-[60px] ${rowBg} z-20 w-[160px] whitespace-nowrap transition-colors duration-150 ${
                     onStudentClick ? 'cursor-pointer hover:text-[#3b82f6]' : ''
                   }`}
                   style={{ boxShadow: '4px 0 6px -2px rgba(0,0,0,0.08)' }}
@@ -501,7 +501,7 @@ export function ApplicationTable({
                     return (
                       <td
                         key={item.id}
-                        className={`px-3 py-2 text-center border-r border-[#e5e7eb] transition-colors ${style} ${
+                        className={`px-3 py-2 text-center border-r border-[#e5e7eb] transition-colors duration-150 ${style} ${
                           isOverdueAndIncomplete ? 'bg-red-100' : ''
                         } ${isTeacher && !canEdit ? 'bg-amber-50/50' : ''} ${
                           isUpdating ? 'opacity-50' : (onStatusChange && canEdit) ? 'cursor-pointer hover:bg-[#3b82f6]/10' : 'cursor-default opacity-60'
@@ -533,7 +533,7 @@ export function ApplicationTable({
                     return (
                       <td
                         key={item.id}
-                        className={`px-3 py-2 text-center border-r border-[#e5e7eb] transition-colors ${
+                        className={`px-3 py-2 text-center border-r border-[#e5e7eb] transition-colors duration-150 ${
                           isOverdueAndIncomplete ? 'bg-red-100' : 'bg-white'
                         } ${isTeacher && !canEdit ? 'bg-amber-50/50' : ''} ${
                           isUpdating ? 'opacity-50' : (onNumberChange && canEdit) ? 'cursor-pointer hover:bg-[#3b82f6]/10' : 'cursor-default opacity-60'
@@ -598,7 +598,7 @@ export function ApplicationTable({
                     return (
                       <td
                         key={item.id}
-                        className={`px-3 py-2 text-center border-r border-[#e5e7eb] transition-colors ${
+                        className={`px-3 py-2 text-center border-r border-[#e5e7eb] transition-colors duration-150 ${
                           isOverdueAndIncomplete ? 'bg-red-100' : 'bg-white'
                         } ${isTeacher && !canEdit ? 'bg-amber-50/50' : ''} ${
                           isUpdating ? 'opacity-50' : (onDateChange && canEdit) ? 'cursor-pointer hover:bg-[#3b82f6]/10' : 'cursor-default opacity-60'

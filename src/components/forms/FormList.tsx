@@ -161,7 +161,7 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
       <div className="flex items-center justify-between">
         <button
           onClick={() => setShowArchived(!showArchived)}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-150 ${
             showArchived
               ? 'bg-[#3b82f6]/20 text-[#1f2937]'
               : 'bg-[#f3f4f6] text-[#4b5563] hover:bg-white'
