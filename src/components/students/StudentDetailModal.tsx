@@ -38,12 +38,6 @@ type TabType = 'basic' | 'scores' | 'interviews' | 'schedule';
 
 type StudentTextbookRow = Awaited<ReturnType<typeof getStudentTextbooksForProgress>>[number];
 
-function gradeToCategory(grade: number): 'elementary' | 'middle' | 'high' {
-  if (grade <= 6) return 'elementary';
-  if (grade <= 9) return 'middle';
-  return 'high';
-}
-
 // assessments の学年→ラベルのためのサブジェクト列
 const FIVE_SUBJECTS = ['english', 'math', 'japanese', 'social', 'science'] as const;
 
@@ -90,12 +84,11 @@ export function StudentDetailModal({
     { key: 'interviews', label: '面談記録' },
   ];
 
-  // 教材データを読み込み
-  const loadTextbooks = useCallback(async (studentId: string, grade: number) => {
-    const category = gradeToCategory(grade);
+  // 教材データを読み込み（学校種別フィルタなし：全教材を表示）
+  const loadTextbooks = useCallback(async (studentId: string) => {
     const [rows, masters] = await Promise.all([
       getStudentTextbooksForProgress(studentId).catch(() => []),
-      getTextbooks(category).catch(() => []),
+      getTextbooks().catch(() => []),
     ]);
     setTextbooks(rows);
     setAvailableTextbooks(masters);
@@ -104,7 +97,7 @@ export function StudentDetailModal({
   useEffect(() => {
     if (isOpen && student) {
       setIsLoading(true);
-      loadTextbooks(student.id, student.grade)
+      loadTextbooks(student.id)
         .catch((error) => console.error('Error fetching student data:', error))
         .finally(() => setIsLoading(false));
     } else {
@@ -178,7 +171,7 @@ export function StudentDetailModal({
         student_id: student.id,
         textbook_id: Number(selectedTextbookId),
       });
-      await loadTextbooks(student.id, student.grade);
+      await loadTextbooks(student.id);
       setSelectedTextbookId('');
       success('教材を追加しました');
     } catch (e) {
@@ -200,7 +193,7 @@ export function StudentDetailModal({
     if (!ok) return;
     try {
       await deleteStudentTextbook(row.id);
-      await loadTextbooks(student.id, student.grade);
+      await loadTextbooks(student.id);
       success('教材を削除しました');
     } catch (e) {
       console.error('Error deleting textbook:', e);
