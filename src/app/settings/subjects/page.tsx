@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { Button, Card, CardHeader, CardTitle, CardContent, Input, ToastContainer } from '@/components/ui';
@@ -56,6 +56,17 @@ export default function SubjectsSettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [editing, setEditing] = useState<AssessmentSubject | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const editorRef = useRef<HTMLDivElement | null>(null);
+
+  // 編集パネルが出たらスクロール＆フォーカス
+  useEffect(() => {
+    if (!editing && !isCreating) return;
+    const el = editorRef.current;
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const firstInput = el.querySelector<HTMLInputElement>('input[type="text"], input:not([type])');
+    firstInput?.focus();
+  }, [editing, isCreating]);
 
   const fetchAll = async () => {
     setIsLoading(true);
@@ -144,17 +155,20 @@ export default function SubjectsSettingsPage() {
         </Card>
 
         {(isCreating || editing) && (
-          <SubjectEditor
-            initial={editing}
-            onCancel={() => { setIsCreating(false); setEditing(null); }}
-            onSaved={async () => {
-              setIsCreating(false);
-              setEditing(null);
-              await fetchAll();
-              success('保存しました');
-            }}
-            onError={(msg) => toastError(msg)}
-          />
+          <div ref={editorRef} className="subject-editor-enter">
+            <SubjectEditor
+              key={editing?.id ?? 'new'}
+              initial={editing}
+              onCancel={() => { setIsCreating(false); setEditing(null); }}
+              onSaved={async () => {
+                setIsCreating(false);
+                setEditing(null);
+                await fetchAll();
+                success('保存しました');
+              }}
+              onError={(msg) => toastError(msg)}
+            />
+          </div>
         )}
 
         {isLoading ? (

@@ -658,3 +658,27 @@ a:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .slide-in-bar { transition: none; }
 }
+
+/* Subject editor 出現アニメーション：開いたことをはっきり伝える */
+.subject-editor-enter {
+  animation: subject-editor-in 280ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+@keyframes subject-editor-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.subject-editor-enter > * {
+  box-shadow: 0 0 0 2px rgba(30, 58, 95, 0.15), 0 4px 16px -4px rgba(30, 58, 95, 0.18);
+  transition: box-shadow 600ms ease-out;
+  border-radius: 12px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .subject-editor-enter { animation: none; }
+  .subject-editor-enter > * { transition: none; }
+}
