@@ -352,13 +352,10 @@ export function StudentDetailModal({
                     >
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="text-sm text-[#1f2937] truncate">
-                          {tb.textbook?.name ?? '（不明な教材）'}
+                          {tb.textbook
+                            ? [tb.textbook.grade, tb.textbook.name, tb.textbook.publisher].filter(Boolean).join(' / ')
+                            : '（不明な教材）'}
                         </span>
-                        {tb.textbook?.subject && (
-                          <span className="text-[10px] text-[#4b5563] bg-gray-100 px-1.5 py-0.5 rounded">
-                            {tb.textbook.subject}
-                          </span>
-                        )}
                         {tb.season && (
                           <span className="text-[10px] text-[#4b5563] bg-gray-100 px-1.5 py-0.5 rounded">
                             {tb.season === 'spring' ? '春期' : tb.season === 'summer' ? '夏期' : '冬期'}

@@ -71,6 +71,10 @@ export function StudentRegularScheduleList({
   const [formOpen, setFormOpen] = useState(false);
   const [editingPattern, setEditingPattern] = useState<ScheduleRegularPattern | null>(null);
 
+  // 通常期（生徒管理の「通塾日程」列と一致させる）と講習期を分割
+  const regularPatterns = patterns.filter((p) => p.period_type === 'regular');
+  const kousyuPatterns = patterns.filter((p) => p.period_type !== 'regular');
+
   const fetchData = useCallback(async () => {
     if (!schoolId) return;
     setLoading(true);
@@ -153,7 +157,7 @@ export function StudentRegularScheduleList({
         </Button>
       </div>
 
-      {patterns.length === 0 ? (
+      {regularPatterns.length === 0 ? (
         <p className="text-sm text-[var(--paragraph)] py-4">
           通塾日程がありません。「+ 通塾日程を追加」から登録してください。
         </p>
@@ -174,16 +178,13 @@ export function StudentRegularScheduleList({
                 <th className="px-4 py-2 text-left font-medium text-[var(--headline)]">
                   科目
                 </th>
-                <th className="px-4 py-2 text-left font-medium text-[var(--headline)]">
-                  期間
-                </th>
                 <th className="px-4 py-2 text-right font-medium text-[var(--headline)]">
                   操作
                 </th>
               </tr>
             </thead>
             <tbody>
-              {patterns.map((p) => (
+              {regularPatterns.map((p) => (
                 <tr
                   key={p.id}
                   className="border-b border-[var(--stroke)] last:border-b-0"
@@ -202,9 +203,6 @@ export function StudentRegularScheduleList({
                       .map((id) => subjects.find((s) => s.id === id)?.name)
                       .filter(Boolean)
                       .join('・') || '—'}
-                  </td>
-                  <td className="px-4 py-2 text-[var(--paragraph)]">
-                    {SCHEDULE_PERIOD_LABELS[p.period_type] ?? p.period_type}
                   </td>
                   <td className="px-4 py-2 text-right">
                     <div className="flex justify-end gap-2">
@@ -233,10 +231,57 @@ export function StudentRegularScheduleList({
         </div>
       )}
 
-      {patterns.length > 0 && (
+      {regularPatterns.length > 0 && (
         <p className="text-xs text-[var(--paragraph-light)]">
-          <Calendar className="inline h-4 w-4 mr-1" />週{patterns.length}回通塾
+          <Calendar className="inline h-4 w-4 mr-1" />週{regularPatterns.length}回通塾
         </p>
+      )}
+
+      {/* 講習期パターン（春期・夏期・冬期）は別セクションで表示 */}
+      {kousyuPatterns.length > 0 && (
+        <div className="border-t border-[var(--stroke)] pt-3 mt-4">
+          <p className="text-xs font-medium text-[var(--headline)] mb-2">
+            講習期パターン（{kousyuPatterns.length}件）
+          </p>
+          <ul className="space-y-1">
+            {kousyuPatterns.map((p) => (
+              <li key={p.id} className="text-xs text-[var(--paragraph)] flex flex-wrap items-center gap-2">
+                <span className="inline-flex px-1.5 py-0.5 text-[10px] rounded bg-orange-100 text-orange-700 border border-orange-200">
+                  {SCHEDULE_PERIOD_LABELS[p.period_type] ?? p.period_type}
+                </span>
+                <span>{DAY_OF_WEEK_LABELS[p.day_of_week] ?? '—'}</span>
+                <span>{slotLabel(p.time_slot)}</span>
+                {p.teacher?.display_name && (
+                  <span className="text-[var(--paragraph-light)]">{p.teacher.display_name}</span>
+                )}
+                <span>
+                  {(p.subject_ids ?? [])
+                    .map((id) => subjects.find((s) => s.id === id)?.name)
+                    .filter(Boolean)
+                    .join('・') || '—'}
+                </span>
+                <span className="ml-auto flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleEdit(p)}
+                    className="text-[var(--paragraph)] hover:text-[var(--primary)]"
+                    aria-label="編集"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(p)}
+                    className="text-[var(--paragraph)] hover:text-[#c62828]"
+                    aria-label="削除"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {ConfirmDialog}
