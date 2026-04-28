@@ -275,8 +275,9 @@ function buildScoreMissingCandidates(sources: AlertSources): Alert[] {
   const categories: Array<'regular_test' | 'report_card' | 'mock'> = ['regular_test', 'report_card', 'mock'];
 
   for (const student of sources.students) {
-    // 小学生（grade <= 6）は除外
-    if (student.grade != null && student.grade <= 6) continue;
+    // 小学生（grade <= 6）と高校生（grade >= 10）は除外。
+    // 高校生は教科セットが学年で動的に変わり、空欄が増えるため未入力判定が正確にできない。
+    if (student.grade != null && (student.grade <= 6 || student.grade >= 10)) continue;
     const allAssessments = sources.assessmentsByStudent.get(student.id) ?? [];
     for (const category of categories) {
       const assessments = allAssessments
