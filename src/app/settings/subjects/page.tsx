@@ -110,7 +110,7 @@ export default function SubjectsSettingsPage() {
   }
 
   return (
-    <AdminLayout headerTitle="科目マスタ">
+    <AdminLayout headerTitle="成績表科目マスタ">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         <Link href="/settings" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700">
           <ChevronLeft className="w-4 h-4 mr-1" />
@@ -119,7 +119,7 @@ export default function SubjectsSettingsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>評価科目マスタ</CardTitle>
+            <CardTitle>成績表科目マスタ</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-gray-600">

@@ -1039,9 +1039,11 @@ function TableView({
   // 申込・引継ぎ・講師名は面談モードでは列設定に関係なく常時非表示（内部情報のため）。
   type MeetingCol = 'proposal' | 'application' | 'examRange' | 'schoolProgress' | 'lesson1' | 'lesson2' | 'lesson3' | 'handover' | 'homeworkNotDone' | 'tardy' | 'teacherName';
   const colsKey = `progress-cols:${studentId}:${textbook.id}`;
+  // デフォルトは「試験範囲・学校進度・1回目・2回目・引継ぎ・宿題未・遅刻・講師名」を表示
+  // 提案コマ数／申込コマ数／3回目はデフォルトでは非表示
   const DEFAULT_COLS: Record<MeetingCol, boolean> = {
-    proposal: true, application: true, examRange: true, schoolProgress: true,
-    lesson1: true, lesson2: true, lesson3: true, handover: true,
+    proposal: false, application: false, examRange: true, schoolProgress: true,
+    lesson1: true, lesson2: true, lesson3: false, handover: true,
     homeworkNotDone: true, tardy: true, teacherName: true,
   };
   const [meetingCols, setMeetingCols] = useState<Record<MeetingCol, boolean>>(DEFAULT_COLS);

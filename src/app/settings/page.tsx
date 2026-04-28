@@ -95,7 +95,7 @@ const settingsItems: SettingsItem[] = [
   {
     href: '/settings/subjects',
     icon: <ListChecks className="w-5 h-5" />,
-    label: '評価科目マスタ',
+    label: '成績表科目マスタ',
     description: '成績ページで使う科目の追加・編集・削除',
     requiresManager: true,
   },
