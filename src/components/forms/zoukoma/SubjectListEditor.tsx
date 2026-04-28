@@ -81,7 +81,7 @@ export function SubjectListEditor({
           {subjects.map((subject, index) => (
             <div
               key={index}
-              className="flex items-center gap-3 px-4 py-3 bg-white hover:bg-[#f3f4f6] transition-colors"
+              className="flex items-center gap-3 px-4 py-3 bg-white hover:bg-[#f3f4f6] transition-colors duration-150"
             >
               <div className="flex items-center gap-2 flex-1">
                 <span className="text-sm text-[#4b5563] w-6">{index + 1}.</span>

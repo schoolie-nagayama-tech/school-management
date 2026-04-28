@@ -143,7 +143,7 @@ function StudentRowActions({
             onClick={action.onClick}
             aria-label={action.label}
             title={action.label}
-            className="inline-flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 text-gray-600 hover:text-ink hover:bg-ink-subtle rounded-lg transition-colors"
+            className="inline-flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 text-gray-600 hover:text-ink hover:bg-ink-subtle rounded-lg transition-colors duration-150"
           >
             <ActionIcon className="w-4 h-4" />
             <span className="text-[10px] leading-none">{action.label}</span>
@@ -159,7 +159,7 @@ function StudentRowActions({
             aria-haspopup="menu"
             aria-expanded={open}
             title="編集・削除"
-            className="inline-flex items-center justify-center w-9 h-9 text-gray-600 hover:text-ink hover:bg-ink-subtle rounded-lg transition-colors"
+            className="inline-flex items-center justify-center w-9 h-9 text-gray-600 hover:text-ink hover:bg-ink-subtle rounded-lg transition-colors duration-150"
           >
             <MoreVertical className="w-4 h-4" />
           </button>

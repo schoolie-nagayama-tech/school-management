@@ -39,7 +39,7 @@ export function PortalCompletionView({
       </div>
       <a
         href={`/portal/${schoolCode}`}
-        className="inline-block px-6 py-3 bg-[color:var(--primary)] text-white font-semibold rounded-lg hover:bg-[color:var(--primary-dark)] transition-colors"
+        className="inline-block px-6 py-3 bg-[color:var(--primary)] text-white font-semibold rounded-lg hover:bg-[color:var(--primary-dark)] transition-colors duration-150"
       >
         ポータルに戻る
       </a>

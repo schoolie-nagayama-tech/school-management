@@ -69,7 +69,7 @@ export function KoushuPeriodCard({
     <div className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
       {/* カードヘッダー */}
       <div
-        className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors"
+        className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors duration-150"
         onClick={toggleExpand}
       >
         {/* シーズンバッジ */}
@@ -101,14 +101,14 @@ export function KoushuPeriodCard({
         <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => onEdit(course)}
-            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors duration-150"
             title="編集"
           >
             <Pencil className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => onDelete(course)}
-            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+            className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors duration-150"
             title="削除"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -155,7 +155,7 @@ export function KoushuPeriodCard({
                       {enrollments.map((en) => (
                         <tr
                           key={en.id}
-                          className="border-b border-gray-100 last:border-0 hover:bg-white transition-colors"
+                          className="border-b border-gray-100 last:border-0 hover:bg-white transition-colors duration-150"
                         >
                           <td className="px-4 py-2 font-medium text-[var(--headline)]">
                             {en.student

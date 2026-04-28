@@ -188,7 +188,7 @@ export function TemplateDialog({
           <div className="flex items-center justify-end gap-2 px-5 py-3 border-t flex-shrink-0">
             <button
               onClick={() => setEditingTemplate(null)}
-              className="text-xs px-3 py-1.5 text-gray-500 hover:text-gray-700 transition-colors"
+              className="text-xs px-3 py-1.5 text-gray-500 hover:text-gray-700 transition-colors duration-150"
               disabled={isSaving}
             >
               キャンセル
@@ -196,7 +196,7 @@ export function TemplateDialog({
             <button
               onClick={handleSaveEdit}
               disabled={isSaving || !editName.trim()}
-              className="flex items-center gap-1 text-xs px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              className="flex items-center gap-1 text-xs px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors duration-150"
             >
               <Save className="w-3.5 h-3.5" />
               {isSaving ? '保存中...' : '保存'}
@@ -228,7 +228,7 @@ export function TemplateDialog({
             ) : (
               <div className="space-y-2">
                 {templates.map((tpl) => (
-                  <div key={tpl.id} className="border rounded-lg hover:bg-gray-50 transition-colors">
+                  <div key={tpl.id} className="border rounded-lg hover:bg-gray-50 transition-colors duration-150">
                     <div className="flex items-center gap-2 p-2">
                       {/* 展開ボタン */}
                       <button

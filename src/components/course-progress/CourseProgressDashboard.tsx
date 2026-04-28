@@ -538,7 +538,7 @@ export function CourseProgressDashboard({
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           <button
             onClick={() => setCategoryOpen(!categoryOpen)}
-            className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 transition-colors"
+            className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 transition-colors duration-150"
           >
             <div className="flex items-center gap-2">
               <span className="text-xs font-medium text-gray-600">学校種別分析</span>

@@ -164,7 +164,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
               aria-expanded={showMobileMenu}
               aria-controls="mobile-nav"
               aria-label={showMobileMenu ? 'メニューを閉じる' : 'メニューを開く'}
-              className="lg:hidden p-1.5 text-white hover:bg-white/10 rounded-lg transition-colors"
+              className="lg:hidden p-1.5 text-white hover:bg-white/10 rounded-lg transition-colors duration-150"
             >
               {showMobileMenu ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -541,7 +541,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
             <ThemeToggle />
             <Link
               href="/help"
-              className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+              className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors duration-150"
               title="ヘルプ"
             >
               <HelpCircle className="w-4 h-4" />
@@ -563,7 +563,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                     e.stopPropagation();
                     setShowSettingsDropdown(!showSettingsDropdown);
                   }}
-                  className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                  className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors duration-150"
                   title="設定"
                 >
                   <Settings className="w-4 h-4" />
@@ -592,7 +592,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                             onBulkGradeUpdateClick();
                             setShowSettingsDropdown(false);
                           }}
-                          className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors"
+                          className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors duration-150"
                         >
                           一括学年更新
                         </button>
@@ -603,7 +603,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                             setIsSubjectSettingsOpen(true);
                             setShowSettingsDropdown(false);
                           }}
-                          className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors"
+                          className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors duration-150"
                         >
                           科目設定
                         </button>
@@ -614,7 +614,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                             onSettingsClick();
                             setShowSettingsDropdown(false);
                           }}
-                          className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors"
+                          className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors duration-150"
                         >
                           {settingsLabel ?? '設定'}
                         </button>
@@ -734,7 +734,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
         {bulletinUnreadCount > 0 && (
           <Link
             href="/students"
-            className="block py-2 px-4 bg-amber-400 text-amber-950 font-bold text-sm text-center hover:bg-amber-500 transition-colors"
+            className="block py-2 px-4 bg-amber-400 text-amber-950 font-bold text-sm text-center hover:bg-amber-500 transition-colors duration-150"
           >
             <Megaphone className="inline h-4 w-4 mr-1" />連絡掲示板に未読が{bulletinUnreadCount}件あります
           </Link>

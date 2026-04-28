@@ -117,7 +117,7 @@ export function MockCsvImportModal({
           onDrop={handleDrop}
           onDragOver={(e) => e.preventDefault()}
           onClick={() => fileInputRef.current?.click()}
-          className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-[#3b82f6] hover:bg-blue-50 transition-colors"
+          className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-[#3b82f6] hover:bg-blue-50 transition-colors duration-150"
         >
           <input
             ref={fileInputRef}

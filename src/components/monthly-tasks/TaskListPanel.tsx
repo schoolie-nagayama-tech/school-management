@@ -323,13 +323,13 @@ export function TaskListPanel({
             <button
               onClick={handleAddTask}
               disabled={!newTaskName.trim() || isCreating}
-              className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors duration-150"
             >
               {isCreating ? '追加中...' : '追加'}
             </button>
             <button
               onClick={() => setShowAddForm(false)}
-              className="text-xs px-2 py-1 text-gray-500 hover:text-gray-700 transition-colors"
+              className="text-xs px-2 py-1 text-gray-500 hover:text-gray-700 transition-colors duration-150"
             >
               キャンセル
             </button>
@@ -647,14 +647,14 @@ export function TaskListPanel({
                           <div className="flex justify-end gap-2 pt-0.5">
                             <button
                               onClick={(e) => { e.stopPropagation(); setExpandedTaskId(null); }}
-                              className="text-xs px-2 py-1 text-gray-500 hover:text-gray-700 transition-colors"
+                              className="text-xs px-2 py-1 text-gray-500 hover:text-gray-700 transition-colors duration-150"
                             >
                               キャンセル
                             </button>
                             <button
                               onClick={(e) => { e.stopPropagation(); handleSaveTaskDetail(task.id); }}
                               disabled={isSaving || !editName.trim()}
-                              className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                              className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors duration-150"
                             >
                               {isSaving ? '保存中...' : '保存'}
                             </button>

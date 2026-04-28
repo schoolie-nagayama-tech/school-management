@@ -98,7 +98,7 @@ export function MaterialList({
                           {/* 編集 */}
                           <button
                             onClick={() => onEdit(material)}
-                            className="p-1.5 text-[#4b5563] hover:text-[#1e3a5f] hover:bg-[#f3f4f6] rounded-lg transition-colors"
+                            className="p-1.5 text-[#4b5563] hover:text-[#1e3a5f] hover:bg-[#f3f4f6] rounded-lg transition-colors duration-150"
                             title="編集"
                           >
                             <Pencil className="w-4 h-4" />
@@ -106,7 +106,7 @@ export function MaterialList({
                           {/* 入庫 */}
                           <button
                             onClick={() => onStockIn(material)}
-                            className="p-1.5 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-colors"
+                            className="p-1.5 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-colors duration-150"
                             title="入庫"
                           >
                             <Plus className="w-4 h-4" />
@@ -114,7 +114,7 @@ export function MaterialList({
                           {/* 出庫 */}
                           <button
                             onClick={() => onStockOut(material)}
-                            className="p-1.5 text-[#ef4444] hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
+                            className="p-1.5 text-[#ef4444] hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors duration-150"
                             title="出庫"
                           >
                             <Minus className="w-4 h-4" />
@@ -124,7 +124,7 @@ export function MaterialList({
                       {/* 履歴 */}
                       <button
                         onClick={() => onHistory(material)}
-                        className="p-1.5 text-[#4b5563] hover:text-[#1e3a5f] hover:bg-[#f3f4f6] rounded-lg transition-colors"
+                        className="p-1.5 text-[#4b5563] hover:text-[#1e3a5f] hover:bg-[#f3f4f6] rounded-lg transition-colors duration-150"
                         title="履歴"
                       >
                         <Clock className="w-4 h-4" />

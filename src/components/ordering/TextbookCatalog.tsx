@@ -147,7 +147,7 @@ function TextbookProductCard({ textbook, students, canEdit, stockQuantity, onAdd
         {canEdit && (
           <button
             onClick={onStockAdjust}
-            className="text-[11px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-[#1e3a5f] transition-colors"
+            className="text-[11px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-[#1e3a5f] transition-colors duration-150"
           >
             {stockQuantity !== null ? '在庫調整' : '在庫登録'}
           </button>
@@ -160,7 +160,7 @@ function TextbookProductCard({ textbook, students, canEdit, stockQuantity, onAdd
           <select
             value={selectedStudentId}
             onChange={(e) => setSelectedStudentId(e.target.value)}
-            className="w-full px-2 py-1.5 border border-gray-200 rounded-md text-xs bg-white text-gray-700 focus:ring-1 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f] transition-colors"
+            className="w-full px-2 py-1.5 border border-gray-200 rounded-md text-xs bg-white text-gray-700 focus:ring-1 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f] transition-colors duration-150"
           >
             <option value="">生徒を選択...</option>
             {students.map((s) => (
@@ -251,7 +251,7 @@ function CartDrawer({
             <ShoppingCart className="w-5 h-5" />
             発注カート（{items.length}件）
           </h3>
-          <button onClick={onClose} className="p-1 rounded hover:bg-gray-100 transition-colors">
+          <button onClick={onClose} className="p-1 rounded hover:bg-gray-100 transition-colors duration-150">
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
@@ -284,7 +284,7 @@ function CartDrawer({
                   </div>
                   <button
                     onClick={() => onRemove(item.id)}
-                    className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                    className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors duration-150"
                     title="削除"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -305,7 +305,7 @@ function CartDrawer({
             <button
               onClick={onSubmit}
               disabled={isSubmitting}
-              className="w-full py-2.5 rounded-lg font-bold text-sm bg-[#1e3a5f] text-white hover:bg-[#2d4a6f] disabled:opacity-50 transition-colors"
+              className="w-full py-2.5 rounded-lg font-bold text-sm bg-[#1e3a5f] text-white hover:bg-[#2d4a6f] disabled:opacity-50 transition-colors duration-150"
             >
               {isSubmitting ? '発注中...' : 'まとめて発注する'}
             </button>
@@ -563,7 +563,7 @@ export function TextbookCatalog({ textbooks, students, canEdit, materials, onBul
           {hasActiveFilters && (
             <button
               onClick={clearFilters}
-              className="w-full text-xs text-gray-500 hover:text-gray-700 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              className="w-full text-xs text-gray-500 hover:text-gray-700 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-150"
             >
               フィルターをクリア
             </button>
@@ -585,7 +585,7 @@ export function TextbookCatalog({ textbooks, students, canEdit, materials, onBul
                 resetPage();
               }}
               placeholder="テキスト名・出版社で検索..."
-              className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm bg-white placeholder-gray-400 focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f] transition-colors"
+              className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm bg-white placeholder-gray-400 focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f] transition-colors duration-150"
             />
           </div>
         </div>
@@ -658,7 +658,7 @@ export function TextbookCatalog({ textbooks, students, canEdit, materials, onBul
             <button
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={safeCurrentPage <= 1}
-              className="px-2 py-1 text-xs rounded border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 transition-colors"
+              className="px-2 py-1 text-xs rounded border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 transition-colors duration-150"
             >
               &laquo;
             </button>
@@ -678,7 +678,7 @@ export function TextbookCatalog({ textbooks, students, canEdit, materials, onBul
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={safeCurrentPage >= totalPages}
-              className="px-2 py-1 text-xs rounded border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 transition-colors"
+              className="px-2 py-1 text-xs rounded border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 transition-colors duration-150"
             >
               &raquo;
             </button>
@@ -692,7 +692,7 @@ export function TextbookCatalog({ textbooks, students, canEdit, materials, onBul
           <div className="max-w-screen-xl mx-auto px-4 py-3 flex items-center justify-between">
             <button
               onClick={() => setIsCartOpen(true)}
-              className="flex items-center gap-2 text-sm text-gray-700 hover:text-[#1e3a5f] transition-colors"
+              className="flex items-center gap-2 text-sm text-gray-700 hover:text-[#1e3a5f] transition-colors duration-150"
             >
               <div className="relative">
                 <ShoppingCart className="w-5 h-5" />
@@ -707,13 +707,13 @@ export function TextbookCatalog({ textbooks, students, canEdit, materials, onBul
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setCartItems([])}
-                className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors"
+                className="px-3 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors duration-150"
               >
                 全て取消
               </button>
               <button
                 onClick={() => setIsCartOpen(true)}
-                className="px-4 py-1.5 text-sm rounded-lg font-bold bg-[#1e3a5f] text-white hover:bg-[#2d4a6f] transition-colors"
+                className="px-4 py-1.5 text-sm rounded-lg font-bold bg-[#1e3a5f] text-white hover:bg-[#2d4a6f] transition-colors duration-150"
               >
                 まとめて発注
               </button>

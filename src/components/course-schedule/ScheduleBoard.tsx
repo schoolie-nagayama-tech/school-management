@@ -639,7 +639,7 @@ function CategorySection({
       {/* Category header */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50/50 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50/50 transition-colors duration-150"
       >
         <div className="flex items-center gap-3">
           <span className="text-xs text-gray-400 transition-transform" style={{ transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}>

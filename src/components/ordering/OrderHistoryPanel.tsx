@@ -116,7 +116,7 @@ export function OrderHistoryPanel({
                         onDelete(order.id);
                       }
                     }}
-                    className="text-xs text-gray-400 hover:text-red-600 transition-colors"
+                    className="text-xs text-gray-400 hover:text-red-600 transition-colors duration-150"
                   >
                     削除
                   </button>

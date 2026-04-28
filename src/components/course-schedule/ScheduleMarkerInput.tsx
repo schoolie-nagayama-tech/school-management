@@ -93,7 +93,7 @@ export function ScheduleMarkerInput({
             <button
               key={l}
               onClick={() => handleQuickLabel(l)}
-              className="px-2 py-0.5 text-[10px] bg-gray-100 hover:bg-gray-200 text-gray-600 rounded transition-colors"
+              className="px-2 py-0.5 text-[10px] bg-gray-100 hover:bg-gray-200 text-gray-600 rounded transition-colors duration-150"
             >
               {l}
             </button>

@@ -156,7 +156,7 @@ export function TaskTimeline({
           >
             {/* 日付ヘッダー */}
             <button
-              className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50/50 transition-colors"
+              className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50/50 transition-colors duration-150"
               onClick={() => toggleCollapse(date)}
             >
               {isCollapsed ? (

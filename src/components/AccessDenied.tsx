@@ -18,7 +18,7 @@ export default function AccessDenied({
         <p className="text-[#4b5563] mb-6">{message}</p>
         <Link
           href="/students"
-          className="inline-block px-6 py-3 bg-[#3b82f6] text-white font-bold rounded-lg hover:bg-[#60a5fa] transition-colors"
+          className="inline-block px-6 py-3 bg-[#3b82f6] text-white font-bold rounded-lg hover:bg-[#60a5fa] transition-colors duration-150"
         >
           生徒一覧に戻る
         </Link>

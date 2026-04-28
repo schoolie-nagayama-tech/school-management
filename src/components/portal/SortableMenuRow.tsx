@@ -99,7 +99,7 @@ export function SortableMenuRow({
           {menu.link_type === 'internal' && periodsPath && (
             <Link
               href={periodsPath}
-              className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-lg bg-[#3b82f6] text-white hover:bg-[#2563eb] transition-colors"
+              className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-lg bg-[#3b82f6] text-white hover:bg-[#2563eb] transition-colors duration-150"
             >
               期間管理
             </Link>

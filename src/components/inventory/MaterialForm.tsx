@@ -134,7 +134,7 @@ export function MaterialForm({
                 <button
                   key={suggestion}
                   type="button"
-                  className="w-full text-left px-3 py-2 text-sm text-[#4b5563] hover:bg-[#f3f4f6] transition-colors"
+                  className="w-full text-left px-3 py-2 text-sm text-[#4b5563] hover:bg-[#f3f4f6] transition-colors duration-150"
                   onClick={() => {
                     setCategory(suggestion);
                     setShowSuggestions(false);

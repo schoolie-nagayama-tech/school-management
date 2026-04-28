@@ -135,7 +135,7 @@ export function TaskPool({
       <div className="flex items-center">
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="flex-1 flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50 transition-colors"
+          className="flex-1 flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50 transition-colors duration-150"
         >
           {isExpanded ? (
             <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
@@ -356,7 +356,7 @@ export function TaskPool({
                   setSelectedTemplateId(null);
                 }
               }}
-              className="w-full text-xs py-1.5 bg-[#d32f2f] text-white rounded hover:bg-[#b71c1c] transition-colors"
+              className="w-full text-xs py-1.5 bg-[#d32f2f] text-white rounded hover:bg-[#b71c1c] transition-colors duration-150"
             >
               テンプレート日付で一括配置
             </button>

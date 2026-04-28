@@ -280,7 +280,7 @@ function UnconfirmedSection({
         </thead>
         <tbody>
           {rows.map((order) => (
-            <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+            <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-150">
               <td className="py-2 px-4 text-sm text-gray-900">{order.material?.name || '-'}</td>
               <td className="py-2 px-4 text-sm text-gray-600">{getSchoolName(order)}</td>
               <td className="py-2 px-4 text-sm text-gray-600">
@@ -296,7 +296,7 @@ function UnconfirmedSection({
                   <td className="py-2 px-4 text-center">
                     <button
                       onClick={() => { if (confirm('この発注を削除しますか？')) onDelete(order.id); }}
-                      className="text-xs text-gray-400 hover:text-red-600 transition-colors"
+                      className="text-xs text-gray-400 hover:text-red-600 transition-colors duration-150"
                     >
                       削除
                     </button>
@@ -341,7 +341,7 @@ function OrderedSection({
             {schoolName}
           </div>
           {schoolOrders.map((order) => (
-            <div key={order.id} className="flex items-center justify-between px-4 py-1.5 pl-8 hover:bg-gray-50 transition-colors">
+            <div key={order.id} className="flex items-center justify-between px-4 py-1.5 pl-8 hover:bg-gray-50 transition-colors duration-150">
               <div className="flex items-center gap-4 flex-1 min-w-0">
                 <span className="text-sm text-gray-900 truncate">{order.material?.name || '-'}</span>
                 <span className="text-sm text-gray-600 whitespace-nowrap">{order.quantity}冊</span>
@@ -355,7 +355,7 @@ function OrderedSection({
                   <StatusDropdown order={order} changingId={changingId} onStatusChange={onStatusChange} />
                   <button
                     onClick={() => { if (confirm('この発注を削除しますか？')) onDelete(order.id); }}
-                    className="text-xs text-gray-400 hover:text-red-600 transition-colors"
+                    className="text-xs text-gray-400 hover:text-red-600 transition-colors duration-150"
                   >
                     削除
                   </button>
@@ -415,7 +415,7 @@ function DeliveredSection({
             const grade = parseInt(parts[1], 10);
             const gradeLabel = GRADE_LABELS[grade] || '';
             return studentOrders.map((order) => (
-              <div key={order.id} className="flex items-center justify-between px-4 py-1.5 pl-8 hover:bg-gray-50 transition-colors">
+              <div key={order.id} className="flex items-center justify-between px-4 py-1.5 pl-8 hover:bg-gray-50 transition-colors duration-150">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <span className="text-sm text-gray-900 whitespace-nowrap">
                     {name}{gradeLabel ? `（${gradeLabel}）` : ''}
@@ -469,7 +469,7 @@ function DistributedSection({
             {schoolName}
           </div>
           {schoolOrders.map((order) => (
-            <div key={order.id} className="flex items-center justify-between px-4 py-1.5 pl-8 hover:bg-gray-50 transition-colors">
+            <div key={order.id} className="flex items-center justify-between px-4 py-1.5 pl-8 hover:bg-gray-50 transition-colors duration-150">
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <span className="text-xs text-gray-400 whitespace-nowrap">
                   {formatDate(order.distributed_at || order.created_at)}

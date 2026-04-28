@@ -90,7 +90,7 @@ export function StudentSelector({ students, value, onChange, disabled }: Student
           onFocus={() => setIsOpen(true)}
           placeholder="生徒を検索..."
           disabled={disabled}
-          className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white placeholder-gray-400 focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f] transition-colors"
+          className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white placeholder-gray-400 focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f] transition-colors duration-150"
         />
       )}
       {isOpen && !disabled && (

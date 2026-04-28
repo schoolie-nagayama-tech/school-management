@@ -507,17 +507,17 @@ export function MonthlyTaskPage() {
       <div className="flex items-center gap-3 pb-3 border-b flex-shrink-0">
         {/* 月選択 */}
         <div className="flex items-center gap-1">
-          <button onClick={goToPrevMonth} className="p-1.5 rounded hover:bg-gray-100 transition-colors">
+          <button onClick={goToPrevMonth} className="p-1.5 rounded hover:bg-gray-100 transition-colors duration-150">
             <ChevronLeft className="w-5 h-5" />
           </button>
           <span className="text-lg font-bold min-w-[130px] text-center">
             {year}年{month}月
           </span>
-          <button onClick={goToNextMonth} className="p-1.5 rounded hover:bg-gray-100 transition-colors">
+          <button onClick={goToNextMonth} className="p-1.5 rounded hover:bg-gray-100 transition-colors duration-150">
             <ChevronRight className="w-5 h-5" />
           </button>
           {!isCurrentMonth && (
-            <button onClick={goToCurrentMonth} className="ml-1 px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors">
+            <button onClick={goToCurrentMonth} className="ml-1 px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors duration-150">
               今月
             </button>
           )}
@@ -557,7 +557,7 @@ export function MonthlyTaskPage() {
             {courseTaskCount > 0 && (
               <button
                 onClick={handleDeleteCourseTasks}
-                className="flex items-center gap-1 px-3 py-1.5 text-xs bg-red-50 text-red-600 hover:bg-red-100 rounded transition-colors"
+                className="flex items-center gap-1 px-3 py-1.5 text-xs bg-red-50 text-red-600 hover:bg-red-100 rounded transition-colors duration-150"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 講習削除({courseTaskCount})
@@ -565,7 +565,7 @@ export function MonthlyTaskPage() {
             )}
             <button
               onClick={handleOpenTemplateDialog}
-              className="flex items-center gap-1 px-3 py-1.5 text-xs bg-gray-50 text-gray-700 hover:bg-gray-100 rounded transition-colors"
+              className="flex items-center gap-1 px-3 py-1.5 text-xs bg-gray-50 text-gray-700 hover:bg-gray-100 rounded transition-colors duration-150"
             >
               <Settings className="w-3.5 h-3.5" />
               テンプレート

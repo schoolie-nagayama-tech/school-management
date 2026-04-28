@@ -379,7 +379,7 @@ export function TaskSummaryPanel({
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => handleOpenAddEvent()}
-                className="flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                className="flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] text-blue-600 hover:bg-blue-50 rounded transition-colors duration-150"
                 title="予定を追加"
               >
                 <Plus className="w-3 h-3" />
@@ -398,7 +398,7 @@ export function TaskSummaryPanel({
               <button
                 onClick={onRefreshCalendar}
                 disabled={calendarLoading}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-gray-400 hover:text-gray-600 transition-colors duration-150"
                 title="更新"
               >
                 <RefreshCw className={`w-3 h-3 ${calendarLoading ? 'animate-spin' : ''}`} />

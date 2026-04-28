@@ -138,7 +138,7 @@ export function BillingItemAccordion({
       {/* アコーディオンヘッダー */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-[#f3f4f6] hover:bg-[#f3f4f6]/80 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 bg-[#f3f4f6] hover:bg-[#f3f4f6]/80 transition-colors duration-150"
       >
         <span className="text-sm font-semibold text-[#1f2937]">項目管理</span>
         <ChevronDown className={`w-5 h-5 text-[#4b5563] transition-[transform] duration-150 ease-out ${isOpen ? 'rotate-180' : ''}`} />
@@ -229,14 +229,14 @@ export function BillingItemAccordion({
                       <div className="flex gap-3">
                         <button
                           onClick={() => startEditing(item)}
-                          className="text-sm text-[#4b5563] hover:text-[#3b82f6] transition-colors"
+                          className="text-sm text-[#4b5563] hover:text-[#3b82f6] transition-colors duration-150"
                           disabled={isProcessing}
                         >
                           名前変更
                         </button>
                         <button
                           onClick={() => handleDelete(item.id, item.name)}
-                          className="text-sm text-[#ef4444] hover:text-[#ef4444]/80 transition-colors"
+                          className="text-sm text-[#ef4444] hover:text-[#ef4444]/80 transition-colors duration-150"
                           disabled={isProcessing}
                         >
                           削除
