@@ -460,6 +460,7 @@ export default function StudentScoresPage() {
                         onCancelEdit={() => setEditingCell(null)}
                         onDelete={handleDeleteRow}
                         canEdit={canEditScores}
+                        studentGrade={student?.grade}
                       />
                     </>
                   )}

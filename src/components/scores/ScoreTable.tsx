@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { AssessmentWithScores } from '@/types/database';
-import { SUBJECT_LABELS } from '@/types/database';
+import { ASSESSMENT_NAME_LABELS, GRADE_LABELS, SUBJECT_LABELS } from '@/types/database';
 import { SUBJECT_CODES } from '@/types/database';
 import { ScoreTableRow, getCalculatedValue } from './ScoreTableRow';
 import type { NaishinType } from '@/lib/utils/convertedNaishin';
+import { Button } from '@/components/ui';
+import { getAssessmentSubjects, type AssessmentSubject } from '@/lib/api/assessmentSubjects';
 
 const FIVE_SUBJECTS = [
   SUBJECT_CODES.ENGLISH,
@@ -28,6 +30,8 @@ interface ScoreTableProps {
   onCancelEdit: () => void;
   onDelete: (assessmentId: string) => void;
   canEdit: boolean;
+  /** 生徒の学年。10以上のとき高校生用の動的科目を使用 */
+  studentGrade?: number;
 }
 
 export function ScoreTable({
@@ -41,9 +45,153 @@ export function ScoreTable({
   onCancelEdit,
   onDelete,
   canEdit,
+  studentGrade,
 }: ScoreTableProps) {
   const [naishinType, setNaishinType] = useState<NaishinType>('tokyo');
+  const isHighSchool = (studentGrade ?? 0) >= 10;
+  const [hsSubjects, setHsSubjects] = useState<AssessmentSubject[]>([]);
 
+  useEffect(() => {
+    if (!isHighSchool) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const list = await getAssessmentSubjects({ schoolType: '高校', grade: studentGrade });
+        if (!cancelled) setHsSubjects(list);
+      } catch (e) {
+        console.error('評価科目マスタの取得に失敗:', e);
+        if (!cancelled) setHsSubjects([]);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isHighSchool, studentGrade]);
+
+  /** 高校生用：表示するコード列（マスタ + 既存登録の救済） */
+  const hsAllCodes = useMemo(() => {
+    if (!isHighSchool) return [] as string[];
+    const set = new Set<string>(hsSubjects.map((s) => s.code));
+    const tail: string[] = [];
+    for (const a of assessments) {
+      for (const s of a.scores ?? []) {
+        if (s.subject && !set.has(s.subject) && !tail.includes(s.subject)) {
+          tail.push(s.subject);
+        }
+      }
+    }
+    return [...hsSubjects.map((s) => s.code), ...tail];
+  }, [isHighSchool, hsSubjects, assessments]);
+
+  const labelOfHs = (code: string): string => {
+    const meta = hsSubjects.find((s) => s.code === code);
+    if (meta) return meta.short_name ?? meta.name;
+    return SUBJECT_LABELS[code] ?? code;
+  };
+
+  // ────────────────── 高校生用：動的カラム ──────────────────
+  if (isHighSchool) {
+    const totalCols = 2 + (category !== 'mock' ? 0 : 1) + hsAllCodes.length + (canEdit ? 1 : 0);
+    return (
+      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+        <table className="w-full border-collapse text-sm">
+          <thead>
+            <tr className="bg-[var(--surface)] border-b border-gray-200">
+              <th className="px-2 py-2 text-left font-semibold text-[var(--headline)] whitespace-nowrap">学年</th>
+              <th className="px-2 py-2 text-left font-semibold text-[var(--headline)] whitespace-nowrap">テスト名</th>
+              {category === 'mock' && (
+                <th className="px-2 py-2 text-left font-semibold text-[var(--headline)] whitespace-nowrap">実施月</th>
+              )}
+              {hsAllCodes.map((code) => {
+                const isCustom = !hsSubjects.some((s) => s.code === code);
+                return (
+                  <th
+                    key={code}
+                    className={`px-2 py-2 text-center font-semibold whitespace-nowrap min-w-[58px] ${isCustom ? 'text-amber-700 italic' : 'text-[var(--headline)]'}`}
+                    title={isCustom ? '（マスタ外の科目／旧データ）' : labelOfHs(code)}
+                  >
+                    {labelOfHs(code)}
+                  </th>
+                );
+              })}
+              {canEdit && (
+                <th className="px-2 py-2 text-center font-semibold text-[var(--headline)] w-20">操作</th>
+              )}
+            </tr>
+          </thead>
+          <tbody>
+            {assessments.length === 0 ? (
+              <tr>
+                <td colSpan={totalCols} className="px-4 py-8 text-center text-[var(--paragraph)]">
+                  データがありません。上の「行を追加」から登録してください。
+                </td>
+              </tr>
+            ) : (
+              assessments.map((a) => {
+                const scoreMap = new Map<string, number | null>(
+                  (a.scores ?? []).map((s) => [s.subject, s.value ?? null])
+                );
+                const examMonthLabel = a.exam_month
+                  ? `${new Date(a.exam_month).getFullYear()}-${String(new Date(a.exam_month).getMonth() + 1).padStart(2, '0')}`
+                  : '—';
+                return (
+                  <tr key={a.id} className="hover:bg-[var(--surface)] transition-colors duration-150">
+                    <td className="border border-gray-200 px-2 py-1.5 text-sm text-[var(--headline)] whitespace-nowrap">
+                      {GRADE_LABELS[a.grade] ?? a.grade}
+                    </td>
+                    <td className="border border-gray-200 px-2 py-1.5 text-sm text-[var(--paragraph)] whitespace-nowrap">
+                      {ASSESSMENT_NAME_LABELS[a.name_code] || a.name_code}
+                    </td>
+                    {category === 'mock' && (
+                      <td className="border border-gray-200 px-2 py-1.5 text-sm text-[var(--paragraph)] whitespace-nowrap">
+                        {examMonthLabel}
+                      </td>
+                    )}
+                    {hsAllCodes.map((code) => {
+                      const value = scoreMap.get(code) ?? null;
+                      const isEditing = editingCell?.assessmentId === a.id && editingCell?.subject === code;
+                      return (
+                        <td key={code} className="border border-gray-200 px-1 py-1 text-center min-w-[52px]">
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={cellValue}
+                              onChange={(e) => onCellChange(e.target.value)}
+                              onBlur={() => onCellBlur(a.id, code)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') onCellBlur(a.id, code);
+                                if (e.key === 'Escape') onCancelEdit();
+                              }}
+                              autoFocus
+                              className="w-full px-1 py-0.5 text-center text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]"
+                            />
+                          ) : (
+                            <div
+                              className="min-h-[28px] flex items-center justify-center text-sm text-[var(--paragraph)] cursor-pointer hover:bg-[var(--surface)] rounded transition-colors duration-150"
+                              onClick={() => canEdit && onCellClick(a.id, code, value)}
+                            >
+                              {value !== null && value !== undefined ? value : '—'}
+                            </div>
+                          )}
+                        </td>
+                      );
+                    })}
+                    {canEdit && (
+                      <td className="border border-gray-200 px-2 py-1.5 text-center">
+                        <Button variant="danger" size="sm" onClick={() => onDelete(a.id)}>
+                          削除
+                        </Button>
+                      </td>
+                    )}
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  // ────────────────── 中学・小学：従来の固定カラム ──────────────────
   if (category === 'mock') {
     return (
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
@@ -101,7 +249,7 @@ export function ScoreTable({
   ] as const;
 
   const isReportCard = category === 'report_card';
-  const colSpanBase = 2 + 5 + 1 + 4 + 1; // 学年+テスト名+5科+5科計+4科+9科計 = 13
+  const colSpanBase = 2 + 5 + 1 + 4 + 1;
   const totalColSpan = colSpanBase + (isReportCard ? 1 : 0) + (canEdit ? 1 : 0);
 
   return (
