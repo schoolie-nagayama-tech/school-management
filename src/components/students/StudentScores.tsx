@@ -422,7 +422,7 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
                 </tr>
               ) : (
                 assessments.map((assessment) => (
-                  <tr key={assessment.id} className="hover:bg-[#f3f4f6]">
+                  <tr key={assessment.id} className="hover:bg-[#f3f4f6] transition-colors duration-150">
                     <td className="border border-[#e5e7eb] px-3 py-2 text-sm text-[#1f2937] sticky left-0 z-10 bg-white">
                       {ASSESSMENT_NAME_LABELS[assessment.name_code] || assessment.name_code}
                     </td>
@@ -464,7 +464,7 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
                             />
                           ) : (
                             <div
-                              className="px-2 py-1 cursor-pointer hover:bg-[#f3f4f6] rounded min-h-[32px] flex items-center justify-center"
+                              className="px-2 py-1 cursor-pointer hover:bg-[#f3f4f6] rounded min-h-[32px] flex items-center justify-center transition-colors duration-150"
                               onClick={() => handleCellClick(assessment.id, subj, value)}
                             >
                               {value !== null ? value.toString() : '-'}

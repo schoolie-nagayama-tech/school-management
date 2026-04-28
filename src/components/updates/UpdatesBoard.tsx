@@ -67,7 +67,7 @@ export function UpdatesBoard({ className = '' }: UpdatesBoardProps) {
                 e.stopPropagation();
                 handleMarkRead();
               }}
-              className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 font-medium px-2 py-1 rounded hover:bg-green-100 transition-colors"
+              className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 font-medium px-2 py-1 rounded hover:bg-green-100 transition-colors duration-150"
               title="確認済みにする"
             >
               <Check className="w-3.5 h-3.5" />

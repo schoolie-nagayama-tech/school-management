@@ -151,7 +151,7 @@ export function StudentRegularScheduleList({
       <div className="flex justify-between items-center">
         <Button
           onClick={handleAdd}
-          className="bg-[#1e3a5f] hover:bg-[#2a4a6f]"
+          className="bg-[#1e3a5f] hover:bg-[#2a4a6f] transition-colors duration-150"
         >
           + 通塾日程を追加
         </Button>
@@ -209,7 +209,7 @@ export function StudentRegularScheduleList({
                       <button
                         type="button"
                         onClick={() => handleEdit(p)}
-                        className="text-[var(--paragraph)] hover:text-[var(--primary)]"
+                        className="text-[var(--paragraph)] hover:text-[var(--primary)] transition-colors duration-150"
                         aria-label="編集"
                       >
                         <Pencil className="w-4 h-4" />
@@ -217,7 +217,7 @@ export function StudentRegularScheduleList({
                       <button
                         type="button"
                         onClick={() => handleDelete(p)}
-                        className="text-[var(--paragraph)] hover:text-[#c62828]"
+                        className="text-[var(--paragraph)] hover:text-[#c62828] transition-colors duration-150"
                         aria-label="削除"
                       >
                         <Trash2 className="w-4 h-4" />

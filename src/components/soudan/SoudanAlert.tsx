@@ -68,7 +68,7 @@ export function SoudanAlert() {
         </div>
         <Link
           href={linkHref}
-          className="px-4 py-2 bg-white text-[#ef4444] font-bold rounded-lg hover:bg-gray-100 transition-colors whitespace-nowrap"
+          className="px-4 py-2 bg-white text-[#ef4444] font-bold rounded-lg hover:bg-gray-100 transition-colors duration-150 whitespace-nowrap"
         >
           確認する →
         </Link>

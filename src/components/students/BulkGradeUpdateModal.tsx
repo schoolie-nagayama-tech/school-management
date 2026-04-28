@@ -170,7 +170,7 @@ export function BulkGradeUpdateModal({
                 {categoryChangeStudents.map(({ student, oldLabel, newLabel }) => (
                   <li
                     key={student.id}
-                    className="px-4 py-2 flex items-center justify-between bg-amber-50/50 hover:bg-amber-50"
+                    className="px-4 py-2 flex items-center justify-between bg-amber-50/50 hover:bg-amber-50 transition-colors duration-150"
                   >
                     <span className="font-medium text-[#1f2937]">
                       {student.last_name} {student.first_name}

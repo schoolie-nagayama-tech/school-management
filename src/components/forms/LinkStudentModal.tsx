@@ -101,7 +101,7 @@ export function LinkStudentModal({
               {students.map((student) => (
                 <label
                   key={student.id}
-                  className="flex items-center gap-3 p-3 hover:bg-[#f3f4f6] rounded cursor-pointer"
+                  className="flex items-center gap-3 p-3 hover:bg-[#f3f4f6] rounded cursor-pointer transition-colors duration-150"
                 >
                   <input
                     type="radio"

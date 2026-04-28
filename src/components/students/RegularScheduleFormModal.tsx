@@ -187,7 +187,7 @@ export function RegularScheduleFormModal({
                   className={`px-3 py-1.5 rounded text-sm border ${
                     dayOfWeek === d
                       ? 'bg-[#1e3a5f] text-white border-[#1e3a5f]'
-                      : 'bg-white border-[var(--stroke)] text-[var(--paragraph)] hover:bg-[var(--surface)]'
+                      : 'bg-white border-[var(--stroke)] text-[var(--paragraph)] hover:bg-[var(--surface)] transition-colors duration-150'
                   }`}
                 >
                   {DAY_OF_WEEK_LABELS[d] ?? ''}
@@ -293,7 +293,7 @@ export function RegularScheduleFormModal({
           <Button
             onClick={handleSubmit}
             disabled={saving || !timeSlotId || !teacherId}
-            className="bg-[#1e3a5f] hover:bg-[#2a4a6f]"
+            className="bg-[#1e3a5f] hover:bg-[#2a4a6f] transition-colors duration-150"
           >
             {saving ? '保存中...' : '保存する'}
           </Button>

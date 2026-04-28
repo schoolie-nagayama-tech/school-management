@@ -86,7 +86,7 @@ export function TaskAlert({ schoolId, onTaskClick }: TaskAlertProps) {
       {/* ヘッダー（クリックで展開/折りたたみ） */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full px-4 py-3 flex items-center justify-between hover:bg-[#ef4444]/20 transition-colors"
+        className="w-full px-4 py-3 flex items-center justify-between hover:bg-[#ef4444]/20 transition-colors duration-150"
       >
         <div className="flex items-center gap-3">
           <AlertTriangle className="text-[#ef4444] w-5 h-5" />
@@ -105,7 +105,7 @@ export function TaskAlert({ schoolId, onTaskClick }: TaskAlertProps) {
           {tasks.map((task) => (
             <div
               key={task.id}
-              className="px-4 py-3 flex items-start justify-between gap-4 hover:bg-[#ef4444]/10 cursor-pointer transition-colors"
+              className="px-4 py-3 flex items-start justify-between gap-4 hover:bg-[#ef4444]/10 cursor-pointer transition-colors duration-150"
               onClick={() => onTaskClick?.(task.student_id)}
             >
               <div className="flex-1 min-w-0">
@@ -134,7 +134,7 @@ export function TaskAlert({ schoolId, onTaskClick }: TaskAlertProps) {
               {/* 完了ボタン */}
               <button
                 onClick={(e) => handleComplete(task.id, e)}
-                className="px-3 py-1 bg-white border border-[#ef4444] text-[#ef4444] text-sm rounded hover:bg-[#ef4444] hover:text-white transition-colors whitespace-nowrap"
+                className="px-3 py-1 bg-white border border-[#ef4444] text-[#ef4444] text-sm rounded hover:bg-[#ef4444] hover:text-white transition-colors duration-150 whitespace-nowrap"
               >
                 完了
               </button>

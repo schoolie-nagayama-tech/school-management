@@ -295,7 +295,7 @@ export function TemplateEditor({
                             <button
                               onClick={() => handleMoveField(field, 'up')}
                               disabled={index === 0 || isSubmitting}
-                              className="p-1.5 text-[#4b5563] hover:text-[#1f2937] disabled:opacity-50"
+                              className="p-1.5 text-[#4b5563] hover:text-[#1f2937] disabled:opacity-50 transition-colors duration-150"
                               title="上に移動"
                             >
                               ↑
@@ -303,7 +303,7 @@ export function TemplateEditor({
                             <button
                               onClick={() => handleMoveField(field, 'down')}
                               disabled={index === fields.length - 1 || isSubmitting}
-                              className="p-1.5 text-[#4b5563] hover:text-[#1f2937] disabled:opacity-50"
+                              className="p-1.5 text-[#4b5563] hover:text-[#1f2937] disabled:opacity-50 transition-colors duration-150"
                               title="下に移動"
                             >
                               ↓
@@ -311,7 +311,7 @@ export function TemplateEditor({
                             <button
                               onClick={() => handleEditField(field)}
                               disabled={isSubmitting}
-                              className="p-1.5 text-[#4b5563] hover:text-[#3b82f6] disabled:opacity-50"
+                              className="p-1.5 text-[#4b5563] hover:text-[#3b82f6] disabled:opacity-50 transition-colors duration-150"
                               title="編集"
                             >
                               <Pencil className="w-4 h-4" />
@@ -319,7 +319,7 @@ export function TemplateEditor({
                             <button
                               onClick={() => handleDeleteField(field.id)}
                               disabled={isSubmitting}
-                              className="p-1.5 text-[#4b5563] hover:text-[#ef4444] disabled:opacity-50"
+                              className="p-1.5 text-[#4b5563] hover:text-[#ef4444] disabled:opacity-50 transition-colors duration-150"
                               title="削除"
                             >
                               <Trash2 className="w-4 h-4" />

@@ -82,14 +82,14 @@ export function SchoolFormModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 bg-[#f3f4f6] text-[#1f2937] rounded-lg hover:bg-[#e5e7eb] transition-colors"
+              className="flex-1 px-4 py-2 bg-[#f3f4f6] text-[#1f2937] rounded-lg hover:bg-[#e5e7eb] transition-colors duration-150"
             >
               キャンセル
             </button>
             <button
               type="submit"
               disabled={isSavingSchool}
-              className="flex-1 px-4 py-2 bg-[#3b82f6] text-white font-bold rounded-lg hover:bg-[#60a5fa] transition-colors disabled:opacity-50"
+              className="flex-1 px-4 py-2 bg-[#3b82f6] text-white font-bold rounded-lg hover:bg-[#60a5fa] transition-colors duration-150 disabled:opacity-50"
             >
               {isSavingSchool ? '保存中...' : editingSchool ? '更新' : '作成'}
             </button>

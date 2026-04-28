@@ -473,14 +473,14 @@ export function KomaFormRenderer({
           type="button"
           onClick={handleReset}
           disabled={isSubmitting}
-          className="px-6 py-3 bg-white text-[#4b5563] font-medium rounded-lg border border-[#e5e7eb] hover:bg-[#f3f4f6] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-6 py-3 bg-white text-[#4b5563] font-medium rounded-lg border border-[#e5e7eb] hover:bg-[#f3f4f6] transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           リセット
         </button>
         <button
           type="submit"
           disabled={isSubmitting}
-          className="px-6 py-3 bg-[#3b82f6] text-white font-medium rounded-lg hover:bg-[#60a5fa] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-6 py-3 bg-[#3b82f6] text-white font-medium rounded-lg hover:bg-[#60a5fa] transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSubmitting ? '送信中...' : '申し込む'}
         </button>

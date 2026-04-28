@@ -116,7 +116,7 @@ export function InterviewModal({ studentId, schoolId, interview, onClose, onSave
               {INTERVIEW_TYPES.map((type) => (
                 <label
                   key={type}
-                  className={`flex items-center justify-center px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
+                  className={`flex items-center justify-center px-3 py-2 rounded-lg border cursor-pointer transition-colors duration-150 ${
                     interviewType === type
                       ? type === 'task'
                         ? 'bg-[#ef4444] text-white border-[#ef4444] font-medium'

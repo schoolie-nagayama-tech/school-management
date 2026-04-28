@@ -143,7 +143,7 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
                       e.stopPropagation();
                       onPrintDay(dateStr);
                     }}
-                    className="ml-0.5 p-0.5 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-200/80 no-print"
+                    className="ml-0.5 p-0.5 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-200/80 no-print transition-colors duration-150"
                     title={`${dateLong} を印刷`}
                     aria-label={`${dateLong} を印刷`}
                   >

@@ -30,7 +30,7 @@ export function PublicFormList({ forms, schoolCode }: PublicFormListProps) {
         return (
           <div
             key={form.id}
-            className="bg-white rounded-xl border border-[#e5e7eb] p-6 hover:shadow-lg transition-shadow"
+            className="bg-white rounded-xl border border-[#e5e7eb] p-6 hover:shadow-lg transition-shadow duration-150"
           >
             <h3 className="text-xl font-bold text-[#1f2937] mb-2">{form.title}</h3>
             {form.description && (

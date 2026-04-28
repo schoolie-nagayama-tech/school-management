@@ -205,13 +205,13 @@ export function InterviewList({ studentId, schoolId }: InterviewListProps) {
                           <div className="flex gap-2">
                             <button
                               onClick={() => handleEdit(interview)}
-                              className="text-sm text-[#4b5563] hover:text-[#3b82f6] transition-colors"
+                              className="text-sm text-[#4b5563] hover:text-[#3b82f6] transition-colors duration-150"
                             >
                               編集
                             </button>
                             <button
                               onClick={() => handleDelete(interview.id)}
-                              className="text-sm text-[#ef4444] hover:text-[#ef4444]/80 transition-colors"
+                              className="text-sm text-[#ef4444] hover:text-[#ef4444]/80 transition-colors duration-150"
                             >
                               削除
                             </button>
