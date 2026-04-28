@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { useAuth } from '@/contexts/AuthContext';
 import { EmbedTokenManager } from '@/components/settings/EmbedTokenManager';
+import { ChevronRight } from 'lucide-react';
 import {
   User,
   School,
@@ -124,7 +125,7 @@ export default function SettingsPage() {
             <Link
               key={item.href}
               href={item.href}
-              className="flex items-center gap-4 p-4 bg-white border border-[#e5e7eb] rounded-lg hover:bg-[#f9fafb] hover:border-[#d1d5db] transition-colors"
+              className="flex items-center gap-4 p-4 bg-white border border-[#e5e7eb] rounded-lg hover:bg-[#f9fafb] hover:border-[#d1d5db] transition-colors duration-150"
             >
               <div className="flex-shrink-0 w-10 h-10 bg-[#f3f4f6] rounded-lg flex items-center justify-center text-[#4b5563]">
                 {item.icon}
@@ -133,9 +134,7 @@ export default function SettingsPage() {
                 <div className="font-medium text-[#1f2937]">{item.label}</div>
                 <div className="text-sm text-[#6b7280]">{item.description}</div>
               </div>
-              <svg className="w-5 h-5 text-[#9ca3af] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
+              <ChevronRight className="w-5 h-5 text-[#9ca3af] flex-shrink-0" />
             </Link>
           ))}
         </div>

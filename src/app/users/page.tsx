@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui';
 import { Button } from '@/components/ui';
-import { Trash2, LogIn } from 'lucide-react';
+import { Trash2, LogIn, Home } from 'lucide-react';
 import type { School, UserRole, UserProfile } from '@/types/database';
 import { USER_ROLE_LABELS, USER_ROLE_LEVELS } from '@/types/database';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
@@ -455,22 +455,10 @@ export default function UsersPage() {
           <div className="flex items-center gap-4">
             <Link
               href="/students"
-              className="flex items-center gap-2 text-[#1f2937] hover:text-[#3b82f6] transition-colors"
+              className="flex items-center gap-2 text-[#1f2937] hover:text-[#3b82f6] transition-colors duration-150"
               title="ホームに戻る"
             >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-                />
-              </svg>
+              <Home className="w-5 h-5" />
             </Link>
             <h1 className="text-2xl font-bold text-[#1f2937]">ユーザー管理</h1>
           </div>
