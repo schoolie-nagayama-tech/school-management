@@ -62,7 +62,7 @@ export function Modal({
         className={`
           relative w-full ${sizeStyles[size]}
           bg-white rounded-xl shadow-2xl border border-gray-200 ring-1 ring-black/5
-          transform transition-all duration-200
+          modal-panel
           max-h-[95vh] overflow-hidden flex flex-col
         `}
         style={minHeight ? { minHeight } : undefined}

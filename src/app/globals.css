@@ -431,7 +431,7 @@ a:focus-visible {
   }
 }
 .privacy-screen-fade {
-  animation: privacy-screen-fade-in 0.3s ease-in forwards;
+  animation: privacy-screen-fade-in 0.3s ease-out forwards;
 }
 
 /* リッチテキストエディタ（連絡掲示板） */
@@ -558,4 +558,52 @@ a:focus-visible {
   pointer-events: none;
   animation: hero-shine 3.5s ease-in-out infinite;
   animation-delay: 1s;
+}
+
+/*
+  モーダル / ダイアログ enter アニメーション
+  ─────────────────────────────────────────────
+  @starting-style: 要素が DOM に挿入されたとき（React mount 時）に
+  opacity:0 / scale(0.96) からトランジションを開始させる。
+  exit アニメーションは React の unmount 時には効かないため enter のみ対応。
+  CSS カスタムイージング: cubic-bezier(0.23, 1, 0.32, 1) は
+  初速が速く、終わりが緩やかな strong ease-out。UI の応答感を高める。
+*/
+.modal-panel {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  transition:
+    opacity 200ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@starting-style {
+  .modal-panel {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+}
+
+/*
+  モーダルオーバーレイのフェードイン
+*/
+.modal-overlay {
+  opacity: 1;
+  transition: opacity 200ms ease-out;
+}
+
+@starting-style {
+  .modal-overlay {
+    opacity: 0;
+  }
+}
+
+/* prefers-reduced-motion: モーダルアニメを無効化 */
+@media (prefers-reduced-motion: reduce) {
+  .modal-panel {
+    transition: none;
+  }
+  .modal-overlay {
+    transition: none;
+  }
 }

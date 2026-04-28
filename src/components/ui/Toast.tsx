@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { CheckCircle, XCircle, Info, AlertTriangle, X } from 'lucide-react';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -36,15 +37,18 @@ function ToastItem({ toast, onRemove }: ToastItemProps) {
 
   useEffect(() => {
     // アニメーションのために少し遅延
-    setTimeout(() => setIsVisible(true), 10);
+    const showTimer = setTimeout(() => setIsVisible(true), 10);
 
     const duration = toast.duration || 3000;
-    const timer = setTimeout(() => {
+    const hideTimer = setTimeout(() => {
       setIsVisible(false);
-      setTimeout(() => onRemove(toast.id), 300); // アニメーション終了後に削除
+      setTimeout(() => onRemove(toast.id), 200); // exit は 200ms で素早く
     }, duration);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(showTimer);
+      clearTimeout(hideTimer);
+    };
   }, [toast.id, toast.duration, onRemove]);
 
   const typeStyles = {
@@ -54,51 +58,35 @@ function ToastItem({ toast, onRemove }: ToastItemProps) {
     warning: 'bg-[#f9a825] text-[#1a1a1a] border-[#f57f17]',
   };
 
-  const iconStyles = {
-    success: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-      </svg>
-    ),
-    error: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-      </svg>
-    ),
-    info: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    ),
-    warning: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-      </svg>
-    ),
-  };
+  const IconComponent = {
+    success: CheckCircle,
+    error: XCircle,
+    info: Info,
+    warning: AlertTriangle,
+  }[toast.type];
 
   return (
     <div
       className={`
         flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg
-        transition-all duration-300 ease-in-out
+        transition-[transform,opacity] duration-300 ease-out
         ${typeStyles[toast.type]}
         ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full'}
       `}
     >
-      <div className="flex-shrink-0">{iconStyles[toast.type]}</div>
+      <div className="flex-shrink-0">
+        <IconComponent className="w-5 h-5" />
+      </div>
       <div className="flex-1 text-sm font-medium">{toast.message}</div>
       <button
         onClick={() => {
           setIsVisible(false);
-          setTimeout(() => onRemove(toast.id), 300);
+          setTimeout(() => onRemove(toast.id), 200);
         }}
         className="flex-shrink-0 opacity-70 hover:opacity-100 transition-opacity"
         aria-label="閉じる"
       >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-        </svg>
+        <X className="w-4 h-4" />
       </button>
     </div>
   );

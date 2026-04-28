@@ -155,8 +155,12 @@ export function BillingItemAccordion({
         </svg>
       </button>
 
-      {/* アコーディオンコンテンツ */}
-      {isOpen && (
+      {/* アコーディオンコンテンツ — CSS grid trick でスムーズに開閉 */}
+      <div
+        className="grid transition-[grid-template-rows] duration-200 ease-out"
+        style={{ gridTemplateRows: isOpen ? '1fr' : '0fr' }}
+      >
+        <div className="overflow-hidden">
         <div className="p-4 space-y-6 border-t border-[#e5e7eb]">
           {/* 新規追加 */}
           <div>
@@ -261,7 +265,8 @@ export function BillingItemAccordion({
             </div>
           </div>
         </div>
-      )}
+        </div>
+      </div>
       {ConfirmDialog}
     </div>
   );

@@ -53,7 +53,7 @@ export function Dialog({ open, onOpenChange, children, ariaLabel }: DialogProps)
         aria-modal="true"
         aria-labelledby={ariaLabel ? undefined : titleId}
         aria-label={ariaLabel}
-        className="relative z-50 w-full max-w-lg bg-white rounded-xl shadow-2xl max-h-[95vh] overflow-hidden flex flex-col"
+        className="relative z-50 w-full max-w-lg bg-white rounded-xl shadow-2xl max-h-[95vh] overflow-hidden flex flex-col modal-panel"
       >
         <DialogTitleIdContext.Provider value={titleId}>{children}</DialogTitleIdContext.Provider>
       </div>

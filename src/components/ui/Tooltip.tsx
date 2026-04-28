@@ -26,7 +26,10 @@ export function Tooltip({ text, children, position = 'top', multiline = false }:
     <div className="relative group/tip inline-flex">
       {children}
       <div
-        className={`absolute ${positionClasses[position]} hidden group-hover/tip:block z-50 pointer-events-none`}
+        className={`absolute ${positionClasses[position]} z-50 pointer-events-none
+          opacity-0 scale-95
+          group-hover/tip:opacity-100 group-hover/tip:scale-100
+          transition-[opacity,transform] duration-[125ms] ease-out`}
       >
         <div
           className={`bg-gray-800 text-white text-[10px] px-2 py-1 rounded shadow-lg ${
