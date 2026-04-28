@@ -102,7 +102,7 @@ export default function ClosedDaysPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/schedule" className="text-sm text-[var(--paragraph)] hover:text-[var(--primary)]">
+            <Link href="/schedule" className="text-sm text-[var(--paragraph)] hover:text-[var(--primary)] transition-colors duration-150">
               ← 座席表に戻る
             </Link>
             <h1 className="text-2xl font-bold text-[var(--headline)]">休講日設定</h1>

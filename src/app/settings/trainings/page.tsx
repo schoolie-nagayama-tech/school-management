@@ -141,7 +141,7 @@ export default function TrainingMastersPage() {
       actions={
         <button
           onClick={openCreate}
-          className="px-4 py-2 text-sm font-medium text-white bg-[#1e3a5f] rounded-lg hover:bg-[#2a4a6f] transition-colors"
+          className="px-4 py-2 text-sm font-medium text-white bg-[#1e3a5f] rounded-lg hover:bg-[#2a4a6f] transition-colors duration-150"
         >
           + 新規作成
         </button>
@@ -156,7 +156,7 @@ export default function TrainingMastersPage() {
           <p className="text-sm">研修マスタがまだありません</p>
           <button
             onClick={openCreate}
-            className="mt-3 text-sm text-[#1e3a5f] hover:underline"
+            className="mt-3 text-sm text-[#1e3a5f] hover:underline transition-colors duration-150"
           >
             最初の研修を登録する
           </button>
@@ -178,7 +178,7 @@ export default function TrainingMastersPage() {
               {items.map((m) => {
                 const inactive = !m.is_active;
                 return (
-                  <tr key={m.id} className={`hover:bg-gray-50/50 transition-colors ${inactive ? 'opacity-60' : ''}`}>
+                  <tr key={m.id} className={`hover:bg-gray-50/50 transition-colors duration-150 ${inactive ? 'opacity-60' : ''}`}>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-gray-900">{m.name}</span>
@@ -197,11 +197,11 @@ export default function TrainingMastersPage() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-3">
-                        <button onClick={() => openEdit(m)} className="text-xs text-[#1e3a5f] hover:underline">編集</button>
-                        <button onClick={() => handleToggleActive(m)} className={`text-xs hover:underline ${inactive ? 'text-emerald-600' : 'text-amber-600'}`}>
+                        <button onClick={() => openEdit(m)} className="text-xs text-[#1e3a5f] hover:underline transition-colors duration-150">編集</button>
+                        <button onClick={() => handleToggleActive(m)} className={`text-xs hover:underline transition-colors duration-150 ${inactive ? 'text-emerald-600' : 'text-amber-600'}`}>
                           {inactive ? '再有効化' : '無効化'}
                         </button>
-                        <button onClick={() => handleDelete(m)} className="text-xs text-red-500 hover:underline">削除</button>
+                        <button onClick={() => handleDelete(m)} className="text-xs text-red-500 hover:underline transition-colors duration-150">削除</button>
                       </div>
                     </td>
                   </tr>

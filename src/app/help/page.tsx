@@ -166,7 +166,7 @@ function FaqAccordion({ category }: { category: FaqCategory }) {
           <div key={index}>
             <button
               onClick={() => setOpenIndex(openIndex === index ? null : index)}
-              className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+              className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors duration-150"
             >
               <span className="text-sm font-medium text-[#1f2937]">{item.question}</span>
               {openIndex === index ? (
@@ -196,7 +196,7 @@ export default function HelpPage() {
           <div>
             <Link
               href="/students"
-              className="text-sm text-[var(--paragraph)] hover:text-[#3b82f6] mb-2 inline-block"
+              className="text-sm text-[var(--paragraph)] hover:text-[#3b82f6] mb-2 inline-block transition-colors duration-150"
             >
               ← 生徒一覧に戻る
             </Link>

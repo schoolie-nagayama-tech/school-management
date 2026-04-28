@@ -188,7 +188,7 @@ export default function RegularPatternsPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/schedule" className="text-sm text-[var(--paragraph)] hover:text-[var(--primary)]">
+            <Link href="/schedule" className="text-sm text-[var(--paragraph)] hover:text-[var(--primary)] transition-colors duration-150">
               ← 座席表に戻る
             </Link>
             <h1 className="text-2xl font-bold text-[var(--headline)]">通塾日程</h1>
@@ -292,7 +292,7 @@ export default function RegularPatternsPage() {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
-              className="bg-[#d9376e] text-white hover:bg-[#c02d5a]"
+              className="bg-[#d9376e] text-white hover:bg-[#c02d5a] transition-colors duration-150"
             >
               削除
             </AlertDialogAction>

@@ -64,7 +64,7 @@ export default function IntegrationsPage() {
       <div className="max-w-4xl mx-auto">
         <Link
           href="/settings"
-          className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4"
+          className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4 transition-colors duration-150"
         >
           <ChevronLeft className="w-4 h-4" />
           設定に戻る
@@ -82,7 +82,7 @@ export default function IntegrationsPage() {
             </div>
             <button
               onClick={fetchConnections}
-              className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+              className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors duration-150"
               title="更新"
             >
               <RefreshCw className="w-4 h-4" />

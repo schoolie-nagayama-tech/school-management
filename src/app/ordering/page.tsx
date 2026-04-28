@@ -325,7 +325,7 @@ export default function OrderingPage() {
         <div className="flex items-center gap-2">
           <Link
             href="/ordering/history"
-            className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
+            className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-colors duration-150"
           >
             発注履歴 ({orders.length})
           </Link>

@@ -231,13 +231,13 @@ export default function TeacherDetailPage() {
         <div className="flex gap-2">
           <Link
             href="/admin/teachers"
-            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg bg-white"
+            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg bg-white transition-colors duration-150"
           >
             一覧に戻る
           </Link>
           <Link
             href={`/admin/teachers/${teacher.id}/edit`}
-            className="px-4 py-2 text-sm font-medium text-white bg-[#1e3a5f] rounded-lg hover:bg-[#2a4a6f]"
+            className="px-4 py-2 text-sm font-medium text-white bg-[#1e3a5f] rounded-lg hover:bg-[#2a4a6f] transition-colors duration-150"
           >
             編集
           </Link>

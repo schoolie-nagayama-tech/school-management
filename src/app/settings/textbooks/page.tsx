@@ -210,7 +210,7 @@ export default function TextbookMasterPage() {
       <div className="max-w-[1600px] mx-auto py-6 px-4">
         {/* Header */}
         <div className="mb-6">
-          <Link href="/settings" className="inline-flex items-center text-sm text-[#6b7280] hover:text-[#374151] mb-4">
+          <Link href="/settings" className="inline-flex items-center text-sm text-[#6b7280] hover:text-[#374151] mb-4 transition-colors duration-150">
             <ChevronLeft className="w-4 h-4 mr-1" />設定に戻る
           </Link>
           <div className="flex items-center justify-between">
@@ -220,7 +220,7 @@ export default function TextbookMasterPage() {
             </div>
             <button
               onClick={openAddModal}
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#1e3a5f] text-white text-sm rounded-lg hover:bg-[#2c4f7c] transition-colors"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#1e3a5f] text-white text-sm rounded-lg hover:bg-[#2c4f7c] transition-colors duration-150"
             >
               <Plus className="w-4 h-4" />教材を追加
             </button>
@@ -328,14 +328,14 @@ export default function TextbookMasterPage() {
                         <div className="flex items-center gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={(e) => openEditModal(e, t)}
-                            className="p-1.5 text-[#9ca3af] hover:text-[#1e3a5f] hover:bg-white rounded transition-colors"
+                            className="p-1.5 text-[#9ca3af] hover:text-[#1e3a5f] hover:bg-white rounded transition-colors duration-150"
                             title="編集"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={(e) => handleDelete(e, t.id, t.name)}
-                            className="p-1.5 text-[#9ca3af] hover:text-red-500 hover:bg-white rounded transition-colors"
+                            className="p-1.5 text-[#9ca3af] hover:text-red-500 hover:bg-white rounded transition-colors duration-150"
                             title="削除"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -437,14 +437,14 @@ export default function TextbookMasterPage() {
               <div className="flex justify-end gap-2 mt-6">
                 <button
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 text-sm text-[#6b7280] hover:text-[#374151] transition-colors"
+                  className="px-4 py-2 text-sm text-[#6b7280] hover:text-[#374151] transition-colors duration-150"
                 >
                   キャンセル
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="px-4 py-2 bg-[#1e3a5f] text-white text-sm rounded-lg hover:bg-[#2c4f7c] disabled:opacity-50 transition-colors"
+                  className="px-4 py-2 bg-[#1e3a5f] text-white text-sm rounded-lg hover:bg-[#2c4f7c] disabled:opacity-50 transition-colors duration-150"
                 >
                   {saving ? '保存中...' : editingId ? '更新' : '追加'}
                 </button>

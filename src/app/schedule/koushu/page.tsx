@@ -137,7 +137,7 @@ export default function KoushuPage() {
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link href="/schedule">
-              <button className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+              <button className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-150">
                 <ArrowLeft className="w-5 h-5" />
               </button>
             </Link>

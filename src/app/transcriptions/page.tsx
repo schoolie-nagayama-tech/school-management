@@ -177,7 +177,7 @@ export default function TranscriptionsPage() {
                 {items.map((t) => (
                   <tr
                     key={t.id}
-                    className={`border-t border-[#e5e7eb] hover:bg-[#f9fafb] ${t.is_archived ? 'opacity-60' : ''}`}
+                    className={`border-t border-[#e5e7eb] hover:bg-[#f9fafb] transition-colors duration-150 ${t.is_archived ? 'opacity-60' : ''}`}
                   >
                     <td className="px-3 py-2 whitespace-nowrap text-[#4b5563]/80">
                       {new Date(t.created_at).toLocaleString('ja-JP', {
