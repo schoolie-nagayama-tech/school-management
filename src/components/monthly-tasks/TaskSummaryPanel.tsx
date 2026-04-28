@@ -252,7 +252,7 @@ export function TaskSummaryPanel({
           </div>
           <div className="mt-2 h-2 bg-gray-100 rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all ${
+              className={`h-full rounded-full transition-[width] duration-500 ease-out ${
                 stats.percent >= 80 ? 'bg-green-500' : stats.percent >= 50 ? 'bg-yellow-500' : 'bg-[#d32f2f]'
               }`}
               style={{ width: `${stats.percent}%` }}
@@ -314,7 +314,7 @@ export function TaskSummaryPanel({
                 <span className="text-[11px] text-gray-600 w-14 truncate">{school.name}</span>
                 <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all ${
+                    className={`h-full rounded-full transition-[width] duration-500 ease-out ${
                       percent >= 80 ? 'bg-green-500' : percent >= 50 ? 'bg-yellow-500' : 'bg-red-400'
                     }`}
                     style={{ width: `${percent}%` }}

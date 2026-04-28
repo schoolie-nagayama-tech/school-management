@@ -121,7 +121,7 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
             return (
               <div
                 key={dateStr}
-                className={`relative min-w-0 rounded-xl border px-3 py-2 flex flex-row items-center justify-center gap-1.5 transition-all duration-150 ${
+                className={`relative min-w-0 rounded-xl border px-3 py-2 flex flex-row items-center justify-center gap-1.5 transition-[background-color,border-color,box-shadow] duration-150 ease-out ${
                   isToday
                     ? 'bg-gray-100 text-gray-900 border-gray-300 scale-105'
                     : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-700'

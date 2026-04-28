@@ -302,7 +302,7 @@ export default function TextbookMasterPage() {
                         onClick={() => router.push(`/settings/textbooks/${t.id}/curriculum`)}
                         className={`group flex items-center gap-3 px-4 py-3 bg-white border rounded-lg cursor-pointer
                           hover:${colors.bg} hover:${colors.border} border-[#e5e7eb] hover:border-[#d1d5db]
-                          hover:shadow-sm transition-all`}
+                          hover:shadow-sm transition-[box-shadow,border-color,background-color] duration-150 ease-out`}
                       >
                         {/* Subject Indicator */}
                         <div className={`flex-shrink-0 w-1 h-8 rounded-full ${colors.dot} opacity-40 group-hover:opacity-100 transition-opacity`} />

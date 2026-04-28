@@ -154,7 +154,7 @@ export function TaskPool({
             onDragOver={(e) => { e.preventDefault(); setTrashOver(true); }}
             onDragLeave={() => setTrashOver(false)}
             onDrop={handleTrashDrop}
-            className={`flex items-center gap-1 px-3 py-2 mr-1 rounded transition-all ${
+            className={`flex items-center gap-1 px-3 py-2 mr-1 rounded transition-[background-color,color,transform] duration-150 ease-out ${
               trashOver
                 ? 'bg-red-100 text-red-600 scale-110'
                 : isDragging
@@ -323,7 +323,7 @@ export function TaskPool({
                       {canEdit && (
                         <button
                           onClick={(e) => { e.stopPropagation(); startEdit(idx); }}
-                          className="p-0.5 text-gray-300 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
+                          className="p-0.5 text-gray-300 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex-shrink-0"
                           title="編集"
                         >
                           <Pencil className="w-3 h-3" />
@@ -333,7 +333,7 @@ export function TaskPool({
                       {canEdit && onAddPoolItemAsTask && (
                         <button
                           onClick={(e) => { e.stopPropagation(); handleAddToTaskList(idx); }}
-                          className="p-0.5 text-gray-300 hover:text-green-500 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
+                          className="p-0.5 text-gray-300 hover:text-green-500 opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex-shrink-0"
                           title="日付を選んでタスクリストに追加"
                         >
                           <Plus className="w-3 h-3" />

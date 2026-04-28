@@ -160,7 +160,7 @@ export function TaskCalendar({
               onClick={() => onSelectDate(dateStr)}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, dateStr)}
-              className={`aspect-square rounded cursor-pointer transition-all flex flex-col p-1 relative ${bgClass} ${
+              className={`aspect-square rounded cursor-pointer transition-[background-color,box-shadow] duration-150 ease-out flex flex-col p-1 relative ${bgClass} ${
                 isSelected
                   ? 'ring-2 ring-blue-500 shadow-md z-10'
                   : ''

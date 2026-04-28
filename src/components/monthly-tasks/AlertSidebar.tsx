@@ -182,7 +182,7 @@ export function AlertSidebar({ tasks, schools }: AlertSidebarProps) {
                 </div>
                 <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all ${
+                    className={`h-full rounded-full transition-[width] duration-500 ease-out ${
                       percent >= 80 ? 'bg-green-500' : percent >= 50 ? 'bg-yellow-500' : 'bg-red-400'
                     }`}
                     style={{ width: `${percent}%` }}

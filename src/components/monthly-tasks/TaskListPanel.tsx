@@ -390,7 +390,7 @@ export function TaskListPanel({
               <div key={date}>
                 {/* Date header (drop target) */}
                 <div
-                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-bold border-b sticky top-0 z-10 cursor-pointer select-none transition-all ${
+                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-bold border-b sticky top-0 z-10 cursor-pointer select-none transition-colors duration-150 ${
                     dragOverDate === date ? 'bg-blue-100 border-blue-400 ring-1 ring-blue-400' :
                     isToday ? 'bg-blue-50 text-blue-700 border-blue-200' :
                     isSelected ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
@@ -543,7 +543,7 @@ export function TaskListPanel({
                               finally { setSyncingTaskId(null); }
                             }}
                             disabled={syncingTaskId === task.id}
-                            className={`flex-shrink-0 p-0.5 transition-all ${
+                            className={`flex-shrink-0 p-0.5 transition-[opacity,color] duration-150 ${
                               task.google_event_id
                                 ? 'text-blue-500 hover:text-blue-700'
                                 : 'text-gray-300 hover:text-blue-500 opacity-0 group-hover:opacity-100'
@@ -564,7 +564,7 @@ export function TaskListPanel({
                               e.stopPropagation();
                               onDeleteTask(task.id);
                             }}
-                            className="flex-shrink-0 p-0.5 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                            className="flex-shrink-0 p-0.5 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
                             title="削除"
                           >
                             <Trash2 className="w-3 h-3" />

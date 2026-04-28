@@ -306,7 +306,7 @@ export function StudentForm({
                   <button
                     type="button"
                     onClick={() => handleDeleteTextbook(tb.orderId, tb.textbookName)}
-                    className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 transition-all"
+                    className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-500 transition-opacity duration-150"
                     title="削除"
                   >
                     <X className="w-3.5 h-3.5" />

@@ -133,7 +133,7 @@ export function MaterialCard({
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div
-              className={`h-2 rounded-full transition-all ${getProgressColor()}`}
+              className={`h-2 rounded-full transition-[width] duration-500 ease-out ${getProgressColor()}`}
               style={{
                 width: `${Math.min((material.stock_quantity / Math.max(material.low_stock_threshold, 1)) * 100, 100)}%`,
               }}

@@ -18,7 +18,7 @@ export function BadgeProgress({ earned, total, rankCounts }: BadgeProgressProps)
       <div className="flex items-center gap-4">
         <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-sky-500 to-emerald-400 transition-all duration-700 ease-out"
+            className="h-full rounded-full bg-gradient-to-r from-sky-500 to-emerald-400 transition-[width] duration-700 ease-out"
             style={{ width: `${pct}%` }}
           />
         </div>

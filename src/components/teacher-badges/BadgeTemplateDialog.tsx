@@ -122,7 +122,7 @@ export function BadgeTemplateDialog({ open, onClose, onSave, initial }: BadgeTem
                     type="button"
                     onClick={() => setIcon(ic)}
                     className={`
-                      flex items-center justify-center w-10 h-10 rounded-lg border-2 transition-all
+                      flex items-center justify-center w-10 h-10 rounded-lg border-2 transition-[border-color,background-color,color,transform] duration-150 ease-out
                       ${icon === ic
                         ? 'border-sky-500 bg-sky-50 text-sky-600 scale-110'
                         : 'border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50'

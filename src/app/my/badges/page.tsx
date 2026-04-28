@@ -127,7 +127,7 @@ export default function MyBadgesPage() {
                     return (
                       <div
                         key={a.id}
-                        className={`relative flex items-center gap-3 p-3 bg-white rounded-xl border shadow-sm transition-all hover:shadow-md hover:-translate-y-[1px] ${
+                        className={`relative flex items-center gap-3 p-3 bg-white rounded-xl border shadow-sm transition-[box-shadow,transform] duration-150 ease-out hover:shadow-md hover:-translate-y-[1px] ${
                           idx === 0 ? 'border-[color:var(--primary)]/20' : 'border-gray-200'
                         }`}
                       >

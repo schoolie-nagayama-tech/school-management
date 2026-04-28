@@ -529,7 +529,7 @@ export function MonthlyTaskPage() {
           <span>講習: {progressSummary.courseCompleted}/{progressSummary.courseTotal}</span>
           <div className="flex items-center gap-1.5">
             <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
-              <div className="h-full bg-[#d32f2f] rounded-full transition-all" style={{ width: `${progressSummary.percent}%` }} />
+              <div className="h-full bg-[#d32f2f] rounded-full transition-[width] duration-500 ease-out" style={{ width: `${progressSummary.percent}%` }} />
             </div>
             <span className="font-medium">{progressSummary.percent}%</span>
           </div>

@@ -877,7 +877,7 @@ function TextbookCard({
   return (
     <div
       onClick={onOpen}
-      className={`bg-white rounded-lg border border-l-4 ${seasonColor} ${stalled ? 'border-amber-300' : 'border-[#e5e7eb]'} ${textbook.is_draft ? 'opacity-70 bg-[#fafafa]' : ''} p-2 shadow-sm hover:shadow-md transition-all cursor-pointer text-xs`}
+      className={`bg-white rounded-lg border border-l-4 ${seasonColor} ${stalled ? 'border-amber-300' : 'border-[#e5e7eb]'} ${textbook.is_draft ? 'opacity-70 bg-[#fafafa]' : ''} p-2 shadow-sm hover:shadow-md transition-[box-shadow] duration-150 ease-out cursor-pointer text-xs`}
     >
       {/* 並べ替えボタン（右上） */}
       <div className="flex items-start justify-between gap-1 mb-1">

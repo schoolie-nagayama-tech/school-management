@@ -371,7 +371,7 @@ export function StudentCsvImportModal({
           </div>
           <div className="w-full bg-[#e5e7eb] rounded-full h-2">
             <div
-              className="bg-[#1e3a5f] h-2 rounded-full transition-all duration-300"
+              className="bg-[#1e3a5f] h-2 rounded-full transition-[width] duration-300 ease-out"
               style={{
                 width: importableRows.length > 0
                   ? `${(progress / importableRows.length) * 100}%`
