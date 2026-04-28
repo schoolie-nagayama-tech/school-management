@@ -374,7 +374,7 @@ export function CourseProgressDashboard({
           {targetKoma > 0 && (
             <>
               <div className="mt-2 w-full bg-gray-100 rounded-full h-2">
-                <div className="h-2 rounded-full bg-[#3b82f6] transition-all" style={{ width: `${Math.min(Math.round(targetRate * 100), 100)}%` }} />
+                <div className="h-2 rounded-full bg-[#3b82f6] transition-[width] duration-500 ease-out" style={{ width: `${Math.min(Math.round(targetRate * 100), 100)}%` }} />
               </div>
               <div className="text-xs text-gray-400 mt-1">目標比 {Math.round(targetRate * 100)}%</div>
             </>
@@ -469,7 +469,7 @@ export function CourseProgressDashboard({
             <span className="text-sm text-gray-400">/ {students.length} 名</span>
           </div>
           <div className="mt-2 w-full bg-gray-100 rounded-full h-2">
-            <div className="h-2 rounded-full bg-[#f59e0b] transition-all" style={{ width: `${students.length > 0 ? Math.round((proposedStudentCount / students.length) * 100) : 0}%` }} />
+            <div className="h-2 rounded-full bg-[#f59e0b] transition-[width] duration-500 ease-out" style={{ width: `${students.length > 0 ? Math.round((proposedStudentCount / students.length) * 100) : 0}%` }} />
           </div>
           <div className="mt-1.5 text-xs text-gray-400 space-y-0.5">
             <div className="flex justify-between"><span>提案済</span><span className="text-gray-600">{proposedStudentCount}名</span></div>
@@ -587,7 +587,7 @@ export function CourseProgressDashboard({
                   </div>
 
                   <div className="w-full bg-white/60 rounded-full h-1.5 mb-2">
-                    <div className="h-1.5 rounded-full transition-all" style={{ width: `${Math.min(Math.round(cat.acquisitionRate * 100), 100)}%`, backgroundColor: cat.colors.accent }} />
+                    <div className="h-1.5 rounded-full transition-[width] duration-500 ease-out" style={{ width: `${Math.min(Math.round(cat.acquisitionRate * 100), 100)}%`, backgroundColor: cat.colors.accent }} />
                   </div>
 
                   {cat.gradeBreakdown.length > 1 && (

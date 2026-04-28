@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { Button, ToastContainer } from '@/components/ui';
+import { ChevronLeft } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { useAuth } from '@/contexts/AuthContext';
@@ -151,10 +152,8 @@ export default function SeasonalShiftsPage() {
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="max-w-[1600px]">
         <div className="mb-4">
-          <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-[#6b7280] hover:text-[#1f2937] transition-colors">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+          <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-[#6b7280] hover:text-[#1f2937] transition-colors duration-150">
+            <ChevronLeft className="w-4 h-4" />
             設定に戻る
           </Link>
         </div>
@@ -164,7 +163,7 @@ export default function SeasonalShiftsPage() {
           <button
             type="button"
             onClick={() => setActiveTab('seasonal')}
-            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors duration-150 ${
               activeTab === 'seasonal'
                 ? 'border-[#d32f2f] text-[#d32f2f]'
                 : 'border-transparent text-[#6b7280] hover:text-[#1f2937]'
@@ -175,7 +174,7 @@ export default function SeasonalShiftsPage() {
           <button
             type="button"
             onClick={() => setActiveTab('regular')}
-            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors duration-150 ${
               activeTab === 'regular'
                 ? 'border-[#d32f2f] text-[#d32f2f]'
                 : 'border-transparent text-[#6b7280] hover:text-[#1f2937]'
