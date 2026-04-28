@@ -34,6 +34,12 @@ const geistMono = localFont({
 export const metadata: Metadata = {
   title: "NEST",
   description: "学習塾向け生徒管理システム",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "NEST",
+  },
 };
 
 export default function RootLayout({
@@ -49,6 +55,7 @@ export default function RootLayout({
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <meta name="theme-color" content="#d32f2f" />
       </head>
       <body className="antialiased">
         <ErrorBoundary>

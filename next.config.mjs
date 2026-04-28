@@ -1,4 +1,11 @@
 import bundleAnalyzer from '@next/bundle-analyzer';
+import withSerwistInit from '@serwist/next';
+
+const withSerwist = withSerwistInit({
+  swSrc: 'src/app/sw.ts',
+  swDest: 'public/sw.js',
+  disable: process.env.NODE_ENV === 'development',
+});
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -26,7 +33,7 @@ const nextConfig = {
       { module: /node_modules/ },
       { message: /Failed to parse source map/ },
     ];
-    
+
     // エラーハンドリングを緩和
     if (!isServer) {
       config.resolve = config.resolve || {};
@@ -35,7 +42,7 @@ const nextConfig = {
         fs: false,
       };
     }
-    
+
     return config;
   },
 };
@@ -44,4 +51,4 @@ const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === 'true',
 });
 
-export default withBundleAnalyzer(nextConfig);
+export default withBundleAnalyzer(withSerwist(nextConfig));

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="64" fill="#d32f2f"/>
+  <text
+    x="256"
+    y="256"
+    font-family="system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif"
+    font-size="320"
+    font-weight="700"
+    fill="white"
+    text-anchor="middle"
+    dominant-baseline="central"
+    letter-spacing="-4"
+  >N</text>
+</svg>
