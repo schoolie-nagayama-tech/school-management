@@ -334,21 +334,21 @@ export default function ZoukomaResponsePage() {
                         <div className="flex gap-2">
                           <button
                             onClick={() => setDetailResponse(response)}
-                            className="text-sm text-[#4b5563] hover:text-[#1f2937]"
+                            className="text-sm text-[#4b5563] hover:text-[#1f2937] transition-colors duration-150"
                           >
                             詳細
                           </button>
                           {response.linked_student_id ? (
                             <button
                               onClick={() => handleUnlinkStudent(response.id)}
-                              className="text-sm text-[#ef4444] hover:text-[#dc2626]"
+                              className="text-sm text-[#ef4444] hover:text-[#dc2626] transition-colors duration-150"
                             >
                               解除
                             </button>
                           ) : (
                             <button
                               onClick={() => handleOpenLinkModal(response)}
-                              className="text-sm text-[#4b5563] hover:text-[#1f2937]"
+                              className="text-sm text-[#4b5563] hover:text-[#1f2937] transition-colors duration-150"
                             >
                               紐付け
                             </button>

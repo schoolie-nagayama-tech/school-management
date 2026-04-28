@@ -319,7 +319,7 @@ export default function AttendanceSheetDetailPage() {
                   return (
                     <tr
                       key={d.date}
-                      className={`${isWeekend ? 'bg-blue-50/50' : ''} hover:bg-gray-50`}
+                      className={`${isWeekend ? 'bg-blue-50/50' : ''} hover:bg-gray-50 transition-colors duration-150`}
                     >
                       <td
                         className={`px-2 py-1 border-b sticky left-0 ${

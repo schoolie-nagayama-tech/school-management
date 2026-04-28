@@ -711,7 +711,7 @@ export default function CourseProgressPage() {
               <>
                 <button
                   onClick={handleOpenTemplateDialog}
-                  className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600"
+                  className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition-colors duration-150"
                 >
                   テンプレート適用
                 </button>
@@ -721,14 +721,14 @@ export default function CourseProgressPage() {
                     setSaveTemplateName(`${seasonLabel}${year} 進捗管理テンプレート`);
                     setShowSaveDialog(true);
                   }}
-                  className="px-3 py-1.5 text-xs border border-green-200 rounded-lg hover:bg-green-50 text-green-600"
+                  className="px-3 py-1.5 text-xs border border-green-200 rounded-lg hover:bg-green-50 text-green-600 transition-colors duration-150"
                 >
                   テンプレート保存
                 </button>
                 <button
                   onClick={handleSyncCalendar}
                   disabled={syncing}
-                  className="px-3 py-1.5 text-xs border border-blue-200 rounded-lg hover:bg-blue-50 text-blue-600 disabled:opacity-50"
+                  className="px-3 py-1.5 text-xs border border-blue-200 rounded-lg hover:bg-blue-50 text-blue-600 disabled:opacity-50 transition-colors duration-150"
                   title="Googleカレンダーの面談予約を取得して進捗を同期"
                 >
                   {syncing ? '同期中...' : '面談同期'}
@@ -781,7 +781,7 @@ export default function CourseProgressPage() {
             <div className="flex border-b border-gray-200">
               <button
                 onClick={() => setSettingsTab('filter')}
-                className={`px-4 py-2 text-xs font-medium transition-colors ${
+                className={`px-4 py-2 text-xs font-medium transition-colors duration-150 ${
                   settingsTab === 'filter'
                     ? 'text-[#1e3a5f] border-b-2 border-[#1e3a5f] bg-blue-50/30'
                     : 'text-gray-400 hover:text-gray-600'
@@ -792,7 +792,7 @@ export default function CourseProgressPage() {
               {isOwnerOrAbove && (
                 <button
                   onClick={() => setSettingsTab('items')}
-                  className={`px-4 py-2 text-xs font-medium transition-colors ${
+                  className={`px-4 py-2 text-xs font-medium transition-colors duration-150 ${
                     settingsTab === 'items'
                       ? 'text-[#1e3a5f] border-b-2 border-[#1e3a5f] bg-blue-50/30'
                       : 'text-gray-400 hover:text-gray-600'
@@ -845,7 +845,7 @@ export default function CourseProgressPage() {
                         setSearchQuery('');
                         setGradeFilter(null);
                       }}
-                      className="text-xs text-gray-400 hover:text-gray-600"
+                      className="text-xs text-gray-400 hover:text-gray-600 transition-colors duration-150"
                     >
                       リセット
                     </button>
@@ -926,7 +926,7 @@ export default function CourseProgressPage() {
                     <button
                       onClick={handleAddItem}
                       disabled={!newItemName.trim()}
-                      className="px-3 py-1.5 text-xs bg-[#1e3a5f] text-white rounded-lg hover:bg-[#2c5282] disabled:opacity-50"
+                      className="px-3 py-1.5 text-xs bg-[#1e3a5f] text-white rounded-lg hover:bg-[#2c5282] disabled:opacity-50 transition-colors duration-150"
                     >
                       追加
                     </button>
@@ -1016,13 +1016,13 @@ export default function CourseProgressPage() {
                           <div className="flex items-center gap-1 shrink-0">
                             <button
                               onClick={() => handleToggleHideItem(item.id, item.is_hidden)}
-                              className="text-[10px] text-gray-400 hover:text-gray-600 px-1"
+                              className="text-[10px] text-gray-400 hover:text-gray-600 px-1 transition-colors duration-150"
                             >
                               {item.is_hidden ? '表示' : '非表示'}
                             </button>
                             <button
                               onClick={() => handleDeleteItem(item.id)}
-                              className="text-[10px] text-[#ef4444] hover:text-[#dc2626] px-1"
+                              className="text-[10px] text-[#ef4444] hover:text-[#dc2626] px-1 transition-colors duration-150"
                             >
                               削除
                             </button>
@@ -1056,7 +1056,7 @@ export default function CourseProgressPage() {
             {isOwnerOrAbove && (
               <button
                 onClick={handleOpenTemplateDialog}
-                className="px-4 py-2 text-sm bg-[#1e3a5f] text-white rounded-lg hover:bg-[#2c5282]"
+                className="px-4 py-2 text-sm bg-[#1e3a5f] text-white rounded-lg hover:bg-[#2c5282] transition-colors duration-150"
               >
                 テンプレートから作成
               </button>
@@ -1111,14 +1111,14 @@ export default function CourseProgressPage() {
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setShowSaveDialog(false)}
-                className="px-4 py-2 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600"
+                className="px-4 py-2 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition-colors duration-150"
               >
                 キャンセル
               </button>
               <button
                 onClick={handleSaveAsTemplate}
                 disabled={!saveTemplateName.trim() || saving}
-                className="px-4 py-2 text-xs bg-[#1e3a5f] text-white rounded-lg hover:bg-[#2c5282] disabled:opacity-50"
+                className="px-4 py-2 text-xs bg-[#1e3a5f] text-white rounded-lg hover:bg-[#2c5282] disabled:opacity-50 transition-colors duration-150"
               >
                 {saving ? '保存中...' : '保存'}
               </button>

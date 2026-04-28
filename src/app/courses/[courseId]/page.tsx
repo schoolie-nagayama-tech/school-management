@@ -568,7 +568,7 @@ export default function CourseDetailPage() {
                   <button
                     key={season}
                     onClick={() => setEditSeason(season)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-150 ${
                       editSeason === season
                         ? season === 'spring'
                           ? 'bg-[#ffeb3b] text-[#1f2937]'
@@ -640,7 +640,7 @@ export default function CourseDetailPage() {
             {course.textbooks?.map(ct => (
               <div
                 key={ct.id}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-colors cursor-pointer ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-colors duration-150 cursor-pointer ${
                   selectedTextbookId === ct.textbook_id
                     ? 'bg-[#3b82f6] border-[#3b82f6] text-[#1f2937]'
                     : 'bg-[#f3f4f6] border-[#f3f4f6] text-[#4b5563] hover:border-[#3b82f6]'
@@ -653,7 +653,7 @@ export default function CourseDetailPage() {
                     e.stopPropagation();
                     handleRemoveTextbook(ct.textbook_id, ct.textbook?.name || '');
                   }}
-                  className="text-[#ef4444] hover:text-[#b82d5b] ml-2"
+                  className="text-[#ef4444] hover:text-[#b82d5b] ml-2 transition-colors duration-150"
                 >
                   ×
                 </button>
@@ -749,7 +749,7 @@ export default function CourseDetailPage() {
                     return (
                       <tr
                         key={row.curriculumItem.id}
-                        className={`border-b border-[#e5e7eb] hover:bg-[#f3f4f6] ${groupColor}`}
+                        className={`border-b border-[#e5e7eb] hover:bg-[#f3f4f6] transition-colors duration-150 ${groupColor}`}
                       >
                         <td className="px-4 py-3 text-center border-r border-[#e5e7eb]">
                           <input
@@ -869,7 +869,7 @@ export default function CourseDetailPage() {
                 {availableTextbooks.map(textbook => (
                   <div
                     key={textbook.id}
-                    className="p-3 bg-[#f3f4f6] rounded-lg border border-[#e5e7eb] hover:bg-[#e5e7eb] flex items-center justify-between"
+                    className="p-3 bg-[#f3f4f6] rounded-lg border border-[#e5e7eb] hover:bg-[#e5e7eb] transition-colors duration-150 flex items-center justify-between"
                   >
                     <div>
                       <div className="font-medium text-[#1f2937]">{textbook.name}</div>

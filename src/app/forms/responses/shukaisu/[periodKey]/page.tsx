@@ -368,13 +368,13 @@ export default function ShukaisuResponsePage() {
               <button
                 onClick={handleBulkArchive}
                 disabled={isProcessing}
-                className="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 disabled:opacity-50"
+                className="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 disabled:opacity-50 transition-colors duration-150"
               >
                 一括アーカイブ
               </button>
               <button
                 onClick={() => setSelectedIds(new Set())}
-                className="px-3 py-1 text-gray-600 text-sm hover:underline"
+                className="px-3 py-1 text-gray-600 text-sm hover:underline transition-colors duration-150"
               >
                 選択解除
               </button>
@@ -438,7 +438,7 @@ export default function ShukaisuResponsePage() {
                   {responses.map((response) => (
                     <tr
                       key={response.id}
-                      className={`border-b border-[#e5e7eb]/20 hover:bg-[#f3f4f6] ${
+                      className={`border-b border-[#e5e7eb]/20 hover:bg-[#f3f4f6] transition-colors duration-150 ${
                         response.is_archived ? 'bg-gray-100 opacity-60' : ''
                       }`}
                     >
@@ -500,7 +500,7 @@ export default function ShukaisuResponsePage() {
                                 アーカイブ済
                               </span>
                               <button
-                                className="px-3 py-1 text-xs bg-[#f3f4f6] text-blue-600 rounded hover:bg-blue-50"
+                                className="px-3 py-1 text-xs bg-[#f3f4f6] text-blue-600 rounded hover:bg-blue-50 transition-colors duration-150"
                                 onClick={() => handleUnarchive(response.id)}
                                 disabled={isProcessing}
                               >
@@ -510,28 +510,28 @@ export default function ShukaisuResponsePage() {
                           ) : (
                             <>
                               <button
-                                className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb]"
+                                className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] transition-colors duration-150"
                                 onClick={() => setDetailResponse(response)}
                               >
                                 詳細
                               </button>
                               {response.linked_student_id ? (
                                 <button
-                                  className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb]"
+                                  className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] transition-colors duration-150"
                                   onClick={() => handleUnlinkStudent(response.id)}
                                 >
                                   解除
                                 </button>
                               ) : (
                                 <button
-                                  className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb]"
+                                  className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] transition-colors duration-150"
                                   onClick={() => handleOpenLinkModal(response)}
                                 >
                                   紐付け
                                 </button>
                               )}
                               <button
-                                className="px-3 py-1 text-xs bg-[#f3f4f6] text-gray-500 rounded hover:bg-gray-100"
+                                className="px-3 py-1 text-xs bg-[#f3f4f6] text-gray-500 rounded hover:bg-gray-100 transition-colors duration-150"
                                 onClick={() => handleArchive(response.id)}
                                 disabled={isProcessing}
                               >

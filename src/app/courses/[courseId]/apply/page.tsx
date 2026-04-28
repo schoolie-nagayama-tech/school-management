@@ -229,7 +229,7 @@ export default function CourseApplyPage() {
         <h3 className="text-sm font-bold text-[#1f2937] mb-3">適用モード</h3>
         <div className="flex gap-4">
           <label
-            className={`flex-1 p-4 rounded-lg border-2 cursor-pointer transition-colors ${
+            className={`flex-1 p-4 rounded-lg border-2 cursor-pointer transition-colors duration-150 ${
               applyMode === 'overwrite'
                 ? 'border-[#3b82f6] bg-[#3b82f6]/10'
                 : 'border-[#f3f4f6] hover:border-[#3b82f6]'
@@ -249,7 +249,7 @@ export default function CourseApplyPage() {
             </div>
           </label>
           <label
-            className={`flex-1 p-4 rounded-lg border-2 cursor-pointer transition-colors ${
+            className={`flex-1 p-4 rounded-lg border-2 cursor-pointer transition-colors duration-150 ${
               applyMode === 'add'
                 ? 'border-[#3b82f6] bg-[#3b82f6]/10'
                 : 'border-[#f3f4f6] hover:border-[#3b82f6]'
@@ -353,7 +353,7 @@ export default function CourseApplyPage() {
                   return (
                     <tr
                       key={student.id}
-                      className={`border-b border-[#e5e7eb] hover:bg-[#f3f4f6] ${
+                      className={`border-b border-[#e5e7eb] hover:bg-[#f3f4f6] transition-colors duration-150 ${
                         isChecked ? 'bg-[#3b82f6]/10' : ''
                       }`}
                     >
@@ -368,7 +368,7 @@ export default function CourseApplyPage() {
                       <td className="px-4 py-3 text-sm font-medium text-[#1f2937] border-r border-[#e5e7eb]">
                         <Link
                           href={`/students/${student.id}/progress`}
-                          className="text-[#1f2937] hover:text-[#3b82f6] hover:underline"
+                          className="text-[#1f2937] hover:text-[#3b82f6] hover:underline transition-colors duration-150"
                         >
                           {student.last_name} {student.first_name}
                           {student.last_name_kana && (
@@ -424,7 +424,7 @@ export default function CourseApplyPage() {
               </thead>
               <tbody>
                 {applications.map(app => (
-                  <tr key={app.id} className="border-b border-[#e5e7eb]/50 hover:bg-[#f3f4f6]">
+                  <tr key={app.id} className="border-b border-[#e5e7eb]/50 hover:bg-[#f3f4f6] transition-colors duration-150">
                     <td className="px-4 py-2 text-sm text-[#1f2937] border-r border-[#e5e7eb]/50">
                       {app.student?.last_name} {app.student?.first_name}
                     </td>

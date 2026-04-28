@@ -558,7 +558,7 @@ export default function CourseSchedulePage() {
             <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
               <button
                 onClick={() => setViewMode('list')}
-                className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
+                className={`px-3 py-1.5 text-xs rounded-md transition-colors duration-150 ${
                   viewMode === 'list'
                     ? 'bg-white text-[#1e3a5f] font-medium shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'
@@ -568,7 +568,7 @@ export default function CourseSchedulePage() {
               </button>
               <button
                 onClick={() => setViewMode('gantt')}
-                className={`px-3 py-1.5 text-xs rounded-md transition-colors ${
+                className={`px-3 py-1.5 text-xs rounded-md transition-colors duration-150 ${
                   viewMode === 'gantt'
                     ? 'bg-white text-[#1e3a5f] font-medium shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'
@@ -582,7 +582,7 @@ export default function CourseSchedulePage() {
               <button
                 onClick={handleExportPDF}
                 disabled={isExporting}
-                className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 disabled:opacity-50 flex items-center gap-1"
+                className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 disabled:opacity-50 flex items-center gap-1 transition-colors duration-150"
               >
                 {isExporting ? (
                   <>
@@ -599,7 +599,7 @@ export default function CourseSchedulePage() {
               <>
                 <button
                   onClick={handleOpenTemplateDialog}
-                  className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600"
+                  className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition-colors duration-150"
                 >
                   テンプレート適用
                 </button>
@@ -610,7 +610,7 @@ export default function CourseSchedulePage() {
                       setSaveTemplateName(`${seasonLabel}${year} 準備スケジュールテンプレート`);
                       setShowSaveTemplateDialog(true);
                     }}
-                    className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600"
+                    className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition-colors duration-150"
                   >
                     テンプレート保存
                   </button>
@@ -619,7 +619,7 @@ export default function CourseSchedulePage() {
                   <button
                     onClick={handleDeployToAllSchools}
                     disabled={deployLoading || tasks.length === 0}
-                    className="px-3 py-1.5 text-xs bg-[#1e3a5f] text-white rounded-lg hover:bg-[#2c5282] disabled:opacity-50 flex items-center gap-1"
+                    className="px-3 py-1.5 text-xs bg-[#1e3a5f] text-white rounded-lg hover:bg-[#2c5282] disabled:opacity-50 flex items-center gap-1 transition-colors duration-150"
                   >
                     {deployLoading ? (
                       <>
@@ -672,7 +672,7 @@ export default function CourseSchedulePage() {
               {isOwnerOrAbove && (
                 <button
                   onClick={handleOpenTemplateDialog}
-                  className="px-4 py-2 text-sm bg-[#1e3a5f] text-white rounded-lg hover:bg-[#2c5282]"
+                  className="px-4 py-2 text-sm bg-[#1e3a5f] text-white rounded-lg hover:bg-[#2c5282] transition-colors duration-150"
                 >
                   テンプレートから作成
                 </button>
@@ -747,7 +747,7 @@ export default function CourseSchedulePage() {
             <div className="px-6 py-4 border-t border-gray-200 flex justify-end gap-2">
               <button
                 onClick={() => { setShowSaveTemplateDialog(false); setSaveTemplateName(''); }}
-                className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg"
+                className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg transition-colors duration-150"
                 disabled={saveTemplateLoading}
               >
                 キャンセル
@@ -755,7 +755,7 @@ export default function CourseSchedulePage() {
               <button
                 onClick={handleSaveAsTemplate}
                 disabled={!saveTemplateName.trim() || saveTemplateLoading}
-                className="px-4 py-2 text-sm bg-[#1e3a5f] text-white rounded-lg hover:bg-[#2c5282] disabled:opacity-50"
+                className="px-4 py-2 text-sm bg-[#1e3a5f] text-white rounded-lg hover:bg-[#2c5282] disabled:opacity-50 transition-colors duration-150"
               >
                 {saveTemplateLoading ? '保存中...' : '保存'}
               </button>

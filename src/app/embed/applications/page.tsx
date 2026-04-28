@@ -402,7 +402,7 @@ export default function EmbedApplicationsPage() {
                     return (
                       <td
                         key={item.id}
-                        className={`px-2 py-1.5 text-center text-xs ${!readOnly ? 'cursor-pointer hover:bg-blue-50' : ''} ${isSaving ? 'opacity-50' : ''}`}
+                        className={`px-2 py-1.5 text-center text-xs ${!readOnly ? 'cursor-pointer hover:bg-blue-50 transition-colors duration-150' : ''} ${isSaving ? 'opacity-50' : ''}`}
                         onClick={() => !isEditing && handleNumberClick(student.id, item.id, app?.number_value ?? null)}
                       >
                         {isEditing ? (
@@ -453,7 +453,7 @@ export default function EmbedApplicationsPage() {
                   return (
                     <td
                       key={item.id}
-                      className={`px-2 py-1.5 text-center text-sm ${getStatusStyle(status)} ${!readOnly ? 'cursor-pointer hover:bg-blue-50 select-none' : ''} ${isSaving ? 'opacity-50' : ''}`}
+                      className={`px-2 py-1.5 text-center text-sm ${getStatusStyle(status)} ${!readOnly ? 'cursor-pointer hover:bg-blue-50 select-none transition-colors duration-150' : ''} ${isSaving ? 'opacity-50' : ''}`}
                       onClick={() => handleCheckClick(student.id, item.id, status)}
                     >
                       {status ? STATUS_SYMBOLS[status] || '' : ''}
