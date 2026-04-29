@@ -9,10 +9,9 @@ import { useConfirm } from '@/hooks/useConfirm';
 import { useRequirePermission } from '@/hooks/usePermissions';
 import { useAuth } from '@/contexts/AuthContext';
 import AccessDenied from '@/components/AccessDenied';
-import { ChevronLeft, Plus, Save, Trash2, RotateCcw } from 'lucide-react';
+import { ChevronLeft, Save, Trash2, RotateCcw } from 'lucide-react';
 import {
   getAllAssessmentSubjects,
-  createAssessmentSubject,
   updateAssessmentSubject,
   deactivateAssessmentSubject,
   deleteAssessmentSubject,
@@ -61,7 +60,6 @@ export default function SubjectsSettingsPage() {
   const [showInactive, setShowInactive] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [editing, setEditing] = useState<AssessmentSubject | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
   const editorRef = useRef<HTMLDivElement | null>(null);
 
   // 教室一覧を取得し、初期選択を設定
@@ -79,13 +77,13 @@ export default function SubjectsSettingsPage() {
 
   // 編集パネルが出たらスクロール＆フォーカス
   useEffect(() => {
-    if (!editing && !isCreating) return;
+    if (!editing) return;
     const el = editorRef.current;
     if (!el) return;
     el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     const firstInput = el.querySelector<HTMLInputElement>('input[type="text"], input:not([type])');
     firstInput?.focus();
-  }, [editing, isCreating]);
+  }, [editing]);
 
   const fetchAll = async () => {
     setIsLoading(true);
@@ -157,7 +155,7 @@ export default function SubjectsSettingsPage() {
                 <span className="text-sm text-blue-700 font-medium whitespace-nowrap">表示する教室:</span>
                 <select
                   value={selectedSchoolId ?? ''}
-                  onChange={(e) => { setSelectedSchoolId(e.target.value || null); setEditing(null); setIsCreating(false); }}
+                  onChange={(e) => { setSelectedSchoolId(e.target.value || null); setEditing(null); }}
                   className="flex-1 px-2 py-1 border border-blue-300 rounded text-sm bg-white"
                 >
                   {schools.map((s) => (
@@ -192,22 +190,18 @@ export default function SubjectsSettingsPage() {
                 />
                 無効化済みも表示
               </label>
-              <Button onClick={() => { setIsCreating(true); setEditing(null); }} size="sm" disabled={!selectedSchoolId}>
-                <Plus className="w-4 h-4 mr-1" />新規追加
-              </Button>
             </div>
           </CardContent>
         </Card>
 
-        {(isCreating || editing) && (
+        {editing && (
           <div ref={editorRef} className="subject-editor-enter">
             <SubjectEditor
-              key={editing?.id ?? 'new'}
+              key={editing.id}
               initial={editing}
               schoolId={selectedSchoolId}
-              onCancel={() => { setIsCreating(false); setEditing(null); }}
+              onCancel={() => setEditing(null)}
               onSaved={async () => {
-                setIsCreating(false);
                 setEditing(null);
                 await fetchAll();
                 success('保存しました');
@@ -267,7 +261,7 @@ export default function SubjectsSettingsPage() {
                           <td className="px-2 py-2 text-right whitespace-nowrap">
                             <button
                               type="button"
-                              onClick={() => { setEditing(s); setIsCreating(false); }}
+                              onClick={() => setEditing(s)}
                               className="text-xs text-blue-600 hover:text-blue-800 px-2 py-1"
                             >
                               編集
@@ -331,26 +325,23 @@ export default function SubjectsSettingsPage() {
 
 function SubjectEditor({
   initial,
-  schoolId,
   onCancel,
   onSaved,
   onError,
 }: {
-  initial: AssessmentSubject | null;
+  initial: AssessmentSubject;
   schoolId: string | null;
   onCancel: () => void;
   onSaved: () => void | Promise<void>;
   onError: (msg: string) => void;
 }) {
-  const isEdit = !!initial;
-  const [name, setName] = useState(initial?.name ?? '');
-  const [shortName, setShortName] = useState(initial?.short_name ?? '');
-  const [code, setCode] = useState(initial?.code ?? '');
-  const [schoolType, setSchoolType] = useState<AssessmentSubject['school_type']>(initial?.school_type ?? '高校');
-  const [grades, setGrades] = useState<number[]>(initial?.applicable_grades ?? []);
-  const [category, setCategory] = useState(initial?.category ?? 'other');
-  const [isRequired, setIsRequired] = useState(initial?.is_required ?? false);
-  const [sortOrder, setSortOrder] = useState(initial?.sort_order ?? 999);
+  const [name, setName] = useState(initial.name);
+  const [shortName, setShortName] = useState(initial.short_name ?? '');
+  const [schoolType, setSchoolType] = useState<AssessmentSubject['school_type']>(initial.school_type);
+  const [grades, setGrades] = useState<number[]>(initial.applicable_grades);
+  const [category, setCategory] = useState(initial.category);
+  const [isRequired, setIsRequired] = useState(initial.is_required);
+  const [sortOrder, setSortOrder] = useState(initial.sort_order);
   const [saving, setSaving] = useState(false);
 
   const toggleGrade = (g: number) => {
@@ -359,33 +350,18 @@ function SubjectEditor({
 
   const save = async () => {
     if (!name.trim()) return onError('科目名を入力してください');
-    if (!isEdit && !code.trim()) return onError('コードを入力してください（一意の英数字）');
     if (grades.length === 0) return onError('対象学年を1つ以上選択してください');
     setSaving(true);
     try {
-      if (isEdit && initial) {
-        await updateAssessmentSubject(initial.id, {
-          name: name.trim(),
-          short_name: shortName.trim() || null,
-          school_type: schoolType,
-          applicable_grades: grades,
-          category,
-          is_required: isRequired,
-          sort_order: sortOrder,
-        });
-      } else {
-        await createAssessmentSubject({
-          school_id: schoolId,
-          code: code.trim(),
-          name: name.trim(),
-          short_name: shortName.trim() || null,
-          school_type: schoolType,
-          applicable_grades: grades,
-          category,
-          is_required: isRequired,
-          sort_order: sortOrder,
-        });
-      }
+      await updateAssessmentSubject(initial.id, {
+        name: name.trim(),
+        short_name: shortName.trim() || null,
+        school_type: schoolType,
+        applicable_grades: grades,
+        category,
+        is_required: isRequired,
+        sort_order: sortOrder,
+      });
       await onSaved();
     } catch (e) {
       onError(e instanceof Error ? e.message : '保存に失敗しました');
@@ -397,7 +373,7 @@ function SubjectEditor({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">{isEdit ? '科目を編集' : '科目を追加'}</CardTitle>
+        <CardTitle className="text-base">科目を編集</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -410,14 +386,9 @@ function SubjectEditor({
             <Input value={shortName} onChange={(e) => setShortName(e.target.value)} placeholder="例：英コⅠ" />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">コード {!isEdit && '*'}</label>
-            <Input
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              placeholder="例：hs_eng_com_1"
-              disabled={isEdit}
-            />
-            {isEdit && <p className="text-[10px] text-gray-400 mt-1">コードは編集できません</p>}
+            <label className="block text-xs font-medium text-gray-700 mb-1">コード</label>
+            <Input value={initial.code} disabled />
+            <p className="text-[10px] text-gray-400 mt-1">コードは編集できません</p>
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">学校種別 *</label>
