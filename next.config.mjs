@@ -35,8 +35,9 @@ const nextConfig = {
       { message: /Failed to parse source map/ },
     ];
 
-    // エラーハンドリングを緩和
-    if (!isServer) {
+    if (isServer) {
+      config.externals.push('web-push');
+    } else {
       config.resolve = config.resolve || {};
       config.resolve.fallback = {
         ...config.resolve.fallback,
