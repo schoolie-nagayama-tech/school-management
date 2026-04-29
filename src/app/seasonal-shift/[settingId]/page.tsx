@@ -1,15 +1,20 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
+import { createSupabaseBrowserClient } from '@/lib/supabase';
 import {
   getPublishedSeasonalShiftSetting,
   getSeasonalShiftSlotSettings,
-  createSeasonalShiftSubmission,
+  createMySeasonalShiftSubmission,
+  getMySeasonalShiftSubmission,
+  updateMySeasonalShiftSubmission,
 } from '@/lib/api/seasonal-shift';
-import type { SeasonalShiftSetting } from '@/types/seasonal-shift';
+import type { SeasonalShiftSetting, SubmissionWithSlots } from '@/types/seasonal-shift';
+import type { UserProfile } from '@/types/database';
 
 type SlotKey = string; // "YYYY-MM-DD|HH:MM-HH:MM"
+type AuthState = 'loading' | 'unauthenticated' | 'authenticated';
 
 function getDatesBetween(start: string, end: string): string[] {
   const dates: string[] = [];
@@ -24,38 +29,70 @@ function getDatesBetween(start: string, end: string): string[] {
 
 export default function SeasonalShiftFormPage() {
   const params = useParams();
-  const searchParams = useSearchParams();
   const settingId = params.settingId as string;
-  const submitted = searchParams.get('submitted') === '1';
 
+  const [authState, setAuthState] = useState<AuthState>('loading');
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [setting, setSetting] = useState<SeasonalShiftSetting | null>(null);
-  const [slotSettings, setSlotSettings] = useState<{ slot_date: string; time_slot: string; is_open: boolean }[]>([]);
+  const [slotSettings, setSlotSettings] = useState<
+    { slot_date: string; time_slot: string; is_open: boolean }[]
+  >([]);
+  const [existingSubmission, setExistingSubmission] = useState<SubmissionWithSlots | null>(null);
   const [selected, setSelected] = useState<Set<SlotKey>>(new Set());
-  const [teacherName, setTeacherName] = useState('');
-  const [teacherEmail, setTeacherEmail] = useState('');
   const [notes, setNotes] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDone, setIsDone] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // 認証チェック
+  useEffect(() => {
+    const supabase = createSupabaseBrowserClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) {
+        setAuthState('unauthenticated');
+        return;
+      }
+      setAuthState('authenticated');
+      supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', user.id)
+        .maybeSingle()
+        .then(({ data }) => setProfile(data as UserProfile | null));
+    });
+  }, []);
 
   const fetchData = useCallback(async () => {
     if (!settingId) return;
     setIsLoading(true);
     setErrorMessage('');
     try {
-      const [s, slots] = await Promise.all([
+      const [s, slots, existing] = await Promise.all([
         getPublishedSeasonalShiftSetting(settingId),
         getSeasonalShiftSlotSettings(settingId),
+        getMySeasonalShiftSubmission(settingId),
       ]);
       if (!s) {
         setSetting(null);
-        setIsLoading(false);
         return;
       }
       setSetting(s);
-      setSlotSettings(slots.map((r) => ({ slot_date: r.slot_date, time_slot: r.time_slot, is_open: r.is_open })));
+      setSlotSettings(
+        slots.map((r) => ({ slot_date: r.slot_date, time_slot: r.time_slot, is_open: r.is_open }))
+      );
+      if (existing) {
+        setExistingSubmission(existing);
+        if (existing.allow_edit) {
+          setNotes(existing.notes ?? '');
+          const pre = new Set<SlotKey>();
+          (existing.slots ?? []).forEach((slot) => {
+            if (slot.available) pre.add(`${slot.shift_date}|${slot.time_slot}`);
+          });
+          setSelected(pre);
+        }
+      }
     } catch (err) {
-      console.error(err);
       setErrorMessage(err instanceof Error ? err.message : '読み込みに失敗しました');
     } finally {
       setIsLoading(false);
@@ -63,12 +100,17 @@ export default function SeasonalShiftFormPage() {
   }, [settingId]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (authState === 'authenticated') {
+      fetchData();
+    }
+  }, [authState, fetchData]);
 
   const dates = setting ? getDatesBetween(setting.start_date, setting.end_date) : [];
   const timeSlots = setting
-    ? setting.weekday_slots.split(',').map((x) => x.trim()).filter(Boolean)
+    ? setting.weekday_slots
+        .split(',')
+        .map((x) => x.trim())
+        .filter(Boolean)
     : [];
   const slotMatrix: { date: string; slot: string; key: SlotKey; available: boolean }[] = [];
   if (setting) {
@@ -76,8 +118,7 @@ export default function SeasonalShiftFormPage() {
       timeSlots.forEach((slot) => {
         const key: SlotKey = `${dateStr}|${slot}`;
         const slotRow = slotSettings.find((s) => s.slot_date === dateStr && s.time_slot === slot);
-        const available = slotRow?.is_open ?? false;
-        slotMatrix.push({ date: dateStr, slot, key, available });
+        slotMatrix.push({ date: dateStr, slot, key, available: slotRow?.is_open ?? false });
       });
     });
   }
@@ -94,29 +135,21 @@ export default function SeasonalShiftFormPage() {
   };
 
   const toggleColumn = (slot: string) => {
-    const availableInColumn = slotMatrix.filter((c) => c.slot === slot && c.available);
-    const allChecked = availableInColumn.every((c) => selected.has(c.key));
-    const newValue = !allChecked;
+    const available = slotMatrix.filter((c) => c.slot === slot && c.available);
+    const allChecked = available.every((c) => selected.has(c.key));
     setSelected((prev) => {
       const next = new Set(prev);
-      availableInColumn.forEach((c) => {
-        if (newValue) next.add(c.key);
-        else next.delete(c.key);
-      });
+      available.forEach((c) => (allChecked ? next.delete(c.key) : next.add(c.key)));
       return next;
     });
   };
 
   const toggleRow = (date: string) => {
-    const availableInRow = slotMatrix.filter((c) => c.date === date && c.available);
-    const allChecked = availableInRow.every((c) => selected.has(c.key));
-    const newValue = !allChecked;
+    const available = slotMatrix.filter((c) => c.date === date && c.available);
+    const allChecked = available.every((c) => selected.has(c.key));
     setSelected((prev) => {
       const next = new Set(prev);
-      availableInRow.forEach((c) => {
-        if (newValue) next.add(c.key);
-        else next.delete(c.key);
-      });
+      available.forEach((c) => (allChecked ? next.delete(c.key) : next.add(c.key)));
       return next;
     });
   };
@@ -124,36 +157,60 @@ export default function SeasonalShiftFormPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!setting) return;
-    if (!teacherName.trim() || !teacherEmail.trim()) {
-      setErrorMessage('名前とメールアドレスを入力してください');
-      return;
-    }
     setIsSubmitting(true);
     setErrorMessage('');
     try {
       const slots = Array.from(selected).map((key) => {
         const [date, timeSlot] = key.split('|');
-        return { shift_date: date, time_slot: timeSlot, available: true };
+        return { shift_date: date, time_slot: timeSlot, available: true as const };
       });
-      await createSeasonalShiftSubmission(
-        {
-          setting_id: settingId,
-          school_id: setting.school_id,
-          teacher_name: teacherName.trim(),
-          teacher_email: teacherEmail.trim(),
-          notes: notes.trim(),
-        },
-        slots
-      );
-      window.location.href = `?submitted=1`;
+
+      if (existingSubmission?.allow_edit) {
+        await updateMySeasonalShiftSubmission(settingId, { notes: notes.trim() }, slots);
+      } else {
+        await createMySeasonalShiftSubmission(
+          { setting_id: settingId, school_id: setting.school_id, notes: notes.trim() },
+          slots
+        );
+      }
+      setIsDone(true);
     } catch (err) {
-      console.error(err);
       setErrorMessage(err instanceof Error ? err.message : '提出に失敗しました');
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // ─── 認証ローディング ───
+  if (authState === 'loading') {
+    return (
+      <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center">
+        <p className="text-[#4b5563]">読み込み中...</p>
+      </div>
+    );
+  }
+
+  // ─── 未ログイン ───
+  if (authState === 'unauthenticated') {
+    return (
+      <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 max-w-sm w-full text-center">
+          <h1 className="text-xl font-bold text-[#1f2937] mb-3">ログインが必要です</h1>
+          <p className="text-sm text-[#6b7280] mb-6">
+            シフト提出にはアカウントへのログインが必要です。
+          </p>
+          <a
+            href={`/login?redirect=${encodeURIComponent(`/seasonal-shift/${settingId}`)}`}
+            className="block w-full px-4 py-2.5 bg-[#d32f2f] hover:bg-[#b71c1c] text-white font-semibold rounded-lg text-sm transition-colors"
+          >
+            ログイン
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── データローディング ───
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center">
@@ -161,6 +218,8 @@ export default function SeasonalShiftFormPage() {
       </div>
     );
   }
+
+  // ─── 設定なし ───
   if (!setting) {
     return (
       <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center p-4">
@@ -174,14 +233,50 @@ export default function SeasonalShiftFormPage() {
     );
   }
 
-  if (submitted) {
+  // ─── 提出完了 ───
+  if (isDone) {
     return (
       <div className="min-h-screen bg-[#f3f4f6]">
         <div className="max-w-lg mx-auto px-4 py-8">
           <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 text-center">
-            <h2 className="text-xl font-bold text-[#1f2937] mb-4">シフト提出が完了しました</h2>
-            <p className="text-[#4b5563] mb-6">
-              確認メールをお送りしました。内容をご確認ください。
+            <h2 className="text-xl font-bold text-[#1f2937] mb-4">
+              {existingSubmission?.allow_edit ? '修正を提出しました' : 'シフト提出が完了しました'}
+            </h2>
+            <p className="text-[#4b5563] text-sm">ご提出ありがとうございました。</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── 提出済み（修正不可） ───
+  if (existingSubmission && !existingSubmission.allow_edit) {
+    const submittedAt = new Date(existingSubmission.submitted_at).toLocaleString('ja-JP');
+    const slotCount = (existingSubmission.slots ?? []).filter((s) => s.available).length;
+    return (
+      <div className="min-h-screen bg-[#f3f4f6]">
+        <div className="max-w-lg mx-auto px-4 py-8">
+          <div className="bg-white rounded-xl border border-[#e5e7eb] p-8">
+            <h2 className="text-xl font-bold text-[#1f2937] mb-2">提出済み</h2>
+            <p className="text-sm text-[#6b7280] mb-4">{setting.name}</p>
+            <dl className="space-y-3 text-sm">
+              <div className="flex justify-between">
+                <dt className="text-[#6b7280]">提出日時</dt>
+                <dd className="text-[#1f2937] font-medium">{submittedAt}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-[#6b7280]">出勤可能コマ数</dt>
+                <dd className="text-[#1f2937] font-medium">{slotCount} コマ</dd>
+              </div>
+              {existingSubmission.notes && (
+                <div>
+                  <dt className="text-[#6b7280] mb-1">備考</dt>
+                  <dd className="text-[#1f2937] whitespace-pre-line">{existingSubmission.notes}</dd>
+                </div>
+              )}
+            </dl>
+            <p className="mt-6 text-xs text-[#9ca3af]">
+              内容の修正が必要な場合は担当者にお問い合わせください。
             </p>
           </div>
         </div>
@@ -189,14 +284,20 @@ export default function SeasonalShiftFormPage() {
     );
   }
 
+  // ─── 提出フォーム（新規 or 修正） ───
+  const isEdit = !!existingSubmission?.allow_edit;
   const uniqueSlots = [...timeSlots];
   const uniqueDates = [...dates];
+  const displayName = profile?.display_name ?? profile?.email ?? '';
 
   return (
     <div className="min-h-screen bg-[#f3f4f6]">
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 mb-6">
           <h1 className="text-2xl font-bold text-[#1f2937] mb-2">{setting.name}</h1>
+          {isEdit && (
+            <p className="text-sm text-amber-600 font-medium mb-2">修正を受け付けています</p>
+          )}
           {setting.description && (
             <p className="text-[#4b5563] whitespace-pre-line mb-4">{setting.description}</p>
           )}
@@ -206,25 +307,9 @@ export default function SeasonalShiftFormPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-[#e5e7eb] p-6 space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-1">お名前 *</label>
-            <input
-              type="text"
-              required
-              value={teacherName}
-              onChange={(e) => setTeacherName(e.target.value)}
-              className="w-full max-w-md px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-1">メールアドレス *</label>
-            <input
-              type="email"
-              required
-              value={teacherEmail}
-              onChange={(e) => setTeacherEmail(e.target.value)}
-              className="w-full max-w-md px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
-            />
+          <div className="p-3 bg-[#f9fafb] rounded-lg border border-[#e5e7eb]">
+            <p className="text-xs text-[#6b7280] mb-0.5">提出者</p>
+            <p className="text-sm font-medium text-[#1f2937]">{displayName}</p>
           </div>
 
           <div>
@@ -232,7 +317,6 @@ export default function SeasonalShiftFormPage() {
             <p className="text-sm text-[#4b5563] mb-3">
               出勤可能なコマにチェックを入れてください。丸ボタンで日付・時間帯を一括で選択できます。
             </p>
-            {/* 時間帯で一括選択（横スクロールなし・折り返し） */}
             <div className="flex flex-wrap gap-2 mb-4">
               {uniqueSlots.map((slot) => (
                 <button
@@ -246,7 +330,6 @@ export default function SeasonalShiftFormPage() {
                 </button>
               ))}
             </div>
-            {/* 日付ごとのブロック（1列表示で時間は1行・区切りとタップ領域を強化） */}
             <div className="space-y-4">
               {uniqueDates.map((dateStr) => {
                 const dayLabel = new Date(dateStr + 'T12:00:00').toLocaleDateString('ja-JP', {
@@ -254,14 +337,14 @@ export default function SeasonalShiftFormPage() {
                   day: 'numeric',
                   weekday: 'short',
                 });
-                const hasOpenInRow = slotMatrix.some((c) => c.date === dateStr && c.available);
+                const hasOpen = slotMatrix.some((c) => c.date === dateStr && c.available);
                 return (
                   <div
                     key={dateStr}
                     className="rounded-xl border-2 border-[#e5e7eb] bg-[#f9fafb] overflow-hidden shadow-sm"
                   >
                     <div className="flex items-center gap-2 px-4 py-3 border-b border-[#e5e7eb] bg-white">
-                      {hasOpenInRow && (
+                      {hasOpen && (
                         <button
                           type="button"
                           onClick={() => toggleRow(dateStr)}
@@ -278,8 +361,7 @@ export default function SeasonalShiftFormPage() {
                       {uniqueSlots.map((slot) => {
                         const key: SlotKey = `${dateStr}|${slot}`;
                         const cell = slotMatrix.find((c) => c.key === key);
-                        const available = cell?.available ?? false;
-                        if (!available) return null;
+                        if (!cell?.available) return null;
                         const checked = selected.has(key);
                         return (
                           <label
@@ -317,16 +399,14 @@ export default function SeasonalShiftFormPage() {
             />
           </div>
 
-          {errorMessage && (
-            <p className="text-sm text-red-600">{errorMessage}</p>
-          )}
+          {errorMessage && <p className="text-sm text-red-600">{errorMessage}</p>}
 
           <button
             type="submit"
             disabled={isSubmitting}
             className="px-6 py-3 bg-[#d32f2f] hover:bg-[#b71c1c] disabled:opacity-50 text-white font-semibold rounded-lg transition-colors duration-150"
           >
-            {isSubmitting ? '送信中...' : '提出する'}
+            {isSubmitting ? '送信中...' : isEdit ? '修正を提出する' : '提出する'}
           </button>
         </form>
       </div>

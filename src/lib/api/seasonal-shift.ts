@@ -332,6 +332,61 @@ export async function resendSeasonalShiftEditEmail(submissionId: string): Promis
   }
 }
 
+// ========== Account-based submission (teacher logged in) ==========
+
+/** Get current user's submission for a setting (null if not submitted) */
+export async function getMySeasonalShiftSubmission(
+  settingId: string
+): Promise<SubmissionWithSlots | null> {
+  const res = await fetchWithAuth(
+    `/api/seasonal-shift/me?setting_id=${encodeURIComponent(settingId)}`
+  );
+  if (res.status === 401) throw new Error('認証が必要です');
+  const payload = (await res.json().catch(() => ({}))) as {
+    error?: string;
+    submission?: SubmissionWithSlots | null;
+  };
+  if (!res.ok) throw new Error(payload.error ?? 'Failed to fetch submission');
+  return payload.submission ?? null;
+}
+
+/** Submit shift as logged-in teacher (name/email auto-filled from profile) */
+export async function createMySeasonalShiftSubmission(
+  input: Pick<SeasonalShiftSubmissionInsert, 'setting_id' | 'school_id' | 'notes'>,
+  slots: Omit<SeasonalShiftSubmissionSlotInsert, 'submission_id'>[]
+): Promise<SeasonalShiftSubmission> {
+  const res = await fetchWithAuth('/api/seasonal-shift/me', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...input, slots }),
+  });
+  const payload = (await res.json().catch(() => ({}))) as {
+    error?: string;
+    submission?: SeasonalShiftSubmission;
+  };
+  if (!res.ok || !payload.submission) throw new Error(payload.error ?? 'Failed to submit');
+  return payload.submission;
+}
+
+/** Re-submit shift as logged-in teacher (allow_edit=true required) */
+export async function updateMySeasonalShiftSubmission(
+  settingId: string,
+  input: { notes?: string },
+  slots: Omit<SeasonalShiftSubmissionSlotInsert, 'submission_id'>[]
+): Promise<SeasonalShiftSubmission> {
+  const res = await fetchWithAuth('/api/seasonal-shift/me', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ setting_id: settingId, ...input, slots }),
+  });
+  const payload = (await res.json().catch(() => ({}))) as {
+    error?: string;
+    submission?: SeasonalShiftSubmission;
+  };
+  if (!res.ok || !payload.submission) throw new Error(payload.error ?? 'Failed to update');
+  return payload.submission;
+}
+
 /** Update submission by token (after resubmit, allow_edit becomes false) */
 export async function updateSeasonalShiftSubmissionByToken(
   editToken: string,
