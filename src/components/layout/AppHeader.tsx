@@ -519,7 +519,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
               </div>
             )}
             {displaySchools.length === 1 && schoolDisplayName && (
-              <div className="text-xs font-medium text-gray-700 px-3 py-1.5 bg-gray-100 rounded-lg">
+              <div className="text-xs font-medium text-white/90 px-3 py-1.5 bg-white/20 rounded-lg max-w-[120px] truncate" title={schoolDisplayName}>
                 {schoolDisplayName}
               </div>
             )}

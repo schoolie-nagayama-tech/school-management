@@ -214,7 +214,7 @@ const StudentTableRow = memo(function StudentTableRow({
       onClick={() => onRowClick?.(student)}
     >
       {selectable && (
-        <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
+        <td className="hidden sm:table-cell px-3 py-3" onClick={(e) => e.stopPropagation()}>
           <input
             type="checkbox"
             checked={isChecked}
@@ -235,16 +235,16 @@ const StudentTableRow = memo(function StudentTableRow({
           )}
         </div>
       </td>
-      <td className="px-4 py-3 text-sm text-[#4b5563]">
+      <td className="hidden sm:table-cell px-4 py-3 text-sm text-[#4b5563]">
         {student.last_name_kana} {student.first_name_kana}
       </td>
       <td className="px-4 py-3 text-sm text-[#4b5563]">
         {GRADE_LABELS[student.grade] || student.grade}
       </td>
-      <td className="px-4 py-3 text-sm text-[#4b5563]">
+      <td className="hidden md:table-cell px-4 py-3 text-sm text-[#4b5563]">
         {student.school_name || <span className="text-[#4b5563]/30">-</span>}
       </td>
-      <td className="px-4 py-3 text-sm text-[#4b5563]">
+      <td className="hidden lg:table-cell px-4 py-3 text-sm text-[#4b5563]">
         {schedulePatterns.length > 0 ? (
           <div className="flex flex-wrap gap-x-2 gap-y-0.5 items-center">
             {schedulePatterns.map((p, i) => (
@@ -375,7 +375,7 @@ export function StudentTable({
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               {selectable && (
-                <th className="px-3 py-3 w-10">
+                <th className="hidden sm:table-cell px-3 py-3 w-10">
                   <input
                     type="checkbox"
                     checked={allSelected}
@@ -390,16 +390,16 @@ export function StudentTable({
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 氏名
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 フリガナ
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 学年
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 学校名
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 通塾日程
               </th>
               <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">

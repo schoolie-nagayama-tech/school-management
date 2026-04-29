@@ -31,7 +31,7 @@ export function AdminLayout({
   useAuth();
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-bg">
       {headerTitle && (
         <AppHeader
           title={headerTitle}
@@ -49,9 +49,9 @@ export function AdminLayout({
       } mx-auto py-6`}>
         {/* ページヘッダー */}
         {(title || actions) && (
-          <div className="flex justify-between items-center mb-6">
-            {title && <h1 className="text-2xl font-bold text-[#1a1a1a]">{title}</h1>}
-            {actions && <div className="flex gap-2">{actions}</div>}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+            {title && <h1 className="text-xl sm:text-2xl font-bold text-[#1a1a1a]">{title}</h1>}
+            {actions && <div className="flex flex-wrap gap-2 shrink-0">{actions}</div>}
           </div>
         )}
         

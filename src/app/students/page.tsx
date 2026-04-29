@@ -635,7 +635,8 @@ export default function StudentsPage() {
         )}
 
         {/* タブナビゲーション */}
-        <div className="flex items-center gap-0 border-b border-gray-200 mb-6">
+        <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 mb-6">
+        <div className="flex items-center gap-0 border-b border-gray-200 min-w-max sm:min-w-0">
           {([
             { key: 'roster' as TabType, label: '生徒名簿' },
             { key: 'report_card' as TabType, label: '内申集計' },
@@ -657,6 +658,7 @@ export default function StudentsPage() {
               {tab.label}
             </button>
           ))}
+        </div>
         </div>
 
         {/* 成績一覧タブ */}
