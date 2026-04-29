@@ -1,6 +1,3 @@
-/// <reference types="node" />
-import https = require("https");
-
 declare module "web-push" {
   export function sendNotification(
     subscription: PushSubscription,
@@ -46,7 +43,7 @@ declare module "web-push" {
     urgency?: Urgency | undefined;
     topic?: string | undefined;
     proxy?: string | undefined;
-    agent?: https.Agent | undefined;
+    agent?: unknown;
   }
 
   export interface SendResult {
