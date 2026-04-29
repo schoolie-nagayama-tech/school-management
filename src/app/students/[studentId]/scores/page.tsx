@@ -488,6 +488,7 @@ export default function StudentScoresPage() {
                         onDelete={handleDeleteRow}
                         canEdit={canEditScores}
                         studentGrade={student?.grade}
+                        schoolId={student?.school_id}
                       />
                     </>
                   )}

@@ -5,7 +5,6 @@ import { Button, Input, Select } from '@/components/ui';
 import type { Student, StudentInsert, StudentUpdate } from '@/types/database';
 import { X } from 'lucide-react';
 import { GRADE_LABELS, STATUS_LABELS, ORDER_STATUS_LABELS } from '@/types/database';
-import { getDefaultSchoolId } from '@/lib/api/schools';
 import { getStudentTextbooks, deleteOrder } from '@/lib/api/ordering';
 import type { StudentTextbook } from '@/lib/api/ordering';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
@@ -15,6 +14,8 @@ interface StudentFormProps {
   onSubmit: (data: StudentInsert | StudentUpdate) => Promise<void>;
   onCancel: () => void;
   isLoading?: boolean;
+  schools?: { id: string; name: string }[];
+  defaultSchoolId?: string;
 }
 
 // 学年オプション
@@ -34,8 +35,11 @@ export function StudentForm({
   onSubmit,
   onCancel,
   isLoading = false,
+  schools = [],
+  defaultSchoolId = '',
 }: StudentFormProps) {
   const isEdit = !!student;
+  const [selectedSchoolId, setSelectedSchoolId] = useState(defaultSchoolId || schools[0]?.id || '');
 
   const [formData, setFormData] = useState({
     student_code: student?.student_code || '',
@@ -151,10 +155,9 @@ export function StudentForm({
 
     if (!validate()) return;
 
-    // 新規登録時はschool_idを自動設定
     const submitData = isEdit
       ? (formData as StudentUpdate)
-      : ({ ...formData, school_id: getDefaultSchoolId() } as StudentInsert);
+      : ({ ...formData, school_id: selectedSchoolId } as StudentInsert);
 
     await onSubmit(submitData);
   };
@@ -204,6 +207,31 @@ export function StudentForm({
           required
         />
       </div>
+
+      {/* 登録教室（新規のみ） */}
+      {!isEdit && schools.length > 0 && (
+        <div>
+          <label className="block text-sm font-medium text-[#1f2937] mb-1">
+            登録する教室 <span className="text-red-500">*</span>
+          </label>
+          {schools.length === 1 ? (
+            <p className="text-sm text-[#4b5563] px-3 py-2 border border-[#e5e7eb] rounded-lg bg-[#f9fafb]">
+              {schools[0].name}
+            </p>
+          ) : (
+            <select
+              value={selectedSchoolId}
+              onChange={(e) => setSelectedSchoolId(e.target.value)}
+              className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white focus:ring-2 focus:ring-[#3b82f6]/30 focus:border-[#3b82f6]"
+              required
+            >
+              {schools.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          )}
+        </div>
+      )}
 
       {/* 学年 */}
       <Select

@@ -919,6 +919,8 @@ export default function StudentsPage() {
           onSubmit={handleCreate}
           onCancel={() => setIsCreateModalOpen(false)}
           isLoading={isSubmitting}
+          schools={masterSchools.filter((s) => !s.is_demo)}
+          defaultSchoolId={selectedSchoolId !== 'all' ? (selectedSchoolId ?? '') : (masterSchools.find((s) => !s.is_demo)?.id ?? '')}
         />
       </Modal>
 

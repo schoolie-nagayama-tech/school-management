@@ -32,6 +32,8 @@ interface ScoreTableProps {
   canEdit: boolean;
   /** 生徒の学年。10以上のとき高校生用の動的科目を使用 */
   studentGrade?: number;
+  /** 生徒の所属教室ID。科目マスタの絞り込みに使用 */
+  schoolId?: string | null;
 }
 
 export function ScoreTable({
@@ -46,6 +48,7 @@ export function ScoreTable({
   onDelete,
   canEdit,
   studentGrade,
+  schoolId,
 }: ScoreTableProps) {
   const [naishinType, setNaishinType] = useState<NaishinType>('tokyo');
   const isHighSchool = (studentGrade ?? 0) >= 10;
@@ -57,7 +60,7 @@ export function ScoreTable({
     let cancelled = false;
     (async () => {
       try {
-        const list = await getAssessmentSubjects({ schoolType: '高校', grade: studentGrade });
+        const list = await getAssessmentSubjects({ schoolType: '高校', grade: studentGrade, schoolId: schoolId ?? undefined });
         if (!cancelled) setHsSubjects(list);
       } catch (e) {
         console.error('評価科目マスタの取得に失敗:', e);
@@ -65,7 +68,7 @@ export function ScoreTable({
       }
     })();
     return () => { cancelled = true; };
-  }, [isHighSchool, studentGrade]);
+  }, [isHighSchool, studentGrade, schoolId]);
 
   /** 高校生用：表示するコード列（マスタ + 既存登録の救済） */
   const hsAllCodes = useMemo(() => {
