@@ -7,6 +7,7 @@ import { Button, Card, CardHeader, CardTitle, CardContent, Input, ToastContainer
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { useRequirePermission } from '@/hooks/usePermissions';
+import { useAuth } from '@/contexts/AuthContext';
 import AccessDenied from '@/components/AccessDenied';
 import { ChevronLeft, Plus, Save, Trash2, RotateCcw } from 'lucide-react';
 import {
@@ -17,6 +18,8 @@ import {
   deleteAssessmentSubject,
   type AssessmentSubject,
 } from '@/lib/api/assessmentSubjects';
+import { getSchools } from '@/lib/api/schools';
+import type { School } from '@/types/database';
 import { GRADE_LABELS } from '@/types/database';
 
 const SCHOOL_TYPES: AssessmentSubject['school_type'][] = ['小学', '中学', '高校', '共通'];
@@ -49,14 +52,30 @@ export default function SubjectsSettingsPage() {
   );
   const { toasts, removeToast, success, error: toastError } = useToast();
   const { confirm, ConfirmDialog } = useConfirm();
+  const { schoolIds, selectedSchoolId: authSelectedSchoolId } = useAuth();
 
   const [subjects, setSubjects] = useState<AssessmentSubject[]>([]);
+  const [schools, setSchools] = useState<School[]>([]);
+  const [selectedSchoolId, setSelectedSchoolId] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<AssessmentSubject['school_type'] | 'all'>('高校');
   const [showInactive, setShowInactive] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [editing, setEditing] = useState<AssessmentSubject | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const editorRef = useRef<HTMLDivElement | null>(null);
+
+  // 教室一覧を取得し、初期選択を設定
+  useEffect(() => {
+    getSchools().then((list) => {
+      const accessible = list.filter((s) => schoolIds.includes(s.id));
+      setSchools(accessible);
+      const initialId =
+        authSelectedSchoolId && authSelectedSchoolId !== 'all' && schoolIds.includes(authSelectedSchoolId)
+          ? authSelectedSchoolId
+          : accessible[0]?.id ?? null;
+      setSelectedSchoolId(initialId);
+    });
+  }, [authSelectedSchoolId, schoolIds]);
 
   // 編集パネルが出たらスクロール＆フォーカス
   useEffect(() => {
@@ -84,9 +103,16 @@ export default function SubjectsSettingsPage() {
 
   const filtered = useMemo(() => {
     return subjects
+      .filter((s) => {
+        // 全教室共通（システム）または選択中の教室のみ表示
+        if (selectedSchoolId) {
+          return s.school_id === null || s.school_id === selectedSchoolId;
+        }
+        return s.school_id === null;
+      })
       .filter((s) => filterType === 'all' || s.school_type === filterType)
       .filter((s) => showInactive || s.is_active);
-  }, [subjects, filterType, showInactive]);
+  }, [subjects, filterType, showInactive, selectedSchoolId]);
 
   const groupedByType = useMemo(() => {
     const map = new Map<string, AssessmentSubject[]>();
@@ -123,9 +149,28 @@ export default function SubjectsSettingsPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-gray-600">
-              成績ページで使う科目を管理します。系統文（カテゴリ）が同じものは集計・アラートで一緒に扱われます。
-              標準科目（システム）は無効化のみ、教室追加分は完全に削除できます。
+              成績ページで使う科目を管理します。「全教室共通」はシステム標準科目です。
+              教室ごとに追加した科目はその教室のみに表示されます。
             </p>
+            {schools.length > 1 && (
+              <div className="flex items-center gap-2 p-2.5 bg-blue-50 border border-blue-200 rounded-lg">
+                <span className="text-sm text-blue-700 font-medium whitespace-nowrap">表示する教室:</span>
+                <select
+                  value={selectedSchoolId ?? ''}
+                  onChange={(e) => { setSelectedSchoolId(e.target.value || null); setEditing(null); setIsCreating(false); }}
+                  className="flex-1 px-2 py-1 border border-blue-300 rounded text-sm bg-white"
+                >
+                  {schools.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {schools.length === 1 && (
+              <div className="text-sm text-gray-600 px-1">
+                教室: <span className="font-medium text-gray-800">{schools[0]?.name}</span>
+              </div>
+            )}
             <div className="flex flex-wrap items-center gap-3">
               <label className="text-sm text-gray-700 flex items-center gap-2">
                 学校種別:
@@ -147,7 +192,7 @@ export default function SubjectsSettingsPage() {
                 />
                 無効化済みも表示
               </label>
-              <Button onClick={() => { setIsCreating(true); setEditing(null); }} size="sm">
+              <Button onClick={() => { setIsCreating(true); setEditing(null); }} size="sm" disabled={!selectedSchoolId}>
                 <Plus className="w-4 h-4 mr-1" />新規追加
               </Button>
             </div>
@@ -159,6 +204,7 @@ export default function SubjectsSettingsPage() {
             <SubjectEditor
               key={editing?.id ?? 'new'}
               initial={editing}
+              schoolId={selectedSchoolId}
               onCancel={() => { setIsCreating(false); setEditing(null); }}
               onSaved={async () => {
                 setIsCreating(false);
@@ -200,7 +246,8 @@ export default function SubjectsSettingsPage() {
                         >
                           <td className="px-2 py-2">
                             {s.name}
-                            {s.is_system && <span className="ml-2 text-[10px] text-gray-400">標準</span>}
+                            {s.is_system && <span className="ml-2 text-[10px] text-gray-400 bg-gray-100 px-1 rounded">全教室共通</span>}
+                            {!s.is_system && s.school_id && <span className="ml-2 text-[10px] text-blue-600 bg-blue-50 px-1 rounded">この教室のみ</span>}
                             {s.is_required && <span className="ml-2 text-[10px] bg-red-50 text-red-600 px-1 rounded">必履修</span>}
                           </td>
                           <td className="px-2 py-2 text-gray-600">{s.short_name ?? '-'}</td>
@@ -284,11 +331,13 @@ export default function SubjectsSettingsPage() {
 
 function SubjectEditor({
   initial,
+  schoolId,
   onCancel,
   onSaved,
   onError,
 }: {
   initial: AssessmentSubject | null;
+  schoolId: string | null;
   onCancel: () => void;
   onSaved: () => void | Promise<void>;
   onError: (msg: string) => void;
@@ -326,6 +375,7 @@ function SubjectEditor({
         });
       } else {
         await createAssessmentSubject({
+          school_id: schoolId,
           code: code.trim(),
           name: name.trim(),
           short_name: shortName.trim() || null,
