@@ -49,6 +49,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={disabled || isLoading}
         className={`
           inline-flex items-center justify-center
+          whitespace-nowrap
           font-medium rounded-lg
           transition duration-150 ease-out
           active:scale-[0.97]

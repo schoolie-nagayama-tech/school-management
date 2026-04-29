@@ -464,7 +464,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
               )}
             </nav>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-3">
             {displaySchools.length > 1 && schoolDisplayName && (
               <div className="relative school-dropdown-container">
                 <button
@@ -472,9 +472,9 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                     e.stopPropagation();
                     setShowSchoolDropdown(!showSchoolDropdown);
                   }}
-                  className="text-white px-3 py-1.5 bg-white/20 rounded-lg hover:bg-white/30 transition-colors flex items-center gap-1 text-xs font-medium"
+                  className="text-white px-2.5 py-1.5 bg-white/20 rounded-lg hover:bg-white/30 transition-colors flex items-center gap-1 text-xs font-medium shrink-0 whitespace-nowrap max-w-[110px] sm:max-w-none"
                 >
-                  <span>{schoolDisplayName}</span>
+                  <span className="truncate">{schoolDisplayName}</span>
                   <ChevronDown className={`w-3 h-3 transition-[transform] duration-150 ease-out ${showSchoolDropdown ? 'rotate-180' : ''}`} />
                 </button>
                 {showSchoolDropdown && (
@@ -538,10 +538,10 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                 </div>
               </div>
             )}
-            <ThemeToggle />
+            <span className="hidden sm:inline-flex"><ThemeToggle /></span>
             <Link
               href="/help"
-              className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors duration-150"
+              className="hidden sm:flex p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors duration-150"
               title="ヘルプ"
             >
               <HelpCircle className="w-4 h-4" />
@@ -720,6 +720,17 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                   </Link>
                 );
               })}
+            {/* モバイル専用: テーマ切替・ヘルプ */}
+            <div className="sm:hidden px-4 pt-2 mt-1 border-t border-white/20 flex items-center justify-between">
+              <span className="text-[11px] text-white/70">テーマ</span>
+              <ThemeToggle />
+            </div>
+            <Link
+              href="/help"
+              className="sm:hidden block px-4 py-2 text-sm text-white hover:bg-white/10 transition-colors"
+            >
+              ヘルプ
+            </Link>
             {profile && (
               <div className="px-4 pt-2 mt-1 border-t border-white/20 text-[11px] text-white/80">
                 <div className="font-semibold text-white">

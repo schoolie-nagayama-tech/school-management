@@ -767,7 +767,7 @@ export default function StudentsPage() {
 
           {/* CSV / 新規登録ボタン（講師には非表示） */}
           {!isTeacher && (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {/* CSVエクスポート ドロップダウン */}
               <div className="relative" ref={exportMenuRef}>
                 <Button

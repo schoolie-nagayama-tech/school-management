@@ -143,10 +143,10 @@ function StudentRowActions({
             onClick={action.onClick}
             aria-label={action.label}
             title={action.label}
-            className="inline-flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 text-gray-600 hover:text-ink hover:bg-ink-subtle rounded-lg transition-colors duration-150"
+            className="inline-flex flex-col items-center justify-center gap-0.5 px-1.5 sm:px-2 py-1.5 text-gray-600 hover:text-ink hover:bg-ink-subtle rounded-lg transition-colors duration-150"
           >
             <ActionIcon className="w-4 h-4" />
-            <span className="text-[10px] leading-none">{action.label}</span>
+            <span className="hidden sm:block text-[10px] leading-none">{action.label}</span>
           </button>
         );
       })}
@@ -223,7 +223,7 @@ const StudentTableRow = memo(function StudentTableRow({
           />
         </td>
       )}
-      <td className="px-4 py-3">
+      <td className="px-4 py-3 whitespace-nowrap">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-[#1a1a1a]">
             {student.last_name} {student.first_name}
@@ -238,7 +238,7 @@ const StudentTableRow = memo(function StudentTableRow({
       <td className="hidden sm:table-cell px-4 py-3 text-sm text-[#4b5563]">
         {student.last_name_kana} {student.first_name_kana}
       </td>
-      <td className="px-4 py-3 text-sm text-[#4b5563]">
+      <td className="px-4 py-3 text-sm text-[#4b5563] whitespace-nowrap">
         {GRADE_LABELS[student.grade] || student.grade}
       </td>
       <td className="hidden md:table-cell px-4 py-3 text-sm text-[#4b5563]">
@@ -387,25 +387,25 @@ export function StudentTable({
                   />
                 </th>
               )}
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">
                 氏名
               </th>
-              <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">
                 フリガナ
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">
                 学年
               </th>
-              <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">
                 学校名
               </th>
-              <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">
                 通塾日程
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">
                 状況
               </th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
+              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">
                 操作
               </th>
             </tr>
