@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import webpush from 'web-push';
 
 export const dynamic = 'force-dynamic';
-
-webpush.setVapidDetails(
-  'mailto:' + (process.env.VAPID_MAILTO ?? 'admin@example.com'),
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-);
 
 function getSupabaseAdmin() {
   return createClient(
@@ -48,6 +41,15 @@ export async function POST(request: NextRequest) {
     if (!subscriptions || subscriptions.length === 0) {
       return NextResponse.json({ sent: 0 });
     }
+
+    // web-push をハンドラ内で遅延ロード（ビルド時のモジュール解決エラーを回避）
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const webpush = require('web-push') as typeof import('web-push');
+    webpush.setVapidDetails(
+      'mailto:' + (process.env.VAPID_MAILTO ?? 'admin@example.com'),
+      process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
+      process.env.VAPID_PRIVATE_KEY!
+    );
 
     const payload = JSON.stringify({ title, body: bodyText, url });
     let sent = 0;
