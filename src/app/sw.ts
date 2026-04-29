@@ -59,3 +59,45 @@ const serwist = new Serwist({
 });
 
 serwist.addEventListeners();
+
+// プッシュ通知・通知クリックは ServiceWorkerGlobalScope のイベント
+// serwist v9 は WorkerGlobalScope として型付けされているため最小 interface でキャストする
+// プッシュ通知受信
+// ServiceWorkerGlobalScope の型は tsconfig の lib に含まれないため any でキャスト
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(self as any).addEventListener("push", (event: { data?: { json(): unknown }; waitUntil(p: Promise<unknown>): void }) => {
+  const data = (event.data?.json() ?? {}) as { title?: string; body?: string; url?: string };
+  const title = data.title ?? "NEST";
+  const options = {
+    body: data.body ?? "新しい通知があります",
+    icon: "/icons/icon-192.svg",
+    badge: "/icons/icon-192.svg",
+    data: { url: data.url ?? "/responses" },
+    tag: "nest-push",
+    renotify: true,
+  } as NotificationOptions;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  event.waitUntil((self as any).registration.showNotification(title, options));
+});
+
+// 通知クリック → 対象ページをフォーカス or 開く
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(self as any).addEventListener("notificationclick", (event: {
+  notification: { close(): void; data?: { url?: string } };
+  waitUntil(p: Promise<unknown>): void;
+}) => {
+  event.notification.close();
+  const url: string = event.notification.data?.url ?? "/responses";
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const clients = (self as any).clients as {
+    matchAll(opts?: object): Promise<Array<{ url: string; focus(): Promise<unknown> }>>;
+    openWindow(url: string): Promise<unknown>;
+  };
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+      const existing = list.find((c) => c.url.includes(url));
+      if (existing) return existing.focus();
+      return clients.openWindow(url);
+    })
+  );
+});

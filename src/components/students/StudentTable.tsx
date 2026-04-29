@@ -1,7 +1,7 @@
 'use client';
 
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { BookOpen, MessageCircle, FileText, Calendar, Pencil, Trash2, MoreVertical, Users } from 'lucide-react';
+import { BookOpen, MessageCircle, FileText, Calendar, Pencil, Trash2, MoreVertical, Users, Code2 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { Student, Subject } from '@/types/database';
 import { GRADE_LABELS, STATUS_LABELS } from '@/types/database';
@@ -245,8 +245,8 @@ const StudentTableRow = memo(function StudentTableRow({
             {student.last_name} {student.first_name}
           </span>
           {student.is_programming && (
-            <span className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-medium rounded bg-purple-100 text-purple-700 border border-purple-200">
-              プログラミング
+            <span title="プログラミングコース" aria-label="プログラミングコース">
+              <Code2 className="w-3.5 h-3.5 text-purple-500 shrink-0" />
             </span>
           )}
         </div>

@@ -12,6 +12,7 @@ import { Megaphone, ChevronDown, X, Menu, HelpCircle, LogOut, Settings, LayoutDa
 import { TierMedal } from '@/components/teacher/TierMedal';
 import { useTeacherBadgeCount } from '@/hooks/useTeacherBadgeCount';
 import { ThemeToggle } from './ThemeToggle';
+import { PushNotificationButton } from '@/components/ui/PushNotificationButton';
 
 interface AppHeaderProps {
   title: string;
@@ -537,6 +538,13 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                   </div>
                 </div>
               </div>
+            )}
+            {/* プッシュ通知（非講師・教室選択済み時のみ表示） */}
+            {!isTeacher && selectedSchoolId && selectedSchoolId !== 'all' && (
+              <PushNotificationButton schoolId={selectedSchoolId} compact />
+            )}
+            {!isTeacher && selectedSchoolId === 'all' && schools.length > 0 && (
+              <PushNotificationButton schoolId={schools[0].id} compact />
             )}
             <span className="hidden sm:inline-flex"><ThemeToggle /></span>
             <Link

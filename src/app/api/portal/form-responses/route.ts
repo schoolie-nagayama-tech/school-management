@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { portalFormResponseSchema } from '@/lib/validations/schemas';
 import { createFurikaeCalendarEvents } from '@/lib/google-calendar';
+import { FORM_TYPE_LABELS } from '@/types/database';
 
 export const dynamic = 'force-dynamic';
 
@@ -166,6 +167,27 @@ export async function POST(request: NextRequest) {
       }
     } catch (e) {
       console.warn('[portal/form-responses] 申込通知メールの送信に失敗しました:', e);
+    }
+
+    // プッシュ通知（新回答受信）— 失敗しても回答は成功扱い
+    try {
+      const formLabel = FORM_TYPE_LABELS[form_type as keyof typeof FORM_TYPE_LABELS] ?? form_type;
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+      await fetch(`${appUrl}/api/push/send`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-internal-key': process.env.SUPABASE_SERVICE_ROLE_KEY ?? '',
+        },
+        body: JSON.stringify({
+          schoolId: school_id,
+          title: `新しい回答：${formLabel}`,
+          bodyText: `${student_name} さんから${formLabel}の申込が届きました`,
+          url: '/responses',
+        }),
+      });
+    } catch (e) {
+      console.warn('[portal/form-responses] プッシュ通知に失敗しました（無視します）:', e);
     }
 
     return NextResponse.json({ data: created });
