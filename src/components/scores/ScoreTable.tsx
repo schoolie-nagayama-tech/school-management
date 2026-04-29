@@ -249,12 +249,13 @@ export function ScoreTable({
               ))}
               <th className="px-2 py-2 text-center font-semibold text-[var(--headline)] min-w-[52px]">3科</th>
               <th className="px-2 py-2 text-center font-semibold text-[var(--headline)] min-w-[52px]">5科</th>
+              {canEdit && <th className="px-2 py-2 text-center font-semibold text-[var(--headline)] w-20">操作</th>}
             </tr>
           </thead>
           <tbody>
             {assessments.length === 0 ? (
               <tr>
-                <td colSpan={10} className="px-4 py-8 text-center text-[var(--paragraph)]">
+                <td colSpan={canEdit ? 11 : 10} className="px-4 py-8 text-center text-[var(--paragraph)]">
                   データがありません。上の「テストを追加」から登録してください。
                 </td>
               </tr>

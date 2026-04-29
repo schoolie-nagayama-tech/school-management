@@ -353,7 +353,7 @@ export function StudentDetailModal({
                           <div className="flex items-center gap-2 min-w-0">
                             <span className="text-sm text-[#1f2937] truncate">
                               {tb.textbook
-                                ? [tb.textbook.school_type, tb.textbook.grade, tb.textbook.name, tb.textbook.publisher].filter(Boolean).join(' / ')
+                                ? [tb.textbook.school_type, tb.textbook.grade, tb.textbook.subject, tb.textbook.name, tb.textbook.publisher].filter(Boolean).join(' / ')
                                 : '（不明な教材）'}
                             </span>
                             {tb.season && (

@@ -131,6 +131,13 @@ export function ScoreTableRow({
         {FIVE_SUBJECTS.map((subj) => renderCell(subj))}
         {renderCell('hensa_3')}
         {renderCell('hensa_5')}
+        {canEdit && (
+          <td className="border border-gray-200 px-2 py-1.5 text-center">
+            <Button variant="danger" size="sm" onClick={() => onDelete(assessment.id)}>
+              削除
+            </Button>
+          </td>
+        )}
       </tr>
     );
   }
