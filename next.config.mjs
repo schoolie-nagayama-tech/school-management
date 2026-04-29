@@ -13,6 +13,7 @@ const nextConfig = {
 
   experimental: {
     optimizePackageImports: ['lucide-react'],
+    serverComponentsExternalPackages: ['web-push'],
   },
 
   // ESLintエラーでビルドを失敗させる（品質ゲート）
