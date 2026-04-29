@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef } from 'react';
 import { Button } from '@/components/ui';
 import type { AssessmentWithScores } from '@/types/database';
 import { ASSESSMENT_NAME_LABELS, GRADE_LABELS } from '@/types/database';
@@ -39,6 +40,7 @@ interface ScoreTableRowProps {
   onCellChange: (value: string) => void;
   onCancelEdit: () => void;
   onDelete: (assessmentId: string) => void;
+  onCellTab: (assessmentId: string, subject: string) => void;
   getCalculatedValue: (
     assessment: AssessmentWithScores,
     type: 'five_sum' | 'nine_sum'
@@ -57,11 +59,13 @@ export function ScoreTableRow({
   onCellChange,
   onCancelEdit,
   onDelete,
+  onCellTab,
   getCalculatedValue,
   canEdit,
   naishinType,
 }: ScoreTableRowProps) {
   const scoreMap = new Map(assessment.scores.map((s) => [s.subject, s.value]));
+  const tabTriggeredRef = useRef(false);
 
   const renderCell = (subject: string) => {
     const value = scoreMap.get(subject) ?? null;
@@ -75,8 +79,21 @@ export function ScoreTableRow({
             type="text"
             value={cellValue}
             onChange={(e) => onCellChange(e.target.value)}
-            onBlur={() => onCellBlur(assessment.id, subject)}
+            onFocus={() => { tabTriggeredRef.current = false; }}
+            onBlur={() => {
+              if (tabTriggeredRef.current) {
+                tabTriggeredRef.current = false;
+                return;
+              }
+              onCellBlur(assessment.id, subject);
+            }}
             onKeyDown={(e) => {
+              if (e.key === 'Tab') {
+                e.preventDefault();
+                tabTriggeredRef.current = true;
+                onCellTab(assessment.id, subject);
+                return;
+              }
               if (e.key === 'Enter') onCellBlur(assessment.id, subject);
               if (e.key === 'Escape') onCancelEdit();
             }}

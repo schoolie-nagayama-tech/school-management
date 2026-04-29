@@ -27,7 +27,7 @@ import {
   deleteAssessmentRow,
 } from '@/lib/api/assessments';
 import { getStudent } from '@/lib/api/students';
-import type { Student, AssessmentWithScores } from '@/types/database';
+import type { Student, AssessmentWithScores, AssessmentScore } from '@/types/database';
 import {
   ASSESSMENT_NAME_LABELS,
   ASSESSMENT_NAME_OPTIONS,
@@ -165,22 +165,49 @@ export default function StudentScoresPage() {
     setCellValue(value !== null ? String(value) : '');
   };
 
-  const handleCellBlur = async (assessmentId: string, subject: string) => {
+  const handleCellBlur = (assessmentId: string, subject: string) => {
     if (!editingCell) return;
     const numValue = cellValue.trim() === '' ? null : parseFloat(cellValue);
     if (cellValue.trim() !== '' && (numValue === null || isNaN(numValue))) {
       setEditingCell(null);
       return;
     }
-    try {
-      await updateScore(assessmentId, subject, numValue);
-      await fetchAllAssessments();
-      success('スコアを更新しました');
-    } catch (e) {
+
+    // オプティミスティック更新（再フェッチなしでスクロール位置を保持）
+    setAssessmentsByCategory(prev => {
+      const next = { ...prev };
+      for (const cat of Object.keys(next) as Category[]) {
+        const aIdx = next[cat].findIndex(a => a.id === assessmentId);
+        if (aIdx === -1) continue;
+        const assessment = next[cat][aIdx];
+        const scoreIdx = assessment.scores.findIndex(s => s.subject === subject);
+        let newScores: AssessmentScore[];
+        if (numValue === null) {
+          newScores = assessment.scores.filter(s => s.subject !== subject);
+        } else if (scoreIdx >= 0) {
+          newScores = assessment.scores.map(s =>
+            s.subject === subject ? { ...s, value: numValue } : s
+          );
+        } else {
+          newScores = [
+            ...assessment.scores,
+            { id: `temp-${Date.now()}`, assessment_id: assessmentId, subject, value: numValue, created_at: new Date().toISOString() },
+          ];
+        }
+        const updated = [...next[cat]];
+        updated[aIdx] = { ...assessment, scores: newScores };
+        next[cat] = updated;
+        break;
+      }
+      return next;
+    });
+    setEditingCell(null);
+
+    updateScore(assessmentId, subject, numValue).catch(e => {
       console.error(e);
       toastError('スコアの更新に失敗しました');
-    }
-    setEditingCell(null);
+      fetchAllAssessments();
+    });
   };
 
   const handleAddRow = async () => {

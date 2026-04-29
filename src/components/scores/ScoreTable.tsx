@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { AssessmentWithScores } from '@/types/database';
 import { ASSESSMENT_NAME_LABELS, GRADE_LABELS, SUBJECT_LABELS } from '@/types/database';
 import { SUBJECT_CODES } from '@/types/database';
@@ -50,6 +50,7 @@ export function ScoreTable({
   const [naishinType, setNaishinType] = useState<NaishinType>('tokyo');
   const isHighSchool = (studentGrade ?? 0) >= 10;
   const [hsSubjects, setHsSubjects] = useState<AssessmentSubject[]>([]);
+  const tabTriggeredRef = useRef(false);
 
   useEffect(() => {
     if (!isHighSchool) return;
@@ -80,6 +81,33 @@ export function ScoreTable({
     }
     return [...hsSubjects.map((s) => s.code), ...tail];
   }, [isHighSchool, hsSubjects, assessments]);
+
+  const handleCellTabForRow = useCallback((
+    assessmentId: string,
+    subject: string,
+    orderedSubjects: string[]
+  ) => {
+    const colIdx = orderedSubjects.indexOf(subject);
+    let nextId = assessmentId;
+    let nextSubj: string | null = null;
+
+    if (colIdx < orderedSubjects.length - 1) {
+      nextSubj = orderedSubjects[colIdx + 1];
+    } else {
+      const rowIdx = assessments.findIndex(a => a.id === assessmentId);
+      if (rowIdx < assessments.length - 1) {
+        nextId = assessments[rowIdx + 1].id;
+        nextSubj = orderedSubjects[0];
+      }
+    }
+
+    onCellBlur(assessmentId, subject);
+    if (nextSubj !== null) {
+      const nextAssessment = assessments.find(a => a.id === nextId)!;
+      const scoreMap = new Map((nextAssessment.scores ?? []).map(s => [s.subject, s.value ?? null]));
+      onCellClick(nextId, nextSubj, scoreMap.get(nextSubj) ?? null);
+    }
+  }, [assessments, onCellBlur, onCellClick]);
 
   const labelOfHs = (code: string): string => {
     const meta = hsSubjects.find((s) => s.code === code);
@@ -155,8 +183,21 @@ export function ScoreTable({
                               type="text"
                               value={cellValue}
                               onChange={(e) => onCellChange(e.target.value)}
-                              onBlur={() => onCellBlur(a.id, code)}
+                              onFocus={() => { tabTriggeredRef.current = false; }}
+                              onBlur={() => {
+                                if (tabTriggeredRef.current) {
+                                  tabTriggeredRef.current = false;
+                                  return;
+                                }
+                                onCellBlur(a.id, code);
+                              }}
                               onKeyDown={(e) => {
+                                if (e.key === 'Tab') {
+                                  e.preventDefault();
+                                  tabTriggeredRef.current = true;
+                                  handleCellTabForRow(a.id, code, hsAllCodes);
+                                  return;
+                                }
                                 if (e.key === 'Enter') onCellBlur(a.id, code);
                                 if (e.key === 'Escape') onCancelEdit();
                               }}
@@ -232,6 +273,7 @@ export function ScoreTable({
                   onDelete={onDelete}
                   getCalculatedValue={getCalculatedValue}
                   canEdit={canEdit}
+                  onCellTab={(aId, subj) => handleCellTabForRow(aId, subj, ['english', 'math', 'japanese', 'social', 'science', 'hensa_3', 'hensa_5'])}
                 />
               ))
             )}
@@ -328,6 +370,7 @@ export function ScoreTable({
                 getCalculatedValue={getCalculatedValue}
                 canEdit={canEdit}
                 naishinType={isReportCard ? naishinType : undefined}
+                onCellTab={(aId, subj) => handleCellTabForRow(aId, subj, ['english', 'math', 'japanese', 'social', 'science', 'music', 'art', 'tech_home', 'pe'])}
               />
             ))
           )}
