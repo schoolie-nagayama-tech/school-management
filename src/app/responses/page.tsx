@@ -12,7 +12,7 @@ import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { ChevronUp, ChevronDown, ChevronsUpDown, Search, X, Filter, List, Users } from 'lucide-react';
+import { ChevronUp, ChevronDown, ChevronsUpDown, Search, X, Filter, List, Users, SlidersHorizontal } from 'lucide-react';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 // フォーム種別 → フォーム詳細URLパス（/forms/responses/[path]/[period]）
@@ -246,6 +246,7 @@ export default function ResponsesPage() {
   const [viewMode, setViewMode] = useState<'list' | 'grouped'>(
     (searchParams.get('view') as 'list' | 'grouped') || 'grouped'
   );
+  const [showFilters, setShowFilters] = useState(false);
 
   // ソート
   const [sortKey, setSortKey] = useState<SortKey>(
@@ -585,14 +586,14 @@ export default function ResponsesPage() {
           })}
         </div>
 
-        {/* 名前検索 */}
-        <div className="mb-4 bg-white rounded-xl border border-[#e5e7eb] p-4">
+        {/* 検索 + フィルタートグル */}
+        <div className="mb-4 bg-white rounded-xl border border-[#e5e7eb] p-3">
           <form
             onSubmit={(e) => {
               e.preventDefault();
               setSearchName(searchInput.trim());
             }}
-            className="flex items-center gap-3"
+            className="flex items-center gap-2"
           >
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -600,17 +601,14 @@ export default function ResponsesPage() {
                 type="text"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="生徒名で検索（例：田中）"
-                className="w-full pl-10 pr-10 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-[#3b82f6] placeholder:text-gray-400"
+                placeholder="生徒名で検索"
+                className="w-full pl-9 pr-8 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-[#3b82f6] placeholder:text-gray-400"
               />
               {searchInput && (
                 <button
                   type="button"
-                  onClick={() => {
-                    setSearchInput('');
-                    setSearchName('');
-                  }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  onClick={() => { setSearchInput(''); setSearchName(''); }}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -618,179 +616,155 @@ export default function ResponsesPage() {
             </div>
             <button
               type="submit"
-              className="px-4 py-2 bg-[#1e3a5f] text-white rounded-lg text-sm hover:bg-[#2c4f7c] transition-colors duration-150"
+              className="px-3 py-2 bg-[#1e3a5f] text-white rounded-lg text-sm hover:bg-[#2c4f7c] transition-colors duration-150 shrink-0"
             >
               検索
             </button>
+            <button
+              type="button"
+              onClick={() => setShowFilters((v) => !v)}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border transition-colors duration-150 shrink-0 ${
+                showFilters
+                  ? 'bg-[#1e3a5f] text-white border-[#1e3a5f]'
+                  : 'bg-white text-gray-600 border-[#e5e7eb] hover:bg-gray-50'
+              }`}
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              <span className="hidden sm:inline">絞り込み</span>
+            </button>
           </form>
           {searchName && (
-            <p className="mt-2 text-sm text-gray-500">
-              「{searchName}」の検索結果: {processFilteredResponses.length}件
+            <p className="mt-2 text-xs text-gray-500">
+              「{searchName}」: {processFilteredResponses.length}件
             </p>
           )}
         </div>
 
-        {/* フィルター */}
-        <div className="mb-6 bg-white rounded-xl border border-[#e5e7eb] p-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-[#1f2937] mb-2">
-                フォーム種別
-              </label>
-              <select
-                value={filterFormType}
-                onChange={(e) => {
-                  setFilterFormType(e.target.value as FormType | 'all');
-                  setFilterPeriod('all');
-                }}
-                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
-              >
-                <option value="all">すべて</option>
-                {Object.entries(FORM_TYPE_LABELS).map(([key, label]) => (
-                  <option key={key} value={key}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </div>
+        {/* 詳細フィルター（折りたたみ） */}
+        {showFilters && (
+          <div className="mb-4 bg-white rounded-xl border border-[#e5e7eb] p-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-[#1f2937] mb-1">種別</label>
+                <select
+                  value={filterFormType}
+                  onChange={(e) => { setFilterFormType(e.target.value as FormType | 'all'); setFilterPeriod('all'); }}
+                  className="w-full px-2 py-1.5 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                >
+                  <option value="all">すべて</option>
+                  {Object.entries(FORM_TYPE_LABELS).map(([key, label]) => (
+                    <option key={key} value={key}>{label}</option>
+                  ))}
+                </select>
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-[#1f2937] mb-2">
-                期間
-              </label>
-              <select
-                value={filterPeriod}
-                onChange={(e) => setFilterPeriod(e.target.value)}
-                disabled={filterFormType === 'all' || formPeriods.length === 0}
-                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6] disabled:bg-[#f3f4f6] disabled:cursor-not-allowed"
-              >
-                <option value="all">{filterFormType === 'all' ? 'フォーム種別を選択してください' : 'すべて'}</option>
-                {formPeriods.map((period) => (
-                  <option key={period.period_key} value={period.period_key}>
-                    {period.period_key} {period.title}
-                  </option>
-                ))}
-              </select>
-            </div>
+              <div>
+                <label className="block text-xs font-medium text-[#1f2937] mb-1">期間</label>
+                <select
+                  value={filterPeriod}
+                  onChange={(e) => setFilterPeriod(e.target.value)}
+                  disabled={filterFormType === 'all' || formPeriods.length === 0}
+                  className="w-full px-2 py-1.5 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6] disabled:bg-[#f3f4f6] disabled:cursor-not-allowed"
+                >
+                  <option value="all">{filterFormType === 'all' ? '種別を先に選択' : 'すべて'}</option>
+                  {formPeriods.map((period) => (
+                    <option key={period.period_key} value={period.period_key}>
+                      {period.period_key} {period.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-[#1f2937] mb-2">
-                学年
-              </label>
-              <select
-                value={filterGrade}
-                onChange={(e) =>
-                  setFilterGrade(
-                    e.target.value === 'all' ? 'all' : parseInt(e.target.value, 10)
-                  )
-                }
-                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
-              >
-                <option value="all">すべて</option>
-                {Object.entries(GRADE_LABELS).map(([key, label]) => (
-                  <option key={key} value={key}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </div>
+              <div>
+                <label className="block text-xs font-medium text-[#1f2937] mb-1">学年</label>
+                <select
+                  value={filterGrade}
+                  onChange={(e) => setFilterGrade(e.target.value === 'all' ? 'all' : parseInt(e.target.value, 10))}
+                  className="w-full px-2 py-1.5 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                >
+                  <option value="all">すべて</option>
+                  {Object.entries(GRADE_LABELS).map(([key, label]) => (
+                    <option key={key} value={key}>{label}</option>
+                  ))}
+                </select>
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-[#1f2937] mb-2">
-                紐付け状態
-              </label>
-              <select
-                value={filterLinkedStatus}
-                onChange={(e) =>
-                  setFilterLinkedStatus(e.target.value as 'all' | 'linked' | 'unlinked')
-                }
-                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
-              >
-                <option value="all">すべて</option>
-                <option value="linked">紐付け済み</option>
-                <option value="unlinked">未紐付け</option>
-              </select>
-            </div>
+              <div>
+                <label className="block text-xs font-medium text-[#1f2937] mb-1">紐付け</label>
+                <select
+                  value={filterLinkedStatus}
+                  onChange={(e) => setFilterLinkedStatus(e.target.value as 'all' | 'linked' | 'unlinked')}
+                  className="w-full px-2 py-1.5 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                >
+                  <option value="all">すべて</option>
+                  <option value="linked">紐付け済み</option>
+                  <option value="unlinked">未紐付け</option>
+                </select>
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-[#1f2937] mb-2">
-                計上状態
-              </label>
-              <select
-                value={filterChargedStatus}
-                onChange={(e) =>
-                  setFilterChargedStatus(e.target.value as 'all' | 'charged' | 'not_charged')
-                }
-                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
-              >
-                <option value="all">すべて</option>
-                <option value="charged">計上済み</option>
-                <option value="not_charged">未計上</option>
-              </select>
-            </div>
+              <div>
+                <label className="block text-xs font-medium text-[#1f2937] mb-1">計上</label>
+                <select
+                  value={filterChargedStatus}
+                  onChange={(e) => setFilterChargedStatus(e.target.value as 'all' | 'charged' | 'not_charged')}
+                  className="w-full px-2 py-1.5 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                >
+                  <option value="all">すべて</option>
+                  <option value="charged">計上済み</option>
+                  <option value="not_charged">未計上</option>
+                </select>
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-[#1f2937] mb-2">
-                処理状態
-              </label>
-              <select
-                value={filterProcessStatus}
-                onChange={(e) => setFilterProcessStatus(e.target.value as ProcessStatus)}
-                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
-              >
-                <option value="unprocessed">未処理のみ</option>
-                <option value="processed">処理済みのみ</option>
-                <option value="all">すべて</option>
-              </select>
-            </div>
+              <div>
+                <label className="block text-xs font-medium text-[#1f2937] mb-1">処理</label>
+                <select
+                  value={filterProcessStatus}
+                  onChange={(e) => setFilterProcessStatus(e.target.value as ProcessStatus)}
+                  className="w-full px-2 py-1.5 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                >
+                  <option value="unprocessed">未処理のみ</option>
+                  <option value="processed">処理済みのみ</option>
+                  <option value="all">すべて</option>
+                </select>
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-[#1f2937] mb-2">
-                申込日
-              </label>
-              <div className="flex items-center gap-1">
-                <input
-                  type="date"
-                  value={filterDateFrom}
-                  onChange={(e) => setFilterDateFrom(e.target.value)}
-                  className="w-full px-2 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
-                />
-                <span className="text-xs text-gray-400 shrink-0">〜</span>
-                <input
-                  type="date"
-                  value={filterDateTo}
-                  onChange={(e) => setFilterDateTo(e.target.value)}
-                  className="w-full px-2 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
-                />
+              <div className="col-span-2 sm:col-span-1 lg:col-span-2">
+                <label className="block text-xs font-medium text-[#1f2937] mb-1">申込日</label>
+                <div className="flex items-center gap-1">
+                  <input
+                    type="date"
+                    value={filterDateFrom}
+                    onChange={(e) => setFilterDateFrom(e.target.value)}
+                    className="w-full px-2 py-1.5 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                  />
+                  <span className="text-xs text-gray-400 shrink-0">〜</span>
+                  <input
+                    type="date"
+                    value={filterDateTo}
+                    onChange={(e) => setFilterDateTo(e.target.value)}
+                    className="w-full px-2 py-1.5 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                  />
+                </div>
               </div>
             </div>
-          </div>
-          {(filterFormType !== 'all' || filterPeriod !== 'all' || filterGrade !== 'all' || filterLinkedStatus !== 'all' || filterChargedStatus !== 'all' || filterProcessStatus !== 'unprocessed' || filterDateFrom || filterDateTo || searchName) && (
             <div className="mt-3 flex items-center justify-between">
-              <p className="text-sm text-gray-500">
-                {processFilteredResponses.length}件表示
-              </p>
+              <p className="text-xs text-gray-500">{processFilteredResponses.length}件表示</p>
               <button
                 type="button"
                 onClick={() => {
-                  setFilterFormType('all');
-                  setFilterPeriod('all');
-                  setFilterGrade('all');
-                  setFilterLinkedStatus('all');
-                  setFilterChargedStatus('all');
+                  setFilterFormType('all'); setFilterPeriod('all'); setFilterGrade('all');
+                  setFilterLinkedStatus('all'); setFilterChargedStatus('all');
                   setFilterProcessStatus('unprocessed');
-                  setFilterDateFrom('');
-                  setFilterDateTo('');
-                  setSearchInput('');
-                  setSearchName('');
+                  setFilterDateFrom(''); setFilterDateTo('');
+                  setSearchInput(''); setSearchName('');
                 }}
-                className="text-sm text-blue-600 hover:text-blue-800 cursor-pointer transition-colors duration-150"
+                className="text-xs text-blue-600 hover:text-blue-800 transition-colors duration-150"
               >
-                フィルターをリセット
+                リセット
               </button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* サマリーセクション */}
         {Object.keys(summary).length > 0 && (
@@ -865,57 +839,47 @@ export default function ResponsesPage() {
                   }`}
                 >
                   {/* 生徒ヘッダー */}
-                  <div className={`px-4 py-3 flex items-center justify-between ${
+                  <div className={`px-4 py-2.5 flex items-center justify-between ${
                     group.hasUncharged ? 'bg-red-50' : 'bg-gray-50'
                   }`}>
-                    <div className="flex items-center gap-3">
-                      <span className="font-semibold text-[#1f2937]">{group.studentName}</span>
-                      <span className="text-xs text-gray-500 bg-white px-2 py-0.5 rounded border border-gray-200">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="font-semibold text-sm text-[#1f2937] truncate">{group.studentName}</span>
+                      <span className="text-xs text-gray-500 bg-white px-1.5 py-0.5 rounded border border-gray-200 shrink-0">
                         {GRADE_LABELS[group.grade] || group.grade}
                       </span>
-                      <span className="text-xs text-gray-500">
-                        {group.schoolName}
-                      </span>
+                      <span className="hidden sm:inline text-xs text-gray-400 shrink-0">{group.schoolName}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-500">{group.responses.length}件</span>
+                    <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                      <span className="text-xs text-gray-400">{group.responses.length}件</span>
                       {group.hasUncharged && (
-                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">未計上あり</span>
+                        <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">未計上</span>
                       )}
-                      {group.hasUnprocessed && (
-                        <span className="px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">未処理あり</span>
+                      {group.hasUnprocessed && !group.hasUncharged && (
+                        <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">未処理</span>
                       )}
                     </div>
                   </div>
                   {/* 回答リスト */}
-                  <table className="w-full text-sm">
-                    <tbody>
-                      {group.responses.map((response) => (
-                        <tr key={response.id} className="border-t border-gray-100 table-row-hover">
-                          <td className="px-4 py-2 w-24 text-gray-500">
-                            {formatDateTime(response.created_at)}
-                          </td>
-                          <td className="px-4 py-2 w-32 font-medium">
+                  <div className="divide-y divide-gray-100">
+                    {group.responses.map((response) => (
+                      <Link
+                        key={response.id}
+                        href={`/forms/responses/${FORM_TYPE_TO_PATH[response.form_type] ?? response.form_type}/${response.form_period}?schoolId=${response.school_id}`}
+                        className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 transition-colors duration-150 gap-3"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-xs font-medium text-[#1f2937] shrink-0">
                             {FORM_TYPE_LABELS[response.form_type]}
-                          </td>
-                          <td className="px-4 py-2 w-28 text-gray-500">
-                            {response.form_period}
-                          </td>
-                          <td className="px-4 py-2">
-                            <ResponseStatusBadges response={response} />
-                          </td>
-                          <td className="px-4 py-2 w-16 text-right">
-                            <Link
-                              href={`/forms/responses/${FORM_TYPE_TO_PATH[response.form_type] ?? response.form_type}/${response.form_period}?schoolId=${response.school_id}`}
-                              className="text-sm text-blue-600 hover:text-blue-800"
-                            >
-                              詳細
-                            </Link>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                          </span>
+                          <span className="text-xs text-gray-400 shrink-0">{response.form_period}</span>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <ResponseStatusBadges response={response} />
+                          <span className="text-xs text-gray-400">{formatDateTime(response.created_at)}</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>

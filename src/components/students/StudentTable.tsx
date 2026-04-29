@@ -4,7 +4,7 @@ import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { BookOpen, MessageCircle, FileText, Calendar, Pencil, Trash2, MoreVertical, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { Student, Subject } from '@/types/database';
-import { GRADE_LABELS, STATUS_LABELS, STATUS_COLORS } from '@/types/database';
+import { GRADE_LABELS, STATUS_LABELS } from '@/types/database';
 import type { SchedulePatternSummary } from '@/lib/api/students';
 import { DAY_OF_WEEK_LABELS } from '@/types/schedule';
 
@@ -12,6 +12,22 @@ type StudentRow = Student & {
   subjects?: Subject[];
   schedulePatterns?: SchedulePatternSummary[];
 };
+
+// 状況を小さなドットで表示（在籍中=青、休会=黄、退会=グレー）
+const STATUS_DOT_COLORS: Record<Student['status'], string> = {
+  active: 'bg-[#3b82f6]',
+  inactive: 'bg-[#f59e0b]',
+  withdrawn: 'bg-[#d1d5db]',
+};
+
+function StatusDot({ status }: { status: Student['status'] }) {
+  return (
+    <span
+      title={STATUS_LABELS[status]}
+      className={`inline-block w-2 h-2 rounded-full ${STATUS_DOT_COLORS[status]}`}
+    />
+  );
+}
 
 interface StudentTableRowProps {
   student: StudentRow;
@@ -262,11 +278,7 @@ const StudentTableRow = memo(function StudentTableRow({
         )}
       </td>
       <td className="px-4 py-3">
-        <span
-          className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${STATUS_COLORS[student.status]}`}
-        >
-          {STATUS_LABELS[student.status]}
-        </span>
+        <StatusDot status={student.status} />
       </td>
       <td className="px-4 py-3 text-right">
         <StudentRowActions
@@ -402,8 +414,7 @@ export function StudentTable({
               <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">
                 通塾日程
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">
-                状況
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap w-6">
               </th>
               <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider whitespace-nowrap">
                 操作
