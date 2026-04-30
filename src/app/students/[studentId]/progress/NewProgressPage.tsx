@@ -43,6 +43,8 @@ import {
   updateStudentTextbookExam,
   deleteStudentTextbookExam,
 } from '@/lib/api/progress';
+import SessionRecordingPanel from '@/components/progress/SessionRecordingPanel';
+import type { SessionRecordingPanelHandle } from '@/components/progress/SessionRecordingPanel';
 import { getStudent } from '@/lib/api/students';
 import { getExamTypes, getTextbooks } from '@/lib/api/textbooks';
 import {
@@ -390,6 +392,7 @@ export default function NewProgressPage() {
             role={isTeacher ? 'teacher' : 'manager'}
             viewMode={effectiveViewMode}
             studentId={studentId}
+            studentName={student ? `${student.last_name} ${student.first_name}` : ''}
             selfName={profile?.display_name ?? ''}
             onBack={() => setView('cards')}
             success={success}
@@ -1001,6 +1004,7 @@ function TableView({
   role: _role,
   viewMode,
   studentId,
+  studentName,
   selfName,
   onBack,
   success,
@@ -1020,6 +1024,7 @@ function TableView({
   role: 'teacher' | 'manager';
   viewMode: ViewMode;
   studentId: string;
+  studentName: string;
   selfName: string;
   onBack: () => void;
   success: (m: string) => void;
@@ -1197,7 +1202,22 @@ function TableView({
     return true;
   }, [paintMode, paintValue, paintStart, applyPaint]);
 
-  // ─── 記録モード ───
+  // ─── セッション記録モード（新UI）───
+  const [sessionMode, setSessionMode] = useState(false);
+  const sessionPanelRef = useRef<SessionRecordingPanelHandle | null>(null);
+
+  // セッション保存後にデータ再読込
+  const handleSessionSaved = useCallback(async () => {
+    try {
+      const rows = await getStudentProgress(textbook.id);
+      setProgress(rows || []);
+      success('セッションを保存しました');
+    } catch {
+      // noop
+    }
+  }, [textbook.id, setProgress, success]);
+
+  // ─── 記録モード（旧UI: バッチ入力）───
   // 1コマで複数単元を進む実情に合わせた一括入力モード
   const todayStr = new Date().toISOString().slice(0, 10);
   const [recording, setRecording] = useState(false);
@@ -1381,14 +1401,25 @@ function TableView({
             </button>
           )}
           {!isMeeting && (
-            <button
-              onClick={() => setRecording((v) => !v)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                recording ? 'bg-[#dc2626] text-white hover:bg-[#b91c1c]' : 'bg-[#1e3a5f] text-white hover:bg-[#2a4d7a]'
-              }`}
-            >
-              {recording ? '記録モード終了' : '＋ 授業を記録'}
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => { setSessionMode((v) => !v); if (recording) setRecording(false); }}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  sessionMode ? 'bg-[#dc2626] text-white hover:bg-[#b91c1c]' : 'bg-[#1e3a5f] text-white hover:bg-[#2a4d7a]'
+                }`}
+              >
+                {sessionMode ? 'セッション終了' : '授業を記録'}
+              </button>
+              <button
+                onClick={() => { setRecording((v) => !v); if (sessionMode) setSessionMode(false); }}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                  recording ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
+                }`}
+                title="旧: 一括記録モード"
+              >
+                {recording ? '一括終了' : '一括'}
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -1600,7 +1631,19 @@ function TableView({
         </div>
       </div>
 
-      {/* 記録モード: 一括入力バー */}
+      {/* セッション記録モード（新UI） */}
+      {sessionMode && !isMeeting && (
+        <SessionRecordingPanel
+          ref={sessionPanelRef}
+          studentTextbookId={textbook.id}
+          studentName={studentName}
+          textbookName={textbook.textbook?.name ?? '教科書'}
+          curriculumItems={progress}
+          onSessionSaved={handleSessionSaved}
+        />
+      )}
+
+      {/* 記録モード: 一括入力バー（旧UI） */}
       {recording && !isMeeting && (
         <div className="mb-2 bg-[#fff7ed] border-2 border-[#fb923c] rounded-lg p-4">
           <div className="flex items-center justify-between mb-3">
@@ -1776,11 +1819,13 @@ function TableView({
                     paintMode={paintMode}
                     isPaintStart={isPaintStart}
                     isPaintCandidate={isPaintCandidate}
+                    sessionMode={sessionMode && !isMeeting}
                     onPaintRowClick={() => handlePaintRowClick(rowIdStr)}
                     onToggleSelect={() => toggleSelect(rowIdStr)}
                     onLocalPatch={(patch) => updateLocal(rowIdStr, patch)}
                     onSaveProgress={(patch) => saveProgressField(row, patch)}
                     onSaveLesson={(n, date) => saveLessonField(row, n, date)}
+                    onSessionCellToggle={sessionMode ? (cid, col) => sessionPanelRef.current?.handleCellToggle(cid, col) : undefined}
                   />
                 );
               });
@@ -2031,11 +2076,13 @@ function ProgressRow({
   paintMode: _paintMode = null,
   isPaintStart = false,
   isPaintCandidate = false,
+  sessionMode = false,
   onPaintRowClick,
   onToggleSelect,
   onLocalPatch,
   onSaveProgress,
   onSaveLesson,
+  onSessionCellToggle,
 }: {
   row: CurriculumItemWithProgress;
   examTypes: ExamType[];
@@ -2054,11 +2101,15 @@ function ProgressRow({
   paintMode?: null | 'examRange' | 'intent';
   isPaintStart?: boolean;
   isPaintCandidate?: boolean;
+  /** セッション記録モード */
+  sessionMode?: boolean;
   onPaintRowClick?: () => void;
   onToggleSelect?: () => void;
   onLocalPatch: (patch: Partial<CurriculumItemWithProgress['progress']>) => void;
   onSaveProgress: (patch: Record<string, unknown>) => Promise<void>;
   onSaveLesson: (lessonNumber: 1 | 2 | 3, date: string | null) => Promise<void>;
+  /** セッション記録モード中のセルクリック */
+  onSessionCellToggle?: (curriculumItemId: number, column: 'school' | 1 | 2 | 3) => void;
 }) {
   const p = row.progress;
   const lessonDate = (n: 1 | 2 | 3) =>
@@ -2216,9 +2267,16 @@ function ProgressRow({
       )}
       {/* 学校進度 */}
       {showSchoolProgress && (
-        <td className="px-3 py-2.5 text-xs">
+        <td
+          className={`px-3 py-2.5 text-xs ${sessionMode ? 'cursor-pointer hover:bg-[#1e3a5f]/5' : ''}`}
+          onClick={sessionMode ? () => onSessionCellToggle?.(row.id, 'school') : undefined}
+        >
           {isMeeting ? (
             <span className="text-[#4b5563]">{p?.school_progress_date ?? '—'}</span>
+          ) : sessionMode ? (
+            <span className={`inline-block px-1.5 py-0.5 rounded text-xs ${p?.school_progress_date ? 'bg-[#1e3a5f]/10 text-[#1e3a5f] font-medium' : 'text-gray-400'}`}>
+              {p?.school_progress_date ? (p.school_progress_date as string).replace(/^\d{4}-/, '').replace('-', '/') : '—'}
+            </span>
           ) : (
             <DateInputWithToday
               value={p?.school_progress_date ?? ''}
@@ -2233,9 +2291,17 @@ function ProgressRow({
       {/* 1回目 / 2回目 / 3回目 */}
       {([1, 2, 3] as const).map((n) =>
         showLesson(n) ? (
-          <td key={n} className="px-3 py-2.5 text-xs">
+          <td
+            key={n}
+            className={`px-3 py-2.5 text-xs ${sessionMode ? 'cursor-pointer hover:bg-[#1e3a5f]/5' : ''}`}
+            onClick={sessionMode ? () => onSessionCellToggle?.(row.id, n) : undefined}
+          >
             {isMeeting ? (
               <span className="text-[#1f2937]">{(lessonDate(n) || '').replace(/^\d{4}-/, '') || '—'}</span>
+            ) : sessionMode ? (
+              <span className={`inline-block px-1.5 py-0.5 rounded text-xs ${lessonDate(n) ? 'bg-[#1e3a5f]/10 text-[#1e3a5f] font-medium' : 'text-gray-400'}`}>
+                {lessonDate(n) ? lessonDate(n).replace(/^\d{4}-/, '').replace('-', '/') : '—'}
+              </span>
             ) : (
               <DateInputWithToday
                 value={lessonDate(n)}

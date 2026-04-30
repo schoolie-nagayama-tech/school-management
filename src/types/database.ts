@@ -749,6 +749,7 @@ export type Database = {
           lesson_number: number;
           lesson_date: string | null;
           teacher_name: string | null;
+          session_id: string | null;
           created_at: string;
         };
         Insert: {
@@ -757,6 +758,7 @@ export type Database = {
           lesson_number: number;
           lesson_date?: string | null;
           teacher_name?: string | null;
+          session_id?: string | null;
           created_at?: string;
         };
         Update: {
@@ -765,6 +767,7 @@ export type Database = {
           lesson_number?: number;
           lesson_date?: string | null;
           teacher_name?: string | null;
+          session_id?: string | null;
           created_at?: string;
         };
         Relationships: [
@@ -772,6 +775,73 @@ export type Database = {
             foreignKeyName: 'student_progress_lessons_student_progress_id_fkey';
             columns: ['student_progress_id'];
             referencedRelation: 'student_progress';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'student_progress_lessons_session_id_fkey';
+            columns: ['session_id'];
+            referencedRelation: 'progress_sessions';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      progress_sessions: {
+        Row: {
+          id: string;
+          student_textbook_id: string;
+          session_date: string;
+          teacher_id: string | null;
+          teacher_name: string | null;
+          handover: string | null;
+          homework_not_done: boolean;
+          tardy: boolean;
+          schedule_entry_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          student_textbook_id: string;
+          session_date: string;
+          teacher_id?: string | null;
+          teacher_name?: string | null;
+          handover?: string | null;
+          homework_not_done?: boolean;
+          tardy?: boolean;
+          schedule_entry_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          student_textbook_id?: string;
+          session_date?: string;
+          teacher_id?: string | null;
+          teacher_name?: string | null;
+          handover?: string | null;
+          homework_not_done?: boolean;
+          tardy?: boolean;
+          schedule_entry_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'progress_sessions_student_textbook_id_fkey';
+            columns: ['student_textbook_id'];
+            referencedRelation: 'student_textbooks';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'progress_sessions_teacher_id_fkey';
+            columns: ['teacher_id'];
+            referencedRelation: 'user_profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'progress_sessions_schedule_entry_id_fkey';
+            columns: ['schedule_entry_id'];
+            referencedRelation: 'schedule_entries';
             referencedColumns: ['id'];
           },
         ];
@@ -3134,6 +3204,16 @@ export type StudentProgressUpdate = Database['public']['Tables']['student_progre
 export type StudentProgressLesson = Database['public']['Tables']['student_progress_lessons']['Row'];
 export type StudentProgressLessonInsert = Database['public']['Tables']['student_progress_lessons']['Insert'];
 export type StudentProgressLessonUpdate = Database['public']['Tables']['student_progress_lessons']['Update'];
+
+export type ProgressSession = Database['public']['Tables']['progress_sessions']['Row'];
+export type ProgressSessionInsert = Database['public']['Tables']['progress_sessions']['Insert'];
+export type ProgressSessionUpdate = Database['public']['Tables']['progress_sessions']['Update'];
+
+/** セッション + 紐付き指導日 + 生徒/テキスト情報 */
+export type ProgressSessionWithDetails = ProgressSession & {
+  lessons?: StudentProgressLesson[];
+  student_textbook?: StudentTextbook & { textbook: Textbook; student?: Student };
+};
 
 // 拡張型（関連データを含む）
 export type StudentTextbookWithDetails = StudentTextbook & {
