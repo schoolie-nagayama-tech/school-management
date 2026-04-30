@@ -120,7 +120,7 @@ export default function NewProgressPage() {
   const params = useParams();
   const studentId = params?.studentId as string;
   const { toasts, removeToast, success, error: toastError } = useToast();
-  const { profile } = useAuth();
+  const { profile, getSelectedSchoolIds } = useAuth();
   const isTeacher = profile?.role === 'teacher';
 
   // データ状態（既存ロジックを踏襲）
@@ -153,8 +153,9 @@ export default function NewProgressPage() {
     (async () => {
       setIsLoading(true);
       try {
+        const schoolIds = getSelectedSchoolIds();
         const [s, tbs, ets] = await Promise.all([
-          getStudent(studentId),
+          getStudent(studentId, schoolIds.length > 0 ? schoolIds : undefined),
           getStudentTextbooks(studentId),
           getExamTypes(),
         ]);
