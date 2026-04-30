@@ -689,7 +689,7 @@ function A_CurriculumView() {
     setIntentDropdown(null);
   };
 
-  const cycleIntent = (id: string) => {
+  const _cycleIntent = (id: string) => {
     const current = intents[id];
     if (!current) {
       setIntents(prev => ({ ...prev, [id]: INTENT_TAGS[0] }));
