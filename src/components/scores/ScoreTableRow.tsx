@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef } from 'react';
+import { GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui';
 import type { AssessmentWithScores } from '@/types/database';
 import { ASSESSMENT_NAME_LABELS, GRADE_LABELS } from '@/types/database';
@@ -47,6 +48,13 @@ interface ScoreTableRowProps {
   ) => string;
   canEdit: boolean;
   naishinType?: NaishinType;
+  showDragHandle?: boolean;
+  isDragging?: boolean;
+  isDragOver?: boolean;
+  onDragStart?: (e: React.DragEvent<HTMLTableRowElement>) => void;
+  onDragOver?: (e: React.DragEvent<HTMLTableRowElement>) => void;
+  onDrop?: (e: React.DragEvent<HTMLTableRowElement>) => void;
+  onDragEnd?: () => void;
 }
 
 export function ScoreTableRow({
@@ -63,6 +71,13 @@ export function ScoreTableRow({
   getCalculatedValue,
   canEdit,
   naishinType,
+  showDragHandle,
+  isDragging,
+  isDragOver,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
 }: ScoreTableRowProps) {
   const scoreMap = new Map(assessment.scores.map((s) => [s.subject, s.value]));
   const tabTriggeredRef = useRef(false);
@@ -118,7 +133,14 @@ export function ScoreTableRow({
 
   if (category === 'mock') {
     return (
-      <tr className="hover:bg-[var(--surface)] transition-colors duration-150">
+      <tr
+        className={`transition-colors duration-150 ${isDragOver ? 'bg-blue-50 border-t-2 border-blue-300' : 'hover:bg-[var(--surface)]'} ${isDragging ? 'opacity-40' : ''}`}
+        draggable={showDragHandle}
+        onDragStart={onDragStart}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
+        onDragEnd={onDragEnd}
+      >
         <td className="border border-gray-200 px-2 py-1.5 text-sm text-[var(--headline)] whitespace-nowrap">
           {GRADE_LABELS[assessment.grade] ?? assessment.grade}
         </td>
@@ -133,9 +155,16 @@ export function ScoreTableRow({
         {renderCell('hensa_5')}
         {canEdit && (
           <td className="border border-gray-200 px-2 py-1.5 text-center">
-            <Button variant="danger" size="sm" onClick={() => onDelete(assessment.id)}>
-              削除
-            </Button>
+            <div className="flex items-center justify-center gap-1.5">
+              <Button variant="danger" size="sm" onClick={() => onDelete(assessment.id)}>
+                削除
+              </Button>
+              {showDragHandle && (
+                <span className="text-gray-300 hover:text-gray-500 cursor-grab transition-colors" title="ドラッグして並び替え">
+                  <GripVertical className="w-4 h-4" />
+                </span>
+              )}
+            </div>
           </td>
         )}
       </tr>
@@ -161,7 +190,14 @@ export function ScoreTableRow({
   }
 
   return (
-    <tr className="hover:bg-[var(--surface)]">
+    <tr
+      className={`transition-colors duration-150 ${isDragOver ? 'bg-blue-50 border-t-2 border-blue-300' : 'hover:bg-[var(--surface)]'} ${isDragging ? 'opacity-40' : ''}`}
+      draggable={showDragHandle}
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      onDragEnd={onDragEnd}
+    >
       <td className="border border-gray-200 px-2 py-1.5 text-sm text-[var(--headline)] whitespace-nowrap">
         {GRADE_LABELS[assessment.grade] ?? assessment.grade}
       </td>
@@ -183,9 +219,16 @@ export function ScoreTableRow({
       )}
       {canEdit && (
         <td className="border border-gray-200 px-2 py-1.5 text-center">
-          <Button variant="danger" size="sm" onClick={() => onDelete(assessment.id)}>
-            削除
-          </Button>
+          <div className="flex items-center justify-center gap-1.5">
+            <Button variant="danger" size="sm" onClick={() => onDelete(assessment.id)}>
+              削除
+            </Button>
+            {showDragHandle && (
+              <span className="text-gray-300 hover:text-gray-500 cursor-grab transition-colors" title="ドラッグして並び替え">
+                <GripVertical className="w-4 h-4" />
+              </span>
+            )}
+          </div>
         </td>
       )}
     </tr>

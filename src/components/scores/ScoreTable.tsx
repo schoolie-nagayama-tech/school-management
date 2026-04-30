@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { GripVertical } from 'lucide-react';
 import type { AssessmentWithScores } from '@/types/database';
 import { ASSESSMENT_NAME_LABELS, GRADE_LABELS, SUBJECT_LABELS } from '@/types/database';
 import { SUBJECT_CODES } from '@/types/database';
@@ -34,6 +35,8 @@ interface ScoreTableProps {
   studentGrade?: number;
   /** 生徒の所属教室ID。科目マスタの絞り込みに使用 */
   schoolId?: string | null;
+  /** 行の並び替えコールバック（fromIndex → toIndex） */
+  onReorder?: (fromIdx: number, toIdx: number) => void;
 }
 
 export function ScoreTable({
@@ -49,8 +52,11 @@ export function ScoreTable({
   canEdit,
   studentGrade,
   schoolId,
+  onReorder,
 }: ScoreTableProps) {
   const [naishinType, setNaishinType] = useState<NaishinType>('tokyo');
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
   const isHighSchool = (studentGrade ?? 0) >= 10;
   const [hsSubjects, setHsSubjects] = useState<AssessmentSubject[]>([]);
   const tabTriggeredRef = useRef(false);
@@ -156,15 +162,25 @@ export function ScoreTable({
                 </td>
               </tr>
             ) : (
-              assessments.map((a) => {
+              assessments.map((a, idx) => {
                 const scoreMap = new Map<string, number | null>(
                   (a.scores ?? []).map((s) => [s.subject, s.value ?? null])
                 );
                 const examMonthLabel = a.exam_month
                   ? `${new Date(a.exam_month).getFullYear()}-${String(new Date(a.exam_month).getMonth() + 1).padStart(2, '0')}`
                   : '—';
+                const isDraggingRow = dragIdx === idx;
+                const isDragOverRow = dragOverIdx === idx && dragIdx !== idx;
                 return (
-                  <tr key={a.id} className="hover:bg-[var(--surface)] transition-colors duration-150">
+                  <tr
+                    key={a.id}
+                    className={`transition-colors duration-150 ${isDragOverRow ? 'bg-blue-50 border-t-2 border-blue-300' : 'hover:bg-[var(--surface)]'} ${isDraggingRow ? 'opacity-40' : ''}`}
+                    draggable={canEdit && !!onReorder}
+                    onDragStart={() => setDragIdx(idx)}
+                    onDragOver={(e) => { e.preventDefault(); setDragOverIdx(idx); }}
+                    onDrop={() => { if (dragIdx !== null && dragIdx !== idx) onReorder?.(dragIdx, idx); setDragIdx(null); setDragOverIdx(null); }}
+                    onDragEnd={() => { setDragIdx(null); setDragOverIdx(null); }}
+                  >
                     <td className="border border-gray-200 px-2 py-1.5 text-sm text-[var(--headline)] whitespace-nowrap">
                       {GRADE_LABELS[a.grade] ?? a.grade}
                     </td>
@@ -220,9 +236,16 @@ export function ScoreTable({
                     })}
                     {canEdit && (
                       <td className="border border-gray-200 px-2 py-1.5 text-center">
-                        <Button variant="danger" size="sm" onClick={() => onDelete(a.id)}>
-                          削除
-                        </Button>
+                        <div className="flex items-center justify-center gap-1.5">
+                          <Button variant="danger" size="sm" onClick={() => onDelete(a.id)}>
+                            削除
+                          </Button>
+                          {onReorder && (
+                            <span className="text-gray-300 hover:text-gray-500 cursor-grab transition-colors" title="ドラッグして並び替え">
+                              <GripVertical className="w-4 h-4" />
+                            </span>
+                          )}
+                        </div>
                       </td>
                     )}
                   </tr>
@@ -263,7 +286,7 @@ export function ScoreTable({
                 </td>
               </tr>
             ) : (
-              assessments.map((a) => (
+              assessments.map((a, idx) => (
                 <ScoreTableRow
                   key={a.id}
                   assessment={a}
@@ -278,6 +301,13 @@ export function ScoreTable({
                   getCalculatedValue={getCalculatedValue}
                   canEdit={canEdit}
                   onCellTab={(aId, subj) => handleCellTabForRow(aId, subj, ['english', 'math', 'japanese', 'social', 'science', 'hensa_3', 'hensa_5'])}
+                  showDragHandle={canEdit && !!onReorder}
+                  isDragging={dragIdx === idx}
+                  isDragOver={dragOverIdx === idx && dragIdx !== idx}
+                  onDragStart={() => setDragIdx(idx)}
+                  onDragOver={(e) => { e.preventDefault(); setDragOverIdx(idx); }}
+                  onDrop={() => { if (dragIdx !== null && dragIdx !== idx) onReorder?.(dragIdx, idx); setDragIdx(null); setDragOverIdx(null); }}
+                  onDragEnd={() => { setDragIdx(null); setDragOverIdx(null); }}
                 />
               ))
             )}
@@ -359,7 +389,7 @@ export function ScoreTable({
               </td>
             </tr>
           ) : (
-            assessments.map((a) => (
+            assessments.map((a, idx) => (
               <ScoreTableRow
                 key={a.id}
                 assessment={a}
@@ -375,6 +405,13 @@ export function ScoreTable({
                 canEdit={canEdit}
                 naishinType={isReportCard ? naishinType : undefined}
                 onCellTab={(aId, subj) => handleCellTabForRow(aId, subj, ['english', 'math', 'japanese', 'social', 'science', 'music', 'art', 'tech_home', 'pe'])}
+                showDragHandle={canEdit && !!onReorder}
+                isDragging={dragIdx === idx}
+                isDragOver={dragOverIdx === idx && dragIdx !== idx}
+                onDragStart={() => setDragIdx(idx)}
+                onDragOver={(e) => { e.preventDefault(); setDragOverIdx(idx); }}
+                onDrop={() => { if (dragIdx !== null && dragIdx !== idx) onReorder?.(dragIdx, idx); setDragIdx(null); setDragOverIdx(null); }}
+                onDragEnd={() => { setDragIdx(null); setDragOverIdx(null); }}
               />
             ))
           )}

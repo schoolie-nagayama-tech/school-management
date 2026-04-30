@@ -232,6 +232,15 @@ export default function StudentScoresPage() {
     }
   };
 
+  const handleReorder = useCallback((category: Category, fromIdx: number, toIdx: number) => {
+    setAssessmentsByCategory((prev) => {
+      const items = [...(prev[category] ?? [])];
+      const [removed] = items.splice(fromIdx, 1);
+      items.splice(toIdx, 0, removed);
+      return { ...prev, [category]: items };
+    });
+  }, []);
+
   const handleDeleteRow = async (assessmentId: string) => {
     if (!(await confirm({ title: '削除確認', description: 'この行を削除してもよろしいですか？', confirmLabel: '削除', variant: 'danger' }))) return;
     try {
@@ -489,6 +498,7 @@ export default function StudentScoresPage() {
                         canEdit={canEditScores}
                         studentGrade={student?.grade}
                         schoolId={student?.school_id}
+                        onReorder={(fromIdx, toIdx) => handleReorder(category, fromIdx, toIdx)}
                       />
                     </>
                   )}
