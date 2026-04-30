@@ -80,7 +80,7 @@ serwist.addEventListeners();
   event.waitUntil((self as any).registration.showNotification(title, options));
 });
 
-// 通知クリック → 対象ページをフォーカス or 開く
+// 通知クリック → PWA ウィンドウ内でページ遷移（新規ウィンドウを開かない）
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (self as any).addEventListener("notificationclick", (event: {
   notification: { close(): void; data?: { url?: string } };
@@ -90,13 +90,21 @@ serwist.addEventListeners();
   const url: string = event.notification.data?.url ?? "/responses";
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const clients = (self as any).clients as {
-    matchAll(opts?: object): Promise<Array<{ url: string; focus(): Promise<unknown> }>>;
+    matchAll(opts?: object): Promise<Array<{
+      url: string;
+      focus(): Promise<unknown>;
+      navigate(url: string): Promise<unknown>;
+    }>>;
     openWindow(url: string): Promise<unknown>;
   };
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
-      const existing = list.find((c) => c.url.includes(url));
-      if (existing) return existing.focus();
+      if (list.length > 0) {
+        // 既存の PWA/タブウィンドウ内でページ遷移（新規ウィンドウを開かない）
+        const client = list[0];
+        return client.navigate(url).then(() => client.focus());
+      }
+      // ウィンドウが何も開いていない場合のみ新規ウィンドウ
       return clients.openWindow(url);
     })
   );
