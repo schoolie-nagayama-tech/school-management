@@ -13,7 +13,8 @@ import {
   saveAttendanceRecord,
   saveAttendanceNote,
   approveAttendanceSheet,
-  rejectAttendanceSheet,
+  rejectToTeacher,
+  rejectToManager,
   reopenAttendanceSheet,
 } from '@/lib/api/attendance';
 import {
@@ -39,6 +40,9 @@ export default function AttendanceSheetDetailPage() {
   const { profile } = useAuth();
   const { toasts, removeToast, success, error: toastError } = useToast();
   const sheetId = params.sheetId as string;
+
+  const isManager = profile?.role === 'manager';
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner';
 
   const [sheet, setSheet] = useState<AttendanceSheet | null>(null);
   const [attendanceTypes, setAttendanceTypes] = useState<AttendanceType[]>([]);
@@ -181,16 +185,24 @@ export default function AttendanceSheetDetailPage() {
     }
   };
 
-  // 修正
+  // 差し戻し（ロール別）
   const handleReject = async () => {
     try {
-      await rejectAttendanceSheet(sheetId, rejectReason);
-      success('修正しました');
+      if (isManager && status === 'submitted') {
+        await rejectToTeacher(sheetId, rejectReason);
+        success('講師に差し戻しました');
+      } else if (isAdmin && status === 'reviewed') {
+        await rejectToManager(sheetId, rejectReason);
+        success('教室長に差し戻しました');
+      } else {
+        await rejectToTeacher(sheetId, rejectReason);
+        success('差し戻しました');
+      }
       setIsRejectDialogOpen(false);
       fetchData();
     } catch (error) {
       console.error('Failed to reject:', error);
-      toastError('修正に失敗しました');
+      toastError('差し戻しに失敗しました');
     }
   };
 
@@ -397,42 +409,57 @@ export default function AttendanceSheetDetailPage() {
 
         {/* 操作ボタン */}
         <div className="flex justify-center gap-4">
-          {status === 'submitted' && (
+          {/* 教室長: 提出済みの出勤簿を講師に差し戻し */}
+          {isManager && status === 'submitted' && (
+            <Button
+              variant="danger"
+              onClick={() => setIsRejectDialogOpen(true)}
+            >
+              <XCircle className="h-4 w-4 mr-2" />
+              講師に差し戻す
+            </Button>
+          )}
+          {/* 管理者: 確認済み or 提出済みを承認 */}
+          {isAdmin && (status === 'reviewed' || status === 'submitted') && (
             <>
               <Button onClick={handleApprove}>
                 <CheckCircle className="h-4 w-4 mr-2" />
                 承認する
               </Button>
-              <Button
-                variant="danger"
-                onClick={() => setIsRejectDialogOpen(true)}
-              >
-                <XCircle className="h-4 w-4 mr-2" />
-                差し戻す
-              </Button>
+              {status === 'reviewed' && (
+                <Button
+                  variant="danger"
+                  onClick={() => setIsRejectDialogOpen(true)}
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  教室長に差し戻す
+                </Button>
+              )}
             </>
           )}
-          {status === 'approved' && (
+          {isAdmin && status === 'approved' && (
             <Button
               variant="secondary"
               onClick={() => setIsReopenDialogOpen(true)}
             >
               <RotateCcw className="h-4 w-4 mr-2" />
-              承認を取り消して提出済みに戻す
+              承認を取り消して確認済みに戻す
             </Button>
           )}
         </div>
       </div>
 
-      {/* 修正ダイアログ */}
+      {/* 差し戻しダイアログ */}
       <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>出勤簿を修正</DialogTitle>
+            <DialogTitle>
+              {isManager ? '講師に差し戻し' : '教室長に差し戻し'}
+            </DialogTitle>
           </DialogHeader>
           <div className="py-4">
             <div className="space-y-2">
-              <Label htmlFor="reason">修正理由（任意）</Label>
+              <Label htmlFor="reason">差し戻し理由（任意）</Label>
               <Textarea
                 id="reason"
                 value={rejectReason}
@@ -443,10 +470,7 @@ export default function AttendanceSheetDetailPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button
-              variant="secondary"
-              onClick={() => setIsRejectDialogOpen(false)}
-            >
+            <Button variant="secondary" onClick={() => setIsRejectDialogOpen(false)}>
               キャンセル
             </Button>
             <Button variant="danger" onClick={handleReject}>
@@ -462,7 +486,7 @@ export default function AttendanceSheetDetailPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>承認を取り消しますか？</AlertDialogTitle>
             <AlertDialogDescription>
-              承認を取り消すと、提出済みの状態に戻ります。その後、編集・承認・差し戻しを選択できます。
+              承認を取り消すと、確認済みの状態に戻ります。その後、編集・承認・差し戻しを選択できます。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

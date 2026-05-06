@@ -83,6 +83,7 @@ export default function AttendanceTypesPage() {
     unit_price: 0,
     display_order: 0,
     is_active: true,
+    is_class_type: true,
   });
 
   const { schools: masterSchools } = useMasterData();
@@ -123,6 +124,7 @@ export default function AttendanceTypesPage() {
       unit_price: 0,
       display_order: attendanceTypes.length,
       is_active: true,
+      is_class_type: true,
     });
     setIsDialogOpen(true);
   };
@@ -136,6 +138,7 @@ export default function AttendanceTypesPage() {
       unit_price: item.unit_price,
       display_order: item.display_order,
       is_active: item.is_active,
+      is_class_type: item.is_class_type,
     });
     setIsDialogOpen(true);
   };

@@ -7,12 +7,13 @@ export interface AttendanceType {
   unit_price: number;
   display_order: number;
   is_active: boolean;
+  is_class_type: boolean;
   created_at: string;
   updated_at: string;
 }
 
 // 出勤簿ステータス
-export type AttendanceSheetStatus = 'draft' | 'submitted' | 'approved' | 'rejected';
+export type AttendanceSheetStatus = 'draft' | 'submitted' | 'reviewed' | 'approved' | 'rejected';
 
 // 出勤簿ヘッダー
 export interface AttendanceSheet {
@@ -24,7 +25,13 @@ export interface AttendanceSheet {
   submitted_at: string | null;
   approved_at: string | null;
   approved_by: string | null;
+  reviewed_at: string | null;
+  reviewed_by: string | null;
+  submitted_to: string | null;
   rejection_reason: string | null;
+  transport_cost: number;
+  admin_note: string | null;
+  is_koma_changing: boolean;
   created_at: string;
   updated_at: string;
   // リレーション
@@ -70,12 +77,14 @@ export interface AttendanceTypeFormData {
   unit_price: number;
   display_order: number;
   is_active: boolean;
+  is_class_type: boolean;
 }
 
 // ステータスラベル
 export const ATTENDANCE_STATUS_LABELS: Record<AttendanceSheetStatus, string> = {
   draft: '入力中',
   submitted: '提出済み',
+  reviewed: '確認済み',
   approved: '承認済み',
   rejected: '修正',
 };
@@ -84,6 +93,7 @@ export const ATTENDANCE_STATUS_LABELS: Record<AttendanceSheetStatus, string> = {
 export const ATTENDANCE_STATUS_COLORS: Record<AttendanceSheetStatus, string> = {
   draft: 'bg-gray-100 text-gray-800',
   submitted: 'bg-yellow-100 text-yellow-800',
+  reviewed: 'bg-blue-100 text-blue-800',
   approved: 'bg-green-100 text-green-800',
   rejected: 'bg-red-100 text-red-800',
 };

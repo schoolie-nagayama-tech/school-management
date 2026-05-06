@@ -862,6 +862,7 @@ export type Database = {
           available_days_of_week?: number[] | null;
           available_slot_numbers_by_day?: Record<string, number[]> | null;
           default_school_id?: string | null;
+          exit_date?: string | null;
         };
         Insert: {
           id?: string;
@@ -878,6 +879,7 @@ export type Database = {
           available_days_of_week?: number[] | null;
           available_slot_numbers_by_day?: Record<string, number[]> | null;
           default_school_id?: string | null;
+          exit_date?: string | null;
         };
         Update: {
           id?: string;
@@ -894,6 +896,7 @@ export type Database = {
           available_days_of_week?: number[] | null;
           available_slot_numbers_by_day?: Record<string, number[]> | null;
           default_school_id?: string | null;
+          exit_date?: string | null;
         };
         Relationships: [];
       };
@@ -1155,6 +1158,7 @@ export type Database = {
           unit_price: number;
           display_order: number;
           is_active: boolean;
+          is_class_type: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -1166,6 +1170,7 @@ export type Database = {
           unit_price: number;
           display_order?: number;
           is_active?: boolean;
+          is_class_type?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -1177,6 +1182,7 @@ export type Database = {
           unit_price?: number;
           display_order?: number;
           is_active?: boolean;
+          is_class_type?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -1188,11 +1194,17 @@ export type Database = {
           teacher_id: string;
           school_id: string;
           year_month: string;
-          status: 'draft' | 'submitted' | 'approved' | 'rejected';
+          status: 'draft' | 'submitted' | 'reviewed' | 'approved' | 'rejected';
           submitted_at: string | null;
           approved_at: string | null;
           approved_by: string | null;
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+          submitted_to: string | null;
           rejection_reason: string | null;
+          transport_cost: number;
+          admin_note: string | null;
+          is_koma_changing: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -1201,11 +1213,17 @@ export type Database = {
           teacher_id: string;
           school_id: string;
           year_month: string;
-          status?: 'draft' | 'submitted' | 'approved' | 'rejected';
+          status?: 'draft' | 'submitted' | 'reviewed' | 'approved' | 'rejected';
           submitted_at?: string | null;
           approved_at?: string | null;
           approved_by?: string | null;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          submitted_to?: string | null;
           rejection_reason?: string | null;
+          transport_cost?: number;
+          admin_note?: string | null;
+          is_koma_changing?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -1214,11 +1232,17 @@ export type Database = {
           teacher_id?: string;
           school_id?: string;
           year_month?: string;
-          status?: 'draft' | 'submitted' | 'approved' | 'rejected';
+          status?: 'draft' | 'submitted' | 'reviewed' | 'approved' | 'rejected';
           submitted_at?: string | null;
           approved_at?: string | null;
           approved_by?: string | null;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
+          submitted_to?: string | null;
           rejection_reason?: string | null;
+          transport_cost?: number;
+          admin_note?: string | null;
+          is_koma_changing?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -3323,6 +3347,75 @@ export interface CourseCurriculumRow {
   isGroupStart: boolean;
   groupRowSpan: number;
   groupProposalCount: number;
+}
+
+// =====================================================
+// 保護者向け講習提案書
+// =====================================================
+
+export type ProposalStatus = 'draft' | 'sent' | 'approved';
+
+export const PROPOSAL_STATUS_LABELS: Record<ProposalStatus, string> = {
+  draft: '下書き',
+  sent: '送付済',
+  approved: '承認',
+};
+
+export interface SeasonalProposal {
+  id: string;
+  student_textbook_id: string;
+  season: SeasonType;
+  year: number;
+  theme: string;
+  status: ProposalStatus;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SeasonalProposalInsert {
+  id?: string;
+  student_textbook_id: string;
+  season: SeasonType;
+  year?: number;
+  theme?: string;
+  status?: ProposalStatus;
+  notes?: string | null;
+}
+
+export interface SeasonalProposalUpdate {
+  theme?: string;
+  status?: ProposalStatus;
+  notes?: string | null;
+}
+
+export interface SeasonalProposalUnit {
+  id: string;
+  proposal_id: string;
+  curriculum_item_id: number;
+  koma_count: number;
+  reason: string;
+  sort_order: number;
+  created_at: string;
+  // JOIN
+  curriculum_item?: CurriculumItem;
+}
+
+export interface SeasonalProposalUnitInsert {
+  id?: string;
+  proposal_id: string;
+  curriculum_item_id: number;
+  koma_count?: number;
+  reason?: string;
+  sort_order?: number;
+}
+
+export interface SeasonalProposalWithDetails extends SeasonalProposal {
+  units: SeasonalProposalUnit[];
+  student_textbook?: StudentTextbook & {
+    textbook: Textbook;
+    student?: Student;
+  };
 }
 
 // =====================================================

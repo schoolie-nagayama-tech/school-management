@@ -41,6 +41,7 @@ import { AdminLayout } from '@/components/layouts';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertBoard } from '@/components/alerts';
+import { AttendanceUnsubmittedAlert } from '@/components/attendance/AttendanceUnsubmittedAlert';
 import { TaskOverdueBanner } from '@/components/monthly-tasks/TaskOverdueBanner';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui';
@@ -584,6 +585,9 @@ export default function StudentsPage() {
             <span className="text-xs font-medium text-blue-600">閲覧専用モード</span>
           </div>
         )}
+
+        {/* 出勤簿未提出アラート（講師向け） */}
+        {isTeacher && <AttendanceUnsubmittedAlert />}
 
         {/* 業務タスク超過バナー（教室長以上のみ） */}
         {!isTeacher && <TaskOverdueBanner />}

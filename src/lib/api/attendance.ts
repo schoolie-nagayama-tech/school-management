@@ -609,7 +609,7 @@ export async function rejectAttendanceSheet(
   return data;
 }
 
-// 出勤簿を一括承認
+// 出勤簿を一括承認（管理者: reviewed → approved）
 export async function bulkApproveAttendanceSheets(
   sheetIds: string[],
   approvedBy: string
@@ -623,7 +623,7 @@ export async function bulkApproveAttendanceSheets(
       rejection_reason: null,
     })
     .in('id', sheetIds)
-    .eq('status', 'submitted')
+    .in('status', ['submitted', 'reviewed'])
     .select();
 
   if (error) {
@@ -633,12 +633,81 @@ export async function bulkApproveAttendanceSheets(
   return data;
 }
 
-// 出勤簿のステータスを提出済みに戻す（承認取消）
-export async function reopenAttendanceSheet(sheetId: string) {
+// 教室長が管理者へ一括提出（submitted → reviewed）
+export async function reviewAttendanceSheets(
+  sheetIds: string[],
+  reviewedBy: string,
+  submittedTo: string
+) {
+  const { data, error } = await supabase
+    .from('attendance_sheets')
+    .update({
+      status: 'reviewed',
+      reviewed_at: new Date().toISOString(),
+      reviewed_by: reviewedBy,
+      submitted_to: submittedTo,
+      rejection_reason: null,
+    })
+    .in('id', sheetIds)
+    .eq('status', 'submitted')
+    .select();
+
+  if (error) {
+    console.error('Error reviewing attendance sheets:', error);
+    throw new Error('一括提出に失敗しました');
+  }
+  return data;
+}
+
+// 教室長が講師に差し戻し（submitted → rejected）
+export async function rejectToTeacher(sheetId: string, reason: string) {
+  const { data, error } = await supabase
+    .from('attendance_sheets')
+    .update({
+      status: 'rejected',
+      rejection_reason: reason,
+    })
+    .eq('id', sheetId)
+    .eq('status', 'submitted')
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error rejecting to teacher:', error);
+    throw new Error('差し戻しに失敗しました');
+  }
+  return data;
+}
+
+// 管理者が教室長に差し戻し（reviewed → submitted）
+export async function rejectToManager(sheetId: string, reason: string) {
   const { data, error } = await supabase
     .from('attendance_sheets')
     .update({
       status: 'submitted',
+      reviewed_at: null,
+      reviewed_by: null,
+      submitted_to: null,
+      rejection_reason: reason,
+    })
+    .eq('id', sheetId)
+    .eq('status', 'reviewed')
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error rejecting to manager:', error);
+    throw new Error('差し戻しに失敗しました');
+  }
+  return data;
+}
+
+// 出勤簿のステータスを戻す（承認取消: approved → reviewed）
+export async function reopenAttendanceSheet(sheetId: string) {
+  const { data, error } = await supabase
+    .from('attendance_sheets')
+    .update({
+      status: 'reviewed',
       approved_at: null,
       approved_by: null,
       rejection_reason: null,
@@ -652,6 +721,25 @@ export async function reopenAttendanceSheet(sheetId: string) {
     throw new Error('承認取消に失敗しました');
   }
   return data;
+}
+
+// 管理者一覧を取得（提出先選択用）
+export async function getAdminUsers() {
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .select('id, display_name, email')
+    .in('role', ['admin', 'owner'])
+    .eq('is_active', true)
+    .order('display_name');
+
+  if (error) {
+    console.error('Error fetching admin users:', error);
+    return [];
+  }
+  return (data || []).map((u) => ({
+    id: u.id,
+    name: u.display_name || u.email || '未設定',
+  }));
 }
 
 // ========================================
@@ -721,7 +809,7 @@ export async function getAttendanceSummary(
     }
   }
 
-  // 全シートの出勤レコードを一括取得
+  // 全シートの出勤レコードを一括取得（is_class_type を含む）
   const summarySheetIds = sheets.map((s) => s.id);
   const recordsBySheet3 = new Map<string, any[]>();
   if (summarySheetIds.length > 0) {
@@ -729,8 +817,9 @@ export async function getAttendanceSummary(
       .from('attendance_records')
       .select(`
         sheet_id,
+        date,
         value,
-        attendance_type:attendance_types(id, name, unit, unit_price)
+        attendance_type:attendance_types(id, name, unit, unit_price, is_class_type)
       `)
       .in('sheet_id', summarySheetIds);
     (allRecords || []).forEach((r: Record<string, unknown>) => {
@@ -753,9 +842,14 @@ export async function getAttendanceSummary(
       amount: number;
     }> = {};
 
+    const classDates = new Set<string>();
+    const allWorkDates = new Set<string>();
+
     records.forEach((r: Record<string, unknown>) => {
-      const type = r.attendance_type as { id: string; name: string; unit: string; unit_price: number } | null;
+      const type = r.attendance_type as { id: string; name: string; unit: string; unit_price: number; is_class_type: boolean } | null;
       if (!type) return;
+      const value = Number(r.value);
+      if (value === 0) return;
 
       if (!typeTotals[type.id]) {
         typeTotals[type.id] = {
@@ -766,9 +860,14 @@ export async function getAttendanceSummary(
           amount: 0,
         };
       }
-      const value = Number(r.value);
       typeTotals[type.id].total += value;
       typeTotals[type.id].amount += value * type.unit_price;
+
+      const date = r.date as string;
+      allWorkDates.add(date);
+      if (type.is_class_type) {
+        classDates.add(date);
+      }
     });
 
     const grandTotal = Object.values(typeTotals).reduce((sum, t) => sum + t.total, 0);
@@ -781,6 +880,8 @@ export async function getAttendanceSummary(
       type_totals: typeTotals,
       grand_total: grandTotal,
       total_amount: totalAmount,
+      prep_days: classDates.size,
+      work_days: allWorkDates.size,
     };
   });
 
@@ -899,4 +1000,152 @@ export async function getAllAttendanceTypes(schoolIds?: string[]) {
     throw new Error('コマ種別の取得に失敗しました');
   }
   return (data || []) as AttendanceType[];
+}
+
+// ========================================
+// 出勤簿 管理者入力 API
+// ========================================
+
+// 交通費・備考・コマ給変更フラグを更新
+export async function updateAttendanceSheetMeta(
+  sheetId: string,
+  fields: { transport_cost?: number; admin_note?: string | null; is_koma_changing?: boolean }
+) {
+  const { error } = await supabase
+    .from('attendance_sheets')
+    .update(fields)
+    .eq('id', sheetId);
+
+  if (error) {
+    console.error('Error updating attendance sheet meta:', error);
+    throw new Error('出勤簿の更新に失敗しました');
+  }
+}
+
+// 講師の退職日を更新
+export async function updateTeacherExitDate(teacherId: string, exitDate: string | null) {
+  const { error } = await supabase
+    .from('user_profiles')
+    .update({ exit_date: exitDate })
+    .eq('id', teacherId);
+
+  if (error) {
+    console.error('Error updating exit date:', error);
+    throw new Error('退職日の更新に失敗しました');
+  }
+}
+
+// 先月退職した講師を取得
+export async function getRecentlyRetiredTeachers(
+  schoolIds: string[],
+  yearMonth: string
+) {
+  const [y, m] = yearMonth.split('-').map(Number);
+  const prevMonth = m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`;
+  const prevStart = `${prevMonth}-01`;
+  const prevEnd = m === 1
+    ? `${y - 1}-12-31`
+    : `${y}-${String(m - 1).padStart(2, '0')}-${new Date(y, m - 1, 0).getDate()}`;
+
+  if (schoolIds.length === 0) return [];
+
+  const { data: userSchools } = await supabase
+    .from('user_schools')
+    .select('user_id')
+    .in('school_id', schoolIds);
+  const teacherIds = Array.from(new Set((userSchools || []).map((u: { user_id?: string }) => u.user_id).filter((id): id is string => Boolean(id))));
+  if (teacherIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .select('id, display_name, email, exit_date')
+    .in('id', teacherIds)
+    .eq('role', 'teacher')
+    .gte('exit_date', prevStart)
+    .lte('exit_date', prevEnd);
+
+  if (error) {
+    console.error('Error fetching retired teachers:', error);
+    return [];
+  }
+  return (data || []).map((t) => ({
+    id: t.id,
+    name: t.display_name || t.email || '未設定',
+    exit_date: t.exit_date ?? null,
+  }));
+}
+
+// 入社して約3ヶ月の講師を取得
+export async function getNewTeachers(
+  schoolIds: string[],
+  yearMonth: string
+) {
+  const [y, m] = yearMonth.split('-').map(Number);
+  let targetMonth = m - 3;
+  let targetYear = y;
+  if (targetMonth <= 0) {
+    targetMonth += 12;
+    targetYear -= 1;
+  }
+  const targetStart = `${targetYear}-${String(targetMonth).padStart(2, '0')}-01`;
+  const targetEnd = `${targetYear}-${String(targetMonth).padStart(2, '0')}-${new Date(targetYear, targetMonth, 0).getDate()}`;
+
+  if (schoolIds.length === 0) return [];
+
+  const { data: userSchools } = await supabase
+    .from('user_schools')
+    .select('user_id')
+    .in('school_id', schoolIds);
+  const teacherIds = Array.from(new Set((userSchools || []).map((u: { user_id?: string }) => u.user_id).filter((id): id is string => Boolean(id))));
+  if (teacherIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .select('id, display_name, email, created_at')
+    .in('id', teacherIds)
+    .eq('role', 'teacher')
+    .eq('is_active', true)
+    .gte('created_at', targetStart)
+    .lte('created_at', targetEnd + 'T23:59:59');
+
+  if (error) {
+    console.error('Error fetching new teachers:', error);
+    return [];
+  }
+  return (data || []).map((t) => ({
+    id: t.id,
+    name: t.display_name || t.email || '未設定',
+    created_at: t.created_at,
+  }));
+}
+
+// 教室に紐づく active 講師一覧（ドロップダウン選択肢用）
+export async function getActiveTeacherProfiles(schoolIds: string[]) {
+  if (schoolIds.length === 0) return [];
+
+  const { data: userSchools } = await supabase
+    .from('user_schools')
+    .select('user_id')
+    .in('school_id', schoolIds);
+  const teacherIds = Array.from(new Set((userSchools || []).map((u: { user_id?: string }) => u.user_id).filter((id): id is string => Boolean(id))));
+  if (teacherIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .select('id, display_name, email, exit_date, created_at')
+    .in('id', teacherIds)
+    .eq('role', 'teacher')
+    .eq('is_active', true)
+    .order('display_name');
+
+  if (error) {
+    console.error('Error fetching active teacher profiles:', error);
+    return [];
+  }
+  return (data || []).map((t) => ({
+    id: t.id,
+    name: t.display_name || t.email || '未設定',
+    exit_date: t.exit_date as string | null,
+    created_at: t.created_at,
+  }));
 }
