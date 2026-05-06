@@ -25,7 +25,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { Eye, EyeOff } from 'lucide-react';
+import Link from 'next/link';
+import { Eye, EyeOff, FileText } from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
 import { Button, Modal, Select, ToastContainer } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
@@ -122,7 +123,7 @@ export default function NewProgressPage() {
   const params = useParams();
   const studentId = params?.studentId as string;
   const { toasts, removeToast, success, error: toastError } = useToast();
-  const { profile, getSelectedSchoolIds } = useAuth();
+  const { profile, getSelectedSchoolIds, isLoading: authLoading } = useAuth();
   const isTeacher = profile?.role === 'teacher';
 
   // データ状態（既存ロジックを踏襲）
@@ -151,7 +152,7 @@ export default function NewProgressPage() {
 
   // 初期ロード
   useEffect(() => {
-    if (!studentId) return;
+    if (!studentId || authLoading) return;
     (async () => {
       setIsLoading(true);
       try {
@@ -198,7 +199,7 @@ export default function NewProgressPage() {
         setIsLoading(false);
       }
     })();
-  }, [studentId, isTeacher, toastError]);
+  }, [studentId, isTeacher, toastError, authLoading, getSelectedSchoolIds]);
 
   // テーブルに入った時に progress を取得
   useEffect(() => {
@@ -1419,6 +1420,13 @@ function TableView({
               >
                 {recording ? '一括終了' : '一括'}
               </button>
+              <Link
+                href={`/students/${studentId}/proposals/new?stbId=${textbook.id}&season=summer`}
+                className="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-colors flex items-center gap-1"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                提案書
+              </Link>
             </div>
           )}
         </div>
