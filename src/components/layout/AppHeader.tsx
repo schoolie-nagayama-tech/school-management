@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { USER_ROLE_LABELS } from '@/types/database';
 import { SubjectSettings } from '@/components/settings';
-import { Megaphone, ChevronDown, X, Menu, HelpCircle, LogOut, Settings, LayoutDashboard } from 'lucide-react';
+import { Megaphone, ChevronDown, X, Menu, LogOut, Settings, LayoutDashboard } from 'lucide-react';
 import { TierMedal } from '@/components/teacher/TierMedal';
 import { useTeacherBadgeCount } from '@/hooks/useTeacherBadgeCount';
 import { ThemeToggle } from './ThemeToggle';
@@ -540,40 +540,12 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
               <TierMedal count={badgeCount} />
             )}
             {profile && !authLoading && (
-              <div className="hidden md:flex items-center gap-2 text-right">
-                <div>
-                  <div className="text-xs font-semibold text-white leading-tight">
-                    {profile.display_name || profile.email}
-                  </div>
-                  <div className="text-[10px] text-white/70 leading-tight">
-                    {USER_ROLE_LABELS[profile.role]}
-                  </div>
-                </div>
-              </div>
-            )}
-            {/* プッシュ通知（非講師・教室選択済み時のみ表示） */}
-            {!isTeacher && selectedSchoolId && selectedSchoolId !== 'all' && (
-              <PushNotificationButton schoolId={selectedSchoolId} compact />
-            )}
-            {!isTeacher && selectedSchoolId === 'all' && schools.length > 0 && (
-              <PushNotificationButton schoolId={schools[0].id} compact />
-            )}
-            <span className="hidden sm:inline-flex"><ThemeToggle /></span>
-            <Link
-              href="/help"
-              className="hidden sm:flex p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors duration-150"
-              title="ヘルプ"
-            >
-              <HelpCircle className="w-4 h-4" />
-            </Link>
-            {profile && !authLoading && (
               <button
                 onClick={signOut}
-                className="p-1 text-[10px] font-medium bg-white/20 text-white border border-white/30 rounded hover:bg-white/30 transition-colors flex items-center gap-0.5"
+                className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors duration-150"
                 title="ログアウト"
               >
-                <LogOut className="w-2.5 h-2.5" />
-                <span className="hidden sm:inline">ログアウト</span>
+                <LogOut className="w-4 h-4" />
               </button>
             )}
             {(showAllLinks || permissions?.canAccessStudents || permissions?.canAccessSettings || profile?.role === 'admin') && (
@@ -590,22 +562,22 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                 </button>
                 {showSettingsDropdown && (
                   <div
-                    className="absolute right-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-xl z-50 min-w-[160px] dropdown-menu dropdown-menu-right"
+                    className="absolute right-0 mt-1 bg-white rounded-lg border border-gray-200 shadow-xl z-50 min-w-[200px] dropdown-menu dropdown-menu-right"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div className="py-1">
-                      <Link
-                        href="/settings"
-                        className={`block px-3 py-2 text-xs font-medium hover:bg-gray-50 transition-colors ${
-                          pathname === '/settings'
-                            ? 'bg-primary/10 text-primary font-semibold'
-                            : 'text-[#1f2937]'
-                        }`}
-                        onClick={() => setShowSettingsDropdown(false)}
-                      >
-                        すべての設定
-                      </Link>
-                      <div className="border-t border-[#e5e7eb] my-1" />
+                      {/* ユーザー情報 */}
+                      {profile && !authLoading && (
+                        <div className="px-3 py-2.5 border-b border-gray-100">
+                          <div className="text-xs font-semibold text-gray-900 leading-tight">
+                            {profile.display_name || profile.email}
+                          </div>
+                          <div className="text-[10px] text-gray-500 leading-tight mt-0.5">
+                            {USER_ROLE_LABELS[profile.role]}
+                          </div>
+                        </div>
+                      )}
+                      {/* ページ固有設定 */}
                       {onBulkGradeUpdateClick && (
                         <button
                           onClick={() => {
@@ -639,6 +611,17 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                           {settingsLabel ?? '設定'}
                         </button>
                       )}
+                      <Link
+                        href="/settings"
+                        className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
+                          pathname === '/settings'
+                            ? 'bg-primary/10 text-primary font-semibold'
+                            : 'text-[#1f2937]'
+                        }`}
+                        onClick={() => setShowSettingsDropdown(false)}
+                      >
+                        すべての設定
+                      </Link>
                       <div className="border-t border-[#e5e7eb] my-1" />
                       {(showAllLinks || permissions?.canAccessUsers) && (
                         <Link
@@ -678,6 +661,31 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                         >
                           セキュリティ設定
                         </Link>
+                      )}
+                      <div className="border-t border-[#e5e7eb] my-1" />
+                      {/* テーマ切替 */}
+                      <div className="px-3 py-2 flex items-center justify-between">
+                        <span className="text-xs text-gray-600">テーマ</span>
+                        <ThemeToggle />
+                      </div>
+                      {/* ヘルプ */}
+                      <Link
+                        href="/help"
+                        className="block px-3 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                        onClick={() => setShowSettingsDropdown(false)}
+                      >
+                        ヘルプ
+                      </Link>
+                      {/* プッシュ通知 */}
+                      {!isTeacher && (
+                        <div className="px-3 py-2 flex items-center justify-between">
+                          <span className="text-xs text-gray-600">プッシュ通知</span>
+                          {selectedSchoolId && selectedSchoolId !== 'all' ? (
+                            <PushNotificationButton schoolId={selectedSchoolId} compact />
+                          ) : schools.length > 0 ? (
+                            <PushNotificationButton schoolId={schools[0].id} compact />
+                          ) : null}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -741,14 +749,14 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                   </Link>
                 );
               })}
-            {/* モバイル専用: テーマ切替・ヘルプ */}
-            <div className="sm:hidden px-4 pt-2 mt-1 border-t border-white/20 flex items-center justify-between">
+            {/* モバイル: テーマ切替・ヘルプ */}
+            <div className="px-4 pt-2 mt-1 border-t border-white/20 flex items-center justify-between">
               <span className="text-[11px] text-white/70">テーマ</span>
               <ThemeToggle />
             </div>
             <Link
               href="/help"
-              className="sm:hidden block px-4 py-2 text-sm text-white hover:bg-white/10 transition-colors"
+              className="block px-4 py-2 text-sm text-white hover:bg-white/10 transition-colors"
             >
               ヘルプ
             </Link>
