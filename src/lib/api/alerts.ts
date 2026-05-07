@@ -105,7 +105,7 @@ export async function fetchAlertSources(schoolIds: string[]): Promise<AlertSourc
   }
 
   const [
-    students,
+    allStudents,
     assessmentsByStudent,
     interviewsByStudent,
     applicationItems,
@@ -126,6 +126,7 @@ export async function fetchAlertSources(schoolIds: string[]): Promise<AlertSourc
     getAlertSettingsBySchools(schoolIds).catch(() => new Map<string, AlertSetting[]>()),
   ]);
 
+  const students = allStudents.filter((s) => s.status === 'active');
   const applications = applicationsResult ?? [];
   const pendingTasks = pendingTasksResult ?? [];
   const { byStudent: textbooksByStudent, examTypeNames } = textbooksResult;
@@ -789,7 +790,7 @@ async function fetchAlertSourcesLight(schoolIds: string[]): Promise<Partial<Aler
     };
   }
 
-  const [students, interviewsByStudent, applicationItems, applicationsResult, pendingTasksResult, settingsBySchool] =
+  const [allStudents, interviewsByStudent, applicationItems, applicationsResult, pendingTasksResult, settingsBySchool] =
     await Promise.all([
       getStudents(undefined, schoolIds),
       getInterviewsBySchool(schoolIds),
@@ -798,6 +799,7 @@ async function fetchAlertSourcesLight(schoolIds: string[]): Promise<Partial<Aler
       getPendingTasksBySchools(schoolIds).catch((e) => { console.warn('未完了タスクの取得に失敗しました:', e); return []; }),
       getAlertSettingsBySchools(schoolIds).catch(() => new Map<string, AlertSetting[]>()),
     ]);
+  const students = allStudents.filter((s) => s.status === 'active');
 
   return {
     students,
@@ -825,13 +827,14 @@ async function fetchAlertSourcesHeavy(schoolIds: string[]): Promise<Partial<Aler
     };
   }
 
-  const [students, assessmentsByStudent, textbooksResult, progressFlags, settingsBySchool] = await Promise.all([
+  const [allStudents, assessmentsByStudent, textbooksResult, progressFlags, settingsBySchool] = await Promise.all([
     getStudents(undefined, schoolIds),
     listAssessmentsBySchool(schoolIds),
     getStudentTextbooksExamsBySchool(schoolIds),
     fetchProgressFlagsByStudent(schoolIds),
     getAlertSettingsBySchools(schoolIds).catch(() => new Map<string, AlertSetting[]>()),
   ]);
+  const students = allStudents.filter((s) => s.status === 'active');
 
   const { byStudent: textbooksByStudent, examTypeNames } = textbooksResult;
 
