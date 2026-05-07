@@ -85,6 +85,60 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ data: data || [] });
       }
 
+      case 'get_progress_widget': {
+        const today = new Date().toISOString().split('T')[0];
+        const yr = new Date().getFullYear();
+        const mo = new Date().getMonth() + 1;
+
+        const { data: allTasks, error: taskErr } = await supabaseAdmin
+          .from('monthly_tasks')
+          .select('id, task_date, task_name, category')
+          .eq('year', yr)
+          .eq('month', mo)
+          .order('task_date', { ascending: true })
+          .order('sort_order', { ascending: true });
+        if (taskErr) throw taskErr;
+
+        if (!allTasks || allTasks.length === 0) {
+          return NextResponse.json({ data: { allComplete: true, tasks: [] } });
+        }
+
+        const allIds = allTasks.map((t: { id: string }) => t.id);
+        const { data: allChecks } = await supabaseAdmin
+          .from('monthly_task_checks')
+          .select('task_id, school_id, is_completed')
+          .in('task_id', allIds);
+
+        const sids = auth.schoolIds;
+
+        type TaskRow = { id: string; task_date: string; task_name: string; category: string };
+        const incompleteTasks: (TaskRow & { overdue: boolean })[] = [];
+        let allComplete = true;
+
+        for (const task of allTasks) {
+          const done = sids.every((sid: string) => {
+            const check = (allChecks || []).find(
+              (c: Record<string, unknown>) => c.task_id === task.id && c.school_id === sid
+            );
+            return check && (check as Record<string, unknown>).is_completed;
+          });
+          if (!done) {
+            allComplete = false;
+            incompleteTasks.push({
+              id: task.id,
+              task_date: task.task_date,
+              task_name: task.task_name,
+              category: task.category,
+              overdue: task.task_date < today,
+            });
+          }
+        }
+
+        return NextResponse.json({
+          data: { allComplete, tasks: incompleteTasks },
+        });
+      }
+
       case 'get_overdue_summary': {
         // 今日以前の未完了タスクをカウント
         const today = new Date().toISOString().split('T')[0];

@@ -42,7 +42,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertBoard } from '@/components/alerts';
 import { AttendanceUnsubmittedAlert } from '@/components/attendance/AttendanceUnsubmittedAlert';
-import { TaskOverdueBanner } from '@/components/monthly-tasks/TaskOverdueBanner';
+import { TaskProgressWidget } from '@/components/monthly-tasks/TaskProgressWidget';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
@@ -589,8 +589,8 @@ export default function StudentsPage() {
         {/* 出勤簿未提出アラート（講師向け） */}
         {isTeacher && <AttendanceUnsubmittedAlert />}
 
-        {/* 業務タスク超過バナー（教室長以上のみ） */}
-        {!isTeacher && <TaskOverdueBanner />}
+        {/* 業務進捗ウィジェット（教室長以上のみ） */}
+        {!isTeacher && <TaskProgressWidget />}
 
         {/* 講師: 連絡掲示板 ↔ アラート を横並び / 管理側: 従来のレイアウト */}
         {isTeacher ? (

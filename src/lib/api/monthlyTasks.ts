@@ -44,6 +44,22 @@ export async function getOverdueSummary(): Promise<{ count: number; tasks: Array
   return data.data;
 }
 
+export interface ProgressWidgetData {
+  allComplete: boolean;
+  tasks: Array<{ id: string; task_date: string; task_name: string; category: string; overdue: boolean }>;
+}
+
+export async function getProgressWidget(): Promise<ProgressWidgetData> {
+  const token = await getAccessToken();
+  const params = new URLSearchParams({ action: 'get_progress_widget' });
+  const res = await fetch(`/api/tasks?${params}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || '取得に失敗しました');
+  return data.data;
+}
+
 // ===================== POST =====================
 
 async function postTaskApi(body: Record<string, unknown>): Promise<Record<string, unknown>> {
