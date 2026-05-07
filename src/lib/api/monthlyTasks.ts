@@ -44,9 +44,18 @@ export async function getOverdueSummary(): Promise<{ count: number; tasks: Array
   return data.data;
 }
 
+export interface ProgressWidgetTask {
+  id: string;
+  task_date: string;
+  task_name: string;
+  category: string;
+  overdue: boolean;
+  incompleteSchoolIds: string[];
+}
+
 export interface ProgressWidgetData {
   allComplete: boolean;
-  tasks: Array<{ id: string; task_date: string; task_name: string; category: string; overdue: boolean }>;
+  tasks: ProgressWidgetTask[];
 }
 
 export async function getProgressWidget(): Promise<ProgressWidgetData> {

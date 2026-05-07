@@ -112,17 +112,20 @@ export async function GET(request: NextRequest) {
         const sids = auth.schoolIds;
 
         type TaskRow = { id: string; task_date: string; task_name: string; category: string };
-        const incompleteTasks: (TaskRow & { overdue: boolean })[] = [];
+        const incompleteTasks: (TaskRow & { overdue: boolean; incompleteSchoolIds: string[] })[] = [];
         let allComplete = true;
 
         for (const task of allTasks) {
-          const done = sids.every((sid: string) => {
+          const incomplete: string[] = [];
+          for (const sid of sids) {
             const check = (allChecks || []).find(
               (c: Record<string, unknown>) => c.task_id === task.id && c.school_id === sid
             );
-            return check && (check as Record<string, unknown>).is_completed;
-          });
-          if (!done) {
+            if (!check || !(check as Record<string, unknown>).is_completed) {
+              incomplete.push(sid);
+            }
+          }
+          if (incomplete.length > 0) {
             allComplete = false;
             incompleteTasks.push({
               id: task.id,
@@ -130,6 +133,7 @@ export async function GET(request: NextRequest) {
               task_name: task.task_name,
               category: task.category,
               overdue: task.task_date < today,
+              incompleteSchoolIds: incomplete,
             });
           }
         }

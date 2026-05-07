@@ -1,8 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { getProgressWidget, type ProgressWidgetData } from '@/lib/api/monthlyTasks';
-import { AlertTriangle, ArrowRight, ListTodo, Trophy } from 'lucide-react';
+import {
+  getProgressWidget,
+  toggleCheck,
+  type ProgressWidgetData,
+  type ProgressWidgetTask,
+} from '@/lib/api/monthlyTasks';
+import { AlertTriangle, ArrowRight, Check, ListTodo, Trophy } from 'lucide-react';
 import Link from 'next/link';
 
 function formatDate(dateStr: string) {
@@ -66,6 +71,53 @@ function CompletionParticles() {
   );
 }
 
+function TaskCheckbox({
+  task,
+  onComplete,
+}: {
+  task: ProgressWidgetTask;
+  onComplete: (task: ProgressWidgetTask) => void;
+}) {
+  const [completing, setCompleting] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const handleClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (completing || done) return;
+    setCompleting(true);
+    try {
+      await Promise.all(
+        task.incompleteSchoolIds.map((sid) => toggleCheck(task.id, sid, true))
+      );
+      setDone(true);
+      setTimeout(() => onComplete(task), 300);
+    } catch {
+      setCompleting(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={completing || done}
+      className={`flex-shrink-0 w-4 h-4 rounded border transition-all duration-200 flex items-center justify-center ${
+        done
+          ? 'bg-green-500 border-green-500'
+          : completing
+            ? 'bg-gray-200 border-gray-300 animate-pulse'
+            : task.overdue
+              ? 'border-red-300 hover:border-red-500 hover:bg-red-50'
+              : task.category === 'business'
+                ? 'border-orange-300 hover:border-orange-500 hover:bg-orange-50'
+                : 'border-purple-300 hover:border-purple-500 hover:bg-purple-50'
+      }`}
+      title="完了にする"
+    >
+      {done && <Check className="w-3 h-3 text-white" />}
+    </button>
+  );
+}
+
 export function TaskProgressWidget() {
   const [data, setData] = useState<ProgressWidgetData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -100,6 +152,18 @@ export function TaskProgressWidget() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  const handleComplete = useCallback((completed: ProgressWidgetTask) => {
+    setData((prev) => {
+      if (!prev) return prev;
+      const remaining = prev.tasks.filter((t) => t.id !== completed.id);
+      if (remaining.length === 0) {
+        setShowCelebration(true);
+        return { allComplete: true, tasks: [] };
+      }
+      return { ...prev, tasks: remaining };
+    });
+  }, []);
 
   if (isLoading) {
     return (
@@ -179,6 +243,7 @@ export function TaskProgressWidget() {
             key={task.id}
             className="inline-flex items-center gap-1 px-2 py-1 rounded border border-red-200 bg-red-50 text-[11px]"
           >
+            <TaskCheckbox task={task} onComplete={handleComplete} />
             <AlertTriangle className="w-3 h-3 text-red-500 flex-shrink-0" />
             <span className="font-medium text-red-600">{formatDate(task.task_date)}</span>
             <span className="text-red-700 max-w-[120px] truncate">{task.task_name}</span>
@@ -193,6 +258,7 @@ export function TaskProgressWidget() {
                 : 'bg-purple-50 border-purple-200 text-purple-700'
             }`}
           >
+            <TaskCheckbox task={task} onComplete={handleComplete} />
             <span className="font-medium">{formatDate(task.task_date)}</span>
             <span className="max-w-[120px] truncate">{task.task_name}</span>
           </span>
