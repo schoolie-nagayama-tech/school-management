@@ -58,15 +58,22 @@ export interface ProgressWidgetData {
   tasks: ProgressWidgetTask[];
 }
 
-export async function getProgressWidget(): Promise<ProgressWidgetData> {
+export async function getProgressWidget(schoolIds?: string[]): Promise<ProgressWidgetData> {
   const token = await getAccessToken();
   const params = new URLSearchParams({ action: 'get_progress_widget' });
+  if (schoolIds && schoolIds.length > 0) {
+    params.set('schoolIds', schoolIds.join(','));
+  }
   const res = await fetch(`/api/tasks?${params}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || '取得に失敗しました');
   return data.data;
+}
+
+export async function batchToggleCheck(taskId: string, schoolIds: string[], isCompleted: boolean) {
+  await postTaskApi({ action: 'batch_toggle_check', taskId, schoolIds, isCompleted });
 }
 
 // ===================== POST =====================

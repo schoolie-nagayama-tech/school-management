@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   getProgressWidget,
-  toggleCheck,
+  batchToggleCheck,
   type ProgressWidgetData,
   type ProgressWidgetTask,
 } from '@/lib/api/monthlyTasks';
@@ -79,49 +79,47 @@ function TaskCheckbox({
   onComplete: (task: ProgressWidgetTask) => void;
 }) {
   const [completing, setCompleting] = useState(false);
-  const [done, setDone] = useState(false);
 
   const handleClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (completing || done) return;
+    if (completing) return;
     setCompleting(true);
+    onComplete(task);
     try {
-      await Promise.all(
-        task.incompleteSchoolIds.map((sid) => toggleCheck(task.id, sid, true))
-      );
-      setDone(true);
-      setTimeout(() => onComplete(task), 300);
+      await batchToggleCheck(task.id, task.incompleteSchoolIds, true);
     } catch {
-      setCompleting(false);
+      // optimistic UI already applied — ignore since widget will refetch if needed
     }
   };
 
   return (
     <button
       onClick={handleClick}
-      disabled={completing || done}
+      disabled={completing}
       className={`flex-shrink-0 w-4 h-4 rounded border transition-all duration-200 flex items-center justify-center ${
-        done
+        completing
           ? 'bg-green-500 border-green-500'
-          : completing
-            ? 'bg-gray-200 border-gray-300 animate-pulse'
-            : task.overdue
-              ? 'border-red-300 hover:border-red-500 hover:bg-red-50'
-              : task.category === 'business'
-                ? 'border-orange-300 hover:border-orange-500 hover:bg-orange-50'
-                : 'border-purple-300 hover:border-purple-500 hover:bg-purple-50'
+          : task.overdue
+            ? 'border-red-300 hover:border-red-500 hover:bg-red-50'
+            : task.category === 'business'
+              ? 'border-orange-300 hover:border-orange-500 hover:bg-orange-50'
+              : 'border-purple-300 hover:border-purple-500 hover:bg-purple-50'
       }`}
       title="完了にする"
     >
-      {done && <Check className="w-3 h-3 text-white" />}
+      {completing && <Check className="w-3 h-3 text-white" />}
     </button>
   );
 }
 
-export function TaskProgressWidget() {
+export function TaskProgressWidget({ schoolIds }: { schoolIds?: string[] }) {
   const [data, setData] = useState<ProgressWidgetData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showCelebration, setShowCelebration] = useState(false);
+
+  // Stabilize schoolIds reference to avoid infinite re-renders
+  const schoolIdsKey = schoolIds?.slice().sort().join(',') ?? '';
+  const stableSchoolIds = useMemo(() => schoolIds, [schoolIdsKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!document.getElementById(CELEBRATION_STYLE_ID)) {
@@ -137,7 +135,7 @@ export function TaskProgressWidget() {
 
   const fetchData = useCallback(async () => {
     try {
-      const result = await getProgressWidget();
+      const result = await getProgressWidget(stableSchoolIds);
       setData(result);
       if (result.allComplete) {
         setShowCelebration(true);
@@ -147,9 +145,10 @@ export function TaskProgressWidget() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [stableSchoolIds]);
 
   useEffect(() => {
+    setIsLoading(true);
     fetchData();
   }, [fetchData]);
 

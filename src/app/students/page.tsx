@@ -590,7 +590,7 @@ export default function StudentsPage() {
         {isTeacher && <AttendanceUnsubmittedAlert />}
 
         {/* 業務進捗ウィジェット（教室長以上のみ） */}
-        {!isTeacher && <TaskProgressWidget />}
+        {!isTeacher && <TaskProgressWidget schoolIds={getSelectedSchoolIds()} />}
 
         {/* 講師: 連絡掲示板 ↔ アラート を横並び / 管理側: 従来のレイアウト */}
         {isTeacher ? (

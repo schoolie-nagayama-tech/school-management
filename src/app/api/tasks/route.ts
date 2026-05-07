@@ -90,13 +90,26 @@ export async function GET(request: NextRequest) {
         const yr = new Date().getFullYear();
         const mo = new Date().getMonth() + 1;
 
-        const { data: allTasks, error: taskErr } = await supabaseAdmin
+        // 教室フィルタ: クエリで指定があればそれを使う、なければ全schoolIds
+        const schoolIdParam = url.searchParams.get('schoolIds');
+        const sids = schoolIdParam
+          ? schoolIdParam.split(',').filter((s) => auth.schoolIds.includes(s))
+          : auth.schoolIds;
+
+        if (sids.length === 0) {
+          return NextResponse.json({ data: { allComplete: true, tasks: [] } });
+        }
+
+        // タスク・チェック・オーバーライドを並列取得
+        const taskQuery = supabaseAdmin
           .from('monthly_tasks')
           .select('id, task_date, task_name, category')
           .eq('year', yr)
           .eq('month', mo)
           .order('task_date', { ascending: true })
           .order('sort_order', { ascending: true });
+
+        const { data: allTasks, error: taskErr } = await taskQuery;
         if (taskErr) throw taskErr;
 
         if (!allTasks || allTasks.length === 0) {
@@ -104,12 +117,27 @@ export async function GET(request: NextRequest) {
         }
 
         const allIds = allTasks.map((t: { id: string }) => t.id);
-        const { data: allChecks } = await supabaseAdmin
-          .from('monthly_task_checks')
-          .select('task_id, school_id, is_completed')
-          .in('task_id', allIds);
 
-        const sids = auth.schoolIds;
+        const [checksResult, overridesResult] = await Promise.all([
+          supabaseAdmin
+            .from('monthly_task_checks')
+            .select('task_id, school_id, is_completed')
+            .in('task_id', allIds)
+            .in('school_id', sids),
+          supabaseAdmin
+            .from('monthly_task_overrides')
+            .select('task_id, school_id, is_hidden')
+            .in('task_id', allIds)
+            .in('school_id', sids)
+            .eq('is_hidden', true),
+        ]);
+        const allChecks = checksResult.data || [];
+        const hiddenOverrides = overridesResult.data || [];
+
+        // is_hidden を高速検索できるようSetに変換
+        const hiddenSet = new Set(
+          hiddenOverrides.map((o: Record<string, unknown>) => `${o.task_id}:${o.school_id}`)
+        );
 
         type TaskRow = { id: string; task_date: string; task_name: string; category: string };
         const incompleteTasks: (TaskRow & { overdue: boolean; incompleteSchoolIds: string[] })[] = [];
@@ -118,10 +146,11 @@ export async function GET(request: NextRequest) {
         for (const task of allTasks) {
           const incomplete: string[] = [];
           for (const sid of sids) {
-            const check = (allChecks || []).find(
+            if (hiddenSet.has(`${task.id}:${sid}`)) continue;
+            const check = allChecks.find(
               (c: Record<string, unknown>) => c.task_id === task.id && c.school_id === sid
             );
-            if (!check || !(check as Record<string, unknown>).is_completed) {
+            if (!check || !check.is_completed) {
               incomplete.push(sid);
             }
           }
@@ -315,6 +344,64 @@ export async function POST(request: NextRequest) {
           .select('id');
         if (delError) throw delError;
         return NextResponse.json({ success: true, deleted: deleted?.length || 0 });
+      }
+
+      case 'batch_toggle_check': {
+        if (!canEdit) return NextResponse.json({ error: '権限がありません' }, { status: 403 });
+        const { taskId: batchTaskId, schoolIds: batchSchoolIds, isCompleted: batchCompleted } = body;
+        if (!batchTaskId || !batchSchoolIds || !Array.isArray(batchSchoolIds) || batchSchoolIds.length === 0) {
+          return NextResponse.json({ error: 'taskId, schoolIds は必須です' }, { status: 400 });
+        }
+
+        const validSchoolIds = (batchSchoolIds as string[]).filter((s: string) => auth.schoolIds.includes(s));
+        if (validSchoolIds.length === 0) {
+          return NextResponse.json({ error: '権限のある教室がありません' }, { status: 403 });
+        }
+
+        const { data: existingChecks } = await supabaseAdmin
+          .from('monthly_task_checks')
+          .select('id, school_id')
+          .eq('task_id', batchTaskId)
+          .in('school_id', validSchoolIds);
+
+        const existingMap = new Map((existingChecks || []).map((c: { id: string; school_id: string }) => [c.school_id, c.id]));
+        const toUpdate: string[] = [];
+        const toInsert: { task_id: string; school_id: string; is_completed: boolean; completed_at: string | null; completed_by: string | null }[] = [];
+
+        for (const sid of validSchoolIds) {
+          if (existingMap.has(sid)) {
+            toUpdate.push(existingMap.get(sid)!);
+          } else {
+            toInsert.push({
+              task_id: batchTaskId,
+              school_id: sid,
+              is_completed: batchCompleted,
+              completed_at: batchCompleted ? new Date().toISOString() : null,
+              completed_by: batchCompleted ? auth.userId : null,
+            });
+          }
+        }
+
+        const ops: PromiseLike<unknown>[] = [];
+        if (toUpdate.length > 0) {
+          ops.push(
+            supabaseAdmin
+              .from('monthly_task_checks')
+              .update({
+                is_completed: batchCompleted,
+                completed_at: batchCompleted ? new Date().toISOString() : null,
+                completed_by: batchCompleted ? auth.userId : null,
+                updated_at: new Date().toISOString(),
+              })
+              .in('id', toUpdate)
+          );
+        }
+        if (toInsert.length > 0) {
+          ops.push(supabaseAdmin.from('monthly_task_checks').insert(toInsert));
+        }
+        await Promise.all(ops);
+
+        return NextResponse.json({ success: true });
       }
 
       case 'toggle_check': {
