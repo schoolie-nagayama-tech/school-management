@@ -7,7 +7,7 @@ import {
   type ProgressWidgetData,
   type ProgressWidgetTask,
 } from '@/lib/api/monthlyTasks';
-import { AlertTriangle, ArrowRight, Check, ListTodo, Trophy } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Check, ChevronDown, ListTodo, Trophy } from 'lucide-react';
 import Link from 'next/link';
 
 function formatDate(dateStr: string) {
@@ -116,6 +116,7 @@ export function TaskProgressWidget({ schoolIds }: { schoolIds?: string[] }) {
   const [data, setData] = useState<ProgressWidgetData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showCelebration, setShowCelebration] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
 
   // Stabilize schoolIds reference to avoid infinite re-renders
   const schoolIdsKey = schoolIds?.slice().sort().join(',') ?? '';
@@ -217,15 +218,19 @@ export function TaskProgressWidget({ schoolIds }: { schoolIds?: string[] }) {
   return (
     <div className="mb-4 rounded-xl border border-gray-200 bg-white shadow-sm">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between px-4 py-2">
+        <button
+          onClick={() => setIsOpen((v) => !v)}
+          className="flex items-center gap-2 hover:opacity-70 transition-opacity"
+        >
+          <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isOpen ? '' : '-rotate-90'}`} />
           <ListTodo className="w-4 h-4 text-gray-500" />
           <span className="text-sm font-bold text-gray-700">業務進捗</span>
           <span className="text-xs text-gray-400">{monthLabel}</span>
           <span className="text-[10px] text-gray-400">
             残 {data.tasks.length}件
           </span>
-        </div>
+        </button>
         <Link
           href="/tasks"
           className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors"
@@ -235,33 +240,38 @@ export function TaskProgressWidget({ schoolIds }: { schoolIds?: string[] }) {
         </Link>
       </div>
 
-      {/* Task list */}
-      <div className="px-4 py-2.5 flex flex-wrap gap-1.5">
-        {overdueTasks.map((task) => (
-          <span
-            key={task.id}
-            className="inline-flex items-center gap-1 px-2 py-1 rounded border border-red-200 bg-red-50 text-[11px]"
-          >
-            <TaskCheckbox task={task} onComplete={handleComplete} />
-            <AlertTriangle className="w-3 h-3 text-red-500 flex-shrink-0" />
-            <span className="font-medium text-red-600">{formatDate(task.task_date)}</span>
-            <span className="text-red-700 max-w-[120px] truncate">{task.task_name}</span>
-          </span>
-        ))}
-        {upcomingTasks.map((task) => (
-          <span
-            key={task.id}
-            className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] border ${
-              task.category === 'business'
-                ? 'bg-orange-50 border-orange-200 text-orange-700'
-                : 'bg-purple-50 border-purple-200 text-purple-700'
-            }`}
-          >
-            <TaskCheckbox task={task} onComplete={handleComplete} />
-            <span className="font-medium">{formatDate(task.task_date)}</span>
-            <span className="max-w-[120px] truncate">{task.task_name}</span>
-          </span>
-        ))}
+      {/* Task list (collapsible) */}
+      <div
+        className="overflow-hidden transition-all duration-200"
+        style={{ maxHeight: isOpen ? '500px' : '0', opacity: isOpen ? 1 : 0 }}
+      >
+        <div className="px-4 py-2.5 flex flex-wrap gap-1.5 border-t border-gray-100">
+          {overdueTasks.map((task) => (
+            <span
+              key={task.id}
+              className="inline-flex items-center gap-1 px-2 py-1 rounded border border-red-200 bg-red-50 text-[11px]"
+            >
+              <TaskCheckbox task={task} onComplete={handleComplete} />
+              <AlertTriangle className="w-3 h-3 text-red-500 flex-shrink-0" />
+              <span className="font-medium text-red-600">{formatDate(task.task_date)}</span>
+              <span className="text-red-700 max-w-[120px] truncate">{task.task_name}</span>
+            </span>
+          ))}
+          {upcomingTasks.map((task) => (
+            <span
+              key={task.id}
+              className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[11px] border ${
+                task.category === 'business'
+                  ? 'bg-orange-50 border-orange-200 text-orange-700'
+                  : 'bg-purple-50 border-purple-200 text-purple-700'
+              }`}
+            >
+              <TaskCheckbox task={task} onComplete={handleComplete} />
+              <span className="font-medium">{formatDate(task.task_date)}</span>
+              <span className="max-w-[120px] truncate">{task.task_name}</span>
+            </span>
+          ))}
+        </div>
       </div>
     </div>
   );
