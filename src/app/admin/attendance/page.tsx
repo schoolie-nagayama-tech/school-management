@@ -24,6 +24,7 @@ import {
   rejectToTeacher,
   rejectToManager,
   getAdminUsers,
+  setKomaChange,
 } from '@/lib/api/attendance';
 import {
   getCurrentYearMonth,
@@ -72,6 +73,8 @@ interface SummaryRow {
   transport_cost: number;
   admin_note: string | null;
   is_koma_changing: boolean;
+  koma_change_from: number | null;
+  koma_change_to: number | null;
 }
 
 interface TeacherProfile {
@@ -114,6 +117,11 @@ export default function AttendanceManagementPage() {
   const [newTeachers, setNewTeachers] = useState<{ id: string; name: string; created_at: string }[]>([]);
   const [retiringTeacherId, setRetiringTeacherId] = useState<string>('');
   const [retiringExitDate, setRetiringExitDate] = useState<string>('');
+
+  // コマ給変更入力
+  const [komaChangeTeacherId, setKomaChangeTeacherId] = useState<string>('');
+  const [komaChangeFrom, setKomaChangeFrom] = useState<string>('');
+  const [komaChangeTo, setKomaChangeTo] = useState<string>('');
 
   // 教室長: 提出先管理者
   const [adminUsers, setAdminUsers] = useState<{ id: string; name: string }[]>([]);
@@ -354,14 +362,44 @@ export default function AttendanceManagementPage() {
     }
   };
 
-  // コマ給変更フラグの切替
-  const handleToggleKomaChange = async (sheet: SummaryRow) => {
-    const newVal = !sheet.is_koma_changing;
-    setSheets((prev) => prev.map((s) => s.id === sheet.id ? { ...s, is_koma_changing: newVal } : s));
+  // コマ給変更を登録
+  const handleSetKomaChange = async () => {
+    if (!komaChangeTeacherId) return;
+    const fromVal = parseInt(komaChangeFrom);
+    const toVal = parseInt(komaChangeTo);
+    if (!fromVal || !toVal || fromVal <= 0 || toVal <= 0) {
+      toastError('旧コマ給と新コマ給を入力してください');
+      return;
+    }
+    const effectiveSchoolIds = selectedSchoolId === 'all'
+      ? userSchoolIds
+      : [selectedSchoolId];
     try {
-      await updateAttendanceSheetMeta(sheet.id, { is_koma_changing: newVal });
+      await setKomaChange(komaChangeTeacherId, yearMonth, effectiveSchoolIds, fromVal, toVal);
+      const teacher = allTeachers.find((t) => t.id === komaChangeTeacherId);
+      success(`${teacher?.name ?? '不明'}のコマ給変更を登録しました（¥${fromVal.toLocaleString()}→¥${toVal.toLocaleString()}）`);
+      setKomaChangeTeacherId('');
+      setKomaChangeFrom('');
+      setKomaChangeTo('');
+      await fetchData();
     } catch {
-      toastError('保存に失敗しました');
+      toastError('コマ給変更の登録に失敗しました');
+    }
+  };
+
+  // コマ給変更を解除
+  const handleClearKomaChange = async (sheet: SummaryRow) => {
+    if (!sheet.teacher?.id && !sheet.teacher_id) return;
+    const teacherId = sheet.teacher?.id || sheet.teacher_id!;
+    const effectiveSchoolIds = selectedSchoolId === 'all'
+      ? userSchoolIds
+      : [selectedSchoolId];
+    try {
+      await setKomaChange(teacherId, yearMonth, effectiveSchoolIds, null, null);
+      success(`${sheet.teacher?.name ?? '不明'}のコマ給変更を解除しました`);
+      await fetchData();
+    } catch {
+      toastError('解除に失敗しました');
     }
   };
 
@@ -558,7 +596,7 @@ export default function AttendanceManagementPage() {
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {recentlyRetired.map((t) => (
-                      <Badge key={t.id} className="bg-red-100 text-red-800">{t.name}</Badge>
+                      <Badge key={t.id} className="bg-red-600 text-white">{t.name}</Badge>
                     ))}
                   </div>
                 </CardContent>
@@ -573,93 +611,13 @@ export default function AttendanceManagementPage() {
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {newTeachers.map((t) => (
-                      <Badge key={t.id} className="bg-blue-100 text-blue-800">{t.name}</Badge>
+                      <Badge key={t.id} className="bg-blue-600 text-white">{t.name}</Badge>
                     ))}
                   </div>
                 </CardContent>
               </Card>
             )}
           </div>
-        )}
-
-        {/* 退職予定・コマ給変更 (admin only) */}
-        {isAdmin && (
-          <Card>
-            <CardHeader className="py-3">
-              <CardTitle className="text-base">退職予定・コマ給変更</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">今月末退職の講師を登録</Label>
-                  <div className="flex items-center gap-2">
-                    <Select value={retiringTeacherId} onValueChange={setRetiringTeacherId}>
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder="講師を選択" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {allTeachers.map((t) => (
-                          <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      type="date"
-                      value={retiringExitDate || monthEndDate}
-                      onChange={(e) => setRetiringExitDate(e.target.value)}
-                      className="w-40"
-                    />
-                    <Button size="sm" onClick={handleSetExitDate} disabled={!retiringTeacherId}>登録</Button>
-                  </div>
-                  {sheets.some((s) => {
-                    const t = allTeachers.find((at) => at.id === s.teacher_id);
-                    return t?.exit_date && t.exit_date.startsWith(yearMonth);
-                  }) && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {allTeachers
-                        .filter((t) => t.exit_date && t.exit_date.startsWith(yearMonth))
-                        .map((t) => (
-                          <Badge key={t.id} className="bg-orange-100 text-orange-800">
-                            {t.name}（{t.exit_date}）
-                          </Badge>
-                        ))}
-                    </div>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">コマ給変更の講師を選択</Label>
-                  <Select
-                    value=""
-                    onValueChange={(teacherId) => {
-                      const sheet = sheets.find((s) => s.teacher_id === teacherId || s.teacher?.id === teacherId);
-                      if (sheet) handleToggleKomaChange(sheet);
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="講師を選択してフラグ切替" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {sheets.map((s) => (
-                        <SelectItem key={s.id} value={s.teacher?.id || s.id}>
-                          {s.teacher?.name ?? '不明'} {s.is_koma_changing ? '(変更中)' : ''}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {komaChangingSheets.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {komaChangingSheets.map((s) => (
-                        <Badge key={s.id} className="bg-purple-100 text-purple-800">
-                          <TrendingUp className="h-3 w-3 mr-1" />
-                          {s.teacher?.name ?? '不明'}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         )}
 
         {/* メインテーブル */}
@@ -775,7 +733,9 @@ export default function AttendanceManagementPage() {
                           <div className="flex flex-col items-center gap-1">
                             <span className="font-medium text-xs">{sheet.teacher?.name ?? '不明'}</span>
                             {sheet.is_koma_changing && (
-                              <Badge className="bg-purple-100 text-purple-700 text-[9px] px-1">コマ変更</Badge>
+                              <Badge className="bg-purple-600 text-white text-[9px] px-1">
+                                コマ¥{(sheet.koma_change_from ?? 0).toLocaleString()}→¥{(sheet.koma_change_to ?? 0).toLocaleString()}
+                              </Badge>
                             )}
                             <Badge className={`text-[10px] ${ATTENDANCE_STATUS_COLORS[sheet.status as AttendanceSheetStatus]}`}>
                               {ATTENDANCE_STATUS_LABELS[sheet.status as AttendanceSheetStatus]}
@@ -952,7 +912,9 @@ export default function AttendanceManagementPage() {
                         <TableCell className="font-medium">
                           <span>{sheet.teacher?.name ?? '不明'}</span>
                           {sheet.is_koma_changing && (
-                            <Badge className="ml-1 bg-purple-100 text-purple-700 text-[10px] px-1">コマ給変更</Badge>
+                            <Badge className="ml-1 bg-purple-600 text-white text-[10px] px-1">
+                              ¥{(sheet.koma_change_from ?? 0).toLocaleString()}→¥{(sheet.koma_change_to ?? 0).toLocaleString()}
+                            </Badge>
                           )}
                         </TableCell>
                         <TableCell className="text-center">
@@ -1067,6 +1029,123 @@ export default function AttendanceManagementPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* 退職予定・コマ給変更 (admin only) */}
+        {isAdmin && (
+          <Card>
+            <CardHeader className="py-3">
+              <CardTitle className="text-base">退職予定・コマ給変更</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* 退職予定 */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">今月末退職の講師を登録</Label>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Select value={retiringTeacherId} onValueChange={setRetiringTeacherId}>
+                    <SelectTrigger className="w-56">
+                      <SelectValue placeholder="講師を選択" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {allTeachers.map((t) => (
+                        <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="date"
+                    value={retiringExitDate || monthEndDate}
+                    onChange={(e) => setRetiringExitDate(e.target.value)}
+                    className="w-40"
+                  />
+                  <Button size="sm" onClick={handleSetExitDate} disabled={!retiringTeacherId}>登録</Button>
+                </div>
+                {allTeachers.some((t) => t.exit_date && t.exit_date.startsWith(yearMonth)) && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {allTeachers
+                      .filter((t) => t.exit_date && t.exit_date.startsWith(yearMonth))
+                      .map((t) => (
+                        <Badge key={t.id} className="bg-orange-500 text-white">
+                          {t.name}（{t.exit_date}）
+                        </Badge>
+                      ))}
+                  </div>
+                )}
+              </div>
+
+              {/* コマ給変更 */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">コマ給変更の講師を登録</Label>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Select value={komaChangeTeacherId} onValueChange={setKomaChangeTeacherId}>
+                    <SelectTrigger className="w-56">
+                      <SelectValue placeholder="講師を選択" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {allTeachers.map((t) => (
+                        <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm text-[#4b5563]">¥</span>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={komaChangeFrom}
+                      onChange={(e) => setKomaChangeFrom(e.target.value)}
+                      placeholder="旧"
+                      className="w-24 text-right"
+                    />
+                    <span className="text-sm text-[#4b5563]">→ ¥</span>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={komaChangeTo}
+                      onChange={(e) => setKomaChangeTo(e.target.value)}
+                      placeholder="新"
+                      className="w-24 text-right"
+                    />
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={handleSetKomaChange}
+                    disabled={!komaChangeTeacherId || !komaChangeFrom || !komaChangeTo}
+                  >
+                    登録
+                  </Button>
+                </div>
+                {komaChangingSheets.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {Array.from(
+                      new Map(
+                        komaChangingSheets.map((s) => [
+                          s.teacher?.id || s.teacher_id || s.id,
+                          s,
+                        ])
+                      ).values()
+                    ).map((s) => (
+                      <div key={s.id} className="inline-flex items-center gap-1 bg-purple-600 text-white rounded-md px-2 py-1 text-xs">
+                        <TrendingUp className="h-3 w-3" />
+                        <span className="font-medium">{s.teacher?.name ?? '不明'}</span>
+                        <span>
+                          ¥{(s.koma_change_from ?? 0).toLocaleString()}→¥{(s.koma_change_to ?? 0).toLocaleString()}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleClearKomaChange(s)}
+                          className="ml-1 hover:bg-purple-700 rounded px-1"
+                          aria-label="解除"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* 遅刻・早退一覧 */}
         <Card>

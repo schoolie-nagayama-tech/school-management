@@ -129,10 +129,21 @@ async function processStudent(m) {
   const isES = folder === '小学生' || /^小/.test(sheet_name);
   if (isES) return { student: sheet_name, skipped: '小学生(成績なし)' };
 
-  const tabName = isHS ? '成績表高校生' : '成績表中学生';
+  // タブ名揺れ対応: 事前にタブ一覧を取得。中学 / 高校 / 汎用(単独「成績表」) の順で選択
+  let tabName;
+  try {
+    const meta = gws(['sheets','spreadsheets','get','--params', JSON.stringify({ spreadsheetId: sheet_id, fields: 'sheets.properties.title' })]);
+    const titles = (meta?.sheets || []).map(x => x.properties.title);
+    const specific = titles.find(t => isHS ? /高校.*成績|成績.*高/.test(t) : /中学.*成績|成績.*中/.test(t));
+    const generic = titles.find(t => /^成績表$|^成績推移表$|^成績$/.test(t));
+    tabName = specific || generic || (isHS ? '成績表高校生' : '成績表中学生');
+  } catch (e) { return { student: sheet_name, error: 'tabs: ' + e.message }; }
   let rows;
   try { rows = readRange(sheet_id, `${tabName}!A1:O50`); }
-  catch (e) { return { student: sheet_name, error: e.message }; }
+  catch (e) {
+    // 成績タブが無い or 読めない場合は成績無しとしてスキップ（エラー扱いしない）
+    return { student: sheet_name, skipped: `成績タブ読取失敗: ${tabName}` };
+  }
 
   const testBlock = extractBlock(rows, '学校定期テスト', 14);
   const hyoteiBlock = extractBlock(rows, isHS ? '学校評定' : '学校内申', 14);

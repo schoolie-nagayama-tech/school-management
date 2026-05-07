@@ -984,25 +984,22 @@ function A_ProposalView() {
         </p>
       </section>
 
-      {/* 現状の分析 */}
+      {/* 現状 */}
       <section className="p-4 bg-white rounded-xl border border-gray-200">
-        <h2 className="text-sm font-bold text-gray-900 mb-3">現在の学習状況</h2>
-        <div className="grid grid-cols-3 gap-3 mb-3">
-          <div className="p-3 bg-gray-50 rounded-lg text-center">
-            <div className="text-[10px] text-gray-500">テキスト進捗</div>
-            <div className="text-xl font-bold text-gray-800">{doneCount}<span className="text-xs font-normal">/{allUnits.length}単元</span></div>
+        <h2 className="text-sm font-bold text-gray-900 mb-2">現在の進捗</h2>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-[#1e3a5f] rounded-full"
+              style={{ width: `${(doneCount / allUnits.length) * 100}%` }}
+            />
           </div>
-          <div className="p-3 bg-gray-50 rounded-lg text-center">
-            <div className="text-[10px] text-gray-500">学校進度</div>
-            <div className="text-xl font-bold text-gray-800">4<span className="text-xs font-normal">単元</span></div>
-          </div>
-          <div className="p-3 bg-gray-50 rounded-lg text-center">
-            <div className="text-[10px] text-gray-500">塾の先取り</div>
-            <div className="text-xl font-bold text-[#1e3a5f]">+1<span className="text-xs font-normal">単元</span></div>
-          </div>
+          <span className="text-sm font-bold text-gray-800 shrink-0">
+            {doneCount}<span className="text-xs font-normal text-gray-500">/{allUnits.length}単元</span>
+          </span>
         </div>
-        <p className="text-xs text-gray-600">
-          通常授業で基礎部分は順調に進んでいます。2学期に入ると一次方程式など難易度の高い単元が続きます。夏休みの講習で先取りと弱点補強を行います。
+        <p className="text-[11px] text-gray-500">
+          通常授業での進捗状況です。下表で講習対象の単元をご確認ください。
         </p>
       </section>
 
@@ -1062,12 +1059,12 @@ function A_ProposalView() {
         </table>
       </section>
 
-      {/* 到達見通し（1行でシンプルに） */}
+      {/* まとめ（1行） */}
       <section className="p-4 bg-gray-50 rounded-xl border border-gray-200">
         <div className="flex items-center gap-3">
-          <div className="text-sm text-gray-500">講習後の見通し:</div>
+          <div className="text-sm text-gray-500">講習内容:</div>
           <div className="text-sm font-bold text-[#1e3a5f]">
-            {doneCount}単元完了 → {doneCount + selectedUnits.length}単元完了（2学期中盤まで先取り）
+            {selectedUnits.length}単元 / {totalKoma}コマ
           </div>
         </div>
       </section>

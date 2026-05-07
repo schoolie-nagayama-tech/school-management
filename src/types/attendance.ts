@@ -32,6 +32,8 @@ export interface AttendanceSheet {
   transport_cost: number;
   admin_note: string | null;
   is_koma_changing: boolean;
+  koma_change_from: number | null;
+  koma_change_to: number | null;
   created_at: string;
   updated_at: string;
   // リレーション

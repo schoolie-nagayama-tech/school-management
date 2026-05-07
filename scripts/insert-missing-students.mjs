@@ -14,16 +14,34 @@ const supa = createClient(
   { auth: { persistSession: false } }
 );
 
-const NEW = [
-  { sheet_id: '19WtJcacHqV3_ZG0aPbTwMNLG8DgX5TIYNr9QebkFtGw', sheet_name: '中２＿冨來瑞生',
-    last_name: '冨來', first_name: '瑞生', last_name_kana: 'トミキ', first_name_kana: 'ミズキ', grade: 8 },
-  { sheet_id: '1HLIPw5HYFq06UK9IzuM-9q5zLh7sl2lynEHIh-yr9EQ', sheet_name: '中１＿大石朝陽',
-    last_name: '大石', first_name: '朝陽', last_name_kana: 'オオイシ', first_name_kana: 'アサヒ', grade: 7 },
-  { sheet_id: '15T4HBdt7JyKbnbdfk_IU0hG6vCS5C2vy7JgyBVMZOR8', sheet_name: '中１＿宇佐美結菜',
-    last_name: '宇佐美', first_name: '結菜', last_name_kana: 'ウサミ', first_name_kana: 'ユイナ', grade: 7 },
-  { sheet_id: '14g3VvHUWE4e1JaOWvrRvtlHH2m1F36iPe0XX3-96nZE', sheet_name: '小３＿大崎透',
-    last_name: '大崎', first_name: '透', last_name_kana: 'オオサキ', first_name_kana: 'トオル', grade: 3 },
-];
+// unmatched 情報は student-mapping.json から読み取る
+import { readFileSync as _rf } from 'node:fs';
+const _unmatched = JSON.parse(_rf('scripts/student-mapping.json','utf8')).unmatched || [];
+const _kanaMap = {
+  // 緑園都市
+  '渡利日向子': { ln: 'ワタリ', fn: 'ヒナコ' },
+  '渡邊琉': { ln: 'ワタナベ', fn: 'リュウ' },
+  '石山愛莉': { ln: 'イシヤマ', fn: 'アイリ' },
+  // 清瀬
+  '高橋芽依': { ln: 'タカハシ', fn: 'メイ' },
+  '村野孝太郎': { ln: 'ムラノ', fn: 'コウタロウ' },
+};
+const NEW = _unmatched.map(u => {
+  const full = u.parsed.fullName.replace(/[\s　]/g,'').replace(/（.*?）/g,'');
+  // 姓名分割: 既知の姓リストにマッチさせる（現行 3名は 1文字姓 or 2文字姓）
+  const known = Object.keys(_kanaMap);
+  const name = known.find(k => k === full);
+  if (!name) throw new Error('unmatched name mapping missing: ' + full);
+  // 姓と名を分ける (各ケースで明示)
+  const split = { '渡利日向子':['渡利','日向子'], '渡邊琉':['渡邊','琉'], '石山愛莉':['石山','愛莉'], '高橋芽依':['高橋','芽依'], '村野孝太郎':['村野','孝太郎'] };
+  const [ln, fn] = split[name];
+  return {
+    sheet_id: u.id, sheet_name: u.name,
+    last_name: ln, first_name: fn,
+    last_name_kana: _kanaMap[name].ln, first_name_kana: _kanaMap[name].fn,
+    grade: u.parsed.grade,
+  };
+});
 
 // 既存 student_code 採番パターン確認
 const { data: existing } = await supa.from('students')

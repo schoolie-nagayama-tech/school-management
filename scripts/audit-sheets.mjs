@@ -72,8 +72,9 @@ function readRange(spreadsheetId, range) {
 // タブ名正規化
 function classifyTab(title) {
   const t = title.replace(/\s+/g, '');
-  if (/成績.*中/.test(t)) return 'seiseki_jhs';
-  if (/成績.*高/.test(t)) return 'seiseki_hs';
+  if (/中学.*成績|成績.*中/.test(t)) return 'seiseki_jhs';
+  if (/高校.*成績|成績.*高/.test(t)) return 'seiseki_hs';
+  if (/^成績表$|^成績推移表$|^成績$/.test(t)) return 'seiseki_generic';
   if (/面談/.test(t)) return 'mendan';
   return null;
 }
@@ -130,8 +131,11 @@ function discoverTargetFolders(parent) {
     }),
   ]);
   const map = {};
+  // 中学生/小学生/高校生/HAL に加え、中1/中2/中3/小1〜小4/小5〜小6 などの分割フォルダにも対応
+  const RE = /^(中学生|小学生|高校生|HAL|中[1-3]|中[１-３]|小[1-6]|小[１-６]|小[1-6１-６]\s*[~〜～]\s*小[1-6１-６])$/;
   for (const f of (res.files || [])) {
-    if (['中学生','小学生','高校生','HAL'].includes(f.name)) map[f.name] = f.id;
+    const name = (f.name || '').replace(/\s+/g,'');
+    if (RE.test(name)) map[f.name] = f.id;
   }
   return map;
 }
@@ -157,12 +161,19 @@ for (const [folderLabel, folderId] of Object.entries(TARGET_FOLDERS)) {
       const tabs = getTabs(f.id);
       row.tabs_total = tabs.length;
       const variants = [];
-      let jhsTab = null, hsTab = null, mendanTab = null;
+      let jhsTab = null, hsTab = null, mendanTab = null, genericTab = null;
       for (const t of tabs) {
         const cls = classifyTab(t);
         if (cls === 'seiseki_jhs') { jhsTab = t; row.has_seiseki_jhs = true; if (t !== '成績表中学生') variants.push(t); }
         if (cls === 'seiseki_hs')  { hsTab  = t; row.has_seiseki_hs  = true; if (t !== '成績表高校生') variants.push(t); }
+        if (cls === 'seiseki_generic') { genericTab = t; variants.push(t); }
         if (cls === 'mendan')      { mendanTab = t; row.has_mendan = true; if (t !== '面談記録') variants.push(t); }
+      }
+      // generic タブ（「成績表」単独など）はフォルダに応じて割り振る
+      if (genericTab) {
+        const fl = folderLabel;
+        if ((/^中/.test(fl) || fl === 'HAL' || fl === '中学生') && !jhsTab) { jhsTab = genericTab; row.has_seiseki_jhs = true; }
+        else if ((/^高/.test(fl) || fl === '高校生') && !hsTab) { hsTab = genericTab; row.has_seiseki_hs = true; }
       }
       row.tab_variants = variants.join('|');
       if (jhsTab) {

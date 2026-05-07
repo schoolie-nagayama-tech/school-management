@@ -1009,7 +1009,13 @@ export async function getAllAttendanceTypes(schoolIds?: string[]) {
 // 交通費・備考・コマ給変更フラグを更新
 export async function updateAttendanceSheetMeta(
   sheetId: string,
-  fields: { transport_cost?: number; admin_note?: string | null; is_koma_changing?: boolean }
+  fields: {
+    transport_cost?: number;
+    admin_note?: string | null;
+    is_koma_changing?: boolean;
+    koma_change_from?: number | null;
+    koma_change_to?: number | null;
+  }
 ) {
   const { error } = await supabase
     .from('attendance_sheets')
@@ -1019,6 +1025,46 @@ export async function updateAttendanceSheetMeta(
   if (error) {
     console.error('Error updating attendance sheet meta:', error);
     throw new Error('出勤簿の更新に失敗しました');
+  }
+}
+
+// コマ給変更を登録/解除（講師の所属教室すべてに反映、シートがなければ作成）
+export async function setKomaChange(
+  teacherId: string,
+  yearMonth: string,
+  allowedSchoolIds: string[],
+  fromValue: number | null,
+  toValue: number | null
+) {
+  if (allowedSchoolIds.length === 0) return;
+
+  const { data: userSchools } = await supabase
+    .from('user_schools')
+    .select('school_id')
+    .eq('user_id', teacherId)
+    .in('school_id', allowedSchoolIds);
+  const teacherSchoolIds = Array.from(new Set((userSchools || []).map((u: { school_id?: string }) => u.school_id).filter((id): id is string => Boolean(id))));
+
+  if (teacherSchoolIds.length === 0) return;
+
+  for (const sId of teacherSchoolIds) {
+    await getOrCreateAttendanceSheet(teacherId, sId, yearMonth);
+  }
+
+  const setFlags = fromValue !== null && toValue !== null;
+  const { error } = await supabase
+    .from('attendance_sheets')
+    .update({
+      is_koma_changing: setFlags,
+      koma_change_from: setFlags ? fromValue : null,
+      koma_change_to: setFlags ? toValue : null,
+    })
+    .eq('teacher_id', teacherId)
+    .eq('year_month', yearMonth)
+    .in('school_id', teacherSchoolIds);
+  if (error) {
+    console.error('Error setting koma change:', error);
+    throw new Error('コマ給変更の保存に失敗しました');
   }
 }
 
