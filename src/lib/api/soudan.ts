@@ -11,6 +11,7 @@ import {
   unarchivePeriod,
 } from './form-periods';
 import { createPublicFormResponse, getFormResponses, getFormResponse, updateFormResponseStatus } from './form-responses';
+import { syncFormResponseToBilling } from './billing';
 import { getDefaultSchoolId, getSchoolByCode } from './schools';
 import type {
   FormPeriodInsert,
@@ -306,6 +307,23 @@ export async function updateSoudanHandledStatus(
   const response = await getFormResponse(responseId);
   const current = (response?.status_checks || {}) as Record<string, boolean>;
   await updateFormResponseStatus(responseId, { ...current, handled });
+}
+
+/**
+ * お客様相談回答の計上状態を更新（既存の status_checks をマージ）
+ */
+export async function updateSoudanChargedStatus(
+  responseId: string,
+  charged: boolean
+): Promise<void> {
+  const response = await getFormResponse(responseId);
+  const current = (response?.status_checks || {}) as Record<string, boolean>;
+  await updateFormResponseStatus(responseId, { ...current, charged });
+  try {
+    await syncFormResponseToBilling(responseId);
+  } catch (err) {
+    console.warn('請求への計上同期に失敗:', err);
+  }
 }
 
 /**
