@@ -1142,9 +1142,16 @@ export async function calcFifthWeekBilling(
   let updated = 0;
   const skipped = 0;
 
+  const programmingStudents = allStudents.filter(s => s.is_programming);
+  console.warn(`[5週目] 全${allStudents.length}名中、プログラミング生徒: ${programmingStudents.length}名（スキップ対象）`);
+  if (programmingStudents.length > 0) {
+    console.warn(`[5週目] プログラミング生徒IDs:`, programmingStudents.map(s => s.id));
+  }
+
   for (const item of fifthWeekItems) {
     for (const student of allStudents) {
-      const quantity = student.is_programming ? 0 : (slotMap.get(student.id) || 0);
+      const rawSlots = slotMap.get(student.id) || 0;
+      const quantity = student.is_programming ? 0 : rawSlots;
 
       const { data: existing } = await supabase
         .from('student_billings')
