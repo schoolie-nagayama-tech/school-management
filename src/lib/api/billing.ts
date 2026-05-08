@@ -664,7 +664,8 @@ export async function syncFormToBilling(
       continue;
     }
 
-    // 3b. 前期以前で未計上の回答も取得（計上漏れ救済）
+    // 3b. 前期以前の回答も取得（キャリーオーバー）
+    //     charged/非charged 両方取得し、カウント段階で判定する
     let carryOverResponses: Array<{ linked_student_id: string | null; status_checks: Record<string, boolean> | null }> = [];
     try {
       const { data: olderResponsesRaw } = await supabase
@@ -674,12 +675,10 @@ export async function syncFormToBilling(
         .not('linked_student_id', 'is', null)
         .in('school_id', targetSchoolIds)
         .lt('created_at', `${periodStart}T00:00:00`);
-      const olderNonCharged = (olderResponsesRaw || []).filter(r => {
-        const sc = (r.status_checks || {}) as Record<string, boolean>;
-        return !sc.charged;
-      });
 
-      if (olderNonCharged.length > 0) {
+      const olderAll = (olderResponsesRaw || []) as typeof carryOverResponses;
+
+      if (olderAll.length > 0) {
         const { data: pastPeriods } = await supabase
           .from('billing_periods')
           .select('id')
@@ -696,23 +695,23 @@ export async function syncFormToBilling(
 
           if (pastItems && pastItems.length > 0) {
             const pastItemIds = pastItems.map(pi => pi.id);
-            const { data: chargedBillings } = await supabase
+            const { data: billedInPast } = await supabase
               .from('student_billings')
               .select('student_id')
               .in('billing_item_id', pastItemIds)
               .eq('is_billed', true);
 
-            const chargedStudentIds = new Set(
-              chargedBillings?.map(b => b.student_id) || []
+            const billedStudentIds = new Set(
+              billedInPast?.map(b => b.student_id) || []
             );
-            carryOverResponses = olderNonCharged.filter(
-              r => r.linked_student_id && !chargedStudentIds.has(r.linked_student_id)
-            ) as typeof carryOverResponses;
+            carryOverResponses = olderAll.filter(
+              r => r.linked_student_id && !billedStudentIds.has(r.linked_student_id)
+            );
           } else {
-            carryOverResponses = olderNonCharged as typeof carryOverResponses;
+            carryOverResponses = olderAll;
           }
         } else {
-          carryOverResponses = olderNonCharged as typeof carryOverResponses;
+          carryOverResponses = olderAll;
         }
       }
     } catch (carryErr) {
