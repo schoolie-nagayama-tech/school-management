@@ -89,7 +89,7 @@ export function BillingTable({
 
       if (valueType === 'number') {
         if (billing?.is_billed) numberBilledCount++;
-        if (billing?.value_number != null) {
+        if (billing?.value_number != null && billing.value_number !== 0) {
           numberHasValueCount++;
           numberSum += billing.value_number;
         }
@@ -599,7 +599,7 @@ export function BillingTable({
                     const isEditingThis = editingCell?.studentId === student.id && editingCell?.itemId === item.id;
 
                     if (valueType === 'number') {
-                      const hasValue = billing?.value_number != null;
+                      const hasValue = billing?.value_number != null && billing.value_number !== 0;
                       const isBilled = billing?.is_billed === true;
                       const bgClass = hasValue && isBilled
                         ? 'bg-green-100'

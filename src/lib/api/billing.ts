@@ -460,7 +460,7 @@ export async function autoFillFifthWeekBilling(
   // 3. 全生徒を取得
   const { data: allStudents, error: studentsError } = await supabase
     .from('students')
-    .select('id, school_id')
+    .select('id, school_id, is_programming')
     .in('school_id', targetSchoolIds)
     .is('deleted_at', null);
 
@@ -485,7 +485,7 @@ export async function autoFillFifthWeekBilling(
   const skipped = 0;
 
   for (const student of allStudents) {
-    const quantity = slotMap.get(student.id) || 0;
+    const quantity = student.is_programming ? 0 : (slotMap.get(student.id) || 0);
 
     // Check if record exists
     const { data: existing } = await supabase
@@ -1129,7 +1129,7 @@ export async function calcFifthWeekBilling(
   // 通塾日程に含まれる全生徒＋通塾日程がない生徒も0にする
   const { data: allStudents, error: allStudentsError } = await supabase
     .from('students')
-    .select('id, school_id')
+    .select('id, school_id, is_programming')
     .in('school_id', targetSchoolIds)
     .is('deleted_at', null);
 
@@ -1144,7 +1144,7 @@ export async function calcFifthWeekBilling(
 
   for (const item of fifthWeekItems) {
     for (const student of allStudents) {
-      const quantity = slotMap.get(student.id) || 0;
+      const quantity = student.is_programming ? 0 : (slotMap.get(student.id) || 0);
 
       const { data: existing } = await supabase
         .from('student_billings')

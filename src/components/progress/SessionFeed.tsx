@@ -9,7 +9,7 @@
  * - クリック → 生徒進行表詳細へ遷移
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   AlertTriangle,
@@ -37,7 +37,15 @@ interface Props {
 
 export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
   const { getSelectedSchoolIds } = useAuth();
-  const schoolIds = propSchoolIds ?? getSelectedSchoolIds();
+  // getSelectedSchoolIds() は毎回新配列を返すので値ベースでメモ化
+  const schoolIds = useMemo(() => {
+    const ids = propSchoolIds ?? getSelectedSchoolIds();
+    return ids;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propSchoolIds, getSelectedSchoolIds]);
+
+  // schoolIds の参照安定化（中身が同じなら再生成しない）
+  const schoolIdsKey = schoolIds.join(',');
 
   const [sessions, setSessions] = useState<ProgressSessionWithDetails[]>([]);
   const [smartAlerts, setSmartAlerts] = useState<SmartAlert[]>([]);
@@ -46,6 +54,12 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
   const [alertsExpanded, setAlertsExpanded] = useState(true);
 
   const load = useCallback(async () => {
+    if (schoolIds.length === 0) {
+      setSessions([]);
+      setSmartAlerts([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const [data, alerts] = await Promise.all([
@@ -61,7 +75,8 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [schoolIds, filter]); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schoolIdsKey, filter]);
 
   useEffect(() => {
     load();
