@@ -649,8 +649,8 @@ export async function syncFormToBilling(
   let synced = 0;
 
   for (const item of linkedItems) {
-    // 3a. 今期の日付範囲内の回答を取得（計上済みを除外）
-    const { data: currentResponsesRaw, error: respError } = await supabase
+    // 3a. 今期の日付範囲内の回答を取得（全件 — charged判定は後で行う）
+    const { data: currentResponsesAll, error: respError } = await supabase
       .from('form_responses')
       .select('linked_student_id, status_checks')
       .eq('form_type', item.linked_form_type!)
@@ -658,10 +658,6 @@ export async function syncFormToBilling(
       .in('school_id', targetSchoolIds)
       .gte('created_at', `${periodStart}T00:00:00`)
       .lt('created_at', `${periodEndPlusOne}T00:00:00`);
-    const currentResponses = (currentResponsesRaw || []).filter(r => {
-      const sc = (r.status_checks || {}) as Record<string, boolean>;
-      return !sc.charged;
-    });
 
     if (respError) {
       console.warn(`フォーム回答の取得に失敗 (${item.linked_form_type}):`, respError);
@@ -669,11 +665,8 @@ export async function syncFormToBilling(
     }
 
     // 3b. 前期以前で未計上の回答も取得（計上漏れ救済）
-    //     created_at < 今期の開始日 の回答のうち、
-    //     過去の請求期間で計上済み(is_billed=true)でないものを含める
-    let carryOverResponses: Array<{ linked_student_id: string | null }> = [];
+    let carryOverResponses: Array<{ linked_student_id: string | null; status_checks: Record<string, boolean> | null }> = [];
     try {
-      // 前期以前の全回答を取得（計上済みを除外）
       const { data: olderResponsesRaw } = await supabase
         .from('form_responses')
         .select('linked_student_id, status_checks')
@@ -681,22 +674,20 @@ export async function syncFormToBilling(
         .not('linked_student_id', 'is', null)
         .in('school_id', targetSchoolIds)
         .lt('created_at', `${periodStart}T00:00:00`);
-      const olderResponses = (olderResponsesRaw || []).filter(r => {
+      const olderNonCharged = (olderResponsesRaw || []).filter(r => {
         const sc = (r.status_checks || {}) as Record<string, boolean>;
         return !sc.charged;
       });
 
-      if (olderResponses && olderResponses.length > 0) {
-        // 過去の請求期間の同じform_typeの項目で計上済みの生徒を取得
+      if (olderNonCharged.length > 0) {
         const { data: pastPeriods } = await supabase
           .from('billing_periods')
           .select('id')
           .in('school_id', targetSchoolIds)
-          .lt('end_date', periodStart); // 今期より前の期間
+          .lt('end_date', periodStart);
 
         if (pastPeriods && pastPeriods.length > 0) {
           const pastPeriodIds = pastPeriods.map(p => p.id);
-          // 過去の期間で同じform_typeの請求項目を取得
           const { data: pastItems } = await supabase
             .from('billing_items')
             .select('id')
@@ -705,7 +696,6 @@ export async function syncFormToBilling(
 
           if (pastItems && pastItems.length > 0) {
             const pastItemIds = pastItems.map(pi => pi.id);
-            // 過去の期間で計上済みの生徒IDを取得
             const { data: chargedBillings } = await supabase
               .from('student_billings')
               .select('student_id')
@@ -715,18 +705,14 @@ export async function syncFormToBilling(
             const chargedStudentIds = new Set(
               chargedBillings?.map(b => b.student_id) || []
             );
-
-            // 計上済みでない生徒の回答だけキャリーオーバー
-            carryOverResponses = olderResponses.filter(
+            carryOverResponses = olderNonCharged.filter(
               r => r.linked_student_id && !chargedStudentIds.has(r.linked_student_id)
-            );
+            ) as typeof carryOverResponses;
           } else {
-            // 過去に請求項目がない = 全部キャリーオーバー
-            carryOverResponses = olderResponses;
+            carryOverResponses = olderNonCharged as typeof carryOverResponses;
           }
         } else {
-          // 過去の請求期間がない = 全部キャリーオーバー
-          carryOverResponses = olderResponses;
+          carryOverResponses = olderNonCharged as typeof carryOverResponses;
         }
       }
     } catch (carryErr) {
@@ -734,21 +720,27 @@ export async function syncFormToBilling(
     }
 
     // 3c. 今期 + キャリーオーバーを合算
-    const allResponses = [...(currentResponses || []), ...carryOverResponses];
+    const allResponses = [...(currentResponsesAll || []), ...carryOverResponses];
     if (allResponses.length === 0) continue;
 
-    // 4. Group by student_id, count responses per student
-    const studentCounts = new Map<string, number>();
+    // 4. 生徒ごとに全件数・非計上件数を集計
+    const studentTotalCounts = new Map<string, number>();
+    const studentNonChargedCounts = new Map<string, number>();
     for (const resp of allResponses) {
       if (resp.linked_student_id) {
-        const current = studentCounts.get(resp.linked_student_id) || 0;
-        studentCounts.set(resp.linked_student_id, current + 1);
+        studentTotalCounts.set(resp.linked_student_id, (studentTotalCounts.get(resp.linked_student_id) || 0) + 1);
+        const sc = (resp.status_checks || {}) as Record<string, boolean>;
+        if (!sc.charged) {
+          studentNonChargedCounts.set(resp.linked_student_id, (studentNonChargedCounts.get(resp.linked_student_id) || 0) + 1);
+        }
       }
     }
 
     // 5. Upsert into student_billings
-    const studentCountEntries = Array.from(studentCounts.entries());
-    for (const [studentId, count] of studentCountEntries) {
+    for (const [studentId, total] of Array.from(studentTotalCounts.entries())) {
+      const nonCharged = studentNonChargedCounts.get(studentId) || 0;
+      const allCharged = nonCharged === 0 && total > 0;
+
       const { data: existing } = await supabase
         .from('student_billings')
         .select('id')
@@ -759,10 +751,13 @@ export async function syncFormToBilling(
       if (existing) {
         await supabase
           .from('student_billings')
-          .update({ value_number: count, updated_at: new Date().toISOString() })
+          .update({
+            value_number: nonCharged,
+            is_billed: allCharged,
+            updated_at: new Date().toISOString(),
+          })
           .eq('id', existing.id);
       } else {
-        // Get school_id from student
         const { data: studentData } = await supabase
           .from('students')
           .select('school_id')
@@ -776,8 +771,8 @@ export async function syncFormToBilling(
               school_id: studentData.school_id,
               student_id: studentId,
               billing_item_id: item.id,
-              is_billed: false,
-              value_number: count,
+              is_billed: allCharged,
+              value_number: nonCharged,
             });
         }
       }
@@ -909,25 +904,32 @@ export async function syncFormResponseToBilling(responseId: string): Promise<voi
 
   if (!siblings || siblings.length === 0) return;
 
-  // AND判定: 全件 charged=true なら計上、1件でも未計上なら未計上
-  const allCharged = siblings.every((r) => {
+  // 全件 charged=true なら計上、非計上件数を value_number に反映
+  let chargedCount = 0;
+  for (const r of siblings) {
     const sc = (r.status_checks || {}) as Record<string, boolean>;
-    return sc.charged === true;
-  });
+    if (sc.charged === true) chargedCount++;
+  }
+  const allCharged = chargedCount === siblings.length;
+  const nonChargedCount = siblings.length - chargedCount;
 
-  // student_billings の is_billed を upsert
+  // student_billings の is_billed と value_number を upsert
   const { data: existing } = await supabase
     .from('student_billings')
-    .select('id, is_billed')
+    .select('id, is_billed, value_number')
     .eq('student_id', response.linked_student_id)
     .eq('billing_item_id', itemId)
     .maybeSingle();
 
   if (existing) {
-    if (existing.is_billed !== allCharged) {
+    if (existing.is_billed !== allCharged || existing.value_number !== nonChargedCount) {
       await supabase
         .from('student_billings')
-        .update({ is_billed: allCharged, updated_at: new Date().toISOString() })
+        .update({
+          is_billed: allCharged,
+          value_number: nonChargedCount,
+          updated_at: new Date().toISOString(),
+        })
         .eq('id', existing.id);
     }
   } else {
@@ -938,6 +940,7 @@ export async function syncFormResponseToBilling(responseId: string): Promise<voi
         student_id: response.linked_student_id,
         billing_item_id: itemId,
         is_billed: allCharged,
+        value_number: nonChargedCount,
       });
   }
 }
