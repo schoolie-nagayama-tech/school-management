@@ -649,15 +649,19 @@ export async function syncFormToBilling(
   let synced = 0;
 
   for (const item of linkedItems) {
-    // 3a. 今期の日付範囲内の回答を取得
-    const { data: currentResponses, error: respError } = await supabase
+    // 3a. 今期の日付範囲内の回答を取得（計上済みを除外）
+    const { data: currentResponsesRaw, error: respError } = await supabase
       .from('form_responses')
-      .select('linked_student_id')
+      .select('linked_student_id, status_checks')
       .eq('form_type', item.linked_form_type!)
       .not('linked_student_id', 'is', null)
       .in('school_id', targetSchoolIds)
       .gte('created_at', `${periodStart}T00:00:00`)
       .lt('created_at', `${periodEndPlusOne}T00:00:00`);
+    const currentResponses = (currentResponsesRaw || []).filter(r => {
+      const sc = (r.status_checks || {}) as Record<string, boolean>;
+      return !sc.charged;
+    });
 
     if (respError) {
       console.warn(`フォーム回答の取得に失敗 (${item.linked_form_type}):`, respError);
@@ -669,14 +673,18 @@ export async function syncFormToBilling(
     //     過去の請求期間で計上済み(is_billed=true)でないものを含める
     let carryOverResponses: Array<{ linked_student_id: string | null }> = [];
     try {
-      // 前期以前の全回答を取得
-      const { data: olderResponses } = await supabase
+      // 前期以前の全回答を取得（計上済みを除外）
+      const { data: olderResponsesRaw } = await supabase
         .from('form_responses')
-        .select('linked_student_id')
+        .select('linked_student_id, status_checks')
         .eq('form_type', item.linked_form_type!)
         .not('linked_student_id', 'is', null)
         .in('school_id', targetSchoolIds)
         .lt('created_at', `${periodStart}T00:00:00`);
+      const olderResponses = (olderResponsesRaw || []).filter(r => {
+        const sc = (r.status_checks || {}) as Record<string, boolean>;
+        return !sc.charged;
+      });
 
       if (olderResponses && olderResponses.length > 0) {
         // 過去の請求期間の同じform_typeの項目で計上済みの生徒を取得
@@ -1143,9 +1151,10 @@ export async function calcFifthWeekBilling(
   const skipped = 0;
 
   const programmingStudents = allStudents.filter(s => s.is_programming);
+  console.warn(`[5週目] 対象教室: ${targetSchoolIds.join(', ')}`);
   console.warn(`[5週目] 全${allStudents.length}名中、プログラミング生徒: ${programmingStudents.length}名（スキップ対象）`);
   if (programmingStudents.length > 0) {
-    console.warn(`[5週目] プログラミング生徒IDs:`, programmingStudents.map(s => s.id));
+    console.warn(`[5週目] プログラミング生徒:`, programmingStudents.map(s => ({ id: s.id, school_id: s.school_id, is_programming: s.is_programming })));
   }
 
   for (const item of fifthWeekItems) {
