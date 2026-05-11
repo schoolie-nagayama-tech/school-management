@@ -168,7 +168,7 @@ export default function TeacherDetailPage() {
     return (
       <AdminLayout headerTitle="講師詳細">
         <div className="flex justify-center py-16">
-          <div className="w-8 h-8 border-2 border-gray-300 border-t-[#1e3a5f] rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-gray-300 border-t-ink rounded-full animate-spin" />
         </div>
       </AdminLayout>
     );
@@ -179,7 +179,7 @@ export default function TeacherDetailPage() {
       <AdminLayout headerTitle="講師詳細">
         <div className="text-center py-16">
           <p className="text-gray-500 mb-4">講師が見つかりませんでした</p>
-          <Link href="/admin/teachers" className="text-[#1e3a5f] hover:underline">
+          <Link href="/admin/teachers" className="text-ink hover:underline">
             講師一覧へ戻る
           </Link>
         </div>
@@ -221,7 +221,7 @@ export default function TeacherDetailPage() {
     if (n >= 7) return 'bg-gradient-to-br from-fuchsia-700 via-purple-700 to-indigo-800';
     if (n >= 4) return 'bg-gradient-to-br from-emerald-700 via-teal-700 to-cyan-800';
     if (n >= 1) return 'bg-gradient-to-br from-slate-600 via-slate-700 to-slate-800';
-    return 'bg-gradient-to-br from-[#1e3a5f] to-[#2a4a6f]';
+    return 'bg-gradient-to-br from-ink to-ink/80';
   })();
 
   return (
@@ -231,13 +231,13 @@ export default function TeacherDetailPage() {
         <div className="flex gap-2">
           <Link
             href="/admin/teachers"
-            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg bg-white transition-colors duration-150"
+            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg bg-surface-raised transition-colors duration-150"
           >
             一覧に戻る
           </Link>
           <Link
             href={`/admin/teachers/${teacher.id}/edit`}
-            className="px-4 py-2 text-sm font-medium text-white bg-[#1e3a5f] rounded-lg hover:bg-[#2a4a6f] transition-colors duration-150"
+            className="px-4 py-2 text-sm font-medium text-white bg-ink rounded-lg hover:brightness-[0.85] transition-colors duration-150"
           >
             編集
           </Link>
@@ -337,7 +337,7 @@ export default function TeacherDetailPage() {
                             <td
                               key={dayIdx}
                               className={`p-2 border border-gray-200 text-center ${
-                                available ? 'bg-emerald-50' : 'bg-white'
+                                available ? 'bg-emerald-50' : 'bg-surface-raised'
                               }`}
                             >
                               {available && <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />}
@@ -477,7 +477,7 @@ export default function TeacherDetailPage() {
 
 function StatCard({ label, value, unit }: { label: string; value: number; unit?: string }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-4">
+    <div className="bg-surface-raised border border-gray-200 rounded-xl p-4">
       <div className="text-xs text-gray-500 mb-1">{label}</div>
       <div className="flex items-baseline gap-1">
         <span className="text-2xl font-bold text-gray-900">{value}</span>
@@ -489,7 +489,7 @@ function StatCard({ label, value, unit }: { label: string; value: number; unit?:
 
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5">
+    <div className="bg-surface-raised border border-gray-200 rounded-xl p-5">
       <h2 className="text-sm font-bold text-gray-800 mb-3">{title}</h2>
       {children}
     </div>
