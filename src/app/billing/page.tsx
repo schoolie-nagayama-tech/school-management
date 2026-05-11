@@ -253,29 +253,23 @@ export default function BillingPage() {
         </div>
       )}
 
-      {/* 期間選択 */}
-      <div className="flex flex-wrap items-end gap-3 mb-3">
-        <div className="flex-1 min-w-[250px]">
-          <BillingPeriodSelector
-            periods={periods}
-            selectedPeriodId={selectedPeriodId}
-            onSelect={setSelectedPeriodId}
-            schoolId={currentSchoolIds}
-            onUpdated={handlePeriodsUpdated}
-            canEdit={canEdit && isManagerOrAbove}
-          />
-        </div>
-      </div>
-
-      {/* 在庫カウンター（検索バーの上） */}
-      {selectedPeriodId && schoolIds.length > 0 && (
-        <div className="mb-3">
+      {/* 期間選択 + 在庫カウンター（横並び） */}
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+        <BillingPeriodSelector
+          periods={periods}
+          selectedPeriodId={selectedPeriodId}
+          onSelect={setSelectedPeriodId}
+          schoolId={currentSchoolIds}
+          onUpdated={handlePeriodsUpdated}
+          canEdit={canEdit && isManagerOrAbove}
+        />
+        {selectedPeriodId && schoolIds.length > 0 && (
           <VocabBookStockCard
             schoolIds={schoolIds}
             refreshKey={stockRefreshKey}
           />
-        </div>
-      )}
+        )}
+      </div>
 
       {/* 検索 + 学年フィルター */}
       {selectedPeriodId && (

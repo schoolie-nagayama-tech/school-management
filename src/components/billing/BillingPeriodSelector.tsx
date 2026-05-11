@@ -221,30 +221,28 @@ export function BillingPeriodSelector({
   };
 
   return (
-    <div className="bg-white border border-[#e5e7eb] rounded-lg p-4 mb-6">
-      <div className="flex flex-wrap gap-4 items-end">
-        {/* 期間選択 */}
-        <div className="flex-1 min-w-[250px]">
-          <label className="block text-sm font-medium text-[#1f2937] mb-1">
-            請求期間
-          </label>
-          <select
-            value={selectedPeriodId || ''}
-            onChange={(e) => {
-              onSelect(e.target.value || null);
-              setIsEditing(false);
-              setIsCreating(false);
-            }}
-            className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
-          >
-            <option value="">-- 期間を選択 --</option>
-            {periods.map((period) => (
-              <option key={period.id} value={period.id}>
-                {period.name} ({formatDateRange(period)})
-              </option>
-            ))}
-          </select>
-        </div>
+    <div>
+      <div className="flex flex-wrap gap-3 items-center">
+        {/* 期間選択（インライン） */}
+        <label className="text-sm font-medium text-[#1f2937] whitespace-nowrap">
+          請求期間
+        </label>
+        <select
+          value={selectedPeriodId || ''}
+          onChange={(e) => {
+            onSelect(e.target.value || null);
+            setIsEditing(false);
+            setIsCreating(false);
+          }}
+          className="px-3 py-1.5 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-[#3b82f6] min-w-[220px]"
+        >
+          <option value="">-- 期間を選択 --</option>
+          {periods.map((period) => (
+            <option key={period.id} value={period.id}>
+              {period.name} ({formatDateRange(period)})
+            </option>
+          ))}
+        </select>
 
         {/* 操作ボタン */}
         {canEdit && (
