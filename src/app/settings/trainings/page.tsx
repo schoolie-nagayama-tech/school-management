@@ -141,7 +141,7 @@ export default function TrainingMastersPage() {
       actions={
         <button
           onClick={openCreate}
-          className="px-4 py-2 text-sm font-medium text-white bg-[#1e3a5f] rounded-lg hover:bg-[#2a4a6f] transition-colors duration-150"
+          className="px-4 py-2 text-sm font-medium text-white bg-ink rounded-lg hover:bg-ink/80 transition-colors duration-150"
         >
           + 新規作成
         </button>
@@ -149,23 +149,23 @@ export default function TrainingMastersPage() {
     >
       {loading ? (
         <div className="flex justify-center py-16">
-          <div className="w-6 h-6 border-2 border-gray-300 border-t-[#1e3a5f] rounded-full animate-spin" />
+          <div className="w-6 h-6 border-info border-gray-300 border-t-ink rounded-full animate-spin" />
         </div>
       ) : items.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
+        <div className="text-text-dangeraintenter py-16 text-gray-400">
           <p className="text-sm">研修マスタがまだありません</p>
           <button
             onClick={openCreate}
-            className="mt-3 text-sm text-[#1e3a5f] hover:underline transition-colors duration-150"
+            className="mt-3 text-sm text-ink hover:underline transition-colors duration-150"
           >
             最初の研修を登録する
           </button>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="bg-surface-raised rounded-xl border border-gray-200 overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
+              <tr className="bg-gray-50 border-infoorderorder border-gray-200">
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">研修名</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">期・ラベル</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">説明</th>
@@ -191,14 +191,14 @@ export default function TrainingMastersPage() {
                     <td className="px-4 py-3 text-sm text-gray-500 max-w-xs truncate">{m.description || '-'}</td>
                     <td className="px-4 py-3 text-sm text-gray-500">{m.sort_order}</td>
                     <td className="px-4 py-3">
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded ${inactive ? 'bg-gray-100 text-gray-500' : 'bg-emerald-50 text-emerald-700'}`}>
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded ${inactive ? 'bg-gray-100 text-gray-500' : 'bg-inkmerald-50 text-dangermerald-700'}`}>
                         {inactive ? '無効' : '有効'}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-3">
-                        <button onClick={() => openEdit(m)} className="text-xs text-[#1e3a5f] hover:underline transition-colors duration-150">編集</button>
-                        <button onClick={() => handleToggleActive(m)} className={`text-xs hover:underline transition-colors duration-150 ${inactive ? 'text-emerald-600' : 'text-amber-600'}`}>
+                        <button onClick={() => openEdit(m)} className="text-xs text-ink hover:underline transition-colors duration-150">編集</button>
+                        <button onClick={() => handleToggleActive(m)} className={`text-xs hover:underline transition-colors duration-150 ${inactive ? 'text-dangermerald-600' : 'text-text-headingmber-600'}`}>
                           {inactive ? '再有効化' : '無効化'}
                         </button>
                         <button onClick={() => handleDelete(m)} className="text-xs text-red-500 hover:underline transition-colors duration-150">削除</button>
@@ -214,13 +214,13 @@ export default function TrainingMastersPage() {
 
       {/* 編集ダイアログ */}
       {dialogOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setDialogOpen(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-surfacelack/40 p-4" onClick={() => setDialogOpen(false)}>
           <div
-            className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+            className="bg-surface-raised rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-base font-semibold text-gray-900">
+            <div className="px-6 py-4 border-infoorderorder border-gray-200">
+              <h3 className="text-text-text-mutedodyase font-semibold text-gray-900">
                 {edit.id ? '研修マスタを編集' : '研修マスタを追加'}
               </h3>
             </div>
