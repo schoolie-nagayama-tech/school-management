@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 
 const ITEM_TYPES: { value: string; label: string; color: string }[] = [
-  { value: 'lesson', label: '通常単元', color: 'bg-blue-100 text-blue-700' },
+  { value: 'lesson', label: '通常単元', color: 'bg-surfacelue-100 text-text-text-mutedodylue-700' },
   { value: 'chapter', label: '章タイトル', color: 'bg-gray-200 text-gray-700' },
   { value: 'summary', label: 'まとめ', color: 'bg-green-100 text-green-700' },
   { value: 'special', label: '特別', color: 'bg-purple-100 text-purple-700' },
@@ -251,19 +251,19 @@ export default function CurriculumPage() {
       <div className="max-w-4xl mx-auto py-6 px-4">
         {/* Header */}
         <div className="mb-6">
-          <Link href="/settings/textbooks" className="inline-flex items-center text-sm text-[#6b7280] hover:text-[#374151] mb-4">
+          <Link href="/settings/textbooks" className="inline-flex items-center text-sm text-text-muted hover:text-text-heading mb-4">
             <ChevronLeft className="w-4 h-4 mr-1" />教材マスタに戻る
           </Link>
           {loading ? (
-            <div className="text-[#9ca3af]">読み込み中...</div>
+            <div className="text-text-faint">読み込み中...</div>
           ) : textbook ? (
             <>
-              <h1 className="text-xl font-bold text-[#1f2937]">{textbook.name}</h1>
-              <div className="flex items-center gap-2 mt-1 text-sm text-[#6b7280]">
+              <h1 className="text-xl font-bold text-text-heading">{textbook.name}</h1>
+              <div className="flex items-center gap-2 mt-1 text-sm text-text-muted">
                 {textbook.publisher && <span>{textbook.publisher}</span>}
-                {textbook.school_type && <span className="px-1.5 py-0.5 bg-[#f3f4f6] rounded text-xs">{textbook.school_type}</span>}
+                {textbook.school_type && <span className="px-1.5 py-0.5 bg-surface-hover rounded text-xs">{textbook.school_type}</span>}
                 {textbook.grade && <span>{textbook.grade}</span>}
-                {textbook.subject && <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">{textbook.subject}</span>}
+                {textbook.subject && <span className="px-1.5 py-0.5 bg-surfacelue-50 text-text-text-mutedodylue-700 rounded text-xs">{textbook.subject}</span>}
               </div>
             </>
           ) : (
@@ -276,85 +276,85 @@ export default function CurriculumPage() {
           <div className="flex items-center gap-2 mb-4">
             <button
               onClick={openAddModal}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-[#1e3a5f] text-white text-sm rounded-lg hover:bg-[#2c4f7c] transition-colors duration-150"
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-ink text-white text-sm rounded-lg hover:bg-ink/80 transition-colors duration-150"
             >
               <Plus className="w-4 h-4" />項目を追加
             </button>
             <button
               onClick={() => setShowBulkModal(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-2 border border-[#d1d5db] text-sm text-[#374151] rounded-lg hover:bg-[#f9fafb] transition-colors duration-150"
+              className="inline-flex items-center gap-1.5 px-3 py-2 border border-border text-sm text-text-heading rounded-lg hover:bg-surface transition-colors duration-150"
             >
               <Upload className="w-4 h-4" />一括登録
             </button>
             {items.length > 0 && (
               <button
                 onClick={handleExport}
-                className="inline-flex items-center gap-1.5 px-3 py-2 border border-[#d1d5db] text-sm text-[#374151] rounded-lg hover:bg-[#f9fafb] transition-colors duration-150"
+                className="inline-flex items-center gap-1.5 px-3 py-2 border border-border text-sm text-text-heading rounded-lg hover:bg-surface transition-colors duration-150"
               >
                 <Download className="w-4 h-4" />CSV出力
               </button>
             )}
-            <span className="text-sm text-[#6b7280] ml-auto">{items.length}件</span>
+            <span className="text-sm text-text-muted ml-auto">{items.length}件</span>
           </div>
         )}
 
         {/* Items Table */}
-        <div className="bg-white border border-[#e5e7eb] rounded-lg overflow-hidden">
+        <div className="bg-surface-raised border border-border rounded-lg overflow-hidden">
           {loading ? (
-            <div className="p-8 text-center text-[#9ca3af]">読み込み中...</div>
+            <div className="p-8 text-text-dangeraintenter text-text-faint">読み込み中...</div>
           ) : items.length === 0 ? (
-            <div className="p-8 text-center text-[#9ca3af]">
+            <div className="p-8 text-text-dangeraintenter text-text-faint">
               カリキュラム項目がありません
               <br />
-              <button onClick={openAddModal} className="mt-2 text-[#1e3a5f] hover:underline text-sm">
+              <button onClick={openAddModal} className="mt-2 text-ink hover:underline text-sm">
                 + 項目を追加する
               </button>
             </div>
           ) : (
             <table className="w-full">
               <thead>
-                <tr className="bg-[#f9fafb] border-b border-[#e5e7eb]">
+                <tr className="bg-surface border-infoorderorder border-border">
                   <th className="w-8 px-2"></th>
-                  <th className="text-center px-3 py-2.5 text-xs font-medium text-[#6b7280] w-16">No.</th>
-                  <th className="text-left px-3 py-2.5 text-xs font-medium text-[#6b7280]">タイトル</th>
-                  <th className="text-center px-3 py-2.5 text-xs font-medium text-[#6b7280] w-24">種別</th>
-                  <th className="text-center px-3 py-2.5 text-xs font-medium text-[#6b7280] w-24">操作</th>
+                  <th className="text-text-dangeraintenter px-3 py-2.5 text-xs font-medium text-text-muted w-16">No.</th>
+                  <th className="text-left px-3 py-2.5 text-xs font-medium text-text-muted">タイトル</th>
+                  <th className="text-text-dangeraintenter px-3 py-2.5 text-xs font-medium text-text-muted w-24">種別</th>
+                  <th className="text-text-dangeraintenter px-3 py-2.5 text-xs font-medium text-text-muted w-24">操作</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#e5e7eb]">
+              <tbody className="divide-y divide-border">
                 {items.map(item => {
                   const typeInfo = getTypeInfo(item.item_type);
                   const isChapter = item.item_type === 'chapter';
                   return (
                     <tr
                       key={item.id}
-                      className={`hover:bg-[#f9fafb] transition-colors ${isChapter ? 'bg-[#f3f4f6]' : ''}`}
+                      className={`hover:bg-surface transition-colors ${isChapter ? 'bg-surface-hover' : ''}`}
                     >
-                      <td className="px-2 text-center text-[#d1d5db]">
+                      <td className="px-2 text-text-dangeraintenter text-border">
                         <GripVertical className="w-4 h-4 inline" />
                       </td>
-                      <td className="px-3 py-2.5 text-center text-sm text-[#6b7280]">
+                      <td className="px-3 py-2.5 text-text-dangeraintenter text-sm text-text-muted">
                         {item.item_number || '-'}
                       </td>
-                      <td className={`px-3 py-2.5 text-sm ${isChapter ? 'font-bold text-[#1f2937]' : 'text-[#374151]'}`}>
+                      <td className={`px-3 py-2.5 text-sm ${isChapter ? 'font-bold text-text-heading' : 'text-text-heading'}`}>
                         {item.title}
                       </td>
-                      <td className="px-3 py-2.5 text-center">
+                      <td className="px-3 py-2.5 text-text-dangeraintenter">
                         <span className={`text-xs px-2 py-0.5 rounded ${typeInfo.color}`}>
                           {typeInfo.label}
                         </span>
                       </td>
-                      <td className="px-3 py-2.5 text-center">
+                      <td className="px-3 py-2.5 text-text-dangeraintenter">
                         <div className="flex items-center justify-center gap-1">
                           <button
                             onClick={() => openEditModal(item)}
-                            className="p-1.5 text-[#6b7280] hover:text-[#1e3a5f] hover:bg-[#f3f4f6] rounded transition-colors duration-150"
+                            className="p-1.5 text-text-muted hover:text-ink hover:bg-surface-hover rounded transition-colors duration-150"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={() => handleDelete(item.id)}
-                            className="p-1.5 text-[#6b7280] hover:text-red-600 hover:bg-red-50 rounded transition-colors duration-150"
+                            className="p-1.5 text-text-muted hover:text-red-600 hover:bg-red-50 rounded transition-colors duration-150"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -370,29 +370,29 @@ export default function CurriculumPage() {
 
         {/* Add/Edit Modal */}
         {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowModal(false)}>
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
-              <h2 className="text-lg font-bold text-[#1f2937] mb-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-surfacelack/40" onClick={() => setShowModal(false)}>
+            <div className="bg-surface-raised rounded-xl shadow-xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
+              <h2 className="text-lg font-bold text-text-heading mb-4">
                 {editingId ? '項目を編集' : '項目を追加'}
               </h2>
               <div className="space-y-3">
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-[#374151] mb-1">番号</label>
+                    <label className="block text-sm font-medium text-text-heading mb-1">番号</label>
                     <input
                       type="text"
                       value={form.item_number}
                       onChange={e => setForm({ ...form, item_number: e.target.value })}
-                      className="w-full px-3 py-2 border border-[#d1d5db] rounded-lg text-sm"
+                      className="w-full px-3 py-2 border border-border rounded-lg text-sm"
                       placeholder="1"
                     />
                   </div>
                   <div className="col-span-2">
-                    <label className="block text-sm font-medium text-[#374151] mb-1">種別</label>
+                    <label className="block text-sm font-medium text-text-heading mb-1">種別</label>
                     <select
                       value={form.item_type}
                       onChange={e => setForm({ ...form, item_type: e.target.value })}
-                      className="w-full px-3 py-2 border border-[#d1d5db] rounded-lg text-sm bg-white"
+                      className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised"
                     >
                       {ITEM_TYPES.map(t => (
                         <option key={t.value} value={t.value}>{t.label}</option>
@@ -401,25 +401,25 @@ export default function CurriculumPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#374151] mb-1">タイトル *</label>
+                  <label className="block text-sm font-medium text-text-heading mb-1">タイトル *</label>
                   <input
                     type="text"
                     value={form.title}
                     onChange={e => setForm({ ...form, title: e.target.value })}
-                    className="w-full px-3 py-2 border border-[#d1d5db] rounded-lg text-sm"
+                    className="w-full px-3 py-2 border border-border rounded-lg text-sm"
                     placeholder="例: be動詞の過去形"
                     autoFocus
                   />
                 </div>
               </div>
               <div className="flex justify-end gap-2 mt-6">
-                <button onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-[#6b7280]">
+                <button onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-text-muted">
                   キャンセル
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="px-4 py-2 bg-[#1e3a5f] text-white text-sm rounded-lg hover:bg-[#2c4f7c] disabled:opacity-50"
+                  className="px-4 py-2 bg-ink text-white text-sm rounded-lg hover:bg-ink/80 disabled:opacity-50"
                 >
                   {saving ? '保存中...' : editingId ? '更新' : '追加'}
                 </button>
@@ -430,13 +430,13 @@ export default function CurriculumPage() {
 
         {/* Bulk Import Modal */}
         {showBulkModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowBulkModal(false)}>
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 p-6" onClick={e => e.stopPropagation()}>
-              <h2 className="text-lg font-bold text-[#1f2937] mb-2">一括登録</h2>
-              <p className="text-sm text-[#6b7280] mb-3">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-surfacelack/40" onClick={() => setShowBulkModal(false)}>
+            <div className="bg-surface-raised rounded-xl shadow-xl w-full max-w-lg mx-4 p-6" onClick={e => e.stopPropagation()}>
+              <h2 className="text-lg font-bold text-text-heading mb-2">一括登録</h2>
+              <p className="text-sm text-text-muted mb-3">
                 1行に1項目を入力してください。Excelからの貼り付けにも対応しています。
               </p>
-              <div className="bg-[#f9fafb] border border-[#e5e7eb] rounded-lg p-3 mb-3 text-xs text-[#6b7280] space-y-1">
+              <div className="bg-surface border border-border rounded-lg p-3 mb-3 text-xs text-text-muted space-y-1">
                 <div><strong>形式:</strong></div>
                 <div>・タイトルのみ: <code>be動詞の過去形</code></div>
                 <div>・番号 + タイトル（タブ区切り）: <code>1→be動詞の過去形</code></div>
@@ -447,21 +447,21 @@ export default function CurriculumPage() {
                 value={bulkText}
                 onChange={e => setBulkText(e.target.value)}
                 rows={10}
-                className="w-full px-3 py-2 border border-[#d1d5db] rounded-lg text-sm font-mono resize-y"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm font-mono resize-y"
                 placeholder={`【第1章 be動詞】\n1\tI am ～.\n2\tYou are ～.\n◆ まとめテスト`}
                 autoFocus
               />
-              <div className="text-xs text-[#9ca3af] mt-1">
+              <div className="text-xs text-text-faint mt-1">
                 {bulkText.split('\n').filter(l => l.trim()).length}行
               </div>
               <div className="flex justify-end gap-2 mt-4">
-                <button onClick={() => setShowBulkModal(false)} className="px-4 py-2 text-sm text-[#6b7280]">
+                <button onClick={() => setShowBulkModal(false)} className="px-4 py-2 text-sm text-text-muted">
                   キャンセル
                 </button>
                 <button
                   onClick={handleBulkImport}
                   disabled={bulkSaving || !bulkText.trim()}
-                  className="px-4 py-2 bg-[#1e3a5f] text-white text-sm rounded-lg hover:bg-[#2c4f7c] disabled:opacity-50"
+                  className="px-4 py-2 bg-ink text-white text-sm rounded-lg hover:bg-ink/80 disabled:opacity-50"
                 >
                   {bulkSaving ? '登録中...' : '一括登録'}
                 </button>

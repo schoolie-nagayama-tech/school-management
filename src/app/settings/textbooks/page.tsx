@@ -17,12 +17,12 @@ const GRADES = ['1年', '2年', '3年', '4年', '5年', '6年', '共通'];
 const SUBJECTS = ['英語', '数学', '算数', '国語', '理科', '社会'];
 
 const SUBJECT_COLORS: Record<string, { bg: string; text: string; border: string; dot: string }> = {
-  '英語': { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', dot: 'bg-blue-500' },
+  '英語': { bg: 'bg-surfacelue-50', text: 'text-text-text-mutedodylue-700', border: 'border-infoorderorderlue-200', dot: 'bg-surfacelue-500' },
   '数学': { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', dot: 'bg-red-500' },
   '算数': { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', dot: 'bg-red-500' },
   '国語': { bg: 'bg-green-50', text: 'text-green-700', border: 'border-green-200', dot: 'bg-green-500' },
   '理科': { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200', dot: 'bg-purple-500' },
-  '社会': { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', dot: 'bg-amber-500' },
+  '社会': { bg: 'bg-surfacember-50', text: 'text-text-headingmber-700', border: 'border-inkmber-200', dot: 'bg-surfacember-500' },
 };
 
 const DEFAULT_COLORS = { bg: 'bg-gray-50', text: 'text-gray-700', border: 'border-gray-200', dot: 'bg-gray-400' };
@@ -210,17 +210,17 @@ export default function TextbookMasterPage() {
       <div className="max-w-[1600px] mx-auto py-6 px-4">
         {/* Header */}
         <div className="mb-6">
-          <Link href="/settings" className="inline-flex items-center text-sm text-[#6b7280] hover:text-[#374151] mb-4 transition-colors duration-150">
+          <Link href="/settings" className="inline-flex items-center text-sm text-text-muted hover:text-text-heading mb-4 transition-colors duration-150">
             <ChevronLeft className="w-4 h-4 mr-1" />設定に戻る
           </Link>
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-bold text-[#1f2937]">教材マスタ管理</h1>
-              <p className="text-sm text-[#6b7280] mt-1">教材をクリックするとカリキュラム（目次）を管理できます</p>
+              <h1 className="text-xl font-bold text-text-heading">教材マスタ管理</h1>
+              <p className="text-sm text-text-muted mt-1">教材をクリックするとカリキュラム（目次）を管理できます</p>
             </div>
             <button
               onClick={openAddModal}
-              className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#1e3a5f] text-white text-sm rounded-lg hover:bg-[#2c4f7c] transition-colors duration-150"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-ink text-white text-sm rounded-lg hover:bg-ink/80 transition-colors duration-150"
             >
               <Plus className="w-4 h-4" />教材を追加
             </button>
@@ -228,22 +228,22 @@ export default function TextbookMasterPage() {
         </div>
 
         {/* Filters */}
-        <div className="bg-white border border-[#e5e7eb] rounded-lg p-3 mb-4">
+        <div className="bg-surface-raised border border-border rounded-lg p-3 mb-4">
           <div className="flex flex-wrap gap-2">
             <div className="relative flex-1 min-w-[180px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9ca3af]" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-faint" />
               <input
                 type="text"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="教材名・出版社で検索..."
-                className="w-full pl-9 pr-3 py-1.5 border border-[#d1d5db] rounded-lg text-sm focus:ring-1 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f]"
+                className="w-full pl-9 pr-3 py-1.5 border border-border rounded-lg text-sm focus:ring-ink focus:ring-ink/30 focus:border-ink"
               />
             </div>
             <select
               value={schoolTypeFilter}
               onChange={e => { setSchoolTypeFilter(e.target.value); setGradeFilter(''); }}
-              className="px-3 py-1.5 border border-[#d1d5db] rounded-lg text-sm bg-white"
+              className="px-3 py-1.5 border border-border rounded-lg text-sm bg-surface-raised"
             >
               <option value="">種別: 全て</option>
               {SCHOOL_TYPES.map(st => <option key={st} value={st}>{st}</option>)}
@@ -251,7 +251,7 @@ export default function TextbookMasterPage() {
             <select
               value={gradeFilter}
               onChange={e => setGradeFilter(e.target.value)}
-              className="px-3 py-1.5 border border-[#d1d5db] rounded-lg text-sm bg-white"
+              className="px-3 py-1.5 border border-border rounded-lg text-sm bg-surface-raised"
             >
               <option value="">学年: 全て</option>
               {availableGrades.map(g => <option key={g} value={g}>{g}</option>)}
@@ -259,7 +259,7 @@ export default function TextbookMasterPage() {
             <select
               value={subjectFilter}
               onChange={e => setSubjectFilter(e.target.value)}
-              className="px-3 py-1.5 border border-[#d1d5db] rounded-lg text-sm bg-white"
+              className="px-3 py-1.5 border border-border rounded-lg text-sm bg-surface-raised"
             >
               <option value="">科目: 全て</option>
               {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
@@ -268,15 +268,15 @@ export default function TextbookMasterPage() {
         </div>
 
         {/* Count */}
-        <div className="text-xs text-[#9ca3af] mb-3">
+        <div className="text-xs text-text-faint mb-3">
           {filtered.length}件 / {textbooks.length}件
         </div>
 
         {/* Content */}
         {loading ? (
-          <div className="bg-white border border-[#e5e7eb] rounded-lg p-12 text-center text-[#9ca3af]">読み込み中...</div>
+          <div className="bg-surface-raised border border-border rounded-lg p-12 text-text-dangeraintenter text-text-faint">読み込み中...</div>
         ) : filtered.length === 0 ? (
-          <div className="bg-white border border-[#e5e7eb] rounded-lg p-12 text-center text-[#9ca3af]">
+          <div className="bg-surface-raised border border-border rounded-lg p-12 text-text-dangeraintenter text-text-faint">
             教材が見つかりません
           </div>
         ) : (
@@ -288,10 +288,10 @@ export default function TextbookMasterPage() {
                   {/* Group Header */}
                   <div className="flex items-center gap-2 mb-2">
                     <div className={`w-2 h-2 rounded-full ${colors.dot}`} />
-                    <h2 className="text-sm font-semibold text-[#374151]">
+                    <h2 className="text-sm font-semibold text-text-heading">
                       {group.schoolType} / {group.subject}
                     </h2>
-                    <span className="text-xs text-[#9ca3af]">{group.items.length}件</span>
+                    <span className="text-xs text-text-faint">{group.items.length}件</span>
                   </div>
 
                   {/* Cards */}
@@ -300,8 +300,8 @@ export default function TextbookMasterPage() {
                       <div
                         key={t.id}
                         onClick={() => router.push(`/settings/textbooks/${t.id}/curriculum`)}
-                        className={`group flex items-center gap-3 px-4 py-3 bg-white border rounded-lg cursor-pointer
-                          hover:${colors.bg} hover:${colors.border} border-[#e5e7eb] hover:border-[#d1d5db]
+                        className={`group flex items-center gap-3 px-4 py-3 bg-surface-raised border rounded-lg cursor-pointer
+                          hover:${colors.bg} hover:${colors.border} border-border hover:border-border
                           hover:shadow-sm transition-[box-shadow,border-color,background-color] duration-150 ease-out`}
                       >
                         {/* Subject Indicator */}
@@ -310,16 +310,16 @@ export default function TextbookMasterPage() {
                         {/* Info */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="font-medium text-sm text-[#1f2937] truncate">{t.name}</span>
+                            <span className="font-medium text-sm text-text-heading truncate">{t.name}</span>
                             {t.publisher && (
-                              <span className="flex-shrink-0 text-xs text-[#9ca3af]">{t.publisher}</span>
+                              <span className="flex-shrink-0 text-xs text-text-faint">{t.publisher}</span>
                             )}
                           </div>
                         </div>
 
                         {/* Tags */}
                         <div className="flex items-center gap-1.5 flex-shrink-0">
-                          <span className="text-xs px-1.5 py-0.5 rounded bg-[#f3f4f6] text-[#6b7280]">
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-surface-hover text-text-muted">
                             {t.grade || '-'}
                           </span>
                         </div>
@@ -328,14 +328,14 @@ export default function TextbookMasterPage() {
                         <div className="flex items-center gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
                           <button
                             onClick={(e) => openEditModal(e, t)}
-                            className="p-1.5 text-[#9ca3af] hover:text-[#1e3a5f] hover:bg-white rounded transition-colors duration-150"
+                            className="p-1.5 text-text-faint hover:text-ink hover:bg-surface-raised rounded transition-colors duration-150"
                             title="編集"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                           </button>
                           <button
                             onClick={(e) => handleDelete(e, t.id, t.name)}
-                            className="p-1.5 text-[#9ca3af] hover:text-red-500 hover:bg-white rounded transition-colors duration-150"
+                            className="p-1.5 text-text-faint hover:text-red-500 hover:bg-surface-raised rounded transition-colors duration-150"
                             title="削除"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -343,7 +343,7 @@ export default function TextbookMasterPage() {
                         </div>
 
                         {/* Arrow */}
-                        <ChevronRight className="w-4 h-4 text-[#d1d5db] group-hover:text-[#9ca3af] flex-shrink-0 transition-colors duration-150" />
+                        <ChevronRight className="w-4 h-4 text-border group-hover:text-text-faint flex-shrink-0 transition-colors duration-150" />
                       </div>
                     ))}
                   </div>
@@ -355,52 +355,52 @@ export default function TextbookMasterPage() {
 
         {/* Modal */}
         {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowModal(false)}>
-            <div className="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
-              <h2 className="text-lg font-bold text-[#1f2937] mb-4">
-                <BookOpen className="w-5 h-5 inline mr-2 text-[#1e3a5f]" />
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-surfacelack/40" onClick={() => setShowModal(false)}>
+            <div className="bg-surface-raised rounded-xl shadow-xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
+              <h2 className="text-lg font-bold text-text-heading mb-4">
+                <BookOpen className="w-5 h-5 inline mr-2 text-ink" />
                 {editingId ? '教材を編集' : '教材を追加'}
               </h2>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-[#374151] mb-1">教材名 *</label>
+                  <label className="block text-sm font-medium text-text-heading mb-1">教材名 *</label>
                   <input
                     type="text"
                     value={form.name}
                     onChange={e => setForm({ ...form, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-[#d1d5db] rounded-lg text-sm focus:ring-1 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f]"
+                    className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:ring-ink focus:ring-ink/30 focus:border-ink"
                     placeholder="例: フォレスタ 英語I"
                     autoFocus
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#374151] mb-1">出版社</label>
+                  <label className="block text-sm font-medium text-text-heading mb-1">出版社</label>
                   <input
                     type="text"
                     value={form.publisher}
                     onChange={e => setForm({ ...form, publisher: e.target.value })}
-                    className="w-full px-3 py-2 border border-[#d1d5db] rounded-lg text-sm focus:ring-1 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f]"
+                    className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:ring-ink focus:ring-ink/30 focus:border-ink"
                     placeholder="例: SPRIX"
                   />
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-[#374151] mb-1">学校種別 *</label>
+                    <label className="block text-sm font-medium text-text-heading mb-1">学校種別 *</label>
                     <select
                       value={form.school_type}
                       onChange={e => setForm({ ...form, school_type: e.target.value, grade: '' })}
-                      className="w-full px-3 py-2 border border-[#d1d5db] rounded-lg text-sm bg-white"
+                      className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised"
                     >
                       <option value="">選択</option>
                       {SCHOOL_TYPES.map(st => <option key={st} value={st}>{st}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-[#374151] mb-1">学年</label>
+                    <label className="block text-sm font-medium text-text-heading mb-1">学年</label>
                     <select
                       value={form.grade}
                       onChange={e => setForm({ ...form, grade: e.target.value })}
-                      className="w-full px-3 py-2 border border-[#d1d5db] rounded-lg text-sm bg-white"
+                      className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised"
                     >
                       <option value="">選択</option>
                       {(form.school_type === '小学'
@@ -412,11 +412,11 @@ export default function TextbookMasterPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-[#374151] mb-1">科目</label>
+                    <label className="block text-sm font-medium text-text-heading mb-1">科目</label>
                     <select
                       value={form.subject}
                       onChange={e => setForm({ ...form, subject: e.target.value })}
-                      className="w-full px-3 py-2 border border-[#d1d5db] rounded-lg text-sm bg-white"
+                      className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised"
                     >
                       <option value="">選択</option>
                       {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
@@ -424,12 +424,12 @@ export default function TextbookMasterPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#374151] mb-1">改訂日</label>
+                  <label className="block text-sm font-medium text-text-heading mb-1">改訂日</label>
                   <input
                     type="text"
                     value={form.revision_date}
                     onChange={e => setForm({ ...form, revision_date: e.target.value })}
-                    className="w-full px-3 py-2 border border-[#d1d5db] rounded-lg text-sm focus:ring-1 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f]"
+                    className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:ring-ink focus:ring-ink/30 focus:border-ink"
                     placeholder="例: 20250401"
                   />
                 </div>
@@ -437,14 +437,14 @@ export default function TextbookMasterPage() {
               <div className="flex justify-end gap-2 mt-6">
                 <button
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 text-sm text-[#6b7280] hover:text-[#374151] transition-colors duration-150"
+                  className="px-4 py-2 text-sm text-text-muted hover:text-text-heading transition-colors duration-150"
                 >
                   キャンセル
                 </button>
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="px-4 py-2 bg-[#1e3a5f] text-white text-sm rounded-lg hover:bg-[#2c4f7c] disabled:opacity-50 transition-colors duration-150"
+                  className="px-4 py-2 bg-ink text-white text-sm rounded-lg hover:bg-ink/80 disabled:opacity-50 transition-colors duration-150"
                 >
                   {saving ? '保存中...' : editingId ? '更新' : '追加'}
                 </button>
