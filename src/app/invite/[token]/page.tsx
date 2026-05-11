@@ -98,10 +98,10 @@ export default function InvitePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center">
+      <div className="min-h-screen bg-surface-hover flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-[#4b5563]">読み込み中...</p>
+          <div className="w-12 h-12 border-4 border-ink border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-text-body">読み込み中...</p>
         </div>
       </div>
     );
@@ -109,14 +109,14 @@ export default function InvitePage() {
 
   if (error && !invitation) {
     return (
-      <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-xl border border-[#e5e7eb] p-8">
+      <div className="min-h-screen bg-surface-hover flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-surface-raised rounded-xl border border-border p-8">
           <div className="text-center">
-            <div className="w-16 h-16 bg-[#ef4444]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <X className="w-8 h-8 text-[#ef4444]" />
+            <div className="w-16 h-16 bg-danger/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <X className="w-8 h-8 text-danger" />
             </div>
-            <h2 className="text-xl font-bold text-[#1f2937] mb-2">招待が無効です</h2>
-            <p className="text-[#4b5563] mb-6">{error}</p>
+            <h2 className="text-xl font-bold text-text-heading mb-2">招待が無効です</h2>
+            <p className="text-text-body mb-6">{error}</p>
           </div>
         </div>
       </div>
@@ -124,44 +124,44 @@ export default function InvitePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-surface-hover flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-[#1f2937]">アカウント作成</h1>
-          <p className="text-[#4b5563] mt-2">生徒管理システムへようこそ</p>
+          <h1 className="text-3xl font-bold text-text-heading">アカウント作成</h1>
+          <p className="text-text-body mt-2">生徒管理システムへようこそ</p>
         </div>
 
-        <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 shadow-lg">
+        <div className="bg-surface-raised rounded-xl border border-border p-8 shadow-lg">
           {invitation && (
             <>
-              <div className="mb-6 p-4 bg-[#3b82f6]/10 rounded-lg">
-                <p className="text-sm text-[#1f2937]">
+              <div className="mb-6 p-4 bg-info/10 rounded-lg">
+                <p className="text-sm text-text-heading">
                   <span className="font-bold">{invitation.email}</span> として<br />
                   <span className="font-bold">{USER_ROLE_LABELS[invitation.role]}</span> 権限で招待されています
                 </p>
               </div>
 
               {error && (
-                <div className="mb-6 p-4 bg-[#ef4444]/10 border border-[#ef4444] rounded-lg">
-                  <p className="text-sm text-[#ef4444]">{error}</p>
+                <div className="mb-6 p-4 bg-danger/10 border border-danger rounded-lg">
+                  <p className="text-sm text-danger">{error}</p>
                 </div>
               )}
 
               <form onSubmit={handleAccept} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-[#1f2937] mb-1">
+                  <label className="block text-sm font-medium text-text-heading mb-1">
                     表示名（任意）
                   </label>
                   <input
                     type="text"
                     value={displayName}
                     onChange={e => setDisplayName(e.target.value)}
-                    className="w-full px-4 py-3 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                    className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder="山田太郎"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#1f2937] mb-1">
+                  <label className="block text-sm font-medium text-text-heading mb-1">
                     パスワード
                   </label>
                   <input
@@ -170,12 +170,12 @@ export default function InvitePage() {
                     onChange={e => setPassword(e.target.value)}
                     required
                     minLength={8}
-                    className="w-full px-4 py-3 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                    className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder="8文字以上"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#1f2937] mb-1">
+                  <label className="block text-sm font-medium text-text-heading mb-1">
                     パスワード（確認）
                   </label>
                   <input
@@ -183,14 +183,14 @@ export default function InvitePage() {
                     value={confirmPassword}
                     onChange={e => setConfirmPassword(e.target.value)}
                     required
-                    className="w-full px-4 py-3 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                    className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder="もう一度入力"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full py-3 bg-[#3b82f6] text-white font-bold rounded-lg hover:bg-[#60a5fa] transition-colors disabled:opacity-50"
+                  className="w-full py-3 bg-info text-white font-bold rounded-lg hover:bg-info/80 transition-colors disabled:opacity-50"
                 >
                   {isSubmitting ? 'アカウント作成中...' : 'アカウントを作成'}
                 </button>
