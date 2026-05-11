@@ -76,7 +76,7 @@ export default function AttendancePortalPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-[#4b5563]">読み込み中...</div>
+        <div className="text-text-body">読み込み中...</div>
       </div>
     );
   }
@@ -85,8 +85,8 @@ export default function AttendancePortalPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-[#ef4444] text-lg">{error}</p>
-          <p className="text-[#4b5563] mt-2">URLを確認してください</p>
+          <p className="text-danger text-lg">{error}</p>
+          <p className="text-text-body mt-2">URLを確認してください</p>
         </div>
       </div>
     );
@@ -97,14 +97,14 @@ export default function AttendancePortalPage() {
       <AppHeader title="講師勤怠" />
 
       {/* ヘッダー */}
-      <header className="bg-white border-b">
+      <header className="bg-surface-raised border-b">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <h1 className="text-xl font-bold text-center">{school?.name} 講師勤怠</h1>
         </div>
       </header>
 
       {/* 年月選択 */}
-      <div className="bg-white border-b">
+      <div className="bg-surface-raised border-b">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-center gap-4">
           <Button
             variant="ghost"
@@ -130,7 +130,7 @@ export default function AttendancePortalPage() {
       <main className="max-w-4xl mx-auto px-4 py-6">
         {teachers.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-[#4b5563]">講師が登録されていません</p>
+            <p className="text-text-body">講師が登録されていません</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -145,7 +145,7 @@ export default function AttendancePortalPage() {
                   <Badge className={getStatusColor(teacher.status)}>
                     {getStatusLabel(teacher.status)}
                   </Badge>
-                  <p className="text-sm text-[#4b5563] mt-2">
+                  <p className="text-sm text-text-body mt-2">
                     {teacher.total_count > 0 ? `${teacher.total_count}コマ` : '未入力'}
                   </p>
                 </CardContent>

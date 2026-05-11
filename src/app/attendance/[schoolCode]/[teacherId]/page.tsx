@@ -293,7 +293,7 @@ export default function TeacherAttendancePage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-[#4b5563]">読み込み中...</div>
+        <div className="text-text-body">読み込み中...</div>
       </div>
     );
   }
@@ -302,7 +302,7 @@ export default function TeacherAttendancePage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-[#ef4444] text-lg">{error}</p>
+          <p className="text-danger text-lg">{error}</p>
           <Button
             variant="secondary"
             className="mt-4"
@@ -322,7 +322,7 @@ export default function TeacherAttendancePage() {
     >
       <AppHeader title="講師勤怠" />
       {/* ヘッダー */}
-      <header className="bg-white border-b sticky top-0 z-10">
+      <header className="bg-surface-raised border-b sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <Button
@@ -334,7 +334,7 @@ export default function TeacherAttendancePage() {
               戻る
             </Button>
             <div className="text-center">
-              <p className="text-sm text-[#4b5563]">{school?.name}</p>
+              <p className="text-sm text-text-body">{school?.name}</p>
               <p className="font-bold">{teacher?.name}</p>
             </div>
             <Badge className={ATTENDANCE_STATUS_COLORS[status]}>
@@ -364,7 +364,7 @@ export default function TeacherAttendancePage() {
       )}
 
       {/* 年月選択 */}
-      <div className="bg-white border-b">
+      <div className="bg-surface-raised border-b">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <Button
             variant="ghost"
@@ -404,7 +404,7 @@ export default function TeacherAttendancePage() {
 
       {/* 入力テーブル */}
       <main className="max-w-6xl mx-auto px-4 py-4">
-        <div className="bg-white rounded-lg shadow overflow-x-auto">
+        <div className="bg-surface-raised rounded-lg shadow overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
@@ -417,7 +417,7 @@ export default function TeacherAttendancePage() {
                     className="px-2 py-2 text-center font-medium border-b min-w-[70px]"
                   >
                     {type.name}
-                    <span className="block text-xs text-[#4b5563] font-normal">
+                    <span className="block text-xs text-text-body font-normal">
                       {type.unit === 'hours' ? '(h)' : ''}
                     </span>
                   </th>
@@ -442,7 +442,7 @@ export default function TeacherAttendancePage() {
                   >
                     <td
                       className={`px-2 py-1 border-b sticky left-0 ${
-                        isWeekend ? 'bg-blue-50/50' : 'bg-white'
+                        isWeekend ? 'bg-blue-50/50' : 'bg-surface-raised'
                       }`}
                     >
                       <span
@@ -537,7 +537,7 @@ export default function TeacherAttendancePage() {
             </Button>
           )}
           {status === 'approved' && (
-            <p className="text-[#4b5563]">承認済みのため編集できません</p>
+            <p className="text-text-body">承認済みのため編集できません</p>
           )}
         </div>
       </main>
