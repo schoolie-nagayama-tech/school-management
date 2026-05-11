@@ -91,7 +91,7 @@ export default function TeacherBadgesPage() {
       actions={
         <button
           onClick={handleCreate}
-          className="px-4 py-2 text-sm font-medium text-white bg-[#1e3a5f] rounded-lg hover:bg-[#2a4a6f] transition-colors duration-150"
+          className="px-4 py-2 text-sm font-medium text-white bg-ink rounded-lg hover:brightness-[0.85] transition-colors duration-150"
         >
           + 新規作成
         </button>
@@ -106,7 +106,7 @@ export default function TeacherBadgesPage() {
               onClick={() => setFilter(tab.key)}
               className={`px-4 py-1.5 text-sm font-medium rounded-md transition-[background-color,color,box-shadow] duration-150 ease-out ${
                 filter === tab.key
-                  ? 'bg-white text-gray-900 shadow-sm'
+                  ? 'bg-surface-raised text-gray-900 shadow-sm'
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -118,20 +118,20 @@ export default function TeacherBadgesPage() {
         {/* テーブル */}
         {loading ? (
           <div className="flex justify-center py-16">
-            <div className="w-6 h-6 border-2 border-gray-300 border-t-[#1e3a5f] rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-gray-300 border-t-ink rounded-full animate-spin" />
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-16 text-gray-400">
             <p className="text-sm">バッジがまだありません</p>
             <button
               onClick={handleCreate}
-              className="mt-3 text-sm text-[#1e3a5f] hover:underline"
+              className="mt-3 text-sm text-ink hover:underline"
             >
               最初のバッジを作成する
             </button>
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="bg-surface-raised rounded-xl border border-gray-200 overflow-hidden">
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
@@ -186,7 +186,7 @@ export default function TeacherBadgesPage() {
                         <div className="flex justify-end gap-3">
                           <button
                             onClick={() => handleEdit(badge)}
-                            className="text-xs text-[#1e3a5f] hover:underline"
+                            className="text-xs text-ink hover:underline"
                           >
                             編集
                           </button>
