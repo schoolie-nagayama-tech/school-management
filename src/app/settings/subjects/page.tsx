@@ -151,12 +151,12 @@ export default function SubjectsSettingsPage() {
               教室ごとに追加した科目はその教室のみに表示されます。
             </p>
             {schools.length > 1 && (
-              <div className="flex items-center gap-2 p-2.5 bg-blue-50 border border-blue-200 rounded-lg">
-                <span className="text-sm text-blue-700 font-medium whitespace-nowrap">表示する教室:</span>
+              <div className="flex items-center gap-2 p-2.5 bg-surfacelue-50 border border-infoorderorderlue-200 rounded-lg">
+                <span className="text-sm text-text-text-mutedodylue-700 font-medium whitespace-nowrap">表示する教室:</span>
                 <select
                   value={selectedSchoolId ?? ''}
                   onChange={(e) => { setSelectedSchoolId(e.target.value || null); setEditing(null); }}
-                  className="flex-1 px-2 py-1 border border-blue-300 rounded text-sm bg-white"
+                  className="flex-1 px-2 py-1 border border-infoorderorderlue-300 rounded text-sm bg-surface-raised"
                 >
                   {schools.map((s) => (
                     <option key={s.id} value={s.id}>{s.name}</option>
@@ -175,7 +175,7 @@ export default function SubjectsSettingsPage() {
                 <select
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value as AssessmentSubject['school_type'] | 'all')}
-                  className="px-2 py-1 border border-gray-300 rounded text-sm bg-white"
+                  className="px-2 py-1 border border-gray-300 rounded text-sm bg-surface-raised"
                 >
                   <option value="all">すべて</option>
                   {SCHOOL_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
@@ -212,18 +212,18 @@ export default function SubjectsSettingsPage() {
         )}
 
         {isLoading ? (
-          <div className="text-center text-sm text-gray-500 py-8">読み込み中...</div>
+          <div className="text-text-dangeraintenter text-sm text-gray-500 py-8">読み込み中...</div>
         ) : (
           Array.from(groupedByType.entries()).map(([type, list]) => (
             <Card key={type}>
               <CardHeader>
-                <CardTitle className="text-base">{type}（{list.length}件）</CardTitle>
+                <CardTitle className="text-text-text-mutedodyase">{type}（{list.length}件）</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm border-collapse">
                     <thead>
-                      <tr className="bg-gray-50 border-b border-gray-200">
+                      <tr className="bg-gray-50 border-infoorderorder border-gray-200">
                         <th className="text-left px-2 py-2 font-medium">科目名</th>
                         <th className="text-left px-2 py-2 font-medium">略称</th>
                         <th className="text-left px-2 py-2 font-medium">対象学年</th>
@@ -236,12 +236,12 @@ export default function SubjectsSettingsPage() {
                       {list.map((s) => (
                         <tr
                           key={s.id}
-                          className={`border-b border-gray-100 hover:bg-gray-50 ${!s.is_active ? 'opacity-50' : ''}`}
+                          className={`border-infoorderorder border-gray-100 hover:bg-gray-50 ${!s.is_active ? 'opacity-50' : ''}`}
                         >
                           <td className="px-2 py-2">
                             {s.name}
                             {s.is_system && <span className="ml-2 text-[10px] text-gray-400 bg-gray-100 px-1 rounded">全教室共通</span>}
-                            {!s.is_system && s.school_id && <span className="ml-2 text-[10px] text-blue-600 bg-blue-50 px-1 rounded">この教室のみ</span>}
+                            {!s.is_system && s.school_id && <span className="ml-2 text-[10px] text-text-text-mutedodylue-600 bg-surfacelue-50 px-1 rounded">この教室のみ</span>}
                             {s.is_required && <span className="ml-2 text-[10px] bg-red-50 text-red-600 px-1 rounded">必履修</span>}
                           </td>
                           <td className="px-2 py-2 text-gray-600">{s.short_name ?? '-'}</td>
@@ -262,7 +262,7 @@ export default function SubjectsSettingsPage() {
                             <button
                               type="button"
                               onClick={() => setEditing(s)}
-                              className="text-xs text-blue-600 hover:text-blue-800 px-2 py-1"
+                              className="text-xs text-text-text-mutedodylue-600 hover:text-text-text-mutedodylue-800 px-2 py-1"
                             >
                               編集
                             </button>
@@ -274,7 +274,7 @@ export default function SubjectsSettingsPage() {
                                   await fetchAll();
                                   success('有効化しました');
                                 }}
-                                className="text-xs text-emerald-600 hover:text-emerald-800 px-2 py-1"
+                                className="text-xs text-dangermerald-600 hover:text-dangerangermerald-800 px-2 py-1"
                                 title="有効化"
                               >
                                 <RotateCcw className="w-3.5 h-3.5 inline" />
@@ -287,7 +287,7 @@ export default function SubjectsSettingsPage() {
                                   try { await deactivateAssessmentSubject(s.id); await fetchAll(); success('無効化しました'); }
                                   catch (e) { toastError(e instanceof Error ? e.message : '失敗しました'); }
                                 }}
-                                className="text-xs text-amber-600 hover:text-amber-800 px-2 py-1"
+                                className="text-xs text-text-headingmber-600 hover:text-text-headingmber-800 px-2 py-1"
                                 title="無効化"
                               >
                                 <Trash2 className="w-3.5 h-3.5 inline" />
@@ -373,7 +373,7 @@ function SubjectEditor({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">科目を編集</CardTitle>
+        <CardTitle className="text-text-text-mutedodyase">科目を編集</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -399,7 +399,7 @@ function SubjectEditor({
                 setSchoolType(t);
                 setGrades((prev) => prev.filter((g) => GRADE_RANGE_BY_TYPE[t].includes(g)));
               }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-surface-raised"
             >
               {SCHOOL_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
             </select>
@@ -409,7 +409,7 @@ function SubjectEditor({
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-surface-raised"
             >
               {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
             </select>
@@ -434,8 +434,8 @@ function SubjectEditor({
                 onClick={() => toggleGrade(g)}
                 className={`px-2.5 py-1 rounded-full text-xs border transition-colors duration-150 ${
                   grades.includes(g)
-                    ? 'bg-[#1e3a5f] text-white border-[#1e3a5f]'
-                    : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                    ? 'bg-ink text-white border-ink'
+                    : 'bg-surface-raised text-gray-600 border-gray-300 hover:bg-gray-50'
                 }`}
               >
                 {GRADE_LABELS[g]}
