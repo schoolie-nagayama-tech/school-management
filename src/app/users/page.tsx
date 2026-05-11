@@ -196,9 +196,9 @@ export default function UsersPage() {
       // 楽観的更新：API 戻り値で一覧に追加
       setUsers((prev) => [...prev, createdUserData as UserWithDetails]);
       success('ユーザーを作成しました');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to create user:', error);
-      toastError(error.message || 'ユーザーの作成に失敗しました');
+      toastError(error instanceof Error ? error.message : 'ユーザーの作成に失敗しました');
     } finally {
       setIsSubmitting(false);
     }
@@ -345,9 +345,9 @@ export default function UsersPage() {
       await refreshSchools();
       await loadData();
       success('教室を作成しました');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error creating school:', err);
-      toastError(err.message || '教室の作成に失敗しました');
+      toastError(err instanceof Error ? err.message : '教室の作成に失敗しました');
     } finally {
       setIsSavingSchool(false);
     }
@@ -380,9 +380,9 @@ export default function UsersPage() {
       await refreshSchools();
       await loadData();
       success('教室を更新しました');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error updating school:', err);
-      toastError(err.message || '教室の更新に失敗しました');
+      toastError(err instanceof Error ? err.message : '教室の更新に失敗しました');
     } finally {
       setIsSavingSchool(false);
     }
@@ -417,8 +417,8 @@ export default function UsersPage() {
       await updateSchool(school.id, { is_demo: !school.is_demo });
       setSchools((prev) => prev.map((s) => s.id === school.id ? { ...s, is_demo: !school.is_demo } : s));
       success(school.is_demo ? 'デモフラグを解除しました' : 'デモ教室に設定しました');
-    } catch (err: any) {
-      toastError(err.message || 'デモフラグの更新に失敗しました');
+    } catch (err: unknown) {
+      toastError(err instanceof Error ? err.message : 'デモフラグの更新に失敗しました');
     }
   };
 

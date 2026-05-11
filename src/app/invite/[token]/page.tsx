@@ -83,9 +83,10 @@ export default function InvitePage() {
 
         router.push('/students');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error accepting invitation:', err);
-      if (err.message?.includes('already registered') || err.message?.includes('User already registered')) {
+      const message = err instanceof Error ? err.message : '';
+      if (message.includes('already registered') || message.includes('User already registered')) {
         setError('このメールアドレスは既に登録されています');
       } else {
         setError('アカウントの作成に失敗しました');

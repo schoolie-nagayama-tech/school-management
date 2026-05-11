@@ -19,7 +19,7 @@ export default function ForgotPasswordPage() {
     try {
       await sendPasswordResetEmail(email);
       setIsSent(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Password reset error:', err);
       setError('パスワードリセットメールの送信に失敗しました');
     } finally {

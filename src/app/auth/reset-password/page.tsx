@@ -35,7 +35,7 @@ export default function ResetPasswordPage() {
       setTimeout(() => {
         router.push('/login');
       }, 3000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Password update error:', err);
       setError('パスワードの更新に失敗しました');
     } finally {

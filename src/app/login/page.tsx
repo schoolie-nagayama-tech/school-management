@@ -46,11 +46,12 @@ export default function LoginPage() {
       } else {
         setIsLoading(false);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setIsLoading(false);
-      if (err.message?.includes('Invalid login credentials')) {
+      const message = err instanceof Error ? err.message : '';
+      if (message.includes('Invalid login credentials')) {
         setError('メールアドレスまたはパスワードが正しくありません');
-      } else if (err.message?.includes('Email not confirmed')) {
+      } else if (message.includes('Email not confirmed')) {
         setError('メールアドレスの確認が完了していません。メールをご確認ください');
       } else {
         setError('ログインに失敗しました');
