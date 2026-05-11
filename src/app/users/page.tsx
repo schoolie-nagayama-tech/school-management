@@ -430,7 +430,7 @@ export default function UsersPage() {
     return (
       <AdminLayout headerTitle="ユーザー管理">
         <div className="p-6 flex items-center justify-center min-h-[40vh]">
-          <div className="w-10 h-10 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin" />
+          <div className="w-10 h-10 border-4 border-ink border-t-transparent rounded-full animate-spin" />
         </div>
       </AdminLayout>
     );
@@ -439,8 +439,8 @@ export default function UsersPage() {
     return (
       <AdminLayout>
         <div className="p-6">
-          <div className="bg-[#ef4444]/10 border border-[#ef4444] rounded-lg p-4">
-            <p className="text-[#ef4444]">このページにアクセスする権限がありません</p>
+          <div className="bg-danger/10 border border-danger rounded-lg p-4">
+            <p className="text-danger">このページにアクセスする権限がありません</p>
           </div>
         </div>
       </AdminLayout>
@@ -455,12 +455,12 @@ export default function UsersPage() {
           <div className="flex items-center gap-4">
             <Link
               href="/students"
-              className="flex items-center gap-2 text-[#1f2937] hover:text-[#3b82f6] transition-colors duration-150"
+              className="flex items-center gap-2 text-text-heading hover:text-info transition-colors duration-150"
               title="ホームに戻る"
             >
               <Home className="w-5 h-5" />
             </Link>
-            <h1 className="text-2xl font-bold text-[#1f2937]">ユーザー管理</h1>
+            <h1 className="text-2xl font-bold text-text-heading">ユーザー管理</h1>
           </div>
           {activeTab === 'users' && !isManager && (
             <Button onClick={() => setIsCreateDialogOpen(true)}>
@@ -483,13 +483,13 @@ export default function UsersPage() {
         </div>
 
         {/* タブ */}
-        <div className="flex gap-2 mb-4 border-b border-[#e5e7eb]/20 flex-shrink-0">
+        <div className="flex gap-2 mb-4 border-b border-border/20 flex-shrink-0">
           <button
             onClick={() => setActiveTab('users')}
             className={`px-4 py-2 font-medium transition-colors duration-150 ${
               activeTab === 'users'
-                ? 'text-[#1f2937] border-b-2 border-[#3b82f6]'
-                : 'text-[#4b5563] hover:text-[#1f2937]'
+                ? 'text-text-heading border-b-2 border-info'
+                : 'text-text-body hover:text-text-heading'
             }`}
           >
             ユーザー管理
@@ -499,8 +499,8 @@ export default function UsersPage() {
               onClick={() => setActiveTab('schools')}
               className={`px-4 py-2 font-medium transition-colors duration-150 ${
                 activeTab === 'schools'
-                  ? 'text-[#1f2937] border-b-2 border-[#3b82f6]'
-                  : 'text-[#4b5563] hover:text-[#1f2937]'
+                  ? 'text-text-heading border-b-2 border-info'
+                  : 'text-text-body hover:text-text-heading'
               }`}
             >
               教室設定
@@ -511,16 +511,16 @@ export default function UsersPage() {
         {isLoading ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
-              <div className="w-12 h-12 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-[#4b5563]">読み込み中...</p>
+              <div className="w-12 h-12 border-4 border-ink border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-text-body">読み込み中...</p>
             </div>
           </div>
         ) : activeTab === 'users' ? (
           <div className="flex-1 min-h-0 flex flex-col">
             {/* ユーザー一覧 */}
-            <div className="bg-white rounded-xl border border-[#e5e7eb] flex-1 min-h-0 flex flex-col overflow-hidden">
-              <div className="p-3 bg-[#f3f4f6] border-b border-[#e5e7eb] flex-shrink-0">
-                <h2 className="font-bold text-[#1f2937]">登録済みユーザー ({users.length})</h2>
+            <div className="bg-surface-raised rounded-xl border border-border flex-1 min-h-0 flex flex-col overflow-hidden">
+              <div className="p-3 bg-surface-hover border-b border-border flex-shrink-0">
+                <h2 className="font-bold text-text-heading">登録済みユーザー ({users.length})</h2>
               </div>
               <div className="flex-1 min-h-0 overflow-auto">
                 <table className="w-full table-fixed">
@@ -533,30 +533,30 @@ export default function UsersPage() {
                     <col style={{ width: '10%' }} />
                     <col style={{ width: '23%' }} />
                   </colgroup>
-                  <thead className="bg-[#f3f4f6] border-b border-[#e5e7eb]">
+                  <thead className="bg-surface-hover border-b border-border">
                     <tr>
-                      <th className="px-3 py-2 text-left text-sm font-bold text-[#1f2937] truncate">名前</th>
-                      <th className="px-3 py-2 text-left text-sm font-bold text-[#1f2937] truncate">ログインID</th>
-                      <th className="px-3 py-2 text-left text-sm font-bold text-[#1f2937] truncate">権限</th>
-                      <th className="px-3 py-2 text-left text-sm font-bold text-[#1f2937]">担当教室</th>
-                      <th className="px-3 py-2 text-left text-sm font-bold text-[#1f2937] truncate">状態</th>
-                      <th className="px-3 py-2 text-left text-sm font-bold text-[#1f2937] truncate">最終ログイン</th>
-                      <th className="px-3 py-2 text-right text-sm font-bold text-[#1f2937] truncate">操作</th>
+                      <th className="px-3 py-2 text-left text-sm font-bold text-text-heading truncate">名前</th>
+                      <th className="px-3 py-2 text-left text-sm font-bold text-text-heading truncate">ログインID</th>
+                      <th className="px-3 py-2 text-left text-sm font-bold text-text-heading truncate">権限</th>
+                      <th className="px-3 py-2 text-left text-sm font-bold text-text-heading">担当教室</th>
+                      <th className="px-3 py-2 text-left text-sm font-bold text-text-heading truncate">状態</th>
+                      <th className="px-3 py-2 text-left text-sm font-bold text-text-heading truncate">最終ログイン</th>
+                      <th className="px-3 py-2 text-right text-sm font-bold text-text-heading truncate">操作</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#e5e7eb]/10">
+                  <tbody className="divide-y divide-border/10">
                     {users.map(user => (
-                      <tr key={user.id} className="hover:bg-[#f3f4f6]/50 transition-colors duration-150">
-                        <td className="px-3 py-2 text-sm text-[#1f2937] truncate" title={user.display_name || '-'}>
+                      <tr key={user.id} className="hover:bg-surface-hover/50 transition-colors duration-150">
+                        <td className="px-3 py-2 text-sm text-text-heading truncate" title={user.display_name || '-'}>
                           {user.display_name || '-'}
                         </td>
-                        <td className="px-3 py-2 text-sm text-[#4b5563] truncate" title={displayLoginId(user.email)}>{displayLoginId(user.email)}</td>
+                        <td className="px-3 py-2 text-sm text-text-body truncate" title={displayLoginId(user.email)}>{displayLoginId(user.email)}</td>
                         <td className="px-3 py-2 whitespace-nowrap">
-                          <span className="inline-block px-2 py-1 text-xs font-bold bg-[#3b82f6]/20 text-[#1f2937] rounded">
+                          <span className="inline-block px-2 py-1 text-xs font-bold bg-info/20 text-text-heading rounded">
                             {USER_ROLE_LABELS[user.role as UserRole] ?? '未設定'}
                           </span>
                         </td>
-                        <td className="px-3 py-2 text-sm text-[#4b5563] align-top break-words">
+                        <td className="px-3 py-2 text-sm text-text-body align-top break-words">
                           {user.user_schools && user.user_schools.length > 0 ? (
                             <div className="flex flex-wrap gap-1 break-words">
                               {user.user_schools.map((us, idx) => {
@@ -565,7 +565,7 @@ export default function UsersPage() {
                                 return (
                                   <span
                                     key={us.id || `${us.user_id}-${us.school_id}-${idx}`}
-                                    className={`inline-flex items-center shrink-0 px-2 py-0.5 text-xs rounded whitespace-nowrap ${isDefault ? 'bg-blue-100 text-blue-800 font-medium' : 'bg-[#f3f4f6] text-[#4b5563]'}`}
+                                    className={`inline-flex items-center shrink-0 px-2 py-0.5 text-xs rounded whitespace-nowrap ${isDefault ? 'bg-blue-100 text-blue-800 font-medium' : 'bg-surface-hover text-text-body'}`}
                                   >
                                     {us.school?.name || '不明'}
                                   </span>
@@ -573,7 +573,7 @@ export default function UsersPage() {
                               })}
                             </div>
                           ) : (
-                            <span className="text-[#4b5563]/50">なし</span>
+                            <span className="text-text-body/50">なし</span>
                           )}
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap">
@@ -587,7 +587,7 @@ export default function UsersPage() {
                             </span>
                           )}
                         </td>
-                        <td className="px-3 py-2 text-sm text-[#4b5563] whitespace-nowrap">
+                        <td className="px-3 py-2 text-sm text-text-body whitespace-nowrap">
                           {user.last_login_at ? new Date(user.last_login_at).toLocaleDateString('ja-JP') : '-'}
                         </td>
                         <td className="px-3 py-2 text-right">
@@ -633,7 +633,7 @@ export default function UsersPage() {
                                       setDeletingUser(user);
                                       setIsDeleteDialogOpen(true);
                                     }}
-                                    className="p-2 text-[#ef4444] hover:text-[#ef4444]"
+                                    className="p-2 text-danger hover:text-danger"
                                   >
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
@@ -652,30 +652,30 @@ export default function UsersPage() {
         ) : canAccessSchoolSettings ? (
           <div className="flex-1 min-h-0 flex flex-col">
             {/* 教室一覧 */}
-            <div className="bg-white rounded-xl border border-[#e5e7eb] flex-1 min-h-0 flex flex-col overflow-hidden">
-              <div className="p-3 bg-[#f3f4f6] border-b border-[#e5e7eb] flex-shrink-0">
-                <h2 className="font-bold text-[#1f2937]">教室一覧 ({schools.length})</h2>
+            <div className="bg-surface-raised rounded-xl border border-border flex-1 min-h-0 flex flex-col overflow-hidden">
+              <div className="p-3 bg-surface-hover border-b border-border flex-shrink-0">
+                <h2 className="font-bold text-text-heading">教室一覧 ({schools.length})</h2>
               </div>
               <div className="flex-1 min-h-0 overflow-auto">
                 <table className="w-full">
-                  <thead className="bg-[#f3f4f6] border-b border-[#e5e7eb]">
+                  <thead className="bg-surface-hover border-b border-border">
                     <tr>
-                      <th className="px-3 py-2 text-left text-sm font-bold text-[#1f2937]">教室名</th>
-                      <th className="px-3 py-2 text-left text-sm font-bold text-[#1f2937]">コード</th>
-                      <th className="px-3 py-2 text-center text-sm font-bold text-[#1f2937]">デモ</th>
-                      <th className="px-3 py-2 text-right text-sm font-bold text-[#1f2937]">操作</th>
+                      <th className="px-3 py-2 text-left text-sm font-bold text-text-heading">教室名</th>
+                      <th className="px-3 py-2 text-left text-sm font-bold text-text-heading">コード</th>
+                      <th className="px-3 py-2 text-center text-sm font-bold text-text-heading">デモ</th>
+                      <th className="px-3 py-2 text-right text-sm font-bold text-text-heading">操作</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#e5e7eb]/10">
+                  <tbody className="divide-y divide-border/10">
                     {schools.map(school => (
-                      <tr key={school.id} className={`hover:bg-[#f3f4f6]/50 ${school.is_demo ? 'opacity-60' : ''}`}>
-                        <td className="px-3 py-2 text-sm text-[#1f2937]">
+                      <tr key={school.id} className={`hover:bg-surface-hover/50 ${school.is_demo ? 'opacity-60' : ''}`}>
+                        <td className="px-3 py-2 text-sm text-text-heading">
                           <span>{school.name}</span>
                           {school.is_demo && (
                             <span className="ml-2 px-1.5 py-0.5 text-[10px] bg-gray-200 text-gray-600 rounded">デモ</span>
                           )}
                         </td>
-                        <td className="px-3 py-2 text-sm text-[#4b5563]">{school.code || '-'}</td>
+                        <td className="px-3 py-2 text-sm text-text-body">{school.code || '-'}</td>
                         <td className="px-3 py-2 text-center">
                           <button
                             type="button"
@@ -686,7 +686,7 @@ export default function UsersPage() {
                             }`}
                           >
                             <span
-                              className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                              className={`absolute top-0.5 w-4 h-4 bg-surface-raised rounded-full shadow transition-transform ${
                                 school.is_demo ? 'translate-x-5' : 'translate-x-0.5'
                               }`}
                             />
@@ -705,7 +705,7 @@ export default function UsersPage() {
                               <Button
                                 variant="ghost"
                                 onClick={() => openDeleteSchoolDialog(school)}
-                                className="p-2 text-[#ef4444] hover:text-[#ef4444]"
+                                className="p-2 text-danger hover:text-danger"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -721,8 +721,8 @@ export default function UsersPage() {
           </div>
         ) : (
           <div className="flex-1 flex items-center p-6">
-            <div className="bg-[#ef4444]/10 border border-[#ef4444] rounded-lg p-4">
-              <p className="text-[#ef4444]">教室設定はオーナー権限以上のみアクセス可能です</p>
+            <div className="bg-danger/10 border border-danger rounded-lg p-4">
+              <p className="text-danger">教室設定はオーナー権限以上のみアクセス可能です</p>
             </div>
           </div>
         )}
@@ -754,7 +754,7 @@ export default function UsersPage() {
               <AlertDialogAction
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="bg-[#ef4444] text-white hover:bg-[#dc2626]"
+                className="bg-danger text-white hover:bg-danger/90"
               >
                 {isDeleting ? '削除中...' : '削除'}
               </AlertDialogAction>
@@ -779,7 +779,7 @@ export default function UsersPage() {
               <AlertDialogAction
                 onClick={handleConfirmDeleteSchool}
                 disabled={isDeletingSchool}
-                className="bg-[#ef4444] text-white hover:bg-[#dc2626]"
+                className="bg-danger text-white hover:bg-danger/90"
               >
                 {isDeletingSchool ? '削除中...' : '削除する'}
               </AlertDialogAction>
