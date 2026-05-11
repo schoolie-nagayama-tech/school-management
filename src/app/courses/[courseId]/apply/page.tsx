@@ -163,7 +163,7 @@ export default function CourseApplyPage() {
       case 'spring': return 'bg-[#fff9e5] border-[#ffeb3b]';
       case 'summer': return 'bg-[#ffe5e5] border-[#ffb3b3]';
       case 'winter': return 'bg-[#e5f3ff] border-[#bae1ff]';
-      default: return 'bg-[#f3f4f6] border-[#e5e7eb]';
+      default: return 'bg-surface-hover border-border';
     }
   };
 
@@ -171,7 +171,7 @@ export default function CourseApplyPage() {
     return (
       <AdminLayout headerTitle="コース適用">
         <div className="flex items-center justify-center py-12">
-          <div className="text-[#4b5563]">読み込み中...</div>
+          <div className="text-text-body">読み込み中...</div>
         </div>
       </AdminLayout>
     );
@@ -181,7 +181,7 @@ export default function CourseApplyPage() {
     return (
       <AdminLayout headerTitle="コース適用">
         <div className="flex items-center justify-center py-12">
-          <div className="text-[#ef4444]">コースが見つかりません</div>
+          <div className="text-danger">コースが見つかりません</div>
         </div>
       </AdminLayout>
     );
@@ -209,30 +209,30 @@ export default function CourseApplyPage() {
       <div className={`mb-6 p-4 rounded-xl border-2 ${getSeasonColor(course.season)}`}>
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h2 className="text-xl font-bold text-[#1f2937]">{course.name}</h2>
-            <div className="flex items-center gap-4 mt-2 text-sm text-[#4b5563]">
+            <h2 className="text-xl font-bold text-text-heading">{course.name}</h2>
+            <div className="flex items-center gap-4 mt-2 text-sm text-text-body">
               <span>{SEASON_LABELS[course.season]}</span>
               <span>対象: {course.target_grades.map(g => GRADE_LABELS[g]).join(', ')}</span>
               <span>テキスト: {course.textbooks?.length || 0}冊</span>
-              <span className="text-[#3b82f6] font-bold">合計: {course.total_koma}コマ</span>
+              <span className="text-info font-bold">合計: {course.total_koma}コマ</span>
             </div>
           </div>
           <div className="text-right">
-            <div className="text-sm text-[#4b5563]">適用済み</div>
-            <div className="text-2xl font-bold text-[#3b82f6]">{applications.length}名</div>
+            <div className="text-sm text-text-body">適用済み</div>
+            <div className="text-2xl font-bold text-info">{applications.length}名</div>
           </div>
         </div>
       </div>
 
       {/* 適用モード選択 */}
-      <div className="mb-6 p-4 bg-white rounded-xl border border-[#e5e7eb]">
-        <h3 className="text-sm font-bold text-[#1f2937] mb-3">適用モード</h3>
+      <div className="mb-6 p-4 bg-surface-raised rounded-xl border border-border">
+        <h3 className="text-sm font-bold text-text-heading mb-3">適用モード</h3>
         <div className="flex gap-4">
           <label
             className={`flex-1 p-4 rounded-lg border-2 cursor-pointer transition-colors duration-150 ${
               applyMode === 'overwrite'
-                ? 'border-[#3b82f6] bg-[#3b82f6]/10'
-                : 'border-[#f3f4f6] hover:border-[#3b82f6]'
+                ? 'border-info bg-info/10'
+                : 'border-surface-hover hover:border-info'
             }`}
           >
             <input
@@ -243,16 +243,16 @@ export default function CourseApplyPage() {
               onChange={() => setApplyMode('overwrite')}
               className="hidden"
             />
-            <div className="font-bold text-[#1f2937]">上書き</div>
-            <div className="text-sm text-[#4b5563] mt-1">
+            <div className="font-bold text-text-heading">上書き</div>
+            <div className="text-sm text-text-body mt-1">
               既存の提案回数を上書きします。グループ化も上書きされます。
             </div>
           </label>
           <label
             className={`flex-1 p-4 rounded-lg border-2 cursor-pointer transition-colors duration-150 ${
               applyMode === 'add'
-                ? 'border-[#3b82f6] bg-[#3b82f6]/10'
-                : 'border-[#f3f4f6] hover:border-[#3b82f6]'
+                ? 'border-info bg-info/10'
+                : 'border-surface-hover hover:border-info'
             }`}
           >
             <input
@@ -263,8 +263,8 @@ export default function CourseApplyPage() {
               onChange={() => setApplyMode('add')}
               className="hidden"
             />
-            <div className="font-bold text-[#1f2937]">加算</div>
-            <div className="text-sm text-[#4b5563] mt-1">
+            <div className="font-bold text-text-heading">加算</div>
+            <div className="text-sm text-text-body mt-1">
               既存の提案回数に加算します。グループ化は上書きされます。
             </div>
           </label>
@@ -272,13 +272,13 @@ export default function CourseApplyPage() {
       </div>
 
       {/* 生徒選択 */}
-      <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
+      <div className="bg-surface-raised rounded-xl border border-border overflow-hidden">
         {/* ヘッダー */}
-        <div className="p-4 bg-[#f3f4f6] border-b border-[#e5e7eb]">
+        <div className="p-4 bg-surface-hover border-b border-border">
           <div className="flex items-center justify-between flex-wrap gap-4">
-            <h3 className="text-lg font-bold text-[#1f2937]">
+            <h3 className="text-lg font-bold text-text-heading">
               対象生徒を選択
-              <span className="ml-2 text-sm font-normal text-[#4b5563]">
+              <span className="ml-2 text-sm font-normal text-text-body">
                 （{targetStudents.length}名が対象学年）
               </span>
             </h3>
@@ -289,13 +289,13 @@ export default function CourseApplyPage() {
                 placeholder="氏名・コードで検索"
                 value={searchKeyword}
                 onChange={e => setSearchKeyword(e.target.value)}
-                className="px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm w-48"
+                className="px-3 py-2 border border-border rounded-lg text-sm w-48"
               />
               {/* 学年フィルター */}
               <select
                 value={filterGrade}
                 onChange={e => setFilterGrade(e.target.value ? parseInt(e.target.value) : '')}
-                className="px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
+                className="px-3 py-2 border border-border rounded-lg text-sm"
               >
                 <option value="">全学年</option>
                 {course.target_grades.map(g => (
@@ -318,8 +318,8 @@ export default function CourseApplyPage() {
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="bg-[#f3f4f6] border-b border-[#e5e7eb]">
-                <th className="px-4 py-3 text-center w-10 border-r border-[#e5e7eb]">
+              <tr className="bg-surface-hover border-b border-border">
+                <th className="px-4 py-3 text-center w-10 border-r border-border">
                   <input
                     type="checkbox"
                     checked={filteredStudents.length > 0 && selectedStudentIds.size === filteredStudents.length}
@@ -327,13 +327,13 @@ export default function CourseApplyPage() {
                     className="w-4 h-4"
                   />
                 </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] border-r border-[#e5e7eb]">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-text-heading border-r border-border">
                   氏名
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-[#1f2937] border-r border-[#e5e7eb]">
+                <th className="px-4 py-3 text-center text-xs font-semibold text-text-heading border-r border-border">
                   学年
                 </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-[#1f2937]">
+                <th className="px-4 py-3 text-center text-xs font-semibold text-text-heading">
                   適用状況
                 </th>
               </tr>
@@ -341,7 +341,7 @@ export default function CourseApplyPage() {
             <tbody>
               {filteredStudents.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-sm text-[#4b5563]">
+                  <td colSpan={4} className="px-4 py-8 text-center text-sm text-text-body">
                     対象の生徒がいません
                   </td>
                 </tr>
@@ -353,11 +353,11 @@ export default function CourseApplyPage() {
                   return (
                     <tr
                       key={student.id}
-                      className={`border-b border-[#e5e7eb] hover:bg-[#f3f4f6] transition-colors duration-150 ${
-                        isChecked ? 'bg-[#3b82f6]/10' : ''
+                      className={`border-b border-border hover:bg-surface-hover transition-colors duration-150 ${
+                        isChecked ? 'bg-info/10' : ''
                       }`}
                     >
-                      <td className="px-4 py-3 text-center border-r border-[#e5e7eb]">
+                      <td className="px-4 py-3 text-center border-r border-border">
                         <input
                           type="checkbox"
                           checked={isChecked}
@@ -365,20 +365,20 @@ export default function CourseApplyPage() {
                           className="w-4 h-4"
                         />
                       </td>
-                      <td className="px-4 py-3 text-sm font-medium text-[#1f2937] border-r border-[#e5e7eb]">
+                      <td className="px-4 py-3 text-sm font-medium text-text-heading border-r border-border">
                         <Link
                           href={`/students/${student.id}/progress`}
-                          className="text-[#1f2937] hover:text-[#3b82f6] hover:underline transition-colors duration-150"
+                          className="text-text-heading hover:text-info hover:underline transition-colors duration-150"
                         >
                           {student.last_name} {student.first_name}
                           {student.last_name_kana && (
-                            <span className="ml-2 text-xs text-[#4b5563]">
+                            <span className="ml-2 text-xs text-text-body">
                               ({student.last_name_kana} {student.first_name_kana})
                             </span>
                           )}
                         </Link>
                       </td>
-                      <td className="px-4 py-3 text-center text-sm text-[#4b5563] border-r border-[#e5e7eb]">
+                      <td className="px-4 py-3 text-center text-sm text-text-body border-r border-border">
                         {GRADE_LABELS[student.grade] || student.grade}
                       </td>
                       <td className="px-4 py-3 text-center">
@@ -387,7 +387,7 @@ export default function CourseApplyPage() {
                             適用済み
                           </span>
                         ) : (
-                          <span className="inline-block px-2 py-1 bg-[#f3f4f6] text-[#4b5563] rounded text-xs">
+                          <span className="inline-block px-2 py-1 bg-surface-hover text-text-body rounded text-xs">
                             未適用
                           </span>
                         )}
@@ -403,35 +403,35 @@ export default function CourseApplyPage() {
 
       {/* 適用履歴 */}
       {applications.length > 0 && (
-        <div className="mt-6 bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
-          <div className="p-4 bg-[#f3f4f6] border-b border-[#e5e7eb]">
-            <h3 className="text-lg font-bold text-[#1f2937]">適用履歴</h3>
+        <div className="mt-6 bg-surface-raised rounded-xl border border-border overflow-hidden">
+          <div className="p-4 bg-surface-hover border-b border-border">
+            <h3 className="text-lg font-bold text-text-heading">適用履歴</h3>
           </div>
           <div className="max-h-64 overflow-y-auto">
             <table className="w-full border-collapse">
               <thead>
-                <tr className="bg-[#f3f4f6] border-b border-[#e5e7eb]">
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-[#1f2937] border-r border-[#e5e7eb]">
+                <tr className="bg-surface-hover border-b border-border">
+                  <th className="px-4 py-2 text-left text-xs font-semibold text-text-heading border-r border-border">
                     生徒名
                   </th>
-                  <th className="px-4 py-2 text-center text-xs font-semibold text-[#1f2937] border-r border-[#e5e7eb]">
+                  <th className="px-4 py-2 text-center text-xs font-semibold text-text-heading border-r border-border">
                     モード
                   </th>
-                  <th className="px-4 py-2 text-center text-xs font-semibold text-[#1f2937]">
+                  <th className="px-4 py-2 text-center text-xs font-semibold text-text-heading">
                     適用日時
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {applications.map(app => (
-                  <tr key={app.id} className="border-b border-[#e5e7eb]/50 hover:bg-[#f3f4f6] transition-colors duration-150">
-                    <td className="px-4 py-2 text-sm text-[#1f2937] border-r border-[#e5e7eb]/50">
+                  <tr key={app.id} className="border-b border-border/50 hover:bg-surface-hover transition-colors duration-150">
+                    <td className="px-4 py-2 text-sm text-text-heading border-r border-border/50">
                       {app.student?.last_name} {app.student?.first_name}
                     </td>
-                    <td className="px-4 py-2 text-center text-sm text-[#4b5563] border-r border-[#e5e7eb]/50">
+                    <td className="px-4 py-2 text-center text-sm text-text-body border-r border-border/50">
                       {app.applied_mode === 'overwrite' ? '上書き' : '加算'}
                     </td>
-                    <td className="px-4 py-2 text-center text-sm text-[#4b5563]">
+                    <td className="px-4 py-2 text-center text-sm text-text-body">
                       {new Date(app.applied_at).toLocaleString('ja-JP')}
                     </td>
                   </tr>
@@ -450,34 +450,34 @@ export default function CourseApplyPage() {
         size="md"
       >
         <div className="space-y-4">
-          <p className="text-[#1f2937]">
+          <p className="text-text-heading">
             以下の内容で適用します。よろしいですか？
           </p>
-          <div className="p-4 bg-[#f3f4f6] rounded-lg space-y-2">
+          <div className="p-4 bg-surface-hover rounded-lg space-y-2">
             <div className="flex justify-between">
-              <span className="text-[#4b5563]">コース:</span>
-              <span className="font-medium text-[#1f2937]">{course.name}</span>
+              <span className="text-text-body">コース:</span>
+              <span className="font-medium text-text-heading">{course.name}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#4b5563]">対象生徒:</span>
-              <span className="font-medium text-[#1f2937]">{selectedStudentIds.size}名</span>
+              <span className="text-text-body">対象生徒:</span>
+              <span className="font-medium text-text-heading">{selectedStudentIds.size}名</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#4b5563]">モード:</span>
-              <span className="font-medium text-[#1f2937]">
+              <span className="text-text-body">モード:</span>
+              <span className="font-medium text-text-heading">
                 {applyMode === 'overwrite' ? '上書き' : '加算'}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#4b5563]">テキスト:</span>
-              <span className="font-medium text-[#1f2937]">{course.textbooks?.length || 0}冊</span>
+              <span className="text-text-body">テキスト:</span>
+              <span className="font-medium text-text-heading">{course.textbooks?.length || 0}冊</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#4b5563]">合計コマ数:</span>
-              <span className="font-medium text-[#3b82f6]">{course.total_koma}コマ</span>
+              <span className="text-text-body">合計コマ数:</span>
+              <span className="font-medium text-info">{course.total_koma}コマ</span>
             </div>
           </div>
-          <div className="flex justify-end gap-2 pt-4 border-t border-[#e5e7eb]">
+          <div className="flex justify-end gap-2 pt-4 border-t border-border">
             <Button variant="secondary" onClick={() => setIsConfirmModalOpen(false)}>
               キャンセル
             </Button>
