@@ -184,8 +184,8 @@ export default function SeasonalShiftFormPage() {
   // ─── 認証ローディング ───
   if (authState === 'loading') {
     return (
-      <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center">
-        <p className="text-[#4b5563]">読み込み中...</p>
+      <div className="min-h-screen bg-surface-hover flex items-center justify-center">
+        <p className="text-text-body">読み込み中...</p>
       </div>
     );
   }
@@ -193,10 +193,10 @@ export default function SeasonalShiftFormPage() {
   // ─── 未ログイン ───
   if (authState === 'unauthenticated') {
     return (
-      <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 max-w-sm w-full text-center">
-          <h1 className="text-xl font-bold text-[#1f2937] mb-3">ログインが必要です</h1>
-          <p className="text-sm text-[#6b7280] mb-6">
+      <div className="min-h-screen bg-surface-hover flex items-center justify-center p-4">
+        <div className="bg-surface-raised rounded-xl border border-border p-8 max-w-sm w-full text-center">
+          <h1 className="text-xl font-bold text-text-heading mb-3">ログインが必要です</h1>
+          <p className="text-sm text-text-muted mb-6">
             シフト提出にはアカウントへのログインが必要です。
           </p>
           <a
@@ -213,8 +213,8 @@ export default function SeasonalShiftFormPage() {
   // ─── データローディング ───
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center">
-        <p className="text-[#4b5563]">読み込み中...</p>
+      <div className="min-h-screen bg-surface-hover flex items-center justify-center">
+        <p className="text-text-body">読み込み中...</p>
       </div>
     );
   }
@@ -222,12 +222,12 @@ export default function SeasonalShiftFormPage() {
   // ─── 設定なし ───
   if (!setting) {
     return (
-      <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-surface-hover flex items-center justify-center p-4">
         <div className="text-center">
-          <h1 className="text-xl font-bold text-[#1f2937] mb-2">
+          <h1 className="text-xl font-bold text-text-heading mb-2">
             このシフト提出は現在受付していません
           </h1>
-          <p className="text-[#4b5563] text-sm">URLをご確認ください。</p>
+          <p className="text-text-body text-sm">URLをご確認ください。</p>
         </div>
       </div>
     );
@@ -236,13 +236,13 @@ export default function SeasonalShiftFormPage() {
   // ─── 提出完了 ───
   if (isDone) {
     return (
-      <div className="min-h-screen bg-[#f3f4f6]">
+      <div className="min-h-screen bg-surface-hover">
         <div className="max-w-lg mx-auto px-4 py-8">
-          <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 text-center">
-            <h2 className="text-xl font-bold text-[#1f2937] mb-4">
+          <div className="bg-surface-raised rounded-xl border border-border p-8 text-center">
+            <h2 className="text-xl font-bold text-text-heading mb-4">
               {existingSubmission?.allow_edit ? '修正を提出しました' : 'シフト提出が完了しました'}
             </h2>
-            <p className="text-[#4b5563] text-sm">ご提出ありがとうございました。</p>
+            <p className="text-text-body text-sm">ご提出ありがとうございました。</p>
           </div>
         </div>
       </div>
@@ -254,28 +254,28 @@ export default function SeasonalShiftFormPage() {
     const submittedAt = new Date(existingSubmission.submitted_at).toLocaleString('ja-JP');
     const slotCount = (existingSubmission.slots ?? []).filter((s) => s.available).length;
     return (
-      <div className="min-h-screen bg-[#f3f4f6]">
+      <div className="min-h-screen bg-surface-hover">
         <div className="max-w-lg mx-auto px-4 py-8">
-          <div className="bg-white rounded-xl border border-[#e5e7eb] p-8">
-            <h2 className="text-xl font-bold text-[#1f2937] mb-2">提出済み</h2>
-            <p className="text-sm text-[#6b7280] mb-4">{setting.name}</p>
+          <div className="bg-surface-raised rounded-xl border border-border p-8">
+            <h2 className="text-xl font-bold text-text-heading mb-2">提出済み</h2>
+            <p className="text-sm text-text-muted mb-4">{setting.name}</p>
             <dl className="space-y-3 text-sm">
               <div className="flex justify-between">
-                <dt className="text-[#6b7280]">提出日時</dt>
-                <dd className="text-[#1f2937] font-medium">{submittedAt}</dd>
+                <dt className="text-text-muted">提出日時</dt>
+                <dd className="text-text-heading font-medium">{submittedAt}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-[#6b7280]">出勤可能コマ数</dt>
-                <dd className="text-[#1f2937] font-medium">{slotCount} コマ</dd>
+                <dt className="text-text-muted">出勤可能コマ数</dt>
+                <dd className="text-text-heading font-medium">{slotCount} コマ</dd>
               </div>
               {existingSubmission.notes && (
                 <div>
-                  <dt className="text-[#6b7280] mb-1">備考</dt>
-                  <dd className="text-[#1f2937] whitespace-pre-line">{existingSubmission.notes}</dd>
+                  <dt className="text-text-muted mb-1">備考</dt>
+                  <dd className="text-text-heading whitespace-pre-line">{existingSubmission.notes}</dd>
                 </div>
               )}
             </dl>
-            <p className="mt-6 text-xs text-[#9ca3af]">
+            <p className="mt-6 text-xs text-text-faint">
               内容の修正が必要な場合は担当者にお問い合わせください。
             </p>
           </div>
@@ -291,30 +291,30 @@ export default function SeasonalShiftFormPage() {
   const displayName = profile?.display_name ?? profile?.email ?? '';
 
   return (
-    <div className="min-h-screen bg-[#f3f4f6]">
+    <div className="min-h-screen bg-surface-hover">
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 mb-6">
-          <h1 className="text-2xl font-bold text-[#1f2937] mb-2">{setting.name}</h1>
+        <div className="bg-surface-raised rounded-xl border border-border p-6 mb-6">
+          <h1 className="text-2xl font-bold text-text-heading mb-2">{setting.name}</h1>
           {isEdit && (
             <p className="text-sm text-amber-600 font-medium mb-2">修正を受け付けています</p>
           )}
           {setting.description && (
-            <p className="text-[#4b5563] whitespace-pre-line mb-4">{setting.description}</p>
+            <p className="text-text-body whitespace-pre-line mb-4">{setting.description}</p>
           )}
-          <p className="text-sm text-[#6b7280]">
+          <p className="text-sm text-text-muted">
             締切: {new Date(setting.deadline + 'T23:59:59').toLocaleDateString('ja-JP')}
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-[#e5e7eb] p-6 space-y-6">
-          <div className="p-3 bg-[#f9fafb] rounded-lg border border-[#e5e7eb]">
-            <p className="text-xs text-[#6b7280] mb-0.5">提出者</p>
-            <p className="text-sm font-medium text-[#1f2937]">{displayName}</p>
+        <form onSubmit={handleSubmit} className="bg-surface-raised rounded-xl border border-border p-6 space-y-6">
+          <div className="p-3 bg-surface rounded-lg border border-border">
+            <p className="text-xs text-text-muted mb-0.5">提出者</p>
+            <p className="text-sm font-medium text-text-heading">{displayName}</p>
           </div>
 
           <div>
-            <h2 className="text-lg font-semibold text-[#1f2937] mb-2">出勤可能日時</h2>
-            <p className="text-sm text-[#4b5563] mb-3">
+            <h2 className="text-lg font-semibold text-text-heading mb-2">出勤可能日時</h2>
+            <p className="text-sm text-text-body mb-3">
               出勤可能なコマにチェックを入れてください。丸ボタンで日付・時間帯を一括で選択できます。
             </p>
             <div className="flex flex-wrap gap-2 mb-4">
@@ -324,7 +324,7 @@ export default function SeasonalShiftFormPage() {
                   type="button"
                   onClick={() => toggleColumn(slot)}
                   title={`${slot}を一括選択`}
-                  className="px-2 py-1.5 text-xs font-medium rounded-lg border border-[#e5e7eb] bg-white text-[#1f2937] hover:bg-[#f3f4f6] active:bg-[#e5e7eb] transition-colors duration-150"
+                  className="px-2 py-1.5 text-xs font-medium rounded-lg border border-border bg-surface-raised text-text-heading hover:bg-surface-hover active:bg-border transition-colors duration-150"
                 >
                   {slot}
                 </button>
@@ -341,9 +341,9 @@ export default function SeasonalShiftFormPage() {
                 return (
                   <div
                     key={dateStr}
-                    className="rounded-xl border-2 border-[#e5e7eb] bg-[#f9fafb] overflow-hidden shadow-sm"
+                    className="rounded-xl border-2 border-border bg-surface overflow-hidden shadow-sm"
                   >
-                    <div className="flex items-center gap-2 px-4 py-3 border-b border-[#e5e7eb] bg-white">
+                    <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-surface-raised">
                       {hasOpen && (
                         <button
                           type="button"
@@ -355,7 +355,7 @@ export default function SeasonalShiftFormPage() {
                           <span className="text-xs text-gray-600 font-medium">全</span>
                         </button>
                       )}
-                      <span className="text-sm font-semibold text-[#1f2937]">{dayLabel}</span>
+                      <span className="text-sm font-semibold text-text-heading">{dayLabel}</span>
                     </div>
                     <div className="grid grid-cols-1 gap-1 p-3">
                       {uniqueSlots.map((slot) => {
@@ -369,16 +369,16 @@ export default function SeasonalShiftFormPage() {
                             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer min-h-[2.75rem] transition-colors ${
                               checked
                                 ? 'bg-blue-100 border-2 border-blue-200 hover:bg-blue-100'
-                                : 'bg-white border-2 border-transparent hover:bg-white/90'
+                                : 'bg-surface-raised border-2 border-transparent hover:bg-surface-raised/90'
                             }`}
                           >
                             <input
                               type="checkbox"
                               checked={checked}
                               onChange={() => toggle(key)}
-                              className="w-5 h-5 text-[#3b82f6] rounded cursor-pointer shrink-0"
+                              className="w-5 h-5 text-info rounded cursor-pointer shrink-0"
                             />
-                            <span className="text-[#1f2937] font-medium">{slot}</span>
+                            <span className="text-text-heading font-medium">{slot}</span>
                           </label>
                         );
                       })}
@@ -390,12 +390,12 @@ export default function SeasonalShiftFormPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-1">備考</label>
+            <label className="block text-sm font-medium text-text-heading mb-1">備考</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
+              className="w-full px-3 py-2 border border-border rounded-lg text-sm"
             />
           </div>
 

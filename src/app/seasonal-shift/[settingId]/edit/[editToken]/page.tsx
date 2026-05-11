@@ -178,20 +178,20 @@ export default function SeasonalShiftEditPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center">
-        <p className="text-[#4b5563]">読み込み中...</p>
+      <div className="min-h-screen bg-surface-hover flex items-center justify-center">
+        <p className="text-text-body">読み込み中...</p>
       </div>
     );
   }
 
   if (invalidToken) {
     return (
-      <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-surface-hover flex items-center justify-center p-4">
         <div className="text-center">
-          <h1 className="text-xl font-bold text-[#1f2937] mb-2">
+          <h1 className="text-xl font-bold text-text-heading mb-2">
             この修正用URLは無効です
           </h1>
-          <p className="text-[#4b5563] text-sm">
+          <p className="text-text-body text-sm">
             修正が完了済みか、URLの有効期限が切れています。管理者にお問い合わせください。
           </p>
         </div>
@@ -201,11 +201,11 @@ export default function SeasonalShiftEditPage() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-[#f3f4f6]">
+      <div className="min-h-screen bg-surface-hover">
         <div className="max-w-lg mx-auto px-4 py-8">
-          <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 text-center">
-            <h2 className="text-xl font-bold text-[#1f2937] mb-4">シフト修正が完了しました</h2>
-            <p className="text-[#4b5563] mb-6">
+          <div className="bg-surface-raised rounded-xl border border-border p-8 text-center">
+            <h2 className="text-xl font-bold text-text-heading mb-4">シフト修正が完了しました</h2>
+            <p className="text-text-body mb-6">
               修正内容が反映されました。このURLは今後使用できません。
             </p>
           </div>
@@ -220,43 +220,43 @@ export default function SeasonalShiftEditPage() {
   const uniqueDates = [...dates];
 
   return (
-    <div className="min-h-screen bg-[#f3f4f6]">
+    <div className="min-h-screen bg-surface-hover">
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 mb-6">
-          <h1 className="text-2xl font-bold text-[#1f2937] mb-2">{setting.name} の修正</h1>
+        <div className="bg-surface-raised rounded-xl border border-border p-6 mb-6">
+          <h1 className="text-2xl font-bold text-text-heading mb-2">{setting.name} の修正</h1>
           {setting.description && (
-            <p className="text-[#4b5563] whitespace-pre-line mb-4">{setting.description}</p>
+            <p className="text-text-body whitespace-pre-line mb-4">{setting.description}</p>
           )}
-          <p className="text-sm text-[#6b7280]">
+          <p className="text-sm text-text-muted">
             シフト内容を修正して再送信してください。送信後、このURLは無効になります。
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-[#e5e7eb] p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="bg-surface-raised rounded-xl border border-border p-6 space-y-6">
           <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-1">お名前 *</label>
+            <label className="block text-sm font-medium text-text-heading mb-1">お名前 *</label>
             <input
               type="text"
               required
               value={teacherName}
               onChange={(e) => setTeacherName(e.target.value)}
-              className="w-full max-w-md px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
+              className="w-full max-w-md px-3 py-2 border border-border rounded-lg text-sm"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-1">メールアドレス *</label>
+            <label className="block text-sm font-medium text-text-heading mb-1">メールアドレス *</label>
             <input
               type="email"
               required
               value={teacherEmail}
               onChange={(e) => setTeacherEmail(e.target.value)}
-              className="w-full max-w-md px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
+              className="w-full max-w-md px-3 py-2 border border-border rounded-lg text-sm"
             />
           </div>
 
           <div>
-            <h2 className="text-lg font-semibold text-[#1f2937] mb-2">出勤可能日時</h2>
-            <p className="text-sm text-[#4b5563] mb-3">
+            <h2 className="text-lg font-semibold text-text-heading mb-2">出勤可能日時</h2>
+            <p className="text-sm text-text-body mb-3">
               出勤可能なコマにチェックを入れてください。丸ボタンで日付・時間帯を一括で選択できます。
             </p>
             <div className="flex flex-wrap gap-2 mb-4">
@@ -266,7 +266,7 @@ export default function SeasonalShiftEditPage() {
                   type="button"
                   onClick={() => toggleColumn(slot)}
                   title={`${slot}を一括選択`}
-                  className="px-2 py-1.5 text-xs font-medium rounded-lg border border-[#e5e7eb] bg-white text-[#1f2937] hover:bg-[#f3f4f6] active:bg-[#e5e7eb] transition-colors duration-150"
+                  className="px-2 py-1.5 text-xs font-medium rounded-lg border border-border bg-surface-raised text-text-heading hover:bg-surface-hover active:bg-border transition-colors duration-150"
                 >
                   {slot}
                 </button>
@@ -283,9 +283,9 @@ export default function SeasonalShiftEditPage() {
                 return (
                   <div
                     key={dateStr}
-                    className="rounded-xl border-2 border-[#e5e7eb] bg-[#f9fafb] overflow-hidden shadow-sm"
+                    className="rounded-xl border-2 border-border bg-surface overflow-hidden shadow-sm"
                   >
-                    <div className="flex items-center gap-2 px-4 py-3 border-b border-[#e5e7eb] bg-white">
+                    <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-surface-raised">
                       {hasOpenInRow && (
                         <button
                           type="button"
@@ -297,7 +297,7 @@ export default function SeasonalShiftEditPage() {
                           <span className="text-xs text-gray-600 font-medium">全</span>
                         </button>
                       )}
-                      <span className="text-sm font-semibold text-[#1f2937]">{dayLabel}</span>
+                      <span className="text-sm font-semibold text-text-heading">{dayLabel}</span>
                     </div>
                     <div className="grid grid-cols-1 gap-1 p-3">
                       {uniqueSlots.map((slot) => {
@@ -312,16 +312,16 @@ export default function SeasonalShiftEditPage() {
                             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm cursor-pointer min-h-[2.75rem] transition-colors ${
                               checked
                                 ? 'bg-blue-100 border-2 border-blue-200 hover:bg-blue-100'
-                                : 'bg-white border-2 border-transparent hover:bg-white/90'
+                                : 'bg-surface-raised border-2 border-transparent hover:bg-surface-raised/90'
                             }`}
                           >
                             <input
                               type="checkbox"
                               checked={checked}
                               onChange={() => toggle(key)}
-                              className="w-5 h-5 text-[#3b82f6] rounded cursor-pointer shrink-0"
+                              className="w-5 h-5 text-info rounded cursor-pointer shrink-0"
                             />
-                            <span className="text-[#1f2937] font-medium">{slot}</span>
+                            <span className="text-text-heading font-medium">{slot}</span>
                           </label>
                         );
                       })}
@@ -333,12 +333,12 @@ export default function SeasonalShiftEditPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-1">備考</label>
+            <label className="block text-sm font-medium text-text-heading mb-1">備考</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
+              className="w-full px-3 py-2 border border-border rounded-lg text-sm"
             />
           </div>
 
