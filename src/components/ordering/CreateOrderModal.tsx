@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Modal, Button, Input, Textarea } from '@/components/ui';
 import { SelectShadcn as Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui';
+import { Plus, Minus, UserPlus } from 'lucide-react';
 import { getStudents } from '@/lib/api/students';
 import { getMaterials } from '@/lib/api/inventory';
 import { createOrder, createOrderWithBilling } from '@/lib/api/ordering';
@@ -17,6 +18,13 @@ interface CreateOrderModalProps {
   schoolIds: string[];
 }
 
+function gradeLabel(grade: number | null): string {
+  if (grade === null || grade === undefined) return '';
+  if (grade <= 6) return `小${grade}`;
+  if (grade <= 9) return `中${grade - 6}`;
+  return `高${grade - 9}`;
+}
+
 export function CreateOrderModal({ isOpen, onClose, onCreated, schoolIds }: CreateOrderModalProps) {
   const [students, setStudents] = useState<Student[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
@@ -27,11 +35,12 @@ export function CreateOrderModal({ isOpen, onClose, onCreated, schoolIds }: Crea
   const [autoBilling, setAutoBilling] = useState(true);
 
   // フォーム
-  const [studentId, setStudentId] = useState('');
+  const [studentIds, setStudentIds] = useState<string[]>(['']);
   const [materialId, setMaterialId] = useState('');
-  const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState('');
   const [studentSearch, setStudentSearch] = useState('');
+
+  const quantity = studentIds.length;
 
   // データ取得
   const fetchData = useCallback(async () => {
@@ -43,10 +52,8 @@ export function CreateOrderModal({ isOpen, onClose, onCreated, schoolIds }: Crea
         getMaterials(schoolIds),
         getBillingPeriods(schoolIds).catch(() => [] as BillingPeriod[]),
       ]);
-      // activeのみ
       setStudents(studentsData.filter((s) => s.status === 'active'));
       setMaterials(materialsData);
-      // アクティブな請求期間を取得
       const active = billingPeriods.find((p) => p.is_active) || null;
       setActiveBillingPeriod(active);
     } catch (error) {
@@ -59,10 +66,8 @@ export function CreateOrderModal({ isOpen, onClose, onCreated, schoolIds }: Crea
   useEffect(() => {
     if (isOpen) {
       fetchData();
-      // フォームリセット
-      setStudentId('');
+      setStudentIds(['']);
       setMaterialId('');
-      setQuantity(1);
       setNotes('');
       setStudentSearch('');
       setErrorMessage('');
@@ -78,13 +83,31 @@ export function CreateOrderModal({ isOpen, onClose, onCreated, schoolIds }: Crea
       })
     : students;
 
+  // 冊数を増やす
+  const addSlot = () => {
+    if (studentIds.length >= 20) return;
+    setStudentIds((prev) => [...prev, '']);
+  };
+
+  // 冊数を減らす
+  const removeSlot = (index: number) => {
+    if (studentIds.length <= 1) return;
+    setStudentIds((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // 生徒を選択
+  const setStudentAt = (index: number, value: string) => {
+    setStudentIds((prev) => {
+      const next = [...prev];
+      next[index] = value;
+      return next;
+    });
+  };
+
   const handleSubmit = async () => {
-    if (!studentId || !materialId) {
-      setErrorMessage('生徒と教材を選択してください');
-      return;
-    }
-    if (quantity < 1) {
-      setErrorMessage('数量は1以上を入力してください');
+    const filledStudentIds = studentIds.filter((id) => id !== '');
+    if (filledStudentIds.length === 0 || !materialId) {
+      setErrorMessage('教材と少なくとも1名の生徒を選択してください');
       return;
     }
 
@@ -92,18 +115,22 @@ export function CreateOrderModal({ isOpen, onClose, onCreated, schoolIds }: Crea
     setErrorMessage('');
     try {
       const schoolId = schoolIds.length > 0 ? schoolIds[0] : undefined;
-      const orderData = {
-        material_id: materialId,
-        student_id: studentId,
-        quantity,
-        notes: notes || undefined,
-      };
 
-      if (autoBilling && activeBillingPeriod) {
-        await createOrderWithBilling(orderData, activeBillingPeriod.id, schoolId);
-      } else {
-        await createOrder(orderData, schoolId);
+      for (const sid of filledStudentIds) {
+        const orderData = {
+          material_id: materialId,
+          student_id: sid,
+          quantity: 1,
+          notes: notes || undefined,
+        };
+
+        if (autoBilling && activeBillingPeriod) {
+          await createOrderWithBilling(orderData, activeBillingPeriod.id, schoolId);
+        } else {
+          await createOrder(orderData, schoolId);
+        }
       }
+
       onCreated();
       onClose();
     } catch (error) {
@@ -112,6 +139,12 @@ export function CreateOrderModal({ isOpen, onClose, onCreated, schoolIds }: Crea
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // 既に他のスロットで選択済みの生徒を除外するヘルパー
+  const getAvailableStudents = (currentIndex: number) => {
+    const selectedIds = new Set(studentIds.filter((_, i) => i !== currentIndex).filter(Boolean));
+    return filteredStudents.filter((s) => !selectedIds.has(s.id));
   };
 
   return (
@@ -130,31 +163,6 @@ export function CreateOrderModal({ isOpen, onClose, onCreated, schoolIds }: Crea
           </div>
         ) : (
           <>
-            {/* 生徒選択 */}
-            <div>
-              <label className="block text-sm font-medium text-[#374151] mb-1">
-                生徒 <span className="text-red-500">*</span>
-              </label>
-              <Input
-                placeholder="生徒名で検索..."
-                value={studentSearch}
-                onChange={(e) => setStudentSearch(e.target.value)}
-                className="mb-2"
-              />
-              <Select value={studentId} onValueChange={setStudentId}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="生徒を選択" />
-                </SelectTrigger>
-                <SelectContent>
-                  {filteredStudents.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.last_name} {s.first_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
             {/* 教材選択 */}
             <div>
               <label className="block text-sm font-medium text-[#374151] mb-1">
@@ -174,18 +182,81 @@ export function CreateOrderModal({ isOpen, onClose, onCreated, schoolIds }: Crea
               </Select>
             </div>
 
-            {/* 数量 */}
+            {/* 冊数と生徒選択 */}
             <div>
-              <label className="block text-sm font-medium text-[#374151] mb-1">
-                数量
-              </label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-[#374151]">
+                  生徒 <span className="text-red-500">*</span>
+                  <span className="ml-2 text-xs font-normal text-gray-500">
+                    {quantity}冊 / {studentIds.filter((id) => id !== '').length}名選択済み
+                  </span>
+                </label>
+                <button
+                  type="button"
+                  onClick={addSlot}
+                  disabled={studentIds.length >= 20}
+                  className="flex items-center gap-1 text-xs text-[#1e3a5f] hover:text-[#2d4a6f] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <UserPlus className="w-3.5 h-3.5" />
+                  冊数を追加
+                </button>
+              </div>
+
+              {/* 生徒検索 */}
               <Input
-                type="number"
-                min={1}
-                value={quantity}
-                onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                className="w-24"
+                placeholder="生徒名で検索..."
+                value={studentSearch}
+                onChange={(e) => setStudentSearch(e.target.value)}
+                className="mb-2"
               />
+
+              {/* 生徒スロット一覧 */}
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {studentIds.map((sid, index) => {
+                  const available = getAvailableStudents(index);
+                  return (
+                    <div key={index} className="flex items-center gap-2">
+                      <span className="text-xs text-gray-400 w-6 text-right flex-shrink-0">
+                        {index + 1}.
+                      </span>
+                      <Select value={sid} onValueChange={(v) => setStudentAt(index, v)}>
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="生徒を選択" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {available.map((s) => (
+                            <SelectItem key={s.id} value={s.id}>
+                              {gradeLabel(s.grade)} {s.last_name} {s.first_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {studentIds.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeSlot(index)}
+                          className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
+                          title="この行を削除"
+                        >
+                          <Minus className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* + ボタン（下部） */}
+              {studentIds.length < 20 && (
+                <button
+                  type="button"
+                  onClick={addSlot}
+                  className="mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 border border-dashed border-gray-300 rounded-lg text-xs text-gray-500 hover:border-[#1e3a5f] hover:text-[#1e3a5f] transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  もう1冊追加
+                </button>
+              )}
             </div>
 
             {/* 備考 */}
@@ -197,9 +268,10 @@ export function CreateOrderModal({ isOpen, onClose, onCreated, schoolIds }: Crea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="備考を入力（任意）"
-                rows={3}
+                rows={2}
               />
             </div>
+
             {/* 請求自動反映 */}
             {activeBillingPeriod && (
               <div className="flex items-center gap-2">
@@ -224,7 +296,11 @@ export function CreateOrderModal({ isOpen, onClose, onCreated, schoolIds }: Crea
             キャンセル
           </Button>
           <Button onClick={handleSubmit} disabled={isLoading || isFetching}>
-            {isLoading ? '作成中...' : '発注を作成'}
+            {isLoading
+              ? '作成中...'
+              : quantity > 1
+                ? `${studentIds.filter((id) => id !== '').length}件をまとめて発注`
+                : '発注を作成'}
           </Button>
         </div>
       </div>

@@ -357,6 +357,7 @@ export function TextbookCatalog({ textbooks, students, canEdit, materials, onOrd
   const [schoolTypeFilter, setSchoolTypeFilter] = useState<string>('all');
   const [selectedGrades, setSelectedGrades] = useState<Set<string>>(new Set());
   const [selectedSubjects, setSelectedSubjects] = useState<Set<string>>(new Set());
+  const [selectedPublishers, setSelectedPublishers] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
 
   // Build a stock lookup: textbook label → stock_quantity
@@ -368,17 +369,20 @@ export function TextbookCatalog({ textbooks, students, canEdit, materials, onOrd
     return map;
   }, [materials]);
 
-  // Derive available grades and subjects from data
-  const { grades, subjects } = useMemo(() => {
+  // Derive available grades, subjects, and publishers from data
+  const { grades, subjects, publishers } = useMemo(() => {
     const gradeSet = new Set<string>();
     const subjectSet = new Set<string>();
+    const publisherSet = new Set<string>();
     textbooks.forEach((tb) => {
       if (tb.grade) gradeSet.add(tb.grade);
       if (tb.subject) subjectSet.add(tb.subject);
+      if (tb.publisher) publisherSet.add(tb.publisher);
     });
     return {
       grades: Array.from(gradeSet).sort(),
       subjects: Array.from(subjectSet).sort(),
+      publishers: Array.from(publisherSet).sort((a, b) => a.localeCompare(b, 'ja')),
     };
   }, [textbooks]);
 
@@ -399,6 +403,11 @@ export function TextbookCatalog({ textbooks, students, canEdit, materials, onOrd
     // Subject filter
     if (selectedSubjects.size > 0) {
       result = result.filter((tb) => tb.subject !== null && selectedSubjects.has(tb.subject));
+    }
+
+    // Publisher filter
+    if (selectedPublishers.size > 0) {
+      result = result.filter((tb) => tb.publisher !== null && selectedPublishers.has(tb.publisher));
     }
 
     // Search filter
@@ -425,7 +434,7 @@ export function TextbookCatalog({ textbooks, students, canEdit, materials, onOrd
     });
 
     return result;
-  }, [textbooks, schoolTypeFilter, selectedGrades, selectedSubjects, search]);
+  }, [textbooks, schoolTypeFilter, selectedGrades, selectedSubjects, selectedPublishers, search]);
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filteredTextbooks.length / ITEMS_PER_PAGE));
@@ -458,16 +467,27 @@ export function TextbookCatalog({ textbooks, students, canEdit, materials, onOrd
     resetPage();
   };
 
+  const togglePublisher = (publisher: string) => {
+    setSelectedPublishers((prev) => {
+      const next = new Set(prev);
+      if (next.has(publisher)) next.delete(publisher);
+      else next.add(publisher);
+      return next;
+    });
+    resetPage();
+  };
+
   const clearFilters = () => {
     setSchoolTypeFilter('all');
     setSelectedGrades(new Set());
     setSelectedSubjects(new Set());
+    setSelectedPublishers(new Set());
     setSearch('');
     resetPage();
   };
 
   const hasActiveFilters =
-    schoolTypeFilter !== 'all' || selectedGrades.size > 0 || selectedSubjects.size > 0 || search.trim() !== '';
+    schoolTypeFilter !== 'all' || selectedGrades.size > 0 || selectedSubjects.size > 0 || selectedPublishers.size > 0 || search.trim() !== '';
 
   // Page number buttons
   const pageNumbers = useMemo(() => {
@@ -554,6 +574,26 @@ export function TextbookCatalog({ textbooks, students, canEdit, materials, onOrd
                       className="w-3 h-3 rounded text-[#1e3a5f] focus:ring-[#1e3a5f]"
                     />
                     {subject}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Publisher */}
+          {publishers.length > 0 && (
+            <div>
+              <h4 className="text-xs font-semibold text-gray-700 mb-2">出版社</h4>
+              <div className="space-y-1 max-h-40 overflow-y-auto">
+                {publishers.map((publisher) => (
+                  <label key={publisher} className="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedPublishers.has(publisher)}
+                      onChange={() => togglePublisher(publisher)}
+                      className="w-3 h-3 rounded text-[#1e3a5f] focus:ring-[#1e3a5f]"
+                    />
+                    {publisher}
                   </label>
                 ))}
               </div>

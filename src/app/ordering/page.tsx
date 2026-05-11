@@ -325,9 +325,33 @@ export default function OrderingPage() {
         <div className="flex items-center gap-2">
           <Link
             href="/ordering/history"
-            className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-colors duration-150"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-colors duration-150"
           >
-            発注履歴 ({orders.length})
+            発注履歴
+            {(() => {
+              const unconfirmed = orders.filter((o) => o.status === 'unconfirmed').length;
+              const ordered = orders.filter((o) => o.status === 'ordered').length;
+              const delivered = orders.filter((o) => o.status === 'delivered').length;
+              return (
+                <>
+                  {unconfirmed > 0 && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-yellow-100 text-yellow-700" title="未確認">
+                      未確認 {unconfirmed}
+                    </span>
+                  )}
+                  {ordered > 0 && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700" title="発注済み">
+                      発注済 {ordered}
+                    </span>
+                  )}
+                  {delivered > 0 && (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700" title="発送済み">
+                      発送済 {delivered}
+                    </span>
+                  )}
+                </>
+              );
+            })()}
           </Link>
           {canEdit && (
             <Button

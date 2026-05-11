@@ -46,6 +46,7 @@ export default function OrderHistoryPage() {
   const [orders, setOrders] = useState<MaterialOrderWithDetails[]>([]);
   const [schoolMap, setSchoolMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [showAllDistributed, setShowAllDistributed] = useState(false);
 
   const fetchData = useCallback(async () => {
     const schoolIds = getSelectedSchoolIds();
@@ -71,8 +72,8 @@ export default function OrderHistoryPage() {
     if (selectedSchoolId !== null) fetchData();
   }, [selectedSchoolId, fetchData]);
 
-  // Group orders by status
-  const ordersByStatus = useMemo(() => {
+  // Group orders by status (配布済みはデフォルト1ヶ月以内のみ表示)
+  const { ordersByStatus, hiddenDistributedCount } = useMemo(() => {
     const map: Record<OrderStatus, MaterialOrderWithDetails[]> = {
       unconfirmed: [],
       ordered: [],
@@ -80,13 +81,23 @@ export default function OrderHistoryPage() {
       distributed: [],
       cancelled: [],
     };
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    let hiddenCount = 0;
+
     for (const order of orders) {
-      if (map[order.status]) {
-        map[order.status].push(order);
+      if (!map[order.status]) continue;
+      if (order.status === 'distributed' && !showAllDistributed) {
+        const distributedDate = new Date(order.distributed_at || order.created_at);
+        if (distributedDate < oneMonthAgo) {
+          hiddenCount++;
+          continue;
+        }
       }
+      map[order.status].push(order);
     }
-    return map;
-  }, [orders]);
+    return { ordersByStatus: map, hiddenDistributedCount: hiddenCount };
+  }, [orders, showAllDistributed]);
 
   const handleStatusChange = useCallback(async (orderId: string, newStatus: OrderStatus) => {
     try {
@@ -170,6 +181,18 @@ export default function OrderHistoryPage() {
               onDelete={handleDelete}
             />
           ))}
+          {hiddenDistributedCount > 0 && (
+            <div className="mt-2 text-center">
+              <button
+                onClick={() => setShowAllDistributed((v) => !v)}
+                className="text-xs text-gray-500 hover:text-[#1e3a5f] transition-colors"
+              >
+                {showAllDistributed
+                  ? '1ヶ月以上前の配布済みを隠す'
+                  : `1ヶ月以上前の配布済み（${hiddenDistributedCount}件）を表示`}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </AdminLayout>
