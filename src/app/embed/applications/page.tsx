@@ -283,7 +283,7 @@ export default function EmbedApplicationsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-white">
+      <div className="flex items-center justify-center min-h-screen bg-surface-raised">
         <div className="text-center text-gray-500">
           <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
           読み込み中...
@@ -294,14 +294,14 @@ export default function EmbedApplicationsPage() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-white">
+      <div className="flex items-center justify-center min-h-screen bg-surface-raised">
         <div className="text-center text-red-600 text-sm p-4">{error}</div>
       </div>
     );
   }
 
   return (
-    <div className="bg-white min-h-screen text-[13px]">
+    <div className="bg-surface-raised min-h-screen text-[13px]">
       {/* トースト */}
       {toast && (
         <div className="fixed top-2 left-1/2 -translate-x-1/2 z-50 bg-red-600 text-white px-4 py-2 rounded-lg shadow-lg text-xs">
@@ -310,11 +310,11 @@ export default function EmbedApplicationsPage() {
       )}
 
       {/* ヘッダー */}
-      <div className="sticky top-0 z-30 bg-[#1e3a5f] text-white px-3 py-2 flex items-center justify-between">
+      <div className="sticky top-0 z-30 bg-ink text-white px-3 py-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="font-bold text-sm flex items-center gap-1"><ClipboardList className="h-4 w-4" />申込状況</span>
           {schoolName && <span className="text-xs opacity-80">（{schoolName}）</span>}
-          {readOnly && <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded">閲覧専用</span>}
+          {readOnly && <span className="text-[10px] bg-surface-raised/20 px-1.5 py-0.5 rounded">閲覧専用</span>}
         </div>
         <div className="text-xs opacity-70">
           更新: {formatTime(generatedAt)}
@@ -332,9 +332,9 @@ export default function EmbedApplicationsPage() {
       <div className="overflow-auto">
         <table className="w-full border-collapse min-w-[600px]">
           <thead>
-            <tr className="bg-[#1e3a5f] text-white">
-              <th className="sticky left-0 z-20 bg-[#1e3a5f] px-2 py-1.5 text-left text-xs font-medium w-12">学年</th>
-              <th className="sticky left-12 z-20 bg-[#1e3a5f] px-2 py-1.5 text-left text-xs font-medium min-w-[100px]">名前</th>
+            <tr className="bg-ink text-white">
+              <th className="sticky left-0 z-20 bg-ink px-2 py-1.5 text-left text-xs font-medium w-12">学年</th>
+              <th className="sticky left-12 z-20 bg-ink px-2 py-1.5 text-left text-xs font-medium min-w-[100px]">名前</th>
               {items.map((item) => (
                 <th key={item.id} className="px-2 py-1.5 text-center text-xs font-medium min-w-[80px]">
                   <div>{item.name}</div>
@@ -380,7 +380,7 @@ export default function EmbedApplicationsPage() {
             {students.map((student, idx) => (
               <tr
                 key={student.id}
-                className={`border-b border-gray-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}
+                className={`border-b border-gray-200 ${idx % 2 === 0 ? 'bg-surface-raised' : 'bg-gray-50/50'}`}
               >
                 <td className="sticky left-0 z-10 px-2 py-1.5 text-xs text-blue-700 font-medium"
                     style={{ backgroundColor: idx % 2 === 0 ? 'white' : '#fafafa' }}>
