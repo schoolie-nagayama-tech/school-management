@@ -50,14 +50,14 @@ import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 const BulletinBoard = dynamic(
   () => import('@/components/bulletin/BulletinBoard').then((m) => m.BulletinBoard),
   {
-    loading: () => <div className="h-64 rounded-xl bg-gray-50 border border-gray-200" />,
+    loading: () => <div className="h-64 rounded-xl bg-surface border border-border-subtle" />,
   }
 );
 
 const NotificationFeed = dynamic(
   () => import('@/components/notifications/NotificationFeed').then((m) => m.NotificationFeed),
   {
-    loading: () => <div className="h-48 rounded-xl bg-gray-50 border border-gray-200" />,
+    loading: () => <div className="h-48 rounded-xl bg-surface border border-border-subtle" />,
   }
 );
 
@@ -65,7 +65,7 @@ const ScoreListView = dynamic(
   () => import('@/components/score-list').then((m) => m.ScoreListView),
   {
     loading: () => (
-      <div className="py-12 text-center text-sm text-gray-500">成績一覧を読み込み中...</div>
+      <div className="py-12 text-center text-sm text-text-muted">成績一覧を読み込み中...</div>
     ),
   }
 );
@@ -545,8 +545,8 @@ export default function StudentsPage() {
       <AdminLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="w-12 h-12 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-500">読み込み中...</p>
+            <div className="w-12 h-12 border-4 border-ink border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-text-muted">読み込み中...</p>
           </div>
         </div>
       </AdminLayout>
@@ -572,8 +572,8 @@ export default function StudentsPage() {
         {errorMessage && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
             <div className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-[#c62828]" />
-              <p className="text-sm text-[#c62828]">{errorMessage}</p>
+              <AlertCircle className="w-5 h-5 text-danger" />
+              <p className="text-sm text-danger">{errorMessage}</p>
             </div>
           </div>
         )}
@@ -640,7 +640,7 @@ export default function StudentsPage() {
 
         {/* タブナビゲーション */}
         <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 mb-6">
-        <div className="flex items-center gap-0 border-b border-gray-200 min-w-max sm:min-w-0">
+        <div className="flex items-center gap-0 border-b border-border min-w-max sm:min-w-0">
           {([
             { key: 'roster' as TabType, label: '生徒名簿' },
             { key: 'report_card' as TabType, label: '内申集計' },
@@ -655,8 +655,8 @@ export default function StudentsPage() {
               }}
               className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === tab.key
-                  ? 'border-[#1e3a5f] text-[#1e3a5f]'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-ink text-ink'
+                  : 'border-transparent text-text-muted hover:text-text-body hover:border-border-strong'
               }`}
             >
               {tab.label}
@@ -673,7 +673,7 @@ export default function StudentsPage() {
               <select
                 value={selectedGrade}
                 onChange={(e) => setSelectedGrade(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white text-[#1a1a1a] focus:ring-2 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f]"
+                className="px-4 py-2 border border-border-strong rounded-lg text-sm bg-surface-raised text-text-heading focus:ring-2 focus:ring-ink/30 focus:border-ink"
               >
                 <option value="all">全学年</option>
                 {Array.from({ length: 13 }, (_, i) => i + 1).map((grade) => (
@@ -701,14 +701,14 @@ export default function StudentsPage() {
             <div className="w-full sm:w-72">
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="w-5 h-5 text-gray-400" />
+                  <Search className="w-5 h-5 text-text-faint" />
                 </div>
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="氏名・フリガナ・コードで検索..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm bg-white text-[#1a1a1a] focus:ring-2 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f] placeholder:text-gray-400"
+                  className="w-full pl-10 pr-4 py-2 border border-border-strong rounded-lg text-sm bg-surface-raised text-text-heading focus:ring-2 focus:ring-ink/30 focus:border-ink placeholder:text-text-faint"
                 />
               </div>
             </div>
@@ -717,7 +717,7 @@ export default function StudentsPage() {
             <select
               value={selectedGrade}
               onChange={(e) => setSelectedGrade(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-sm bg-white text-[#1a1a1a] focus:ring-2 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f]"
+              className="px-4 py-2 border border-border-strong rounded-lg text-sm bg-surface-raised text-text-heading focus:ring-2 focus:ring-ink/30 focus:border-ink"
             >
               <option value="all">全学年</option>
               {Array.from({ length: 13 }, (_, i) => i + 1).map((grade) => (
@@ -749,8 +749,8 @@ export default function StudentsPage() {
                   inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors
                   ${
                     showInactive
-                      ? 'bg-[#1e3a5f] text-white hover:bg-[#1e3a5f]/90 border border-[#1e3a5f]'
-                      : 'bg-white text-gray-600 border border-gray-300 hover:bg-gray-50'
+                      ? 'bg-ink text-white hover:bg-ink/90 border border-ink'
+                      : 'bg-surface-raised text-text-body border border-border-strong hover:bg-surface-hover'
                   }
                 `}
               >
@@ -783,7 +783,7 @@ export default function StudentsPage() {
                   {isExporting ? 'エクスポート中...' : 'CSVエクスポート ▾'}
                 </Button>
                 {exportMenuOpen && (
-                  <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-[#e5e7eb] z-50 min-w-[140px] overflow-hidden dropdown-menu dropdown-menu-right">
+                  <div className="absolute right-0 top-full mt-1 bg-surface-raised rounded-lg shadow-lg border border-border z-50 min-w-[140px] overflow-hidden dropdown-menu dropdown-menu-right">
                     {[
                       { label: '生徒一覧', onClick: handleExportStudents },
                       { label: '成績', onClick: handleExportAssessments },
@@ -792,7 +792,7 @@ export default function StudentsPage() {
                       <button
                         key={item.label}
                         onClick={item.onClick}
-                        className="w-full text-left px-4 py-2 text-sm text-[#1f2937] hover:bg-[#f3f4f6] transition-colors duration-150"
+                        className="w-full text-left px-4 py-2 text-sm text-text-heading hover:bg-surface-hover transition-colors duration-150"
                       >
                         {item.label}
                       </button>
@@ -817,8 +817,8 @@ export default function StudentsPage() {
 
         {/* 一括操作バー */}
         {!isTeacher && selectedIds.size > 0 && (
-          <div className="mb-4 flex items-center gap-3 p-3 bg-[#1e3a5f]/5 border border-[#1e3a5f]/20 rounded-lg slide-in-bar">
-            <span className="text-sm font-medium text-[#1e3a5f]">
+          <div className="mb-4 flex items-center gap-3 p-3 bg-ink/5 border border-ink/20 rounded-lg slide-in-bar">
+            <span className="text-sm font-medium text-ink">
               {selectedIds.size}件選択中
             </span>
             <Button
@@ -837,7 +837,7 @@ export default function StudentsPage() {
             </Button>
             <button
               onClick={() => setSelectedIds(new Set())}
-              className="ml-auto text-sm text-gray-500 hover:text-gray-700"
+              className="ml-auto text-sm text-text-muted hover:text-text-body"
             >
               選択解除
             </button>
@@ -862,7 +862,7 @@ export default function StudentsPage() {
         {/* ページネーション */}
         {rosterTotalPages > 1 && (
           <div className="flex items-center justify-between mt-4 px-2">
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-text-muted">
               {rosterTotalCount}件中 {(currentPage - 1) * ITEMS_PER_PAGE + 1}〜
               {Math.min(currentPage * ITEMS_PER_PAGE, rosterTotalCount)}件を表示
             </span>
@@ -870,31 +870,31 @@ export default function StudentsPage() {
               <button
                 onClick={() => setCurrentPage(1)}
                 disabled={currentPage === 1}
-                className="px-2 py-1 text-sm rounded border border-gray-200 disabled:opacity-40 hover:bg-gray-50"
+                className="px-2 py-1 text-sm rounded border border-border disabled:opacity-40 hover:bg-surface-hover"
               >
                 «
               </button>
               <button
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-1 text-sm rounded border border-gray-200 disabled:opacity-40 hover:bg-gray-50"
+                className="px-3 py-1 text-sm rounded border border-border disabled:opacity-40 hover:bg-surface-hover"
               >
                 ‹ 前
               </button>
-              <span className="px-3 py-1 text-sm text-[#1e3a5f] font-medium">
+              <span className="px-3 py-1 text-sm text-ink font-medium">
                 {currentPage} / {rosterTotalPages}
               </span>
               <button
                 onClick={() => setCurrentPage((p) => Math.min(rosterTotalPages, p + 1))}
                 disabled={currentPage === rosterTotalPages}
-                className="px-3 py-1 text-sm rounded border border-gray-200 disabled:opacity-40 hover:bg-gray-50"
+                className="px-3 py-1 text-sm rounded border border-border disabled:opacity-40 hover:bg-surface-hover"
               >
                 次 ›
               </button>
               <button
                 onClick={() => setCurrentPage(rosterTotalPages)}
                 disabled={currentPage === rosterTotalPages}
-                className="px-2 py-1 text-sm rounded border border-gray-200 disabled:opacity-40 hover:bg-gray-50"
+                className="px-2 py-1 text-sm rounded border border-border disabled:opacity-40 hover:bg-surface-hover"
               >
                 »
               </button>
@@ -1024,19 +1024,19 @@ export default function StudentsPage() {
       >
         <div className="space-y-4">
           <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-[#ef4444]/20 flex items-center justify-center">
-              <AlertTriangle className="w-5 h-5 text-[#ef4444]" />
+            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-danger/20 flex items-center justify-center">
+              <AlertTriangle className="w-5 h-5 text-danger" />
             </div>
             <div>
-              <p className="text-[#1f2937]">
+              <p className="text-text-heading">
                 選択した <span className="font-bold">{selectedIds.size}名</span> の生徒を削除してもよろしいですか？
               </p>
-              <p className="mt-3 text-sm text-[#4b5563]">
+              <p className="mt-3 text-sm text-text-body">
                 削除後もデータは保持されますが、一覧には表示されなくなります。
               </p>
             </div>
           </div>
-          <div className="flex justify-end gap-3 pt-4 border-t border-[#e5e7eb]">
+          <div className="flex justify-end gap-3 pt-4 border-t border-border">
             <Button variant="secondary" onClick={() => setIsBulkDeleteDialogOpen(false)}>
               キャンセル
             </Button>
@@ -1058,17 +1058,17 @@ export default function StudentsPage() {
         size="sm"
       >
         <div className="space-y-4">
-          <p className="text-sm text-[#4b5563]">
+          <p className="text-sm text-text-body">
             選択した <span className="font-bold">{selectedIds.size}名</span> の生徒を移動します。
           </p>
           <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-1">
+            <label className="block text-sm font-medium text-text-heading mb-1">
               移動先の教室
             </label>
             <select
               value={moveTargetSchoolId}
               onChange={(e) => setMoveTargetSchoolId(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-[#1a1a1a] focus:ring-2 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f]"
+              className="w-full px-3 py-2 border border-border-strong rounded-lg text-sm bg-surface-raised text-text-heading focus:ring-2 focus:ring-ink/30 focus:border-ink"
             >
               <option value="">教室を選択...</option>
               {moveSchoolOptions.map((school) => (
@@ -1078,7 +1078,7 @@ export default function StudentsPage() {
               ))}
             </select>
           </div>
-          <div className="flex justify-end gap-3 pt-4 border-t border-[#e5e7eb]">
+          <div className="flex justify-end gap-3 pt-4 border-t border-border">
             <Button
               variant="secondary"
               onClick={() => {
