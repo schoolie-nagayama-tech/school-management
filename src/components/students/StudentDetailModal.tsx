@@ -10,7 +10,7 @@ import {
   updateStudentTextbook,
 } from '@/lib/api/progress';
 import { getTextbooks } from '@/lib/api/textbooks';
-import { getStudentTextbooks as getDistributedMaterials } from '@/lib/api/ordering';
+import { getStudentTextbooks as getDistributedMaterials, deleteDistributedMaterial } from '@/lib/api/ordering';
 import type { StudentTextbook as DistributedMaterial } from '@/lib/api/ordering';
 import { listAssessments } from '@/lib/api/assessments';
 import type { Student, Textbook, AssessmentWithScores } from '@/types/database';
@@ -205,6 +205,25 @@ export function StudentDetailModal({
     } catch (e) {
       console.error('Error deleting textbook:', e);
       toastError('教材の削除に失敗しました');
+    }
+  };
+
+  const handleRemoveDistributed = async (dm: DistributedMaterial) => {
+    if (!student) return;
+    const ok = await confirm({
+      title: '配布教材を削除',
+      description: `「${dm.textbookName}」を所持教材から削除しますか？\n使い終わった教材を外して再発注できるようにします。`,
+      confirmLabel: '削除',
+      variant: 'danger',
+    });
+    if (!ok) return;
+    try {
+      await deleteDistributedMaterial(dm.orderId, student.id);
+      await loadTextbooks(student.id);
+      success('配布教材を削除しました');
+    } catch (e) {
+      console.error('Error deleting distributed material:', e);
+      toastError('配布教材の削除に失敗しました');
     }
   };
 
@@ -431,7 +450,18 @@ export function StudentDetailModal({
                           {dm.textbookName}
                           {dm.quantity > 1 && <span className="text-xs text-[#4b5563] ml-1">x{dm.quantity}</span>}
                         </span>
-                        <span className="text-[10px] text-[#9ca3af]">配布済</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-[#9ca3af]">配布済</span>
+                          {!isTeacher && (
+                            <button
+                              onClick={() => handleRemoveDistributed(dm)}
+                              className="p-0.5 text-gray-300 hover:text-red-500 transition-colors"
+                              title="削除（使い終わった教材を外す）"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>

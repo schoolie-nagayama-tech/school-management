@@ -405,6 +405,58 @@ export async function getStudentTextbooks(studentId: string): Promise<StudentTex
 }
 
 /**
+ * 配布済み教材を削除（使い終わった教材を所持教材から外す）
+ * - material_orders レコードを削除
+ * - 対応する student_textbooks レコードがあれば削除
+ */
+export async function deleteDistributedMaterial(orderId: string, studentId: string): Promise<void> {
+  // まず注文情報を取得して教材名を特定
+  const { data: order } = await supabase
+    .from('material_orders')
+    .select('id, material_id, materials(name)')
+    .eq('id', orderId)
+    .single();
+
+  if (!order) {
+    throw new Error('注文が見つかりません');
+  }
+
+  // material_orders を削除
+  const { error: deleteOrderError } = await supabase
+    .from('material_orders')
+    .delete()
+    .eq('id', orderId);
+
+  if (deleteOrderError) {
+    throw new Error(getUserErrorMessage(deleteOrderError, '配布教材の削除に失敗しました'));
+  }
+
+  // 対応する student_textbooks があれば削除
+  const mat = order.materials as Record<string, unknown> | null;
+  const materialName = mat?.name ? String(mat.name) : null;
+  if (materialName) {
+    const { data: textbook } = await supabase
+      .from('textbooks')
+      .select('id')
+      .eq('name', materialName)
+      .maybeSingle();
+
+    if (textbook) {
+      const { data: stb } = await supabase
+        .from('student_textbooks')
+        .select('id')
+        .eq('student_id', studentId)
+        .eq('textbook_id', textbook.id)
+        .maybeSingle();
+
+      if (stb) {
+        await supabase.from('student_textbooks').delete().eq('id', stb.id);
+      }
+    }
+  }
+}
+
+/**
  * 教材配布時の自動連携
  *
  * - 単語練習帳の場合: 直近の請求期間の「単語練習帳」列に value_number=1 を自動セット
