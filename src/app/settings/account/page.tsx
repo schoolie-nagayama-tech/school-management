@@ -181,7 +181,7 @@ export default function AccountSettingsPage() {
     return (
       <AdminLayout headerTitle="アカウント設定">
         <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-8 h-8 border-danger border-ink border-t-transparent rounded-full animate-spin"></div>
         </div>
       </AdminLayout>
     );
@@ -192,7 +192,7 @@ export default function AccountSettingsPage() {
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="mb-4">
-          <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-[#6b7280] hover:text-[#1f2937] transition-colors duration-150">
+          <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text-heading transition-colors duration-150">
             <ChevronLeft className="w-4 h-4" />
             設定に戻る
           </Link>
@@ -206,12 +206,12 @@ export default function AccountSettingsPage() {
           <CardContent>
             <div className="space-y-4">
               {/* メール/パスワード */}
-              <div className="flex items-center justify-between p-4 bg-[#f3f4f6] rounded-lg">
+              <div className="flex items-center justify-between p-4 bg-surface-hover rounded-lg">
                 <div className="flex items-center gap-3">
                   <Mail className="w-6 h-6 text-gray-600" />
                   <div>
-                    <p className="font-medium text-[#1f2937]">メール/パスワード</p>
-                    <p className="text-sm text-[#4b5563]">{user?.email || '未設定'}</p>
+                    <p className="font-medium text-text-heading">メール/パスワード</p>
+                    <p className="text-sm text-text-body">{user?.email || '未設定'}</p>
                   </div>
                 </div>
                 <span className="text-green-600 text-sm font-medium">有効</span>
@@ -219,7 +219,7 @@ export default function AccountSettingsPage() {
 
               {/* Google（教室長以上のみ表示） */}
               {canUseGoogleAuth && (
-                <div className="flex items-center justify-between p-4 bg-[#f3f4f6] rounded-lg">
+                <div className="flex items-center justify-between p-4 bg-surface-hover rounded-lg">
                   <div className="flex items-center gap-3">
                     <svg className="w-6 h-6" viewBox="0 0 24 24">
                       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -228,8 +228,8 @@ export default function AccountSettingsPage() {
                       <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                     </svg>
                     <div>
-                      <p className="font-medium text-[#1f2937]">Googleアカウント</p>
-                      <p className="text-sm text-[#4b5563]">
+                      <p className="font-medium text-text-heading">Googleアカウント</p>
+                      <p className="text-sm text-text-body">
                         {isGoogleLinked ? '紐付け済み' : '未紐付け'}
                       </p>
                     </div>
@@ -247,8 +247,8 @@ export default function AccountSettingsPage() {
               )}
 
               {!canUseGoogleAuth && (
-                <div className="p-4 bg-[#f3f4f6] rounded-lg">
-                  <p className="text-sm text-[#4b5563]">
+                <div className="p-4 bg-surface-hover rounded-lg">
+                  <p className="text-sm text-text-body">
                     Googleログインは教室長以上のアカウントのみ利用可能です。
                   </p>
                 </div>
@@ -266,7 +266,7 @@ export default function AccountSettingsPage() {
             <CardContent>
               <div className="space-y-4">
                 {/* Google Calendar */}
-                <div className="flex items-center justify-between p-4 bg-[#f3f4f6] rounded-lg">
+                <div className="flex items-center justify-between p-4 bg-surface-hover rounded-lg">
                   <div className="flex items-center gap-3">
                     <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none">
                       <rect x="3" y="4" width="18" height="18" rx="2" stroke="#4285F4" strokeWidth="2"/>
@@ -278,13 +278,13 @@ export default function AccountSettingsPage() {
                       <rect x="11" y="12" width="3" height="3" rx="0.5" fill="#EA4335"/>
                     </svg>
                     <div>
-                      <p className="font-medium text-[#1f2937]">Googleカレンダー</p>
+                      <p className="font-medium text-text-heading">Googleカレンダー</p>
                       {calendarStatus.connected ? (
-                        <p className="text-sm text-[#4b5563]">
+                        <p className="text-sm text-text-body">
                           連携中: {calendarStatus.email || '(メール不明)'}
                         </p>
                       ) : (
-                        <p className="text-sm text-[#4b5563]">
+                        <p className="text-sm text-text-body">
                           模試の振替予定を自動でカレンダーに追加します
                         </p>
                       )}
@@ -307,8 +307,8 @@ export default function AccountSettingsPage() {
                 </div>
 
                 {calendarStatus.connected && (
-                  <div className="px-4 py-2 bg-blue-50 rounded-lg">
-                    <p className="text-xs text-blue-700">
+                  <div className="px-4 py-2 bg-surfacelue-50 rounded-lg">
+                    <p className="text-xs text-text-text-mutedodylue-700">
                       模試フォームで「振替受験」が選択された際、あなたのGoogleカレンダーに振替予定が自動追加されます。
                     </p>
                   </div>
