@@ -110,19 +110,19 @@ export default function RegularShiftFormPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center">
-        <p className="text-[#4b5563]">読み込み中...</p>
+      <div className="min-h-screen bg-surface-hover flex items-center justify-center">
+        <p className="text-text-body">読み込み中...</p>
       </div>
     );
   }
   if (!setting) {
     return (
-      <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-surface-hover flex items-center justify-center p-4">
         <div className="text-center">
-          <h1 className="text-xl font-bold text-[#1f2937] mb-2">
+          <h1 className="text-xl font-bold text-text-heading mb-2">
             このシフト提出は現在受付していません
           </h1>
-          <p className="text-[#4b5563] text-sm">URLをご確認ください。</p>
+          <p className="text-text-body text-sm">URLをご確認ください。</p>
         </div>
       </div>
     );
@@ -130,11 +130,11 @@ export default function RegularShiftFormPage() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-[#f3f4f6]">
+      <div className="min-h-screen bg-surface-hover">
         <div className="max-w-lg mx-auto px-4 py-8">
-          <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 text-center">
-            <h2 className="text-xl font-bold text-[#1f2937] mb-4">シフト提出が完了しました</h2>
-            <p className="text-[#4b5563] mb-6">
+          <div className="bg-surface-raised rounded-xl border border-border p-8 text-center">
+            <h2 className="text-xl font-bold text-text-heading mb-4">シフト提出が完了しました</h2>
+            <p className="text-text-body mb-6">
               ご提出ありがとうございます。内容をご確認ください。
             </p>
           </div>
@@ -144,39 +144,39 @@ export default function RegularShiftFormPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f3f4f6]">
+    <div className="min-h-screen bg-surface-hover">
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 mb-6">
-          <h1 className="text-2xl font-bold text-[#1f2937] mb-2">{setting.name}</h1>
+        <div className="bg-surface-raised rounded-xl border border-border p-6 mb-6">
+          <h1 className="text-2xl font-bold text-text-heading mb-2">{setting.name}</h1>
           {setting.description && (
-            <p className="text-[#4b5563] whitespace-pre-line mb-4">{setting.description}</p>
+            <p className="text-text-body whitespace-pre-line mb-4">{setting.description}</p>
           )}
           {setting.deadline && (
-            <p className="text-sm text-[#6b7280]">
+            <p className="text-sm text-text-muted">
               締切: {new Date(setting.deadline + 'T23:59:59').toLocaleDateString('ja-JP')}
             </p>
           )}
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-[#e5e7eb] p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="bg-surface-raised rounded-xl border border-border p-6 space-y-6">
           <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-1">お名前 *</label>
+            <label className="block text-sm font-medium text-text-heading mb-1">お名前 *</label>
             <input
               type="text"
               required
               value={teacherName}
               onChange={(e) => setTeacherName(e.target.value)}
-              className="w-full max-w-md px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
+              className="w-full max-w-md px-3 py-2 border border-border rounded-lg text-sm"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-1">メールアドレス *</label>
+            <label className="block text-sm font-medium text-text-heading mb-1">メールアドレス *</label>
             <input
               type="email"
               required
               value={teacherEmail}
               onChange={(e) => setTeacherEmail(e.target.value)}
-              className="w-full max-w-md px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
+              className="w-full max-w-md px-3 py-2 border border-border rounded-lg text-sm"
             />
           </div>
 
@@ -191,12 +191,12 @@ export default function RegularShiftFormPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-1">備考</label>
+            <label className="block text-sm font-medium text-text-heading mb-1">備考</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
+              className="w-full px-3 py-2 border border-border rounded-lg text-sm"
             />
           </div>
 
