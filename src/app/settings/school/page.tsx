@@ -173,7 +173,7 @@ export default function SchoolSettingsPage() {
     return (
       <AdminLayout headerTitle="教室設定">
         <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-8 h-8 border-danger border-ink border-t-transparent rounded-full animate-spin"></div>
         </div>
       </AdminLayout>
     );
@@ -192,7 +192,7 @@ export default function SchoolSettingsPage() {
     return (
       <AdminLayout headerTitle="教室設定">
         <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-8 h-8 border-danger border-ink border-t-transparent rounded-full animate-spin"></div>
         </div>
       </AdminLayout>
     );
@@ -203,7 +203,7 @@ export default function SchoolSettingsPage() {
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="max-w-2xl mx-auto">
         <div className="mb-4">
-          <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-[#6b7280] hover:text-[#1f2937] transition-colors duration-150">
+          <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text-heading transition-colors duration-150">
             <ChevronLeft className="w-4 h-4" />
             設定に戻る
           </Link>
@@ -224,7 +224,7 @@ export default function SchoolSettingsPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <label className="block text-sm font-medium text-[#1f2937] mb-1">
+              <label className="block text-sm font-medium text-text-heading mb-1">
                 ロゴ画像
               </label>
               <div className="flex items-center gap-4">
@@ -232,11 +232,11 @@ export default function SchoolSettingsPage() {
                   <img
                     src={logoUrl}
                     alt="ロゴ"
-                    className="w-16 h-16 rounded-xl object-cover border border-[#e5e7eb] bg-[#f9fafb]"
+                    className="w-16 h-16 rounded-xl object-cover border border-border bg-surface"
                   />
                 ) : (
-                  <div className="w-16 h-16 rounded-xl bg-[#f3f4f6] border border-dashed border-[#d1d5db] flex items-center justify-center">
-                    <ImageIcon className="w-6 h-6 text-[#9ca3af]" />
+                  <div className="w-16 h-16 rounded-xl bg-surface-hover border border-infoorderashed border-border flex items-center justify-center">
+                    <ImageIcon className="w-6 h-6 text-text-faint" />
                   </div>
                 )}
                 <div className="flex flex-col gap-2">
@@ -259,14 +259,14 @@ export default function SchoolSettingsPage() {
                       type="button"
                       onClick={handleLogoRemove}
                       disabled={isUploading}
-                      className="text-xs text-[#ef4444] hover:text-[#dc2626] transition-colors disabled:opacity-50"
+                      className="text-xs text-danger hover:text-danger transition-colors disabled:opacity-50"
                     >
                       ロゴを削除
                     </button>
                   )}
                 </div>
               </div>
-              <p className="text-xs text-[#6b7280]">
+              <p className="text-xs text-text-muted">
                 保護者ポータルのヘッダーに表示されます。2MB以下の画像ファイル。
               </p>
             </div>
@@ -280,7 +280,7 @@ export default function SchoolSettingsPage() {
           <CardContent>
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-[#1f2937] mb-2">
+                <label className="block text-sm font-medium text-text-heading mb-2">
                   申込通知先メールアドレス
                 </label>
 
@@ -313,19 +313,19 @@ export default function SchoolSettingsPage() {
                 <button
                   type="button"
                   onClick={addEmail}
-                  className="mt-2 flex items-center gap-1.5 text-sm text-[#1e3a5f] hover:text-[#2a4f7f] font-medium transition-colors duration-150"
+                  className="mt-2 flex items-center gap-1.5 text-sm text-ink hover:text-ink/80 font-medium transition-colors duration-150"
                 >
                   <Plus className="w-4 h-4" />
                   メールアドレスを追加
                 </button>
 
-                <p className="mt-2 text-sm text-[#4b5563]">
+                <p className="mt-2 text-sm text-text-body">
                   フォームから申込があった際に通知を受け取るメールアドレスです。複数設定すると全員に通知されます。
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[#1f2937] mb-2">
+                <label className="block text-sm font-medium text-text-heading mb-2">
                   Slack担当者メンバーID
                 </label>
                 <Input
@@ -335,7 +335,7 @@ export default function SchoolSettingsPage() {
                   placeholder="U012345ABC"
                   className="max-w-xs"
                 />
-                <p className="mt-2 text-sm text-[#4b5563]">
+                <p className="mt-2 text-sm text-text-body">
                   教材管理の通知でメンションする担当者のSlackメンバーIDです。Slackのプロフィール → 「メンバーIDをコピー」で取得できます。
                 </p>
               </div>
