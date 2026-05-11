@@ -139,7 +139,7 @@ export default function AlertsSettingsPage() {
     });
     if (!ok) return;
     try {
-      await resetAlertSettings(schoolId);
+      await resetAlertSettings(localSchoolId);
       success('デフォルトに戻しました');
       await fetchSettings();
     } catch (e) {
@@ -159,9 +159,6 @@ export default function AlertsSettingsPage() {
     return <AdminLayout><AccessDenied /></AdminLayout>;
   }
 
-  const selectedSchoolIds = getSelectedSchoolIds();
-  const availableSchools = schools.filter((s) => selectedSchoolIds.includes(s.id));
-
   return (
     <AdminLayout headerTitle="アラート設定">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
@@ -169,6 +166,14 @@ export default function AlertsSettingsPage() {
           <ChevronLeft className="w-4 h-4 mr-1" />
           設定一覧に戻る
         </Link>
+
+        {isAllSelected && (
+          <SchoolSwitcher
+            schools={availableSchools}
+            selectedSchoolId={localSchoolId}
+            onChange={setLocalSchoolId}
+          />
+        )}
 
         <Card>
           <CardHeader>
@@ -178,21 +183,6 @@ export default function AlertsSettingsPage() {
             <p className="text-sm text-gray-600">
               アラート種別ごとに ON/OFF としきい値を教室単位で設定できます。空欄のフィールドはデフォルト値が使われます。
             </p>
-
-            {availableSchools.length > 1 && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">編集する教室</label>
-                <select
-                  value={schoolId ?? ''}
-                  onChange={(e) => setSchoolId(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white"
-                >
-                  {availableSchools.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
 
             <div className="flex items-center gap-2 pt-2 border-t border-gray-100">
               <Button onClick={saveAll} disabled={isSaving || isLoading || !settings}>
