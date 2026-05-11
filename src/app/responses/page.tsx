@@ -66,20 +66,20 @@ const QUICK_FILTERS: QuickFilter[] = [
   },
   {
     label: '増コマ・未計上',
-    color: 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50',
-    activeColor: 'bg-[#1e3a5f] text-white border-[#1e3a5f]',
+    color: 'border-gray-300 text-gray-700 bg-surface-raised hover:bg-gray-50',
+    activeColor: 'bg-ink text-white border-ink',
     filters: { formType: 'zoukoma', period: 'all', grade: 'all', linkedStatus: 'all', chargedStatus: 'not_charged', processStatus: 'all' },
   },
   {
     label: '模試・未計上',
-    color: 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50',
-    activeColor: 'bg-[#1e3a5f] text-white border-[#1e3a5f]',
+    color: 'border-gray-300 text-gray-700 bg-surface-raised hover:bg-gray-50',
+    activeColor: 'bg-ink text-white border-ink',
     filters: { formType: 'moshi', period: 'all', grade: 'all', linkedStatus: 'all', chargedStatus: 'not_charged', processStatus: 'all' },
   },
   {
     label: 'Vもぎ・未計上',
-    color: 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50',
-    activeColor: 'bg-[#1e3a5f] text-white border-[#1e3a5f]',
+    color: 'border-gray-300 text-gray-700 bg-surface-raised hover:bg-gray-50',
+    activeColor: 'bg-ink text-white border-ink',
     filters: { formType: 'mogi', period: 'all', grade: 'all', linkedStatus: 'all', chargedStatus: 'not_charged', processStatus: 'all' },
   },
 ];
@@ -192,7 +192,7 @@ function SummaryCard({
 
   return (
     <Link href={href}>
-      <div className="p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 cursor-pointer transition-colors duration-150">
+      <div className="p-4 bg-surface-raised border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 cursor-pointer transition-colors duration-150">
         <h3 className="font-semibold text-gray-900">
           {formTypeLabel} ({periodLabel})
         </h3>
@@ -529,8 +529,8 @@ export default function ResponsesPage() {
       <AdminLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="w-12 h-12 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-[#4b5563]">読み込み中...</p>
+            <div className="w-12 h-12 border-4 border-ink border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-text-body">読み込み中...</p>
           </div>
         </div>
       </AdminLayout>
@@ -550,8 +550,8 @@ export default function ResponsesPage() {
     <AdminLayout headerTitle="回答管理">
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {errorMessage && (
-          <div className="mb-4 p-4 bg-[#ef4444]/20 border border-[#ef4444] rounded-lg">
-            <p className="text-sm text-[#ef4444]">{errorMessage}</p>
+          <div className="mb-4 p-4 bg-danger/20 border border-danger rounded-lg">
+            <p className="text-sm text-danger">{errorMessage}</p>
           </div>
         )}
 
@@ -587,7 +587,7 @@ export default function ResponsesPage() {
         </div>
 
         {/* 検索 + フィルタートグル */}
-        <div className="mb-4 bg-white rounded-xl border border-[#e5e7eb] p-3">
+        <div className="mb-4 bg-surface-raised rounded-xl border border-border p-3">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -602,7 +602,7 @@ export default function ResponsesPage() {
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder="生徒名で検索"
-                className="w-full pl-9 pr-8 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#1f2937] focus:outline-none focus:ring-2 focus:ring-[#3b82f6] placeholder:text-gray-400"
+                className="w-full pl-9 pr-8 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-heading focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-gray-400"
               />
               {searchInput && (
                 <button
@@ -616,7 +616,7 @@ export default function ResponsesPage() {
             </div>
             <button
               type="submit"
-              className="px-3 py-2 bg-[#1e3a5f] text-white rounded-lg text-sm hover:bg-[#2c4f7c] transition-colors duration-150 shrink-0"
+              className="px-3 py-2 bg-ink text-white rounded-lg text-sm hover:bg-ink/80 transition-colors duration-150 shrink-0"
             >
               検索
             </button>
@@ -625,8 +625,8 @@ export default function ResponsesPage() {
               onClick={() => setShowFilters((v) => !v)}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border transition-colors duration-150 shrink-0 ${
                 showFilters
-                  ? 'bg-[#1e3a5f] text-white border-[#1e3a5f]'
-                  : 'bg-white text-gray-600 border-[#e5e7eb] hover:bg-gray-50'
+                  ? 'bg-ink text-white border-ink'
+                  : 'bg-surface-raised text-gray-600 border-border hover:bg-gray-50'
               }`}
             >
               <SlidersHorizontal className="h-4 w-4" />
@@ -642,14 +642,14 @@ export default function ResponsesPage() {
 
         {/* 詳細フィルター（折りたたみ） */}
         {showFilters && (
-          <div className="mb-4 bg-white rounded-xl border border-[#e5e7eb] p-4">
+          <div className="mb-4 bg-surface-raised rounded-xl border border-border p-4">
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
               <div>
-                <label className="block text-xs font-medium text-[#1f2937] mb-1">種別</label>
+                <label className="block text-xs font-medium text-text-heading mb-1">種別</label>
                 <select
                   value={filterFormType}
                   onChange={(e) => { setFilterFormType(e.target.value as FormType | 'all'); setFilterPeriod('all'); }}
-                  className="w-full px-2 py-1.5 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                  className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   <option value="all">すべて</option>
                   {Object.entries(FORM_TYPE_LABELS).map(([key, label]) => (
@@ -659,12 +659,12 @@ export default function ResponsesPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1f2937] mb-1">期間</label>
+                <label className="block text-xs font-medium text-text-heading mb-1">期間</label>
                 <select
                   value={filterPeriod}
                   onChange={(e) => setFilterPeriod(e.target.value)}
                   disabled={filterFormType === 'all' || formPeriods.length === 0}
-                  className="w-full px-2 py-1.5 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6] disabled:bg-[#f3f4f6] disabled:cursor-not-allowed"
+                  className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-surface-hover disabled:cursor-not-allowed"
                 >
                   <option value="all">{filterFormType === 'all' ? '種別を先に選択' : 'すべて'}</option>
                   {formPeriods.map((period) => (
@@ -676,11 +676,11 @@ export default function ResponsesPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1f2937] mb-1">学年</label>
+                <label className="block text-xs font-medium text-text-heading mb-1">学年</label>
                 <select
                   value={filterGrade}
                   onChange={(e) => setFilterGrade(e.target.value === 'all' ? 'all' : parseInt(e.target.value, 10))}
-                  className="w-full px-2 py-1.5 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                  className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   <option value="all">すべて</option>
                   {Object.entries(GRADE_LABELS).map(([key, label]) => (
@@ -690,11 +690,11 @@ export default function ResponsesPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1f2937] mb-1">紐付け</label>
+                <label className="block text-xs font-medium text-text-heading mb-1">紐付け</label>
                 <select
                   value={filterLinkedStatus}
                   onChange={(e) => setFilterLinkedStatus(e.target.value as 'all' | 'linked' | 'unlinked')}
-                  className="w-full px-2 py-1.5 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                  className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   <option value="all">すべて</option>
                   <option value="linked">紐付け済み</option>
@@ -703,11 +703,11 @@ export default function ResponsesPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1f2937] mb-1">計上</label>
+                <label className="block text-xs font-medium text-text-heading mb-1">計上</label>
                 <select
                   value={filterChargedStatus}
                   onChange={(e) => setFilterChargedStatus(e.target.value as 'all' | 'charged' | 'not_charged')}
-                  className="w-full px-2 py-1.5 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                  className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   <option value="all">すべて</option>
                   <option value="charged">計上済み</option>
@@ -716,11 +716,11 @@ export default function ResponsesPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-[#1f2937] mb-1">処理</label>
+                <label className="block text-xs font-medium text-text-heading mb-1">処理</label>
                 <select
                   value={filterProcessStatus}
                   onChange={(e) => setFilterProcessStatus(e.target.value as ProcessStatus)}
-                  className="w-full px-2 py-1.5 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                  className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   <option value="unprocessed">未処理のみ</option>
                   <option value="processed">処理済みのみ</option>
@@ -729,20 +729,20 @@ export default function ResponsesPage() {
               </div>
 
               <div className="col-span-2 sm:col-span-1 lg:col-span-2">
-                <label className="block text-xs font-medium text-[#1f2937] mb-1">申込日</label>
+                <label className="block text-xs font-medium text-text-heading mb-1">申込日</label>
                 <div className="flex items-center gap-1">
                   <input
                     type="date"
                     value={filterDateFrom}
                     onChange={(e) => setFilterDateFrom(e.target.value)}
-                    className="w-full px-2 py-1.5 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                    className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                   <span className="text-xs text-gray-400 shrink-0">〜</span>
                   <input
                     type="date"
                     value={filterDateTo}
                     onChange={(e) => setFilterDateTo(e.target.value)}
-                    className="w-full px-2 py-1.5 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563] focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                    className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
               </div>
@@ -768,7 +768,7 @@ export default function ResponsesPage() {
 
         {/* サマリーセクション */}
         {Object.keys(summary).length > 0 && (
-          <div className="mb-6 bg-white rounded-xl border border-gray-200 p-6">
+          <div className="mb-6 bg-surface-raised rounded-xl border border-gray-200 p-6">
             <h2 className="text-lg font-bold text-gray-900 mb-4">サマリー</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {Object.entries(summary).map(([key, stats]) => {
@@ -793,17 +793,17 @@ export default function ResponsesPage() {
         )}
 
         {/* 回答一覧 */}
-        <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
+        <div className="bg-surface-raised rounded-xl border border-border p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-[#1f2937]">回答一覧</h2>
+            <h2 className="text-lg font-bold text-text-heading">回答一覧</h2>
             <div className="flex items-center border border-gray-300 rounded-lg overflow-hidden">
               <button
                 type="button"
                 onClick={() => setViewMode('grouped')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors duration-150 ${
                   viewMode === 'grouped'
-                    ? 'bg-[#1e3a5f] text-white'
-                    : 'bg-white text-gray-600 hover:bg-gray-50'
+                    ? 'bg-ink text-white'
+                    : 'bg-surface-raised text-gray-600 hover:bg-gray-50'
                 }`}
               >
                 <Users className="h-4 w-4" />
@@ -814,8 +814,8 @@ export default function ResponsesPage() {
                 onClick={() => setViewMode('list')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium transition-colors duration-150 ${
                   viewMode === 'list'
-                    ? 'bg-[#1e3a5f] text-white'
-                    : 'bg-white text-gray-600 hover:bg-gray-50'
+                    ? 'bg-ink text-white'
+                    : 'bg-surface-raised text-gray-600 hover:bg-gray-50'
                 }`}
               >
                 <List className="h-4 w-4" />
@@ -824,9 +824,9 @@ export default function ResponsesPage() {
             </div>
           </div>
           {isLoading ? (
-            <div className="text-center py-8 text-[#4b5563]">読み込み中...</div>
+            <div className="text-center py-8 text-text-body">読み込み中...</div>
           ) : processFilteredResponses.length === 0 ? (
-            <div className="text-center py-8 text-[#4b5563]">該当する回答がありません。フィルターを変更してください。</div>
+            <div className="text-center py-8 text-text-body">該当する回答がありません。フィルターを変更してください。</div>
           ) : viewMode === 'grouped' ? (
             /* 生徒別ビュー */
             <div className="space-y-3">
@@ -843,8 +843,8 @@ export default function ResponsesPage() {
                     group.hasUncharged ? 'bg-red-50' : 'bg-gray-50'
                   }`}>
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="font-semibold text-sm text-[#1f2937] truncate">{group.studentName}</span>
-                      <span className="text-xs text-gray-500 bg-white px-1.5 py-0.5 rounded border border-gray-200 shrink-0">
+                      <span className="font-semibold text-sm text-text-heading truncate">{group.studentName}</span>
+                      <span className="text-xs text-gray-500 bg-surface-raised px-1.5 py-0.5 rounded border border-gray-200 shrink-0">
                         {GRADE_LABELS[group.grade] || group.grade}
                       </span>
                       <span className="hidden sm:inline text-xs text-gray-400 shrink-0">{group.schoolName}</span>
@@ -868,7 +868,7 @@ export default function ResponsesPage() {
                         className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 transition-colors duration-150 gap-3"
                       >
                         <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-xs font-medium text-[#1f2937] shrink-0">
+                          <span className="text-xs font-medium text-text-heading shrink-0">
                             {FORM_TYPE_LABELS[response.form_type]}
                           </span>
                           <span className="text-xs text-gray-400 shrink-0">{response.form_period}</span>
@@ -886,80 +886,80 @@ export default function ResponsesPage() {
           ) : (
             /* 一覧ビュー */
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse border border-[#e5e7eb] text-sm">
+              <table className="w-full border-collapse border border-border text-sm">
                 <thead>
-                  <tr className="bg-[#f3f4f6]">
-                    <th className="border border-[#e5e7eb] px-4 py-3 text-left">
+                  <tr className="bg-surface-hover">
+                    <th className="border border-border px-4 py-3 text-left">
                       <button
                         type="button"
                         onClick={() => handleSort('created_at')}
-                        className="font-medium text-[#1f2937] hover:text-[#3b82f6] flex items-center transition-colors duration-150"
+                        className="font-medium text-text-heading hover:text-info flex items-center transition-colors duration-150"
                       >
                         日時
                         {getSortIcon(sortKey, 'created_at', sortOrder)}
                       </button>
                     </th>
-                    <th className="border border-[#e5e7eb] px-4 py-3 text-left">
+                    <th className="border border-border px-4 py-3 text-left">
                       <button
                         type="button"
                         onClick={() => handleSort('form_type')}
-                        className="font-medium text-[#1f2937] hover:text-[#3b82f6] flex items-center transition-colors duration-150"
+                        className="font-medium text-text-heading hover:text-info flex items-center transition-colors duration-150"
                       >
                         種別
                         {getSortIcon(sortKey, 'form_type', sortOrder)}
                       </button>
                     </th>
-                    <th className="border border-[#e5e7eb] px-4 py-3 text-left">
+                    <th className="border border-border px-4 py-3 text-left">
                       <button
                         type="button"
                         onClick={() => handleSort('form_period')}
-                        className="font-medium text-[#1f2937] hover:text-[#3b82f6] flex items-center transition-colors duration-150"
+                        className="font-medium text-text-heading hover:text-info flex items-center transition-colors duration-150"
                       >
                         期間
                         {getSortIcon(sortKey, 'form_period', sortOrder)}
                       </button>
                     </th>
-                    <th className="border border-[#e5e7eb] px-4 py-3 text-left">
+                    <th className="border border-border px-4 py-3 text-left">
                       <button
                         type="button"
                         onClick={() => handleSort('school')}
-                        className="font-medium text-[#1f2937] hover:text-[#3b82f6] flex items-center transition-colors duration-150"
+                        className="font-medium text-text-heading hover:text-info flex items-center transition-colors duration-150"
                       >
                         教室
                         {getSortIcon(sortKey, 'school', sortOrder)}
                       </button>
                     </th>
-                    <th className="border border-[#e5e7eb] px-4 py-3 text-left">
+                    <th className="border border-border px-4 py-3 text-left">
                       <button
                         type="button"
                         onClick={() => handleSort('student_name')}
-                        className="font-medium text-[#1f2937] hover:text-[#3b82f6] flex items-center transition-colors duration-150"
+                        className="font-medium text-text-heading hover:text-info flex items-center transition-colors duration-150"
                       >
                         生徒名
                         {getSortIcon(sortKey, 'student_name', sortOrder)}
                       </button>
                     </th>
-                    <th className="border border-[#e5e7eb] px-4 py-3 text-left">
+                    <th className="border border-border px-4 py-3 text-left">
                       <button
                         type="button"
                         onClick={() => handleSort('grade')}
-                        className="font-medium text-[#1f2937] hover:text-[#3b82f6] flex items-center transition-colors duration-150"
+                        className="font-medium text-text-heading hover:text-info flex items-center transition-colors duration-150"
                       >
                         学年
                         {getSortIcon(sortKey, 'grade', sortOrder)}
                       </button>
                     </th>
-                    <th className="border border-[#e5e7eb] px-4 py-3 text-center">
+                    <th className="border border-border px-4 py-3 text-center">
                       <button
                         type="button"
                         onClick={() => handleSort('status')}
-                        className="font-medium text-[#1f2937] hover:text-[#3b82f6] flex items-center mx-auto transition-colors duration-150"
+                        className="font-medium text-text-heading hover:text-info flex items-center mx-auto transition-colors duration-150"
                       >
                         処理状態
                         {getSortIcon(sortKey, 'status', sortOrder)}
                       </button>
                     </th>
-                    <th className="border border-[#e5e7eb] px-4 py-3 text-left">
+                    <th className="border border-border px-4 py-3 text-left">
                       操作
                     </th>
                   </tr>
@@ -967,34 +967,34 @@ export default function ResponsesPage() {
                 <tbody>
                   {sortedResponses.map((response) => (
                     <tr key={response.id} className="table-row-hover">
-                      <td className="border border-[#e5e7eb] px-4 py-3">
+                      <td className="border border-border px-4 py-3">
                         {formatDateTime(response.created_at)}
                       </td>
-                      <td className="border border-[#e5e7eb] px-4 py-3">
+                      <td className="border border-border px-4 py-3">
                         {FORM_TYPE_LABELS[response.form_type]}
                       </td>
-                      <td className="border border-[#e5e7eb] px-4 py-3">
+                      <td className="border border-border px-4 py-3">
                         {response.form_period}
                       </td>
-                      <td className="border border-[#e5e7eb] px-4 py-3">
+                      <td className="border border-border px-4 py-3">
                         {schoolsMap[response.school_id] ?? '-'}
                       </td>
-                      <td className="border border-[#e5e7eb] px-4 py-3">
+                      <td className="border border-border px-4 py-3">
                         {response.linked_student
                           ? `${response.linked_student.last_name} ${response.linked_student.first_name}`
                           : response.student_name}
                       </td>
-                      <td className="border border-[#e5e7eb] px-4 py-3">
+                      <td className="border border-border px-4 py-3">
                         {GRADE_LABELS[response.grade] || response.grade}
                       </td>
-                      <td className="border border-[#e5e7eb] px-4 py-3 text-center">
+                      <td className="border border-border px-4 py-3 text-center">
                         <ResponseStatusBadges response={response} />
                       </td>
-                      <td className="border border-[#e5e7eb] px-4 py-3">
+                      <td className="border border-border px-4 py-3">
                         <div className="flex gap-2">
                           <Link
                             href={`/forms/responses/${FORM_TYPE_TO_PATH[response.form_type] ?? response.form_type}/${response.form_period}?schoolId=${response.school_id}`}
-                            className="text-sm text-[#4b5563] hover:text-[#1f2937]"
+                            className="text-sm text-text-body hover:text-text-heading"
                           >
                             詳細
                           </Link>
