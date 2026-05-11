@@ -154,7 +154,7 @@ export default function SecuritySettingsPage() {
   if (authLoading || !profile) {
     return (
       <AdminLayout headerTitle="講師勤怠">
-        <div className="flex justify-center py-12 text-[#4b5563]">
+        <div className="flex justify-center py-12 text-text-body">
           読み込み中...
         </div>
       </AdminLayout>
@@ -173,7 +173,7 @@ export default function SecuritySettingsPage() {
     <AdminLayout headerTitle="講師勤怠">
       <div className="space-y-6">
         <div className="mb-4">
-          <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-[#6b7280] hover:text-[#1f2937] transition-colors duration-150">
+          <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text-heading transition-colors duration-150">
             <ChevronLeft className="w-4 h-4" />
             設定に戻る
           </Link>
@@ -181,7 +181,7 @@ export default function SecuritySettingsPage() {
         <h1 className="text-2xl font-bold">セキュリティ設定</h1>
 
         {isLoading ? (
-          <div className="flex justify-center py-12 text-[#4b5563]">
+          <div className="flex justify-center py-12 text-text-body">
             読み込み中...
           </div>
         ) : (
@@ -192,7 +192,7 @@ export default function SecuritySettingsPage() {
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label>プライバシースクリーン タイムアウト（ロール別）</Label>
-                <p className="text-xs text-[#6b7280]">
+                <p className="text-xs text-text-muted">
                   0秒＝無効。10〜300秒で無操作時のオーバーレイ表示までの秒数を指定
                 </p>
                 <div className="space-y-3 mt-3">
@@ -203,7 +203,7 @@ export default function SecuritySettingsPage() {
                     >
                       <label
                         htmlFor={`timeout-${role}`}
-                        className="w-36 text-sm font-medium text-[#1a1a1a]"
+                        className="w-36 text-sm font-medium text-text-heading"
                       >
                         {USER_ROLE_LABELS[role]}
                       </label>
@@ -221,7 +221,7 @@ export default function SecuritySettingsPage() {
                             )
                           }
                         />
-                        <span className="text-sm text-[#6b7280]">秒</span>
+                        <span className="text-sm text-text-muted">秒</span>
                       </div>
                     </div>
                   ))}
