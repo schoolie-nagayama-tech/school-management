@@ -97,7 +97,7 @@ export default function AttendanceSheetDetailPage() {
     return (
       <AdminLayout headerTitle="講師勤怠">
         <div className="flex justify-center py-8">
-          <div className="text-[#4b5563]">読み込み中...</div>
+          <div className="text-text-body">読み込み中...</div>
         </div>
       </AdminLayout>
     );
@@ -253,7 +253,7 @@ export default function AttendanceSheetDetailPage() {
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
-              <p className="text-sm text-[#4b5563]">{sheet.school?.name}</p>
+              <p className="text-sm text-text-body">{sheet.school?.name}</p>
               <h1 className="text-2xl font-bold">{sheet.teacher?.name}</h1>
             </div>
           </div>
@@ -310,7 +310,7 @@ export default function AttendanceSheetDetailPage() {
                       className="px-2 py-2 text-center font-medium border-b min-w-[70px]"
                     >
                       {type.name}
-                      <span className="block text-xs text-[#4b5563] font-normal">
+                      <span className="block text-xs text-text-body font-normal">
                         {type.unit === 'hours' ? '(h)' : ''}
                       </span>
                     </th>
@@ -335,7 +335,7 @@ export default function AttendanceSheetDetailPage() {
                     >
                       <td
                         className={`px-2 py-1 border-b sticky left-0 ${
-                          isWeekend ? 'bg-blue-50/50' : 'bg-white'
+                          isWeekend ? 'bg-blue-50/50' : 'bg-surface-raised'
                         }`}
                       >
                         <span
