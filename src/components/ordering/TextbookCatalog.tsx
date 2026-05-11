@@ -318,7 +318,7 @@ function CartDrawer({
 
 // ─── Main Catalog ───────────────────────────────────────────
 
-export function TextbookCatalog({ textbooks, students, canEdit, materials, onBulkOrder, onStockAdjust, onStockRegister }: TextbookCatalogProps) {
+export function TextbookCatalog({ textbooks, students, canEdit, materials, onOrder, onBulkOrder, onStockAdjust, onStockRegister }: TextbookCatalogProps) {
   // Cart state
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -486,6 +486,46 @@ export function TextbookCatalog({ textbooks, students, canEdit, materials, onBul
     const entry = stockMap.get(label) ?? stockMap.get(tb.name);
     return entry ?? null;
   }, [stockMap]);
+
+  // Materials that don't have a corresponding textbook entry (e.g. 単語練習帳)
+  const materialOnlyItems = useMemo(() => {
+    const textbookNames = new Set(textbooks.map(tb => tb.name));
+    return materials.filter(m => !textbookNames.has(m.name) && m.is_active);
+  }, [materials, textbooks]);
+
+  // Material-only order handler
+  const [materialOrderStudent, setMaterialOrderStudent] = useState<Record<string, string>>({});
+  const [materialOrderQty, setMaterialOrderQty] = useState<Record<string, number>>({});
+  const [materialOrderSuccess, setMaterialOrderSuccess] = useState<Record<string, boolean>>({});
+
+  const handleMaterialOrder = useCallback(async (material: Material) => {
+    const studentId = materialOrderStudent[material.id];
+    if (!studentId) return;
+    const qty = materialOrderQty[material.id] || 1;
+    const student = students.find(s => s.id === studentId);
+    if (!student) return;
+
+    // Add to cart like textbooks
+    const fakeTextbook = {
+      id: -1,
+      name: material.name,
+      publisher: null,
+      school_type: null,
+      grade: null,
+      grade_category: null,
+      subject: null,
+      revision_date: null,
+      sheet_gid: null,
+      created_at: null,
+      updated_at: null,
+    } as Textbook;
+    const studentLabel = `${gradeLabel(student.grade)} ${student.last_name} ${student.first_name}`;
+    handleAddToCart(fakeTextbook, material.name, studentId, studentLabel, qty);
+    setMaterialOrderStudent(prev => ({ ...prev, [material.id]: '' }));
+    setMaterialOrderQty(prev => ({ ...prev, [material.id]: 1 }));
+    setMaterialOrderSuccess(prev => ({ ...prev, [material.id]: true }));
+    setTimeout(() => setMaterialOrderSuccess(prev => ({ ...prev, [material.id]: false })), 1500);
+  }, [materialOrderStudent, materialOrderQty, students, handleAddToCart]);
 
   return (
     <div className="flex gap-4">
@@ -685,6 +725,97 @@ export function TextbookCatalog({ textbooks, students, canEdit, materials, onBul
           </div>
         )}
       </div>
+
+      {/* ─── その他教材（テキストマスタ外の教材） ─── */}
+      {materialOnlyItems.length > 0 && (
+        <div className="flex-1 min-w-0 mt-6">
+          <h3 className="text-sm font-bold text-gray-700 mb-3 border-b border-gray-200 pb-2">
+            その他教材
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+            {materialOnlyItems.map((material) => {
+              const isLowStock = material.stock_quantity <= material.low_stock_threshold;
+              const successState = materialOrderSuccess[material.id];
+              return (
+                <div
+                  key={material.id}
+                  className={`rounded-lg border ${isLowStock ? 'border-red-200' : 'border-gray-200'} hover:shadow-md transition-shadow flex flex-col overflow-hidden`}
+                >
+                  {/* Header */}
+                  <div className="flex items-center justify-between px-3 py-1.5 bg-gray-50">
+                    <span className="text-xs font-bold text-gray-500">
+                      {material.category || '教材'}
+                    </span>
+                  </div>
+                  {/* Info */}
+                  <div className="px-3 pt-2 pb-1">
+                    <div className="text-sm font-semibold text-[#1e3a5f] leading-tight">
+                      {material.name}
+                    </div>
+                    {material.description && (
+                      <div className="text-[11px] text-gray-400 mt-0.5">{material.description}</div>
+                    )}
+                  </div>
+                  {/* Stock */}
+                  <div className="flex items-center justify-between px-3 mb-2">
+                    <span className={`text-xs ${isLowStock ? 'text-red-600 font-medium' : 'text-[#1e3a5f]'}`}>
+                      在庫: {material.stock_quantity}{material.unit || '冊'}
+                      {isLowStock && <AlertTriangle className="inline w-3.5 h-3.5 ml-0.5" />}
+                    </span>
+                    {canEdit && onStockAdjust && (
+                      <button
+                        onClick={() => onStockAdjust(material)}
+                        className="text-[11px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-[#1e3a5f] transition-colors duration-150"
+                      >
+                        在庫調整
+                      </button>
+                    )}
+                  </div>
+                  {/* Order */}
+                  {canEdit && (
+                    <div className="border-t border-gray-100 pt-2 px-3 pb-3 flex-1 flex flex-col gap-1.5">
+                      <select
+                        value={materialOrderStudent[material.id] || ''}
+                        onChange={(e) => setMaterialOrderStudent(prev => ({ ...prev, [material.id]: e.target.value }))}
+                        className="w-full px-2 py-1.5 border border-gray-200 rounded-md text-xs bg-white text-gray-700 focus:ring-1 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f] transition-colors duration-150"
+                      >
+                        <option value="">生徒を選択...</option>
+                        {students.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {gradeLabel(s.grade)} {s.last_name} {s.first_name}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="number"
+                          min={1}
+                          max={20}
+                          value={materialOrderQty[material.id] || 1}
+                          onChange={(e) => setMaterialOrderQty(prev => ({ ...prev, [material.id]: Math.max(1, Math.min(20, parseInt(e.target.value) || 1)) }))}
+                          className="w-14 text-center px-1 py-1.5 border border-gray-200 rounded-md text-xs"
+                        />
+                        <span className="text-xs text-gray-400">{material.unit || '冊'}</span>
+                        <button
+                          onClick={() => handleMaterialOrder(material)}
+                          disabled={!materialOrderStudent[material.id]}
+                          className={`flex-1 py-1.5 rounded-md font-medium text-xs transition-colors ${
+                            successState
+                              ? 'bg-green-600 text-white'
+                              : 'bg-[#1e3a5f] text-white hover:bg-[#2d4a6f] disabled:opacity-40 disabled:cursor-not-allowed'
+                          }`}
+                        >
+                          {successState ? '追加しました' : 'カートに追加'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Floating Cart Bar */}
       {canEdit && cartItems.length > 0 && (

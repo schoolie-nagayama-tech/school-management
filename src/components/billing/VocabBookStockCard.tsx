@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getMaterials, createStockTransaction } from '@/lib/api/inventory';
 import type { Material } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,17 +9,15 @@ import { Pencil, Check, X } from 'lucide-react';
 
 interface VocabBookStockCardProps {
   schoolIds: string[];
-  stockDelta: number;
+  refreshKey: number;
 }
 
-export function VocabBookStockCard({ schoolIds, stockDelta }: VocabBookStockCardProps) {
+export function VocabBookStockCard({ schoolIds, refreshKey }: VocabBookStockCardProps) {
   const [material, setMaterial] = useState<Material | null>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const lastAppliedDelta = useRef(0);
-  const materialRef = useRef<Material | null>(null);
   const { profile } = useAuth();
   const { success, error: toastError } = useToast();
   const isAdmin = profile?.role === 'admin' || profile?.role === 'owner';
@@ -30,7 +28,6 @@ export function VocabBookStockCard({ schoolIds, stockDelta }: VocabBookStockCard
       const materials = await getMaterials(schoolIds);
       const vocabBook = materials.find(m => m.name === '単語練習帳') || null;
       setMaterial(vocabBook);
-      materialRef.current = vocabBook;
     } catch {
       // silent fail
     } finally {
@@ -40,35 +37,7 @@ export function VocabBookStockCard({ schoolIds, stockDelta }: VocabBookStockCard
 
   useEffect(() => {
     fetchMaterial();
-  }, [fetchMaterial]);
-
-  useEffect(() => {
-    if (stockDelta === lastAppliedDelta.current) return;
-    const mat = materialRef.current;
-    if (!mat) return;
-
-    const diff = stockDelta - lastAppliedDelta.current;
-    if (diff === 0) return;
-    lastAppliedDelta.current = stockDelta;
-
-    const applyDelta = async () => {
-      try {
-        const txnType = diff < 0 ? 'out' as const : 'in' as const;
-        await createStockTransaction({
-          material_id: mat.id,
-          school_id: mat.school_id,
-          transaction_type: txnType,
-          quantity: Math.abs(diff),
-          reason: '請求管理の計上による自動更新',
-        });
-        await fetchMaterial();
-      } catch {
-        // silent fail
-      }
-    };
-
-    applyDelta();
-  }, [stockDelta, fetchMaterial]);
+  }, [fetchMaterial, refreshKey]);
 
   const handleAdjust = async () => {
     if (!material) return;

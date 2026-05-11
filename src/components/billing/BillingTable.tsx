@@ -3,6 +3,7 @@
 import type { Student, BillingItem, StudentBilling } from '@/types/database';
 import { GRADE_LABELS } from '@/types/database';
 import { toggleStudentBilling, updateBillingItem, deleteBillingItem, syncOrdersToBilling, autoFillFifthWeekBilling, updateBillingValue, syncFormToBilling, calcFifthWeekBilling } from '@/lib/api/billing';
+import { getMaterials, createStockTransaction } from '@/lib/api/inventory';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { getFifthWeekDayLabels } from '@/lib/utils/fifthWeek';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,7 +24,7 @@ interface BillingTableProps {
   schoolIds?: string | string[];  // For 5th week auto-calc
   billingPeriodId?: string;  // For form sync and 5th week calc
   billingPeriodName?: string;  // For 5th week dialog display
-  onStockChange?: (itemName: string, delta: number) => void;  // 在庫増減通知（計上時-1, 解除時+1）
+  onStockUpdated?: () => void;  // 在庫変動後のリフレッシュ通知
 }
 
 export function BillingTable({
@@ -38,7 +39,7 @@ export function BillingTable({
   schoolIds,
   billingPeriodId,
   billingPeriodName,
-  onStockChange,
+  onStockUpdated,
 }: BillingTableProps) {
   const { profile } = useAuth();
   const isTeacher = profile?.role === 'teacher';
@@ -153,7 +154,7 @@ export function BillingTable({
 
   const isVocabBookItem = (item: BillingItem) => item.name === '単語練習帳';
 
-  // 単語練習帳ワンクリックトグル: 値なし→1, 値あり→クリア
+  // 単語練習帳ワンクリックトグル: 値なし→1(在庫-1), 値あり→クリア(在庫+1)
   const handleVocabToggle = async (studentId: string, itemId: string, currentBilling: StudentBilling | undefined) => {
     if (isTeacher || !onBillingChange) return;
     const key = `${studentId}-${itemId}`;
@@ -162,6 +163,28 @@ export function BillingTable({
       const hasValue = currentBilling?.value_number != null && currentBilling.value_number !== 0;
       const newValue = hasValue ? null : 1;
       await updateBillingValue(studentId, itemId, { value_number: newValue });
+
+      // 値セット時に在庫-1、クリア時に在庫+1
+      try {
+        const targetSchoolIds = Array.isArray(schoolIds) ? schoolIds : schoolIds ? [schoolIds] : [];
+        if (targetSchoolIds.length > 0) {
+          const allMaterials = await getMaterials(targetSchoolIds);
+          const vocabMaterial = allMaterials.find(m => m.name === '単語練習帳');
+          if (vocabMaterial) {
+            await createStockTransaction({
+              material_id: vocabMaterial.id,
+              school_id: vocabMaterial.school_id,
+              transaction_type: newValue ? 'out' : 'in',
+              quantity: 1,
+              reason: newValue ? '単語練習帳セットによる自動出庫' : '単語練習帳クリアによる自動入庫',
+            });
+            onStockUpdated?.();
+          }
+        }
+      } catch {
+        // 在庫連携は best-effort
+      }
+
       onItemsChange?.();
     } catch (err) {
       toastError(err instanceof Error ? err.message : '値の更新に失敗しました');
@@ -225,16 +248,6 @@ export function BillingTable({
       const newIsBilled = !currentBilling?.is_billed;
       await updateBillingValue(studentId, itemId, { is_billed: newIsBilled });
       onBillingChange(studentId, itemId, newIsBilled);
-
-      // 単語練習帳の計上/解除時に在庫を連動
-      if (onStockChange) {
-        const item = items.find(i => i.id === itemId);
-        if (item && item.name === '単語練習帳') {
-          // 計上時: 在庫 -1, 解除時: 在庫 +1
-          const qty = (currentBilling?.value_number ?? 1);
-          onStockChange(item.name, newIsBilled ? -qty : qty);
-        }
-      }
     } catch (err) {
       toastError(err instanceof Error ? err.message : '計上の更新に失敗しました');
     } finally {

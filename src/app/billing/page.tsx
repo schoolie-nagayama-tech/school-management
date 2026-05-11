@@ -54,8 +54,8 @@ export default function BillingPage() {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // 単語練習帳の在庫変動累積値
-  const [stockDelta, setStockDelta] = useState(0);
+  // 単語練習帳の在庫リフレッシュキー
+  const [stockRefreshKey, setStockRefreshKey] = useState(0);
 
   // フィルター状態
   const [filters, setFilters] = useState<BillingFilters>({
@@ -253,9 +253,8 @@ export default function BillingPage() {
         </div>
       )}
 
-      {/* 期間選択 + 検索（1行にまとめる） */}
-      <div className="flex flex-wrap items-end gap-3 mb-4">
-        {/* 期間セレクト */}
+      {/* 期間選択 */}
+      <div className="flex flex-wrap items-end gap-3 mb-3">
         <div className="flex-1 min-w-[250px]">
           <BillingPeriodSelector
             periods={periods}
@@ -266,40 +265,44 @@ export default function BillingPage() {
             canEdit={canEdit && isManagerOrAbove}
           />
         </div>
-
-        {/* 在庫カウンター + 検索 + 学年フィルター（期間選択時のみ） */}
-        {selectedPeriodId && (
-          <>
-            {schoolIds.length > 0 && (
-              <VocabBookStockCard
-                schoolIds={schoolIds}
-                stockDelta={stockDelta}
-              />
-            )}
-            <div className="w-64">
-              <input
-                type="text"
-                placeholder="氏名・フリガナで検索"
-                value={filters.search}
-                onChange={(e) => handleFilterChange({ search: e.target.value })}
-                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white placeholder-gray-400 focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f]"
-              />
-            </div>
-            <div className="w-32">
-              <select
-                value={filters.grade ?? ''}
-                onChange={(e) => handleFilterChange({ grade: e.target.value ? Number(e.target.value) : null })}
-                className="w-full px-2 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#1f2937] focus:ring-2 focus:ring-[#1e3a5f]/20"
-              >
-                <option value="">全学年</option>
-                {Array.from(new Set(students.map((s) => s.grade))).sort((a, b) => a - b).map((g) => (
-                  <option key={g} value={g}>{GRADE_LABELS[g] || g}</option>
-                ))}
-              </select>
-            </div>
-          </>
-        )}
       </div>
+
+      {/* 在庫カウンター（検索バーの上） */}
+      {selectedPeriodId && schoolIds.length > 0 && (
+        <div className="mb-3">
+          <VocabBookStockCard
+            schoolIds={schoolIds}
+            refreshKey={stockRefreshKey}
+          />
+        </div>
+      )}
+
+      {/* 検索 + 学年フィルター */}
+      {selectedPeriodId && (
+        <div className="flex flex-wrap items-end gap-3 mb-4">
+          <div className="w-64">
+            <input
+              type="text"
+              placeholder="氏名・フリガナで検索"
+              value={filters.search}
+              onChange={(e) => handleFilterChange({ search: e.target.value })}
+              className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white placeholder-gray-400 focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f]"
+            />
+          </div>
+          <div className="w-32">
+            <select
+              value={filters.grade ?? ''}
+              onChange={(e) => handleFilterChange({ grade: e.target.value ? Number(e.target.value) : null })}
+              className="w-full px-2 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#1f2937] focus:ring-2 focus:ring-[#1e3a5f]/20"
+            >
+              <option value="">全学年</option>
+              {Array.from(new Set(students.map((s) => s.grade))).sort((a, b) => a - b).map((g) => (
+                <option key={g} value={g}>{GRADE_LABELS[g] || g}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
 
       {/* 項目管理アコーディオン（教室長以上のみ） */}
       {selectedPeriodId && isManagerOrAbove && currentSchoolIds && (
@@ -366,7 +369,7 @@ export default function BillingPage() {
             schoolIds={getSelectedSchoolIds()}
             billingPeriodId={selectedPeriodId || undefined}
             billingPeriodName={periods.find(p => p.id === selectedPeriodId)?.name}
-            onStockChange={(_itemName, delta) => setStockDelta(prev => prev + delta)}
+            onStockUpdated={() => setStockRefreshKey(prev => prev + 1)}
           />
         </>
       )}
