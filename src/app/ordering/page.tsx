@@ -293,8 +293,8 @@ export default function OrderingPage() {
       <AdminLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="w-12 h-12 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-[#4b5563]">読み込み中...</p>
+            <div className="w-12 h-12 border-4 border-ink border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-text-body">読み込み中...</p>
           </div>
         </div>
       </AdminLayout>
@@ -314,7 +314,7 @@ export default function OrderingPage() {
     <AdminLayout headerTitle="教材・発注管理">
       {/* Error Message */}
       {errorMessage && (
-        <div className="mb-4 bg-[#ef4444]/20 text-[#ef4444] px-4 py-2 rounded border border-[#ef4444]">
+        <div className="mb-4 bg-danger/20 text-danger px-4 py-2 rounded border border-danger">
           {errorMessage}
         </div>
       )}
@@ -371,7 +371,7 @@ export default function OrderingPage() {
       {isLoading ? (
         <div className="bg-white rounded-xl border border-gray-200 p-8">
           <div className="flex items-center justify-center">
-            <svg className="animate-spin h-8 w-8 text-[#1e3a5f]" fill="none" viewBox="0 0 24 24">
+            <svg className="animate-spin h-8 w-8 text-ink" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path
                 className="opacity-75"
@@ -379,7 +379,7 @@ export default function OrderingPage() {
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               />
             </svg>
-            <span className="ml-3 text-[#4b5563]">読み込み中...</span>
+            <span className="ml-3 text-text-body">読み込み中...</span>
           </div>
         </div>
       ) : (
