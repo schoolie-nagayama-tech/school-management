@@ -13,8 +13,8 @@ export default function InventoryPage() {
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
       <div className="text-center">
-        <div className="w-12 h-12 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <p className="text-[#4b5563]">リダイレクト中...</p>
+        <div className="w-12 h-12 border-4 border-ink border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-text-body">リダイレクト中...</p>
       </div>
     </div>
   );
