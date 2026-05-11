@@ -424,7 +424,7 @@ export default function CourseDetailPage() {
       case 'spring': return 'bg-[#fff9e5] border-[#ffeb3b]';
       case 'summer': return 'bg-[#ffe5e5] border-[#ffb3b3]';
       case 'winter': return 'bg-[#e5f3ff] border-[#bae1ff]';
-      default: return 'bg-[#f3f4f6] border-[#e5e7eb]';
+      default: return 'bg-surface-hover border-border';
     }
   };
 
@@ -441,7 +441,7 @@ export default function CourseDetailPage() {
     return (
       <AdminLayout headerTitle="コース詳細">
         <div className="flex items-center justify-center py-12">
-          <div className="text-[#4b5563]">読み込み中...</div>
+          <div className="text-text-body">読み込み中...</div>
         </div>
       </AdminLayout>
     );
@@ -451,7 +451,7 @@ export default function CourseDetailPage() {
     return (
       <AdminLayout headerTitle="コース詳細">
         <div className="flex items-center justify-center py-12">
-          <div className="text-[#ef4444]">コースが見つかりません</div>
+          <div className="text-danger">コースが見つかりません</div>
         </div>
       </AdminLayout>
     );
@@ -463,8 +463,8 @@ export default function CourseDetailPage() {
       <AdminLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="w-12 h-12 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-[#4b5563]">読み込み中...</p>
+            <div className="w-12 h-12 border-4 border-ink border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-text-body">読み込み中...</p>
           </div>
         </div>
       </AdminLayout>
@@ -496,7 +496,7 @@ export default function CourseDetailPage() {
       {/* 基本情報 */}
       <div className={`mb-6 p-6 rounded-xl border-2 ${getSeasonColor(course.season)}`}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-[#1f2937]">基本情報</h2>
+          <h2 className="text-xl font-bold text-text-heading">基本情報</h2>
           {!isEditingBasic ? (
             <Button variant="secondary" size="sm" onClick={() => setIsEditingBasic(true)}>
               編集
@@ -526,43 +526,43 @@ export default function CourseDetailPage() {
         {!isEditingBasic ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <span className="text-sm font-medium text-[#4b5563]">コース名:</span>
-              <p className="text-lg font-bold text-[#1f2937]">{course.name}</p>
+              <span className="text-sm font-medium text-text-body">コース名:</span>
+              <p className="text-lg font-bold text-text-heading">{course.name}</p>
             </div>
             <div>
-              <span className="text-sm font-medium text-[#4b5563]">季節:</span>
-              <p className="text-lg font-bold text-[#1f2937]">{SEASON_LABELS[course.season]}</p>
+              <span className="text-sm font-medium text-text-body">季節:</span>
+              <p className="text-lg font-bold text-text-heading">{SEASON_LABELS[course.season]}</p>
             </div>
             <div>
-              <span className="text-sm font-medium text-[#4b5563]">対象学年:</span>
-              <p className="text-lg font-bold text-[#1f2937]">
+              <span className="text-sm font-medium text-text-body">対象学年:</span>
+              <p className="text-lg font-bold text-text-heading">
                 {course.target_grades.map(g => GRADE_LABELS[g] || g).join(', ')}
               </p>
             </div>
             <div>
-              <span className="text-sm font-medium text-[#4b5563]">合計コマ数:</span>
-              <p className="text-lg font-bold text-[#3b82f6]">{course.total_koma}コマ</p>
+              <span className="text-sm font-medium text-text-body">合計コマ数:</span>
+              <p className="text-lg font-bold text-info">{course.total_koma}コマ</p>
             </div>
             {course.comment && (
               <div className="md:col-span-2">
-                <span className="text-sm font-medium text-[#4b5563]">コメント:</span>
-                <p className="text-[#1f2937]">{course.comment}</p>
+                <span className="text-sm font-medium text-text-body">コメント:</span>
+                <p className="text-text-heading">{course.comment}</p>
               </div>
             )}
           </div>
         ) : (
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-[#1f2937] mb-1">コース名</label>
+              <label className="block text-sm font-medium text-text-heading mb-1">コース名</label>
               <input
                 type="text"
                 value={editName}
                 onChange={e => setEditName(e.target.value)}
-                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg"
+                className="w-full px-3 py-2 border border-border rounded-lg"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#1f2937] mb-1">季節</label>
+              <label className="block text-sm font-medium text-text-heading mb-1">季節</label>
               <div className="flex gap-2">
                 {(['spring', 'summer', 'winter'] as SeasonType[]).map(season => (
                   <button
@@ -571,11 +571,11 @@ export default function CourseDetailPage() {
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-150 ${
                       editSeason === season
                         ? season === 'spring'
-                          ? 'bg-[#ffeb3b] text-[#1f2937]'
+                          ? 'bg-[#ffeb3b] text-text-heading'
                           : season === 'summer'
-                          ? 'bg-[#ff8e8e] text-[#1f2937]'
-                          : 'bg-[#8ec5ff] text-[#1f2937]'
-                        : 'bg-[#f3f4f6] text-[#4b5563]'
+                          ? 'bg-[#ff8e8e] text-text-heading'
+                          : 'bg-[#8ec5ff] text-text-heading'
+                        : 'bg-surface-hover text-text-body'
                     }`}
                   >
                     {SEASON_LABELS[season]}
@@ -584,15 +584,15 @@ export default function CourseDetailPage() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#1f2937] mb-2">対象学年</label>
+              <label className="block text-sm font-medium text-text-heading mb-2">対象学年</label>
               <div className="flex flex-wrap gap-2">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(grade => (
                   <label
                     key={grade}
                     className={`px-3 py-1.5 rounded-lg cursor-pointer text-sm ${
                       editTargetGrades.includes(grade)
-                        ? 'bg-[#3b82f6] text-white'
-                        : 'bg-[#f3f4f6] text-[#4b5563]'
+                        ? 'bg-info text-white'
+                        : 'bg-surface-hover text-text-body'
                     }`}
                   >
                     <input
@@ -607,12 +607,12 @@ export default function CourseDetailPage() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#1f2937] mb-1">コメント</label>
+              <label className="block text-sm font-medium text-text-heading mb-1">コメント</label>
               <textarea
                 value={editComment}
                 onChange={e => setEditComment(e.target.value)}
                 rows={3}
-                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg"
+                className="w-full px-3 py-2 border border-border rounded-lg"
               />
             </div>
           </div>
@@ -620,9 +620,9 @@ export default function CourseDetailPage() {
       </div>
 
       {/* テキスト選択 */}
-      <div className="mb-6 p-4 bg-white rounded-xl border border-[#e5e7eb]">
+      <div className="mb-6 p-4 bg-surface-raised rounded-xl border border-border">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-[#1f2937]">テキスト</h3>
+          <h3 className="text-lg font-bold text-text-heading">テキスト</h3>
           <Button
             variant="primary"
             size="sm"
@@ -634,7 +634,7 @@ export default function CourseDetailPage() {
         </div>
 
         {course.textbooks?.length === 0 ? (
-          <p className="text-[#4b5563] text-center py-4">テキストを追加してください</p>
+          <p className="text-text-body text-center py-4">テキストを追加してください</p>
         ) : (
           <div className="flex gap-2 flex-wrap">
             {course.textbooks?.map(ct => (
@@ -642,8 +642,8 @@ export default function CourseDetailPage() {
                 key={ct.id}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-colors duration-150 cursor-pointer ${
                   selectedTextbookId === ct.textbook_id
-                    ? 'bg-[#3b82f6] border-[#3b82f6] text-[#1f2937]'
-                    : 'bg-[#f3f4f6] border-[#f3f4f6] text-[#4b5563] hover:border-[#3b82f6]'
+                    ? 'bg-info border-info text-text-heading'
+                    : 'bg-surface-hover border-surface-hover text-text-body hover:border-info'
                 }`}
                 onClick={() => setSelectedTextbookId(ct.textbook_id)}
               >
@@ -653,7 +653,7 @@ export default function CourseDetailPage() {
                     e.stopPropagation();
                     handleRemoveTextbook(ct.textbook_id, ct.textbook?.name || '');
                   }}
-                  className="text-[#ef4444] hover:text-[#b82d5b] ml-2 transition-colors duration-150"
+                  className="text-danger hover:text-danger/80 ml-2 transition-colors duration-150"
                 >
                   ×
                 </button>
@@ -665,13 +665,13 @@ export default function CourseDetailPage() {
 
       {/* カリキュラム編集 */}
       {selectedTextbookId && (
-        <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
+        <div className="bg-surface-raised rounded-xl border border-border overflow-hidden">
           {/* コントロールパネル */}
-          <div className="p-4 bg-[#f3f4f6] border-b border-[#e5e7eb]">
+          <div className="p-4 bg-surface-hover border-b border-border">
             <div className="flex items-center justify-between flex-wrap gap-4">
-              <h3 className="text-lg font-bold text-[#1f2937]">
+              <h3 className="text-lg font-bold text-text-heading">
                 カリキュラム設定
-                <span className="ml-4 text-[#3b82f6]">合計: {calculatedTotalKoma}コマ</span>
+                <span className="ml-4 text-info">合計: {calculatedTotalKoma}コマ</span>
               </h3>
               <div className="flex items-center gap-2">
                 <Button
@@ -711,8 +711,8 @@ export default function CourseDetailPage() {
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
-                <tr className="bg-[#f3f4f6] border-b border-[#e5e7eb]">
-                  <th className="px-4 py-3 text-center w-10 border-r border-[#e5e7eb]">
+                <tr className="bg-surface-hover border-b border-border">
+                  <th className="px-4 py-3 text-center w-10 border-r border-border">
                     <input
                       type="checkbox"
                       checked={curriculumItems.length > 0 && selectedItems.size === curriculumItems.length}
@@ -726,10 +726,10 @@ export default function CourseDetailPage() {
                       className="w-4 h-4"
                     />
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] border-r border-[#e5e7eb]">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-text-heading border-r border-border">
                     単元名
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-[#1f2937] w-28">
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-text-heading w-28">
                     提案回数
                   </th>
                 </tr>
@@ -737,7 +737,7 @@ export default function CourseDetailPage() {
               <tbody>
                 {displayRows.length === 0 ? (
                   <tr>
-                    <td colSpan={3} className="px-4 py-8 text-center text-sm text-[#4b5563]">
+                    <td colSpan={3} className="px-4 py-8 text-center text-sm text-text-body">
                       カリキュラム項目がありません
                     </td>
                   </tr>
@@ -749,9 +749,9 @@ export default function CourseDetailPage() {
                     return (
                       <tr
                         key={row.curriculumItem.id}
-                        className={`border-b border-[#e5e7eb] hover:bg-[#f3f4f6] transition-colors duration-150 ${groupColor}`}
+                        className={`border-b border-border hover:bg-surface-hover transition-colors duration-150 ${groupColor}`}
                       >
-                        <td className="px-4 py-3 text-center border-r border-[#e5e7eb]">
+                        <td className="px-4 py-3 text-center border-r border-border">
                           <input
                             type="checkbox"
                             checked={isChecked}
@@ -767,9 +767,9 @@ export default function CourseDetailPage() {
                             className="w-4 h-4"
                           />
                         </td>
-                        <td className="px-4 py-3 text-sm text-[#1f2937] border-r border-[#e5e7eb]">
+                        <td className="px-4 py-3 text-sm text-text-heading border-r border-border">
                           {row.curriculumItem.item_number && (
-                            <span className="text-[#4b5563] mr-2">{row.curriculumItem.item_number}</span>
+                            <span className="text-text-body mr-2">{row.curriculumItem.item_number}</span>
                           )}
                           {row.curriculumItem.title}
                         </td>
@@ -783,7 +783,7 @@ export default function CourseDetailPage() {
                               min="0"
                               value={proposalCountValues.get(row.curriculumItem.id) ?? row.groupProposalCount}
                               onChange={e => handleProposalCountChange(row, parseInt(e.target.value) || 0)}
-                              className="w-20 px-2 py-1 text-center border border-[#e5e7eb] rounded"
+                              className="w-20 px-2 py-1 text-center border border-border rounded"
                             />
                           </td>
                         )}
@@ -794,11 +794,11 @@ export default function CourseDetailPage() {
               </tbody>
               {displayRows.length > 0 && (
                 <tfoot>
-                  <tr className="bg-[#f3f4f6] font-bold">
-                    <td colSpan={2} className="px-4 py-3 text-right text-sm text-[#1f2937] border-r border-[#e5e7eb]">
+                  <tr className="bg-surface-hover font-bold">
+                    <td colSpan={2} className="px-4 py-3 text-right text-sm text-text-heading border-r border-border">
                       合計
                     </td>
-                    <td className="px-4 py-3 text-center text-lg text-[#3b82f6]">
+                    <td className="px-4 py-3 text-center text-lg text-info">
                       {calculatedTotalKoma}コマ
                     </td>
                   </tr>
@@ -858,10 +858,10 @@ export default function CourseDetailPage() {
             />
           </div>
 
-          <div className="border-t border-[#e5e7eb] pt-4">
-            <h4 className="text-sm font-semibold text-[#1f2937] mb-3">テキスト一覧</h4>
+          <div className="border-t border-border pt-4">
+            <h4 className="text-sm font-semibold text-text-heading mb-3">テキスト一覧</h4>
             {availableTextbooks.length === 0 ? (
-              <p className="text-sm text-[#4b5563] text-center py-4">
+              <p className="text-sm text-text-body text-center py-4">
                 追加可能なテキストがありません
               </p>
             ) : (
@@ -869,11 +869,11 @@ export default function CourseDetailPage() {
                 {availableTextbooks.map(textbook => (
                   <div
                     key={textbook.id}
-                    className="p-3 bg-[#f3f4f6] rounded-lg border border-[#e5e7eb] hover:bg-[#e5e7eb] transition-colors duration-150 flex items-center justify-between"
+                    className="p-3 bg-surface-hover rounded-lg border border-border hover:bg-border transition-colors duration-150 flex items-center justify-between"
                   >
                     <div>
-                      <div className="font-medium text-[#1f2937]">{textbook.name}</div>
-                      <div className="text-sm text-[#4b5563]">
+                      <div className="font-medium text-text-heading">{textbook.name}</div>
+                      <div className="text-sm text-text-body">
                         {textbook.grade && <span>学年: {textbook.grade}</span>}
                         {textbook.publisher && <span className="ml-2">出版社: {textbook.publisher}</span>}
                         {textbook.subject && <span className="ml-2">科目: {textbook.subject}</span>}
