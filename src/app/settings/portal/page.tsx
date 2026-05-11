@@ -303,9 +303,9 @@ export default function PortalSettingsPage() {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-[#4b5563]">読み込み中...</p>
+          <div className="text-text-dangeraintenter">
+            <div className="w-12 h-12 border-danger border-ink border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-text-body">読み込み中...</p>
           </div>
         </div>
       </AdminLayout>
@@ -326,35 +326,35 @@ export default function PortalSettingsPage() {
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <AdminLayout headerTitle="ポータル設定">
         <div className="mb-4">
-          <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-[#6b7280] hover:text-[#1f2937] transition-colors duration-150">
+          <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text-heading transition-colors duration-150">
             <ChevronLeft className="w-4 h-4" />
             設定に戻る
           </Link>
         </div>
         {errorMessage && (
-          <div className="mb-4 p-4 bg-[#ef4444]/20 border border-[#ef4444] rounded-lg">
-            <p className="text-sm text-[#ef4444]">{errorMessage}</p>
+          <div className="mb-4 p-4 bg-danger/20 border border-danger rounded-lg">
+            <p className="text-sm text-danger">{errorMessage}</p>
           </div>
         )}
 
         {/* ポータルURL表示 */}
         {portalUrls.length > 0 && (
-          <div className="mb-6 bg-white rounded-xl border border-[#e5e7eb] p-6">
-            <h2 className="text-lg font-bold text-[#1f2937] mb-4">ポータルURL</h2>
+          <div className="mb-6 bg-surface-raised rounded-xl border border-border p-6">
+            <h2 className="text-lg font-bold text-text-heading mb-4">ポータルURL</h2>
             {selectedSchoolId === 'all' ? (
               <div className="space-y-4">
-                <div className="p-4 bg-[#3b82f6]/10 border border-[#3b82f6] rounded-lg">
-                  <p className="text-sm font-medium text-[#1f2937] mb-2">
+                <div className="p-4 bg-info/10 border border-info rounded-lg">
+                  <p className="text-sm font-medium text-text-heading mb-2">
                     すべての教室を選択中
                   </p>
-                  <p className="text-xs text-[#4b5563]">
+                  <p className="text-xs text-text-body">
                     各教室ごとにポータルURLが異なります。保護者には各教室のURLを共有してください。
                   </p>
                 </div>
                 <div className="space-y-3">
                   {portalUrls.map(({ school, url }) => (
                     <div key={school.id} className="space-y-1">
-                      <label className="block text-sm font-medium text-[#1f2937]">
+                      <label className="block text-sm font-medium text-text-heading">
                         {school.code === 'DEFAULT' ? 'デフォルト' : school.name}
                       </label>
                       <div className="flex gap-2">
@@ -362,7 +362,7 @@ export default function PortalSettingsPage() {
                           type="text"
                           value={url}
                           readOnly
-                          className="flex-1 px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-[#f3f4f6] text-[#4b5563]"
+                          className="flex-1 px-3 py-2 border border-border rounded-lg text-sm bg-surface-hover text-text-body"
                         />
                         <Button
                           variant="outline"
@@ -386,7 +386,7 @@ export default function PortalSettingsPage() {
                     type="text"
                     value={portalUrls[0]?.url || ''}
                     readOnly
-                    className="flex-1 px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-[#f3f4f6] text-[#4b5563]"
+                    className="flex-1 px-3 py-2 border border-border rounded-lg text-sm bg-surface-hover text-text-body"
                   />
                   <Button
                     variant="outline"
@@ -399,7 +399,7 @@ export default function PortalSettingsPage() {
                     コピー
                   </Button>
                 </div>
-                <p className="text-xs text-[#4b5563]/60">
+                <p className="text-xs text-text-body/60">
                   このURLを保護者に共有してください
                 </p>
               </div>
@@ -409,16 +409,16 @@ export default function PortalSettingsPage() {
 
         {/* フォーム一覧（統合版） */}
         {isLoading ? (
-          <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 text-center">
-            <p className="text-[#4b5563]">読み込み中...</p>
+          <div className="bg-surface-raised rounded-xl border border-border p-8 text-text-dangeraintenter">
+            <p className="text-text-body">読み込み中...</p>
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
+          <div className="bg-surface-raised rounded-xl border border-border p-6">
             <div className="flex items-center justify-between gap-4 mb-4">
-              <h2 className="text-lg font-bold text-[#1f2937]">フォーム一覧</h2>
+              <h2 className="text-lg font-bold text-text-heading">フォーム一覧</h2>
               <Link
                 href="/settings/forms/class-periods"
-                className="text-xs text-[#6b7280] hover:text-[#374151] hover:underline"
+                className="text-xs text-text-muted hover:text-text-heading hover:underline"
                 title="週回数・曜日変更などのフォームで使う時限の共通設定"
               >
                 授業の時間帯
@@ -430,14 +430,14 @@ export default function PortalSettingsPage() {
                 collisionDetection={closestCenter}
                 onDragEnd={handleDragEnd}
               >
-                <table className="w-full border-collapse border border-[#e5e7eb] text-sm">
+                <table className="w-full border-collapse border border-border text-sm">
                   <thead>
-                    <tr className="bg-[#f3f4f6]">
-                      <th className="border border-[#e5e7eb] px-4 py-3 text-left">タイトル</th>
-                      <th className="border border-[#e5e7eb] px-4 py-3 text-left">
+                    <tr className="bg-surface-hover">
+                      <th className="border border-border px-4 py-3 text-left">タイトル</th>
+                      <th className="border border-border px-4 py-3 text-left">
                         現在の公開状況
                       </th>
-                      <th className="border border-[#e5e7eb] px-4 py-3 text-left">操作</th>
+                      <th className="border border-border px-4 py-3 text-left">操作</th>
                     </tr>
                   </thead>
                   <tbody>
