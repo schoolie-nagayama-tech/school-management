@@ -318,7 +318,7 @@ function CartDrawer({
 
 // ─── Main Catalog ───────────────────────────────────────────
 
-export function TextbookCatalog({ textbooks, students, canEdit, materials, onOrder, onBulkOrder, onStockAdjust, onStockRegister }: TextbookCatalogProps) {
+export function TextbookCatalog({ textbooks, students, canEdit, materials, onOrder: _onOrder, onBulkOrder, onStockAdjust, onStockRegister }: TextbookCatalogProps) {
   // Cart state
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
