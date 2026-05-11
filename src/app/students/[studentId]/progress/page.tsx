@@ -30,7 +30,7 @@ function ProgressRouter() {
 
 export default function ProgressPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-sm text-[#6b7280]">読み込み中...</div>}>
+    <Suspense fallback={<div className="p-8 text-sm text-text-muted">読み込み中...</div>}>
       <ProgressRouter />
     </Suspense>
   );

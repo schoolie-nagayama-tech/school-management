@@ -89,7 +89,7 @@ export default function StudentSchedulePage() {
           </h1>
         </div>
 
-        <Card className="bg-[#f8f8f8] border-gray-200">
+        <Card className="bg-surface border-gray-200">
           <CardHeader>
             <CardTitle>通塾日程</CardTitle>
           </CardHeader>
