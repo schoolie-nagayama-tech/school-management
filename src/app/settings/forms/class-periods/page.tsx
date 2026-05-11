@@ -73,7 +73,7 @@ export default function ClassPeriodsSettingsPage() {
     return (
       <AdminLayout narrow>
         <div className="flex items-center justify-center min-h-[60vh]">
-          <p className="text-[#4b5563]">読み込み中...</p>
+          <p className="text-text-body">読み込み中...</p>
         </div>
       </AdminLayout>
     );
@@ -95,22 +95,22 @@ export default function ClassPeriodsSettingsPage() {
           <div className="mb-4">
             <Link
               href="/settings/portal"
-              className="text-sm text-[#3b82f6] hover:underline"
+              className="text-sm text-info hover:underline"
             >
               ← フォーム設定に戻る
             </Link>
           </div>
 
-          <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
-            <h2 className="text-lg font-bold text-[#1f2937] mb-2">
+          <div className="bg-surface-raised rounded-xl border border-border p-6">
+            <h2 className="text-lg font-bold text-text-heading mb-2">
               授業の時間帯（共通設定）
             </h2>
-            <p className="text-sm text-[#4b5563] mb-4">
+            <p className="text-sm text-text-body mb-4">
               週回数変更・曜日変更などのフォームで利用する時限の一覧です。ここで設定した内容が、各フォームの期間設定で「時限」の初期値として使われます。1行に「コード,ラベル」の形式で入力してください。
             </p>
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-[#1f2937] mb-2">
+              <label className="block text-sm font-medium text-text-heading mb-2">
                 時限一覧 <span className="text-red-500">*</span>
               </label>
               <textarea
@@ -118,9 +118,9 @@ export default function ClassPeriodsSettingsPage() {
                 onChange={(e) => handleChange(e.target.value)}
                 placeholder="4,4限(14:25-15:55)&#10;5,5限(16:20-17:50)&#10;6,6限(18:00-19:30)&#10;7,7限(19:40-21:10)"
                 rows={8}
-                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm font-mono resize-y focus:outline-none focus:ring-primary focus:ring-primary"
               />
-              <p className="text-xs text-[#4b5563]/60 mt-1">
+              <p className="text-xs text-text-body/60 mt-1">
                 例: 4,4限(14:25-15:55) のように「コード,ラベル」の形式で1行に1時限ずつ
               </p>
             </div>

@@ -188,7 +188,7 @@ export default function FormPeriodsPage() {
     return (
       <AdminLayout narrow>
         <div className="flex items-center justify-center min-h-[60vh]">
-          <p className="text-[#4b5563]">読み込み中...</p>
+          <p className="text-text-body">読み込み中...</p>
         </div>
       </AdminLayout>
     );
@@ -206,8 +206,8 @@ export default function FormPeriodsPage() {
     return (
       <AdminLayout narrow>
         <div className="max-w-3xl mx-auto px-4 py-8">
-          <p className="text-[#ef4444]">このフォーム種別は期間管理に対応していません。</p>
-          <Link href="/settings/portal" className="text-[#3b82f6] hover:underline mt-2 inline-block">
+          <p className="text-danger">このフォーム種別は期間管理に対応していません。</p>
+          <Link href="/settings/portal" className="text-info hover:underline mt-2 inline-block">
             ← ポータル設定に戻る
           </Link>
         </div>
@@ -222,26 +222,26 @@ export default function FormPeriodsPage() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Link
             href="/settings/portal"
-            className="inline-flex items-center text-sm text-[#3b82f6] hover:underline mb-6"
+            className="inline-flex items-center text-sm text-info hover:underline mb-6"
           >
             ← ポータル設定に戻る
           </Link>
 
           {errorMessage && (
-            <div className="mb-4 p-4 bg-[#ef4444]/20 border border-[#ef4444] rounded-lg">
-              <p className="text-sm text-[#ef4444]">{errorMessage}</p>
+            <div className="mb-4 p-4 bg-danger/20 border border-danger rounded-lg">
+              <p className="text-sm text-danger">{errorMessage}</p>
             </div>
           )}
 
           {isMultiSchool && (
-            <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+            <div className="mb-4 p-4 bg-surfacember-50 border border-inkmber-200 rounded-lg text-sm text-text-headingmber-800">
               <p className="font-medium mb-1">複数教室を選択中です</p>
               <p>
                 新しい期間を作成すると、選択中の{selectedSchoolIds.length}教室に同じ期間が一括で作成されます。編集時に「他教室も同じ内容で更新」にチェックを入れると、選択中の全教室の同じ期間が更新されます。
               </p>
             </div>
           )}
-          <div className="mb-6 p-4 bg-[#eff6ff] border border-[#3b82f6]/30 rounded-lg text-sm text-[#1e40af]">
+          <div className="mb-6 p-4 bg-info/10 border border-info/30 rounded-lg text-sm text-info">
             <p className="font-medium mb-1 flex items-center gap-1"><Lightbulb className="h-4 w-4" />公開できる期間は1つだけです。</p>
             <p>
               新しい期間を公開すると、現在公開中の期間は自動で非公開になります。
@@ -249,12 +249,12 @@ export default function FormPeriodsPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <label className="flex items-center gap-2 cursor-pointer text-sm text-[#4b5563]">
+            <label className="flex items-center gap-2 cursor-pointer text-sm text-text-body">
               <input
                 type="checkbox"
                 checked={showArchived}
                 onChange={(e) => setShowArchived(e.target.checked)}
-                className="rounded border-[#e5e7eb]"
+                className="rounded border-border"
               />
               アーカイブ済みを表示
             </label>
@@ -269,11 +269,11 @@ export default function FormPeriodsPage() {
           </div>
 
           {isLoading ? (
-            <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 text-center">
-              <p className="text-[#4b5563]">読み込み中...</p>
+            <div className="bg-surface-raised rounded-xl border border-border p-8 text-text-dangeraintenter">
+              <p className="text-text-body">読み込み中...</p>
             </div>
           ) : periods.length === 0 ? (
-            <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 text-center text-[#4b5563]">
+            <div className="bg-surface-raised rounded-xl border border-border p-8 text-text-dangeraintenter text-text-body">
               期間がありません。「＋ 新しい期間を作成」から追加してください。
             </div>
           ) : (

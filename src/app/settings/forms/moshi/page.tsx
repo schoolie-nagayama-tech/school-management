@@ -152,32 +152,32 @@ export default function MoshiSettingsPage() {
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <AdminLayout headerTitle="オープン模試申し込み 設定" narrow>
         <div className="mb-4">
-          <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-[#6b7280] hover:text-[#1f2937] transition-colors duration-150">
+          <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text-heading transition-colors duration-150">
             <ChevronLeft className="w-4 h-4" />
             設定に戻る
           </Link>
         </div>
         {errorMessage && (
-          <div className="mb-4 p-4 bg-[#ef4444]/20 border border-[#ef4444] rounded-lg">
-            <p className="text-sm text-[#ef4444]">{errorMessage}</p>
+          <div className="mb-4 p-4 bg-danger/20 border border-danger rounded-lg">
+            <p className="text-sm text-danger">{errorMessage}</p>
           </div>
         )}
 
-        <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
+        <div className="bg-surface-raised rounded-xl border border-border p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-bold text-[#1f2937]">期間一覧</h2>
+            <h2 className="text-lg font-bold text-text-heading">期間一覧</h2>
             <div className="flex items-center gap-4">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={showArchived}
                   onChange={(e) => setShowArchived(e.target.checked)}
-                  className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6] cursor-pointer"
+                  className="w-4 h-4 text-info border-border rounded focus:ring-primary cursor-pointer"
                 />
-                <span className="text-sm text-[#1f2937]">
+                <span className="text-sm text-text-heading">
                   アーカイブ済みを表示
                   {archivedPeriods.length > 0 && (
-                    <span className="ml-1 text-[#4b5563]/60">
+                    <span className="ml-1 text-text-body/60">
                       ({archivedPeriods.length}件)
                     </span>
                   )}
@@ -188,7 +188,7 @@ export default function MoshiSettingsPage() {
                   setEditingPeriod(null);
                   setIsEditorOpen(true);
                 }}
-                className="px-4 py-2 bg-[#3b82f6] text-white font-medium rounded-lg hover:bg-[#60a5fa] transition-colors duration-150"
+                className="px-4 py-2 bg-info text-white font-medium rounded-lg hover:bg-info/80 transition-colors duration-150"
               >
                 新規作成
               </button>
@@ -196,35 +196,35 @@ export default function MoshiSettingsPage() {
           </div>
 
           {isLoading ? (
-            <div className="text-center py-8 text-[#4b5563]">読み込み中...</div>
+            <div className="text-text-dangeraintenter py-8 text-text-body">読み込み中...</div>
           ) : periods.length === 0 ? (
-            <div className="text-center py-8 text-[#4b5563]">
+            <div className="text-text-dangeraintenter py-8 text-text-body">
               期間がありません。右上の「新規作成」ボタンから追加してください。
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse border border-[#e5e7eb] text-sm">
+              <table className="w-full border-collapse border border-border text-sm">
                 <thead>
-                  <tr className="bg-[#f3f4f6]">
-                    <th className="border border-[#e5e7eb] px-4 py-3 text-left">
+                  <tr className="bg-surface-hover">
+                    <th className="border border-border px-4 py-3 text-left">
                       期間
                     </th>
-                    <th className="border border-[#e5e7eb] px-4 py-3 text-left">
+                    <th className="border border-border px-4 py-3 text-left">
                       タイトル
                     </th>
-                    <th className="border border-[#e5e7eb] px-4 py-3 text-left">
+                    <th className="border border-border px-4 py-3 text-left">
                       受験日時
                     </th>
-                    <th className="border border-[#e5e7eb] px-4 py-3 text-left">
+                    <th className="border border-border px-4 py-3 text-left">
                       公開期間
                     </th>
-                    <th className="border border-[#e5e7eb] px-4 py-3 text-left">
+                    <th className="border border-border px-4 py-3 text-left">
                       状態
                     </th>
-                    <th className="border border-[#e5e7eb] px-4 py-3 text-left">
+                    <th className="border border-border px-4 py-3 text-left">
                       回答数
                     </th>
-                    <th className="border border-[#e5e7eb] px-4 py-3 text-left">
+                    <th className="border border-border px-4 py-3 text-left">
                       操作
                     </th>
                   </tr>
@@ -232,19 +232,19 @@ export default function MoshiSettingsPage() {
                 <tbody>
                   {activePeriods.map((period) => (
                     <tr key={period.id} className="table-row-hover">
-                      <td className="border border-[#e5e7eb] px-4 py-3">
+                      <td className="border border-border px-4 py-3">
                         {period.period_key}
                       </td>
-                      <td className="border border-[#e5e7eb] px-4 py-3">
+                      <td className="border border-border px-4 py-3">
                         {period.title}
                       </td>
-                      <td className="border border-[#e5e7eb] px-4 py-3">
+                      <td className="border border-border px-4 py-3">
                         {period.settings.exam_date_label} {period.settings.exam_time}
                       </td>
-                      <td className="border border-[#e5e7eb] px-4 py-3">
+                      <td className="border border-border px-4 py-3">
                         {formatDateRange(period.publish_start, period.publish_end)}
                       </td>
-                      <td className="border border-[#e5e7eb] px-4 py-3">
+                      <td className="border border-border px-4 py-3">
                         {(() => {
                           const status = getPeriodStatus(period);
                           const statusColorClass =
@@ -262,10 +262,10 @@ export default function MoshiSettingsPage() {
                           );
                         })()}
                       </td>
-                      <td className="border border-[#e5e7eb] px-4 py-3">
+                      <td className="border border-border px-4 py-3">
                         {responseCounts[period.id] ?? '-'}件
                       </td>
-                      <td className="border border-[#e5e7eb] px-4 py-3">
+                      <td className="border border-border px-4 py-3">
                         <div className="flex gap-2">
                           <Button
                             onClick={() => {
@@ -294,7 +294,7 @@ export default function MoshiSettingsPage() {
                           </Button>
                           <Link
                             href={`/forms/responses/moshi/${period.period_key}`}
-                            className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] flex items-center justify-center"
+                            className="px-3 py-1 text-xs bg-surface-hover text-text-body rounded hover:bg-border flex items-center justify-center"
                           >
                             回答一覧
                           </Link>
@@ -321,7 +321,7 @@ export default function MoshiSettingsPage() {
                   {showArchived && archivedPeriods.length > 0 && (
                     <>
                       <tr>
-                        <td colSpan={7} className="border border-[#e5e7eb] px-4 py-2 bg-gray-50">
+                        <td colSpan={7} className="border border-border px-4 py-2 bg-gray-50">
                           <div className="text-sm font-medium text-gray-600">
                             アーカイブ済み
                           </div>
@@ -332,19 +332,19 @@ export default function MoshiSettingsPage() {
                           key={period.id}
                           className="table-row-hover bg-gray-50 opacity-70"
                         >
-                          <td className="border border-[#e5e7eb] px-4 py-3">
+                          <td className="border border-border px-4 py-3">
                             {period.period_key}
                           </td>
-                          <td className="border border-[#e5e7eb] px-4 py-3">
+                          <td className="border border-border px-4 py-3">
                             {period.title}
                           </td>
-                          <td className="border border-[#e5e7eb] px-4 py-3">
+                          <td className="border border-border px-4 py-3">
                             {period.settings.exam_date_label} {period.settings.exam_time}
                           </td>
-                          <td className="border border-[#e5e7eb] px-4 py-3">
+                          <td className="border border-border px-4 py-3">
                             {formatDateRange(period.publish_start, period.publish_end)}
                           </td>
-                          <td className="border border-[#e5e7eb] px-4 py-3">
+                          <td className="border border-border px-4 py-3">
                             <span className="px-2 py-1 rounded text-xs font-medium bg-gray-200 text-gray-600">
                               アーカイブ
                             </span>
@@ -354,10 +354,10 @@ export default function MoshiSettingsPage() {
                               </div>
                             )}
                           </td>
-                          <td className="border border-[#e5e7eb] px-4 py-3">
+                          <td className="border border-border px-4 py-3">
                             {responseCounts[period.id] ?? '-'}件
                           </td>
-                          <td className="border border-[#e5e7eb] px-4 py-3">
+                          <td className="border border-border px-4 py-3">
                             <div className="flex gap-2">
                               <Button
                                 onClick={() => {
@@ -374,7 +374,7 @@ export default function MoshiSettingsPage() {
                               </Button>
                               <Link
                                 href={`/forms/responses/moshi/${period.period_key}`}
-                                className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] flex items-center justify-center"
+                                className="px-3 py-1 text-xs bg-surface-hover text-text-body rounded hover:bg-border flex items-center justify-center"
                               >
                                 回答一覧
                               </Link>
