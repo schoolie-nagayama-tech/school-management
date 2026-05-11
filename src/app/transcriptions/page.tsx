@@ -91,11 +91,11 @@ export default function TranscriptionsPage() {
     <AdminLayout headerTitle="面談文字起こし" narrow>
       <div>
         {/* ページヘッダー */}
-        <div className="mb-5 pb-4 border-b border-[#e5e7eb]">
+        <div className="mb-5 pb-4 border-b border-border">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-xl font-bold text-[#1f2937]">面談文字起こし</h1>
-              <p className="text-xs text-[#4b5563]/70 mt-0.5">
+              <h1 className="text-xl font-bold text-text-heading">面談文字起こし</h1>
+              <p className="text-xs text-text-body/70 mt-0.5">
                 Slack経由でNottaから受信したAI要約を、生徒の面談記録に紐付けます
               </p>
             </div>
@@ -121,9 +121,9 @@ export default function TranscriptionsPage() {
         </div>
 
         {/* フィルタバー */}
-        <div className="flex flex-wrap items-center gap-4 mb-4 p-3 bg-[#f9fafb] border border-[#e5e7eb] rounded-lg">
+        <div className="flex flex-wrap items-center gap-4 mb-4 p-3 bg-surface border border-border rounded-lg">
           <div className="flex items-center gap-2">
-            <label className="text-xs font-medium text-[#4b5563]">紐付け状態</label>
+            <label className="text-xs font-medium text-text-body">紐付け状態</label>
             <Select
               value={linkedFilter}
               onChange={(e) => setLinkedFilter(e.target.value as LinkedFilter)}
@@ -134,7 +134,7 @@ export default function TranscriptionsPage() {
               ]}
             />
           </div>
-          <label className="flex items-center gap-2 text-xs text-[#4b5563] cursor-pointer select-none">
+          <label className="flex items-center gap-2 text-xs text-text-body cursor-pointer select-none">
             <input
               type="checkbox"
               checked={showArchived}
@@ -151,18 +151,18 @@ export default function TranscriptionsPage() {
         )}
 
         {isLoading ? (
-          <div className="text-center py-16 text-[#4b5563]/60 text-sm">読み込み中...</div>
+          <div className="text-center py-16 text-text-body/60 text-sm">読み込み中...</div>
         ) : items.length === 0 ? (
-          <div className="text-center py-16 border border-dashed border-[#e5e7eb] rounded-lg bg-[#fafafa]">
-            <div className="text-sm text-[#4b5563]">該当する文字起こしがありません</div>
-            <div className="text-xs text-[#4b5563]/60 mt-1">
+          <div className="text-center py-16 border border-dashed border-border rounded-lg bg-surface">
+            <div className="text-sm text-text-body">該当する文字起こしがありません</div>
+            <div className="text-xs text-text-body/60 mt-1">
               NottaがSlackに投稿するとここに表示されます
             </div>
           </div>
         ) : (
-          <div className="overflow-x-auto border border-[#e5e7eb] rounded">
+          <div className="overflow-x-auto border border-border rounded">
             <table className="min-w-full text-sm">
-              <thead className="bg-[#f3f4f6] text-[#4b5563]">
+              <thead className="bg-surface-hover text-text-body">
                 <tr>
                   <th className="px-3 py-2 text-left">取り込み</th>
                   <th className="px-3 py-2 text-left">タイトル</th>
@@ -177,9 +177,9 @@ export default function TranscriptionsPage() {
                 {items.map((t) => (
                   <tr
                     key={t.id}
-                    className={`border-t border-[#e5e7eb] hover:bg-[#f9fafb] transition-colors duration-150 ${t.is_archived ? 'opacity-60' : ''}`}
+                    className={`border-t border-border hover:bg-surface transition-colors duration-150 ${t.is_archived ? 'opacity-60' : ''}`}
                   >
-                    <td className="px-3 py-2 whitespace-nowrap text-[#4b5563]/80">
+                    <td className="px-3 py-2 whitespace-nowrap text-text-body/80">
                       {new Date(t.created_at).toLocaleString('ja-JP', {
                         month: 'numeric',
                         day: 'numeric',
@@ -188,7 +188,7 @@ export default function TranscriptionsPage() {
                       })}
                     </td>
                     <td className="px-3 py-2 max-w-[200px] truncate">{t.title || '(無題)'}</td>
-                    <td className="px-3 py-2 whitespace-nowrap text-[#4b5563]/80">
+                    <td className="px-3 py-2 whitespace-nowrap text-text-body/80">
                       {t.recorded_at
                         ? new Date(t.recorded_at).toLocaleString('ja-JP', {
                             month: 'numeric',
@@ -199,7 +199,7 @@ export default function TranscriptionsPage() {
                         : '-'}
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap">{formatDuration(t.duration_seconds)}</td>
-                    <td className="px-3 py-2 max-w-[300px] truncate text-[#4b5563]/80">
+                    <td className="px-3 py-2 max-w-[300px] truncate text-text-body/80">
                       {t.transcript.slice(0, 80)}
                     </td>
                     <td className="px-3 py-2 whitespace-nowrap">
