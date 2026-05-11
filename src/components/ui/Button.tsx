@@ -13,15 +13,15 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    'bg-[#1e3a5f] text-white hover:bg-[#152a45] focus:ring-[#1e3a5f]/40 disabled:bg-[#1e3a5f]/50 disabled:text-white/70',
+    'bg-ink text-text-on-primary hover:brightness-[0.85] focus:ring-ink/40 disabled:opacity-50 disabled:hover:brightness-100',
   secondary:
-    'bg-transparent text-[#1e3a5f] border border-[#1e3a5f] hover:bg-[#1e3a5f]/10 focus:ring-[#1e3a5f]/30 disabled:border-gray-300 disabled:text-gray-400',
+    'bg-transparent text-ink border border-ink hover:bg-ink/10 focus:ring-ink/30 disabled:border-border disabled:text-text-faint',
   danger:
-    'bg-transparent text-[#c62828] border border-[#c62828] hover:bg-[#c62828]/10 focus:ring-[#c62828]/30 disabled:border-gray-300 disabled:text-gray-400',
+    'bg-transparent text-danger border border-danger hover:bg-danger/10 focus:ring-danger/30 disabled:border-border disabled:text-text-faint',
   ghost:
-    'bg-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-800 focus:ring-gray-200 disabled:text-gray-400',
+    'bg-transparent text-text-muted hover:bg-surface-hover hover:text-text-heading focus:ring-border disabled:text-text-faint',
   outline:
-    'bg-transparent text-[#4b5563] border border-[#e5e7eb] hover:bg-[#f3f4f6] focus:ring-[#e5e7eb] disabled:border-gray-200 disabled:text-gray-400',
+    'bg-transparent text-text-body border border-border hover:bg-surface-hover focus:ring-border disabled:border-border-subtle disabled:text-text-faint',
 };
 
 const sizeStyles: Record<ButtonSize, string> = {

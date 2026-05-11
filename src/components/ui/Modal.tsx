@@ -28,7 +28,6 @@ export function Modal({
   size = 'md',
   minHeight,
 }: ModalProps) {
-  // ESCキーで閉じる
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -51,18 +50,16 @@ export function Modal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* オーバーレイ */}
       <div
         className="absolute inset-0 modal-overlay"
         onClick={onClose}
         aria-hidden="true"
       />
 
-      {/* モーダル本体 */}
       <div
         className={`
           relative w-full ${sizeStyles[size]}
-          bg-white rounded-xl shadow-2xl border border-gray-200 ring-1 ring-black/5
+          bg-surface-raised rounded-xl shadow-2xl border border-border ring-1 ring-black/5
           modal-panel
           max-h-[95vh] overflow-hidden flex flex-col
         `}
@@ -71,24 +68,22 @@ export function Modal({
         aria-modal="true"
         aria-labelledby="modal-title"
       >
-        {/* ヘッダー */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <h2
             id="modal-title"
-            className="text-lg font-bold text-[#1a1a1a]"
+            className="text-lg font-bold text-text-heading"
           >
             {title}
           </h2>
           <button
             onClick={onClose}
-            className="p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors duration-150"
+            className="p-1 text-text-faint hover:text-text-body rounded-lg hover:bg-surface-hover transition-colors duration-150"
             aria-label="閉じる"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* コンテンツ */}
         <div className="px-6 py-6 flex-1 min-h-0 overflow-y-auto">{children}</div>
       </div>
     </div>

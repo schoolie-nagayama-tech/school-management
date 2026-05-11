@@ -11,7 +11,7 @@ interface CardProps {
 export function Card({ children, className = '', onClick }: CardProps) {
   return (
     <div
-      className={`bg-[#f8f8f8] rounded-xl border border-gray-200 ${className}`}
+      className={`bg-surface rounded-xl border border-border ${className}`}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}
@@ -28,7 +28,7 @@ interface CardHeaderProps {
 
 export function CardHeader({ children, className = '' }: CardHeaderProps) {
   return (
-    <div className={`px-6 py-4 border-b border-gray-200 ${className}`}>
+    <div className={`px-6 py-4 border-b border-border ${className}`}>
       {children}
     </div>
   );
@@ -41,7 +41,7 @@ interface CardTitleProps {
 
 export function CardTitle({ children, className = '' }: CardTitleProps) {
   return (
-    <h3 className={`text-lg font-bold text-[#1a1a1a] ${className}`}>
+    <h3 className={`text-lg font-bold text-text-heading ${className}`}>
       {children}
     </h3>
   );

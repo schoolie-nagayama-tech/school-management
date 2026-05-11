@@ -121,8 +121,9 @@ export function BulletinBoard({ className = '' }: BulletinBoardProps) {
 
         setLabelsBySchool(labelsBySchoolMap);
         setPosts(allPosts);
-      } catch (error: any) {
-        if (error?.message?.includes('schema cache') || error?.message?.includes('not found')) {
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : '';
+        if (message.includes('schema cache') || message.includes('not found')) {
           console.warn('掲示板テーブルが見つかりません。マイグレーションを実行してください:', error);
           setPosts([]);
           setLabelsBySchool({});

@@ -616,13 +616,13 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                         className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                           pathname === '/settings'
                             ? 'bg-primary/10 text-primary font-semibold'
-                            : 'text-[#1f2937]'
+                            : 'text-text-heading'
                         }`}
                         onClick={() => setShowSettingsDropdown(false)}
                       >
                         すべての設定
                       </Link>
-                      <div className="border-t border-[#e5e7eb] my-1" />
+                      <div className="border-t border-border my-1" />
                       {(showAllLinks || permissions?.canAccessUsers) && (
                         <Link
                           href="/users"
@@ -662,7 +662,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                           セキュリティ設定
                         </Link>
                       )}
-                      <div className="border-t border-[#e5e7eb] my-1" />
+                      <div className="border-t border-border my-1" />
                       {/* テーマ切替 */}
                       <div className="px-3 py-2 flex items-center justify-between">
                         <span className="text-xs text-gray-600">テーマ</span>

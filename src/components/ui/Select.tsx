@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { SelectHTMLAttributes, forwardRef } from 'react';
 
@@ -26,10 +26,10 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
         {label && (
           <label
             htmlFor={selectId}
-            className="block text-sm font-medium text-[#1f2937] mb-1"
+            className="block text-sm font-medium text-text-heading mb-1"
           >
             {label}
-            {props.required && <span className="text-[#ef4444] ml-1">*</span>}
+            {props.required && <span className="text-danger ml-1">*</span>}
           </label>
         )}
         <select
@@ -38,12 +38,12 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           className={`
             w-full px-3 py-2
             border rounded-lg
-            text-[#4b5563]
-            bg-white
+            text-text-body
+            bg-surface-raised
             transition-colors duration-150
-            focus:ring-2 focus:ring-[#3b82f6] focus:border-[#3b82f6]
-            disabled:bg-[#f3f4f6] disabled:text-[#4b5563]/50 disabled:cursor-not-allowed
-            ${error ? 'border-[#ef4444] focus:ring-[#ef4444] focus:border-[#ef4444]' : 'border-[#e5e7eb]'}
+            focus:ring-2 focus:ring-primary focus:border-primary
+            disabled:bg-surface disabled:text-text-faint disabled:cursor-not-allowed
+            ${error ? 'border-danger focus:ring-danger focus:border-danger' : 'border-border'}
             ${className}
           `}
           {...props}
@@ -59,7 +59,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             </option>
           ))}
         </select>
-        {error && <p className="mt-1 text-sm text-[#ef4444]">{error}</p>}
+        {error && <p className="mt-1 text-sm text-danger">{error}</p>}
       </div>
     );
   }
