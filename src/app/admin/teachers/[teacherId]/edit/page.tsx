@@ -463,12 +463,12 @@ export default function TeacherEditPage() {
           <div className="flex items-center gap-4">
             <Link
               href="/admin/teachers"
-              className="flex items-center gap-2 text-[#4b5563] hover:text-[#ff8e3c] transition-colors duration-150"
+              className="flex items-center gap-2 text-text-body hover:text-[#ff8e3c] transition-colors duration-150"
             >
               <ChevronLeft className="w-4 h-4" />
               講師一覧に戻る
             </Link>
-            <h1 className="text-2xl font-bold text-[#1f2937]">講師詳細</h1>
+            <h1 className="text-2xl font-bold text-text-heading">講師詳細</h1>
           </div>
           <div className="flex gap-3">
             <Link href="/admin/teachers">
@@ -484,21 +484,21 @@ export default function TeacherEditPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* 左カラム: 基本情報 */}
           <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 shadow-sm">
-              <h2 className="text-base font-semibold text-[#1f2937] mb-4 pb-2 border-b border-[#e5e7eb]">
+            <div className="bg-surface-raised rounded-xl border border-border p-6 shadow-sm">
+              <h2 className="text-base font-semibold text-text-heading mb-4 pb-2 border-b border-border">
                 基本情報
               </h2>
               <div className="space-y-4">
                 <div>
-                  <Label className="block text-sm font-medium text-[#6b7280] mb-1.5">ログインID</Label>
+                  <Label className="block text-sm font-medium text-text-muted mb-1.5">ログインID</Label>
                   <Input
                     value={displayLoginId(teacher.email)}
                     disabled
-                    className="w-full bg-[#f9fafb] text-[#4b5563]"
+                    className="w-full bg-surface text-text-body"
                   />
                 </div>
                 <div>
-                  <Label className="block text-sm font-medium text-[#6b7280] mb-1.5">表示名</Label>
+                  <Label className="block text-sm font-medium text-text-muted mb-1.5">表示名</Label>
                   <Input
                     value={editDisplayName}
                     onChange={(e) => setEditDisplayName(e.target.value)}
@@ -507,10 +507,10 @@ export default function TeacherEditPage() {
                   />
                 </div>
                 <div>
-                  <Label className="block text-sm font-medium text-[#6b7280] mb-1.5">担当教室</Label>
-                  <div className="space-y-2 max-h-40 overflow-y-auto border border-[#e5e7eb] rounded-lg p-3 bg-[#fafafa]">
+                  <Label className="block text-sm font-medium text-text-muted mb-1.5">担当教室</Label>
+                  <div className="space-y-2 max-h-40 overflow-y-auto border border-border rounded-lg p-3 bg-surface">
                     {availableSchools.map((school) => (
-                      <label key={school.id} className="flex items-center gap-2 cursor-pointer hover:bg-[#f3f4f6] rounded px-2 py-1 -mx-2 -my-1">
+                      <label key={school.id} className="flex items-center gap-2 cursor-pointer hover:bg-surface-hover rounded px-2 py-1 -mx-2 -my-1">
                         <input
                           type="checkbox"
                           checked={editSchoolIds.includes(school.id)}
@@ -521,9 +521,9 @@ export default function TeacherEditPage() {
                               setEditSchoolIds(editSchoolIds.filter((id) => id !== school.id));
                             }
                           }}
-                          className="rounded border-[#9ca3af] text-[#ff8e3c] focus:ring-[#ff8e3c]"
+                          className="rounded border-text-faint text-[#ff8e3c] focus:ring-[#ff8e3c]"
                         />
-                        <span className="text-sm text-[#1f2937]">{school.name}</span>
+                        <span className="text-sm text-text-heading">{school.name}</span>
                       </label>
                     ))}
                   </div>
@@ -534,11 +534,11 @@ export default function TeacherEditPage() {
 
           {/* 右カラム: 指導・勤務設定 */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 shadow-sm">
-              <h2 className="text-base font-semibold text-[#1f2937] mb-2 pb-2 border-b border-[#e5e7eb]">
+            <div className="bg-surface-raised rounded-xl border border-border p-6 shadow-sm">
+              <h2 className="text-base font-semibold text-text-heading mb-2 pb-2 border-b border-border">
                 指導可能科目
               </h2>
-              <p className="text-xs text-[#6b7280] mb-3">
+              <p className="text-xs text-text-muted mb-3">
                 選択した科目のみ指導可能です。未選択の科目は指導できません。
               </p>
               {subjects.length > 0 && (
@@ -546,14 +546,14 @@ export default function TeacherEditPage() {
                   <button
                     type="button"
                     onClick={() => setEditTeachableSubjectIds(subjects.map((s) => s.id))}
-                    className="text-xs px-3 py-1.5 rounded-md border border-[#e5e7eb] hover:bg-[#f9fafb] hover:border-[#ff8e3c]/50 text-[#6b7280]"
+                    className="text-xs px-3 py-1.5 rounded-md border border-border hover:bg-surface hover:border-[#ff8e3c]/50 text-text-muted"
                   >
                     全科目選択
                   </button>
                   <button
                     type="button"
                     onClick={() => setEditTeachableSubjectIds([])}
-                    className="text-xs px-3 py-1.5 rounded-md border border-[#e5e7eb] hover:bg-[#f9fafb] hover:border-[#ff8e3c]/50 text-[#6b7280]"
+                    className="text-xs px-3 py-1.5 rounded-md border border-border hover:bg-surface hover:border-[#ff8e3c]/50 text-text-muted"
                   >
                     全科目解除
                   </button>
@@ -561,12 +561,12 @@ export default function TeacherEditPage() {
               )}
               <div className="space-y-4 max-h-56 overflow-y-auto">
                 {subjects.length === 0 ? (
-                  <p className="text-sm text-[#9ca3af]">科目が登録されていません</p>
+                  <p className="text-sm text-text-faint">科目が登録されていません</p>
                 ) : (
                   groupSubjectsByGradeCategory(subjects).map(({ label, items }) => (
                     <div key={label}>
                       <div className="flex items-center justify-between mb-2">
-                        <p className="text-xs font-semibold text-[#6b7280] uppercase tracking-wide">{label}</p>
+                        <p className="text-xs font-semibold text-text-muted uppercase tracking-wide">{label}</p>
                         <div className="flex gap-1">
                           <button
                             type="button"
@@ -576,7 +576,7 @@ export default function TeacherEditPage() {
                                 [...prev.filter((id) => !ids.includes(id)), ...ids]
                               );
                             }}
-                            className="text-[10px] px-2 py-0.5 rounded border border-[#e5e7eb] hover:bg-[#f9fafb] text-[#6b7280]"
+                            className="text-[10px] px-2 py-0.5 rounded border border-border hover:bg-surface text-text-muted"
                           >
                             全選択
                           </button>
@@ -587,7 +587,7 @@ export default function TeacherEditPage() {
                                 prev.filter((id) => !items.some((s) => s.id === id))
                               )
                             }
-                            className="text-[10px] px-2 py-0.5 rounded border border-[#e5e7eb] hover:bg-[#f9fafb] text-[#6b7280]"
+                            className="text-[10px] px-2 py-0.5 rounded border border-border hover:bg-surface text-text-muted"
                           >
                             全解除
                           </button>
@@ -608,7 +608,7 @@ export default function TeacherEditPage() {
                                   );
                                 }
                               }}
-                              className="rounded border-[#9ca3af] text-[#ff8e3c] focus:ring-[#ff8e3c]"
+                              className="rounded border-text-faint text-[#ff8e3c] focus:ring-[#ff8e3c]"
                             />
                             <span className="text-sm">{subject.name}</span>
                           </label>
@@ -620,27 +620,27 @@ export default function TeacherEditPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 shadow-sm">
-              <h2 className="text-base font-semibold text-[#1f2937] mb-4 pb-2 border-b border-[#e5e7eb]">
+            <div className="bg-surface-raised rounded-xl border border-border p-6 shadow-sm">
+              <h2 className="text-base font-semibold text-text-heading mb-4 pb-2 border-b border-border">
                 出勤可能コマ
               </h2>
-              <p className="text-xs text-[#6b7280] mb-4">
+              <p className="text-xs text-text-muted mb-4">
                 担当教室の座席表に設定されているコマのみ表示されます。各曜日で出勤可能なコマを選択してください。選択した曜日・コマのみ座席表に表示され、未選択の曜日・コマは表示されません。
               </p>
               {scheduleTimeSlots.length === 0 ? (
-                <p className="text-sm text-[#9ca3af] py-4">
+                <p className="text-sm text-text-faint py-4">
                   担当教室を選択するか、担当教室の座席表でコマ時間を設定すると表示されます。
                 </p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[360px] text-sm">
                     <thead>
-                      <tr className="border-b border-[#e5e7eb]">
-                        <th className="text-left py-2 pr-4 font-medium text-[#6b7280] w-10">曜日</th>
+                      <tr className="border-b border-border">
+                        <th className="text-left py-2 pr-4 font-medium text-text-muted w-10">曜日</th>
                         {scheduleTimeSlots.map((slot) => (
-                          <th key={slot.id} className="text-center py-2 px-1 font-medium text-[#6b7280] min-w-[5rem]">
+                          <th key={slot.id} className="text-center py-2 px-1 font-medium text-text-muted min-w-[5rem]">
                             <div>{slot.slot_number}限</div>
-                            <div className="text-[10px] font-normal text-[#9ca3af] tabular-nums mt-0.5">
+                            <div className="text-[10px] font-normal text-text-faint tabular-nums mt-0.5">
                               {slot.start_time?.slice(0, 5)}〜{slot.end_time?.slice(0, 5)}
                             </div>
                           </th>
@@ -662,8 +662,8 @@ export default function TeacherEditPage() {
                           });
                         };
                         return (
-                          <tr key={d.value} className="border-b border-[#e5e7eb]/50 hover:bg-[#f9fafb]">
-                            <td className="py-2 pr-4 font-medium text-[#1f2937]">{d.label}</td>
+                          <tr key={d.value} className="border-b border-border/50 hover:bg-surface">
+                            <td className="py-2 pr-4 font-medium text-text-heading">{d.label}</td>
                             {scheduleTimeSlots.map((slot) => (
                               <td key={slot.id} className="py-2 px-1 text-center">
                                 <label className="flex items-center justify-center cursor-pointer">
@@ -671,7 +671,7 @@ export default function TeacherEditPage() {
                                     type="checkbox"
                                     checked={slotNums.includes(slot.slot_number)}
                                     onChange={() => toggleSlot(slot.slot_number)}
-                                    className="rounded border-[#9ca3af] text-[#ff8e3c] focus:ring-[#ff8e3c] w-4 h-4"
+                                    className="rounded border-text-faint text-[#ff8e3c] focus:ring-[#ff8e3c] w-4 h-4"
                                   />
                                 </label>
                               </td>
@@ -687,9 +687,9 @@ export default function TeacherEditPage() {
 
             {/* バッジ / トロフィー */}
             {allBadges.length > 0 && (
-              <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#e5e7eb]">
-                  <h2 className="text-base font-semibold text-[#1f2937]">
+              <div className="bg-surface-raised rounded-xl border border-border p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-4 pb-2 border-b border-border">
+                  <h2 className="text-base font-semibold text-text-heading">
                     バッジ / トロフィー
                   </h2>
                 </div>
@@ -718,9 +718,9 @@ export default function TeacherEditPage() {
             )}
 
             {/* 研修参加履歴 */}
-            <div className="bg-white rounded-xl border border-[#e5e7eb] p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-4 pb-2 border-b border-[#e5e7eb]">
-                <h2 className="text-base font-semibold text-[#1f2937]">研修参加履歴</h2>
+            <div className="bg-surface-raised rounded-xl border border-border p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4 pb-2 border-b border-border">
+                <h2 className="text-base font-semibold text-text-heading">研修参加履歴</h2>
               </div>
 
               {/* 追加フォーム */}
@@ -733,7 +733,7 @@ export default function TeacherEditPage() {
                     {trainingMasters.length === 0 ? (
                       <div className="mt-1 text-xs text-gray-500">
                         研修マスタが未登録です。
-                        <Link href="/settings/trainings" className="text-[#1e3a5f] hover:underline ml-1">
+                        <Link href="/settings/trainings" className="text-ink hover:underline ml-1">
                           設定 &gt; 研修マスタ管理
                         </Link>
                         で登録してください。
@@ -753,7 +753,7 @@ export default function TeacherEditPage() {
                             setNewTrainingTitle('');
                           }
                         }}
-                        className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-[#1e3a5f] focus:outline-none focus:ring-1 focus:ring-[#1e3a5f]"
+                        className="mt-1 block w-full rounded-md border border-gray-300 bg-surface-raised px-3 py-2 text-sm focus:border-ink focus:outline-none focus:ring-1 focus:ring-ink"
                       >
                         <option value="">-- 研修を選択 --</option>
                         {trainingMasters.map((m) => (
