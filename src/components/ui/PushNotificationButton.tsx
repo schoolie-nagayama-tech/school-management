@@ -109,9 +109,9 @@ export function PushNotificationButton({ schoolId, compact = false }: Props) {
 
   const Icon = isDenied ? BellOff : isSubscribed ? BellRing : Bell;
   const colorClass = isDenied
-    ? 'text-gray-400 cursor-not-allowed'
+    ? 'text-text-faint cursor-not-allowed'
     : isSubscribed
-    ? 'text-[#d32f2f]'
+    ? 'text-primary'
     : 'text-white/70 hover:text-white';
 
   const handleClick = () => {
@@ -146,10 +146,10 @@ export function PushNotificationButton({ schoolId, compact = false }: Props) {
       disabled={isLoading || isDenied}
       className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors duration-150 ${
         isDenied
-          ? 'text-gray-400 cursor-not-allowed'
+          ? 'text-text-faint cursor-not-allowed'
           : isSubscribed
-          ? 'text-[#d32f2f] hover:bg-[#d32f2f]/10'
-          : 'text-gray-700 hover:bg-gray-100'
+          ? 'text-primary hover:bg-primary/10'
+          : 'text-text-body hover:bg-surface-hover'
       }`}
     >
       {isLoading ? (

@@ -17,9 +17,9 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
         onChange={(e) => onCheckedChange?.(e.target.checked)}
         className={`
           w-4 h-4
-          text-[#3b82f6]
-          border-[#e5e7eb] rounded
-          focus:ring-2 focus:ring-[#3b82f6] focus:ring-offset-2
+          text-info
+          border-border rounded
+          focus:ring-2 focus:ring-primary focus:ring-offset-2
           disabled:opacity-50 disabled:cursor-not-allowed
           ${className}
         `}

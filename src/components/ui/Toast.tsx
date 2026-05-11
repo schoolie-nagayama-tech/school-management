@@ -52,10 +52,10 @@ function ToastItem({ toast, onRemove }: ToastItemProps) {
   }, [toast.id, toast.duration, onRemove]);
 
   const typeStyles = {
-    success: 'bg-[#2e7d32] text-white border-[#1b5e20]',
-    error: 'bg-[#c62828] text-white border-[#b71c1c]',
-    info: 'bg-[#1976d2] text-white border-[#1565c0]',
-    warning: 'bg-[#f9a825] text-[#1a1a1a] border-[#f57f17]',
+    success: 'bg-success text-white border-success/80',
+    error: 'bg-danger text-white border-danger/80',
+    info: 'bg-info text-white border-info/80',
+    warning: 'bg-warning text-text-heading border-warning/80',
   };
 
   const IconComponent = {
@@ -69,7 +69,7 @@ function ToastItem({ toast, onRemove }: ToastItemProps) {
     <div
       className={`
         flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg
-        transition-[transform,opacity] duration-300 ease-out
+        transition-[transform,opacity] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]
         ${typeStyles[toast.type]}
         ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full'}
       `}

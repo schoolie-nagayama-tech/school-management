@@ -56,6 +56,10 @@
   --accent-ink: oklch(30% 0.07 257);
   --accent-ink-subtle: oklch(95% 0.02 257);
 
+  /* === Motion === */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+
   /* === 互換レイヤー（既存コードで参照中） === */
   --background: var(--bg);
   --headline: var(--text-heading);

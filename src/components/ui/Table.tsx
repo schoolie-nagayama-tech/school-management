@@ -53,7 +53,7 @@ interface TableRowProps {
 export function TableRow({ children, className = '', onClick }: TableRowProps) {
   return (
     <tr
-      className={`border-b border-[#e5e7eb]/20 ${onClick ? 'cursor-pointer hover:bg-[#f3f4f6]' : ''} ${className}`}
+      className={`border-b border-border/20 ${onClick ? 'cursor-pointer hover:bg-surface-hover' : ''} ${className}`}
       onClick={onClick}
     >
       {children}
@@ -68,7 +68,7 @@ interface TableHeadProps {
 
 export function TableHead({ children, className = '' }: TableHeadProps) {
   return (
-    <th className={`px-4 py-3 text-left text-sm font-semibold text-[#1f2937] bg-[#f3f4f6] ${className}`}>
+    <th className={`px-4 py-3 text-left text-sm font-semibold text-text-heading bg-surface-hover ${className}`}>
       {children}
     </th>
   );
@@ -81,7 +81,7 @@ interface TableCellProps extends TdHTMLAttributes<HTMLTableCellElement> {
 
 export function TableCell({ children, className = '', ...rest }: TableCellProps) {
   return (
-    <td className={`px-4 py-3 text-sm text-[#4b5563] ${className}`} {...rest}>
+    <td className={`px-4 py-3 text-sm text-text-body ${className}`} {...rest}>
       {children ?? null}
     </td>
   );

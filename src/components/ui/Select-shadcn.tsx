@@ -55,12 +55,12 @@ export function SelectTrigger({ children, className = '', onClick }: SelectTrigg
       className={`
         w-full px-3 py-2
         border rounded-lg
-        text-[#4b5563]
-        bg-white
+        text-text-body
+        bg-surface-raised
         transition-colors duration-150
-        focus:ring-2 focus:ring-[#3b82f6] focus:border-[#3b82f6]
-        disabled:bg-[#f3f4f6] disabled:text-[#4b5563]/50 disabled:cursor-not-allowed
-        border-[#e5e7eb]
+        focus:ring-2 focus:ring-primary focus:border-primary
+        disabled:bg-surface-hover disabled:text-text-muted disabled:cursor-not-allowed
+        border-border
         flex items-center justify-between
         ${className}
       `}
@@ -116,7 +116,7 @@ export function SelectContent({ children, className = '' }: SelectContentProps) 
       ref={contentRef}
       className={`
         absolute z-50 w-full mt-1
-        bg-white border border-[#e5e7eb] rounded-lg shadow-lg
+        bg-surface-raised border border-border rounded-lg shadow-lg
         max-h-60 overflow-auto
         ${className}
       `}
@@ -148,8 +148,8 @@ export function SelectItem({ value, children, onClick, className = '' }: SelectI
   return (
     <div
       className={`
-        px-3 py-2 cursor-pointer hover:bg-[#f3f4f6] transition-colors
-        ${context?.value === value ? 'bg-[#3b82f6]/10' : ''}
+        px-3 py-2 cursor-pointer hover:bg-surface-hover transition-colors duration-150
+        ${context?.value === value ? 'bg-info/10' : ''}
         ${className}
       `}
       data-value={value}

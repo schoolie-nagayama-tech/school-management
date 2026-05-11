@@ -96,7 +96,7 @@ function TaskCheckbox({
     <button
       onClick={handleClick}
       disabled={completing}
-      className={`flex-shrink-0 w-4 h-4 rounded border transition-all duration-200 flex items-center justify-center ${
+      className={`flex-shrink-0 w-4 h-4 rounded border transition-[background-color,border-color] duration-150 ease-out flex items-center justify-center ${
         completing
           ? 'bg-green-500 border-green-500'
           : task.overdue
@@ -242,7 +242,7 @@ export function TaskProgressWidget({ schoolIds }: { schoolIds?: string[] }) {
 
       {/* Task list (collapsible) */}
       <div
-        className="overflow-hidden transition-all duration-200"
+        className="overflow-hidden transition-[max-height,opacity] duration-200 ease-out"
         style={{ maxHeight: isOpen ? '500px' : '0', opacity: isOpen ? 1 : 0 }}
       >
         <div className="px-4 py-2.5 flex flex-wrap gap-1.5 border-t border-gray-100">

@@ -37,7 +37,7 @@ export function RichTextEditor({
     },
     editorProps: {
       attributes: {
-        class: 'rich-text-editor-body min-h-[120px] px-3 py-2 focus:outline-none text-sm text-[#1f2937]',
+        class: 'rich-text-editor-body min-h-[120px] px-3 py-2 focus:outline-none text-sm text-text-heading',
       },
     },
   });
@@ -66,7 +66,7 @@ export function RichTextEditor({
   if (!editor) {
     return (
       <div
-        className={`rounded-lg border border-[#e5e7eb] bg-white ${className}`}
+        className={`rounded-lg border border-border bg-surface-raised ${className}`}
         style={{ minHeight }}
       >
         <div className="px-3 py-2 text-sm text-gray-400">読み込み中...</div>
@@ -76,11 +76,11 @@ export function RichTextEditor({
 
   return (
     <div
-      className={`rounded-lg border border-[#e5e7eb] bg-white focus-within:ring-2 focus-within:ring-[#3b82f6] focus-within:border-[#3b82f6] ${className}`}
+      className={`rounded-lg border border-border bg-surface-raised focus-within:ring-2 focus-within:ring-primary focus-within:border-primary ${className}`}
       style={{ minHeight }}
     >
       {/* ツールバー */}
-      <div className="flex flex-wrap items-center gap-0.5 border-b border-[#e5e7eb] px-1 py-1">
+      <div className="flex flex-wrap items-center gap-0.5 border-b border-border px-1 py-1">
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBold().run()}
           isActive={editor.isActive('bold')}
@@ -155,7 +155,7 @@ function ToolbarButton({
       type="button"
       onClick={onClick}
       title={title}
-      className={`p-1.5 rounded text-[#4b5563] hover:bg-gray-100 hover:text-[#1f2937] ${isActive ? 'bg-gray-200 text-[#1f2937]' : ''}`}
+      className={`p-1.5 rounded text-text-body hover:bg-surface-hover hover:text-text-heading transition-colors duration-150 ${isActive ? 'bg-surface-hover text-text-heading' : ''}`}
     >
       {children}
     </button>

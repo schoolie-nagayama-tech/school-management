@@ -44,7 +44,7 @@ export function Dialog({ open, onOpenChange, children, ariaLabel }: DialogProps)
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-black/50"
+        className="absolute inset-0 modal-overlay"
         onClick={() => onOpenChange(false)}
         aria-hidden="true"
       />
@@ -53,7 +53,7 @@ export function Dialog({ open, onOpenChange, children, ariaLabel }: DialogProps)
         aria-modal="true"
         aria-labelledby={ariaLabel ? undefined : titleId}
         aria-label={ariaLabel}
-        className="relative z-50 w-full max-w-lg bg-white rounded-xl shadow-2xl max-h-[95vh] overflow-hidden flex flex-col modal-panel"
+        className="relative z-50 w-full max-w-lg bg-surface-raised rounded-xl shadow-2xl border border-border ring-1 ring-black/5 max-h-[95vh] overflow-hidden flex flex-col modal-panel"
       >
         <DialogTitleIdContext.Provider value={titleId}>{children}</DialogTitleIdContext.Provider>
       </div>
@@ -77,7 +77,7 @@ interface DialogHeaderProps {
 
 export function DialogHeader({ children, className = '' }: DialogHeaderProps) {
   return (
-    <div className={`px-6 py-4 border-b border-[#e5e7eb] ${className}`}>
+    <div className={`px-6 py-4 border-b border-border ${className}`}>
       {children}
     </div>
   );
@@ -91,7 +91,7 @@ interface DialogTitleProps {
 export function DialogTitle({ children, className = '' }: DialogTitleProps) {
   const titleId = useContext(DialogTitleIdContext);
   return (
-    <h2 id={titleId} className={`text-lg font-semibold text-[#1f2937] ${className}`}>
+    <h2 id={titleId} className={`text-lg font-semibold text-text-heading ${className}`}>
       {children}
     </h2>
   );
@@ -104,7 +104,7 @@ interface DialogFooterProps {
 
 export function DialogFooter({ children, className = '' }: DialogFooterProps) {
   return (
-    <div className={`flex items-center justify-end gap-2 px-6 py-4 border-t border-[#e5e7eb] ${className}`}>
+    <div className={`flex items-center justify-end gap-2 px-6 py-4 border-t border-border ${className}`}>
       {children}
     </div>
   );

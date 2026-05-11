@@ -32,7 +32,7 @@ export function Tooltip({ text, children, position = 'top', multiline = false }:
           transition-[opacity,transform] duration-[125ms] ease-out`}
       >
         <div
-          className={`bg-gray-800 text-white text-[10px] px-2 py-1 rounded shadow-lg ${
+          className={`bg-text-heading text-text-on-primary text-[10px] px-2 py-1 rounded shadow-lg ${
             multiline ? 'whitespace-pre-line max-w-[240px] leading-relaxed' : 'whitespace-nowrap'
           }`}
         >
@@ -59,7 +59,7 @@ export function HelpTooltip({ text, position = 'top', multiline = true, size = 1
   return (
     <Tooltip text={text} position={position} multiline={multiline}>
       <span
-        className="inline-flex items-center justify-center rounded-full border border-gray-300 text-gray-400 hover:text-gray-600 hover:border-gray-400 cursor-help transition-colors shrink-0"
+        className="inline-flex items-center justify-center rounded-full border border-border text-text-faint hover:text-text-muted hover:border-border-strong cursor-help transition-colors duration-150 shrink-0"
         style={{ width: size + 4, height: size + 4, fontSize: size - 2 }}
       >
         ?
