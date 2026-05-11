@@ -677,7 +677,7 @@ export default function AttendanceManagementPage() {
               <div className="mb-4 flex flex-wrap items-center gap-4">
                 {isManager ? (
                   <>
-                    <span className="text-sm text-[#4b5563]">
+                    <span className="text-sm text-text-body">
                       提出済み: {actionableCount}件
                     </span>
                     <div className="flex items-center gap-2">
@@ -701,7 +701,7 @@ export default function AttendanceManagementPage() {
                   </>
                 ) : (
                   <>
-                    <span className="text-sm text-[#4b5563]">
+                    <span className="text-sm text-text-body">
                       承認待ち: {actionableCount}件
                     </span>
                     {selectedIds.size > 0 && (
@@ -717,17 +717,17 @@ export default function AttendanceManagementPage() {
 
             {isLoading ? (
               <div className="flex justify-center py-8">
-                <div className="text-[#4b5563]">読み込み中...</div>
+                <div className="text-text-body">読み込み中...</div>
               </div>
             ) : sheets.length === 0 ? (
-              <div className="text-center py-8 text-[#4b5563]">出勤簿がありません</div>
+              <div className="text-center py-8 text-text-body">出勤簿がありません</div>
             ) : isAdmin && isTransposedView ? (
               /* ===== 管理者: 転置ビュー ===== */
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="min-w-[120px] sticky left-0 bg-white z-10">項目</TableHead>
+                      <TableHead className="min-w-[120px] sticky left-0 bg-surface-raised z-10">項目</TableHead>
                       {sortedSheets.map((sheet) => (
                         <TableHead key={sheet.id} className="text-center min-w-[100px]">
                           <div className="flex flex-col items-center gap-1">
@@ -750,7 +750,7 @@ export default function AttendanceManagementPage() {
                     {/* コマ種別行 */}
                     {displayTypes.map((type) => (
                       <TableRow key={type.id}>
-                        <TableCell className="font-medium sticky left-0 bg-white z-10">{type.name}</TableCell>
+                        <TableCell className="font-medium sticky left-0 bg-surface-raised z-10">{type.name}</TableCell>
                         {sortedSheets.map((sheet) => {
                           const td = Object.values(sheet.type_totals).find((t) => t.name === type.name);
                           return (
@@ -781,7 +781,7 @@ export default function AttendanceManagementPage() {
                     </TableRow>
                     {/* 準備給日数 */}
                     <TableRow>
-                      <TableCell className="font-medium sticky left-0 bg-white z-10">準備給日数</TableCell>
+                      <TableCell className="font-medium sticky left-0 bg-surface-raised z-10">準備給日数</TableCell>
                       {sortedSheets.map((sheet) => (
                         <TableCell key={sheet.id} className="text-center">{sheet.prep_days}日</TableCell>
                       ))}
@@ -791,7 +791,7 @@ export default function AttendanceManagementPage() {
                     </TableRow>
                     {/* 勤務日数 */}
                     <TableRow>
-                      <TableCell className="font-medium sticky left-0 bg-white z-10">勤務日数</TableCell>
+                      <TableCell className="font-medium sticky left-0 bg-surface-raised z-10">勤務日数</TableCell>
                       {sortedSheets.map((sheet) => (
                         <TableCell key={sheet.id} className="text-center">{sheet.work_days}日</TableCell>
                       ))}
@@ -801,7 +801,7 @@ export default function AttendanceManagementPage() {
                     </TableRow>
                     {/* 交通費 (editable) */}
                     <TableRow>
-                      <TableCell className="font-medium sticky left-0 bg-white z-10">交通費</TableCell>
+                      <TableCell className="font-medium sticky left-0 bg-surface-raised z-10">交通費</TableCell>
                       {sortedSheets.map((sheet) => (
                         <TableCell key={sheet.id}>
                           <Input
@@ -820,7 +820,7 @@ export default function AttendanceManagementPage() {
                     </TableRow>
                     {/* 備考 (editable) */}
                     <TableRow>
-                      <TableCell className="font-medium sticky left-0 bg-white z-10">備考</TableCell>
+                      <TableCell className="font-medium sticky left-0 bg-surface-raised z-10">備考</TableCell>
                       {sortedSheets.map((sheet) => (
                         <TableCell key={sheet.id}>
                           <Input
@@ -1087,7 +1087,7 @@ export default function AttendanceManagementPage() {
                     </SelectContent>
                   </Select>
                   <div className="flex items-center gap-1">
-                    <span className="text-sm text-[#4b5563]">¥</span>
+                    <span className="text-sm text-text-body">¥</span>
                     <Input
                       type="number"
                       min="0"
@@ -1096,7 +1096,7 @@ export default function AttendanceManagementPage() {
                       placeholder="旧"
                       className="w-24 text-right"
                     />
-                    <span className="text-sm text-[#4b5563]">→ ¥</span>
+                    <span className="text-sm text-text-body">→ ¥</span>
                     <Input
                       type="number"
                       min="0"
@@ -1154,7 +1154,7 @@ export default function AttendanceManagementPage() {
               <CardTitle>
                 遅刻・早退一覧
                 {lateEarlyRecords.length > 0 && (
-                  <span className="text-[#4b5563] font-normal text-sm ml-2">（{lateEarlyRecords.length}件）</span>
+                  <span className="text-text-body font-normal text-sm ml-2">（{lateEarlyRecords.length}件）</span>
                 )}
               </CardTitle>
               <Button variant="secondary" onClick={handleExportLateEarlyCSV} disabled={lateEarlyRecords.length === 0}>
@@ -1166,10 +1166,10 @@ export default function AttendanceManagementPage() {
           <CardContent>
             {isLoading ? (
               <div className="flex justify-center py-8">
-                <div className="text-[#4b5563]">読み込み中...</div>
+                <div className="text-text-body">読み込み中...</div>
               </div>
             ) : lateEarlyRecords.length === 0 ? (
-              <div className="text-center py-8 text-[#4b5563]">遅刻・早退のデータがありません</div>
+              <div className="text-center py-8 text-text-body">遅刻・早退のデータがありません</div>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
@@ -1189,7 +1189,7 @@ export default function AttendanceManagementPage() {
                         {showSchoolColumn && <TableCell>{record.sheet?.school?.name}</TableCell>}
                         <TableCell className="font-medium">{record.sheet?.teacher?.name}</TableCell>
                         <TableCell className="text-red-600 font-medium">{record.late_early}</TableCell>
-                        <TableCell className="text-[#4b5563]">{record.note || '-'}</TableCell>
+                        <TableCell className="text-text-body">{record.note || '-'}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -1209,7 +1209,7 @@ export default function AttendanceManagementPage() {
             </DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <p className="text-sm text-[#4b5563] mb-4">
+            <p className="text-sm text-text-body mb-4">
               {rejectingSheet?.teacher?.name ?? '不明'}の出勤簿を
               {rejectMode === 'to-teacher' ? '講師' : '教室長'}に差し戻します。
             </p>
