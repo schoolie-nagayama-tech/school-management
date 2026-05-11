@@ -12,7 +12,7 @@ import SessionFeed from '@/components/progress/SessionFeed';
 
 export default function ProgressFeedPage() {
   return (
-    <AdminLayout>
+    <AdminLayout headerTitle="進行フィード">
       <div className="max-w-3xl mx-auto">
         <div className="mb-6">
           <h1 className="text-lg font-bold text-gray-900">進行フィード</h1>
