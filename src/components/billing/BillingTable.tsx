@@ -4,6 +4,8 @@ import type { Student, BillingItem, StudentBilling } from '@/types/database';
 import { GRADE_LABELS } from '@/types/database';
 import { toggleStudentBilling, updateBillingItem, deleteBillingItem, syncOrdersToBilling, autoFillFifthWeekBilling, updateBillingValue, syncFormToBilling, calcFifthWeekBilling } from '@/lib/api/billing';
 import { getMaterials, createStockTransaction } from '@/lib/api/inventory';
+import { deleteStudentTextbook } from '@/lib/api/progress';
+import { supabase } from '@/lib/supabase';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { getFifthWeekDayLabels } from '@/lib/utils/fifthWeek';
 import { useAuth } from '@/contexts/AuthContext';
@@ -164,7 +166,7 @@ export function BillingTable({
       const newValue = hasValue ? null : 1;
       await updateBillingValue(studentId, itemId, { value_number: newValue });
 
-      // 値セット時に在庫-1、クリア時に在庫+1
+      // 値セット時に在庫-1、クリア時に在庫+1 & 所持教材から削除
       try {
         const targetSchoolIds = Array.isArray(schoolIds) ? schoolIds : schoolIds ? [schoolIds] : [];
         if (targetSchoolIds.length > 0) {
@@ -179,6 +181,30 @@ export function BillingTable({
               reason: newValue ? '単語練習帳セットによる自動出庫' : '単語練習帳クリアによる自動入庫',
             });
             onStockUpdated?.();
+          }
+
+          // クリア時: 所持教材 (student_textbooks) から単語練習帳を削除（再発注可能にする）
+          if (!newValue) {
+            try {
+              const { data: tb } = await supabase
+                .from('textbooks')
+                .select('id')
+                .eq('name', '単語練習帳')
+                .maybeSingle();
+              if (tb) {
+                const { data: stb } = await supabase
+                  .from('student_textbooks')
+                  .select('id')
+                  .eq('student_id', studentId)
+                  .eq('textbook_id', tb.id)
+                  .maybeSingle();
+                if (stb) {
+                  await deleteStudentTextbook(stb.id);
+                }
+              }
+            } catch {
+              // 所持教材の削除は best-effort
+            }
           }
         }
       } catch {

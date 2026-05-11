@@ -253,8 +253,8 @@ export default function BillingPage() {
         </div>
       )}
 
-      {/* 期間選択 + 在庫カウンター（横並び） */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+      {/* 期間選択 + 検索 + 在庫カウンター（横一列） */}
+      <div className="flex flex-wrap items-center gap-3 mb-3">
         <BillingPeriodSelector
           periods={periods}
           selectedPeriodId={selectedPeriodId}
@@ -263,40 +263,36 @@ export default function BillingPage() {
           onUpdated={handlePeriodsUpdated}
           canEdit={canEdit && isManagerOrAbove}
         />
-        {selectedPeriodId && schoolIds.length > 0 && (
-          <VocabBookStockCard
-            schoolIds={schoolIds}
-            refreshKey={stockRefreshKey}
-          />
-        )}
-      </div>
-
-      {/* 検索 + 学年フィルター */}
-      {selectedPeriodId && (
-        <div className="flex flex-wrap items-end gap-3 mb-4">
-          <div className="w-64">
+        {selectedPeriodId && (
+          <>
             <input
               type="text"
               placeholder="氏名・フリガナで検索"
               value={filters.search}
               onChange={(e) => handleFilterChange({ search: e.target.value })}
-              className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white placeholder-gray-400 focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f]"
+              className="w-48 px-3 py-1.5 border border-[#e5e7eb] rounded-lg text-sm bg-white placeholder-gray-400 focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f]"
             />
-          </div>
-          <div className="w-32">
             <select
               value={filters.grade ?? ''}
               onChange={(e) => handleFilterChange({ grade: e.target.value ? Number(e.target.value) : null })}
-              className="w-full px-2 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#1f2937] focus:ring-2 focus:ring-[#1e3a5f]/20"
+              className="w-24 px-2 py-1.5 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#1f2937] focus:ring-2 focus:ring-[#1e3a5f]/20"
             >
               <option value="">全学年</option>
               {Array.from(new Set(students.map((s) => s.grade))).sort((a, b) => a - b).map((g) => (
                 <option key={g} value={g}>{GRADE_LABELS[g] || g}</option>
               ))}
             </select>
-          </div>
+          </>
+        )}
+        <div className="ml-auto">
+          {selectedPeriodId && schoolIds.length > 0 && (
+            <VocabBookStockCard
+              schoolIds={schoolIds}
+              refreshKey={stockRefreshKey}
+            />
+          )}
         </div>
-      )}
+      </div>
 
       {/* 項目管理アコーディオン（教室長以上のみ） */}
       {selectedPeriodId && isManagerOrAbove && currentSchoolIds && (
