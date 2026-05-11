@@ -7,8 +7,6 @@ import { Button, ToastContainer } from '@/components/ui';
 import { ChevronLeft } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
-import { useAuth } from '@/contexts/AuthContext';
-import { getDefaultSchoolId } from '@/lib/api/schools';
 import {
   getSeasonalShiftSettings,
   getSeasonalShiftSubmissions,
@@ -23,16 +21,18 @@ import type { SeasonalShiftSetting } from '@/types/seasonal-shift';
 import type { RegularShiftSetting } from '@/types/regular-shift';
 import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
+import { useLocalSchoolId } from '@/hooks/useLocalSchoolId';
+import { SchoolSwitcher } from '@/components/SchoolSwitcher';
 
 type TabType = 'seasonal' | 'regular';
 
 export default function SeasonalShiftsPage() {
-  const { selectedSchoolId, getSelectedSchoolIds } = useAuth();
   const { toasts, removeToast, success, error } = useToast();
   const { confirm, ConfirmDialog } = useConfirm();
   const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
     (p) => p.canAccessPortal ?? false
   );
+  const { localSchoolId, setLocalSchoolId, isAllSelected, availableSchools } = useLocalSchoolId();
 
   const [activeTab, setActiveTab] = useState<TabType>('seasonal');
 
@@ -49,12 +49,11 @@ export default function SeasonalShiftsPage() {
   const [regularErrorMessage, setRegularErrorMessage] = useState('');
 
   const fetchSeasonalData = useCallback(async () => {
-    const schoolIds = getSelectedSchoolIds();
-    const schoolId = schoolIds.length > 0 ? schoolIds[0] : getDefaultSchoolId();
+    if (!localSchoolId) return;
     setIsLoading(true);
     setErrorMessage('');
     try {
-      const data = await getSeasonalShiftSettings(schoolId);
+      const data = await getSeasonalShiftSettings(localSchoolId);
       setSettings(data);
       const counts: Record<string, number> = {};
       await Promise.all(
@@ -70,16 +69,14 @@ export default function SeasonalShiftsPage() {
     } finally {
       setIsLoading(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [getSelectedSchoolIds, selectedSchoolId]);
+  }, [localSchoolId]);
 
   const fetchRegularData = useCallback(async () => {
-    const schoolIds = getSelectedSchoolIds();
-    const schoolId = schoolIds.length > 0 ? schoolIds[0] : getDefaultSchoolId();
+    if (!localSchoolId) return;
     setIsRegularLoading(true);
     setRegularErrorMessage('');
     try {
-      const data = await getRegularShiftSettings(schoolId);
+      const data = await getRegularShiftSettings(localSchoolId);
       setRegularSettings(data);
       const counts: Record<string, number> = {};
       await Promise.all(
@@ -95,8 +92,7 @@ export default function SeasonalShiftsPage() {
     } finally {
       setIsRegularLoading(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [getSelectedSchoolIds, selectedSchoolId]);
+  }, [localSchoolId]);
 
   useEffect(() => {
     fetchSeasonalData();
@@ -157,6 +153,14 @@ export default function SeasonalShiftsPage() {
             設定に戻る
           </Link>
         </div>
+
+        {isAllSelected && (
+          <SchoolSwitcher
+            schools={availableSchools}
+            selectedSchoolId={localSchoolId}
+            onChange={setLocalSchoolId}
+          />
+        )}
 
         {/* Tab Navigation */}
         <div className="flex border-b border-[#e5e7eb] mb-6">

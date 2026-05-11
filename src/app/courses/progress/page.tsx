@@ -43,13 +43,16 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { HelpTooltip } from '@/components/ui/Tooltip';
 import { loadSavedSeasonYear, saveSavedSeasonYear } from '@/lib/utils/coursePrepStorage';
+import { useLocalSchoolId } from '@/hooks/useLocalSchoolId';
+import { SchoolSwitcher } from '@/components/SchoolSwitcher';
 
 export default function CourseProgressPage() {
   const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
     (p) => p.canAccessCourses
   );
   const canEdit = useCanEdit('canEditApplications');
-  const { getSelectedSchoolIds, selectedSchoolId, profile } = useAuth();
+  const { selectedSchoolId, profile } = useAuth();
+  const { localSchoolId, setLocalSchoolId, isAllSelected, availableSchools } = useLocalSchoolId();
   const isOwnerOrAbove =
     profile?.role === 'owner' ||
     profile?.role === 'admin';
@@ -108,13 +111,12 @@ export default function CourseProgressPage() {
     setIsLoading(true);
     setErrorMessage('');
     try {
-      const schoolIds = getSelectedSchoolIds();
-      if (schoolIds.length === 0) {
+      if (!localSchoolId) {
         setErrorMessage('教室が選択されていません');
         setIsLoading(false);
         return;
       }
-      const schoolId = schoolIds[0];
+      const schoolId = localSchoolId;
 
       // バッチAPI: 生徒を含む全データを1リクエストで取得
       const batchData = await batchFetchCoursePrepApi(
@@ -160,13 +162,13 @@ export default function CourseProgressPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [getSelectedSchoolIds, season, year, showHidden, isOwnerOrAbove]);
+  }, [localSchoolId, season, year, showHidden, isOwnerOrAbove]);
 
   useEffect(() => {
     if (selectedSchoolId !== null) {
       fetchData();
     }
-  }, [fetchData, selectedSchoolId]);
+  }, [fetchData, localSchoolId]);
 
   // 表示用項目（講師はmanager_only除外 / 非表示除外）
   const displayItems = useMemo(() => {
@@ -317,60 +319,56 @@ export default function CourseProgressPage() {
   // 予算コマ変更
   const handleBudgetKomaChange = useCallback(
     async (value: number) => {
-      const schoolIds = getSelectedSchoolIds();
-      if (schoolIds.length === 0) return;
+      if (!localSchoolId) return;
       setPeriod((prev) => prev ? { ...prev, budget_koma: value } : prev);
       try {
-        await upsertCoursePrepPeriod(schoolIds[0], season, year, { budget_koma: value });
+        await upsertCoursePrepPeriod(localSchoolId, season, year, { budget_koma: value });
       } catch (err) {
         console.error('Error updating budget:', err);
         fetchData();
       }
     },
-    [getSelectedSchoolIds, season, year, fetchData]
+    [localSchoolId, season, year, fetchData]
   );
 
   // 目標コマ変更
   const handleTargetKomaChange = useCallback(
     async (value: number) => {
-      const schoolIds = getSelectedSchoolIds();
-      if (schoolIds.length === 0) return;
+      if (!localSchoolId) return;
       setPeriod((prev) => prev ? { ...prev, target_koma: value } : prev);
       try {
-        await upsertCoursePrepPeriod(schoolIds[0], season, year, { target_koma: value });
+        await upsertCoursePrepPeriod(localSchoolId, season, year, { target_koma: value });
       } catch (err) {
         console.error('Error updating target:', err);
         fetchData();
       }
     },
-    [getSelectedSchoolIds, season, year, fetchData]
+    [localSchoolId, season, year, fetchData]
   );
 
   // 予想取得率変更
   const handleExpectedRateChange = useCallback(
     async (value: number) => {
-      const schoolIds = getSelectedSchoolIds();
-      if (schoolIds.length === 0) return;
+      if (!localSchoolId) return;
       setPeriod((prev) => prev ? { ...prev, expected_rate: value } : prev);
       try {
-        await upsertCoursePrepPeriod(schoolIds[0], season, year, { expected_rate: value });
+        await upsertCoursePrepPeriod(localSchoolId, season, year, { expected_rate: value });
       } catch (err) {
         console.error('Error updating expected rate:', err);
         fetchData();
       }
     },
-    [getSelectedSchoolIds, season, year, fetchData]
+    [localSchoolId, season, year, fetchData]
   );
 
   // 講習期間日付変更 → upsert後にperiod+auto_valuesだけバッチ再取得（1リクエスト）
   const handlePeriodDateChange = useCallback(
     async (updates: Partial<Pick<CoursePrepPeriod, 'schedule_start_date' | 'schedule_end_date'>>) => {
-      const schoolIds = getSelectedSchoolIds();
-      if (schoolIds.length === 0) return;
+      if (!localSchoolId) return;
       try {
-        await upsertCoursePrepPeriod(schoolIds[0], season, year, updates);
+        await upsertCoursePrepPeriod(localSchoolId, season, year, updates);
         const batchResult = await batchFetchCoursePrepApi(
-          { schoolId: schoolIds[0], season, year: String(year) },
+          { schoolId: localSchoolId, season, year: String(year) },
           ['period', 'auto_values']
         );
         setPeriod((batchResult.period as CoursePrepPeriod) || null);
@@ -379,17 +377,16 @@ export default function CourseProgressPage() {
         console.error('Error updating period dates:', err);
       }
     },
-    [getSelectedSchoolIds, season, year]
+    [localSchoolId, season, year]
   );
 
   // テンプレート適用
   const handleApplyTemplate = useCallback(
     async (templateId: string) => {
-      const schoolIds = getSelectedSchoolIds();
-      if (schoolIds.length === 0) return;
+      if (!localSchoolId) return;
       setTemplateLoading(true);
       try {
-        await initializeProgressFromTemplate(schoolIds[0], season, year, templateId);
+        await initializeProgressFromTemplate(localSchoolId, season, year, templateId);
         setShowTemplateDialog(false);
         await fetchData();
       } catch (err) {
@@ -399,16 +396,15 @@ export default function CourseProgressPage() {
         setTemplateLoading(false);
       }
     },
-    [getSelectedSchoolIds, season, year, fetchData]
+    [localSchoolId, season, year, fetchData]
   );
 
   // テンプレート保存
   const handleSaveAsTemplate = useCallback(async () => {
-    const schoolIds = getSelectedSchoolIds();
-    if (schoolIds.length === 0 || !saveTemplateName.trim()) return;
+    if (!localSchoolId || !saveTemplateName.trim()) return;
     setSaving(true);
     try {
-      await saveCurrentAsTemplate(schoolIds[0], season, year, 'progress', saveTemplateName.trim());
+      await saveCurrentAsTemplate(localSchoolId, season, year, 'progress', saveTemplateName.trim());
       alert('テンプレートを保存しました');
       setShowSaveDialog(false);
       setSaveTemplateName('');
@@ -418,39 +414,37 @@ export default function CourseProgressPage() {
     } finally {
       setSaving(false);
     }
-  }, [getSelectedSchoolIds, season, year, saveTemplateName]);
+  }, [localSchoolId, season, year, saveTemplateName]);
 
   // テンプレート削除
   const handleDeleteTemplate = useCallback(async (templateId: string) => {
-    const schoolIds = getSelectedSchoolIds();
-    if (schoolIds.length === 0) return;
+    if (!localSchoolId) return;
     if (!confirm('このテンプレートを削除しますか？')) return;
     try {
-      await deleteTemplate(templateId, schoolIds[0]);
-      const tpls = await getTemplates('progress', season, schoolIds[0]);
+      await deleteTemplate(templateId, localSchoolId);
+      const tpls = await getTemplates('progress', season, localSchoolId);
       setTemplates(tpls);
     } catch (err) {
       console.error('Error deleting template:', err);
     }
-  }, [getSelectedSchoolIds, season]);
+  }, [localSchoolId, season]);
 
   // スケジュールタスクとのリンク設定 → バッチ1リクエスト + 再取得1リクエスト
   const handleLinkScheduleTask = useCallback(
     async (itemId: string, taskId: string | null) => {
-      const schoolIds = getSelectedSchoolIds();
-      if (schoolIds.length === 0) return;
+      if (!localSchoolId) return;
       try {
         const unlinkTaskIds = scheduleTasks
           .filter((t) => t.linked_progress_item_id === itemId)
           .map((t) => t.id);
-        await callCoursePrepApi('batch_link_schedule_tasks', schoolIds[0], {
+        await callCoursePrepApi('batch_link_schedule_tasks', localSchoolId, {
           unlinkTaskIds,
           linkTaskId: taskId,
           linkItemId: itemId,
         });
         // 再取得
         const batchResult = await batchFetchCoursePrepApi(
-          { schoolId: schoolIds[0], season, year: String(year) },
+          { schoolId: localSchoolId, season, year: String(year) },
           ['schedule_tasks']
         );
         setScheduleTasks((batchResult.schedule_tasks || []) as ScheduleTaskWithMarkers[]);
@@ -458,15 +452,14 @@ export default function CourseProgressPage() {
         console.error('Error linking schedule task:', err);
       }
     },
-    [getSelectedSchoolIds, scheduleTasks, season, year]
+    [localSchoolId, scheduleTasks, season, year]
   );
 
   // カレンダー同期
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState('');
   const handleSyncCalendar = useCallback(async () => {
-    const schoolIds = getSelectedSchoolIds();
-    if (schoolIds.length === 0) return;
+    if (!localSchoolId) return;
     setSyncing(true);
     setSyncMessage('');
     try {
@@ -481,7 +474,7 @@ export default function CourseProgressPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ schoolId: schoolIds[0] }),
+        body: JSON.stringify({ schoolId: localSchoolId }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -498,24 +491,22 @@ export default function CourseProgressPage() {
     } finally {
       setSyncing(false);
     }
-  }, [getSelectedSchoolIds, fetchData]);
+  }, [localSchoolId, fetchData]);
 
   // テンプレートダイアログを手動で開く
   const handleOpenTemplateDialog = useCallback(async () => {
-    const schoolIds = getSelectedSchoolIds();
-    if (schoolIds.length === 0) return;
-    const tpls = await getTemplates('progress', season, schoolIds[0]);
+    if (!localSchoolId) return;
+    const tpls = await getTemplates('progress', season, localSchoolId);
     setTemplates(tpls);
     setShowTemplateDialog(true);
-  }, [season, getSelectedSchoolIds]);
+  }, [season, localSchoolId]);
 
   // 項目関連の部分再取得（項目+進捗だけ。生徒やauto_valuesは不変）
   const refetchItems = useCallback(async () => {
-    const schoolIds = getSelectedSchoolIds();
-    if (schoolIds.length === 0) return;
+    if (!localSchoolId) return;
     try {
       const batchResult = await batchFetchCoursePrepApi(
-        { schoolId: schoolIds[0], season, year: String(year), includeHidden: String(showHidden) },
+        { schoolId: localSchoolId, season, year: String(year), includeHidden: String(showHidden) },
         ['progress_items', 'student_progress']
       );
       const itemsData = ((batchResult.progress_items as Record<string, unknown>[]) || []).map((item) => ({
@@ -536,13 +527,12 @@ export default function CourseProgressPage() {
     } catch (err) {
       console.error('Error refetching items:', err);
     }
-  }, [getSelectedSchoolIds, season, year, showHidden]);
+  }, [localSchoolId, season, year, showHidden]);
 
   // 項目追加
   const handleAddItem = useCallback(async () => {
     if (!newItemName.trim()) return;
-    const schoolIds = getSelectedSchoolIds();
-    if (schoolIds.length === 0) return;
+    if (!localSchoolId) return;
     try {
       await createCourseProgressItem(
         {
@@ -551,7 +541,7 @@ export default function CourseProgressPage() {
           column_group: newItemGroup || null,
           auto_source: newItemAutoSource || null,
         },
-        schoolIds[0],
+        localSchoolId,
         season,
         year
       );
@@ -564,50 +554,47 @@ export default function CourseProgressPage() {
       console.error('Error creating item:', err);
       setErrorMessage(getUserErrorMessage(err, '項目の作成に失敗しました'));
     }
-  }, [newItemName, newItemType, newItemGroup, newItemAutoSource, getSelectedSchoolIds, season, year, refetchItems]);
+  }, [newItemName, newItemType, newItemGroup, newItemAutoSource, localSchoolId, season, year, refetchItems]);
 
   // 項目削除
   const handleDeleteItem = useCallback(
     async (itemId: string) => {
       if (!confirm('この項目を削除しますか？関連するデータも削除されます。')) return;
-      const schoolIds = getSelectedSchoolIds();
-      if (schoolIds.length === 0) return;
+      if (!localSchoolId) return;
       try {
-        await deleteCourseProgressItem(itemId, schoolIds[0]);
+        await deleteCourseProgressItem(itemId, localSchoolId);
         await refetchItems();
       } catch (err) {
         console.error('Error deleting item:', err);
         setErrorMessage(getUserErrorMessage(err, '項目の削除に失敗しました'));
       }
     },
-    [refetchItems, getSelectedSchoolIds]
+    [refetchItems, localSchoolId]
   );
 
   // 項目非表示トグル
   const handleToggleHideItem = useCallback(
     async (itemId: string, isHidden: boolean) => {
-      const schoolIds = getSelectedSchoolIds();
-      if (schoolIds.length === 0) return;
+      if (!localSchoolId) return;
       try {
         if (isHidden) {
-          await unhideCourseProgressItem(itemId, schoolIds[0]);
+          await unhideCourseProgressItem(itemId, localSchoolId);
         } else {
-          await hideCourseProgressItem(itemId, schoolIds[0]);
+          await hideCourseProgressItem(itemId, localSchoolId);
         }
         await refetchItems();
       } catch (err) {
         console.error('Error toggling item visibility:', err);
       }
     },
-    [refetchItems, getSelectedSchoolIds]
+    [refetchItems, localSchoolId]
   );
 
   // 項目並び替え（D&D） → バッチ1リクエストで更新
   const handleDropItem = useCallback(
     async (dragId: string, dropId: string) => {
       if (dragId === dropId) return;
-      const schoolIds = getSelectedSchoolIds();
-      if (schoolIds.length === 0) return;
+      if (!localSchoolId) return;
       const dragIdx = items.findIndex((i) => i.id === dragId);
       const dropIdx = items.findIndex((i) => i.id === dropId);
       if (dragIdx < 0 || dropIdx < 0) return;
@@ -630,47 +617,45 @@ export default function CourseProgressPage() {
           })
           .map((c) => ({ id: c.id, sort_order: c.sort_order }));
         if (changed.length > 0) {
-          await callCoursePrepApi('batch_reorder_items', schoolIds[0], { items: changed });
+          await callCoursePrepApi('batch_reorder_items', localSchoolId, { items: changed });
         }
       } catch (err) {
         console.error('Error reordering items:', err);
         fetchData();
       }
     },
-    [items, getSelectedSchoolIds, fetchData]
+    [items, localSchoolId, fetchData]
   );
 
   // 項目名変更
   const handleItemNameChange = useCallback(
     async (itemId: string, name: string) => {
-      const schoolIds = getSelectedSchoolIds();
-      if (schoolIds.length === 0) return;
+      if (!localSchoolId) return;
       // ローカル即時反映
       setItems((prev) => prev.map((i) => (i.id === itemId ? { ...i, name } : i)));
       try {
-        await updateCourseProgressItem(itemId, schoolIds[0], { name });
+        await updateCourseProgressItem(itemId, localSchoolId, { name });
       } catch (err) {
         console.error('Error updating item name:', err);
         fetchData();
       }
     },
-    [getSelectedSchoolIds, fetchData]
+    [localSchoolId, fetchData]
   );
 
   // 期日変更（ガントチャート連動はschedule側で実装）
   const handleItemDeadlineChange = useCallback(
     async (itemId: string, deadline: string | null) => {
-      const schoolIds = getSelectedSchoolIds();
-      if (schoolIds.length === 0) return;
+      if (!localSchoolId) return;
       setItems((prev) => prev.map((i) => (i.id === itemId ? { ...i, deadline } : i)));
       try {
-        await updateCourseProgressItem(itemId, schoolIds[0], { deadline });
+        await updateCourseProgressItem(itemId, localSchoolId, { deadline });
       } catch (err) {
         console.error('Error updating item deadline:', err);
         fetchData();
       }
     },
-    [getSelectedSchoolIds, fetchData]
+    [localSchoolId, fetchData]
   );
 
   // 権限チェック中
@@ -698,6 +683,13 @@ export default function CourseProgressPage() {
   return (
     <AdminLayout headerTitle="講習 進捗管理">
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {isAllSelected && (
+          <SchoolSwitcher
+            schools={availableSchools}
+            selectedSchoolId={localSchoolId}
+            onChange={setLocalSchoolId}
+          />
+        )}
         {/* ヘッダー: 期・年選択 + アクション */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
           <SeasonYearSelector
@@ -954,12 +946,11 @@ export default function CourseProgressPage() {
                             <select
                               value={item.column_type}
                               onChange={async (e) => {
-                                const schoolIds = getSelectedSchoolIds();
-                                if (schoolIds.length === 0) return;
+                                if (!localSchoolId) return;
                                 const newType = e.target.value as ApplicationColumnType;
                                 setItems((prev) => prev.map((i) => i.id === item.id ? { ...i, column_type: newType } : i));
                                 try {
-                                  await updateCourseProgressItem(item.id, schoolIds[0], { column_type: newType });
+                                  await updateCourseProgressItem(item.id, localSchoolId, { column_type: newType });
                                 } catch (err) {
                                   console.error('Error updating type:', err);
                                   fetchData();

@@ -12,13 +12,16 @@ import AccessDenied from '@/components/AccessDenied';
 import type { SeasonalCourseWithDetails, SeasonType } from '@/types/database';
 import { SEASON_LABELS, GRADE_LABELS } from '@/types/database';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
+import { useLocalSchoolId } from '@/hooks/useLocalSchoolId';
+import { SchoolSwitcher } from '@/components/SchoolSwitcher';
 
 export default function CoursesPage() {
   // 権限チェック
   const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
     (p) => p.canAccessCourses
   );
-  const { getSelectedSchoolIds, selectedSchoolId, schoolIds } = useAuth();
+  const { getSelectedSchoolIds, schoolIds } = useAuth();
+  const { localSchoolId, setLocalSchoolId, isAllSelected, availableSchools } = useLocalSchoolId();
 
   const [courses, setCourses] = useState<SeasonalCourseWithDetails[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -39,15 +42,12 @@ export default function CoursesPage() {
     setIsLoading(true);
     setErrorMessage('');
     try {
-      const schoolIds = getSelectedSchoolIds();
-      if (schoolIds.length === 0) {
+      if (!localSchoolId) {
         setCourses([]);
         return;
       }
 
-      // 複数教室が選択されている場合は最初の教室を使用（講習管理は単一教室のみ）
-      const schoolId = schoolIds[0];
-      const data = await getSeasonalCourses(schoolId);
+      const data = await getSeasonalCourses(localSchoolId);
       setCourses(data);
     } catch (error) {
       console.error('Error fetching courses:', error);
@@ -57,14 +57,14 @@ export default function CoursesPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [getSelectedSchoolIds]);
+  }, [localSchoolId]);
 
   // 初回読み込みと教室選択変更時の再読み込み
   useEffect(() => {
-    if (selectedSchoolId !== null) {
+    if (localSchoolId) {
       fetchCourses();
     }
-  }, [fetchCourses, selectedSchoolId]);
+  }, [fetchCourses, localSchoolId]);
 
   // 新規作成
   const handleCreate = async (e: React.FormEvent) => {
@@ -141,6 +141,14 @@ export default function CoursesPage() {
 
   return (
     <AdminLayout headerTitle="講習管理">
+      {isAllSelected && (
+        <SchoolSwitcher
+          schools={availableSchools}
+          selectedSchoolId={localSchoolId}
+          onChange={setLocalSchoolId}
+        />
+      )}
+
       {/* エラーメッセージ */}
       {errorMessage && (
         <div className="mb-6 p-4 bg-[#ef4444]/10 border border-[#ef4444] rounded-lg">

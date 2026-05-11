@@ -40,6 +40,7 @@ import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
 import { Clock, BookOpen } from 'lucide-react';
+import { SchoolSwitcher } from '@/components/SchoolSwitcher';
 import {
   getSchoolKoushu,
   getKoushuEnrollments,
@@ -715,6 +716,13 @@ export default function SchedulePage() {
   return (
     <AdminLayout headerTitle="座席表">
       <div className="space-y-6">
+        {selectedSchoolId === 'all' && (
+          <SchoolSwitcher
+            schools={schools}
+            selectedSchoolId={selectedSchoolIdLocal}
+            onChange={setSelectedSchoolIdLocal}
+          />
+        )}
         <ScheduleToolbar
           weekStart={weekStart}
           weekStartStr={weekStartStr}
