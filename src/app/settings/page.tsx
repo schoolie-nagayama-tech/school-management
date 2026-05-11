@@ -141,23 +141,23 @@ export default function SettingsPage() {
             <Link
               key={item.href}
               href={item.href}
-              className="flex items-center gap-4 p-4 bg-white border border-[#e5e7eb] rounded-lg hover:bg-[#f9fafb] hover:border-[#d1d5db] transition-colors duration-150"
+              className="flex items-center gap-4 p-4 bg-surface-raised border border-border rounded-lg hover:bg-surface hover:border-border transition-colors duration-150"
             >
-              <div className="flex-shrink-0 w-10 h-10 bg-[#f3f4f6] rounded-lg flex items-center justify-center text-[#4b5563]">
+              <div className="flex-shrink-0 w-10 h-10 bg-surface-hover rounded-lg flex items-center justify-center text-text-body">
                 {item.icon}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-medium text-[#1f2937]">{item.label}</div>
-                <div className="text-sm text-[#6b7280]">{item.description}</div>
+                <div className="font-medium text-text-heading">{item.label}</div>
+                <div className="text-sm text-text-muted">{item.description}</div>
               </div>
-              <ChevronRight className="w-5 h-5 text-[#9ca3af] flex-shrink-0" />
+              <ChevronRight className="w-5 h-5 text-text-faint flex-shrink-0" />
             </Link>
           ))}
         </div>
 
         {/* 埋め込みウィジェット管理 */}
         {isManager && (
-          <div className="mt-8 p-4 bg-white border border-[#e5e7eb] rounded-lg">
+          <div className="mt-8 p-4 bg-surface-raised border border-border rounded-lg">
             <EmbedTokenManager />
           </div>
         )}
