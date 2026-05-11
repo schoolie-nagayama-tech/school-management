@@ -515,8 +515,8 @@ export default function CourseSchedulePage() {
       <AdminLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="w-12 h-12 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-[#4b5563]">読み込み中...</p>
+            <div className="w-12 h-12 border-4 border-ink border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-text-body">読み込み中...</p>
           </div>
         </div>
       </AdminLayout>
@@ -560,7 +560,7 @@ export default function CourseSchedulePage() {
                 onClick={() => setViewMode('list')}
                 className={`px-3 py-1.5 text-xs rounded-md transition-colors duration-150 ${
                   viewMode === 'list'
-                    ? 'bg-white text-[#1e3a5f] font-medium shadow-sm'
+                    ? 'bg-white text-ink font-medium shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -570,7 +570,7 @@ export default function CourseSchedulePage() {
                 onClick={() => setViewMode('gantt')}
                 className={`px-3 py-1.5 text-xs rounded-md transition-colors duration-150 ${
                   viewMode === 'gantt'
-                    ? 'bg-white text-[#1e3a5f] font-medium shadow-sm'
+                    ? 'bg-white text-ink font-medium shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
@@ -619,7 +619,7 @@ export default function CourseSchedulePage() {
                   <button
                     onClick={handleDeployToAllSchools}
                     disabled={deployLoading || tasks.length === 0}
-                    className="px-3 py-1.5 text-xs bg-[#1e3a5f] text-white rounded-lg hover:bg-[#2c5282] disabled:opacity-50 flex items-center gap-1 transition-colors duration-150"
+                    className="px-3 py-1.5 text-xs bg-ink text-white rounded-lg hover:bg-ink/80 disabled:opacity-50 flex items-center gap-1 transition-colors duration-150"
                   >
                     {deployLoading ? (
                       <>
@@ -637,7 +637,7 @@ export default function CourseSchedulePage() {
         </div>
 
         {errorMessage && (
-          <div className="mb-4 bg-[#ef4444]/20 text-[#ef4444] px-4 py-2 rounded border border-[#ef4444]">
+          <div className="mb-4 bg-danger/20 text-danger px-4 py-2 rounded border border-danger">
             {errorMessage}
           </div>
         )}
@@ -647,8 +647,8 @@ export default function CourseSchedulePage() {
         {isLoading ? (
           <div className="bg-white rounded-xl border border-gray-200 p-8">
             <div className="flex items-center justify-center">
-              <div className="w-8 h-8 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin" />
-              <span className="ml-3 text-[#4b5563]">読み込み中...</span>
+              <div className="w-8 h-8 border-4 border-ink border-t-transparent rounded-full animate-spin" />
+              <span className="ml-3 text-text-body">読み込み中...</span>
             </div>
           </div>
         ) : viewMode === 'list' ? (
@@ -668,11 +668,11 @@ export default function CourseSchedulePage() {
           /* ガントチャート表示 */
           tasks.length === 0 ? (
             <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-              <p className="text-[#4b5563] mb-4">スケジュールがありません。</p>
+              <p className="text-text-body mb-4">スケジュールがありません。</p>
               {isOwnerOrAbove && (
                 <button
                   onClick={handleOpenTemplateDialog}
-                  className="px-4 py-2 text-sm bg-[#1e3a5f] text-white rounded-lg hover:bg-[#2c5282] transition-colors duration-150"
+                  className="px-4 py-2 text-sm bg-ink text-white rounded-lg hover:bg-ink/80 transition-colors duration-150"
                 >
                   テンプレートから作成
                 </button>
@@ -727,7 +727,7 @@ export default function CourseSchedulePage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl border border-gray-200 shadow-2xl max-w-md w-full mx-4">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-bold text-[#1e3a5f]">テンプレートとして保存</h3>
+              <h3 className="text-lg font-bold text-ink">テンプレートとして保存</h3>
               <p className="text-sm text-gray-500 mt-1">
                 現在のスケジュール（{tasks.length}タスク、日付含む）をテンプレートとして保存します
               </p>
@@ -755,7 +755,7 @@ export default function CourseSchedulePage() {
               <button
                 onClick={handleSaveAsTemplate}
                 disabled={!saveTemplateName.trim() || saveTemplateLoading}
-                className="px-4 py-2 text-sm bg-[#1e3a5f] text-white rounded-lg hover:bg-[#2c5282] disabled:opacity-50 transition-colors duration-150"
+                className="px-4 py-2 text-sm bg-ink text-white rounded-lg hover:bg-ink/80 disabled:opacity-50 transition-colors duration-150"
               >
                 {saveTemplateLoading ? '保存中...' : '保存'}
               </button>
