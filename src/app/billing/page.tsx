@@ -224,8 +224,8 @@ export default function BillingPage() {
       <AdminLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="w-12 h-12 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-[#4b5563]">読み込み中...</p>
+            <div className="w-12 h-12 border-4 border-ink border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-text-body">読み込み中...</p>
           </div>
         </div>
       </AdminLayout>
@@ -248,7 +248,7 @@ export default function BillingPage() {
     <AdminLayout headerTitle="請求管理">
       {/* エラーメッセージ */}
       {errorMessage && (
-        <div className="mb-4 bg-[#ef4444]/20 text-[#ef4444] px-4 py-2 rounded border border-[#ef4444]">
+        <div className="mb-4 bg-danger/20 text-danger px-4 py-2 rounded border border-danger">
           {errorMessage}
         </div>
       )}
@@ -270,12 +270,12 @@ export default function BillingPage() {
               placeholder="氏名・フリガナで検索"
               value={filters.search}
               onChange={(e) => handleFilterChange({ search: e.target.value })}
-              className="w-48 px-3 py-1.5 border border-[#e5e7eb] rounded-lg text-sm bg-white placeholder-gray-400 focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f]"
+              className="w-48 px-3 py-1.5 border border-border rounded-lg text-sm bg-surface-raised placeholder-gray-400 focus:ring-2 focus:ring-ink/20 focus:border-ink"
             />
             <select
               value={filters.grade ?? ''}
               onChange={(e) => handleFilterChange({ grade: e.target.value ? Number(e.target.value) : null })}
-              className="w-24 px-2 py-1.5 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#1f2937] focus:ring-2 focus:ring-[#1e3a5f]/20"
+              className="w-24 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-heading focus:ring-2 focus:ring-ink/20"
             >
               <option value="">全学年</option>
               {Array.from(new Set(students.map((s) => s.grade))).sort((a, b) => a - b).map((g) => (
@@ -306,18 +306,18 @@ export default function BillingPage() {
 
       {/* テーブル */}
       {!selectedPeriodId ? (
-        <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 text-center">
-          <p className="text-[#4b5563] mb-4">
+        <div className="bg-surface-raised rounded-xl border border-border p-8 text-center">
+          <p className="text-text-body mb-4">
             {periods.length === 0
               ? '請求期間がありません。新しい期間を作成してください。'
               : '請求期間を選択してください。'}
           </p>
         </div>
       ) : isLoading ? (
-        <div className="bg-white rounded-xl border border-[#e5e7eb] p-8">
+        <div className="bg-surface-raised rounded-xl border border-border p-8">
           <div className="flex items-center justify-center">
             <svg
-              className="animate-spin h-8 w-8 text-[#1e3a5f]"
+              className="animate-spin h-8 w-8 text-ink"
               fill="none"
               viewBox="0 0 24 24"
             >
@@ -335,14 +335,14 @@ export default function BillingPage() {
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               />
             </svg>
-            <span className="ml-3 text-[#4b5563]">読み込み中...</span>
+            <span className="ml-3 text-text-body">読み込み中...</span>
           </div>
         </div>
       ) : items.length === 0 ? (
-        <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 text-center">
-          <p className="text-[#4b5563] mb-4">請求項目がありません。</p>
+        <div className="bg-surface-raised rounded-xl border border-border p-8 text-center">
+          <p className="text-text-body mb-4">請求項目がありません。</p>
           {canEdit && isManagerOrAbove && (
-            <p className="text-[#4b5563] text-sm">上の「項目管理」から請求項目を追加してください。</p>
+            <p className="text-text-body text-sm">上の「項目管理」から請求項目を追加してください。</p>
           )}
         </div>
       ) : (
