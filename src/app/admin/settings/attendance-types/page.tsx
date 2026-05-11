@@ -244,7 +244,7 @@ export default function AttendanceTypesPage() {
     <AdminLayout headerTitle="講師勤怠">
       <div className="space-y-6">
         <div className="mb-4">
-          <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-[#6b7280] hover:text-[#1f2937] transition-colors duration-150">
+          <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text-heading transition-colors duration-150">
             <ChevronLeft className="w-4 h-4" />
             設定に戻る
           </Link>
@@ -284,11 +284,11 @@ export default function AttendanceTypesPage() {
           <CardContent>
             {isLoading ? (
               <div className="flex justify-center py-8">
-                <div className="text-[#4b5563]">読み込み中...</div>
+                <div className="text-text-body">読み込み中...</div>
               </div>
             ) : attendanceTypes.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
-                <p className="text-[#4b5563] mb-4">
+                <p className="text-text-body mb-4">
                   コマ種別が登録されていません
                 </p>
                 <Button onClick={handleCreate}>
@@ -430,7 +430,7 @@ export default function AttendanceTypesPage() {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              className="bg-[#ef4444] text-white hover:bg-[#dc2626]"
+              className="bg-danger text-white hover:bg-red-700"
             >
               削除
             </AlertDialogAction>
