@@ -78,7 +78,7 @@ export default function NewSeasonalShiftPage() {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center min-h-[40vh]">
-          <p className="text-[#4b5563]">読み込み中...</p>
+          <p className="text-text-body">読み込み中...</p>
         </div>
       </AdminLayout>
     );
@@ -97,88 +97,88 @@ export default function NewSeasonalShiftPage() {
       <div className="max-w-2xl">
         <Link
           href="/settings/seasonal-shifts"
-          className="text-sm text-[#3b82f6] hover:underline mb-4 inline-block"
+          className="text-sm text-info hover:underline mb-4 inline-block"
         >
           ← 一覧に戻る
         </Link>
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-[#e5e7eb] p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="bg-surface-raised rounded-xl border border-border p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-1">講習期間名 *</label>
+            <label className="block text-sm font-medium text-text-heading mb-1">講習期間名 *</label>
             <input
               type="text"
               required
               value={form.name}
               onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
               placeholder="例：2026年春期講習"
-              className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
+              className="w-full px-3 py-2 border border-border rounded-lg text-sm"
             />
           </div>
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-[#1f2937] mb-1">開始日 *</label>
+              <label className="block text-sm font-medium text-text-heading mb-1">開始日 *</label>
               <input
                 type="date"
                 required
                 value={form.start_date}
                 onChange={(e) => setForm((p) => ({ ...p, start_date: e.target.value }))}
-                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#1f2937] mb-1">終了日 *</label>
+              <label className="block text-sm font-medium text-text-heading mb-1">終了日 *</label>
               <input
                 type="date"
                 required
                 value={form.end_date}
                 onChange={(e) => setForm((p) => ({ ...p, end_date: e.target.value }))}
-                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#1f2937] mb-1">提出締切日 *</label>
+              <label className="block text-sm font-medium text-text-heading mb-1">提出締切日 *</label>
               <input
                 type="date"
                 required
                 value={form.deadline}
                 onChange={(e) => setForm((p) => ({ ...p, deadline: e.target.value }))}
-                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm"
               />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-1">説明文</label>
+            <label className="block text-sm font-medium text-text-heading mb-1">説明文</label>
             <textarea
               value={form.description}
               onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
               rows={3}
               placeholder="提出フォームに表示する説明"
-              className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
+              className="w-full px-3 py-2 border border-border rounded-lg text-sm"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-1">平日の時間帯（カンマ区切り） *</label>
+            <label className="block text-sm font-medium text-text-heading mb-1">平日の時間帯（カンマ区切り） *</label>
             <input
               type="text"
               required
               value={form.weekday_slots}
               onChange={(e) => setForm((p) => ({ ...p, weekday_slots: e.target.value }))}
               placeholder="12:50-14:20,14:45-16:15,..."
-              className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
+              className="w-full px-3 py-2 border border-border rounded-lg text-sm"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-1">土曜の時間帯（カンマ区切り） *</label>
+            <label className="block text-sm font-medium text-text-heading mb-1">土曜の時間帯（カンマ区切り） *</label>
             <input
               type="text"
               required
               value={form.saturday_slots}
               onChange={(e) => setForm((p) => ({ ...p, saturday_slots: e.target.value }))}
               placeholder="平日と同じ形式"
-              className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
+              className="w-full px-3 py-2 border border-border rounded-lg text-sm"
             />
           </div>
           {form.start_date && form.end_date && timeSlotsArray.length > 0 && (
-            <div className="border-t border-[#e5e7eb] pt-4">
+            <div className="border-t border-border pt-4">
               <ShiftSlotMatrix
                 startDate={form.start_date}
                 endDate={form.end_date}
@@ -189,20 +189,20 @@ export default function NewSeasonalShiftPage() {
             </div>
           )}
           <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-1">ステータス</label>
+            <label className="block text-sm font-medium text-text-heading mb-1">ステータス</label>
             <select
               value={form.status}
               onChange={(e) =>
                 setForm((p) => ({ ...p, status: e.target.value as 'draft' | 'published' }))
               }
-              className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
+              className="w-full px-3 py-2 border border-border rounded-lg text-sm"
             >
               <option value="draft">下書き</option>
               <option value="published">公開中</option>
             </select>
           </div>
           <div className="flex gap-3 pt-4">
-            <Button type="submit" disabled={isSubmitting} className="bg-[#d32f2f] hover:bg-[#b71c1c] text-white transition-colors duration-150">
+            <Button type="submit" disabled={isSubmitting} className="bg-danger hover:bg-danger/80 text-white transition-colors duration-150">
               {isSubmitting ? '作成中...' : '作成'}
             </Button>
             <Link href="/settings/seasonal-shifts">

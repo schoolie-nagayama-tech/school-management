@@ -243,7 +243,7 @@ export default function SeasonalShiftSubmissionsPage() {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center min-h-[40vh]">
-          <p className="text-[#4b5563]">読み込み中...</p>
+          <p className="text-text-body">読み込み中...</p>
         </div>
       </AdminLayout>
     );
@@ -262,12 +262,12 @@ export default function SeasonalShiftSubmissionsPage() {
       <div className="max-w-[1600px]">
         <Link
           href={`/settings/seasonal-shifts/${settingId}`}
-          className="text-sm text-[#3b82f6] hover:underline mb-4 inline-block"
+          className="text-sm text-info hover:underline mb-4 inline-block"
         >
           ← 設定に戻る
         </Link>
         {setting && (
-          <h1 className="text-xl font-bold text-[#1f2937] mb-4">{setting.name} 提出一覧</h1>
+          <h1 className="text-xl font-bold text-text-heading mb-4">{setting.name} 提出一覧</h1>
         )}
 
         {/* 運営判断用ダッシュボード（アコーディオン） */}
@@ -283,31 +283,31 @@ export default function SeasonalShiftSubmissionsPage() {
         )}
 
         {isLoading ? (
-          <p className="text-[#4b5563]">読み込み中...</p>
+          <p className="text-text-body">読み込み中...</p>
         ) : submissions.length === 0 ? (
-          <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 text-center text-[#4b5563]">
+          <div className="bg-surface-raised rounded-xl border border-border p-8 text-text-dangeraintenter text-text-body">
             まだ提出がありません。
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
+          <div className="bg-surface-raised rounded-xl border border-border overflow-hidden">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="bg-[#f3f4f6] border-b border-[#e5e7eb]">
-                  <th className="px-4 py-3 text-left font-semibold text-[#1f2937]">講師名</th>
-                  <th className="px-4 py-3 text-left font-semibold text-[#1f2937]">メール</th>
-                  <th className="px-4 py-3 text-left font-semibold text-[#1f2937]">提出日時</th>
-                  <th className="px-4 py-3 text-center font-semibold text-[#1f2937]">修正許可</th>
-                  <th className="px-4 py-3 text-center font-semibold text-[#1f2937]">座席表入力</th>
-                  <th className="px-4 py-3 text-right font-semibold text-[#1f2937]">操作</th>
+                <tr className="bg-surface-hover border-infoorderorder border-border">
+                  <th className="px-4 py-3 text-left font-semibold text-text-heading">講師名</th>
+                  <th className="px-4 py-3 text-left font-semibold text-text-heading">メール</th>
+                  <th className="px-4 py-3 text-left font-semibold text-text-heading">提出日時</th>
+                  <th className="px-4 py-3 text-text-dangeraintenter font-semibold text-text-heading">修正許可</th>
+                  <th className="px-4 py-3 text-text-dangeraintenter font-semibold text-text-heading">座席表入力</th>
+                  <th className="px-4 py-3 text-right font-semibold text-text-heading">操作</th>
                 </tr>
               </thead>
               <tbody>
                 {submissions.map((sub) => (
-                  <tr key={sub.id} className="border-b border-[#e5e7eb]/60 hover:bg-[#f9fafb] transition-colors duration-150">
-                    <td className="px-4 py-3 font-medium text-[#1f2937]">{sub.teacher_name}</td>
-                    <td className="px-4 py-3 text-[#4b5563]">{sub.teacher_email}</td>
-                    <td className="px-4 py-3 text-[#4b5563]">{formatDate(sub.submitted_at)}</td>
-                    <td className="px-4 py-3 text-center">
+                  <tr key={sub.id} className="border-infoorderorder border-border/60 hover:bg-surface transition-colors duration-150">
+                    <td className="px-4 py-3 font-medium text-text-heading">{sub.teacher_name}</td>
+                    <td className="px-4 py-3 text-text-body">{sub.teacher_email}</td>
+                    <td className="px-4 py-3 text-text-body">{formatDate(sub.submitted_at)}</td>
+                    <td className="px-4 py-3 text-text-dangeraintenter">
                       {sub.allow_edit ? (
                         <span className="flex items-center justify-center gap-2">
                           <span className="text-green-600 text-xs">許可済</span>
@@ -338,16 +338,16 @@ export default function SeasonalShiftSubmissionsPage() {
                         </Button>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-center">
+                    <td className="px-4 py-3 text-text-dangeraintenter">
                       <label className="inline-flex items-center gap-2 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={sub.seat_chart_entered ?? false}
                           disabled={updatingSeatChartId === sub.id}
                           onChange={() => handleSeatChartToggle(sub)}
-                          className="w-4 h-4 rounded border-[#d1d5db] text-[#1e3a5f] focus:ring-[#1e3a5f]"
+                          className="w-4 h-4 rounded border-border text-ink focus:ring-ink"
                         />
-                        <span className="text-sm text-[#4b5563]">
+                        <span className="text-sm text-text-body">
                           {updatingSeatChartId === sub.id ? '更新中...' : sub.seat_chart_entered ? '入力済' : '未入力'}
                         </span>
                       </label>
@@ -357,19 +357,19 @@ export default function SeasonalShiftSubmissionsPage() {
                         <button
                           type="button"
                           onClick={() => handleExportPDFFromList(sub)}
-                          className="text-[#6b7280] hover:text-[#1f2937] hover:underline text-sm"
+                          className="text-text-muted hover:text-text-heading hover:underline text-sm"
                         >
                           PDF
                         </button>
-                        <span className="text-[#e5e7eb]">|</span>
+                        <span className="text-border">|</span>
                         <button
                           type="button"
                           onClick={() => openDetail(sub)}
-                          className="text-[#3b82f6] hover:underline text-sm"
+                          className="text-info hover:underline text-sm"
                         >
                           詳細
                         </button>
-                        <span className="text-[#e5e7eb]">|</span>
+                        <span className="text-border">|</span>
                         <button
                           type="button"
                           onClick={() => handleDelete(sub)}
@@ -389,37 +389,37 @@ export default function SeasonalShiftSubmissionsPage() {
 
         {detailSubmission && setting && (
           <div
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-surfacelack/50 flex items-center justify-center z-50 p-4"
             onClick={() => setDetailSubmission(null)}
           >
             <div
               id="submission-detail-pdf-content"
-              className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6"
+              className="bg-surface-raised rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-lg font-bold text-[#1f2937] mb-4">提出詳細</h3>
+              <h3 className="text-lg font-bold text-text-heading mb-4">提出詳細</h3>
               <dl className="space-y-3 text-sm mb-6">
                 <div>
-                  <dt className="text-[#4b5563]">講師名</dt>
+                  <dt className="text-text-body">講師名</dt>
                   <dd className="font-medium">{detailSubmission.teacher_name}</dd>
                 </div>
                 <div>
-                  <dt className="text-[#4b5563]">メール</dt>
+                  <dt className="text-text-body">メール</dt>
                   <dd className="font-medium">{detailSubmission.teacher_email}</dd>
                 </div>
                 <div>
-                  <dt className="text-[#4b5563]">提出日時</dt>
+                  <dt className="text-text-body">提出日時</dt>
                   <dd className="font-medium">{formatDate(detailSubmission.submitted_at)}</dd>
                 </div>
                 <div>
-                  <dt className="text-[#4b5563]">出勤可能コマ数</dt>
+                  <dt className="text-text-body">出勤可能コマ数</dt>
                   <dd className="font-medium">{detailSubmission.slots_count}コマ</dd>
                 </div>
               </dl>
 
               <div className="mb-4">
-                <h4 className="text-sm font-semibold text-[#1f2937] mb-2">出勤可能日時</h4>
-                <p className="text-xs text-[#6b7280] mb-2">
+                <h4 className="text-sm font-semibold text-text-heading mb-2">出勤可能日時</h4>
+                <p className="text-xs text-text-muted mb-2">
                   ✓：出勤可能　空白：出勤不可　-：休校
                 </p>
                 <SubmissionDetailMatrix
@@ -431,8 +431,8 @@ export default function SeasonalShiftSubmissionsPage() {
 
               {detailSubmission.notes && (
                 <div className="mb-6">
-                  <p className="text-[#4b5563] text-sm mb-1">備考</p>
-                  <p className="font-medium whitespace-pre-wrap text-sm bg-[#f9fafb] p-3 rounded-lg border border-[#e5e7eb]">
+                  <p className="text-text-body text-sm mb-1">備考</p>
+                  <p className="font-medium whitespace-pre-wrap text-sm bg-surface p-3 rounded-lg border border-border">
                     {detailSubmission.notes}
                   </p>
                 </div>

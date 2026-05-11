@@ -130,7 +130,7 @@ export default function SeasonalShiftsPage() {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center min-h-[40vh]">
-          <p className="text-[#4b5563]">読み込み中...</p>
+          <p className="text-text-body">読み込み中...</p>
         </div>
       </AdminLayout>
     );
@@ -148,7 +148,7 @@ export default function SeasonalShiftsPage() {
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="max-w-[1600px]">
         <div className="mb-4">
-          <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-[#6b7280] hover:text-[#1f2937] transition-colors duration-150">
+          <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text-heading transition-colors duration-150">
             <ChevronLeft className="w-4 h-4" />
             設定に戻る
           </Link>
@@ -163,14 +163,14 @@ export default function SeasonalShiftsPage() {
         )}
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-[#e5e7eb] mb-6">
+        <div className="flex border-infoorderorder border-border mb-6">
           <button
             type="button"
             onClick={() => setActiveTab('seasonal')}
-            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors duration-150 ${
+            className={`px-4 py-3 text-sm font-medium border-infoorderorder-2 transition-colors duration-150 ${
               activeTab === 'seasonal'
-                ? 'border-[#d32f2f] text-[#d32f2f]'
-                : 'border-transparent text-[#6b7280] hover:text-[#1f2937]'
+                ? 'border-danger text-danger'
+                : 'border-transparent text-text-muted hover:text-text-heading'
             }`}
           >
             講習シフト
@@ -178,10 +178,10 @@ export default function SeasonalShiftsPage() {
           <button
             type="button"
             onClick={() => setActiveTab('regular')}
-            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors duration-150 ${
+            className={`px-4 py-3 text-sm font-medium border-infoorderorder-2 transition-colors duration-150 ${
               activeTab === 'regular'
-                ? 'border-[#d32f2f] text-[#d32f2f]'
-                : 'border-transparent text-[#6b7280] hover:text-[#1f2937]'
+                ? 'border-danger text-danger'
+                : 'border-transparent text-text-muted hover:text-text-heading'
             }`}
           >
             通常シフト
@@ -192,9 +192,9 @@ export default function SeasonalShiftsPage() {
         {activeTab === 'seasonal' && (
           <>
             <div className="flex justify-between items-center mb-6">
-              <h1 className="text-2xl font-bold text-[#1f2937]">講習期間シフト設定</h1>
+              <h1 className="text-text-headingxl font-bold text-text-heading">講習期間シフト設定</h1>
               <Link href="/settings/seasonal-shifts/new">
-                <Button className="bg-[#d32f2f] hover:bg-[#b71c1c] text-white transition-colors duration-150">
+                <Button className="bg-danger hover:bg-danger/80 text-white transition-colors duration-150">
                   新規作成
                 </Button>
               </Link>
@@ -207,33 +207,33 @@ export default function SeasonalShiftsPage() {
             )}
 
             {isLoading ? (
-              <p className="text-[#4b5563]">読み込み中...</p>
+              <p className="text-text-body">読み込み中...</p>
             ) : settings.length === 0 ? (
-              <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 text-center text-[#4b5563]">
+              <div className="bg-surface-raised rounded-xl border border-border p-8 text-text-dangeraintenter text-text-body">
                 シフト設定がありません。新規作成から追加してください。
               </div>
             ) : (
-              <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
+              <div className="bg-surface-raised rounded-xl border border-border overflow-hidden">
                 <table className="w-full border-collapse text-sm">
                   <thead>
-                    <tr className="bg-[#f3f4f6] border-b border-[#e5e7eb]">
-                      <th className="px-4 py-3 text-left font-semibold text-[#1f2937]">講習期間名</th>
-                      <th className="px-4 py-3 text-left font-semibold text-[#1f2937]">期間</th>
-                      <th className="px-4 py-3 text-left font-semibold text-[#1f2937]">締切</th>
-                      <th className="px-4 py-3 text-center font-semibold text-[#1f2937]">ステータス</th>
-                      <th className="px-4 py-3 text-center font-semibold text-[#1f2937]">提出数</th>
-                      <th className="px-4 py-3 text-right font-semibold text-[#1f2937]">操作</th>
+                    <tr className="bg-surface-hover border-infoorderorder border-border">
+                      <th className="px-4 py-3 text-left font-semibold text-text-heading">講習期間名</th>
+                      <th className="px-4 py-3 text-left font-semibold text-text-heading">期間</th>
+                      <th className="px-4 py-3 text-left font-semibold text-text-heading">締切</th>
+                      <th className="px-4 py-3 text-text-dangeraintenter font-semibold text-text-heading">ステータス</th>
+                      <th className="px-4 py-3 text-text-dangeraintenter font-semibold text-text-heading">提出数</th>
+                      <th className="px-4 py-3 text-right font-semibold text-text-heading">操作</th>
                     </tr>
                   </thead>
                   <tbody>
                     {settings.map((s) => (
-                      <tr key={s.id} className="border-b border-[#e5e7eb]/60 hover:bg-[#f9fafb] transition-colors duration-150">
-                        <td className="px-4 py-3 font-medium text-[#1f2937]">{s.name}</td>
-                        <td className="px-4 py-3 text-[#4b5563]">
+                      <tr key={s.id} className="border-infoorderorder border-border/60 hover:bg-surface transition-colors duration-150">
+                        <td className="px-4 py-3 font-medium text-text-heading">{s.name}</td>
+                        <td className="px-4 py-3 text-text-body">
                           {formatDate(s.start_date)} 〜 {formatDate(s.end_date)}
                         </td>
-                        <td className="px-4 py-3 text-[#4b5563]">{formatDate(s.deadline)}</td>
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-4 py-3 text-text-body">{formatDate(s.deadline)}</td>
+                        <td className="px-4 py-3 text-text-dangeraintenter">
                           <span
                             className={`inline-block px-2 py-1 text-xs font-medium rounded ${
                               s.status === 'published'
@@ -244,19 +244,19 @@ export default function SeasonalShiftsPage() {
                             {s.status === 'published' ? '公開中' : '下書き'}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-center text-[#4b5563]">
+                        <td className="px-4 py-3 text-text-dangeraintenter text-text-body">
                           {submissionCounts[s.id] ?? 0}件
                         </td>
                         <td className="px-4 py-3 text-right">
                           <Link
                             href={`/settings/seasonal-shifts/${s.id}/submissions`}
-                            className="text-[#3b82f6] hover:underline mr-3"
+                            className="text-info hover:underline mr-3"
                           >
                             提出一覧
                           </Link>
                           <Link
                             href={`/settings/seasonal-shifts/${s.id}`}
-                            className="text-[#3b82f6] hover:underline mr-3"
+                            className="text-info hover:underline mr-3"
                           >
                             編集
                           </Link>
@@ -281,9 +281,9 @@ export default function SeasonalShiftsPage() {
         {activeTab === 'regular' && (
           <>
             <div className="flex justify-between items-center mb-6">
-              <h1 className="text-2xl font-bold text-[#1f2937]">通常シフト設定</h1>
+              <h1 className="text-text-headingxl font-bold text-text-heading">通常シフト設定</h1>
               <Link href="/settings/regular-shifts/new">
-                <Button className="bg-[#d32f2f] hover:bg-[#b71c1c] text-white transition-colors duration-150">
+                <Button className="bg-danger hover:bg-danger/80 text-white transition-colors duration-150">
                   新規作成
                 </Button>
               </Link>
@@ -296,31 +296,31 @@ export default function SeasonalShiftsPage() {
             )}
 
             {isRegularLoading ? (
-              <p className="text-[#4b5563]">読み込み中...</p>
+              <p className="text-text-body">読み込み中...</p>
             ) : regularSettings.length === 0 ? (
-              <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 text-center text-[#4b5563]">
+              <div className="bg-surface-raised rounded-xl border border-border p-8 text-text-dangeraintenter text-text-body">
                 通常シフト設定がありません。新規作成から追加してください。
               </div>
             ) : (
-              <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
+              <div className="bg-surface-raised rounded-xl border border-border overflow-hidden">
                 <table className="w-full border-collapse text-sm">
                   <thead>
-                    <tr className="bg-[#f3f4f6] border-b border-[#e5e7eb]">
-                      <th className="px-4 py-3 text-left font-semibold text-[#1f2937]">シフト名</th>
-                      <th className="px-4 py-3 text-left font-semibold text-[#1f2937]">締切</th>
-                      <th className="px-4 py-3 text-center font-semibold text-[#1f2937]">ステータス</th>
-                      <th className="px-4 py-3 text-center font-semibold text-[#1f2937]">提出数</th>
-                      <th className="px-4 py-3 text-right font-semibold text-[#1f2937]">操作</th>
+                    <tr className="bg-surface-hover border-infoorderorder border-border">
+                      <th className="px-4 py-3 text-left font-semibold text-text-heading">シフト名</th>
+                      <th className="px-4 py-3 text-left font-semibold text-text-heading">締切</th>
+                      <th className="px-4 py-3 text-text-dangeraintenter font-semibold text-text-heading">ステータス</th>
+                      <th className="px-4 py-3 text-text-dangeraintenter font-semibold text-text-heading">提出数</th>
+                      <th className="px-4 py-3 text-right font-semibold text-text-heading">操作</th>
                     </tr>
                   </thead>
                   <tbody>
                     {regularSettings.map((s) => (
-                      <tr key={s.id} className="border-b border-[#e5e7eb]/60 hover:bg-[#f9fafb] transition-colors duration-150">
-                        <td className="px-4 py-3 font-medium text-[#1f2937]">{s.name}</td>
-                        <td className="px-4 py-3 text-[#4b5563]">
+                      <tr key={s.id} className="border-infoorderorder border-border/60 hover:bg-surface transition-colors duration-150">
+                        <td className="px-4 py-3 font-medium text-text-heading">{s.name}</td>
+                        <td className="px-4 py-3 text-text-body">
                           {s.deadline ? formatDate(s.deadline) : '-'}
                         </td>
-                        <td className="px-4 py-3 text-center">
+                        <td className="px-4 py-3 text-text-dangeraintenter">
                           <span
                             className={`inline-block px-2 py-1 text-xs font-medium rounded ${
                               s.status === 'published'
@@ -331,19 +331,19 @@ export default function SeasonalShiftsPage() {
                             {s.status === 'published' ? '公開中' : '下書き'}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-center text-[#4b5563]">
+                        <td className="px-4 py-3 text-text-dangeraintenter text-text-body">
                           {regularSubmissionCounts[s.id] ?? 0}件
                         </td>
                         <td className="px-4 py-3 text-right">
                           <Link
                             href={`/settings/regular-shifts/${s.id}/submissions`}
-                            className="text-[#3b82f6] hover:underline mr-3"
+                            className="text-info hover:underline mr-3"
                           >
                             提出一覧
                           </Link>
                           <Link
                             href={`/settings/regular-shifts/${s.id}`}
-                            className="text-[#3b82f6] hover:underline mr-3"
+                            className="text-info hover:underline mr-3"
                           >
                             編集
                           </Link>

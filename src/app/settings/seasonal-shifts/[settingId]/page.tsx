@@ -142,7 +142,7 @@ export default function SeasonalShiftDetailPage() {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center min-h-[40vh]">
-          <p className="text-[#4b5563]">読み込み中...</p>
+          <p className="text-text-body">読み込み中...</p>
         </div>
       </AdminLayout>
     );
@@ -162,15 +162,15 @@ export default function SeasonalShiftDetailPage() {
       <div className="max-w-2xl space-y-6">
         <Link
           href="/settings/seasonal-shifts"
-          className="text-sm text-[#3b82f6] hover:underline inline-block"
+          className="text-sm text-info hover:underline inline-block"
         >
           ← 一覧に戻る
         </Link>
 
         {/* 提出URL */}
-        <div className="bg-white rounded-xl border border-[#e5e7eb] p-4">
-          <h2 className="text-sm font-semibold text-[#1f2937] mb-2">講師用提出URL</h2>
-          <p className="text-xs text-[#4b5563] mb-2">
+        <div className="bg-surface-raised rounded-xl border border-border p-4">
+          <h2 className="text-sm font-semibold text-text-heading mb-2">講師用提出URL</h2>
+          <p className="text-xs text-text-body mb-2">
             このURLを講師に共有すると、シフト提出フォームが開きます。（公開中のみ有効）
           </p>
           <div className="flex gap-2">
@@ -178,88 +178,88 @@ export default function SeasonalShiftDetailPage() {
               type="text"
               readOnly
               value={publicUrl}
-              className="flex-1 px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-[#f9fafb]"
+              className="flex-1 px-3 py-2 border border-border rounded-lg text-sm bg-surface"
             />
-            <Button type="button" onClick={copyUrl} className="bg-[#1f2937] hover:bg-[#111827] text-white transition-colors duration-150">
+            <Button type="button" onClick={copyUrl} className="bg-text-heading hover:bg-text-heading/90 text-white transition-colors duration-150">
               {copied ? 'コピー済み' : 'コピー'}
             </Button>
           </div>
         </div>
 
-        <form onSubmit={handleSave} className="bg-white rounded-xl border border-[#e5e7eb] p-6 space-y-4">
+        <form onSubmit={handleSave} className="bg-surface-raised rounded-xl border border-border p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-1">講習期間名 *</label>
+            <label className="block text-sm font-medium text-text-heading mb-1">講習期間名 *</label>
             <input
               type="text"
               required
               value={form.name}
               onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-              className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
+              className="w-full px-3 py-2 border border-border rounded-lg text-sm"
             />
           </div>
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-[#1f2937] mb-1">開始日 *</label>
+              <label className="block text-sm font-medium text-text-heading mb-1">開始日 *</label>
               <input
                 type="date"
                 required
                 value={form.start_date}
                 onChange={(e) => setForm((p) => ({ ...p, start_date: e.target.value }))}
-                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#1f2937] mb-1">終了日 *</label>
+              <label className="block text-sm font-medium text-text-heading mb-1">終了日 *</label>
               <input
                 type="date"
                 required
                 value={form.end_date}
                 onChange={(e) => setForm((p) => ({ ...p, end_date: e.target.value }))}
-                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#1f2937] mb-1">提出締切日 *</label>
+              <label className="block text-sm font-medium text-text-heading mb-1">提出締切日 *</label>
               <input
                 type="date"
                 required
                 value={form.deadline}
                 onChange={(e) => setForm((p) => ({ ...p, deadline: e.target.value }))}
-                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm"
               />
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-1">説明文</label>
+            <label className="block text-sm font-medium text-text-heading mb-1">説明文</label>
             <textarea
               value={form.description}
               onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
               rows={3}
-              className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
+              className="w-full px-3 py-2 border border-border rounded-lg text-sm"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-1">平日の時間帯 *</label>
+            <label className="block text-sm font-medium text-text-heading mb-1">平日の時間帯 *</label>
             <input
               type="text"
               required
               value={form.weekday_slots}
               onChange={(e) => setForm((p) => ({ ...p, weekday_slots: e.target.value }))}
-              className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
+              className="w-full px-3 py-2 border border-border rounded-lg text-sm"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-1">土曜の時間帯 *</label>
+            <label className="block text-sm font-medium text-text-heading mb-1">土曜の時間帯 *</label>
             <input
               type="text"
               required
               value={form.saturday_slots}
               onChange={(e) => setForm((p) => ({ ...p, saturday_slots: e.target.value }))}
-              className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
+              className="w-full px-3 py-2 border border-border rounded-lg text-sm"
             />
           </div>
           {form.start_date && form.end_date && timeSlotsArray.length > 0 && (
-            <div className="border-t border-[#e5e7eb] pt-4">
+            <div className="border-t border-border pt-4">
               <ShiftSlotMatrix
                 startDate={form.start_date}
                 endDate={form.end_date}
@@ -270,13 +270,13 @@ export default function SeasonalShiftDetailPage() {
             </div>
           )}
           <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-1">ステータス</label>
+            <label className="block text-sm font-medium text-text-heading mb-1">ステータス</label>
             <select
               value={form.status}
               onChange={(e) =>
                 setForm((p) => ({ ...p, status: e.target.value as 'draft' | 'published' }))
               }
-              className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm"
+              className="w-full px-3 py-2 border border-border rounded-lg text-sm"
             >
               <option value="draft">下書き</option>
               <option value="published">公開中</option>
@@ -284,7 +284,7 @@ export default function SeasonalShiftDetailPage() {
           </div>
 
           <div className="flex gap-3 pt-4">
-            <Button type="submit" disabled={isSubmitting} className="bg-[#d32f2f] hover:bg-[#b71c1c] text-white transition-colors duration-150">
+            <Button type="submit" disabled={isSubmitting} className="bg-danger hover:bg-danger/80 text-white transition-colors duration-150">
               {isSubmitting ? '保存中...' : '保存'}
             </Button>
             <Link href={`/settings/seasonal-shifts/${settingId}/submissions`}>
