@@ -62,7 +62,7 @@ export default function MyBadgesPage() {
       <div className="max-w-4xl mx-auto px-4 py-8">
         {loading ? (
           <div className="flex justify-center py-20">
-            <div className="w-8 h-8 border-2 border-gray-300 border-t-[#1e3a5f] rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-gray-300 border-t-ink rounded-full animate-spin" />
           </div>
         ) : badges.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-200 p-10 text-center shadow-sm">
