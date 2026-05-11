@@ -287,8 +287,8 @@ export default function MogiResponsePage() {
       <AdminLayout headerTitle={`${periodKey} Vもぎ申込 回答一覧`} narrow>
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {errorMessage && (
-          <div className="mb-6 p-4 bg-[#ef4444]/10 border border-[#ef4444] rounded-lg">
-            <p className="text-sm text-[#ef4444]">{errorMessage}</p>
+          <div className="mb-6 p-4 bg-danger/10 border border-danger rounded-lg">
+            <p className="text-sm text-danger">{errorMessage}</p>
           </div>
         )}
 
@@ -296,10 +296,10 @@ export default function MogiResponsePage() {
         <MogiStats stats={stats} />
 
         {/* フィルター */}
-        <div className="mb-6 bg-white rounded-xl border border-[#e5e7eb] p-4">
+        <div className="mb-6 bg-surface-raised rounded-xl border border-border p-4">
           <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
             <div>
-              <label className="block text-sm font-medium text-[#1f2937] mb-2">
+              <label className="block text-sm font-medium text-text-heading mb-2">
                 学年
               </label>
               <select
@@ -309,7 +309,7 @@ export default function MogiResponsePage() {
                     e.target.value === 'all' ? 'all' : Number(e.target.value)
                   )
                 }
-                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563]"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body"
               >
                 <option value="all">全て</option>
                 {Array.from({ length: 13 }, (_, i) => i + 1).map((grade) => (
@@ -321,7 +321,7 @@ export default function MogiResponsePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#1f2937] mb-2">
+              <label className="block text-sm font-medium text-text-heading mb-2">
                 模試種別
               </label>
               <select
@@ -331,7 +331,7 @@ export default function MogiResponsePage() {
                   setFilterExamType(next);
                   setFilterDateId('all');
                 }}
-                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563]"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body"
               >
                 <option value="all">全て</option>
                 {MOGI_EXAM_TYPE_OPTIONS.map((opt) => (
@@ -343,13 +343,13 @@ export default function MogiResponsePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#1f2937] mb-2">
+              <label className="block text-sm font-medium text-text-heading mb-2">
                 日程
               </label>
               <select
                 value={filterDateId}
                 onChange={(e) => setFilterDateId(e.target.value)}
-                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563]"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body"
               >
                 <option value="all">全て</option>
                 {stats.date_venue_counts
@@ -363,13 +363,13 @@ export default function MogiResponsePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#1f2937] mb-2">
+              <label className="block text-sm font-medium text-text-heading mb-2">
                 会場
               </label>
               <select
                 value={filterVenueId}
                 onChange={(e) => setFilterVenueId(e.target.value)}
-                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563]"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body"
               >
                 <option value="all">全て</option>
                 {uniqueVenueIds.map((venueId) => {
@@ -386,7 +386,7 @@ export default function MogiResponsePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#1f2937] mb-2">
+              <label className="block text-sm font-medium text-text-heading mb-2">
                 計上状態
               </label>
               <select
@@ -396,7 +396,7 @@ export default function MogiResponsePage() {
                     e.target.value as 'all' | 'charged' | 'not_charged'
                   )
                 }
-                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563]"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body"
               >
                 <option value="all">全て</option>
                 <option value="charged">計上済み</option>
@@ -405,7 +405,7 @@ export default function MogiResponsePage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-[#1f2937] mb-2">
+              <label className="block text-sm font-medium text-text-heading mb-2">
                 紐付け状態
               </label>
               <select
@@ -415,7 +415,7 @@ export default function MogiResponsePage() {
                     e.target.value as 'all' | 'linked' | 'unlinked'
                   )
                 }
-                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white text-[#4b5563]"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised text-text-body"
               >
                 <option value="all">全て</option>
                 <option value="linked">紐付け済み</option>
@@ -423,20 +423,20 @@ export default function MogiResponsePage() {
               </select>
             </div>
           </div>
-          <div className="flex items-center justify-between pt-4 border-t border-[#e5e7eb]/20">
+          <div className="flex items-center justify-between pt-4 border-t border-border/20">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
                 checked={showArchived}
                 onChange={(e) => setShowArchived(e.target.checked)}
-                className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6] cursor-pointer"
+                className="w-4 h-4 text-info border-border rounded focus:ring-primary cursor-pointer"
               />
-              <span className="text-sm text-[#1f2937] flex items-center gap-2">
+              <span className="text-sm text-text-heading flex items-center gap-2">
                 アーカイブ済みを表示
                 {archivedCount > 0 && (
-                  <span className="ml-1 text-[#4b5563]/60">({archivedCount}件)</span>
+                  <span className="ml-1 text-text-body/60">({archivedCount}件)</span>
                 )}
-                {isLoading && <span className="inline-block w-3 h-3 border-2 border-[#3b82f6] border-t-transparent rounded-full animate-spin" />}
+                {isLoading && <span className="inline-block w-3 h-3 border-2 border-info border-t-transparent rounded-full animate-spin" />}
               </span>
             </label>
           </div>
@@ -467,47 +467,47 @@ export default function MogiResponsePage() {
         )}
 
         {/* 回答一覧 */}
-        <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
+        <div className="bg-surface-raised rounded-xl border border-border overflow-hidden">
           {isLoading ? (
             <div className="p-8 text-center">
-              <p className="text-[#4b5563]">読み込み中...</p>
+              <p className="text-text-body">読み込み中...</p>
             </div>
           ) : responses.length === 0 ? (
             <div className="p-8 text-center">
-              <p className="text-[#4b5563]">回答がありません。保護者ポータルから申込が届くとここに表示されます。</p>
+              <p className="text-text-body">回答がありません。保護者ポータルから申込が届くとここに表示されます。</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="bg-[#f3f4f6] border-b border-[#e5e7eb]">
+                  <tr className="bg-surface-hover border-b border-border">
                     <th className="px-2 py-3 text-center w-10">
                       <input
                         type="checkbox"
                         checked={allSelected}
                         onChange={(e) => handleSelectAll(e.target.checked)}
-                        className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6] cursor-pointer"
+                        className="w-4 h-4 text-info border-border rounded focus:ring-primary cursor-pointer"
                       />
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-text-heading uppercase">
                       回答日時
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-text-heading uppercase">
                       生徒名
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-text-heading uppercase">
                       学年
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-text-heading uppercase">
                       選択日程・会場
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-text-heading uppercase">
                       計上
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-text-heading uppercase">
                       紐付け
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-[#1f2937] uppercase">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-text-heading uppercase">
                       操作
                     </th>
                   </tr>
@@ -516,7 +516,7 @@ export default function MogiResponsePage() {
                   {responses.map((response) => (
                     <tr
                       key={response.id}
-                      className={`border-b border-[#e5e7eb]/20 hover:bg-[#f3f4f6] transition-colors duration-150 ${
+                      className={`border-b border-border/20 hover:bg-surface-hover transition-colors duration-150 ${
                         response.is_archived ? 'bg-gray-100 opacity-60' : ''
                       }`}
                     >
@@ -526,37 +526,37 @@ export default function MogiResponsePage() {
                             type="checkbox"
                             checked={selectedIds.has(response.id)}
                             onChange={(e) => handleSelect(response.id, e.target.checked)}
-                            className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6] cursor-pointer"
+                            className="w-4 h-4 text-info border-border rounded focus:ring-primary cursor-pointer"
                           />
                         )}
                       </td>
-                      <td className="px-4 py-3 text-sm text-[#4b5563]">
+                      <td className="px-4 py-3 text-sm text-text-body">
                         {formatDate(response.created_at)}
                       </td>
-                      <td className="px-4 py-3 text-sm text-[#1f2937] font-medium">
+                      <td className="px-4 py-3 text-sm text-text-heading font-medium">
                         {response.linked_student
                           ? `${response.linked_student.last_name} ${response.linked_student.first_name}`
                           : response.student_name}
                       </td>
-                      <td className="px-4 py-3 text-sm text-[#4b5563]">
+                      <td className="px-4 py-3 text-sm text-text-body">
                         {GRADE_NUMBER_TO_NAME[response.grade] || response.grade}
                       </td>
-                      <td className="px-4 py-3 text-sm text-[#4b5563]">
+                      <td className="px-4 py-3 text-sm text-text-body">
                         {formatSelections(response.response_data.selections)}
                       </td>
-                      <td className="px-4 py-3 text-sm text-[#4b5563]">
+                      <td className="px-4 py-3 text-sm text-text-body">
                         <input
                           type="checkbox"
                           checked={response.status_checks?.charged || false}
                           onChange={(e) => handleChargedToggle(response.id, e.target.checked)}
-                          className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6] cursor-pointer"
+                          className="w-4 h-4 text-info border-border rounded focus:ring-primary cursor-pointer"
                         />
                       </td>
-                      <td className="px-4 py-3 text-sm text-[#4b5563]">
+                      <td className="px-4 py-3 text-sm text-text-body">
                         {response.linked_student_id ? (
-                          <span className="text-[#1f2937] font-medium">済</span>
+                          <span className="text-text-heading font-medium">済</span>
                         ) : (
-                          <span className="text-[#4b5563]/60">未</span>
+                          <span className="text-text-body/60">未</span>
                         )}
                       </td>
                       <td className="px-4 py-3">
@@ -567,7 +567,7 @@ export default function MogiResponsePage() {
                                 アーカイブ済
                               </span>
                               <button
-                                className="px-3 py-1 text-xs bg-[#f3f4f6] text-blue-600 rounded hover:bg-blue-50 transition-colors duration-150"
+                                className="px-3 py-1 text-xs bg-surface-hover text-blue-600 rounded hover:bg-blue-50 transition-colors duration-150"
                                 onClick={() => handleUnarchive(response.id)}
                                 disabled={isProcessing}
                               >
@@ -577,28 +577,28 @@ export default function MogiResponsePage() {
                           ) : (
                             <>
                               <button
-                                className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] transition-colors duration-150"
+                                className="px-3 py-1 text-xs bg-surface-hover text-text-body rounded hover:bg-border transition-colors duration-150"
                                 onClick={() => setDetailResponse(response)}
                               >
                                 詳細
                               </button>
                               {response.linked_student_id ? (
                                 <button
-                                  className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] transition-colors duration-150"
+                                  className="px-3 py-1 text-xs bg-surface-hover text-text-body rounded hover:bg-border transition-colors duration-150"
                                   onClick={() => handleUnlinkStudent(response.id)}
                                 >
                                   解除
                                 </button>
                               ) : (
                                 <button
-                                  className="px-3 py-1 text-xs bg-[#f3f4f6] text-[#4b5563] rounded hover:bg-[#e5e7eb] transition-colors duration-150"
+                                  className="px-3 py-1 text-xs bg-surface-hover text-text-body rounded hover:bg-border transition-colors duration-150"
                                   onClick={() => handleOpenLinkModal(response)}
                                 >
                                   紐付け
                                 </button>
                               )}
                               <button
-                                className="px-3 py-1 text-xs bg-[#f3f4f6] text-gray-500 rounded hover:bg-gray-100 transition-colors duration-150"
+                                className="px-3 py-1 text-xs bg-surface-hover text-gray-500 rounded hover:bg-gray-100 transition-colors duration-150"
                                 onClick={() => handleArchive(response.id)}
                                 disabled={isProcessing}
                               >
