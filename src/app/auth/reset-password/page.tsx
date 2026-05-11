@@ -44,35 +44,35 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f3f4f6] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-surface-hover flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-[#1f2937]">新しいパスワード設定</h1>
-          <p className="text-[#4b5563] mt-2">新しいパスワードを入力してください</p>
+          <h1 className="text-3xl font-bold text-text-heading">新しいパスワード設定</h1>
+          <p className="text-text-body mt-2">新しいパスワードを入力してください</p>
         </div>
 
-        <div className="bg-white rounded-xl border border-[#e5e7eb] p-8 shadow-lg">
+        <div className="bg-surface-raised rounded-xl border border-border p-8 shadow-lg">
           {isSuccess ? (
             <div className="text-center">
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Check className="w-8 h-8 text-green-600" />
               </div>
-              <h2 className="text-xl font-bold text-[#1f2937] mb-2">パスワードを更新しました</h2>
-              <p className="text-[#4b5563]">
+              <h2 className="text-xl font-bold text-text-heading mb-2">パスワードを更新しました</h2>
+              <p className="text-text-body">
                 3秒後にログイン画面に移動します...
               </p>
             </div>
           ) : (
             <>
               {error && (
-                <div className="mb-6 p-4 bg-[#ef4444]/10 border border-[#ef4444] rounded-lg">
-                  <p className="text-sm text-[#ef4444]">{error}</p>
+                <div className="mb-6 p-4 bg-danger/10 border border-danger rounded-lg">
+                  <p className="text-sm text-danger">{error}</p>
                 </div>
               )}
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-[#1f2937] mb-1">
+                  <label className="block text-sm font-medium text-text-heading mb-1">
                     新しいパスワード
                   </label>
                   <input
@@ -81,12 +81,12 @@ export default function ResetPasswordPage() {
                     onChange={e => setPassword(e.target.value)}
                     required
                     minLength={8}
-                    className="w-full px-4 py-3 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                    className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder="8文字以上"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[#1f2937] mb-1">
+                  <label className="block text-sm font-medium text-text-heading mb-1">
                     パスワード（確認）
                   </label>
                   <input
@@ -94,14 +94,14 @@ export default function ResetPasswordPage() {
                     value={confirmPassword}
                     onChange={e => setConfirmPassword(e.target.value)}
                     required
-                    className="w-full px-4 py-3 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                    className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder="もう一度入力"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-3 bg-[#3b82f6] text-white font-bold rounded-lg hover:bg-[#60a5fa] transition-colors disabled:opacity-50"
+                  className="w-full py-3 bg-info text-white font-bold rounded-lg hover:bg-info/80 transition-colors disabled:opacity-50"
                 >
                   {isLoading ? '更新中...' : 'パスワードを更新'}
                 </button>
