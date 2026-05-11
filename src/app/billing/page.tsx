@@ -267,9 +267,15 @@ export default function BillingPage() {
           />
         </div>
 
-        {/* 検索 + 学年フィルター（期間選択時のみ） */}
+        {/* 在庫カウンター + 検索 + 学年フィルター（期間選択時のみ） */}
         {selectedPeriodId && (
           <>
+            {schoolIds.length > 0 && (
+              <VocabBookStockCard
+                schoolIds={schoolIds}
+                stockDelta={stockDelta}
+              />
+            )}
             <div className="w-64">
               <input
                 type="text"
@@ -348,15 +354,6 @@ export default function BillingPage() {
         </div>
       ) : (
         <>
-          {/* 単語練習帳在庫カード */}
-          {schoolIds.length > 0 && (
-            <div className="mb-3">
-              <VocabBookStockCard
-                schoolIds={schoolIds}
-                stockDelta={stockDelta}
-              />
-            </div>
-          )}
           <BillingTable
             students={filteredStudents}
             items={items}

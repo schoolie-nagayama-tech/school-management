@@ -151,6 +151,29 @@ export function BillingTable({
     }
   };
 
+  const isVocabBookItem = (item: BillingItem) => item.name === '単語練習帳';
+
+  // 単語練習帳ワンクリックトグル: 値なし→1, 値あり→クリア
+  const handleVocabToggle = async (studentId: string, itemId: string, currentBilling: StudentBilling | undefined) => {
+    if (isTeacher || !onBillingChange) return;
+    const key = `${studentId}-${itemId}`;
+    setUpdatingCells((prev) => new Set(prev).add(key));
+    try {
+      const hasValue = currentBilling?.value_number != null && currentBilling.value_number !== 0;
+      const newValue = hasValue ? null : 1;
+      await updateBillingValue(studentId, itemId, { value_number: newValue });
+      onItemsChange?.();
+    } catch (err) {
+      toastError(err instanceof Error ? err.message : '値の更新に失敗しました');
+    } finally {
+      setUpdatingCells((prev) => {
+        const next = new Set(prev);
+        next.delete(key);
+        return next;
+      });
+    }
+  };
+
   // Number cell edit handler
   const handleNumberCellClick = (studentId: string, itemId: string, currentBilling: StudentBilling | undefined) => {
     if (isTeacher) return;
@@ -607,6 +630,51 @@ export function BillingTable({
                         ? 'bg-yellow-50'
                         : '';
 
+                      // 単語練習帳: ワンクリックで 1/クリア 切替
+                      if (isVocabBookItem(item)) {
+                        return (
+                          <td
+                            key={item.id}
+                            className={`px-1 py-1 text-center border-r border-[#e5e7eb] transition-colors duration-150 ${bgClass} ${
+                              isUpdating ? 'opacity-50' : ''
+                            } ${canEditCell && onBillingChange ? 'cursor-pointer hover:bg-blue-50' : ''}`}
+                            onClick={() => {
+                              if (!isUpdating && canEditCell && onBillingChange) {
+                                handleVocabToggle(student.id, item.id, billing);
+                              }
+                            }}
+                            title={hasValue ? '1（クリックでクリア）' : 'クリックで1をセット'}
+                          >
+                            {isUpdating ? (
+                              <span className="text-[#4b5563] text-xs">...</span>
+                            ) : (
+                              <div className="flex flex-col items-center gap-0.5">
+                                <span className={`text-sm font-bold ${hasValue ? (isBilled ? 'text-green-700' : 'text-[#1e3a5f]') : 'text-gray-300'}`}>
+                                  {hasValue ? billing?.value_number : '-'}
+                                </span>
+                                {canEditCell && onBillingChange && hasValue && (
+                                  <button
+                                    className={`text-[11px] leading-none rounded-md px-2 py-0.5 font-medium transition-colors ${
+                                      isBilled
+                                        ? 'bg-green-500 text-white hover:bg-green-600'
+                                        : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
+                                    }`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleChargedToggle(student.id, item.id, billing);
+                                    }}
+                                    title={isBilled ? '計上済（クリックで解除）' : '未計上（クリックで計上）'}
+                                  >
+                                    {isBilled ? '✓ 計上' : '計上'}
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </td>
+                        );
+                      }
+
+                      // 通常の number セル
                       return (
                         <td
                           key={item.id}
@@ -638,7 +706,6 @@ export function BillingTable({
                             />
                           ) : (
                             <div className="flex flex-col items-center gap-0.5">
-                              {/* 数値表示 */}
                               <span
                                 className={`text-sm font-bold ${
                                   hasValue ? (isBilled ? 'text-green-700' : 'text-[#1e3a5f]') : 'text-gray-300'
@@ -646,7 +713,6 @@ export function BillingTable({
                               >
                                 {hasValue ? billing?.value_number : '-'}
                               </span>
-                              {/* 計上ボタン */}
                               {canEditCell && onBillingChange && hasValue && (
                                 <button
                                   className={`text-[11px] leading-none rounded-md px-2 py-0.5 font-medium transition-colors ${

@@ -10,6 +10,8 @@ import {
   updateStudentTextbook,
 } from '@/lib/api/progress';
 import { getTextbooks } from '@/lib/api/textbooks';
+import { getStudentTextbooks as getDistributedMaterials } from '@/lib/api/ordering';
+import type { StudentTextbook as DistributedMaterial } from '@/lib/api/ordering';
 import { listAssessments } from '@/lib/api/assessments';
 import type { Student, Textbook, AssessmentWithScores } from '@/types/database';
 import {
@@ -64,6 +66,7 @@ export function StudentDetailModal({
   const { success, error: toastError } = useToast();
   const isTeacher = profile?.role === 'teacher';
   const [textbooks, setTextbooks] = useState<StudentTextbookRow[]>([]);
+  const [distributedMaterials, setDistributedMaterials] = useState<DistributedMaterial[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('basic');
   const schoolId = getDefaultSchoolId();
@@ -87,12 +90,14 @@ export function StudentDetailModal({
 
   // 教材データを読み込み（学校種別フィルタなし：全教材を表示）
   const loadTextbooks = useCallback(async (studentId: string) => {
-    const [rows, masters] = await Promise.all([
+    const [rows, masters, distributed] = await Promise.all([
       getStudentTextbooksForProgress(studentId).catch(() => []),
       getTextbooks().catch(() => []),
+      getDistributedMaterials(studentId).catch(() => []),
     ]);
     setTextbooks(rows);
     setAvailableTextbooks(masters);
+    setDistributedMaterials(distributed);
   }, []);
 
   useEffect(() => {
@@ -103,6 +108,7 @@ export function StudentDetailModal({
         .finally(() => setIsLoading(false));
     } else {
       setTextbooks([]);
+      setDistributedMaterials([]);
       setAvailableTextbooks([]);
       setSelectedSubject('all');
       setSelectedTextbookId('');
@@ -407,8 +413,29 @@ export function StudentDetailModal({
                     })}
                   </div>
                 </>
-              ) : (
+              ) : distributedMaterials.length === 0 ? (
                 <p className="text-sm text-[#4b5563]/60">登録された教材はありません</p>
+              ) : null}
+
+              {/* 配布済み教材（発注管理から） */}
+              {distributedMaterials.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-[11px] text-[#6b7280] mb-1.5">発注配布済み</p>
+                  <div className="space-y-1">
+                    {distributedMaterials.map((dm) => (
+                      <div
+                        key={dm.orderId}
+                        className="flex items-center justify-between px-3 py-1.5 bg-gray-50 rounded-lg border border-[#e5e7eb]"
+                      >
+                        <span className="text-sm text-[#1f2937]">
+                          {dm.textbookName}
+                          {dm.quantity > 1 && <span className="text-xs text-[#4b5563] ml-1">x{dm.quantity}</span>}
+                        </span>
+                        <span className="text-[10px] text-[#9ca3af]">配布済</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
 

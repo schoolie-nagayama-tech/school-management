@@ -277,7 +277,6 @@ export async function updateOrderStatus(
   // 在庫トランザクションを自動作成
   try {
     if (status === 'delivered') {
-      // 発送済み: 入庫
       await createStockTransaction({
         school_id: existingOrder.school_id,
         material_id: existingOrder.material_id,
@@ -288,7 +287,6 @@ export async function updateOrderStatus(
         related_student_id: null,
       });
     } else if (status === 'distributed') {
-      // 配布時: 出庫
       await createStockTransaction({
         school_id: existingOrder.school_id,
         material_id: existingOrder.material_id,
@@ -300,8 +298,21 @@ export async function updateOrderStatus(
       });
     }
   } catch (stockError) {
-    // 在庫連携に失敗してもステータス更新自体は成功として返す
     console.error('在庫トランザクションの自動作成に失敗しました:', stockError);
+  }
+
+  // 配布時: 単語練習帳なら請求管理の単語練習帳列に自動記入 + 所持教材登録
+  if (status === 'distributed') {
+    try {
+      await onMaterialDistributed(
+        existingOrder.material_id,
+        existingOrder.student_id,
+        existingOrder.school_id,
+        existingOrder.quantity
+      );
+    } catch (err) {
+      console.error('配布時の自動連携に失敗しました:', err);
+    }
   }
 
   return data as MaterialOrder;
@@ -391,4 +402,104 @@ export async function getStudentTextbooks(studentId: string): Promise<StudentTex
       orderedAt: row.ordered_at as string | null,
     };
   });
+}
+
+/**
+ * 教材配布時の自動連携
+ *
+ * - 単語練習帳の場合: 直近の請求期間の「単語練習帳」列に value_number=1 を自動セット
+ * - 全教材共通: student_textbooks に track_progress=false で登録（進行表には出さない）
+ */
+async function onMaterialDistributed(
+  materialId: string,
+  studentId: string,
+  schoolId: string,
+  _quantity: number
+): Promise<void> {
+  // 教材名を取得
+  const { data: material } = await supabase
+    .from('materials')
+    .select('name')
+    .eq('id', materialId)
+    .single();
+
+  if (!material) return;
+
+  const isVocabBook = material.name === '単語練習帳';
+
+  // 単語練習帳: 直近アクティブ請求期間の「単語練習帳」列に 1 を自動入力
+  if (isVocabBook) {
+    const { data: periods } = await supabase
+      .from('billing_periods')
+      .select('id')
+      .eq('school_id', schoolId)
+      .eq('is_active', true)
+      .order('start_date', { ascending: false })
+      .limit(1);
+
+    if (periods && periods.length > 0) {
+      const periodId = periods[0].id;
+      const { data: vocabItem } = await supabase
+        .from('billing_items')
+        .select('id')
+        .eq('billing_period_id', periodId)
+        .eq('school_id', schoolId)
+        .eq('name', '単語練習帳')
+        .maybeSingle();
+
+      if (vocabItem) {
+        const { data: existing } = await supabase
+          .from('student_billings')
+          .select('id')
+          .eq('student_id', studentId)
+          .eq('billing_item_id', vocabItem.id)
+          .maybeSingle();
+
+        if (existing) {
+          await supabase
+            .from('student_billings')
+            .update({ value_number: 1, updated_at: new Date().toISOString() })
+            .eq('id', existing.id);
+        } else {
+          await supabase
+            .from('student_billings')
+            .insert({
+              school_id: schoolId,
+              student_id: studentId,
+              billing_item_id: vocabItem.id,
+              is_billed: false,
+              value_number: 1,
+            });
+        }
+      }
+    }
+  }
+
+  // 所持教材に登録（textbooks テーブルに同名があれば student_textbooks に追加, track_progress=false）
+  const { data: textbook } = await supabase
+    .from('textbooks')
+    .select('id')
+    .eq('name', material.name)
+    .maybeSingle();
+
+  if (textbook) {
+    const { data: existingSt } = await supabase
+      .from('student_textbooks')
+      .select('id')
+      .eq('student_id', studentId)
+      .eq('textbook_id', textbook.id)
+      .maybeSingle();
+
+    if (!existingSt) {
+      await supabase
+        .from('student_textbooks')
+        .insert({
+          school_id: schoolId,
+          student_id: studentId,
+          textbook_id: textbook.id,
+          is_active: true,
+          track_progress: false,
+        });
+    }
+  }
 }

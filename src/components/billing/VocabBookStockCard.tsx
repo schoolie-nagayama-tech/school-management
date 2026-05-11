@@ -3,17 +3,26 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getMaterials, createStockTransaction } from '@/lib/api/inventory';
 import type { Material } from '@/types/database';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/useToast';
+import { Pencil, Check, X } from 'lucide-react';
 
 interface VocabBookStockCardProps {
   schoolIds: string[];
-  stockDelta: number; // 外部からの在庫変動を受け取る（計上による増減）
+  stockDelta: number;
 }
 
 export function VocabBookStockCard({ schoolIds, stockDelta }: VocabBookStockCardProps) {
   const [material, setMaterial] = useState<Material | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const lastAppliedDelta = useRef(0);
   const materialRef = useRef<Material | null>(null);
+  const { profile } = useAuth();
+  const { success, error: toastError } = useToast();
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner';
 
   const fetchMaterial = useCallback(async () => {
     if (schoolIds.length === 0) return;
@@ -33,7 +42,6 @@ export function VocabBookStockCard({ schoolIds, stockDelta }: VocabBookStockCard
     fetchMaterial();
   }, [fetchMaterial]);
 
-  // stockDeltaが変わったら在庫トランザクションを作成
   useEffect(() => {
     if (stockDelta === lastAppliedDelta.current) return;
     const mat = materialRef.current;
@@ -62,8 +70,33 @@ export function VocabBookStockCard({ schoolIds, stockDelta }: VocabBookStockCard
     applyDelta();
   }, [stockDelta, fetchMaterial]);
 
-  if (loading) return null;
-  if (!material) return null;
+  const handleAdjust = async () => {
+    if (!material) return;
+    const newQty = parseInt(editValue, 10);
+    if (isNaN(newQty) || newQty < 0) {
+      toastError('0以上の数値を入力してください');
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await createStockTransaction({
+        material_id: material.id,
+        school_id: material.school_id,
+        transaction_type: 'adjust',
+        quantity: newQty,
+        reason: '管理者による手動調整',
+      });
+      await fetchMaterial();
+      setIsEditing(false);
+      success(`在庫を ${newQty} に調整しました`);
+    } catch {
+      toastError('在庫の調整に失敗しました');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (loading || !material) return null;
 
   const isLowStock = material.stock_quantity <= material.low_stock_threshold;
 
@@ -75,14 +108,61 @@ export function VocabBookStockCard({ schoolIds, stockDelta }: VocabBookStockCard
     }`}>
       <span className="font-medium">単語練習帳</span>
       <span className="text-xs text-gray-500">在庫</span>
-      <span className={`font-bold text-lg ${isLowStock ? 'text-red-600' : 'text-blue-600'}`}>
-        {material.stock_quantity}
-      </span>
-      <span className="text-xs text-gray-500">{material.unit || '冊'}</span>
-      {isLowStock && (
-        <span className="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-medium">
-          残少
-        </span>
+      {isEditing ? (
+        <div className="flex items-center gap-1">
+          <input
+            type="number"
+            min="0"
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleAdjust();
+              if (e.key === 'Escape') setIsEditing(false);
+            }}
+            autoFocus
+            disabled={isSaving}
+            className="w-16 px-1.5 py-0.5 text-center text-sm border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+          />
+          <button
+            onClick={handleAdjust}
+            disabled={isSaving}
+            className="p-0.5 text-green-600 hover:text-green-700 disabled:opacity-50"
+            title="確定"
+          >
+            <Check className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setIsEditing(false)}
+            className="p-0.5 text-gray-400 hover:text-gray-600"
+            title="キャンセル"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      ) : (
+        <>
+          <span className={`font-bold text-lg ${isLowStock ? 'text-red-600' : 'text-blue-600'}`}>
+            {material.stock_quantity}
+          </span>
+          <span className="text-xs text-gray-500">{material.unit || '冊'}</span>
+          {isLowStock && (
+            <span className="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-medium">
+              残少
+            </span>
+          )}
+          {isAdmin && (
+            <button
+              onClick={() => {
+                setEditValue(String(material.stock_quantity));
+                setIsEditing(true);
+              }}
+              className="p-0.5 text-gray-400 hover:text-blue-600 transition-colors"
+              title="在庫数を調整"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </>
       )}
     </div>
   );
