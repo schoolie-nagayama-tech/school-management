@@ -664,8 +664,8 @@ export default function CourseProgressPage() {
       <AdminLayout>
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="w-12 h-12 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-[#4b5563]">読み込み中...</p>
+            <div className="w-12 h-12 border-4 border-ink border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-text-body">読み込み中...</p>
           </div>
         </div>
       </AdminLayout>
@@ -729,7 +729,7 @@ export default function CourseProgressPage() {
             )}
             <button
               onClick={() => setShowSettings(!showSettings)}
-              className={`px-3 py-1.5 text-xs border rounded-lg ${showSettings ? 'border-[#1e3a5f] bg-[#1e3a5f] text-white' : 'border-gray-200 hover:bg-gray-50 text-gray-600'}`}
+              className={`px-3 py-1.5 text-xs border rounded-lg ${showSettings ? 'border-ink bg-ink text-white' : 'border-gray-200 hover:bg-gray-50 text-gray-600'}`}
             >
               設定
             </button>
@@ -746,7 +746,7 @@ export default function CourseProgressPage() {
 
         {/* エラーメッセージ */}
         {errorMessage && (
-          <div className="mb-4 bg-[#ef4444]/20 text-[#ef4444] px-4 py-2 rounded border border-[#ef4444]">
+          <div className="mb-4 bg-danger/20 text-danger px-4 py-2 rounded border border-danger">
             {errorMessage}
           </div>
         )}
@@ -775,7 +775,7 @@ export default function CourseProgressPage() {
                 onClick={() => setSettingsTab('filter')}
                 className={`px-4 py-2 text-xs font-medium transition-colors duration-150 ${
                   settingsTab === 'filter'
-                    ? 'text-[#1e3a5f] border-b-2 border-[#1e3a5f] bg-blue-50/30'
+                    ? 'text-ink border-b-2 border-ink bg-blue-50/30'
                     : 'text-gray-400 hover:text-gray-600'
                 }`}
               >
@@ -786,7 +786,7 @@ export default function CourseProgressPage() {
                   onClick={() => setSettingsTab('items')}
                   className={`px-4 py-2 text-xs font-medium transition-colors duration-150 ${
                     settingsTab === 'items'
-                      ? 'text-[#1e3a5f] border-b-2 border-[#1e3a5f] bg-blue-50/30'
+                      ? 'text-ink border-b-2 border-ink bg-blue-50/30'
                       : 'text-gray-400 hover:text-gray-600'
                   }`}
                 >
@@ -826,7 +826,7 @@ export default function CourseProgressPage() {
                         type="checkbox"
                         checked={showHidden}
                         onChange={(e) => setShowHidden(e.target.checked)}
-                        className="w-3.5 h-3.5 text-[#3b82f6] rounded"
+                        className="w-3.5 h-3.5 text-info rounded"
                       />
                       非表示項目も表示
                     </label>
@@ -918,7 +918,7 @@ export default function CourseProgressPage() {
                     <button
                       onClick={handleAddItem}
                       disabled={!newItemName.trim()}
-                      className="px-3 py-1.5 text-xs bg-[#1e3a5f] text-white rounded-lg hover:bg-[#2c5282] disabled:opacity-50 transition-colors duration-150"
+                      className="px-3 py-1.5 text-xs bg-ink text-white rounded-lg hover:bg-ink/80 disabled:opacity-50 transition-colors duration-150"
                     >
                       追加
                     </button>
@@ -1013,7 +1013,7 @@ export default function CourseProgressPage() {
                             </button>
                             <button
                               onClick={() => handleDeleteItem(item.id)}
-                              className="text-[10px] text-[#ef4444] hover:text-[#dc2626] px-1 transition-colors duration-150"
+                              className="text-[10px] text-danger hover:text-danger/80 px-1 transition-colors duration-150"
                             >
                               削除
                             </button>
@@ -1037,17 +1037,17 @@ export default function CourseProgressPage() {
         {isLoading ? (
           <div className="bg-white rounded-xl border border-gray-200 p-8">
             <div className="flex items-center justify-center">
-              <div className="w-8 h-8 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin" />
-              <span className="ml-3 text-[#4b5563]">読み込み中...</span>
+              <div className="w-8 h-8 border-4 border-ink border-t-transparent rounded-full animate-spin" />
+              <span className="ml-3 text-text-body">読み込み中...</span>
             </div>
           </div>
         ) : displayItems.length === 0 ? (
           <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-            <p className="text-[#4b5563] mb-4">進捗管理項目がありません。</p>
+            <p className="text-text-body mb-4">進捗管理項目がありません。</p>
             {isOwnerOrAbove && (
               <button
                 onClick={handleOpenTemplateDialog}
-                className="px-4 py-2 text-sm bg-[#1e3a5f] text-white rounded-lg hover:bg-[#2c5282] transition-colors duration-150"
+                className="px-4 py-2 text-sm bg-ink text-white rounded-lg hover:bg-ink/80 transition-colors duration-150"
               >
                 テンプレートから作成
               </button>
@@ -1084,7 +1084,7 @@ export default function CourseProgressPage() {
       {showSaveDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="bg-white rounded-xl shadow-xl p-6 w-96 max-w-[90vw]">
-            <h3 className="text-sm font-bold text-[#1e3a5f] mb-4">テンプレートとして保存</h3>
+            <h3 className="text-sm font-bold text-ink mb-4">テンプレートとして保存</h3>
             <p className="text-xs text-gray-500 mb-3">
               現在の進捗管理項目をテンプレートとして保存します。
             </p>
@@ -1109,7 +1109,7 @@ export default function CourseProgressPage() {
               <button
                 onClick={handleSaveAsTemplate}
                 disabled={!saveTemplateName.trim() || saving}
-                className="px-4 py-2 text-xs bg-[#1e3a5f] text-white rounded-lg hover:bg-[#2c5282] disabled:opacity-50 transition-colors duration-150"
+                className="px-4 py-2 text-xs bg-ink text-white rounded-lg hover:bg-ink/80 disabled:opacity-50 transition-colors duration-150"
               >
                 {saving ? '保存中...' : '保存'}
               </button>
