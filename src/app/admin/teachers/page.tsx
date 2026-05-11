@@ -324,7 +324,7 @@ export default function TeachersPage() {
     return (
       <AdminLayout headerTitle="講師管理">
         <div className="p-6 flex items-center justify-center min-h-[40vh]">
-          <div className="w-10 h-10 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin" />
+          <div className="w-10 h-10 border-4 border-ink border-t-transparent rounded-full animate-spin" />
         </div>
       </AdminLayout>
     );
@@ -333,8 +333,8 @@ export default function TeachersPage() {
     return (
       <AdminLayout>
         <div className="p-6">
-          <div className="bg-[#ef4444]/10 border border-[#ef4444] rounded-lg p-4">
-            <p className="text-[#ef4444]">このページにアクセスする権限がありません</p>
+          <div className="bg-danger/10 border border-danger rounded-lg p-4">
+            <p className="text-danger">このページにアクセスする権限がありません</p>
           </div>
         </div>
       </AdminLayout>
@@ -349,12 +349,12 @@ export default function TeachersPage() {
           <div className="flex items-center gap-4">
             <Link
               href="/students"
-              className="flex items-center gap-2 text-[#1f2937] hover:text-[#3b82f6] transition-colors duration-150"
+              className="flex items-center gap-2 text-text-heading hover:text-info transition-colors duration-150"
               title="ホームに戻る"
             >
               <Home className="w-5 h-5" />
             </Link>
-            <h1 className="text-2xl font-bold text-[#1f2937]">講師管理</h1>
+            <h1 className="text-2xl font-bold text-text-heading">講師管理</h1>
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -390,8 +390,8 @@ export default function TeachersPage() {
 
         {isLoading ? (
           <div className="text-center py-12">
-            <div className="w-12 h-12 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-[#4b5563]">読み込み中...</p>
+            <div className="w-12 h-12 border-4 border-ink border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-text-body">読み込み中...</p>
           </div>
         ) : (
           <div className="space-y-6">
@@ -417,33 +417,33 @@ export default function TeachersPage() {
                     type="checkbox"
                     checked={sortByBadges}
                     onChange={(e) => setSortByBadges(e.target.checked)}
-                    className="rounded border-gray-300 text-[#1e3a5f] focus:ring-[#1e3a5f]"
+                    className="rounded border-gray-300 text-ink focus:ring-ink"
                   />
                   バッジ数でソート
                 </label>
               </div>
             )}
 
-            <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden">
-              <div className="p-4 bg-[#f3f4f6] border-b border-[#e5e7eb]">
-                <h2 className="font-bold text-[#1f2937]">登録済み講師 ({teachers.length})</h2>
+            <div className="bg-surface-raised rounded-xl border border-border overflow-hidden">
+              <div className="p-4 bg-surface-hover border-b border-border">
+                <h2 className="font-bold text-text-heading">登録済み講師 ({teachers.length})</h2>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-[#f3f4f6] border-b border-[#e5e7eb]">
+                  <thead className="bg-surface-hover border-b border-border">
                     <tr>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937]">名前</th>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937]">ログインID</th>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937]">担当教室</th>
+                      <th className="px-4 py-3 text-left text-sm font-bold text-text-heading">名前</th>
+                      <th className="px-4 py-3 text-left text-sm font-bold text-text-heading">ログインID</th>
+                      <th className="px-4 py-3 text-left text-sm font-bold text-text-heading">担当教室</th>
                       {allBadges.length > 0 && (
-                        <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937]">バッジ</th>
+                        <th className="px-4 py-3 text-left text-sm font-bold text-text-heading">バッジ</th>
                       )}
-                      <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937]">状態</th>
-                      <th className="px-4 py-3 text-left text-sm font-bold text-[#1f2937]">最終ログイン</th>
-                      <th className="px-4 py-3 text-right text-sm font-bold text-[#1f2937]">操作</th>
+                      <th className="px-4 py-3 text-left text-sm font-bold text-text-heading">状態</th>
+                      <th className="px-4 py-3 text-left text-sm font-bold text-text-heading">最終ログイン</th>
+                      <th className="px-4 py-3 text-right text-sm font-bold text-text-heading">操作</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#e5e7eb]/10">
+                  <tbody className="divide-y divide-border/10">
                     {(() => {
                       let list = [...teachers];
                       // バッジフィルタ
@@ -459,22 +459,22 @@ export default function TeachersPage() {
                       }
                       return list;
                     })().map(teacher => (
-                      <tr key={teacher.id} className="hover:bg-[#f3f4f6]/50">
-                        <td className="px-4 py-3 text-sm text-[#1f2937]">
+                      <tr key={teacher.id} className="hover:bg-surface-hover/50">
+                        <td className="px-4 py-3 text-sm text-text-heading">
                           {teacher.display_name || '-'}
                         </td>
-                        <td className="px-4 py-3 text-sm text-[#4b5563]">{displayLoginId(teacher.email)}</td>
-                        <td className="px-4 py-3 text-sm text-[#4b5563]">
+                        <td className="px-4 py-3 text-sm text-text-body">{displayLoginId(teacher.email)}</td>
+                        <td className="px-4 py-3 text-sm text-text-body">
                           {teacher.user_schools && teacher.user_schools.length > 0 ? (
                             <div className="flex flex-wrap gap-1">
                               {teacher.user_schools.map(us => (
-                                <span key={us.id} className="inline-block px-2 py-0.5 text-xs bg-[#f3f4f6] rounded">
+                                <span key={us.id} className="inline-block px-2 py-0.5 text-xs bg-surface-hover rounded">
                                   {us.school?.name || '不明'}
                                 </span>
                               ))}
                             </div>
                           ) : (
-                            <span className="text-[#4b5563]/50">なし</span>
+                            <span className="text-text-body/50">なし</span>
                           )}
                         </td>
                         {allBadges.length > 0 && (
@@ -521,7 +521,7 @@ export default function TeachersPage() {
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-sm text-[#4b5563]">
+                        <td className="px-4 py-3 text-sm text-text-body">
                           {teacher.last_login_at ? new Date(teacher.last_login_at).toLocaleDateString('ja-JP') : '-'}
                         </td>
                         <td className="px-4 py-3 text-right">
@@ -562,7 +562,7 @@ export default function TeachersPage() {
                                 setDeletingTeacher(teacher);
                                 setIsDeleteDialogOpen(true);
                               }}
-                              className="p-2 text-[#ef4444] hover:text-[#ef4444]"
+                              className="p-2 text-danger hover:text-danger"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -584,7 +584,7 @@ export default function TeachersPage() {
           </DialogHeader>
           <DialogContent>
             <div className="space-y-4">
-              <div className="text-sm text-[#4b5563] mb-4">
+              <div className="text-sm text-text-body mb-4">
                 新しい講師アカウントを作成します。ユーザーID（メールアドレス）は未入力の場合、自動生成されます。
               </div>
               <div className="space-y-2">
@@ -598,7 +598,7 @@ export default function TeachersPage() {
                   }
                   placeholder="未入力の場合は自動生成されます"
                 />
-                <p className="text-xs text-[#4b5563]/70">ログイン時に使用するIDです。未入力の場合は自動生成されます。</p>
+                <p className="text-xs text-text-body/70">ログイン時に使用するIDです。未入力の場合は自動生成されます。</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="displayName">表示名 *</Label>
@@ -622,7 +622,7 @@ export default function TeachersPage() {
                   }
                   placeholder="4文字以上"
                 />
-                <p className="text-xs text-[#4b5563]/70">パスワードは4文字以上で入力してください</p>
+                <p className="text-xs text-text-body/70">パスワードは4文字以上で入力してください</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="school">所属教室 *</Label>
@@ -675,7 +675,7 @@ export default function TeachersPage() {
           </DialogHeader>
           <DialogContent>
             <div className="space-y-4">
-              <div className="text-sm text-[#4b5563] mb-4">
+              <div className="text-sm text-text-body mb-4">
                 以下の情報を講師に伝えてください。パスワードは後から確認できません。
               </div>
               {createdTeacher && (
@@ -764,7 +764,7 @@ export default function TeachersPage() {
               <AlertDialogCancel onClick={() => { setIsDeleteDialogOpen(false); setDeletingTeacher(null); }}>キャンセル</AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleDelete}
-                className="bg-[#ef4444] text-white hover:bg-[#dc2626]"
+                className="bg-danger text-white hover:bg-red-700"
               >
                 削除
               </AlertDialogAction>
