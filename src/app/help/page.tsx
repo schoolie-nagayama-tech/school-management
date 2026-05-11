@@ -168,7 +168,7 @@ function FaqAccordion({ category }: { category: FaqCategory }) {
               onClick={() => setOpenIndex(openIndex === index ? null : index)}
               className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors duration-150"
             >
-              <span className="text-sm font-medium text-[#1f2937]">{item.question}</span>
+              <span className="text-sm font-medium text-text-heading">{item.question}</span>
               {openIndex === index ? (
                 <ChevronUp className="w-4 h-4 text-gray-400 shrink-0" />
               ) : (
@@ -177,7 +177,7 @@ function FaqAccordion({ category }: { category: FaqCategory }) {
             </button>
             {openIndex === index && (
               <div className="px-4 pb-3">
-                <p className="text-sm text-[#4b5563] leading-relaxed whitespace-pre-wrap">{item.answer}</p>
+                <p className="text-sm text-text-body leading-relaxed whitespace-pre-wrap">{item.answer}</p>
               </div>
             )}
           </div>
@@ -196,7 +196,7 @@ export default function HelpPage() {
           <div>
             <Link
               href="/students"
-              className="text-sm text-[var(--paragraph)] hover:text-[#3b82f6] mb-2 inline-block transition-colors duration-150"
+              className="text-sm text-[var(--paragraph)] hover:text-info mb-2 inline-block transition-colors duration-150"
             >
               ← 生徒一覧に戻る
             </Link>
