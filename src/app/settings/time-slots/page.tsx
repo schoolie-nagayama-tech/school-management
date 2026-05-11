@@ -117,7 +117,7 @@ export default function TimeSlotsSettingsPage() {
   if (!profile) {
     return (
       <AdminLayout headerTitle="設定">
-        <div className="py-8 text-center text-[var(--paragraph)]">読み込み中...</div>
+        <div className="py-8 text-text-dangeraintenter text-[var(--paragraph)]">読み込み中...</div>
       </AdminLayout>
     );
   }
@@ -137,7 +137,7 @@ export default function TimeSlotsSettingsPage() {
             <Link href="/settings" className="text-sm text-[var(--paragraph)] hover:text-[var(--primary)]">
               ← 設定に戻る
             </Link>
-            <h1 className="text-2xl font-bold text-[var(--headline)]">コマ時間設定</h1>
+            <h1 className="text-text-headingxl font-bold text-[var(--headline)]">コマ時間設定</h1>
           </div>
           <div className="flex items-center gap-4">
             <Select value={selectedSchoolId} onValueChange={setSelectedSchoolId}>
