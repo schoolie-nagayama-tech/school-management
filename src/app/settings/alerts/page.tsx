@@ -7,9 +7,9 @@ import Link from 'next/link';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { useRequirePermission } from '@/hooks/usePermissions';
-import { useAuth } from '@/contexts/AuthContext';
-import { useMasterData } from '@/contexts/MasterDataContext';
 import AccessDenied from '@/components/AccessDenied';
+import { useLocalSchoolId } from '@/hooks/useLocalSchoolId';
+import { SchoolSwitcher } from '@/components/SchoolSwitcher';
 import {
   ALERT_TYPE_LABELS,
   type AlertSetting,
@@ -72,28 +72,18 @@ export default function AlertsSettingsPage() {
   const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
     (p) => p.canAccessSettings
   );
-  const { getSelectedSchoolIds } = useAuth();
-  const { schools } = useMasterData();
+  const { localSchoolId, setLocalSchoolId, isAllSelected, availableSchools } = useLocalSchoolId();
   const { toasts, removeToast, success, error: toastError } = useToast();
   const { confirm, ConfirmDialog } = useConfirm();
-
-  const [schoolId, setSchoolId] = useState<string | null>(null);
   const [settings, setSettings] = useState<Record<AlertType, AlertSetting> | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
-    const ids = getSelectedSchoolIds();
-    if (ids.length > 0 && !schoolId) {
-      setSchoolId(ids[0]);
-    }
-  }, [getSelectedSchoolIds, schoolId]);
-
   const fetchSettings = useCallback(async () => {
-    if (!schoolId) return;
+    if (!localSchoolId) return;
     setIsLoading(true);
     try {
-      const data = await getAlertSettings(schoolId);
+      const data = await getAlertSettings(localSchoolId);
       const map = {} as Record<AlertType, AlertSetting>;
       for (const s of data) map[s.alert_type] = s;
       setSettings(map);
@@ -103,7 +93,7 @@ export default function AlertsSettingsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [schoolId, toastError]);
+  }, [localSchoolId, toastError]);
 
   useEffect(() => { fetchSettings(); }, [fetchSettings]);
 
@@ -123,12 +113,12 @@ export default function AlertsSettingsPage() {
   };
 
   const saveAll = async () => {
-    if (!schoolId || !settings) return;
+    if (!localSchoolId || !settings) return;
     setIsSaving(true);
     try {
       const types = Object.keys(settings) as AlertType[];
       await Promise.all(
-        types.map((t) => upsertAlertSetting(schoolId, t, settings[t].enabled, settings[t].thresholds))
+        types.map((t) => upsertAlertSetting(localSchoolId, t, settings[t].enabled, settings[t].thresholds))
       );
       success('保存しました');
     } catch (e) {
@@ -140,7 +130,7 @@ export default function AlertsSettingsPage() {
   };
 
   const resetAll = async () => {
-    if (!schoolId) return;
+    if (!localSchoolId) return;
     const ok = await confirm({
       title: 'デフォルトに戻す',
       description: 'この教室のすべてのアラート設定をデフォルトに戻します。よろしいですか？',

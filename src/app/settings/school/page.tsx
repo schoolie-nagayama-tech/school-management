@@ -7,8 +7,9 @@ import Link from 'next/link';
 import { getSchool, updateSchool } from '@/lib/api/schools';
 import { useToast } from '@/hooks/useToast';
 import { useRequirePermission } from '@/hooks/usePermissions';
-import { useAuth } from '@/contexts/AuthContext';
 import AccessDenied from '@/components/AccessDenied';
+import { useLocalSchoolId } from '@/hooks/useLocalSchoolId';
+import { SchoolSwitcher } from '@/components/SchoolSwitcher';
 import type { School } from '@/types/database';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { ChevronLeft, ImageIcon, X, Plus } from 'lucide-react';
@@ -18,7 +19,7 @@ export default function SchoolSettingsPage() {
     (p) => p.canAccessSettings
   );
   const { toasts, removeToast, success, error: toastError } = useToast();
-  const { getSelectedSchoolIds } = useAuth();
+  const { localSchoolId, setLocalSchoolId, isAllSelected, availableSchools } = useLocalSchoolId();
 
   const [school, setSchool] = useState<School | null>(null);
   const [notificationEmails, setNotificationEmails] = useState<string[]>([]);
@@ -33,10 +34,8 @@ export default function SchoolSettingsPage() {
   useEffect(() => {
     const fetchSchool = async () => {
       try {
-        const schoolIds = getSelectedSchoolIds();
-        const schoolId = schoolIds[0];
-        if (!schoolId) return;
-        const schoolData = await getSchool(schoolId);
+        if (!localSchoolId) return;
+        const schoolData = await getSchool(localSchoolId);
         if (schoolData) {
           setSchool(schoolData);
           setLogoUrl(schoolData.logo_url || '');
@@ -61,8 +60,7 @@ export default function SchoolSettingsPage() {
     if (hasPermission) {
       fetchSchool();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasPermission, toastError, getSelectedSchoolIds]);
+  }, [hasPermission, toastError, localSchoolId]);
 
   // メールアドレスリストを更新
   const updateEmail = (index: number, value: string) => {
@@ -210,6 +208,15 @@ export default function SchoolSettingsPage() {
             設定に戻る
           </Link>
         </div>
+
+        {isAllSelected && (
+          <SchoolSwitcher
+            schools={availableSchools}
+            selectedSchoolId={localSchoolId}
+            onChange={setLocalSchoolId}
+          />
+        )}
+
         {/* ロゴ設定 */}
         <Card>
           <CardHeader>
