@@ -378,11 +378,12 @@ export async function getTextbookUnitsWithProgress(
  */
 export async function syncProposalToProgress(
   proposalId: string
-): Promise<{ studentTextbookId: string }> {
+): Promise<{ studentTextbookId: string; textbookCreated: boolean }> {
   const proposal = await getProposal(proposalId);
   if (!proposal) throw new Error('提案書が見つかりません');
 
   let stbId = proposal.student_textbook_id;
+  let textbookCreated = false;
 
   // student_textbook が未紐付けの場合は作成
   if (!stbId) {
@@ -420,6 +421,7 @@ export async function syncProposalToProgress(
 
       if (stbErr) throw new Error(`テキスト登録に失敗しました: ${stbErr.message}`);
       stbId = (newStb as { id: string }).id;
+      textbookCreated = true;
     }
 
     // 提案書に student_textbook_id を紐付け
@@ -469,7 +471,7 @@ export async function syncProposalToProgress(
     }
   }
 
-  return { studentTextbookId: stbId! };
+  return { studentTextbookId: stbId!, textbookCreated };
 }
 
 /**

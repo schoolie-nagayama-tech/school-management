@@ -12,6 +12,7 @@ import {
   Link2,
   Unlink,
   Minus,
+  PackageOpen,
   X,
   Plus,
   Printer,
@@ -144,6 +145,7 @@ export default function ProposalEditor() {
 
   const [previewMode, setPreviewMode] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showOrderAlert, setShowOrderAlert] = useState(false);
 
   // ── 初期読み込み ──
   const loadData = useCallback(async () => {
@@ -476,9 +478,12 @@ export default function ProposalEditor() {
     if (isNew || !proposalId) return;
     setSyncing(true);
     try {
-      const { studentTextbookId: stbId } = await syncProposalToProgress(proposalId);
+      const { studentTextbookId: stbId, textbookCreated } = await syncProposalToProgress(proposalId);
       setStudentTextbookId(stbId);
       addToast('進行表に反映しました', 'success');
+      if (textbookCreated) {
+        setShowOrderAlert(true);
+      }
     } catch (e) {
       console.error(e);
       addToast('進行表への反映に失敗しました', 'error');
@@ -884,6 +889,26 @@ export default function ProposalEditor() {
               className="bg-danger text-white hover:bg-red-700"
             >
               削除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* テキスト発注アラート */}
+      <AlertDialog open={showOrderAlert} onOpenChange={setShowOrderAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <PackageOpen className="w-5 h-5 text-warning" />
+              テキスト発注が必要です
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {studentName} さんの進行表に「{textbookSubject ? `${textbookSubject} ` : ''}{textbookName}」を新しく追加しました。テキストの発注を忘れずに行ってください。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setShowOrderAlert(false)}>
+              確認しました
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
