@@ -380,6 +380,15 @@ export default function NewProgressPage() {
           </h1>
         </div>
         <div className="flex items-center gap-2">
+          {!isTeacher && (
+            <Link
+              href={`/students/${studentId}/proposals`}
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium border border-[#e5e7eb] text-[#4b5563] rounded-lg hover:bg-[#f3f4f6] active:scale-[0.97] transition-[colors,transform] duration-150"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              講習提案
+            </Link>
+          )}
           {!isTeacher && <ModeSwitcher mode={viewMode} onChange={setViewMode} />}
           <ViewSwitcher view={view} onChange={setView} />
         </div>
