@@ -2857,7 +2857,7 @@ function TextbookSettingsInline({
 // 試験範囲セクション（独立: 試験目標の有無と無関係）
 // 教科書に設定済みの範囲をチップで一覧 + 追加/編集/削除
 // ─────────────────────────────────────────────
-function ExamRangesSection({
+function _ExamRangesSection({
   textbookId: _textbookId,
   examTypes,
   ranges,
