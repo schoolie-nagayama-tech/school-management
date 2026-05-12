@@ -1254,90 +1254,6 @@ function TableView({
     }
   }, [textbook.id, setProgress, success]);
 
-  // ─── 記録モード（旧UI: バッチ入力）───
-  // 1コマで複数単元を進む実情に合わせた一括入力モード
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const [recording, setRecording] = useState(false);
-  const [recordDate, setRecordDate] = useState<string>(todayStr);
-  // 講師名はログイン中ユーザー名を初期値に
-  const [recordTeacher, setRecordTeacher] = useState<string>(selfName);
-  useEffect(() => { if (!recordTeacher && selfName) setRecordTeacher(selfName); }, [selfName, recordTeacher]);
-  const [recordNote, setRecordNote] = useState<string>('');
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    if (!recording) setSelectedIds(new Set());
-  }, [recording]);
-
-  const toggleSelect = (itemId: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(itemId)) next.delete(itemId);
-      else next.add(itemId);
-      return next;
-    });
-  };
-
-  /**
-   * 一括スタンプ: 選択行の N コマ目に recordDate を保存。
-   * 事前に student_progress レコードが無い行は upsert で作成してから lesson を upsert する。
-   */
-  const applyStamp = async (slot: 1 | 2 | 3) => {
-    if (selectedIds.size === 0) {
-      toastError('記録する行を選択してください');
-      return;
-    }
-    if (!recordDate) {
-      toastError('授業日を入力してください');
-      return;
-    }
-    const targets = progress.filter((r) => selectedIds.has(String(r.id)));
-    let okCount = 0;
-    let ngCount = 0;
-    for (const row of targets) {
-      try {
-        // 進捗レコードが無ければ作成（teacher_name, handover も記録モードの値で上書き）
-        let progressId = row.progress?.id;
-        const basePatch: Record<string, unknown> = {};
-        if (recordTeacher) basePatch.teacher_name = recordTeacher;
-        if (recordNote) basePatch.handover = recordNote;
-        if (!progressId) {
-          const created = await upsertStudentProgress({
-            student_textbook_id: textbook.id,
-            curriculum_item_id: row.id,
-            ...basePatch,
-          });
-          progressId = created?.id;
-        } else if (Object.keys(basePatch).length > 0) {
-          await updateStudentProgress(progressId, basePatch);
-        }
-        if (progressId) {
-          await upsertStudentProgressLesson({
-            student_progress_id: progressId,
-            lesson_number: slot,
-            lesson_date: recordDate,
-          });
-          okCount++;
-        } else {
-          ngCount++;
-        }
-      } catch (e) {
-        console.error(e);
-        ngCount++;
-      }
-    }
-    if (okCount > 0) success(`${okCount}件を${slot}回目に記録しました`);
-    if (ngCount > 0) toastError(`${ngCount}件の保存に失敗しました`);
-    setSelectedIds(new Set());
-    // 進捗データ再取得
-    try {
-      const rows = await getStudentProgress(textbook.id);
-      setProgress(rows || []);
-    } catch {
-      // noop
-    }
-  };
-
   // 編集ハンドラ（既存API呼出し、楽観的更新）
   // progress が null の場合も shell を作って UI を即反映できるようにする
   const updateLocal = (itemId: string, patch: Partial<CurriculumItemWithProgress['progress']>) => {
@@ -1440,21 +1356,12 @@ function TableView({
           {!isMeeting && (
             <div className="flex items-center gap-1.5">
               <button
-                onClick={() => { setSessionMode((v) => { if (v) setSessionSelection(null); return !v; }); if (recording) setRecording(false); }}
+                onClick={() => { setSessionMode((v) => { if (v) setSessionSelection(null); return !v; }); }}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                   sessionMode ? 'bg-[#dc2626] text-white hover:bg-[#b91c1c]' : 'bg-[#1e3a5f] text-white hover:bg-[#2a4d7a]'
                 }`}
               >
                 {sessionMode ? 'セッション終了' : '授業を記録'}
-              </button>
-              <button
-                onClick={() => { setRecording((v) => !v); if (sessionMode) { setSessionMode(false); setSessionSelection(null); } }}
-                className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                  recording ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
-                }`}
-                title="旧: 一括記録モード"
-              >
-                {recording ? '一括終了' : '一括'}
               </button>
               <Link
                 href={`/students/${studentId}/proposals/new?stbId=${textbook.id}&season=summer`}
@@ -1726,52 +1633,11 @@ function TableView({
         />
       )}
 
-      {/* 記録モード: 一括入力バー（旧UI） */}
-      {recording && !isMeeting && (
-        <div className="mb-2 bg-[#fff7ed] border-2 border-[#fb923c] rounded-lg p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-sm font-bold text-[#9a3412]">記録モード</div>
-            <div className="text-xs text-[#9a3412]">1コマで複数単元を進む想定。行にチェック → 「N回目に記録」で一括スタンプ</div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
-            <div>
-              <label className="block text-[10px] font-semibold text-[#9a3412] uppercase mb-1">授業日</label>
-              <input type="date" value={recordDate} onChange={(e) => setRecordDate(e.target.value)} className="w-full px-2 py-1.5 border border-[#fb923c] bg-white rounded text-sm" />
-            </div>
-            <div>
-              <label className="block text-[10px] font-semibold text-[#9a3412] uppercase mb-1">担当講師</label>
-              <input type="text" value={recordTeacher} onChange={(e) => setRecordTeacher(e.target.value)} placeholder="（空欄なら行の現状維持）" className="w-full px-2 py-1.5 border border-[#fb923c] bg-white rounded text-sm" />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-[10px] font-semibold text-[#9a3412] uppercase mb-1">引継ぎメモ（選択行に共通・空欄可）</label>
-              <input type="text" value={recordNote} onChange={(e) => setRecordNote(e.target.value)} className="w-full px-2 py-1.5 border border-[#fb923c] bg-white rounded text-sm" />
-            </div>
-          </div>
-          <div className="mt-3 flex items-center justify-between flex-wrap gap-2">
-            <div className="text-sm text-[#9a3412]">
-              選択中 <strong className="text-lg">{selectedIds.size}</strong> 件
-            </div>
-            <div className="flex gap-2">
-              <button onClick={() => applyStamp(1)} disabled={selectedIds.size === 0} className="px-3 py-1.5 bg-[#1e3a5f] text-white text-sm rounded-lg hover:bg-[#2a4d7a] disabled:bg-[#9ca3af] disabled:cursor-not-allowed">
-                1回目に記録
-              </button>
-              <button onClick={() => applyStamp(2)} disabled={selectedIds.size === 0} className="px-3 py-1.5 bg-[#1e3a5f] text-white text-sm rounded-lg hover:bg-[#2a4d7a] disabled:bg-[#9ca3af] disabled:cursor-not-allowed">
-                2回目に記録
-              </button>
-              <button onClick={() => applyStamp(3)} disabled={selectedIds.size === 0} className="px-3 py-1.5 bg-[#1e3a5f] text-white text-sm rounded-lg hover:bg-[#2a4d7a] disabled:bg-[#9ca3af] disabled:cursor-not-allowed">
-                3回目に記録
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* 進捗テーブル */}
       <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden shadow-sm overflow-x-auto">
         <table className="w-full text-sm min-w-[900px]">
           <thead className="bg-[#f9fafb] border-b border-[#e5e7eb] text-[#6b7280] text-xs">
             <tr>
-              {recording && !isMeeting && <th className="px-2 py-2 w-10"></th>}
               <th className="px-3 py-2 text-left w-10">#</th>
               <th className="px-3 py-2 text-left min-w-[180px]">単元名</th>
               {meetingCols.proposal && <th className="px-3 py-2 text-left w-20">提案</th>}
@@ -1822,8 +1688,6 @@ function TableView({
                     meetingCols={meetingCols}
                     groupStart={groupStart}
                     inheritedIntentTag={inheritedTag}
-                    recording={recording && !isMeeting}
-                    selected={selectedIds.has(rowIdStr)}
                     selfName={selfName}
                     paintActive={paintActive}
                     paintMode={paintMode}
@@ -1832,7 +1696,6 @@ function TableView({
                     sessionMode={sessionMode && !isMeeting}
                     sessionSelection={sessionMode && !isMeeting ? sessionSelection : null}
                     onPaintRowClick={() => handlePaintRowClick(rowIdStr)}
-                    onToggleSelect={() => toggleSelect(rowIdStr)}
                     onLocalPatch={(patch) => updateLocal(rowIdStr, patch)}
                     onSaveProgress={(patch) => saveProgressField(row, patch)}
                     onSaveLesson={(n, date) => saveLessonField(row, n, date)}
@@ -2080,8 +1943,6 @@ function ProgressRow({
   meetingCols,
   groupStart = true,
   inheritedIntentTag = null,
-  recording = false,
-  selected = false,
   selfName = '',
   paintActive = false,
   paintMode: _paintMode = null,
@@ -2090,7 +1951,6 @@ function ProgressRow({
   sessionMode = false,
   sessionSelection = null,
   onPaintRowClick,
-  onToggleSelect,
   onLocalPatch,
   onSaveProgress,
   onSaveLesson,
@@ -2104,8 +1964,6 @@ function ProgressRow({
   groupStart?: boolean;
   /** 非先頭行に継承表示する指導意図タグ（読み取り専用） */
   inheritedIntentTag?: IntentTag | null;
-  recording?: boolean;
-  selected?: boolean;
   /** ログイン中ユーザーの display_name（講師名欄の自動補完用） */
   selfName?: string;
   /** 一括塗りモードが有効か */
@@ -2118,7 +1976,6 @@ function ProgressRow({
   /** セッションの選択状態（ハイライト用） */
   sessionSelection?: { unitActions: Record<number, 1 | 2 | 3>; schoolUnits: Set<number> } | null;
   onPaintRowClick?: () => void;
-  onToggleSelect?: () => void;
   onLocalPatch: (patch: Partial<CurriculumItemWithProgress['progress']>) => void;
   onSaveProgress: (patch: Record<string, unknown>) => Promise<void>;
   onSaveLesson: (lessonNumber: 1 | 2 | 3, date: string | null) => Promise<void>;
@@ -2142,13 +1999,9 @@ function ProgressRow({
       ? 'border-b border-[#f3f4f6] hover:bg-[#eff6ff] cursor-pointer'
       : paintActive
         ? 'border-b border-[#f3f4f6] hover:bg-[#eff6ff] cursor-pointer'
-        : selected
-          ? 'border-b border-[#f3f4f6] bg-[#fff7ed] cursor-pointer'
-          : isSessionSelected
-            ? 'border-b border-[#f3f4f6] bg-[#1e3a5f]/5'
-            : recording
-              ? 'border-b border-[#f3f4f6] hover:bg-[#f9fafb] cursor-pointer'
-              : 'border-b border-[#f3f4f6] hover:bg-[#f9fafb]';
+        : isSessionSelected
+          ? 'border-b border-[#f3f4f6] bg-[#1e3a5f]/5'
+          : 'border-b border-[#f3f4f6] hover:bg-[#f9fafb]';
 
   // 列表示判定（管理モードでも meetingCols で制御）
   const showProposal = meetingCols.proposal;
@@ -2165,25 +2018,8 @@ function ProgressRow({
   return (
     <tr
       className={rowClass}
-      onClick={
-        paintActive
-          ? onPaintRowClick
-          : recording
-            ? onToggleSelect
-            : undefined
-      }
+      onClick={paintActive ? onPaintRowClick : undefined}
     >
-      {recording && (
-        <td className="px-2 py-2.5 text-center">
-          <input
-            type="checkbox"
-            checked={selected}
-            onChange={onToggleSelect}
-            onClick={(e) => e.stopPropagation()}
-            className="w-4 h-4 accent-[#fb923c] cursor-pointer"
-          />
-        </td>
-      )}
       <td className="px-3 py-2.5 text-[#6b7280] text-xs">{row.item_number ?? ''}</td>
       <td className="px-3 py-2.5 text-[#1f2937]">
         <div className="flex items-center gap-1.5 flex-wrap">
@@ -2480,16 +2316,23 @@ function DateInputWithToday({
     setEditing(false);
   };
 
-  // 値があって非編集中: テキスト表示 → クリックで編集
+  // 値があって非編集中: テキスト表示 + クリアボタン
   if (!isEmpty && !editing) {
     return (
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-0.5 group">
         <button
           onClick={(e) => { e.stopPropagation(); setEditing(true); setTimeout(() => inputRef.current?.showPicker?.(), 50); }}
           className="px-1.5 py-1 text-xs text-[#1f2937] hover:bg-[#f3f4f6] rounded transition-colors cursor-pointer"
           title="クリックで日付を変更"
         >
           {localVal.replace(/^\d{4}-/, '').replace('-', '/')}
+        </button>
+        <button
+          onClick={(e) => { e.stopPropagation(); setLocalVal(''); onSave(null); }}
+          className="px-1 py-0.5 text-[10px] text-[#9ca3af] hover:text-red-500 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+          title="日付をクリア"
+        >
+          ×
         </button>
       </div>
     );
