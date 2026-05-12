@@ -1,13 +1,15 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { FileText, Filter } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { FileText, Filter, Plus, Search } from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
 import { getProposalsBySchool, calcTotalKoma } from '@/lib/api/proposals';
+import { supabase } from '@/lib/supabase';
 import type { SeasonalProposalWithDetails, SeasonType, ProposalStatus } from '@/types/database';
 import { SEASON_LABELS, PROPOSAL_STATUS_LABELS } from '@/types/database';
 import { useLocalSchoolId } from '@/hooks/useLocalSchoolId';
@@ -31,7 +33,21 @@ const STATUS_FILTER_INACTIVE: Record<ProposalStatus, string> = {
   approved: 'bg-success-subtle text-success hover:bg-success/15',
 };
 
+interface StudentOption {
+  id: string;
+  last_name: string;
+  first_name: string;
+}
+
+function getCurrentSeason(): SeasonType {
+  const month = new Date().getMonth() + 1;
+  if (month >= 2 && month <= 4) return 'spring';
+  if (month >= 5 && month <= 9) return 'summer';
+  return 'winter';
+}
+
 export default function CourseProposalsPage() {
+  const router = useRouter();
   const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
     (p) => p.canAccessCourses
   );
@@ -45,6 +61,14 @@ export default function CourseProposalsPage() {
   const [filterYear, setFilterYear] = useState<number>(currentYear);
   const [filterSeason, setFilterSeason] = useState<SeasonType | ''>('');
   const [filterStatus, setFilterStatus] = useState<ProposalStatus | ''>('');
+
+  // Student picker
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerQuery, setPickerQuery] = useState('');
+  const [students, setStudents] = useState<StudentOption[]>([]);
+  const [studentsLoading, setStudentsLoading] = useState(false);
+  const pickerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -66,6 +90,54 @@ export default function CourseProposalsPage() {
   useEffect(() => {
     if (hasPermission) load();
   }, [hasPermission, load]);
+
+  const loadStudents = useCallback(async () => {
+    setStudentsLoading(true);
+    try {
+      const schoolIds = getSelectedSchoolIds();
+      const { data } = await supabase
+        .from('students')
+        .select('id, last_name, first_name')
+        .in('school_id', schoolIds)
+        .eq('is_active', true)
+        .order('last_name');
+      setStudents((data ?? []) as StudentOption[]);
+    } catch {
+      // ignore
+    } finally {
+      setStudentsLoading(false);
+    }
+  }, [getSelectedSchoolIds]);
+
+  const openPicker = useCallback(() => {
+    setPickerOpen(true);
+    setPickerQuery('');
+    loadStudents();
+    setTimeout(() => inputRef.current?.focus(), 50);
+  }, [loadStudents]);
+
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setPickerOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [pickerOpen]);
+
+  const filteredStudents = pickerQuery
+    ? students.filter((s) =>
+        `${s.last_name}${s.first_name}`.includes(pickerQuery)
+      )
+    : students;
+
+  const handleSelectStudent = (studentId: string) => {
+    setPickerOpen(false);
+    const season = getCurrentSeason();
+    router.push(`/students/${studentId}/proposals/new?season=${season}&year=${currentYear}`);
+  };
 
   if (permissionLoading) {
     return (
@@ -109,13 +181,58 @@ export default function CourseProposalsPage() {
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-lg font-bold text-text-heading">講習提案書</h1>
-          {isAllSelected && (
-            <SchoolSwitcher
-              schools={availableSchools}
-              selectedSchoolId={localSchoolId}
-              onChange={setLocalSchoolId}
-            />
-          )}
+          <div className="flex items-center gap-2">
+            {isAllSelected && (
+              <SchoolSwitcher
+                schools={availableSchools}
+                selectedSchoolId={localSchoolId}
+                onChange={setLocalSchoolId}
+              />
+            )}
+            <div className="relative" ref={pickerRef}>
+              <button
+                onClick={openPicker}
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-ink text-text-on-primary rounded-lg hover:brightness-[0.85] transition-[filter] duration-150"
+              >
+                <Plus className="w-3 h-3" />
+                新規作成
+              </button>
+              {pickerOpen && (
+                <div className="absolute right-0 top-full mt-1 w-64 bg-surface-raised border border-border-default rounded-xl shadow-lg z-50 overflow-hidden">
+                  <div className="p-2 border-b border-border-subtle">
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-faint" />
+                      <input
+                        ref={inputRef}
+                        type="text"
+                        value={pickerQuery}
+                        onChange={(e) => setPickerQuery(e.target.value)}
+                        placeholder="生徒を検索..."
+                        className="w-full pl-8 pr-3 py-1.5 text-xs border border-border-default rounded-lg bg-surface-raised text-text-body placeholder:text-text-faint focus:outline-none focus:ring-1 focus:ring-ink/30"
+                      />
+                    </div>
+                  </div>
+                  <div className="max-h-60 overflow-y-auto">
+                    {studentsLoading ? (
+                      <div className="py-4 text-center text-xs text-text-faint">読み込み中...</div>
+                    ) : filteredStudents.length === 0 ? (
+                      <div className="py-4 text-center text-xs text-text-faint">該当する生徒がいません</div>
+                    ) : (
+                      filteredStudents.map((s) => (
+                        <button
+                          key={s.id}
+                          onClick={() => handleSelectStudent(s.id)}
+                          className="w-full text-left px-3 py-2 text-sm text-text-body hover:bg-surface-hover transition-colors duration-150"
+                        >
+                          {s.last_name} {s.first_name}
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="flex gap-2 mb-4">
@@ -167,12 +284,19 @@ export default function CourseProposalsPage() {
           <div className="space-y-4">
             {Array.from(byStudent.values()).map(({ name, studentId, proposals: studentProposals }) => (
               <div key={studentId} className="bg-surface-raised rounded-xl border border-border-default overflow-hidden">
-                <div className="px-4 py-2.5 border-b border-border-subtle bg-surface-hover/50">
+                <div className="px-4 py-2.5 border-b border-border-subtle bg-surface-hover/50 flex items-center justify-between">
                   <Link
                     href={`/students/${studentId}/proposals`}
                     className="font-semibold text-sm text-text-heading hover:text-accent-ink transition-colors duration-150"
                   >
                     {name}
+                  </Link>
+                  <Link
+                    href={`/students/${studentId}/proposals/new?season=${getCurrentSeason()}&year=${currentYear}`}
+                    className="text-text-muted hover:text-text-heading transition-colors duration-150"
+                    title="この生徒の提案書を作成"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
                   </Link>
                 </div>
                 <div className="divide-y divide-border-subtle">

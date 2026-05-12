@@ -26,7 +26,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Eye, EyeOff, FileText } from 'lucide-react';
+import { Eye, EyeOff, FileText, Plus } from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
 import { Button, Modal, Select, ToastContainer } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
@@ -1366,11 +1366,18 @@ function TableView({
                 {sessionMode ? 'セッション終了' : '授業を記録'}
               </button>
               <Link
-                href={`/students/${studentId}/proposals/new?stbId=${textbook.id}&textbookId=${textbook.textbook_id}&season=${textbook.season || 'summer'}&year=${new Date().getFullYear()}`}
+                href={`/students/${studentId}/proposals`}
                 className="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-colors flex items-center gap-1"
               >
                 <FileText className="w-3.5 h-3.5" />
-                提案書
+                提案書一覧
+              </Link>
+              <Link
+                href={`/students/${studentId}/proposals/new?stbId=${textbook.id}&textbookId=${textbook.textbook_id}&season=${textbook.season || 'summer'}&year=${new Date().getFullYear()}`}
+                className="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-colors flex items-center gap-1"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                提案書作成
               </Link>
             </div>
           )}
