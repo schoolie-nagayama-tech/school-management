@@ -90,8 +90,9 @@ function TextbookMasterPage() {
     setProposalStudentQuery('');
     setProposalStudentsLoading(true);
     try {
-      let ids = schoolIds;
-      if (ids.length === 0 && selectedSchoolId && selectedSchoolId !== 'all') ids = [selectedSchoolId];
+      const ids = selectedSchoolId && selectedSchoolId !== 'all'
+        ? [selectedSchoolId]
+        : schoolIds;
       if (ids.length === 0) { setProposalStudents([]); return; }
       const { data } = await supabase
         .from('students')

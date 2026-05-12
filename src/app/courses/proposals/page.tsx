@@ -94,9 +94,9 @@ export default function CourseProposalsPage() {
   const loadStudents = useCallback(async () => {
     setStudentsLoading(true);
     try {
-      let ids = schoolIds;
-      if (ids.length === 0) ids = getSelectedSchoolIds();
-      if (ids.length === 0 && selectedSchoolId && selectedSchoolId !== 'all') ids = [selectedSchoolId];
+      const ids = selectedSchoolId && selectedSchoolId !== 'all'
+        ? [selectedSchoolId]
+        : getSelectedSchoolIds();
       if (ids.length === 0) {
         setStudents([]);
         return;
