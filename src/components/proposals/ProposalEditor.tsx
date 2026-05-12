@@ -10,7 +10,9 @@ import {
   ChevronDown,
   ChevronUp,
   Link2,
+  Unlink,
   Minus,
+  X,
   Plus,
   Printer,
   Save,
@@ -317,6 +319,18 @@ export default function ProposalEditor() {
 
   const ungroupUnit = (ciId: number) => {
     updateUnit(ciId, { group_id: 0 });
+  };
+
+  const ungroupAll = (groupId: number) => {
+    setUnitDrafts((prev) => {
+      const next = new Map(prev);
+      Array.from(next.entries()).forEach(([key, d]) => {
+        if (d.group_id === groupId) {
+          next.set(key, { ...d, group_id: 0 });
+        }
+      });
+      return next;
+    });
   };
 
   const activeUnits = useMemo(() => {
@@ -768,6 +782,7 @@ export default function ProposalEditor() {
                   onToggle={() => toggleUnit(item.id)}
                   onUpdate={(patch) => updateUnit(item.id, patch)}
                   onUngroup={() => ungroupUnit(item.id)}
+                  onUngroupAll={() => draft.group_id > 0 && ungroupAll(draft.group_id)}
                 />
               );
             })}
@@ -864,6 +879,7 @@ function UnitRow({
   onToggle,
   onUpdate,
   onUngroup,
+  onUngroupAll,
 }: {
   item: CurriculumItem;
   draft: UnitDraft;
@@ -872,6 +888,7 @@ function UnitRow({
   onToggle: () => void;
   onUpdate: (patch: Partial<UnitDraft>) => void;
   onUngroup: () => void;
+  onUngroupAll: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const isGroupHead = groupMembers && groupMembers[0]?.curriculum_item_id === draft.curriculum_item_id;
@@ -928,7 +945,7 @@ function UnitRow({
           {done && (
             <span className="ml-1.5 text-[10px] text-text-faint">指導済</span>
           )}
-          {isGrouped && (
+          {isGrouped && !isActive && (
             <span className="ml-1.5 text-[10px] text-info font-medium">
               G{draft.group_id}
             </span>
@@ -982,14 +999,33 @@ function UnitRow({
         )}
 
         {isGrouped && isActive && (
-          <button
-            onClick={onUngroup}
-            className="p-1 text-info/60 hover:text-info rounded hover:bg-info/10 active:bg-info/20 transition-colors duration-100"
-            title="グループから外す"
-            aria-label="グループから外す"
-          >
-            <Link2 className="w-3.5 h-3.5" />
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-bold text-info bg-info/10 rounded">
+              <Link2 className="w-2.5 h-2.5" />
+              G{draft.group_id}
+            </span>
+            {isGroupHead ? (
+              <button
+                onClick={onUngroupAll}
+                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium text-error bg-error/10 rounded hover:bg-error/20 active:scale-95 transition-[colors,transform] duration-100"
+                title="グループを全解除"
+                aria-label="グループを全解除"
+              >
+                <Unlink className="w-2.5 h-2.5" />
+                全解除
+              </button>
+            ) : (
+              <button
+                onClick={onUngroup}
+                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium text-text-muted bg-surface-hover rounded hover:bg-border-default active:scale-95 transition-[colors,transform] duration-100"
+                title="グループから外す"
+                aria-label="グループから外す"
+              >
+                <X className="w-2.5 h-2.5" />
+                外す
+              </button>
+            )}
+          </div>
         )}
 
         {isActive && (
