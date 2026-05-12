@@ -51,7 +51,7 @@ export default function CourseProposalsPage() {
   const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
     (p) => p.canAccessCourses
   );
-  const { getSelectedSchoolIds } = useAuth();
+  const { schoolIds, selectedSchoolId, getSelectedSchoolIds } = useAuth();
   const { localSchoolId, setLocalSchoolId, isAllSelected, availableSchools } = useLocalSchoolId();
 
   const [proposals, setProposals] = useState<SeasonalProposalWithDetails[]>([]);
@@ -94,20 +94,27 @@ export default function CourseProposalsPage() {
   const loadStudents = useCallback(async () => {
     setStudentsLoading(true);
     try {
-      const schoolIds = getSelectedSchoolIds();
-      const { data } = await supabase
+      let ids = schoolIds;
+      if (ids.length === 0) ids = getSelectedSchoolIds();
+      if (ids.length === 0 && selectedSchoolId && selectedSchoolId !== 'all') ids = [selectedSchoolId];
+      if (ids.length === 0) {
+        setStudents([]);
+        return;
+      }
+      const { data, error } = await supabase
         .from('students')
         .select('id, last_name, first_name')
-        .in('school_id', schoolIds)
+        .in('school_id', ids)
         .eq('is_active', true)
         .order('last_name');
+      if (error) console.error('生徒取得エラー:', error);
       setStudents((data ?? []) as StudentOption[]);
-    } catch {
-      // ignore
+    } catch (e) {
+      console.error('生徒取得エラー:', e);
     } finally {
       setStudentsLoading(false);
     }
-  }, [getSelectedSchoolIds]);
+  }, [schoolIds, selectedSchoolId, getSelectedSchoolIds]);
 
   const openPicker = useCallback(() => {
     setPickerOpen(true);

@@ -10,7 +10,8 @@ import { ToastContainer } from '@/components/ui';
 import AccessDenied from '@/components/AccessDenied';
 import { getTextbooks, createTextbook, updateTextbook, deleteTextbook } from '@/lib/api/textbooks';
 import type { Textbook, TextbookInsert } from '@/types/database';
-import { Plus, Search, Edit2, Trash2, BookOpen, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, BookOpen, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 const SCHOOL_TYPES = ['小学', '中学', '高校'];
 const GRADES = ['1年', '2年', '3年', '4年', '5年', '6年', '共通'];
@@ -56,7 +57,7 @@ export default function TextbookMasterPageWrapper() {
 function TextbookMasterPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { profile, isLoading: authLoading } = useAuth();
+  const { profile, schoolIds, selectedSchoolId, isLoading: authLoading } = useAuth();
   const { toasts, removeToast, success: toastSuccess, error: toastError } = useToast();
   const isManager = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
 
@@ -74,6 +75,59 @@ function TextbookMasterPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<TextbookForm>(emptyForm);
   const [saving, setSaving] = useState(false);
+
+  // Proposal student picker
+  const [proposalPickerTextbookId, setProposalPickerTextbookId] = useState<number | null>(null);
+  const [proposalStudents, setProposalStudents] = useState<{ id: string; last_name: string; first_name: string }[]>([]);
+  const [proposalStudentQuery, setProposalStudentQuery] = useState('');
+  const [proposalStudentsLoading, setProposalStudentsLoading] = useState(false);
+  const proposalPickerRef = useRef<HTMLDivElement>(null);
+  const proposalInputRef = useRef<HTMLInputElement>(null);
+
+  const openProposalPicker = useCallback(async (e: React.MouseEvent, textbookId: number) => {
+    e.stopPropagation();
+    setProposalPickerTextbookId(textbookId);
+    setProposalStudentQuery('');
+    setProposalStudentsLoading(true);
+    try {
+      let ids = schoolIds;
+      if (ids.length === 0 && selectedSchoolId && selectedSchoolId !== 'all') ids = [selectedSchoolId];
+      if (ids.length === 0) { setProposalStudents([]); return; }
+      const { data } = await supabase
+        .from('students')
+        .select('id, last_name, first_name')
+        .in('school_id', ids)
+        .eq('is_active', true)
+        .order('last_name');
+      setProposalStudents((data ?? []) as { id: string; last_name: string; first_name: string }[]);
+    } catch { /* ignore */ } finally {
+      setProposalStudentsLoading(false);
+    }
+    setTimeout(() => proposalInputRef.current?.focus(), 50);
+  }, [schoolIds, selectedSchoolId]);
+
+  useEffect(() => {
+    if (proposalPickerTextbookId === null) return;
+    const handler = (e: MouseEvent) => {
+      if (proposalPickerRef.current && !proposalPickerRef.current.contains(e.target as Node)) {
+        setProposalPickerTextbookId(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [proposalPickerTextbookId]);
+
+  const filteredProposalStudents = proposalStudentQuery
+    ? proposalStudents.filter(s => `${s.last_name}${s.first_name}`.includes(proposalStudentQuery))
+    : proposalStudents;
+
+  const handleSelectProposalStudent = (studentId: string) => {
+    if (proposalPickerTextbookId === null) return;
+    setProposalPickerTextbookId(null);
+    const month = new Date().getMonth() + 1;
+    const season = month >= 2 && month <= 4 ? 'spring' : month >= 5 && month <= 9 ? 'summer' : 'winter';
+    router.push(`/students/${studentId}/proposals/new?textbookId=${proposalPickerTextbookId}&season=${season}&year=${new Date().getFullYear()}`);
+  };
 
   const toastErrorRef = useRef(toastError);
   toastErrorRef.current = toastError;
@@ -356,6 +410,50 @@ function TextbookMasterPage() {
 
                         {/* Actions */}
                         <div className="flex items-center gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                          <div className="relative" ref={proposalPickerTextbookId === t.id ? proposalPickerRef : undefined}>
+                            <button
+                              onClick={(e) => openProposalPicker(e, t.id)}
+                              className="p-1.5 text-text-faint hover:text-ink hover:bg-surface-raised rounded transition-colors duration-150"
+                              title="提案書を作成"
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                            </button>
+                            {proposalPickerTextbookId === t.id && (
+                              <div className="absolute right-0 top-full mt-1 w-64 bg-surface-raised border border-border-default rounded-xl shadow-lg z-50 overflow-hidden">
+                                <div className="p-2 border-b border-border-subtle">
+                                  <div className="relative">
+                                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-faint" />
+                                    <input
+                                      ref={proposalInputRef}
+                                      type="text"
+                                      value={proposalStudentQuery}
+                                      onChange={(e) => setProposalStudentQuery(e.target.value)}
+                                      placeholder="生徒を検索..."
+                                      className="w-full pl-8 pr-3 py-1.5 text-xs border border-border-default rounded-lg bg-surface-raised text-text-body placeholder:text-text-faint focus:outline-none focus:ring-1 focus:ring-ink/30"
+                                      onClick={(e) => e.stopPropagation()}
+                                    />
+                                  </div>
+                                </div>
+                                <div className="max-h-60 overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                                  {proposalStudentsLoading ? (
+                                    <div className="py-4 text-center text-xs text-text-faint">読み込み中...</div>
+                                  ) : filteredProposalStudents.length === 0 ? (
+                                    <div className="py-4 text-center text-xs text-text-faint">該当する生徒がいません</div>
+                                  ) : (
+                                    filteredProposalStudents.map((s) => (
+                                      <button
+                                        key={s.id}
+                                        onClick={(e) => { e.stopPropagation(); handleSelectProposalStudent(s.id); }}
+                                        className="w-full text-left px-3 py-2 text-sm text-text-body hover:bg-surface-hover transition-colors duration-150"
+                                      >
+                                        {s.last_name} {s.first_name}
+                                      </button>
+                                    ))
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
                           <button
                             onClick={(e) => openEditModal(e, t)}
                             className="p-1.5 text-text-faint hover:text-ink hover:bg-surface-raised rounded transition-colors duration-150"
