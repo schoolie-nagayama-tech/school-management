@@ -36,13 +36,14 @@ interface Props {
 }
 
 export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
-  const { getSelectedSchoolIds } = useAuth();
-  // getSelectedSchoolIds() は毎回新配列を返すので値ベースでメモ化
+  const { schoolIds: allSchoolIds, selectedSchoolId } = useAuth();
+  // propSchoolIds があればそれを使う。なければ選択中の教室。
+  // 'all' の場合はデモ教室も含む全教室IDを使う（getSelectedSchoolIds はデモ除外するため使わない）
   const schoolIds = useMemo(() => {
-    const ids = propSchoolIds ?? getSelectedSchoolIds();
-    return ids;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [propSchoolIds, getSelectedSchoolIds]);
+    if (propSchoolIds) return propSchoolIds;
+    if (selectedSchoolId === 'all' || !selectedSchoolId) return allSchoolIds;
+    return [selectedSchoolId];
+  }, [propSchoolIds, allSchoolIds, selectedSchoolId]);
 
   // schoolIds の参照安定化（中身が同じなら再生成しない）
   const schoolIdsKey = schoolIds.join(',');
