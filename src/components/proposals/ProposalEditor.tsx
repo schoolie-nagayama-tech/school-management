@@ -201,7 +201,7 @@ export default function ProposalEditor() {
       for (const item of items) {
         drafts.set(item.id, {
           curriculum_item_id: item.id,
-          koma_count: 1,
+          koma_count: 0,
           applied_koma: 0,
           reason: '',
           selected: false,
@@ -263,7 +263,7 @@ export default function ProposalEditor() {
     for (const item of items) {
       drafts.set(item.id, {
         curriculum_item_id: item.id,
-        koma_count: 1,
+        koma_count: 0,
         applied_koma: 0,
         reason: '',
         selected: false,
@@ -880,7 +880,7 @@ function UnitRow({
 
   const rowColor = !isActive
     ? draft.selected
-      ? 'border-accent-ink/30 bg-accent-ink-subtle/50'
+      ? 'border-primary/30 bg-primary/5'
       : 'border-border-subtle bg-surface-raised'
     : hasApplied
       ? 'border-success/30 bg-success-subtle'
@@ -890,7 +890,7 @@ function UnitRow({
 
   const checkColor = !draft.selected
     ? 'border-border-strong hover:border-text-muted'
-    : 'bg-accent-ink border-accent-ink text-white';
+    : 'bg-primary border-primary text-white';
 
   return (
     <div className={`rounded-lg border transition-colors duration-150 ${rowColor}`}>
