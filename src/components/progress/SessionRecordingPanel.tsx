@@ -57,6 +57,12 @@ function createDraft(teacherName = ''): SessionDraft {
   };
 }
 
+/** セッション選択状態（親に通知用） */
+export interface SessionSelection {
+  unitActions: Record<number, 1 | 2 | 3>;
+  schoolUnits: Set<number>;
+}
+
 // ─── Props ───
 interface Props {
   studentTextbookId: string;
@@ -66,6 +72,8 @@ interface Props {
   curriculumItems: CurriculumItem[];
   /** セッション保存後に呼ばれる（進行表データを再取得するため） */
   onSessionSaved: () => void;
+  /** 選択状態が変わるたびに呼ばれる（テーブル行ハイライト用） */
+  onSelectionChange?: (sel: SessionSelection) => void;
 }
 
 export interface SessionRecordingPanelHandle {
@@ -74,10 +82,11 @@ export interface SessionRecordingPanelHandle {
 
 const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(function SessionRecordingPanel({
   studentTextbookId,
-  studentName,
-  textbookName,
+  studentName: _studentName,
+  textbookName: _textbookName,
   curriculumItems,
   onSessionSaved,
+  onSelectionChange,
 }, ref) {
   const { profile } = useAuth();
   const myName = profile?.display_name || '';
@@ -105,6 +114,15 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const activeSession = sessions[activeIdx] || null;
+
+  // 選択状態が変わったら親に通知
+  useEffect(() => {
+    if (!activeSession || !onSelectionChange) return;
+    onSelectionChange({
+      unitActions: activeSession.unitActions,
+      schoolUnits: activeSession.schoolUnits,
+    });
+  }, [activeSession?.unitActions, activeSession?.schoolUnits, activeSession?.saved, activeIdx, onSelectionChange]);
 
   // ─── 外部から呼ばれるAPI ───
 
@@ -221,14 +239,6 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
 
   return (
     <div className="space-y-3 mb-6">
-      {/* ヘッダー */}
-      <div className="px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-between">
-        <span className="text-sm font-semibold text-gray-900">
-          {studentName} / {textbookName}
-        </span>
-        <span className="text-xs text-gray-500">1コマ = 1セッション</span>
-      </div>
-
       {/* 前回の引継ぎ */}
       {lastSession && lastSession.handover && (
         <div className="px-4 py-3 bg-white border border-gray-200 rounded-xl">

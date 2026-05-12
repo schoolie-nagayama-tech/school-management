@@ -189,7 +189,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                   生徒管理
                 </Link>
               )}
-              {(showAllLinks || permissions?.canAccessStudents) && (
+              {(showAllLinks || (permissions?.canAccessStudents && profile?.role !== 'teacher')) && (
                 <Link
                   href="/progress-feed"
                   className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
@@ -721,7 +721,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
               { href: '/forms/responses', label: 'フォーム回答', show: showAllLinks || permissions?.canAccessPortal },
               { href: '/settings/portal', label: 'ポータル設定', show: showAllLinks || permissions?.canAccessPortal },
               { href: '/transcriptions', label: '文字起こし', show: showAllLinks || permissions?.canAccessPortal },
-              { href: '/progress-feed', label: '進行フィード', show: showAllLinks || permissions?.canAccessStudents },
+              { href: '/progress-feed', label: '進行フィード', show: showAllLinks || (permissions?.canAccessStudents && profile?.role !== 'teacher') },
               { href: '/courses', label: '講習一覧', show: showAllLinks || permissions?.canAccessPortal },
               { href: '/courses/progress', label: '講習進行', show: showAllLinks || permissions?.canAccessPortal },
               { href: '/courses/schedule', label: '講習日程', show: showAllLinks || permissions?.canAccessPortal },

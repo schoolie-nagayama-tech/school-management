@@ -1,5 +1,9 @@
 'use client';
 
+function formatScore(n: number): string {
+  return Number.isInteger(n) ? String(n) : String(Math.round(n * 10) / 10);
+}
+
 interface ScoreListCellProps {
   value: number | null;
   diff: number | null;
@@ -56,7 +60,7 @@ export function ScoreListCell({
       >
         {value != null ? (
           <span>
-            {value}
+            {formatScore(value)}
             <DiffBadge diff={diff} />
           </span>
         ) : (
@@ -80,7 +84,7 @@ export function ScoreListSumCell({
       <div className="min-h-[24px] flex items-center justify-center text-xs">
         {value != null ? (
           <span>
-            {value}
+            {formatScore(value)}
             <DiffBadge diff={diff} />
           </span>
         ) : (
@@ -93,11 +97,13 @@ export function ScoreListSumCell({
 
 function DiffBadge({ diff }: { diff: number | null }) {
   if (diff == null) return null;
-  if (diff === 0) {
+  const rounded = Math.round(diff * 10) / 10;
+  if (rounded === 0) {
     return <span className="text-[10px] text-gray-400 ml-0.5">(±0)</span>;
   }
-  if (diff > 0) {
-    return <span className="text-[10px] text-green-600 ml-0.5 font-medium">(+{diff})</span>;
+  const formatted = formatScore(rounded);
+  if (rounded > 0) {
+    return <span className="text-[10px] text-green-600 ml-0.5 font-medium">(+{formatted})</span>;
   }
-  return <span className="text-[10px] text-red-600 ml-0.5 font-medium">({diff})</span>;
+  return <span className="text-[10px] text-red-600 ml-0.5 font-medium">({formatted})</span>;
 }
