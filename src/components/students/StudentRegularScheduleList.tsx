@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui';
+import { Button, Loading } from '@/components/ui';
 import { Pencil, Trash2, Calendar } from 'lucide-react';
 import { RegularScheduleFormModal } from './RegularScheduleFormModal';
 import { fetchWithAuth } from '@/lib/api/auth';
@@ -139,11 +139,7 @@ export function StudentRegularScheduleList({
   };
 
   if (loading) {
-    return (
-      <div className="py-8 text-center text-sm text-[var(--paragraph)]">
-        読み込み中...
-      </div>
-    );
+    return <Loading size="md" />;
   }
 
   return (

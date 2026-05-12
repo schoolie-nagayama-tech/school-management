@@ -257,9 +257,8 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
 
       {/* Heavy アラート読み込み中表示 */}
       {heavyLoadState === 'loading' && (
-        <div className="mx-4 mt-2 py-2 flex items-center gap-2 text-sm text-gray-500">
-          <span className="w-4 h-4 border-2 border-gray-300 border-t-[#1e3a5f] rounded-full animate-spin" />
-          成績・テスト関連のアラートを読み込み中...
+        <div className="mx-4 mt-2 py-2">
+          <InlineLoading label="成績・テスト関連のアラートを読み込み中..." />
         </div>
       )}
 

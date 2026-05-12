@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
-import { Button, Modal, ToastContainer } from '@/components/ui';
+import { Button, Modal, ToastContainer, Loading } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import {
   getSeasonalCourse,
@@ -170,9 +170,7 @@ export default function CourseApplyPage() {
   if (isLoading) {
     return (
       <AdminLayout headerTitle="コース適用">
-        <div className="flex items-center justify-center py-12">
-          <div className="text-text-body">読み込み中...</div>
-        </div>
+        <Loading size="md" />
       </AdminLayout>
     );
   }
