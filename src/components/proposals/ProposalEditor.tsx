@@ -38,6 +38,7 @@ import {
   updateProposal,
   syncProposalToProgress,
   calcTotalKoma,
+  calcTotalAppliedKoma,
 } from '@/lib/api/proposals';
 import type { ProposalUnitInput } from '@/lib/api/proposals';
 import { getTextbooks } from '@/lib/api/textbooks';
@@ -55,6 +56,7 @@ import { SEASON_LABELS, PROPOSAL_STATUS_LABELS } from '@/types/database';
 interface UnitDraft {
   curriculum_item_id: number;
   koma_count: number;
+  applied_koma: number;
   reason: string;
   selected: boolean;
   group_id: number;
@@ -101,7 +103,6 @@ export default function ProposalEditor() {
   const [year, setYear] = useState(qYear);
   const [theme, setTheme] = useState('');
   const [notes, setNotes] = useState('');
-  const [appliedKoma, setAppliedKoma] = useState<number | null>(null);
 
   const [selectedTextbookId, setSelectedTextbookId] = useState<number>(qTextbookId);
   const [allTextbooks, setAllTextbooks] = useState<Textbook[]>([]);
@@ -118,6 +119,7 @@ export default function ProposalEditor() {
 
   const [studentName, setStudentName] = useState('');
   const [textbookName, setTextbookName] = useState('');
+  const [textbookSubject, setTextbookSubject] = useState('');
 
   const [previewMode, setPreviewMode] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -151,10 +153,10 @@ export default function ProposalEditor() {
         setYear(data.year);
         setTheme(data.theme);
         setNotes(data.notes ?? '');
-        setAppliedKoma(data.applied_koma);
         tbId = data.textbook_id;
         setSelectedTextbookId(tbId);
         setTextbookName(data.textbook?.name ?? '');
+        setTextbookSubject(data.textbook?.subject ?? '');
       } else if (stbId) {
         const { data: stb } = await supabase
           .from('student_textbooks')
@@ -164,18 +166,23 @@ export default function ProposalEditor() {
 
         if (stb) {
           const st = stb as Record<string, unknown>;
-          const textbook = st.textbook as { id: number; name: string } | null;
+          const textbook = st.textbook as { id: number; name: string; subject?: string | null } | null;
           tbId = textbook?.id ?? 0;
           setSelectedTextbookId(tbId);
           setTextbookName(textbook?.name ?? '');
+          setTextbookSubject(textbook?.subject ?? '');
         }
       } else if (tbId) {
         const { data: tb } = await supabase
           .from('textbooks')
-          .select('name')
+          .select('name, subject')
           .eq('id', tbId)
           .single();
-        if (tb) setTextbookName((tb as { name: string }).name);
+        if (tb) {
+          const t = tb as { name: string; subject: string | null };
+          setTextbookName(t.name);
+          setTextbookSubject(t.subject ?? '');
+        }
       }
 
       const textbooks = await getTextbooks();
@@ -197,6 +204,7 @@ export default function ProposalEditor() {
         drafts.set(item.id, {
           curriculum_item_id: item.id,
           koma_count: 1,
+          applied_koma: 0,
           reason: '',
           selected: false,
           group_id: 0,
@@ -209,6 +217,7 @@ export default function ProposalEditor() {
           if (d) {
             d.selected = true;
             d.koma_count = u.koma_count;
+            d.applied_koma = u.applied_koma ?? 0;
             d.reason = u.reason;
             d.group_id = u.group_id;
             if (u.group_id > maxGroup) maxGroup = u.group_id;
@@ -245,6 +254,7 @@ export default function ProposalEditor() {
   const handleSelectTextbook = async (tb: Textbook) => {
     setSelectedTextbookId(tb.id);
     setTextbookName(tb.name);
+    setTextbookSubject(tb.subject ?? '');
     setShowTextbookPicker(false);
 
     const { items } = await getTextbookUnitsWithProgress(null, tb.id);
@@ -256,6 +266,7 @@ export default function ProposalEditor() {
       drafts.set(item.id, {
         curriculum_item_id: item.id,
         koma_count: 1,
+        applied_koma: 0,
         reason: '',
         selected: false,
         group_id: 0,
@@ -312,6 +323,10 @@ export default function ProposalEditor() {
     return calcTotalKoma(selectedUnits);
   }, [selectedUnits]);
 
+  const totalAppliedKoma = useMemo(() => {
+    return calcTotalAppliedKoma(selectedUnits);
+  }, [selectedUnits]);
+
   const groupMap = useMemo(() => {
     const map = new Map<number, UnitDraft[]>();
     for (const u of selectedUnits) {
@@ -333,6 +348,7 @@ export default function ProposalEditor() {
       const unitInputs: ProposalUnitInput[] = selectedUnits.map((u) => ({
         curriculum_item_id: u.curriculum_item_id,
         koma_count: u.koma_count,
+        applied_koma: u.applied_koma > 0 ? u.applied_koma : null,
         reason: u.reason,
         group_id: u.group_id,
       }));
@@ -345,7 +361,6 @@ export default function ProposalEditor() {
         season,
         year,
         theme,
-        appliedKoma: appliedKoma,
         notes: notes || null,
         units: unitInputs,
       });
@@ -435,7 +450,7 @@ export default function ProposalEditor() {
 
         <ProposalPrintView
           studentName={studentName}
-          textbookName={textbookName}
+          textbookName={textbookSubject ? `${textbookSubject} ${textbookName}` : textbookName}
           seasonLabel={seasonLabel}
           year={year}
           theme={theme}
@@ -504,7 +519,7 @@ export default function ProposalEditor() {
             提案書一覧に戻る
           </Link>
           <h1 className="text-lg font-bold text-text-heading">テキストを選択</h1>
-          <p className="text-sm text-text-muted mt-0.5">{studentName} の講習提案書</p>
+          <p className="text-sm text-text-muted mt-0.5">{studentName} の講習提案書{textbookSubject ? ` (${textbookSubject})` : ''}</p>
         </div>
 
         <div className="relative mb-3">
@@ -596,7 +611,7 @@ export default function ProposalEditor() {
               {isNew ? '講習提案書を作成' : '講習提案書を編集'}
             </h1>
             <p className="text-sm text-text-muted mt-0.5">
-              {studentName} / {textbookName} / {year}年 {seasonLabel}講習
+              {studentName} / {textbookSubject ? `${textbookSubject} ` : ''}{textbookName} / {year}年 {seasonLabel}講習
             </p>
           </div>
 
@@ -678,31 +693,6 @@ export default function ProposalEditor() {
           />
         </section>
 
-        {/* 申込コマ数 */}
-        {!isNew && (
-          <section className="p-4 bg-surface-raised rounded-xl border border-border-default">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-bold text-text-heading">申込コマ数</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min={0}
-                  value={appliedKoma ?? ''}
-                  onChange={(e) => setAppliedKoma(e.target.value === '' ? null : Number(e.target.value))}
-                  className="w-20 px-3 py-1.5 text-sm border border-border-default rounded-lg text-center bg-surface-raised focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                  placeholder="--"
-                />
-                <span className="text-xs text-text-muted">コマ</span>
-              </div>
-            </div>
-            {appliedKoma != null && appliedKoma !== totalKoma && (
-              <p className="mt-2 text-xs text-warning">
-                提案 {totalKoma}コマ → 申込 {appliedKoma}コマ（差分 {appliedKoma - totalKoma > 0 ? '+' : ''}{appliedKoma - totalKoma}コマ）
-              </p>
-            )}
-          </section>
-        )}
-
         {/* 単元選択 */}
         <section className="p-4 bg-surface-raised rounded-xl border border-border-default">
           <div className="flex items-center justify-between mb-3">
@@ -716,11 +706,21 @@ export default function ProposalEditor() {
                 <Link2 className="w-3 h-3" />
                 グループ化
               </button>
-              <div className="text-sm text-accent-ink font-bold">
-                {selectedUnits.length}単元 / {totalKoma}コマ
+              <div className="text-sm font-bold">
+                <span className="text-accent-ink">{selectedUnits.length}単元 / {totalKoma}コマ</span>
+                {totalAppliedKoma != null && (
+                  <span className="text-info ml-2">申込 {totalAppliedKoma}コマ</span>
+                )}
               </div>
             </div>
           </div>
+
+          {selectedUnits.length > 0 && (
+            <div className="flex items-center justify-end gap-1 mb-1 pr-8 text-[10px] text-text-faint font-medium">
+              <span className="w-[88px] text-center">提案</span>
+              <span className="w-[88px] text-center">申込</span>
+            </div>
+          )}
 
           <div className="space-y-1">
             {allItems.map((item) => {
@@ -894,25 +894,48 @@ function UnitRow({
         </div>
 
         {draft.selected && (!isGrouped || isGroupHead) && (
-          <div className="flex items-center gap-1 shrink-0">
-            <button
-              onClick={() => onUpdate({ koma_count: Math.max(1, draft.koma_count - 1) })}
-              className="w-6 h-6 flex items-center justify-center text-text-faint hover:text-text-body rounded hover:bg-surface-hover transition-colors duration-150"
-              aria-label="コマ数を減らす"
-            >
-              <Minus className="w-3 h-3" />
-            </button>
-            <span className="w-8 text-center text-sm font-bold text-accent-ink">
-              {draft.koma_count}
-            </span>
-            <button
-              onClick={() => onUpdate({ koma_count: draft.koma_count + 1 })}
-              className="w-6 h-6 flex items-center justify-center text-text-faint hover:text-text-body rounded hover:bg-surface-hover transition-colors duration-150"
-              aria-label="コマ数を増やす"
-            >
-              <Plus className="w-3 h-3" />
-            </button>
-            <span className="text-xs text-text-faint ml-0.5">コマ</span>
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-0.5">
+              <button
+                onClick={() => onUpdate({ koma_count: Math.max(1, draft.koma_count - 1) })}
+                className="w-5 h-5 flex items-center justify-center text-text-faint hover:text-text-body rounded hover:bg-surface-hover transition-colors duration-150"
+                aria-label="提案コマ数を減らす"
+              >
+                <Minus className="w-3 h-3" />
+              </button>
+              <span className="w-6 text-center text-sm font-bold text-accent-ink">
+                {draft.koma_count}
+              </span>
+              <button
+                onClick={() => onUpdate({ koma_count: draft.koma_count + 1 })}
+                className="w-5 h-5 flex items-center justify-center text-text-faint hover:text-text-body rounded hover:bg-surface-hover transition-colors duration-150"
+                aria-label="提案コマ数を増やす"
+              >
+                <Plus className="w-3 h-3" />
+              </button>
+            </div>
+
+            <div className="w-px h-4 bg-border-default" />
+
+            <div className="flex items-center gap-0.5">
+              <button
+                onClick={() => onUpdate({ applied_koma: Math.max(0, draft.applied_koma - 1) })}
+                className="w-5 h-5 flex items-center justify-center text-text-faint hover:text-text-body rounded hover:bg-surface-hover transition-colors duration-150"
+                aria-label="申込コマ数を減らす"
+              >
+                <Minus className="w-3 h-3" />
+              </button>
+              <span className={`w-6 text-center text-sm font-bold ${draft.applied_koma > 0 ? 'text-info' : 'text-text-faint'}`}>
+                {draft.applied_koma}
+              </span>
+              <button
+                onClick={() => onUpdate({ applied_koma: draft.applied_koma + 1 })}
+                className="w-5 h-5 flex items-center justify-center text-text-faint hover:text-text-body rounded hover:bg-surface-hover transition-colors duration-150"
+                aria-label="申込コマ数を増やす"
+              >
+                <Plus className="w-3 h-3" />
+              </button>
+            </div>
           </div>
         )}
 

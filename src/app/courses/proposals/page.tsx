@@ -8,7 +8,7 @@ import { AdminLayout } from '@/components/layouts';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
-import { getProposalsBySchool, calcTotalKoma } from '@/lib/api/proposals';
+import { getProposalsBySchool, calcTotalKoma, calcTotalAppliedKoma } from '@/lib/api/proposals';
 import { supabase } from '@/lib/supabase';
 import type { SeasonalProposalWithDetails, SeasonType, ProposalStatus } from '@/types/database';
 import { SEASON_LABELS, PROPOSAL_STATUS_LABELS } from '@/types/database';
@@ -309,6 +309,7 @@ export default function CourseProposalsPage() {
                 <div className="divide-y divide-border-subtle">
                   {studentProposals.map((p) => {
                     const koma = calcTotalKoma(p.units);
+                    const appliedKoma = calcTotalAppliedKoma(p.units);
                     return (
                       <Link
                         key={p.id}
@@ -318,13 +319,16 @@ export default function CourseProposalsPage() {
                         <FileText className="w-4 h-4 text-text-faint shrink-0" />
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-medium text-text-heading truncate">
+                            {p.textbook?.subject && (
+                              <span className="text-text-muted font-normal mr-1.5">{p.textbook.subject}</span>
+                            )}
                             {p.textbook?.name ?? '不明'}
                           </div>
                           <div className="text-xs text-text-muted flex gap-2">
                             <span>{p.theme || `${p.year}年 ${SEASON_LABELS[p.season]}`}</span>
                             <span>{p.units.length}単元 / {koma}コマ</span>
-                            {p.applied_koma != null && (
-                              <span className="text-info">申込 {p.applied_koma}コマ</span>
+                            {appliedKoma != null && (
+                              <span className="text-info">申込 {appliedKoma}コマ</span>
                             )}
                           </div>
                         </div>

@@ -219,6 +219,7 @@ export async function getProposalsBySchool(
 export interface ProposalUnitInput {
   curriculum_item_id: number;
   koma_count: number;
+  applied_koma: number | null;
   reason: string;
   group_id: number;
 }
@@ -241,6 +242,7 @@ export async function saveProposalUnits(
     proposal_id: proposalId,
     curriculum_item_id: u.curriculum_item_id,
     koma_count: u.koma_count,
+    applied_koma: u.applied_koma,
     reason: u.reason,
     group_id: u.group_id,
     sort_order: i,
@@ -269,7 +271,6 @@ export async function upsertProposal(params: {
   year: number;
   theme: string;
   status?: SeasonalProposal['status'];
-  appliedKoma?: number | null;
   notes?: string | null;
   units: ProposalUnitInput[];
 }): Promise<SeasonalProposalWithDetails> {
@@ -282,10 +283,11 @@ export async function upsertProposal(params: {
     year,
     theme,
     status,
-    appliedKoma,
     notes,
     units,
   } = params;
+
+  const appliedKoma = calcTotalAppliedKoma(units);
 
   let proposal: SeasonalProposal;
 
@@ -422,19 +424,21 @@ export async function syncProposalToProgress(
     await updateProposal(proposalId, { student_textbook_id: stbId });
   }
 
-  // group_id ごとのコマ数を集計
+  // group_id ごとのコマ数を集計（group_id=0 は未グループ＝個別カウント）
   const groupKoma = new Map<number, number>();
   for (const u of proposal.units) {
-    if (!groupKoma.has(u.group_id)) {
+    if (u.group_id > 0 && !groupKoma.has(u.group_id)) {
       groupKoma.set(u.group_id, u.koma_count);
     }
   }
 
-  // 単元ごとの proposal_count を計算
-  // 同一グループの単元はグループのコマ数を共有
   const unitKomaMap = new Map<number, number>();
   for (const u of proposal.units) {
-    unitKomaMap.set(u.curriculum_item_id, groupKoma.get(u.group_id) ?? u.koma_count);
+    if (u.group_id > 0) {
+      unitKomaMap.set(u.curriculum_item_id, groupKoma.get(u.group_id) ?? u.koma_count);
+    } else {
+      unitKomaMap.set(u.curriculum_item_id, u.koma_count);
+    }
   }
 
   // student_progress を upsert
@@ -478,9 +482,10 @@ export async function syncApplicationToProgress(
   }
 
   for (const u of proposal.units) {
+    const count = u.applied_koma ?? u.koma_count;
     await supabase
       .from('student_progress')
-      .update({ application_count: u.koma_count })
+      .update({ application_count: count })
       .eq('student_textbook_id', proposal.student_textbook_id)
       .eq('curriculum_item_id', u.curriculum_item_id);
   }
@@ -495,11 +500,31 @@ export async function syncApplicationToProgress(
  * 同一 group_id の単元は1コマとしてカウント
  */
 export function calcTotalKoma(units: { group_id: number; koma_count: number }[]): number {
-  const seen = new Map<number, number>();
+  let total = 0;
+  const seen = new Set<number>();
   for (const u of units) {
-    if (!seen.has(u.group_id)) {
-      seen.set(u.group_id, u.koma_count);
+    if (u.group_id === 0) {
+      total += u.koma_count;
+    } else if (!seen.has(u.group_id)) {
+      seen.add(u.group_id);
+      total += u.koma_count;
     }
   }
-  return Array.from(seen.values()).reduce((a, b) => a + b, 0);
+  return total;
+}
+
+export function calcTotalAppliedKoma(units: { group_id: number; applied_koma: number | null }[]): number | null {
+  const withApplied = units.filter((u) => u.applied_koma != null && u.applied_koma > 0);
+  if (withApplied.length === 0) return null;
+  let total = 0;
+  const seen = new Set<number>();
+  for (const u of withApplied) {
+    if (u.group_id === 0) {
+      total += u.applied_koma!;
+    } else if (!seen.has(u.group_id)) {
+      seen.add(u.group_id);
+      total += u.applied_koma!;
+    }
+  }
+  return total;
 }

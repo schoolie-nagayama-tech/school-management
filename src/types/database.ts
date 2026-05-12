@@ -3408,6 +3408,7 @@ export interface SeasonalProposalUnit {
   proposal_id: string;
   curriculum_item_id: number;
   koma_count: number;
+  applied_koma: number | null;
   reason: string;
   sort_order: number;
   group_id: number;
@@ -3421,6 +3422,7 @@ export interface SeasonalProposalUnitInsert {
   proposal_id: string;
   curriculum_item_id: number;
   koma_count?: number;
+  applied_koma?: number | null;
   reason?: string;
   sort_order?: number;
   group_id?: number;

@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, FileText, Plus } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { getProposalsByStudent, calcTotalKoma } from '@/lib/api/proposals';
+import { getProposalsByStudent, calcTotalKoma, calcTotalAppliedKoma } from '@/lib/api/proposals';
 import type { SeasonalProposalWithDetails, SeasonType, ProposalStatus } from '@/types/database';
 import { SEASON_LABELS, PROPOSAL_STATUS_LABELS } from '@/types/database';
 
@@ -52,12 +52,13 @@ export default function ProposalList() {
   const currentYear = new Date().getFullYear();
   const currentSeason = getCurrentSeason();
 
-  const byTextbook = new Map<number, { name: string; proposals: SeasonalProposalWithDetails[] }>();
+  const byTextbook = new Map<number, { name: string; subject: string; proposals: SeasonalProposalWithDetails[] }>();
   for (const p of proposals) {
     const tbId = p.textbook_id;
     const tbName = p.textbook?.name ?? '不明なテキスト';
+    const tbSubject = p.textbook?.subject ?? '';
     if (!byTextbook.has(tbId)) {
-      byTextbook.set(tbId, { name: tbName, proposals: [] });
+      byTextbook.set(tbId, { name: tbName, subject: tbSubject, proposals: [] });
     }
     byTextbook.get(tbId)!.proposals.push(p);
   }
@@ -95,15 +96,19 @@ export default function ProposalList() {
         </div>
       ) : (
         <div className="space-y-6">
-          {Array.from(byTextbook.entries()).map(([tbId, { name, proposals: tbProposals }]) => (
+          {Array.from(byTextbook.entries()).map(([tbId, { name, subject, proposals: tbProposals }]) => (
             <div key={tbId} className="bg-surface-raised rounded-xl border border-border-default overflow-hidden">
               <div className="px-4 py-3 border-b border-border-subtle">
-                <div className="font-semibold text-sm text-text-heading">{name}</div>
+                <div className="font-semibold text-sm text-text-heading">
+                  {subject && <span className="text-text-muted font-normal mr-1.5">{subject}</span>}
+                  {name}
+                </div>
               </div>
 
               <div className="divide-y divide-border-subtle">
                 {tbProposals.map((p) => {
                   const koma = calcTotalKoma(p.units);
+                  const appliedKoma = calcTotalAppliedKoma(p.units);
                   return (
                     <Link
                       key={p.id}
@@ -118,8 +123,8 @@ export default function ProposalList() {
                         <div className="text-xs text-text-muted flex gap-2">
                           <span>{p.year}年 {SEASON_LABELS[p.season as SeasonType]}</span>
                           <span>{p.units.length}単元 / {koma}コマ</span>
-                          {p.applied_koma != null && (
-                            <span className="text-info">申込 {p.applied_koma}コマ</span>
+                          {appliedKoma != null && (
+                            <span className="text-info">申込 {appliedKoma}コマ</span>
                           )}
                         </div>
                       </div>
