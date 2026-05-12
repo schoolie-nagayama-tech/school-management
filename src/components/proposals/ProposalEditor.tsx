@@ -898,7 +898,7 @@ function UnitRow({
       <div className="flex items-center gap-2 px-3 py-2">
         <button
           onClick={onToggle}
-          className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors duration-150 ${checkColor}`}
+          className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-[colors,transform] duration-150 active:scale-90 ${checkColor}`}
           aria-label={draft.selected ? `${item.title} を選択解除` : `${item.title} を選択`}
         >
           {draft.selected && <Check className="w-3 h-3" />}
@@ -907,7 +907,7 @@ function UnitRow({
         <button
           type="button"
           onClick={handleCardClick}
-          className="flex-1 min-w-0 text-left cursor-pointer group"
+          className="flex-1 min-w-0 text-left cursor-pointer group active:opacity-70 transition-opacity duration-100"
         >
           <span
             className={`text-sm transition-colors duration-150 ${
@@ -935,7 +935,7 @@ function UnitRow({
             <div className="flex items-center gap-0.5">
               <button
                 onClick={() => onUpdate({ koma_count: Math.max(0, draft.koma_count - 1) })}
-                className="w-5 h-5 flex items-center justify-center text-text-faint hover:text-text-body rounded hover:bg-surface-hover transition-colors duration-150"
+                className="w-5 h-5 flex items-center justify-center text-text-faint hover:text-text-body rounded hover:bg-surface-hover active:bg-border-default transition-colors duration-100"
                 aria-label="提案コマ数を減らす"
               >
                 <Minus className="w-3 h-3" />
@@ -945,7 +945,7 @@ function UnitRow({
               </span>
               <button
                 onClick={() => onUpdate({ koma_count: draft.koma_count + 1 })}
-                className="w-5 h-5 flex items-center justify-center text-text-faint hover:text-text-body rounded hover:bg-surface-hover transition-colors duration-150"
+                className="w-5 h-5 flex items-center justify-center text-text-faint hover:text-text-body rounded hover:bg-surface-hover active:bg-border-default transition-colors duration-100"
                 aria-label="提案コマ数を増やす"
               >
                 <Plus className="w-3 h-3" />
@@ -957,7 +957,7 @@ function UnitRow({
             <div className="flex items-center gap-0.5">
               <button
                 onClick={() => onUpdate({ applied_koma: Math.max(0, draft.applied_koma - 1) })}
-                className="w-5 h-5 flex items-center justify-center text-text-faint hover:text-text-body rounded hover:bg-surface-hover transition-colors duration-150"
+                className="w-5 h-5 flex items-center justify-center text-text-faint hover:text-text-body rounded hover:bg-surface-hover active:bg-border-default transition-colors duration-100"
                 aria-label="申込コマ数を減らす"
               >
                 <Minus className="w-3 h-3" />
@@ -967,7 +967,7 @@ function UnitRow({
               </span>
               <button
                 onClick={() => onUpdate({ applied_koma: draft.applied_koma + 1 })}
-                className="w-5 h-5 flex items-center justify-center text-text-faint hover:text-text-body rounded hover:bg-surface-hover transition-colors duration-150"
+                className="w-5 h-5 flex items-center justify-center text-text-faint hover:text-text-body rounded hover:bg-surface-hover active:bg-border-default transition-colors duration-100"
                 aria-label="申込コマ数を増やす"
               >
                 <Plus className="w-3 h-3" />
@@ -979,7 +979,7 @@ function UnitRow({
         {isGrouped && isActive && (
           <button
             onClick={onUngroup}
-            className="p-1 text-info/60 hover:text-info rounded hover:bg-info/10 transition-colors duration-150"
+            className="p-1 text-info/60 hover:text-info rounded hover:bg-info/10 active:bg-info/20 transition-colors duration-100"
             title="グループから外す"
             aria-label="グループから外す"
           >
@@ -990,7 +990,7 @@ function UnitRow({
         {isActive && (
           <button
             onClick={() => setExpanded(!expanded)}
-            className="p-1 text-text-faint hover:text-text-body rounded hover:bg-surface-hover transition-colors duration-150"
+            className="p-1 text-text-faint hover:text-text-body rounded hover:bg-surface-hover active:bg-border-default transition-colors duration-100"
             aria-label={expanded ? '理由を閉じる' : '理由を入力'}
           >
             {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}

@@ -178,7 +178,7 @@ export default function ProposalList() {
               <button
                 onClick={handleBulkPrint}
                 disabled={printLoading}
-                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border-default text-text-body rounded-lg hover:bg-surface-hover transition-colors duration-150 disabled:opacity-50"
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border-default text-text-body rounded-lg hover:bg-surface-hover active:scale-[0.97] transition-[colors,transform] duration-150 disabled:opacity-50"
               >
                 {printLoading ? (
                   <InlineLoading size="sm" label="読み込み中..." />
@@ -226,7 +226,7 @@ export default function ProposalList() {
                     <Link
                       key={p.id}
                       href={`/students/${studentId}/proposals/${p.id}`}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-surface-hover transition-colors duration-150"
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-surface-hover active:bg-surface-hover/80 transition-colors duration-150"
                     >
                       <FileText className="w-4 h-4 text-text-faint shrink-0" />
                       <div className="flex-1 min-w-0">
