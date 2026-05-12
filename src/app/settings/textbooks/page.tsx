@@ -97,7 +97,7 @@ function TextbookMasterPage() {
         .from('students')
         .select('id, last_name, first_name')
         .in('school_id', ids)
-        .eq('is_active', true)
+        .eq('status', 'active')
         .order('last_name');
       setProposalStudents((data ?? []) as { id: string; last_name: string; first_name: string }[]);
     } catch { /* ignore */ } finally {

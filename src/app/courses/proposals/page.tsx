@@ -105,9 +105,9 @@ export default function CourseProposalsPage() {
         .from('students')
         .select('id, last_name, first_name')
         .in('school_id', ids)
-        .eq('is_active', true)
+        .eq('status', 'active')
         .order('last_name');
-      if (error) console.error('生徒取得エラー:', error);
+      if (error) throw error;
       setStudents((data ?? []) as StudentOption[]);
     } catch (e) {
       console.error('生徒取得エラー:', e);

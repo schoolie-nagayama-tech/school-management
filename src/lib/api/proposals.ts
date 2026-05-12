@@ -168,7 +168,7 @@ export async function getProposalsBySchool(
     .from('students')
     .select('id')
     .in('school_id', schoolIds)
-    .eq('is_active', true);
+    .eq('status', 'active');
 
   if (!studentList || studentList.length === 0) return [];
   const studentIds = (studentList as { id: string }[]).map((s) => s.id);
