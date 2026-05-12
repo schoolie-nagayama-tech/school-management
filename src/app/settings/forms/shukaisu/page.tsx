@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
-import { Button, ToastContainer } from '@/components/ui';
+import { Button, ToastContainer, Loading } from '@/components/ui';
 import { ChevronLeft } from 'lucide-react';
 import { getShukaisuPeriods, deleteShukaisuPeriod, getShukaisuResponseCount, archiveShukaisuPeriod, unarchiveShukaisuPeriod } from '@/lib/api/shukaisu';
 import { ShukaisuPeriodEditor } from '@/components/forms/shukaisu/ShukaisuPeriodEditor';
@@ -196,7 +196,7 @@ export default function ShukaisuSettingsPage() {
           </div>
 
           {isLoading ? (
-            <div className="text-text-dangeraintenter py-8 text-text-body">読み込み中...</div>
+            <Loading size="md" />
           ) : periods.length === 0 ? (
             <div className="text-text-dangeraintenter py-8 text-text-body">
               期間がありません。右上の「新規作成」ボタンから追加してください。

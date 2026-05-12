@@ -11,7 +11,7 @@ import { useMasterData } from '@/contexts/MasterDataContext';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui';
-import { Button } from '@/components/ui';
+import { Button, Loading } from '@/components/ui';
 import { Trash2, LogIn, Home } from 'lucide-react';
 import type { School, UserRole, UserProfile } from '@/types/database';
 import { USER_ROLE_LABELS, USER_ROLE_LEVELS } from '@/types/database';
@@ -429,9 +429,7 @@ export default function UsersPage() {
   if (!user || authLoading) {
     return (
       <AdminLayout headerTitle="ユーザー管理">
-        <div className="p-6 flex items-center justify-center min-h-[40vh]">
-          <div className="w-10 h-10 border-4 border-ink border-t-transparent rounded-full animate-spin" />
-        </div>
+        <Loading className="min-h-[40vh]" />
       </AdminLayout>
     );
   }
@@ -509,12 +507,7 @@ export default function UsersPage() {
         </div>
 
         {isLoading ? (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <div className="w-12 h-12 border-4 border-ink border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <p className="text-text-body">読み込み中...</p>
-            </div>
-          </div>
+          <Loading className="flex-1" />
         ) : activeTab === 'users' ? (
           <div className="flex-1 min-h-0 flex flex-col">
             {/* ユーザー一覧 */}

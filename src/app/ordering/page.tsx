@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AdminLayout } from '@/components/layouts';
-import { Button } from '@/components/ui';
+import { Button, Loading, InlineLoading } from '@/components/ui';
 import {
   MaterialForm,
   StockTransactionModal,
@@ -291,12 +291,7 @@ export default function OrderingPage() {
   if (permissionLoading) {
     return (
       <AdminLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-ink border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-text-body">読み込み中...</p>
-          </div>
-        </div>
+        <Loading className="min-h-[60vh]" />
       </AdminLayout>
     );
   }
@@ -370,17 +365,7 @@ export default function OrderingPage() {
       {/* Textbook Catalog (main content) */}
       {isLoading ? (
         <div className="bg-white rounded-xl border border-gray-200 p-8">
-          <div className="flex items-center justify-center">
-            <svg className="animate-spin h-8 w-8 text-ink" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              />
-            </svg>
-            <span className="ml-3 text-text-body">読み込み中...</span>
-          </div>
+          <InlineLoading />
         </div>
       ) : (
         <TextbookCatalog

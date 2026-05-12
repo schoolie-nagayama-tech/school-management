@@ -19,7 +19,7 @@ import { getStudents } from '@/lib/api/students';
 import { LinkStudentModal } from '@/components/forms/LinkStudentModal';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
-import { ToastContainer } from '@/components/ui';
+import { ToastContainer, Loading } from '@/components/ui';
 import type { ShukaisuResponse, ShukaisuResponseFilters } from '@/types/forms/shukaisu';
 import type { Student } from '@/types/database';
 import { getDefaultSchoolId } from '@/lib/api/schools';
@@ -385,8 +385,8 @@ export default function ShukaisuResponsePage() {
         {/* 回答一覧 */}
         <div className="bg-surface-raised rounded-xl border border-border overflow-hidden">
           {isLoading ? (
-            <div className="p-8 text-center">
-              <p className="text-text-body">読み込み中...</p>
+            <div className="p-8">
+              <Loading size="md" />
             </div>
           ) : responses.length === 0 ? (
             <div className="p-8 text-center">

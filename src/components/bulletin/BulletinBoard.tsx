@@ -17,7 +17,7 @@ import type { School } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
-import { Button } from '@/components/ui';
+import { Button, InlineLoading } from '@/components/ui';
 import { ChevronDown, ChevronUp, Plus, Check, Megaphone } from 'lucide-react';
 import { RELEASE_NOTES } from '@/lib/data/releaseNotes';
 
@@ -212,10 +212,7 @@ export function BulletinBoard({ className = '' }: BulletinBoardProps) {
   if (isLoading) {
     return (
       <div className={`bg-[#f8f8f8] rounded-xl border border-gray-200 p-4 ${className}`}>
-        <div className="flex items-center justify-center">
-          <div className="w-6 h-6 border-2 border-[#1e3a5f] border-t-transparent rounded-full animate-spin"></div>
-          <span className="ml-2 text-sm text-gray-500">掲示板を読み込み中...</span>
-        </div>
+        <InlineLoading label="掲示板を読み込み中..." />
       </div>
     );
   }

@@ -14,6 +14,7 @@ import { onTeacherBadgesChanged } from '@/lib/teacher-badge-events';
 import type { School, UserProfile, Subject, TeacherBadge, TeacherBadgeAssignment, BadgeRank, TeacherTraining } from '@/types/database';
 import { BADGE_RANK_CONFIG, USER_ROLE_LABELS } from '@/types/database';
 import type { ScheduleTimeSlot } from '@/types/schedule';
+import { Loading } from '@/components/ui';
 import { BadgeIcon } from '@/components/teacher-badges/BadgeIcon';
 import { displayLoginId } from '@/lib/utils/loginId';
 
@@ -167,9 +168,7 @@ export default function TeacherDetailPage() {
   if (isLoading) {
     return (
       <AdminLayout headerTitle="講師詳細">
-        <div className="flex justify-center py-16">
-          <div className="w-8 h-8 border-2 border-gray-300 border-t-ink rounded-full animate-spin" />
-        </div>
+        <Loading />
       </AdminLayout>
     );
   }

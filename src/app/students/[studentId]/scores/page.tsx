@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
-import { Button, ToastContainer } from '@/components/ui';
+import { Button, ToastContainer, Loading, InlineLoading } from '@/components/ui';
 import type { ChartDataPoint } from '@/components/scores/ScoreChart';
 
 const ScoreChart = dynamic(
@@ -275,9 +275,7 @@ export default function StudentScoresPage() {
   if (permissionLoading) {
     return (
       <AdminLayout headerTitle="成績表">
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <p className="text-[var(--paragraph)]">読み込み中...</p>
-        </div>
+        <Loading size="md" className="min-h-[60vh]" />
       </AdminLayout>
     );
   }
@@ -392,7 +390,7 @@ export default function StudentScoresPage() {
                 </div>
                 <div className="p-4 flex-1 min-w-0">
                   {isLoading ? (
-                    <div className="py-8 text-center text-sm text-[var(--paragraph)]">読み込み中...</div>
+                    <Loading size="md" />
                   ) : (
                     <>
                       <div className="mb-3 flex justify-end gap-2">

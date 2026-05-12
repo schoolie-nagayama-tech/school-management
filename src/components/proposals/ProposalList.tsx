@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, FileText, Plus } from 'lucide-react';
+import { Loading } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import { getProposalsByStudent, calcTotalKoma, calcTotalAppliedKoma } from '@/lib/api/proposals';
 import type { SeasonalProposalWithDetails, SeasonType, ProposalStatus } from '@/types/database';
@@ -89,7 +90,7 @@ export default function ProposalList() {
       </div>
 
       {loading ? (
-        <div className="py-12 text-center text-sm text-text-faint">読み込み中...</div>
+        <Loading size="md" />
       ) : proposals.length === 0 ? (
         <div className="py-12 text-center text-sm text-text-faint">
           提案書はまだありません

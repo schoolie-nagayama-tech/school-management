@@ -9,6 +9,7 @@ import {
 } from '@/lib/api/regular-shift';
 import type { RegularShiftSetting, RegularShiftSlotSetting } from '@/types/regular-shift';
 import { RegularShiftSlotMatrix, type RegularSlotSettingRow } from '@/components/regular-shift/RegularShiftSlotMatrix';
+import { Loading } from '@/components/ui';
 
 const DAYS = [1, 2, 3, 4, 5, 6] as const;
 
@@ -129,7 +130,7 @@ export default function RegularShiftEditPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-surface-hover flex items-center justify-center">
-        <p className="text-text-body">読み込み中...</p>
+        <Loading />
       </div>
     );
   }

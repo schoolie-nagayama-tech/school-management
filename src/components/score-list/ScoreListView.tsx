@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Search, X, SlidersHorizontal, ArrowUpDown } from 'lucide-react';
+import { InlineLoading } from '@/components/ui';
 import { listAssessmentsBySchool } from '@/lib/api/assessments';
 import { updateScore } from '@/lib/api/assessments';
 import { transformToScoreList } from '@/lib/utils/scoreListTransform';
@@ -306,9 +307,8 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
 
   if (isLoading) {
     return (
-      <div className="py-12 flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-[#1e3a5f] border-t-transparent rounded-full animate-spin" />
-        <span className="ml-2 text-sm text-gray-500">成績データを読み込み中...</span>
+      <div className="py-12">
+        <InlineLoading label="成績データを読み込み中..." />
       </div>
     );
   }

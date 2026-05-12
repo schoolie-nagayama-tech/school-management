@@ -10,6 +10,7 @@ import { MogiForm } from '@/components/forms/mogi';
 import type { MogiPeriod } from '@/types/forms/mogi';
 import type { School } from '@/types/database';
 import type { PortalMenu } from '@/types/database';
+import { Loading } from '@/components/ui';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 export default function MogiPortalPage() {
@@ -63,7 +64,7 @@ export default function MogiPortalPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
-        <p className="text-[#4b5563]">読み込み中...</p>
+        <Loading />
       </div>
     );
   }

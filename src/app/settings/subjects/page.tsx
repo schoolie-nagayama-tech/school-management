@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
-import { Button, Card, CardHeader, CardTitle, CardContent, Input, ToastContainer } from '@/components/ui';
+import { Button, Card, CardHeader, CardTitle, CardContent, Input, ToastContainer, Loading } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { useRequirePermission } from '@/hooks/usePermissions';
@@ -125,7 +125,7 @@ export default function SubjectsSettingsPage() {
   if (permissionLoading) {
     return (
       <AdminLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">読み込み中...</div>
+        <Loading size="md" />
       </AdminLayout>
     );
   }
@@ -212,7 +212,7 @@ export default function SubjectsSettingsPage() {
         )}
 
         {isLoading ? (
-          <div className="text-text-dangeraintenter text-sm text-gray-500 py-8">読み込み中...</div>
+          <Loading size="md" />
         ) : (
           Array.from(groupedByType.entries()).map(([type, list]) => (
             <Card key={type}>

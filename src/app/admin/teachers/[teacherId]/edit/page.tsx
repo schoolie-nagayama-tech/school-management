@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
-import { Button, Input, Label } from '@/components/ui';
+import { Button, Input, Label, Loading } from '@/components/ui';
 import { ToastContainer } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -435,7 +435,7 @@ export default function TeacherEditPage() {
   if (isLoading) {
     return (
       <AdminLayout headerTitle="講師詳細">
-        <div className="p-6 text-center text-[#2a2a2a]">読み込み中...</div>
+        <Loading size="md" />
       </AdminLayout>
     );
   }

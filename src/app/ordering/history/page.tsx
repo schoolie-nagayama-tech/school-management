@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
+import { Loading } from '@/components/ui';
 import { OrderStatusSection } from '@/components/ordering/OrderStatusSection';
 import { getOrders, updateOrderStatus, deleteOrder } from '@/lib/api/ordering';
 import { useMasterData } from '@/contexts/MasterDataContext';
@@ -136,9 +137,7 @@ export default function OrderHistoryPage() {
   if (permLoading) {
     return (
       <AdminLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="w-10 h-10 border-4 border-ink border-t-transparent rounded-full animate-spin" />
-        </div>
+        <Loading className="min-h-[60vh]" />
       </AdminLayout>
     );
   }
@@ -161,7 +160,7 @@ export default function OrderHistoryPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-gray-500 text-sm">読み込み中...</div>
+        <Loading size="md" />
       ) : orders.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
           <p className="text-gray-500 text-sm">発注履歴がありません</p>

@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui';
+import { Button, Loading } from '@/components/ui';
 import {
   getFormTemplates,
   deleteFormTemplate,
@@ -96,7 +96,7 @@ export function TemplateList({ onSelectTemplate, onRefresh }: TemplateListProps)
 
   if (isLoading) {
     return (
-      <div className="text-center py-8 text-[#4b5563]">読み込み中...</div>
+      <Loading size="md" />
     );
   }
 

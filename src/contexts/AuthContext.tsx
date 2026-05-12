@@ -8,6 +8,7 @@ import type { UserProfile, Permission, UserRole } from '@/types/database';
 import { getPermissions } from '@/types/database';
 import { getUserProfile, createUserProfile, updateLastLogin, getUserSchools, addUserToSchool } from '@/lib/api/auth';
 import { getSchools } from '@/lib/api/schools';
+import { Loading } from '@/components/ui';
 
 function isAbortError(err: unknown): boolean {
   if (!(err instanceof Error)) return false;
@@ -402,7 +403,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     >
       {shouldShowLoadingInsteadOfChildren ? (
         <div className="min-h-screen flex items-center justify-center bg-[#f3f4f6]">
-          <div className="w-10 h-10 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin" />
+          <Loading />
         </div>
       ) : (
         children

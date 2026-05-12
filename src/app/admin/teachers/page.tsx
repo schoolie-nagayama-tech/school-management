@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { updateUserProfile, fetchWithAuth } from '@/lib/api/auth';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { useToast } from '@/hooks/useToast';
-import { ToastContainer } from '@/components/ui';
+import { ToastContainer, Loading } from '@/components/ui';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui';
 import { Button } from '@/components/ui';
@@ -324,9 +324,7 @@ export default function TeachersPage() {
   if (!user || authLoading) {
     return (
       <AdminLayout headerTitle="講師管理">
-        <div className="p-6 flex items-center justify-center min-h-[40vh]">
-          <div className="w-10 h-10 border-4 border-ink border-t-transparent rounded-full animate-spin" />
-        </div>
+        <Loading />
       </AdminLayout>
     );
   }
@@ -390,10 +388,7 @@ export default function TeachersPage() {
         </div>
 
         {isLoading ? (
-          <div className="text-center py-12">
-            <div className="w-12 h-12 border-4 border-ink border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-text-body">読み込み中...</p>
-          </div>
+          <Loading />
         ) : (
           <div className="space-y-6">
             {/* 講師一覧 */}

@@ -15,7 +15,7 @@ import { getStudents } from '@/lib/api/students';
 import { LinkStudentModal } from '@/components/forms/LinkStudentModal';
 import { ZoukomaResponseDetailModal } from '@/components/forms/zoukoma';
 import { useToast } from '@/hooks/useToast';
-import { ToastContainer } from '@/components/ui';
+import { ToastContainer, Loading } from '@/components/ui';
 import type { ZoukomaResponse, ZoukomaResponseFilters } from '@/types/forms/zoukoma';
 import type { Student } from '@/types/database';
 import { getDefaultSchoolId } from '@/lib/api/schools';
@@ -242,7 +242,7 @@ export default function ZoukomaResponsePage() {
         {/* 回答一覧 */}
         <div className="bg-surface-raised rounded-xl border border-border p-6">
           {isLoading ? (
-            <div className="text-center py-8 text-text-body">読み込み中...</div>
+            <Loading size="md" />
           ) : responses.length === 0 ? (
             <div className="text-center py-8 text-text-body">回答がありません。保護者ポータルから申込が届くとここに表示されます。</div>
           ) : (

@@ -12,6 +12,7 @@ import {
 } from '@/lib/api/seasonal-shift';
 import type { SeasonalShiftSetting, SubmissionWithSlots } from '@/types/seasonal-shift';
 import type { UserProfile } from '@/types/database';
+import { Loading } from '@/components/ui';
 
 type SlotKey = string; // "YYYY-MM-DD|HH:MM-HH:MM"
 type AuthState = 'loading' | 'unauthenticated' | 'authenticated';
@@ -185,7 +186,7 @@ export default function SeasonalShiftFormPage() {
   if (authState === 'loading') {
     return (
       <div className="min-h-screen bg-surface-hover flex items-center justify-center">
-        <p className="text-text-body">読み込み中...</p>
+        <Loading />
       </div>
     );
   }
@@ -214,7 +215,7 @@ export default function SeasonalShiftFormPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-surface-hover flex items-center justify-center">
-        <p className="text-text-body">読み込み中...</p>
+        <Loading />
       </div>
     );
   }

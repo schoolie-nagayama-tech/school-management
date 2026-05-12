@@ -9,6 +9,7 @@ import {
   updateSeasonalShiftSubmissionByToken,
 } from '@/lib/api/seasonal-shift';
 import type { SeasonalShiftSetting } from '@/types/seasonal-shift';
+import { Loading } from '@/components/ui';
 
 type SlotKey = string;
 
@@ -179,7 +180,7 @@ export default function SeasonalShiftEditPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-surface-hover flex items-center justify-center">
-        <p className="text-text-body">読み込み中...</p>
+        <Loading />
       </div>
     );
   }

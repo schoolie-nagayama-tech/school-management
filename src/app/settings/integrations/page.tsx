@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { AdminLayout } from '@/components/layouts';
+import { Loading } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
 import { createSupabaseBrowserClient } from '@/lib/supabase';
 import Link from 'next/link';
@@ -90,9 +91,8 @@ export default function IntegrationsPage() {
           </div>
 
           {isLoading ? (
-            <div className="px-6 py-8 text-center text-gray-400">
-              <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-              読み込み中...
+            <div className="px-6 py-8">
+              <Loading size="sm" />
             </div>
           ) : error ? (
             <div className="px-6 py-8 text-center text-red-500 text-sm">{error}</div>

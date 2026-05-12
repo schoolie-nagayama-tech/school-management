@@ -8,6 +8,7 @@ import { DAY_OF_WEEK_LABELS, SCHEDULE_PERIOD_LABELS } from '@/types/schedule';
 import type { Subject } from '@/types/database';
 import { supabase } from '@/lib/supabase';
 import { X } from 'lucide-react';
+import { Loading } from '@/components/ui';
 
 interface AttendanceMatrixProps {
   studentId: string;
@@ -194,7 +195,7 @@ export function AttendanceMatrix({ studentId, schoolId, studentGrade, canEdit, o
   );
 
   if (isLoading) {
-    return <p className="text-sm text-[#2a2a2a]">読み込み中...</p>;
+    return <Loading size="md" />;
   }
 
   if (timeSlots.length === 0) {

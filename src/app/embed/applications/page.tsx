@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ClipboardList } from 'lucide-react';
+import { Loading } from '@/components/ui';
 
 // ── 型定義 ──
 type ApplicationStatus = 'pending' | 'completed' | 'not_applicable';
@@ -283,11 +284,8 @@ export default function EmbedApplicationsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-surface-raised">
-        <div className="text-center text-gray-500">
-          <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-          読み込み中...
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-surface-raised">
+        <Loading />
       </div>
     );
   }

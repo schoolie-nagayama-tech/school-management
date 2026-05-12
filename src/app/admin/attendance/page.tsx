@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
-import { Card, CardContent, CardHeader, CardTitle, Button, SelectShadcn as Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge, Checkbox, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Textarea, Label, Input, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui';
+import { Card, CardContent, CardHeader, CardTitle, Button, SelectShadcn as Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge, Checkbox, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Textarea, Label, Input, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, Loading } from '@/components/ui';
 import { ToastContainer } from '@/components/ui';
 import { ChevronLeft, ChevronRight, CheckCircle, ExternalLink, Download, RotateCcw, AlertTriangle, UserMinus, UserPlus, TrendingUp, Send, ArrowUpDown } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
@@ -716,9 +716,7 @@ export default function AttendanceManagementPage() {
             )}
 
             {isLoading ? (
-              <div className="flex justify-center py-8">
-                <div className="text-text-body">読み込み中...</div>
-              </div>
+              <Loading size="md" />
             ) : sheets.length === 0 ? (
               <div className="text-center py-8 text-text-body">出勤簿がありません</div>
             ) : isAdmin && isTransposedView ? (
@@ -1165,9 +1163,7 @@ export default function AttendanceManagementPage() {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="flex justify-center py-8">
-                <div className="text-text-body">読み込み中...</div>
-              </div>
+              <Loading size="md" />
             ) : lateEarlyRecords.length === 0 ? (
               <div className="text-center py-8 text-text-body">遅刻・早退のデータがありません</div>
             ) : (

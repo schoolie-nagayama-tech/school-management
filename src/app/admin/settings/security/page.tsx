@@ -10,6 +10,7 @@ import {
   CardTitle,
   Input,
   Label,
+  Loading,
 } from '@/components/ui';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
@@ -154,9 +155,7 @@ export default function SecuritySettingsPage() {
   if (authLoading || !profile) {
     return (
       <AdminLayout headerTitle="講師勤怠">
-        <div className="flex justify-center py-12 text-text-body">
-          読み込み中...
-        </div>
+        <Loading size="md" />
       </AdminLayout>
     );
   }
@@ -181,9 +180,7 @@ export default function SecuritySettingsPage() {
         <h1 className="text-2xl font-bold">セキュリティ設定</h1>
 
         {isLoading ? (
-          <div className="flex justify-center py-12 text-text-body">
-            読み込み中...
-          </div>
+          <Loading size="md" />
         ) : (
           <Card>
             <CardHeader>

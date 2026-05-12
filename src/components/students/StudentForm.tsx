@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Button, Input, Select } from '@/components/ui';
+import { Button, Input, Select, Loading } from '@/components/ui';
 import type { Student, StudentInsert, StudentUpdate } from '@/types/database';
 import { X } from 'lucide-react';
 import { GRADE_LABELS, STATUS_LABELS, ORDER_STATUS_LABELS } from '@/types/database';
@@ -305,7 +305,7 @@ export function StudentForm({
             所持教材
           </label>
           {textbooksLoading ? (
-            <p className="text-sm text-[#4b5563]">読み込み中...</p>
+            <Loading size="md" />
           ) : textbookError ? (
             <p className="text-sm text-red-600">{textbookError}</p>
           ) : textbooks.length > 0 ? (

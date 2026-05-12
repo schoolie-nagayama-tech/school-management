@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createSupabaseBrowserClient } from '@/lib/supabase';
+import { Loading } from '@/components/ui';
 
 const GOOGLE_AUTH_ALLOWED_ROLES = ['admin', 'owner', 'manager'];
 
@@ -44,10 +45,7 @@ export default function AuthCallbackPage() {
 
   return (
     <div className="min-h-screen bg-surface-hover flex items-center justify-center">
-      <div className="text-center">
-        <div className="w-12 h-12 border-4 border-ink border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <p className="text-text-body">認証中...</p>
-      </div>
+      <Loading label="認証中..." />
     </div>
   );
 }

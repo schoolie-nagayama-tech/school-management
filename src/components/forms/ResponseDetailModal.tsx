@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Modal } from '@/components/ui';
+import { Modal, Loading } from '@/components/ui';
 import { getForm } from '@/lib/api/forms';
 import type { FormResponse, FormWithFields, FormField } from '@/types/database';
 import { GRADE_LABELS } from '@/types/database';
@@ -60,7 +60,7 @@ export function ResponseDetailModal({
     <Modal isOpen={isOpen} onClose={onClose} title="回答詳細">
       <div className="space-y-4">
         {isLoading ? (
-          <div className="text-center py-8 text-[#4b5563]">読み込み中...</div>
+          <Loading size="md" />
         ) : (
           <>
             {/* 基本情報 */}

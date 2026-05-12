@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useState, useEffect } from 'react';
-import { Modal, Button } from '@/components/ui';
+import { Modal, Button, Loading } from '@/components/ui';
 import type { Form } from '@/types/database';
 import { getDefaultSchoolId, getSchool } from '@/lib/api/schools';
 import { supabase } from '@/lib/supabase';
@@ -90,7 +90,7 @@ export function FormLinkModal({ isOpen, onClose, form }: FormLinkModalProps) {
         </div>
 
         {isLoading ? (
-          <div className="text-center py-4 text-[#4b5563]">読み込み中...</div>
+          <Loading size="md" />
         ) : (
           <>
             <div>

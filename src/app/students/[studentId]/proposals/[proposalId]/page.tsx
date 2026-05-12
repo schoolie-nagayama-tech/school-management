@@ -2,12 +2,13 @@
 
 import { Suspense } from 'react';
 import { AdminLayout } from '@/components/layouts';
+import { Loading } from '@/components/ui';
 import ProposalEditor from '@/components/proposals/ProposalEditor';
 
 export default function ProposalPage() {
   return (
     <AdminLayout headerTitle="提案書">
-      <Suspense fallback={<div className="p-8 text-sm text-text-faint">読み込み中...</div>}>
+      <Suspense fallback={<Loading />}>
         <ProposalEditor />
       </Suspense>
     </AdminLayout>

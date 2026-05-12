@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { getInvitationByToken, signUpWithEmail } from '@/lib/api/auth';
+import { Loading } from '@/components/ui';
 import { X } from 'lucide-react';
 import type { UserInvitation } from '@/types/database';
 import { USER_ROLE_LABELS } from '@/types/database';
@@ -99,10 +100,7 @@ export default function InvitePage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-surface-hover flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-ink border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-text-body">読み込み中...</p>
-        </div>
+        <Loading />
       </div>
     );
   }

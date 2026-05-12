@@ -28,7 +28,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Eye, EyeOff, FileText, Plus } from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
-import { Button, Modal, Select, ToastContainer } from '@/components/ui';
+import { Button, Modal, Select, ToastContainer, Loading } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -385,9 +385,7 @@ export default function NewProgressPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="w-8 h-8 border-2 border-gray-300 border-t-[#1e3a5f] rounded-full animate-spin" />
-        </div>
+        <Loading className="py-20" />
       ) : studentTextbooks.length === 0 ? (
         <EmptyState onAdd={!isTeacher ? () => openAddTextbookModal() : undefined} />
       ) : view === 'cards' ? (

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
-import { Button, ToastContainer, Modal, Select } from '@/components/ui';
+import { Button, ToastContainer, Modal, Select, Loading } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
 import {
@@ -758,9 +758,7 @@ export default function LegacyProgressPage() {
   if (isLoading) {
     return (
       <AdminLayout headerTitle="進行表">
-        <div className="flex items-center justify-center py-12">
-          <div className="text-[#4b5563]">読み込み中...</div>
-        </div>
+        <Loading size="md" />
       </AdminLayout>
     );
   }

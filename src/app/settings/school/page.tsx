@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { AdminLayout } from '@/components/layouts';
-import { Button, Card, CardHeader, CardTitle, CardContent, Input, ToastContainer } from '@/components/ui';
+import { Button, Card, CardHeader, CardTitle, CardContent, Input, ToastContainer, Loading } from '@/components/ui';
 import Link from 'next/link';
 import { getSchool, updateSchool } from '@/lib/api/schools';
 import { useToast } from '@/hooks/useToast';
@@ -172,9 +172,7 @@ export default function SchoolSettingsPage() {
   if (permissionLoading) {
     return (
       <AdminLayout headerTitle="教室設定">
-        <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-danger border-ink border-t-transparent rounded-full animate-spin"></div>
-        </div>
+        <Loading />
       </AdminLayout>
     );
   }
@@ -191,9 +189,7 @@ export default function SchoolSettingsPage() {
   if (isLoading) {
     return (
       <AdminLayout headerTitle="教室設定">
-        <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-danger border-ink border-t-transparent rounded-full animate-spin"></div>
-        </div>
+        <Loading />
       </AdminLayout>
     );
   }

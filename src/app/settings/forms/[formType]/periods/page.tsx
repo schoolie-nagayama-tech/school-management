@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
-import { Button, ToastContainer } from '@/components/ui';
+import { Button, ToastContainer, Loading } from '@/components/ui';
 import { Lightbulb } from 'lucide-react';
 import { PeriodListTable } from '@/components/settings/forms';
 import {
@@ -187,9 +187,7 @@ export default function FormPeriodsPage() {
   if (permissionLoading) {
     return (
       <AdminLayout narrow>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <p className="text-text-body">読み込み中...</p>
-        </div>
+        <Loading size="md" />
       </AdminLayout>
     );
   }
@@ -269,9 +267,7 @@ export default function FormPeriodsPage() {
           </div>
 
           {isLoading ? (
-            <div className="bg-surface-raised rounded-xl border border-border p-8 text-text-dangeraintenter">
-              <p className="text-text-body">読み込み中...</p>
-            </div>
+            <Loading size="md" />
           ) : periods.length === 0 ? (
             <div className="bg-surface-raised rounded-xl border border-border p-8 text-text-dangeraintenter text-text-body">
               期間がありません。「＋ 新しい期間を作成」から追加してください。

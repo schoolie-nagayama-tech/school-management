@@ -16,3 +16,4 @@ export { Textarea } from './Textarea';
 export { RichTextEditor } from './RichTextEditor';
 export type { RichTextEditorProps } from './RichTextEditor';
 export { Select as SelectShadcn, SelectTrigger, SelectValue, SelectContent, SelectItem } from './Select-shadcn';
+export { Spinner, Loading, InlineLoading } from './Spinner';

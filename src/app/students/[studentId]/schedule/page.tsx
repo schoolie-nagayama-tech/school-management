@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
+import { Card, CardContent, CardHeader, CardTitle, Loading } from '@/components/ui';
 import { AttendanceMatrix } from '@/components/students/AttendanceMatrix';
 import { getStudent } from '@/lib/api/students';
 import { useAuth } from '@/contexts/AuthContext';
@@ -48,7 +48,7 @@ export default function StudentSchedulePage() {
   if (loading) {
     return (
       <AdminLayout headerTitle="通塾日程">
-        <div className="py-8 text-center text-[var(--paragraph)]">読み込み中...</div>
+        <Loading size="md" />
       </AdminLayout>
     );
   }

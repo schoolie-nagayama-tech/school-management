@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
+import { Card, CardContent, CardHeader, CardTitle, Loading } from '@/components/ui';
 import { SelectShadcn as Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui';
 import { Input } from '@/components/ui';
 import { Label } from '@/components/ui';
@@ -83,7 +83,7 @@ export default function ClosedDaysPage() {
   if (!profile) {
     return (
       <AdminLayout headerTitle="座席表">
-        <div className="py-8 text-center text-[var(--paragraph)]">読み込み中...</div>
+        <Loading size="md" />
       </AdminLayout>
     );
   }

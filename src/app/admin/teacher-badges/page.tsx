@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { AdminLayout } from '@/components/layouts';
+import { Loading } from '@/components/ui';
 import type { TeacherBadge, BadgeCategory } from '@/types/database';
 import { BADGE_CATEGORY_CONFIG, BADGE_RANK_CONFIG } from '@/types/database';
 import { getTeacherBadges, createTeacherBadge, updateTeacherBadge, deleteTeacherBadge } from '@/lib/api/teacher-badges';
@@ -117,9 +118,7 @@ export default function TeacherBadgesPage() {
 
         {/* テーブル */}
         {loading ? (
-          <div className="flex justify-center py-16">
-            <div className="w-6 h-6 border-2 border-gray-300 border-t-ink rounded-full animate-spin" />
-          </div>
+          <Loading size="md" />
         ) : filtered.length === 0 ? (
           <div className="text-center py-16 text-gray-400">
             <p className="text-sm">バッジがまだありません</p>

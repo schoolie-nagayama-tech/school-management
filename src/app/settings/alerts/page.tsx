@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { AdminLayout } from '@/components/layouts';
-import { Button, Card, CardHeader, CardTitle, CardContent, Input, ToastContainer } from '@/components/ui';
+import { Button, Card, CardHeader, CardTitle, CardContent, Input, ToastContainer, Loading } from '@/components/ui';
 import Link from 'next/link';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -151,7 +151,7 @@ export default function AlertsSettingsPage() {
   if (permissionLoading) {
     return (
       <AdminLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">読み込み中...</div>
+        <Loading size="md" />
       </AdminLayout>
     );
   }
@@ -198,7 +198,7 @@ export default function AlertsSettingsPage() {
         </Card>
 
         {isLoading || !settings ? (
-          <div className="text-center text-sm text-gray-500 py-8">読み込み中...</div>
+          <Loading size="md" />
         ) : (
           (Object.keys(ALERT_TYPE_LABELS) as AlertType[]).map((type) => {
             const s = settings[type];

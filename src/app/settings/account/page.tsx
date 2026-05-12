@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { AdminLayout } from '@/components/layouts';
-import { Button, Card, CardHeader, CardTitle, CardContent } from '@/components/ui';
+import { Button, Card, CardHeader, CardTitle, CardContent, Loading } from '@/components/ui';
 import Link from 'next/link';
 import { createSupabaseBrowserClient } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -180,9 +180,7 @@ export default function AccountSettingsPage() {
   if (isLoading) {
     return (
       <AdminLayout headerTitle="アカウント設定">
-        <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-danger border-ink border-t-transparent rounded-full animate-spin"></div>
-        </div>
+        <Loading />
       </AdminLayout>
     );
   }

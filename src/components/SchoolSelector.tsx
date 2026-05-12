@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { Loading } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
 import { getSchools } from '@/lib/api/schools';
 import type { School } from '@/types/database';
@@ -39,10 +40,7 @@ export function SchoolSelector() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-[#4b5563]">読み込み中...</p>
-        </div>
+        <Loading />
       </div>
     );
   }

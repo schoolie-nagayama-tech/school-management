@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { SelectShadcn as Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui';
 import { Button } from '@/components/ui';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui';
-import { ToastContainer } from '@/components/ui';
+import { ToastContainer, Loading } from '@/components/ui';
 import { TimeSlotForm } from '@/components/schedule/TimeSlotForm';
 import { TimeSlotTable } from '@/components/schedule/TimeSlotTable';
 import { useToast } from '@/hooks/useToast';
@@ -117,7 +117,7 @@ export default function TimeSlotsSettingsPage() {
   if (!profile) {
     return (
       <AdminLayout headerTitle="設定">
-        <div className="py-8 text-text-dangeraintenter text-[var(--paragraph)]">読み込み中...</div>
+        <Loading size="md" />
       </AdminLayout>
     );
   }

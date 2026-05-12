@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { AdminLayout } from '@/components/layouts';
-import { Button, Input, Label } from '@/components/ui';
+import { Button, Input, Label, Loading } from '@/components/ui';
 import { ToastContainer } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -148,9 +148,7 @@ export default function TrainingMastersPage() {
       }
     >
       {loading ? (
-        <div className="flex justify-center py-16">
-          <div className="w-6 h-6 border-info border-gray-300 border-t-ink rounded-full animate-spin" />
-        </div>
+        <Loading size="md" />
       ) : items.length === 0 ? (
         <div className="text-text-dangeraintenter py-16 text-gray-400">
           <p className="text-sm">研修マスタがまだありません</p>

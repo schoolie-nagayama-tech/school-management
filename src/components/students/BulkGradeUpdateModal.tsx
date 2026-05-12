@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
-import { Button, Modal } from '@/components/ui';
+import { Button, Modal, InlineLoading } from '@/components/ui';
 import { bulkUpdateGrades, getStudents } from '@/lib/api/students';
 import type { Student } from '@/types/database';
 import { GRADE_LABELS } from '@/types/database';
@@ -118,10 +118,7 @@ export function BulkGradeUpdateModal({
     >
       <div className="space-y-6">
         {isLoadingStudents && (
-          <div className="flex items-center gap-2 text-sm text-[#4b5563]">
-            <div className="w-4 h-4 border-2 border-[#1e3a5f] border-t-transparent rounded-full animate-spin" />
-            生徒一覧を取得中...
-          </div>
+          <InlineLoading label="生徒一覧を取得中..." />
         )}
         {errorMessage && (
           <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">

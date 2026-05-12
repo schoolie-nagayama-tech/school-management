@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { getDefaultSchoolId } from '@/lib/api/schools';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
-import { ToastContainer } from '@/components/ui';
+import { ToastContainer, Loading } from '@/components/ui';
 import { ChevronLeft } from 'lucide-react';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
@@ -191,7 +191,7 @@ export default function ZoukomaSettingsPage() {
           </div>
 
           {isLoading ? (
-            <div className="text-text-dangeraintenter py-8 text-text-body">読み込み中...</div>
+            <Loading size="md" />
           ) : periods.length === 0 ? (
             <div className="text-text-dangeraintenter py-8 text-text-body">
               期間がありません。右上の「新規作成」ボタンから追加してください。

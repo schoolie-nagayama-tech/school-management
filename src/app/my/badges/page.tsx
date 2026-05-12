@@ -6,6 +6,7 @@ import type { TeacherBadge, TeacherBadgeAssignment, BadgeRank, TeacherTraining }
 import { BADGE_RANK_CONFIG } from '@/types/database';
 import { getMyBadges } from '@/lib/api/teacher-badges';
 import { getMyTrainings } from '@/lib/api/teacher-trainings';
+import { Loading } from '@/components/ui';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { BadgeGrid } from '@/components/teacher-badges/BadgeGrid';
 import { BadgeProgress } from '@/components/teacher-badges/BadgeProgress';
@@ -61,9 +62,7 @@ export default function MyBadgesPage() {
       <AppHeader title="マイトロフィー" />
       <div className="max-w-4xl mx-auto px-4 py-8">
         {loading ? (
-          <div className="flex justify-center py-20">
-            <div className="w-8 h-8 border-2 border-gray-300 border-t-ink rounded-full animate-spin" />
-          </div>
+          <Loading className="py-20" />
         ) : badges.length === 0 ? (
           <div className="bg-white rounded-2xl border border-gray-200 p-10 text-center shadow-sm">
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-[color:var(--primary-subtle)] text-[color:var(--primary)] mb-4">

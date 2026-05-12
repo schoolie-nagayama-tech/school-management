@@ -49,6 +49,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  Loading,
 } from '@/components/ui';
 import Link from 'next/link';
 import { Plus, ChevronLeft } from 'lucide-react';
@@ -283,9 +284,7 @@ export default function AttendanceTypesPage() {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="flex justify-center py-8">
-                <div className="text-text-body">読み込み中...</div>
-              </div>
+              <Loading size="md" />
             ) : attendanceTypes.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <p className="text-text-body mb-4">

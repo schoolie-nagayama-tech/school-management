@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AdminLayout } from '@/components/layouts';
+import { Loading, InlineLoading } from '@/components/ui';
 import {
   ScheduleGanttChart,
   ScheduleMarkerInput,
@@ -513,12 +514,7 @@ export default function CourseSchedulePage() {
   if (permissionLoading) {
     return (
       <AdminLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-ink border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-text-body">読み込み中...</p>
-          </div>
-        </div>
+        <Loading className="min-h-[60vh]" />
       </AdminLayout>
     );
   }
@@ -646,10 +642,7 @@ export default function CourseSchedulePage() {
         <div id="schedule-content">
         {isLoading ? (
           <div className="bg-white rounded-xl border border-gray-200 p-8">
-            <div className="flex items-center justify-center">
-              <div className="w-8 h-8 border-4 border-ink border-t-transparent rounded-full animate-spin" />
-              <span className="ml-3 text-text-body">読み込み中...</span>
-            </div>
+            <InlineLoading />
           </div>
         ) : viewMode === 'list' ? (
           /* リスト表示 */

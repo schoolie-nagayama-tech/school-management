@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { Button, Input, Badge, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui';
+import { Button, Input, Badge, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, Loading } from '@/components/ui';
 import { ToastContainer } from '@/components/ui';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { ArrowLeft, ChevronLeft, ChevronRight, Send, Undo2, AlertTriangle } from 'lucide-react';
@@ -293,7 +293,7 @@ export default function TeacherAttendancePage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-text-body">読み込み中...</div>
+        <Loading />
       </div>
     );
   }

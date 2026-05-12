@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Pencil, Trash2, Plus, Users } from 'lucide-react';
-import { Button } from '@/components/ui';
+import { Button, Loading } from '@/components/ui';
 import type { KoushuCourse, KoushuEnrollment } from '@/lib/api/seasonalCourses';
 import type { Subject } from '@/types/database';
 
@@ -132,7 +132,7 @@ export function KoushuPeriodCard({
           </div>
 
           {enrollmentsLoading ? (
-            <div className="py-6 text-center text-sm text-[var(--paragraph)]">読み込み中...</div>
+            <Loading size="md" />
           ) : (
             <>
               {enrollments.length === 0 ? (

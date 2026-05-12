@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Plus } from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
-import { Button } from '@/components/ui';
+import { Button, Loading } from '@/components/ui';
 import { KoushuPeriodCard } from '@/components/schedule/KoushuPeriodCard';
 import { KoushuPeriodFormModal } from '@/components/schedule/KoushuPeriodFormModal';
 import { KoushuEnrollmentFormModal } from '@/components/schedule/KoushuEnrollmentFormModal';
@@ -161,7 +161,7 @@ export default function KoushuPage() {
 
         {/* 読み込み中 */}
         {schoolId && loading && (
-          <div className="text-center py-12 text-[var(--paragraph)]">読み込み中...</div>
+          <Loading size="md" />
         )}
 
         {/* 講習なし */}

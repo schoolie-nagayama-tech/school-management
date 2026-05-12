@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
-import { ToastContainer } from '@/components/ui';
+import { ToastContainer, Loading } from '@/components/ui';
 import AccessDenied from '@/components/AccessDenied';
 import { supabase } from '@/lib/supabase';
 import {
@@ -255,7 +255,7 @@ export default function CurriculumPage() {
             <ChevronLeft className="w-4 h-4 mr-1" />教材マスタに戻る
           </Link>
           {loading ? (
-            <div className="text-text-faint">読み込み中...</div>
+            <Loading size="sm" label="読み込み中..." />
           ) : textbook ? (
             <>
               <h1 className="text-xl font-bold text-text-heading">{textbook.name}</h1>
@@ -301,7 +301,7 @@ export default function CurriculumPage() {
         {/* Items Table */}
         <div className="bg-surface-raised border border-border rounded-lg overflow-hidden">
           {loading ? (
-            <div className="p-8 text-text-dangeraintenter text-text-faint">読み込み中...</div>
+            <Loading size="md" />
           ) : items.length === 0 ? (
             <div className="p-8 text-text-dangeraintenter text-text-faint">
               カリキュラム項目がありません

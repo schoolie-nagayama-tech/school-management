@@ -8,6 +8,7 @@ import { getSchoolByCode } from '@/lib/api/schools';
 import { YoubiForm } from '@/components/forms/youbi';
 import type { YoubiPeriod } from '@/types/forms/youbi';
 import type { School } from '@/types/database';
+import { Loading } from '@/components/ui';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 export default function YoubiPortalPage() {
@@ -60,7 +61,7 @@ export default function YoubiPortalPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
-        <p className="text-[#4b5563]">読み込み中...</p>
+        <Loading />
       </div>
     );
   }

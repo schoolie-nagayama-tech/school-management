@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { Spinner } from '@/components/ui';
 import type { MonthlyTaskWithChecks, School } from '@/types/database';
 import {
   AlertTriangle,
@@ -504,7 +505,7 @@ export function TaskSummaryPanel({
             </div>
           ) : calendarLoading ? (
             <div className="flex items-center justify-center h-32">
-              <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+              <Spinner size="sm" />
             </div>
           ) : (
             <div className="grid grid-cols-7 h-full">

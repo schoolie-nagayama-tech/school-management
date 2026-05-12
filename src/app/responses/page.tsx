@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AdminLayout } from '@/components/layouts';
+import { Loading } from '@/components/ui';
 import { getFormResponses, type FormResponseWithStudent } from '@/lib/api/form-responses';
 import { getFormPeriods } from '@/lib/api/form-periods';
 import { useMasterData } from '@/contexts/MasterDataContext';
@@ -527,12 +528,7 @@ export default function ResponsesPage() {
   if (permissionLoading) {
     return (
       <AdminLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-ink border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-text-body">読み込み中...</p>
-          </div>
-        </div>
+        <Loading className="min-h-[60vh]" />
       </AdminLayout>
     );
   }
@@ -824,7 +820,7 @@ export default function ResponsesPage() {
             </div>
           </div>
           {isLoading ? (
-            <div className="text-center py-8 text-text-body">読み込み中...</div>
+            <Loading size="md" />
           ) : processFilteredResponses.length === 0 ? (
             <div className="text-center py-8 text-text-body">該当する回答がありません。フィルターを変更してください。</div>
           ) : viewMode === 'grouped' ? (

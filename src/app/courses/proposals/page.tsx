@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FileText, Filter, Plus, Search } from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
+import { Loading } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
@@ -149,7 +150,7 @@ export default function CourseProposalsPage() {
   if (permissionLoading) {
     return (
       <AdminLayout headerTitle="提案書">
-        <div className="p-8 text-sm text-text-faint">読み込み中...</div>
+        <Loading />
       </AdminLayout>
     );
   }
@@ -283,7 +284,7 @@ export default function CourseProposalsPage() {
         </div>
 
         {loading ? (
-          <div className="py-12 text-center text-sm text-text-faint">読み込み中...</div>
+          <Loading size="md" />
         ) : filtered.length === 0 ? (
           <div className="py-12 text-center text-sm text-text-faint">
             該当する提案書はありません

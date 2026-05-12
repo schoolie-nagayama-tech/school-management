@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { Modal, Button } from '@/components/ui';
+import { Modal, Button, Spinner } from '@/components/ui';
 import {
   parseStudentCSV,
   downloadCSV,
@@ -364,7 +364,7 @@ export function StudentCsvImportModal({
       {step === 'importing' && (
         <div className="space-y-6 py-6">
           <div className="text-center">
-            <div className="w-10 h-10 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <Spinner size="lg" className="mx-auto mb-4" />
             <p className="text-sm text-[#4b5563]">
               インポート中... {progress} / {importableRows.length} 件
             </p>

@@ -18,6 +18,7 @@ import {
 } from '@/types/database';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
+import { Loading } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfirm } from '@/hooks/useConfirm';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
@@ -571,9 +572,7 @@ export function StudentScores({ student, isOpen, onClose }: StudentScoresProps) 
       )}
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-8">
-          <span className="text-[#4b5563]">読み込み中...</span>
-        </div>
+        <Loading size="md" />
       ) : (
         <div>
           {renderSection('regular_test', assessments.regular_test)}

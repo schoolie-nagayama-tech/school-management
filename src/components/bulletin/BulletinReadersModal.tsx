@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Modal } from '@/components/ui';
+import { Modal, Loading } from '@/components/ui';
 import { getPostReaders } from '@/lib/api/bulletin';
 import type { BulletinRead } from '@/types/bulletin';
 import { supabase } from '@/lib/supabase';
@@ -92,7 +92,7 @@ export function BulletinReadersModal({
             既読 ({readers.length}人)
           </h3>
           {isLoading ? (
-            <div className="text-sm text-[#4b5563]/70">読み込み中...</div>
+            <Loading size="md" />
           ) : readers.length === 0 ? (
             <div className="text-sm text-[#4b5563]/70">既読者はいません</div>
           ) : (

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
-import { Button } from '@/components/ui';
+import { Button, Loading } from '@/components/ui';
 import { ToastContainer } from '@/components/ui';
 import {
   WeeklyScheduleGrid,
@@ -701,7 +701,7 @@ export default function SchedulePage() {
   if (authLoading || !profile) {
     return (
       <AdminLayout headerTitle="座席表">
-        <div className="py-8 text-center text-[var(--paragraph)]">読み込み中...</div>
+        <Loading size="md" />
       </AdminLayout>
     );
   }
@@ -809,7 +809,7 @@ export default function SchedulePage() {
                     />
                   )}
                   {entriesLoading ? (
-                    <div className="py-8 text-center text-[var(--paragraph)]">読み込み中...</div>
+                    <Loading size="md" />
                   ) : (
                     <div className="print:hidden">
                     <WeeklyScheduleGrid

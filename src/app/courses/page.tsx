@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { AlertCircle } from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
-import { Button } from '@/components/ui';
+import { Button, Loading } from '@/components/ui';
 import { getSeasonalCourses, createSeasonalCourse } from '@/lib/api/seasonalCourses';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRequirePermission } from '@/hooks/usePermissions';
@@ -120,12 +120,7 @@ export default function CoursesPage() {
   if (permissionLoading) {
     return (
       <AdminLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-ink border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-text-body">読み込み中...</p>
-          </div>
-        </div>
+        <Loading className="min-h-[60vh]" />
       </AdminLayout>
     );
   }
@@ -169,12 +164,7 @@ export default function CoursesPage() {
 
       {/* コース一覧 */}
       {isLoading ? (
-        <div className="flex items-center justify-center min-h-[40vh]">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-ink border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-text-body">読み込み中...</p>
-          </div>
-        </div>
+        <Loading className="min-h-[40vh]" />
       ) : courses.length === 0 ? (
         <div className="bg-surface-raised rounded-xl border border-border p-8 text-center">
           <p className="text-text-body mb-4">講習が登録されていません。</p>

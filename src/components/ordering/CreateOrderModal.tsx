@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Modal, Button, Input, Textarea } from '@/components/ui';
+import { Modal, Button, Input, Textarea, InlineLoading } from '@/components/ui';
 import { SelectShadcn as Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui';
 import { Plus, Minus, UserPlus } from 'lucide-react';
 import { getStudents } from '@/lib/api/students';
@@ -157,9 +157,8 @@ export function CreateOrderModal({ isOpen, onClose, onCreated, schoolIds }: Crea
         )}
 
         {isFetching ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="w-8 h-8 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin"></div>
-            <span className="ml-3 text-[#4b5563]">読み込み中...</span>
+          <div className="py-8">
+            <InlineLoading />
           </div>
         ) : (
           <>

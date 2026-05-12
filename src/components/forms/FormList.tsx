@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui';
+import { Button, Loading } from '@/components/ui';
 import { getForms, deleteForm, updateFormStatus, archiveForm, unarchiveForm } from '@/lib/api/forms';
 import type { Form, FormStatus } from '@/types/database';
 import { FORM_STATUS_LABELS } from '@/types/database';
@@ -140,7 +140,7 @@ export function FormList({ onEditForm, onViewResponses: _onViewResponses, onRefr
 
   if (isLoading) {
     return (
-      <div className="text-center py-8 text-[#4b5563]">読み込み中...</div>
+      <Loading size="md" />
     );
   }
 

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
-import { Button, Input, Badge, Card, CardContent, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Textarea, Label, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui';
+import { Button, Input, Badge, Card, CardContent, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Textarea, Label, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, Loading } from '@/components/ui';
 import { ToastContainer } from '@/components/ui';
 import { ArrowLeft, ChevronLeft, ChevronRight, CheckCircle, XCircle, RotateCcw } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
@@ -96,9 +96,7 @@ export default function AttendanceSheetDetailPage() {
   if (isLoading || !sheet) {
     return (
       <AdminLayout headerTitle="講師勤怠">
-        <div className="flex justify-center py-8">
-          <div className="text-text-body">読み込み中...</div>
-        </div>
+        <Loading size="md" />
       </AdminLayout>
     );
   }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Modal, Button, Select, Input } from '@/components/ui';
+import { Modal, Button, Select, Input, Loading } from '@/components/ui';
 import type {
   NottaTranscript,
   InterviewType,
@@ -141,7 +141,7 @@ export function LinkTranscriptModal({ isOpen, onClose, transcript, onSuccess }: 
             onChange={(e) => setSearch(e.target.value)}
           />
           {isLoadingStudents ? (
-            <div className="text-center py-8 text-[#4b5563]/60 text-sm">読み込み中...</div>
+            <Loading size="md" />
           ) : filtered.length === 0 ? (
             <div className="text-center py-6 text-[#4b5563]/60 text-sm">
               {students.length === 0 ? '生徒が登録されていません' : '該当する生徒がいません'}

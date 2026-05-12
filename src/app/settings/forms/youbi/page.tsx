@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
-import { Button, ToastContainer } from '@/components/ui';
+import { Button, ToastContainer, Loading } from '@/components/ui';
 import { ChevronLeft } from 'lucide-react';
 import { getYoubiPeriods, deleteYoubiPeriod, getYoubiResponseCount, archiveYoubiPeriod, unarchiveYoubiPeriod } from '@/lib/api/youbi';
 import { YoubiPeriodEditor } from '@/components/forms/youbi/YoubiPeriodEditor';
@@ -196,7 +196,7 @@ export default function YoubiSettingsPage() {
           </div>
 
           {isLoading ? (
-            <div className="text-text-dangeraintenter py-8 text-text-body">読み込み中...</div>
+            <Loading size="md" />
           ) : periods.length === 0 ? (
             <div className="text-text-dangeraintenter py-8 text-text-body">
               期間がありません。右上の「新規作成」ボタンから追加してください。

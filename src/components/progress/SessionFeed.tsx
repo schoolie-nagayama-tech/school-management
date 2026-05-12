@@ -19,6 +19,7 @@ import {
   RefreshCw,
   Target,
 } from 'lucide-react';
+import { Loading } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   getSessionFeed,
@@ -126,7 +127,7 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
 
       {/* フィード */}
       {loading && sessions.length === 0 ? (
-        <div className="py-12 text-center text-sm text-gray-400">読み込み中...</div>
+        <Loading size="md" />
       ) : sessions.length === 0 ? (
         <div className="py-12 text-center text-sm text-gray-400">
           {filter === 'alerts' ? '要注意のセッションはありません' : 'セッションがありません'}

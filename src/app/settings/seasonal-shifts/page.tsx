@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
-import { Button, ToastContainer } from '@/components/ui';
+import { Button, ToastContainer, Loading } from '@/components/ui';
 import { ChevronLeft } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -129,9 +129,7 @@ export default function SeasonalShiftsPage() {
   if (permissionLoading) {
     return (
       <AdminLayout>
-        <div className="flex items-center justify-center min-h-[40vh]">
-          <p className="text-text-body">読み込み中...</p>
-        </div>
+        <Loading size="md" />
       </AdminLayout>
     );
   }
@@ -207,7 +205,7 @@ export default function SeasonalShiftsPage() {
             )}
 
             {isLoading ? (
-              <p className="text-text-body">読み込み中...</p>
+              <Loading size="md" />
             ) : settings.length === 0 ? (
               <div className="bg-surface-raised rounded-xl border border-border p-8 text-text-dangeraintenter text-text-body">
                 シフト設定がありません。新規作成から追加してください。
@@ -296,7 +294,7 @@ export default function SeasonalShiftsPage() {
             )}
 
             {isRegularLoading ? (
-              <p className="text-text-body">読み込み中...</p>
+              <Loading size="md" />
             ) : regularSettings.length === 0 ? (
               <div className="bg-surface-raised rounded-xl border border-border p-8 text-text-dangeraintenter text-text-body">
                 通常シフト設定がありません。新規作成から追加してください。

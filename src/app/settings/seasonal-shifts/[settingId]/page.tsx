@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
-import { Button, ToastContainer } from '@/components/ui';
+import { Button, ToastContainer, Loading } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import {
   getSeasonalShiftSetting,
@@ -141,9 +141,7 @@ export default function SeasonalShiftDetailPage() {
   if (permissionLoading || isLoading) {
     return (
       <AdminLayout>
-        <div className="flex items-center justify-center min-h-[40vh]">
-          <p className="text-text-body">読み込み中...</p>
-        </div>
+        <Loading size="md" />
       </AdminLayout>
     );
   }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import dynamic from 'next/dynamic';
-import { Button, Modal } from '@/components/ui';
+import { Button, Modal, Loading } from '@/components/ui';
 import { Plus, AlertCircle, Eye, EyeOff, AlertTriangle, Search } from 'lucide-react';
 import {
   StudentForm,
@@ -543,12 +543,7 @@ export default function StudentsPage() {
   if (permissionLoading) {
     return (
       <AdminLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-ink border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-text-muted">読み込み中...</p>
-          </div>
-        </div>
+        <Loading className="min-h-[60vh]" />
       </AdminLayout>
     );
   }

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
+import { Card, CardContent, CardHeader, CardTitle, Loading } from '@/components/ui';
 import { SelectShadcn as Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui';
 import { ToastContainer } from '@/components/ui';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui';
@@ -169,7 +169,7 @@ export default function RegularPatternsPage() {
   if (!profile) {
     return (
       <AdminLayout headerTitle="座席表">
-        <div className="py-8 text-center text-[var(--paragraph)]">読み込み中...</div>
+        <Loading size="md" />
       </AdminLayout>
     );
   }

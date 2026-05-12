@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Modal, Button } from '@/components/ui';
+import { Modal, Button, InlineLoading } from '@/components/ui';
 import type { FormResponse, Student } from '@/types/database';
 import { GRADE_LABELS } from '@/types/database';
 import { linkResponseToStudent } from '@/lib/api/form-responses';
@@ -88,9 +88,8 @@ export function LinkStudentModal({
             同じ学年の生徒を選択 <span className="text-[#ef4444]">*</span>
           </label>
           {isLoadingStudents ? (
-            <div className="text-center py-8 text-[#4b5563]/60">
-              <div className="inline-block w-5 h-5 border-2 border-[#3b82f6] border-t-transparent rounded-full animate-spin mb-2" />
-              <p>生徒一覧を読み込み中...</p>
+            <div className="py-8">
+              <InlineLoading label="生徒一覧を読み込み中..." />
             </div>
           ) : students.length === 0 ? (
             <div className="text-center py-8 text-[#4b5563]/60">

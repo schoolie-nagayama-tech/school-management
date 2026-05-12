@@ -7,6 +7,7 @@ import type { FormResponseWithStudent } from '@/lib/api/form-responses';
 import { FORM_TYPE_LABELS, GRADE_LABELS, STATUS_LABELS } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
 import { ChevronDown, ChevronUp, Check, CheckCheck, AlertTriangle } from 'lucide-react';
+import { InlineLoading } from '@/components/ui';
 import { getSchool } from '@/lib/api/schools';
 import { useConfirm } from '@/hooks/useConfirm';
 import { supabase } from '@/lib/supabase';
@@ -611,10 +612,7 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
   if (isLoading) {
     return (
       <div className={`bg-[#f8f8f8] rounded-xl border border-gray-200 p-4 ${className}`}>
-        <div className="flex items-center justify-center">
-          <div className="w-6 h-6 border-2 border-[#1e3a5f] border-t-transparent rounded-full animate-spin"></div>
-          <span className="ml-2 text-sm text-gray-500">通知を読み込み中...</span>
-        </div>
+        <InlineLoading label="通知を読み込み中..." />
       </div>
     );
   }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Button, Input, Modal, Select } from '@/components/ui';
+import { Button, Input, Modal, Select, Loading } from '@/components/ui';
 import { Pencil, Trash2 } from 'lucide-react';
 import {
   getForm,
@@ -347,7 +347,7 @@ export function FormEditor({
           )}
 
           {isLoading ? (
-            <div className="text-center py-8 text-[#4b5563]">読み込み中...</div>
+            <Loading size="md" />
           ) : (
             <>
               <div>

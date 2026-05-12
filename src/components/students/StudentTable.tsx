@@ -3,6 +3,7 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { BookOpen, MessageCircle, FileText, Calendar, Pencil, Trash2, MoreVertical, Users, Code2 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { InlineLoading } from '@/components/ui';
 import type { Student, Subject } from '@/types/database';
 import { GRADE_LABELS, STATUS_LABELS } from '@/types/database';
 import type { SchedulePatternSummary } from '@/lib/api/students';
@@ -358,10 +359,7 @@ export function StudentTable({
   if (isLoading) {
     return (
       <div className="bg-[#f8f8f8] rounded-xl border border-gray-200 p-8">
-        <div className="flex items-center justify-center">
-          <div className="w-8 h-8 border-2 border-[#1e3a5f] border-t-transparent rounded-full animate-spin"></div>
-          <span className="ml-3 text-gray-500">読み込み中...</span>
-        </div>
+        <InlineLoading />
       </div>
     );
   }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { Modal, Button, Select } from '@/components/ui';
+import { Modal, Button, Select, Loading } from '@/components/ui';
 import { getDefaultSchoolId } from '@/lib/api/schools';
 import {
   getStudentTextbooks as getStudentTextbooksForProgress,
@@ -376,7 +376,7 @@ export function StudentDetailModal({
               )}
 
               {isLoading ? (
-                <p className="text-sm text-[#4b5563]">読み込み中...</p>
+                <Loading size="md" />
               ) : textbooks.length > 0 ? (
                 <>
                   <p className="text-[11px] text-[#6b7280] mb-2">
@@ -559,7 +559,7 @@ export function StudentDetailModal({
             </div>
 
             {isLoadingScores ? (
-              <p className="text-sm text-[#4b5563]">読み込み中...</p>
+              <Loading size="md" />
             ) : (
               <div className="space-y-4">
                 {(['regular_test', 'report_card', 'mock'] as const).map((cat) => {

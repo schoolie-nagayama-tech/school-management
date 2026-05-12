@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Card, CardContent } from '@/components/ui';
+import { Card, CardContent, Loading } from '@/components/ui';
 import { Button } from '@/components/ui';
 import { Badge } from '@/components/ui';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -76,7 +76,7 @@ export default function AttendancePortalPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-text-body">読み込み中...</div>
+        <Loading />
       </div>
     );
   }

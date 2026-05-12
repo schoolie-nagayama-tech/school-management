@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge } from '@/components/ui';
+import { Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge, Loading } from '@/components/ui';
 import { Pencil, Trash2 } from 'lucide-react';
 import type { ScheduleTimeSlot } from '@/types/schedule';
 
@@ -20,7 +20,7 @@ interface TimeSlotTableProps {
 export function TimeSlotTable({ slots, onEdit, onDelete, onAdd, isLoading }: TimeSlotTableProps) {
   if (isLoading) {
     return (
-      <div className="py-8 text-center text-[var(--paragraph)]">読み込み中...</div>
+      <Loading size="md" />
     );
   }
   if (slots.length === 0) {

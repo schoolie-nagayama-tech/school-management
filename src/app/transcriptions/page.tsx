@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AdminLayout } from '@/components/layouts';
-import { Button, Select } from '@/components/ui';
+import { Button, Select, Loading } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
@@ -151,7 +151,7 @@ export default function TranscriptionsPage() {
         )}
 
         {isLoading ? (
-          <div className="text-center py-16 text-text-body/60 text-sm">読み込み中...</div>
+          <Loading size="md" />
         ) : items.length === 0 ? (
           <div className="text-center py-16 border border-dashed border-border rounded-lg bg-surface">
             <div className="text-sm text-text-body">該当する文字起こしがありません</div>

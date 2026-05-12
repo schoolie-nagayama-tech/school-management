@@ -18,7 +18,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { AdminLayout } from '@/components/layouts';
-import { Button, ToastContainer } from '@/components/ui';
+import { Button, ToastContainer, Loading } from '@/components/ui';
 import { ChevronLeft } from 'lucide-react';
 import { PortalMenuEditModal, SortableMenuRow } from '@/components/portal';
 import { useToast } from '@/hooks/useToast';
@@ -302,12 +302,7 @@ export default function PortalSettingsPage() {
   if (permissionLoading) {
     return (
       <AdminLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-text-dangeraintenter">
-            <div className="w-12 h-12 border-danger border-ink border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-text-body">読み込み中...</p>
-          </div>
-        </div>
+        <Loading />
       </AdminLayout>
     );
   }
@@ -409,9 +404,7 @@ export default function PortalSettingsPage() {
 
         {/* フォーム一覧（統合版） */}
         {isLoading ? (
-          <div className="bg-surface-raised rounded-xl border border-border p-8 text-text-dangeraintenter">
-            <p className="text-text-body">読み込み中...</p>
-          </div>
+          <Loading size="md" />
         ) : (
           <div className="bg-surface-raised rounded-xl border border-border p-6">
             <div className="flex items-center justify-between gap-4 mb-4">

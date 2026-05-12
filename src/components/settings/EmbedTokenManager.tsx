@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Button } from '@/components/ui';
+import { Button, Loading } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -155,7 +155,7 @@ export function EmbedTokenManager() {
       </div>
 
       {isLoading ? (
-        <div className="text-sm text-gray-500 text-center py-4">読み込み中...</div>
+        <Loading size="md" />
       ) : tokens.length === 0 ? (
         <div className="text-sm text-gray-500 text-center py-6 bg-gray-50 rounded-lg border border-dashed">
           埋め込みトークンがありません。「トークン作成」で作成してください。

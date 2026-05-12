@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
 import { GRADE_LABELS } from '@/types/database';
 import { ChevronDown, ChevronUp, Info, AlertTriangle, X } from 'lucide-react';
+import { InlineLoading } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import { dismissAlert } from '@/lib/api/alerts';
 import { completeTask } from '@/lib/api/interviews';
@@ -162,10 +163,7 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
   if (isLoading) {
     return (
       <div className={`bg-[#f8f8f8] rounded-xl border border-gray-200 p-4 ${className}`}>
-        <div className="flex items-center justify-center">
-          <div className="w-6 h-6 border-2 border-[#1e3a5f] border-t-transparent rounded-full animate-spin"></div>
-          <span className="ml-2 text-sm text-gray-500">アラートを読み込み中...</span>
-        </div>
+        <InlineLoading label="アラートを読み込み中..." />
       </div>
     );
   }

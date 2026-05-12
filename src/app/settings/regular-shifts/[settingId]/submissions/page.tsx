@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
-import { Button, ToastContainer } from '@/components/ui';
+import { Button, ToastContainer, Loading } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
 import {
@@ -179,9 +179,7 @@ export default function RegularShiftSubmissionsPage() {
   if (permissionLoading) {
     return (
       <AdminLayout>
-        <div className="flex items-center justify-center min-h-[40vh]">
-          <p className="text-text-body">読み込み中...</p>
-        </div>
+        <Loading size="md" />
       </AdminLayout>
     );
   }
@@ -220,7 +218,7 @@ export default function RegularShiftSubmissionsPage() {
         )}
 
         {isLoading ? (
-          <p className="text-text-body">読み込み中...</p>
+          <Loading size="md" />
         ) : submissions.length === 0 ? (
           <div className="bg-surface-raised rounded-xl border border-border p-8 text-text-dangeraintenter text-text-body">
             まだ提出がありません。

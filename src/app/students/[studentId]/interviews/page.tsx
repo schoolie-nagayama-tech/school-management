@@ -6,7 +6,7 @@ import { AdminLayout } from '@/components/layouts';
 import { InterviewList } from '@/components/students/InterviewList';
 import { getStudent } from '@/lib/api/students';
 import { getDefaultSchoolId } from '@/lib/api/schools';
-import { Button } from '@/components/ui';
+import { Button, Loading } from '@/components/ui';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Student } from '@/types/database';
@@ -40,12 +40,7 @@ export default function StudentInterviewsPage() {
   if (isLoading) {
     return (
       <AdminLayout headerTitle="面談記録">
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-ink border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-text-body">読み込み中...</p>
-          </div>
-        </div>
+        <Loading className="min-h-[60vh]" />
       </AdminLayout>
     );
   }

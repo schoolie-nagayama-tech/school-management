@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useMemo } from 'react';
-import { Modal, Button, Input, Label } from '@/components/ui';
+import { Modal, Button, Input, Label, Spinner } from '@/components/ui';
 import { SelectShadcn as Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui';
 import {
   parseTeacherCSV,
@@ -429,7 +429,7 @@ export function TeacherCsvImportModal({
       {step === 'importing' && (
         <div className="space-y-6 py-6">
           <div className="text-center">
-            <div className="w-10 h-10 border-4 border-[#1e3a5f] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <Spinner size="lg" className="mx-auto mb-4" />
             <p className="text-sm text-[#4b5563]">
               インポート中... {progress} / {validRows.length} 件
             </p>

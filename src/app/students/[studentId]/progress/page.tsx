@@ -12,6 +12,7 @@
 
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { Loading } from '@/components/ui';
 import NewProgressPage from './NewProgressPage';
 import LegacyProgressPage from './LegacyProgressPage';
 
@@ -30,7 +31,7 @@ function ProgressRouter() {
 
 export default function ProgressPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-sm text-text-muted">読み込み中...</div>}>
+    <Suspense fallback={<Loading />}>
       <ProgressRouter />
     </Suspense>
   );

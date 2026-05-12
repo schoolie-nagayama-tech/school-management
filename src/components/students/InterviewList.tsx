@@ -5,7 +5,7 @@ import { StudentInterview, InterviewType, INTERVIEW_TYPE_LABELS, INTERVIEW_TYPE_
 import { getStudentInterviews, deleteInterview, completeTask, uncompleteTask } from '@/lib/api/interviews';
 import { undismissAlert } from '@/lib/api/alerts';
 import { InterviewModal } from './InterviewModal';
-import { Button, Select } from '@/components/ui';
+import { Button, Select, Loading } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -110,7 +110,7 @@ export function InterviewList({ studentId, schoolId }: InterviewListProps) {
   };
 
   if (isLoading) {
-    return <div className="p-4 text-center text-[#4b5563]">読み込み中...</div>;
+    return <Loading size="md" />;
   }
 
   return (

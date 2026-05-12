@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
-import { ToastContainer } from '@/components/ui';
+import { ToastContainer, Loading } from '@/components/ui';
 import AccessDenied from '@/components/AccessDenied';
 import { getTextbooks, createTextbook, updateTextbook, deleteTextbook } from '@/lib/api/textbooks';
 import type { Textbook, TextbookInsert } from '@/types/database';
@@ -359,7 +359,7 @@ function TextbookMasterPage() {
 
         {/* Content */}
         {loading ? (
-          <div className="bg-surface-raised border border-border rounded-lg p-12 text-text-dangeraintenter text-text-faint">読み込み中...</div>
+          <Loading size="md" />
         ) : filtered.length === 0 ? (
           <div className="bg-surface-raised border border-border rounded-lg p-12 text-text-dangeraintenter text-text-faint">
             教材が見つかりません

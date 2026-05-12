@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
-import { Button, Modal, Select, ToastContainer } from '@/components/ui';
+import { Button, Modal, Select, ToastContainer, Loading } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
 import {
@@ -440,9 +440,7 @@ export default function CourseDetailPage() {
   if (isLoading) {
     return (
       <AdminLayout headerTitle="コース詳細">
-        <div className="flex items-center justify-center py-12">
-          <div className="text-text-body">読み込み中...</div>
-        </div>
+        <Loading size="md" />
       </AdminLayout>
     );
   }
@@ -461,12 +459,7 @@ export default function CourseDetailPage() {
   if (permissionLoading) {
     return (
       <AdminLayout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="w-12 h-12 border-4 border-ink border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-text-body">読み込み中...</p>
-          </div>
-        </div>
+        <Loading className="min-h-[60vh]" />
       </AdminLayout>
     );
   }

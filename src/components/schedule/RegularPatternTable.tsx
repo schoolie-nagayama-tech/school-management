@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge } from '@/components/ui';
+import { Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge, Loading } from '@/components/ui';
 import { Pencil, Trash2, Plus } from 'lucide-react';
 import { DAY_OF_WEEK_LABELS, SCHEDULE_PERIOD_LABELS } from '@/types/schedule';
 import type { ScheduleRegularPattern } from '@/types/schedule';
@@ -30,7 +30,7 @@ export function RegularPatternTable({
 }: RegularPatternTableProps) {
   if (isLoading) {
     return (
-      <div className="py-8 text-center text-[var(--paragraph)]">読み込み中...</div>
+      <Loading size="md" />
     );
   }
   return (

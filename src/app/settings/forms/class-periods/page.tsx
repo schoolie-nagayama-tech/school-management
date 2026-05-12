@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
-import { Button, ToastContainer } from '@/components/ui';
+import { Button, ToastContainer, Loading } from '@/components/ui';
 import {
   getClassPeriods,
   setClassPeriods,
@@ -72,9 +72,7 @@ export default function ClassPeriodsSettingsPage() {
   if (permissionLoading) {
     return (
       <AdminLayout narrow>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <p className="text-text-body">読み込み中...</p>
-        </div>
+        <Loading size="md" />
       </AdminLayout>
     );
   }
