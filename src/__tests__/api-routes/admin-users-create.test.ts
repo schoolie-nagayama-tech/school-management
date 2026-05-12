@@ -166,6 +166,6 @@ describe('POST /api/admin/users/create', () => {
 
     expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body.error).toContain('メールアドレスは既に登録');
+    expect(body.error).toContain('既に登録されています');
   });
 });
