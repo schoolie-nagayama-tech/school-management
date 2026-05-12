@@ -9,9 +9,10 @@ import type {
   SeasonType,
   CurriculumItem,
   StudentProgress,
+  Textbook,
+  Student,
 } from '@/types/database';
 
-// seasonal_proposals / seasonal_proposal_units は Supabase 生成型に未登録
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const fromProposals = () => supabase.from('seasonal_proposals' as any);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -21,9 +22,6 @@ const fromProposalUnits = () => supabase.from('seasonal_proposal_units' as any);
 // 提案書 CRUD
 // ============================================
 
-/**
- * 提案書を作成
- */
 export async function createProposal(
   data: SeasonalProposalInsert
 ): Promise<SeasonalProposal> {
@@ -38,9 +36,6 @@ export async function createProposal(
   return row as unknown as SeasonalProposal;
 }
 
-/**
- * 提案書を更新
- */
 export async function updateProposal(
   id: string,
   patch: SeasonalProposalUpdate
@@ -57,9 +52,6 @@ export async function updateProposal(
   return row as unknown as SeasonalProposal;
 }
 
-/**
- * 提案書を削除
- */
 export async function deleteProposal(id: string): Promise<void> {
   const { error } = await fromProposals()
     .delete()
@@ -74,15 +66,14 @@ export async function deleteProposal(id: string): Promise<void> {
 // 提案書取得
 // ============================================
 
-/**
- * 提案書を詳細付きで取得
- */
 export async function getProposal(
   id: string
 ): Promise<SeasonalProposalWithDetails | null> {
   const { data, error } = await fromProposals()
     .select(`
       *,
+      student:students(*),
+      textbook:textbooks(*),
       student_textbook:student_textbooks(
         *,
         textbook:textbooks(*),
@@ -97,7 +88,6 @@ export async function getProposal(
   }
   if (!data) return null;
 
-  // 単元明細を取得
   const { data: units, error: uErr } = await fromProposalUnits()
     .select(`
       *,
@@ -113,27 +103,54 @@ export async function getProposal(
   const row = data as unknown as Record<string, unknown>;
   return {
     ...(row as unknown as SeasonalProposal),
+    student: row.student as Student | undefined,
+    textbook: row.textbook as Textbook | undefined,
     student_textbook: row.student_textbook as SeasonalProposalWithDetails['student_textbook'],
     units: (units ?? []) as unknown as SeasonalProposalUnit[],
   };
 }
 
 /**
- * 生徒テキストの提案書一覧を取得
+ * 生徒の提案書一覧を取得
  */
-export async function getProposalsByStudentTextbook(
-  studentTextbookId: string
-): Promise<SeasonalProposal[]> {
+export async function getProposalsByStudent(
+  studentId: string
+): Promise<SeasonalProposalWithDetails[]> {
   const { data, error } = await fromProposals()
-    .select('*')
-    .eq('student_textbook_id', studentTextbookId)
+    .select(`
+      *,
+      student:students(*),
+      textbook:textbooks(*)
+    `)
+    .eq('student_id', studentId)
     .order('year', { ascending: false })
     .order('created_at', { ascending: false });
 
   if (error) {
     throw new Error(`提案書一覧の取得に失敗しました: ${error.message}`);
   }
-  return (data ?? []) as unknown as SeasonalProposal[];
+
+  const proposals = (data ?? []) as unknown as (SeasonalProposal & Record<string, unknown>)[];
+  if (proposals.length === 0) return [];
+
+  const proposalIds = proposals.map((d) => d.id);
+  const { data: allUnits } = await fromProposalUnits()
+    .select('*')
+    .in('proposal_id', proposalIds);
+
+  const unitsByProposal = new Map<string, SeasonalProposalUnit[]>();
+  for (const u of (allUnits ?? []) as unknown as SeasonalProposalUnit[]) {
+    const list = unitsByProposal.get(u.proposal_id) ?? [];
+    list.push(u);
+    unitsByProposal.set(u.proposal_id, list);
+  }
+
+  return proposals.map((d) => ({
+    ...d,
+    student: d.student as Student | undefined,
+    textbook: d.textbook as Textbook | undefined,
+    units: unitsByProposal.get(d.id) ?? [],
+  })) as SeasonalProposalWithDetails[];
 }
 
 /**
@@ -146,26 +163,23 @@ export async function getProposalsBySchool(
 ): Promise<SeasonalProposalWithDetails[]> {
   if (schoolIds.length === 0) return [];
 
-  // 対象 student_textbooks を特定
-  const { data: stList } = await supabase
-    .from('student_textbooks')
+  // 対象生徒を特定
+  const { data: studentList } = await supabase
+    .from('students')
     .select('id')
     .in('school_id', schoolIds)
     .eq('is_active', true);
 
-  if (!stList || stList.length === 0) return [];
-  const stIds = (stList as { id: string }[]).map((st) => st.id);
+  if (!studentList || studentList.length === 0) return [];
+  const studentIds = (studentList as { id: string }[]).map((s) => s.id);
 
   let query = fromProposals()
     .select(`
       *,
-      student_textbook:student_textbooks(
-        *,
-        textbook:textbooks(*),
-        student:students(*)
-      )
+      student:students(*),
+      textbook:textbooks(*)
     `)
-    .in('student_textbook_id', stIds)
+    .in('student_id', studentIds)
     .order('updated_at', { ascending: false });
 
   if (season) query = query.eq('season', season);
@@ -176,8 +190,9 @@ export async function getProposalsBySchool(
     throw new Error(`教室の提案書取得に失敗しました: ${error.message}`);
   }
 
-  // 各提案の単元を一括取得
   const proposalIds = ((data ?? []) as unknown as { id: string }[]).map((d) => d.id);
+  if (proposalIds.length === 0) return [];
+
   const { data: allUnits } = await fromProposalUnits()
     .select('*')
     .in('proposal_id', proposalIds);
@@ -191,7 +206,8 @@ export async function getProposalsBySchool(
 
   return ((data ?? []) as unknown as (SeasonalProposal & Record<string, unknown>)[]).map((d) => ({
     ...d,
-    student_textbook: d.student_textbook as SeasonalProposalWithDetails['student_textbook'],
+    student: d.student as Student | undefined,
+    textbook: d.textbook as Textbook | undefined,
     units: unitsByProposal.get(d.id) ?? [],
   })) as SeasonalProposalWithDetails[];
 }
@@ -204,16 +220,13 @@ export interface ProposalUnitInput {
   curriculum_item_id: number;
   koma_count: number;
   reason: string;
+  group_id: number;
 }
 
-/**
- * 提案単元を一括保存（既存を全て差し替え）
- */
 export async function saveProposalUnits(
   proposalId: string,
   units: ProposalUnitInput[]
 ): Promise<SeasonalProposalUnit[]> {
-  // 既存を削除
   const { error: delErr } = await fromProposalUnits()
     .delete()
     .eq('proposal_id', proposalId);
@@ -224,12 +237,12 @@ export async function saveProposalUnits(
 
   if (units.length === 0) return [];
 
-  // 新規挿入
   const inserts: SeasonalProposalUnitInsert[] = units.map((u, i) => ({
     proposal_id: proposalId,
     curriculum_item_id: u.curriculum_item_id,
     koma_count: u.koma_count,
     reason: u.reason,
+    group_id: u.group_id,
     sort_order: i,
   }));
 
@@ -247,26 +260,29 @@ export async function saveProposalUnits(
 // 提案書 作成/更新 ワンショット
 // ============================================
 
-/**
- * 提案書の作成 or 更新をまとめて行う
- */
 export async function upsertProposal(params: {
   id?: string;
-  studentTextbookId: string;
+  studentId: string;
+  textbookId: number;
+  studentTextbookId?: string | null;
   season: SeasonType;
   year: number;
   theme: string;
   status?: SeasonalProposal['status'];
+  appliedKoma?: number | null;
   notes?: string | null;
   units: ProposalUnitInput[];
 }): Promise<SeasonalProposalWithDetails> {
   const {
     id,
+    studentId,
+    textbookId,
     studentTextbookId,
     season,
     year,
     theme,
     status,
+    appliedKoma,
     notes,
     units,
   } = params;
@@ -274,28 +290,28 @@ export async function upsertProposal(params: {
   let proposal: SeasonalProposal;
 
   if (id) {
-    // 更新
     proposal = await updateProposal(id, {
       theme,
       status,
+      applied_koma: appliedKoma,
       notes,
     });
   } else {
-    // 新規作成
     proposal = await createProposal({
-      student_textbook_id: studentTextbookId,
+      student_id: studentId,
+      textbook_id: textbookId,
+      student_textbook_id: studentTextbookId ?? null,
       season,
       year,
       theme,
       status: status ?? 'draft',
+      applied_koma: appliedKoma,
       notes,
     });
   }
 
-  // 単元を保存
   await saveProposalUnits(proposal.id, units);
 
-  // 詳細を返す
   const full = await getProposal(proposal.id);
   return full!;
 }
@@ -305,17 +321,16 @@ export async function upsertProposal(params: {
 // ============================================
 
 /**
- * テキストの全カリキュラム項目と生徒の進捗を取得
- * 提案書作成画面で使う
+ * テキストのカリキュラムと進捗を取得
+ * studentTextbookId が null の場合は進捗なしでカリキュラムのみ返す
  */
 export async function getTextbookUnitsWithProgress(
-  studentTextbookId: string,
+  studentTextbookId: string | null,
   textbookId: number
 ): Promise<{
   items: CurriculumItem[];
   progressMap: Map<number, StudentProgress>;
 }> {
-  // カリキュラム項目
   const { data: items, error: iErr } = await supabase
     .from('curriculum_items')
     .select('*')
@@ -326,23 +341,165 @@ export async function getTextbookUnitsWithProgress(
     throw new Error(`カリキュラム取得に失敗しました: ${iErr.message}`);
   }
 
-  // 生徒の進捗
-  const { data: progress, error: pErr } = await supabase
-    .from('student_progress')
-    .select('*')
-    .eq('student_textbook_id', studentTextbookId);
-
-  if (pErr) {
-    throw new Error(`進捗取得に失敗しました: ${pErr.message}`);
-  }
-
   const progressMap = new Map<number, StudentProgress>();
-  for (const p of (progress ?? []) as unknown as StudentProgress[]) {
-    progressMap.set(p.curriculum_item_id, p);
+
+  if (studentTextbookId) {
+    const { data: progress, error: pErr } = await supabase
+      .from('student_progress')
+      .select('*')
+      .eq('student_textbook_id', studentTextbookId);
+
+    if (pErr) {
+      throw new Error(`進捗取得に失敗しました: ${pErr.message}`);
+    }
+
+    for (const p of (progress ?? []) as unknown as StudentProgress[]) {
+      progressMap.set(p.curriculum_item_id, p);
+    }
   }
 
   return {
     items: (items ?? []) as CurriculumItem[],
     progressMap,
   };
+}
+
+// ============================================
+// 進行表連携
+// ============================================
+
+/**
+ * 提案書の単元を進行表 (student_progress.proposal_count) に一括反映
+ * student_textbook が未作成の場合は先に作成する
+ */
+export async function syncProposalToProgress(
+  proposalId: string
+): Promise<{ studentTextbookId: string }> {
+  const proposal = await getProposal(proposalId);
+  if (!proposal) throw new Error('提案書が見つかりません');
+
+  let stbId = proposal.student_textbook_id;
+
+  // student_textbook が未紐付けの場合は作成
+  if (!stbId) {
+    // 既存の student_textbook を探す
+    const { data: existing } = await supabase
+      .from('student_textbooks')
+      .select('id')
+      .eq('student_id', proposal.student_id)
+      .eq('textbook_id', proposal.textbook_id)
+      .maybeSingle();
+
+    if (existing) {
+      stbId = (existing as { id: string }).id;
+    } else {
+      // 生徒の school_id を取得
+      const { data: student } = await supabase
+        .from('students')
+        .select('school_id')
+        .eq('id', proposal.student_id)
+        .single();
+
+      if (!student) throw new Error('生徒情報が取得できません');
+
+      const { data: newStb, error: stbErr } = await supabase
+        .from('student_textbooks')
+        .insert({
+          school_id: (student as { school_id: string }).school_id,
+          student_id: proposal.student_id,
+          textbook_id: proposal.textbook_id,
+          is_active: true,
+          season: proposal.season,
+        })
+        .select('id')
+        .single();
+
+      if (stbErr) throw new Error(`テキスト登録に失敗しました: ${stbErr.message}`);
+      stbId = (newStb as { id: string }).id;
+    }
+
+    // 提案書に student_textbook_id を紐付け
+    await updateProposal(proposalId, { student_textbook_id: stbId });
+  }
+
+  // group_id ごとのコマ数を集計
+  const groupKoma = new Map<number, number>();
+  for (const u of proposal.units) {
+    if (!groupKoma.has(u.group_id)) {
+      groupKoma.set(u.group_id, u.koma_count);
+    }
+  }
+
+  // 単元ごとの proposal_count を計算
+  // 同一グループの単元はグループのコマ数を共有
+  const unitKomaMap = new Map<number, number>();
+  for (const u of proposal.units) {
+    unitKomaMap.set(u.curriculum_item_id, groupKoma.get(u.group_id) ?? u.koma_count);
+  }
+
+  // student_progress を upsert
+  const entries = Array.from(unitKomaMap.entries());
+  for (const [ciId, komaCount] of entries) {
+    const { data: existing } = await supabase
+      .from('student_progress')
+      .select('id')
+      .eq('student_textbook_id', stbId)
+      .eq('curriculum_item_id', ciId)
+      .maybeSingle();
+
+    if (existing) {
+      await supabase
+        .from('student_progress')
+        .update({ proposal_count: komaCount })
+        .eq('id', (existing as { id: string }).id);
+    } else {
+      await supabase
+        .from('student_progress')
+        .insert({
+          student_textbook_id: stbId,
+          curriculum_item_id: ciId,
+          proposal_count: komaCount,
+        });
+    }
+  }
+
+  return { studentTextbookId: stbId! };
+}
+
+/**
+ * 申し込みコマ数を進行表の application_count に反映
+ */
+export async function syncApplicationToProgress(
+  proposalId: string
+): Promise<void> {
+  const proposal = await getProposal(proposalId);
+  if (!proposal || !proposal.student_textbook_id) {
+    throw new Error('提案書またはテキスト紐付けがありません');
+  }
+
+  for (const u of proposal.units) {
+    await supabase
+      .from('student_progress')
+      .update({ application_count: u.koma_count })
+      .eq('student_textbook_id', proposal.student_textbook_id)
+      .eq('curriculum_item_id', u.curriculum_item_id);
+  }
+}
+
+// ============================================
+// コマ数集計ヘルパー
+// ============================================
+
+/**
+ * group_id ベースで実質コマ数を計算
+ * 同一 group_id の単元は1コマとしてカウント
+ */
+export function calcTotalKoma(units: { group_id: number; koma_count: number }[]): number {
+  const seen = new Map<number, number>();
+  for (const u of units) {
+    if (!seen.has(u.group_id)) {
+      seen.set(u.group_id, u.koma_count);
+    }
+  }
+  return Array.from(seen.values()).reduce((a, b) => a + b, 0);
 }

@@ -1,54 +1,81 @@
 'use client';
 
-/**
- * ProposalEditor — 保護者向け講習提案書の作成・編集・印刷
- *
- * URL: /students/[studentId]/proposals/[proposalId]
- *   proposalId = "new" のとき新規作成（?stbId=xxx&season=summer が必要）
- *
- * 機能:
- *   - テーマ入力
- *   - テキスト全単元を表示 → 講習対象を選択
- *   - 対象単元ごとのコマ数・理由
- *   - 印刷プレビュー (print CSS 対応)
- */
-
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft,
+  ArrowRight,
   Check,
   ChevronDown,
   ChevronUp,
+  Link2,
   Minus,
   Plus,
   Printer,
   Save,
+  Search,
+  Trash2,
 } from 'lucide-react';
-import { AdminLayout } from '@/components/layouts';
+import {
+  Button,
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+  AlertDialogCancel,
+  ToastContainer,
+} from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
-import { ToastContainer } from '@/components/ui';
 import {
   getProposal,
   getTextbookUnitsWithProgress,
   upsertProposal,
+  deleteProposal,
+  updateProposal,
+  syncProposalToProgress,
+  calcTotalKoma,
 } from '@/lib/api/proposals';
+import type { ProposalUnitInput } from '@/lib/api/proposals';
+import { getTextbooks } from '@/lib/api/textbooks';
 import { supabase } from '@/lib/supabase';
 import type {
   CurriculumItem,
+  ProposalStatus,
   SeasonalProposalWithDetails,
   SeasonType,
   StudentProgress,
+  Textbook,
 } from '@/types/database';
-import { SEASON_LABELS } from '@/types/database';
+import { SEASON_LABELS, PROPOSAL_STATUS_LABELS } from '@/types/database';
 
 interface UnitDraft {
   curriculum_item_id: number;
   koma_count: number;
   reason: string;
   selected: boolean;
+  group_id: number;
 }
+
+const STATUS_FLOW: ProposalStatus[] = ['draft', 'sent', 'approved'];
+
+const STATUS_COLORS: Record<ProposalStatus, { active: string; inactive: string }> = {
+  draft: {
+    active: 'bg-text-muted text-white',
+    inactive: 'bg-surface-hover text-text-muted hover:bg-border-default',
+  },
+  sent: {
+    active: 'bg-info text-white',
+    inactive: 'bg-info-subtle text-info hover:bg-info/15',
+  },
+  approved: {
+    active: 'bg-success text-white',
+    inactive: 'bg-success-subtle text-success hover:bg-success/15',
+  },
+};
 
 export default function ProposalEditor() {
   const params = useParams();
@@ -60,43 +87,55 @@ export default function ProposalEditor() {
   const proposalId = params?.proposalId as string;
   const isNew = proposalId === 'new';
 
-  // クエリパラメータ（新規時）
   const qStbId = searchParams?.get('stbId') ?? '';
-  const qSeason = (searchParams?.get('season') ?? 'summer') as SeasonType;
+  const qSeason = (searchParams?.get('season') ?? '') as SeasonType | '';
   const qYear = Number(searchParams?.get('year') ?? new Date().getFullYear());
+  const qTextbookId = Number(searchParams?.get('textbookId') ?? 0);
 
-  // 状態
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [proposal, setProposal] = useState<SeasonalProposalWithDetails | null>(null);
-  const [studentTextbookId, setStudentTextbookId] = useState(qStbId);
-  const [season, setSeason] = useState<SeasonType>(qSeason);
+  const [studentTextbookId, setStudentTextbookId] = useState<string | null>(qStbId || null);
+  const [season, setSeason] = useState<SeasonType>(qSeason || getCurrentSeason());
   const [year, setYear] = useState(qYear);
   const [theme, setTheme] = useState('');
   const [notes, setNotes] = useState('');
+  const [appliedKoma, setAppliedKoma] = useState<number | null>(null);
 
-  // 全単元 + 進捗
+  const [selectedTextbookId, setSelectedTextbookId] = useState<number>(qTextbookId);
+  const [allTextbooks, setAllTextbooks] = useState<Textbook[]>([]);
+  const [showTextbookPicker, setShowTextbookPicker] = useState(false);
+  const [textbookSearch, setTextbookSearch] = useState('');
+
   const [allItems, setAllItems] = useState<CurriculumItem[]>([]);
   const [progressMap, setProgressMap] = useState<Map<number, StudentProgress>>(new Map());
   const [unitDrafts, setUnitDrafts] = useState<Map<number, UnitDraft>>(new Map());
+  const [nextGroupId, setNextGroupId] = useState(1);
 
-  // 生徒・テキスト情報
   const [studentName, setStudentName] = useState('');
   const [textbookName, setTextbookName] = useState('');
-  const [textbookId, setTextbookId] = useState<number>(0);
 
-  // 表示モード
   const [previewMode, setPreviewMode] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   // ── 初期読み込み ──
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
+      const { data: student } = await supabase
+        .from('students')
+        .select('last_name, first_name')
+        .eq('id', studentId)
+        .single();
+      if (student) {
+        setStudentName(`${student.last_name} ${student.first_name}`);
+      }
+
+      let tbId = selectedTextbookId;
       let stbId = studentTextbookId;
-      let tbId = textbookId;
 
       if (!isNew && proposalId) {
-        // 既存提案書を読み込み
         const data = await getProposal(proposalId);
         if (!data) {
           addToast('提案書が見つかりません', 'error');
@@ -109,55 +148,58 @@ export default function ProposalEditor() {
         setYear(data.year);
         setTheme(data.theme);
         setNotes(data.notes ?? '');
-        tbId = data.student_textbook?.textbook?.id ?? 0;
-        setTextbookId(tbId);
-        setStudentName(
-          data.student_textbook?.student
-            ? `${data.student_textbook.student.last_name} ${data.student_textbook.student.first_name}`
-            : ''
-        );
-        setTextbookName(data.student_textbook?.textbook?.name ?? '');
+        setAppliedKoma(data.applied_koma);
+        tbId = data.textbook_id;
+        setSelectedTextbookId(tbId);
+        setTextbookName(data.textbook?.name ?? '');
       } else if (stbId) {
-        // 新規: student_textbook の情報を取得
         const { data: stb } = await supabase
           .from('student_textbooks')
-          .select('*, textbook:textbooks(*), student:students(*)')
+          .select('*, textbook:textbooks(*)')
           .eq('id', stbId)
           .single();
 
         if (stb) {
           const st = stb as Record<string, unknown>;
-          const student = st.student as { last_name: string; first_name: string } | null;
           const textbook = st.textbook as { id: number; name: string } | null;
-          setStudentName(student ? `${student.last_name} ${student.first_name}` : '');
-          setTextbookName(textbook?.name ?? '');
           tbId = textbook?.id ?? 0;
-          setTextbookId(tbId);
+          setSelectedTextbookId(tbId);
+          setTextbookName(textbook?.name ?? '');
         }
+      } else if (tbId) {
+        const { data: tb } = await supabase
+          .from('textbooks')
+          .select('name')
+          .eq('id', tbId)
+          .single();
+        if (tb) setTextbookName((tb as { name: string }).name);
       }
 
-      if (!stbId || !tbId) {
+      const textbooks = await getTextbooks();
+      setAllTextbooks(textbooks);
+
+      if (!tbId) {
         setLoading(false);
+        if (isNew) setShowTextbookPicker(true);
         return;
       }
 
-      // 全単元 + 進捗
       const { items, progressMap: pm } = await getTextbookUnitsWithProgress(stbId, tbId);
       setAllItems(items);
       setProgressMap(pm);
 
-      // unitDrafts 初期化
       const drafts = new Map<number, UnitDraft>();
+      let maxGroup = 0;
       for (const item of items) {
         drafts.set(item.id, {
           curriculum_item_id: item.id,
           koma_count: 1,
           reason: '',
           selected: false,
+          group_id: 0,
         });
       }
 
-      // 既存提案の単元を反映
       if (!isNew && proposal) {
         for (const u of proposal.units) {
           const d = drafts.get(u.curriculum_item_id);
@@ -165,11 +207,12 @@ export default function ProposalEditor() {
             d.selected = true;
             d.koma_count = u.koma_count;
             d.reason = u.reason;
+            d.group_id = u.group_id;
+            if (u.group_id > maxGroup) maxGroup = u.group_id;
           }
         }
       }
 
-      // 新規の場合、既に proposal_count > 0 の単元を自動選択
       if (isNew) {
         pm.forEach((prog, ciId) => {
           if (prog.proposal_count > 0) {
@@ -183,24 +226,46 @@ export default function ProposalEditor() {
       }
 
       setUnitDrafts(drafts);
+      setNextGroupId(maxGroup + 1);
     } catch (e) {
       console.error(e);
       addToast('データの読み込みに失敗しました', 'error');
     } finally {
       setLoading(false);
     }
-  }, [proposalId, isNew, studentTextbookId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [proposalId, isNew, studentTextbookId, selectedTextbookId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  // ── 単元操作 ──
+  const handleSelectTextbook = async (tb: Textbook) => {
+    setSelectedTextbookId(tb.id);
+    setTextbookName(tb.name);
+    setShowTextbookPicker(false);
+
+    const { items } = await getTextbookUnitsWithProgress(null, tb.id);
+    setAllItems(items);
+    setProgressMap(new Map());
+
+    const drafts = new Map<number, UnitDraft>();
+    for (const item of items) {
+      drafts.set(item.id, {
+        curriculum_item_id: item.id,
+        koma_count: 1,
+        reason: '',
+        selected: false,
+        group_id: 0,
+      });
+    }
+    setUnitDrafts(drafts);
+  };
+
   const toggleUnit = (ciId: number) => {
     setUnitDrafts((prev) => {
       const next = new Map(prev);
       const d = next.get(ciId);
-      if (d) next.set(ciId, { ...d, selected: !d.selected });
+      if (d) next.set(ciId, { ...d, selected: !d.selected, group_id: d.selected ? 0 : d.group_id });
       return next;
     });
   };
@@ -214,32 +279,72 @@ export default function ProposalEditor() {
     });
   };
 
-  // ── 集計 ──
+  const groupSelected = () => {
+    const ungrouped = Array.from(unitDrafts.values()).filter((d) => d.selected && d.group_id === 0);
+    if (ungrouped.length < 2) {
+      addToast('グルーピングには2つ以上の未グループ単元を選択してください', 'error');
+      return;
+    }
+    const gid = nextGroupId;
+    setNextGroupId(gid + 1);
+    setUnitDrafts((prev) => {
+      const next = new Map(prev);
+      for (const s of ungrouped) {
+        const d = next.get(s.curriculum_item_id);
+        if (d) next.set(s.curriculum_item_id, { ...d, group_id: gid });
+      }
+      return next;
+    });
+  };
+
+  const ungroupUnit = (ciId: number) => {
+    updateUnit(ciId, { group_id: 0 });
+  };
+
   const selectedUnits = useMemo(() => {
     return Array.from(unitDrafts.values()).filter((d) => d.selected);
   }, [unitDrafts]);
 
   const totalKoma = useMemo(() => {
-    return selectedUnits.reduce((a, b) => a + b.koma_count, 0);
+    return calcTotalKoma(selectedUnits);
   }, [selectedUnits]);
 
-  // ── 保存 ──
+  const groupMap = useMemo(() => {
+    const map = new Map<number, UnitDraft[]>();
+    for (const u of selectedUnits) {
+      if (u.group_id === 0) continue;
+      const list = map.get(u.group_id) ?? [];
+      list.push(u);
+      map.set(u.group_id, list);
+    }
+    return map;
+  }, [selectedUnits]);
+
   const handleSave = async () => {
-    if (!studentTextbookId) return;
+    if (!selectedTextbookId) {
+      addToast('テキストを選択してください', 'error');
+      return;
+    }
     setSaving(true);
     try {
+      const unitInputs: ProposalUnitInput[] = selectedUnits.map((u) => ({
+        curriculum_item_id: u.curriculum_item_id,
+        koma_count: u.koma_count,
+        reason: u.reason,
+        group_id: u.group_id,
+      }));
+
       const result = await upsertProposal({
         id: isNew ? undefined : proposalId,
-        studentTextbookId,
+        studentId,
+        textbookId: selectedTextbookId,
+        studentTextbookId: studentTextbookId,
         season,
         year,
         theme,
+        appliedKoma: appliedKoma,
         notes: notes || null,
-        units: selectedUnits.map((u) => ({
-          curriculum_item_id: u.curriculum_item_id,
-          koma_count: u.koma_count,
-          reason: u.reason,
-        })),
+        units: unitInputs,
       });
 
       addToast('保存しました', 'success');
@@ -257,66 +362,149 @@ export default function ProposalEditor() {
     }
   };
 
-  // ── 進捗判定ヘルパー ──
-  const _isDone = (ciId: number): boolean => {
-    const p = progressMap.get(ciId);
-    if (!p) return false;
-    return false;
+  const handleStatusChange = async (newStatus: ProposalStatus) => {
+    if (isNew || !proposalId) return;
+    try {
+      await updateProposal(proposalId, { status: newStatus });
+      setProposal((prev) => prev ? { ...prev, status: newStatus } : prev);
+      addToast(`ステータスを「${PROPOSAL_STATUS_LABELS[newStatus]}」に変更しました`, 'success');
+    } catch (e) {
+      console.error(e);
+      addToast('ステータス変更に失敗しました', 'error');
+    }
   };
 
-  const hasLessons = (ciId: number): boolean => {
+  const handleDelete = async () => {
+    if (isNew || !proposalId) return;
+    try {
+      await deleteProposal(proposalId);
+      addToast('提案書を削除しました', 'success');
+      router.replace(`/students/${studentId}/proposals`);
+    } catch (e) {
+      console.error(e);
+      addToast('削除に失敗しました', 'error');
+    }
+  };
+
+  const handleSyncToProgress = async () => {
+    if (isNew || !proposalId) return;
+    setSyncing(true);
+    try {
+      const { studentTextbookId: stbId } = await syncProposalToProgress(proposalId);
+      setStudentTextbookId(stbId);
+      addToast('進行表に反映しました', 'success');
+    } catch (e) {
+      console.error(e);
+      addToast('進行表への反映に失敗しました', 'error');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const isDone = (ciId: number): boolean => {
     const p = progressMap.get(ciId);
-    return !!p;
+    return !!p?.school_progress_date;
   };
 
   if (loading) {
-    return (
-      <AdminLayout>
-        <div className="p-8 text-sm text-gray-400">読み込み中...</div>
-      </AdminLayout>
-    );
+    return <div className="p-8 text-sm text-text-muted">読み込み中...</div>;
   }
 
+  const currentStatus = proposal?.status ?? 'draft';
   const seasonLabel = SEASON_LABELS[season] ?? season;
 
   // ════════════════════════════════════════
-  // プレビューモード（印刷用）
+  // プレビューモード
   // ════════════════════════════════════════
   if (previewMode) {
     return (
-      <AdminLayout>
-        <div className="max-w-2xl mx-auto">
-          <div className="mb-4 flex gap-2 print:hidden">
-            <button
-              onClick={() => setPreviewMode(false)}
-              className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-            >
-              <ArrowLeft className="w-4 h-4 inline mr-1" />
-              編集に戻る
-            </button>
-            <button
-              onClick={() => window.print()}
-              className="px-3 py-1.5 text-sm bg-[#1e3a5f] text-white rounded-lg hover:bg-[#2c4f7c]"
-            >
-              <Printer className="w-4 h-4 inline mr-1" />
-              印刷
-            </button>
-          </div>
+      <div className="max-w-2xl mx-auto">
+        <div className="mb-4 flex gap-2 print:hidden">
+          <Button variant="outline" size="sm" onClick={() => setPreviewMode(false)}>
+            <ArrowLeft className="w-4 h-4 mr-1.5" />
+            編集に戻る
+          </Button>
+          <Button size="sm" onClick={() => window.print()}>
+            <Printer className="w-4 h-4 mr-1.5" />
+            印刷
+          </Button>
+        </div>
 
-          <ProposalPrintView
-            studentName={studentName}
-            textbookName={textbookName}
-            seasonLabel={seasonLabel}
-            year={year}
-            theme={theme}
-            allItems={allItems}
-            selectedUnits={selectedUnits}
-            progressMap={progressMap}
-            totalKoma={totalKoma}
+        <ProposalPrintView
+          studentName={studentName}
+          textbookName={textbookName}
+          seasonLabel={seasonLabel}
+          year={year}
+          theme={theme}
+          allItems={allItems}
+          selectedUnits={selectedUnits}
+          progressMap={progressMap}
+          totalKoma={totalKoma}
+          groupMap={groupMap}
+        />
+        <ToastContainer toasts={toasts} onRemove={removeToast} />
+      </div>
+    );
+  }
+
+  // ════════════════════════════════════════
+  // テキスト選択ピッカー
+  // ════════════════════════════════════════
+  if (showTextbookPicker || (!selectedTextbookId && isNew)) {
+    const filtered = allTextbooks.filter((tb) => {
+      if (!textbookSearch) return true;
+      const q = textbookSearch.toLowerCase();
+      return (
+        tb.name.toLowerCase().includes(q) ||
+        tb.subject?.toLowerCase().includes(q) ||
+        tb.publisher?.toLowerCase().includes(q)
+      );
+    });
+
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="mb-6">
+          <Link
+            href={`/students/${studentId}/proposals`}
+            className="text-sm text-text-muted hover:text-text-body inline-flex items-center gap-1 mb-2"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            提案書一覧に戻る
+          </Link>
+          <h1 className="text-lg font-bold text-text-heading">テキストを選択</h1>
+          <p className="text-sm text-text-muted mt-0.5">{studentName} の講習提案書</p>
+        </div>
+
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-faint" />
+          <input
+            value={textbookSearch}
+            onChange={(e) => setTextbookSearch(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 text-sm border border-border-default rounded-lg bg-surface-raised focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            placeholder="テキスト名・教科・出版社で検索"
+            autoFocus
           />
         </div>
+
+        <div className="space-y-1 max-h-[60vh] overflow-y-auto">
+          {filtered.map((tb) => (
+            <button
+              key={tb.id}
+              onClick={() => handleSelectTextbook(tb)}
+              className="w-full text-left px-4 py-3 bg-surface-raised rounded-lg border border-border-default hover:border-accent-ink/30 hover:bg-accent-ink-subtle transition-colors duration-150"
+            >
+              <div className="text-sm font-medium text-text-heading">{tb.name}</div>
+              <div className="text-xs text-text-muted mt-0.5">
+                {[tb.subject, tb.publisher, tb.grade].filter(Boolean).join(' / ')}
+              </div>
+            </button>
+          ))}
+          {filtered.length === 0 && (
+            <div className="py-8 text-center text-sm text-text-faint">該当するテキストがありません</div>
+          )}
+        </div>
         <ToastContainer toasts={toasts} onRemove={removeToast} />
-      </AdminLayout>
+      </div>
     );
   }
 
@@ -324,105 +512,248 @@ export default function ProposalEditor() {
   // 編集モード
   // ════════════════════════════════════════
   return (
-    <AdminLayout>
-      <div className="max-w-3xl mx-auto">
-        {/* ヘッダー */}
-        <div className="mb-6">
-          <Link
-            href={`/students/${studentId}/progress`}
-            className="text-sm text-gray-500 hover:text-gray-700 inline-flex items-center gap-1 mb-2"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            進行表に戻る
-          </Link>
-          <h1 className="text-lg font-bold text-gray-900">
-            {isNew ? '講習提案書を作成' : '講習提案書を編集'}
-          </h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            {studentName} / {textbookName} / {year}年 {seasonLabel}講習
-          </p>
-        </div>
-
-        <div className="space-y-5">
-          {/* テーマ */}
-          <section className="p-4 bg-white rounded-xl border border-gray-200">
-            <label className="text-sm font-bold text-gray-900 block mb-2">
-              講習テーマ
-            </label>
-            <input
-              value={theme}
-              onChange={(e) => setTheme(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f]"
-              placeholder="例: 英検3級対策 / 1年生の総復習 / 2学期の先取り"
-            />
-          </section>
-
-          {/* 単元選択 */}
-          <section className="p-4 bg-white rounded-xl border border-gray-200">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-bold text-gray-900">対象単元を選択</h2>
-              <div className="text-sm text-[#1e3a5f] font-bold">
-                {selectedUnits.length}単元 / {totalKoma}コマ
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              {allItems.map((item) => {
-                const draft = unitDrafts.get(item.id);
-                if (!draft) return null;
-                const done = hasLessons(item.id);
-
-                return (
-                  <UnitRow
-                    key={item.id}
-                    item={item}
-                    draft={draft}
-                    done={done}
-                    onToggle={() => toggleUnit(item.id)}
-                    onUpdate={(patch) => updateUnit(item.id, patch)}
-                  />
-                );
-              })}
-            </div>
-          </section>
-
-          {/* メモ */}
-          <section className="p-4 bg-white rounded-xl border border-gray-200">
-            <label className="text-sm font-bold text-gray-900 block mb-2">
-              備考（内部メモ・印刷には出ません）
-            </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={2}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f] resize-none"
-              placeholder="内部メモ"
-            />
-          </section>
-
-          {/* アクション */}
-          <div className="flex gap-2">
-            <button
-              onClick={handleSave}
-              disabled={saving || !theme.trim()}
-              className="flex-1 px-4 py-2.5 bg-[#1e3a5f] text-white rounded-xl text-sm font-medium hover:bg-[#2c4f7c] disabled:opacity-50 flex items-center justify-center gap-1.5"
-            >
-              <Save className="w-4 h-4" />
-              {saving ? '保存中...' : '保存'}
-            </button>
-            <button
-              onClick={() => setPreviewMode(true)}
-              className="px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 border border-gray-200 flex items-center gap-1.5"
-            >
-              <Printer className="w-4 h-4" />
-              プレビュー
-            </button>
+    <div className="max-w-3xl mx-auto">
+      {/* ヘッダー */}
+      <div className="mb-6">
+        <Link
+          href={`/students/${studentId}/proposals`}
+          className="text-sm text-text-muted hover:text-text-body inline-flex items-center gap-1 mb-2"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          提案書一覧
+        </Link>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-lg font-bold text-text-heading">
+              {isNew ? '講習提案書を作成' : '講習提案書を編集'}
+            </h1>
+            <p className="text-sm text-text-muted mt-0.5">
+              {studentName} / {textbookName} / {year}年 {seasonLabel}講習
+            </p>
           </div>
+
+          {!isNew && (
+            <div className="flex items-center gap-1.5">
+              {STATUS_FLOW.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => handleStatusChange(s)}
+                  className={`px-2.5 py-1 text-[11px] font-bold rounded-full transition-colors duration-150 ${
+                    currentStatus === s ? STATUS_COLORS[s].active : STATUS_COLORS[s].inactive
+                  }`}
+                >
+                  {PROPOSAL_STATUS_LABELS[s]}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
+      <div className="space-y-5">
+        {/* シーズン・年 */}
+        {isNew && (
+          <section className="p-4 bg-surface-raised rounded-xl border border-border-default">
+            <div className="flex gap-4">
+              <div>
+                <label className="text-xs font-bold text-text-muted block mb-1.5">シーズン</label>
+                <div className="flex gap-1">
+                  {(['spring', 'summer', 'winter'] as SeasonType[]).map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setSeason(s)}
+                      className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors duration-150 ${
+                        season === s
+                          ? 'bg-ink text-text-on-primary'
+                          : 'bg-surface-hover text-text-body hover:bg-border-default'
+                      }`}
+                    >
+                      {SEASON_LABELS[s]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-text-muted block mb-1.5">年度</label>
+                <input
+                  type="number"
+                  value={year}
+                  onChange={(e) => setYear(Number(e.target.value))}
+                  className="w-24 px-3 py-1.5 text-sm border border-border-default rounded-lg bg-surface-raised focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                />
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* テキスト変更 */}
+        {isNew && (
+          <section className="p-4 bg-surface-raised rounded-xl border border-border-default flex items-center justify-between">
+            <div>
+              <div className="text-xs font-bold text-text-muted mb-0.5">テキスト</div>
+              <div className="text-sm font-medium text-text-heading">{textbookName}</div>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => setShowTextbookPicker(true)}>
+              変更
+            </Button>
+          </section>
+        )}
+
+        {/* テーマ */}
+        <section className="p-4 bg-surface-raised rounded-xl border border-border-default">
+          <label className="text-sm font-bold text-text-heading block mb-2">講習テーマ</label>
+          <input
+            value={theme}
+            onChange={(e) => setTheme(e.target.value)}
+            className="w-full px-3 py-2 text-sm border border-border-default rounded-lg bg-surface-raised focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            placeholder="例: 英検3級対策 / 1年生の総復習 / 2学期の先取り"
+          />
+        </section>
+
+        {/* 申込コマ数 */}
+        {!isNew && (
+          <section className="p-4 bg-surface-raised rounded-xl border border-border-default">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-bold text-text-heading">申込コマ数</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min={0}
+                  value={appliedKoma ?? ''}
+                  onChange={(e) => setAppliedKoma(e.target.value === '' ? null : Number(e.target.value))}
+                  className="w-20 px-3 py-1.5 text-sm border border-border-default rounded-lg text-center bg-surface-raised focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  placeholder="--"
+                />
+                <span className="text-xs text-text-muted">コマ</span>
+              </div>
+            </div>
+            {appliedKoma != null && appliedKoma !== totalKoma && (
+              <p className="mt-2 text-xs text-warning">
+                提案 {totalKoma}コマ → 申込 {appliedKoma}コマ（差分 {appliedKoma - totalKoma > 0 ? '+' : ''}{appliedKoma - totalKoma}コマ）
+              </p>
+            )}
+          </section>
+        )}
+
+        {/* 単元選択 */}
+        <section className="p-4 bg-surface-raised rounded-xl border border-border-default">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-bold text-text-heading">対象単元を選択</h2>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={groupSelected}
+                className="px-2 py-1 text-[11px] bg-surface-hover text-text-muted rounded-md hover:bg-border-default flex items-center gap-1 transition-colors duration-150"
+                title="選択中の未グループ単元を1コマにまとめる"
+              >
+                <Link2 className="w-3 h-3" />
+                グループ化
+              </button>
+              <div className="text-sm text-accent-ink font-bold">
+                {selectedUnits.length}単元 / {totalKoma}コマ
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            {allItems.map((item) => {
+              const draft = unitDrafts.get(item.id);
+              if (!draft) return null;
+              const done = isDone(item.id);
+              const groupMembers = draft.group_id > 0 ? groupMap.get(draft.group_id) : undefined;
+
+              return (
+                <UnitRow
+                  key={item.id}
+                  item={item}
+                  draft={draft}
+                  done={done}
+                  groupMembers={groupMembers}
+                  onToggle={() => toggleUnit(item.id)}
+                  onUpdate={(patch) => updateUnit(item.id, patch)}
+                  onUngroup={() => ungroupUnit(item.id)}
+                />
+              );
+            })}
+          </div>
+        </section>
+
+        {/* メモ */}
+        <section className="p-4 bg-surface-raised rounded-xl border border-border-default">
+          <label className="text-sm font-bold text-text-heading block mb-2">
+            備考（内部メモ・印刷には出ません）
+          </label>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={2}
+            className="w-full px-3 py-2 text-sm border border-border-default rounded-lg bg-surface-raised focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
+            placeholder="内部メモ"
+          />
+        </section>
+
+        {/* アクション */}
+        <div className="flex gap-2">
+          <Button
+            className="flex-1"
+            onClick={handleSave}
+            disabled={saving || !theme.trim() || !selectedTextbookId}
+            isLoading={saving}
+          >
+            <Save className="w-4 h-4 mr-1.5" />
+            保存
+          </Button>
+          <Button variant="outline" onClick={() => setPreviewMode(true)}>
+            <Printer className="w-4 h-4 mr-1.5" />
+            プレビュー
+          </Button>
+        </div>
+
+        {/* 進行表反映 + 削除 */}
+        {!isNew && (
+          <div className="flex gap-2 pt-2 border-t border-border-subtle">
+            <Button
+              variant="outline"
+              className="flex-1 !border-success/40 !text-success hover:!bg-success-subtle"
+              onClick={handleSyncToProgress}
+              disabled={syncing}
+              isLoading={syncing}
+            >
+              <ArrowRight className="w-4 h-4 mr-1.5" />
+              進行表に反映
+            </Button>
+            <Button variant="danger" onClick={() => setShowDeleteConfirm(true)}>
+              <Trash2 className="w-4 h-4 mr-1.5" />
+              削除
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* 削除確認 */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>提案書を削除しますか？</AlertDialogTitle>
+            <AlertDialogDescription>
+              「{theme || `${year}年 ${seasonLabel}講習`}」を削除します。この操作は取り消せません。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowDeleteConfirm(false)}>
+              キャンセル
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-danger text-white hover:bg-red-700"
+            >
+              削除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-    </AdminLayout>
+    </div>
   );
 }
 
@@ -432,96 +763,119 @@ function UnitRow({
   item,
   draft,
   done,
+  groupMembers,
   onToggle,
   onUpdate,
+  onUngroup,
 }: {
   item: CurriculumItem;
   draft: UnitDraft;
   done: boolean;
+  groupMembers?: UnitDraft[];
   onToggle: () => void;
   onUpdate: (patch: Partial<UnitDraft>) => void;
+  onUngroup: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const isGroupHead = groupMembers && groupMembers[0]?.curriculum_item_id === draft.curriculum_item_id;
+  const isGrouped = draft.group_id > 0;
 
   return (
     <div
-      className={`rounded-lg border transition-colors ${
+      className={`rounded-lg border transition-colors duration-150 ${
         draft.selected
-          ? 'border-[#1e3a5f]/30 bg-[#1e3a5f]/[0.03]'
-          : 'border-gray-100 bg-white'
+          ? isGrouped
+            ? 'border-info/30 bg-info-subtle'
+            : 'border-accent-ink/20 bg-accent-ink-subtle'
+          : 'border-border-subtle bg-surface-raised'
       }`}
     >
       <div className="flex items-center gap-2 px-3 py-2">
-        {/* チェックボックス */}
         <button
           onClick={onToggle}
-          className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+          className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors duration-150 ${
             draft.selected
-              ? 'bg-[#1e3a5f] border-[#1e3a5f] text-white'
-              : 'border-gray-300 hover:border-gray-400'
+              ? 'bg-accent-ink border-accent-ink text-white'
+              : 'border-border-strong hover:border-text-muted'
           }`}
+          aria-label={draft.selected ? `${item.title} を選択解除` : `${item.title} を選択`}
         >
           {draft.selected && <Check className="w-3 h-3" />}
         </button>
 
-        {/* 単元名 */}
         <div className="flex-1 min-w-0">
           <span
             className={`text-sm ${
               done
-                ? 'text-gray-400 line-through'
+                ? 'text-text-faint line-through'
                 : draft.selected
-                  ? 'font-medium text-gray-900'
-                  : 'text-gray-600'
+                  ? 'font-medium text-text-heading'
+                  : 'text-text-body'
             }`}
           >
             {item.title}
           </span>
           {done && (
-            <span className="ml-1.5 text-[10px] text-gray-400">指導済</span>
+            <span className="ml-1.5 text-[10px] text-text-faint">指導済</span>
+          )}
+          {isGrouped && (
+            <span className="ml-1.5 text-[10px] text-info font-medium">
+              G{draft.group_id}
+            </span>
           )}
         </div>
 
-        {/* コマ数（選択時のみ） */}
-        {draft.selected && (
+        {draft.selected && (!isGrouped || isGroupHead) && (
           <div className="flex items-center gap-1 shrink-0">
             <button
               onClick={() => onUpdate({ koma_count: Math.max(1, draft.koma_count - 1) })}
-              className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 rounded hover:bg-gray-100"
+              className="w-6 h-6 flex items-center justify-center text-text-faint hover:text-text-body rounded hover:bg-surface-hover transition-colors duration-150"
+              aria-label="コマ数を減らす"
             >
               <Minus className="w-3 h-3" />
             </button>
-            <span className="w-8 text-center text-sm font-bold text-[#1e3a5f]">
+            <span className="w-8 text-center text-sm font-bold text-accent-ink">
               {draft.koma_count}
             </span>
             <button
               onClick={() => onUpdate({ koma_count: draft.koma_count + 1 })}
-              className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-600 rounded hover:bg-gray-100"
+              className="w-6 h-6 flex items-center justify-center text-text-faint hover:text-text-body rounded hover:bg-surface-hover transition-colors duration-150"
+              aria-label="コマ数を増やす"
             >
               <Plus className="w-3 h-3" />
             </button>
-            <span className="text-xs text-gray-400 ml-0.5">コマ</span>
+            <span className="text-xs text-text-faint ml-0.5">コマ</span>
           </div>
         )}
 
-        {/* 展開ボタン（選択時のみ） */}
+        {isGrouped && draft.selected && (
+          <button
+            onClick={onUngroup}
+            className="p-1 text-info/60 hover:text-info rounded hover:bg-info/10 transition-colors duration-150"
+            title="グループから外す"
+            aria-label="グループから外す"
+          >
+            <Link2 className="w-3.5 h-3.5" />
+          </button>
+        )}
+
         {draft.selected && (
           <button
             onClick={() => setExpanded(!expanded)}
-            className="p-1 text-gray-400 hover:text-gray-600 rounded hover:bg-gray-100"
+            className="p-1 text-text-faint hover:text-text-body rounded hover:bg-surface-hover transition-colors duration-150"
+            aria-label={expanded ? '理由を閉じる' : '理由を入力'}
           >
             {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
         )}
       </div>
 
-      {/* 理由入力（展開時） */}
       {draft.selected && expanded && (
         <div className="px-3 pb-2.5 pt-0">
           <input
             value={draft.reason}
             onChange={(e) => onUpdate({ reason: e.target.value })}
-            className="w-full px-2.5 py-1.5 text-xs border border-gray-200 rounded-lg focus:ring-1 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f]"
+            className="w-full px-2.5 py-1.5 text-xs border border-border-default rounded-lg bg-surface-raised focus:ring-1 focus:ring-primary/20 focus:border-primary"
             placeholder="この単元を講習で扱う理由（保護者に表示されます）"
           />
         </div>
@@ -542,6 +896,7 @@ function ProposalPrintView({
   selectedUnits,
   progressMap,
   totalKoma,
+  groupMap,
 }: {
   studentName: string;
   textbookName: string;
@@ -552,106 +907,110 @@ function ProposalPrintView({
   selectedUnits: UnitDraft[];
   progressMap: Map<number, StudentProgress>;
   totalKoma: number;
+  groupMap: Map<number, UnitDraft[]>;
 }) {
   const selectedIds = new Set(selectedUnits.map((u) => u.curriculum_item_id));
   const unitMap = new Map(selectedUnits.map((u) => [u.curriculum_item_id, u]));
-  const doneCount = allItems.filter((item) => progressMap.has(item.id)).length;
+  const doneCount = allItems.filter((item) => !!progressMap.get(item.id)?.school_progress_date).length;
 
   return (
     <div className="space-y-5 print:space-y-4">
-      {/* ヘッダー */}
-      <div className="p-5 bg-[#1e3a5f] text-white rounded-2xl print:rounded-none print:bg-white print:text-black print:border-b-2 print:border-[#1e3a5f]">
+      <div className="p-5 bg-ink text-text-on-primary rounded-2xl print:rounded-none print:bg-white print:text-text-heading print:border-b-2 print:border-ink">
         <div className="text-lg font-bold">{year}年 {seasonLabel}講習のご提案</div>
         <div className="text-sm mt-1 opacity-90 print:opacity-100">
           {studentName} さま / {textbookName}
         </div>
       </div>
 
-      {/* テーマ */}
       {theme && (
-        <section className="p-4 bg-white rounded-xl border border-gray-200 print:border-gray-300">
-          <h2 className="text-sm font-bold text-gray-900 mb-1">講習テーマ</h2>
-          <p className="text-sm text-gray-800">{theme}</p>
+        <section className="p-4 bg-surface-raised rounded-xl border border-border-default print:border-border-strong">
+          <h2 className="text-sm font-bold text-text-heading mb-1">講習テーマ</h2>
+          <p className="text-sm text-text-body">{theme}</p>
         </section>
       )}
 
-      {/* 進捗 */}
-      <section className="p-4 bg-white rounded-xl border border-gray-200 print:border-gray-300">
-        <h2 className="text-sm font-bold text-gray-900 mb-2">現在の進捗</h2>
+      <section className="p-4 bg-surface-raised rounded-xl border border-border-default print:border-border-strong">
+        <h2 className="text-sm font-bold text-text-heading mb-2">現在の進捗</h2>
         <div className="flex items-center gap-3">
-          <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden print:border print:border-gray-300">
+          <div className="flex-1 h-2 bg-surface-hover rounded-full overflow-hidden print:border print:border-border-strong">
             <div
-              className="h-full bg-[#1e3a5f] rounded-full print:bg-gray-800"
-              style={{ width: `${(doneCount / allItems.length) * 100}%` }}
+              className="h-full bg-ink rounded-full"
+              style={{ width: allItems.length ? `${(doneCount / allItems.length) * 100}%` : '0%' }}
             />
           </div>
-          <span className="text-sm font-bold text-gray-800 shrink-0">
+          <span className="text-sm font-bold text-text-heading shrink-0">
             {doneCount}
-            <span className="text-xs font-normal text-gray-500">/{allItems.length}単元</span>
+            <span className="text-xs font-normal text-text-muted">/{allItems.length}単元</span>
           </span>
         </div>
       </section>
 
-      {/* 全単元一覧 */}
-      <section className="p-4 bg-white rounded-xl border border-gray-200 print:border-gray-300">
+      <section className="p-4 bg-surface-raised rounded-xl border border-border-default print:border-border-strong">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-bold text-gray-900">テキスト全単元と講習対象</h2>
-          <span className="text-sm font-bold text-[#1e3a5f] print:text-gray-900">
+          <h2 className="text-sm font-bold text-text-heading">テキスト全単元と講習対象</h2>
+          <span className="text-sm font-bold text-accent-ink print:text-text-heading">
             講習 {totalKoma}コマ / {selectedUnits.length}単元
           </span>
         </div>
         <table className="w-full text-xs">
-          <thead className="border-b border-gray-200">
+          <thead className="border-b border-border-default">
             <tr>
-              <th className="py-2 text-left font-semibold text-gray-500">単元</th>
-              <th className="py-2 text-center w-14 font-semibold text-gray-500">状況</th>
-              <th className="py-2 text-center w-12 font-semibold text-gray-500">コマ</th>
-              <th className="py-2 text-left font-semibold text-gray-500">講習で扱う理由</th>
+              <th className="py-2 text-left font-semibold text-text-muted">単元</th>
+              <th className="py-2 text-center w-14 font-semibold text-text-muted">状況</th>
+              <th className="py-2 text-center w-12 font-semibold text-text-muted">コマ</th>
+              <th className="py-2 text-left font-semibold text-text-muted">講習で扱う理由</th>
             </tr>
           </thead>
           <tbody>
             {allItems.map((item) => {
               const isTarget = selectedIds.has(item.id);
-              const isDone = progressMap.has(item.id);
+              const progress = progressMap.get(item.id);
+              const itemDone = !!progress?.school_progress_date;
               const unit = unitMap.get(item.id);
+              const isGrouped = unit && unit.group_id > 0;
+              const members = isGrouped ? groupMap.get(unit.group_id) : undefined;
+              const isGroupHead = members && members[0]?.curriculum_item_id === item.id;
 
               return (
                 <tr
                   key={item.id}
                   className={
                     isTarget
-                      ? 'bg-[#1e3a5f]/5 border-b border-[#1e3a5f]/10 print:bg-gray-50'
-                      : 'border-b border-gray-50'
+                      ? 'bg-accent-ink-subtle border-b border-accent-ink/10 print:bg-surface'
+                      : 'border-b border-border-subtle'
                   }
                 >
                   <td
                     className={`py-2 ${
                       isTarget
-                        ? 'font-bold text-[#1e3a5f] print:text-gray-900'
-                        : isDone
-                          ? 'text-gray-400 line-through'
-                          : 'text-gray-600'
+                        ? 'font-bold text-accent-ink print:text-text-heading'
+                        : itemDone
+                          ? 'text-text-faint line-through'
+                          : 'text-text-body'
                     }`}
                   >
                     {item.title}
+                    {isGrouped && (
+                      <span className="ml-1 text-[9px] text-info">G{unit.group_id}</span>
+                    )}
                   </td>
                   <td className="py-2 text-center">
-                    {isDone ? (
-                      <span className="inline-flex items-center gap-0.5 text-[10px] text-gray-400">
+                    {itemDone ? (
+                      <span className="inline-flex items-center gap-0.5 text-[10px] text-text-faint">
                         <Check className="w-3 h-3" />済
                       </span>
                     ) : isTarget ? (
-                      <span className="px-1.5 py-0.5 bg-[#1e3a5f] text-white text-[10px] font-bold rounded print:bg-gray-800">
+                      <span className="px-1.5 py-0.5 bg-ink text-text-on-primary text-[10px] font-bold rounded">
                         講習
                       </span>
                     ) : (
-                      <span className="text-[10px] text-gray-300">--</span>
+                      <span className="text-[10px] text-text-faint">--</span>
                     )}
                   </td>
-                  <td className="py-2 text-center font-bold text-[#1e3a5f] print:text-gray-900">
-                    {isTarget ? unit?.koma_count : ''}
+                  <td className="py-2 text-center font-bold text-accent-ink print:text-text-heading">
+                    {isTarget && (!isGrouped || isGroupHead) ? unit?.koma_count : ''}
                   </td>
-                  <td className={`py-2 ${isTarget ? 'text-gray-700' : 'text-gray-300'}`}>
+                  <td className={`py-2 ${isTarget ? 'text-text-body' : 'text-text-faint'}`}>
                     {isTarget ? unit?.reason : ''}
                   </td>
                 </tr>
@@ -661,15 +1020,21 @@ function ProposalPrintView({
         </table>
       </section>
 
-      {/* まとめ */}
-      <section className="p-4 bg-gray-50 rounded-xl border border-gray-200 print:border-gray-300">
+      <section className="p-4 bg-surface rounded-xl border border-border-default print:border-border-strong">
         <div className="flex items-center gap-3">
-          <div className="text-sm text-gray-500">講習内容:</div>
-          <div className="text-sm font-bold text-[#1e3a5f] print:text-gray-900">
+          <div className="text-sm text-text-muted">講習内容:</div>
+          <div className="text-sm font-bold text-accent-ink print:text-text-heading">
             {selectedUnits.length}単元 / {totalKoma}コマ
           </div>
         </div>
       </section>
     </div>
   );
+}
+
+function getCurrentSeason(): SeasonType {
+  const month = new Date().getMonth() + 1;
+  if (month >= 2 && month <= 4) return 'spring';
+  if (month >= 5 && month <= 9) return 'summer';
+  return 'winter';
 }

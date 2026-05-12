@@ -1366,7 +1366,7 @@ function TableView({
                 {sessionMode ? 'セッション終了' : '授業を記録'}
               </button>
               <Link
-                href={`/students/${studentId}/proposals/new?stbId=${textbook.id}&season=summer`}
+                href={`/students/${studentId}/proposals/new?stbId=${textbook.id}&textbookId=${textbook.textbook_id}&season=${textbook.season || 'summer'}&year=${new Date().getFullYear()}`}
                 className="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-colors flex items-center gap-1"
               >
                 <FileText className="w-3.5 h-3.5" />

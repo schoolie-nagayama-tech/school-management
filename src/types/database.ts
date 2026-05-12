@@ -3369,11 +3369,14 @@ export const PROPOSAL_STATUS_LABELS: Record<ProposalStatus, string> = {
 
 export interface SeasonalProposal {
   id: string;
-  student_textbook_id: string;
+  student_id: string;
+  textbook_id: number;
+  student_textbook_id: string | null;
   season: SeasonType;
   year: number;
   theme: string;
   status: ProposalStatus;
+  applied_koma: number | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -3381,17 +3384,22 @@ export interface SeasonalProposal {
 
 export interface SeasonalProposalInsert {
   id?: string;
-  student_textbook_id: string;
+  student_id: string;
+  textbook_id: number;
+  student_textbook_id?: string | null;
   season: SeasonType;
   year?: number;
   theme?: string;
   status?: ProposalStatus;
+  applied_koma?: number | null;
   notes?: string | null;
 }
 
 export interface SeasonalProposalUpdate {
+  student_textbook_id?: string | null;
   theme?: string;
   status?: ProposalStatus;
+  applied_koma?: number | null;
   notes?: string | null;
 }
 
@@ -3402,6 +3410,7 @@ export interface SeasonalProposalUnit {
   koma_count: number;
   reason: string;
   sort_order: number;
+  group_id: number;
   created_at: string;
   // JOIN
   curriculum_item?: CurriculumItem;
@@ -3414,10 +3423,13 @@ export interface SeasonalProposalUnitInsert {
   koma_count?: number;
   reason?: string;
   sort_order?: number;
+  group_id?: number;
 }
 
 export interface SeasonalProposalWithDetails extends SeasonalProposal {
   units: SeasonalProposalUnit[];
+  student?: Student;
+  textbook?: Textbook;
   student_textbook?: StudentTextbook & {
     textbook: Textbook;
     student?: Student;

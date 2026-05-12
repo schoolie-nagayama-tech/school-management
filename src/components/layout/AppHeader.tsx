@@ -325,6 +325,17 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                         >
                           準備スケジュール
                         </Link>
+                        <Link
+                          href="/courses/proposals"
+                          onClick={() => setShowCourseDropdown(false)}
+                          className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
+                            pathname?.startsWith('/courses/proposals')
+                              ? 'bg-primary/10 text-primary font-semibold'
+                              : ''
+                          }`}
+                        >
+                          提案書
+                        </Link>
                       </div>
                     </div>
                   )}
