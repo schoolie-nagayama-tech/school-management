@@ -18,19 +18,19 @@ import { SchoolSwitcher } from '@/components/SchoolSwitcher';
 const STATUS_BADGE: Record<ProposalStatus, string> = {
   draft: 'bg-surface-hover text-text-muted',
   sent: 'bg-info-subtle text-info',
-  approved: 'bg-success-subtle text-success',
+  approved: 'bg-info-subtle text-info',
 };
 
-const STATUS_FILTER_ACTIVE: Record<ProposalStatus, string> = {
+const VISIBLE_STATUSES: ProposalStatus[] = ['draft', 'sent'];
+
+const STATUS_FILTER_ACTIVE: Record<string, string> = {
   draft: 'bg-text-muted text-white',
   sent: 'bg-info text-white',
-  approved: 'bg-success text-white',
 };
 
-const STATUS_FILTER_INACTIVE: Record<ProposalStatus, string> = {
+const STATUS_FILTER_INACTIVE: Record<string, string> = {
   draft: 'bg-surface-hover text-text-muted hover:bg-border-default',
   sent: 'bg-info-subtle text-info hover:bg-info/15',
-  approved: 'bg-success-subtle text-success hover:bg-success/15',
 };
 
 interface StudentOption {
@@ -178,9 +178,10 @@ export default function CourseProposalsPage() {
     byStudent.get(sid)!.proposals.push(p);
   }
 
-  const statusCounts = { draft: 0, sent: 0, approved: 0 };
+  const statusCounts: Record<string, number> = { draft: 0, sent: 0 };
   for (const p of proposals) {
-    statusCounts[p.status]++;
+    const key = p.status === 'approved' ? 'sent' : p.status;
+    statusCounts[key] = (statusCounts[key] ?? 0) + 1;
   }
 
   return (
@@ -243,7 +244,7 @@ export default function CourseProposalsPage() {
         </div>
 
         <div className="flex gap-2 mb-4">
-          {(Object.entries(statusCounts) as [ProposalStatus, number][]).map(([status, count]) => (
+          {VISIBLE_STATUSES.map((status) => (
             <button
               key={status}
               onClick={() => setFilterStatus(filterStatus === status ? '' : status)}
@@ -253,7 +254,7 @@ export default function CourseProposalsPage() {
                   : STATUS_FILTER_INACTIVE[status]
               }`}
             >
-              {PROPOSAL_STATUS_LABELS[status]} {count}
+              {PROPOSAL_STATUS_LABELS[status]} {statusCounts[status] ?? 0}
             </button>
           ))}
         </div>

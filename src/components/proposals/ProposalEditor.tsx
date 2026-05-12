@@ -36,6 +36,7 @@ import {
   upsertProposal,
   deleteProposal,
   updateProposal,
+  saveProposalUnits,
   syncProposalToProgress,
   calcTotalKoma,
   calcTotalAppliedKoma,
@@ -62,9 +63,9 @@ interface UnitDraft {
   group_id: number;
 }
 
-const STATUS_FLOW: ProposalStatus[] = ['draft', 'sent', 'approved'];
+const STATUS_FLOW: ProposalStatus[] = ['draft', 'sent'];
 
-const STATUS_COLORS: Record<ProposalStatus, { active: string; inactive: string }> = {
+const STATUS_COLORS: Record<string, { active: string; inactive: string }> = {
   draft: {
     active: 'bg-text-muted text-white',
     inactive: 'bg-surface-hover text-text-muted hover:bg-border-default',
@@ -72,10 +73,6 @@ const STATUS_COLORS: Record<ProposalStatus, { active: string; inactive: string }
   sent: {
     active: 'bg-info text-white',
     inactive: 'bg-info-subtle text-info hover:bg-info/15',
-  },
-  approved: {
-    active: 'bg-success text-white',
-    inactive: 'bg-success-subtle text-success hover:bg-success/15',
   },
 };
 
@@ -383,7 +380,32 @@ export default function ProposalEditor() {
   const handleStatusChange = async (newStatus: ProposalStatus) => {
     if (isNew || !proposalId) return;
     try {
-      await updateProposal(proposalId, { status: newStatus });
+      if (newStatus === 'sent') {
+        const updated = new Map(unitDrafts);
+        Array.from(updated.entries()).forEach(([ciId, d]) => {
+          if (d.selected) {
+            updated.set(ciId, { ...d, applied_koma: d.koma_count });
+          }
+        });
+        setUnitDrafts(updated);
+
+        const unitInputs = Array.from(updated.values())
+          .filter((d) => d.selected)
+          .map((u) => ({
+            curriculum_item_id: u.curriculum_item_id,
+            koma_count: u.koma_count,
+            applied_koma: u.koma_count,
+            reason: u.reason,
+            group_id: u.group_id,
+          }));
+        await saveProposalUnits(proposalId, unitInputs);
+
+        const totalApplied = calcTotalAppliedKoma(unitInputs);
+        await updateProposal(proposalId, { status: newStatus, applied_koma: totalApplied });
+      } else {
+        await updateProposal(proposalId, { status: newStatus });
+      }
+
       setProposal((prev) => prev ? { ...prev, status: newStatus } : prev);
       addToast(`ステータスを「${PROPOSAL_STATUS_LABELS[newStatus]}」に変更しました`, 'success');
     } catch (e) {
@@ -513,7 +535,7 @@ export default function ProposalEditor() {
         <div className="mb-6">
           <Link
             href={`/students/${studentId}/proposals`}
-            className="text-sm text-text-muted hover:text-text-body inline-flex items-center gap-1 mb-2"
+            className="text-sm text-text-muted hover:text-text-heading inline-flex items-center gap-1 mb-2 transition-colors duration-150"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             提案書一覧に戻る
@@ -600,7 +622,7 @@ export default function ProposalEditor() {
       <div className="mb-6">
         <Link
           href={`/students/${studentId}/proposals`}
-          className="text-sm text-text-muted hover:text-text-body inline-flex items-center gap-1 mb-2"
+          className="text-sm text-text-muted hover:text-text-heading inline-flex items-center gap-1 mb-2 transition-colors duration-150"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           提案書一覧
@@ -847,38 +869,53 @@ function UnitRow({
   const [expanded, setExpanded] = useState(false);
   const isGroupHead = groupMembers && groupMembers[0]?.curriculum_item_id === draft.curriculum_item_id;
   const isGrouped = draft.group_id > 0;
+  const hasApplied = draft.applied_koma > 0;
+
+  const handleNameClick = () => {
+    if (!draft.selected) {
+      onToggle();
+    } else {
+      onUpdate({ koma_count: draft.koma_count + 1 });
+    }
+  };
+
+  const rowColor = !draft.selected
+    ? 'border-border-subtle bg-surface-raised'
+    : hasApplied
+      ? 'border-success/30 bg-success-subtle'
+      : isGrouped
+        ? 'border-info/30 bg-info-subtle'
+        : 'border-accent-ink/20 bg-accent-ink-subtle';
+
+  const checkColor = !draft.selected
+    ? 'border-border-strong hover:border-text-muted'
+    : hasApplied
+      ? 'bg-success border-success text-white'
+      : 'bg-accent-ink border-accent-ink text-white';
 
   return (
-    <div
-      className={`rounded-lg border transition-colors duration-150 ${
-        draft.selected
-          ? isGrouped
-            ? 'border-info/30 bg-info-subtle'
-            : 'border-accent-ink/20 bg-accent-ink-subtle'
-          : 'border-border-subtle bg-surface-raised'
-      }`}
-    >
+    <div className={`rounded-lg border transition-colors duration-150 ${rowColor}`}>
       <div className="flex items-center gap-2 px-3 py-2">
         <button
           onClick={onToggle}
-          className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors duration-150 ${
-            draft.selected
-              ? 'bg-accent-ink border-accent-ink text-white'
-              : 'border-border-strong hover:border-text-muted'
-          }`}
+          className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors duration-150 ${checkColor}`}
           aria-label={draft.selected ? `${item.title} を選択解除` : `${item.title} を選択`}
         >
           {draft.selected && <Check className="w-3 h-3" />}
         </button>
 
-        <div className="flex-1 min-w-0">
+        <button
+          type="button"
+          onClick={handleNameClick}
+          className="flex-1 min-w-0 text-left cursor-pointer group"
+        >
           <span
-            className={`text-sm ${
+            className={`text-sm transition-colors duration-150 ${
               done
                 ? 'text-text-faint line-through'
                 : draft.selected
-                  ? 'font-medium text-text-heading'
-                  : 'text-text-body'
+                  ? 'font-medium text-text-heading group-hover:text-accent-ink'
+                  : 'text-text-body group-hover:text-text-heading'
             }`}
           >
             {item.title}
@@ -891,7 +928,7 @@ function UnitRow({
               G{draft.group_id}
             </span>
           )}
-        </div>
+        </button>
 
         {draft.selected && (!isGrouped || isGroupHead) && (
           <div className="flex items-center gap-2 shrink-0">
@@ -925,7 +962,7 @@ function UnitRow({
               >
                 <Minus className="w-3 h-3" />
               </button>
-              <span className={`w-6 text-center text-sm font-bold ${draft.applied_koma > 0 ? 'text-info' : 'text-text-faint'}`}>
+              <span className={`w-6 text-center text-sm font-bold ${hasApplied ? 'text-success' : 'text-text-faint'}`}>
                 {draft.applied_koma}
               </span>
               <button

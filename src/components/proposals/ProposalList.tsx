@@ -12,7 +12,7 @@ import { SEASON_LABELS, PROPOSAL_STATUS_LABELS } from '@/types/database';
 const STATUS_BADGE: Record<ProposalStatus, string> = {
   draft: 'bg-surface-hover text-text-muted',
   sent: 'bg-info-subtle text-info',
-  approved: 'bg-success-subtle text-success',
+  approved: 'bg-info-subtle text-info',
 };
 
 export default function ProposalList() {
