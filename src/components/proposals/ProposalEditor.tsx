@@ -871,12 +871,11 @@ function UnitRow({
   const isGrouped = draft.group_id > 0;
   const hasApplied = draft.applied_koma > 0;
 
-  const handleNameClick = () => {
+  const handleCardClick = () => {
     if (!draft.selected) {
       onToggle();
-    } else {
-      onUpdate({ koma_count: draft.koma_count + 1 });
     }
+    onUpdate({ koma_count: draft.koma_count + 1 });
   };
 
   const rowColor = !draft.selected
@@ -906,7 +905,7 @@ function UnitRow({
 
         <button
           type="button"
-          onClick={handleNameClick}
+          onClick={handleCardClick}
           className="flex-1 min-w-0 text-left cursor-pointer group"
         >
           <span
