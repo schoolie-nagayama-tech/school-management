@@ -3,10 +3,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, FileText, Plus } from 'lucide-react';
-import { Loading } from '@/components/ui';
+import { ArrowLeft, FileText, Plus, Printer } from 'lucide-react';
+import { Button, Loading, InlineLoading } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
-import { getProposalsByStudent, calcTotalKoma, calcTotalAppliedKoma } from '@/lib/api/proposals';
+import {
+  getProposalsByStudent,
+  getTextbookUnitsWithProgress,
+  calcTotalKoma,
+  calcTotalAppliedKoma,
+} from '@/lib/api/proposals';
+import { ProposalPrintView } from './ProposalPrintView';
+import type { PrintUnitDraft, ProposalPrintData } from './ProposalPrintView';
 import type { SeasonalProposalWithDetails, SeasonType, ProposalStatus } from '@/types/database';
 import { SEASON_LABELS, PROPOSAL_STATUS_LABELS } from '@/types/database';
 
@@ -23,6 +30,9 @@ export default function ProposalList() {
   const [loading, setLoading] = useState(true);
   const [studentName, setStudentName] = useState('');
   const [proposals, setProposals] = useState<SeasonalProposalWithDetails[]>([]);
+  const [printMode, setPrintMode] = useState(false);
+  const [printLoading, setPrintLoading] = useState(false);
+  const [printData, setPrintData] = useState<ProposalPrintData[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -50,8 +60,92 @@ export default function ProposalList() {
     load();
   }, [load]);
 
+  const handleBulkPrint = async () => {
+    if (proposals.length === 0) return;
+    setPrintLoading(true);
+    try {
+      const results: ProposalPrintData[] = [];
+
+      for (const p of proposals) {
+        const { items, progressMap } = await getTextbookUnitsWithProgress(
+          p.student_textbook_id ?? null,
+          p.textbook_id
+        );
+
+        const activeUnits: PrintUnitDraft[] = p.units
+          .filter((u) => u.koma_count > 0)
+          .map((u) => ({
+            curriculum_item_id: u.curriculum_item_id,
+            koma_count: u.koma_count,
+            applied_koma: u.applied_koma ?? 0,
+            reason: u.reason,
+            group_id: u.group_id,
+          }));
+
+        const groupMap = new Map<number, PrintUnitDraft[]>();
+        for (const u of activeUnits) {
+          if (u.group_id > 0) {
+            const list = groupMap.get(u.group_id) ?? [];
+            list.push(u);
+            groupMap.set(u.group_id, list);
+          }
+        }
+
+        const tbName = p.textbook?.subject
+          ? `${p.textbook.subject} ${p.textbook.name}`
+          : p.textbook?.name ?? '';
+
+        results.push({
+          studentName,
+          textbookName: tbName,
+          seasonLabel: `${SEASON_LABELS[p.season as SeasonType]}`,
+          year: p.year,
+          theme: p.theme,
+          allItems: items,
+          activeUnits,
+          progressMap,
+          totalKoma: calcTotalKoma(p.units),
+          groupMap,
+        });
+      }
+
+      setPrintData(results);
+      setPrintMode(true);
+      setTimeout(() => window.print(), 300);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setPrintLoading(false);
+    }
+  };
+
   const currentYear = new Date().getFullYear();
   const currentSeason = getCurrentSeason();
+
+  if (printMode) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="mb-4 flex gap-2 print:hidden">
+          <Button variant="outline" size="sm" onClick={() => setPrintMode(false)}>
+            <ArrowLeft className="w-4 h-4 mr-1.5" />
+            一覧に戻る
+          </Button>
+          <Button size="sm" onClick={() => window.print()}>
+            <Printer className="w-4 h-4 mr-1.5" />
+            印刷
+          </Button>
+        </div>
+
+        <div className="space-y-8">
+          {printData.map((data, i) => (
+            <div key={i} className="print:break-before-page first:print:break-before-auto">
+              <ProposalPrintView {...data} />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   const byTextbook = new Map<number, { name: string; subject: string; proposals: SeasonalProposalWithDetails[] }>();
   for (const p of proposals) {
@@ -79,13 +173,31 @@ export default function ProposalList() {
             <h1 className="text-lg font-bold text-text-heading">講習提案書</h1>
             <p className="text-sm text-text-muted mt-0.5">{studentName}</p>
           </div>
-          <Link
-            href={`/students/${studentId}/proposals/new?season=${currentSeason}&year=${currentYear}`}
-            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-ink text-text-on-primary rounded-lg hover:brightness-[0.85] transition-[filter] duration-150"
-          >
-            <Plus className="w-3 h-3" />
-            新規作成
-          </Link>
+          <div className="flex items-center gap-2">
+            {proposals.length > 0 && (
+              <button
+                onClick={handleBulkPrint}
+                disabled={printLoading}
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border-default text-text-body rounded-lg hover:bg-surface-hover transition-colors duration-150 disabled:opacity-50"
+              >
+                {printLoading ? (
+                  <InlineLoading size="sm" label="読み込み中..." />
+                ) : (
+                  <>
+                    <Printer className="w-3 h-3" />
+                    一括印刷
+                  </>
+                )}
+              </button>
+            )}
+            <Link
+              href={`/students/${studentId}/proposals/new?season=${currentSeason}&year=${currentYear}`}
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-ink text-text-on-primary rounded-lg hover:brightness-[0.85] transition-[filter] duration-150"
+            >
+              <Plus className="w-3 h-3" />
+              新規作成
+            </Link>
+          </div>
         </div>
       </div>
 
