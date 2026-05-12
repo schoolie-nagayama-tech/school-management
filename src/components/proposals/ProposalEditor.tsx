@@ -293,7 +293,7 @@ export default function ProposalEditor() {
   };
 
   const groupSelected = () => {
-    const ungrouped = Array.from(unitDrafts.values()).filter((d) => d.selected && d.koma_count > 0 && d.group_id === 0);
+    const ungrouped = Array.from(unitDrafts.values()).filter((d) => d.selected && d.group_id === 0);
     if (ungrouped.length < 2) {
       addToast('グルーピングには2つ以上の未グループ単元を選択してください', 'error');
       return;
@@ -304,7 +304,11 @@ export default function ProposalEditor() {
       const next = new Map(prev);
       for (const s of ungrouped) {
         const d = next.get(s.curriculum_item_id);
-        if (d) next.set(s.curriculum_item_id, { ...d, group_id: gid });
+        if (d) next.set(s.curriculum_item_id, {
+          ...d,
+          group_id: gid,
+          koma_count: d.koma_count || 1,
+        });
       }
       return next;
     });
