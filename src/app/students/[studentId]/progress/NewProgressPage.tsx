@@ -168,7 +168,7 @@ export default function NewProgressPage() {
         const filteredTbs = isTeacher ? baseTbs.filter((tb) => !tb.is_draft) : baseTbs;
         setStudentTextbooks(filteredTbs);
         setExamTypes(ets || []);
-        // 全教科書の active な試験目標の行動目標を一括取得
+        // 全教科書の active な目標設定の行動目標を一括取得
         const examIds: string[] = [];
         for (const tb of filteredTbs) {
           for (const e of (tb.exams || [])) if (e.id) examIds.push(e.id);
@@ -696,7 +696,7 @@ function activeExamOf(
   return {
     id: pick.id,
     exam_type_id: pick.exam_type_id ?? null,
-    name: etName || pick.custom_exam_name || '試験目標',
+    name: etName || pick.custom_exam_name || '目標設定',
     date: pick.exam_date,
     daysLeft: daysLeftOf(pick.exam_date),
     targetScore: pick.target_score,
@@ -981,7 +981,7 @@ function TextbookCard({
         {textbook.is_draft && <span className="text-[10px] px-1.5 py-0.5 bg-gray-200 text-gray-700 rounded font-bold border border-gray-400">非公開</span>}
       </div>
 
-      {/* 試験目標（コンパクト） */}
+      {/* 目標設定（コンパクト） */}
       {activeExam ? (
         <div className="mb-1.5 p-1.5 bg-gradient-to-br from-[#eff6ff] to-[#dbeafe]/50 border border-[#1e40af]/20 rounded">
           <div className="text-[10px] font-semibold text-[#1e3a5f] truncate mb-0.5">{activeExam.name}</div>
@@ -998,8 +998,8 @@ function TextbookCard({
           </div>
         </div>
       ) : (
-        <div className="mb-1.5 px-1.5 py-1 border border-dashed border-[#d1d5db] rounded text-[10px] text-[#9ca3af] text-center">
-          試験目標未設定
+        <div className="mb-1.5 px-1.5 py-1.5 bg-amber-50 border border-amber-300 rounded text-[10px] text-amber-700 text-center font-medium">
+          目標未設定
         </div>
       )}
 
@@ -1066,7 +1066,7 @@ function TableView({
   const isMeeting = viewMode === 'meeting';
   const activeExam = activeExamOf(textbook, examTypes);
   const activeExamGoals = activeExam ? actionGoalsByExam[activeExam.id] ?? [] : [];
-  // 試験目標編集モーダル
+  // 目標設定編集モーダル
   const [goalModalOpen, setGoalModalOpen] = useState(false);
   const [goalModalEditingId, setGoalModalEditingId] = useState<string | null>(null);
   const [rangeModalOpen, setRangeModalOpen] = useState(false);
@@ -1357,8 +1357,10 @@ function TableView({
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => { setSessionMode((v) => { if (v) setSessionSelection(null); return !v; }); }}
+                disabled={!activeExam && !sessionMode}
+                title={!activeExam ? '目標を設定してください' : undefined}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  sessionMode ? 'bg-[#dc2626] text-white hover:bg-[#b91c1c]' : 'bg-[#1e3a5f] text-white hover:bg-[#2a4d7a]'
+                  sessionMode ? 'bg-[#dc2626] text-white hover:bg-[#b91c1c]' : !activeExam ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[#1e3a5f] text-white hover:bg-[#2a4d7a]'
                 }`}
               >
                 {sessionMode ? 'セッション終了' : '授業を記録'}
@@ -1396,7 +1398,7 @@ function TableView({
 
       {/* ── 試験・設定エリア（コンパクト） ── */}
       <div className="mb-3 space-y-2">
-        {/* 試験目標 */}
+        {/* 目標設定 */}
         {activeExam ? (
           <div className="bg-gradient-to-r from-[#eff6ff] to-[#dbeafe]/50 border border-[#1e40af]/20 rounded-lg px-4 py-3">
             <div className="flex items-center justify-between mb-2">
@@ -1443,14 +1445,22 @@ function TableView({
               }}
             />
           </div>
-        ) : !isMeeting ? (
-          <button
-            onClick={() => { setGoalModalEditingId(null); setGoalModalOpen(true); }}
-            className="px-3 py-2 border border-dashed border-[#d1d5db] rounded-lg text-xs text-[#6b7280] hover:bg-[#f9fafb] hover:border-[#1e3a5f] hover:text-[#1e3a5f] transition-colors"
-          >
-            ＋ 試験目標
-          </button>
-        ) : null}
+        ) : (
+          <div className="bg-amber-50 border-2 border-amber-400 rounded-lg px-4 py-3 flex items-center justify-between">
+            <div>
+              <div className="text-sm font-bold text-amber-800">目標が設定されていません</div>
+              <div className="text-[11px] text-amber-600 mt-0.5">目標を設定すると進捗の記録ができるようになります</div>
+            </div>
+            {!isMeeting && (
+              <button
+                onClick={() => { setGoalModalEditingId(null); setGoalModalOpen(true); }}
+                className="px-4 py-2 bg-amber-500 text-white text-xs font-bold rounded-lg hover:bg-amber-600 transition-colors whitespace-nowrap"
+              >
+                目標を設定する
+              </button>
+            )}
+          </div>
+        )}
 
         {/* 進め方 / 宿題 / 試験範囲 — 1つのカードにまとめる */}
         {!isMeeting && (
@@ -1695,6 +1705,7 @@ function TableView({
                     isPaintCandidate={isPaintCandidate}
                     sessionMode={sessionMode && !isMeeting}
                     sessionSelection={sessionMode && !isMeeting ? sessionSelection : null}
+                    hasGoal={!!activeExam}
                     onPaintRowClick={() => handlePaintRowClick(rowIdStr)}
                     onLocalPatch={(patch) => updateLocal(rowIdStr, patch)}
                     onSaveProgress={(patch) => saveProgressField(row, patch)}
@@ -1712,7 +1723,7 @@ function TableView({
         UI を刷新中。問題があれば URL に <code className="px-1 bg-[#f3f4f6] rounded">?v=legacy</code> を付けて旧UIに戻せます。
       </div>
 
-      {/* 試験目標 編集/新規モーダル */}
+      {/* 目標設定 編集/新規モーダル */}
       {goalModalOpen && (
         <ExamGoalEditModal
           textbookId={textbook.id}
@@ -1721,12 +1732,12 @@ function TableView({
           onClose={() => setGoalModalOpen(false)}
           onSaved={async () => {
             setGoalModalOpen(false);
-            success('試験目標を保存しました');
+            success('目標を保存しました');
             await onRefresh();
           }}
           onDeleted={async () => {
             setGoalModalOpen(false);
-            success('試験目標を削除しました');
+            success('目標を削除しました');
             await onRefresh();
           }}
           toastError={toastError}
@@ -1766,7 +1777,7 @@ function TableView({
 }
 
 /**
- * 試験目標 編集/新規作成モーダル
+ * 目標設定 編集/新規作成モーダル
  * - 試験名（exam_types マスタから選択 or 自由入力）
  * - 試験日 / 目標点
  * - 削除（編集時のみ）
@@ -1829,7 +1840,7 @@ function ExamGoalEditModal({
 
   const remove = async () => {
     if (!editing) return;
-    if (!window.confirm('この試験目標を削除しますか？関連する行動目標も一緒に削除されます。')) return;
+    if (!window.confirm('この目標を削除しますか？関連する行動目標も一緒に削除されます。')) return;
     setSaving(true);
     try {
       await deleteStudentTextbookExam(editing.id);
@@ -1847,7 +1858,7 @@ function ExamGoalEditModal({
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col pointer-events-auto">
           <header className="px-6 py-4 border-b border-[#e5e7eb] flex items-center justify-between">
-            <h2 className="font-bold text-[#1f2937] text-lg">{editing ? '試験目標を編集' : '試験目標を設定'}</h2>
+            <h2 className="font-bold text-[#1f2937] text-lg">{editing ? '目標を編集' : '目標を設定'}</h2>
             <button onClick={onClose} className="w-8 h-8 rounded hover:bg-[#f3f4f6] text-[#6b7280]">✕</button>
           </header>
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
@@ -1950,6 +1961,7 @@ function ProgressRow({
   isPaintCandidate = false,
   sessionMode = false,
   sessionSelection = null,
+  hasGoal = true,
   onPaintRowClick,
   onLocalPatch,
   onSaveProgress,
@@ -1975,6 +1987,8 @@ function ProgressRow({
   sessionMode?: boolean;
   /** セッションの選択状態（ハイライト用） */
   sessionSelection?: { unitActions: Record<number, 1 | 2 | 3>; schoolUnits: Set<number> } | null;
+  /** 目標が設定されているか（未設定時は入力を無効化） */
+  hasGoal?: boolean;
   onPaintRowClick?: () => void;
   onLocalPatch: (patch: Partial<CurriculumItemWithProgress['progress']>) => void;
   onSaveProgress: (patch: Record<string, unknown>) => Promise<void>;
@@ -2144,6 +2158,7 @@ function ProgressRow({
                 onLocalPatch({ school_progress_date: v ?? undefined });
                 onSaveProgress({ school_progress_date: v });
               }}
+              disabled={!hasGoal}
             />
           )}
         </td>
@@ -2168,6 +2183,7 @@ function ProgressRow({
               <DateInputWithToday
                 value={lessonDate(n)}
                 onSave={(v) => onSaveLesson(n, v)}
+                disabled={!hasGoal}
               />
             )}
           </td>
@@ -2175,16 +2191,20 @@ function ProgressRow({
       })}
       {showHandover && (
         <td className="px-3 py-2.5">
-          <input
-            type="text"
-            defaultValue={p?.handover ?? ''}
-            placeholder="引継ぎメモ"
-            onBlur={(e) => {
-              onLocalPatch({ handover: e.target.value || undefined });
-              onSaveProgress({ handover: e.target.value || null });
-            }}
-            className="w-full px-1.5 py-1 text-xs bg-transparent border border-transparent hover:border-[#e5e7eb] focus:border-[#1e3a5f] focus:bg-white rounded outline-none"
-          />
+          {hasGoal ? (
+            <input
+              type="text"
+              defaultValue={p?.handover ?? ''}
+              placeholder="引継ぎメモ"
+              onBlur={(e) => {
+                onLocalPatch({ handover: e.target.value || undefined });
+                onSaveProgress({ handover: e.target.value || null });
+              }}
+              className="w-full px-1.5 py-1 text-xs bg-transparent border border-transparent hover:border-[#e5e7eb] focus:border-[#1e3a5f] focus:bg-white rounded outline-none"
+            />
+          ) : (
+            <span className="px-1.5 py-1 text-xs text-[#d1d5db]">—</span>
+          )}
         </td>
       )}
       {showHomeworkNotDone && (
@@ -2198,7 +2218,7 @@ function ProgressRow({
               onSaveProgress({ homework_not_done: next });
             }}
             className="w-4 h-4 accent-[#d97706] cursor-pointer"
-            title="宿題未実施"
+            disabled={!hasGoal}
           />
         </td>
       )}
@@ -2213,20 +2233,24 @@ function ProgressRow({
               onSaveProgress({ tardy: next });
             }}
             className="w-4 h-4 accent-[#d97706] cursor-pointer"
-            title="遅刻"
+            disabled={!hasGoal}
           />
         </td>
       )}
       {showTeacherName && (
         <td className="px-3 py-2.5">
-          <TeacherNameInput
-            value={p?.teacher_name ?? ''}
-            selfName={selfName}
-            onSave={(v) => {
-              onLocalPatch({ teacher_name: v ?? undefined });
-              onSaveProgress({ teacher_name: v });
-            }}
-          />
+          {hasGoal ? (
+            <TeacherNameInput
+              value={p?.teacher_name ?? ''}
+              selfName={selfName}
+              onSave={(v) => {
+                onLocalPatch({ teacher_name: v ?? undefined });
+                onSaveProgress({ teacher_name: v });
+              }}
+            />
+          ) : (
+            <span className="px-1.5 py-1 text-xs text-[#d1d5db]">—</span>
+          )}
         </td>
       )}
     </tr>
@@ -2299,9 +2323,11 @@ function IntentTagPicker({
 function DateInputWithToday({
   value,
   onSave,
+  disabled = false,
 }: {
   value: string;
   onSave: (v: string | null) => void;
+  disabled?: boolean;
 }) {
   const [localVal, setLocalVal] = useState(value);
   const [editing, setEditing] = useState(false);
@@ -2309,6 +2335,12 @@ function DateInputWithToday({
   useEffect(() => setLocalVal(value), [value]);
 
   const isEmpty = !localVal;
+
+  if (disabled) {
+    return (
+      <span className="px-1.5 py-1 text-xs text-[#d1d5db]">—</span>
+    );
+  }
 
   const commit = (v: string) => {
     const next = v || null;
@@ -2447,7 +2479,7 @@ function ActionGoalsSection({
   const [newCounter, setNewCounter] = useState<number | ''>('');
   const [copyOpen, setCopyOpen] = useState(false);
 
-  // 複製元候補: 他の試験目標
+  // 複製元候補: 他の目標設定
   const copySources = allExams.filter((e) => e.id !== examId);
 
   const add = async () => {
@@ -2697,7 +2729,7 @@ function TextbookSettingsInline({
 }
 
 // ─────────────────────────────────────────────
-// 試験範囲セクション（独立: 試験目標の有無と無関係）
+// 試験範囲セクション（独立: 目標設定の有無と無関係）
 // 教科書に設定済みの範囲をチップで一覧 + 追加/編集/削除
 // ─────────────────────────────────────────────
 function _ExamRangesSection({
@@ -2998,7 +3030,7 @@ function ExamRangeModal({
                 })}
               </select>
               <p className="text-[11px] text-[#6b7280] mt-1">
-                試験目標の有無と関係なく、試験名に対して独立に範囲を設定できます。
+                目標設定の有無と関係なく、試験名に対して独立に範囲を設定できます。
               </p>
             </div>
 
