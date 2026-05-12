@@ -292,6 +292,34 @@ export default function NewProgressPage() {
     [student, studentId, isTeacher, success, toastError]
   );
 
+  // テキスト一覧＋関連データを再取得（モーダル保存後にページ遷移せず反映するため）
+  const refreshTextbooks = useCallback(async () => {
+    try {
+      const tbs = await getStudentTextbooks(studentId);
+      const baseTbs = (tbs || []).filter((tb) => (tb as { track_progress?: boolean }).track_progress === true);
+      const filteredTbs = isTeacher ? baseTbs.filter((tb) => !tb.is_draft) : baseTbs;
+      setStudentTextbooks(filteredTbs);
+      // 行動目標も再取得
+      const examIds: string[] = [];
+      for (const tb of filteredTbs) {
+        for (const e of (tb.exams || [])) if (e.id) examIds.push(e.id);
+      }
+      if (examIds.length > 0) {
+        const map = await getActionGoalsByExams(examIds);
+        setActionGoalsByExam(map);
+      } else {
+        setActionGoalsByExam({});
+      }
+      // 選択中テキストの進捗も再取得
+      if (selectedTextbookId) {
+        const rows = await getStudentProgress(selectedTextbookId);
+        setProgressData(rows || []);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [studentId, isTeacher, selectedTextbookId]);
+
   // 同一科目グループ内で並び順を入れ替え、sort_order を永続化
   const handleReorder = useCallback(
     async (textbookId: string, direction: 'up' | 'down') => {
@@ -396,6 +424,7 @@ export default function NewProgressPage() {
             studentName={student ? `${student.last_name} ${student.first_name}` : ''}
             selfName={profile?.display_name ?? ''}
             onBack={() => setView('cards')}
+            onRefresh={refreshTextbooks}
             success={success}
             toastError={toastError}
           />
@@ -1008,6 +1037,7 @@ function TableView({
   studentName,
   selfName,
   onBack,
+  onRefresh,
   success,
   toastError,
   onTogglePublish,
@@ -1028,6 +1058,7 @@ function TableView({
   studentName: string;
   selfName: string;
   onBack: () => void;
+  onRefresh: () => Promise<void>;
   success: (m: string) => void;
   toastError: (m: string) => void;
   onTogglePublish?: (id: string) => void;
@@ -1458,67 +1489,69 @@ function TableView({
 
       {/* ── 試験・設定エリア（コンパクト） ── */}
       <div className="mb-3 space-y-2">
-        {/* 試験目標 + 試験範囲 横並び */}
-        <div className="flex items-start gap-2 flex-wrap">
-          {/* 試験目標 */}
-          {activeExam ? (
-            <div className="flex-1 min-w-[280px] bg-gradient-to-r from-[#eff6ff] to-[#dbeafe]/50 border border-[#1e40af]/20 rounded-lg px-4 py-3">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-[#1e3a5f]">{activeExam.name}</span>
-                  {activeExam.date && <span className="text-[11px] text-[#6b7280]">{activeExam.date}</span>}
-                </div>
-                {!isMeeting && (
-                  <button
-                    onClick={() => { setGoalModalEditingId(activeExam.id); setGoalModalOpen(true); }}
-                    className="px-2 py-0.5 text-[11px] bg-white border border-[#1e40af]/20 rounded text-[#1e40af] hover:bg-[#1e40af] hover:text-white transition-colors"
-                  >
-                    編集
-                  </button>
-                )}
+        {/* 試験目標 */}
+        {activeExam ? (
+          <div className="bg-gradient-to-r from-[#eff6ff] to-[#dbeafe]/50 border border-[#1e40af]/20 rounded-lg px-4 py-3">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-[#1e3a5f]">{activeExam.name}</span>
+                {activeExam.date && <span className="text-[11px] text-[#6b7280]">{activeExam.date}</span>}
               </div>
-              <div className="flex items-center gap-4">
-                <div className="text-center">
-                  <div className="text-[9px] text-[#6b7280] font-semibold uppercase">残り</div>
-                  <span className="text-lg font-bold text-[#1e3a5f]">{activeExam.daysLeft ?? '—'}</span>
-                  {activeExam.daysLeft != null && <span className="text-[10px] text-[#6b7280]">日</span>}
-                </div>
-                <div className="text-center">
-                  <div className="text-[9px] text-[#6b7280] font-semibold uppercase">目標</div>
-                  <span className="text-lg font-bold text-[#1e3a5f]">{activeExam.targetScore ?? '—'}</span>
-                  {activeExam.targetScore != null && <span className="text-[10px] text-[#6b7280]">点</span>}
-                </div>
-                <div className="text-center">
-                  <div className="text-[9px] text-[#6b7280] font-semibold uppercase">行動目標</div>
-                  <span className="text-lg font-bold text-[#1e3a5f]">{activeExamGoals.filter((g) => g.achieved).length}</span>
-                  <span className="text-xs text-[#6b7280]">/{activeExamGoals.length}</span>
-                </div>
-              </div>
-              <ActionGoalsSection
-                examId={activeExam.id}
-                goals={activeExamGoals}
-                allExams={textbook.exams || []}
-                examTypes={examTypes}
-                isMeeting={isMeeting}
-                toastError={toastError}
-                success={success}
-                onChange={(next) => {
-                  setActionGoalsByExam((prev) => ({ ...prev, [activeExam.id]: next }));
-                }}
-              />
+              {!isMeeting && (
+                <button
+                  onClick={() => { setGoalModalEditingId(activeExam.id); setGoalModalOpen(true); }}
+                  className="px-2 py-0.5 text-[11px] bg-white border border-[#1e40af]/20 rounded text-[#1e40af] hover:bg-[#1e40af] hover:text-white transition-colors"
+                >
+                  編集
+                </button>
+              )}
             </div>
-          ) : !isMeeting ? (
-            <button
-              onClick={() => { setGoalModalEditingId(null); setGoalModalOpen(true); }}
-              className="px-3 py-2 border border-dashed border-[#d1d5db] rounded-lg text-xs text-[#6b7280] hover:bg-[#f9fafb] hover:border-[#1e3a5f] hover:text-[#1e3a5f] transition-colors"
-            >
-              ＋ 試験目標
-            </button>
-          ) : null}
+            <div className="flex items-center gap-4">
+              <div className="text-center">
+                <div className="text-[9px] text-[#6b7280] font-semibold uppercase">残り</div>
+                <span className="text-lg font-bold text-[#1e3a5f]">{activeExam.daysLeft ?? '—'}</span>
+                {activeExam.daysLeft != null && <span className="text-[10px] text-[#6b7280]">日</span>}
+              </div>
+              <div className="text-center">
+                <div className="text-[9px] text-[#6b7280] font-semibold uppercase">目標</div>
+                <span className="text-lg font-bold text-[#1e3a5f]">{activeExam.targetScore ?? '—'}</span>
+                {activeExam.targetScore != null && <span className="text-[10px] text-[#6b7280]">点</span>}
+              </div>
+              <div className="text-center">
+                <div className="text-[9px] text-[#6b7280] font-semibold uppercase">行動目標</div>
+                <span className="text-lg font-bold text-[#1e3a5f]">{activeExamGoals.filter((g) => g.achieved).length}</span>
+                <span className="text-xs text-[#6b7280]">/{activeExamGoals.length}</span>
+              </div>
+            </div>
+            <ActionGoalsSection
+              examId={activeExam.id}
+              goals={activeExamGoals}
+              allExams={textbook.exams || []}
+              examTypes={examTypes}
+              isMeeting={isMeeting}
+              toastError={toastError}
+              success={success}
+              onChange={(next) => {
+                setActionGoalsByExam((prev) => ({ ...prev, [activeExam.id]: next }));
+              }}
+            />
+          </div>
+        ) : !isMeeting ? (
+          <button
+            onClick={() => { setGoalModalEditingId(null); setGoalModalOpen(true); }}
+            className="px-3 py-2 border border-dashed border-[#d1d5db] rounded-lg text-xs text-[#6b7280] hover:bg-[#f9fafb] hover:border-[#1e3a5f] hover:text-[#1e3a5f] transition-colors"
+          >
+            ＋ 試験目標
+          </button>
+        ) : null}
 
-          {/* 試験範囲（インライン） */}
-          <div className="flex-1 min-w-[200px]">
-            <ExamRangesSection
+        {/* 進め方 / 宿題 / 試験範囲 — 1つのカードにまとめる */}
+        {!isMeeting && (
+          <div className="bg-white border border-[#e5e7eb] rounded-lg p-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+              <TextbookSettingsInline textbookId={textbook.id} toastError={toastError} />
+            </div>
+            <ExamRangesInline
               textbookId={textbook.id}
               examTypes={examTypes}
               ranges={examRanges}
@@ -1569,11 +1602,18 @@ function TableView({
               }}
             />
           </div>
-        </div>
-
-        {/* 進め方 / 宿題 — 折りたたみ */}
-        {!isMeeting && (
-          <TextbookSettingsSection textbookId={textbook.id} isMeeting={isMeeting} success={success} toastError={toastError} />
+        )}
+        {/* 面談モードでも試験範囲は表示 */}
+        {isMeeting && examRanges.length > 0 && (
+          <ExamRangesInline
+            textbookId={textbook.id}
+            examTypes={examTypes}
+            ranges={examRanges}
+            progress={progress}
+            isMeeting={isMeeting}
+            onOpenEdit={() => {}}
+            onDelete={() => {}}
+          />
         )}
 
         {/* ツールバー: 列設定 + まとめて設定（1行にまとめ） */}
@@ -1726,79 +1766,6 @@ function TableView({
         </div>
       )}
 
-      {/* 一括塗りモード: 試験範囲 / 指導意図を範囲選択で一括適用 */}
-      {!isMeeting && (
-        <div className={`mb-2 rounded-lg border ${paintMode ? 'bg-[#eff6ff] border-[#1e40af]' : 'bg-white border-[#e5e7eb]'} px-3 py-2 flex items-center gap-2 flex-wrap`}>
-          <span className="text-xs font-semibold text-[#1f2937]">まとめて設定:</span>
-          <div className="inline-flex rounded overflow-hidden border border-[#e5e7eb] text-xs">
-            {([
-              { key: null, label: 'OFF' },
-              { key: 'examRange' as const, label: '試験範囲' },
-              { key: 'intent' as const, label: '指導意図' },
-            ]).map((m) => (
-              <button
-                key={m.label}
-                onClick={() => { setPaintMode(m.key); setPaintValue(''); setPaintStart(null); }}
-                className={`px-2.5 py-1 transition-colors ${
-                  paintMode === m.key
-                    ? 'bg-[#1e3a5f] text-white'
-                    : 'bg-white text-[#4b5563] hover:bg-[#f3f4f6]'
-                }`}
-              >
-                {m.label}
-              </button>
-            ))}
-          </div>
-          {paintMode === 'examRange' && (
-            <select
-              value={paintValue}
-              onChange={(e) => { setPaintValue(e.target.value); setPaintStart(null); }}
-              className="px-2 py-1 text-xs border border-[#e5e7eb] rounded bg-white"
-            >
-              <option value="">試験を選択...</option>
-              {examTypes.map((et) => (
-                <option key={et.id} value={et.id}>{et.name}</option>
-              ))}
-            </select>
-          )}
-          {paintMode === 'intent' && (
-            <select
-              value={paintValue}
-              onChange={(e) => { setPaintValue(e.target.value); setPaintStart(null); }}
-              className="px-2 py-1 text-xs border border-[#e5e7eb] rounded bg-white"
-            >
-              <option value="">指導意図を選択...</option>
-              {INTENT_TAGS.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
-          )}
-          {paintMode && paintValue && (() => {
-            const startRow = paintStart ? progress.find((r) => String(r.id) === paintStart) : null;
-            const startLabel = startRow
-              ? (itemNo(startRow) != null ? `項目${itemNo(startRow)}` : (startRow.title ?? '選択中の行'))
-              : null;
-            return (
-              <span className="text-xs text-[#1e40af] ml-1 font-medium">
-                {paintStart == null
-                  ? '開始の行をクリック →'
-                  : `開始: ${startLabel} → 終了の行をクリック`}
-              </span>
-            );
-          })()}
-          {paintStart != null && (
-            <button onClick={() => setPaintStart(null)} className="text-xs text-[#6b7280] hover:text-[#1f2937] underline">
-              開始リセット
-            </button>
-          )}
-          {!paintMode && (
-            <span className="text-xs text-[#6b7280] ml-1">
-              モードを選ぶと、単元を2クリックで範囲一括設定できます
-            </span>
-          )}
-        </div>
-      )}
-
       {/* 進捗テーブル */}
       <div className="bg-white rounded-xl border border-[#e5e7eb] overflow-hidden shadow-sm overflow-x-auto">
         <table className="w-full text-sm min-w-[900px]">
@@ -1889,15 +1856,15 @@ function TableView({
           examTypes={examTypes}
           editing={goalModalEditingId ? (textbook.exams || []).find((e) => e.id === goalModalEditingId) ?? null : null}
           onClose={() => setGoalModalOpen(false)}
-          onSaved={() => {
+          onSaved={async () => {
             setGoalModalOpen(false);
             success('試験目標を保存しました');
-            if (typeof window !== 'undefined') window.location.reload();
+            await onRefresh();
           }}
-          onDeleted={() => {
+          onDeleted={async () => {
             setGoalModalOpen(false);
             success('試験目標を削除しました');
-            if (typeof window !== 'undefined') window.location.reload();
+            await onRefresh();
           }}
           toastError={toastError}
         />
@@ -2844,20 +2811,15 @@ function ActionGoalRow({
 }
 
 // ─────────────────────────────────────────────
-// 進め方・宿題セクション
+// 進め方・宿題（インライン — 外枠は親が描画）
 // ─────────────────────────────────────────────
-function TextbookSettingsSection({
+function TextbookSettingsInline({
   textbookId,
-  isMeeting,
-  success: _success,
   toastError,
 }: {
   textbookId: string;
-  isMeeting: boolean;
-  success: (m: string) => void;
   toastError: (m: string) => void;
 }) {
-  // TODO: 既存の getStudentTextbookSettings で初期値取得・upsert で保存
   const save = async (patch: { approach?: string; homework_style?: string }) => {
     try {
       await upsertStudentTextbookSettings(textbookId, patch);
@@ -2867,32 +2829,27 @@ function TextbookSettingsSection({
     }
   };
 
-  if (isMeeting) {
-    // 面談モードでは読み取り専用（Phase 2 で実データ表示に）
-    return null;
-  }
-
   return (
-    <div className="mb-4 bg-white border border-[#e5e7eb] rounded-lg p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+    <>
       <div>
-        <label className="block text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider mb-1.5">進め方</label>
+        <label className="block text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider mb-1">進め方</label>
         <textarea
-          className="w-full px-2 py-1.5 border border-[#e5e7eb] rounded text-sm"
+          className="w-full px-2 py-1.5 border border-[#e5e7eb] rounded text-sm resize-none"
           rows={2}
           placeholder="例: ワーク→応用の順。間違えた問題は翌週再演習。"
           onBlur={(e) => save({ approach: e.target.value })}
         />
       </div>
       <div>
-        <label className="block text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider mb-1.5">宿題の出し方</label>
+        <label className="block text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider mb-1">宿題の出し方</label>
         <textarea
-          className="w-full px-2 py-1.5 border border-[#e5e7eb] rounded text-sm"
+          className="w-full px-2 py-1.5 border border-[#e5e7eb] rounded text-sm resize-none"
           rows={2}
           placeholder="例: 次回範囲の予習 + 前回ワークの復習"
           onBlur={(e) => save({ homework_style: e.target.value })}
         />
       </div>
-    </div>
+    </>
   );
 }
 
@@ -2977,6 +2934,73 @@ function ExamRangesSection({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// 試験範囲インライン（カード内に埋め込み用。外枠なし）
+// ─────────────────────────────────────────────
+function ExamRangesInline({
+  textbookId: _textbookId,
+  examTypes,
+  ranges,
+  progress,
+  isMeeting,
+  onOpenEdit,
+  onDelete,
+}: {
+  textbookId: string;
+  examTypes: ExamType[];
+  ranges: StudentTextbookExamRange[];
+  progress: CurriculumItemWithProgress[];
+  isMeeting: boolean;
+  onOpenEdit: (rangeId: string | null, examTypeId: string | null) => void;
+  onDelete: (rangeId: string) => void;
+}) {
+  const titleOfItem = (no: number) =>
+    progress.find((p) => itemNo(p) === no)?.title ?? `項目${no}`;
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-1.5">
+        <label className="text-[11px] font-semibold text-[#6b7280] uppercase tracking-wider">試験範囲</label>
+        {!isMeeting && (
+          <button
+            onClick={() => onOpenEdit(null, null)}
+            className="px-2 py-0.5 text-[11px] bg-[#f9fafb] border border-[#e5e7eb] rounded text-[#1e3a5f] hover:bg-[#1e3a5f] hover:text-white transition-colors"
+          >
+            ＋ 追加
+          </button>
+        )}
+      </div>
+      {ranges.length === 0 ? (
+        <div className="text-[11px] text-[#9ca3af]">未設定</div>
+      ) : (
+        <div className="flex flex-wrap gap-1.5">
+          {ranges.map((r) => {
+            const name = examTypes.find((t) => t.id === r.exam_type_id)?.name ?? '試験';
+            const startTitle = titleOfItem(r.range_start_item_number);
+            const endTitle = titleOfItem(r.range_end_item_number);
+            const label = r.range_start_item_number === r.range_end_item_number
+              ? startTitle
+              : `${startTitle} 〜 ${endTitle}`;
+            return (
+              <span key={r.id} className="inline-flex items-center gap-1 px-2 py-1 bg-[#eff6ff] border border-[#dbeafe] rounded text-[11px]">
+                <strong className="text-[#1e3a5f]">{name}</strong>
+                <span className="text-[#6b7280]">|</span>
+                <span className="text-[#1f2937]">{label}</span>
+                <span className="text-[10px] text-[#6b7280]">（{r.range_start_item_number}〜{r.range_end_item_number}）</span>
+                {!isMeeting && (
+                  <>
+                    <button onClick={() => onOpenEdit(r.id, r.exam_type_id)} className="px-1 text-[10px] text-[#1e40af] hover:underline">編集</button>
+                    <button onClick={() => onDelete(r.id)} className="px-1 text-[10px] text-red-500 hover:underline">削除</button>
+                  </>
+                )}
+              </span>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

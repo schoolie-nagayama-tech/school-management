@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useMemo, useCallback, useRef, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { useAuth } from '@/contexts/AuthContext';
@@ -45,18 +45,29 @@ const emptyForm: TextbookForm = {
   revision_date: '',
 };
 
-export default function TextbookMasterPage() {
+export default function TextbookMasterPageWrapper() {
+  return (
+    <Suspense fallback={null}>
+      <TextbookMasterPage />
+    </Suspense>
+  );
+}
+
+function TextbookMasterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { profile, isLoading: authLoading } = useAuth();
   const { toasts, removeToast, success: toastSuccess, error: toastError } = useToast();
   const isManager = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
 
   const [textbooks, setTextbooks] = useState<Textbook[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [schoolTypeFilter, setSchoolTypeFilter] = useState('');
-  const [gradeFilter, setGradeFilter] = useState('');
-  const [subjectFilter, setSubjectFilter] = useState('');
+
+  // フィルタ状態をURLクエリパラメータから初期化（戻るボタンで復元される）
+  const [search, setSearch] = useState(searchParams.get('q') ?? '');
+  const [schoolTypeFilter, setSchoolTypeFilter] = useState(searchParams.get('type') ?? '');
+  const [gradeFilter, setGradeFilter] = useState(searchParams.get('grade') ?? '');
+  const [subjectFilter, setSubjectFilter] = useState(searchParams.get('subject') ?? '');
 
   // Modal state
   const [showModal, setShowModal] = useState(false);
@@ -86,6 +97,18 @@ export default function TextbookMasterPage() {
       loadTextbooks();
     }
   }, [isManager, loadTextbooks]);
+
+  // フィルタ変更時にURL同期（replaceState でブラウザ履歴を汚さない）
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (search) params.set('q', search);
+    if (schoolTypeFilter) params.set('type', schoolTypeFilter);
+    if (gradeFilter) params.set('grade', gradeFilter);
+    if (subjectFilter) params.set('subject', subjectFilter);
+    const qs = params.toString();
+    const newUrl = qs ? `?${qs}` : window.location.pathname;
+    window.history.replaceState(null, '', newUrl);
+  }, [search, schoolTypeFilter, gradeFilter, subjectFilter]);
 
   // Filter & Sort
   const filtered = useMemo(() => {
