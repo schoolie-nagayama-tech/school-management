@@ -2332,7 +2332,7 @@ function ProgressRow({
             <span className="text-[#4b5563]">{p?.school_progress_date ?? '—'}</span>
           ) : sessionMode ? (
             <span className={`inline-block px-1.5 py-0.5 rounded text-xs ${schoolSelected ? 'bg-[#1e3a5f] text-white font-medium' : p?.school_progress_date ? 'bg-[#1e3a5f]/10 text-[#1e3a5f] font-medium' : 'text-gray-400'}`}>
-              {schoolSelected ? 'school' : p?.school_progress_date ? (p.school_progress_date as string).replace(/^\d{4}-/, '').replace('-', '/') : '—'}
+              {schoolSelected ? '学校' : p?.school_progress_date ? (p.school_progress_date as string).replace(/^\d{4}-/, '').replace('-', '/') : '—'}
             </span>
           ) : (
             <DateInputWithToday

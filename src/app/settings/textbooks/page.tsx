@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
@@ -47,7 +47,7 @@ const emptyForm: TextbookForm = {
 
 export default function TextbookMasterPage() {
   const router = useRouter();
-  const { profile } = useAuth();
+  const { profile, isLoading: authLoading } = useAuth();
   const { toasts, removeToast, success: toastSuccess, error: toastError } = useToast();
   const isManager = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
 
@@ -64,21 +64,28 @@ export default function TextbookMasterPage() {
   const [form, setForm] = useState<TextbookForm>(emptyForm);
   const [saving, setSaving] = useState(false);
 
+  const toastErrorRef = useRef(toastError);
+  toastErrorRef.current = toastError;
+
   const loadTextbooks = useCallback(async () => {
     try {
       setLoading(true);
       const data = await getTextbooks();
       setTextbooks(data);
     } catch (e) {
-      toastError(`教材の読み込みに失敗しました: ${e instanceof Error ? e.message : '不明なエラー'}`);
+      toastErrorRef.current(`教材の読み込みに失敗しました: ${e instanceof Error ? e.message : '不明なエラー'}`);
     } finally {
       setLoading(false);
     }
-  }, [toastError]);
+  }, []);
 
+  const loadedRef = useRef(false);
   useEffect(() => {
-    if (isManager) loadTextbooks();
-  }, [isManager]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (isManager && !loadedRef.current) {
+      loadedRef.current = true;
+      loadTextbooks();
+    }
+  }, [isManager, loadTextbooks]);
 
   // Filter & Sort
   const filtered = useMemo(() => {
@@ -203,7 +210,7 @@ export default function TextbookMasterPage() {
     }
   };
 
-  if (!isManager) return <AccessDenied />;
+  if (!authLoading && !isManager) return <AccessDenied />;
 
   return (
     <AdminLayout headerTitle="教材マスタ管理">

@@ -101,7 +101,11 @@ export async function getTextbooks(
     query = query.eq('grade_category', gradeCategory);
   }
 
-  query = query.order('name', { ascending: true });
+  // 学校種別（小学→中学→高校）→ テキスト名 → 学年 の順でソート
+  query = query
+    .order('school_type', { ascending: true })
+    .order('name', { ascending: true })
+    .order('grade', { ascending: true });
 
   const { data, error } = await query;
 

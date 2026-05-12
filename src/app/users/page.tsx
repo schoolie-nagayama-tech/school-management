@@ -19,7 +19,7 @@ import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { UserEditModal } from '@/components/users/UserEditModal';
 import { SchoolFormModal } from '@/components/users/SchoolFormModal';
 import { UserCreateDialogs } from '@/components/users/UserCreateDialogs';
-import { displayLoginId } from '@/lib/utils/loginId';
+import { displayLoginId, normalizeLoginEmail, normalizePassword } from '@/lib/utils/loginId';
 
 type TabType = 'users' | 'schools';
 
@@ -166,8 +166,8 @@ export default function UsersPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: formData.email || undefined,
-          password: formData.password,
+          email: formData.email ? normalizeLoginEmail(formData.email) : undefined,
+          password: normalizePassword(formData.password),
           displayName: formData.displayName,
           role: formData.role,
           schoolId: formData.schoolId,

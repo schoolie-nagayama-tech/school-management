@@ -17,6 +17,7 @@ import { SelectShadcn as Select, SelectContent, SelectItem, SelectTrigger, Selec
 import { Copy, Check, Eye, EyeOff, Trash2, LogIn, AlertTriangle, Home } from 'lucide-react';
 import { impersonateUser } from '@/lib/impersonate';
 import type { School, UserProfile, TeacherBadge, TeacherBadgeAssignment } from '@/types/database';
+import { normalizeLoginEmail, normalizePassword } from '@/lib/utils/loginId';
 import { BADGE_RANK_CONFIG } from '@/types/database';
 import { generateTeacherCSV, downloadCSV, type TeacherExportRow } from '@/lib/utils/csvUtils';
 import { TeacherCsvImportModal } from '@/components/csv/TeacherCsvImportModal';
@@ -209,10 +210,10 @@ export default function TeachersPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: formData.email || undefined, // 未入力の場合は自動生成
-          password: formData.password,
+          email: formData.email ? normalizeLoginEmail(formData.email) : undefined,
+          password: normalizePassword(formData.password),
           displayName: formData.displayName,
-          role: 'teacher', // 講師として固定
+          role: 'teacher',
           schoolId: formData.schoolId,
         }),
       });

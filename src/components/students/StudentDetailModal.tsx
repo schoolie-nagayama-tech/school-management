@@ -136,18 +136,23 @@ export function StudentDetailModal({
 
   const filteredMasterTextbooks = useMemo(() => {
     const alreadyLinked = new Set(textbooks.map((t) => t.textbook_id));
+    const SCHOOL_ORDER: Record<string, number> = { '小学': 1, '中学': 2, '高校': 3 };
     const GRADE_ORDER: Record<string, number> = {
-      '小1': 1, '小2': 2, '小3': 3, '小4': 4, '小5': 5, '小6': 6,
-      '中1': 7, '中2': 8, '中3': 9, '高1': 10, '高2': 11, '高3': 12,
+      '1年': 1, '2年': 2, '3年': 3, '4年': 4, '5年': 5, '6年': 6, '共通': 7,
     };
     return availableTextbooks
       .filter((t) => !alreadyLinked.has(t.id))
       .filter((t) => selectedSubject === 'all' || t.subject === selectedSubject)
       .sort((a, b) => {
+        // 学校種別 → テキスト名 → 学年
+        const sa = SCHOOL_ORDER[a.school_type ?? ''] ?? 99;
+        const sb = SCHOOL_ORDER[b.school_type ?? ''] ?? 99;
+        if (sa !== sb) return sa - sb;
+        const nameCmp = (a.name ?? '').localeCompare(b.name ?? '', 'ja');
+        if (nameCmp !== 0) return nameCmp;
         const ga = GRADE_ORDER[a.grade ?? ''] ?? 99;
         const gb = GRADE_ORDER[b.grade ?? ''] ?? 99;
-        if (ga !== gb) return ga - gb;
-        return (a.name ?? '').localeCompare(b.name ?? '', 'ja');
+        return ga - gb;
       });
   }, [availableTextbooks, textbooks, selectedSubject]);
 

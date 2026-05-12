@@ -86,7 +86,6 @@ export async function POST(request: NextRequest) {
     // メールアドレスが未指定の場合は自動生成（UUIDを使用）
     let finalEmail = email;
     if (!finalEmail || finalEmail.trim() === '') {
-      // UUIDを生成してメールアドレス形式にする
       const uuid = randomUUID();
       finalEmail = `user-${uuid}@system.local`;
     }
@@ -126,9 +125,16 @@ export async function POST(request: NextRequest) {
     });
 
     if (authError) {
+      const msg = authError.message ?? '';
       let userMessage = 'ユーザーの作成に失敗しました';
-      if (authError.message?.includes('already registered')) {
-        userMessage = 'このメールアドレスは既に登録されています';
+      if (msg.includes('already registered')) {
+        userMessage = 'このメールアドレス（ID）は既に登録されています';
+      } else if (msg.includes('email') && msg.includes('invalid')) {
+        userMessage = 'メールアドレスの形式が正しくありません';
+      } else if (msg.includes('password') || msg.includes('Password')) {
+        userMessage = `パスワードが要件を満たしていません（6文字以上必要です）`;
+      } else {
+        userMessage = `ユーザーの作成に失敗しました: ${msg}`;
       }
       console.error('Auth user creation error:', authError);
       return NextResponse.json({ error: userMessage }, { status: 400 });
