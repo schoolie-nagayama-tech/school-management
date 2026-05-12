@@ -80,6 +80,7 @@ export default function ProposalList() {
             applied_koma: u.applied_koma ?? 0,
             reason: u.reason,
             group_id: u.group_id,
+            intent_tag: u.intent_tag ?? null,
           }));
 
         const groupMap = new Map<number, PrintUnitDraft[]>();

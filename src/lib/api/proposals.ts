@@ -222,6 +222,7 @@ export interface ProposalUnitInput {
   applied_koma: number | null;
   reason: string;
   group_id: number;
+  intent_tag: string | null;
 }
 
 export async function saveProposalUnits(
@@ -245,6 +246,7 @@ export async function saveProposalUnits(
     applied_koma: u.applied_koma,
     reason: u.reason,
     group_id: u.group_id,
+    intent_tag: u.intent_tag,
     sort_order: i,
   }));
 

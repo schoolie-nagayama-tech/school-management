@@ -3412,6 +3412,7 @@ export interface SeasonalProposalUnit {
   reason: string;
   sort_order: number;
   group_id: number;
+  intent_tag: string | null;
   created_at: string;
   // JOIN
   curriculum_item?: CurriculumItem;
@@ -3426,6 +3427,7 @@ export interface SeasonalProposalUnitInsert {
   reason?: string;
   sort_order?: number;
   group_id?: number;
+  intent_tag?: string | null;
 }
 
 export interface SeasonalProposalWithDetails extends SeasonalProposal {

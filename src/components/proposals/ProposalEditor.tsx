@@ -65,7 +65,27 @@ interface UnitDraft {
   reason: string;
   selected: boolean;
   group_id: number;
+  intent_tag: string | null;
 }
+
+const INTENT_TAGS = [
+  '苦手補強',
+  '既習の定着',
+  '未習の先取り',
+  '学校進度に合わせる',
+  '直前演習',
+  '応用発展',
+] as const;
+type IntentTag = typeof INTENT_TAGS[number];
+
+const INTENT_TAG_COLOR: Record<IntentTag, string> = {
+  '苦手補強': 'text-red-700 border-red-200',
+  '既習の定着': 'text-blue-700 border-blue-200',
+  '未習の先取り': 'text-purple-700 border-purple-200',
+  '学校進度に合わせる': 'text-emerald-700 border-emerald-200',
+  '直前演習': 'text-amber-700 border-amber-200',
+  '応用発展': 'text-indigo-700 border-indigo-200',
+};
 
 const STATUS_FLOW: ProposalStatus[] = ['draft', 'sent'];
 
@@ -209,6 +229,7 @@ export default function ProposalEditor() {
           reason: '',
           selected: false,
           group_id: 0,
+          intent_tag: null,
         });
       }
 
@@ -221,6 +242,7 @@ export default function ProposalEditor() {
             d.applied_koma = u.applied_koma ?? 0;
             d.reason = u.reason;
             d.group_id = u.group_id;
+            d.intent_tag = u.intent_tag ?? null;
             if (u.group_id > maxGroup) maxGroup = u.group_id;
           }
         }
@@ -271,6 +293,7 @@ export default function ProposalEditor() {
         reason: '',
         selected: false,
         group_id: 0,
+        intent_tag: null,
       });
     }
     setUnitDrafts(drafts);
@@ -369,6 +392,7 @@ export default function ProposalEditor() {
         applied_koma: u.applied_koma > 0 ? u.applied_koma : null,
         reason: u.reason,
         group_id: u.group_id,
+        intent_tag: u.intent_tag,
       }));
 
       const result = await upsertProposal({
@@ -418,6 +442,7 @@ export default function ProposalEditor() {
             applied_koma: u.koma_count,
             reason: u.reason,
             group_id: u.group_id,
+            intent_tag: u.intent_tag,
           }));
         await saveProposalUnits(proposalId, unitInputs);
 
@@ -950,6 +975,13 @@ function UnitRow({
               G{draft.group_id}
             </span>
           )}
+          {isActive && draft.intent_tag && (
+            <span
+              className={`ml-1.5 inline-block px-1.5 py-0 border rounded-full text-[9px] font-medium ${INTENT_TAG_COLOR[draft.intent_tag as IntentTag] ?? 'text-text-muted border-border-default'}`}
+            >
+              {draft.intent_tag}
+            </span>
+          )}
         </button>
 
         {isActive && (!isGrouped || isGroupHead) && (
@@ -1040,7 +1072,27 @@ function UnitRow({
       </div>
 
       {isActive && expanded && (
-        <div className="px-3 pb-2.5 pt-0">
+        <div className="px-3 pb-2.5 pt-0 space-y-1.5">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[10px] text-text-muted shrink-0">指導意図:</span>
+            {INTENT_TAGS.map((tag) => {
+              const active = draft.intent_tag === tag;
+              const color = INTENT_TAG_COLOR[tag];
+              return (
+                <button
+                  key={tag}
+                  onClick={() => onUpdate({ intent_tag: active ? null : tag })}
+                  className={`px-1.5 py-0.5 text-[10px] font-medium border rounded-full transition-[colors,transform] duration-100 active:scale-95 ${
+                    active
+                      ? `${color} bg-white border-current`
+                      : 'text-text-faint border-border-default hover:border-text-muted hover:text-text-muted'
+                  }`}
+                >
+                  {tag}
+                </button>
+              );
+            })}
+          </div>
           <input
             value={draft.reason}
             onChange={(e) => onUpdate({ reason: e.target.value })}
