@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
-import { Button, ToastContainer, Loading, InlineLoading } from '@/components/ui';
+import { Button, ToastContainer, Loading } from '@/components/ui';
 import type { ChartDataPoint } from '@/components/scores/ScoreChart';
 
 const ScoreChart = dynamic(

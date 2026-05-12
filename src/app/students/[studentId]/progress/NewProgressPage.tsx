@@ -277,6 +277,7 @@ export default function NewProgressPage() {
           student_id: studentId,
           textbook_id: textbookId,
           is_active: true,
+          track_progress: true,
         });
         const tbs = await getStudentTextbooks(studentId);
         const baseTbs = (tbs || []).filter((tb) => (tb as { track_progress?: boolean }).track_progress === true);
