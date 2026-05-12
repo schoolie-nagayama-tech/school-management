@@ -107,6 +107,9 @@ export default function ProposalEditor() {
   const [allTextbooks, setAllTextbooks] = useState<Textbook[]>([]);
   const [showTextbookPicker, setShowTextbookPicker] = useState(false);
   const [textbookSearch, setTextbookSearch] = useState('');
+  const [tbFilterSchoolType, setTbFilterSchoolType] = useState('');
+  const [tbFilterSubject, setTbFilterSubject] = useState('');
+  const [tbFilterGrade, setTbFilterGrade] = useState('');
 
   const [allItems, setAllItems] = useState<CurriculumItem[]>([]);
   const [progressMap, setProgressMap] = useState<Map<number, StudentProgress>>(new Map());
@@ -451,15 +454,44 @@ export default function ProposalEditor() {
   // テキスト選択ピッカー
   // ════════════════════════════════════════
   if (showTextbookPicker || (!selectedTextbookId && isNew)) {
-    const filtered = allTextbooks.filter((tb) => {
-      if (!textbookSearch) return true;
-      const q = textbookSearch.toLowerCase();
-      return (
-        tb.name.toLowerCase().includes(q) ||
-        tb.subject?.toLowerCase().includes(q) ||
-        tb.publisher?.toLowerCase().includes(q)
-      );
-    });
+    const schoolTypes = Array.from(new Set(allTextbooks.map((t) => t.school_type).filter((v): v is string => !!v))).sort();
+    const subjects = Array.from(new Set(allTextbooks.map((t) => t.subject).filter((v): v is string => !!v))).sort();
+    const grades = Array.from(
+      new Set(
+        allTextbooks
+          .filter((t) => !tbFilterSchoolType || t.school_type === tbFilterSchoolType)
+          .map((t) => t.grade)
+          .filter((v): v is string => !!v)
+      )
+    ).sort();
+
+    const SUBJECT_ORDER = ['英語', '数学', '算数', '国語', '理科', '社会'];
+    const GRADE_ORDER = ['1年', '2年', '3年', '4年', '5年', '6年', '共通'];
+
+    const filtered = allTextbooks
+      .filter((tb) => {
+        if (tbFilterSchoolType && tb.school_type !== tbFilterSchoolType) return false;
+        if (tbFilterSubject && tb.subject !== tbFilterSubject) return false;
+        if (tbFilterGrade && tb.grade !== tbFilterGrade) return false;
+        if (textbookSearch) {
+          const q = textbookSearch.toLowerCase();
+          if (
+            !tb.name.toLowerCase().includes(q) &&
+            !tb.subject?.toLowerCase().includes(q) &&
+            !tb.publisher?.toLowerCase().includes(q)
+          ) return false;
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        const subjA = SUBJECT_ORDER.indexOf(a.subject || '');
+        const subjB = SUBJECT_ORDER.indexOf(b.subject || '');
+        if (subjA !== subjB) return (subjA === -1 ? 999 : subjA) - (subjB === -1 ? 999 : subjB);
+        const grA = GRADE_ORDER.indexOf(a.grade || '');
+        const grB = GRADE_ORDER.indexOf(b.grade || '');
+        if (grA !== grB) return (grA === -1 ? 999 : grA) - (grB === -1 ? 999 : grB);
+        return a.name.localeCompare(b.name, 'ja');
+      });
 
     return (
       <div className="max-w-2xl mx-auto">
@@ -475,7 +507,7 @@ export default function ProposalEditor() {
           <p className="text-sm text-text-muted mt-0.5">{studentName} の講習提案書</p>
         </div>
 
-        <div className="relative mb-4">
+        <div className="relative mb-3">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-faint" />
           <input
             value={textbookSearch}
@@ -484,6 +516,42 @@ export default function ProposalEditor() {
             placeholder="テキスト名・教科・出版社で検索"
             autoFocus
           />
+        </div>
+
+        <div className="flex items-center gap-2 mb-4 flex-wrap">
+          <select
+            value={tbFilterSchoolType}
+            onChange={(e) => { setTbFilterSchoolType(e.target.value); setTbFilterGrade(''); }}
+            className="px-2 py-1 border border-border-default rounded-lg text-xs bg-surface-raised text-text-body"
+          >
+            <option value="">学校種別</option>
+            {schoolTypes.map((st) => <option key={st} value={st}>{st}</option>)}
+          </select>
+          <select
+            value={tbFilterSubject}
+            onChange={(e) => setTbFilterSubject(e.target.value)}
+            className="px-2 py-1 border border-border-default rounded-lg text-xs bg-surface-raised text-text-body"
+          >
+            <option value="">教科</option>
+            {subjects.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <select
+            value={tbFilterGrade}
+            onChange={(e) => setTbFilterGrade(e.target.value)}
+            className="px-2 py-1 border border-border-default rounded-lg text-xs bg-surface-raised text-text-body"
+          >
+            <option value="">学年</option>
+            {grades.map((g) => <option key={g} value={g}>{g}</option>)}
+          </select>
+          {(tbFilterSchoolType || tbFilterSubject || tbFilterGrade) && (
+            <button
+              onClick={() => { setTbFilterSchoolType(''); setTbFilterSubject(''); setTbFilterGrade(''); }}
+              className="text-xs text-text-muted hover:text-text-heading transition-colors duration-150"
+            >
+              クリア
+            </button>
+          )}
+          <span className="text-xs text-text-faint ml-auto">{filtered.length}件</span>
         </div>
 
         <div className="space-y-1 max-h-[60vh] overflow-y-auto">
