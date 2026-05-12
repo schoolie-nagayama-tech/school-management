@@ -308,6 +308,7 @@ export default function ProposalEditor() {
           ...d,
           group_id: gid,
           koma_count: d.koma_count || 1,
+          selected: false,
         });
       }
       return next;
