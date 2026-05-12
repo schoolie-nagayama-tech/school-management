@@ -28,6 +28,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   ToastContainer,
+  Loading,
 } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import {
@@ -276,7 +277,7 @@ export default function ProposalEditor() {
     setUnitDrafts((prev) => {
       const next = new Map(prev);
       const d = next.get(ciId);
-      if (d) next.set(ciId, { ...d, selected: !d.selected, group_id: d.selected ? 0 : d.group_id });
+      if (d) next.set(ciId, { ...d, selected: !d.selected });
       return next;
     });
   };
@@ -291,7 +292,7 @@ export default function ProposalEditor() {
   };
 
   const groupSelected = () => {
-    const ungrouped = Array.from(unitDrafts.values()).filter((d) => d.selected && d.group_id === 0);
+    const ungrouped = Array.from(unitDrafts.values()).filter((d) => d.selected && d.koma_count > 0 && d.group_id === 0);
     if (ungrouped.length < 2) {
       addToast('グルーピングには2つ以上の未グループ単元を選択してください', 'error');
       return;
@@ -312,28 +313,28 @@ export default function ProposalEditor() {
     updateUnit(ciId, { group_id: 0 });
   };
 
-  const selectedUnits = useMemo(() => {
-    return Array.from(unitDrafts.values()).filter((d) => d.selected);
+  const activeUnits = useMemo(() => {
+    return Array.from(unitDrafts.values()).filter((d) => d.koma_count > 0);
   }, [unitDrafts]);
 
   const totalKoma = useMemo(() => {
-    return calcTotalKoma(selectedUnits);
-  }, [selectedUnits]);
+    return calcTotalKoma(activeUnits);
+  }, [activeUnits]);
 
   const totalAppliedKoma = useMemo(() => {
-    return calcTotalAppliedKoma(selectedUnits);
-  }, [selectedUnits]);
+    return calcTotalAppliedKoma(activeUnits);
+  }, [activeUnits]);
 
   const groupMap = useMemo(() => {
     const map = new Map<number, UnitDraft[]>();
-    for (const u of selectedUnits) {
+    for (const u of activeUnits) {
       if (u.group_id === 0) continue;
       const list = map.get(u.group_id) ?? [];
       list.push(u);
       map.set(u.group_id, list);
     }
     return map;
-  }, [selectedUnits]);
+  }, [activeUnits]);
 
   const handleSave = async () => {
     if (!selectedTextbookId) {
@@ -342,7 +343,7 @@ export default function ProposalEditor() {
     }
     setSaving(true);
     try {
-      const unitInputs: ProposalUnitInput[] = selectedUnits.map((u) => ({
+      const unitInputs: ProposalUnitInput[] = activeUnits.map((u) => ({
         curriculum_item_id: u.curriculum_item_id,
         koma_count: u.koma_count,
         applied_koma: u.applied_koma > 0 ? u.applied_koma : null,
@@ -383,14 +384,14 @@ export default function ProposalEditor() {
       if (newStatus === 'sent') {
         const updated = new Map(unitDrafts);
         Array.from(updated.entries()).forEach(([ciId, d]) => {
-          if (d.selected) {
+          if (d.koma_count > 0) {
             updated.set(ciId, { ...d, applied_koma: d.koma_count });
           }
         });
         setUnitDrafts(updated);
 
         const unitInputs = Array.from(updated.values())
-          .filter((d) => d.selected)
+          .filter((d) => d.koma_count > 0)
           .map((u) => ({
             curriculum_item_id: u.curriculum_item_id,
             koma_count: u.koma_count,
@@ -447,7 +448,7 @@ export default function ProposalEditor() {
   };
 
   if (loading) {
-    return <div className="p-8 text-sm text-text-muted">読み込み中...</div>;
+    return <div className="p-8"><Loading size="md" /></div>;
   }
 
   const currentStatus = proposal?.status ?? 'draft';
@@ -477,7 +478,7 @@ export default function ProposalEditor() {
           year={year}
           theme={theme}
           allItems={allItems}
-          selectedUnits={selectedUnits}
+          activeUnits={activeUnits}
           progressMap={progressMap}
           totalKoma={totalKoma}
           groupMap={groupMap}
@@ -729,7 +730,7 @@ export default function ProposalEditor() {
                 グループ化
               </button>
               <div className="text-sm font-bold">
-                <span className="text-accent-ink">{selectedUnits.length}単元 / {totalKoma}コマ</span>
+                <span className="text-accent-ink">{activeUnits.length}単元 / {totalKoma}コマ</span>
                 {totalAppliedKoma != null && (
                   <span className="text-info ml-2">申込 {totalAppliedKoma}コマ</span>
                 )}
@@ -737,7 +738,7 @@ export default function ProposalEditor() {
             </div>
           </div>
 
-          {selectedUnits.length > 0 && (
+          {activeUnits.length > 0 && (
             <div className="flex items-center justify-end gap-1 mb-1 pr-8 text-[10px] text-text-faint font-medium">
               <span className="w-[88px] text-center">提案</span>
               <span className="w-[88px] text-center">申込</span>
@@ -872,14 +873,15 @@ function UnitRow({
   const hasApplied = draft.applied_koma > 0;
 
   const handleCardClick = () => {
-    if (!draft.selected) {
-      onToggle();
-    }
     onUpdate({ koma_count: draft.koma_count + 1 });
   };
 
-  const rowColor = !draft.selected
-    ? 'border-border-subtle bg-surface-raised'
+  const isActive = draft.koma_count > 0;
+
+  const rowColor = !isActive
+    ? draft.selected
+      ? 'border-accent-ink/30 bg-accent-ink-subtle/50'
+      : 'border-border-subtle bg-surface-raised'
     : hasApplied
       ? 'border-success/30 bg-success-subtle'
       : isGrouped
@@ -888,9 +890,7 @@ function UnitRow({
 
   const checkColor = !draft.selected
     ? 'border-border-strong hover:border-text-muted'
-    : hasApplied
-      ? 'bg-success border-success text-white'
-      : 'bg-accent-ink border-accent-ink text-white';
+    : 'bg-accent-ink border-accent-ink text-white';
 
   return (
     <div className={`rounded-lg border transition-colors duration-150 ${rowColor}`}>
@@ -912,7 +912,7 @@ function UnitRow({
             className={`text-sm transition-colors duration-150 ${
               done
                 ? 'text-text-faint line-through'
-                : draft.selected
+                : isActive
                   ? 'font-medium text-text-heading group-hover:text-accent-ink'
                   : 'text-text-body group-hover:text-text-heading'
             }`}
@@ -929,11 +929,11 @@ function UnitRow({
           )}
         </button>
 
-        {draft.selected && (!isGrouped || isGroupHead) && (
+        {isActive && (!isGrouped || isGroupHead) && (
           <div className="flex items-center gap-2 shrink-0">
             <div className="flex items-center gap-0.5">
               <button
-                onClick={() => onUpdate({ koma_count: Math.max(1, draft.koma_count - 1) })}
+                onClick={() => onUpdate({ koma_count: Math.max(0, draft.koma_count - 1) })}
                 className="w-5 h-5 flex items-center justify-center text-text-faint hover:text-text-body rounded hover:bg-surface-hover transition-colors duration-150"
                 aria-label="提案コマ数を減らす"
               >
@@ -975,7 +975,7 @@ function UnitRow({
           </div>
         )}
 
-        {isGrouped && draft.selected && (
+        {isGrouped && isActive && (
           <button
             onClick={onUngroup}
             className="p-1 text-info/60 hover:text-info rounded hover:bg-info/10 transition-colors duration-150"
@@ -986,7 +986,7 @@ function UnitRow({
           </button>
         )}
 
-        {draft.selected && (
+        {isActive && (
           <button
             onClick={() => setExpanded(!expanded)}
             className="p-1 text-text-faint hover:text-text-body rounded hover:bg-surface-hover transition-colors duration-150"
@@ -997,7 +997,7 @@ function UnitRow({
         )}
       </div>
 
-      {draft.selected && expanded && (
+      {isActive && expanded && (
         <div className="px-3 pb-2.5 pt-0">
           <input
             value={draft.reason}
@@ -1020,7 +1020,7 @@ function ProposalPrintView({
   year,
   theme,
   allItems,
-  selectedUnits,
+  activeUnits,
   progressMap,
   totalKoma,
   groupMap,
@@ -1031,13 +1031,13 @@ function ProposalPrintView({
   year: number;
   theme: string;
   allItems: CurriculumItem[];
-  selectedUnits: UnitDraft[];
+  activeUnits: UnitDraft[];
   progressMap: Map<number, StudentProgress>;
   totalKoma: number;
   groupMap: Map<number, UnitDraft[]>;
 }) {
-  const selectedIds = new Set(selectedUnits.map((u) => u.curriculum_item_id));
-  const unitMap = new Map(selectedUnits.map((u) => [u.curriculum_item_id, u]));
+  const selectedIds = new Set(activeUnits.map((u) => u.curriculum_item_id));
+  const unitMap = new Map(activeUnits.map((u) => [u.curriculum_item_id, u]));
   const doneCount = allItems.filter((item) => !!progressMap.get(item.id)?.school_progress_date).length;
 
   return (
@@ -1076,7 +1076,7 @@ function ProposalPrintView({
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-bold text-text-heading">テキスト全単元と講習対象</h2>
           <span className="text-sm font-bold text-accent-ink print:text-text-heading">
-            講習 {totalKoma}コマ / {selectedUnits.length}単元
+            講習 {totalKoma}コマ / {activeUnits.length}単元
           </span>
         </div>
         <table className="w-full text-xs">
@@ -1151,7 +1151,7 @@ function ProposalPrintView({
         <div className="flex items-center gap-3">
           <div className="text-sm text-text-muted">講習内容:</div>
           <div className="text-sm font-bold text-accent-ink print:text-text-heading">
-            {selectedUnits.length}単元 / {totalKoma}コマ
+            {activeUnits.length}単元 / {totalKoma}コマ
           </div>
         </div>
       </section>
