@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
           : auth.schoolIds;
 
         if (sids.length === 0) {
-          return NextResponse.json({ data: { allComplete: true, tasks: [] } });
+          return NextResponse.json({ data: { allComplete: true, tasks: [], coursePrepTasks: [] } });
         }
 
         // タスク・チェック・オーバーライドを並列取得
@@ -112,63 +112,84 @@ export async function GET(request: NextRequest) {
         const { data: allTasks, error: taskErr } = await taskQuery;
         if (taskErr) throw taskErr;
 
-        if (!allTasks || allTasks.length === 0) {
-          return NextResponse.json({ data: { allComplete: true, tasks: [] } });
-        }
-
-        const allIds = allTasks.map((t: { id: string }) => t.id);
-
-        const [checksResult, overridesResult] = await Promise.all([
-          supabaseAdmin
-            .from('monthly_task_checks')
-            .select('task_id, school_id, is_completed')
-            .in('task_id', allIds)
-            .in('school_id', sids),
-          supabaseAdmin
-            .from('monthly_task_overrides')
-            .select('task_id, school_id, is_hidden')
-            .in('task_id', allIds)
-            .in('school_id', sids)
-            .eq('is_hidden', true),
-        ]);
-        const allChecks = checksResult.data || [];
-        const hiddenOverrides = overridesResult.data || [];
-
-        // is_hidden を高速検索できるようSetに変換
-        const hiddenSet = new Set(
-          hiddenOverrides.map((o: Record<string, unknown>) => `${o.task_id}:${o.school_id}`)
-        );
-
         type TaskRow = { id: string; task_date: string; task_name: string; category: string };
         const incompleteTasks: (TaskRow & { overdue: boolean; incompleteSchoolIds: string[] })[] = [];
         let allComplete = true;
 
-        for (const task of allTasks) {
-          const incomplete: string[] = [];
-          for (const sid of sids) {
-            if (hiddenSet.has(`${task.id}:${sid}`)) continue;
-            const check = allChecks.find(
-              (c: Record<string, unknown>) => c.task_id === task.id && c.school_id === sid
-            );
-            if (!check || !check.is_completed) {
-              incomplete.push(sid);
+        if (allTasks && allTasks.length > 0) {
+          const allIds = allTasks.map((t: { id: string }) => t.id);
+
+          const [checksResult, overridesResult] = await Promise.all([
+            supabaseAdmin
+              .from('monthly_task_checks')
+              .select('task_id, school_id, is_completed')
+              .in('task_id', allIds)
+              .in('school_id', sids),
+            supabaseAdmin
+              .from('monthly_task_overrides')
+              .select('task_id, school_id, is_hidden')
+              .in('task_id', allIds)
+              .in('school_id', sids)
+              .eq('is_hidden', true),
+          ]);
+          const allChecks = checksResult.data || [];
+          const hiddenOverrides = overridesResult.data || [];
+
+          const hiddenSet = new Set(
+            hiddenOverrides.map((o: Record<string, unknown>) => `${o.task_id}:${o.school_id}`)
+          );
+
+          for (const task of allTasks) {
+            const incomplete: string[] = [];
+            for (const sid of sids) {
+              if (hiddenSet.has(`${task.id}:${sid}`)) continue;
+              const check = allChecks.find(
+                (c: Record<string, unknown>) => c.task_id === task.id && c.school_id === sid
+              );
+              if (!check || !check.is_completed) {
+                incomplete.push(sid);
+              }
             }
-          }
-          if (incomplete.length > 0) {
-            allComplete = false;
-            incompleteTasks.push({
-              id: task.id,
-              task_date: task.task_date,
-              task_name: task.task_name,
-              category: task.category,
-              overdue: task.task_date < today,
-              incompleteSchoolIds: incomplete,
-            });
+            if (incomplete.length > 0) {
+              allComplete = false;
+              incompleteTasks.push({
+                id: task.id,
+                task_date: task.task_date,
+                task_name: task.task_name,
+                category: task.category,
+                overdue: task.task_date < today,
+                incompleteSchoolIds: incomplete,
+              });
+            }
           }
         }
 
+        // 講習準備スケジュールタスク: 未完了 & 期限が今日から14日以内 or 期限超過
+        const futureLimit = new Date();
+        futureLimit.setDate(futureLimit.getDate() + 14);
+        const futureLimitStr = futureLimit.toISOString().split('T')[0];
+
+        const { data: schedTasks } = await supabaseAdmin
+          .from('course_prep_schedule_tasks')
+          .select('id, name, deadline, start_date, end_date, major_category, is_completed')
+          .in('school_id', sids)
+          .eq('is_completed', false)
+          .not('deadline', 'is', null)
+          .lte('deadline', futureLimitStr)
+          .order('deadline', { ascending: true });
+
+        const coursePrepTasks = (schedTasks || []).map((t: { id: string; name: string; deadline: string | null; start_date: string | null; end_date: string | null; major_category: string }) => ({
+          id: t.id,
+          name: t.name,
+          deadline: t.deadline,
+          start_date: t.start_date,
+          end_date: t.end_date,
+          major_category: t.major_category,
+          overdue: t.deadline ? t.deadline < today : false,
+        }));
+
         return NextResponse.json({
-          data: { allComplete, tasks: incompleteTasks },
+          data: { allComplete, tasks: incompleteTasks, coursePrepTasks },
         });
       }
 

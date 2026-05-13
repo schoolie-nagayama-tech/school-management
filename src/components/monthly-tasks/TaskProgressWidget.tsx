@@ -6,13 +6,22 @@ import {
   batchToggleCheck,
   type ProgressWidgetData,
   type ProgressWidgetTask,
+  type CoursePrepWidgetTask,
 } from '@/lib/api/monthlyTasks';
-import { AlertTriangle, ArrowRight, Check, ChevronDown, ListTodo, Trophy } from 'lucide-react';
+import { AlertTriangle, ArrowRight, BookOpen, Check, ChevronDown, ListTodo, Trophy } from 'lucide-react';
 import Link from 'next/link';
 
 function formatDate(dateStr: string) {
   const d = new Date(dateStr + 'T00:00:00');
   return `${d.getMonth() + 1}/${d.getDate()}(${['日','月','火','水','木','金','土'][d.getDay()]})`;
+}
+
+function formatCoursePrepMessage(task: CoursePrepWidgetTask): string {
+  const deadlineStr = task.deadline ? formatDate(task.deadline) : '';
+  if (task.overdue) {
+    return `講習準備：${task.name}（${deadlineStr}期限 - 期限超過）`;
+  }
+  return `講習準備：${task.name}を${deadlineStr}までに完了してください`;
 }
 
 const CELEBRATION_STYLE_ID = 'task-progress-celebration';
@@ -272,6 +281,22 @@ export function TaskProgressWidget({ schoolIds }: { schoolIds?: string[] }) {
             </span>
           ))}
         </div>
+        {/* 講習準備タスク */}
+        {data.coursePrepTasks && data.coursePrepTasks.length > 0 && (
+          <div className="px-4 py-2 border-t border-gray-100 space-y-1">
+            {data.coursePrepTasks.map((ct) => (
+              <div
+                key={ct.id}
+                className={`flex items-start gap-2 text-[11px] leading-relaxed ${
+                  ct.overdue ? 'text-red-600' : 'text-blue-700'
+                }`}
+              >
+                <BookOpen className={`w-3 h-3 mt-0.5 flex-shrink-0 ${ct.overdue ? 'text-red-400' : 'text-blue-400'}`} />
+                <span>{formatCoursePrepMessage(ct)}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

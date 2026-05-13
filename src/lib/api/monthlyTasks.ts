@@ -53,9 +53,20 @@ export interface ProgressWidgetTask {
   incompleteSchoolIds: string[];
 }
 
+export interface CoursePrepWidgetTask {
+  id: string;
+  name: string;
+  deadline: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  major_category: string;
+  overdue: boolean;
+}
+
 export interface ProgressWidgetData {
   allComplete: boolean;
   tasks: ProgressWidgetTask[];
+  coursePrepTasks?: CoursePrepWidgetTask[];
 }
 
 export async function getProgressWidget(schoolIds?: string[]): Promise<ProgressWidgetData> {
