@@ -9,6 +9,7 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  Download,
   Link2,
   Unlink,
   Minus,
@@ -47,10 +48,12 @@ import {
 } from '@/lib/api/proposals';
 import type { ProposalUnitInput } from '@/lib/api/proposals';
 import { getTextbooks } from '@/lib/api/textbooks';
+import { getCourseCurriculum } from '@/lib/api/seasonalCourses';
 import { supabase } from '@/lib/supabase';
 import type {
   CurriculumItem,
   ProposalStatus,
+  SeasonalCourse,
   SeasonalProposalWithDetails,
   SeasonType,
   StudentProgress,
@@ -146,6 +149,11 @@ export default function ProposalEditor() {
   const [previewMode, setPreviewMode] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showOrderAlert, setShowOrderAlert] = useState(false);
+
+  // ひな形取り込み
+  const [availableCourses, setAvailableCourses] = useState<SeasonalCourse[]>([]);
+  const [showCourseImport, setShowCourseImport] = useState(false);
+  const [importingCourse, setImportingCourse] = useState(false);
 
   // ── 初期読み込み ──
   const loadData = useCallback(async () => {
@@ -264,6 +272,27 @@ export default function ProposalEditor() {
 
       setUnitDrafts(drafts);
       setNextGroupId(maxGroup + 1);
+
+      // このテキストを含む講習コースを取得
+      try {
+        const { data: courseTextbooks } = await supabase
+          .from('seasonal_course_textbooks')
+          .select('course_id')
+          .eq('textbook_id', tbId);
+        if (courseTextbooks && courseTextbooks.length > 0) {
+          const courseIds = (courseTextbooks as { course_id: string }[]).map((ct) => ct.course_id);
+          const { data: courses } = await supabase
+            .from('seasonal_courses')
+            .select('id, name, season')
+            .in('id', courseIds)
+            .eq('is_active', true);
+          setAvailableCourses((courses ?? []) as SeasonalCourse[]);
+        } else {
+          setAvailableCourses([]);
+        }
+      } catch {
+        setAvailableCourses([]);
+      }
     } catch (e) {
       console.error(e);
       addToast('データの読み込みに失敗しました', 'error');
@@ -317,6 +346,57 @@ export default function ProposalEditor() {
       if (d) next.set(ciId, { ...d, ...patch });
       return next;
     });
+  };
+
+  const handleImportCourse = async (courseId: string) => {
+    if (!selectedTextbookId) return;
+    setImportingCourse(true);
+    try {
+      const { settings } = await getCourseCurriculum(courseId, selectedTextbookId);
+      if (settings.length === 0) {
+        addToast('このコースにはカリキュラム設定がありません', 'error');
+        return;
+      }
+
+      let maxGroup = nextGroupId;
+      // group_number → 新しい group_id のマッピング
+      const groupRemap = new Map<number, number>();
+
+      setUnitDrafts((prev) => {
+        const next = new Map(prev);
+        for (const s of settings) {
+          if (s.proposal_count <= 0) continue;
+          const d = next.get(s.curriculum_item_id);
+          if (!d) continue;
+
+          let newGroupId = 0;
+          if (s.group_number != null && s.group_number > 0) {
+            if (!groupRemap.has(s.group_number)) {
+              groupRemap.set(s.group_number, maxGroup);
+              maxGroup++;
+            }
+            newGroupId = groupRemap.get(s.group_number)!;
+          }
+
+          next.set(s.curriculum_item_id, {
+            ...d,
+            koma_count: s.proposal_count,
+            group_id: newGroupId,
+            selected: false,
+          });
+        }
+        return next;
+      });
+
+      setNextGroupId(maxGroup);
+      setShowCourseImport(false);
+      addToast('ひな形を取り込みました', 'success');
+    } catch (e) {
+      console.error(e);
+      addToast('取り込みに失敗しました', 'error');
+    } finally {
+      setImportingCourse(false);
+    }
   };
 
   const groupSelected = () => {
@@ -771,6 +851,41 @@ export default function ProposalEditor() {
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-bold text-text-heading">対象単元を選択</h2>
             <div className="flex items-center gap-3">
+              {availableCourses.length > 0 && (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowCourseImport(!showCourseImport)}
+                    disabled={importingCourse}
+                    className="px-2 py-1 text-[11px] bg-accent-ink-subtle text-accent-ink rounded-md hover:bg-accent-ink/20 flex items-center gap-1 transition-colors duration-150 active:scale-95 disabled:opacity-50"
+                    title="講習一覧のひな形を取り込む"
+                  >
+                    <Download className="w-3 h-3" />
+                    ひな形取込
+                  </button>
+                  {showCourseImport && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setShowCourseImport(false)} />
+                      <div className="absolute right-0 top-full mt-1 w-56 bg-surface-raised border border-border-default rounded-lg shadow-lg z-20 overflow-hidden">
+                        <div className="px-3 py-1.5 text-[10px] text-text-faint uppercase tracking-wider border-b border-border-subtle">
+                          講習ひな形を選択
+                        </div>
+                        {availableCourses.map((c) => (
+                          <button
+                            key={c.id}
+                            onClick={() => handleImportCourse(c.id)}
+                            className="w-full px-3 py-2 text-left text-xs text-text-body hover:bg-surface-hover transition-colors duration-100"
+                          >
+                            <div className="font-medium text-text-heading">{c.name}</div>
+                            <div className="text-[10px] text-text-muted mt-0.5">
+                              {SEASON_LABELS[c.season as SeasonType]}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
               <button
                 onClick={groupSelected}
                 className="px-2 py-1 text-[11px] bg-surface-hover text-text-muted rounded-md hover:bg-border-default flex items-center gap-1 transition-colors duration-150"
