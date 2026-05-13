@@ -43,7 +43,6 @@ import {
   updateProposal,
   saveProposalUnits,
   syncProposalToProgress,
-  syncApplicationToProgress,
   publishProposal,
   calcTotalKoma,
   calcTotalAppliedKoma,
@@ -510,15 +509,24 @@ export default function ProposalEditor() {
     }
   };
 
+  const [statusChanging, setStatusChanging] = useState(false);
+
   const handleStatusChange = async (newStatus: ProposalStatus) => {
-    if (isNew || !proposalId) return;
+    if (isNew || !proposalId || statusChanging) return;
+
+    // 公開は確認ダイアログ
+    if (newStatus === 'approved') {
+      if (!window.confirm('提案書を公開しますか？\n\n申込コマ数が進行表に反映され、講師に公開されます。')) return;
+    }
+
+    setStatusChanging(true);
     try {
       if (newStatus === 'sent') {
         // 提案済み: applied_koma を koma_count で初期化
         const updated = new Map(unitDrafts);
-        Array.from(updated.entries()).forEach(([ciId, d]) => {
+        Array.from(updated.entries()).forEach(([, d]) => {
           if (d.koma_count > 0) {
-            updated.set(ciId, { ...d, applied_koma: d.koma_count });
+            updated.set(d.curriculum_item_id, { ...d, applied_koma: d.koma_count });
           }
         });
         setUnitDrafts(updated);
@@ -538,7 +546,18 @@ export default function ProposalEditor() {
         const totalApplied = calcTotalAppliedKoma(unitInputs);
         await updateProposal(proposalId, { status: newStatus, applied_koma: totalApplied });
       } else if (newStatus === 'approved') {
-        // 公開: 申込コマ数を進行表に転記 → 進行表を講師に公開
+        // 公開: 未保存の申込コマ数を先に保存してから公開
+        const unitInputs = Array.from(unitDrafts.values())
+          .filter((d) => d.koma_count > 0)
+          .map((u) => ({
+            curriculum_item_id: u.curriculum_item_id,
+            koma_count: u.koma_count,
+            applied_koma: u.applied_koma,
+            reason: u.reason,
+            group_id: u.group_id,
+            intent_tag: u.intent_tag,
+          }));
+        await saveProposalUnits(proposalId, unitInputs);
         await publishProposal(proposalId);
       } else {
         await updateProposal(proposalId, { status: newStatus });
@@ -549,6 +568,8 @@ export default function ProposalEditor() {
     } catch (e) {
       console.error(e);
       addToast('ステータス変更に失敗しました', 'error');
+    } finally {
+      setStatusChanging(false);
     }
   };
 
@@ -779,18 +800,28 @@ export default function ProposalEditor() {
           </div>
 
           {!isNew && (
-            <div className="flex items-center gap-1.5">
-              {STATUS_FLOW.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => handleStatusChange(s)}
-                  className={`px-2.5 py-1 text-[11px] font-bold rounded-full transition-colors duration-150 ${
-                    currentStatus === s ? STATUS_COLORS[s].active : STATUS_COLORS[s].inactive
-                  }`}
-                >
-                  {PROPOSAL_STATUS_LABELS[s]}
-                </button>
-              ))}
+            <div className="flex items-center gap-0.5">
+              {STATUS_FLOW.map((s, i) => {
+                const isCurrent = currentStatus === s;
+                const currentIdx = STATUS_FLOW.indexOf(currentStatus);
+                const isPast = STATUS_FLOW.indexOf(s) < currentIdx;
+                return (
+                  <div key={s} className="flex items-center">
+                    {i > 0 && (
+                      <div className={`w-3 h-px mx-0.5 ${isPast || isCurrent ? 'bg-text-muted' : 'bg-border-default'}`} />
+                    )}
+                    <button
+                      onClick={() => handleStatusChange(s)}
+                      disabled={statusChanging || (currentStatus === 'approved' && s !== 'approved')}
+                      className={`px-2.5 py-1 text-[11px] font-bold rounded-full transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed ${
+                        isCurrent ? STATUS_COLORS[s].active : STATUS_COLORS[s].inactive
+                      }`}
+                    >
+                      {statusChanging && s === currentStatus ? '...' : PROPOSAL_STATUS_LABELS[s]}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -975,19 +1006,9 @@ export default function ProposalEditor() {
           </Button>
         </div>
 
-        {/* 進行表反映 + 削除 */}
+        {/* 削除 */}
         {!isNew && (
-          <div className="flex gap-2 pt-2 border-t border-border-subtle">
-            <Button
-              variant="outline"
-              className="flex-1 !border-success/40 !text-success hover:!bg-success-subtle"
-              onClick={handleSyncToProgress}
-              disabled={syncing}
-              isLoading={syncing}
-            >
-              <ArrowRight className="w-4 h-4 mr-1.5" />
-              進行表に反映
-            </Button>
+          <div className="flex justify-end pt-2 border-t border-border-subtle">
             <Button variant="danger" onClick={() => setShowDeleteConfirm(true)}>
               <Trash2 className="w-4 h-4 mr-1.5" />
               削除
