@@ -397,6 +397,11 @@ export async function syncProposalToProgress(
 
     if (existing) {
       stbId = (existing as { id: string }).id;
+      // 既存テキストの track_progress を有効化
+      await supabase
+        .from('student_textbooks')
+        .update({ track_progress: true })
+        .eq('id', stbId);
     } else {
       // 生徒の school_id を取得
       const { data: student } = await supabase
@@ -414,6 +419,7 @@ export async function syncProposalToProgress(
           student_id: proposal.student_id,
           textbook_id: proposal.textbook_id,
           is_active: true,
+          track_progress: true,
           season: proposal.season,
         })
         .select('id')
