@@ -104,7 +104,7 @@ export default function CoursesPage() {
     try {
       let totalCreated = 0;
       let totalSkipped = 0;
-      for (const courseId of selected) {
+      for (const courseId of Array.from(selected)) {
         const { created, skipped } = await deployCourseToSchools(courseId, schoolIds);
         totalCreated += created;
         totalSkipped += skipped;
