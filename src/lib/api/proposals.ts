@@ -419,6 +419,7 @@ export async function syncProposalToProgress(
           student_id: proposal.student_id,
           textbook_id: proposal.textbook_id,
           is_active: true,
+          is_draft: true,
           track_progress: true,
           season: proposal.season,
         })
@@ -499,6 +500,52 @@ export async function syncApplicationToProgress(
       .eq('student_textbook_id', proposal.student_textbook_id)
       .eq('curriculum_item_id', u.curriculum_item_id);
   }
+}
+
+// ============================================
+// 公開（approved）ワンショット
+// ============================================
+
+/**
+ * 提案書を「公開」にする
+ * 1. 進行表に未反映なら反映（syncProposalToProgress）
+ * 2. 申込コマ数を進行表に転記（syncApplicationToProgress）
+ * 3. student_textbook の is_draft を false に（講師に公開）
+ * 4. ステータスを approved に更新
+ */
+export async function publishProposal(proposalId: string): Promise<void> {
+  // 進行表に反映（未反映の場合のみ内部で作成）
+  const { studentTextbookId } = await syncProposalToProgress(proposalId);
+
+  // 申込コマ数を転記
+  await syncApplicationToProgress(proposalId);
+
+  // 講師に公開
+  await supabase
+    .from('student_textbooks')
+    .update({ is_draft: false })
+    .eq('id', studentTextbookId);
+
+  // ステータス更新
+  await updateProposal(proposalId, { status: 'approved' });
+}
+
+/**
+ * 複数の提案書を一括公開
+ */
+export async function bulkPublishProposals(proposalIds: string[]): Promise<{ success: number; failed: number }> {
+  let success = 0;
+  let failed = 0;
+  for (const id of proposalIds) {
+    try {
+      await publishProposal(id);
+      success++;
+    } catch (e) {
+      console.error(`提案書 ${id} の公開に失敗:`, e);
+      failed++;
+    }
+  }
+  return { success, failed };
 }
 
 // ============================================

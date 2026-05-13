@@ -3364,7 +3364,7 @@ export type ProposalStatus = 'draft' | 'sent' | 'approved';
 export const PROPOSAL_STATUS_LABELS: Record<ProposalStatus, string> = {
   draft: '下書き',
   sent: '提案済',
-  approved: '承認',
+  approved: '公開',
 };
 
 export interface SeasonalProposal {

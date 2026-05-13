@@ -26,7 +26,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Eye, EyeOff, FileText, Plus } from 'lucide-react';
+import { Eye, EyeOff, FileText, Plus, Trash2 } from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
 import { Button, Modal, Select, ToastContainer, Loading } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
@@ -42,6 +42,7 @@ import {
   upsertStudentTextbookSettings,
   createStudentTextbookExam,
   updateStudentTextbookExam,
+  deleteStudentTextbook,
   deleteStudentTextbookExam,
 } from '@/lib/api/progress';
 import SessionRecordingPanel from '@/components/progress/SessionRecordingPanel';
@@ -267,6 +268,29 @@ export default function NewProgressPage() {
     [studentTextbooks, success, toastError]
   );
 
+  // テキスト削除
+  const handleDeleteTextbook = useCallback(
+    async (textbookId: string) => {
+      const tb = studentTextbooks.find((t) => t.id === textbookId);
+      if (!tb) return;
+      const name = tb.textbook?.name ?? 'テキスト';
+      if (!window.confirm(`「${name}」の進行表を削除しますか？\n\n進行データ・テスト目標・提案書も削除されます。この操作は取り消せません。`)) return;
+      try {
+        await deleteStudentTextbook(textbookId);
+        setStudentTextbooks((prev) => prev.filter((t) => t.id !== textbookId));
+        if (selectedTextbookId === textbookId) {
+          setSelectedTextbookId(null);
+          setView('cards');
+        }
+        success(`「${name}」を削除しました`);
+      } catch (e) {
+        console.error(e);
+        toastError('削除に失敗しました');
+      }
+    },
+    [studentTextbooks, selectedTextbookId, success, toastError]
+  );
+
   // テキスト追加実行
   const handleAddTextbook = useCallback(
     async (textbookId: number) => {
@@ -409,6 +433,7 @@ export default function NewProgressPage() {
           onReorder={handleReorder}
           onAddTextbook={!isTeacher ? openAddTextbookModal : undefined}
           onTogglePublish={!isTeacher ? handleTogglePublish : undefined}
+          onDelete={!isTeacher ? handleDeleteTextbook : undefined}
         />
       ) : (
         selectedTb && (
@@ -782,6 +807,7 @@ function CardsView({
   onReorder,
   onAddTextbook,
   onTogglePublish,
+  onDelete,
 }: {
   textbooks: StudentTextbookWithDetails[];
   examTypes: ExamType[];
@@ -792,6 +818,7 @@ function CardsView({
   onReorder: (id: string, direction: 'up' | 'down') => void;
   onAddTextbook?: (presetSubject?: string) => void;
   onTogglePublish?: (id: string) => void;
+  onDelete?: (id: string) => void;
 }) {
   const isMeeting = viewMode === 'meeting';
 
@@ -871,6 +898,7 @@ function CardsView({
                       canMoveDown={i < items.length - 1}
                       onReorder={(dir) => onReorder(tb.id, dir)}
                       onTogglePublish={onTogglePublish ? () => onTogglePublish(tb.id) : undefined}
+                      onDelete={onDelete ? () => onDelete(tb.id) : undefined}
                     />
                   );
                 })}
@@ -894,6 +922,7 @@ function TextbookCard({
   canMoveDown,
   onReorder,
   onTogglePublish,
+  onDelete,
 }: {
   textbook: StudentTextbookWithDetails;
   subjectColumn: SubjectColumn;
@@ -906,6 +935,7 @@ function TextbookCard({
   canMoveDown: boolean;
   onReorder: (dir: 'up' | 'down') => void;
   onTogglePublish?: () => void;
+  onDelete?: () => void;
 }) {
   const { stalled } = isStalled(textbook);
   const { total, done } = progressStats(textbook);
@@ -928,6 +958,16 @@ function TextbookCard({
       <div className="flex items-start justify-between gap-1 mb-1">
         <div className={`text-[10px] font-bold ${tint.text}`}>{subjectColumn}</div>
         <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+          {onDelete && (
+            <button
+              type="button"
+              onClick={onDelete}
+              className="w-5 h-5 rounded border border-[#e5e7eb] bg-white text-[#9ca3af] hover:text-red-500 hover:border-red-300 hover:bg-red-50 flex items-center justify-center transition-colors duration-150"
+              title="削除"
+            >
+              <Trash2 className="w-3 h-3" />
+            </button>
+          )}
           {onTogglePublish && (
             <button
               type="button"
@@ -1088,7 +1128,7 @@ function TableView({
   // デフォルトは「試験範囲・学校進度・1回目・2回目・引継ぎ・宿題未・遅刻・講師名」を表示
   // 提案コマ数／申込コマ数／3回目はデフォルトでは非表示
   const DEFAULT_COLS: Record<MeetingCol, boolean> = {
-    proposal: false, application: false, examRange: true, schoolProgress: true,
+    proposal: false, application: true, examRange: true, schoolProgress: true,
     lesson1: true, lesson2: true, lesson3: false, handover: true,
     homeworkNotDone: true, tardy: true, teacherName: true,
   };

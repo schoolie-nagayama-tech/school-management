@@ -43,6 +43,8 @@ import {
   updateProposal,
   saveProposalUnits,
   syncProposalToProgress,
+  syncApplicationToProgress,
+  publishProposal,
   calcTotalKoma,
   calcTotalAppliedKoma,
 } from '@/lib/api/proposals';
@@ -91,7 +93,7 @@ const INTENT_TAG_COLOR: Record<IntentTag, string> = {
   '応用発展': 'text-indigo-700 border-indigo-200',
 };
 
-const STATUS_FLOW: ProposalStatus[] = ['draft', 'sent'];
+const STATUS_FLOW: ProposalStatus[] = ['draft', 'sent', 'approved'];
 
 const STATUS_COLORS: Record<string, { active: string; inactive: string }> = {
   draft: {
@@ -101,6 +103,10 @@ const STATUS_COLORS: Record<string, { active: string; inactive: string }> = {
   sent: {
     active: 'bg-info text-white',
     inactive: 'bg-info-subtle text-info hover:bg-info/15',
+  },
+  approved: {
+    active: 'bg-emerald-600 text-white',
+    inactive: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
   },
 };
 
@@ -508,6 +514,7 @@ export default function ProposalEditor() {
     if (isNew || !proposalId) return;
     try {
       if (newStatus === 'sent') {
+        // 提案済み: applied_koma を koma_count で初期化
         const updated = new Map(unitDrafts);
         Array.from(updated.entries()).forEach(([ciId, d]) => {
           if (d.koma_count > 0) {
@@ -530,6 +537,9 @@ export default function ProposalEditor() {
 
         const totalApplied = calcTotalAppliedKoma(unitInputs);
         await updateProposal(proposalId, { status: newStatus, applied_koma: totalApplied });
+      } else if (newStatus === 'approved') {
+        // 公開: 申込コマ数を進行表に転記 → 進行表を講師に公開
+        await publishProposal(proposalId);
       } else {
         await updateProposal(proposalId, { status: newStatus });
       }
