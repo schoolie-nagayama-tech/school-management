@@ -269,17 +269,15 @@ export function PortalMenuEditModal({
                         <label className="text-xs font-medium text-[#1f2937]">
                           リンク {index + 1}
                         </label>
-                        {formData.link_urls.length > 1 && (
-                          <Button
-                            type="button"
-                            onClick={() => handleRemoveLink(index)}
-                            variant="ghost"
-                            className="p-1 text-[#ef4444] hover:text-[#dc2626]"
-                            disabled={isSubmitting}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        )}
+                        <Button
+                          type="button"
+                          onClick={() => handleRemoveLink(index)}
+                          variant="ghost"
+                          className="p-1 text-[#ef4444] hover:text-[#dc2626]"
+                          disabled={isSubmitting}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-[#1f2937] mb-1">

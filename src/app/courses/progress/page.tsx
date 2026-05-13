@@ -57,6 +57,9 @@ export default function CourseProgressPage() {
   const isOwnerOrAbove =
     profile?.role === 'owner' ||
     profile?.role === 'admin';
+  const isManagerOrAbove =
+    isOwnerOrAbove ||
+    profile?.role === 'manager';
 
   // 期・年選択（localStorageから復元、工程表と共有）
   const [season, setSeasonRaw] = useState<SeasonType>(() => loadSavedSeasonYear().season);
@@ -747,8 +750,8 @@ export default function CourseProgressPage() {
           </div>
         )}
 
-        {/* ダッシュボード */}
-        {!isLoading && displayItems.length > 0 && (
+        {/* ダッシュボード（教室長以上のみ表示） */}
+        {!isLoading && displayItems.length > 0 && isManagerOrAbove && (
           <CourseProgressDashboard
             students={filteredStudents}
             items={displayItems}
