@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, CheckSquare, FileText, Plus, Printer, Square } from 'lucide-react';
+import { ArrowLeft, Check, FileText, Plus, Printer } from 'lucide-react';
 import { Button, Loading, InlineLoading } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import {
@@ -21,7 +21,7 @@ import { SEASON_LABELS, PROPOSAL_STATUS_LABELS } from '@/types/database';
 const STATUS_BADGE: Record<ProposalStatus, string> = {
   draft: 'bg-surface-hover text-text-muted',
   sent: 'bg-info-subtle text-info',
-  approved: 'bg-emerald-50 text-emerald-700',
+  approved: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
 };
 
 export default function ProposalList() {
@@ -35,7 +35,7 @@ export default function ProposalList() {
   const [printLoading, setPrintLoading] = useState(false);
   const [printData, setPrintData] = useState<ProposalPrintData[]>([]);
 
-  // 一括操作
+  // 一括公開
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [publishing, setPublishing] = useState(false);
 
@@ -66,6 +66,8 @@ export default function ProposalList() {
     load();
   }, [load]);
 
+  // ── チェック操作 ──
+
   const toggleSelect = (id: string) => {
     setSelected((prev) => {
       const next = new Set(prev);
@@ -75,22 +77,27 @@ export default function ProposalList() {
     });
   };
 
-  // 公開可能な提案書（draft / sent のみ）
   const publishable = proposals.filter((p) => p.status !== 'approved');
-  const selectedPublishable = Array.from(selected).filter((id) =>
+  const selectedCount = Array.from(selected).filter((id) =>
     publishable.some((p) => p.id === id)
-  );
+  ).length;
+
+  const selectAllPublishable = () => setSelected(new Set(publishable.map((p) => p.id)));
+  const clearSelection = () => setSelected(new Set());
 
   const handleBulkPublish = async () => {
-    if (selectedPublishable.length === 0) return;
-    if (!window.confirm(`${selectedPublishable.length}件の提案書を公開しますか？\n\n申込コマ数が進行表に反映され、講師に公開されます。`)) return;
+    const ids = Array.from(selected).filter((id) => publishable.some((p) => p.id === id));
+    if (ids.length === 0) return;
+    if (!window.confirm(
+      `${ids.length}件の提案書を公開しますか？\n\n申込コマ数が進行表に反映され、講師に公開されます。`
+    )) return;
     setPublishing(true);
     try {
-      const { success, failed } = await bulkPublishProposals(selectedPublishable);
+      const { success, failed } = await bulkPublishProposals(ids);
       if (failed > 0) {
-        alert(`${success}件を公開しました。${failed}件は失敗しました。`);
+        alert(`${success}件を公開、${failed}件が失敗しました`);
       }
-      setSelected(new Set());
+      clearSelection();
       await load();
     } catch (e) {
       console.error(e);
@@ -99,9 +106,7 @@ export default function ProposalList() {
     }
   };
 
-  const selectAllPublishable = () => {
-    setSelected(new Set(publishable.map((p) => p.id)));
-  };
+  // ── 一括印刷 ──
 
   const handleBulkPrint = async () => {
     if (proposals.length === 0) return;
@@ -166,6 +171,7 @@ export default function ProposalList() {
   const currentYear = new Date().getFullYear();
   const currentSeason = getCurrentSeason();
 
+  // ── 印刷モード ──
   if (printMode) {
     return (
       <div className="max-w-2xl mx-auto">
@@ -179,7 +185,6 @@ export default function ProposalList() {
             印刷
           </Button>
         </div>
-
         <div className="space-y-8">
           {printData.map((data, i) => (
             <div key={i} className="print:break-before-page first:print:break-before-auto">
@@ -191,6 +196,7 @@ export default function ProposalList() {
     );
   }
 
+  // ── テキストごとにグループ化 ──
   const byTextbook = new Map<number, { name: string; subject: string; proposals: SeasonalProposalWithDetails[] }>();
   for (const p of proposals) {
     const tbId = p.textbook_id;
@@ -206,6 +212,7 @@ export default function ProposalList() {
 
   return (
     <div className="max-w-2xl mx-auto">
+      {/* ヘッダー */}
       <div className="mb-6">
         <Link
           href={`/students/${studentId}/progress`}
@@ -247,52 +254,68 @@ export default function ProposalList() {
         </div>
       </div>
 
-      {/* 一括操作バー */}
+      {/* 一括公開バー */}
       {!loading && publishable.length > 0 && (
-        <div className={`mb-4 flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors duration-150 ${
-          hasSelection ? 'bg-emerald-50 border-emerald-200' : 'bg-surface border-border-subtle'
-        }`}>
+        <div
+          className={`mb-4 flex items-center gap-3 px-3.5 py-2 rounded-xl border transition-all duration-200 ${
+            hasSelection
+              ? 'bg-emerald-50 border-emerald-200 shadow-sm'
+              : 'bg-surface-raised border-border-subtle'
+          }`}
+        >
           <button
-            onClick={() => hasSelection ? setSelected(new Set()) : selectAllPublishable()}
-            className="text-xs text-text-muted hover:text-text-heading transition-colors"
+            onClick={() => hasSelection ? clearSelection() : selectAllPublishable()}
+            className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors duration-150 ${
+              hasSelection
+                ? 'bg-emerald-600 border-emerald-600 text-white'
+                : 'border-border-default hover:border-text-muted'
+            }`}
           >
-            {hasSelection ? `${selectedPublishable.length}件選択中` : '選択'}
+            {hasSelection && <Check className="w-2.5 h-2.5" />}
           </button>
+
           {hasSelection ? (
             <>
+              <span className="text-xs font-medium text-emerald-800">
+                {selectedCount}件選択
+              </span>
               <button
-                onClick={() => setSelected(new Set())}
-                className="text-xs text-text-faint hover:text-text-muted"
+                onClick={clearSelection}
+                className="text-[11px] text-emerald-600 hover:text-emerald-800 transition-colors"
               >
                 解除
               </button>
               <div className="flex-1" />
               <button
                 onClick={handleBulkPublish}
-                disabled={publishing || selectedPublishable.length === 0}
-                className="inline-flex items-center gap-1 px-3 py-1 text-xs font-bold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 active:scale-[0.97] transition-[colors,transform] duration-150 disabled:opacity-50"
+                disabled={publishing || selectedCount === 0}
+                className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 active:scale-[0.97] transition-[colors,transform] duration-150 disabled:opacity-50"
               >
                 {publishing ? (
                   <InlineLoading size="sm" label="公開中..." />
                 ) : (
-                  `${selectedPublishable.length}件を公開`
+                  `公開する`
                 )}
               </button>
             </>
           ) : (
             <>
+              <span className="text-xs text-text-faint">
+                未公開 {publishable.length}件
+              </span>
               <div className="flex-1" />
               <button
                 onClick={selectAllPublishable}
-                className="text-xs text-text-faint hover:text-text-muted"
+                className="text-[11px] text-text-faint hover:text-text-muted transition-colors"
               >
-                未公開をすべて選択
+                すべて選択
               </button>
             </>
           )}
         </div>
       )}
 
+      {/* 一覧 */}
       {loading ? (
         <Loading size="md" />
       ) : proposals.length === 0 ? (
@@ -316,25 +339,32 @@ export default function ProposalList() {
                   const appliedKoma = calcTotalAppliedKoma(p.units);
                   const isChecked = selected.has(p.id);
                   const isApproved = p.status === 'approved';
+
                   return (
                     <div
                       key={p.id}
-                      className={`flex items-center gap-3 px-4 py-3 hover:bg-surface-hover transition-colors duration-150 ${isChecked ? 'bg-emerald-50/50' : ''}`}
+                      className={`flex items-center gap-3 pl-3 pr-4 py-3 transition-colors duration-150 ${
+                        isChecked ? 'bg-emerald-50/60' : 'hover:bg-surface-hover'
+                      }`}
                     >
-                      {/* チェックボックス */}
+                      {/* チェックボックス or 公開済みマーク */}
                       {!isApproved ? (
                         <button
                           onClick={() => toggleSelect(p.id)}
-                          className="shrink-0 text-text-faint hover:text-text-heading transition-colors"
+                          className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors duration-150 ${
+                            isChecked
+                              ? 'bg-emerald-600 border-emerald-600 text-white'
+                              : 'border-border-default hover:border-text-muted'
+                          }`}
                         >
-                          {isChecked
-                            ? <CheckSquare className="w-4 h-4 text-emerald-600" />
-                            : <Square className="w-4 h-4" />
-                          }
+                          {isChecked && <Check className="w-2.5 h-2.5" />}
                         </button>
                       ) : (
-                        <div className="w-4 shrink-0" />
+                        <div className="w-4 h-4 shrink-0 flex items-center justify-center">
+                          <Check className="w-3 h-3 text-emerald-500" />
+                        </div>
                       )}
+
                       <Link
                         href={`/students/${studentId}/proposals/${p.id}`}
                         className="flex items-center gap-3 flex-1 min-w-0"
@@ -344,7 +374,7 @@ export default function ProposalList() {
                           <div className="text-sm font-medium text-text-heading truncate">
                             {p.theme || `${p.year}年 ${SEASON_LABELS[p.season as SeasonType]}講習`}
                           </div>
-                          <div className="text-xs text-text-muted flex gap-2">
+                          <div className="text-xs text-text-muted flex gap-2 flex-wrap">
                             <span>{p.year}年 {SEASON_LABELS[p.season as SeasonType]}</span>
                             <span>{p.units.length}単元 / {koma}コマ</span>
                             {appliedKoma != null && (
@@ -353,7 +383,7 @@ export default function ProposalList() {
                           </div>
                         </div>
                         <span
-                          className={`px-2 py-0.5 text-[10px] font-bold rounded ${STATUS_BADGE[p.status]}`}
+                          className={`px-2 py-0.5 text-[10px] font-bold rounded shrink-0 ${STATUS_BADGE[p.status]}`}
                         >
                           {PROPOSAL_STATUS_LABELS[p.status]}
                         </span>

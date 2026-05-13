@@ -59,17 +59,17 @@ export default function CourseApplyPage() {
     }
   }, [courseId, error, router]);
 
-  // 生徒一覧を取得
+  // 生徒一覧を取得（コースの教室の生徒のみ）
   const fetchStudents = useCallback(async () => {
+    if (!course) return;
     try {
-      const data = await getStudents();
-      // 在籍中の生徒のみ
+      const data = await getStudents(undefined, [course.school_id]);
       setStudents(data.filter(s => s.status === 'active'));
     } catch (err) {
       console.error('Error fetching students:', err);
       error(err instanceof Error ? err.message : '生徒一覧の取得に失敗しました');
     }
-  }, [error]);
+  }, [error, course]);
 
   // 適用履歴を取得
   const fetchApplications = useCallback(async () => {
@@ -85,11 +85,17 @@ export default function CourseApplyPage() {
   useEffect(() => {
     const load = async () => {
       setIsLoading(true);
-      await Promise.all([fetchCourse(), fetchStudents(), fetchApplications()]);
+      await Promise.all([fetchCourse(), fetchApplications()]);
       setIsLoading(false);
     };
     load();
-  }, [fetchCourse, fetchStudents, fetchApplications]);
+  }, [fetchCourse, fetchApplications]);
+
+  useEffect(() => {
+    if (course) {
+      fetchStudents();
+    }
+  }, [course, fetchStudents]);
 
   // 対象学年の生徒のみフィルター
   const targetStudents = useMemo(() => {

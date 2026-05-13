@@ -5,7 +5,6 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft,
-  ArrowRight,
   Check,
   ChevronDown,
   ChevronUp,
@@ -42,7 +41,6 @@ import {
   deleteProposal,
   updateProposal,
   saveProposalUnits,
-  syncProposalToProgress,
   publishProposal,
   calcTotalKoma,
   calcTotalAppliedKoma,
@@ -126,7 +124,6 @@ export default function ProposalEditor() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [syncing, setSyncing] = useState(false);
   const [proposal, setProposal] = useState<SeasonalProposalWithDetails | null>(null);
   const [studentTextbookId, setStudentTextbookId] = useState<string | null>(qStbId || null);
   const [season, setSeason] = useState<SeasonType>(qSeason || getCurrentSeason());
@@ -582,24 +579,6 @@ export default function ProposalEditor() {
     } catch (e) {
       console.error(e);
       addToast('削除に失敗しました', 'error');
-    }
-  };
-
-  const handleSyncToProgress = async () => {
-    if (isNew || !proposalId) return;
-    setSyncing(true);
-    try {
-      const { studentTextbookId: stbId, textbookCreated } = await syncProposalToProgress(proposalId);
-      setStudentTextbookId(stbId);
-      addToast('進行表に反映しました', 'success');
-      if (textbookCreated) {
-        setShowOrderAlert(true);
-      }
-    } catch (e) {
-      console.error(e);
-      addToast('進行表への反映に失敗しました', 'error');
-    } finally {
-      setSyncing(false);
     }
   };
 

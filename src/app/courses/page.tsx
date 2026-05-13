@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, CheckSquare, Copy, Square } from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
-import { Button, Loading } from '@/components/ui';
-import { getSeasonalCourses, createSeasonalCourse } from '@/lib/api/seasonalCourses';
+import { Button, Loading, InlineLoading } from '@/components/ui';
+import { getSeasonalCourses, createSeasonalCourse, deployCourseToSchools } from '@/lib/api/seasonalCourses';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
@@ -16,7 +16,6 @@ import { useLocalSchoolId } from '@/hooks/useLocalSchoolId';
 import { SchoolSwitcher } from '@/components/SchoolSwitcher';
 
 export default function CoursesPage() {
-  // 権限チェック
   const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
     (p) => p.canAccessCourses
   );
@@ -29,6 +28,10 @@ export default function CoursesPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // 選択状態
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [isDeploying, setIsDeploying] = useState(false);
+
   // 新規作成フォーム
   const [newCourseName, setNewCourseName] = useState('');
   const [newCourseSeason, setNewCourseSeason] = useState<SeasonType>('spring');
@@ -37,7 +40,6 @@ export default function CoursesPage() {
   const [newCourseComment, setNewCourseComment] = useState('');
   const [applyToAllSchools, setApplyToAllSchools] = useState(false);
 
-  // コース一覧を取得
   const fetchCourses = useCallback(async () => {
     setIsLoading(true);
     setErrorMessage('');
@@ -46,25 +48,77 @@ export default function CoursesPage() {
         setCourses([]);
         return;
       }
-
       const data = await getSeasonalCourses(localSchoolId);
       setCourses(data);
     } catch (error) {
       console.error('Error fetching courses:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, '講習一覧の取得に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, '講習一覧の取得に失敗しました'));
     } finally {
       setIsLoading(false);
     }
   }, [localSchoolId]);
 
-  // 初回読み込みと教室選択変更時の再読み込み
   useEffect(() => {
     if (localSchoolId) {
       fetchCourses();
     }
   }, [fetchCourses, localSchoolId]);
+
+  // 教室切り替え時に選択をリセット
+  useEffect(() => {
+    setSelected(new Set());
+  }, [localSchoolId]);
+
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selected.size === courses.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(courses.map((c) => c.id)));
+    }
+  };
+
+  // 全教室に展開
+  const handleDeploy = async () => {
+    if (selected.size === 0) return;
+    const count = selected.size;
+    const targetCount = schoolIds.length - 1;
+    if (targetCount <= 0) {
+      setErrorMessage('展開先の教室がありません');
+      return;
+    }
+    if (!window.confirm(
+      `選択した${count}件の講習を他の${targetCount}教室に展開します。\n\n同名・同季節の講習が既にある教室はスキップされます。よろしいですか？`
+    )) return;
+
+    setIsDeploying(true);
+    setErrorMessage('');
+    try {
+      let totalCreated = 0;
+      let totalSkipped = 0;
+      for (const courseId of selected) {
+        const { created, skipped } = await deployCourseToSchools(courseId, schoolIds);
+        totalCreated += created;
+        totalSkipped += skipped;
+      }
+      setSelected(new Set());
+      alert(`${totalCreated}件を作成しました。${totalSkipped}件はスキップされました。`);
+      await fetchCourses();
+    } catch (error) {
+      console.error('Error deploying courses:', error);
+      setErrorMessage(getUserErrorMessage(error, '展開に失敗しました'));
+    } finally {
+      setIsDeploying(false);
+    }
+  };
 
   // 新規作成
   const handleCreate = async (e: React.FormEvent) => {
@@ -73,19 +127,14 @@ export default function CoursesPage() {
       setErrorMessage('コース名を入力してください');
       return;
     }
-
     setIsSubmitting(true);
     setErrorMessage('');
     try {
-      // すべての教室に適用する場合
       const targetSchoolIds = applyToAllSchools ? schoolIds : getSelectedSchoolIds();
-      
       if (targetSchoolIds.length === 0) {
         setErrorMessage('教室が選択されていません');
         return;
       }
-
-      // 各教室に講習を作成
       const courseData = {
         name: newCourseName.trim(),
         season: newCourseSeason,
@@ -93,11 +142,9 @@ export default function CoursesPage() {
         total_koma: newCourseTotalKoma === '' ? undefined : Number(newCourseTotalKoma),
         comment: newCourseComment.trim() || undefined,
       };
-
       await Promise.all(
         targetSchoolIds.map((schoolId) => createSeasonalCourse(schoolId, courseData))
       );
-
       setIsCreateModalOpen(false);
       setNewCourseName('');
       setNewCourseSeason('spring');
@@ -108,15 +155,12 @@ export default function CoursesPage() {
       await fetchCourses();
     } catch (error) {
       console.error('Error creating course:', error);
-      setErrorMessage(
-        getUserErrorMessage(error, '講習の作成に失敗しました')
-      );
+      setErrorMessage(getUserErrorMessage(error, '講習の作成に失敗しました'));
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // 権限チェック中
   if (permissionLoading) {
     return (
       <AdminLayout>
@@ -125,7 +169,6 @@ export default function CoursesPage() {
     );
   }
 
-  // 権限なし
   if (!hasPermission) {
     return (
       <AdminLayout>
@@ -133,6 +176,9 @@ export default function CoursesPage() {
       </AdminLayout>
     );
   }
+
+  const hasSelection = selected.size > 0;
+  const canDeploy = schoolIds.length > 1;
 
   return (
     <AdminLayout headerTitle="講習管理">
@@ -144,7 +190,6 @@ export default function CoursesPage() {
         />
       )}
 
-      {/* エラーメッセージ */}
       {errorMessage && (
         <div className="mb-6 p-4 bg-danger/10 border border-danger rounded-lg">
           <div className="flex items-center gap-2">
@@ -162,6 +207,56 @@ export default function CoursesPage() {
         </Button>
       </div>
 
+      {/* 一括操作バー */}
+      {!isLoading && courses.length > 0 && canDeploy && (
+        <div className={`mb-4 flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors duration-150 ${
+          hasSelection ? 'bg-info/5 border-info/30' : 'bg-surface border-border-subtle'
+        }`}>
+          <button
+            onClick={toggleSelectAll}
+            className="text-xs text-text-muted hover:text-text-heading transition-colors flex items-center gap-1"
+          >
+            {selected.size === courses.length
+              ? <CheckSquare className="w-3.5 h-3.5 text-info" />
+              : <Square className="w-3.5 h-3.5" />
+            }
+            {hasSelection ? `${selected.size}件選択中` : '一括選択'}
+          </button>
+          {hasSelection ? (
+            <>
+              <button
+                onClick={() => setSelected(new Set())}
+                className="text-xs text-text-faint hover:text-text-muted"
+              >
+                解除
+              </button>
+              <div className="flex-1" />
+              <button
+                onClick={handleDeploy}
+                disabled={isDeploying}
+                className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold bg-info text-white rounded-lg hover:bg-info/90 active:scale-[0.97] transition-[colors,transform] duration-150 disabled:opacity-50"
+              >
+                {isDeploying ? (
+                  <InlineLoading size="sm" label="展開中..." />
+                ) : (
+                  <>
+                    <Copy className="w-3 h-3" />
+                    全教室に展開（{schoolIds.length - 1}教室）
+                  </>
+                )}
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="flex-1" />
+              <span className="text-xs text-text-faint">
+                チェックして全教室に展開
+              </span>
+            </>
+          )}
+        </div>
+      )}
+
       {/* コース一覧 */}
       {isLoading ? (
         <Loading className="min-h-[40vh]" />
@@ -174,47 +269,68 @@ export default function CoursesPage() {
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {courses.map((course) => (
-            <Link
-              key={course.id}
-              href={`/courses/${course.id}`}
-              className="bg-surface-raised rounded-xl border border-border p-6 hover:shadow-lg transition-shadow duration-150"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <h3 className="text-lg font-bold text-text-heading flex-1">
-                  {course.name}
-                </h3>
-                <span className="ml-2 px-2 py-1 text-xs font-bold bg-info/20 text-text-heading rounded">
-                  {SEASON_LABELS[course.season]}
-                </span>
-              </div>
-              <div className="space-y-2 text-sm text-text-body">
-                <div>
-                  <span className="font-medium">対象学年: </span>
-                  {course.target_grades.length > 0
-                    ? course.target_grades
-                        .map((g) => GRADE_LABELS[g])
-                        .join(', ')
-                    : '未設定'}
-                </div>
-                {course.total_koma && (
-                  <div>
-                    <span className="font-medium">合計コマ数: </span>
-                    {course.total_koma}コマ
+          {courses.map((course) => {
+            const isChecked = selected.has(course.id);
+            return (
+              <div
+                key={course.id}
+                className={`bg-surface-raised rounded-xl border p-6 transition-all duration-150 ${
+                  isChecked ? 'border-info ring-1 ring-info/30' : 'border-border'
+                }`}
+              >
+                {/* チェックボックス行 */}
+                {canDeploy && (
+                  <div className="flex items-center justify-end mb-2 -mt-1 -mr-1">
+                    <button
+                      onClick={() => toggleSelect(course.id)}
+                      className="p-1 text-text-faint hover:text-text-heading transition-colors"
+                    >
+                      {isChecked
+                        ? <CheckSquare className="w-4 h-4 text-info" />
+                        : <Square className="w-4 h-4" />
+                      }
+                    </button>
                   </div>
                 )}
-                {course.comment && (
-                  <div className="text-xs text-text-body/70 line-clamp-2">
-                    {course.comment}
+                <Link
+                  href={`/courses/${course.id}`}
+                  className="block hover:opacity-80 transition-opacity duration-150"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <h3 className="text-lg font-bold text-text-heading flex-1">
+                      {course.name}
+                    </h3>
+                    <span className="ml-2 px-2 py-1 text-xs font-bold bg-info/20 text-text-heading rounded">
+                      {SEASON_LABELS[course.season]}
+                    </span>
                   </div>
-                )}
-                <div className="pt-2 border-t border-border/10">
-                  <span className="font-medium">適用数: </span>
-                  {course.application_count || 0}件
-                </div>
+                  <div className="space-y-2 text-sm text-text-body">
+                    <div>
+                      <span className="font-medium">対象学年: </span>
+                      {course.target_grades.length > 0
+                        ? course.target_grades.map((g) => GRADE_LABELS[g]).join(', ')
+                        : '未設定'}
+                    </div>
+                    {course.total_koma && (
+                      <div>
+                        <span className="font-medium">合計コマ数: </span>
+                        {course.total_koma}コマ
+                      </div>
+                    )}
+                    {course.comment && (
+                      <div className="text-xs text-text-body/70 line-clamp-2">
+                        {course.comment}
+                      </div>
+                    )}
+                    <div className="pt-2 border-t border-border/10">
+                      <span className="font-medium">適用数: </span>
+                      {course.application_count || 0}件
+                    </div>
+                  </div>
+                </Link>
               </div>
-            </Link>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -269,9 +385,7 @@ export default function CoursesPage() {
                             if (e.target.checked) {
                               setNewCourseGrades([...newCourseGrades, grade]);
                             } else {
-                              setNewCourseGrades(
-                                newCourseGrades.filter((g) => g !== grade)
-                              );
+                              setNewCourseGrades(newCourseGrades.filter((g) => g !== grade));
                             }
                           }}
                           className="rounded border-border"
@@ -290,9 +404,7 @@ export default function CoursesPage() {
                   type="number"
                   value={newCourseTotalKoma}
                   onChange={(e) =>
-                    setNewCourseTotalKoma(
-                      e.target.value === '' ? '' : Number(e.target.value)
-                    )
+                    setNewCourseTotalKoma(e.target.value === '' ? '' : Number(e.target.value))
                   }
                   min="1"
                   className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"

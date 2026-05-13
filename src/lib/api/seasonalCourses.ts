@@ -336,6 +336,92 @@ export async function deleteSeasonalCourse(courseId: string): Promise<void> {
   if (error) throw error;
 }
 
+// コースを他の教室に展開（テキスト・カリキュラム設定を含む完全コピー）
+export async function deployCourseToSchools(
+  courseId: string,
+  targetSchoolIds: string[]
+): Promise<{ created: number; skipped: number }> {
+  const source = await getSeasonalCourse(courseId);
+  if (!source) throw new Error('コースが見つかりません');
+
+  let created = 0;
+  let skipped = 0;
+
+  for (const schoolId of targetSchoolIds) {
+    if (schoolId === source.school_id) {
+      skipped++;
+      continue;
+    }
+
+    // 同名・同季節の講習が既にあればスキップ
+    const { data: existing } = await supabase
+      .from('seasonal_courses')
+      .select('id')
+      .eq('school_id', schoolId)
+      .eq('name', source.name)
+      .eq('season', source.season)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (existing) {
+      skipped++;
+      continue;
+    }
+
+    // コースを作成
+    const { data: newCourse, error: cErr } = await supabase
+      .from('seasonal_courses')
+      .insert({
+        school_id: schoolId,
+        name: source.name,
+        season: source.season,
+        target_grades: source.target_grades,
+        total_koma: source.total_koma,
+        comment: source.comment,
+      })
+      .select()
+      .single();
+
+    if (cErr) throw cErr;
+
+    // テキスト紐付けをコピー
+    if (source.textbooks?.length > 0) {
+      const tbInserts = source.textbooks.map((ct) => ({
+        course_id: (newCourse as { id: string }).id,
+        textbook_id: ct.textbook_id,
+        sort_order: ct.sort_order,
+      }));
+      const { error: tbErr } = await supabase
+        .from('seasonal_course_textbooks')
+        .insert(tbInserts);
+      if (tbErr) throw tbErr;
+    }
+
+    // カリキュラム設定をコピー
+    if (source.curriculum?.length > 0) {
+      const curInserts = source.curriculum
+        .filter((c) => c.proposal_count > 0 || c.group_number != null)
+        .map((c) => ({
+          course_id: (newCourse as { id: string }).id,
+          textbook_id: c.textbook_id,
+          curriculum_item_id: c.curriculum_item_id,
+          proposal_count: c.proposal_count,
+          group_number: c.group_number,
+        }));
+      if (curInserts.length > 0) {
+        const { error: curErr } = await supabase
+          .from('seasonal_course_curriculum')
+          .insert(curInserts);
+        if (curErr) throw curErr;
+      }
+    }
+
+    created++;
+  }
+
+  return { created, skipped };
+}
+
 // =====================================================
 // コース×テキスト
 // =====================================================
