@@ -174,7 +174,7 @@ export default function ProposalList() {
   // ── 印刷モード ──
   if (printMode) {
     return (
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         <div className="mb-4 flex gap-2 print:hidden">
           <Button variant="outline" size="sm" onClick={() => setPrintMode(false)}>
             <ArrowLeft className="w-4 h-4 mr-1.5" />
@@ -211,7 +211,7 @@ export default function ProposalList() {
   const hasSelection = selected.size > 0;
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-5xl mx-auto">
       {/* ヘッダー */}
       <div className="mb-6">
         <Link

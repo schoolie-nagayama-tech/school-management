@@ -187,7 +187,7 @@ export default function CourseProposalsPage() {
 
   return (
     <AdminLayout headerTitle="提案書">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-lg font-bold text-text-heading">講習提案書</h1>
           <div className="flex items-center gap-2">

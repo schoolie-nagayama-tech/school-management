@@ -599,7 +599,7 @@ export default function ProposalEditor() {
   // ════════════════════════════════════════
   if (previewMode) {
     return (
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         <div className="mb-4 flex gap-2 print:hidden">
           <Button variant="outline" size="sm" onClick={() => setPreviewMode(false)}>
             <ArrowLeft className="w-4 h-4 mr-1.5" />
@@ -672,7 +672,7 @@ export default function ProposalEditor() {
       });
 
     return (
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         <div className="mb-6">
           <Link
             href={`/students/${studentId}/proposals`}
