@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { Modal, Button } from '@/components/ui';
 import { createAssessmentRow, updateScore } from '@/lib/api/assessments';
 import type { Student } from '@/types/database';
 import { GRADE_LABELS } from '@/types/database';
-import { AlertCircle, Check, HelpCircle } from 'lucide-react';
+import { AlertCircle, Check, HelpCircle, Upload, ClipboardPaste } from 'lucide-react';
 
 interface MockPasteImportModalProps {
   isOpen: boolean;
@@ -16,13 +16,9 @@ interface MockPasteImportModalProps {
 
 /** パースした1生徒分のデータ */
 interface ParsedMockRow {
-  /** 元の塾内番号 */
   originalCode: string;
-  /** 元の氏名 */
   originalName: string;
-  /** マッチしたNEST生徒 */
   matchedStudent: Student | null;
-  /** 得点 */
   scores: {
     japanese: number | null;
     math: number | null;
@@ -32,9 +28,10 @@ interface ParsedMockRow {
     hensa_3: number | null;
     hensa_5: number | null;
   };
-  /** 志望校（表示用） */
   schools: string[];
 }
+
+type InputMode = 'file' | 'paste';
 
 /** 氏名を正規化（全角スペース・半角スペース除去、全角英数→半角） */
 function normalizeName(name: string): string {
@@ -71,8 +68,9 @@ function findStudentByName(name: string, students: Student[]): Student | null {
 }
 
 /** 数値パース（空白や全角数字対応） */
-function parseNum(val: string | undefined): number | null {
-  if (!val) return null;
+function parseNum(val: string | number | undefined | null): number | null {
+  if (val === undefined || val === null) return null;
+  if (typeof val === 'number') return isNaN(val) ? null : val;
   const trimmed = val
     .trim()
     .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0));
@@ -82,17 +80,67 @@ function parseNum(val: string | undefined): number | null {
 }
 
 /**
- * 模試会社からコピペされたデータをパースする。
+ * xlsx/CSVファイルから読み込んだデータをパースする。
+ *
+ * 進研テストの列構造:
+ *   0:登録番号, 1:塾コード, 2:塾名, 3:教室名, 4:学年, 5:塾内番号, 6:性別, 7:氏名,
+ *   8:年度, 9:商品, 10:学年, 11:回号,
+ *   12:国語得点, 13:国語偏差値, 14:数学得点, 15:数学偏差値,
+ *   16:英語得点, 17:英語偏差値, 18:社会得点, 19:社会偏差値,
+ *   20:理科得点, 21:理科偏差値, 22:二科三科得点, 23:二科三科偏差値,
+ *   24:四科五科得点, 25:四科五科偏差値,
+ *   26〜: 志望校名,合格可能性 のペア
+ */
+function parseFileRows(
+  rows: (string | number | undefined)[][],
+  students: Student[]
+): ParsedMockRow[] {
+  const results: ParsedMockRow[] = [];
+
+  // ヘッダー行をスキップ（先頭行）
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    if (!r || r.length < 12) continue;
+
+    const name = String(r[7] || '').trim();
+    if (!name) continue;
+
+    const schoolList: string[] = [];
+    for (let j = 26; j < r.length; j += 2) {
+      const schoolName = String(r[j] || '').trim();
+      if (schoolName) schoolList.push(schoolName);
+    }
+
+    results.push({
+      originalCode: String(r[5] || ''),
+      originalName: name,
+      matchedStudent: findStudentByName(name, students),
+      scores: {
+        japanese: parseNum(r[13]),
+        math: parseNum(r[15]),
+        english: parseNum(r[17]),
+        social: parseNum(r[19]),
+        science: parseNum(r[21]),
+        hensa_3: parseNum(r[23]),
+        hensa_5: parseNum(r[25]),
+      },
+      schools: schoolList,
+    });
+  }
+
+  return results;
+}
+
+/**
+ * コピペされたデータをパースする。
  *
  * フォーマット:
- *   ヘッダー行（複数行にまたがることがある）
  *   生徒行ブロック: 番号 TAB 性別 TAB 氏名
- *   得点行ブロック: 国語得点 TAB 国語SS TAB 数学得点 TAB ... TAB 志望校1 TAB ...
+ *   得点行ブロック: 国語得点 TAB 国語SS TAB 数学得点 TAB 数学SS TAB ...
  */
 function parsePastedData(text: string, students: Student[]): ParsedMockRow[] {
   const lines = text.split('\n').map((l) => l.replace(/\r$/, ''));
 
-  // ヘッダー的な行をスキップするためのキーワード
   const headerKeywords = [
     '塾内', '番号', '性別', '氏名', '得点', 'ＳＳ', 'SS',
     '志望校', '合格', '可能性', '年度', '商品', '学年', '回号',
@@ -106,13 +154,10 @@ function parsePastedData(text: string, students: Student[]): ParsedMockRow[] {
     const trimmed = line.trim();
     if (!trimmed) continue;
 
-    // ヘッダー行をスキップ
     const isHeader = headerKeywords.some((kw) => trimmed.includes(kw));
     if (isHeader) continue;
 
     const cols = trimmed.split('\t');
-
-    // 生徒行の判定: 3列目以降が空 or 未定義、かつ2列目が性別（男/女）
     const col0 = (cols[0] || '').trim();
     const col1 = (cols[1] || '').trim();
     const col2 = (cols[2] || '').trim();
@@ -126,7 +171,6 @@ function parsePastedData(text: string, students: Student[]): ParsedMockRow[] {
       continue;
     }
 
-    // 得点行の判定: 先頭がスコアっぽい数値
     const firstNum = parseNum(col0);
     if (firstNum !== null && cols.length >= 6) {
       scoreRows.push(cols);
@@ -134,7 +178,6 @@ function parsePastedData(text: string, students: Student[]): ParsedMockRow[] {
     }
   }
 
-  // 生徒行と得点行を1:1で結合
   const results: ParsedMockRow[] = [];
   const count = Math.min(studentRows.length, scoreRows.length);
 
@@ -142,13 +185,11 @@ function parsePastedData(text: string, students: Student[]): ParsedMockRow[] {
     const sr = studentRows[i];
     const sc = scoreRows[i];
 
-    // 得点行の列マッピング:
+    // 偏差値列を参照（得点ではなく SS を取得）
     // 0:国語得点, 1:国語SS, 2:数学得点, 3:数学SS, 4:英語得点, 5:英語SS,
     // 6:社会得点, 7:社会SS, 8:理科得点, 9:理科SS,
-    // 10:二科三科得点, 11:二科三科SS, 12:四科五科得点, 13:四科五科SS,
-    // 14〜: 志望校名,合格可能性 のペア
+    // 10:二科三科得点, 11:二科三科SS, 12:四科五科得点, 13:四科五科SS
 
-    // 志望校を取得
     const schoolList: string[] = [];
     for (let j = 14; j < sc.length; j += 2) {
       const name = (sc[j] || '').trim();
@@ -160,11 +201,11 @@ function parsePastedData(text: string, students: Student[]): ParsedMockRow[] {
       originalName: sr.name,
       matchedStudent: findStudentByName(sr.name, students),
       scores: {
-        japanese: parseNum(sc[0]),
-        math: parseNum(sc[2]),
-        english: parseNum(sc[4]),
-        social: parseNum(sc[6]),
-        science: parseNum(sc[8]),
+        japanese: parseNum(sc[1]),
+        math: parseNum(sc[3]),
+        english: parseNum(sc[5]),
+        social: parseNum(sc[7]),
+        science: parseNum(sc[9]),
         hensa_3: parseNum(sc[11]),
         hensa_5: parseNum(sc[13]),
       },
@@ -181,7 +222,11 @@ export function MockPasteImportModal({
   students,
   onImportComplete,
 }: MockPasteImportModalProps) {
+  const [inputMode, setInputMode] = useState<InputMode>('file');
   const [pasteText, setPasteText] = useState('');
+  const [fileRows, setFileRows] = useState<(string | number | undefined)[][] | null>(null);
+  const [fileName, setFileName] = useState('');
+  const [fileError, setFileError] = useState('');
   const [nameCode, setNameCode] = useState<'venue' | 'classroom'>('venue');
   const [examMonth, setExamMonth] = useState(() => {
     const now = new Date();
@@ -193,20 +238,61 @@ export function MockPasteImportModal({
     failed: number;
     skipped: number;
   } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // activeな生徒のみ対象
   const activeStudents = useMemo(
     () => students.filter((s) => s.status === 'active' && !s.deleted_at),
     [students]
   );
 
   const parsed = useMemo(() => {
+    if (inputMode === 'file') {
+      if (!fileRows) return [];
+      return parseFileRows(fileRows, activeStudents);
+    }
     if (!pasteText.trim()) return [];
     return parsePastedData(pasteText, activeStudents);
-  }, [pasteText, activeStudents]);
+  }, [inputMode, fileRows, pasteText, activeStudents]);
 
   const matchedCount = parsed.filter((r) => r.matchedStudent).length;
   const unmatchedCount = parsed.filter((r) => !r.matchedStudent).length;
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setFileError('');
+    setFileName(file.name);
+    setImportResult(null);
+
+    try {
+      const ext = file.name.toLowerCase().split('.').pop();
+      if (ext === 'xlsx' || ext === 'xls') {
+        // xlsx をダイナミックインポート
+        const XLSX = await import('xlsx');
+        const buf = await file.arrayBuffer();
+        const wb = XLSX.read(buf, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json<(string | number | undefined)[]>(ws, { header: 1 });
+        setFileRows(rows);
+      } else if (ext === 'csv') {
+        const text = await file.text();
+        // CSVパース（改行を含むフィールドに対応）
+        const rows = parseCSV(text);
+        setFileRows(rows);
+      } else {
+        setFileError('xlsx または csv ファイルを選択してください');
+        setFileRows(null);
+      }
+    } catch (err) {
+      console.error('File read error:', err);
+      setFileError('ファイルの読み込みに失敗しました');
+      setFileRows(null);
+    }
+
+    // reset input so same file can be re-selected
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   const handleImport = async () => {
     const importable = parsed.filter((r) => r.matchedStudent);
@@ -249,6 +335,9 @@ export function MockPasteImportModal({
 
   const handleClose = () => {
     setPasteText('');
+    setFileRows(null);
+    setFileName('');
+    setFileError('');
     setImportResult(null);
     onClose();
   };
@@ -284,25 +373,91 @@ export function MockPasteImportModal({
           </div>
         </div>
 
-        {/* 貼り付けエリア */}
-        <div>
-          <label className="block text-xs font-medium text-text-heading mb-1">
-            模試結果を貼り付け
-          </label>
-          <textarea
-            value={pasteText}
-            onChange={(e) => {
-              setPasteText(e.target.value);
-              setImportResult(null);
-            }}
-            placeholder="模試会社のサイトから結果表をコピーして、ここに貼り付けてください"
-            rows={6}
-            className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-white font-mono focus:ring-2 focus:ring-primary/30 focus:border-primary resize-y"
-          />
-          <p className="text-[11px] text-text-muted mt-1">
-            生徒の氏名でNESTの生徒と自動マッチングします。塾内番号は使用しません。
-          </p>
+        {/* 入力モード切替 */}
+        <div className="flex gap-1 p-1 bg-surface-hover rounded-lg w-fit">
+          <button
+            type="button"
+            onClick={() => setInputMode('file')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
+              inputMode === 'file'
+                ? 'bg-white text-text-heading shadow-sm font-medium'
+                : 'text-text-muted hover:text-text-body'
+            }`}
+          >
+            <Upload className="w-3.5 h-3.5" />
+            ファイル読込
+          </button>
+          <button
+            type="button"
+            onClick={() => setInputMode('paste')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
+              inputMode === 'paste'
+                ? 'bg-white text-text-heading shadow-sm font-medium'
+                : 'text-text-muted hover:text-text-body'
+            }`}
+          >
+            <ClipboardPaste className="w-3.5 h-3.5" />
+            コピペ
+          </button>
         </div>
+
+        {/* ファイル読込 */}
+        {inputMode === 'file' && (
+          <div>
+            <label className="block text-xs font-medium text-text-heading mb-1">
+              模試結果ファイル（xlsx / csv）
+            </label>
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+              <Upload className="w-6 h-6 text-text-muted mx-auto mb-2" />
+              {fileName ? (
+                <p className="text-sm text-text-heading font-medium">{fileName}</p>
+              ) : (
+                <p className="text-sm text-text-muted">
+                  クリックしてファイルを選択、または<br />
+                  模試会社からダウンロードしたファイルをドロップ
+                </p>
+              )}
+            </div>
+            {fileError && (
+              <p className="text-xs text-red-600 mt-1">{fileError}</p>
+            )}
+            <p className="text-[11px] text-text-muted mt-1">
+              進研テスト等のダウンロードファイルに対応。偏差値のみ取り込みます（得点は除外）。
+            </p>
+          </div>
+        )}
+
+        {/* コピペ入力 */}
+        {inputMode === 'paste' && (
+          <div>
+            <label className="block text-xs font-medium text-text-heading mb-1">
+              模試結果を貼り付け
+            </label>
+            <textarea
+              value={pasteText}
+              onChange={(e) => {
+                setPasteText(e.target.value);
+                setImportResult(null);
+              }}
+              placeholder="模試会社のサイトから結果表をコピーして、ここに貼り付けてください"
+              rows={6}
+              className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-white font-mono focus:ring-2 focus:ring-primary/30 focus:border-primary resize-y"
+            />
+            <p className="text-[11px] text-text-muted mt-1">
+              生徒の氏名でNESTの生徒と自動マッチングします。偏差値のみ取り込みます。
+            </p>
+          </div>
+        )}
 
         {/* プレビュー */}
         {parsed.length > 0 && (
@@ -433,4 +588,67 @@ export function MockPasteImportModal({
       </div>
     </Modal>
   );
+}
+
+/**
+ * CSVテキストをパースする。
+ * ダブルクォート内の改行・カンマに対応。
+ */
+function parseCSV(text: string): string[][] {
+  const rows: string[][] = [];
+  let current: string[] = [];
+  let field = '';
+  let inQuotes = false;
+  let i = 0;
+
+  while (i < text.length) {
+    const ch = text[i];
+
+    if (inQuotes) {
+      if (ch === '"') {
+        if (i + 1 < text.length && text[i + 1] === '"') {
+          field += '"';
+          i += 2;
+        } else {
+          inQuotes = false;
+          i++;
+        }
+      } else {
+        field += ch;
+        i++;
+      }
+    } else {
+      if (ch === '"') {
+        inQuotes = true;
+        i++;
+      } else if (ch === ',') {
+        current.push(field);
+        field = '';
+        i++;
+      } else if (ch === '\r') {
+        if (i + 1 < text.length && text[i + 1] === '\n') i++;
+        current.push(field);
+        field = '';
+        rows.push(current);
+        current = [];
+        i++;
+      } else if (ch === '\n') {
+        current.push(field);
+        field = '';
+        rows.push(current);
+        current = [];
+        i++;
+      } else {
+        field += ch;
+        i++;
+      }
+    }
+  }
+
+  if (field || current.length > 0) {
+    current.push(field);
+    rows.push(current);
+  }
+
+  return rows;
 }
