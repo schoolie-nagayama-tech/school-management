@@ -161,7 +161,7 @@ export default function AlertsSettingsPage() {
 
   return (
     <AdminLayout headerTitle="アラート設定">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         <Link href="/settings" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 transition-colors duration-150">
           <ChevronLeft className="w-4 h-4 mr-1" />
           設定一覧に戻る
