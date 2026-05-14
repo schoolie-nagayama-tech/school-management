@@ -122,6 +122,7 @@ export default function StudentsPage() {
   // タブ切り替え
   type TabType = 'roster' | 'report_card' | 'regular_test' | 'mock';
   const [activeTab, setActiveTab] = useState<TabType>(() => {
+    if (isTeacher) return 'roster';
     const tab = searchParams.get('tab');
     if (tab === 'report_card' || tab === 'regular_test' || tab === 'mock') return tab;
     return 'roster';
@@ -645,9 +646,11 @@ export default function StudentsPage() {
         <div className="flex items-center gap-0 border-b border-border min-w-max sm:min-w-0">
           {([
             { key: 'roster' as TabType, label: '生徒名簿' },
-            { key: 'report_card' as TabType, label: '内申集計' },
-            { key: 'regular_test' as TabType, label: 'テスト点数集計' },
-            { key: 'mock' as TabType, label: '模試結果集計' },
+            ...(!isTeacher ? [
+              { key: 'report_card' as TabType, label: '内申集計' },
+              { key: 'regular_test' as TabType, label: 'テスト点数集計' },
+              { key: 'mock' as TabType, label: '模試結果集計' },
+            ] : []),
           ] as const).map((tab) => (
             <button
               key={tab.key}
@@ -667,8 +670,8 @@ export default function StudentsPage() {
         </div>
         </div>
 
-        {/* 成績一覧タブ */}
-        {activeTab !== 'roster' && (
+        {/* 成績一覧タブ（講師には非表示） */}
+        {activeTab !== 'roster' && !isTeacher && (
           <div>
             {/* 学年フィルター + 模試一括取り込みボタン */}
             <div className="flex items-center gap-3 mb-4">
