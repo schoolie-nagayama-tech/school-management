@@ -39,7 +39,7 @@ export function StudentForm({
   defaultSchoolId = '',
 }: StudentFormProps) {
   const isEdit = !!student;
-  const [selectedSchoolId, setSelectedSchoolId] = useState(defaultSchoolId || schools[0]?.id || '');
+  const [selectedSchoolId] = useState(defaultSchoolId || schools[0]?.id || '');
 
   const [formData, setFormData] = useState({
     student_code: student?.student_code || '',
