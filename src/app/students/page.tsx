@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { Button, Modal, Loading } from '@/components/ui';
-import { Plus, AlertCircle, Eye, EyeOff, AlertTriangle, Search } from 'lucide-react';
+import { Plus, AlertCircle, Eye, EyeOff, AlertTriangle, Search, ClipboardPaste } from 'lucide-react';
 import {
   StudentForm,
   StudentTable,
@@ -81,6 +81,12 @@ const BulkGradeUpdateModalDynamic = dynamic(
   { loading: () => null }
 );
 
+const MockPasteImportModalDynamic = dynamic(
+  () =>
+    import('@/components/scores/MockPasteImportModal').then((m) => m.MockPasteImportModal),
+  { loading: () => null }
+);
+
 export default function StudentsPage() {
   // 権限チェック
   const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
@@ -133,6 +139,7 @@ export default function StudentsPage() {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCsvImportModalOpen, setIsCsvImportModalOpen] = useState(false);
+  const [isMockPasteModalOpen, setIsMockPasteModalOpen] = useState(false);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement>(null);
@@ -663,7 +670,7 @@ export default function StudentsPage() {
         {/* 成績一覧タブ */}
         {activeTab !== 'roster' && (
           <div>
-            {/* 学年フィルター */}
+            {/* 学年フィルター + 模試一括取り込みボタン */}
             <div className="flex items-center gap-3 mb-4">
               <select
                 value={selectedGrade}
@@ -677,6 +684,16 @@ export default function StudentsPage() {
                   </option>
                 ))}
               </select>
+              {activeTab === 'mock' && !isTeacher && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsMockPasteModalOpen(true)}
+                >
+                  <ClipboardPaste className="w-4 h-4 mr-1.5" />
+                  模試結果の一括取り込み
+                </Button>
+              )}
             </div>
             <ScoreListView
               category={activeTab}
@@ -1100,6 +1117,14 @@ export default function StudentsPage() {
         onClose={() => setIsBulkGradeUpdateModalOpen(false)}
         onSuccess={() => void syncListsAfterMutation()}
         schoolIds={getSelectedSchoolIds()}
+      />
+
+      {/* 模試結果一括取り込みモーダル */}
+      <MockPasteImportModalDynamic
+        isOpen={isMockPasteModalOpen}
+        onClose={() => setIsMockPasteModalOpen(false)}
+        students={studentsForScores}
+        onImportComplete={() => void syncListsAfterMutation()}
       />
     </AdminLayout>
   );
