@@ -71,7 +71,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-bg flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
+      <div className="w-full max-w-md">
         {/* ブランドバナー */}
         <div className="bg-primary rounded-2xl px-6 py-6 text-center mb-6 shadow-lg">
           <h1 className="text-3xl font-bold text-white tracking-wide">NEST</h1>
