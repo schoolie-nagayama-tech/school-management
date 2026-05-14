@@ -72,13 +72,10 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-bg flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
-        {/* ブランドヘッダー */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary mb-4">
-            <span className="text-3xl font-bold text-white leading-none">N</span>
-          </div>
-          <h1 className="text-2xl font-bold text-text-heading tracking-tight">NEST</h1>
-          <p className="text-sm text-text-muted mt-1">生徒管理システム</p>
+        {/* ブランドバナー */}
+        <div className="bg-primary rounded-2xl px-6 py-6 text-center mb-6 shadow-lg">
+          <h1 className="text-3xl font-bold text-white tracking-wide">NEST</h1>
+          <p className="text-sm text-white/80 mt-1">生徒管理システム</p>
         </div>
 
         {/* ログインフォーム */}
