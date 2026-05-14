@@ -758,10 +758,10 @@ export default function CourseProgressPage() {
             progressData={progressData}
             period={period}
             autoValues={autoValuesData}
-            onBudgetKomaChange={isOwnerOrAbove ? handleBudgetKomaChange : undefined}
-            onTargetKomaChange={isOwnerOrAbove ? handleTargetKomaChange : undefined}
-            onExpectedRateChange={isOwnerOrAbove ? handleExpectedRateChange : undefined}
-            onPeriodDateChange={isOwnerOrAbove ? handlePeriodDateChange : undefined}
+            onBudgetKomaChange={isManagerOrAbove ? handleBudgetKomaChange : undefined}
+            onTargetKomaChange={isManagerOrAbove ? handleTargetKomaChange : undefined}
+            onExpectedRateChange={isManagerOrAbove ? handleExpectedRateChange : undefined}
+            onPeriodDateChange={isManagerOrAbove ? handlePeriodDateChange : undefined}
           />
         )}
 

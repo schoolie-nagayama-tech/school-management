@@ -250,6 +250,11 @@ const StudentTableRow = memo(function StudentTableRow({
               <Code2 className="w-3.5 h-3.5 text-purple-500 shrink-0" />
             </span>
           )}
+          {student.is_sibling && (
+            <span title="兄弟・姉妹あり" aria-label="兄弟・姉妹あり">
+              <Users className="w-3.5 h-3.5 text-teal-500 shrink-0" />
+            </span>
+          )}
         </div>
       </td>
       <td className="hidden sm:table-cell px-4 py-3 text-sm text-[#4b5563]">

@@ -53,6 +53,7 @@ export function StudentForm({
     class_name: student?.class_name || '',
     club: student?.club || '',
     is_programming: student?.is_programming ?? false,
+    is_sibling: student?.is_sibling ?? false,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -77,6 +78,7 @@ export function StudentForm({
         class_name: student.class_name || '',
         club: student.club || '',
         is_programming: student.is_programming ?? false,
+        is_sibling: student.is_sibling ?? false,
       });
     }
   }, [student]);
@@ -208,28 +210,15 @@ export function StudentForm({
         />
       </div>
 
-      {/* 登録教室（新規のみ） */}
+      {/* 登録教室（新規のみ・現在選択中の教室に登録） */}
       {!isEdit && schools.length > 0 && (
         <div>
           <label className="block text-sm font-medium text-[#1f2937] mb-1">
-            登録する教室 <span className="text-red-500">*</span>
+            登録する教室
           </label>
-          {schools.length === 1 ? (
-            <p className="text-sm text-[#4b5563] px-3 py-2 border border-[#e5e7eb] rounded-lg bg-[#f9fafb]">
-              {schools[0].name}
-            </p>
-          ) : (
-            <select
-              value={selectedSchoolId}
-              onChange={(e) => setSelectedSchoolId(e.target.value)}
-              className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white focus:ring-2 focus:ring-[#3b82f6]/30 focus:border-[#3b82f6]"
-              required
-            >
-              {schools.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
-          )}
+          <p className="text-sm text-[#4b5563] px-3 py-2 border border-[#e5e7eb] rounded-lg bg-[#f9fafb]">
+            {schools.find((s) => s.id === selectedSchoolId)?.name ?? schools[0]?.name}
+          </p>
         </div>
       )}
 
@@ -285,8 +274,8 @@ export function StudentForm({
         placeholder="例: サッカー部"
       />
 
-      {/* プログラミングコース */}
-      <div>
+      {/* チェックボックス */}
+      <div className="space-y-2">
         <label className="flex items-center gap-2 cursor-pointer">
           <input
             type="checkbox"
@@ -295,6 +284,15 @@ export function StudentForm({
             className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6]"
           />
           <span className="text-sm font-medium text-[#1f2937]">プログラミングコース受講</span>
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={formData.is_sibling}
+            onChange={(e) => setFormData((prev) => ({ ...prev, is_sibling: e.target.checked }))}
+            className="w-4 h-4 text-[#3b82f6] border-[#e5e7eb] rounded focus:ring-[#3b82f6]"
+          />
+          <span className="text-sm font-medium text-[#1f2937]">兄弟・姉妹あり</span>
         </label>
       </div>
 

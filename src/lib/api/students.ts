@@ -11,7 +11,7 @@ import { getDefaultSchoolId } from './schools';
 
 /** 一覧取得用（Row の列と一致。将来の列追加時は型と同期すること） */
 const STUDENT_LIST_COLUMNS =
-  'id,school_id,student_code,last_name,first_name,last_name_kana,first_name_kana,grade,status,school_name,class_name,club,subject_other,is_programming,deleted_at,created_at,updated_at';
+  'id,school_id,student_code,last_name,first_name,last_name_kana,first_name_kana,grade,status,school_name,class_name,club,subject_other,is_programming,is_sibling,deleted_at,created_at,updated_at';
 
 const SUBJECT_LIST_COLUMNS = 'id,name,grade_category,sort_order,duration_minutes,created_at';
 
