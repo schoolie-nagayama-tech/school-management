@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Search, X, SlidersHorizontal, ArrowUpDown } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { Search, X, SlidersHorizontal, ArrowUpDown, Save } from 'lucide-react';
 import { InlineLoading } from '@/components/ui';
 import { listAssessmentsBySchool } from '@/lib/api/assessments';
 import { updateScore } from '@/lib/api/assessments';
 import { transformToScoreList } from '@/lib/utils/scoreListTransform';
 import type { ScoreListCategory, ScoreListStudent } from '@/lib/utils/scoreListTransform';
-import { ASSESSMENT_NAME_OPTIONS } from '@/types/database';
+import { ASSESSMENT_NAME_OPTIONS, GRADE_LABELS } from '@/types/database';
 import type { AssessmentWithScores, Student, Subject } from '@/types/database';
 import type { NaishinType } from '@/lib/utils/convertedNaishin';
 import { useAuth } from '@/contexts/AuthContext';
@@ -101,6 +101,12 @@ function sortStudents(students: ScoreListStudent[], key: SortKey): ScoreListStud
   return arr;
 }
 
+// ── Pending change key ──
+
+function changeKey(assessmentId: string, subject: string) {
+  return `${assessmentId}:${subject}`;
+}
+
 // ── Props ──
 
 interface ScoreListViewProps {
@@ -135,11 +141,20 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
   // フィルター & ソート
   const [searchQuery, setSearchQuery] = useState('');
   const [nameCodeFilter, setNameCodeFilter] = useState<string>('all');
+  const [gradeFilter, setGradeFilter] = useState<string>('all');
   const [sortKey, setSortKey] = useState<SortKey>('default');
 
   // インライン編集
   const [editingCell, setEditingCell] = useState<{ assessmentId: string; subject: string } | null>(null);
   const [cellValue, setCellValue] = useState('');
+
+  // 未保存の変更を追跡
+  const [pendingChanges, setPendingChanges] = useState<Map<string, { assessmentId: string; subject: string; value: number | null }>>(new Map());
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveResult, setSaveResult] = useState<{ success: number; failed: number } | null>(null);
+  const saveResultTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  const isDirty = pendingChanges.size > 0;
 
   // ページネーション
   const [currentPage, setCurrentPage] = useState(1);
@@ -157,6 +172,7 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
     try {
       const data = await listAssessmentsBySchool(schoolIds, category);
       setAssessmentsByStudent(data);
+      setPendingChanges(new Map());
     } catch (e) {
       console.error('Error fetching score list:', e);
       setError('成績データの取得に失敗しました');
@@ -172,7 +188,7 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
   // ページリセット
   useEffect(() => {
     setCurrentPage(1);
-  }, [category, students.length, searchQuery, nameCodeFilter, sortKey]);
+  }, [category, students.length, searchQuery, nameCodeFilter, gradeFilter, sortKey]);
 
   // カテゴリ変更時、無効なソート・フィルターをリセット
   useEffect(() => {
@@ -183,19 +199,40 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
       setSortKey('default');
     }
     setNameCodeFilter('all');
+    setGradeFilter('all');
   }, [category, sortKey]);
 
-  // テスト名フィルター適用済み assessments（transform 前に絞り込み）
+  // テスト名フィルター + テスト学年フィルター適用済み assessments
   const filteredAssessments = useMemo(() => {
-    if (nameCodeFilter === 'all') return assessmentsByStudent;
+    const hasNameFilter = nameCodeFilter !== 'all';
+    const hasGradeFilter = gradeFilter !== 'all';
+    if (!hasNameFilter && !hasGradeFilter) return assessmentsByStudent;
+
+    const gradeNum = hasGradeFilter ? Number(gradeFilter) : null;
     const next = new Map<string, AssessmentWithScores[]>();
     const entries = Array.from(assessmentsByStudent.entries());
     for (const [sid, list] of entries) {
-      const matched = list.filter((a) => a.name_code === nameCodeFilter);
+      const matched = list.filter((a) => {
+        if (hasNameFilter && a.name_code !== nameCodeFilter) return false;
+        if (gradeNum != null && a.grade !== gradeNum) return false;
+        return true;
+      });
       if (matched.length > 0) next.set(sid, matched);
     }
     return next;
-  }, [assessmentsByStudent, nameCodeFilter]);
+  }, [assessmentsByStudent, nameCodeFilter, gradeFilter]);
+
+  // テスト学年フィルターの選択肢（実データから収集）
+  const availableGrades = useMemo(() => {
+    const grades = new Set<number>();
+    const entries = Array.from(assessmentsByStudent.entries());
+    for (const [, list] of entries) {
+      for (const a of list) {
+        if (a.grade) grades.add(a.grade);
+      }
+    }
+    return Array.from(grades).sort((a, b) => a - b);
+  }, [assessmentsByStudent]);
 
   // データ変換
   const baseStudents = useMemo(
@@ -239,7 +276,7 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
     return base.length;
   }, [students, assessmentsByStudent, category, naishinType]);
 
-  const hasActiveFilter = searchQuery.trim() !== '' || nameCodeFilter !== 'all';
+  const hasActiveFilter = searchQuery.trim() !== '' || nameCodeFilter !== 'all' || gradeFilter !== 'all';
 
   // ── インライン編集ハンドラ ──
 
@@ -256,51 +293,95 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
     setCellValue(value);
   }, []);
 
+  /** セルの編集確定 — ローカルのみ更新、API呼び出しはしない */
   const handleCellBlur = useCallback(
-    async (assessmentId: string, subject: string) => {
+    (assessmentId: string, subject: string) => {
       setEditingCell(null);
       const trimmed = cellValue.trim();
       const newValue = trimmed === '' ? null : Number(trimmed);
 
       if (trimmed !== '' && isNaN(newValue as number)) return;
 
-      try {
-        await updateScore(assessmentId, subject, newValue);
-        // ローカルで即座に更新
-        setAssessmentsByStudent((prev) => {
-          const next = new Map(prev);
-          const entries = Array.from(next.entries());
-          for (const [sid, assessments] of entries) {
-            const idx = assessments.findIndex((a: AssessmentWithScores) => a.id === assessmentId);
-            if (idx !== -1) {
-              const assessment = { ...assessments[idx] };
-              const scoreIdx = assessment.scores.findIndex((s) => s.subject === subject);
-              if (scoreIdx !== -1) {
-                assessment.scores = [...assessment.scores];
-                assessment.scores[scoreIdx] = { ...assessment.scores[scoreIdx], value: newValue };
-              } else if (newValue != null) {
-                assessment.scores = [
-                  ...assessment.scores,
-                  { id: '', assessment_id: assessmentId, subject, value: newValue, created_at: '' },
-                ];
-              }
-              const newAssessments = [...assessments];
-              newAssessments[idx] = assessment;
-              next.set(sid, newAssessments);
-              break;
+      // ローカルで即座に更新
+      setAssessmentsByStudent((prev) => {
+        const next = new Map(prev);
+        const entries = Array.from(next.entries());
+        for (const [sid, assessments] of entries) {
+          const idx = assessments.findIndex((a: AssessmentWithScores) => a.id === assessmentId);
+          if (idx !== -1) {
+            const assessment = { ...assessments[idx] };
+            const scoreIdx = assessment.scores.findIndex((s) => s.subject === subject);
+            if (scoreIdx !== -1) {
+              assessment.scores = [...assessment.scores];
+              assessment.scores[scoreIdx] = { ...assessment.scores[scoreIdx], value: newValue };
+            } else if (newValue != null) {
+              assessment.scores = [
+                ...assessment.scores,
+                { id: '', assessment_id: assessmentId, subject, value: newValue, created_at: '' },
+              ];
             }
+            const newAssessments = [...assessments];
+            newAssessments[idx] = assessment;
+            next.set(sid, newAssessments);
+            break;
           }
-          return next;
-        });
-      } catch (e) {
-        console.error('Error updating score:', e);
-      }
+        }
+        return next;
+      });
+
+      // 未保存変更として記録
+      setPendingChanges((prev) => {
+        const next = new Map(prev);
+        next.set(changeKey(assessmentId, subject), { assessmentId, subject, value: newValue });
+        return next;
+      });
+
+      // 保存結果をクリア
+      setSaveResult(null);
     },
     [cellValue]
   );
 
   const handleCancelEdit = useCallback(() => {
     setEditingCell(null);
+  }, []);
+
+  // ── 一括保存 ──
+
+  const handleSave = useCallback(async () => {
+    if (pendingChanges.size === 0) return;
+    setIsSaving(true);
+    setSaveResult(null);
+
+    let success = 0;
+    let failed = 0;
+
+    const changes = Array.from(pendingChanges.values());
+    for (const { assessmentId, subject, value } of changes) {
+      try {
+        await updateScore(assessmentId, subject, value);
+        success++;
+      } catch (e) {
+        console.error('Save failed:', assessmentId, subject, e);
+        failed++;
+      }
+    }
+
+    if (failed === 0) {
+      setPendingChanges(new Map());
+    }
+
+    setSaveResult({ success, failed });
+    setIsSaving(false);
+
+    // 結果表示を3秒後にクリア
+    if (saveResultTimer.current) clearTimeout(saveResultTimer.current);
+    saveResultTimer.current = setTimeout(() => setSaveResult(null), 3000);
+  }, [pendingChanges]);
+
+  // クリーンアップ
+  useEffect(() => () => {
+    if (saveResultTimer.current) clearTimeout(saveResultTimer.current);
   }, []);
 
   // ── レンダリング ──
@@ -373,12 +454,34 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
             ))}
           </select>
 
+          {/* テスト学年 */}
+          {availableGrades.length > 1 && (
+            <select
+              value={gradeFilter}
+              onChange={(e) => setGradeFilter(e.target.value)}
+              aria-label="テスト時の学年で絞り込み"
+              className={`px-2.5 py-1.5 border rounded-md text-xs bg-white focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f] ${
+                gradeFilter === 'all'
+                  ? 'border-gray-300 text-[#1a1a1a]'
+                  : 'border-[#1e3a5f] text-[#1e3a5f] font-medium'
+              }`}
+            >
+              <option value="all">すべての学年</option>
+              {availableGrades.map((g) => (
+                <option key={g} value={g}>
+                  {GRADE_LABELS[g] ?? `学年${g}`}
+                </option>
+              ))}
+            </select>
+          )}
+
           {hasActiveFilter && (
             <button
               type="button"
               onClick={() => {
                 setSearchQuery('');
                 setNameCodeFilter('all');
+                setGradeFilter('all');
               }}
               className="text-[11px] text-gray-500 hover:text-[#1e3a5f] underline underline-offset-2 transition-colors duration-150 whitespace-nowrap"
             >
@@ -448,6 +551,38 @@ export function ScoreListView({ category, students, schoolIds }: ScoreListViewPr
           )}
         </div>
       </div>
+
+      {/* 保存バー */}
+      {canEdit && (isDirty || saveResult) && (
+        <div className={`mb-3 flex items-center gap-3 px-4 py-2.5 rounded-lg border ${
+          saveResult
+            ? saveResult.failed > 0
+              ? 'bg-amber-50 border-amber-200'
+              : 'bg-green-50 border-green-200'
+            : 'bg-blue-50 border-blue-200'
+        }`}>
+          {saveResult ? (
+            <span className={`text-xs font-medium ${saveResult.failed > 0 ? 'text-amber-700' : 'text-green-700'}`}>
+              {saveResult.success}件保存しました
+              {saveResult.failed > 0 && `（${saveResult.failed}件失敗）`}
+            </span>
+          ) : (
+            <>
+              <span className="text-xs font-medium text-blue-700">
+                {pendingChanges.size}件の未保存の変更があります
+              </span>
+              <button
+                onClick={handleSave}
+                disabled={isSaving}
+                className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors duration-150"
+              >
+                <Save className="w-3.5 h-3.5" />
+                {isSaving ? '保存中...' : '保存'}
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
       {/* テーブル */}
       <ScoreListTable

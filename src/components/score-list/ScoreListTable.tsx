@@ -39,13 +39,13 @@ const REGULAR_TEST_COLUMNS: ColumnDef[] = [
 ];
 
 const MOCK_COLUMNS: ColumnDef[] = [
-  { key: 'english', label: '英語', type: 'subject' },
-  { key: 'math', label: '数学', type: 'subject' },
-  { key: 'japanese', label: '国語', type: 'subject' },
-  { key: 'science', label: '理科', type: 'subject' },
-  { key: 'social', label: '社会', type: 'subject' },
-  { key: 'hensa3', label: '3科偏差値', type: 'special' },
-  { key: 'hensa5', label: '5科偏差値', type: 'special' },
+  { key: 'english', label: '英語SS', type: 'subject' },
+  { key: 'math', label: '数学SS', type: 'subject' },
+  { key: 'japanese', label: '国語SS', type: 'subject' },
+  { key: 'science', label: '理科SS', type: 'subject' },
+  { key: 'social', label: '社会SS', type: 'subject' },
+  { key: 'hensa3', label: '3科SS', type: 'special' },
+  { key: 'hensa5', label: '5科SS', type: 'special' },
 ];
 
 function getColumns(category: ScoreListCategory): ColumnDef[] {
@@ -113,7 +113,7 @@ export function ScoreListTable({
               名前（リンク）
             </th>
             <th className="border border-gray-200 px-2 py-2 text-center font-medium text-gray-700 min-w-[80px]">
-              {category === 'report_card' ? '' : ''}
+              テスト名
             </th>
             {columns.map((col) => (
               <th

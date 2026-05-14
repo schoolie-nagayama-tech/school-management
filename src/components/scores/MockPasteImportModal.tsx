@@ -268,12 +268,12 @@ export function MockPasteImportModal({
     try {
       const ext = file.name.toLowerCase().split('.').pop();
       if (ext === 'xlsx' || ext === 'xls') {
-        // xlsx をダイナミックインポート
-        const XLSX = await import('xlsx');
-        const buf = await file.arrayBuffer();
-        const wb = XLSX.read(buf, { type: 'array' });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json<(string | number | undefined)[]>(ws, { header: 1 });
+        // サーバーサイドで xlsx を解析（クライアントバンドル肥大化防止）
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch('/api/scores/parse-xlsx', { method: 'POST', body: formData });
+        if (!res.ok) throw new Error('xlsx parse failed');
+        const { rows } = await res.json();
         setFileRows(rows);
       } else if (ext === 'csv') {
         const text = await file.text();
