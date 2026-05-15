@@ -5,13 +5,16 @@ import { useEffect, useState } from 'react';
 function detectInAppBrowser(): boolean {
   if (typeof navigator === 'undefined') return false;
   const ua = navigator.userAgent || '';
-  if (/Line|FBAN|FBAV|Instagram|Twitter|MicroMessenger|KAKAOTALK/i.test(ua)) return true;
+  if (/Line|FBAN|FBAV|Instagram|Twitter|MicroMessenger|KAKAOTALK|Grow/i.test(ua)) return true;
   if (/Android/i.test(ua) && /; wv\)/.test(ua)) return true;
+  // Android WebView: "Version/X.X ... Chrome" (regular Chrome doesn't have Version/)
+  if (/Android/i.test(ua) && /Version\/[\d.]+.*Chrome/i.test(ua)) return true;
   return false;
 }
 
 export function InAppBrowserGuard({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<'checking' | 'normal' | 'redirecting' | 'fallback'>('checking');
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!detectInAppBrowser()) {
@@ -32,6 +35,25 @@ export function InAppBrowserGuard({ children }: { children: React.ReactNode }) {
       setStatus('fallback');
     }
   }, []);
+
+  const handleCopyUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      const textarea = document.createElement('textarea');
+      textarea.value = window.location.href;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   if (status === 'checking') {
     return (
@@ -72,6 +94,16 @@ export function InAppBrowserGuard({ children }: { children: React.ReactNode }) {
           >
             ブラウザで開く
           </a>
+          <button
+            type="button"
+            onClick={handleCopyUrl}
+            className="block w-full px-6 py-3 border-2 border-gray-300 text-gray-700 font-medium rounded-xl text-center active:bg-gray-100 transition-colors"
+          >
+            {copied ? 'コピーしました' : 'URLをコピーして貼り付ける'}
+          </button>
+          <p className="text-xs text-gray-400 leading-relaxed">
+            ボタンが動作しない場合は、右上のメニューから<br />「ブラウザで開く」を選択してください
+          </p>
           <button
             type="button"
             onClick={() => setStatus('normal')}
