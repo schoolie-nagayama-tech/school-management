@@ -33,12 +33,9 @@ function getClientIp(request: NextRequest): string {
   );
 }
 
-function buildInAppBrowserPage(targetUrl: string, isAndroid: boolean): string {
+function buildInAppBrowserPage(targetUrl: string): string {
   const safeUrl = targetUrl.replace(/&/g, '&amp;').replace(/'/g, '&#39;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
   const jsUrl = targetUrl.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-  const cleanUrl = targetUrl.replace(/^https?:\/\//, '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-  const scheme = targetUrl.startsWith('https') ? 'https' : 'http';
-  const intentUrl = `intent://${cleanUrl}#Intent;scheme=${scheme};action=android.intent.action.VIEW;end`;
 
   return `<!DOCTYPE html>
 <html lang="ja">
@@ -63,14 +60,13 @@ p{font-size:14px;color:#6b7280;line-height:1.6;margin-bottom:20px}
 <body>
 <div class="c">
 <h1>ブラウザで開いてください</h1>
-<p>アプリ内ブラウザでは正常に表示できません。</p>
-<a href="${safeUrl}" target="_blank" rel="noopener" class="btn">ブラウザで開く</a>
-<button type="button" class="ol" id="cb" onclick="cc()">URLをコピーして貼り付ける</button>
+<p>アプリ内ブラウザでは正常に表示できません。<br>下のボタンからURLをコピーして、ブラウザに貼り付けてください。</p>
+<button type="button" class="btn" id="cb" onclick="cc()">URLをコピーする</button>
+<a href="${safeUrl}" target="_blank" rel="noopener" class="ol">ブラウザで開く</a>
 <p class="h">ボタンが動作しない場合は、右上のメニューから「ブラウザで開く」を選択してください</p>
 </div>
 <script>
-${isAndroid ? `try{location.href='${intentUrl}'}catch(e){}` : ''}
-function cc(){var b=document.getElementById('cb');try{if(navigator.clipboard){navigator.clipboard.writeText('${jsUrl}').then(function(){b.textContent='コピーしました';b.className='ol ok';r()})}else{f()}}catch(e){f()}function f(){var t=document.createElement('textarea');t.value='${jsUrl}';t.style.cssText='position:fixed;opacity:0';document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);b.textContent='コピーしました';b.className='ol ok';r()}function r(){setTimeout(function(){b.textContent='URLをコピーして貼り付ける';b.className='ol'},2000)}}
+function cc(){var b=document.getElementById('cb');try{if(navigator.clipboard){navigator.clipboard.writeText('${jsUrl}').then(function(){b.textContent='コピーしました！ブラウザに貼り付けてください';b.style.background='#047857';r()})}else{f()}}catch(e){f()}function f(){var t=document.createElement('textarea');t.value='${jsUrl}';t.style.cssText='position:fixed;opacity:0';document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);b.textContent='コピーしました！ブラウザに貼り付けてください';b.style.background='#047857';r()}function r(){setTimeout(function(){b.textContent='URLをコピーする';b.style.background='#059669'},3000)}}
 </script>
 </body>
 </html>`;
@@ -108,7 +104,7 @@ export async function middleware(request: NextRequest) {
       const cleanUrl = new URL(request.nextUrl.toString());
       cleanUrl.searchParams.delete('openExternalBrowser');
       const targetUrl = cleanUrl.toString();
-      const html = buildInAppBrowserPage(targetUrl, isAndroid);
+      const html = buildInAppBrowserPage(targetUrl);
       return new NextResponse(html, {
         headers: { 'Content-Type': 'text/html; charset=utf-8' },
       });
