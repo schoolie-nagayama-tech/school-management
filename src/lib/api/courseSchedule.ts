@@ -34,19 +34,12 @@ export async function createScheduleTask(
     end_date?: string | null;
   }
 ): Promise<ScheduleTask> {
-  // 現在のタスク数をAPI経由で取得してsort_orderを決定
-  const tasks = await getScheduleTasks(schoolId, season, year);
-  const maxSort = tasks.length > 0
-    ? Math.max(...tasks.map(t => t.sort_order))
-    : -1;
-
   const result = await callCoursePrepApi('create_schedule_task', schoolId, {
     season,
     year,
     majorCategory: task.major_category,
     name: task.name,
     description: task.description || null,
-    sortOrder: maxSort + 1,
     startDate: task.start_date || null,
     endDate: task.end_date || null,
   });

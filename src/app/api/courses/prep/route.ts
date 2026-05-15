@@ -478,20 +478,13 @@ export async function GET(request: NextRequest) {
 
         if (targets.includes('student_progress')) {
           promises.push((async () => {
-            const { data: items } = await supabaseAdmin
-              .from('course_prep_progress_items')
-              .select('id')
-              .eq('school_id', schoolId)
-              .eq('season', season)
-              .eq('year', year);
-            if (!items || items.length === 0) { batchResult.student_progress = []; return; }
-            const itemIds = items.map((i: { id: string }) => i.id);
             const { data } = await supabaseAdmin
               .from('course_prep_student_progress')
-              .select('*')
-              .eq('school_id', schoolId)
-              .in('item_id', itemIds);
-            batchResult.student_progress = data || [];
+              .select('*, item:course_prep_progress_items!inner(school_id, season, year)')
+              .eq('item.school_id', schoolId)
+              .eq('item.season', season)
+              .eq('item.year', year);
+            batchResult.student_progress = (data || []).map(({ item, ...rest }: { item: unknown; [key: string]: unknown }) => rest);
           })());
         }
 
@@ -510,7 +503,7 @@ export async function GET(request: NextRequest) {
 
         if (targets.includes('auto_values')) {
           promises.push((async () => {
-            const [{ data: regularPatterns }, { data: seasonalPatterns }, { data: periodForAuto }] = await Promise.all([
+            const [{ data: regularPatterns }, { data: seasonalPatterns }, { data: periodForAuto }, subjectProposalMap] = await Promise.all([
               supabaseAdmin.from('schedule_regular_patterns')
                 .select('student_id, day_of_week')
                 .eq('school_id', schoolId).eq('period_type', 'regular').eq('is_active', true),
@@ -520,6 +513,7 @@ export async function GET(request: NextRequest) {
               supabaseAdmin.from('course_prep_periods')
                 .select('schedule_start_date, schedule_end_date')
                 .eq('school_id', schoolId).eq('season', season).eq('year', year).maybeSingle(),
+              fetchSubjectProposals(supabaseAdmin, schoolId, season),
             ]);
             const regularWeeklyMap: Record<string, number> = {};
             const regularDayMap: Record<string, Record<number, number>> = {};
@@ -557,8 +551,6 @@ export async function GET(request: NextRequest) {
                 course_sessions: sessions,
               };
             }
-            // 科目別 proposal_count を集計して追加
-            const subjectProposalMap = await fetchSubjectProposals(supabaseAdmin, schoolId, season);
             for (const sid of Object.keys(subjectProposalMap)) {
               if (!autoResult[sid]) {
                 autoResult[sid] = { regular_weekly: 0, course_sessions: 0 };
@@ -580,41 +572,46 @@ export async function GET(request: NextRequest) {
               .order('sort_order', { ascending: true });
             if (!tasks || tasks.length === 0) { batchResult.schedule_tasks = []; return; }
             const taskIds = tasks.map((t: { id: string }) => t.id);
-            const { data: markers } = await supabaseAdmin
-              .from('course_prep_schedule_markers')
-              .select('*')
-              .in('task_id', taskIds)
-              .order('marker_date', { ascending: true });
+            const linkedItemIds = tasks
+              .map((t: { linked_progress_item_id: string | null }) => t.linked_progress_item_id)
+              .filter((id: string | null): id is string => !!id);
+            const uniqueLinkedIds = Array.from(new Set(linkedItemIds));
+
+            const [{ data: markers }, studentCount, progressData] = await Promise.all([
+              supabaseAdmin
+                .from('course_prep_schedule_markers')
+                .select('*')
+                .in('task_id', taskIds)
+                .order('marker_date', { ascending: true }),
+              uniqueLinkedIds.length > 0
+                ? supabaseAdmin
+                    .from('students')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('school_id', schoolId)
+                    .is('deleted_at', null)
+                    .neq('status', 'withdrawn')
+                    .then(({ count }) => count || 0)
+                : Promise.resolve(0),
+              uniqueLinkedIds.length > 0
+                ? supabaseAdmin
+                    .from('course_prep_student_progress')
+                    .select('item_id, status')
+                    .in('item_id', uniqueLinkedIds)
+                    .then(({ data }) => data || [])
+                : Promise.resolve([]),
+            ]);
+
             const markersByTask = new Map<string, unknown[]>();
             for (const m of (markers || [])) {
               const tid = (m as { task_id: string }).task_id;
               if (!markersByTask.has(tid)) markersByTask.set(tid, []);
               markersByTask.get(tid)!.push(m);
             }
-            const linkedItemIds = tasks
-              .map((t: { linked_progress_item_id: string | null }) => t.linked_progress_item_id)
-              .filter((id: string | null): id is string => !!id);
             const progressRateMap: Record<string, { total: number; completed: number }> = {};
-            if (linkedItemIds.length > 0) {
-              const uniqueIds = Array.from(new Set(linkedItemIds));
-
-              // 対象生徒数を母数にする
-              const { count: studentCount } = await supabaseAdmin
-                .from('students')
-                .select('id', { count: 'exact', head: true })
-                .eq('school_id', schoolId)
-                .is('deleted_at', null);
-              const totalStudents = studentCount || 0;
-
-              const { data: progressData } = await supabaseAdmin
-                .from('course_prep_student_progress')
-                .select('item_id, status')
-                .in('item_id', uniqueIds);
-              for (const itemId of uniqueIds) {
-                const related = (progressData || []).filter((p: { item_id: string }) => p.item_id === itemId);
-                const completed = related.filter((p: { status: string }) => p.status === 'completed').length;
-                progressRateMap[itemId] = { total: totalStudents, completed };
-              }
+            for (const itemId of uniqueLinkedIds) {
+              const related = (progressData as { item_id: string; status: string }[]).filter((p) => p.item_id === itemId);
+              const completed = related.filter((p) => p.status === 'completed').length;
+              progressRateMap[itemId] = { total: studentCount as number, completed };
             }
             batchResult.schedule_tasks = tasks.map((t: { id: string; linked_progress_item_id: string | null }) => ({
               ...t,
@@ -1136,8 +1133,23 @@ async function handleUpdateStudentDate(
 async function handleCreateScheduleTask(
   supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
   schoolId: string,
-  params: { season: string; year: number; majorCategory: string; name: string; description?: string; sortOrder: number; startDate?: string | null; endDate?: string | null }
+  params: { season: string; year: number; majorCategory: string; name: string; description?: string; sortOrder?: number; startDate?: string | null; endDate?: string | null }
 ) {
+  let sortOrder = params.sortOrder;
+  if (sortOrder == null) {
+    const { data: existing } = await supabaseAdmin
+      .from('course_prep_schedule_tasks')
+      .select('sort_order')
+      .eq('school_id', schoolId)
+      .eq('season', params.season)
+      .eq('year', params.year)
+      .order('sort_order', { ascending: false })
+      .limit(1);
+    sortOrder = existing && existing.length > 0
+      ? (existing[0] as { sort_order: number }).sort_order + 1
+      : 0;
+  }
+
   const { data, error } = await supabaseAdmin
     .from('course_prep_schedule_tasks')
     .insert({
@@ -1147,7 +1159,7 @@ async function handleCreateScheduleTask(
       major_category: params.majorCategory,
       name: params.name,
       description: params.description || null,
-      sort_order: params.sortOrder,
+      sort_order: sortOrder,
       ...(params.startDate ? { start_date: params.startDate } : {}),
       ...(params.endDate ? { end_date: params.endDate } : {}),
     })
