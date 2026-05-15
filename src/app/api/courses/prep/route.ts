@@ -484,7 +484,7 @@ export async function GET(request: NextRequest) {
               .eq('item.school_id', schoolId)
               .eq('item.season', season)
               .eq('item.year', year);
-            batchResult.student_progress = (data || []).map(({ item, ...rest }: { item: unknown; [key: string]: unknown }) => rest);
+            batchResult.student_progress = (data || []).map(({ item: _item, ...rest }: { item: unknown; [key: string]: unknown }) => rest);
           })());
         }
 
