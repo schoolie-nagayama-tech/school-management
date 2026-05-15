@@ -81,89 +81,89 @@ export default function TeacherDetailPage() {
 
   useEffect(() => {
     if (!teacherId) return;
+    let cancelled = false;
+
     (async () => {
       try {
-        const res = await fetchWithAuth(`/api/admin/users/${teacherId}`);
-        if (!res.ok) {
-          if (res.status === 404) setNotFound(true);
+        const [teacherRes, badges, assignments, trainingsList] = await Promise.all([
+          fetchWithAuth(`/api/admin/users/${teacherId}`),
+          getTeacherBadges().catch(() => [] as TeacherBadge[]),
+          getTeacherBadgeAssignments(teacherId).catch(() => [] as TeacherBadgeAssignment[]),
+          getTeacherTrainings(teacherId).catch(() => [] as TeacherTraining[]),
+        ]);
+
+        if (cancelled) return;
+
+        if (!teacherRes.ok) {
+          if (teacherRes.status === 404) setNotFound(true);
           return;
         }
-        setTeacher(await res.json());
-      } finally {
-        setIsLoading(false);
-      }
-    })();
-  }, [teacherId]);
 
-  // バッジ情報
-  useEffect(() => {
-    if (!teacherId) return;
-    let cancelled = false;
-    const loadBadges = async () => {
-      try {
-        const [badges, assignments] = await Promise.all([
-          getTeacherBadges(),
-          getTeacherBadgeAssignments(teacherId),
-        ]);
-        if (cancelled) return;
+        const data: TeacherWithDetails = await teacherRes.json();
+        setTeacher(data);
         setAllBadges(badges);
         setBadgeAssignments(assignments);
+        setTrainings(trainingsList);
+
+        const schoolIds = (data.user_schools || []).map((us) => us.school_id);
+        if (schoolIds.length > 0) {
+          const slotsArrays = await Promise.all(
+            schoolIds.map((sid) => getActiveTimeSlots(sid).catch(() => [] as ScheduleTimeSlot[]))
+          );
+          if (cancelled) return;
+          const seen = new Set<number>();
+          const all: ScheduleTimeSlot[] = [];
+          for (const slots of slotsArrays) {
+            for (const s of slots) {
+              if (!seen.has(s.slot_number)) {
+                seen.add(s.slot_number);
+                all.push(s);
+              }
+            }
+          }
+          all.sort((a, b) => a.slot_number - b.slot_number);
+          setScheduleTimeSlots(all);
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [teacherId]);
+
+  useEffect(() => {
+    if (!teacherId) return;
+    let lastLoadAt = Date.now();
+    const THROTTLE_MS = 30_000;
+
+    const reloadBadges = async () => {
+      try {
+        const assignments = await getTeacherBadgeAssignments(teacherId);
+        setBadgeAssignments(assignments);
+        lastLoadAt = Date.now();
       } catch {}
     };
-    loadBadges();
-    // 他画面でバッジが変更されたら再取得
+
     const offEvent = onTeacherBadgesChanged((changedId) => {
-      if (changedId === teacherId) loadBadges();
+      if (changedId === teacherId) reloadBadges();
     });
-    const onFocus = () => loadBadges();
+
+    const onFocus = () => {
+      if (document.visibilityState === 'hidden') return;
+      if (Date.now() - lastLoadAt < THROTTLE_MS) return;
+      reloadBadges();
+    };
+
     window.addEventListener('focus', onFocus);
     document.addEventListener('visibilitychange', onFocus);
+
     return () => {
-      cancelled = true;
       offEvent();
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onFocus);
     };
   }, [teacherId]);
-
-  // 研修参加履歴
-  useEffect(() => {
-    if (!teacherId) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const list = await getTeacherTrainings(teacherId);
-        if (!cancelled) setTrainings(list);
-      } catch {}
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [teacherId]);
-
-  // スロット情報（出勤可能コマ表示用）
-  const teacherSchoolIds = teacher?.user_schools?.map((us) => us.school_id) || [];
-  useEffect(() => {
-    if (teacherSchoolIds.length === 0) return;
-    (async () => {
-      try {
-        const all: ScheduleTimeSlot[] = [];
-        const seen = new Set<number>();
-        for (const sid of teacherSchoolIds) {
-          const slots = await getActiveTimeSlots(sid);
-          for (const s of slots) {
-            if (!seen.has(s.slot_number)) {
-              seen.add(s.slot_number);
-              all.push(s);
-            }
-          }
-        }
-        all.sort((a, b) => a.slot_number - b.slot_number);
-        setScheduleTimeSlots(all);
-      } catch {}
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [teacher?.id]);
 
   if (isLoading) {
     return (

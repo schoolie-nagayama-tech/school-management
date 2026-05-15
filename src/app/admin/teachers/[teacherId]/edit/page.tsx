@@ -139,33 +139,6 @@ export default function TeacherEditPage() {
   const [newTrainingNote, setNewTrainingNote] = useState('');
   const [isTrainingSaving, setIsTrainingSaving] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const list = await getTrainingMasters(true);
-        if (!cancelled) setTrainingMasters(list);
-      } catch {}
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!teacherId) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const list = await getTeacherTrainings(teacherId);
-        if (!cancelled) setTrainings(list);
-      } catch {}
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [teacherId]);
-
   const handleAddTraining = async () => {
     if (!teacherId) return;
     const title = newTrainingTitle.trim();
@@ -228,12 +201,22 @@ export default function TeacherEditPage() {
 
   useEffect(() => {
     if (!teacherId) return;
-    const load = async () => {
-      setIsLoading(true);
-      setNotFound(false);
+    let cancelled = false;
+    setIsLoading(true);
+    setNotFound(false);
+
+    (async () => {
       try {
-        // 講師1件だけ取得（teachable_subject_ids, available_days_of_week を含む最新の状態）
-        const teacherRes = await fetchWithAuth(`/api/admin/users/${teacherId}`);
+        const [teacherRes, masters, trainingsList, badges, assignments] = await Promise.all([
+          fetchWithAuth(`/api/admin/users/${teacherId}`),
+          getTrainingMasters(true).catch(() => [] as TrainingMaster[]),
+          getTeacherTrainings(teacherId).catch(() => [] as TeacherTraining[]),
+          getTeacherBadges().catch(() => [] as TeacherBadge[]),
+          getTeacherBadgeAssignments(teacherId).catch(() => [] as TeacherBadgeAssignment[]),
+        ]);
+
+        if (cancelled) return;
+
         if (!teacherRes.ok) {
           if (teacherRes.status === 404) {
             setNotFound(true);
@@ -242,10 +225,15 @@ export default function TeacherEditPage() {
           }
           throw new Error('講師の取得に失敗しました');
         }
+
         const found: TeacherWithDetails = await teacherRes.json();
         setTeacher(found);
         setSchools(masterSchools);
         setSubjects(masterSubjects);
+        setTrainingMasters(masters);
+        setTrainings(trainingsList);
+        setAllBadges(badges);
+        setBadgeAssignments(assignments);
 
         setEditDisplayName(found.display_name || '');
         const teacherSchoolIds = found.user_schools?.map((us) => us.school_id) || [];
@@ -255,38 +243,20 @@ export default function TeacherEditPage() {
         } else {
           setEditSchoolIds(teacherSchoolIds);
         }
-        // 保存済みの値を表示（API は配列で返すが、文字列等で返る場合にも正規化）
         const subjectIds = normalizeToStrArray(found.teachable_subject_ids);
         setEditTeachableSubjectIds(subjectIds);
         setEditAvailableSlotNumbersByDay(
           normalizeToSlotNumbersByDay(found.available_slot_numbers_by_day)
         );
       } catch (e) {
-        toastError((e as Error).message);
+        if (!cancelled) toastError((e as Error).message);
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
-    };
-    load();
-  }, [teacherId, isManager, getSelectedSchoolIds, toastError, masterSchools, masterSubjects]);
+    })();
 
-  // バッジデータ取得
-  useEffect(() => {
-    if (!teacherId) return;
-    const loadBadges = async () => {
-      try {
-        const [badges, assignments] = await Promise.all([
-          getTeacherBadges(),
-          getTeacherBadgeAssignments(teacherId),
-        ]);
-        setAllBadges(badges);
-        setBadgeAssignments(assignments);
-      } catch {
-        // バッジ取得失敗は致命的ではない
-      }
-    };
-    loadBadges();
-  }, [teacherId]);
+    return () => { cancelled = true; };
+  }, [teacherId, isManager, getSelectedSchoolIds, toastError, masterSchools, masterSubjects]);
 
   const handleBadgeToggle = async (badge: TeacherBadge) => {
     if (!teacherId) return;
@@ -330,18 +300,21 @@ export default function TeacherEditPage() {
     }
   };
 
-  // 担当教室の座席表コマ時間を取得（講師の出勤可能コマ選択用）
   useEffect(() => {
     if (editSchoolIds.length === 0) {
       setScheduleTimeSlots([]);
       return;
     }
-    const load = async () => {
+    let cancelled = false;
+    (async () => {
       try {
-        const allSlots: ScheduleTimeSlot[] = [];
+        const slotsArrays = await Promise.all(
+          editSchoolIds.map((sid) => getActiveTimeSlots(sid).catch(() => [] as ScheduleTimeSlot[]))
+        );
+        if (cancelled) return;
         const seen = new Set<number>();
-        for (const schoolId of editSchoolIds) {
-          const slots = await getActiveTimeSlots(schoolId);
+        const allSlots: ScheduleTimeSlot[] = [];
+        for (const slots of slotsArrays) {
           for (const s of slots) {
             if (!seen.has(s.slot_number)) {
               seen.add(s.slot_number);
@@ -352,10 +325,10 @@ export default function TeacherEditPage() {
         allSlots.sort((a, b) => a.slot_number - b.slot_number);
         setScheduleTimeSlots(allSlots);
       } catch {
-        setScheduleTimeSlots([]);
+        if (!cancelled) setScheduleTimeSlots([]);
       }
-    };
-    load();
+    })();
+    return () => { cancelled = true; };
   }, [editSchoolIds]);
 
   const handleSave = async () => {
