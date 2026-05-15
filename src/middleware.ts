@@ -33,6 +33,56 @@ function getClientIp(request: NextRequest): string {
   );
 }
 
+function buildInAppBrowserPage(targetUrl: string, isAndroid: boolean): string {
+  const safeUrl = targetUrl.replace(/&/g, '&amp;').replace(/'/g, '&#39;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  const jsUrl = targetUrl.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  const cleanUrl = targetUrl.replace(/^https?:\/\//, '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  const scheme = targetUrl.startsWith('https') ? 'https' : 'http';
+  const intentUrl = `intent://${cleanUrl}#Intent;scheme=${scheme};action=android.intent.action.VIEW;end`;
+
+  return `<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>ブラウザで開く</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans",sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(to bottom,#ecfdf5,#fff)}
+.c{text-align:center;max-width:320px;width:100%}
+h1{font-size:18px;color:#1f2937;margin-bottom:12px}
+p{font-size:14px;color:#6b7280;line-height:1.6;margin-bottom:20px}
+.btn{display:block;width:100%;padding:14px;font-size:16px;font-weight:700;color:#fff;background:#059669;border:none;border-radius:12px;text-decoration:none;text-align:center;margin-bottom:12px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.btn:active{background:#047857}
+.ol{display:block;width:100%;padding:12px;font-size:14px;color:#374151;background:#fff;border:2px solid #d1d5db;border-radius:12px;text-align:center;cursor:pointer;margin-bottom:16px;-webkit-tap-highlight-color:transparent}
+.ol:active{background:#f3f4f6}
+.ok{color:#059669;font-weight:600;border-color:#059669}
+.h{font-size:12px;color:#9ca3af;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="c">
+<h1>ブラウザで開いてください</h1>
+<p>アプリ内ブラウザでは正常に表示できません。</p>
+<a href="${safeUrl}" target="_blank" rel="noopener" class="btn">ブラウザで開く</a>
+<button type="button" class="ol" id="cb" onclick="cc()">URLをコピーして貼り付ける</button>
+<p class="h">ボタンが動作しない場合は、右上のメニューから「ブラウザで開く」を選択してください</p>
+</div>
+<script>
+${isAndroid ? `try{location.href='${intentUrl}'}catch(e){}` : ''}
+function cc(){var b=document.getElementById('cb');try{if(navigator.clipboard){navigator.clipboard.writeText('${jsUrl}').then(function(){b.textContent='コピーしました';b.className='ol ok';r()})}else{f()}}catch(e){f()}function f(){var t=document.createElement('textarea');t.value='${jsUrl}';t.style.cssText='position:fixed;opacity:0';document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);b.textContent='コピーしました';b.className='ol ok';r()}function r(){setTimeout(function(){b.textContent='URLをコピーして貼り付ける';b.className='ol'},2000)}}
+</script>
+</body>
+</html>`;
+}
+
+function isInAppBrowser(ua: string): boolean {
+  if (/Line|FBAN|FBAV|Instagram|Twitter|MicroMessenger|KAKAOTALK|Grow/i.test(ua)) return true;
+  if (/Android/i.test(ua) && /; wv\)/.test(ua)) return true;
+  if (/Android/i.test(ua) && /Version\/[\d.]+.*Chrome/i.test(ua)) return true;
+  return false;
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -43,6 +93,18 @@ export async function middleware(request: NextRequest) {
     pathname.endsWith('.webmanifest')
   ) {
     return NextResponse.next();
+  }
+
+  // ── アプリ内ブラウザ → 純粋HTML（Next.js不使用）で外部ブラウザ誘導 ──
+  if (pathname.startsWith('/portal/')) {
+    const ua = request.headers.get('user-agent') || '';
+    if (isInAppBrowser(ua)) {
+      const targetUrl = request.nextUrl.toString();
+      const html = buildInAppBrowserPage(targetUrl, /Android/i.test(ua));
+      return new NextResponse(html, {
+        headers: { 'Content-Type': 'text/html; charset=utf-8' },
+      });
+    }
   }
 
   // ── 公開APIレート制限 ──

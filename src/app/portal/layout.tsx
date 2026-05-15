@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next';
-import { InAppBrowserGuard } from '@/components/portal/InAppBrowserGuard';
 
 export const metadata: Metadata = {
   title: 'お申し込みポータル',
@@ -19,5 +18,5 @@ export default function PortalLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <InAppBrowserGuard>{children}</InAppBrowserGuard>;
+  return <>{children}</>;
 }
