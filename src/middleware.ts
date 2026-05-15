@@ -98,9 +98,17 @@ export async function middleware(request: NextRequest) {
   // ── アプリ内ブラウザ → 純粋HTML（Next.js不使用）で外部ブラウザ誘導 ──
   if (pathname.startsWith('/portal/')) {
     const ua = request.headers.get('user-agent') || '';
-    if (isInAppBrowser(ua)) {
-      const targetUrl = request.nextUrl.toString();
-      const html = buildInAppBrowserPage(targetUrl, /Android/i.test(ua));
+    const hasOpenBrowserFlag = request.nextUrl.searchParams.get('openExternalBrowser') === '1';
+    const isAndroid = /Android/i.test(ua);
+
+    // openExternalBrowser=1 付き＋Android → UA関係なくブリッジページ
+    // または UA検出でアプリ内ブラウザと判定
+    if ((hasOpenBrowserFlag && isAndroid) || isInAppBrowser(ua)) {
+      // ブリッジページのリンク先からパラメータを除去（ブラウザで開いた後に再度ブリッジにならないようにする）
+      const cleanUrl = new URL(request.nextUrl.toString());
+      cleanUrl.searchParams.delete('openExternalBrowser');
+      const targetUrl = cleanUrl.toString();
+      const html = buildInAppBrowserPage(targetUrl, isAndroid);
       return new NextResponse(html, {
         headers: { 'Content-Type': 'text/html; charset=utf-8' },
       });
