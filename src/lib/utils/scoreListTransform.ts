@@ -91,11 +91,12 @@ function sortKeyForAssessment(a: AssessmentWithScores): string {
 
 function buildRowLabel(assessment: AssessmentWithScores, category: ScoreListCategory): string {
   const nameLabel = ASSESSMENT_NAME_LABELS[assessment.name_code] ?? assessment.name_code;
+  const gradeLabel = GRADE_LABELS[assessment.grade] ?? `${assessment.grade}`;
   if (category === 'mock' && assessment.exam_month) {
     const d = new Date(assessment.exam_month);
-    return `${nameLabel} ${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    return `${gradeLabel} ${nameLabel} ${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   }
-  return nameLabel;
+  return `${gradeLabel} ${nameLabel}`;
 }
 
 // ── メイン変換関数 ──

@@ -217,14 +217,22 @@ export default function PortalSettingsPage() {
 
   const portalUrls = getPortalUrls();
 
-  const handleCopyUrl = async (url: string) => {
+  const handleCopyText = async (text: string, label = 'URL') => {
     try {
-      await navigator.clipboard.writeText(url);
-      success('URLをコピーしました');
+      await navigator.clipboard.writeText(text);
+      success(`${label}をコピーしました`);
     } catch (err) {
       console.error('Failed to copy:', err);
       error('コピーに失敗しました');
     }
+  };
+
+  const handleCopyUrl = (url: string) => handleCopyText(url, 'URL');
+
+  const buildHtmlSnippet = (school: School, url: string): string => {
+    const sep = url.includes('?') ? '&' : '?';
+    const linkUrl = `${url}${sep}openExternalBrowser=1`;
+    return `<ul>\n  <a href="${linkUrl}" target="_blank"><u><b>${school.name}ポータルサイト</b></u></a>\n</ul>`;
   };
 
   // ドラッグ&ドロップ用のセンサー
@@ -397,6 +405,60 @@ export default function PortalSettingsPage() {
                 <p className="text-xs text-text-body/60">
                   このURLを保護者に共有してください
                 </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* HTML埋め込みコード */}
+        {portalUrls.length > 0 && (
+          <div className="mb-6 bg-surface-raised rounded-xl border border-border p-6">
+            <h2 className="text-lg font-bold text-text-heading mb-2">HTML埋め込みコード</h2>
+            <p className="text-xs text-text-body/60 mb-4">
+              ホームページ等に貼り付けるためのHTMLコードです
+            </p>
+            {selectedSchoolId === 'all' ? (
+              <div className="space-y-3">
+                {portalUrls.map(({ school, url }) => {
+                  const snippet = buildHtmlSnippet(school, url);
+                  return (
+                    <div key={school.id} className="space-y-1">
+                      <label className="block text-sm font-medium text-text-heading">
+                        {school.code === 'DEFAULT' ? 'デフォルト' : school.name}
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={snippet}
+                          readOnly
+                          className="flex-1 px-3 py-2 border border-border rounded-lg text-sm bg-surface-hover text-text-body font-mono"
+                        />
+                        <Button onClick={() => handleCopyText(snippet, 'HTMLコード')} className="min-w-[100px]">
+                          コピー
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {portalUrls.map(({ school, url }) => {
+                  const snippet = buildHtmlSnippet(school, url);
+                  return (
+                    <div key={school.id} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={snippet}
+                        readOnly
+                        className="flex-1 px-3 py-2 border border-border rounded-lg text-sm bg-surface-hover text-text-body font-mono"
+                      />
+                      <Button onClick={() => handleCopyText(snippet, 'HTMLコード')} className="min-w-[100px]">
+                        コピー
+                      </Button>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

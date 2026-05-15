@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { InAppBrowserGuard } from '@/components/portal/InAppBrowserGuard';
 
 export const metadata: Metadata = {
   title: 'お申し込みポータル',
@@ -9,8 +10,8 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
-  viewportFit: 'cover', // ノッチ・ホームインジケータ周りの安全領域
-  themeColor: '#10b981', // ポータル用・柔らかい緑（emerald-500）
+  viewportFit: 'cover',
+  themeColor: '#10b981',
 };
 
 export default function PortalLayout({
@@ -18,5 +19,5 @@ export default function PortalLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return <InAppBrowserGuard>{children}</InAppBrowserGuard>;
 }

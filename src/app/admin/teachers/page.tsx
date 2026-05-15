@@ -84,6 +84,7 @@ export default function TeachersPage() {
   const [allBadges, setAllBadges] = useState<TeacherBadge[]>([]);
   const [teacherBadgeMap, setTeacherBadgeMap] = useState<Map<string, TeacherBadgeAssignment[]>>(new Map());
   const [badgeFilter, setBadgeFilter] = useState<string>('all');
+  const [schoolFilter, setSchoolFilter] = useState<string>('all');
   const [sortByBadges, setSortByBadges] = useState(false);
 
   const loadData = useCallback(async () => {
@@ -391,32 +392,50 @@ export default function TeachersPage() {
           <Loading />
         ) : (
           <div className="space-y-6">
-            {/* 講師一覧 */}
             {/* フィルタ */}
-            {allBadges.length > 0 && (
+            {(schools.length > 1 || allBadges.length > 0) && (
               <div className="flex flex-wrap items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">バッジ:</span>
-                  <select
-                    value={badgeFilter}
-                    onChange={(e) => setBadgeFilter(e.target.value)}
-                    className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-                  >
-                    <option value="all">すべて</option>
-                    {allBadges.map((b) => (
-                      <option key={b.id} value={b.id}>{b.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={sortByBadges}
-                    onChange={(e) => setSortByBadges(e.target.checked)}
-                    className="rounded border-gray-300 text-ink focus:ring-ink"
-                  />
-                  バッジ数でソート
-                </label>
+                {schools.length > 1 && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">教室:</span>
+                    <select
+                      value={schoolFilter}
+                      onChange={(e) => setSchoolFilter(e.target.value)}
+                      className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                    >
+                      <option value="all">すべて</option>
+                      {schools.map((s) => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {allBadges.length > 0 && (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-500">バッジ:</span>
+                      <select
+                        value={badgeFilter}
+                        onChange={(e) => setBadgeFilter(e.target.value)}
+                        className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                      >
+                        <option value="all">すべて</option>
+                        {allBadges.map((b) => (
+                          <option key={b.id} value={b.id}>{b.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={sortByBadges}
+                        onChange={(e) => setSortByBadges(e.target.checked)}
+                        className="rounded border-gray-300 text-ink focus:ring-ink"
+                      />
+                      バッジ数でソート
+                    </label>
+                  </>
+                )}
               </div>
             )}
 
@@ -442,6 +461,12 @@ export default function TeachersPage() {
                   <tbody className="divide-y divide-border/10">
                     {(() => {
                       let list = [...teachers];
+                      // 教室フィルタ
+                      if (schoolFilter !== 'all') {
+                        list = list.filter((t) =>
+                          (t.user_schools || []).some((us) => us.school_id === schoolFilter)
+                        );
+                      }
                       // バッジフィルタ
                       if (badgeFilter !== 'all') {
                         list = list.filter((t) => {
