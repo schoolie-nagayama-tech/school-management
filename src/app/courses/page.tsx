@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { AlertCircle, CheckSquare, Copy, Square } from 'lucide-react';
+import { AlertCircle, ArrowUpDown, CheckSquare, Copy, FileText, Square } from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
 import { Button, Loading, InlineLoading } from '@/components/ui';
 import { getSeasonalCourses, createSeasonalCourse, deployCourseToSchools } from '@/lib/api/seasonalCourses';
@@ -27,6 +27,11 @@ export default function CoursesPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // ソート
+  type SortKey = 'season' | 'name' | 'application' | 'grade';
+  const [sortKey, setSortKey] = useState<SortKey>('season');
+  const [sortAsc, setSortAsc] = useState(true);
 
   // 選択状態
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -180,6 +185,43 @@ export default function CoursesPage() {
   const hasSelection = selected.size > 0;
   const canDeploy = schoolIds.length > 1;
 
+  const SEASON_ORDER: Record<SeasonType, number> = { spring: 0, summer: 1, winter: 2 };
+
+  const sortedCourses = [...courses].sort((a, b) => {
+    let cmp = 0;
+    switch (sortKey) {
+      case 'season':
+        cmp = SEASON_ORDER[a.season] - SEASON_ORDER[b.season];
+        break;
+      case 'name':
+        cmp = a.name.localeCompare(b.name, 'ja');
+        break;
+      case 'application':
+        cmp = (a.application_count || 0) - (b.application_count || 0);
+        break;
+      case 'grade':
+        cmp = (a.target_grades[0] ?? 99) - (b.target_grades[0] ?? 99);
+        break;
+    }
+    return sortAsc ? cmp : -cmp;
+  });
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortKey(key);
+      setSortAsc(true);
+    }
+  };
+
+  const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+    { key: 'season', label: '季節' },
+    { key: 'name', label: '名前' },
+    { key: 'grade', label: '学年' },
+    { key: 'application', label: '適用数' },
+  ];
+
   return (
     <AdminLayout headerTitle="講習管理">
       {isAllSelected && (
@@ -200,12 +242,44 @@ export default function CoursesPage() {
       )}
 
       {/* ツールバー */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-4 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-text-heading">講習一覧</h1>
-        <Button onClick={() => setIsCreateModalOpen(true)}>
-          + 新規講習を作成
-        </Button>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/courses/proposals"
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-text-body bg-surface-raised border border-border rounded-lg hover:bg-surface-hover transition-colors"
+          >
+            <FileText className="w-4 h-4" />
+            提案書
+          </Link>
+          <Button onClick={() => setIsCreateModalOpen(true)}>
+            + 新規講習を作成
+          </Button>
+        </div>
       </div>
+
+      {/* ソート */}
+      {!isLoading && courses.length > 1 && (
+        <div className="mb-4 flex items-center gap-1.5">
+          <ArrowUpDown className="w-3.5 h-3.5 text-text-faint" />
+          {SORT_OPTIONS.map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => handleSort(key)}
+              className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
+                sortKey === key
+                  ? 'bg-primary/10 text-primary font-bold'
+                  : 'text-text-muted hover:bg-surface-hover'
+              }`}
+            >
+              {label}
+              {sortKey === key && (
+                <span className="ml-0.5">{sortAsc ? '↑' : '↓'}</span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* 一括操作バー */}
       {!isLoading && courses.length > 0 && canDeploy && (
@@ -269,7 +343,7 @@ export default function CoursesPage() {
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {courses.map((course) => {
+          {sortedCourses.map((course) => {
             const isChecked = selected.has(course.id);
             return (
               <div
