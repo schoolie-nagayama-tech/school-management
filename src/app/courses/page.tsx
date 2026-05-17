@@ -57,7 +57,7 @@ export default function CoursesPage() {
   const [filterGradeGroup, setFilterGradeGroup] = useState('');
 
   // ソート
-  const [sortKey, setSortKey] = useState<SortKey>('season');
+  const [sortKey, setSortKey] = useState<SortKey>('grade');
   const [sortAsc, setSortAsc] = useState(true);
 
   // 選択状態
@@ -129,17 +129,17 @@ export default function CoursesPage() {
     };
   }, [courses, query, filterSeason, filterGradeGroup, sortKey, sortAsc]);
 
-  // ドラッグでスクロール
+  // ドラッグでスクロール（横バー）
   useEffect(() => {
     if (!isDragging) return;
     const onMove = (e: MouseEvent) => {
       const track = trackRef.current;
       const el = listRef.current;
       if (!track || !el) return;
-      const trackH = track.clientHeight;
-      const dy = e.clientY - dragStartY.current;
+      const trackW = track.clientWidth;
+      const dx = e.clientX - dragStartY.current;
       const maxScroll = el.scrollHeight - el.clientHeight;
-      const scrollDelta = (dy / (trackH * (1 - thumbRatio))) * maxScroll;
+      const scrollDelta = (dx / (trackW * (1 - thumbRatio))) * maxScroll;
       el.scrollTop = Math.max(0, Math.min(maxScroll, dragStartScroll.current + scrollDelta));
     };
     const onUp = () => setIsDragging(false);
@@ -153,7 +153,7 @@ export default function CoursesPage() {
 
   const handleThumbDown = (e: React.MouseEvent) => {
     e.preventDefault();
-    dragStartY.current = e.clientY;
+    dragStartY.current = e.clientX;
     dragStartScroll.current = listRef.current?.scrollTop ?? 0;
     setIsDragging(true);
   };
@@ -161,9 +161,9 @@ export default function CoursesPage() {
   const handleTrackClick = (e: React.MouseEvent) => {
     const track = trackRef.current;
     const el = listRef.current;
-    if (!track || !el || e.target !== track) return;
+    if (!track || !el) return;
     const rect = track.getBoundingClientRect();
-    const clickRatio = (e.clientY - rect.top) / rect.height;
+    const clickRatio = (e.clientX - rect.left) / rect.width;
     const maxScroll = el.scrollHeight - el.clientHeight;
     el.scrollTop = clickRatio * maxScroll;
   };
@@ -554,11 +554,11 @@ export default function CoursesPage() {
           </button>
         </div>
       ) : (
-        <div className="relative flex">
+        <div className="relative">
           {/* スクロールエリア */}
           <div
             ref={listRef}
-            className="flex-1 overflow-y-auto pr-1"
+            className="overflow-y-auto"
             style={{ maxHeight: 'calc(100vh - 320px)', scrollbarWidth: 'none' }}
           >
             <div className="space-y-px">
@@ -624,31 +624,30 @@ export default function CoursesPage() {
             </div>
           </div>
 
-          {/* カスタムスクロールバー */}
+          {/* 横スクロールバー（プログレスバー型） */}
           {showScrollbar && (
-            <div
-              ref={trackRef}
-              onClick={handleTrackClick}
-              className="ml-1.5 w-5 shrink-0 relative rounded-full bg-surface-hover/50 cursor-pointer select-none"
-              style={{ maxHeight: 'calc(100vh - 320px)' }}
-            >
-              {/* サム */}
+            <div className="mt-2 px-1">
               <div
-                onMouseDown={handleThumbDown}
-                className={`absolute left-0 w-full rounded-full transition-colors ${
-                  isDragging ? 'bg-primary/40' : 'bg-primary/20 hover:bg-primary/30'
-                }`}
-                style={{
-                  height: `${Math.max(thumbRatio * 100, 10)}%`,
-                  top: `${scrollRatio * (100 - Math.max(thumbRatio * 100, 10))}%`,
-                }}
+                ref={trackRef}
+                onClick={handleTrackClick}
+                className="relative h-1.5 rounded-full bg-border/40 cursor-pointer select-none group/track"
               >
-                {/* 位置インジケータ */}
-                <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex flex-col items-center justify-center pointer-events-none">
-                  <span className="text-[9px] font-bold text-primary/60 leading-none">
-                    {Math.round(scrollRatio * 100)}%
-                  </span>
-                </div>
+                {/* インジケータ（現在位置） */}
+                <div
+                  onMouseDown={handleThumbDown}
+                  className={`absolute top-0 h-full rounded-full transition-colors ${
+                    isDragging ? 'bg-primary' : 'bg-primary/50 group-hover/track:bg-primary/70'
+                  }`}
+                  style={{
+                    width: `${Math.max(thumbRatio * 100, 8)}%`,
+                    left: `${scrollRatio * (100 - Math.max(thumbRatio * 100, 8))}%`,
+                  }}
+                />
+              </div>
+              <div className="flex items-center justify-between mt-1">
+                <span className="text-[10px] text-text-faint tabular-nums">
+                  {Math.round(scrollRatio * filteredSorted.length)}/{filteredSorted.length}件目付近
+                </span>
               </div>
             </div>
           )}
