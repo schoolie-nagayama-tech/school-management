@@ -38,6 +38,15 @@ const GRADE_GROUPS = [
   { label: '既卒', grades: [13] },
 ];
 
+const NAV_GRADES = [
+  { key: 7, label: '中1' },
+  { key: 8, label: '中2' },
+  { key: 9, label: '中3' },
+  { key: 10, label: '高1' },
+  { key: 11, label: '高2' },
+  { key: 12, label: '高3' },
+];
+
 export default function CoursesPage() {
   const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
     (p) => p.canAccessCourses
@@ -64,14 +73,11 @@ export default function CoursesPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isDeploying, setIsDeploying] = useState(false);
 
-  // スクロールバー
+  // スクロール
   const listRef = useRef<HTMLDivElement>(null);
   const [scrollRatio, setScrollRatio] = useState(0);
-  const [thumbRatio, setThumbRatio] = useState(1);
-  const [isDragging, setIsDragging] = useState(false);
-  const dragStartY = useRef(0);
-  const dragStartScroll = useRef(0);
-  const trackRef = useRef<HTMLDivElement>(null);
+  const [showScrollNav, setShowScrollNav] = useState(false);
+  const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   // 新規作成フォーム
   const [newCourseName, setNewCourseName] = useState('');
@@ -117,7 +123,7 @@ export default function CoursesPage() {
       const { scrollTop, scrollHeight, clientHeight } = el;
       const maxScroll = scrollHeight - clientHeight;
       setScrollRatio(maxScroll > 0 ? scrollTop / maxScroll : 0);
-      setThumbRatio(scrollHeight > 0 ? clientHeight / scrollHeight : 1);
+      setShowScrollNav(scrollHeight > clientHeight);
     };
     update();
     el.addEventListener('scroll', update, { passive: true });
@@ -128,45 +134,6 @@ export default function CoursesPage() {
       ro.disconnect();
     };
   }, [courses, query, filterSeason, filterGradeGroup, sortKey, sortAsc]);
-
-  // ドラッグでスクロール（横バー）
-  useEffect(() => {
-    if (!isDragging) return;
-    const onMove = (e: MouseEvent) => {
-      const track = trackRef.current;
-      const el = listRef.current;
-      if (!track || !el) return;
-      const trackW = track.clientWidth;
-      const dx = e.clientX - dragStartY.current;
-      const maxScroll = el.scrollHeight - el.clientHeight;
-      const scrollDelta = (dx / (trackW * (1 - thumbRatio))) * maxScroll;
-      el.scrollTop = Math.max(0, Math.min(maxScroll, dragStartScroll.current + scrollDelta));
-    };
-    const onUp = () => setIsDragging(false);
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-    return () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-    };
-  }, [isDragging, thumbRatio]);
-
-  const handleThumbDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    dragStartY.current = e.clientX;
-    dragStartScroll.current = listRef.current?.scrollTop ?? 0;
-    setIsDragging(true);
-  };
-
-  const handleTrackClick = (e: React.MouseEvent) => {
-    const track = trackRef.current;
-    const el = listRef.current;
-    if (!track || !el) return;
-    const rect = track.getBoundingClientRect();
-    const clickRatio = (e.clientX - rect.left) / rect.width;
-    const maxScroll = el.scrollHeight - el.clientHeight;
-    el.scrollTop = clickRatio * maxScroll;
-  };
 
   // フィルタ・検索・ソート
   const filteredSorted = useMemo(() => {
@@ -215,6 +182,13 @@ export default function CoursesPage() {
       return sortAsc ? cmp : -cmp;
     });
   }, [courses, query, filterSeason, filterGradeGroup, sortKey, sortAsc]);
+
+  // 学年ナビゲーション: どの学年が存在するか
+  const presentGrades = useMemo(() => {
+    const grades = new Set<number>();
+    filteredSorted.forEach((c) => c.target_grades.forEach((g) => grades.add(g)));
+    return grades;
+  }, [filteredSorted]);
 
   const hasActiveFilter = query || filterSeason || filterGradeGroup;
 
@@ -283,6 +257,15 @@ export default function CoursesPage() {
     setFilterGradeGroup('');
   };
 
+  // 学年ジャンプ
+  const scrollToGrade = (grade: number) => {
+    const course = filteredSorted.find((c) => c.target_grades.includes(grade));
+    if (course) {
+      const el = itemRefs.current.get(course.id);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCourseName.trim()) {
@@ -341,7 +324,6 @@ export default function CoursesPage() {
 
   const hasSelection = selected.size > 0;
   const canDeploy = schoolIds.length > 1;
-  const showScrollbar = thumbRatio < 1;
 
   return (
     <AdminLayout headerTitle="講習管理">
@@ -363,26 +345,40 @@ export default function CoursesPage() {
       )}
 
       {/* ヘッダー */}
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-text-heading">講習一覧</h1>
-        <div className="flex items-center gap-2">
-          <Link
-            href="/courses/proposals"
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-text-body bg-surface-raised border border-border rounded-lg hover:bg-surface-hover transition-colors"
-          >
-            <FileText className="w-4 h-4" />
-            提案書
-          </Link>
-          <Button onClick={() => setIsCreateModalOpen(true)}>
-            <Plus className="w-4 h-4 mr-1" />
-            新規作成
-          </Button>
+      <div className="mb-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-lg font-bold text-text-heading">講習一覧</h1>
+            {!isLoading && courses.length > 0 && (
+              <p className="text-sm text-text-muted mt-0.5">
+                {filteredSorted.length === courses.length
+                  ? `${courses.length}件`
+                  : `${filteredSorted.length} / ${courses.length}件`}
+              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/courses/proposals"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-text-body border border-border rounded-lg hover:bg-surface-hover transition-colors"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              提案書
+            </Link>
+            <button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-ink text-text-on-primary rounded-lg hover:brightness-[0.85] transition-[filter] duration-150"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              新規作成
+            </button>
+          </div>
         </div>
       </div>
 
       {/* 検索 + フィルタ + ソート */}
       {!isLoading && courses.length > 0 && (
-        <div className="mb-3 space-y-2">
+        <div className="mb-4 space-y-2">
           {/* 検索バー */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-faint" />
@@ -472,7 +468,7 @@ export default function CoursesPage() {
                   className="text-xs text-text-faint hover:text-text-muted flex items-center gap-0.5"
                 >
                   <X className="w-3 h-3" />
-                  フィルタ解除
+                  解除
                 </button>
               </>
             )}
@@ -480,54 +476,55 @@ export default function CoursesPage() {
         </div>
       )}
 
-      {/* 件数表示 + 一括操作 */}
-      {!isLoading && courses.length > 0 && (
-        <div className={`mb-2 flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors duration-150 ${
-          hasSelection ? 'bg-info/5 border-info/30' : 'bg-transparent border-transparent'
-        }`}>
-          <span className="text-xs text-text-faint">
-            {filteredSorted.length === courses.length
-              ? `${courses.length}件`
-              : `${filteredSorted.length} / ${courses.length}件`}
-          </span>
-          {canDeploy && (
+      {/* 一括操作バー */}
+      {!isLoading && courses.length > 0 && canDeploy && (
+        <div
+          className={`mb-3 flex items-center gap-3 px-3.5 py-2 rounded-xl border transition-all duration-200 ${
+            hasSelection
+              ? 'bg-info/5 border-info/20 shadow-sm'
+              : 'bg-surface-raised border-border-subtle'
+          }`}
+        >
+          <button
+            onClick={toggleSelectAll}
+            className="text-xs text-text-muted hover:text-text-heading transition-colors flex items-center gap-1.5"
+          >
+            {selected.size === filteredSorted.length && filteredSorted.length > 0
+              ? <CheckSquare className="w-3.5 h-3.5 text-info" />
+              : <Square className="w-3.5 h-3.5" />
+            }
+            {hasSelection ? `${selected.size}件選択` : '一括選択'}
+          </button>
+          {hasSelection ? (
             <>
-              <div className="w-px h-3 bg-border" />
               <button
-                onClick={toggleSelectAll}
-                className="text-xs text-text-muted hover:text-text-heading transition-colors flex items-center gap-1"
+                onClick={() => setSelected(new Set())}
+                className="text-[11px] text-text-faint hover:text-text-muted"
               >
-                {selected.size === filteredSorted.length && filteredSorted.length > 0
-                  ? <CheckSquare className="w-3 h-3 text-info" />
-                  : <Square className="w-3 h-3" />
-                }
-                {hasSelection ? `${selected.size}件選択` : '一括選択'}
+                解除
               </button>
-              {hasSelection && (
-                <>
-                  <button
-                    onClick={() => setSelected(new Set())}
-                    className="text-xs text-text-faint hover:text-text-muted"
-                  >
-                    解除
-                  </button>
-                  <div className="flex-1" />
-                  <button
-                    onClick={handleDeploy}
-                    disabled={isDeploying}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold bg-info text-white rounded-md hover:bg-info/90 active:scale-[0.97] transition-[colors,transform] duration-150 disabled:opacity-50"
-                  >
-                    {isDeploying ? (
-                      <InlineLoading size="sm" label="展開中..." />
-                    ) : (
-                      <>
-                        <Copy className="w-3 h-3" />
-                        全教室に展開
-                      </>
-                    )}
-                  </button>
-                </>
-              )}
+              <div className="flex-1" />
+              <button
+                onClick={handleDeploy}
+                disabled={isDeploying}
+                className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold bg-info text-white rounded-lg hover:bg-info/90 active:scale-[0.97] transition-[colors,transform] duration-150 disabled:opacity-50"
+              >
+                {isDeploying ? (
+                  <InlineLoading size="sm" label="展開中..." />
+                ) : (
+                  <>
+                    <Copy className="w-3 h-3" />
+                    全教室に展開
+                  </>
+                )}
+              </button>
+            </>
+          ) : (
+            <>
+              <div className="flex-1" />
+              <span className="text-[11px] text-text-faint">
+                チェックして全教室に展開
+              </span>
             </>
           )}
         </div>
@@ -554,30 +551,31 @@ export default function CoursesPage() {
           </button>
         </div>
       ) : (
-        <div className="relative">
-          {/* スクロールエリア */}
+        <div className="flex gap-3">
+          {/* メインリスト */}
           <div
             ref={listRef}
-            className="overflow-y-auto"
+            className="flex-1 overflow-y-auto rounded-xl border border-border-default bg-surface-raised"
             style={{ maxHeight: 'calc(100vh - 320px)', scrollbarWidth: 'none' }}
           >
-            <div className="space-y-px">
+            <div className="divide-y divide-border-subtle">
               {filteredSorted.map((course) => {
                 const isChecked = selected.has(course.id);
                 return (
                   <div
                     key={course.id}
-                    className={`group flex items-center gap-3 rounded-lg border transition-all duration-100 ${
+                    ref={(el) => { if (el) itemRefs.current.set(course.id, el); }}
+                    className={`group flex items-start gap-3 transition-colors duration-100 ${
                       isChecked
-                        ? 'bg-info/5 border-info/20'
-                        : 'bg-surface-raised border-transparent hover:border-border hover:bg-surface-hover/50'
+                        ? 'bg-info/5'
+                        : 'hover:bg-surface-hover/50'
                     }`}
                   >
                     {/* チェックボックス */}
                     {canDeploy && (
                       <button
                         onClick={() => toggleSelect(course.id)}
-                        className="pl-3 py-3 text-text-faint hover:text-text-heading transition-colors shrink-0"
+                        className="pl-4 pt-4 text-text-faint hover:text-text-heading transition-colors shrink-0"
                       >
                         {isChecked
                           ? <CheckSquare className="w-4 h-4 text-info" />
@@ -589,34 +587,41 @@ export default function CoursesPage() {
                     {/* コンテンツ */}
                     <Link
                       href={`/courses/${course.id}`}
-                      className={`flex-1 flex items-center gap-3 py-3 ${canDeploy ? 'pr-3' : 'px-3'} min-w-0`}
+                      className={`flex-1 flex items-start gap-3 py-3.5 ${canDeploy ? 'pr-4' : 'px-4'} min-w-0`}
                     >
-                      {/* 季節バッジ */}
-                      <span className={`shrink-0 px-2 py-0.5 text-[11px] font-bold rounded ${SEASON_COLORS[course.season]}`}>
+                      {/* 左: 季節バッジ */}
+                      <span className={`shrink-0 mt-0.5 px-2 py-0.5 text-[11px] font-bold rounded ${SEASON_COLORS[course.season]}`}>
                         {SEASON_LABELS[course.season]}
                       </span>
 
-                      {/* 名前 */}
-                      <span className="font-medium text-sm text-text-heading truncate min-w-0 flex-1">
-                        {course.name}
-                      </span>
-
-                      {/* メタ情報 */}
-                      <div className="hidden sm:flex items-center gap-3 shrink-0 text-xs text-text-muted">
-                        <span>
-                          {course.target_grades.length > 0
-                            ? course.target_grades.map((g) => GRADE_LABELS[g]).join(' ')
-                            : '学年未設定'}
-                        </span>
-                        {course.total_koma > 0 && (
-                          <span>{course.total_koma}コマ</span>
+                      {/* 中央: 名前 + 説明 */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm text-text-heading truncate">
+                            {course.name}
+                          </span>
+                          <span className="shrink-0 text-xs text-text-faint tabular-nums">
+                            {course.total_koma > 0 && `${course.total_koma}コマ`}
+                          </span>
+                        </div>
+                        {/* 学年 + コメント */}
+                        <div className="mt-0.5 flex items-center gap-2 text-xs text-text-muted">
+                          <span>
+                            {course.target_grades.length > 0
+                              ? course.target_grades.map((g) => GRADE_LABELS[g]).join(' ')
+                              : '学年未設定'}
+                          </span>
+                          <span className="text-text-faint">|</span>
+                          <span className="tabular-nums">適用 {course.application_count || 0}件</span>
+                        </div>
+                        {course.comment && (
+                          <p className="mt-1 text-xs text-text-muted/70 line-clamp-1">
+                            {course.comment}
+                          </p>
                         )}
-                        <span className="tabular-nums">
-                          適用 {course.application_count || 0}
-                        </span>
                       </div>
 
-                      <ChevronRight className="w-4 h-4 text-text-faint shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <ChevronRight className="w-4 h-4 text-text-faint shrink-0 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </Link>
                   </div>
                 );
@@ -624,30 +629,37 @@ export default function CoursesPage() {
             </div>
           </div>
 
-          {/* 横スクロールバー（プログレスバー型） */}
-          {showScrollbar && (
-            <div className="mt-2 px-1">
-              <div
-                ref={trackRef}
-                onClick={handleTrackClick}
-                className="relative h-1.5 rounded-full bg-border/40 cursor-pointer select-none group/track"
-              >
-                {/* インジケータ（現在位置） */}
+          {/* 縦スクロールナビ（学年メモリ付き） */}
+          {showScrollNav && (
+            <div className="shrink-0 w-12 flex flex-col items-center py-2 select-none" style={{ maxHeight: 'calc(100vh - 320px)' }}>
+              {/* スクロール位置トラック */}
+              <div className="relative flex-1 w-1 bg-border/40 rounded-full">
+                {/* 現在位置インジケータ */}
                 <div
-                  onMouseDown={handleThumbDown}
-                  className={`absolute top-0 h-full rounded-full transition-colors ${
-                    isDragging ? 'bg-primary' : 'bg-primary/50 group-hover/track:bg-primary/70'
-                  }`}
-                  style={{
-                    width: `${Math.max(thumbRatio * 100, 8)}%`,
-                    left: `${scrollRatio * (100 - Math.max(thumbRatio * 100, 8))}%`,
-                  }}
+                  className="absolute left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-primary shadow-sm transition-[top] duration-100"
+                  style={{ top: `calc(${scrollRatio * 100}% - 6px)` }}
                 />
               </div>
-              <div className="flex items-center justify-between mt-1">
-                <span className="text-[10px] text-text-faint tabular-nums">
-                  {Math.round(scrollRatio * filteredSorted.length)}/{filteredSorted.length}件目付近
-                </span>
+
+              {/* 学年ジャンプボタン */}
+              <div className="mt-3 flex flex-col gap-0.5 items-center">
+                {NAV_GRADES.map(({ key, label }) => {
+                  const exists = presentGrades.has(key);
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => scrollToGrade(key)}
+                      disabled={!exists}
+                      className={`w-full px-1 py-0.5 text-[10px] leading-tight rounded transition-colors ${
+                        exists
+                          ? 'text-text-muted hover:bg-primary/10 hover:text-primary font-medium'
+                          : 'text-text-faint/30 cursor-default'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
