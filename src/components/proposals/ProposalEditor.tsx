@@ -145,6 +145,7 @@ export default function ProposalEditor() {
   const [nextGroupId, setNextGroupId] = useState(1);
 
   const [studentName, setStudentName] = useState('');
+  const [studentSchoolId, setStudentSchoolId] = useState<string | null>(null);
   const [textbookName, setTextbookName] = useState('');
   const [textbookSubject, setTextbookSubject] = useState('');
 
@@ -163,11 +164,12 @@ export default function ProposalEditor() {
     try {
       const { data: student } = await supabase
         .from('students')
-        .select('last_name, first_name')
+        .select('last_name, first_name, school_id')
         .eq('id', studentId)
         .single();
       if (student) {
         setStudentName(`${student.last_name} ${student.first_name}`);
+        setStudentSchoolId((student as { school_id: string }).school_id);
       }
 
       let tbId = selectedTextbookId;
@@ -484,6 +486,7 @@ export default function ProposalEditor() {
         studentId,
         textbookId: selectedTextbookId,
         studentTextbookId: studentTextbookId,
+        schoolId: studentSchoolId,
         season,
         year,
         theme,

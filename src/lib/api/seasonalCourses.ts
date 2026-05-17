@@ -676,7 +676,7 @@ export async function applyCoursesToStudents(
   const fromProposalUnits = () => supabase.from('seasonal_proposal_units' as any);
 
   const year = new Date().getFullYear();
-  type ProposalRow = { student_id: string; textbook_id: number; student_textbook_id: string; season: string; year: number; theme: string; status: string; applied_koma: number };
+  type ProposalRow = { student_id: string; textbook_id: number; student_textbook_id: string; school_id: string | null; season: string; year: number; theme: string; status: string; applied_koma: number };
   const proposalInserts: ProposalRow[] = [];
 
   for (const studentId of studentIds) {
@@ -701,6 +701,7 @@ export async function applyCoursesToStudents(
         student_id: studentId,
         textbook_id: ct.textbook_id,
         student_textbook_id: stId,
+        school_id: course.school_id,
         season: course.season,
         year,
         theme: course.name,

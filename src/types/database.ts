@@ -3375,6 +3375,7 @@ export interface SeasonalProposal {
   student_id: string;
   textbook_id: number;
   student_textbook_id: string | null;
+  school_id: string | null;
   season: SeasonType;
   year: number;
   theme: string;
@@ -3390,6 +3391,7 @@ export interface SeasonalProposalInsert {
   student_id: string;
   textbook_id: number;
   student_textbook_id?: string | null;
+  school_id?: string | null;
   season: SeasonType;
   year?: number;
   theme?: string;

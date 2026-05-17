@@ -163,23 +163,13 @@ export async function getProposalsBySchool(
 ): Promise<SeasonalProposalWithDetails[]> {
   if (schoolIds.length === 0) return [];
 
-  // 対象生徒を特定
-  const { data: studentList } = await supabase
-    .from('students')
-    .select('id')
-    .in('school_id', schoolIds)
-    .eq('status', 'active');
-
-  if (!studentList || studentList.length === 0) return [];
-  const studentIds = (studentList as { id: string }[]).map((s) => s.id);
-
   let query = fromProposals()
     .select(`
       *,
       student:students(*),
       textbook:textbooks(*)
     `)
-    .in('student_id', studentIds)
+    .in('school_id', schoolIds)
     .order('updated_at', { ascending: false });
 
   if (season) query = query.eq('season', season);
@@ -269,6 +259,7 @@ export async function upsertProposal(params: {
   studentId: string;
   textbookId: number;
   studentTextbookId?: string | null;
+  schoolId?: string | null;
   season: SeasonType;
   year: number;
   theme: string;
@@ -281,6 +272,7 @@ export async function upsertProposal(params: {
     studentId,
     textbookId,
     studentTextbookId,
+    schoolId,
     season,
     year,
     theme,
@@ -305,6 +297,7 @@ export async function upsertProposal(params: {
       student_id: studentId,
       textbook_id: textbookId,
       student_textbook_id: studentTextbookId ?? null,
+      school_id: schoolId ?? null,
       season,
       year,
       theme,

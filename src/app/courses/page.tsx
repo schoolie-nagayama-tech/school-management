@@ -541,7 +541,7 @@ export default function CoursesPage() {
           <div
             ref={listRef}
             className="flex-1 overflow-y-auto rounded-xl border border-border-default bg-surface-raised"
-            style={{ maxHeight: 'calc(100vh - 190px)', scrollbarWidth: 'none' }}
+            style={{ maxHeight: 'calc(100vh - 130px)', scrollbarWidth: 'none' }}
           >
             <div className="divide-y divide-border-subtle">
               {filteredSorted.map((course) => {
@@ -616,7 +616,7 @@ export default function CoursesPage() {
 
           {/* 縦スクロールナビ（学年メモリ付き） */}
           {showScrollNav && (
-            <div className="shrink-0 w-12 flex flex-col items-center py-2 select-none" style={{ maxHeight: 'calc(100vh - 190px)' }}>
+            <div className="shrink-0 w-12 flex flex-col items-center py-2 select-none" style={{ maxHeight: 'calc(100vh - 130px)' }}>
               {/* スクロール位置トラック */}
               <div className="relative flex-1 w-1 bg-border/40 rounded-full">
                 {/* 現在位置インジケータ */}
