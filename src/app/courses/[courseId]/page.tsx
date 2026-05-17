@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Link2, Unlink, Plus, Save, Users, X } from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
-import { Button, Modal, Select, ToastContainer, Loading } from '@/components/ui';
+import { Modal, Select, ToastContainer, Loading } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
 import {
@@ -709,7 +709,7 @@ export default function CourseDetailPage() {
                     カリキュラム項目がありません
                   </div>
                 ) : (
-                  displayRows.map((row, idx) => {
+                  displayRows.map((row, _idx) => {
                     const groupColor = getGroupColor(row.setting?.group_number);
                     const isChecked = selectedItems.has(row.curriculumItem.id);
                     const isGrouped = row.setting?.group_number != null;
