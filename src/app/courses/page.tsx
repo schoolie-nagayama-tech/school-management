@@ -464,7 +464,7 @@ export default function CoursesPage() {
       {/* 一括操作バー */}
       {!isLoading && courses.length > 0 && canDeploy && (
         <div
-          className={`mb-3 flex items-center gap-3 px-3.5 py-2 rounded-xl border transition-all duration-200 ${
+          className={`mb-2 flex items-center gap-3 px-3 py-1.5 rounded-lg border transition-all duration-200 ${
             hasSelection
               ? 'bg-info/5 border-info/20 shadow-sm'
               : 'bg-surface-raised border-border-subtle'
@@ -541,7 +541,7 @@ export default function CoursesPage() {
           <div
             ref={listRef}
             className="flex-1 overflow-y-auto rounded-xl border border-border-default bg-surface-raised"
-            style={{ maxHeight: 'calc(100vh - 320px)', scrollbarWidth: 'none' }}
+            style={{ maxHeight: 'calc(100vh - 190px)', scrollbarWidth: 'none' }}
           >
             <div className="divide-y divide-border-subtle">
               {filteredSorted.map((course) => {
@@ -616,7 +616,7 @@ export default function CoursesPage() {
 
           {/* 縦スクロールナビ（学年メモリ付き） */}
           {showScrollNav && (
-            <div className="shrink-0 w-12 flex flex-col items-center py-2 select-none" style={{ maxHeight: 'calc(100vh - 320px)' }}>
+            <div className="shrink-0 w-12 flex flex-col items-center py-2 select-none" style={{ maxHeight: 'calc(100vh - 190px)' }}>
               {/* スクロール位置トラック */}
               <div className="relative flex-1 w-1 bg-border/40 rounded-full">
                 {/* 現在位置インジケータ */}

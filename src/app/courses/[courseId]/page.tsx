@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { ArrowLeft, Link2, Unlink, Plus, Save, Users, X } from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
 import { Button, Modal, Select, ToastContainer, Loading } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
@@ -418,14 +419,10 @@ export default function CourseDetailPage() {
     return colors[(groupNumber - 1) % colors.length];
   };
 
-  // 季節の背景色
-  const getSeasonColor = (season: SeasonType) => {
-    switch (season) {
-      case 'spring': return 'bg-[#fff9e5] border-[#ffeb3b]';
-      case 'summer': return 'bg-[#ffe5e5] border-[#ffb3b3]';
-      case 'winter': return 'bg-[#e5f3ff] border-[#bae1ff]';
-      default: return 'bg-surface-hover border-border';
-    }
+  const SEASON_BADGE: Record<SeasonType, string> = {
+    spring: 'bg-pink-100 text-pink-700',
+    summer: 'bg-sky-100 text-sky-700',
+    winter: 'bg-slate-100 text-slate-600',
   };
 
   // 学年チェックボックスの切り替え
@@ -477,274 +474,254 @@ export default function CourseDetailPage() {
     <AdminLayout headerTitle={`コース編集 - ${course.name}`}>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
 
-      {/* 戻るボタン */}
-      <div className="mb-4">
-        <Link href="/courses">
-          <Button variant="secondary" size="sm">
-            ← コース一覧に戻る
-          </Button>
-        </Link>
-      </div>
+      <div className="max-w-5xl mx-auto">
+        {/* ヘッダー */}
+        <div className="mb-5">
+          <Link
+            href="/courses"
+            className="text-sm text-text-muted hover:text-text-heading inline-flex items-center gap-1 mb-2 transition-colors duration-150"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            講習一覧
+          </Link>
 
-      {/* 基本情報 */}
-      <div className={`mb-6 p-6 rounded-xl border-2 ${getSeasonColor(course.season)}`}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-text-heading">基本情報</h2>
           {!isEditingBasic ? (
-            <Button variant="secondary" size="sm" onClick={() => setIsEditingBasic(true)}>
-              編集
-            </Button>
-          ) : (
-            <div className="flex gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => {
-                  setIsEditingBasic(false);
-                  setEditName(course.name);
-                  setEditSeason(course.season);
-                  setEditTargetGrades(course.target_grades);
-                  setEditComment(course.comment || '');
-                }}
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-lg font-bold text-text-heading">{course.name}</h1>
+                  <span className={`px-2 py-0.5 text-[11px] font-bold rounded ${SEASON_BADGE[course.season]}`}>
+                    {SEASON_LABELS[course.season]}
+                  </span>
+                  <span className="text-sm font-bold text-accent-ink tabular-nums">
+                    {calculatedTotalKoma > 0 ? `${calculatedTotalKoma}コマ` : `${course.total_koma}コマ`}
+                  </span>
+                </div>
+                <p className="text-sm text-text-muted mt-0.5">
+                  {course.target_grades.length > 0
+                    ? course.target_grades.map(g => GRADE_LABELS[g] || g).join(' ')
+                    : '学年未設定'}
+                  {course.comment && (
+                    <span className="ml-2 text-text-muted/70">— {course.comment}</span>
+                  )}
+                </p>
+              </div>
+              <button
+                onClick={() => setIsEditingBasic(true)}
+                className="px-3 py-1.5 text-xs font-medium text-text-body border border-border-default rounded-lg hover:bg-surface-hover transition-colors duration-150"
               >
-                キャンセル
-              </Button>
-              <Button variant="primary" size="sm" onClick={handleSaveBasic} disabled={isSaving}>
-                保存
-              </Button>
+                編集
+              </button>
             </div>
+          ) : (
+            <section className="p-4 bg-surface-raised rounded-xl border border-border-default">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-bold text-text-heading">基本情報を編集</h2>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setIsEditingBasic(false);
+                      setEditName(course.name);
+                      setEditSeason(course.season);
+                      setEditTargetGrades(course.target_grades);
+                      setEditComment(course.comment || '');
+                    }}
+                    className="px-3 py-1.5 text-xs font-medium text-text-body border border-border-default rounded-lg hover:bg-surface-hover transition-colors duration-150"
+                  >
+                    キャンセル
+                  </button>
+                  <button
+                    onClick={handleSaveBasic}
+                    disabled={isSaving}
+                    className="px-3 py-1.5 text-xs font-medium bg-ink text-text-on-primary rounded-lg hover:brightness-[0.85] transition-[filter] duration-150 disabled:opacity-50"
+                  >
+                    {isSaving ? '保存中...' : '保存'}
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-bold text-text-muted block mb-1">コース名</label>
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={e => setEditName(e.target.value)}
+                    className="w-full px-3 py-1.5 text-sm border border-border-default rounded-lg bg-surface-raised focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  />
+                </div>
+                <div className="flex gap-4">
+                  <div>
+                    <label className="text-xs font-bold text-text-muted block mb-1">シーズン</label>
+                    <div className="flex gap-1">
+                      {(['spring', 'summer', 'winter'] as SeasonType[]).map(s => (
+                        <button
+                          key={s}
+                          onClick={() => setEditSeason(s)}
+                          className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors duration-150 ${
+                            editSeason === s
+                              ? 'bg-ink text-text-on-primary'
+                              : 'bg-surface-hover text-text-body hover:bg-border-default'
+                          }`}
+                        >
+                          {SEASON_LABELS[s]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-xs font-bold text-text-muted block mb-1">対象学年</label>
+                    <div className="flex flex-wrap gap-1">
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(grade => (
+                        <button
+                          key={grade}
+                          onClick={() => toggleGrade(grade)}
+                          className={`px-2 py-1 text-[11px] rounded-md transition-colors duration-150 ${
+                            editTargetGrades.includes(grade)
+                              ? 'bg-ink text-text-on-primary font-bold'
+                              : 'bg-surface-hover text-text-muted hover:bg-border-default'
+                          }`}
+                        >
+                          {GRADE_LABELS[grade]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-text-muted block mb-1">コメント</label>
+                  <input
+                    type="text"
+                    value={editComment}
+                    onChange={e => setEditComment(e.target.value)}
+                    className="w-full px-3 py-1.5 text-sm border border-border-default rounded-lg bg-surface-raised focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    placeholder="講習に関するメモ"
+                  />
+                </div>
+              </div>
+            </section>
           )}
         </div>
 
-        {!isEditingBasic ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <span className="text-sm font-medium text-text-body">コース名:</span>
-              <p className="text-lg font-bold text-text-heading">{course.name}</p>
+        <div className="space-y-5">
+          {/* テキスト */}
+          <section className="p-4 bg-surface-raised rounded-xl border border-border-default">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs font-bold text-text-muted">テキスト</div>
+              <button
+                onClick={() => setIsAddTextbookModalOpen(true)}
+                disabled={(course.textbooks?.length || 0) >= 3}
+                className="px-2.5 py-1 text-[11px] font-medium bg-ink text-text-on-primary rounded-md hover:brightness-[0.85] transition-[filter] duration-150 disabled:opacity-40 flex items-center gap-1"
+              >
+                <Plus className="w-3 h-3" />
+                テキスト追加 ({course.textbooks?.length || 0}/3)
+              </button>
             </div>
-            <div>
-              <span className="text-sm font-medium text-text-body">季節:</span>
-              <p className="text-lg font-bold text-text-heading">{SEASON_LABELS[course.season]}</p>
-            </div>
-            <div>
-              <span className="text-sm font-medium text-text-body">対象学年:</span>
-              <p className="text-lg font-bold text-text-heading">
-                {course.target_grades.map(g => GRADE_LABELS[g] || g).join(', ')}
-              </p>
-            </div>
-            <div>
-              <span className="text-sm font-medium text-text-body">合計コマ数:</span>
-              <p className="text-lg font-bold text-info">{course.total_koma}コマ</p>
-            </div>
-            {course.comment && (
-              <div className="md:col-span-2">
-                <span className="text-sm font-medium text-text-body">コメント:</span>
-                <p className="text-text-heading">{course.comment}</p>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-text-heading mb-1">コース名</label>
-              <input
-                type="text"
-                value={editName}
-                onChange={e => setEditName(e.target.value)}
-                className="w-full px-3 py-2 border border-border rounded-lg"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-text-heading mb-1">季節</label>
-              <div className="flex gap-2">
-                {(['spring', 'summer', 'winter'] as SeasonType[]).map(season => (
+            {course.textbooks?.length === 0 ? (
+              <p className="text-sm text-text-muted text-center py-3">テキストを追加してください</p>
+            ) : (
+              <div className="flex gap-2 flex-wrap">
+                {course.textbooks?.map(ct => (
                   <button
-                    key={season}
-                    onClick={() => setEditSeason(season)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-150 ${
-                      editSeason === season
-                        ? season === 'spring'
-                          ? 'bg-[#ffeb3b] text-text-heading'
-                          : season === 'summer'
-                          ? 'bg-[#ff8e8e] text-text-heading'
-                          : 'bg-[#8ec5ff] text-text-heading'
-                        : 'bg-surface-hover text-text-body'
+                    key={ct.id}
+                    onClick={() => setSelectedTextbookId(ct.textbook_id)}
+                    className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors duration-150 ${
+                      selectedTextbookId === ct.textbook_id
+                        ? 'bg-ink text-text-on-primary'
+                        : 'bg-surface-hover text-text-body hover:bg-border-default'
                     }`}
                   >
-                    {SEASON_LABELS[season]}
+                    {ct.textbook?.name}
+                    <span
+                      onClick={e => {
+                        e.stopPropagation();
+                        handleRemoveTextbook(ct.textbook_id, ct.textbook?.name || '');
+                      }}
+                      className={`ml-0.5 transition-colors duration-150 ${
+                        selectedTextbookId === ct.textbook_id
+                          ? 'text-text-on-primary/60 hover:text-text-on-primary'
+                          : 'text-text-faint hover:text-danger'
+                      }`}
+                    >
+                      <X className="w-3 h-3" />
+                    </span>
                   </button>
                 ))}
               </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-text-heading mb-2">対象学年</label>
-              <div className="flex flex-wrap gap-2">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(grade => (
-                  <label
-                    key={grade}
-                    className={`px-3 py-1.5 rounded-lg cursor-pointer text-sm ${
-                      editTargetGrades.includes(grade)
-                        ? 'bg-info text-white'
-                        : 'bg-surface-hover text-text-body'
-                    }`}
+            )}
+          </section>
+
+          {/* カリキュラム設定 */}
+          {selectedTextbookId && (
+            <section className="bg-surface-raised rounded-xl border border-border-default overflow-hidden">
+              <div className="p-4 flex items-center justify-between flex-wrap gap-2">
+                <h2 className="text-sm font-bold text-text-heading">
+                  対象単元を設定
+                  <span className="ml-3 text-accent-ink">{calculatedTotalKoma}コマ</span>
+                </h2>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleGroup}
+                    disabled={isSaving || selectedItems.size < 2}
+                    className="px-2 py-1 text-[11px] bg-surface-hover text-text-muted rounded-md hover:bg-border-default flex items-center gap-1 transition-colors duration-150 disabled:opacity-40"
                   >
-                    <input
-                      type="checkbox"
-                      checked={editTargetGrades.includes(grade)}
-                      onChange={() => toggleGrade(grade)}
-                      className="hidden"
-                    />
-                    {GRADE_LABELS[grade]}
-                  </label>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-text-heading mb-1">コメント</label>
-              <textarea
-                value={editComment}
-                onChange={e => setEditComment(e.target.value)}
-                rows={3}
-                className="w-full px-3 py-2 border border-border rounded-lg"
-              />
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* テキスト選択 */}
-      <div className="mb-6 p-4 bg-surface-raised rounded-xl border border-border">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-text-heading">テキスト</h3>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => setIsAddTextbookModalOpen(true)}
-            disabled={(course.textbooks?.length || 0) >= 3}
-          >
-            + テキスト追加 ({course.textbooks?.length || 0}/3)
-          </Button>
-        </div>
-
-        {course.textbooks?.length === 0 ? (
-          <p className="text-text-body text-center py-4">テキストを追加してください</p>
-        ) : (
-          <div className="flex gap-2 flex-wrap">
-            {course.textbooks?.map(ct => (
-              <div
-                key={ct.id}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg border-2 transition-colors duration-150 cursor-pointer ${
-                  selectedTextbookId === ct.textbook_id
-                    ? 'bg-info border-info text-text-heading'
-                    : 'bg-surface-hover border-surface-hover text-text-body hover:border-info'
-                }`}
-                onClick={() => setSelectedTextbookId(ct.textbook_id)}
-              >
-                <span className="font-medium">{ct.textbook?.name}</span>
-                <button
-                  onClick={e => {
-                    e.stopPropagation();
-                    handleRemoveTextbook(ct.textbook_id, ct.textbook?.name || '');
-                  }}
-                  className="text-danger hover:text-danger/80 ml-2 transition-colors duration-150"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* カリキュラム編集 */}
-      {selectedTextbookId && (
-        <div className="bg-surface-raised rounded-xl border border-border overflow-hidden">
-          {/* コントロールパネル */}
-          <div className="p-4 bg-surface-hover border-b border-border">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <h3 className="text-lg font-bold text-text-heading">
-                カリキュラム設定
-                <span className="ml-4 text-info">合計: {calculatedTotalKoma}コマ</span>
-              </h3>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={handleSaveProposalCounts}
-                  disabled={isSaving || proposalCountValues.size === 0}
-                >
-                  {isSaving ? '保存中...' : '提案回数を保存'}
-                </Button>
-                <Link href={`/courses/${courseId}/apply`}>
-                  <Button variant="primary" size="sm">
+                    <Link2 className="w-3 h-3" />
+                    グループ化 ({selectedItems.size})
+                  </button>
+                  <button
+                    onClick={handleUngroup}
+                    disabled={isSaving || selectedItems.size === 0}
+                    className="px-2 py-1 text-[11px] text-text-faint hover:text-text-muted rounded-md transition-colors duration-150 disabled:opacity-40 flex items-center gap-1"
+                  >
+                    <Unlink className="w-3 h-3" />
+                    グループ解除
+                  </button>
+                  <button
+                    onClick={handleSaveProposalCounts}
+                    disabled={isSaving || proposalCountValues.size === 0}
+                    className="px-3 py-1.5 text-[11px] font-medium bg-ink text-text-on-primary rounded-lg hover:brightness-[0.85] transition-[filter] duration-150 disabled:opacity-40 flex items-center gap-1"
+                  >
+                    <Save className="w-3 h-3" />
+                    {isSaving ? '保存中...' : '提案回数を保存'}
+                  </button>
+                  <Link
+                    href={`/courses/${courseId}/apply`}
+                    className="px-3 py-1.5 text-[11px] font-medium text-text-body border border-border-default rounded-lg hover:bg-surface-hover transition-colors duration-150 flex items-center gap-1"
+                  >
+                    <Users className="w-3 h-3" />
                     生徒に適用する
-                  </Button>
-                </Link>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={handleGroup}
-                  disabled={isSaving || selectedItems.size < 2}
-                >
-                  グループ化 ({selectedItems.size})
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleUngroup}
-                  disabled={isSaving || selectedItems.size === 0}
-                >
-                  グループ解除
-                </Button>
+                  </Link>
+                </div>
               </div>
-            </div>
-          </div>
 
-          {/* テーブル */}
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-surface-hover border-b border-border">
-                  <th className="px-4 py-3 text-center w-10 border-r border-border">
-                    <input
-                      type="checkbox"
-                      checked={curriculumItems.length > 0 && selectedItems.size === curriculumItems.length}
-                      onChange={e => {
-                        if (e.target.checked) {
-                          setSelectedItems(new Set(curriculumItems.map(item => item.id)));
-                        } else {
-                          setSelectedItems(new Set());
-                        }
-                      }}
-                      className="w-4 h-4"
-                    />
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-text-heading border-r border-border">
-                    単元名
-                  </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-text-heading w-28">
-                    提案回数
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
+              {/* ヘッダーラベル */}
+              {displayRows.length > 0 && (
+                <div className="flex items-center px-4 py-1.5 border-t border-border-subtle text-[10px] text-text-faint font-medium">
+                  <div className="w-7 text-center shrink-0" />
+                  <div className="flex-1 pl-1">単元名</div>
+                  <div className="w-20 text-center shrink-0">提案回数</div>
+                </div>
+              )}
+
+              {/* 単元リスト */}
+              <div className="border-t border-border-subtle">
                 {displayRows.length === 0 ? (
-                  <tr>
-                    <td colSpan={3} className="px-4 py-8 text-center text-sm text-text-body">
-                      カリキュラム項目がありません
-                    </td>
-                  </tr>
+                  <div className="px-4 py-8 text-center text-sm text-text-muted">
+                    カリキュラム項目がありません
+                  </div>
                 ) : (
-                  displayRows.map(row => {
+                  displayRows.map((row, idx) => {
                     const groupColor = getGroupColor(row.setting?.group_number);
                     const isChecked = selectedItems.has(row.curriculumItem.id);
+                    const isGrouped = row.setting?.group_number != null;
 
                     return (
-                      <tr
+                      <div
                         key={row.curriculumItem.id}
-                        className={`border-b border-border hover:bg-surface-hover transition-colors duration-150 ${groupColor}`}
+                        className={`flex items-center px-4 py-2 border-b border-border-subtle last:border-b-0 transition-colors duration-100 ${groupColor} ${
+                          isChecked ? 'bg-primary/5' : 'hover:bg-surface-hover/50'
+                        }`}
                       >
-                        <td className="px-4 py-3 text-center border-r border-border">
+                        <div className="w-7 shrink-0 flex items-center justify-center">
                           <input
                             type="checkbox"
                             checked={isChecked}
@@ -757,50 +734,55 @@ export default function CourseDetailPage() {
                               }
                               setSelectedItems(newSet);
                             }}
-                            className="w-4 h-4"
+                            className="w-3.5 h-3.5 rounded"
                           />
-                        </td>
-                        <td className="px-4 py-3 text-sm text-text-heading border-r border-border">
-                          {row.curriculumItem.item_number && (
-                            <span className="text-text-body mr-2">{row.curriculumItem.item_number}</span>
+                        </div>
+                        <div className="flex-1 min-w-0 pl-1">
+                          <span className="text-sm text-text-heading">
+                            {row.curriculumItem.item_number != null && (
+                              <span className="text-text-muted mr-1.5 tabular-nums text-xs">{row.curriculumItem.item_number}</span>
+                            )}
+                            {row.curriculumItem.title}
+                          </span>
+                          {isGrouped && row.isGroupStart && (
+                            <span className="ml-2 text-[10px] text-text-faint">
+                              G{row.setting?.group_number} ({row.groupRowSpan}単元)
+                            </span>
                           )}
-                          {row.curriculumItem.title}
-                        </td>
+                        </div>
                         {row.isGroupStart && (
-                          <td
-                            className="px-4 py-3 text-center"
-                            rowSpan={row.groupRowSpan}
-                          >
+                          <div className="w-20 shrink-0 flex justify-center" style={row.groupRowSpan > 1 ? {} : {}}>
                             <input
                               type="number"
                               min="0"
                               value={proposalCountValues.get(row.curriculumItem.id) ?? row.groupProposalCount}
                               onChange={e => handleProposalCountChange(row, parseInt(e.target.value) || 0)}
-                              className="w-20 px-2 py-1 text-center border border-border rounded"
+                              className="w-16 px-2 py-1 text-center text-sm border border-border-default rounded-lg bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary tabular-nums"
                             />
-                          </td>
+                          </div>
                         )}
-                      </tr>
+                        {!row.isGroupStart && isGrouped && (
+                          <div className="w-20 shrink-0" />
+                        )}
+                      </div>
                     );
                   })
                 )}
-              </tbody>
+              </div>
+
+              {/* フッター合計 */}
               {displayRows.length > 0 && (
-                <tfoot>
-                  <tr className="bg-surface-hover font-bold">
-                    <td colSpan={2} className="px-4 py-3 text-right text-sm text-text-heading border-r border-border">
-                      合計
-                    </td>
-                    <td className="px-4 py-3 text-center text-lg text-info">
-                      {calculatedTotalKoma}コマ
-                    </td>
-                  </tr>
-                </tfoot>
+                <div className="flex items-center px-4 py-2.5 border-t border-border-default bg-surface-hover/50">
+                  <div className="flex-1 text-right text-xs font-bold text-text-heading pr-4">合計</div>
+                  <div className="w-20 shrink-0 text-center text-sm font-bold text-accent-ink tabular-nums">
+                    {calculatedTotalKoma}コマ
+                  </div>
+                </div>
               )}
-            </table>
-          </div>
+            </section>
+          )}
         </div>
-      )}
+      </div>
 
       {/* テキスト追加モーダル */}
       <Modal
@@ -858,27 +840,26 @@ export default function CourseDetailPage() {
                 追加可能なテキストがありません
               </p>
             ) : (
-              <div className="max-h-64 overflow-y-auto space-y-2">
+              <div className="max-h-64 overflow-y-auto space-y-1">
                 {availableTextbooks.map(textbook => (
                   <div
                     key={textbook.id}
-                    className="p-3 bg-surface-hover rounded-lg border border-border hover:bg-border transition-colors duration-150 flex items-center justify-between"
+                    className="p-3 rounded-lg border border-border-subtle hover:bg-surface-hover transition-colors duration-150 flex items-center justify-between"
                   >
                     <div>
-                      <div className="font-medium text-text-heading">{textbook.name}</div>
-                      <div className="text-sm text-text-body">
-                        {textbook.grade && <span>学年: {textbook.grade}</span>}
-                        {textbook.publisher && <span className="ml-2">出版社: {textbook.publisher}</span>}
-                        {textbook.subject && <span className="ml-2">科目: {textbook.subject}</span>}
+                      <div className="font-medium text-sm text-text-heading">{textbook.name}</div>
+                      <div className="text-xs text-text-muted">
+                        {textbook.grade && <span>{textbook.grade}</span>}
+                        {textbook.publisher && <span className="ml-2">{textbook.publisher}</span>}
+                        {textbook.subject && <span className="ml-2">{textbook.subject}</span>}
                       </div>
                     </div>
-                    <Button
-                      variant="primary"
-                      size="sm"
+                    <button
                       onClick={() => handleAddTextbook(textbook.id)}
+                      className="px-2.5 py-1 text-[11px] font-medium bg-ink text-text-on-primary rounded-md hover:brightness-[0.85] transition-[filter] duration-150"
                     >
                       追加
-                    </Button>
+                    </button>
                   </div>
                 ))}
               </div>
@@ -887,12 +868,6 @@ export default function CourseDetailPage() {
         </div>
       </Modal>
 
-      {/* 保存中インジケーター */}
-      {isSaving && (
-        <div className="fixed bottom-4 right-4 bg-black text-white px-4 py-2 rounded-lg shadow-lg">
-          保存中...
-        </div>
-      )}
       {ConfirmDialog}
     </AdminLayout>
   );

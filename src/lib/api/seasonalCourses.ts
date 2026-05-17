@@ -612,13 +612,12 @@ export async function ungroupCourseCurriculumItems(
 // 生徒への適用
 // =====================================================
 
-// コースを生徒に適用
+// コースを生徒に適用（提案書レコードも作成）
 export async function applyCoursesToStudents(
   courseId: string,
   studentIds: string[],
   mode: 'overwrite' | 'add'
 ): Promise<void> {
-  // コース情報を取得
   const course = await getSeasonalCourse(courseId);
   if (!course) throw new Error('コースが見つかりません');
 
@@ -626,7 +625,6 @@ export async function applyCoursesToStudents(
 
   const textbookIds = course.textbooks.map((ct) => ct.textbook_id);
   const now = new Date().toISOString();
-  // Map key: "student_id:textbook_id"
   const stMap = new Map<string, string>();
 
   // Step 1: 既存 student_textbooks を一括取得
@@ -666,16 +664,94 @@ export async function applyCoursesToStudents(
     }
   }
 
-  // テキストIDごとのカリキュラムマップ
   const curriculumByTextbook = new Map<number, typeof course.curriculum>();
   for (const ct of course.textbooks) {
     curriculumByTextbook.set(ct.textbook_id, course.curriculum.filter((c) => c.textbook_id === ct.textbook_id));
   }
 
+  // Step 3: 各生徒×テキストごとに seasonal_proposals + seasonal_proposal_units を作成
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const fromProposals = () => supabase.from('seasonal_proposals' as any);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const fromProposalUnits = () => supabase.from('seasonal_proposal_units' as any);
+
+  const year = new Date().getFullYear();
+  type ProposalRow = { student_id: string; textbook_id: number; student_textbook_id: string; season: string; year: number; theme: string; status: string; applied_koma: number };
+  const proposalInserts: ProposalRow[] = [];
+
+  for (const studentId of studentIds) {
+    for (const ct of course.textbooks) {
+      const stId = stMap.get(`${studentId}:${ct.textbook_id}`);
+      if (!stId) continue;
+      const settings = (curriculumByTextbook.get(ct.textbook_id) || []).filter((s) => s.proposal_count > 0);
+      if (settings.length === 0) continue;
+
+      let totalKoma = 0;
+      const seenGroups = new Set<number>();
+      for (const s of settings) {
+        if (!s.group_number || s.group_number === 0) {
+          totalKoma += s.proposal_count;
+        } else if (!seenGroups.has(s.group_number)) {
+          seenGroups.add(s.group_number);
+          totalKoma += s.proposal_count;
+        }
+      }
+
+      proposalInserts.push({
+        student_id: studentId,
+        textbook_id: ct.textbook_id,
+        student_textbook_id: stId,
+        season: course.season,
+        year,
+        theme: course.name,
+        status: 'approved',
+        applied_koma: totalKoma,
+      });
+    }
+  }
+
+  if (proposalInserts.length > 0) {
+    const { data: proposals, error: pError } = await fromProposals()
+      .insert(proposalInserts)
+      .select('id, student_id, textbook_id');
+    if (pError) throw pError;
+
+    const proposalMap = new Map<string, string>();
+    for (const p of ((proposals || []) as unknown as { id: string; student_id: string; textbook_id: number }[])) {
+      proposalMap.set(`${p.student_id}:${p.textbook_id}`, p.id);
+    }
+
+    const unitInserts: { proposal_id: string; curriculum_item_id: number; koma_count: number; applied_koma: number; reason: string; group_id: number; intent_tag: null; sort_order: number }[] = [];
+    for (const studentId of studentIds) {
+      for (const ct of course.textbooks) {
+        const proposalId = proposalMap.get(`${studentId}:${ct.textbook_id}`);
+        if (!proposalId) continue;
+        const settings = (curriculumByTextbook.get(ct.textbook_id) || []).filter((s) => s.proposal_count > 0);
+        settings.forEach((s, i) => {
+          unitInserts.push({
+            proposal_id: proposalId,
+            curriculum_item_id: s.curriculum_item_id,
+            koma_count: s.proposal_count,
+            applied_koma: s.proposal_count,
+            reason: '',
+            group_id: s.group_number ?? 0,
+            intent_tag: null,
+            sort_order: i,
+          });
+        });
+      }
+    }
+
+    if (unitInserts.length > 0) {
+      const { error: uError } = await fromProposalUnits().insert(unitInserts);
+      if (uError) throw uError;
+    }
+  }
+
+  // Step 4: student_progress の同期
   const allStIds = Array.from(new Set(Array.from(stMap.values())));
 
   if (mode === 'overwrite') {
-    // 上書きモード: 全 student_progress を一括 upsert
     const progressRows = [];
     for (const studentId of studentIds) {
       for (const ct of course.textbooks) {
@@ -686,7 +762,6 @@ export async function applyCoursesToStudents(
             student_textbook_id: stId,
             curriculum_item_id: setting.curriculum_item_id,
             proposal_count: setting.proposal_count,
-            // 申込回数は提案回数と同期（コース適用時は両方にセット）
             application_count: setting.proposal_count,
             group_number: setting.group_number,
             updated_at: now,
@@ -701,7 +776,6 @@ export async function applyCoursesToStudents(
       if (error) throw error;
     }
   } else {
-    // 加算モード: 既存 student_progress を一括取得してから差分計算
     const { data: existingProgress } = await supabase
       .from('student_progress')
       .select('id, student_textbook_id, curriculum_item_id, proposal_count, application_count, group_number')
@@ -729,7 +803,6 @@ export async function applyCoursesToStudents(
             toUpdate.push({
               id: existing.id,
               proposal_count: (existing.proposal_count || 0) + setting.proposal_count,
-              // 申込も提案と同じだけ加算（コース適用）
               application_count: (existing.application_count || 0) + setting.proposal_count,
               group_number: setting.group_number,
             });
@@ -738,7 +811,6 @@ export async function applyCoursesToStudents(
               student_textbook_id: stId,
               curriculum_item_id: setting.curriculum_item_id,
               proposal_count: setting.proposal_count,
-              // 新規作成時は両方に同じ値
               application_count: setting.proposal_count,
               group_number: setting.group_number,
             });
@@ -760,7 +832,15 @@ export async function applyCoursesToStudents(
     ]);
   }
 
-  // Step 4: 適用履歴を一括INSERT
+  // Step 5: student_textbooks を講師に公開（publishProposal と同じ）
+  if (allStIds.length > 0) {
+    await supabase
+      .from('student_textbooks')
+      .update({ is_draft: false } as never)
+      .in('id', allStIds);
+  }
+
+  // Step 6: 適用履歴を一括INSERT
   await supabase.from('seasonal_course_applications').insert(
     studentIds.map((studentId) => ({
       course_id: courseId,
