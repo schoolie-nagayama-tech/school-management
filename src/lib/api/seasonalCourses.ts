@@ -713,13 +713,18 @@ export async function applyCoursesToStudents(
 
   if (proposalInserts.length > 0) {
     const { data: proposals, error: pError } = await fromProposals()
-      .insert(proposalInserts)
+      .upsert(proposalInserts, { onConflict: 'student_id,textbook_id,season,year' })
       .select('id, student_id, textbook_id');
     if (pError) throw pError;
 
     const proposalMap = new Map<string, string>();
     for (const p of ((proposals || []) as unknown as { id: string; student_id: string; textbook_id: number }[])) {
       proposalMap.set(`${p.student_id}:${p.textbook_id}`, p.id);
+    }
+
+    const proposalIds = Array.from(proposalMap.values());
+    if (proposalIds.length > 0) {
+      await fromProposalUnits().delete().in('proposal_id', proposalIds);
     }
 
     const unitInserts: { proposal_id: string; curriculum_item_id: number; koma_count: number; applied_koma: number; reason: string; group_id: number; intent_tag: null; sort_order: number }[] = [];
