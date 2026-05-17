@@ -664,9 +664,30 @@ export async function applyCoursesToStudents(
     }
   }
 
-  const curriculumByTextbook = new Map<number, typeof course.curriculum>();
+  const curriculumByTextbook = new Map<number, { curriculum_item_id: number; proposal_count: number; group_number: number | null }[]>();
   for (const ct of course.textbooks) {
-    curriculumByTextbook.set(ct.textbook_id, course.curriculum.filter((c) => c.textbook_id === ct.textbook_id));
+    const items = course.curriculum
+      .filter((c) => c.textbook_id === ct.textbook_id && c.proposal_count > 0)
+      .map((c) => ({ curriculum_item_id: c.curriculum_item_id, proposal_count: c.proposal_count, group_number: c.group_number }));
+    curriculumByTextbook.set(ct.textbook_id, items);
+  }
+
+  // カリキュラム設定がないテキストはcurriculum_itemsから直接取得（1単元1コマ）
+  const textbooksWithoutCurriculum = course.textbooks
+    .filter((ct) => (curriculumByTextbook.get(ct.textbook_id) || []).length === 0)
+    .map((ct) => ct.textbook_id);
+
+  if (textbooksWithoutCurriculum.length > 0) {
+    const { data: ciRows } = await supabase
+      .from('curriculum_items')
+      .select('id, textbook_id')
+      .in('textbook_id', textbooksWithoutCurriculum)
+      .order('sort_order');
+    for (const ci of (ciRows || []) as { id: number; textbook_id: number }[]) {
+      const arr = curriculumByTextbook.get(ci.textbook_id) || [];
+      arr.push({ curriculum_item_id: ci.id, proposal_count: 1, group_number: null });
+      curriculumByTextbook.set(ci.textbook_id, arr);
+    }
   }
 
   // Step 3: 各生徒×テキストごとに seasonal_proposals + seasonal_proposal_units を作成
