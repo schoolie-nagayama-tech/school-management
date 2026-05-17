@@ -3,8 +3,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { ArrowLeft, CheckSquare, Search, Square, Users } from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
-import { Button, Modal, ToastContainer, Loading } from '@/components/ui';
+import { ToastContainer, Loading, InlineLoading } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import {
   getSeasonalCourse,
@@ -19,6 +20,12 @@ import type {
 } from '@/types/database';
 import { SEASON_LABELS, GRADE_LABELS } from '@/types/database';
 
+const SEASON_BADGE: Record<string, string> = {
+  spring: 'bg-pink-100 text-pink-700',
+  summer: 'bg-sky-100 text-sky-700',
+  winter: 'bg-slate-100 text-slate-600',
+};
+
 export default function CourseApplyPage() {
   const params = useParams();
   const router = useRouter();
@@ -31,18 +38,13 @@ export default function CourseApplyPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isApplying, setIsApplying] = useState(false);
 
-  // 選択状態
   const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
   const [applyMode, setApplyMode] = useState<'overwrite' | 'add'>('overwrite');
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
-  // 確認モーダル
-  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-
-  // フィルター
   const [filterGrade, setFilterGrade] = useState<number | ''>('');
   const [searchKeyword, setSearchKeyword] = useState('');
 
-  // コース情報を取得
   const fetchCourse = useCallback(async () => {
     if (!courseId) return;
     try {
@@ -59,7 +61,6 @@ export default function CourseApplyPage() {
     }
   }, [courseId, error, router]);
 
-  // 生徒一覧を取得（コースの教室の生徒のみ）
   const fetchStudents = useCallback(async () => {
     if (!course) return;
     try {
@@ -71,7 +72,6 @@ export default function CourseApplyPage() {
     }
   }, [error, course]);
 
-  // 適用履歴を取得
   const fetchApplications = useCallback(async () => {
     if (!courseId) return;
     try {
@@ -92,60 +92,46 @@ export default function CourseApplyPage() {
   }, [fetchCourse, fetchApplications]);
 
   useEffect(() => {
-    if (course) {
-      fetchStudents();
-    }
+    if (course) fetchStudents();
   }, [course, fetchStudents]);
 
-  // 対象学年の生徒のみフィルター
   const targetStudents = useMemo(() => {
     if (!course) return [];
     return students.filter(s => course.target_grades.includes(s.grade));
   }, [students, course]);
 
-  // フィルター済み生徒
   const filteredStudents = useMemo(() => {
     return targetStudents.filter(s => {
       if (filterGrade !== '' && s.grade !== filterGrade) return false;
       if (searchKeyword) {
-        const keyword = searchKeyword.toLowerCase();
-        const fullName = `${s.last_name}${s.first_name}`.toLowerCase();
-        const fullNameKana = `${s.last_name_kana || ''}${s.first_name_kana || ''}`.toLowerCase();
-        const studentCode = (s.student_code || '').toLowerCase();
-        if (!fullName.includes(keyword) && !fullNameKana.includes(keyword) && !studentCode.includes(keyword)) {
-          return false;
-        }
+        const kw = searchKeyword.toLowerCase();
+        const name = `${s.last_name}${s.first_name}`.toLowerCase();
+        const kana = `${s.last_name_kana || ''}${s.first_name_kana || ''}`.toLowerCase();
+        const code = (s.student_code || '').toLowerCase();
+        if (!name.includes(kw) && !kana.includes(kw) && !code.includes(kw)) return false;
       }
       return true;
     });
   }, [targetStudents, filterGrade, searchKeyword]);
 
-  // 適用済み生徒IDのセット
   const appliedStudentIds = useMemo(() => {
     return new Set(applications.map(a => a.student_id));
   }, [applications]);
 
-  // 全選択/全解除
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedStudentIds(new Set(filteredStudents.map(s => s.id)));
-    } else {
+  const toggleSelect = (id: string) => {
+    const next = new Set(selectedStudentIds);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    setSelectedStudentIds(next);
+  };
+
+  const toggleAll = () => {
+    if (selectedStudentIds.size === filteredStudents.length) {
       setSelectedStudentIds(new Set());
-    }
-  };
-
-  // 個別選択
-  const handleSelectStudent = (studentId: string, checked: boolean) => {
-    const newSet = new Set(selectedStudentIds);
-    if (checked) {
-      newSet.add(studentId);
     } else {
-      newSet.delete(studentId);
+      setSelectedStudentIds(new Set(filteredStudents.map(s => s.id)));
     }
-    setSelectedStudentIds(newSet);
   };
 
-  // 適用実行
   const handleApply = async () => {
     if (!courseId || selectedStudentIds.size === 0) return;
     setIsApplying(true);
@@ -153,7 +139,7 @@ export default function CourseApplyPage() {
       await applyCoursesToStudents(courseId, Array.from(selectedStudentIds), applyMode);
       await fetchApplications();
       setSelectedStudentIds(new Set());
-      setIsConfirmModalOpen(false);
+      setIsConfirmOpen(false);
       success(`${selectedStudentIds.size}名に適用しました`);
     } catch (err) {
       console.error('Error applying course:', err);
@@ -163,334 +149,250 @@ export default function CourseApplyPage() {
     }
   };
 
-  // 季節の背景色
-  const getSeasonColor = (season: string) => {
-    switch (season) {
-      case 'spring': return 'bg-[#fff9e5] border-[#ffeb3b]';
-      case 'summer': return 'bg-[#ffe5e5] border-[#ffb3b3]';
-      case 'winter': return 'bg-[#e5f3ff] border-[#bae1ff]';
-      default: return 'bg-surface-hover border-border';
-    }
-  };
-
   if (isLoading) {
-    return (
-      <AdminLayout headerTitle="コース適用">
-        <Loading size="md" />
-      </AdminLayout>
-    );
+    return <AdminLayout headerTitle="講習管理"><Loading size="md" /></AdminLayout>;
   }
 
   if (!course) {
     return (
-      <AdminLayout headerTitle="コース適用">
-        <div className="flex items-center justify-center py-12">
-          <div className="text-danger">コースが見つかりません</div>
-        </div>
+      <AdminLayout headerTitle="講習管理">
+        <div className="py-12 text-center text-sm text-text-faint">コースが見つかりません</div>
       </AdminLayout>
     );
   }
 
+  const hasSelection = selectedStudentIds.size > 0;
+  const allSelected = filteredStudents.length > 0 && selectedStudentIds.size === filteredStudents.length;
+
   return (
-    <AdminLayout headerTitle={`コース適用 - ${course.name}`}>
+    <AdminLayout headerTitle="講習管理">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
+      <div className="max-w-5xl mx-auto">
 
-      {/* 戻るボタン */}
-      <div className="mb-4 flex gap-2">
-        <Link href="/courses">
-          <Button variant="secondary" size="sm">
-            ← コース一覧
-          </Button>
-        </Link>
-        <Link href={`/courses/${courseId}`}>
-          <Button variant="secondary" size="sm">
-            コース編集
-          </Button>
-        </Link>
-      </div>
-
-      {/* コース情報サマリー */}
-      <div className={`mb-6 p-4 rounded-xl border-2 ${getSeasonColor(course.season)}`}>
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <h2 className="text-xl font-bold text-text-heading">{course.name}</h2>
-            <div className="flex items-center gap-4 mt-2 text-sm text-text-body">
-              <span>{SEASON_LABELS[course.season]}</span>
-              <span>対象: {course.target_grades.map(g => GRADE_LABELS[g]).join(', ')}</span>
-              <span>テキスト: {course.textbooks?.length || 0}冊</span>
-              <span className="text-info font-bold">合計: {course.total_koma}コマ</span>
-            </div>
-          </div>
-          <div className="text-right">
-            <div className="text-sm text-text-body">適用済み</div>
-            <div className="text-2xl font-bold text-info">{applications.length}名</div>
-          </div>
-        </div>
-      </div>
-
-      {/* 適用モード選択 */}
-      <div className="mb-6 p-4 bg-surface-raised rounded-xl border border-border">
-        <h3 className="text-sm font-bold text-text-heading mb-3">適用モード</h3>
-        <div className="flex gap-4">
-          <label
-            className={`flex-1 p-4 rounded-lg border-2 cursor-pointer transition-colors duration-150 ${
-              applyMode === 'overwrite'
-                ? 'border-info bg-info/10'
-                : 'border-surface-hover hover:border-info'
-            }`}
-          >
-            <input
-              type="radio"
-              name="applyMode"
-              value="overwrite"
-              checked={applyMode === 'overwrite'}
-              onChange={() => setApplyMode('overwrite')}
-              className="hidden"
-            />
-            <div className="font-bold text-text-heading">上書き</div>
-            <div className="text-sm text-text-body mt-1">
-              既存の提案回数を上書きします。グループ化も上書きされます。
-            </div>
-          </label>
-          <label
-            className={`flex-1 p-4 rounded-lg border-2 cursor-pointer transition-colors duration-150 ${
-              applyMode === 'add'
-                ? 'border-info bg-info/10'
-                : 'border-surface-hover hover:border-info'
-            }`}
-          >
-            <input
-              type="radio"
-              name="applyMode"
-              value="add"
-              checked={applyMode === 'add'}
-              onChange={() => setApplyMode('add')}
-              className="hidden"
-            />
-            <div className="font-bold text-text-heading">加算</div>
-            <div className="text-sm text-text-body mt-1">
-              既存の提案回数に加算します。グループ化は上書きされます。
-            </div>
-          </label>
-        </div>
-      </div>
-
-      {/* 生徒選択 */}
-      <div className="bg-surface-raised rounded-xl border border-border overflow-hidden">
         {/* ヘッダー */}
-        <div className="p-4 bg-surface-hover border-b border-border">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <h3 className="text-lg font-bold text-text-heading">
-              対象生徒を選択
-              <span className="ml-2 text-sm font-normal text-text-body">
-                （{targetStudents.length}名が対象学年）
+        <div className="mb-4">
+          <Link href={`/courses/${courseId}`} className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-text-heading transition-colors mb-2">
+            <ArrowLeft className="w-3 h-3" />
+            コース詳細に戻る
+          </Link>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-lg font-bold text-text-heading">{course.name}</h1>
+              <span className={`px-2 py-0.5 text-[11px] font-bold rounded ${SEASON_BADGE[course.season] || ''}`}>
+                {SEASON_LABELS[course.season]}
               </span>
-            </h3>
-            <div className="flex items-center gap-4">
-              {/* 検索 */}
+              <span className="text-xs text-text-muted">
+                {course.target_grades.map(g => GRADE_LABELS[g]).join(' ')}
+              </span>
+              <span className="text-xs font-bold text-accent-ink">{course.total_koma}コマ</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-text-muted">
+              <Users className="w-3.5 h-3.5" />
+              <span className="text-xs">適用済み</span>
+              <span className="text-lg font-bold text-info">{applications.length}</span>
+              <span className="text-xs">名</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 適用モード */}
+        <div className="p-4 bg-surface-raised rounded-xl border border-border-default mb-4">
+          <div className="text-xs font-bold text-text-muted mb-2">適用モード</div>
+          <div className="flex gap-3">
+            {(['overwrite', 'add'] as const).map((mode) => (
+              <button
+                key={mode}
+                onClick={() => setApplyMode(mode)}
+                className={`flex-1 p-3 rounded-lg border text-left transition-colors duration-150 ${
+                  applyMode === mode
+                    ? 'border-ink bg-ink/5'
+                    : 'border-border-default hover:border-text-muted'
+                }`}
+              >
+                <div className={`text-sm font-bold ${applyMode === mode ? 'text-text-heading' : 'text-text-muted'}`}>
+                  {mode === 'overwrite' ? '上書き' : '加算'}
+                </div>
+                <div className="text-[11px] text-text-muted mt-0.5">
+                  {mode === 'overwrite'
+                    ? '既存の提案回数を上書きします。グループ化も上書きされます。'
+                    : '既存の提案回数に加算します。グループ化は上書きされます。'}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 生徒選択 */}
+        <div className="bg-surface-raised rounded-xl border border-border-default overflow-hidden">
+          {/* 操作バー */}
+          <div className="px-4 py-2.5 border-b border-border-subtle flex items-center gap-3">
+            <button onClick={toggleAll} className="flex items-center gap-1.5 text-xs text-text-muted hover:text-text-heading transition-colors">
+              {allSelected
+                ? <CheckSquare className="w-3.5 h-3.5 text-info" />
+                : <Square className="w-3.5 h-3.5" />}
+              {hasSelection ? `${selectedStudentIds.size}名選択` : '全選択'}
+            </button>
+            {hasSelection && (
+              <button onClick={() => setSelectedStudentIds(new Set())} className="text-[11px] text-text-faint hover:text-text-muted">
+                解除
+              </button>
+            )}
+            <span className="text-[11px] text-text-faint">
+              ({targetStudents.length}名が対象学年)
+            </span>
+            <div className="flex-1" />
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-faint" />
               <input
                 type="text"
                 placeholder="氏名・コードで検索"
                 value={searchKeyword}
                 onChange={e => setSearchKeyword(e.target.value)}
-                className="px-3 py-2 border border-border rounded-lg text-sm w-48"
+                className="pl-8 pr-3 py-1.5 text-xs border border-border-default rounded-lg bg-surface-raised text-text-body placeholder:text-text-faint focus:outline-none focus:ring-1 focus:ring-ink/30 w-44"
               />
-              {/* 学年フィルター */}
-              <select
-                value={filterGrade}
-                onChange={e => setFilterGrade(e.target.value ? parseInt(e.target.value) : '')}
-                className="px-3 py-2 border border-border rounded-lg text-sm"
-              >
-                <option value="">全学年</option>
-                {course.target_grades.map(g => (
-                  <option key={g} value={g}>{GRADE_LABELS[g]}</option>
-                ))}
-              </select>
-              {/* 適用ボタン */}
-              <Button
-                variant="primary"
-                onClick={() => setIsConfirmModalOpen(true)}
-                disabled={selectedStudentIds.size === 0}
-              >
-                選択した{selectedStudentIds.size}名に適用
-              </Button>
+            </div>
+            <select
+              value={filterGrade}
+              onChange={e => setFilterGrade(e.target.value ? parseInt(e.target.value) : '')}
+              className="px-2 py-1.5 text-xs border border-border-default rounded-lg bg-surface-raised text-text-body"
+            >
+              <option value="">全学年</option>
+              {course.target_grades.map(g => (
+                <option key={g} value={g}>{GRADE_LABELS[g]}</option>
+              ))}
+            </select>
+            <button
+              onClick={() => setIsConfirmOpen(true)}
+              disabled={!hasSelection}
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-[11px] font-bold bg-ink text-text-on-primary rounded-lg hover:brightness-[0.85] transition-[filter] duration-150 disabled:opacity-40 disabled:pointer-events-none"
+            >
+              選択した{selectedStudentIds.size}名に適用
+            </button>
+          </div>
+
+          {/* 生徒リスト */}
+          <div className="divide-y divide-border-subtle" style={{ maxHeight: 'calc(100vh - 340px)', overflowY: 'auto' }}>
+            {filteredStudents.length === 0 ? (
+              <div className="py-8 text-center text-xs text-text-faint">対象の生徒がいません</div>
+            ) : (
+              filteredStudents.map(student => {
+                const isApplied = appliedStudentIds.has(student.id);
+                const isChecked = selectedStudentIds.has(student.id);
+                return (
+                  <div
+                    key={student.id}
+                    className={`flex items-center gap-3 px-4 py-2.5 transition-colors duration-100 ${
+                      isChecked ? 'bg-info/5' : 'hover:bg-surface-hover/50'
+                    }`}
+                  >
+                    <button onClick={() => toggleSelect(student.id)} className="shrink-0 text-text-faint hover:text-text-heading transition-colors">
+                      {isChecked
+                        ? <CheckSquare className="w-4 h-4 text-info" />
+                        : <Square className="w-4 h-4" />}
+                    </button>
+                    <Link
+                      href={`/students/${student.id}/progress`}
+                      className="flex-1 min-w-0 text-sm text-text-heading hover:text-accent-ink transition-colors truncate"
+                    >
+                      {student.last_name} {student.first_name}
+                      {student.last_name_kana && (
+                        <span className="ml-1.5 text-xs text-text-muted">
+                          ({student.last_name_kana} {student.first_name_kana})
+                        </span>
+                      )}
+                    </Link>
+                    <span className="text-xs text-text-muted w-10 text-center shrink-0">
+                      {GRADE_LABELS[student.grade] || student.grade}
+                    </span>
+                    <span className="w-16 text-center shrink-0">
+                      {isApplied ? (
+                        <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-50 text-emerald-600">
+                          適用済み
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-text-faint">未適用</span>
+                      )}
+                    </span>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* 適用履歴 */}
+        {applications.length > 0 && (
+          <div className="mt-4 bg-surface-raised rounded-xl border border-border-default overflow-hidden">
+            <div className="px-4 py-2.5 border-b border-border-subtle">
+              <span className="text-xs font-bold text-text-muted">適用履歴</span>
+            </div>
+            <div className="divide-y divide-border-subtle max-h-48 overflow-y-auto">
+              {applications.map(app => (
+                <div key={app.id} className="flex items-center gap-4 px-4 py-2 text-xs">
+                  <span className="text-text-heading flex-1 min-w-0 truncate">
+                    {app.student?.last_name} {app.student?.first_name}
+                  </span>
+                  <span className="text-text-muted shrink-0">
+                    {app.applied_mode === 'overwrite' ? '上書き' : '加算'}
+                  </span>
+                  <span className="text-text-faint shrink-0">
+                    {new Date(app.applied_at).toLocaleString('ja-JP')}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
-
-        {/* テーブル */}
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-surface-hover border-b border-border">
-                <th className="px-4 py-3 text-center w-10 border-r border-border">
-                  <input
-                    type="checkbox"
-                    checked={filteredStudents.length > 0 && selectedStudentIds.size === filteredStudents.length}
-                    onChange={e => handleSelectAll(e.target.checked)}
-                    className="w-4 h-4"
-                  />
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-text-heading border-r border-border">
-                  氏名
-                </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-text-heading border-r border-border">
-                  学年
-                </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-text-heading">
-                  適用状況
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredStudents.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-sm text-text-body">
-                    対象の生徒がいません
-                  </td>
-                </tr>
-              ) : (
-                filteredStudents.map(student => {
-                  const isApplied = appliedStudentIds.has(student.id);
-                  const isChecked = selectedStudentIds.has(student.id);
-
-                  return (
-                    <tr
-                      key={student.id}
-                      className={`border-b border-border hover:bg-surface-hover transition-colors duration-150 ${
-                        isChecked ? 'bg-info/10' : ''
-                      }`}
-                    >
-                      <td className="px-4 py-3 text-center border-r border-border">
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={e => handleSelectStudent(student.id, e.target.checked)}
-                          className="w-4 h-4"
-                        />
-                      </td>
-                      <td className="px-4 py-3 text-sm font-medium text-text-heading border-r border-border">
-                        <Link
-                          href={`/students/${student.id}/progress`}
-                          className="text-text-heading hover:text-info hover:underline transition-colors duration-150"
-                        >
-                          {student.last_name} {student.first_name}
-                          {student.last_name_kana && (
-                            <span className="ml-2 text-xs text-text-body">
-                              ({student.last_name_kana} {student.first_name_kana})
-                            </span>
-                          )}
-                        </Link>
-                      </td>
-                      <td className="px-4 py-3 text-center text-sm text-text-body border-r border-border">
-                        {GRADE_LABELS[student.grade] || student.grade}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        {isApplied ? (
-                          <span className="inline-block px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">
-                            適用済み
-                          </span>
-                        ) : (
-                          <span className="inline-block px-2 py-1 bg-surface-hover text-text-body rounded text-xs">
-                            未適用
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+        )}
       </div>
 
-      {/* 適用履歴 */}
-      {applications.length > 0 && (
-        <div className="mt-6 bg-surface-raised rounded-xl border border-border overflow-hidden">
-          <div className="p-4 bg-surface-hover border-b border-border">
-            <h3 className="text-lg font-bold text-text-heading">適用履歴</h3>
-          </div>
-          <div className="max-h-64 overflow-y-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="bg-surface-hover border-b border-border">
-                  <th className="px-4 py-2 text-left text-xs font-semibold text-text-heading border-r border-border">
-                    生徒名
-                  </th>
-                  <th className="px-4 py-2 text-center text-xs font-semibold text-text-heading border-r border-border">
-                    モード
-                  </th>
-                  <th className="px-4 py-2 text-center text-xs font-semibold text-text-heading">
-                    適用日時
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {applications.map(app => (
-                  <tr key={app.id} className="border-b border-border/50 hover:bg-surface-hover transition-colors duration-150">
-                    <td className="px-4 py-2 text-sm text-text-heading border-r border-border/50">
-                      {app.student?.last_name} {app.student?.first_name}
-                    </td>
-                    <td className="px-4 py-2 text-center text-sm text-text-body border-r border-border/50">
-                      {app.applied_mode === 'overwrite' ? '上書き' : '加算'}
-                    </td>
-                    <td className="px-4 py-2 text-center text-sm text-text-body">
-                      {new Date(app.applied_at).toLocaleString('ja-JP')}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {/* 確認モーダル */}
+      {isConfirmOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-surface-raised rounded-xl border border-border-default p-5 max-w-sm w-full">
+            <h2 className="text-sm font-bold text-text-heading mb-3">適用の確認</h2>
+            <p className="text-xs text-text-body mb-3">以下の内容で適用します。よろしいですか？</p>
+            <div className="p-3 bg-surface-hover/50 rounded-lg space-y-1.5 text-xs mb-4">
+              <div className="flex justify-between">
+                <span className="text-text-muted">コース:</span>
+                <span className="font-medium text-text-heading">{course.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-text-muted">対象生徒:</span>
+                <span className="font-medium text-text-heading">{selectedStudentIds.size}名</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-text-muted">モード:</span>
+                <span className="font-medium text-text-heading">
+                  {applyMode === 'overwrite' ? '上書き' : '加算'}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-text-muted">テキスト:</span>
+                <span className="font-medium text-text-heading">{course.textbooks?.length || 0}冊</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-text-muted">合計コマ数:</span>
+                <span className="font-bold text-accent-ink">{course.total_koma}コマ</span>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setIsConfirmOpen(false)}
+                className="px-3 py-1.5 text-xs font-medium text-text-muted border border-border-default rounded-lg hover:bg-surface-hover transition-colors"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleApply}
+                disabled={isApplying}
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-ink text-text-on-primary rounded-lg hover:brightness-[0.85] transition-[filter] duration-150 disabled:opacity-50"
+              >
+                {isApplying ? <InlineLoading size="sm" label="適用中..." /> : '適用する'}
+              </button>
+            </div>
           </div>
         </div>
       )}
-
-      {/* 確認モーダル */}
-      <Modal
-        isOpen={isConfirmModalOpen}
-        onClose={() => setIsConfirmModalOpen(false)}
-        title="適用の確認"
-        size="md"
-      >
-        <div className="space-y-4">
-          <p className="text-text-heading">
-            以下の内容で適用します。よろしいですか？
-          </p>
-          <div className="p-4 bg-surface-hover rounded-lg space-y-2">
-            <div className="flex justify-between">
-              <span className="text-text-body">コース:</span>
-              <span className="font-medium text-text-heading">{course.name}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-text-body">対象生徒:</span>
-              <span className="font-medium text-text-heading">{selectedStudentIds.size}名</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-text-body">モード:</span>
-              <span className="font-medium text-text-heading">
-                {applyMode === 'overwrite' ? '上書き' : '加算'}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-text-body">テキスト:</span>
-              <span className="font-medium text-text-heading">{course.textbooks?.length || 0}冊</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-text-body">合計コマ数:</span>
-              <span className="font-medium text-info">{course.total_koma}コマ</span>
-            </div>
-          </div>
-          <div className="flex justify-end gap-2 pt-4 border-t border-border">
-            <Button variant="secondary" onClick={() => setIsConfirmModalOpen(false)}>
-              キャンセル
-            </Button>
-            <Button variant="primary" onClick={handleApply} disabled={isApplying}>
-              {isApplying ? '適用中...' : '適用する'}
-            </Button>
-          </div>
-        </div>
-      </Modal>
     </AdminLayout>
   );
 }

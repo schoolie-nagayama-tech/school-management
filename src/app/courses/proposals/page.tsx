@@ -3,13 +3,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FileText, Filter, Plus, Search } from 'lucide-react';
+import { FileText, Filter, Plus, Search, Trash2 } from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
 import { Loading } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
-import { getProposalsBySchool, calcTotalKoma, calcTotalAppliedKoma } from '@/lib/api/proposals';
+import { getProposalsBySchool, calcTotalKoma, calcTotalAppliedKoma, deleteProposal } from '@/lib/api/proposals';
 import { supabase } from '@/lib/supabase';
 import type { SeasonalProposalWithDetails, SeasonType, ProposalStatus } from '@/types/database';
 import { SEASON_LABELS, PROPOSAL_STATUS_LABELS } from '@/types/database';
@@ -68,8 +68,23 @@ export default function CourseProposalsPage() {
   const [pickerQuery, setPickerQuery] = useState('');
   const [students, setStudents] = useState<StudentOption[]>([]);
   const [studentsLoading, setStudentsLoading] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
   const pickerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleDelete = async (proposalId: string) => {
+    if (!confirm('この提案書を削除しますか？')) return;
+    setDeletingId(proposalId);
+    try {
+      await deleteProposal(proposalId);
+      setProposals((prev) => prev.filter((p) => p.id !== proposalId));
+    } catch (e) {
+      console.error('削除エラー:', e);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -164,7 +179,11 @@ export default function CourseProposalsPage() {
   }
 
   const filtered = filterStatus
-    ? proposals.filter((p) => p.status === filterStatus)
+    ? proposals.filter((p) =>
+        filterStatus === 'sent'
+          ? p.status === 'sent' || p.status === 'approved'
+          : p.status === filterStatus
+      )
     : proposals;
 
   const byStudent = new Map<string, { name: string; studentId: string; proposals: SeasonalProposalWithDetails[] }>();
@@ -313,33 +332,42 @@ export default function CourseProposalsPage() {
                     const koma = calcTotalKoma(p.units);
                     const appliedKoma = calcTotalAppliedKoma(p.units);
                     return (
-                      <Link
+                      <div
                         key={p.id}
-                        href={`/students/${studentId}/proposals/${p.id}`}
-                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-surface-hover transition-colors duration-150"
+                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-surface-hover transition-colors duration-150 group"
                       >
-                        <FileText className="w-4 h-4 text-text-faint shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-text-heading truncate">
-                            {p.textbook?.subject && (
-                              <span className="text-text-muted font-normal mr-1.5">{p.textbook.subject}</span>
-                            )}
-                            {p.textbook?.name ?? '不明'}
+                        <Link href={`/students/${studentId}/proposals/${p.id}`} className="flex items-center gap-3 flex-1 min-w-0">
+                          <FileText className="w-4 h-4 text-text-faint shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-text-heading truncate">
+                              {p.textbook?.subject && (
+                                <span className="text-text-muted font-normal mr-1.5">{p.textbook.subject}</span>
+                              )}
+                              {p.textbook?.name ?? '不明'}
+                            </div>
+                            <div className="text-xs text-text-muted flex gap-2">
+                              <span>{p.theme || `${p.year}年 ${SEASON_LABELS[p.season]}`}</span>
+                              <span>{p.units.length}単元 / {koma}コマ</span>
+                              {appliedKoma != null && (
+                                <span className="text-info">申込 {appliedKoma}コマ</span>
+                              )}
+                            </div>
                           </div>
-                          <div className="text-xs text-text-muted flex gap-2">
-                            <span>{p.theme || `${p.year}年 ${SEASON_LABELS[p.season]}`}</span>
-                            <span>{p.units.length}単元 / {koma}コマ</span>
-                            {appliedKoma != null && (
-                              <span className="text-info">申込 {appliedKoma}コマ</span>
-                            )}
-                          </div>
-                        </div>
+                        </Link>
                         <span
-                          className={`px-2 py-0.5 text-[10px] font-bold rounded ${STATUS_BADGE[p.status]}`}
+                          className={`px-2 py-0.5 text-[10px] font-bold rounded shrink-0 ${STATUS_BADGE[p.status]}`}
                         >
                           {PROPOSAL_STATUS_LABELS[p.status]}
                         </span>
-                      </Link>
+                        <button
+                          onClick={() => handleDelete(p.id)}
+                          disabled={deletingId === p.id}
+                          className="opacity-0 group-hover:opacity-100 p-1 text-text-faint hover:text-danger transition-all duration-150 shrink-0 disabled:opacity-50"
+                          title="削除"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     );
                   })}
                 </div>
