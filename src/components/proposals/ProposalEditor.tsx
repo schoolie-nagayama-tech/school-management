@@ -384,7 +384,7 @@ export default function ProposalEditor() {
             ...d,
             koma_count: s.proposal_count,
             group_id: newGroupId,
-            selected: false,
+            selected: d.selected,
           });
         }
         return next;

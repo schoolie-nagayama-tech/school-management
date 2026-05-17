@@ -344,70 +344,39 @@ export default function CoursesPage() {
         </div>
       )}
 
-      {/* ヘッダー */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-bold text-text-heading">講習一覧</h1>
-            {!isLoading && courses.length > 0 && (
-              <p className="text-sm text-text-muted mt-0.5">
-                {filteredSorted.length === courses.length
-                  ? `${courses.length}件`
-                  : `${filteredSorted.length} / ${courses.length}件`}
-              </p>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/courses/proposals"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-text-body border border-border rounded-lg hover:bg-surface-hover transition-colors"
-            >
-              <FileText className="w-3.5 h-3.5" />
-              提案書
-            </Link>
-            <button
-              onClick={() => setIsCreateModalOpen(true)}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-ink text-text-on-primary rounded-lg hover:brightness-[0.85] transition-[filter] duration-150"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              新規作成
-            </button>
-          </div>
-        </div>
-      </div>
+      {/* ヘッダー + 検索・フィルタ・ソート（1行にまとめ） */}
+      <div className="mb-3 flex items-center gap-3 flex-wrap">
+        <h1 className="text-lg font-bold text-text-heading shrink-0">講習一覧</h1>
 
-      {/* 検索 + フィルタ + ソート */}
-      {!isLoading && courses.length > 0 && (
-        <div className="mb-4 space-y-2">
-          {/* 検索バー */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-faint" />
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="講習名・学年・季節で検索..."
-              className="w-full pl-9 pr-8 py-2 text-sm border border-border rounded-lg bg-surface focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
-            />
-            {query && (
-              <button
-                onClick={() => setQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 text-text-faint hover:text-text-muted"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
+        {!isLoading && courses.length > 0 && (
+          <>
+            {/* 検索 */}
+            <div className="relative flex-1 min-w-[160px] max-w-xs">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-faint" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="検索..."
+                className="w-full pl-8 pr-7 py-1.5 text-xs border border-border rounded-lg bg-surface focus:outline-none focus:ring-1 focus:ring-primary/30 focus:border-primary transition-colors"
+              />
+              {query && (
+                <button
+                  onClick={() => setQuery('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-text-faint hover:text-text-muted"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
 
-          {/* フィルタ + ソート行 */}
-          <div className="flex items-center gap-3 flex-wrap">
-            {/* 季節フィルタ */}
-            <div className="flex items-center gap-1">
+            {/* 季節 */}
+            <div className="flex items-center gap-0.5">
               {(Object.entries(SEASON_LABELS) as [SeasonType, string][]).map(([value, label]) => (
                 <button
                   key={value}
                   onClick={() => setFilterSeason(filterSeason === value ? '' : value)}
-                  className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
+                  className={`px-2 py-1 text-[11px] rounded transition-colors ${
                     filterSeason === value
                       ? SEASON_COLORS[value] + ' font-bold'
                       : 'text-text-muted hover:bg-surface-hover'
@@ -418,15 +387,13 @@ export default function CoursesPage() {
               ))}
             </div>
 
-            <div className="w-px h-4 bg-border" />
-
-            {/* 学年グループフィルタ */}
-            <div className="flex items-center gap-1">
+            {/* 学年 */}
+            <div className="flex items-center gap-0.5">
               {GRADE_GROUPS.map((g) => (
                 <button
                   key={g.label}
                   onClick={() => setFilterGradeGroup(filterGradeGroup === g.label ? '' : g.label)}
-                  className={`px-2.5 py-1 text-xs rounded-md transition-colors ${
+                  className={`px-2 py-1 text-[11px] rounded transition-colors ${
                     filterGradeGroup === g.label
                       ? 'bg-primary/10 text-primary font-bold'
                       : 'text-text-muted hover:bg-surface-hover'
@@ -437,44 +404,62 @@ export default function CoursesPage() {
               ))}
             </div>
 
-            <div className="w-px h-4 bg-border" />
-
             {/* ソート */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5">
               <ArrowUpDown className="w-3 h-3 text-text-faint" />
               {SORT_OPTIONS.map(({ key, label }) => (
                 <button
                   key={key}
                   onClick={() => handleSort(key)}
-                  className={`px-2 py-1 text-xs rounded-md transition-colors ${
+                  className={`px-1.5 py-1 text-[11px] rounded transition-colors ${
                     sortKey === key
-                      ? 'bg-text-heading/8 text-text-heading font-bold'
-                      : 'text-text-faint hover:bg-surface-hover hover:text-text-muted'
+                      ? 'text-text-heading font-bold'
+                      : 'text-text-faint hover:text-text-muted'
                   }`}
                 >
-                  {label}
-                  {sortKey === key && (
-                    <span className="ml-0.5 text-[10px]">{sortAsc ? '↑' : '↓'}</span>
-                  )}
+                  {label}{sortKey === key && (sortAsc ? '↑' : '↓')}
                 </button>
               ))}
             </div>
 
             {hasActiveFilter && (
-              <>
-                <div className="flex-1" />
-                <button
-                  onClick={clearFilters}
-                  className="text-xs text-text-faint hover:text-text-muted flex items-center gap-0.5"
-                >
-                  <X className="w-3 h-3" />
-                  解除
-                </button>
-              </>
+              <button
+                onClick={clearFilters}
+                className="text-[11px] text-text-faint hover:text-text-muted flex items-center gap-0.5"
+              >
+                <X className="w-3 h-3" />
+              </button>
             )}
-          </div>
+
+            {/* 件数 */}
+            <span className="text-[11px] text-text-faint tabular-nums">
+              {filteredSorted.length === courses.length
+                ? `${courses.length}件`
+                : `${filteredSorted.length}/${courses.length}`}
+            </span>
+          </>
+        )}
+
+        <div className="flex-1" />
+
+        {/* アクション */}
+        <div className="flex items-center gap-2 shrink-0">
+          <Link
+            href="/courses/proposals"
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-medium text-text-body border border-border rounded-lg hover:bg-surface-hover transition-colors"
+          >
+            <FileText className="w-3 h-3" />
+            提案書
+          </Link>
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-medium bg-ink text-text-on-primary rounded-lg hover:brightness-[0.85] transition-[filter] duration-150"
+          >
+            <Plus className="w-3 h-3" />
+            新規作成
+          </button>
         </div>
-      )}
+      </div>
 
       {/* 一括操作バー */}
       {!isLoading && courses.length > 0 && canDeploy && (
