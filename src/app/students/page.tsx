@@ -403,11 +403,12 @@ export default function StudentsPage() {
     setIsSubmitting(true);
     setErrorMessage('');
     try {
-      await createStudent(data as StudentInsert);
+      const created = await createStudent(data as StudentInsert);
       setIsCreateModalOpen(false);
       await syncListsAfterMutation();
+      setSelectedStudent(created);
+      setIsDetailModalOpen(true);
     } catch (error) {
-      console.error('Error creating student:', error);
       setErrorMessage(
         getUserErrorMessage(error, '生徒の登録に失敗しました')
       );
