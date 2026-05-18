@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getUnreadCount } from '@/lib/api/bulletin';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMasterData } from '@/contexts/MasterDataContext';
@@ -49,6 +49,29 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
   const [showTeacherDropdown, setShowTeacherDropdown] = useState(false);
   const [showBusinessDropdown, setShowBusinessDropdown] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+
+  // ナビドロップダウン: ホバーで開閉（150ms遅延で閉じる）
+  const navCloseTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const navSetters = useMemo(() => ({
+    form: setShowFormDropdown,
+    course: setShowCourseDropdown,
+    teacher: setShowTeacherDropdown,
+    business: setShowBusinessDropdown,
+  }), []);
+
+  const handleNavEnter = useCallback((key: string) => {
+    clearTimeout(navCloseTimers.current[key]);
+    Object.entries(navSetters).forEach(([k, setter]) => {
+      if (k !== key) { clearTimeout(navCloseTimers.current[k]); setter(false); }
+    });
+    navSetters[key as keyof typeof navSetters](true);
+  }, [navSetters]);
+
+  const handleNavLeave = useCallback((key: string) => {
+    navCloseTimers.current[key] = setTimeout(() => {
+      navSetters[key as keyof typeof navSetters](false);
+    }, 150);
+  }, [navSetters]);
 
   // ルート変更時にモバイルメニューを自動で閉じる
   useEffect(() => {
@@ -120,9 +143,9 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
 
   const schoolDisplayName = getCurrentSchoolDisplayName();
 
-  // クリック外でドロップダウンを閉じる
+  // クリック外でドロップダウンを閉じる（教室選択・設定のみ — ナビはホバー制御）
   useEffect(() => {
-    if (!showSchoolDropdown && !showSettingsDropdown && !showBusinessDropdown && !showFormDropdown && !showCourseDropdown && !showTeacherDropdown) return;
+    if (!showSchoolDropdown && !showSettingsDropdown) return;
 
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
@@ -132,18 +155,6 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
       if (showSettingsDropdown && !target.closest('.settings-dropdown-container')) {
         setShowSettingsDropdown(false);
       }
-      if (showBusinessDropdown && !target.closest('.business-dropdown-container')) {
-        setShowBusinessDropdown(false);
-      }
-      if (showFormDropdown && !target.closest('.form-dropdown-container')) {
-        setShowFormDropdown(false);
-      }
-      if (showCourseDropdown && !target.closest('.course-dropdown-container')) {
-        setShowCourseDropdown(false);
-      }
-      if (showTeacherDropdown && !target.closest('.teacher-dropdown-container')) {
-        setShowTeacherDropdown(false);
-      }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -151,7 +162,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showSchoolDropdown, showSettingsDropdown, showBusinessDropdown, showFormDropdown, showCourseDropdown, showTeacherDropdown]);
+  }, [showSchoolDropdown, showSettingsDropdown]);
 
   return (
     <header className="bg-primary shadow-md">
@@ -215,7 +226,11 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
               )}
               {/* フォーム管理（教室長以上のみ） */}
               {(showAllLinks || permissions?.canAccessPortal) && (
-                <div className="relative form-dropdown-container">
+                <div
+                  className="relative form-dropdown-container"
+                  onMouseEnter={() => handleNavEnter('form')}
+                  onMouseLeave={() => handleNavLeave('form')}
+                >
                   <button
                     className={`px-2.5 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 ${
                       pathname?.startsWith('/responses') ||
@@ -226,8 +241,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                         ? 'bg-white text-primary font-semibold'
                         : 'text-white/90 hover:bg-white/10 hover:text-white'
                     }`}
-                    onClick={() => setShowFormDropdown(!showFormDropdown)}
-                                      >
+                  >
                   フォーム管理
                   <ChevronDown className={`w-3 h-3 transition-[transform] duration-150 ease-out ${showFormDropdown ? 'rotate-180' : ''}`} />
                 </button>
@@ -238,7 +252,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                   <div className="py-1">
                     <Link
                       href="/responses"
-                      onClick={() => setShowFormDropdown(false)}
+
                       className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                         pathname?.startsWith('/responses') || pathname?.startsWith('/forms/responses')
                           ? 'bg-primary/10 text-primary font-semibold'
@@ -249,7 +263,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                     </Link>
                     <Link
                       href="/transcriptions"
-                      onClick={() => setShowFormDropdown(false)}
+
                       className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                         pathname?.startsWith('/transcriptions')
                           ? 'bg-primary/10 text-primary font-semibold'
@@ -261,7 +275,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                     {(showAllLinks || permissions?.canAccessPortal) && (
                       <Link
                         href="/settings/portal"
-                        onClick={() => setShowFormDropdown(false)}
+  
                         className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                           pathname === '/settings/portal' || pathname?.startsWith('/settings/portal')
                             ? 'bg-primary/10 text-primary font-semibold'
@@ -277,14 +291,17 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                 </div>
               )}
               {(showAllLinks || permissions?.canAccessCourses) && (
-                <div className="relative course-dropdown-container">
+                <div
+                  className="relative course-dropdown-container"
+                  onMouseEnter={() => handleNavEnter('course')}
+                  onMouseLeave={() => handleNavLeave('course')}
+                >
                   <button
                     className={`px-2.5 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 ${
                       pathname === '/courses' || pathname?.startsWith('/courses/')
                         ? 'bg-white text-primary font-semibold'
                         : 'text-white/90 hover:bg-white/10 hover:text-white'
                     }`}
-                    onClick={() => setShowCourseDropdown(!showCourseDropdown)}
                   >
                     講習管理
                     <ChevronDown className={`w-3 h-3 transition-[transform] duration-150 ease-out ${showCourseDropdown ? 'rotate-180' : ''}`} />
@@ -294,7 +311,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                       <div className="py-1">
                         <Link
                           href="/courses"
-                          onClick={() => setShowCourseDropdown(false)}
+    
                           className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                             pathname === '/courses' && !pathname?.startsWith('/courses/')
                               ? 'bg-primary/10 text-primary font-semibold'
@@ -305,7 +322,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                         </Link>
                         <Link
                           href="/courses/progress"
-                          onClick={() => setShowCourseDropdown(false)}
+    
                           className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                             pathname?.startsWith('/courses/progress')
                               ? 'bg-primary/10 text-primary font-semibold'
@@ -316,7 +333,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                         </Link>
                         <Link
                           href="/courses/schedule"
-                          onClick={() => setShowCourseDropdown(false)}
+    
                           className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                             pathname?.startsWith('/courses/schedule')
                               ? 'bg-primary/10 text-primary font-semibold'
@@ -327,7 +344,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                         </Link>
                         <Link
                           href="/courses/proposals"
-                          onClick={() => setShowCourseDropdown(false)}
+    
                           className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                             pathname?.startsWith('/courses/proposals')
                               ? 'bg-primary/10 text-primary font-semibold'
@@ -343,7 +360,11 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
               )}
               {/* 講師メニュー（教室長以上のみ） */}
               {!profile || profile.role !== 'teacher' ? (
-                <div className="relative teacher-dropdown-container">
+                <div
+                  className="relative teacher-dropdown-container"
+                  onMouseEnter={() => handleNavEnter('teacher')}
+                  onMouseLeave={() => handleNavLeave('teacher')}
+                >
                   <button
                     className={`px-2.5 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 ${
                       pathname?.startsWith('/admin/teachers') ||
@@ -354,8 +375,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                         ? 'bg-white text-primary font-semibold'
                         : 'text-white/90 hover:bg-white/10 hover:text-white'
                     }`}
-                    onClick={() => setShowTeacherDropdown(!showTeacherDropdown)}
-                                      >
+                  >
                     講師
                     <ChevronDown className={`w-3 h-3 transition-[transform] duration-150 ease-out ${showTeacherDropdown ? 'rotate-180' : ''}`} />
                   </button>
@@ -428,7 +448,11 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
               )}
               {/* 業務管理（教室長以上のみ） */}
               {(showAllLinks || permissions?.canAccessBilling) && (
-                <div className="relative business-dropdown-container">
+                <div
+                  className="relative business-dropdown-container"
+                  onMouseEnter={() => handleNavEnter('business')}
+                  onMouseLeave={() => handleNavLeave('business')}
+                >
                   <button
                     className={`px-2.5 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 ${
                       pathname?.startsWith('/billing') ||
@@ -438,8 +462,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                         ? 'bg-white text-primary font-semibold'
                         : 'text-white/90 hover:bg-white/10 hover:text-white'
                     }`}
-                    onClick={() => setShowBusinessDropdown(!showBusinessDropdown)}
-                                      >
+                  >
                     業務管理
                     <ChevronDown className={`w-3 h-3 transition-[transform] duration-150 ease-out ${showBusinessDropdown ? 'rotate-180' : ''}`} />
                   </button>
@@ -450,7 +473,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                     <div className="py-1">
                       <Link
                         href="/billing"
-                        onClick={() => setShowBusinessDropdown(false)}
+  
                         className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                           pathname?.startsWith('/billing')
                             ? 'bg-primary/10 text-primary font-semibold'
@@ -461,7 +484,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                       </Link>
                       <Link
                         href="/ordering"
-                        onClick={() => setShowBusinessDropdown(false)}
+  
                         className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                           pathname?.startsWith('/ordering') || pathname?.startsWith('/inventory')
                             ? 'bg-primary/10 text-primary font-semibold'
@@ -472,7 +495,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                       </Link>
                       <Link
                         href="/tasks"
-                        onClick={() => setShowBusinessDropdown(false)}
+  
                         className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                           pathname?.startsWith('/tasks')
                             ? 'bg-primary/10 text-primary font-semibold'
