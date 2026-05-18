@@ -618,6 +618,14 @@ export default function SoudanResponsePage() {
           isOpen={!!detailResponse}
           response={detailResponse}
           onClose={() => setDetailResponse(null)}
+          onLink={(resp) => {
+            setDetailResponse(null);
+            handleOpenLinkModal(resp);
+          }}
+          onUnlink={(id) => {
+            setDetailResponse(null);
+            handleUnlinkStudent(id);
+          }}
         />
       )}
       {ConfirmDialog}

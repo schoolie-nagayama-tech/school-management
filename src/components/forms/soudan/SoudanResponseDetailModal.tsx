@@ -1,6 +1,6 @@
-﻿'use client';
+'use client';
 
-import { Modal } from '@/components/ui';
+import { Modal, Button } from '@/components/ui';
 import type { SoudanResponse } from '@/types/forms/soudan';
 import { SOUDAN_GRADE_NUMBER_TO_NAME } from '@/types/forms/soudan';
 
@@ -8,12 +8,16 @@ interface SoudanResponseDetailModalProps {
   isOpen: boolean;
   response: SoudanResponse;
   onClose: () => void;
+  onLink?: (response: SoudanResponse) => void;
+  onUnlink?: (responseId: string) => void;
 }
 
 export function SoudanResponseDetailModal({
   isOpen,
   response,
   onClose,
+  onLink,
+  onUnlink,
 }: SoudanResponseDetailModalProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -105,9 +109,39 @@ export function SoudanResponseDetailModal({
           <label className="block text-sm font-medium text-[#1f2937] mb-1">
             紐付け状態
           </label>
-          <p className="text-sm text-[#4b5563]">
-            {response.linked_student_id ? '紐付け済み' : '未紐付け'}
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="text-sm text-[#4b5563]">
+              {response.linked_student_id
+                ? `紐付け済み（${response.linked_student ? `${response.linked_student.last_name} ${response.linked_student.first_name}` : ''}）`
+                : '未紐付け'}
+            </p>
+            {response.linked_student_id ? (
+              onUnlink && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    onUnlink(response.id);
+                    onClose();
+                  }}
+                >
+                  紐付け解除
+                </Button>
+              )
+            ) : (
+              onLink && (
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    onLink(response);
+                    onClose();
+                  }}
+                >
+                  生徒に紐付け
+                </Button>
+              )
+            )}
+          </div>
         </div>
       </div>
     </Modal>

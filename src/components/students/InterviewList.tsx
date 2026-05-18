@@ -200,6 +200,11 @@ export function InterviewList({ studentId, schoolId }: InterviewListProps) {
                           >
                             {INTERVIEW_TYPE_LABELS[interview.interview_type]}
                           </span>
+                          {interview.title && (
+                            <span className="text-sm font-medium text-[#1f2937]">
+                              {interview.title}
+                            </span>
+                          )}
                         </div>
                         {canEdit && (
                           <div className="flex gap-2">

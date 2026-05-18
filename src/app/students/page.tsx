@@ -43,6 +43,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertBoard } from '@/components/alerts';
 import { AttendanceUnsubmittedAlert } from '@/components/attendance/AttendanceUnsubmittedAlert';
 import { TaskProgressWidget } from '@/components/monthly-tasks/TaskProgressWidget';
+import { CourseProgressWidget } from '@/components/course-progress';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
@@ -594,6 +595,9 @@ export default function StudentsPage() {
 
         {/* 業務進捗ウィジェット（教室長以上のみ） */}
         {!isTeacher && <TaskProgressWidget schoolIds={getSelectedSchoolIds()} />}
+
+        {/* 講習進捗ウィジェット（教室長以上のみ） */}
+        {!isTeacher && selectedSchoolId && <CourseProgressWidget schoolId={selectedSchoolId} />}
 
         {/* 講師: 連絡掲示板 ↔ アラート を横並び / 管理側: 従来のレイアウト */}
         {isTeacher ? (

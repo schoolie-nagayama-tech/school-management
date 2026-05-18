@@ -36,6 +36,7 @@ export function InterviewModal({ studentId, schoolId, interview, onClose, onSave
   const [interviewType, setInterviewType] = useState<InterviewType>(
     interview?.interview_type || 'parent_interview'
   );
+  const [title, setTitle] = useState(interview?.title || '');
   const [content, setContent] = useState(interview?.content || '');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -44,6 +45,7 @@ export function InterviewModal({ studentId, schoolId, interview, onClose, onSave
     if (interview) {
       setInterviewDate(interview.interview_date);
       setInterviewType(interview.interview_type);
+      setTitle(interview.title || '');
       setContent(interview.content);
     }
   }, [interview]);
@@ -65,6 +67,7 @@ export function InterviewModal({ studentId, schoolId, interview, onClose, onSave
       const input = {
         interview_date: interviewDate,
         interview_type: interviewType,
+        title: title.trim() || null,
         content: content.trim(),
       };
 
@@ -143,6 +146,16 @@ export function InterviewModal({ studentId, schoolId, interview, onClose, onSave
               </p>
             )}
           </div>
+
+          {/* タイトル */}
+          <Input
+            label="タイトル"
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="例: 山田太郎 保護者面談"
+            disabled={isSaving}
+          />
 
           {/* 内容 */}
           <div>

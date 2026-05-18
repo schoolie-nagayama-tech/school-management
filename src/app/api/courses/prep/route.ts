@@ -16,136 +16,203 @@ function countDayOccurrences(startDate: string, endDate: string): Record<number,
 }
 
 /**
- * 科目別 proposal_count 集計
- * student_textbooks → textbooks.subject → student_progress.proposal_count
- * グループ先頭のみ集計（重複防止: updateGroupCounts() の仕様に準拠）
+ * 科目別 proposal コマ数集計
+ *
+ * 優先順位:
+ *   1. seasonal_proposals + seasonal_proposal_units（提案書の koma_count）
+ *   2. student_textbooks → student_progress.proposal_count（進行表の提案コマ）
+ *
+ * 同一生徒×科目は提案書データがあればそちらを優先し、なければ進行表を使用。
  *
  * 返り値: { [studentId]: { [subject]: totalProposalCount } }
  */
 async function fetchSubjectProposals(
   supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
   schoolId: string,
-  season: string
+  season: string,
+  year?: number
 ): Promise<Record<string, Record<string, number>>> {
   try {
-    // 1. student_textbooks を season で取得
-    const { data: studentTextbooks, error: stError } = await supabaseAdmin
-      .from('student_textbooks')
-      .select('id, student_id, textbook_id')
-      .eq('school_id', schoolId)
-      .eq('season', season)
-      .eq('is_active', true);
-
-    if (stError) {
-      console.warn('[fetchSubjectProposals] student_textbooks query error:', stError.message);
-      return {};
-    }
-    if (!studentTextbooks || studentTextbooks.length === 0) return {};
-
-    // 2. textbook の subject を取得
-    const textbookIds = Array.from(new Set(
-      (studentTextbooks as { textbook_id: number }[]).map((st) => st.textbook_id)
-    ));
-    const { data: textbooks, error: tbError } = await supabaseAdmin
-      .from('textbooks')
-      .select('id, subject')
-      .in('id', textbookIds);
-
-    if (tbError) {
-      console.warn('[fetchSubjectProposals] textbooks query error:', tbError.message);
-      return {};
-    }
-
-    const subjectMap = new Map<number, string>();
-    for (const t of (textbooks || []) as { id: number; subject: string }[]) {
-      if (t.subject) subjectMap.set(t.id, t.subject);
-    }
-
-    // student_textbook_id → { student_id, subject }
-    const stInfoMap = new Map<string, { student_id: string; subject: string }>();
-    for (const st of studentTextbooks as { id: string; student_id: string; textbook_id: number }[]) {
-      const subject = subjectMap.get(st.textbook_id);
-      if (subject) {
-        stInfoMap.set(st.id, { student_id: st.student_id, subject });
-      }
-    }
-
-    if (stInfoMap.size === 0) return {};
-
-    // 3. student_progress の proposal_count を取得（proposal_count > 0 のみ）
-    const stIds = Array.from(stInfoMap.keys());
-
-    // Supabase .in() は最大数百件まで安全。大量の場合はバッチ分割
-    const BATCH_SIZE = 500;
-    type ProgressRow = {
-      student_textbook_id: string;
-      proposal_count: number | null;
-      group_number: number | null;
-      curriculum_item_id: string;
-    };
-    const allProgressData: ProgressRow[] = [];
-
-    for (let i = 0; i < stIds.length; i += BATCH_SIZE) {
-      const batch = stIds.slice(i, i + BATCH_SIZE);
-      const { data, error: pError } = await supabaseAdmin
-        .from('student_progress')
-        .select('student_textbook_id, proposal_count, group_number, curriculum_item_id')
-        .in('student_textbook_id', batch)
-        .gt('proposal_count', 0);
-
-      if (pError) {
-        console.warn('[fetchSubjectProposals] student_progress query error:', pError.message);
-        continue;
-      }
-      if (data) allProgressData.push(...(data as ProgressRow[]));
-    }
-
-    if (allProgressData.length === 0) return {};
-
-    // 4. student_textbook_id ごとにグルーピング
-    const grouped = new Map<string, ProgressRow[]>();
-    for (const row of allProgressData) {
-      const key = row.student_textbook_id;
-      const arr = grouped.get(key);
-      if (arr) arr.push(row);
-      else grouped.set(key, [row]);
-    }
-
-    // 5. グループ先頭のみ集計して student_id × subject で合算
     const result: Record<string, Record<string, number>> = {};
+    const studentSubjectsFromProposals = new Set<string>(); // "studentId:subject"
 
-    grouped.forEach((rows, stId) => {
-      const info = stInfoMap.get(stId);
-      if (!info) return;
+    // ========== 1. 提案書ベース（seasonal_proposals + seasonal_proposal_units） ==========
+    {
+      let proposalQuery = supabaseAdmin
+        .from('seasonal_proposals')
+        .select('id, student_id, textbook_id')
+        .eq('school_id', schoolId)
+        .eq('season', season);
 
-      // グループ重複防止: group_number が同じ items は最小 curriculum_item_id のみカウント
-      // (updateGroupCounts() が先頭にだけ値をセットする仕様に準拠)
-      const groupLeaders = new Map<number, string>(); // group_number → min curriculum_item_id
-      for (const row of rows) {
-        if (row.group_number != null) {
-          const existing = groupLeaders.get(row.group_number);
-          if (!existing || row.curriculum_item_id < existing) {
-            groupLeaders.set(row.group_number, row.curriculum_item_id);
+      if (year && year > 0) {
+        proposalQuery = proposalQuery.eq('year', year);
+      }
+
+      const { data: proposals, error: pErr } = await proposalQuery;
+
+      if (pErr) {
+        console.warn('[fetchSubjectProposals] seasonal_proposals query error:', pErr.message);
+      } else if (proposals && proposals.length > 0) {
+        const tbIds = Array.from(new Set(
+          (proposals as { textbook_id: number }[]).map((p) => p.textbook_id)
+        ));
+        const { data: textbooks } = await supabaseAdmin
+          .from('textbooks')
+          .select('id, subject')
+          .in('id', tbIds);
+
+        const subjectMap = new Map<number, string>();
+        for (const t of (textbooks || []) as { id: number; subject: string }[]) {
+          if (t.subject) subjectMap.set(t.id, t.subject);
+        }
+
+        const proposalIds = (proposals as { id: string }[]).map((p) => p.id);
+
+        type UnitRow = { proposal_id: string; koma_count: number; group_id: number };
+        const allUnits: UnitRow[] = [];
+        const BATCH = 500;
+        for (let i = 0; i < proposalIds.length; i += BATCH) {
+          const batch = proposalIds.slice(i, i + BATCH);
+          const { data: units } = await supabaseAdmin
+            .from('seasonal_proposal_units')
+            .select('proposal_id, koma_count, group_id')
+            .in('proposal_id', batch)
+            .gt('koma_count', 0);
+          if (units) allUnits.push(...(units as UnitRow[]));
+        }
+
+        const unitsByProposal = new Map<string, UnitRow[]>();
+        for (const u of allUnits) {
+          const arr = unitsByProposal.get(u.proposal_id);
+          if (arr) arr.push(u);
+          else unitsByProposal.set(u.proposal_id, [u]);
+        }
+
+        for (const proposal of proposals as { id: string; student_id: string; textbook_id: number }[]) {
+          const subject = subjectMap.get(proposal.textbook_id);
+          if (!subject) continue;
+
+          const units = unitsByProposal.get(proposal.id) || [];
+          const seenGroups = new Set<number>();
+          let total = 0;
+
+          for (const u of units) {
+            if (u.group_id > 0) {
+              if (!seenGroups.has(u.group_id)) {
+                seenGroups.add(u.group_id);
+                total += u.koma_count;
+              }
+            } else {
+              total += u.koma_count;
+            }
+          }
+
+          if (total > 0) {
+            if (!result[proposal.student_id]) result[proposal.student_id] = {};
+            result[proposal.student_id][subject] =
+              (result[proposal.student_id][subject] || 0) + total;
+            studentSubjectsFromProposals.add(`${proposal.student_id}:${subject}`);
           }
         }
       }
+    }
 
-      let subjectTotal = 0;
-      for (const row of rows) {
-        if (!row.proposal_count) continue;
-        // グループに属する場合、先頭以外はスキップ
-        if (row.group_number != null) {
-          if (groupLeaders.get(row.group_number) !== row.curriculum_item_id) continue;
+    // ========== 2. 進行表ベース（student_progress）— 提案書にない生徒×科目のみ ==========
+    {
+      const { data: studentTextbooks, error: stError } = await supabaseAdmin
+        .from('student_textbooks')
+        .select('id, student_id, textbook_id')
+        .eq('school_id', schoolId)
+        .eq('season', season)
+        .eq('is_active', true);
+
+      if (stError) {
+        console.warn('[fetchSubjectProposals] student_textbooks query error:', stError.message);
+      } else if (studentTextbooks && studentTextbooks.length > 0) {
+        const tbIds = Array.from(new Set(
+          (studentTextbooks as { textbook_id: number }[]).map((st) => st.textbook_id)
+        ));
+        const { data: textbooks } = await supabaseAdmin
+          .from('textbooks')
+          .select('id, subject')
+          .in('id', tbIds);
+
+        const subjectMap = new Map<number, string>();
+        for (const t of (textbooks || []) as { id: number; subject: string }[]) {
+          if (t.subject) subjectMap.set(t.id, t.subject);
         }
-        subjectTotal += row.proposal_count;
-      }
 
-      if (subjectTotal > 0) {
-        if (!result[info.student_id]) result[info.student_id] = {};
-        result[info.student_id][info.subject] =
-          (result[info.student_id][info.subject] || 0) + subjectTotal;
+        const stInfoMap = new Map<string, { student_id: string; subject: string }>();
+        for (const st of studentTextbooks as { id: string; student_id: string; textbook_id: number }[]) {
+          const subject = subjectMap.get(st.textbook_id);
+          if (subject) stInfoMap.set(st.id, { student_id: st.student_id, subject });
+        }
+
+        if (stInfoMap.size > 0) {
+          const stIds = Array.from(stInfoMap.keys());
+          const BATCH = 500;
+          type ProgressRow = {
+            student_textbook_id: string;
+            proposal_count: number | null;
+            group_number: number | null;
+            curriculum_item_id: string;
+          };
+          const allProgressData: ProgressRow[] = [];
+
+          for (let i = 0; i < stIds.length; i += BATCH) {
+            const batch = stIds.slice(i, i + BATCH);
+            const { data, error: pError } = await supabaseAdmin
+              .from('student_progress')
+              .select('student_textbook_id, proposal_count, group_number, curriculum_item_id')
+              .in('student_textbook_id', batch)
+              .gt('proposal_count', 0);
+            if (pError) {
+              console.warn('[fetchSubjectProposals] student_progress query error:', pError.message);
+              continue;
+            }
+            if (data) allProgressData.push(...(data as ProgressRow[]));
+          }
+
+          const grouped = new Map<string, ProgressRow[]>();
+          for (const row of allProgressData) {
+            const arr = grouped.get(row.student_textbook_id);
+            if (arr) arr.push(row);
+            else grouped.set(row.student_textbook_id, [row]);
+          }
+
+          grouped.forEach((rows, stId) => {
+            const info = stInfoMap.get(stId);
+            if (!info) return;
+            if (studentSubjectsFromProposals.has(`${info.student_id}:${info.subject}`)) return;
+
+            const groupLeaders = new Map<number, string>();
+            for (const row of rows) {
+              if (row.group_number != null) {
+                const existing = groupLeaders.get(row.group_number);
+                if (!existing || row.curriculum_item_id < existing) {
+                  groupLeaders.set(row.group_number, row.curriculum_item_id);
+                }
+              }
+            }
+
+            let subjectTotal = 0;
+            for (const row of rows) {
+              if (!row.proposal_count) continue;
+              if (row.group_number != null) {
+                if (groupLeaders.get(row.group_number) !== row.curriculum_item_id) continue;
+              }
+              subjectTotal += row.proposal_count;
+            }
+
+            if (subjectTotal > 0) {
+              if (!result[info.student_id]) result[info.student_id] = {};
+              result[info.student_id][info.subject] =
+                (result[info.student_id][info.subject] || 0) + subjectTotal;
+            }
+          });
+        }
       }
-    });
+    }
 
     return result;
   } catch (err) {
@@ -427,7 +494,7 @@ export async function GET(request: NextRequest) {
         }
 
         // 科目別 proposal_count を集計して追加
-        const subjectProposalMap = await fetchSubjectProposals(supabaseAdmin, schoolId, season);
+        const subjectProposalMap = await fetchSubjectProposals(supabaseAdmin, schoolId, season, year);
         for (const sid of Object.keys(subjectProposalMap)) {
           if (!result[sid]) {
             result[sid] = { regular_weekly: 0, course_sessions: 0 };
@@ -513,7 +580,7 @@ export async function GET(request: NextRequest) {
               supabaseAdmin.from('course_prep_periods')
                 .select('schedule_start_date, schedule_end_date')
                 .eq('school_id', schoolId).eq('season', season).eq('year', year).maybeSingle(),
-              fetchSubjectProposals(supabaseAdmin, schoolId, season),
+              fetchSubjectProposals(supabaseAdmin, schoolId, season, year),
             ]);
             const regularWeeklyMap: Record<string, number> = {};
             const regularDayMap: Record<string, Record<number, number>> = {};

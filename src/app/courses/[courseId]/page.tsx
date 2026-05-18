@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Link2, Unlink, Plus, Save, Users, X } from 'lucide-react';
+import { ArrowLeft, Link2, Unlink, Plus, Save, Trash2, Users, X } from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
 import { Modal, Select, ToastContainer, Loading } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
@@ -11,6 +11,7 @@ import { useConfirm } from '@/hooks/useConfirm';
 import {
   getSeasonalCourse,
   updateSeasonalCourse,
+  deleteSeasonalCourse,
   addTextbookToCourse,
   removeTextbookFromCourse,
   getCourseCurriculum,
@@ -180,6 +181,22 @@ export default function CourseDetailPage() {
     });
     return Array.from(grades).sort();
   }, [allTextbooks]);
+
+  const handleDeleteCourse = async () => {
+    if (!courseId || !course) return;
+    if (!(await confirm({
+      title: 'コースを削除',
+      description: `「${course.name}」を削除しますか？`,
+      confirmLabel: '削除',
+      variant: 'danger',
+    }))) return;
+    try {
+      await deleteSeasonalCourse(courseId);
+      router.push('/courses');
+    } catch (err) {
+      error(err instanceof Error ? err.message : '削除に失敗しました');
+    }
+  };
 
   // 基本情報を保存
   const handleSaveBasic = async () => {
@@ -506,12 +523,21 @@ export default function CourseDetailPage() {
                   )}
                 </p>
               </div>
-              <button
-                onClick={() => setIsEditingBasic(true)}
-                className="px-3 py-1.5 text-xs font-medium text-text-body border border-border-default rounded-lg hover:bg-surface-hover transition-colors duration-150"
-              >
-                編集
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleDeleteCourse}
+                  className="p-1.5 text-text-faint hover:text-danger rounded-lg hover:bg-surface-hover transition-[background-color,color] duration-150 ease-out"
+                  title="削除"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setIsEditingBasic(true)}
+                  className="px-3 py-1.5 text-xs font-medium text-text-body border border-border-default rounded-lg hover:bg-surface-hover transition-[background-color] duration-150 ease-out"
+                >
+                  編集
+                </button>
+              </div>
             </div>
           ) : (
             <section className="p-4 bg-surface-raised rounded-xl border border-border-default">
@@ -602,6 +628,7 @@ export default function CourseDetailPage() {
           )}
         </div>
 
+        {!isEditingBasic && (
         <div className="space-y-5">
           {/* テキスト */}
           <section className="p-4 bg-surface-raised rounded-xl border border-border-default">
@@ -782,6 +809,7 @@ export default function CourseDetailPage() {
             </section>
           )}
         </div>
+        )}
       </div>
 
       {/* テキスト追加モーダル */}

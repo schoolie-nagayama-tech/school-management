@@ -1,5 +1,6 @@
 import { supabase } from '../supabase';
 import type { StudentInterview, StudentInterviewInput } from '@/types/database';
+import { dismissAlert, invalidateAlertCache } from './alerts';
 
 /**
  * 教室単位で面談記録をバッチ取得（アラート用）
@@ -63,6 +64,7 @@ export async function createInterview(
       student_id: studentId,
       interview_date: input.interview_date,
       interview_type: input.interview_type,
+      title: input.title || null,
       content: input.content,
     })
     .select()
@@ -70,6 +72,29 @@ export async function createInterview(
 
   if (error) {
     throw new Error(`面談記録の作成に失敗しました: ${error.message}`);
+  }
+
+  // 面談記録作成時に interview_overdue アラートを自動で対応済みにする
+  if (input.interview_type !== 'task') {
+    try {
+      const { data: existingInterviews } = await supabase
+        .from('student_interviews')
+        .select('interview_date')
+        .eq('student_id', studentId)
+        .neq('interview_type', 'task')
+        .order('interview_date', { ascending: false })
+        .limit(2);
+
+      const previousDate = existingInterviews && existingInterviews.length > 1
+        ? existingInterviews[1].interview_date
+        : null;
+      const alertKey = `interview:${previousDate || 'never'}`;
+
+      await dismissAlert(schoolId, studentId, 'interview_overdue', alertKey, undefined, '面談記録の登録により自動消去');
+      invalidateAlertCache([schoolId]);
+    } catch (_) {
+      // アラート消去は best-effort
+    }
   }
 
   return data as StudentInterview;
@@ -87,6 +112,7 @@ export async function updateInterview(
     .update({
       interview_date: input.interview_date,
       interview_type: input.interview_type,
+      title: input.title ?? null,
       content: input.content,
       updated_at: new Date().toISOString(),
     })

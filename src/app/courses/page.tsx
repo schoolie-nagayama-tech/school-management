@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Link from 'next/link';
-import { AlertCircle, ArrowUpDown, CheckSquare, ChevronRight, Copy, FileText, Plus, Search, Square, X } from 'lucide-react';
+import { AlertCircle, ArrowUpDown, CheckSquare, ChevronRight, Copy, FileText, Plus, Search, Square, Trash2, X } from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
 import { Button, Loading, InlineLoading } from '@/components/ui';
-import { getSeasonalCourses, createSeasonalCourse, deployCourseToSchools } from '@/lib/api/seasonalCourses';
+import { getSeasonalCourses, createSeasonalCourse, deployCourseToSchools, deleteSeasonalCourse } from '@/lib/api/seasonalCourses';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
@@ -72,6 +72,8 @@ export default function CoursesPage() {
   // 選択状態
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isDeploying, setIsDeploying] = useState(false);
+
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // スクロール
   const listRef = useRef<HTMLDivElement>(null);
@@ -239,6 +241,24 @@ export default function CoursesPage() {
       setErrorMessage(getUserErrorMessage(error, '展開に失敗しました'));
     } finally {
       setIsDeploying(false);
+    }
+  };
+
+  const handleDelete = async (courseId: string, courseName: string) => {
+    if (!window.confirm(`「${courseName}」を削除しますか？`)) return;
+    setDeletingId(courseId);
+    try {
+      await deleteSeasonalCourse(courseId);
+      setCourses((prev) => prev.filter((c) => c.id !== courseId));
+      setSelected((prev) => {
+        const next = new Set(prev);
+        next.delete(courseId);
+        return next;
+      });
+    } catch (error) {
+      setErrorMessage(getUserErrorMessage(error, '削除に失敗しました'));
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -608,6 +628,15 @@ export default function CoursesPage() {
 
                       <ChevronRight className="w-4 h-4 text-text-faint shrink-0 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </Link>
+
+                    <button
+                      onClick={() => handleDelete(course.id, course.name)}
+                      disabled={deletingId === course.id}
+                      className="pr-3 pt-3.5 opacity-0 group-hover:opacity-100 text-text-faint hover:text-danger transition-[color,opacity] duration-150 ease-out shrink-0 disabled:opacity-50"
+                      title="削除"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 );
               })}

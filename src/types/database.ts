@@ -1798,6 +1798,7 @@ export type Database = {
           student_id: string;
           interview_date: string;
           interview_type: string;
+          title: string | null;
           content: string;
           is_completed: boolean;
           completed_at: string | null;
@@ -1811,6 +1812,7 @@ export type Database = {
           student_id: string;
           interview_date: string;
           interview_type: string;
+          title?: string | null;
           content: string;
           is_completed?: boolean;
           completed_at?: string | null;
@@ -1824,6 +1826,7 @@ export type Database = {
           student_id?: string;
           interview_date?: string;
           interview_type?: string;
+          title?: string | null;
           content?: string;
           is_completed?: boolean;
           completed_at?: string | null;
@@ -3076,6 +3079,7 @@ export interface StudentInterview {
   student_id: string;
   interview_date: string;      // YYYY-MM-DD
   interview_type: InterviewType;
+  title: string | null;
   content: string;
   is_completed: boolean;       // タスク用
   completed_at: string | null; // タスク用
@@ -3087,6 +3091,7 @@ export interface StudentInterview {
 export interface StudentInterviewInput {
   interview_date: string;
   interview_type: InterviewType;
+  title?: string | null;
   content: string;
 }
 
