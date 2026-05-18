@@ -122,6 +122,7 @@ export default function CourseProposalsPage() {
         .select('id, last_name, first_name')
         .in('school_id', ids)
         .eq('status', 'active')
+        .is('deleted_at', null)
         .order('last_name');
       if (error) throw error;
       setStudents((data ?? []) as StudentOption[]);

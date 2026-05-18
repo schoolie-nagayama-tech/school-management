@@ -5,6 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft,
+  BookPlus,
   Check,
   ChevronDown,
   ChevronUp,
@@ -44,6 +45,7 @@ import {
   publishProposal,
   calcTotalKoma,
   calcTotalAppliedKoma,
+  promoteProposalToCourse,
 } from '@/lib/api/proposals';
 import type { ProposalUnitInput } from '@/lib/api/proposals';
 import { getTextbooks } from '@/lib/api/textbooks';
@@ -58,7 +60,7 @@ import type {
   StudentProgress,
   Textbook,
 } from '@/types/database';
-import { SEASON_LABELS, PROPOSAL_STATUS_LABELS } from '@/types/database';
+import { SEASON_LABELS, PROPOSAL_STATUS_LABELS, GRADE_LABELS } from '@/types/database';
 import { ProposalPrintView } from './ProposalPrintView';
 
 interface UnitDraft {
@@ -158,18 +160,24 @@ export default function ProposalEditor() {
   const [showCourseImport, setShowCourseImport] = useState(false);
   const [importingCourse, setImportingCourse] = useState(false);
 
+  // コースとして登録
+  const [showPromoteConfirm, setShowPromoteConfirm] = useState(false);
+  const [promoting, setPromoting] = useState(false);
+  const [studentGrade, setStudentGrade] = useState<number | null>(null);
+
   // ── 初期読み込み ──
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const { data: student } = await supabase
         .from('students')
-        .select('last_name, first_name, school_id')
+        .select('last_name, first_name, school_id, grade')
         .eq('id', studentId)
         .single();
       if (student) {
         setStudentName(`${student.last_name} ${student.first_name}`);
         setStudentSchoolId((student as { school_id: string }).school_id);
+        setStudentGrade((student as { grade: number }).grade);
       }
 
       let tbId = selectedTextbookId;
@@ -990,6 +998,16 @@ export default function ProposalEditor() {
             <Printer className="w-4 h-4 mr-1.5" />
             プレビュー
           </Button>
+          {!isNew && proposal && (
+            <Button
+              variant="outline"
+              onClick={() => setShowPromoteConfirm(true)}
+              disabled={promoting || !theme.trim() || !selectedTextbookId}
+            >
+              <BookPlus className="w-4 h-4 mr-1.5" />
+              講習に登録
+            </Button>
+          )}
         </div>
 
       </div>
@@ -1012,6 +1030,51 @@ export default function ProposalEditor() {
               className="bg-danger text-white hover:bg-red-700"
             >
               削除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* コースとして登録確認 */}
+      <AlertDialog open={showPromoteConfirm} onOpenChange={setShowPromoteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <BookPlus className="w-5 h-5 text-primary" />
+              講習一覧に登録しますか？
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              この提案書の内容をもとに講習一覧にコースを作成します。作成後は他の生徒にも展開できます。
+            </AlertDialogDescription>
+            <div className="mt-2 bg-surface-hover rounded-lg p-3 space-y-1 text-sm">
+              <p><span className="text-text-muted">コース名:</span> {theme}</p>
+              <p><span className="text-text-muted">テキスト:</span> {textbookName}</p>
+              <p><span className="text-text-muted">対象学年:</span> {studentGrade ? (GRADE_LABELS[studentGrade] ?? `学年${studentGrade}`) : '不明'}</p>
+              <p><span className="text-text-muted">内容:</span> {activeUnits.length}単元 / {totalKoma}コマ</p>
+            </div>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowPromoteConfirm(false)}>
+              キャンセル
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={promoting}
+              onClick={async () => {
+                setPromoting(true);
+                try {
+                  await handleSave();
+                  const { courseId } = await promoteProposalToCourse(proposalId);
+                  addToast('講習一覧に登録しました', 'success');
+                  setShowPromoteConfirm(false);
+                  router.push(`/courses/${courseId}`);
+                } catch (err) {
+                  addToast(err instanceof Error ? err.message : '登録に失敗しました', 'error');
+                } finally {
+                  setPromoting(false);
+                }
+              }}
+            >
+              {promoting ? '登録中...' : '登録する'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

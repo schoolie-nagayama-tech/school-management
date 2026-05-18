@@ -12,6 +12,11 @@ import type {
   Textbook,
   Student,
 } from '@/types/database';
+import {
+  createSeasonalCourse,
+  addTextbookToCourse,
+  saveBulkCourseCurriculum,
+} from './seasonalCourses';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const fromProposals = () => supabase.from('seasonal_proposals' as any);
@@ -577,4 +582,68 @@ export function calcTotalAppliedKoma(units: { group_id: number; applied_koma: nu
     }
   }
   return total;
+}
+
+// ============================================
+// 提案書 → コースカタログへの昇格
+// ============================================
+
+export async function promoteProposalToCourse(
+  proposalId: string
+): Promise<{ courseId: string; courseName: string }> {
+  const proposal = await getProposal(proposalId);
+  if (!proposal) throw new Error('提案書が見つかりません');
+
+  const { data: student } = await supabase
+    .from('students')
+    .select('grade, school_id')
+    .eq('id', proposal.student_id)
+    .single();
+  if (!student) throw new Error('生徒情報が取得できません');
+
+  const schoolId = proposal.school_id ?? (student as { school_id: string }).school_id;
+  if (!schoolId) throw new Error('教室IDが特定できません');
+
+  const courseName = proposal.theme || `${proposal.textbook?.name ?? ''} ${proposal.season}講習`;
+  const grade = (student as { grade: number }).grade;
+
+  const { data: existing } = await supabase
+    .from('seasonal_courses')
+    .select('id')
+    .eq('school_id', schoolId)
+    .eq('name', courseName)
+    .eq('season', proposal.season)
+    .eq('is_active', true)
+    .maybeSingle();
+
+  if (existing) throw new Error('同名の講習が既に存在します');
+
+  const units = (proposal.units ?? []).filter(u => u.koma_count > 0);
+  const totalKoma = calcTotalKoma(units.map(u => ({ group_id: u.group_id, koma_count: u.koma_count })));
+
+  const course = await createSeasonalCourse(schoolId, {
+    name: courseName,
+    season: proposal.season,
+    target_grades: [grade],
+    total_koma: totalKoma,
+    comment: proposal.notes ?? undefined,
+  });
+
+  if (proposal.textbook_id) {
+    await addTextbookToCourse(course.id, proposal.textbook_id);
+  }
+
+  if (units.length > 0 && proposal.textbook_id) {
+    await saveBulkCourseCurriculum(
+      course.id,
+      proposal.textbook_id,
+      units.map(u => ({
+        curriculum_item_id: u.curriculum_item_id,
+        proposal_count: u.koma_count,
+        group_number: u.group_id > 0 ? u.group_id : null,
+      }))
+    );
+  }
+
+  return { courseId: course.id, courseName: course.name };
 }
