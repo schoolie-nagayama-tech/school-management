@@ -69,18 +69,42 @@ export interface ProgressWidgetData {
   coursePrepTasks?: CoursePrepWidgetTask[];
 }
 
+const WIDGET_CACHE_TTL_MS = 30_000;
+let widgetCache: { key: string; data: ProgressWidgetData; expiresAt: number } | null = null;
+let widgetInflight: { key: string; promise: Promise<ProgressWidgetData> } | null = null;
+
 export async function getProgressWidget(schoolIds?: string[]): Promise<ProgressWidgetData> {
-  const token = await getAccessToken();
-  const params = new URLSearchParams({ action: 'get_progress_widget' });
-  if (schoolIds && schoolIds.length > 0) {
-    params.set('schoolIds', schoolIds.join(','));
+  const key = schoolIds?.slice().sort().join(',') ?? '';
+
+  if (widgetCache && widgetCache.key === key && widgetCache.expiresAt > Date.now()) {
+    return widgetCache.data;
   }
-  const res = await fetch(`/api/tasks?${params}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || '取得に失敗しました');
-  return data.data;
+  if (widgetInflight && widgetInflight.key === key) {
+    return widgetInflight.promise;
+  }
+
+  const promise = (async () => {
+    const token = await getAccessToken();
+    const params = new URLSearchParams({ action: 'get_progress_widget' });
+    if (schoolIds && schoolIds.length > 0) {
+      params.set('schoolIds', schoolIds.join(','));
+    }
+    const res = await fetch(`/api/tasks?${params}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '取得に失敗しました');
+    const result = data.data as ProgressWidgetData;
+    widgetCache = { key, data: result, expiresAt: Date.now() + WIDGET_CACHE_TTL_MS };
+    return result;
+  })();
+
+  widgetInflight = { key, promise };
+  try {
+    return await promise;
+  } finally {
+    widgetInflight = null;
+  }
 }
 
 export async function batchToggleCheck(taskId: string, schoolIds: string[], isCompleted: boolean) {
