@@ -5,6 +5,7 @@ import { AlertItem } from './AlertItem';
 import { getAlertsLight, getAlertsHeavy, mergeStudentAlerts, invalidateAlertCache } from '@/lib/api/alerts';
 import type { StudentAlerts, Alert } from '@/types/alerts';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMasterData } from '@/contexts/MasterDataContext';
 import { useToast } from '@/hooks/useToast';
 import { GRADE_LABELS } from '@/types/database';
 import { ChevronDown, ChevronUp, Info, AlertTriangle, X } from 'lucide-react';
@@ -18,8 +19,20 @@ interface AlertBoardProps {
   className?: string;
 }
 
+const SCHOOL_COLORS = [
+  { bg: 'bg-sky-100', text: 'text-sky-700', border: 'border-sky-200' },
+  { bg: 'bg-emerald-100', text: 'text-emerald-700', border: 'border-emerald-200' },
+  { bg: 'bg-violet-100', text: 'text-violet-700', border: 'border-violet-200' },
+  { bg: 'bg-rose-100', text: 'text-rose-700', border: 'border-rose-200' },
+  { bg: 'bg-indigo-100', text: 'text-indigo-700', border: 'border-indigo-200' },
+  { bg: 'bg-teal-100', text: 'text-teal-700', border: 'border-teal-200' },
+  { bg: 'bg-fuchsia-100', text: 'text-fuchsia-700', border: 'border-fuchsia-200' },
+  { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-200' },
+] as const;
+
 export function AlertBoard({ className = '' }: AlertBoardProps) {
-  const { getSelectedSchoolIds, profile } = useAuth();
+  const { getSelectedSchoolIds, selectedSchoolId, profile } = useAuth();
+  const { schools } = useMasterData();
   const { success, error: toastError } = useToast();
   const [studentAlerts, setStudentAlerts] = useState<StudentAlerts[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -160,6 +173,37 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
     [studentAlerts]
   );
 
+  const isMultiSchool = selectedSchoolId === 'all';
+
+  const schoolNameMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const s of schools) map[s.id] = s.name;
+    return map;
+  }, [schools]);
+
+  const schoolColorMap = useMemo(() => {
+    const ids = Array.from(new Set(studentAlerts.map((sa) => sa.school_id).filter(Boolean) as string[]));
+    const map: Record<string, typeof SCHOOL_COLORS[number]> = {};
+    ids.forEach((id, i) => { map[id] = SCHOOL_COLORS[i % SCHOOL_COLORS.length]; });
+    return map;
+  }, [studentAlerts]);
+
+  // 教室別にグルーピング（マルチ校時のみ）
+  const alertsBySchool = useMemo(() => {
+    if (!isMultiSchool) return null;
+    const map = new Map<string, { name: string; alerts: StudentAlerts[]; count: number }>();
+    for (const sa of studentAlerts) {
+      const sid = sa.school_id || 'unknown';
+      if (!map.has(sid)) {
+        map.set(sid, { name: schoolNameMap[sid] || '不明', alerts: [], count: 0 });
+      }
+      const entry = map.get(sid)!;
+      entry.alerts.push(sa);
+      entry.count += sa.alerts.length;
+    }
+    return Array.from(map.entries()).sort((a, b) => b[1].count - a[1].count);
+  }, [isMultiSchool, studentAlerts, schoolNameMap]);
+
   if (isLoading) {
     return (
       <div className={`bg-[#f8f8f8] rounded-xl border border-gray-200 p-4 ${className}`}>
@@ -182,17 +226,29 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
     <div className={`bg-[#f8f8f8] rounded-xl border border-gray-200 overflow-hidden ${className}`}>
       {/* ヘッダー */}
       <div className="flex items-center justify-between p-4 bg-[#ffebee] border-b border-[#ffcdd2]">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <AlertTriangle className="w-5 h-5 text-[#d32f2f]" />
           <span className="font-bold text-[#1a1a1a]">
             アラート（{totalAlerts}件）
           </span>
+          {isMultiSchool && alertsBySchool && (
+            <div className="flex items-center gap-1">
+              {alertsBySchool.map(([sid, group]) => {
+                const color = schoolColorMap[sid];
+                return (
+                  <span key={sid} className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${color?.bg || 'bg-gray-100'} ${color?.text || 'text-gray-700'}`}>
+                    {group.name} {group.count}
+                  </span>
+                );
+              })}
+            </div>
+          )}
           <button
             onClick={(e) => {
               e.stopPropagation();
               setShowInfoPopup(!showInfoPopup);
             }}
-            className="ml-2 text-gray-500 hover:text-gray-700 transition-colors duration-150"
+            className="text-gray-500 hover:text-gray-700 transition-colors duration-150"
             title="アラート内容の説明"
           >
             <Info className="w-4 h-4" />
@@ -262,34 +318,78 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
         </div>
       )}
 
-      {/* アラート一覧（生徒ごとにカードヘッダーで区切り） */}
+      {/* アラート一覧 */}
       {isExpanded && (
         <div className="p-3 space-y-2 max-h-[640px] overflow-y-auto">
-          {studentAlerts.map((studentAlert) => (
-            <div key={studentAlert.student_id} className="rounded-lg border border-gray-200 overflow-hidden bg-white">
-              {/* カードヘッダー：生徒名・学年 */}
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border-b border-gray-200">
-                <span className="font-semibold text-sm text-[#1a1a1a]">
-                  {studentAlert.student_name}
-                </span>
-                <span className="text-xs text-gray-500">
-                  （{GRADE_LABELS[studentAlert.grade] || studentAlert.grade}）
-                </span>
-              </div>
-              <div className="p-2 space-y-1">
-                {studentAlert.alerts.map((alert) => (
-                  <AlertItem
-                    key={alert.id}
-                    alert={alert}
-                    onDismiss={handleDismiss}
-                    canDismiss={canDismiss}
-                  />
-                ))}
-              </div>
-            </div>
-          ))}
+          {isMultiSchool && alertsBySchool ? (
+            alertsBySchool.map(([schoolId, group]) => {
+              const color = schoolColorMap[schoolId];
+              return (
+                <div key={schoolId}>
+                  <div className={`flex items-center gap-2 px-2 py-1.5 mb-1.5 rounded-lg ${color?.bg || 'bg-gray-100'}`}>
+                    <span className={`text-xs font-bold ${color?.text || 'text-gray-700'}`}>
+                      {group.name}
+                    </span>
+                    <span className="text-[10px] text-gray-500">{group.count}件</span>
+                  </div>
+                  <div className="space-y-1.5 mb-3">
+                    {group.alerts.map((studentAlert) => (
+                      <StudentAlertCard
+                        key={studentAlert.student_id}
+                        studentAlert={studentAlert}
+                        handleDismiss={handleDismiss}
+                        canDismiss={canDismiss}
+                      />
+                    ))}
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            studentAlerts.map((studentAlert) => (
+              <StudentAlertCard
+                key={studentAlert.student_id}
+                studentAlert={studentAlert}
+                handleDismiss={handleDismiss}
+                canDismiss={canDismiss}
+              />
+            ))
+          )}
         </div>
       )}
+    </div>
+  );
+}
+
+function StudentAlertCard({
+  studentAlert,
+  handleDismiss,
+  canDismiss,
+}: {
+  studentAlert: StudentAlerts;
+  handleDismiss: (alert: Alert) => void;
+  canDismiss: boolean;
+}) {
+  return (
+    <div className="rounded-lg border border-gray-200 overflow-hidden bg-white">
+      <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border-b border-gray-200">
+        <span className="font-semibold text-sm text-[#1a1a1a]">
+          {studentAlert.student_name}
+        </span>
+        <span className="text-xs text-gray-500">
+          ({GRADE_LABELS[studentAlert.grade] || studentAlert.grade})
+        </span>
+      </div>
+      <div className="p-2 space-y-1">
+        {studentAlert.alerts.map((alert) => (
+          <AlertItem
+            key={alert.id}
+            alert={alert}
+            onDismiss={handleDismiss}
+            canDismiss={canDismiss}
+          />
+        ))}
+      </div>
     </div>
   );
 }

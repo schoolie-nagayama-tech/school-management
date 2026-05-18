@@ -8,7 +8,17 @@ import {
   type ProgressWidgetTask,
   type CoursePrepWidgetTask,
 } from '@/lib/api/monthlyTasks';
-import { AlertTriangle, ArrowRight, BookOpen, Check, ChevronDown, ListTodo, Trophy } from 'lucide-react';
+import { batchFetchCoursePrepApi } from '@/lib/api/coursePrepApi';
+import { loadSavedSeasonYear } from '@/lib/utils/coursePrepStorage';
+import type {
+  Student,
+  CourseProgressItem,
+  StudentCourseProgress,
+  SeasonType,
+} from '@/types/database';
+import { SEASON_LABELS } from '@/types/database';
+import type { AutoValues } from '@/lib/api/courseProgress';
+import { AlertTriangle, ArrowRight, BookOpen, Check, ChevronDown, GraduationCap, ListTodo, Trophy } from 'lucide-react';
 import Link from 'next/link';
 
 function formatDate(dateStr: string) {
@@ -121,11 +131,46 @@ function TaskCheckbox({
   );
 }
 
-export function TaskProgressWidget({ schoolIds }: { schoolIds?: string[] }) {
+function findItemByKeywords(items: CourseProgressItem[], keywords: string[]): CourseProgressItem | undefined {
+  for (const kw of keywords) {
+    const exact = items.find((i) => i.name === kw);
+    if (exact) return exact;
+  }
+  for (const kw of keywords) {
+    const partial = items.find((i) => i.name.includes(kw));
+    if (partial) return partial;
+  }
+  return undefined;
+}
+
+interface SchoolInfo { id: string; name: string }
+
+interface PerSchoolCourseData {
+  schoolId: string;
+  schoolName: string;
+  students: Student[];
+  items: CourseProgressItem[];
+  progress: StudentCourseProgress[];
+  autoValues: AutoValues;
+}
+
+export function TaskProgressWidget({ schoolIds, schoolId, schools: schoolsProp }: {
+  schoolIds?: string[];
+  schoolId?: string;
+  schools?: SchoolInfo[];
+}) {
   const [data, setData] = useState<ProgressWidgetData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showCelebration, setShowCelebration] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
+
+  // --- Course progress state (per-school) ---
+  const [perSchoolData, setPerSchoolData] = useState<PerSchoolCourseData[]>([]);
+  const [cpLoading, setCpLoading] = useState(false);
+  const [season] = useState<SeasonType>(() => loadSavedSeasonYear().season);
+  const [year] = useState(() => loadSavedSeasonYear().year);
+
+  const isMultiSchool = schoolId === 'all' || (!schoolId && (schoolsProp?.length ?? 0) > 1);
 
   // Stabilize schoolIds reference to avoid infinite re-renders
   const schoolIdsKey = schoolIds?.slice().sort().join(',') ?? '';
@@ -162,6 +207,64 @@ export function TaskProgressWidget({ schoolIds }: { schoolIds?: string[] }) {
     fetchData();
   }, [fetchData]);
 
+  // --- Course progress fetch (supports multi-school) ---
+  const targetSchoolIds = useMemo(() => {
+    if (isMultiSchool && schoolsProp) return schoolsProp.map((s) => s.id);
+    if (schoolId && schoolId !== 'all') return [schoolId];
+    return [];
+  }, [isMultiSchool, schoolsProp, schoolId]);
+
+  const schoolNameMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    if (schoolsProp) schoolsProp.forEach((s) => { map[s.id] = s.name; });
+    return map;
+  }, [schoolsProp]);
+
+  const fetchCourseProgress = useCallback(async () => {
+    if (targetSchoolIds.length === 0) return;
+    setCpLoading(true);
+    try {
+      const results = await Promise.all(
+        targetSchoolIds.map(async (sid) => {
+          const result = await batchFetchCoursePrepApi(
+            { schoolId: sid, season, year: String(year), includeHidden: 'false' },
+            ['students', 'progress_items', 'student_progress', 'auto_values']
+          );
+          const rawItems = (result.progress_items as Record<string, unknown>[]) || [];
+          const rawProgress = (result.student_progress as Record<string, unknown>[]) || [];
+          return {
+            schoolId: sid,
+            schoolName: schoolNameMap[sid] || sid,
+            students: ((result.students as Record<string, unknown>[]) || []) as Student[],
+            items: rawItems.map((item) => ({
+              ...item,
+              column_type: (item.column_type as string) || 'check',
+              manager_only: item.manager_only === true,
+              is_hidden: item.is_hidden === true,
+              deadline: (item.deadline as string) || null,
+              auto_source: (item.auto_source as string) || null,
+            })) as CourseProgressItem[],
+            progress: rawProgress.map((d) => ({
+              ...d,
+              number_value: d.number_value ?? null,
+              date_value: d.date_value ?? null,
+            })) as StudentCourseProgress[],
+            autoValues: (result.auto_values || {}) as AutoValues,
+          } as PerSchoolCourseData;
+        })
+      );
+      setPerSchoolData(results.filter((r) => r.items.length > 0));
+    } catch {
+      // non-critical
+    } finally {
+      setCpLoading(false);
+    }
+  }, [targetSchoolIds, season, year, schoolNameMap]);
+
+  useEffect(() => {
+    fetchCourseProgress();
+  }, [fetchCourseProgress]);
+
   const handleComplete = useCallback((completed: ProgressWidgetTask) => {
     setData((prev) => {
       if (!prev) return prev;
@@ -173,6 +276,105 @@ export function TaskProgressWidget({ schoolIds }: { schoolIds?: string[] }) {
       return { ...prev, tasks: remaining };
     });
   }, []);
+
+  // --- Course progress computed values (per-school) ---
+  const computeSchoolMetrics = useCallback((sd: PerSchoolCourseData) => {
+    const pcsItem = findItemByKeywords(sd.items, ['PCS回収', 'PCS']);
+    const soudanItem = findItemByKeywords(sd.items, ['面談申込', '面談申し込み', '面談申込み']);
+    const interviewItem = findItemByKeywords(sd.items, ['生徒面談実施', '生徒面談', '面談実施']);
+    const parentInterviewItem = findItemByKeywords(sd.items, ['父母面談実施', '父母面談', '保護者面談実施', '保護者面談']);
+    const subjectItems = sd.items.filter((i) => i.column_group === '教科別' && i.column_type === 'number');
+
+    const countCompleted = (item: CourseProgressItem | undefined) => {
+      if (!item) return null;
+      let completed = 0;
+      for (const s of sd.students) {
+        const d = sd.progress.find((p) => p.student_id === s.id && p.item_id === item.id);
+        if (d?.status === 'completed') completed++;
+      }
+      return { completed, total: sd.students.length };
+    };
+
+    const pcsStats = countCompleted(pcsItem);
+    const soudanStats = countCompleted(soudanItem);
+    const interviewStats = countCompleted(interviewItem);
+    const parentInterviewStats = countCompleted(parentInterviewItem);
+    const interviewRate = parentInterviewStats && parentInterviewStats.total > 0
+      ? Math.round((parentInterviewStats.completed / parentInterviewStats.total) * 100) : 0;
+
+    // Subject totals
+    const subjectTotals: { name: string; total: number }[] = [];
+    let grandTotal = 0;
+    for (const item of subjectItems) {
+      let sum = 0;
+      for (const s of sd.students) {
+        if (item.auto_source === 'subject_proposal') {
+          const sv = sd.autoValues[s.id];
+          if (sv?.subject_proposals) {
+            if (sv.subject_proposals[item.name] !== undefined) sum += sv.subject_proposals[item.name];
+            else { for (const [subject, count] of Object.entries(sv.subject_proposals)) { if (item.name.includes(subject)) { sum += count; break; } } }
+          }
+        } else {
+          const d = sd.progress.find((p) => p.student_id === s.id && p.item_id === item.id);
+          if (d?.number_value != null) sum += d.number_value;
+        }
+      }
+      if (sum > 0) subjectTotals.push({ name: item.name, total: sum });
+      grandTotal += sum;
+    }
+
+    // Koma stats
+    const proposedKomaItem = sd.items.find((i) => i.auto_source === 'proposed_extra') || findItemByKeywords(sd.items, ['提案増コマ', '提示増コマ']);
+    const decidedKomaItem = sd.items.find(
+      (i) => i.id !== proposedKomaItem?.id && i.column_type === 'number' && (i.name.includes('増コマ回数') || i.name === '増コマ回数決定')
+    ) || findItemByKeywords(sd.items.filter((i) => i.id !== proposedKomaItem?.id), ['増コマ回数決定', '増コマ決定', '決定コマ', '増コマ回数']);
+
+    let totalProposed = 0, totalDecided = 0;
+    for (const s of sd.students) {
+      if (proposedKomaItem) {
+        if (proposedKomaItem.auto_source === 'proposed_extra') {
+          let subjectSum = 0;
+          for (const item of subjectItems) {
+            if (item.auto_source === 'subject_proposal') {
+              const sv = sd.autoValues[s.id];
+              if (sv?.subject_proposals) {
+                if (sv.subject_proposals[item.name] !== undefined) subjectSum += sv.subject_proposals[item.name];
+                else { for (const [sub, count] of Object.entries(sv.subject_proposals)) { if (item.name.includes(sub)) { subjectSum += count; break; } } }
+              }
+            } else {
+              const d = sd.progress.find((p) => p.student_id === s.id && p.item_id === item.id);
+              if (d?.number_value != null) subjectSum += d.number_value;
+            }
+          }
+          totalProposed += Math.max(0, subjectSum - (sd.autoValues[s.id]?.course_sessions ?? 0));
+        } else {
+          const d = sd.progress.find((p) => p.student_id === s.id && p.item_id === proposedKomaItem.id);
+          totalProposed += d?.number_value ?? 0;
+        }
+      }
+      if (decidedKomaItem) {
+        const d = sd.progress.find((p) => p.student_id === s.id && p.item_id === decidedKomaItem.id);
+        totalDecided += d?.number_value ?? 0;
+      }
+    }
+
+    const hasData = !!(pcsStats || soudanStats || interviewStats || parentInterviewStats || grandTotal > 0 || totalProposed > 0 || totalDecided > 0);
+    return {
+      schoolId: sd.schoolId, schoolName: sd.schoolName,
+      pcsStats, soudanStats, interviewStats, parentInterviewStats, interviewRate,
+      subjectTotals: { subjects: subjectTotals, grandTotal },
+      komaStats: { proposed: totalProposed, decided: totalDecided },
+      hasData,
+    };
+  }, []);
+
+  const allSchoolMetrics = useMemo(() =>
+    perSchoolData.map(computeSchoolMetrics).filter((m) => m.hasData),
+    [perSchoolData, computeSchoolMetrics]
+  );
+
+  const hasCourseData = !cpLoading && allSchoolMetrics.length > 0;
+  const seasonLabel = SEASON_LABELS[season];
 
   if (isLoading) {
     return (
@@ -186,6 +388,64 @@ export function TaskProgressWidget({ schoolIds }: { schoolIds?: string[] }) {
 
   const now = new Date();
   const monthLabel = `${now.getMonth() + 1}月`;
+
+  const courseProgressSection = hasCourseData ? (
+    <div className="px-4 py-3 border-t border-gray-100">
+      <div className="flex items-center gap-2 mb-2">
+        <GraduationCap className="w-3.5 h-3.5 text-indigo-500" />
+        <span className="text-[11px] font-bold text-gray-600">講習進捗</span>
+        <span className="text-[10px] text-gray-400">{year}年 {seasonLabel}</span>
+        <Link
+          href="/courses/progress"
+          className="ml-auto flex items-center gap-0.5 text-[10px] text-blue-500 hover:text-blue-700 font-medium transition-colors"
+        >
+          詳細
+          <ArrowRight className="w-3 h-3" />
+        </Link>
+      </div>
+      {allSchoolMetrics.map((m, idx) => (
+        <div key={m.schoolId} className={idx > 0 ? 'mt-2.5 pt-2.5 border-t border-gray-100' : ''}>
+          {allSchoolMetrics.length > 1 && (
+            <div className="text-[10px] font-bold text-gray-500 mb-1.5">{m.schoolName}</div>
+          )}
+          <div className="flex flex-wrap gap-2">
+            {m.pcsStats && <CourseMetricChip label="PCS回収" value={m.pcsStats.completed} total={m.pcsStats.total} color="blue" />}
+            {m.soudanStats && <CourseMetricChip label="面談申込" value={m.soudanStats.completed} total={m.soudanStats.total} color="amber" />}
+            {m.interviewStats && <CourseMetricChip label="生徒面談" value={m.interviewStats.completed} total={m.interviewStats.total} color="green" />}
+            {m.parentInterviewStats && (
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-emerald-200 bg-emerald-50 text-[11px]">
+                <span className="text-emerald-600 font-medium">面談実施率</span>
+                <span className="text-emerald-800 font-bold">{m.interviewRate}%</span>
+              </div>
+            )}
+            {(m.komaStats.proposed > 0 || m.komaStats.decided > 0) && (
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-purple-200 bg-purple-50 text-[11px]">
+                <span className="text-purple-600 font-medium">増コマ</span>
+                <span className="text-purple-800 font-bold">{m.komaStats.decided}</span>
+                <span className="text-purple-400">/</span>
+                <span className="text-purple-600">{m.komaStats.proposed}</span>
+              </div>
+            )}
+          </div>
+          {m.subjectTotals.subjects.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] text-gray-400 mr-0.5">提案コマ:</span>
+              {m.subjectTotals.subjects.map((s) => (
+                <span key={s.name} className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-gray-200 bg-gray-50 text-[10px]">
+                  <span className="text-gray-500">{s.name}</span>
+                  <span className="text-gray-800 font-bold">{s.total}</span>
+                </span>
+              ))}
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-indigo-200 bg-indigo-50 text-[10px]">
+                <span className="text-indigo-600 font-medium">合計</span>
+                <span className="text-indigo-800 font-bold">{m.subjectTotals.grandTotal}</span>
+              </span>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  ) : null;
 
   if (data.allComplete) {
     return (
@@ -209,6 +469,7 @@ export function TaskProgressWidget({ schoolIds }: { schoolIds?: string[] }) {
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
+        {courseProgressSection}
         <div
           className="h-1"
           style={{
@@ -249,11 +510,12 @@ export function TaskProgressWidget({ schoolIds }: { schoolIds?: string[] }) {
         </Link>
       </div>
 
-      {/* Task list (collapsible) */}
+      {/* Collapsible content */}
       <div
         className="overflow-hidden transition-[max-height,opacity] duration-200 ease-out"
-        style={{ maxHeight: isOpen ? '500px' : '0', opacity: isOpen ? 1 : 0 }}
+        style={{ maxHeight: isOpen ? '800px' : '0', opacity: isOpen ? 1 : 0 }}
       >
+        {/* 業務タスク */}
         <div className="px-4 py-2.5 flex flex-wrap gap-1.5 border-t border-gray-100">
           {overdueTasks.map((task) => (
             <span
@@ -297,7 +559,30 @@ export function TaskProgressWidget({ schoolIds }: { schoolIds?: string[] }) {
             ))}
           </div>
         )}
+
+        {/* 講習進捗 */}
+        {courseProgressSection}
       </div>
+    </div>
+  );
+}
+
+function CourseMetricChip({ label, value, total, color }: {
+  label: string; value: number; total: number; color: 'blue' | 'amber' | 'green';
+}) {
+  const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+  const colors = {
+    blue: { border: 'border-blue-200', bg: 'bg-blue-50', label: 'text-blue-600', value: 'text-blue-800', sub: 'text-blue-400' },
+    amber: { border: 'border-amber-200', bg: 'bg-amber-50', label: 'text-amber-600', value: 'text-amber-800', sub: 'text-amber-400' },
+    green: { border: 'border-green-200', bg: 'bg-green-50', label: 'text-green-600', value: 'text-green-800', sub: 'text-green-400' },
+  }[color];
+  return (
+    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border ${colors.border} ${colors.bg} text-[11px]`}>
+      <span className={`${colors.label} font-medium`}>{label}</span>
+      <span className={`${colors.value} font-bold`}>{value}</span>
+      <span className={colors.sub}>/</span>
+      <span className={colors.label}>{total}</span>
+      <span className={`${colors.sub} text-[10px]`}>({pct}%)</span>
     </div>
   );
 }

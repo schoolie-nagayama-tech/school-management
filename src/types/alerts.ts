@@ -39,6 +39,7 @@ export interface Alert {
   student_id: string;
   student_name: string;
   grade: number;
+  school_id?: string;
   alert_type: AlertType;
   alert_key: string;
   message: string;  // 表示メッセージ（例: "英語 -12点"）
@@ -85,6 +86,7 @@ export interface StudentAlerts {
   student_id: string;
   student_name: string;
   grade: number;
+  school_id?: string;
   alerts: Alert[];
 }
 
