@@ -672,23 +672,12 @@ export async function applyCoursesToStudents(
     curriculumByTextbook.set(ct.textbook_id, items);
   }
 
-  // カリキュラム設定がないテキストはcurriculum_itemsから直接取得（1単元1コマ）
-  const textbooksWithoutCurriculum = course.textbooks
-    .filter((ct) => (curriculumByTextbook.get(ct.textbook_id) || []).length === 0)
-    .map((ct) => ct.textbook_id);
-
-  if (textbooksWithoutCurriculum.length > 0) {
-    const { data: ciRows } = await supabase
-      .from('curriculum_items')
-      .select('id, textbook_id')
-      .in('textbook_id', textbooksWithoutCurriculum)
-      .order('sort_order');
-    for (const ci of (ciRows || []) as { id: number; textbook_id: number }[]) {
-      const arr = curriculumByTextbook.get(ci.textbook_id) || [];
-      arr.push({ curriculum_item_id: ci.id, proposal_count: 1, group_number: null });
-      curriculumByTextbook.set(ci.textbook_id, arr);
-    }
-  }
+  // カリキュラム設定がないテキストを記録（提案書だけ作りユニットは空にする）
+  const textbooksWithoutCurriculum = new Set(
+    course.textbooks
+      .filter((ct) => (curriculumByTextbook.get(ct.textbook_id) || []).length === 0)
+      .map((ct) => ct.textbook_id)
+  );
 
   // Step 3: 各生徒×テキストごとに seasonal_proposals + seasonal_proposal_units を作成
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -705,7 +694,9 @@ export async function applyCoursesToStudents(
       const stId = stMap.get(`${studentId}:${ct.textbook_id}`);
       if (!stId) continue;
       const settings = (curriculumByTextbook.get(ct.textbook_id) || []).filter((s) => s.proposal_count > 0);
-      if (settings.length === 0) continue;
+      const hasCurriculum = !textbooksWithoutCurriculum.has(ct.textbook_id);
+
+      if (settings.length === 0 && hasCurriculum) continue;
 
       let totalKoma = 0;
       const seenGroups = new Set<number>();
@@ -726,7 +717,7 @@ export async function applyCoursesToStudents(
         season: course.season,
         year,
         theme: course.name,
-        status: 'approved',
+        status: 'draft',
         applied_koma: totalKoma,
       });
     }
@@ -775,88 +766,94 @@ export async function applyCoursesToStudents(
     }
   }
 
-  // Step 4: student_progress の同期
+  // Step 4: student_progress の同期（カリキュラム設定があるテキストのみ）
   const allStIds = Array.from(new Set(Array.from(stMap.values())));
+  const textbooksWithCurriculum = course.textbooks.filter((ct) => !textbooksWithoutCurriculum.has(ct.textbook_id));
 
-  if (mode === 'overwrite') {
-    const progressRows = [];
-    for (const studentId of studentIds) {
-      for (const ct of course.textbooks) {
-        const stId = stMap.get(`${studentId}:${ct.textbook_id}`);
-        if (!stId) continue;
-        for (const setting of curriculumByTextbook.get(ct.textbook_id) || []) {
-          progressRows.push({
-            student_textbook_id: stId,
-            curriculum_item_id: setting.curriculum_item_id,
-            proposal_count: setting.proposal_count,
-            application_count: setting.proposal_count,
-            group_number: setting.group_number,
-            updated_at: now,
-          });
-        }
-      }
-    }
-    if (progressRows.length > 0) {
-      const { error } = await supabase
-        .from('student_progress')
-        .upsert(progressRows as never, { onConflict: 'student_textbook_id,curriculum_item_id' });
-      if (error) throw error;
-    }
-  } else {
-    const { data: existingProgress } = await supabase
-      .from('student_progress')
-      .select('id, student_textbook_id, curriculum_item_id, proposal_count, application_count, group_number')
-      .in('student_textbook_id', allStIds);
-
-    type ExistingProgress = { id: string; student_textbook_id: string; curriculum_item_id: number; proposal_count: number | null; application_count: number | null; group_number: number | null };
-    const progressMap = new Map<string, ExistingProgress>(
-      ((existingProgress || []) as ExistingProgress[]).map((p) => [
-        `${p.student_textbook_id}:${p.curriculum_item_id}`,
-        p,
-      ])
-    );
-
-    const toInsert = [];
-    const toUpdate: { id: string; proposal_count: number; application_count: number; group_number: number | null }[] = [];
-
-    for (const studentId of studentIds) {
-      for (const ct of course.textbooks) {
-        const stId = stMap.get(`${studentId}:${ct.textbook_id}`);
-        if (!stId) continue;
-        for (const setting of curriculumByTextbook.get(ct.textbook_id) || []) {
-          const key = `${stId}:${setting.curriculum_item_id}`;
-          const existing = progressMap.get(key);
-          if (existing) {
-            toUpdate.push({
-              id: existing.id,
-              proposal_count: (existing.proposal_count || 0) + setting.proposal_count,
-              application_count: (existing.application_count || 0) + setting.proposal_count,
-              group_number: setting.group_number,
-            });
-          } else {
-            toInsert.push({
+  if (textbooksWithCurriculum.length > 0) {
+    if (mode === 'overwrite') {
+      const progressRows = [];
+      for (const studentId of studentIds) {
+        for (const ct of textbooksWithCurriculum) {
+          const stId = stMap.get(`${studentId}:${ct.textbook_id}`);
+          if (!stId) continue;
+          for (const setting of curriculumByTextbook.get(ct.textbook_id) || []) {
+            progressRows.push({
               student_textbook_id: stId,
               curriculum_item_id: setting.curriculum_item_id,
               proposal_count: setting.proposal_count,
               application_count: setting.proposal_count,
               group_number: setting.group_number,
+              updated_at: now,
             });
           }
         }
       }
-    }
-
-    await Promise.all([
-      toInsert.length > 0
-        ? supabase.from('student_progress').insert(toInsert as never)
-        : Promise.resolve(),
-      ...toUpdate.map((u) =>
-        supabase
+      if (progressRows.length > 0) {
+        const { error } = await supabase
           .from('student_progress')
-          .update({ proposal_count: u.proposal_count, application_count: u.application_count, group_number: u.group_number, updated_at: now } as never)
-          .eq('id', u.id)
-      ),
-    ]);
+          .upsert(progressRows as never, { onConflict: 'student_textbook_id,curriculum_item_id' });
+        if (error) throw error;
+      }
+    } else {
+      const stIdsWithCurriculum = textbooksWithCurriculum.flatMap((ct) =>
+        studentIds.map((sid) => stMap.get(`${sid}:${ct.textbook_id}`)).filter(Boolean) as string[]
+      );
+      const { data: existingProgress } = await supabase
+        .from('student_progress')
+        .select('id, student_textbook_id, curriculum_item_id, proposal_count, application_count, group_number')
+        .in('student_textbook_id', stIdsWithCurriculum);
+
+      type ExistingProgress = { id: string; student_textbook_id: string; curriculum_item_id: number; proposal_count: number | null; application_count: number | null; group_number: number | null };
+      const progressMap = new Map<string, ExistingProgress>(
+        ((existingProgress || []) as ExistingProgress[]).map((p) => [
+          `${p.student_textbook_id}:${p.curriculum_item_id}`,
+          p,
+        ])
+      );
+
+      const toInsert = [];
+      const toUpdate: { id: string; proposal_count: number; application_count: number; group_number: number | null }[] = [];
+
+      for (const studentId of studentIds) {
+        for (const ct of textbooksWithCurriculum) {
+          const stId = stMap.get(`${studentId}:${ct.textbook_id}`);
+          if (!stId) continue;
+          for (const setting of curriculumByTextbook.get(ct.textbook_id) || []) {
+            const key = `${stId}:${setting.curriculum_item_id}`;
+            const existing = progressMap.get(key);
+            if (existing) {
+              toUpdate.push({
+                id: existing.id,
+                proposal_count: (existing.proposal_count || 0) + setting.proposal_count,
+                application_count: (existing.application_count || 0) + setting.proposal_count,
+                group_number: setting.group_number,
+              });
+            } else {
+              toInsert.push({
+                student_textbook_id: stId,
+                curriculum_item_id: setting.curriculum_item_id,
+                proposal_count: setting.proposal_count,
+                application_count: setting.proposal_count,
+                group_number: setting.group_number,
+              });
+            }
+          }
+        }
+      }
+
+      await Promise.all([
+        toInsert.length > 0
+          ? supabase.from('student_progress').insert(toInsert as never)
+          : Promise.resolve(),
+        ...toUpdate.map((u) =>
+          supabase
+            .from('student_progress')
+            .update({ proposal_count: u.proposal_count, application_count: u.application_count, group_number: u.group_number, updated_at: now } as never)
+            .eq('id', u.id)
+        ),
+      ]);
+    }
   }
 
   // Step 5: student_textbooks を講師に公開（publishProposal と同じ）

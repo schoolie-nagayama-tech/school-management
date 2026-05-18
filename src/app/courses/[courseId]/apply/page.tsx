@@ -56,7 +56,6 @@ export default function CourseApplyPage() {
         router.push('/courses');
       }
     } catch (err) {
-      console.error('Error fetching course:', err);
       error(err instanceof Error ? err.message : 'コース情報の取得に失敗しました');
     }
   }, [courseId, error, router]);
@@ -67,7 +66,6 @@ export default function CourseApplyPage() {
       const data = await getStudents(undefined, [course.school_id]);
       setStudents(data.filter(s => s.status === 'active'));
     } catch (err) {
-      console.error('Error fetching students:', err);
       error(err instanceof Error ? err.message : '生徒一覧の取得に失敗しました');
     }
   }, [error, course]);
@@ -77,8 +75,8 @@ export default function CourseApplyPage() {
     try {
       const data = await getCourseApplications(courseId);
       setApplications(data);
-    } catch (err) {
-      console.error('Error fetching applications:', err);
+    } catch {
+      // silently handle — non-critical
     }
   }, [courseId]);
 
@@ -142,7 +140,6 @@ export default function CourseApplyPage() {
       setIsConfirmOpen(false);
       success(`${selectedStudentIds.size}名に適用しました`);
     } catch (err) {
-      console.error('Error applying course:', err);
       error(err instanceof Error ? err.message : '適用に失敗しました');
     } finally {
       setIsApplying(false);
@@ -203,7 +200,7 @@ export default function CourseApplyPage() {
               <button
                 key={mode}
                 onClick={() => setApplyMode(mode)}
-                className={`flex-1 p-3 rounded-lg border text-left transition-colors duration-150 ${
+                className={`flex-1 p-3 rounded-lg border text-left transition-[border-color,background-color] duration-150 ease-out active:scale-[0.99] ${
                   applyMode === mode
                     ? 'border-ink bg-ink/5'
                     : 'border-border-default hover:border-text-muted'
@@ -264,7 +261,7 @@ export default function CourseApplyPage() {
             <button
               onClick={() => setIsConfirmOpen(true)}
               disabled={!hasSelection}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-[11px] font-bold bg-ink text-text-on-primary rounded-lg hover:brightness-[0.85] transition-[filter] duration-150 disabled:opacity-40 disabled:pointer-events-none"
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-[11px] font-bold bg-ink text-text-on-primary rounded-lg hover:brightness-[0.85] active:scale-[0.97] transition-[filter,transform] duration-150 ease-out disabled:opacity-40 disabled:pointer-events-none"
             >
               選択した{selectedStudentIds.size}名に適用
             </button>
@@ -306,7 +303,7 @@ export default function CourseApplyPage() {
                     </span>
                     <span className="w-16 text-center shrink-0">
                       {isApplied ? (
-                        <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-50 text-emerald-600">
+                        <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-info-subtle text-info">
                           適用済み
                         </span>
                       ) : (
@@ -347,8 +344,8 @@ export default function CourseApplyPage() {
 
       {/* 確認モーダル */}
       {isConfirmOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-surface-raised rounded-xl border border-border-default p-5 max-w-sm w-full">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+          <div className="bg-surface-raised rounded-xl border border-border-default p-5 max-w-sm w-full animate-in fade-in zoom-in-[0.97] duration-150">
             <h2 className="text-sm font-bold text-text-heading mb-3">適用の確認</h2>
             <p className="text-xs text-text-body mb-3">以下の内容で適用します。よろしいですか？</p>
             <div className="p-3 bg-surface-hover/50 rounded-lg space-y-1.5 text-xs mb-4">
@@ -378,14 +375,14 @@ export default function CourseApplyPage() {
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setIsConfirmOpen(false)}
-                className="px-3 py-1.5 text-xs font-medium text-text-muted border border-border-default rounded-lg hover:bg-surface-hover transition-colors"
+                className="px-3 py-1.5 text-xs font-medium text-text-muted border border-border-default rounded-lg hover:bg-surface-hover active:scale-[0.97] transition-[background-color,transform] duration-150 ease-out"
               >
                 キャンセル
               </button>
               <button
                 onClick={handleApply}
                 disabled={isApplying}
-                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-ink text-text-on-primary rounded-lg hover:brightness-[0.85] transition-[filter] duration-150 disabled:opacity-50"
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-ink text-text-on-primary rounded-lg hover:brightness-[0.85] active:scale-[0.97] transition-[filter,transform] duration-150 ease-out disabled:opacity-50"
               >
                 {isApplying ? <InlineLoading size="sm" label="適用中..." /> : '適用する'}
               </button>

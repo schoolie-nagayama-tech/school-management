@@ -298,7 +298,6 @@ export default function ProposalEditor() {
         setAvailableCourses([]);
       }
     } catch (e) {
-      console.error(e);
       addToast('データの読み込みに失敗しました', 'error');
     } finally {
       setLoading(false);
@@ -396,7 +395,6 @@ export default function ProposalEditor() {
       setShowCourseImport(false);
       addToast('ひな形を取り込みました', 'success');
     } catch (e) {
-      console.error(e);
       addToast('取り込みに失敗しました', 'error');
     } finally {
       setImportingCourse(false);
@@ -502,7 +500,6 @@ export default function ProposalEditor() {
         setProposal(result);
       }
     } catch (e) {
-      console.error(e);
       addToast('保存に失敗しました', 'error');
     } finally {
       setSaving(false);
@@ -566,7 +563,6 @@ export default function ProposalEditor() {
       setProposal((prev) => prev ? { ...prev, status: newStatus } : prev);
       addToast(`ステータスを「${PROPOSAL_STATUS_LABELS[newStatus]}」に変更しました`, 'success');
     } catch (e) {
-      console.error(e);
       addToast('ステータス変更に失敗しました', 'error');
     } finally {
       setStatusChanging(false);
@@ -580,7 +576,6 @@ export default function ProposalEditor() {
       addToast('提案書を削除しました', 'success');
       router.replace(`/students/${studentId}/proposals`);
     } catch (e) {
-      console.error(e);
       addToast('削除に失敗しました', 'error');
     }
   };
@@ -679,7 +674,7 @@ export default function ProposalEditor() {
         <div className="mb-6">
           <Link
             href={`/students/${studentId}/proposals`}
-            className="text-sm text-text-muted hover:text-text-heading inline-flex items-center gap-1 mb-2 transition-colors duration-150"
+            className="text-sm text-text-muted hover:text-text-heading inline-flex items-center gap-1 mb-2 transition-[color] duration-150 ease-out"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             提案書一覧に戻る
@@ -727,7 +722,7 @@ export default function ProposalEditor() {
           {(tbFilterSchoolType || tbFilterSubject || tbFilterGrade) && (
             <button
               onClick={() => { setTbFilterSchoolType(''); setTbFilterSubject(''); setTbFilterGrade(''); }}
-              className="text-xs text-text-muted hover:text-text-heading transition-colors duration-150"
+              className="text-xs text-text-muted hover:text-text-heading transition-[color] duration-150 ease-out"
             >
               クリア
             </button>
@@ -740,7 +735,7 @@ export default function ProposalEditor() {
             <button
               key={tb.id}
               onClick={() => handleSelectTextbook(tb)}
-              className="w-full text-left px-4 py-3 bg-surface-raised rounded-lg border border-border-default hover:border-accent-ink/30 hover:bg-accent-ink-subtle transition-colors duration-150"
+              className="w-full text-left px-4 py-3 bg-surface-raised rounded-lg border border-border-default hover:border-accent-ink/30 hover:bg-accent-ink-subtle active:scale-[0.99] transition-[background-color,border-color,transform] duration-150 ease-out"
             >
               <div className="text-sm font-medium text-text-heading">{tb.name}</div>
               <div className="text-xs text-text-muted mt-0.5">
@@ -766,7 +761,7 @@ export default function ProposalEditor() {
       <div className="mb-6">
         <Link
           href={`/students/${studentId}/proposals`}
-          className="text-sm text-text-muted hover:text-text-heading inline-flex items-center gap-1 mb-2 transition-colors duration-150"
+          className="text-sm text-text-muted hover:text-text-heading inline-flex items-center gap-1 mb-2 transition-[color] duration-150 ease-out"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           提案書一覧
@@ -782,28 +777,37 @@ export default function ProposalEditor() {
           </div>
 
           {!isNew && (
-            <div className="flex items-center gap-0.5">
-              {STATUS_FLOW.map((s, i) => {
-                const isCurrent = currentStatus === s;
-                const currentIdx = STATUS_FLOW.indexOf(currentStatus);
-                const isPast = STATUS_FLOW.indexOf(s) < currentIdx;
-                return (
-                  <div key={s} className="flex items-center">
-                    {i > 0 && (
-                      <div className={`w-3 h-px mx-0.5 ${isPast || isCurrent ? 'bg-text-muted' : 'bg-border-default'}`} />
-                    )}
-                    <button
-                      onClick={() => handleStatusChange(s)}
-                      disabled={statusChanging || (currentStatus === 'approved' && s !== 'approved')}
-                      className={`px-2.5 py-1 text-[11px] font-bold rounded-full transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed ${
-                        isCurrent ? STATUS_COLORS[s].active : STATUS_COLORS[s].inactive
-                      }`}
-                    >
-                      {statusChanging && s === currentStatus ? '...' : PROPOSAL_STATUS_LABELS[s]}
-                    </button>
-                  </div>
-                );
-              })}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-0.5">
+                {STATUS_FLOW.map((s, i) => {
+                  const isCurrent = currentStatus === s;
+                  const currentIdx = STATUS_FLOW.indexOf(currentStatus);
+                  const isPast = STATUS_FLOW.indexOf(s) < currentIdx;
+                  return (
+                    <div key={s} className="flex items-center">
+                      {i > 0 && (
+                        <div className={`w-3 h-px mx-0.5 ${isPast || isCurrent ? 'bg-text-muted' : 'bg-border-default'}`} />
+                      )}
+                      <button
+                        onClick={() => handleStatusChange(s)}
+                        disabled={statusChanging}
+                        className={`px-2.5 py-1 text-[11px] font-bold rounded-full active:scale-95 transition-[background-color,color,transform] duration-150 ease-out disabled:opacity-40 disabled:cursor-not-allowed ${
+                          isCurrent ? STATUS_COLORS[s].active : STATUS_COLORS[s].inactive
+                        }`}
+                      >
+                        {statusChanging && s === currentStatus ? '...' : PROPOSAL_STATUS_LABELS[s]}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="p-1.5 text-text-faint hover:text-danger rounded-lg hover:bg-surface-hover transition-[background-color,color] duration-150 ease-out"
+                title="削除"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
             </div>
           )}
         </div>
@@ -821,7 +825,7 @@ export default function ProposalEditor() {
                     <button
                       key={s}
                       onClick={() => setSeason(s)}
-                      className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors duration-150 ${
+                      className={`px-3 py-1.5 text-xs rounded-lg font-medium active:scale-[0.97] transition-[background-color,color,transform] duration-150 ease-out ${
                         season === s
                           ? 'bg-ink text-text-on-primary'
                           : 'bg-surface-hover text-text-body hover:bg-border-default'
@@ -879,7 +883,7 @@ export default function ProposalEditor() {
                   <button
                     onClick={() => setShowCourseImport(!showCourseImport)}
                     disabled={importingCourse}
-                    className="px-2 py-1 text-[11px] bg-accent-ink-subtle text-accent-ink rounded-md hover:bg-accent-ink/20 flex items-center gap-1 transition-colors duration-150 active:scale-95 disabled:opacity-50"
+                    className="px-2 py-1 text-[11px] bg-accent-ink-subtle text-accent-ink rounded-md hover:bg-accent-ink/20 flex items-center gap-1 transition-[background-color,color,transform] duration-150 ease-out active:scale-95 disabled:opacity-50"
                     title="講習一覧のひな形を取り込む"
                   >
                     <Download className="w-3 h-3" />
@@ -896,7 +900,7 @@ export default function ProposalEditor() {
                           <button
                             key={c.id}
                             onClick={() => handleImportCourse(c.id)}
-                            className="w-full px-3 py-2 text-left text-xs text-text-body hover:bg-surface-hover transition-colors duration-100"
+                            className="w-full px-3 py-2 text-left text-xs text-text-body hover:bg-surface-hover transition-[background-color] duration-100 ease-out"
                           >
                             <div className="font-medium text-text-heading">{c.name}</div>
                             <div className="text-[10px] text-text-muted mt-0.5">
@@ -911,7 +915,7 @@ export default function ProposalEditor() {
               )}
               <button
                 onClick={groupSelected}
-                className="px-2 py-1 text-[11px] bg-surface-hover text-text-muted rounded-md hover:bg-border-default flex items-center gap-1 transition-colors duration-150"
+                className="px-2 py-1 text-[11px] bg-surface-hover text-text-muted rounded-md hover:bg-border-default flex items-center gap-1 active:scale-95 transition-[background-color,color,transform] duration-150 ease-out"
                 title="選択中の未グループ単元を1コマにまとめる"
               >
                 <Link2 className="w-3 h-3" />
@@ -988,15 +992,6 @@ export default function ProposalEditor() {
           </Button>
         </div>
 
-        {/* 削除 */}
-        {!isNew && (
-          <div className="flex justify-end pt-2 border-t border-border-subtle">
-            <Button variant="danger" onClick={() => setShowDeleteConfirm(true)}>
-              <Trash2 className="w-4 h-4 mr-1.5" />
-              削除
-            </Button>
-          </div>
-        )}
       </div>
 
       {/* 削除確認 */}
@@ -1094,11 +1089,11 @@ function UnitRow({
     : 'bg-primary border-primary text-white';
 
   return (
-    <div className={`rounded-lg border transition-colors duration-150 ${rowColor}`}>
+    <div className={`rounded-lg border transition-[background-color,border-color] duration-150 ease-out ${rowColor}`}>
       <div className="flex items-center gap-2 px-3 py-2">
         <button
           onClick={onToggle}
-          className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-[colors,transform] duration-150 active:scale-90 ${checkColor}`}
+          className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-[background-color,border-color,color,transform] duration-150 ease-out active:scale-90 ${checkColor}`}
           aria-label={draft.selected ? `${item.title} を選択解除` : `${item.title} を選択`}
         >
           {draft.selected && <Check className="w-3 h-3" />}
@@ -1110,7 +1105,7 @@ function UnitRow({
           className="flex-1 min-w-0 text-left cursor-pointer group active:opacity-70 transition-opacity duration-100"
         >
           <span
-            className={`text-sm transition-colors duration-150 ${
+            className={`text-sm transition-[color] duration-150 ease-out ${
               done
                 ? 'text-text-faint line-through'
                 : isActive
@@ -1142,7 +1137,7 @@ function UnitRow({
             <div className="flex items-center gap-0.5">
               <button
                 onClick={() => onUpdate({ koma_count: Math.max(0, draft.koma_count - 1) })}
-                className="w-5 h-5 flex items-center justify-center text-text-faint hover:text-text-body rounded hover:bg-surface-hover active:bg-border-default transition-colors duration-100"
+                className="w-5 h-5 flex items-center justify-center text-text-faint hover:text-text-body rounded hover:bg-surface-hover active:bg-border-default transition-[background-color,color] duration-100 ease-out"
                 aria-label="提案コマ数を減らす"
               >
                 <Minus className="w-3 h-3" />
@@ -1152,7 +1147,7 @@ function UnitRow({
               </span>
               <button
                 onClick={() => onUpdate({ koma_count: draft.koma_count + 1 })}
-                className="w-5 h-5 flex items-center justify-center text-text-faint hover:text-text-body rounded hover:bg-surface-hover active:bg-border-default transition-colors duration-100"
+                className="w-5 h-5 flex items-center justify-center text-text-faint hover:text-text-body rounded hover:bg-surface-hover active:bg-border-default transition-[background-color,color] duration-100 ease-out"
                 aria-label="提案コマ数を増やす"
               >
                 <Plus className="w-3 h-3" />
@@ -1164,7 +1159,7 @@ function UnitRow({
             <div className="flex items-center gap-0.5">
               <button
                 onClick={() => onUpdate({ applied_koma: Math.max(0, draft.applied_koma - 1) })}
-                className="w-5 h-5 flex items-center justify-center text-text-faint hover:text-text-body rounded hover:bg-surface-hover active:bg-border-default transition-colors duration-100"
+                className="w-5 h-5 flex items-center justify-center text-text-faint hover:text-text-body rounded hover:bg-surface-hover active:bg-border-default transition-[background-color,color] duration-100 ease-out"
                 aria-label="申込コマ数を減らす"
               >
                 <Minus className="w-3 h-3" />
@@ -1174,7 +1169,7 @@ function UnitRow({
               </span>
               <button
                 onClick={() => onUpdate({ applied_koma: draft.applied_koma + 1 })}
-                className="w-5 h-5 flex items-center justify-center text-text-faint hover:text-text-body rounded hover:bg-surface-hover active:bg-border-default transition-colors duration-100"
+                className="w-5 h-5 flex items-center justify-center text-text-faint hover:text-text-body rounded hover:bg-surface-hover active:bg-border-default transition-[background-color,color] duration-100 ease-out"
                 aria-label="申込コマ数を増やす"
               >
                 <Plus className="w-3 h-3" />
@@ -1192,7 +1187,7 @@ function UnitRow({
             {isGroupHead ? (
               <button
                 onClick={onUngroupAll}
-                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium text-error bg-error/10 rounded hover:bg-error/20 active:scale-95 transition-[colors,transform] duration-100"
+                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium text-error bg-error/10 rounded hover:bg-error/20 active:scale-95 transition-[background-color,color,transform] duration-100 ease-out"
                 title="グループを全解除"
                 aria-label="グループを全解除"
               >
@@ -1202,7 +1197,7 @@ function UnitRow({
             ) : (
               <button
                 onClick={onUngroup}
-                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium text-text-muted bg-surface-hover rounded hover:bg-border-default active:scale-95 transition-[colors,transform] duration-100"
+                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-medium text-text-muted bg-surface-hover rounded hover:bg-border-default active:scale-95 transition-[background-color,color,transform] duration-100 ease-out"
                 title="グループから外す"
                 aria-label="グループから外す"
               >
@@ -1216,7 +1211,7 @@ function UnitRow({
         {isActive && (
           <button
             onClick={() => setExpanded(!expanded)}
-            className="p-1 text-text-faint hover:text-text-body rounded hover:bg-surface-hover active:bg-border-default transition-colors duration-100"
+            className="p-1 text-text-faint hover:text-text-body rounded hover:bg-surface-hover active:bg-border-default transition-[background-color,color] duration-100 ease-out"
             aria-label={expanded ? '理由を閉じる' : '理由を入力'}
           >
             {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -1235,7 +1230,7 @@ function UnitRow({
                 <button
                   key={tag}
                   onClick={() => onUpdate({ intent_tag: active ? null : tag })}
-                  className={`px-1.5 py-0.5 text-[10px] font-medium border rounded-full transition-[colors,transform] duration-100 active:scale-95 ${
+                  className={`px-1.5 py-0.5 text-[10px] font-medium border rounded-full transition-[background-color,border-color,color,transform] duration-100 ease-out active:scale-95 ${
                     active
                       ? `${color} bg-white border-current`
                       : 'text-text-faint border-border-default hover:border-text-muted hover:text-text-muted'
