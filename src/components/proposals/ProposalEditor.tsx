@@ -297,7 +297,7 @@ export default function ProposalEditor() {
       } catch {
         setAvailableCourses([]);
       }
-    } catch (e) {
+    } catch (_e) {
       addToast('データの読み込みに失敗しました', 'error');
     } finally {
       setLoading(false);
@@ -394,7 +394,7 @@ export default function ProposalEditor() {
       setNextGroupId(maxGroup);
       setShowCourseImport(false);
       addToast('ひな形を取り込みました', 'success');
-    } catch (e) {
+    } catch (_e) {
       addToast('取り込みに失敗しました', 'error');
     } finally {
       setImportingCourse(false);
@@ -499,7 +499,7 @@ export default function ProposalEditor() {
       } else {
         setProposal(result);
       }
-    } catch (e) {
+    } catch (_e) {
       addToast('保存に失敗しました', 'error');
     } finally {
       setSaving(false);
@@ -562,7 +562,7 @@ export default function ProposalEditor() {
 
       setProposal((prev) => prev ? { ...prev, status: newStatus } : prev);
       addToast(`ステータスを「${PROPOSAL_STATUS_LABELS[newStatus]}」に変更しました`, 'success');
-    } catch (e) {
+    } catch (_e) {
       addToast('ステータス変更に失敗しました', 'error');
     } finally {
       setStatusChanging(false);
@@ -575,7 +575,7 @@ export default function ProposalEditor() {
       await deleteProposal(proposalId);
       addToast('提案書を削除しました', 'success');
       router.replace(`/students/${studentId}/proposals`);
-    } catch (e) {
+    } catch (_e) {
       addToast('削除に失敗しました', 'error');
     }
   };
