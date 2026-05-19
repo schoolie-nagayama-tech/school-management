@@ -122,6 +122,15 @@ const GROUP_TEXT_COLORS = [
   'text-cyan-600',
 ];
 
+const GROUP_BG = [
+  'bg-blue-50',
+  'bg-purple-50',
+  'bg-amber-50',
+  'bg-emerald-50',
+  'bg-rose-50',
+  'bg-cyan-50',
+];
+
 const STATUS_COLORS: Record<string, { active: string; inactive: string }> = {
   draft: {
     active: 'bg-text-muted text-white',
@@ -975,26 +984,80 @@ export default function ProposalEditor() {
           )}
 
           <div className="space-y-1">
-            {allItems.map((item) => {
-              const draft = unitDrafts.get(item.id);
-              if (!draft) return null;
-              const done = isDone(item.id);
-              const groupMembers = draft.group_id > 0 ? groupMap.get(draft.group_id) : undefined;
+            {(() => {
+              const rendered = new Set<number>();
+              return allItems.map((item) => {
+                const draft = unitDrafts.get(item.id);
+                if (!draft) return null;
+                const done = isDone(item.id);
+                const isGrouped = draft.group_id > 0 && draft.koma_count > 0;
+                const groupMembers = isGrouped ? groupMap.get(draft.group_id) : undefined;
 
-              return (
-                <UnitRow
-                  key={item.id}
-                  item={item}
-                  draft={draft}
-                  done={done}
-                  groupMembers={groupMembers}
-                  onToggle={() => toggleUnit(item.id)}
-                  onUpdate={(patch) => updateUnit(item.id, patch)}
-                  onUngroup={() => ungroupUnit(item.id)}
-                  onUngroupAll={() => draft.group_id > 0 && ungroupAll(draft.group_id)}
-                />
-              );
-            })}
+                if (isGrouped && groupMembers && groupMembers.length > 1) {
+                  if (rendered.has(draft.group_id)) return null;
+                  rendered.add(draft.group_id);
+                  const colorIdx = (draft.group_id - 1) % GROUP_COLORS.length;
+                  const memberItems = groupMembers
+                    .map((m) => ({ item: allItems.find((i) => i.id === m.curriculum_item_id)!, draft: m }))
+                    .filter((m) => m.item);
+
+                  return (
+                    <div
+                      key={`group-${draft.group_id}`}
+                      className={`rounded-lg border-2 ${GROUP_COLORS[colorIdx].replace('border-l-', 'border-')} ${GROUP_BG[colorIdx]} overflow-hidden`}
+                    >
+                      <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/50">
+                        <span className={`text-[10px] font-bold ${GROUP_TEXT_COLORS[colorIdx]}`}>
+                          グループ {draft.group_id}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-text-heading">
+                            {groupMembers[0]?.koma_count ?? 0}コマ
+                          </span>
+                          <button
+                            onClick={() => ungroupAll(draft.group_id)}
+                            className="p-0.5 text-text-faint hover:text-danger rounded hover:bg-white/50 active:scale-95 transition-[background-color,color,transform] duration-100"
+                            title="グループ解除"
+                          >
+                            <Unlink className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="space-y-px">
+                        {memberItems.map(({ item: mi, draft: md }) => (
+                          <UnitRow
+                            key={mi.id}
+                            item={mi}
+                            draft={md}
+                            done={isDone(mi.id)}
+                            groupMembers={groupMembers}
+                            insideGroupContainer
+                            onToggle={() => toggleUnit(mi.id)}
+                            onUpdate={(patch) => updateUnit(mi.id, patch)}
+                            onUngroup={() => ungroupUnit(mi.id)}
+                            onUngroupAll={() => ungroupAll(draft.group_id)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <UnitRow
+                    key={item.id}
+                    item={item}
+                    draft={draft}
+                    done={done}
+                    groupMembers={groupMembers}
+                    onToggle={() => toggleUnit(item.id)}
+                    onUpdate={(patch) => updateUnit(item.id, patch)}
+                    onUngroup={() => ungroupUnit(item.id)}
+                    onUngroupAll={() => draft.group_id > 0 && ungroupAll(draft.group_id)}
+                  />
+                );
+              });
+            })()}
           </div>
         </section>
 
@@ -1171,6 +1234,7 @@ function UnitRow({
   draft,
   done,
   groupMembers,
+  insideGroupContainer,
   onToggle,
   onUpdate,
   onUngroup,
@@ -1180,47 +1244,37 @@ function UnitRow({
   draft: UnitDraft;
   done: boolean;
   groupMembers?: UnitDraft[];
+  insideGroupContainer?: boolean;
   onToggle: () => void;
   onUpdate: (patch: Partial<UnitDraft>) => void;
   onUngroup: () => void;
   onUngroupAll: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const isGroupHead = groupMembers && groupMembers[0]?.curriculum_item_id === draft.curriculum_item_id;
   const isGrouped = draft.group_id > 0;
   const hasApplied = draft.applied_koma > 0;
+  const isActive = draft.koma_count > 0;
 
   const handleCardClick = () => {
     onUpdate({ koma_count: draft.koma_count + 1 });
   };
 
-  const isActive = draft.koma_count > 0;
-
-  const groupColorIdx = isGrouped ? (draft.group_id - 1) % GROUP_COLORS.length : 0;
-  const groupBorderColor = isGrouped ? GROUP_COLORS[groupColorIdx] : '';
-  const groupBadgeBg = isGrouped ? GROUP_BG_COLORS[groupColorIdx] : '';
-  const groupTextColor = isGrouped ? GROUP_TEXT_COLORS[groupColorIdx] : '';
-
-  const rowColor = !isActive
-    ? draft.selected
-      ? 'border-primary/30 bg-primary/5'
-      : 'border-border-subtle bg-surface-raised'
-    : hasApplied
-      ? 'border-success/30 bg-success-subtle'
-      : isGrouped
-        ? 'border-border-default bg-surface-raised'
-        : 'border-accent-ink/20 bg-accent-ink-subtle';
+  const rowColor = insideGroupContainer
+    ? 'bg-white/60'
+    : !isActive
+      ? draft.selected
+        ? 'border border-primary/30 bg-primary/5'
+        : 'border border-border-subtle bg-surface-raised'
+      : hasApplied
+        ? 'border border-success/30 bg-success-subtle'
+        : 'border border-accent-ink/20 bg-accent-ink-subtle';
 
   const checkColor = !draft.selected
     ? 'border-border-strong hover:border-text-muted'
     : 'bg-primary border-primary text-white';
 
   return (
-    <div
-      className={`rounded-lg border transition-[background-color,border-color] duration-150 ease-out ${rowColor} ${
-        isGrouped && isActive ? `border-l-4 ${groupBorderColor}` : ''
-      }`}
-    >
+    <div className={`${insideGroupContainer ? '' : 'rounded-lg'} transition-[background-color,border-color] duration-150 ease-out ${rowColor}`}>
       <div className="flex items-center gap-2 px-3 py-2">
         <button
           onClick={onToggle}
@@ -1249,11 +1303,6 @@ function UnitRow({
           {done && (
             <span className="ml-1.5 text-[10px] text-text-faint">指導済</span>
           )}
-          {isGrouped && !isActive && (
-            <span className={`ml-1.5 text-[10px] font-medium ${groupTextColor}`}>
-              G{draft.group_id}
-            </span>
-          )}
           {isActive && draft.intent_tag && (
             <span
               className={`ml-1.5 inline-block px-1.5 py-0 border rounded-full text-[9px] font-medium ${INTENT_TAG_COLOR[draft.intent_tag as IntentTag] ?? 'text-text-muted border-border-default'}`}
@@ -1263,7 +1312,7 @@ function UnitRow({
           )}
         </button>
 
-        {isActive && (!isGrouped || isGroupHead) && (
+        {isActive && !insideGroupContainer && (
           <div className="flex items-center gap-2 shrink-0">
             <div className="flex items-center gap-0.5">
               <button
@@ -1309,43 +1358,21 @@ function UnitRow({
           </div>
         )}
 
-        {isGrouped && isActive && !isGroupHead && (
-          <div className="flex items-center gap-1 shrink-0">
-            <span className={`text-[10px] font-medium ${groupTextColor}`}>
-              G{draft.group_id}
-            </span>
-            <button
-              onClick={onUngroup}
-              className="p-0.5 text-text-faint hover:text-text-muted rounded hover:bg-surface-hover active:scale-95 transition-[background-color,color,transform] duration-100 ease-out"
-              title="グループから外す"
-              aria-label="グループから外す"
-            >
-              <X className="w-3 h-3" />
-            </button>
-          </div>
-        )}
-
-        {isGrouped && isActive && isGroupHead && (
-          <div className="flex items-center gap-1 shrink-0">
-            <span className={`inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold text-white rounded ${groupBadgeBg}`}>
-              {draft.group_id}
-            </span>
-            <button
-              onClick={onUngroupAll}
-              className="p-0.5 text-text-faint hover:text-danger rounded hover:bg-surface-hover active:scale-95 transition-[background-color,color,transform] duration-100 ease-out"
-              title="グループを全解除"
-              aria-label="グループを全解除"
-            >
-              <Unlink className="w-3.5 h-3.5" />
-            </button>
-          </div>
+        {insideGroupContainer && (
+          <button
+            onClick={onUngroup}
+            className="p-0.5 text-text-faint hover:text-text-muted rounded hover:bg-white/50 active:scale-95 transition-[background-color,color,transform] duration-100 shrink-0"
+            title="グループから外す"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
         )}
 
         {isActive && (
           <button
             onClick={() => setExpanded(!expanded)}
             className="p-1 text-text-faint hover:text-text-body rounded hover:bg-surface-hover active:bg-border-default transition-[background-color,color] duration-100 ease-out"
-            aria-label={expanded ? '理由を閉じる' : '理由を入力'}
+            aria-label={expanded ? '詳細を閉じる' : '詳細を開く'}
           >
             {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
@@ -1353,7 +1380,7 @@ function UnitRow({
       </div>
 
       {isActive && (
-        <div className={`px-3 pb-2 pt-0 ${isGrouped ? 'ml-1' : ''}`}>
+        <div className="px-3 pb-2 pt-0">
           <div className="flex items-center gap-1 flex-wrap">
             {INTENT_TAGS.map((tag) => {
               const active = draft.intent_tag === tag;
@@ -1377,7 +1404,7 @@ function UnitRow({
       )}
 
       {isActive && expanded && (
-        <div className={`px-3 pb-2.5 pt-0 ${isGrouped ? 'ml-1' : ''}`}>
+        <div className="px-3 pb-2.5 pt-0">
           <input
             value={draft.reason}
             onChange={(e) => onUpdate({ reason: e.target.value })}
