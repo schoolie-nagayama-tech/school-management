@@ -78,7 +78,9 @@ export function OrderHistoryPanel({
                 {formatDate(order.created_at)}
               </td>
               <td className="py-2 px-3 text-xs text-gray-800">
-                {order.student
+                {order.is_sample ? (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">見本</span>
+                ) : order.student
                   ? `${order.student.last_name} ${order.student.first_name}`
                   : '-'}
               </td>

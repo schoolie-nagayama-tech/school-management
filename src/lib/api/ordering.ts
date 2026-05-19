@@ -64,10 +64,12 @@ export async function getOrders(
 
   let results = (data || []) as MaterialOrderWithDetails[];
 
-  // 検索フィルター（生徒名）
+  // 検索フィルター（生徒名 / 見本）
   if (filters?.search) {
     const searchLower = filters.search.toLowerCase();
     results = results.filter((order) => {
+      // 見本発注は「見本」で検索可能
+      if (order.is_sample && '見本'.includes(searchLower)) return true;
       if (!order.student) return false;
       const studentName = `${order.student.last_name}${order.student.first_name}`;
       return studentName.toLowerCase().includes(searchLower);
@@ -83,20 +85,23 @@ export async function getOrders(
 export async function createOrder(
   order: {
     material_id: string;
-    student_id: string;
+    student_id?: string | null;
+    is_sample?: boolean;
     quantity?: number;
     notes?: string;
   },
   schoolId?: string
 ): Promise<MaterialOrder> {
   const targetSchoolId = schoolId || getDefaultSchoolId();
+  const isSample = order.is_sample ?? false;
 
   const { data, error } = await supabase
     .from('material_orders')
     .insert({
       school_id: targetSchoolId,
       material_id: order.material_id,
-      student_id: order.student_id,
+      student_id: isSample ? null : (order.student_id || null),
+      is_sample: isSample,
       quantity: order.quantity ?? 1,
       status: 'unconfirmed' as OrderStatus,
       notes: order.notes || null,
@@ -118,7 +123,7 @@ export async function createOrder(
  * 発注を作成し、「教材発注」請求項目の生徒セルに教材名を自動反映する
  */
 export async function createOrderWithBilling(
-  order: { material_id: string; student_id: string; quantity?: number; notes?: string },
+  order: { material_id: string; student_id?: string | null; is_sample?: boolean; quantity?: number; notes?: string },
   billingPeriodId: string,
   schoolId?: string
 ): Promise<{ order: MaterialOrder; billingItem: BillingItem | null }> {
@@ -128,6 +133,12 @@ export async function createOrderWithBilling(
   const createdOrder = await createOrder(order, schoolId);
 
   let billingItem: BillingItem | null = null;
+
+  // 見本発注の場合は請求連携をスキップ
+  const isSample = order.is_sample ?? false;
+  if (isSample || !order.student_id) {
+    return { order: createdOrder, billingItem: null };
+  }
 
   try {
     // 2. 教材名を取得
@@ -302,7 +313,8 @@ export async function updateOrderStatus(
   }
 
   // 配布時: 単語練習帳なら請求管理の単語練習帳列に自動記入 + 所持教材登録
-  if (status === 'distributed') {
+  // 見本発注（student_id が null）の場合はスキップ
+  if (status === 'distributed' && existingOrder.student_id) {
     try {
       await onMaterialDistributed(
         existingOrder.material_id,

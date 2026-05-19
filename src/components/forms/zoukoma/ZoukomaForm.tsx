@@ -15,7 +15,7 @@ import {
 } from '@/types/forms/zoukoma';
 import { SubjectInput } from './SubjectInput';
 import { PriceQuote } from './PriceQuote';
-import { SlotTable } from './SlotTable';
+import { SlotTable, generateAllSlots } from './SlotTable';
 import {
   PortalFormHeader,
   PortalFormSection,
@@ -45,7 +45,8 @@ export function ZoukomaForm({ school, period, isPreview }: ZoukomaFormProps) {
   const [subjectValues, setSubjectValues] = useState<Record<string, number>>(
     {}
   );
-  const [selectedSlots, setSelectedSlots] = useState<string[]>([]);
+  // バツ印モード: 出席できない日程を選択
+  const [unavailableSlots, setUnavailableSlots] = useState<string[]>([]);
   const [note, setNote] = useState('');
 
   // バリデーションエラー
@@ -58,13 +59,13 @@ export function ZoukomaForm({ school, period, isPreview }: ZoukomaFormProps) {
   const { clearDraft } = usePortalFormDraft({
     storageKey: `zoukoma:${school.id}:${period.period_key}`,
     enabled: !isPreview,
-    value: { studentName, selectedGrade, email, subjectValues, selectedSlots, note },
+    value: { studentName, selectedGrade, email, subjectValues, selectedSlots: unavailableSlots, note },
     onRestore: (d) => {
       if (d.studentName) setStudentName(d.studentName);
       if (d.selectedGrade) setSelectedGrade(d.selectedGrade);
       if (d.email) setEmail(d.email);
       if (d.subjectValues) setSubjectValues(d.subjectValues);
-      if (d.selectedSlots?.length) setSelectedSlots(d.selectedSlots);
+      if (d.selectedSlots?.length) setUnavailableSlots(d.selectedSlots);
       if (d.note) setNote(d.note);
     },
   });
@@ -132,8 +133,12 @@ export function ZoukomaForm({ school, period, isPreview }: ZoukomaFormProps) {
       newErrors.subjects = '少なくとも1科目はコマ数を入力してください';
     }
 
-    if (selectedSlots.length === 0) {
-      newErrors.slots = '出席可能な日程を選択してください';
+    // バツ印モード: 全スロットが出席不可だとエラー
+    const allSlots = generateAllSlots(settings);
+    const unavailableSet = new Set(unavailableSlots);
+    const availableCount = allSlots.filter(s => !unavailableSet.has(s.id)).length;
+    if (availableCount === 0) {
+      newErrors.slots = '全ての日程が出席不可になっています。出席できる日程を残してください。';
     }
 
     setErrors(newErrors);
@@ -146,7 +151,7 @@ export function ZoukomaForm({ school, period, isPreview }: ZoukomaFormProps) {
     setSelectedGrade('');
     setEmail('');
     setSubjectValues({});
-    setSelectedSlots([]);
+    setUnavailableSlots([]);
     setNote('');
     setErrors({});
     setErrorMessage('');
@@ -177,16 +182,14 @@ export function ZoukomaForm({ school, period, isPreview }: ZoukomaFormProps) {
       const unitPrice = priceTable[selectedGrade] || 0;
       const totalFee = totalKoma * unitPrice;
 
-      // 選択されたスロットの詳細情報を生成
-      const selectedSlotDetails = selectedSlots.map((slotId) => {
-        // slotId形式: "2024-10-15_5"
+      // スロットID → ラベル変換ヘルパー
+      const buildSlotDetail = (slotId: string) => {
         const [date, periodStr] = slotId.split('_');
         const dateObj = new Date(date);
         const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
         const dayName = dayNames[dateObj.getDay()];
         const dateStr = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
-        
-        // 新形式または旧形式から時間帯を取得
+
         let timeRange = '';
         if (settings.schedule?.periods) {
           const periodConfig = settings.schedule.periods.find(
@@ -198,14 +201,20 @@ export function ZoukomaForm({ school, period, isPreview }: ZoukomaFormProps) {
         } else {
           timeRange = settings.time_slots?.[periodStr as '4' | '5' | '6' | '7'] || '';
         }
-        
-        const label = `${dateStr}(${dayName}) ${periodStr}限${timeRange ? ' ' + timeRange : ''}`;
 
-        return {
-          id: slotId,
-          label,
-        };
-      });
+        const label = `${dateStr}(${dayName}) ${periodStr}限${timeRange ? ' ' + timeRange : ''}`;
+        return { id: slotId, label };
+      };
+
+      // 全スロットから出席不可を除外して出席可能スロットを算出
+      const allSlots = generateAllSlots(settings);
+      const unavailableSet = new Set(unavailableSlots);
+      const availableSlotIds = allSlots
+        .filter(s => !unavailableSet.has(s.id))
+        .map(s => s.id);
+
+      const selectedSlotDetails = availableSlotIds.map(buildSlotDetail);
+      const unavailableSlotDetails = unavailableSlots.map(buildSlotDetail);
 
       const responseData: ZoukomaResponseData = {
         subjects: subjectValues,
@@ -213,7 +222,8 @@ export function ZoukomaForm({ school, period, isPreview }: ZoukomaFormProps) {
         unit_price: unitPrice,
         total_fee: totalFee,
         selected_slots: selectedSlotDetails,
-        slot_count: selectedSlots.length,
+        unavailable_slots: unavailableSlotDetails,
+        slot_count: availableSlotIds.length,
         note: note.trim() || undefined,
       };
 
@@ -332,12 +342,15 @@ export function ZoukomaForm({ school, period, isPreview }: ZoukomaFormProps) {
         </PortalFormSection>
 
         <PortalFormSection
-          title="出席可能日程"
-          description="出席できる日程を選んでください"
+          title="出席できない日程"
+          description="出席できない日程に✗をつけてください（3週間・PS2のみ）"
         >
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4 space-y-2">
+            <p className="text-sm font-semibold text-[#92400e]">
+              PS2のみでの実施となります
+            </p>
             <p className="text-sm text-[#4b5563]">
-              出席可能な日程は多めに選択してください。申込コマ数と同じ数だけ日程をお選びいただいた場合、他の生徒さんとの調整ができず授業を組めない場合があります。
+              出席<span className="font-bold text-[#ef4444]">できない</span>日程に✗印をつけてください。✗がない日程は出席可能とみなします。
             </p>
           </div>
 
@@ -349,9 +362,10 @@ export function ZoukomaForm({ school, period, isPreview }: ZoukomaFormProps) {
 
           <SlotTable
             settings={settings}
-            selectedSlots={selectedSlots}
-            onChange={setSelectedSlots}
+            selectedSlots={unavailableSlots}
+            onChange={setUnavailableSlots}
             disabled={isSubmitting}
+            mode="unavailable"
           />
           <p className="text-sm text-[#4b5563] mt-4">
             日程が決まりましたら、Growよりご連絡いたします。

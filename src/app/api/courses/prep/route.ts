@@ -1048,6 +1048,30 @@ async function handleUpdateProgressItem(
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // 期日同期: deadline が更新された場合、リンク元のスケジュールタスクの end_date も同期
+  if (params.updates.deadline !== undefined) {
+    try {
+      const { data: linkedTasks } = await supabaseAdmin
+        .from('course_prep_schedule_tasks')
+        .select('id')
+        .eq('linked_progress_item_id', params.itemId);
+
+      if (linkedTasks && linkedTasks.length > 0) {
+        const ids = linkedTasks.map((t: { id: string }) => t.id);
+        await supabaseAdmin
+          .from('course_prep_schedule_tasks')
+          .update({
+            end_date: params.updates.deadline as string | null,
+            updated_at: new Date().toISOString(),
+          })
+          .in('id', ids);
+      }
+    } catch (syncErr) {
+      console.error('[courses/prep] deadline sync (progress→schedule) error:', syncErr);
+    }
+  }
+
   return NextResponse.json({ data });
 }
 
@@ -1354,6 +1378,55 @@ async function handleUpdateScheduleTask(
     .eq('id', params.taskId);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // 期日同期: end_date が更新された場合、リンク先の進捗項目の deadline も同期
+  if (params.updates.end_date !== undefined) {
+    try {
+      const { data: task } = await supabaseAdmin
+        .from('course_prep_schedule_tasks')
+        .select('linked_progress_item_id')
+        .eq('id', params.taskId)
+        .single();
+
+      if (task?.linked_progress_item_id) {
+        await supabaseAdmin
+          .from('course_prep_progress_items')
+          .update({
+            deadline: params.updates.end_date as string | null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', task.linked_progress_item_id);
+      }
+    } catch (syncErr) {
+      console.error('[courses/prep] deadline sync (schedule→progress) error:', syncErr);
+    }
+  }
+
+  // リンク設定時: スケジュールタスクの end_date を進捗項目の deadline に同期
+  if (params.updates.linked_progress_item_id !== undefined && params.updates.end_date === undefined) {
+    try {
+      const linkedId = params.updates.linked_progress_item_id as string | null;
+      if (linkedId) {
+        const { data: task } = await supabaseAdmin
+          .from('course_prep_schedule_tasks')
+          .select('end_date')
+          .eq('id', params.taskId)
+          .single();
+
+        if (task?.end_date) {
+          await supabaseAdmin
+            .from('course_prep_progress_items')
+            .update({
+              deadline: task.end_date,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', linkedId);
+        }
+      }
+    } catch (syncErr) {
+      console.error('[courses/prep] deadline sync (link) error:', syncErr);
+    }
+  }
 
   // 双方向同期: is_completed が更新された場合、連動する monthly_task_checks も更新
   if (params.updates.is_completed !== undefined) {

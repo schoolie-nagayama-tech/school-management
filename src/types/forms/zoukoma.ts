@@ -48,6 +48,11 @@ export interface ZoukomaResponseData {
     id: string; // スロットID（例: "20241015_5"）
     label: string; // 表示ラベル（例: "10/15(火) 5限 16:20–17:50"）
   }>;
+  /** 出席できない日程（バツ印で選択されたスロット） */
+  unavailable_slots?: Array<{
+    id: string;
+    label: string;
+  }>;
   slot_count: number; // 選択したスロット数
   note?: string; // 備考
 }

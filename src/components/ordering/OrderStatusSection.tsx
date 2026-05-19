@@ -284,7 +284,9 @@ function UnconfirmedSection({
               <td className="py-2 px-4 text-sm text-gray-900">{order.material?.name || '-'}</td>
               <td className="py-2 px-4 text-sm text-gray-600">{getSchoolName(order)}</td>
               <td className="py-2 px-4 text-sm text-gray-600">
-                {order.student ? `${order.student.last_name} ${order.student.first_name}` : '-'}
+                {order.is_sample ? (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">見本</span>
+                ) : order.student ? `${order.student.last_name} ${order.student.first_name}` : '-'}
               </td>
               <td className="py-2 px-4 text-center text-sm text-gray-900">{order.quantity}冊</td>
               <td className="py-2 px-4 text-sm text-gray-500">{formatDate(order.created_at)}</td>
@@ -346,7 +348,9 @@ function OrderedSection({
                 <span className="text-sm text-gray-900 truncate">{order.material?.name || '-'}</span>
                 <span className="text-sm text-gray-600 whitespace-nowrap">{order.quantity}冊</span>
                 <span className="text-xs text-gray-400 whitespace-nowrap">
-                  {order.student ? `${order.student.last_name} ${order.student.first_name}` : ''}
+                  {order.is_sample ? (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">見本</span>
+                  ) : order.student ? `${order.student.last_name} ${order.student.first_name}` : ''}
                 </span>
                 <span className="text-xs text-gray-400 whitespace-nowrap">発注日: {formatDate(order.created_at)}</span>
               </div>
@@ -386,9 +390,11 @@ function DeliveredSection({
       const studentMap: Record<string, MaterialOrderWithDetails[]> = {};
       const studentOrder: string[] = [];
       for (const order of schoolOrders) {
-        const studentKey = order.student
-          ? `${order.student.last_name} ${order.student.first_name}|${order.student.grade}`
-          : '不明|0';
+        const studentKey = order.is_sample
+          ? '見本|0'
+          : order.student
+            ? `${order.student.last_name} ${order.student.first_name}|${order.student.grade}`
+            : '不明|0';
         if (!studentMap[studentKey]) {
           studentMap[studentKey] = [];
           studentOrder.push(studentKey);
@@ -475,7 +481,9 @@ function DistributedSection({
                   {formatDate(order.distributed_at || order.created_at)}
                 </span>
                 <span className="text-sm text-gray-900 whitespace-nowrap">
-                  {order.student ? `${order.student.last_name} ${order.student.first_name}` : '-'}
+                  {order.is_sample ? (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">見本</span>
+                  ) : order.student ? `${order.student.last_name} ${order.student.first_name}` : '-'}
                 </span>
                 <span className="text-sm text-gray-600 truncate">
                   {order.material?.name || '-'} x{order.quantity}

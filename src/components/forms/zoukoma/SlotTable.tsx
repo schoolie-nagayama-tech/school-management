@@ -10,11 +10,73 @@ const DEFAULT_PERIODS_FALLBACK: PeriodConfig[] = [
   { code: '7', start_time: '19:30', end_time: '21:00', available_saturday: false, available_sunday: false, available_weekday: true },
 ];
 
+/** 設定から3週間分の全スロットを生成（SlotTable 外からも利用可能） */
+export function generateAllSlots(settings: ZoukomaSettings): TimeSlot[] {
+  const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const minDaysAhead = settings.schedule?.min_days_ahead ?? 0;
+  const minDate = new Date(today);
+  minDate.setDate(today.getDate() + minDaysAhead);
+
+  const startDate = new Date(today);
+  const slots: TimeSlot[] = [];
+
+  const periodsToUse: PeriodConfig[] =
+    settings.schedule?.periods?.length
+      ? settings.schedule.periods
+      : DEFAULT_PERIODS_FALLBACK;
+
+  for (let day = 0; day < 21; day++) {
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + day);
+    const dayOfWeek = date.getDay();
+    const dayName = dayNames[dayOfWeek];
+
+    const isSunday = dayOfWeek === 0;
+    const isSaturday = dayOfWeek === 6;
+    const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
+    const isBeforeMinDate = date < minDate;
+
+    periodsToUse.forEach((periodConfig) => {
+      const period = parseInt(periodConfig.code, 10);
+      const satOk = periodConfig.available_saturday ?? false;
+      const sunOk = periodConfig.available_sunday ?? false;
+      const weekdayOk = periodConfig.available_weekday ?? false;
+      const shouldShow =
+        (isSunday && sunOk) ||
+        (isSaturday && satOk) ||
+        (isWeekday && weekdayOk);
+
+      if (!shouldShow) return;
+
+      const slotId = `${date.toISOString().split('T')[0]}_${period}`;
+      const timeRange = `${periodConfig.start_time}–${periodConfig.end_time}`;
+      const dateStr = `${date.getMonth() + 1}/${date.getDate()}`;
+      const label = `${dateStr}(${dayName}) ${period}限 ${timeRange}`;
+
+      slots.push({
+        id: slotId,
+        date: date.toISOString().split('T')[0],
+        dayOfWeek: dayName,
+        period,
+        label,
+        timeRange,
+        isAvailable: !isBeforeMinDate,
+      });
+    });
+  }
+
+  return slots;
+}
+
 interface SlotTableProps {
   settings: ZoukomaSettings;
   selectedSlots: string[];
   onChange: (slotIds: string[]) => void;
   disabled?: boolean;
+  /** 'available' = 出席可能を選択（従来）, 'unavailable' = 出席できない日にバツ印 */
+  mode?: 'available' | 'unavailable';
 }
 
 export function SlotTable({
@@ -22,72 +84,13 @@ export function SlotTable({
   selectedSlots,
   onChange,
   disabled = false,
+  mode = 'available',
 }: SlotTableProps) {
+  const isUnavailableMode = mode === 'unavailable';
   const selectedSlotSet = useMemo(() => new Set(selectedSlots), [selectedSlots]);
 
   // 入力日から3週間分の日程スロットを常に生成（期間設定がなくてもデフォルト時限で表示）
-  const slots = useMemo(() => {
-    const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const minDaysAhead = settings.schedule?.min_days_ahead ?? 0;
-    const minDate = new Date(today);
-    minDate.setDate(today.getDate() + minDaysAhead);
-
-    // 入力している日から3週間（21日間）を常に使用
-    const startDate = new Date(today);
-    const slots: TimeSlot[] = [];
-
-    // 新形式（schedule.periods）があればそれを使用、なければデフォルト時限
-    const periodsToUse: PeriodConfig[] =
-      settings.schedule?.periods?.length
-        ? settings.schedule.periods
-        : DEFAULT_PERIODS_FALLBACK;
-
-    for (let day = 0; day < 21; day++) {
-      const date = new Date(startDate);
-      date.setDate(startDate.getDate() + day);
-      const dayOfWeek = date.getDay();
-      const dayName = dayNames[dayOfWeek];
-
-      const isSunday = dayOfWeek === 0;
-      const isSaturday = dayOfWeek === 6;
-      const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
-      const isBeforeMinDate = date < minDate;
-
-      periodsToUse.forEach((periodConfig) => {
-        const period = parseInt(periodConfig.code, 10);
-        const satOk = periodConfig.available_saturday ?? false;
-        const sunOk = periodConfig.available_sunday ?? false;
-        const weekdayOk = periodConfig.available_weekday ?? false;
-        const shouldShow =
-          (isSunday && sunOk) ||
-          (isSaturday && satOk) ||
-          (isWeekday && weekdayOk);
-
-        if (!shouldShow) {
-          return;
-        }
-
-        const slotId = `${date.toISOString().split('T')[0]}_${period}`;
-        const timeRange = `${periodConfig.start_time}–${periodConfig.end_time}`;
-        const dateStr = `${date.getMonth() + 1}/${date.getDate()}`;
-        const label = `${dateStr}(${dayName}) ${period}限 ${timeRange}`;
-
-        slots.push({
-          id: slotId,
-          date: date.toISOString().split('T')[0],
-          dayOfWeek: dayName,
-          period,
-          label,
-          timeRange,
-          isAvailable: !isBeforeMinDate,
-        });
-      });
-    }
-
-    return slots;
-  }, [settings]);
+  const slots = useMemo(() => generateAllSlots(settings), [settings]);
 
   // 日付ごとにグループ化
   const slotsByDate = useMemo(() => {
@@ -184,16 +187,20 @@ export function SlotTable({
                       onClick={() => handlePeriodToggleAll(period)}
                       className={`text-xs font-medium px-2 py-1 rounded transition-colors ${
                         periodState.allSelected
-                          ? 'bg-[#3b82f6] text-white'
+                          ? isUnavailableMode
+                            ? 'bg-[#ef4444] text-white'
+                            : 'bg-[#3b82f6] text-white'
                           : periodState.someSelected
-                          ? 'bg-[#3b82f6]/50 text-[#1f2937]'
+                          ? isUnavailableMode
+                            ? 'bg-[#ef4444]/50 text-[#1f2937]'
+                            : 'bg-[#3b82f6]/50 text-[#1f2937]'
                           : 'text-[#4b5563] hover:bg-[#e5e7eb]'
                       }`}
                       disabled={disabled}
-                      title={`${period}限を全て${periodState.allSelected ? '解除' : '選択'}`}
+                      title={`${period}限を全て${periodState.allSelected ? '解除' : isUnavailableMode ? '✗にする' : '選択'}`}
                     >
                       {period}限
-                      {periodState.allSelected && ' ✓'}
+                      {periodState.allSelected && (isUnavailableMode ? ' ✗' : ' ✓')}
                     </button>
                   ) : (
                     <span className="text-xs text-[#4b5563]/40">{period}限</span>
@@ -220,14 +227,16 @@ export function SlotTable({
                     onClick={() => handleDateToggle(date)}
                     className={`text-left font-medium px-2 py-1 rounded transition-colors ${
                       allDateSelected
-                        ? 'bg-[#3b82f6] text-white'
+                        ? isUnavailableMode
+                          ? 'bg-[#ef4444] text-white'
+                          : 'bg-[#3b82f6] text-white'
                         : 'text-[#4b5563] hover:bg-[#e5e7eb]'
                     }`}
                     disabled={disabled}
-                    title={`この日の全てを${allDateSelected ? '解除' : '選択'}`}
+                    title={`この日の全てを${allDateSelected ? '解除' : isUnavailableMode ? '✗にする' : '選択'}`}
                   >
                     {dateStr}
-                    {allDateSelected && ' ✓'}
+                    {allDateSelected && (isUnavailableMode ? ' ✗' : ' ✓')}
                   </button>
                 </td>
                 {[4, 5, 6, 7].map((period) => {
@@ -259,12 +268,14 @@ export function SlotTable({
                         disabled={disabled}
                         className={`w-8 h-8 rounded border-2 transition-colors ${
                           isSelected
-                            ? 'bg-[#3b82f6] border-[#e5e7eb]'
+                            ? isUnavailableMode
+                              ? 'bg-[#ef4444] border-[#ef4444] text-white'
+                              : 'bg-[#3b82f6] border-[#e5e7eb]'
                             : 'bg-white border-[#e5e7eb] hover:bg-[#f3f4f6]'
                         }`}
                         title={slot.label}
                       >
-                        {isSelected ? '✓' : ''}
+                        {isSelected ? (isUnavailableMode ? '✗' : '✓') : ''}
                       </button>
                     </td>
                   );

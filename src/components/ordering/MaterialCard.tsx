@@ -21,7 +21,7 @@ interface MaterialCardProps {
   onStockIn: (material: Material) => void;
   onStockOut: (material: Material) => void;
   onHistory: (material: Material) => void;
-  onOrder: (materialId: string, studentId: string, quantity: number, notes: string) => Promise<void>;
+  onOrder: (materialId: string, studentId: string, quantity: number, notes: string, isSample?: boolean) => Promise<void>;
 }
 
 export function MaterialCard({
@@ -54,11 +54,14 @@ export function MaterialCard({
     return 'bg-green-500';
   };
 
+  const SAMPLE_VALUE = '__SAMPLE__';
+
   const handleOrder = async () => {
     if (!selectedStudentId) return;
+    const isSample = selectedStudentId === SAMPLE_VALUE;
     setIsOrdering(true);
     try {
-      await onOrder(material.id, selectedStudentId, quantity, notes);
+      await onOrder(material.id, isSample ? '' : selectedStudentId, quantity, notes, isSample);
       setSelectedStudentId('');
       setQuantity(1);
       setNotes('');
@@ -182,6 +185,7 @@ export function MaterialCard({
               value={selectedStudentId}
               onChange={setSelectedStudentId}
               disabled={isOrdering}
+              showSampleOption
             />
           </div>
 

@@ -73,7 +73,11 @@ export function OrderList({ orders, canEdit, onStatusChange, onDelete }: OrderLi
                 className={`${ROW_COLORS[order.status]} ${order.status === 'cancelled' ? 'line-through text-gray-400' : ''}`}
               >
                 <TableCell>
-                  {order.student?.last_name} {order.student?.first_name}
+                  {order.is_sample ? (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">見本</span>
+                  ) : order.student ? (
+                    <>{order.student.last_name} {order.student.first_name}</>
+                  ) : '-'}
                 </TableCell>
                 <TableCell>{order.material?.name ?? '-'}</TableCell>
                 <TableCell className="text-center">{order.quantity}</TableCell>

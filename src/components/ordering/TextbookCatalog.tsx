@@ -65,6 +65,8 @@ function formatTextbookLabel(tb: Textbook): string {
 
 // ─── Product Card ───────────────────────────────────────────
 
+const SAMPLE_VALUE = '__SAMPLE__';
+
 interface TextbookProductCardProps {
   textbook: Textbook;
   students: StudentOption[];
@@ -81,10 +83,14 @@ function TextbookProductCard({ textbook, students, canEdit, stockQuantity, onAdd
 
   const handleAddToCart = () => {
     if (!selectedStudentId) return;
-    const student = students.find((s) => s.id === selectedStudentId);
-    if (!student) return;
-    const studentLabel = `${gradeLabel(student.grade)} ${student.last_name} ${student.first_name}`;
-    onAddToCart(textbook, formatTextbookLabel(textbook), selectedStudentId, studentLabel, quantity);
+    if (selectedStudentId === SAMPLE_VALUE) {
+      onAddToCart(textbook, formatTextbookLabel(textbook), SAMPLE_VALUE, '見本', quantity);
+    } else {
+      const student = students.find((s) => s.id === selectedStudentId);
+      if (!student) return;
+      const studentLabel = `${gradeLabel(student.grade)} ${student.last_name} ${student.first_name}`;
+      onAddToCart(textbook, formatTextbookLabel(textbook), selectedStudentId, studentLabel, quantity);
+    }
     setSelectedStudentId('');
     setQuantity(1);
     setAddedSuccess(true);
@@ -163,6 +169,7 @@ function TextbookProductCard({ textbook, students, canEdit, stockQuantity, onAdd
             className="w-full px-2 py-1.5 border border-gray-200 rounded-md text-xs bg-white text-gray-700 focus:ring-1 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f] transition-colors duration-150"
           >
             <option value="">生徒を選択...</option>
+            <option value={SAMPLE_VALUE} className="font-medium text-purple-700">見本（生徒なし）</option>
             {students.map((s) => (
               <option key={s.id} value={s.id}>
                 {gradeLabel(s.grade)} {s.last_name} {s.first_name}

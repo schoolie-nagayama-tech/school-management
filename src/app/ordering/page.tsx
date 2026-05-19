@@ -162,6 +162,8 @@ export default function OrderingPage() {
     setIsStockTxnOpen(true);
   };
 
+  const SAMPLE_VALUE = '__SAMPLE__';
+
   // --- Textbook Ordering (with auto stock decrement) ---
   const handleTextbookOrder = async (
     textbookName: string,
@@ -170,6 +172,7 @@ export default function OrderingPage() {
     notes: string
   ) => {
     const schoolId = schoolIds.length > 0 ? schoolIds[0] : undefined;
+    const isSample = studentId === SAMPLE_VALUE;
 
     // Check if a material already exists with this textbook name
     let material = materials.find((m) => m.name === textbookName);
@@ -188,12 +191,12 @@ export default function OrderingPage() {
 
     const orderData = {
       material_id: material.id,
-      student_id: studentId,
+      ...(isSample ? { is_sample: true } : { student_id: studentId }),
       quantity,
       notes: notes || undefined,
     };
 
-    if (activeBillingPeriod) {
+    if (!isSample && activeBillingPeriod) {
       await createOrderWithBilling(orderData, activeBillingPeriod.id, schoolId);
     } else {
       await createOrder(orderData, schoolId);
@@ -207,7 +210,7 @@ export default function OrderingPage() {
           material_id: material.id,
           transaction_type: 'out',
           quantity,
-          reason: '発注による自動出庫',
+          reason: isSample ? '見本発注による自動出庫' : '発注による自動出庫',
         });
       } catch {
         // Stock decrement is best-effort; don't block the order
@@ -231,7 +234,8 @@ export default function OrderingPage() {
 
     const orderEntries: Array<{
       material_id: string;
-      student_id: string;
+      student_id?: string;
+      is_sample?: boolean;
       quantity: number;
       notes?: string;
     }> = [];
@@ -245,9 +249,10 @@ export default function OrderingPage() {
         );
         materialCache.set(item.textbookName, material);
       }
+      const isSample = item.studentId === SAMPLE_VALUE;
       orderEntries.push({
         material_id: material.id,
-        student_id: item.studentId,
+        ...(isSample ? { is_sample: true } : { student_id: item.studentId }),
         quantity: item.quantity,
       });
     }
@@ -259,7 +264,15 @@ export default function OrderingPage() {
         await createOrderWithBilling(entry, activeBillingPeriod.id, schoolId);
       }
     } else {
-      await createBulkOrders(orderEntries, schoolId);
+      // 見本発注が混在する場合は個別に作成
+      const hasSample = orderEntries.some((e) => e.is_sample);
+      if (hasSample) {
+        for (const entry of orderEntries) {
+          await createOrder(entry, schoolId);
+        }
+      } else {
+        await createBulkOrders(orderEntries as Array<{ material_id: string; student_id: string; quantity: number }>, schoolId);
+      }
     }
 
     // Auto-decrement stock

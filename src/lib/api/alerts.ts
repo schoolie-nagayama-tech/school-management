@@ -15,7 +15,7 @@ import type {
 } from '@/types/alerts';
 import { DEFAULT_ALERT_THRESHOLDS } from '@/types/alerts';
 import { SUBJECT_LABELS } from '@/types/database';
-import type { AssessmentWithScores } from '@/types/database';
+import type { AssessmentWithScores, SeasonType } from '@/types/database';
 import type { StudentInterview } from '@/types/database';
 import type { StudentTextbookWithDetails } from '@/types/database';
 
@@ -35,6 +35,9 @@ export interface AlertSources {
   /** 生徒ごとの宿題未実施・遅刻カウント */
   homeworkCountByStudent: Map<string, number>;
   tardyCountByStudent: Map<string, number>;
+  /** 講習準備：期日付き進捗項目と生徒完了状態 */
+  coursePrepItems: Array<{ id: string; school_id: string; name: string; deadline: string; season: SeasonType; year: number }>;
+  coursePrepStudentProgress: Array<{ student_id: string; item_id: string; status: string | null }>;
   /** 設定（教室別の最も厳しい値を採用） */
   settingsBySchool: Map<string, AlertSetting[]>;
 }
@@ -100,6 +103,8 @@ export async function fetchAlertSources(schoolIds: string[]): Promise<AlertSourc
       examTypeNames: new Map(),
       homeworkCountByStudent: new Map(),
       tardyCountByStudent: new Map(),
+      coursePrepItems: [],
+      coursePrepStudentProgress: [],
       settingsBySchool: new Map(),
     };
   }
@@ -113,6 +118,7 @@ export async function fetchAlertSources(schoolIds: string[]): Promise<AlertSourc
     pendingTasksResult,
     textbooksResult,
     progressFlags,
+    coursePrepData,
     settingsBySchool,
   ] = await Promise.all([
     getStudents(undefined, schoolIds),
@@ -123,6 +129,7 @@ export async function fetchAlertSources(schoolIds: string[]): Promise<AlertSourc
     getPendingTasksBySchools(schoolIds).catch((e) => { console.warn('未完了タスクの取得に失敗しました:', e); return []; }),
     getStudentTextbooksExamsBySchool(schoolIds),
     fetchProgressFlagsByStudent(schoolIds),
+    fetchCoursePrepAlertData(schoolIds),
     getAlertSettingsBySchools(schoolIds).catch(() => new Map<string, AlertSetting[]>()),
   ]);
 
@@ -142,6 +149,8 @@ export async function fetchAlertSources(schoolIds: string[]): Promise<AlertSourc
     examTypeNames,
     homeworkCountByStudent: progressFlags.homework,
     tardyCountByStudent: progressFlags.tardy,
+    coursePrepItems: coursePrepData.items,
+    coursePrepStudentProgress: coursePrepData.studentProgress,
     settingsBySchool,
   };
 }
@@ -594,6 +603,124 @@ function buildTardyCandidates(sources: AlertSources): Alert[] {
   );
 }
 
+// ============================================
+// 講習準備アラート用データ取得
+// ============================================
+
+function getCoursePrepSeason(): SeasonType {
+  const month = new Date().getMonth() + 1;
+  if (month >= 2 && month <= 5) return 'spring';
+  if (month >= 5 && month <= 9) return 'summer';
+  return 'winter';
+}
+
+async function fetchCoursePrepAlertData(schoolIds: string[]): Promise<{
+  items: AlertSources['coursePrepItems'];
+  studentProgress: AlertSources['coursePrepStudentProgress'];
+}> {
+  if (schoolIds.length === 0) return { items: [], studentProgress: [] };
+
+  const season = getCoursePrepSeason();
+  const year = new Date().getFullYear();
+
+  try {
+    const { data: items, error: itemsError } = await supabase
+      .from('course_prep_progress_items')
+      .select('id, school_id, name, deadline, season, year')
+      .in('school_id', schoolIds)
+      .eq('season', season)
+      .eq('year', year)
+      .eq('is_hidden', false)
+      .eq('column_type', 'check')
+      .not('deadline', 'is', null);
+
+    if (itemsError) {
+      console.warn('講習準備アラートデータ取得エラー:', itemsError);
+      return { items: [], studentProgress: [] };
+    }
+
+    if (!items || items.length === 0) return { items: [], studentProgress: [] };
+
+    const itemIds = items.map((i: { id: string }) => i.id);
+    const { data: progress } = await supabase
+      .from('course_prep_student_progress')
+      .select('student_id, item_id, status')
+      .in('item_id', itemIds);
+
+    return {
+      items: items as AlertSources['coursePrepItems'],
+      studentProgress: (progress || []) as AlertSources['coursePrepStudentProgress'],
+    };
+  } catch (e) {
+    console.warn('講習準備アラートデータ取得エラー:', e);
+    return { items: [], studentProgress: [] };
+  }
+}
+
+function buildCoursePrepOverdueCandidates(sources: AlertSources): Alert[] {
+  if (!isAlertEnabled(sources.settingsBySchool, 'course_prep_overdue')) return [];
+  if (sources.coursePrepItems.length === 0) return [];
+
+  const alerts: Alert[] = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const warnDays = getStrictestThreshold(
+    sources.settingsBySchool, 'course_prep_overdue', 'course_prep_warn_days', 'max'
+  );
+
+  const completedSet = new Set<string>();
+  for (const p of sources.coursePrepStudentProgress) {
+    if (p.status === 'completed' || p.status === 'not_applicable') {
+      completedSet.add(`${p.student_id}:${p.item_id}`);
+    }
+  }
+
+  for (const item of sources.coursePrepItems) {
+    const dueDate = new Date(item.deadline + 'T00:00:00');
+    const daysDiff = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    if (daysDiff > warnDays) continue;
+
+    const studentsInSchool = sources.students.filter((s) => s.school_id === item.school_id);
+    for (const student of studentsInSchool) {
+      if (completedSet.has(`${student.id}:${item.id}`)) continue;
+
+      const dueDateStr = dueDate.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' });
+      const alertKey = `course_prep:${item.id}`;
+
+      let severity: AlertSeverity;
+      let message: string;
+      if (daysDiff > 0) {
+        severity = 'info';
+        message = `${item.name}（あと${daysDiff}日: ${dueDateStr}）`;
+      } else if (daysDiff === 0) {
+        severity = 'warning';
+        message = `${item.name}（本日期日: ${dueDateStr}）`;
+      } else {
+        severity = 'danger';
+        message = `${item.name}（${Math.abs(daysDiff)}日超過: ${dueDateStr}）`;
+      }
+
+      alerts.push({
+        id: `${student.id}:course_prep_overdue:${alertKey}`,
+        student_id: student.id,
+        student_name: `${student.last_name} ${student.first_name}`,
+        grade: student.grade,
+        school_id: student.school_id,
+        alert_type: 'course_prep_overdue',
+        alert_key: alertKey,
+        message,
+        details: {
+          item_name: item.name,
+          due_date: item.deadline,
+          days_until_due: daysDiff,
+        },
+        severity,
+      });
+    }
+  }
+  return alerts;
+}
+
 export type AlertLevel = 'warning' | 'info';
 
 /** Phase 3: アラート定義のデータ駆動化（追加・表示制御を一元管理） */
@@ -609,13 +736,14 @@ export const ALERT_DEFINITIONS: Record<
   exam_overdue: { level: 'warning', evaluator: buildExamOverdueCandidates },
   homework_not_done: { level: 'warning', evaluator: buildHomeworkNotDoneCandidates },
   tardy: { level: 'warning', evaluator: buildTardyCandidates },
+  course_prep_overdue: { level: 'warning', evaluator: buildCoursePrepOverdueCandidates },
 };
 
 /** Light 用の alert types */
 const LIGHT_ALERT_TYPES: AlertType[] = ['interview_overdue', 'application_overdue', 'interview_task'];
 
 /** Heavy 用の alert types */
-const HEAVY_ALERT_TYPES: AlertType[] = ['score_drop', 'score_missing', 'exam_overdue', 'homework_not_done', 'tardy'];
+const HEAVY_ALERT_TYPES: AlertType[] = ['score_drop', 'score_missing', 'exam_overdue', 'homework_not_done', 'tardy', 'course_prep_overdue'];
 
 /**
  * 全アラート候補を生成（pure、dismiss 未考慮、ALERT_DEFINITIONS 駆動）
@@ -794,6 +922,8 @@ async function fetchAlertSourcesLight(schoolIds: string[]): Promise<Partial<Aler
       applicationItems: [],
       applications: [],
       pendingTasks: [],
+      coursePrepItems: [],
+      coursePrepStudentProgress: [],
       settingsBySchool: new Map(),
     };
   }
@@ -831,15 +961,18 @@ async function fetchAlertSourcesHeavy(schoolIds: string[]): Promise<Partial<Aler
       examTypeNames: new Map(),
       homeworkCountByStudent: new Map(),
       tardyCountByStudent: new Map(),
+      coursePrepItems: [],
+      coursePrepStudentProgress: [],
       settingsBySchool: new Map(),
     };
   }
 
-  const [allStudents, assessmentsByStudent, textbooksResult, progressFlags, settingsBySchool] = await Promise.all([
+  const [allStudents, assessmentsByStudent, textbooksResult, progressFlags, coursePrepData, settingsBySchool] = await Promise.all([
     getStudents(undefined, schoolIds),
     listAssessmentsBySchool(schoolIds),
     getStudentTextbooksExamsBySchool(schoolIds),
     fetchProgressFlagsByStudent(schoolIds),
+    fetchCoursePrepAlertData(schoolIds),
     getAlertSettingsBySchools(schoolIds).catch(() => new Map<string, AlertSetting[]>()),
   ]);
   const students = allStudents.filter((s) => s.status === 'active');
@@ -858,6 +991,8 @@ async function fetchAlertSourcesHeavy(schoolIds: string[]): Promise<Partial<Aler
     examTypeNames,
     homeworkCountByStudent: progressFlags.homework,
     tardyCountByStudent: progressFlags.tardy,
+    coursePrepItems: coursePrepData.items,
+    coursePrepStudentProgress: coursePrepData.studentProgress,
     settingsBySchool,
   };
 }
@@ -874,6 +1009,8 @@ function toFullSources(partial: Partial<AlertSources>): AlertSources {
     examTypeNames: partial.examTypeNames ?? new Map(),
     homeworkCountByStudent: partial.homeworkCountByStudent ?? new Map(),
     tardyCountByStudent: partial.tardyCountByStudent ?? new Map(),
+    coursePrepItems: partial.coursePrepItems ?? [],
+    coursePrepStudentProgress: partial.coursePrepStudentProgress ?? [],
     settingsBySchool: partial.settingsBySchool ?? new Map(),
   };
 }

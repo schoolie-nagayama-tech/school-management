@@ -2397,7 +2397,8 @@ export type Database = {
           id: string;
           school_id: string;
           material_id: string;
-          student_id: string;
+          student_id: string | null;
+          is_sample: boolean;
           quantity: number;
           status: 'unconfirmed' | 'ordered' | 'delivered' | 'distributed' | 'cancelled';
           ordered_at: string | null;
@@ -2412,7 +2413,8 @@ export type Database = {
           id?: string;
           school_id: string;
           material_id: string;
-          student_id: string;
+          student_id?: string | null;
+          is_sample?: boolean;
           quantity?: number;
           status?: 'unconfirmed' | 'ordered' | 'delivered' | 'distributed' | 'cancelled';
           ordered_at?: string | null;
@@ -2427,7 +2429,8 @@ export type Database = {
           id?: string;
           school_id?: string;
           material_id?: string;
-          student_id?: string;
+          student_id?: string | null;
+          is_sample?: boolean;
           quantity?: number;
           status?: 'unconfirmed' | 'ordered' | 'delivered' | 'distributed' | 'cancelled';
           ordered_at?: string | null;
@@ -3824,7 +3827,7 @@ export const ORDER_STATUS_COLORS: Record<OrderStatus, string> = {
 
 export type MaterialOrderWithDetails = MaterialOrder & {
   material?: Material;
-  student?: { id: string; last_name: string; first_name: string; grade: number };
+  student?: { id: string; last_name: string; first_name: string; grade: number } | null;
 };
 
 // ============================================

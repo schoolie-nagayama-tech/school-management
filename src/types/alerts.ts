@@ -6,7 +6,8 @@ export type AlertType =
   | 'interview_task'    // 面談タスク
   | 'exam_overdue'      // テスト未更新
   | 'homework_not_done' // 宿題未実施
-  | 'tardy';            // 遅刻
+  | 'tardy'             // 遅刻
+  | 'course_prep_overdue'; // 講習準備未完了
 
 export const ALERT_TYPE_LABELS: Record<AlertType, string> = {
   score_drop: '成績低下',
@@ -17,6 +18,7 @@ export const ALERT_TYPE_LABELS: Record<AlertType, string> = {
   exam_overdue: '目標未設定',
   homework_not_done: '宿題未実施',
   tardy: '遅刻',
+  course_prep_overdue: '講習準備',
 };
 
 /** アラートラベル用：明るいトーンに統一 */
@@ -29,6 +31,7 @@ export const ALERT_TYPE_COLORS: Record<AlertType, string> = {
   exam_overdue: 'bg-rose-100 text-rose-700',
   homework_not_done: 'bg-yellow-100 text-yellow-800',
   tardy: 'bg-orange-100 text-orange-700',
+  course_prep_overdue: 'bg-indigo-100 text-indigo-700',
 };
 
 /** 段階レベル（バッジの色や強調表現に使用） */
@@ -104,6 +107,8 @@ export interface AlertThresholds {
   tardy_warn_count?: number;         // 遅刻：N回で黄（デフォ 1）
   tardy_danger_count?: number;       // 遅刻：N回で赤（デフォ 3）
   trend_window_months?: number;      // 長期トレンド判定の月数（デフォ 6）
+  course_prep_warn_days?: number;    // 講習準備：N日前から黄（デフォ 3）
+  course_prep_alert_days?: number;   // 講習準備：N日前から橙（デフォ 0 = 当日）
 }
 
 export const DEFAULT_ALERT_THRESHOLDS: Required<AlertThresholds> = {
@@ -119,6 +124,8 @@ export const DEFAULT_ALERT_THRESHOLDS: Required<AlertThresholds> = {
   tardy_warn_count: 1,
   tardy_danger_count: 3,
   trend_window_months: 6,
+  course_prep_warn_days: 3,
+  course_prep_alert_days: 0,
 };
 
 export interface AlertSetting {

@@ -15,6 +15,7 @@ const ALL_ALERT_TYPES: AlertType[] = [
   'exam_overdue',
   'homework_not_done',
   'tardy',
+  'course_prep_overdue',
 ];
 
 type AlertSettingRow = {

@@ -101,47 +101,35 @@ export function ZoukomaResponseDetailModal({
           </div>
         </div>
 
-        {/* 希望日程 */}
-        {response_data.selected_slots && response_data.selected_slots.length > 0 && (() => {
-          // スロットIDから dateKey・periodKey を取得してマトリックスを構築
-          const slotSet = new Set(response_data.selected_slots.map(s => s.id));
-
-          // ユニークな日付キー（ソート済み）
-          const dateKeys = Array.from(new Set(response_data.selected_slots.map(s => s.id.split('_')[0]))).sort();
-
-          // ユニークな時限キー（数値順）
-          const periodKeys = Array.from(new Set(response_data.selected_slots.map(s => s.id.split('_')[1])))
+        {/* 出席できない日程（unavailable_slots がある場合） */}
+        {response_data.unavailable_slots && response_data.unavailable_slots.length > 0 && (() => {
+          const allSlots = [...response_data.selected_slots, ...response_data.unavailable_slots];
+          const unavailableSet = new Set(response_data.unavailable_slots.map(s => s.id));
+          const dateKeys = Array.from(new Set(allSlots.map(s => s.id.split('_')[0]))).sort();
+          const periodKeys = Array.from(new Set(allSlots.map(s => s.id.split('_')[1])))
             .sort((a, b) => parseInt(a) - parseInt(b));
 
-          // dateKey → "3/11(水)" のラベルマップ
           const dateLabel: Record<string, string> = {};
-          // periodKey → { period: "5限", timeRange?: "16:20–17:50" }
           const periodInfo: Record<string, { period: string; timeRange?: string }> = {};
-
-          response_data.selected_slots.forEach(slot => {
+          allSlots.forEach(slot => {
             const [dk, pk] = slot.id.split('_');
-            const parts = slot.label.split(' '); // ["3/11(水)", "5限", "16:20–17:50"]
+            const parts = slot.label.split(' ');
             if (!dateLabel[dk]) dateLabel[dk] = parts[0] ?? dk;
             if (!periodInfo[pk]) {
-              periodInfo[pk] = {
-                period: parts[1] ?? `${pk}限`,
-                timeRange: parts[2],
-              };
+              periodInfo[pk] = { period: parts[1] ?? `${pk}限`, timeRange: parts[2] };
             }
           });
 
           return (
             <div>
               <label className="block text-sm font-medium text-[#1f2937] mb-2">
-                希望日程（{response_data.selected_slots.length}件）
+                日程（出席不可: {response_data.unavailable_slots.length}件 / 出席可: {response_data.selected_slots.length}件）
               </label>
               <div className="overflow-x-auto">
                 <table className="border-collapse text-sm">
                   <thead>
                     <tr className="bg-[#f3f4f6]">
-                      <th className="border border-[#e5e7eb] px-3 py-2 text-left font-medium text-[#4b5563]">
-                        日付
-                      </th>
+                      <th className="border border-[#e5e7eb] px-3 py-2 text-left font-medium text-[#4b5563]">日付</th>
                       {periodKeys.map(pk => (
                         <th key={pk} className="border border-[#e5e7eb] px-3 py-2 text-center font-medium text-[#4b5563]">
                           <div>{periodInfo[pk]?.period}</div>
@@ -155,9 +143,75 @@ export function ZoukomaResponseDetailModal({
                   <tbody>
                     {dateKeys.map((dk, i) => (
                       <tr key={dk} className={i % 2 === 0 ? 'bg-white' : 'bg-[#f9fafb]'}>
-                        <td className="border border-[#e5e7eb] px-3 py-2 text-[#4b5563] whitespace-nowrap">
-                          {dateLabel[dk]}
-                        </td>
+                        <td className="border border-[#e5e7eb] px-3 py-2 text-[#4b5563] whitespace-nowrap">{dateLabel[dk]}</td>
+                        {periodKeys.map(pk => {
+                          const slotId = `${dk}_${pk}`;
+                          const isUnavailable = unavailableSet.has(slotId);
+                          const exists = allSlots.some(s => s.id === slotId);
+                          return (
+                            <td key={pk} className={`border border-[#e5e7eb] px-3 py-2 text-center ${isUnavailable ? 'bg-[#fef2f2]' : ''}`}>
+                              {!exists ? (
+                                <span className="text-[#d1d5db]">—</span>
+                              ) : isUnavailable ? (
+                                <span className="text-[#ef4444] font-bold">✗</span>
+                              ) : (
+                                <span className="text-[#059669] font-bold">✓</span>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* 希望日程（従来形式: unavailable_slots がない場合） */}
+        {(!response_data.unavailable_slots || response_data.unavailable_slots.length === 0) &&
+          response_data.selected_slots && response_data.selected_slots.length > 0 && (() => {
+          const slotSet = new Set(response_data.selected_slots.map(s => s.id));
+          const dateKeys = Array.from(new Set(response_data.selected_slots.map(s => s.id.split('_')[0]))).sort();
+          const periodKeys = Array.from(new Set(response_data.selected_slots.map(s => s.id.split('_')[1])))
+            .sort((a, b) => parseInt(a) - parseInt(b));
+
+          const dateLabel: Record<string, string> = {};
+          const periodInfo: Record<string, { period: string; timeRange?: string }> = {};
+          response_data.selected_slots.forEach(slot => {
+            const [dk, pk] = slot.id.split('_');
+            const parts = slot.label.split(' ');
+            if (!dateLabel[dk]) dateLabel[dk] = parts[0] ?? dk;
+            if (!periodInfo[pk]) {
+              periodInfo[pk] = { period: parts[1] ?? `${pk}限`, timeRange: parts[2] };
+            }
+          });
+
+          return (
+            <div>
+              <label className="block text-sm font-medium text-[#1f2937] mb-2">
+                希望日程（{response_data.selected_slots.length}件）
+              </label>
+              <div className="overflow-x-auto">
+                <table className="border-collapse text-sm">
+                  <thead>
+                    <tr className="bg-[#f3f4f6]">
+                      <th className="border border-[#e5e7eb] px-3 py-2 text-left font-medium text-[#4b5563]">日付</th>
+                      {periodKeys.map(pk => (
+                        <th key={pk} className="border border-[#e5e7eb] px-3 py-2 text-center font-medium text-[#4b5563]">
+                          <div>{periodInfo[pk]?.period}</div>
+                          {periodInfo[pk]?.timeRange && (
+                            <div className="font-normal text-xs text-[#6b7280]">{periodInfo[pk].timeRange}</div>
+                          )}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dateKeys.map((dk, i) => (
+                      <tr key={dk} className={i % 2 === 0 ? 'bg-white' : 'bg-[#f9fafb]'}>
+                        <td className="border border-[#e5e7eb] px-3 py-2 text-[#4b5563] whitespace-nowrap">{dateLabel[dk]}</td>
                         {periodKeys.map(pk => (
                           <td key={pk} className="border border-[#e5e7eb] px-3 py-2 text-center">
                             {slotSet.has(`${dk}_${pk}`) ? (

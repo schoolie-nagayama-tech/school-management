@@ -55,6 +55,10 @@ const FIELDS_BY_TYPE: Partial<Record<AlertType, FieldDef[]>> = {
     { key: 'tardy_warn_count', label: '黄色（注意）になる回数', unit: '回', min: 1, max: 10 },
     { key: 'tardy_danger_count', label: '赤色（警告）になる回数', unit: '回', min: 1, max: 30 },
   ],
+  course_prep_overdue: [
+    { key: 'course_prep_warn_days', label: '何日前から表示', unit: '日', min: 0, max: 60 },
+    { key: 'course_prep_alert_days', label: '何日前から警告', unit: '日', min: 0, max: 30 },
+  ],
 };
 
 const ALERT_DESCRIPTIONS: Record<AlertType, string> = {
@@ -66,6 +70,7 @@ const ALERT_DESCRIPTIONS: Record<AlertType, string> = {
   exam_overdue: '教材のテスト日が過ぎているのに記録未更新の項目を検出。',
   homework_not_done: '進行表で「宿題未実施」にチェックした回数で段階表示。',
   tardy: '進行表で「遅刻」にチェックした回数で段階表示。',
+  course_prep_overdue: '講習準備の進捗項目で期日超過・間近の未完了生徒を段階表示。',
 };
 
 export default function AlertsSettingsPage() {

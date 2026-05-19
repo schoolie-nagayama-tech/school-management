@@ -35,6 +35,7 @@ export function CreateOrderModal({ isOpen, onClose, onCreated, schoolIds }: Crea
   const [autoBilling, setAutoBilling] = useState(true);
 
   // フォーム
+  const [isSample, setIsSample] = useState(false);
   const [studentIds, setStudentIds] = useState<string[]>(['']);
   const [materialId, setMaterialId] = useState('');
   const [notes, setNotes] = useState('');
@@ -66,6 +67,7 @@ export function CreateOrderModal({ isOpen, onClose, onCreated, schoolIds }: Crea
   useEffect(() => {
     if (isOpen) {
       fetchData();
+      setIsSample(false);
       setStudentIds(['']);
       setMaterialId('');
       setNotes('');
@@ -105,10 +107,17 @@ export function CreateOrderModal({ isOpen, onClose, onCreated, schoolIds }: Crea
   };
 
   const handleSubmit = async () => {
-    const filledStudentIds = studentIds.filter((id) => id !== '');
-    if (filledStudentIds.length === 0 || !materialId) {
-      setErrorMessage('教材と少なくとも1名の生徒を選択してください');
+    if (!materialId) {
+      setErrorMessage('教材を選択してください');
       return;
+    }
+
+    if (!isSample) {
+      const filledStudentIds = studentIds.filter((id) => id !== '');
+      if (filledStudentIds.length === 0) {
+        setErrorMessage('生徒を選択してください（見本の場合は「見本発注」にチェック）');
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -116,18 +125,30 @@ export function CreateOrderModal({ isOpen, onClose, onCreated, schoolIds }: Crea
     try {
       const schoolId = schoolIds.length > 0 ? schoolIds[0] : undefined;
 
-      for (const sid of filledStudentIds) {
+      if (isSample) {
+        // 見本発注: 生徒なし・1件のみ
         const orderData = {
           material_id: materialId,
-          student_id: sid,
+          is_sample: true,
           quantity: 1,
           notes: notes || undefined,
         };
+        await createOrder(orderData, schoolId);
+      } else {
+        const filledStudentIds = studentIds.filter((id) => id !== '');
+        for (const sid of filledStudentIds) {
+          const orderData = {
+            material_id: materialId,
+            student_id: sid,
+            quantity: 1,
+            notes: notes || undefined,
+          };
 
-        if (autoBilling && activeBillingPeriod) {
-          await createOrderWithBilling(orderData, activeBillingPeriod.id, schoolId);
-        } else {
-          await createOrder(orderData, schoolId);
+          if (autoBilling && activeBillingPeriod) {
+            await createOrderWithBilling(orderData, activeBillingPeriod.id, schoolId);
+          } else {
+            await createOrder(orderData, schoolId);
+          }
         }
       }
 
@@ -181,7 +202,28 @@ export function CreateOrderModal({ isOpen, onClose, onCreated, schoolIds }: Crea
               </Select>
             </div>
 
-            {/* 冊数と生徒選択 */}
+            {/* 見本発注チェック */}
+            <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <input
+                type="checkbox"
+                id="isSample"
+                checked={isSample}
+                onChange={(e) => {
+                  setIsSample(e.target.checked);
+                  if (e.target.checked) {
+                    setStudentIds(['']);
+                    setStudentSearch('');
+                  }
+                }}
+                className="h-4 w-4 rounded border-gray-300 text-[#1e3a5f] focus:ring-[#1e3a5f]"
+              />
+              <label htmlFor="isSample" className="text-sm text-[#374151] font-medium">
+                見本発注（生徒なし）
+              </label>
+            </div>
+
+            {/* 冊数と生徒選択（見本でない場合のみ） */}
+            {!isSample && (
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="block text-sm font-medium text-[#374151]">
@@ -257,6 +299,7 @@ export function CreateOrderModal({ isOpen, onClose, onCreated, schoolIds }: Crea
                 </button>
               )}
             </div>
+            )}
 
             {/* 備考 */}
             <div>
@@ -271,8 +314,8 @@ export function CreateOrderModal({ isOpen, onClose, onCreated, schoolIds }: Crea
               />
             </div>
 
-            {/* 請求自動反映 */}
-            {activeBillingPeriod && (
+            {/* 請求自動反映（見本でない場合のみ） */}
+            {!isSample && activeBillingPeriod && (
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
@@ -297,9 +340,11 @@ export function CreateOrderModal({ isOpen, onClose, onCreated, schoolIds }: Crea
           <Button onClick={handleSubmit} disabled={isLoading || isFetching}>
             {isLoading
               ? '作成中...'
-              : quantity > 1
-                ? `${studentIds.filter((id) => id !== '').length}件をまとめて発注`
-                : '発注を作成'}
+              : isSample
+                ? '見本を発注'
+                : quantity > 1
+                  ? `${studentIds.filter((id) => id !== '').length}件をまとめて発注`
+                  : '発注を作成'}
           </Button>
         </div>
       </div>

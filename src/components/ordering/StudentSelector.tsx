@@ -9,20 +9,24 @@ interface StudentOption {
   grade: number | null;
 }
 
+const SAMPLE_VALUE = '__SAMPLE__';
+
 interface StudentSelectorProps {
   students: StudentOption[];
   value: string;
   onChange: (studentId: string) => void;
   disabled?: boolean;
+  showSampleOption?: boolean;
 }
 
-export function StudentSelector({ students, value, onChange, disabled }: StudentSelectorProps) {
+export function StudentSelector({ students, value, onChange, disabled, showSampleOption }: StudentSelectorProps) {
   const [search, setSearch] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const selectedStudent = students.find((s) => s.id === value);
+  const isSampleSelected = value === SAMPLE_VALUE;
+  const selectedStudent = isSampleSelected ? null : students.find((s) => s.id === value);
 
   const filtered = search
     ? students.filter((s) => {
@@ -62,12 +66,18 @@ export function StudentSelector({ students, value, onChange, disabled }: Student
 
   return (
     <div ref={containerRef} className="relative">
-      {selectedStudent && !isOpen ? (
+      {(selectedStudent || isSampleSelected) && !isOpen ? (
         <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-sm">
-          <span className="text-xs text-gray-500">{gradeLabel(selectedStudent.grade)}</span>
-          <span className="flex-1 text-gray-800">
-            {selectedStudent.last_name} {selectedStudent.first_name}
-          </span>
+          {isSampleSelected ? (
+            <span className="flex-1 text-purple-700 font-medium">見本（生徒なし）</span>
+          ) : selectedStudent ? (
+            <>
+              <span className="text-xs text-gray-500">{gradeLabel(selectedStudent.grade)}</span>
+              <span className="flex-1 text-gray-800">
+                {selectedStudent.last_name} {selectedStudent.first_name}
+              </span>
+            </>
+          ) : null}
           {!disabled && (
             <button
               type="button"
@@ -95,6 +105,16 @@ export function StudentSelector({ students, value, onChange, disabled }: Student
       )}
       {isOpen && !disabled && (
         <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+          {showSampleOption && (
+            <button
+              type="button"
+              className="w-full text-left px-3 py-1.5 text-sm hover:bg-purple-50 transition-colors flex items-center gap-2 border-b border-gray-100"
+              onClick={() => handleSelect(SAMPLE_VALUE)}
+            >
+              <span className="text-xs text-purple-500 w-6">--</span>
+              <span className="text-purple-700 font-medium">見本（生徒なし）</span>
+            </button>
+          )}
           {filtered.length === 0 ? (
             <div className="px-3 py-2 text-xs text-gray-400">該当する生徒がいません</div>
           ) : (
