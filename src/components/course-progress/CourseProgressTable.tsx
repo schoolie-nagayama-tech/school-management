@@ -10,7 +10,7 @@ import { Tooltip } from '@/components/ui/Tooltip';
 const AUTO_SOURCE_LABELS: Record<string, { label: string; desc: string }> = {
   regular_weekly: { label: '通塾回数/週', desc: '通塾パターンから自動計算' },
   course_sessions: { label: '講習期間通常回数', desc: '講習期間中の通塾回数を自動計算' },
-  proposed_extra: { label: '提示増コマ', desc: '教科別計 - 通常回数' },
+  proposed_extra: { label: '提示増コマ', desc: '下書き提案コマ合計 - 通常回数' },
   subject_proposal: { label: '進行表コマ数', desc: '進行表の提案コマ数を科目名で自動集計' },
 };
 
@@ -247,8 +247,8 @@ export function CourseProgressTable({
             if (item.auto_source === 'regular_weekly') v = sv.regular_weekly;
             else if (item.auto_source === 'course_sessions') v = sv.course_sessions;
             else if (item.auto_source === 'proposed_extra') {
-              const st = subjectTotals[s.id] ?? 0;
-              v = Math.max(0, st - (sv.course_sessions ?? 0));
+              const pt = sv.proposal_total ?? 0;
+              v = Math.max(0, pt - (sv.course_sessions ?? 0));
             }
             else if (item.auto_source === 'subject_proposal') v = getSubjectProposalValue(sv.subject_proposals, item.name);
           }
@@ -269,7 +269,7 @@ export function CourseProgressTable({
       agg[item.id] = { completed, total, sum, filled };
     }
     return agg;
-  }, [items, students, progressMap, autoValues, subjectTotals]);
+  }, [items, students, progressMap, autoValues]);
 
   // グループ別進捗率
   const groupCompletionRates = useMemo(() => {
@@ -400,11 +400,11 @@ export function CourseProgressTable({
       if (!sv) return 0;
       if (autoSource === 'regular_weekly') return sv.regular_weekly;
       if (autoSource === 'course_sessions') return sv.course_sessions;
-      // 提示増コマ = 教科別合計 - 講習期間通常回数
+      // 提示増コマ = 下書き提案コマ合計 - 講習期間通常回数
       if (autoSource === 'proposed_extra') {
-        const subjectTotal = subjectTotals[studentId] ?? 0;
+        const proposalTotal = sv.proposal_total ?? 0;
         const courseSessions = sv.course_sessions ?? 0;
-        return Math.max(0, subjectTotal - courseSessions);
+        return Math.max(0, proposalTotal - courseSessions);
       }
       // 進行表コマ数（科目別）
       if (autoSource === 'subject_proposal') {
@@ -412,7 +412,7 @@ export function CourseProgressTable({
       }
       return null;
     },
-    [autoValues, subjectTotals]
+    [autoValues]
   );
 
   // コンテナ幅を測定してセル幅を動的に計算

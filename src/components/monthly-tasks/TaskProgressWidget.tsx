@@ -333,20 +333,10 @@ export function TaskProgressWidget({ schoolIds, schoolId, schools: schoolsProp }
     for (const s of sd.students) {
       if (proposedKomaItem) {
         if (proposedKomaItem.auto_source === 'proposed_extra') {
-          let subjectSum = 0;
-          for (const item of subjectItems) {
-            if (item.auto_source === 'subject_proposal') {
-              const sv = sd.autoValues[s.id];
-              if (sv?.subject_proposals) {
-                if (sv.subject_proposals[item.name] !== undefined) subjectSum += sv.subject_proposals[item.name];
-                else { for (const [sub, count] of Object.entries(sv.subject_proposals)) { if (item.name.includes(sub)) { subjectSum += count; break; } } }
-              }
-            } else {
-              const d = sd.progress.find((p) => p.student_id === s.id && p.item_id === item.id);
-              if (d?.number_value != null) subjectSum += d.number_value;
-            }
-          }
-          totalProposed += Math.max(0, subjectSum - (sd.autoValues[s.id]?.course_sessions ?? 0));
+          const sv = sd.autoValues[s.id];
+          const proposalTotal = sv?.proposal_total ?? 0;
+          const courseSessions = sv?.course_sessions ?? 0;
+          totalProposed += Math.max(0, proposalTotal - courseSessions);
         } else {
           const d = sd.progress.find((p) => p.student_id === s.id && p.item_id === proposedKomaItem.id);
           totalProposed += d?.number_value ?? 0;

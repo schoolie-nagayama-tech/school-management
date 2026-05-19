@@ -190,25 +190,10 @@ export function CourseProgressWidget({ schoolId }: CourseProgressWidgetProps) {
       // 提案コマ
       if (proposedKomaItem) {
         if (proposedKomaItem.auto_source === 'proposed_extra') {
-          let subjectSum = 0;
-          for (const item of subjectItems) {
-            if (item.auto_source === 'subject_proposal') {
-              const sv = autoValues[s.id];
-              if (sv?.subject_proposals) {
-                if (sv.subject_proposals[item.name] !== undefined) subjectSum += sv.subject_proposals[item.name];
-                else {
-                  for (const [subject, count] of Object.entries(sv.subject_proposals)) {
-                    if (item.name.includes(subject)) { subjectSum += count; break; }
-                  }
-                }
-              }
-            } else {
-              const d = progressData.find((p) => p.student_id === s.id && p.item_id === item.id);
-              if (d?.number_value != null) subjectSum += d.number_value;
-            }
-          }
-          const courseSessions = autoValues[s.id]?.course_sessions ?? 0;
-          totalProposed += Math.max(0, subjectSum - courseSessions);
+          const sv = autoValues[s.id];
+          const proposalTotal = sv?.proposal_total ?? 0;
+          const courseSessions = sv?.course_sessions ?? 0;
+          totalProposed += Math.max(0, proposalTotal - courseSessions);
         } else {
           const d = progressData.find((p) => p.student_id === s.id && p.item_id === proposedKomaItem.id);
           totalProposed += d?.number_value ?? 0;

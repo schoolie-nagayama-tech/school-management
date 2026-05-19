@@ -470,7 +470,7 @@ export async function GET(request: NextRequest) {
         }
 
         // course_sessions = Σ(各曜日のパターン数 × その曜日の期間内出現回数)
-        const result: Record<string, { regular_weekly: number; course_sessions: number; subject_proposals?: Record<string, number> }> = {};
+        const result: Record<string, { regular_weekly: number; course_sessions: number; proposal_total?: number; subject_proposals?: Record<string, number> }> = {};
         const allStudentIds = Array.from(new Set([...Object.keys(regularWeeklyMap), ...Object.keys(seasonalDayMap)]));
         for (const sid of allStudentIds) {
           const weeklyCount = regularWeeklyMap[sid] || 0;
@@ -493,13 +493,14 @@ export async function GET(request: NextRequest) {
           };
         }
 
-        // 科目別 proposal_count を集計して追加
+        // 科目別 proposal_count を集計して追加 + proposal_total
         const subjectProposalMap = await fetchSubjectProposals(supabaseAdmin, schoolId, season, year);
         for (const sid of Object.keys(subjectProposalMap)) {
           if (!result[sid]) {
             result[sid] = { regular_weekly: 0, course_sessions: 0 };
           }
           result[sid].subject_proposals = subjectProposalMap[sid];
+          result[sid].proposal_total = Object.values(subjectProposalMap[sid]).reduce((a, b) => a + b, 0);
         }
 
         return NextResponse.json({ data: result });
@@ -598,7 +599,7 @@ export async function GET(request: NextRequest) {
             if (periodForAuto?.schedule_start_date && periodForAuto?.schedule_end_date) {
               dayCounts = countDayOccurrences(periodForAuto.schedule_start_date, periodForAuto.schedule_end_date);
             }
-            const autoResult: Record<string, { regular_weekly: number; course_sessions: number; subject_proposals?: Record<string, number> }> = {};
+            const autoResult: Record<string, { regular_weekly: number; course_sessions: number; proposal_total?: number; subject_proposals?: Record<string, number> }> = {};
             const allIds = Array.from(new Set([...Object.keys(regularWeeklyMap), ...Object.keys(seasonalDayMap)]));
             for (const sid of allIds) {
               const weeklyCount = regularWeeklyMap[sid] || 0;
@@ -623,6 +624,7 @@ export async function GET(request: NextRequest) {
                 autoResult[sid] = { regular_weekly: 0, course_sessions: 0 };
               }
               autoResult[sid].subject_proposals = subjectProposalMap[sid];
+              autoResult[sid].proposal_total = Object.values(subjectProposalMap[sid]).reduce((a, b) => a + b, 0);
             }
             batchResult.auto_values = autoResult;
           })());

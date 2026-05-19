@@ -199,9 +199,10 @@ export function CourseProgressDashboard({
     for (const s of students) {
       if (proposedKomaItem) {
         if (proposedKomaItem.auto_source === 'proposed_extra') {
-          const subjectTotal = studentSubjectTotals[s.id] ?? 0;
-          const courseSessions = autoValues?.[s.id]?.course_sessions ?? 0;
-          vals[s.id] = Math.max(0, subjectTotal - courseSessions);
+          const sv = autoValues?.[s.id];
+          const proposalTotal = sv?.proposal_total ?? 0;
+          const courseSessions = sv?.course_sessions ?? 0;
+          vals[s.id] = Math.max(0, proposalTotal - courseSessions);
         } else {
           const d = progressData.find((p) => p.student_id === s.id && p.item_id === proposedKomaItem.id);
           vals[s.id] = d?.number_value ?? 0;

@@ -230,7 +230,7 @@ export function ProposalPrintView({
         <div className="flex items-center justify-between mb-1 border-b border-black pb-0.5">
           <h2 className="text-[10px] font-bold">テキスト全単元</h2>
           <span className="text-[10px] font-bold">
-            講習 {activeUnits.length}単元 / {totalKoma}コマ
+            講習 {totalKoma}コマ
           </span>
         </div>
         <div className="proposal-print-compact">
@@ -251,22 +251,19 @@ export function ProposalPrintView({
                 key={item.id}
                 className={`proposal-print-compact-item flex items-center gap-1 ${
                   isTarget ? 'font-bold' : itemDone ? 'text-gray-400 line-through' : ''
-                }`}
+                } ${isGrouped && isTarget ? 'border-l-[2px] border-l-black pl-1' : ''}`}
               >
                 <span className="w-3 text-center shrink-0">
-                  {itemDone ? '✓' : isTarget ? '■' : ' '}
+                  {itemDone ? '✓' : isTarget ? '■' : ' '}
                 </span>
                 <span className="flex-1 min-w-0 truncate">{item.title}</span>
                 {isTarget && (!isGrouped || isGroupHead) && unit && (
-                  <span className="shrink-0 tabular-nums">{unit.koma_count}</span>
+                  <span className="shrink-0 tabular-nums">{unit.koma_count}コマ</span>
                 )}
                 {isTarget && intentTag && (
                   <span className="shrink-0 text-[7px] px-1 border border-gray-300 rounded-sm">
                     {intentTag}
                   </span>
-                )}
-                {isGrouped && (
-                  <span className="shrink-0 text-[6px] text-gray-500">G{unit!.group_id}</span>
                 )}
               </div>
             );
@@ -279,7 +276,7 @@ export function ProposalPrintView({
         <div className="flex items-center gap-3">
           <div className="text-sm print:text-[10px] text-text-muted">講習内容:</div>
           <div className="text-sm print:text-[10px] font-bold text-accent-ink print:text-text-heading">
-            {activeUnits.length}単元 / {totalKoma}コマ
+            {totalKoma}コマ
           </div>
         </div>
       </section>
