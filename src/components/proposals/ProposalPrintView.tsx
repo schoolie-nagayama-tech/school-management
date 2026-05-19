@@ -49,20 +49,20 @@ export function ProposalPrintView({
   const doneCount = allItems.filter((item) => !!progressMap.get(item.id)?.school_progress_date).length;
 
   return (
-    <div className="proposal-print-page space-y-5 print:space-y-2">
+    <div className="proposal-print-page space-y-5 print:space-y-1">
       {/* ヘッダー */}
-      <div className="p-5 bg-ink text-text-on-primary rounded-2xl print:rounded-none print:bg-white print:text-text-heading print:border-b-2 print:border-ink print:p-0 print:pb-2">
-        <div className="text-lg font-bold print:text-base">{year}年 {seasonLabel}講習のご提案</div>
-        <div className="text-sm mt-1 opacity-90 print:opacity-100 print:text-xs print:mt-0.5">
+      <div className="p-5 bg-ink text-text-on-primary rounded-2xl print:rounded-none print:bg-white print:text-text-heading print:border-b-2 print:border-ink print:p-0 print:pb-1">
+        <div className="text-lg font-bold print:text-sm">{year}年 {seasonLabel}講習のご提案</div>
+        <div className="text-sm mt-1 opacity-90 print:opacity-100 print:text-[10px] print:mt-0">
           {studentName} さま / {textbookName}
         </div>
       </div>
 
       {/* テーマ（印刷時も表示） */}
       {theme && (
-        <section className="p-4 print:p-2 bg-surface-raised rounded-xl border border-border-default print:border-border-strong">
-          <h2 className="text-sm print:text-xs font-bold text-text-heading mb-1 print:mb-0.5">講習テーマ</h2>
-          <p className="text-sm print:text-xs text-text-body">{theme}</p>
+        <section className="p-4 print:p-1 bg-surface-raised rounded-xl border border-border-default print:border-border-strong">
+          <h2 className="text-sm print:text-[10px] font-bold text-text-heading mb-1 print:mb-0">講習テーマ</h2>
+          <p className="text-sm print:text-[10px] text-text-body">{theme}</p>
         </section>
       )}
 
@@ -135,22 +135,22 @@ export function ProposalPrintView({
         </table>
       </section>
 
-      {/* テキスト全単元（画面 + 印刷） */}
-      <section className="p-4 print:p-2 bg-surface-raised rounded-xl border border-border-default print:border-border-strong">
-        <div className="flex items-center justify-between mb-3 print:mb-1.5">
-          <h2 className="text-sm print:text-xs font-bold text-text-heading">テキスト全単元</h2>
-          <span className="text-sm print:text-xs font-bold text-accent-ink print:text-text-heading">
+      {/* テキスト全単元（画面のみ：テーブル表示） */}
+      <section className="p-4 bg-surface-raised rounded-xl border border-border-default print:hidden">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-bold text-text-heading">テキスト全単元</h2>
+          <span className="text-sm font-bold text-accent-ink">
             講習 {activeUnits.length}単元 / {totalKoma}コマ
           </span>
         </div>
         <table className="w-full text-xs proposal-print-table">
           <thead className="border-b border-border-default">
             <tr>
-              <th className="py-2 print:py-1 text-left font-semibold text-text-muted print:text-[10px]">単元</th>
-              <th className="py-2 print:py-1 text-center w-14 font-semibold text-text-muted print:text-[10px]">状況</th>
-              <th className="py-2 print:py-1 text-center w-12 font-semibold text-text-muted print:text-[10px]">コマ</th>
-              <th className="py-2 print:py-1 text-left font-semibold text-text-muted print:text-[10px]">指導意図</th>
-              <th className="py-2 print:py-1 text-left font-semibold text-text-muted print:text-[10px] print:hidden">理由</th>
+              <th className="py-2 text-left font-semibold text-text-muted">単元</th>
+              <th className="py-2 text-center w-14 font-semibold text-text-muted">状況</th>
+              <th className="py-2 text-center w-12 font-semibold text-text-muted">コマ</th>
+              <th className="py-2 text-left font-semibold text-text-muted">指導意図</th>
+              <th className="py-2 text-left font-semibold text-text-muted">理由</th>
             </tr>
           </thead>
           <tbody>
@@ -172,14 +172,14 @@ export function ProposalPrintView({
                   key={item.id}
                   className={
                     isTarget
-                      ? 'bg-accent-ink-subtle border-b border-accent-ink/10 print:bg-gray-50'
+                      ? 'bg-accent-ink-subtle border-b border-accent-ink/10'
                       : 'border-b border-border-subtle'
                   }
                 >
                   <td
-                    className={`py-2 print:py-1 print:text-[11px] ${
+                    className={`py-2 ${
                       isTarget
-                        ? 'font-bold text-accent-ink print:text-text-heading'
+                        ? 'font-bold text-accent-ink'
                         : itemDone
                           ? 'text-text-faint line-through'
                           : 'text-text-body'
@@ -187,35 +187,35 @@ export function ProposalPrintView({
                   >
                     {item.title}
                     {isGrouped && (
-                      <span className="ml-1 text-[9px] print:text-[8px] text-info">G{unit!.group_id}</span>
+                      <span className="ml-1 text-[9px] text-info">G{unit!.group_id}</span>
                     )}
                   </td>
-                  <td className="py-2 print:py-1 text-center">
+                  <td className="py-2 text-center">
                     {itemDone ? (
-                      <span className="inline-flex items-center gap-0.5 text-[10px] print:text-[9px] text-text-faint">
-                        <Check className="w-3 h-3 print:w-2.5 print:h-2.5" />済
+                      <span className="inline-flex items-center gap-0.5 text-[10px] text-text-faint">
+                        <Check className="w-3 h-3" />済
                       </span>
                     ) : isTarget ? (
-                      <span className="px-1.5 py-0.5 bg-ink text-text-on-primary text-[10px] print:text-[9px] font-bold rounded">
+                      <span className="px-1.5 py-0.5 bg-ink text-text-on-primary text-[10px] font-bold rounded">
                         講習
                       </span>
                     ) : (
-                      <span className="text-[10px] print:text-[9px] text-text-faint">--</span>
+                      <span className="text-[10px] text-text-faint">--</span>
                     )}
                   </td>
-                  <td className="py-2 print:py-1 text-center font-bold text-accent-ink print:text-text-heading print:text-[11px]">
+                  <td className="py-2 text-center font-bold text-accent-ink">
                     {isTarget && (!isGrouped || isGroupHead) ? unit?.koma_count : ''}
                   </td>
-                  <td className="py-2 print:py-1">
+                  <td className="py-2">
                     {isTarget && intentTag && (
                       <span
-                        className={`inline-block px-1.5 py-0.5 border rounded-full text-[9px] print:text-[8px] font-medium ${INTENT_TAG_PRINT_COLOR[intentTag] ?? 'text-text-muted border-border-default'}`}
+                        className={`inline-block px-1.5 py-0.5 border rounded-full text-[9px] font-medium ${INTENT_TAG_PRINT_COLOR[intentTag] ?? 'text-text-muted border-border-default'}`}
                       >
                         {intentTag}
                       </span>
                     )}
                   </td>
-                  <td className={`py-2 print:hidden ${isTarget ? 'text-text-body' : 'text-text-faint'}`}>
+                  <td className={`py-2 ${isTarget ? 'text-text-body' : 'text-text-faint'}`}>
                     {isTarget ? unit?.reason : ''}
                   </td>
                 </tr>
@@ -225,11 +225,60 @@ export function ProposalPrintView({
         </table>
       </section>
 
+      {/* テキスト全単元（印刷用：2段組コンパクト表示） */}
+      <section className="hidden print:block print:p-0">
+        <div className="flex items-center justify-between mb-1 border-b border-black pb-0.5">
+          <h2 className="text-[10px] font-bold">テキスト全単元</h2>
+          <span className="text-[10px] font-bold">
+            講習 {activeUnits.length}単元 / {totalKoma}コマ
+          </span>
+        </div>
+        <div className="proposal-print-compact">
+          {allItems.map((item) => {
+            const isTarget = selectedIds.has(item.id);
+            const progress = progressMap.get(item.id);
+            const itemDone = !!progress?.school_progress_date;
+            const unit = unitMap.get(item.id);
+            const isGrouped = unit && unit.group_id > 0;
+            const members = isGrouped ? groupMap.get(unit!.group_id) : undefined;
+            const isGroupHead = members && members[0]?.curriculum_item_id === item.id;
+            const intentTag = unit?.intent_tag
+              ?? (isGrouped && members ? members[0]?.intent_tag : null)
+              ?? null;
+
+            return (
+              <div
+                key={item.id}
+                className={`proposal-print-compact-item flex items-center gap-1 ${
+                  isTarget ? 'font-bold' : itemDone ? 'text-gray-400 line-through' : ''
+                }`}
+              >
+                <span className="w-3 text-center shrink-0">
+                  {itemDone ? '✓' : isTarget ? '■' : ' '}
+                </span>
+                <span className="flex-1 min-w-0 truncate">{item.title}</span>
+                {isTarget && (!isGrouped || isGroupHead) && unit && (
+                  <span className="shrink-0 tabular-nums">{unit.koma_count}</span>
+                )}
+                {isTarget && intentTag && (
+                  <span className="shrink-0 text-[7px] px-1 border border-gray-300 rounded-sm">
+                    {intentTag}
+                  </span>
+                )}
+                {isGrouped && (
+                  <span className="shrink-0 text-[6px] text-gray-500">G{unit!.group_id}</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
       {/* サマリーフッター */}
-      <section className="p-4 print:p-2 bg-surface rounded-xl border border-border-default print:border-border-strong">
+      <section className="p-4 print:p-1 bg-surface rounded-xl border border-border-default print:border-border-strong">
         <div className="flex items-center gap-3">
-          <div className="text-sm print:text-xs text-text-muted">講習内容:</div>
-          <div className="text-sm print:text-xs font-bold text-accent-ink print:text-text-heading">
+          <div className="text-sm print:text-[10px] text-text-muted">講習内容:</div>
+          <div className="text-sm print:text-[10px] font-bold text-accent-ink print:text-text-heading">
             {activeUnits.length}単元 / {totalKoma}コマ
           </div>
         </div>
