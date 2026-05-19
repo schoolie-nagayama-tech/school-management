@@ -984,80 +984,26 @@ export default function ProposalEditor() {
           )}
 
           <div className="space-y-1">
-            {(() => {
-              const rendered = new Set<number>();
-              return allItems.map((item) => {
-                const draft = unitDrafts.get(item.id);
-                if (!draft) return null;
-                const done = isDone(item.id);
-                const isGrouped = draft.group_id > 0 && draft.koma_count > 0;
-                const groupMembers = isGrouped ? groupMap.get(draft.group_id) : undefined;
+            {allItems.map((item) => {
+              const draft = unitDrafts.get(item.id);
+              if (!draft) return null;
+              const done = isDone(item.id);
+              const groupMembers = draft.group_id > 0 ? groupMap.get(draft.group_id) : undefined;
 
-                if (isGrouped && groupMembers && groupMembers.length > 1) {
-                  if (rendered.has(draft.group_id)) return null;
-                  rendered.add(draft.group_id);
-                  const colorIdx = (draft.group_id - 1) % GROUP_COLORS.length;
-                  const memberItems = groupMembers
-                    .map((m) => ({ item: allItems.find((i) => i.id === m.curriculum_item_id)!, draft: m }))
-                    .filter((m) => m.item);
-
-                  return (
-                    <div
-                      key={`group-${draft.group_id}`}
-                      className={`rounded-lg border-2 ${GROUP_COLORS[colorIdx].replace('border-l-', 'border-')} ${GROUP_BG[colorIdx]} overflow-hidden`}
-                    >
-                      <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/50">
-                        <span className={`text-[10px] font-bold ${GROUP_TEXT_COLORS[colorIdx]}`}>
-                          グループ {draft.group_id}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-text-heading">
-                            {groupMembers[0]?.koma_count ?? 0}コマ
-                          </span>
-                          <button
-                            onClick={() => ungroupAll(draft.group_id)}
-                            className="p-0.5 text-text-faint hover:text-danger rounded hover:bg-white/50 active:scale-95 transition-[background-color,color,transform] duration-100"
-                            title="グループ解除"
-                          >
-                            <Unlink className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                      <div className="space-y-px">
-                        {memberItems.map(({ item: mi, draft: md }) => (
-                          <UnitRow
-                            key={mi.id}
-                            item={mi}
-                            draft={md}
-                            done={isDone(mi.id)}
-                            groupMembers={groupMembers}
-                            insideGroupContainer
-                            onToggle={() => toggleUnit(mi.id)}
-                            onUpdate={(patch) => updateUnit(mi.id, patch)}
-                            onUngroup={() => ungroupUnit(mi.id)}
-                            onUngroupAll={() => ungroupAll(draft.group_id)}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  );
-                }
-
-                return (
-                  <UnitRow
-                    key={item.id}
-                    item={item}
-                    draft={draft}
-                    done={done}
-                    groupMembers={groupMembers}
-                    onToggle={() => toggleUnit(item.id)}
-                    onUpdate={(patch) => updateUnit(item.id, patch)}
-                    onUngroup={() => ungroupUnit(item.id)}
-                    onUngroupAll={() => draft.group_id > 0 && ungroupAll(draft.group_id)}
-                  />
-                );
-              });
-            })()}
+              return (
+                <UnitRow
+                  key={item.id}
+                  item={item}
+                  draft={draft}
+                  done={done}
+                  groupMembers={groupMembers}
+                  onToggle={() => toggleUnit(item.id)}
+                  onUpdate={(patch) => updateUnit(item.id, patch)}
+                  onUngroup={() => ungroupUnit(item.id)}
+                  onUngroupAll={() => draft.group_id > 0 && ungroupAll(draft.group_id)}
+                />
+              );
+            })}
           </div>
         </section>
 
@@ -1233,25 +1179,24 @@ function UnitRow({
   item,
   draft,
   done,
-  groupMembers: _groupMembers,
-  insideGroupContainer,
+  groupMembers,
   onToggle,
   onUpdate,
   onUngroup,
-  onUngroupAll: _onUngroupAll,
+  onUngroupAll,
 }: {
   item: CurriculumItem;
   draft: UnitDraft;
   done: boolean;
   groupMembers?: UnitDraft[];
-  insideGroupContainer?: boolean;
   onToggle: () => void;
   onUpdate: (patch: Partial<UnitDraft>) => void;
   onUngroup: () => void;
   onUngroupAll: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const _isGrouped = draft.group_id > 0;
+  const isGrouped = draft.group_id > 0;
+  const isGroupHead = groupMembers && groupMembers[0]?.curriculum_item_id === draft.curriculum_item_id;
   const hasApplied = draft.applied_koma > 0;
   const isActive = draft.koma_count > 0;
 
@@ -1259,14 +1204,16 @@ function UnitRow({
     onUpdate({ koma_count: draft.koma_count + 1 });
   };
 
-  const rowColor = insideGroupContainer
-    ? 'bg-white/60'
-    : !isActive
-      ? draft.selected
-        ? 'border border-primary/30 bg-primary/5'
-        : 'border border-border-subtle bg-surface-raised'
-      : hasApplied
-        ? 'border border-success/30 bg-success-subtle'
+  const groupColorIdx = isGrouped ? (draft.group_id - 1) % GROUP_COLORS.length : 0;
+
+  const rowColor = !isActive
+    ? draft.selected
+      ? 'border border-primary/30 bg-primary/5'
+      : 'border border-border-subtle bg-surface-raised'
+    : hasApplied
+      ? 'border border-success/30 bg-success-subtle'
+      : isGrouped
+        ? `border ${GROUP_BG[groupColorIdx]}`
         : 'border border-accent-ink/20 bg-accent-ink-subtle';
 
   const checkColor = !draft.selected
@@ -1274,7 +1221,11 @@ function UnitRow({
     : 'bg-primary border-primary text-white';
 
   return (
-    <div className={`${insideGroupContainer ? '' : 'rounded-lg'} transition-[background-color,border-color] duration-150 ease-out ${rowColor}`}>
+    <div
+      className={`rounded-lg transition-[background-color,border-color] duration-150 ease-out ${rowColor} ${
+        isGrouped && isActive ? `border-l-4 ${GROUP_COLORS[groupColorIdx]}` : ''
+      }`}
+    >
       <div className="flex items-center gap-2 px-3 py-2">
         <button
           onClick={onToggle}
@@ -1303,6 +1254,11 @@ function UnitRow({
           {done && (
             <span className="ml-1.5 text-[10px] text-text-faint">指導済</span>
           )}
+          {isGrouped && isActive && (
+            <span className={`ml-1.5 text-[10px] font-bold ${GROUP_TEXT_COLORS[groupColorIdx]}`}>
+              G{draft.group_id}
+            </span>
+          )}
           {isActive && draft.intent_tag && (
             <span
               className={`ml-1.5 inline-block px-1.5 py-0 border rounded-full text-[9px] font-medium ${INTENT_TAG_COLOR[draft.intent_tag as IntentTag] ?? 'text-text-muted border-border-default'}`}
@@ -1312,7 +1268,7 @@ function UnitRow({
           )}
         </button>
 
-        {isActive && !insideGroupContainer && (
+        {isActive && (!isGrouped || isGroupHead) && (
           <div className="flex items-center gap-2 shrink-0">
             <div className="flex items-center gap-0.5">
               <button
@@ -1358,13 +1314,23 @@ function UnitRow({
           </div>
         )}
 
-        {insideGroupContainer && (
+        {isGrouped && isActive && !isGroupHead && (
           <button
             onClick={onUngroup}
-            className="p-0.5 text-text-faint hover:text-text-muted rounded hover:bg-white/50 active:scale-95 transition-[background-color,color,transform] duration-100 shrink-0"
+            className="p-0.5 text-text-faint hover:text-text-muted rounded hover:bg-surface-hover active:scale-95 transition-[background-color,color,transform] duration-100 shrink-0"
             title="グループから外す"
           >
             <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+
+        {isGrouped && isActive && isGroupHead && (
+          <button
+            onClick={onUngroupAll}
+            className="p-0.5 text-text-faint hover:text-danger rounded hover:bg-surface-hover active:scale-95 transition-[background-color,color,transform] duration-100 shrink-0"
+            title="グループ解除"
+          >
+            <Unlink className="w-3.5 h-3.5" />
           </button>
         )}
 
