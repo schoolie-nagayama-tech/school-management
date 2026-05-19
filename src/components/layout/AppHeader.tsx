@@ -270,7 +270,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                           : ''
                       }`}
                     >
-                      面談文字起こし
+                      面談記録追加
                     </Link>
                     {(showAllLinks || permissions?.canAccessPortal) && (
                       <Link
@@ -754,7 +754,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
               { href: '/responses', label: '回答一覧', show: showAllLinks || permissions?.canAccessPortal },
               { href: '/forms/responses', label: 'フォーム回答', show: showAllLinks || permissions?.canAccessPortal },
               { href: '/settings/portal', label: 'ポータル設定', show: showAllLinks || permissions?.canAccessPortal },
-              { href: '/transcriptions', label: '文字起こし', show: showAllLinks || permissions?.canAccessPortal },
+              { href: '/transcriptions', label: '面談記録追加', show: showAllLinks || permissions?.canAccessPortal },
               { href: '/progress-feed', label: '進行フィード', show: showAllLinks || (permissions?.canAccessStudents && profile?.role !== 'teacher') },
               { href: '/courses', label: '講習一覧', show: showAllLinks || permissions?.canAccessPortal },
               { href: '/courses/progress', label: '講習進行', show: showAllLinks || permissions?.canAccessPortal },

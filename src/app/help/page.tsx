@@ -487,11 +487,11 @@ const FAQ_DATA: FaqCategory[] = [
         roles: ['admin', 'manager'],
       },
       {
-        question: '面談文字起こし（Notta連携）',
+        question: '面談記録追加（Notta連携）',
         answer:
-          'フォーム管理 > 面談文字起こしで、Notta（音声文字起こしサービス）で記録した面談内容を管理できます。Webhook連携で自動取り込みも可能です。Slack通知にも対応しています。',
-        keywords: ['文字起こし', 'Notta', '面談', '音声', '議事録'],
-        link: { href: '/transcriptions', label: '面談文字起こし' },
+          'フォーム管理 > 面談記録追加で、Notta（音声文字起こしサービス）で記録した面談内容を生徒に紐付けできます。Webhook連携で自動取り込みも可能です。Slack通知にも対応しています。生徒管理ページの上部にもボタンがあります。',
+        keywords: ['文字起こし', 'Notta', '面談', '音声', '議事録', '面談記録追加'],
+        link: { href: '/transcriptions', label: '面談記録追加' },
         roles: ['admin', 'manager'],
       },
     ],

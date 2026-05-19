@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { Button, Modal, Loading } from '@/components/ui';
-import { Plus, AlertCircle, Eye, EyeOff, AlertTriangle, Search, ClipboardPaste } from 'lucide-react';
+import Link from 'next/link';
+import { Plus, AlertCircle, Eye, EyeOff, AlertTriangle, Mic, Search, ClipboardPaste } from 'lucide-react';
 import {
   StudentForm,
   StudentTable,
@@ -823,7 +824,14 @@ export default function StudentsPage() {
               >
                 CSVインポート
               </Button>
-<Button onClick={handleOpenCreateModal}>
+              <Link
+                href="/transcriptions"
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-text-body border border-border-default rounded-lg hover:bg-surface-hover transition-[background-color] duration-150 ease-out"
+              >
+                <Mic className="w-3.5 h-3.5" />
+                面談記録追加
+              </Link>
+              <Button onClick={handleOpenCreateModal}>
                 <Plus className="w-4 h-4 mr-2" />
                 新規登録
               </Button>

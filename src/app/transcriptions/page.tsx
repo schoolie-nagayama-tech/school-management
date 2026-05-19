@@ -88,13 +88,13 @@ export default function TranscriptionsPage() {
   };
 
   return (
-    <AdminLayout headerTitle="面談文字起こし" narrow>
+    <AdminLayout headerTitle="面談記録追加" narrow>
       <div>
         {/* ページヘッダー */}
         <div className="mb-5 pb-4 border-b border-border">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-xl font-bold text-text-heading">面談文字起こし</h1>
+              <h1 className="text-xl font-bold text-text-heading">面談記録追加</h1>
               <p className="text-xs text-text-body/70 mt-0.5">
                 Slack経由でNottaから受信したAI要約を、生徒の面談記録に紐付けます
               </p>
