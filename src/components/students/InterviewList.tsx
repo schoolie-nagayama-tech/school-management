@@ -5,7 +5,9 @@ import { StudentInterview, InterviewType, INTERVIEW_TYPE_LABELS, INTERVIEW_TYPE_
 import { getStudentInterviews, deleteInterview, completeTask, uncompleteTask } from '@/lib/api/interviews';
 import { undismissAlert } from '@/lib/api/alerts';
 import { InterviewModal } from './InterviewModal';
+import { ImportNottaModal } from './ImportNottaModal';
 import { Button, Select, Loading } from '@/components/ui';
+import { Mic } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -20,6 +22,7 @@ export function InterviewList({ studentId, schoolId }: InterviewListProps) {
   const [interviews, setInterviews] = useState<StudentInterview[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isNottaModalOpen, setIsNottaModalOpen] = useState(false);
   const [editingInterview, setEditingInterview] = useState<StudentInterview | null>(null);
   const [filterType, setFilterType] = useState<InterviewType | 'all'>('all');
   const { success, error: toastError } = useToast();
@@ -118,7 +121,13 @@ export function InterviewList({ studentId, schoolId }: InterviewListProps) {
       {/* ヘッダー */}
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold text-[#1f2937]">面談記録</h3>
-        <Button onClick={handleAdd} size="sm">+ 記録を追加</Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => setIsNottaModalOpen(true)} size="sm" variant="secondary">
+            <Mic className="w-3.5 h-3.5 mr-1 inline" />
+            Nottaから取り込み
+          </Button>
+          <Button onClick={handleAdd} size="sm">+ 記録を追加</Button>
+        </div>
       </div>
 
       {/* フィルター */}
@@ -256,6 +265,18 @@ export function InterviewList({ studentId, schoolId }: InterviewListProps) {
           onSaved={handleSaved}
         />
       )}
+
+      <ImportNottaModal
+        isOpen={isNottaModalOpen}
+        onClose={() => setIsNottaModalOpen(false)}
+        studentId={studentId}
+        schoolId={schoolId}
+        onSuccess={() => {
+          setIsNottaModalOpen(false);
+          fetchInterviews();
+          success('Notta文字起こしを面談記録に取り込みました');
+        }}
+      />
     </div>
   );
 }
