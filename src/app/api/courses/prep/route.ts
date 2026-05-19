@@ -34,7 +34,6 @@ async function fetchSubjectProposals(
 ): Promise<Record<string, Record<string, number>>> {
   try {
     const result: Record<string, Record<string, number>> = {};
-    const studentSubjectsFromProposals = new Set<string>(); // "studentId:subject"
 
     // ========== 1. 提案書ベース（seasonal_proposals + seasonal_proposal_units） ==========
     {
@@ -111,105 +110,8 @@ async function fetchSubjectProposals(
             if (!result[proposal.student_id]) result[proposal.student_id] = {};
             result[proposal.student_id][subject] =
               (result[proposal.student_id][subject] || 0) + total;
-            studentSubjectsFromProposals.add(`${proposal.student_id}:${subject}`);
+
           }
-        }
-      }
-    }
-
-    // ========== 2. 進行表ベース（student_progress）— 提案書にない生徒×科目のみ ==========
-    {
-      const { data: studentTextbooks, error: stError } = await supabaseAdmin
-        .from('student_textbooks')
-        .select('id, student_id, textbook_id')
-        .eq('school_id', schoolId)
-        .eq('season', season)
-        .eq('is_active', true);
-
-      if (stError) {
-        console.warn('[fetchSubjectProposals] student_textbooks query error:', stError.message);
-      } else if (studentTextbooks && studentTextbooks.length > 0) {
-        const tbIds = Array.from(new Set(
-          (studentTextbooks as { textbook_id: number }[]).map((st) => st.textbook_id)
-        ));
-        const { data: textbooks } = await supabaseAdmin
-          .from('textbooks')
-          .select('id, subject')
-          .in('id', tbIds);
-
-        const subjectMap = new Map<number, string>();
-        for (const t of (textbooks || []) as { id: number; subject: string }[]) {
-          if (t.subject) subjectMap.set(t.id, t.subject);
-        }
-
-        const stInfoMap = new Map<string, { student_id: string; subject: string }>();
-        for (const st of studentTextbooks as { id: string; student_id: string; textbook_id: number }[]) {
-          const subject = subjectMap.get(st.textbook_id);
-          if (subject) stInfoMap.set(st.id, { student_id: st.student_id, subject });
-        }
-
-        if (stInfoMap.size > 0) {
-          const stIds = Array.from(stInfoMap.keys());
-          const BATCH = 500;
-          type ProgressRow = {
-            student_textbook_id: string;
-            proposal_count: number | null;
-            group_number: number | null;
-            curriculum_item_id: string;
-          };
-          const allProgressData: ProgressRow[] = [];
-
-          for (let i = 0; i < stIds.length; i += BATCH) {
-            const batch = stIds.slice(i, i + BATCH);
-            const { data, error: pError } = await supabaseAdmin
-              .from('student_progress')
-              .select('student_textbook_id, proposal_count, group_number, curriculum_item_id')
-              .in('student_textbook_id', batch)
-              .gt('proposal_count', 0);
-            if (pError) {
-              console.warn('[fetchSubjectProposals] student_progress query error:', pError.message);
-              continue;
-            }
-            if (data) allProgressData.push(...(data as ProgressRow[]));
-          }
-
-          const grouped = new Map<string, ProgressRow[]>();
-          for (const row of allProgressData) {
-            const arr = grouped.get(row.student_textbook_id);
-            if (arr) arr.push(row);
-            else grouped.set(row.student_textbook_id, [row]);
-          }
-
-          grouped.forEach((rows, stId) => {
-            const info = stInfoMap.get(stId);
-            if (!info) return;
-            if (studentSubjectsFromProposals.has(`${info.student_id}:${info.subject}`)) return;
-
-            const groupLeaders = new Map<number, string>();
-            for (const row of rows) {
-              if (row.group_number != null) {
-                const existing = groupLeaders.get(row.group_number);
-                if (!existing || row.curriculum_item_id < existing) {
-                  groupLeaders.set(row.group_number, row.curriculum_item_id);
-                }
-              }
-            }
-
-            let subjectTotal = 0;
-            for (const row of rows) {
-              if (!row.proposal_count) continue;
-              if (row.group_number != null) {
-                if (groupLeaders.get(row.group_number) !== row.curriculum_item_id) continue;
-              }
-              subjectTotal += row.proposal_count;
-            }
-
-            if (subjectTotal > 0) {
-              if (!result[info.student_id]) result[info.student_id] = {};
-              result[info.student_id][info.subject] =
-                (result[info.student_id][info.subject] || 0) + subjectTotal;
-            }
-          });
         }
       }
     }
