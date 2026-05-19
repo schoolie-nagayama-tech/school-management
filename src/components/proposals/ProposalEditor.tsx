@@ -122,6 +122,8 @@ const GROUP_TEXT_COLORS = [
   'text-cyan-600',
 ];
 
+const GROUP_CIRCLE_NUMS = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩'];
+
 const GROUP_BG = [
   'bg-blue-50',
   'bg-purple-50',
@@ -182,6 +184,7 @@ export default function ProposalEditor() {
   const [progressMap, setProgressMap] = useState<Map<number, StudentProgress>>(new Map());
   const [unitDrafts, setUnitDrafts] = useState<Map<number, UnitDraft>>(new Map());
   const [nextGroupId, setNextGroupId] = useState(1);
+  const lastToggleIdRef = useRef<number | null>(null);
 
   const [studentName, setStudentName] = useState('');
   const [studentSchoolId, setStudentSchoolId] = useState<string | null>(null);
@@ -392,7 +395,26 @@ export default function ProposalEditor() {
     setUnitDrafts(drafts);
   };
 
-  const toggleUnit = (ciId: number) => {
+  const toggleUnit = (ciId: number, shiftKey = false) => {
+    if (shiftKey && lastToggleIdRef.current != null && lastToggleIdRef.current !== ciId) {
+      const startIdx = allItems.findIndex((i) => i.id === lastToggleIdRef.current);
+      const endIdx = allItems.findIndex((i) => i.id === ciId);
+      if (startIdx >= 0 && endIdx >= 0) {
+        const [lo, hi] = startIdx < endIdx ? [startIdx, endIdx] : [endIdx, startIdx];
+        setUnitDrafts((prev) => {
+          const next = new Map(prev);
+          for (let idx = lo; idx <= hi; idx++) {
+            const id = allItems[idx].id;
+            const d = next.get(id);
+            if (d && !d.selected) next.set(id, { ...d, selected: true });
+          }
+          return next;
+        });
+        lastToggleIdRef.current = ciId;
+        return;
+      }
+    }
+    lastToggleIdRef.current = ciId;
     setUnitDrafts((prev) => {
       const next = new Map(prev);
       const d = next.get(ciId);
@@ -1002,7 +1024,7 @@ export default function ProposalEditor() {
                   draft={draft}
                   done={done}
                   groupMembers={groupMembers}
-                  onToggle={() => toggleUnit(item.id)}
+                  onToggle={(shiftKey) => toggleUnit(item.id, shiftKey)}
                   onUpdate={(patch) => updateUnit(item.id, patch)}
                   onUngroup={() => ungroupUnit(item.id)}
                   onUngroupAll={() => draft.group_id > 0 && ungroupAll(draft.group_id)}
@@ -1194,7 +1216,7 @@ function UnitRow({
   draft: UnitDraft;
   done: boolean;
   groupMembers?: UnitDraft[];
-  onToggle: () => void;
+  onToggle: (shiftKey: boolean) => void;
   onUpdate: (patch: Partial<UnitDraft>) => void;
   onUngroup: () => void;
   onUngroupAll: () => void;
@@ -1233,7 +1255,7 @@ function UnitRow({
     >
       <div className="flex items-center gap-2 px-3 py-2">
         <button
-          onClick={onToggle}
+          onClick={(e) => onToggle(e.shiftKey)}
           className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-[background-color,border-color,color,transform] duration-150 ease-out active:scale-90 ${checkColor}`}
           aria-label={draft.selected ? `${item.title} を選択解除` : `${item.title} を選択`}
         >
@@ -1261,7 +1283,7 @@ function UnitRow({
           )}
           {isGrouped && isActive && (
             <span className={`ml-1.5 text-[10px] font-bold ${GROUP_TEXT_COLORS[groupColorIdx]}`}>
-              G{draft.group_id}
+              {GROUP_CIRCLE_NUMS[(draft.group_id - 1) % GROUP_CIRCLE_NUMS.length]}
             </span>
           )}
           {isActive && draft.intent_tag && (
