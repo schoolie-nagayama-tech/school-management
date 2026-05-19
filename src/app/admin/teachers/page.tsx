@@ -619,7 +619,7 @@ export default function TeachersPage() {
                   }
                   placeholder="未入力の場合は自動生成されます"
                 />
-                <p className="text-xs text-text-body/70">ログイン時に使用するIDです。未入力の場合は自動生成されます。</p>
+                <p className="text-xs text-text-body/70">GrowのID・パスワードと同じものを入力してください。未入力の場合は自動生成されます。</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="displayName">表示名 *</Label>
@@ -643,7 +643,7 @@ export default function TeachersPage() {
                   }
                   placeholder="4文字以上"
                 />
-                <p className="text-xs text-text-body/70">パスワードは4文字以上で入力してください</p>
+                <p className="text-xs text-text-body/70">Growと同じパスワードを入力してください（4文字以上）</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="school">所属教室 *</Label>
