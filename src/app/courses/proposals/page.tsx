@@ -3,18 +3,20 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FileText, Filter, Plus, Search, Trash2 } from 'lucide-react';
+import { ArrowLeft, FileText, Filter, Plus, Printer, Search, Trash2 } from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
-import { Loading } from '@/components/ui';
+import { InlineLoading, Loading } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
-import { getProposalsBySchool, calcTotalKoma, calcTotalAppliedKoma, deleteProposal } from '@/lib/api/proposals';
+import { getProposalsBySchool, getTextbookUnitsWithProgress, calcTotalKoma, calcTotalAppliedKoma, deleteProposal } from '@/lib/api/proposals';
 import { supabase } from '@/lib/supabase';
 import type { SeasonalProposalWithDetails, SeasonType, ProposalStatus } from '@/types/database';
 import { SEASON_LABELS, PROPOSAL_STATUS_LABELS } from '@/types/database';
 import { useLocalSchoolId } from '@/hooks/useLocalSchoolId';
 import { SchoolSwitcher } from '@/components/SchoolSwitcher';
+import { ProposalPrintView } from '@/components/proposals/ProposalPrintView';
+import type { PrintUnitDraft, ProposalPrintData } from '@/components/proposals/ProposalPrintView';
 
 const STATUS_BADGE: Record<ProposalStatus, string> = {
   draft: 'bg-surface-hover text-text-muted',
@@ -72,6 +74,66 @@ export default function CourseProposalsPage() {
 
   const pickerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const [printMode, setPrintMode] = useState(false);
+  const [printLoading, setPrintLoading] = useState<string | null>(null);
+  const [printData, setPrintData] = useState<ProposalPrintData[]>([]);
+  const [printStudentName, setPrintStudentName] = useState('');
+
+  const handlePrintStudent = async (studentId: string, studentName: string, studentProposals: SeasonalProposalWithDetails[]) => {
+    if (studentProposals.length === 0) return;
+    setPrintLoading(studentId);
+    try {
+      const results: ProposalPrintData[] = [];
+      for (const p of studentProposals) {
+        const { items, progressMap } = await getTextbookUnitsWithProgress(
+          p.student_textbook_id ?? null,
+          p.textbook_id
+        );
+        const activeUnits: PrintUnitDraft[] = p.units
+          .filter((u) => u.koma_count > 0)
+          .map((u) => ({
+            curriculum_item_id: u.curriculum_item_id,
+            koma_count: u.koma_count,
+            applied_koma: u.applied_koma ?? 0,
+            reason: u.reason,
+            group_id: u.group_id,
+            intent_tag: u.intent_tag ?? null,
+          }));
+        const groupMap = new Map<number, PrintUnitDraft[]>();
+        for (const u of activeUnits) {
+          if (u.group_id > 0) {
+            const list = groupMap.get(u.group_id) ?? [];
+            list.push(u);
+            groupMap.set(u.group_id, list);
+          }
+        }
+        const tbName = p.textbook?.subject
+          ? `${p.textbook.subject} ${p.textbook.name}`
+          : p.textbook?.name ?? '';
+        results.push({
+          studentName,
+          textbookName: tbName,
+          seasonLabel: SEASON_LABELS[p.season as SeasonType],
+          year: p.year,
+          theme: p.theme,
+          allItems: items,
+          activeUnits,
+          progressMap,
+          totalKoma: calcTotalKoma(p.units),
+          groupMap,
+        });
+      }
+      setPrintData(results);
+      setPrintStudentName(studentName);
+      setPrintMode(true);
+      setTimeout(() => window.print(), 300);
+    } catch {
+      // print error
+    } finally {
+      setPrintLoading(null);
+    }
+  };
 
   const handleDelete = async (proposalId: string) => {
     if (!confirm('この提案書を削除しますか？')) return;
@@ -175,6 +237,39 @@ export default function CourseProposalsPage() {
     return (
       <AdminLayout headerTitle="提案書">
         <AccessDenied />
+      </AdminLayout>
+    );
+  }
+
+  if (printMode) {
+    return (
+      <AdminLayout headerTitle="提案書">
+        <div className="max-w-5xl mx-auto">
+          <div className="mb-4 flex gap-2 print:hidden">
+            <button
+              onClick={() => setPrintMode(false)}
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border-default text-text-body rounded-lg hover:bg-surface-hover transition-colors duration-150"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              一覧に戻る
+            </button>
+            <button
+              onClick={() => window.print()}
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-ink text-text-on-primary rounded-lg hover:brightness-[0.85] transition-[filter] duration-150"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              印刷
+            </button>
+            <span className="text-sm text-text-muted self-center ml-2">{printStudentName} ({printData.length}件)</span>
+          </div>
+          <div className="space-y-8">
+            {printData.map((data, i) => (
+              <div key={i} className="print:break-before-page first:print:break-before-auto">
+                <ProposalPrintView {...data} />
+              </div>
+            ))}
+          </div>
+        </div>
       </AdminLayout>
     );
   }
@@ -320,13 +415,27 @@ export default function CourseProposalsPage() {
                   >
                     {name}
                   </Link>
-                  <Link
-                    href={`/students/${studentId}/proposals/new?season=${getCurrentSeason()}&year=${currentYear}`}
-                    className="text-text-muted hover:text-text-heading transition-colors duration-150"
-                    title="この生徒の提案書を作成"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                  </Link>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => handlePrintStudent(studentId, name, studentProposals)}
+                      disabled={printLoading === studentId}
+                      className="p-1 text-text-faint hover:text-text-heading transition-colors duration-150 disabled:opacity-50"
+                      title="この生徒の提案書を印刷"
+                    >
+                      {printLoading === studentId ? (
+                        <InlineLoading size="sm" />
+                      ) : (
+                        <Printer className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                    <Link
+                      href={`/students/${studentId}/proposals/new?season=${getCurrentSeason()}&year=${currentYear}`}
+                      className="text-text-muted hover:text-text-heading transition-colors duration-150"
+                      title="この生徒の提案書を作成"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
                 </div>
                 <div className="divide-y divide-border-subtle">
                   {studentProposals.map((p) => {

@@ -165,7 +165,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
   }, [showSchoolDropdown, showSettingsDropdown]);
 
   return (
-    <header className="bg-primary shadow-md">
+    <header className="bg-primary shadow-md print:hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14">
           <div className="flex items-center gap-4">
