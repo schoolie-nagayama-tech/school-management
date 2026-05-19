@@ -252,6 +252,15 @@ export default function TranscriptionsPage() {
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
         transcript={selected}
+        onLink={() => {
+          setIsDetailOpen(false);
+          setIsLinkOpen(true);
+        }}
+        onUnlink={async () => {
+          if (!selected) return;
+          await handleUnlink(selected.id);
+          setIsDetailOpen(false);
+        }}
       />
       <LinkTranscriptModal
         isOpen={isLinkOpen}

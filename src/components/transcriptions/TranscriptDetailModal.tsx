@@ -1,12 +1,15 @@
 'use client';
 
 import { Modal, Button } from '@/components/ui';
+import { Link2 } from 'lucide-react';
 import type { NottaTranscriptWithStudent } from '@/types/database';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   transcript: NottaTranscriptWithStudent | null;
+  onLink?: () => void;
+  onUnlink?: () => void;
 }
 
 function formatDuration(seconds: number | null): string {
@@ -16,7 +19,7 @@ function formatDuration(seconds: number | null): string {
   return `${m}分${s}秒`;
 }
 
-export function TranscriptDetailModal({ isOpen, onClose, transcript }: Props) {
+export function TranscriptDetailModal({ isOpen, onClose, transcript, onLink, onUnlink }: Props) {
   if (!transcript) return null;
 
   return (
@@ -35,11 +38,11 @@ export function TranscriptDetailModal({ isOpen, onClose, transcript }: Props) {
             <span className="text-[#4b5563]/60">取り込み: </span>
             {new Date(transcript.created_at).toLocaleString('ja-JP')}
           </div>
-          <div>
+          <div className="flex items-center gap-2">
             <span className="text-[#4b5563]/60">紐付け先: </span>
             {transcript.student
-              ? `${transcript.student.last_name} ${transcript.student.first_name}`
-              : '未紐付け'}
+              ? <span className="text-green-700 font-medium">{transcript.student.last_name} {transcript.student.first_name}</span>
+              : <span className="text-yellow-700">未紐付け</span>}
           </div>
           {transcript.audio_url && (
             <div className="col-span-2">
@@ -62,7 +65,20 @@ export function TranscriptDetailModal({ isOpen, onClose, transcript }: Props) {
           </div>
         </div>
 
-        <div className="flex justify-end pt-2 border-t border-[#e5e7eb]">
+        <div className="flex items-center justify-between pt-2 border-t border-[#e5e7eb]">
+          <div>
+            {!transcript.linked_student_id && onLink && (
+              <Button onClick={onLink}>
+                <Link2 className="w-4 h-4 mr-1 inline" />
+                紐付け
+              </Button>
+            )}
+            {transcript.linked_student_id && onUnlink && (
+              <Button variant="secondary" onClick={onUnlink}>
+                紐付け解除
+              </Button>
+            )}
+          </div>
           <Button onClick={onClose} variant="secondary">
             閉じる
           </Button>
