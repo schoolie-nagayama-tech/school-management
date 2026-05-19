@@ -258,32 +258,59 @@ export function MockPasteImportModal({
   const unmatchedCount = parsed.filter((r) => !r.matchedStudent).length;
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     setFileError('');
-    setFileName(file.name);
     setImportResult(null);
 
     try {
-      const ext = file.name.toLowerCase().split('.').pop();
-      if (ext === 'xlsx' || ext === 'xls') {
-        // サーバーサイドで xlsx を解析（クライアントバンドル肥大化防止）
-        const formData = new FormData();
-        formData.append('file', file);
-        const res = await fetch('/api/scores/parse-xlsx', { method: 'POST', body: formData });
-        if (!res.ok) throw new Error('xlsx parse failed');
-        const { rows } = await res.json();
-        setFileRows(rows);
-      } else if (ext === 'csv') {
-        const text = await file.text();
-        // CSVパース（改行を含むフィールドに対応）
-        const rows = parseCSV(text);
-        setFileRows(rows);
-      } else {
-        setFileError('xlsx または csv ファイルを選択してください');
-        setFileRows(null);
+      const allRows: (string | number | undefined)[][] = [];
+      const fileNames: string[] = [];
+
+      for (let fi = 0; fi < files.length; fi++) {
+        const file = files[fi];
+        fileNames.push(file.name);
+        const ext = file.name.toLowerCase().split('.').pop();
+
+        if (ext === 'xlsx' || ext === 'xls') {
+          const formData = new FormData();
+          formData.append('file', file);
+          const res = await fetch('/api/scores/parse-xlsx', { method: 'POST', body: formData });
+          if (!res.ok) throw new Error('xlsx parse failed: ' + file.name);
+          const { rows } = await res.json();
+          // 最初のファイルはヘッダー含む全行、2番目以降はヘッダーをスキップ
+          if (allRows.length === 0) {
+            allRows.push(...rows);
+          } else {
+            // ヘッダー行（先頭行）をスキップしてデータ行のみ追加
+            for (let i = 1; i < rows.length; i++) {
+              allRows.push(rows[i]);
+            }
+          }
+        } else if (ext === 'csv') {
+          const text = await file.text();
+          const rows = parseCSV(text);
+          if (allRows.length === 0) {
+            allRows.push(...rows);
+          } else {
+            for (let i = 1; i < rows.length; i++) {
+              allRows.push(rows[i]);
+            }
+          }
+        } else {
+          setFileError('xlsx または csv ファイルを選択してください');
+          setFileRows(null);
+          return;
+        }
       }
+
+      setFileName(
+        fileNames.length === 1
+          ? fileNames[0]
+          : `${fileNames.length}件のファイル（${fileNames.join(', ')}）`
+      );
+      setFileRows(allRows);
     } catch (err) {
       console.error('File read error:', err);
       setFileError('ファイルの読み込みに失敗しました');
@@ -415,6 +442,7 @@ export function MockPasteImportModal({
                 ref={fileInputRef}
                 type="file"
                 accept=".xlsx,.xls,.csv"
+                multiple
                 onChange={handleFileChange}
                 className="hidden"
               />
@@ -423,8 +451,8 @@ export function MockPasteImportModal({
                 <p className="text-sm text-text-heading font-medium">{fileName}</p>
               ) : (
                 <p className="text-sm text-text-muted">
-                  クリックしてファイルを選択、または<br />
-                  模試会社からダウンロードしたファイルをドロップ
+                  クリックしてファイルを選択（複数選択可）<br />
+                  学年別ファイルをまとめて選択できます
                 </p>
               )}
             </div>
@@ -432,7 +460,7 @@ export function MockPasteImportModal({
               <p className="text-xs text-red-600 mt-1">{fileError}</p>
             )}
             <p className="text-[11px] text-text-muted mt-1">
-              進研テスト等のダウンロードファイルに対応。偏差値のみ取り込みます（得点は除外）。
+              進研テスト等のダウンロードファイルに対応（学年別ファイルを複数同時選択可）。偏差値のみ取り込みます（得点は除外）。
             </p>
           </div>
         )}
