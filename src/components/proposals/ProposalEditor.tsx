@@ -104,7 +104,7 @@ const GROUP_COLORS = [
   'border-l-cyan-500',
 ];
 
-const GROUP_BG_COLORS = [
+const _GROUP_BG_COLORS = [
   'bg-blue-500',
   'bg-purple-500',
   'bg-amber-500',
@@ -1233,12 +1233,12 @@ function UnitRow({
   item,
   draft,
   done,
-  groupMembers,
+  groupMembers: _groupMembers,
   insideGroupContainer,
   onToggle,
   onUpdate,
   onUngroup,
-  onUngroupAll,
+  onUngroupAll: _onUngroupAll,
 }: {
   item: CurriculumItem;
   draft: UnitDraft;
@@ -1251,7 +1251,7 @@ function UnitRow({
   onUngroupAll: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const isGrouped = draft.group_id > 0;
+  const _isGrouped = draft.group_id > 0;
   const hasApplied = draft.applied_koma > 0;
   const isActive = draft.koma_count > 0;
 
