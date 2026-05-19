@@ -1352,10 +1352,9 @@ function UnitRow({
         )}
       </div>
 
-      {isActive && expanded && (
-        <div className={`px-3 pb-2.5 pt-0 space-y-1.5 ${isGrouped ? 'ml-1' : ''}`}>
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[10px] text-text-muted shrink-0">指導意図:</span>
+      {isActive && (
+        <div className={`px-3 pb-2 pt-0 ${isGrouped ? 'ml-1' : ''}`}>
+          <div className="flex items-center gap-1 flex-wrap">
             {INTENT_TAGS.map((tag) => {
               const active = draft.intent_tag === tag;
               const color = INTENT_TAG_COLOR[tag];
@@ -1374,6 +1373,11 @@ function UnitRow({
               );
             })}
           </div>
+        </div>
+      )}
+
+      {isActive && expanded && (
+        <div className={`px-3 pb-2.5 pt-0 ${isGrouped ? 'ml-1' : ''}`}>
           <input
             value={draft.reason}
             onChange={(e) => onUpdate({ reason: e.target.value })}
