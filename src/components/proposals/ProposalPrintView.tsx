@@ -23,6 +23,8 @@ export interface ProposalPrintData {
   groupMap: Map<number, PrintUnitDraft[]>;
 }
 
+const GROUP_CIRCLE_NUMS = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩'];
+
 const INTENT_TAG_PRINT_COLOR: Record<string, string> = {
   '苦手補強': 'text-red-700 border-red-200',
   '既習の定着': 'text-blue-700 border-blue-200',
@@ -245,18 +247,24 @@ export function ProposalPrintView({
             const intentTag = unit?.intent_tag
               ?? (isGrouped && members ? members[0]?.intent_tag : null)
               ?? null;
+            const groupLabel = isGrouped
+              ? GROUP_CIRCLE_NUMS[(unit!.group_id - 1) % GROUP_CIRCLE_NUMS.length]
+              : '';
 
             return (
               <div
                 key={item.id}
                 className={`proposal-print-compact-item flex items-center gap-1 ${
                   isTarget ? 'font-bold' : itemDone ? 'text-gray-400 line-through' : ''
-                } ${isGrouped && isTarget ? 'border-l-[2px] border-l-black pl-1' : ''}`}
+                } ${isGrouped && isTarget ? 'bg-gray-100 border-l-[2px] border-l-black pl-1' : ''}`}
               >
                 <span className="w-3 text-center shrink-0">
                   {itemDone ? '✓' : isTarget ? '■' : ' '}
                 </span>
                 <span className="flex-1 min-w-0 truncate">{item.title}</span>
+                {isGrouped && isTarget && (
+                  <span className="shrink-0 text-[7px]">セット{groupLabel}</span>
+                )}
                 {isTarget && (!isGrouped || isGroupHead) && unit && (
                   <span className="shrink-0 tabular-nums">{unit.koma_count}コマ</span>
                 )}
