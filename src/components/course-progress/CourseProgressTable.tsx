@@ -656,7 +656,7 @@ export function CourseProgressTable({
                   cells.push(
                     <th key="_subject_total_agg" className="border-b border-gray-300 p-0 text-center bg-gray-100 font-normal">
                       <div className="w-full py-0.5">
-                        <span className="text-[9px] font-bold" style={{ color: subjectGroup?.color }}>{grandTotal}</span>
+                        <span className="text-[9px] font-bold" style={{ color: subjectGroup?.color }}>{grandTotal > 0 ? grandTotal : ''}</span>
                       </div>
                     </th>
                   );
@@ -744,13 +744,14 @@ export function CourseProgressTable({
                       // 自動計算
                       if (item.auto_source && item.column_type === 'number') {
                         const autoVal = getAutoValue(student.id, item.auto_source, item.name);
+                        const showVal = autoVal != null && autoVal !== 0;
                         return (
                           <td key={item.id} className="border-b border-gray-100 p-0 text-center">
                             <div
                               className="w-full h-[30px] flex items-center justify-center text-[10px] font-semibold"
-                              style={{ backgroundColor: `${groupColor}12`, color: groupColor }}
+                              style={{ backgroundColor: showVal ? `${groupColor}12` : undefined, color: showVal ? groupColor : undefined }}
                             >
-                              {autoVal ?? 0}
+                              {showVal ? autoVal : ''}
                             </div>
                           </td>
                         );
@@ -826,7 +827,7 @@ export function CourseProgressTable({
                             className="w-full h-[30px] flex items-center justify-center text-[11px] font-bold"
                             style={{ color: subjectGroup?.color }}
                           >
-                            {total}
+                            {total > 0 ? total : ''}
                           </div>
                         </td>
                       );

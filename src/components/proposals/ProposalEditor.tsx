@@ -187,6 +187,7 @@ export default function ProposalEditor() {
   const [studentSchoolId, setStudentSchoolId] = useState<string | null>(null);
   const [textbookName, setTextbookName] = useState('');
   const [textbookSubject, setTextbookSubject] = useState('');
+  const [textbookGrade, setTextbookGrade] = useState('');
 
   const [previewMode, setPreviewMode] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -246,6 +247,7 @@ export default function ProposalEditor() {
         setSelectedTextbookId(tbId);
         setTextbookName(data.textbook?.name ?? '');
         setTextbookSubject(data.textbook?.subject ?? '');
+        setTextbookGrade((data.textbook as Record<string, unknown>)?.grade as string ?? '');
       } else if (stbId) {
         const { data: stb } = await supabase
           .from('student_textbooks')
@@ -255,22 +257,24 @@ export default function ProposalEditor() {
 
         if (stb) {
           const st = stb as Record<string, unknown>;
-          const textbook = st.textbook as { id: number; name: string; subject?: string | null } | null;
+          const textbook = st.textbook as { id: number; name: string; subject?: string | null; grade?: string | null } | null;
           tbId = textbook?.id ?? 0;
           setSelectedTextbookId(tbId);
           setTextbookName(textbook?.name ?? '');
           setTextbookSubject(textbook?.subject ?? '');
+          setTextbookGrade(textbook?.grade ?? '');
         }
       } else if (tbId) {
         const { data: tb } = await supabase
           .from('textbooks')
-          .select('name, subject')
+          .select('name, subject, grade')
           .eq('id', tbId)
           .single();
         if (tb) {
-          const t = tb as { name: string; subject: string | null };
+          const t = tb as { name: string; subject: string | null; grade: string | null };
           setTextbookName(t.name);
           setTextbookSubject(t.subject ?? '');
+          setTextbookGrade(t.grade ?? '');
         }
       }
 
@@ -366,6 +370,7 @@ export default function ProposalEditor() {
     setSelectedTextbookId(tb.id);
     setTextbookName(tb.name);
     setTextbookSubject(tb.subject ?? '');
+    setTextbookGrade(tb.grade ?? '');
     setShowTextbookPicker(false);
 
     const { items } = await getTextbookUnitsWithProgress(null, tb.id);
@@ -665,7 +670,7 @@ export default function ProposalEditor() {
 
         <ProposalPrintView
           studentName={studentName}
-          textbookName={textbookSubject ? `${textbookSubject} ${textbookName}` : textbookName}
+          textbookName={[textbookGrade, textbookSubject, textbookName].filter(Boolean).join(' ')}
           seasonLabel={seasonLabel}
           year={year}
           theme={theme}
@@ -810,7 +815,7 @@ export default function ProposalEditor() {
   // 編集モード
   // ════════════════════════════════════════
   return (
-    <div className="max-w-3xl mx-auto pb-20" ref={topRef}>
+    <div className="max-w-5xl mx-auto pb-20" ref={topRef}>
       {/* ヘッダー */}
       <div className="mb-6">
         <Link
@@ -826,7 +831,7 @@ export default function ProposalEditor() {
               {isNew ? '講習提案書を作成' : '講習提案書を編集'}
             </h1>
             <p className="text-sm text-text-muted mt-0.5">
-              {studentName} / {textbookSubject ? `${textbookSubject} ` : ''}{textbookName} / {year}年 {seasonLabel}講習
+              {studentName} / {[textbookGrade, textbookSubject, textbookName].filter(Boolean).join(' ')} / {year}年 {seasonLabel}講習
             </p>
           </div>
 
@@ -908,7 +913,7 @@ export default function ProposalEditor() {
           <section className="p-4 bg-surface-raised rounded-xl border border-border-default flex items-center justify-between">
             <div>
               <div className="text-xs font-bold text-text-muted mb-0.5">テキスト</div>
-              <div className="text-sm font-medium text-text-heading">{textbookName}</div>
+              <div className="text-sm font-medium text-text-heading">{[textbookGrade, textbookSubject, textbookName].filter(Boolean).join(' ')}</div>
             </div>
             <Button variant="ghost" size="sm" onClick={() => setShowTextbookPicker(true)}>
               変更
@@ -1025,7 +1030,7 @@ export default function ProposalEditor() {
 
       {/* スティッキーボトムバー */}
       <div className="fixed bottom-0 left-0 right-0 z-30 bg-surface-raised/95 backdrop-blur-sm border-t border-border-default print:hidden">
-        <div className="max-w-3xl mx-auto px-4 py-2.5 flex items-center gap-3">
+        <div className="max-w-5xl mx-auto px-4 py-2.5 flex items-center gap-3">
           <div className="text-xs font-bold text-text-muted shrink-0">
             <span className="text-accent-ink">{activeUnits.length}単元 / {totalKoma}コマ</span>
             {totalAppliedKoma != null && totalAppliedKoma > 0 && (
@@ -1116,7 +1121,7 @@ export default function ProposalEditor() {
             </AlertDialogDescription>
             <div className="mt-2 bg-surface-hover rounded-lg p-3 space-y-1 text-sm">
               <p><span className="text-text-muted">コース名:</span> {theme}</p>
-              <p><span className="text-text-muted">テキスト:</span> {textbookName}</p>
+              <p><span className="text-text-muted">テキスト:</span> {[textbookGrade, textbookSubject, textbookName].filter(Boolean).join(' ')}</p>
               <p><span className="text-text-muted">対象学年:</span> {studentGrade ? (GRADE_LABELS[studentGrade] ?? `学年${studentGrade}`) : '不明'}</p>
               <p><span className="text-text-muted">内容:</span> {activeUnits.length}単元 / {totalKoma}コマ</p>
             </div>
