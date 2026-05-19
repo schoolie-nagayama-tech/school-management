@@ -496,6 +496,10 @@ export default function CourseDetailPage() {
         <div className="mb-5">
           <Link
             href="/courses"
+            onClick={(e) => {
+              e.preventDefault();
+              router.back();
+            }}
             className="text-sm text-text-muted hover:text-text-heading inline-flex items-center gap-1 mb-2 transition-colors duration-150"
           >
             <ArrowLeft className="w-3.5 h-3.5" />

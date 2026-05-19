@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { AlertCircle, ArrowUpDown, CheckSquare, ChevronRight, Copy, FileText, Plus, Search, Square, Trash2, X } from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
 import { Button, Loading, InlineLoading } from '@/components/ui';
@@ -47,12 +48,16 @@ const NAV_GRADES = [
   { key: 12, label: '高3' },
 ];
 
+const SCROLL_STORAGE_KEY = 'courses-scroll';
+
 export default function CoursesPage() {
   const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
     (p) => p.canAccessCourses
   );
   const { getSelectedSchoolIds, schoolIds } = useAuth();
   const { localSchoolId, setLocalSchoolId, isAllSelected, availableSchools } = useLocalSchoolId();
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   const [courses, setCourses] = useState<SeasonalCourseWithDetails[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -60,14 +65,18 @@ export default function CoursesPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 検索・フィルタ
-  const [query, setQuery] = useState('');
-  const [filterSeason, setFilterSeason] = useState<SeasonType | ''>('');
-  const [filterGradeGroup, setFilterGradeGroup] = useState('');
+  // 検索・フィルタ（URLパラメータから初期化）
+  const [query, setQuery] = useState(() => searchParams.get('q') || '');
+  const [filterSeason, setFilterSeason] = useState<SeasonType | ''>(() =>
+    (searchParams.get('season') as SeasonType) || ''
+  );
+  const [filterGradeGroup, setFilterGradeGroup] = useState(() => searchParams.get('grade') || '');
 
-  // ソート
-  const [sortKey, setSortKey] = useState<SortKey>('grade');
-  const [sortAsc, setSortAsc] = useState(true);
+  // ソート（URLパラメータから初期化）
+  const [sortKey, setSortKey] = useState<SortKey>(() =>
+    (searchParams.get('sort') as SortKey) || 'grade'
+  );
+  const [sortAsc, setSortAsc] = useState(() => searchParams.get('asc') !== '0');
 
   // 選択状態
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -117,6 +126,38 @@ export default function CoursesPage() {
     setSelected(new Set());
   }, [localSchoolId]);
 
+  // フィルタ・ソート状態をURLパラメータに同期
+  const isInitialMount = useRef(true);
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    const params = new URLSearchParams();
+    if (query) params.set('q', query);
+    if (filterSeason) params.set('season', filterSeason);
+    if (filterGradeGroup) params.set('grade', filterGradeGroup);
+    if (sortKey !== 'grade') params.set('sort', sortKey);
+    if (!sortAsc) params.set('asc', '0');
+    const qs = params.toString();
+    router.replace(qs ? `/courses?${qs}` : '/courses', { scroll: false });
+  }, [query, filterSeason, filterGradeGroup, sortKey, sortAsc, router]);
+
+  // データ読み込み完了後にスクロール位置を復元
+  useEffect(() => {
+    if (!isLoading && courses.length > 0 && listRef.current) {
+      const saved = sessionStorage.getItem(SCROLL_STORAGE_KEY);
+      if (saved) {
+        requestAnimationFrame(() => {
+          if (listRef.current) {
+            listRef.current.scrollTop = Number(saved);
+          }
+        });
+        sessionStorage.removeItem(SCROLL_STORAGE_KEY);
+      }
+    }
+  }, [isLoading, courses.length]);
+
   // スクロール監視
   useEffect(() => {
     const el = listRef.current;
@@ -126,6 +167,7 @@ export default function CoursesPage() {
       const maxScroll = scrollHeight - clientHeight;
       setScrollRatio(maxScroll > 0 ? scrollTop / maxScroll : 0);
       setShowScrollNav(scrollHeight > clientHeight);
+      sessionStorage.setItem(SCROLL_STORAGE_KEY, String(scrollTop));
     };
     update();
     el.addEventListener('scroll', update, { passive: true });
