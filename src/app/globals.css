@@ -383,6 +383,20 @@ a:focus-visible {
     margin: 10mm;
   }
 
+  /* 講習提案書: A4縦1枚に収める */
+  .proposal-print-page {
+    page: proposal;
+  }
+  @page proposal {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+  .proposal-print-table td,
+  .proposal-print-table th {
+    padding-top: 3px !important;
+    padding-bottom: 3px !important;
+  }
+
   body {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;

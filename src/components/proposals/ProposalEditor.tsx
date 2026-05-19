@@ -1,10 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft,
+  ArrowUp,
   BookPlus,
   Check,
   ChevronDown,
@@ -164,6 +165,15 @@ export default function ProposalEditor() {
   const [showPromoteConfirm, setShowPromoteConfirm] = useState(false);
   const [promoting, setPromoting] = useState(false);
   const [studentGrade, setStudentGrade] = useState<number | null>(null);
+
+  const topRef = useRef<HTMLDivElement>(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setShowScrollTop(window.scrollY > 400);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   // ── 初期読み込み ──
   const loadData = useCallback(async () => {
@@ -764,7 +774,7 @@ export default function ProposalEditor() {
   // 編集モード
   // ════════════════════════════════════════
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="max-w-3xl mx-auto pb-20" ref={topRef}>
       {/* ヘッダー */}
       <div className="mb-6">
         <Link
@@ -983,34 +993,55 @@ export default function ProposalEditor() {
           />
         </section>
 
-        {/* アクション */}
-        <div className="flex gap-2">
+      </div>
+
+      {/* スティッキーボトムバー */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 bg-surface-raised/95 backdrop-blur-sm border-t border-border-default print:hidden">
+        <div className="max-w-3xl mx-auto px-4 py-2.5 flex items-center gap-3">
+          <div className="text-xs font-bold text-text-muted shrink-0">
+            <span className="text-accent-ink">{activeUnits.length}単元 / {totalKoma}コマ</span>
+            {totalAppliedKoma != null && totalAppliedKoma > 0 && (
+              <span className="text-info ml-2">申込 {totalAppliedKoma}</span>
+            )}
+          </div>
+          <div className="flex-1" />
+          {!isNew && proposal && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowPromoteConfirm(true)}
+              disabled={promoting || !theme.trim() || !selectedTextbookId}
+            >
+              <BookPlus className="w-3.5 h-3.5 mr-1" />
+              講習に登録
+            </Button>
+          )}
+          <Button variant="outline" size="sm" onClick={() => setPreviewMode(true)}>
+            <Printer className="w-3.5 h-3.5 mr-1" />
+            プレビュー
+          </Button>
           <Button
-            className="flex-1"
+            size="sm"
             onClick={handleSave}
             disabled={saving || !theme.trim() || !selectedTextbookId}
             isLoading={saving}
           >
-            <Save className="w-4 h-4 mr-1.5" />
+            <Save className="w-3.5 h-3.5 mr-1" />
             保存
           </Button>
-          <Button variant="outline" onClick={() => setPreviewMode(true)}>
-            <Printer className="w-4 h-4 mr-1.5" />
-            プレビュー
-          </Button>
-          {!isNew && proposal && (
-            <Button
-              variant="outline"
-              onClick={() => setShowPromoteConfirm(true)}
-              disabled={promoting || !theme.trim() || !selectedTextbookId}
-            >
-              <BookPlus className="w-4 h-4 mr-1.5" />
-              講習に登録
-            </Button>
-          )}
         </div>
-
       </div>
+
+      {/* トップに戻るボタン */}
+      {showScrollTop && (
+        <button
+          onClick={() => topRef.current?.scrollIntoView({ behavior: 'smooth' })}
+          className="fixed bottom-16 right-4 z-30 w-10 h-10 bg-ink text-text-on-primary rounded-full shadow-lg flex items-center justify-center hover:brightness-[0.85] active:scale-90 transition-[filter,transform] duration-150 print:hidden"
+          aria-label="トップに戻る"
+        >
+          <ArrowUp className="w-5 h-5" />
+        </button>
+      )}
 
       {/* 削除確認 */}
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
