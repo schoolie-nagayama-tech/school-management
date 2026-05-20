@@ -65,8 +65,8 @@ describe('POST /api/admin/users/create', () => {
   });
 
   it('未認証で401を返す', async () => {
-    const { requireAdmin } = await import('@/lib/api-auth');
-    vi.mocked(requireAdmin).mockResolvedValueOnce(
+    const { requireManager } = await import('@/lib/api-auth');
+    vi.mocked(requireManager).mockResolvedValueOnce(
       NextResponse.json({ error: '認証が必要です' }, { status: 401 })
     );
 
