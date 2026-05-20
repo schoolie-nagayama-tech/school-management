@@ -12,8 +12,7 @@ import { ChevronDown, ChevronUp, Info, AlertTriangle, X } from 'lucide-react';
 import { InlineLoading } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import { dismissAlert } from '@/lib/api/alerts';
-import { completeTask } from '@/lib/api/interviews';
-import { ALERT_TYPE_LABELS, ALERT_TYPE_COLORS } from '@/types/alerts';
+import { ALERT_TYPE_LABELS, ALERT_TYPE_COLORS, DISMISSABLE_ALERT_TYPES } from '@/types/alerts';
 
 interface AlertBoardProps {
   className?: string;
@@ -51,7 +50,10 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
     interview_overdue: '最後の面談から30日以上経過している',
     application_overdue: '期日が過ぎている申込項目がある',
     interview_task: '未完了の面談タスクがある',
-    exam_overdue: 'テスト日が過ぎている目標設定がある',
+    exam_overdue: 'テスト日を過ぎたが目標点・行動目標が未設定',
+    homework_not_done: '宿題未実施の回数がしきい値を超えている',
+    tardy: '遅刻の回数がしきい値を超えている',
+    course_prep_overdue: '講習準備の期日が近い、または超過',
   };
 
   const fetchAlerts = useCallback(async (skipCache = false) => {
@@ -122,20 +124,13 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
 
   const handleDismiss = useCallback(async (alert: Alert) => {
     if (!canDismiss) return;
+    if (!DISMISSABLE_ALERT_TYPES.has(alert.alert_type)) return;
 
     try {
       const schoolIds = getSelectedSchoolIds();
       if (schoolIds.length === 0) {
         toastError('教室が選択されていません');
         return;
-      }
-
-      // 面談タスクの場合：面談記録のタスクを完了にしてから対応済み記録を付与（同期）
-      if (alert.alert_type === 'interview_task') {
-        const taskId = alert.details?.task_id ?? (alert.alert_key.startsWith('task:') ? alert.alert_key.slice(5) : null);
-        if (taskId) {
-          await completeTask(taskId);
-        }
       }
 
       // 生徒のschool_idを取得
@@ -290,6 +285,9 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
                   </span>
                 </div>
               ))}
+            </div>
+            <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-400 leading-relaxed">
+              成績低下・宿題未実施・遅刻は「対応済み」で消去。その他は実績入力で自動的に消えます。
             </div>
           </div>
         </div>

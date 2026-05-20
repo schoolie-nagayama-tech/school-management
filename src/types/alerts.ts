@@ -111,6 +111,16 @@ export interface AlertThresholds {
   course_prep_alert_days?: number;   // 講習準備：N日前から橙（デフォ 0 = 当日）
 }
 
+/**
+ * 対応済みボタンで手動 dismiss できるアラートタイプ。
+ * これ以外は実績入力（面談記録・成績入力など）で自動的に消える。
+ */
+export const DISMISSABLE_ALERT_TYPES: ReadonlySet<AlertType> = new Set<AlertType>([
+  'score_drop',
+  'homework_not_done',
+  'tardy',
+]);
+
 export const DEFAULT_ALERT_THRESHOLDS: Required<AlertThresholds> = {
   score_drop_regular: 10,
   score_drop_mock: 5,

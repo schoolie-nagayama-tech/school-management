@@ -38,6 +38,8 @@ export interface AlertSources {
   /** 講習準備：期日付き進捗項目と生徒完了状態 */
   coursePrepItems: Array<{ id: string; school_id: string; name: string; deadline: string; season: SeasonType; year: number }>;
   coursePrepStudentProgress: Array<{ student_id: string; item_id: string; status: string | null }>;
+  /** 行動目標が1件以上存在するテスト設定のIDセット */
+  actionGoalExamIds: Set<string>;
   /** 設定（教室別の最も厳しい値を採用） */
   settingsBySchool: Map<string, AlertSetting[]>;
 }
@@ -105,6 +107,7 @@ export async function fetchAlertSources(schoolIds: string[]): Promise<AlertSourc
       tardyCountByStudent: new Map(),
       coursePrepItems: [],
       coursePrepStudentProgress: [],
+      actionGoalExamIds: new Set(),
       settingsBySchool: new Map(),
     };
   }
@@ -138,6 +141,22 @@ export async function fetchAlertSources(schoolIds: string[]): Promise<AlertSourc
   const pendingTasks = pendingTasksResult ?? [];
   const { byStudent: textbooksByStudent, examTypeNames } = textbooksResult;
 
+  // action_goals が存在するテスト設定IDを取得
+  const allExamIds: string[] = [];
+  Array.from(textbooksByStudent.values()).forEach((stList) => {
+    for (const st of stList) {
+      for (const exam of st.exams ?? []) allExamIds.push(exam.id);
+    }
+  });
+  const actionGoalExamIds = new Set<string>();
+  if (allExamIds.length > 0) {
+    const { data: goals } = await supabase
+      .from('action_goals')
+      .select('student_textbook_exam_id')
+      .in('student_textbook_exam_id', allExamIds);
+    for (const g of (goals ?? []) as Array<{ student_textbook_exam_id: string }>) actionGoalExamIds.add(g.student_textbook_exam_id);
+  }
+
   return {
     students,
     assessmentsByStudent,
@@ -151,6 +170,7 @@ export async function fetchAlertSources(schoolIds: string[]): Promise<AlertSourc
     tardyCountByStudent: progressFlags.tardy,
     coursePrepItems: coursePrepData.items,
     coursePrepStudentProgress: coursePrepData.studentProgress,
+    actionGoalExamIds,
     settingsBySchool,
   };
 }
@@ -515,6 +535,10 @@ function buildExamOverdueCandidates(sources: AlertSources): Alert[] {
     for (const st of textbooks) {
       for (const exam of st.exams ?? []) {
         if (!exam.exam_date) continue;
+        // 目標点 or 行動目標が設定済みなら目標未設定ではない
+        if (exam.target_score != null) continue;
+        if (sources.actionGoalExamIds.has(exam.id)) continue;
+
         const examDate = new Date(exam.exam_date);
         examDate.setHours(0, 0, 0, 0);
         const daysUntil = Math.ceil((examDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
@@ -963,6 +987,7 @@ async function fetchAlertSourcesHeavy(schoolIds: string[]): Promise<Partial<Aler
       tardyCountByStudent: new Map(),
       coursePrepItems: [],
       coursePrepStudentProgress: [],
+      actionGoalExamIds: new Set<string>(),
       settingsBySchool: new Map(),
     };
   }
@@ -979,6 +1004,22 @@ async function fetchAlertSourcesHeavy(schoolIds: string[]): Promise<Partial<Aler
 
   const { byStudent: textbooksByStudent, examTypeNames } = textbooksResult;
 
+  // action_goals が存在するテスト設定IDを取得
+  const allExamIds: string[] = [];
+  Array.from(textbooksByStudent.values()).forEach((stList) => {
+    for (const st of stList) {
+      for (const exam of st.exams ?? []) allExamIds.push(exam.id);
+    }
+  });
+  const actionGoalExamIds = new Set<string>();
+  if (allExamIds.length > 0) {
+    const { data: goals } = await supabase
+      .from('action_goals')
+      .select('student_textbook_exam_id')
+      .in('student_textbook_exam_id', allExamIds);
+    for (const g of (goals ?? []) as Array<{ student_textbook_exam_id: string }>) actionGoalExamIds.add(g.student_textbook_exam_id);
+  }
+
   if (process.env.NODE_ENV === 'development') {
     const assessmentCount = Array.from(assessmentsByStudent.values()).reduce((n, arr) => n + arr.length, 0);
     console.debug('[Heavy] schoolIds:', schoolIds.length, 'students:', students.length, 'assessments:', assessmentCount, 'textbooksByStudent:', textbooksByStudent.size);
@@ -993,6 +1034,7 @@ async function fetchAlertSourcesHeavy(schoolIds: string[]): Promise<Partial<Aler
     tardyCountByStudent: progressFlags.tardy,
     coursePrepItems: coursePrepData.items,
     coursePrepStudentProgress: coursePrepData.studentProgress,
+    actionGoalExamIds,
     settingsBySchool,
   };
 }
@@ -1011,6 +1053,7 @@ function toFullSources(partial: Partial<AlertSources>): AlertSources {
     tardyCountByStudent: partial.tardyCountByStudent ?? new Map(),
     coursePrepItems: partial.coursePrepItems ?? [],
     coursePrepStudentProgress: partial.coursePrepStudentProgress ?? [],
+    actionGoalExamIds: partial.actionGoalExamIds ?? new Set(),
     settingsBySchool: partial.settingsBySchool ?? new Map(),
   };
 }

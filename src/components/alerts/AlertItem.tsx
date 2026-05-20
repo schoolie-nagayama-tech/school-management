@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import type { Alert } from '@/types/alerts';
-import { ALERT_TYPE_LABELS, ALERT_TYPE_COLORS } from '@/types/alerts';
+import { ALERT_TYPE_LABELS, ALERT_TYPE_COLORS, DISMISSABLE_ALERT_TYPES } from '@/types/alerts';
 import { Button } from '@/components/ui';
 
 interface AlertItemProps {
@@ -41,6 +41,8 @@ function getEditHref(alert: Alert): string | null {
     case 'homework_not_done':
     case 'tardy':
       return `/students/${sid}/progress`;
+    case 'course_prep_overdue':
+      return `/courses/progress`;
     default:
       return null;
   }
@@ -70,14 +72,14 @@ export function AlertItem({ alert, onDismiss, canDismiss = false }: AlertItemPro
         </span>
         {messageNode}
       </div>
-      {canDismiss && onDismiss && (
+      {canDismiss && onDismiss && DISMISSABLE_ALERT_TYPES.has(alert.alert_type) && (
         <Button
           onClick={() => onDismiss(alert)}
           variant="primary"
           size="sm"
           className="shrink-0 text-xs px-2 py-1"
         >
-          {alert.alert_type === 'interview_task' ? '達成' : '対応済み'}
+          対応済み
         </Button>
       )}
     </div>
