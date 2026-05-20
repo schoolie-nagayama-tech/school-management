@@ -14,7 +14,7 @@ import type {
   AlertType,
 } from '@/types/alerts';
 import { DEFAULT_ALERT_THRESHOLDS } from '@/types/alerts';
-import { SUBJECT_LABELS } from '@/types/database';
+import { SUBJECT_LABELS, ASSESSMENT_NAME_LABELS } from '@/types/database';
 import type { AssessmentWithScores, SeasonType } from '@/types/database';
 import type { StudentInterview } from '@/types/database';
 import type { StudentTextbookWithDetails } from '@/types/database';
@@ -320,8 +320,11 @@ function buildScoreMissingCandidates(sources: AlertSources): Alert[] {
       if (assessments.length === 0) continue;
 
       const latest = assessments[0];
-      // 中間テスト（name_codeに_midを含む）は5教科のみ。期末・学年末・内申は9教科。
-      const isMidterm = category === 'regular_test' && latest.name_code?.includes('_mid');
+      // 中間テスト（name_codeに_midを含む or titleに中間を含む）は5教科のみ。
+      // 期末・学年末・内申は9教科。
+      const isMidterm = category === 'regular_test' && (
+        latest.name_code?.includes('_mid') || latest.title?.includes('中間')
+      );
       const expectedSubjects =
         category === 'mock'
           ? ['english', 'math', 'japanese', 'social', 'science', 'conv_5', 'conv_4', 'conv_total']
@@ -335,9 +338,13 @@ function buildScoreMissingCandidates(sources: AlertSources): Alert[] {
         if (!score || score.value == null) missingSubjects.push(subj);
       }
       if (missingSubjects.length > 0) {
+        const categoryLabel =
+          category === 'regular_test' ? '定期テスト' : category === 'report_card' ? '内申' : '模試';
+        const testName = ASSESSMENT_NAME_LABELS[latest.name_code] || '';
         const examMonthStr = latest.exam_month
           ? new Date(latest.exam_month).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long' })
-          : '最新';
+          : '';
+        const prefix = [categoryLabel, testName, examMonthStr].filter(Boolean).join(' ');
         const alertKey = `${category}:${latest.exam_month || latest.id}`;
         alerts.push({
           id: `${student.id}:score_missing:${alertKey}`,
@@ -347,7 +354,7 @@ function buildScoreMissingCandidates(sources: AlertSources): Alert[] {
           school_id: student.school_id,
           alert_type: 'score_missing',
           alert_key: alertKey,
-          message: `${examMonthStr} ${missingSubjects.map((s) => SUBJECT_LABELS[s] || s).join('・')}`,
+          message: `${prefix} ${missingSubjects.map((s) => SUBJECT_LABELS[s] || s).join('・')}`,
           details: { subject: missingSubjects.join(',') },
         });
       }
