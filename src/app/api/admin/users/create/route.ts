@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { randomUUID } from 'crypto';
-import { requireAdmin, getApiAuth, isSchoolInScope } from '@/lib/api-auth';
+import { requireManager, getApiAuth, isSchoolInScope } from '@/lib/api-auth';
 import { writeAuditLog } from '@/lib/audit-log';
+import { USER_ROLE_LEVELS } from '@/types/database';
+import type { UserRole } from '@/types/database';
 
 function getSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -26,7 +28,7 @@ function getSupabaseAdmin() {
 
 export async function POST(request: NextRequest) {
   try {
-    const authGuardError = await requireAdmin(request);
+    const authGuardError = await requireManager(request);
     if (authGuardError) return authGuardError;
     const { auth } = await getApiAuth(request);
     if (!auth) return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
@@ -60,6 +62,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: '必須項目が入力されていません' },
         { status: 400 }
+      );
+    }
+
+    // 自分より上の権限のユーザーは作成不可
+    const myLevel = USER_ROLE_LEVELS[auth.role.toLowerCase() as UserRole] ?? 0;
+    const targetLevel = USER_ROLE_LEVELS[(role as string).toLowerCase() as UserRole] ?? 0;
+    if (targetLevel >= myLevel) {
+      return NextResponse.json(
+        { error: '自分と同等以上の権限のユーザーは作成できません' },
+        { status: 403 }
       );
     }
 
