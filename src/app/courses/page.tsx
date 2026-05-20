@@ -16,7 +16,7 @@ import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { useLocalSchoolId } from '@/hooks/useLocalSchoolId';
 import { SchoolSwitcher } from '@/components/SchoolSwitcher';
 
-type SortKey = 'season' | 'name' | 'application' | 'grade';
+type SortKey = 'season' | 'name' | 'application' | 'grade' | 'subject';
 
 const SEASON_ORDER: Record<SeasonType, number> = { spring: 0, summer: 1, winter: 2 };
 const SEASON_COLORS: Record<SeasonType, string> = {
@@ -29,6 +29,7 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: 'season', label: '季節' },
   { key: 'name', label: '名前' },
   { key: 'grade', label: '学年' },
+  { key: 'subject', label: '科目' },
   { key: 'application', label: '適用数' },
 ];
 
@@ -222,6 +223,12 @@ export default function CoursesPage() {
         case 'grade':
           cmp = (a.target_grades[0] ?? 99) - (b.target_grades[0] ?? 99);
           break;
+        case 'subject': {
+          const sa = a.textbooks?.[0]?.textbook?.subject ?? '';
+          const sb = b.textbooks?.[0]?.textbook?.subject ?? '';
+          cmp = sa.localeCompare(sb, 'ja');
+          break;
+        }
       }
       return sortAsc ? cmp : -cmp;
     });
