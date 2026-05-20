@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useCallback } from 'react';
 import { Modal, Button } from '@/components/ui';
 import { createAssessmentRow, updateScore } from '@/lib/api/assessments';
 import type { Student } from '@/types/database';
@@ -257,9 +257,8 @@ export function MockPasteImportModal({
   const matchedCount = parsed.filter((r) => r.matchedStudent).length;
   const unmatchedCount = parsed.filter((r) => !r.matchedStudent).length;
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  const processFiles = useCallback(async (files: File[]) => {
+    if (files.length === 0) return;
 
     setFileError('');
     setImportResult(null);
@@ -268,8 +267,7 @@ export function MockPasteImportModal({
       const allRows: (string | number | undefined)[][] = [];
       const fileNames: string[] = [];
 
-      for (let fi = 0; fi < files.length; fi++) {
-        const file = files[fi];
+      for (const file of files) {
         fileNames.push(file.name);
         const ext = file.name.toLowerCase().split('.').pop();
 
@@ -279,11 +277,9 @@ export function MockPasteImportModal({
           const res = await fetch('/api/scores/parse-xlsx', { method: 'POST', body: formData });
           if (!res.ok) throw new Error('xlsx parse failed: ' + file.name);
           const { rows } = await res.json();
-          // 最初のファイルはヘッダー含む全行、2番目以降はヘッダーをスキップ
           if (allRows.length === 0) {
             allRows.push(...rows);
           } else {
-            // ヘッダー行（先頭行）をスキップしてデータ行のみ追加
             for (let i = 1; i < rows.length; i++) {
               allRows.push(rows[i]);
             }
@@ -316,10 +312,48 @@ export function MockPasteImportModal({
       setFileError('ファイルの読み込みに失敗しました');
       setFileRows(null);
     }
+  }, []);
 
-    // reset input so same file can be re-selected
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    await processFiles(Array.from(files));
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
+
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCountRef = useRef(0);
+
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCountRef.current++;
+    if (dragCountRef.current === 1) setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCountRef.current--;
+    if (dragCountRef.current === 0) setIsDragging(false);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCountRef.current = 0;
+    setIsDragging(false);
+
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    if (droppedFiles.length > 0) {
+      await processFiles(droppedFiles);
+    }
+  }, [processFiles]);
 
   const handleImport = async () => {
     const importable = parsed.filter((r) => r.matchedStudent);
@@ -436,7 +470,15 @@ export function MockPasteImportModal({
             </label>
             <div
               onClick={() => fileInputRef.current?.click()}
-              className="w-full border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
+              onDragEnter={handleDragEnter}
+              onDragLeave={handleDragLeave}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+              className={`w-full border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
+                isDragging
+                  ? 'border-primary bg-primary/10'
+                  : 'border-border hover:border-primary/50 hover:bg-primary/5'
+              }`}
             >
               <input
                 ref={fileInputRef}
@@ -446,13 +488,17 @@ export function MockPasteImportModal({
                 onChange={handleFileChange}
                 className="hidden"
               />
-              <Upload className="w-6 h-6 text-text-muted mx-auto mb-2" />
-              {fileName ? (
+              <Upload className={`w-6 h-6 mx-auto mb-2 ${isDragging ? 'text-primary' : 'text-text-muted'}`} />
+              {isDragging ? (
+                <p className="text-sm text-primary font-medium">
+                  ここにドロップ
+                </p>
+              ) : fileName ? (
                 <p className="text-sm text-text-heading font-medium">{fileName}</p>
               ) : (
                 <p className="text-sm text-text-muted">
-                  クリックしてファイルを選択（複数選択可）<br />
-                  学年別ファイルをまとめて選択できます
+                  ファイルをドラッグ&ドロップ、またはクリックして選択（複数可）<br />
+                  学年別ファイルをまとめて取り込めます
                 </p>
               )}
             </div>
