@@ -320,10 +320,14 @@ function buildScoreMissingCandidates(sources: AlertSources): Alert[] {
       if (assessments.length === 0) continue;
 
       const latest = assessments[0];
+      // 中間テスト（name_codeに_midを含む）は5教科のみ。期末・学年末・内申は9教科。
+      const isMidterm = category === 'regular_test' && latest.name_code?.includes('_mid');
       const expectedSubjects =
         category === 'mock'
           ? ['english', 'math', 'japanese', 'social', 'science', 'conv_5', 'conv_4', 'conv_total']
-          : ['english', 'math', 'japanese', 'social', 'science', 'music', 'art', 'tech_home', 'pe'];
+          : isMidterm
+            ? ['english', 'math', 'japanese', 'social', 'science']
+            : ['english', 'math', 'japanese', 'social', 'science', 'music', 'art', 'tech_home', 'pe'];
 
       const missingSubjects: string[] = [];
       for (const subj of expectedSubjects) {
