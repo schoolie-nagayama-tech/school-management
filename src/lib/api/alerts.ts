@@ -303,7 +303,8 @@ function buildScoreDropCandidates(sources: AlertSources): Alert[] {
 function buildScoreMissingCandidates(sources: AlertSources): Alert[] {
   if (!isAlertEnabled(sources.settingsBySchool, 'score_missing')) return [];
   const alerts: Alert[] = [];
-  const categories: Array<'regular_test' | 'report_card' | 'mock'> = ['regular_test', 'report_card', 'mock'];
+  // 模試は科目構成が不定のため未入力チェック対象外
+  const categories: Array<'regular_test' | 'report_card'> = ['regular_test', 'report_card'];
 
   for (const student of sources.students) {
     // 小学生（grade <= 6）と高校生（grade >= 10）は除外。
@@ -325,12 +326,9 @@ function buildScoreMissingCandidates(sources: AlertSources): Alert[] {
       const isMidterm = category === 'regular_test' && (
         latest.name_code?.includes('_mid') || latest.title?.includes('中間')
       );
-      const expectedSubjects =
-        category === 'mock'
-          ? ['english', 'math', 'japanese', 'social', 'science', 'conv_5', 'conv_4', 'conv_total']
-          : isMidterm
-            ? ['english', 'math', 'japanese', 'social', 'science']
-            : ['english', 'math', 'japanese', 'social', 'science', 'music', 'art', 'tech_home', 'pe'];
+      const expectedSubjects = isMidterm
+        ? ['english', 'math', 'japanese', 'social', 'science']
+        : ['english', 'math', 'japanese', 'social', 'science', 'music', 'art', 'tech_home', 'pe'];
 
       const missingSubjects: string[] = [];
       for (const subj of expectedSubjects) {
