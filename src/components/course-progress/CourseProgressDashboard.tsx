@@ -154,6 +154,21 @@ export function CourseProgressDashboard({
     );
   }, [items, proposedKomaItem]);
 
+  // --- 面談実施チェック項目 ---
+  const interviewItem = useMemo(() => {
+    return findItemByKeywords(items, ['生徒面談実施', '生徒面談', '面談実施']);
+  }, [items]);
+
+  const interviewCompletedCount = useMemo(() => {
+    if (!interviewItem) return 0;
+    let count = 0;
+    for (const s of students) {
+      const d = progressData.find((p) => p.student_id === s.id && p.item_id === interviewItem.id);
+      if (d?.status === 'completed') count++;
+    }
+    return count;
+  }, [interviewItem, students, progressData]);
+
   // --- 教科別コマ合計 ---
   const subjectItems = useMemo(
     () => items.filter((i) => i.column_group === '教科別' && i.column_type === 'number'),
@@ -459,22 +474,45 @@ export function CourseProgressDashboard({
           </div>
         </div>
 
-        {/* 提案状況 */}
+        {/* 進捗状況 */}
         <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <div className="text-xs text-gray-500 mb-1 flex items-center gap-1">
-            提案状況
-            <HelpTooltip text={"提案済: 提案コマ数が1以上の生徒数\n決定済: 決定コマ数が1以上の生徒数\n平均提案: 全生徒の平均提案コマ数"} size={10} />
+          <div className="text-xs text-gray-500 mb-2 flex items-center gap-1">
+            進捗状況
+            <HelpTooltip text={"作成済: 提示増コマが1以上の生徒数\n面談実施済: 面談実施チェック済みの生徒数\n申込済: 増コマ決定が1以上の生徒数"} size={10} />
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-[#1e3a5f]">{proposedStudentCount}</span>
-            <span className="text-sm text-gray-400">/ {students.length} 名</span>
+          <div className="space-y-2">
+            {/* 作成済み */}
+            <div>
+              <div className="flex items-center justify-between text-xs mb-0.5">
+                <span className="text-gray-500">作成済</span>
+                <span className="text-gray-700 font-medium">{proposedStudentCount}<span className="text-gray-400 font-normal"> / {students.length}名</span></span>
+              </div>
+              <div className="w-full bg-gray-100 rounded-full h-1.5">
+                <div className="h-1.5 rounded-full bg-[#f59e0b] transition-[width] duration-500 ease-out" style={{ width: `${students.length > 0 ? Math.round((proposedStudentCount / students.length) * 100) : 0}%` }} />
+              </div>
+            </div>
+            {/* 面談実施済み */}
+            <div>
+              <div className="flex items-center justify-between text-xs mb-0.5">
+                <span className="text-gray-500">面談実施済</span>
+                <span className="text-gray-700 font-medium">{interviewCompletedCount}<span className="text-gray-400 font-normal"> / {students.length}名</span></span>
+              </div>
+              <div className="w-full bg-gray-100 rounded-full h-1.5">
+                <div className="h-1.5 rounded-full bg-[#10b981] transition-[width] duration-500 ease-out" style={{ width: `${students.length > 0 ? Math.round((interviewCompletedCount / students.length) * 100) : 0}%` }} />
+              </div>
+            </div>
+            {/* 申込済み */}
+            <div>
+              <div className="flex items-center justify-between text-xs mb-0.5">
+                <span className="text-gray-500">申込済</span>
+                <span className="text-gray-700 font-medium">{decidedStudentCount}<span className="text-gray-400 font-normal"> / {students.length}名</span></span>
+              </div>
+              <div className="w-full bg-gray-100 rounded-full h-1.5">
+                <div className="h-1.5 rounded-full bg-[#3b82f6] transition-[width] duration-500 ease-out" style={{ width: `${students.length > 0 ? Math.round((decidedStudentCount / students.length) * 100) : 0}%` }} />
+              </div>
+            </div>
           </div>
-          <div className="mt-2 w-full bg-gray-100 rounded-full h-2">
-            <div className="h-2 rounded-full bg-[#f59e0b] transition-[width] duration-500 ease-out" style={{ width: `${students.length > 0 ? Math.round((proposedStudentCount / students.length) * 100) : 0}%` }} />
-          </div>
-          <div className="mt-1.5 text-xs text-gray-400 space-y-0.5">
-            <div className="flex justify-between"><span>提案済</span><span className="text-gray-600">{proposedStudentCount}名</span></div>
-            <div className="flex justify-between"><span>決定済</span><span className="text-gray-600">{decidedStudentCount}名</span></div>
+          <div className="mt-2 pt-2 border-t border-gray-100 text-xs text-gray-400">
             <div className="flex justify-between"><span>平均提案</span><span className="text-gray-600">{students.length > 0 ? (totalProposed / students.length).toFixed(1) : 0}コマ/人</span></div>
           </div>
         </div>
