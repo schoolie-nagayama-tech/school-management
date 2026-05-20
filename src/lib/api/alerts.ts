@@ -230,7 +230,10 @@ function buildScoreDropCandidates(sources: AlertSources): Alert[] {
       const assessments = allAssessments
         .filter((a) => a.category === category)
         .sort((a, b) => {
-          if (!a.exam_month || !b.exam_month) return 0;
+          // null exam_month を末尾に送る
+          if (!a.exam_month && !b.exam_month) return 0;
+          if (!a.exam_month) return 1;
+          if (!b.exam_month) return -1;
           return b.exam_month.localeCompare(a.exam_month);
         });
       if (assessments.length < 2) continue;
@@ -315,7 +318,10 @@ function buildScoreMissingCandidates(sources: AlertSources): Alert[] {
       const assessments = allAssessments
         .filter((a) => a.category === category)
         .sort((a, b) => {
-          if (!a.exam_month || !b.exam_month) return 0;
+          // null exam_month を末尾に送る
+          if (!a.exam_month && !b.exam_month) return 0;
+          if (!a.exam_month) return 1;
+          if (!b.exam_month) return -1;
           return b.exam_month.localeCompare(a.exam_month);
         });
       if (assessments.length === 0) continue;
@@ -335,6 +341,8 @@ function buildScoreMissingCandidates(sources: AlertSources): Alert[] {
         const score = latest.scores.find((s) => s.subject === subj);
         if (!score || score.value == null) missingSubjects.push(subj);
       }
+      // 全科目が未入力＝空の未使用レコード → 偽陽性なのでスキップ
+      if (missingSubjects.length === expectedSubjects.length) continue;
       if (missingSubjects.length > 0) {
         const categoryLabel =
           category === 'regular_test' ? '定期テスト' : category === 'report_card' ? '内申' : '模試';
