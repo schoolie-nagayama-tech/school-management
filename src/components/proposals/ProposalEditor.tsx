@@ -488,6 +488,16 @@ export default function ProposalEditor() {
       addToast('グルーピングには2つ以上の未グループ単元を選択してください', 'error');
       return;
     }
+    const selectedSet = new Set(ungrouped.map((d) => d.curriculum_item_id));
+    const indices = allItems
+      .map((item, idx) => selectedSet.has(item.id) ? idx : -1)
+      .filter((i) => i >= 0);
+    for (let i = 1; i < indices.length; i++) {
+      if (indices[i] !== indices[i - 1] + 1) {
+        addToast('隣接する単元のみグループ化できます', 'error');
+        return;
+      }
+    }
     const gid = nextGroupId;
     setNextGroupId(gid + 1);
     setUnitDrafts((prev) => {

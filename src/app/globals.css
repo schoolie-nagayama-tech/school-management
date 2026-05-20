@@ -408,6 +408,10 @@ a:focus-visible {
     border-bottom: 0.5px solid #e5e7eb;
   }
 
+  .proposal-print-compact-item--merged {
+    border-bottom: none;
+  }
+
   body {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;

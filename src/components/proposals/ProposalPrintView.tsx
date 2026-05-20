@@ -20,10 +20,8 @@ export interface ProposalPrintData {
   activeUnits: PrintUnitDraft[];
   progressMap: Map<number, StudentProgress>;
   totalKoma: number;
-  groupMap: Map<number, PrintUnitDraft[]>;
+  groupMap?: Map<number, PrintUnitDraft[]>;
 }
-
-const GROUP_CIRCLE_NUMS = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧', '⑨', '⑩'];
 
 const INTENT_TAG_PRINT_COLOR: Record<string, string> = {
   '苦手補強': 'text-red-700 border-red-200',
@@ -33,6 +31,24 @@ const INTENT_TAG_PRINT_COLOR: Record<string, string> = {
   '直前演習': 'text-amber-700 border-amber-200',
   '応用発展': 'text-indigo-700 border-indigo-200',
 };
+
+type GroupPos = 'first' | 'mid' | 'last' | 'solo';
+
+function getGroupPos(
+  allItems: CurriculumItem[],
+  idx: number,
+  unitMap: Map<number, PrintUnitDraft>,
+): GroupPos | null {
+  const unit = unitMap.get(allItems[idx].id);
+  if (!unit || unit.group_id === 0) return null;
+  const gid = unit.group_id;
+  const prevSame = idx > 0 && unitMap.get(allItems[idx - 1].id)?.group_id === gid;
+  const nextSame = idx < allItems.length - 1 && unitMap.get(allItems[idx + 1].id)?.group_id === gid;
+  if (!prevSame && !nextSame) return 'solo';
+  if (!prevSame) return 'first';
+  if (!nextSame) return 'last';
+  return 'mid';
+}
 
 export function ProposalPrintView({
   studentName,
@@ -44,7 +60,6 @@ export function ProposalPrintView({
   activeUnits,
   progressMap,
   totalKoma,
-  groupMap,
 }: ProposalPrintData) {
   const selectedIds = new Set(activeUnits.map((u) => u.curriculum_item_id));
   const unitMap = new Map(activeUnits.map((u) => [u.curriculum_item_id, u]));
@@ -103,21 +118,23 @@ export function ProposalPrintView({
             </tr>
           </thead>
           <tbody>
-            {activeUnits.map((unit) => {
-              const item = allItems.find((i) => i.id === unit.curriculum_item_id);
+            {activeUnits.map((unit, _i, arr) => {
+              const item = allItems.find((it) => it.id === unit.curriculum_item_id);
               if (!item) return null;
               const isGrouped = unit.group_id > 0;
-              const members = isGrouped ? groupMap.get(unit.group_id) : undefined;
-              const isGroupHead = members && members[0]?.curriculum_item_id === item.id;
-              const intentTag = unit.intent_tag
-                ?? (isGrouped && members ? members[0]?.intent_tag : null)
-                ?? null;
+              const isGroupHead = isGrouped && (arr.findIndex((u) => u.group_id === unit.group_id) === _i);
+              const isGroupLast = isGrouped && (
+                _i === arr.length - 1 || arr[_i + 1]?.group_id !== unit.group_id
+              );
+              const intentTag = unit.intent_tag ?? null;
 
               return (
-                <tr key={item.id} className="border-b border-border-subtle">
-                  <td className="py-1.5 font-medium text-text-heading">
+                <tr
+                  key={item.id}
+                  className={isGrouped && !isGroupLast ? 'border-b border-transparent' : 'border-b border-border-subtle'}
+                >
+                  <td className={`py-1.5 font-medium text-text-heading ${isGrouped ? 'pl-2 border-l-2 border-l-text-muted' : ''}`}>
                     {item.title}
-                    {isGrouped && <span className="ml-1 text-[9px] text-info">G{unit.group_id}</span>}
                   </td>
                   <td className="py-1.5 text-center font-bold text-text-heading">
                     {(!isGrouped || isGroupHead) ? unit.koma_count : ''}
@@ -156,30 +173,31 @@ export function ProposalPrintView({
             </tr>
           </thead>
           <tbody>
-            {allItems.map((item) => {
+            {allItems.map((item, idx) => {
               const isTarget = selectedIds.has(item.id);
               const progress = progressMap.get(item.id);
               const itemDone = !!progress?.school_progress_date;
               const unit = unitMap.get(item.id);
-              const isGrouped = unit && unit.group_id > 0;
-              const members = isGrouped ? groupMap.get(unit!.group_id) : undefined;
-              const isGroupHead = members && members[0]?.curriculum_item_id === item.id;
+              const gpos = getGroupPos(allItems, idx, unitMap);
+              const isGrouped = gpos !== null;
+              const isGroupHead = gpos === 'first' || gpos === 'solo';
+              const isGroupMerged = gpos === 'first' || gpos === 'mid';
 
-              const intentTag = unit?.intent_tag
-                ?? (isGrouped && members ? members[0]?.intent_tag : null)
-                ?? null;
+              const intentTag = unit?.intent_tag ?? null;
 
               return (
                 <tr
                   key={item.id}
                   className={
                     isTarget
-                      ? 'bg-accent-ink-subtle border-b border-accent-ink/10'
+                      ? `bg-accent-ink-subtle ${isGroupMerged ? 'border-b border-transparent' : 'border-b border-accent-ink/10'}`
                       : 'border-b border-border-subtle'
                   }
                 >
                   <td
                     className={`py-2 ${
+                      isGrouped && isTarget ? 'pl-2 border-l-2 border-l-accent-ink' : ''
+                    } ${
                       isTarget
                         ? 'font-bold text-accent-ink'
                         : itemDone
@@ -188,9 +206,6 @@ export function ProposalPrintView({
                     }`}
                   >
                     {item.title}
-                    {isGrouped && (
-                      <span className="ml-1 text-[9px] text-info">G{unit!.group_id}</span>
-                    )}
                   </td>
                   <td className="py-2 text-center">
                     {itemDone ? (
@@ -236,35 +251,31 @@ export function ProposalPrintView({
           </span>
         </div>
         <div className="proposal-print-compact">
-          {allItems.map((item) => {
+          {allItems.map((item, idx) => {
             const isTarget = selectedIds.has(item.id);
             const progress = progressMap.get(item.id);
             const itemDone = !!progress?.school_progress_date;
             const unit = unitMap.get(item.id);
-            const isGrouped = unit && unit.group_id > 0;
-            const members = isGrouped ? groupMap.get(unit!.group_id) : undefined;
-            const isGroupHead = members && members[0]?.curriculum_item_id === item.id;
-            const intentTag = unit?.intent_tag
-              ?? (isGrouped && members ? members[0]?.intent_tag : null)
-              ?? null;
-            const groupLabel = isGrouped
-              ? GROUP_CIRCLE_NUMS[(unit!.group_id - 1) % GROUP_CIRCLE_NUMS.length]
-              : '';
+            const gpos = getGroupPos(allItems, idx, unitMap);
+            const isGrouped = gpos !== null;
+            const isGroupHead = gpos === 'first' || gpos === 'solo';
+            const isGroupMerged = gpos === 'first' || gpos === 'mid';
+            const intentTag = unit?.intent_tag ?? null;
 
             return (
               <div
                 key={item.id}
-                className={`proposal-print-compact-item flex items-center gap-1 ${
-                  isTarget ? 'font-bold' : itemDone ? 'text-gray-400 line-through' : ''
-                } ${isGrouped && isTarget ? 'bg-gray-100 border-l-[2px] border-l-black pl-1' : ''}`}
+                className={[
+                  'proposal-print-compact-item flex items-center gap-1',
+                  isTarget ? 'font-bold' : itemDone ? 'text-gray-400 line-through' : '',
+                  isGrouped && isTarget ? 'bg-gray-100 border-l-[2px] border-l-black pl-1' : '',
+                  isGroupMerged && isTarget ? 'proposal-print-compact-item--merged' : '',
+                ].join(' ')}
               >
                 <span className="w-3 text-center shrink-0">
                   {itemDone ? '✓' : isTarget ? '■' : ' '}
                 </span>
                 <span className="flex-1 min-w-0 truncate">{item.title}</span>
-                {isGrouped && isTarget && (
-                  <span className="shrink-0 text-[7px]">セット{groupLabel}</span>
-                )}
                 {isTarget && (!isGrouped || isGroupHead) && unit && (
                   <span className="shrink-0 tabular-nums">{unit.koma_count}コマ</span>
                 )}
