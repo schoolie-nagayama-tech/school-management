@@ -36,6 +36,16 @@ const STATUS_FILTER_INACTIVE: Record<string, string> = {
   sent: 'bg-info-subtle text-info hover:bg-info/15',
 };
 
+const SUBJECT_BADGE_COLORS: Record<string, { bg: string; text: string }> = {
+  '英語': { bg: 'bg-blue-50', text: 'text-blue-700' },
+  '数学': { bg: 'bg-red-50', text: 'text-red-700' },
+  '算数': { bg: 'bg-red-50', text: 'text-red-700' },
+  '国語': { bg: 'bg-green-50', text: 'text-green-700' },
+  '理科': { bg: 'bg-amber-50', text: 'text-amber-700' },
+  '社会': { bg: 'bg-purple-50', text: 'text-purple-700' },
+};
+const DEFAULT_BADGE_COLOR = { bg: 'bg-gray-100', text: 'text-gray-600' };
+
 interface StudentOption {
   id: string;
   last_name: string;
@@ -464,11 +474,16 @@ export default function CourseProposalsPage() {
                         <Link href={`/students/${studentId}/proposals/${p.id}`} className="flex items-center gap-3 flex-1 min-w-0">
                           <FileText className="w-4 h-4 text-text-faint shrink-0" />
                           <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-text-heading truncate">
-                              {p.textbook?.subject && (
-                                <span className="text-text-muted font-normal mr-1.5">{p.textbook.subject}</span>
-                              )}
-                              {p.textbook?.name ?? '不明'}
+                            <div className="text-sm font-medium text-text-heading truncate flex items-center gap-1.5">
+                              {p.textbook?.subject && (() => {
+                                const colors = SUBJECT_BADGE_COLORS[p.textbook!.subject!] ?? DEFAULT_BADGE_COLOR;
+                                return (
+                                  <span className={`inline-flex px-1.5 py-0.5 text-[10px] font-bold rounded shrink-0 ${colors.bg} ${colors.text}`}>
+                                    {p.textbook!.subject}
+                                  </span>
+                                );
+                              })()}
+                              <span className="truncate">{p.textbook?.name ?? '不明'}</span>
                             </div>
                             <div className="text-xs text-text-muted flex gap-2">
                               <span>{p.theme || `${p.year}年 ${SEASON_LABELS[p.season]}`}</span>
