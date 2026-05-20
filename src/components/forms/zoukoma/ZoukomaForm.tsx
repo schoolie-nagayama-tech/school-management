@@ -342,15 +342,14 @@ export function ZoukomaForm({ school, period, isPreview }: ZoukomaFormProps) {
         </PortalFormSection>
 
         <PortalFormSection
-          title="出席できない日程"
-          description="出席できない日程に✗をつけてください（3週間・PS2のみ）"
+          title="出席できない日程に✗をつけてください（3週間・PS2のみ）"
         >
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4 space-y-2">
             <p className="text-sm font-semibold text-[#92400e]">
               PS2のみでの実施となります
             </p>
             <p className="text-sm text-[#4b5563]">
-              出席<span className="font-bold text-[#ef4444]">できない</span>日程に✗印をつけてください。✗がない日程は出席可能とみなします。
+              ご都合の悪い日程に✗印をおつけください。✗のない日程にお申し込みいただいたコマ数を割り振ってご案内いたします。
             </p>
           </div>
 
