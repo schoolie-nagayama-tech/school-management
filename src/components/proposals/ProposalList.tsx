@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Check, FileText, Plus, Printer, User } from 'lucide-react';
-import { Button, Loading, InlineLoading } from '@/components/ui';
+import { Loading, InlineLoading } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import {
   getProposalsByStudent,
