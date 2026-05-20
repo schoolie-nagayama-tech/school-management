@@ -43,6 +43,16 @@ const NAV_GRADES = [
   { key: 12, label: '高3' },
 ];
 
+const SUBJECT_BADGE_COLORS: Record<string, { bg: string; text: string }> = {
+  '英語': { bg: 'bg-blue-50', text: 'text-blue-700' },
+  '数学': { bg: 'bg-red-50', text: 'text-red-700' },
+  '算数': { bg: 'bg-red-50', text: 'text-red-700' },
+  '国語': { bg: 'bg-green-50', text: 'text-green-700' },
+  '理科': { bg: 'bg-amber-50', text: 'text-amber-700' },
+  '社会': { bg: 'bg-purple-50', text: 'text-purple-700' },
+};
+const DEFAULT_BADGE_COLOR = { bg: 'bg-gray-100', text: 'text-gray-600' };
+
 const SCROLL_STORAGE_KEY = 'courses-scroll';
 
 export default function CoursesPage() {
@@ -690,6 +700,19 @@ export default function CoursesPage() {
                       {/* 中央: 名前 + 説明 */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
+                          {(() => {
+                            const subjects = Array.from(new Set(
+                              course.textbooks?.map((t) => t.textbook?.subject).filter(Boolean) as string[] ?? []
+                            ));
+                            return subjects.map((s) => {
+                              const c = SUBJECT_BADGE_COLORS[s] ?? DEFAULT_BADGE_COLOR;
+                              return (
+                                <span key={s} className={`inline-flex px-1.5 py-0.5 text-[10px] font-bold rounded shrink-0 ${c.bg} ${c.text}`}>
+                                  {s}
+                                </span>
+                              );
+                            });
+                          })()}
                           <span className="font-medium text-sm text-text-heading truncate">
                             {course.name}
                           </span>
