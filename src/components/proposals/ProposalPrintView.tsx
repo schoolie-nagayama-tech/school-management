@@ -24,10 +24,11 @@ export interface ProposalPrintData {
 }
 
 const INTENT_TAG_PRINT_COLOR: Record<string, string> = {
+  '予習': 'text-purple-700 border-purple-200',
+  '復習': 'text-blue-700 border-blue-200',
+  '苦手克服': 'text-rose-700 border-rose-200',
   '苦手補強': 'text-red-700 border-red-200',
-  '既習の定着': 'text-blue-700 border-blue-200',
-  '未習の先取り': 'text-purple-700 border-purple-200',
-  '学校進度に合わせる': 'text-emerald-700 border-emerald-200',
+  '定着': 'text-emerald-700 border-emerald-200',
   '直前演習': 'text-amber-700 border-amber-200',
   '応用発展': 'text-indigo-700 border-indigo-200',
 };
@@ -113,7 +114,6 @@ export function ProposalPrintView({
             <tr>
               <th className="py-2 text-left font-semibold text-text-muted">単元名</th>
               <th className="py-2 text-center w-10 font-semibold text-text-muted">コマ</th>
-              <th className="py-2 text-left font-semibold text-text-muted">指導意図</th>
             </tr>
           </thead>
           <tbody>
@@ -134,16 +134,14 @@ export function ProposalPrintView({
                 >
                   <td className={`py-1.5 font-medium text-text-heading ${isGrouped ? 'pl-2 border-l-2 border-l-text-muted' : ''}`}>
                     {item.title}
-                  </td>
-                  <td className="py-1.5 text-center font-bold text-text-heading">
-                    {(!isGrouped || isGroupHead) ? unit.koma_count : ''}
-                  </td>
-                  <td className="py-1.5">
                     {intentTag && (
-                      <span className={`inline-block px-1.5 py-0.5 border rounded-full text-[9px] font-medium ${INTENT_TAG_PRINT_COLOR[intentTag] ?? 'text-text-muted border-border-default'}`}>
+                      <span className={`inline-block ml-1.5 px-1.5 py-0.5 border rounded-full text-[9px] font-medium align-middle ${INTENT_TAG_PRINT_COLOR[intentTag] ?? 'text-text-muted border-border-default'}`}>
                         {intentTag}
                       </span>
                     )}
+                  </td>
+                  <td className="py-1.5 text-center font-bold text-text-heading">
+                    {(!isGrouped || isGroupHead) ? unit.koma_count : ''}
                   </td>
                 </tr>
               );
@@ -166,7 +164,6 @@ export function ProposalPrintView({
               <th className="py-2 text-left font-semibold text-text-muted">単元</th>
               <th className="py-2 text-center w-14 font-semibold text-text-muted">状況</th>
               <th className="py-2 text-center w-12 font-semibold text-text-muted">コマ</th>
-              <th className="py-2 text-left font-semibold text-text-muted">指導意図</th>
             </tr>
           </thead>
           <tbody>
@@ -203,6 +200,13 @@ export function ProposalPrintView({
                     }`}
                   >
                     {item.title}
+                    {isTarget && intentTag && (
+                      <span
+                        className={`inline-block ml-1.5 px-1.5 py-0.5 border rounded-full text-[9px] font-medium align-middle ${INTENT_TAG_PRINT_COLOR[intentTag] ?? 'text-text-muted border-border-default'}`}
+                      >
+                        {intentTag}
+                      </span>
+                    )}
                   </td>
                   <td className="py-2 text-center">
                     {itemDone ? (
@@ -219,15 +223,6 @@ export function ProposalPrintView({
                   </td>
                   <td className="py-2 text-center font-bold text-accent-ink">
                     {isTarget && (!isGrouped || isGroupHead) ? unit?.koma_count : ''}
-                  </td>
-                  <td className="py-2">
-                    {isTarget && intentTag && (
-                      <span
-                        className={`inline-block px-1.5 py-0.5 border rounded-full text-[9px] font-medium ${INTENT_TAG_PRINT_COLOR[intentTag] ?? 'text-text-muted border-border-default'}`}
-                      >
-                        {intentTag}
-                      </span>
-                    )}
                   </td>
                 </tr>
               );

@@ -75,20 +75,22 @@ interface UnitDraft {
 }
 
 const INTENT_TAGS = [
+  '予習',
+  '復習',
+  '苦手克服',
   '苦手補強',
-  '既習の定着',
-  '未習の先取り',
-  '学校進度に合わせる',
+  '定着',
   '直前演習',
   '応用発展',
 ] as const;
 type IntentTag = typeof INTENT_TAGS[number];
 
 const INTENT_TAG_COLOR: Record<IntentTag, string> = {
+  '予習': 'text-purple-700 border-purple-200',
+  '復習': 'text-blue-700 border-blue-200',
+  '苦手克服': 'text-rose-700 border-rose-200',
   '苦手補強': 'text-red-700 border-red-200',
-  '既習の定着': 'text-blue-700 border-blue-200',
-  '未習の先取り': 'text-purple-700 border-purple-200',
-  '学校進度に合わせる': 'text-emerald-700 border-emerald-200',
+  '定着': 'text-emerald-700 border-emerald-200',
   '直前演習': 'text-amber-700 border-amber-200',
   '応用発展': 'text-indigo-700 border-indigo-200',
 };
@@ -323,17 +325,6 @@ export default function ProposalEditor() {
         }
       }
 
-      if (isNew) {
-        pm.forEach((prog, ciId) => {
-          if (prog.proposal_count > 0) {
-            const d = drafts.get(ciId);
-            if (d) {
-              d.selected = true;
-              d.koma_count = prog.proposal_count;
-            }
-          }
-        });
-      }
 
       setUnitDrafts(drafts);
       setNextGroupId(maxGroup + 1);
