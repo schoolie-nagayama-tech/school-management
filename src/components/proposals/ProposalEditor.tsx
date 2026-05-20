@@ -386,18 +386,21 @@ export default function ProposalEditor() {
     setUnitDrafts(drafts);
   };
 
+  const lastToggleStateRef = useRef<boolean>(true);
+
   const toggleUnit = (ciId: number, shiftKey = false) => {
     if (shiftKey && lastToggleIdRef.current != null && lastToggleIdRef.current !== ciId) {
       const startIdx = allItems.findIndex((i) => i.id === lastToggleIdRef.current);
       const endIdx = allItems.findIndex((i) => i.id === ciId);
       if (startIdx >= 0 && endIdx >= 0) {
         const [lo, hi] = startIdx < endIdx ? [startIdx, endIdx] : [endIdx, startIdx];
+        const targetState = lastToggleStateRef.current;
         setUnitDrafts((prev) => {
           const next = new Map(prev);
           for (let idx = lo; idx <= hi; idx++) {
             const id = allItems[idx].id;
             const d = next.get(id);
-            if (d && !d.selected) next.set(id, { ...d, selected: true });
+            if (d && d.selected !== targetState) next.set(id, { ...d, selected: targetState });
           }
           return next;
         });
@@ -405,11 +408,14 @@ export default function ProposalEditor() {
         return;
       }
     }
+    const prev = unitDrafts.get(ciId);
+    const newState = prev ? !prev.selected : true;
     lastToggleIdRef.current = ciId;
-    setUnitDrafts((prev) => {
-      const next = new Map(prev);
+    lastToggleStateRef.current = newState;
+    setUnitDrafts((p) => {
+      const next = new Map(p);
       const d = next.get(ciId);
-      if (d) next.set(ciId, { ...d, selected: !d.selected });
+      if (d) next.set(ciId, { ...d, selected: newState });
       return next;
     });
   };

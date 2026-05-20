@@ -11,10 +11,10 @@ export interface ClassPeriodItem {
 const STORAGE_KEY = (schoolId: string) => `class_periods_${schoolId}`;
 
 const DEFAULT_PERIODS: ClassPeriodItem[] = [
-  { code: '4', label: '4限(14:25-15:55)' },
+  { code: '4', label: '4限(14:30-16:00)' },
   { code: '5', label: '5限(16:20-17:50)' },
-  { code: '6', label: '6限(18:00-19:30)' },
-  { code: '7', label: '7限(19:40-21:10)' },
+  { code: '6', label: '6限(18:10-19:40)' },
+  { code: '7', label: '7限(20:00-21:30)' },
 ];
 
 /**

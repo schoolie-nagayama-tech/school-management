@@ -239,15 +239,30 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
     return SHUKAISU_GRADE_NAME_TO_NUMBER[gradeStr] || 0;
   };
 
-  // 日付ラベルを生成
+  // 月ラベルを生成（yyyy-MM → ○月〜）
   const formatDateLabel = (dateStr: string): string => {
     if (!dateStr) return '';
+    // yyyy-MM 形式
+    if (/^\d{4}-\d{2}$/.test(dateStr)) {
+      const [y, m] = dateStr.split('-').map(Number);
+      return `${y}年${m}月〜`;
+    }
+    // 旧形式（yyyy-MM-dd）も念のためサポート
     const date = new Date(dateStr);
     const month = date.getMonth() + 1;
     const day = date.getDate();
     const dow = ['日', '月', '火', '水', '木', '金', '土'][date.getDay()];
     return `${month}月${day}日（${dow}）〜`;
   };
+
+  // 変更開始月の最小値（翌月）
+  const minChangeMonth = (() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth() + 2; // 翌月（0-indexed +1 で今月、+2 で翌月）
+    if (m > 12) return `${y + 1}-01`;
+    return `${y}-${String(m).padStart(2, '0')}`;
+  })();
 
   // スロットのバリデーション
   const validateSlots = (slots: ShukaisuSlot[], label: string): boolean => {
@@ -288,7 +303,9 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
     }
 
     if (!changeFrom) {
-      newErrors.changeFrom = '変更希望日を入力してください';
+      newErrors.changeFrom = '変更開始月を選択してください';
+    } else if (changeFrom < minChangeMonth) {
+      newErrors.changeFrom = '翌月以降を選択してください';
     }
 
     setErrors(newErrors);
@@ -518,14 +535,15 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
           {renderSlotInputs(requestedSlots, updateRequestedSlot)}
         </PortalFormSection>
 
-        <PortalFormSection title="変更希望日">
+        <PortalFormSection title="変更開始月">
           <div>
             <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-              いつから変更を希望しますか？ <span className="text-[color:var(--primary)]">*</span>
+              何月から変更を希望しますか？ <span className="text-[color:var(--primary)]">*</span>
             </label>
             <Input
-              type="date"
+              type="month"
               value={changeFrom}
+              min={minChangeMonth}
               onChange={(e) => setChangeFrom(e.target.value)}
               className={errors.changeFrom ? 'border-[color:var(--primary)]' : ''}
             />
@@ -536,7 +554,13 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
               <p className="text-[color:var(--primary)] text-xs mt-1">{errors.changeFrom}</p>
             )}
           </div>
-          <div className="mt-4 p-4 bg-amber-50 border border-amber-300 rounded-lg">
+          <div className="mt-4 p-4 bg-amber-50 border border-amber-300 rounded-lg space-y-2">
+            <p className="text-sm font-semibold text-amber-900 leading-relaxed">
+              変更は翌月以降からとなります。変更希望月の前々月末までにお申し込みください。
+            </p>
+            <p className="text-xs text-amber-800 leading-relaxed">
+              例：4月から変更したい場合 → 2月末までにお申し込みください。2月中にお申し込みいただいた場合、3月は現在と同じ内容で通塾いただき、4月から変更が適用されます。
+            </p>
             <p className="text-sm font-semibold text-amber-900 leading-relaxed">
               ご希望の時間帯が満席の場合もございます。決まり次第Growからご連絡、ご相談させていただきます。
             </p>
