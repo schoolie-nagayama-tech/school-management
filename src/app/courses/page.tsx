@@ -32,12 +32,6 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: 'application', label: '適用数' },
 ];
 
-const GRADE_GROUPS = [
-  { label: '小学', grades: [1, 2, 3, 4, 5, 6] },
-  { label: '中学', grades: [7, 8, 9] },
-  { label: '高校', grades: [10, 11, 12] },
-  { label: '既卒', grades: [13] },
-];
 
 const NAV_GRADES = [
   { key: 7, label: '中1' },
