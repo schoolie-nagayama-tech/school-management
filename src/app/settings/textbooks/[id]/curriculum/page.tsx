@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'next/navigation';
-import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
@@ -43,6 +42,7 @@ const emptyForm: ItemForm = { item_number: '', title: '', item_type: 'lesson' };
 
 export default function CurriculumPage() {
   const params = useParams();
+  const router = useRouter();
   const textbookId = Number(params.id);
   const { profile } = useAuth();
   const { toasts, removeToast, success: toastSuccess, error: toastError } = useToast();
@@ -251,9 +251,9 @@ export default function CurriculumPage() {
       <div className="max-w-4xl mx-auto py-6 px-4">
         {/* Header */}
         <div className="mb-6">
-          <Link href="/settings/textbooks" className="inline-flex items-center text-sm text-text-muted hover:text-text-heading mb-4">
+          <button onClick={() => router.back()} className="inline-flex items-center text-sm text-text-muted hover:text-text-heading mb-4 transition-colors duration-150">
             <ChevronLeft className="w-4 h-4 mr-1" />教材マスタに戻る
-          </Link>
+          </button>
           {loading ? (
             <Loading size="sm" label="読み込み中..." />
           ) : textbook ? (
