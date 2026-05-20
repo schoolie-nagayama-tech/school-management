@@ -99,27 +99,27 @@ export function ScoreListTable({
   }
 
   return (
-    <div className="overflow-x-auto border border-gray-200 rounded-lg">
+    <div className="overflow-auto border border-gray-200 rounded-lg" style={{ maxHeight: 'calc(100vh - 220px)' }}>
       <table className="w-full border-collapse text-xs">
-        <thead>
+        <thead className="sticky top-0 z-10">
           <tr className="bg-gray-100">
-            <th className="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700 w-[72px] min-w-[72px] max-w-[96px]">
+            <th className="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700 bg-gray-100 w-[72px] min-w-[72px] max-w-[96px]">
               学校
             </th>
-            <th className="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700 min-w-[48px]">
+            <th className="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700 bg-gray-100 min-w-[48px]">
               学年
             </th>
-            <th className="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700 min-w-[80px]">
+            <th className="border border-gray-200 px-2 py-2 text-left font-medium text-gray-700 bg-gray-100 min-w-[80px]">
               名前（リンク）
             </th>
-            <th className="border border-gray-200 px-2 py-2 text-center font-medium text-gray-700 min-w-[80px]">
+            <th className="border border-gray-200 px-2 py-2 text-center font-medium text-gray-700 bg-gray-100 min-w-[80px]">
               テスト名
             </th>
             {columns.map((col) => (
               <th
                 key={col.key}
                 className={`border border-gray-200 px-2 py-2 text-center font-medium text-gray-700 min-w-[52px] whitespace-nowrap ${
-                  col.type === 'sum' || col.type === 'special' ? 'bg-gray-50' : ''
+                  col.type === 'sum' || col.type === 'special' ? 'bg-gray-50' : 'bg-gray-100'
                 }`}
               >
                 {col.label}
