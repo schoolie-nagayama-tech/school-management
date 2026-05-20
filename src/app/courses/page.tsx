@@ -70,7 +70,11 @@ export default function CoursesPage() {
   const [filterSeason, setFilterSeason] = useState<SeasonType | ''>(() =>
     (searchParams.get('season') as SeasonType) || ''
   );
-  const [filterGradeGroup, setFilterGradeGroup] = useState(() => searchParams.get('grade') || '');
+  const [filterGrade, setFilterGrade] = useState<number | ''>(() => {
+    const g = searchParams.get('grade');
+    return g ? Number(g) : '';
+  });
+  const [filterSubject, setFilterSubject] = useState(() => searchParams.get('subject') || '');
 
   // ソート（URLパラメータから初期化）
   const [sortKey, setSortKey] = useState<SortKey>(() =>
@@ -136,12 +140,13 @@ export default function CoursesPage() {
     const params = new URLSearchParams();
     if (query) params.set('q', query);
     if (filterSeason) params.set('season', filterSeason);
-    if (filterGradeGroup) params.set('grade', filterGradeGroup);
+    if (filterGrade) params.set('grade', String(filterGrade));
+    if (filterSubject) params.set('subject', filterSubject);
     if (sortKey !== 'grade') params.set('sort', sortKey);
     if (!sortAsc) params.set('asc', '0');
     const qs = params.toString();
     router.replace(qs ? `/courses?${qs}` : '/courses', { scroll: false });
-  }, [query, filterSeason, filterGradeGroup, sortKey, sortAsc, router]);
+  }, [query, filterSeason, filterGrade, filterSubject, sortKey, sortAsc, router]);
 
   // データ読み込み完了後にスクロール位置を復元
   useEffect(() => {
@@ -177,7 +182,7 @@ export default function CoursesPage() {
       el.removeEventListener('scroll', update);
       ro.disconnect();
     };
-  }, [courses, query, filterSeason, filterGradeGroup, sortKey, sortAsc]);
+  }, [courses, query, filterSeason, filterGrade, filterSubject, sortKey, sortAsc]);
 
   // フィルタ・検索・ソート
   const filteredSorted = useMemo(() => {
@@ -198,13 +203,14 @@ export default function CoursesPage() {
       list = list.filter((c) => c.season === filterSeason);
     }
 
-    if (filterGradeGroup) {
-      const group = GRADE_GROUPS.find((g) => g.label === filterGradeGroup);
-      if (group) {
-        list = list.filter((c) =>
-          c.target_grades.some((g) => group.grades.includes(g))
-        );
-      }
+    if (filterGrade) {
+      list = list.filter((c) => c.target_grades.includes(filterGrade));
+    }
+
+    if (filterSubject) {
+      list = list.filter((c) =>
+        c.textbooks?.some((t) => t.textbook?.subject === filterSubject)
+      );
     }
 
     return [...list].sort((a, b) => {
@@ -225,7 +231,7 @@ export default function CoursesPage() {
       }
       return sortAsc ? cmp : -cmp;
     });
-  }, [courses, query, filterSeason, filterGradeGroup, sortKey, sortAsc]);
+  }, [courses, query, filterSeason, filterGrade, filterSubject, sortKey, sortAsc]);
 
   // 学年ナビゲーション: どの学年が存在するか
   const presentGrades = useMemo(() => {
@@ -234,7 +240,24 @@ export default function CoursesPage() {
     return grades;
   }, [filteredSorted]);
 
-  const hasActiveFilter = query || filterSeason || filterGradeGroup;
+  // フィルタ用: データに存在する学年と科目を抽出
+  const availableGrades = useMemo(() => {
+    const grades = new Set<number>();
+    courses.forEach((c) => c.target_grades.forEach((g) => grades.add(g)));
+    return Array.from(grades).sort((a, b) => a - b);
+  }, [courses]);
+
+  const availableSubjects = useMemo(() => {
+    const subjects = new Set<string>();
+    courses.forEach((c) => {
+      c.textbooks?.forEach((t) => {
+        if (t.textbook?.subject) subjects.add(t.textbook.subject);
+      });
+    });
+    return Array.from(subjects).sort();
+  }, [courses]);
+
+  const hasActiveFilter = query || filterSeason || filterGrade || filterSubject;
 
   const toggleSelect = (id: string) => {
     setSelected((prev) => {
@@ -316,7 +339,8 @@ export default function CoursesPage() {
   const clearFilters = () => {
     setQuery('');
     setFilterSeason('');
-    setFilterGradeGroup('');
+    setFilterGrade('');
+    setFilterSubject('');
   };
 
   // 学年ジャンプ
@@ -450,21 +474,42 @@ export default function CoursesPage() {
             </div>
 
             {/* 学年 */}
-            <div className="flex items-center gap-0.5">
-              {GRADE_GROUPS.map((g) => (
-                <button
-                  key={g.label}
-                  onClick={() => setFilterGradeGroup(filterGradeGroup === g.label ? '' : g.label)}
-                  className={`px-2 py-1 text-[11px] rounded transition-colors ${
-                    filterGradeGroup === g.label
-                      ? 'bg-primary/10 text-primary font-bold'
-                      : 'text-text-muted hover:bg-surface-hover'
-                  }`}
-                >
-                  {g.label}
-                </button>
-              ))}
-            </div>
+            {availableGrades.length > 0 && (
+              <div className="flex items-center gap-0.5">
+                {availableGrades.map((g) => (
+                  <button
+                    key={g}
+                    onClick={() => setFilterGrade(filterGrade === g ? '' : g)}
+                    className={`px-2 py-1 text-[11px] rounded transition-colors ${
+                      filterGrade === g
+                        ? 'bg-primary/10 text-primary font-bold'
+                        : 'text-text-muted hover:bg-surface-hover'
+                    }`}
+                  >
+                    {GRADE_LABELS[g] || `${g}`}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* 科目 */}
+            {availableSubjects.length > 0 && (
+              <div className="flex items-center gap-0.5">
+                {availableSubjects.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setFilterSubject(filterSubject === s ? '' : s)}
+                    className={`px-2 py-1 text-[11px] rounded transition-colors ${
+                      filterSubject === s
+                        ? 'bg-emerald-100 text-emerald-700 font-bold'
+                        : 'text-text-muted hover:bg-surface-hover'
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* ソート */}
             <div className="flex items-center gap-0.5">
