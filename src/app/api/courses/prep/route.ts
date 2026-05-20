@@ -698,6 +698,32 @@ export async function POST(request: NextRequest) {
           await supabaseAdmin.from('course_prep_schedule_tasks')
             .update({ linked_progress_item_id: linkItemId })
             .eq('id', linkTaskId).eq('school_id', schoolId);
+
+          // リンク確立時に end_date ↔ deadline を初期同期
+          const { data: linkedTask } = await supabaseAdmin
+            .from('course_prep_schedule_tasks')
+            .select('end_date')
+            .eq('id', linkTaskId)
+            .single();
+          const { data: linkedItem } = await supabaseAdmin
+            .from('course_prep_progress_items')
+            .select('deadline')
+            .eq('id', linkItemId)
+            .single();
+
+          if (linkedTask && linkedItem) {
+            const taskDate = linkedTask.end_date as string | null;
+            const itemDeadline = linkedItem.deadline as string | null;
+            if (taskDate && !itemDeadline) {
+              await supabaseAdmin.from('course_prep_progress_items')
+                .update({ deadline: taskDate, updated_at: new Date().toISOString() })
+                .eq('id', linkItemId);
+            } else if (!taskDate && itemDeadline) {
+              await supabaseAdmin.from('course_prep_schedule_tasks')
+                .update({ end_date: itemDeadline, updated_at: new Date().toISOString() })
+                .eq('id', linkTaskId);
+            }
+          }
         }
         return NextResponse.json({ success: true });
       }
