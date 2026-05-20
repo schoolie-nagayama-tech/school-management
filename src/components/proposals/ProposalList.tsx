@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Check, FileText, Plus, Printer } from 'lucide-react';
+import { ArrowLeft, Check, FileText, Plus, Printer, User } from 'lucide-react';
 import { Button, Loading, InlineLoading } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import {
@@ -16,7 +16,7 @@ import {
 import { ProposalPrintView } from './ProposalPrintView';
 import type { PrintUnitDraft, ProposalPrintData } from './ProposalPrintView';
 import type { SeasonalProposalWithDetails, SeasonType, ProposalStatus } from '@/types/database';
-import { SEASON_LABELS, PROPOSAL_STATUS_LABELS } from '@/types/database';
+import { SEASON_LABELS, PROPOSAL_STATUS_LABELS, GRADE_LABELS } from '@/types/database';
 
 const STATUS_BADGE: Record<ProposalStatus, string> = {
   draft: 'bg-surface-hover text-text-muted',
@@ -30,6 +30,7 @@ export default function ProposalList() {
 
   const [loading, setLoading] = useState(true);
   const [studentName, setStudentName] = useState('');
+  const [studentGrade, setStudentGrade] = useState<number | null>(null);
   const [proposals, setProposals] = useState<SeasonalProposalWithDetails[]>([]);
   const [printMode, setPrintMode] = useState(false);
   const [printLoading, setPrintLoading] = useState(false);
@@ -44,12 +45,13 @@ export default function ProposalList() {
     try {
       const { data: student } = await supabase
         .from('students')
-        .select('last_name, first_name')
+        .select('last_name, first_name, grade')
         .eq('id', studentId)
         .single();
 
       if (student) {
         setStudentName(`${student.last_name} ${student.first_name}`);
+        setStudentGrade(student.grade ?? null);
       }
 
       const list = await getProposalsByStudent(studentId);
@@ -106,7 +108,7 @@ export default function ProposalList() {
     }
   };
 
-  // ── 一括印刷 ──
+  // ── 一括印刷（科目順にソート） ──
 
   const handleBulkPrint = async () => {
     if (proposals.length === 0) return;
@@ -114,7 +116,16 @@ export default function ProposalList() {
     try {
       const results: ProposalPrintData[] = [];
 
-      for (const p of proposals) {
+      const sorted = [...proposals].sort((a, b) => {
+        const sa = a.textbook?.subject ?? '';
+        const sb = b.textbook?.subject ?? '';
+        if (sa !== sb) return sa.localeCompare(sb, 'ja');
+        const na = a.textbook?.name ?? '';
+        const nb = b.textbook?.name ?? '';
+        return na.localeCompare(nb, 'ja');
+      });
+
+      for (const p of sorted) {
         const { items, progressMap } = await getTextbookUnitsWithProgress(
           p.student_textbook_id ?? null,
           p.textbook_id
@@ -175,15 +186,22 @@ export default function ProposalList() {
   if (printMode) {
     return (
       <div className="max-w-5xl mx-auto">
-        <div className="mb-4 flex gap-2 print:hidden">
-          <Button variant="outline" size="sm" onClick={() => setPrintMode(false)}>
-            <ArrowLeft className="w-4 h-4 mr-1.5" />
-            一覧に戻る
-          </Button>
-          <Button size="sm" onClick={() => window.print()}>
-            <Printer className="w-4 h-4 mr-1.5" />
+        <div className="mb-4 flex items-center gap-2 print:hidden">
+          <button
+            onClick={() => setPrintMode(false)}
+            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border-default text-text-body rounded-lg hover:bg-surface-hover transition-colors duration-150"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            戻る
+          </button>
+          <button
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-ink text-text-on-primary rounded-lg hover:brightness-[0.85] transition-[filter] duration-150"
+          >
+            <Printer className="w-3.5 h-3.5" />
             印刷
-          </Button>
+          </button>
+          <span className="text-sm text-text-muted ml-2">{studentName} ({printData.length}件)</span>
         </div>
         <div className="space-y-8">
           {printData.map((data, i) => (
@@ -196,7 +214,7 @@ export default function ProposalList() {
     );
   }
 
-  // ── テキストごとにグループ化 ──
+  // ── 科目→テキストごとにグループ化 ──
   const byTextbook = new Map<number, { name: string; subject: string; proposals: SeasonalProposalWithDetails[] }>();
   for (const p of proposals) {
     const tbId = p.textbook_id;
@@ -207,6 +225,10 @@ export default function ProposalList() {
     }
     byTextbook.get(tbId)!.proposals.push(p);
   }
+  const sortedTextbooks = Array.from(byTextbook.entries()).sort(([, a], [, b]) => {
+    if (a.subject !== b.subject) return a.subject.localeCompare(b.subject, 'ja');
+    return a.name.localeCompare(b.name, 'ja');
+  });
 
   const hasSelection = selected.size > 0;
 
@@ -214,17 +236,28 @@ export default function ProposalList() {
     <div className="max-w-5xl mx-auto">
       {/* ヘッダー */}
       <div className="mb-6">
-        <Link
-          href={`/students/${studentId}/progress`}
-          className="text-sm text-text-muted hover:text-text-heading inline-flex items-center gap-1 mb-2 transition-colors duration-150"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          進行表に戻る
-        </Link>
+        <div className="flex items-center gap-2 mb-3">
+          <Link
+            href="/courses/proposals"
+            className="text-xs text-text-muted hover:text-text-heading inline-flex items-center gap-1 transition-colors duration-150"
+          >
+            <ArrowLeft className="w-3 h-3" />
+            提案書一覧
+          </Link>
+          <span className="text-xs text-text-faint">/</span>
+          <span className="text-xs text-text-muted">{studentName}</span>
+        </div>
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-bold text-text-heading">講習提案書</h1>
-            <p className="text-sm text-text-muted mt-0.5">{studentName}</p>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-ink/10 flex items-center justify-center shrink-0">
+              <User className="w-4 h-4 text-ink" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-text-heading">{studentName}</h1>
+              <p className="text-xs text-text-muted">
+                {studentGrade ? `${GRADE_LABELS[studentGrade]} ` : ''}提案書 {proposals.length}件
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             {proposals.length > 0 && (
@@ -324,7 +357,7 @@ export default function ProposalList() {
         </div>
       ) : (
         <div className="space-y-6">
-          {Array.from(byTextbook.entries()).map(([tbId, { name, subject, proposals: tbProposals }]) => (
+          {sortedTextbooks.map(([tbId, { name, subject, proposals: tbProposals }]) => (
             <div key={tbId} className="bg-surface-raised rounded-xl border border-border-default overflow-hidden">
               <div className="px-4 py-3 border-b border-border-subtle">
                 <div className="font-semibold text-sm text-text-heading">

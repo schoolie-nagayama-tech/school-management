@@ -85,7 +85,15 @@ export default function CourseProposalsPage() {
     setPrintLoading(studentId);
     try {
       const results: ProposalPrintData[] = [];
-      for (const p of studentProposals) {
+      const sorted = [...studentProposals].sort((a, b) => {
+        const sa = a.textbook?.subject ?? '';
+        const sb = b.textbook?.subject ?? '';
+        if (sa !== sb) return sa.localeCompare(sb, 'ja');
+        const na = a.textbook?.name ?? '';
+        const nb = b.textbook?.name ?? '';
+        return na.localeCompare(nb, 'ja');
+      });
+      for (const p of sorted) {
         const { items, progressMap } = await getTextbookUnitsWithProgress(
           p.student_textbook_id ?? null,
           p.textbook_id
@@ -304,7 +312,14 @@ export default function CourseProposalsPage() {
     <AdminLayout headerTitle="提案書">
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-lg font-bold text-text-heading">講習提案書</h1>
+          <div>
+            <h1 className="text-lg font-bold text-text-heading">講習提案書</h1>
+            {!loading && filtered.length > 0 && (
+              <p className="text-xs text-text-muted mt-0.5">
+                {byStudent.size}名 / {filtered.length}件
+              </p>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             {isAllSelected && (
               <SchoolSwitcher
