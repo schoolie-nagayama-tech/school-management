@@ -1,11 +1,17 @@
 /**
  * PostgreSQL配列 → JavaScript配列の正規化関数テスト
- * admin/users ルートで使用される toNumArray, toStrArray, toSlotNumbersByDay
+ *
+ * Supabase から返る PostgreSQL 配列は "{1,2,3}" のような文字列形式になることがある。
+ * admin/users ルートではこれを JS 配列に変換する関数を使っており、
+ * 入力パターン（JS配列 / PG文字列 / null / undefined）すべてを網羅テストする。
+ *
+ * 対象関数: toNumArray, toStrArray, toSlotNumbersByDay
+ * 使用箇所: src/app/api/admin/users/route.ts, src/app/api/admin/users/[userId]/route.ts
  */
 import { describe, it, expect } from 'vitest';
 
-// ルートファイルからは export されていないため、同じロジックを再実装してテスト
-// この関数群は src/app/api/admin/users/route.ts と src/app/api/admin/users/[userId]/route.ts で使用
+// ルートファイルからは export されていないため、同じロジックを再実装してテスト。
+// 本体側を変更した場合はこちらも同期が必要。
 
 function toNumArray(v: unknown): number[] {
   if (Array.isArray(v)) return v.map((x) => Number(x)).filter((n) => !Number.isNaN(n));

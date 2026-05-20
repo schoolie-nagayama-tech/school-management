@@ -1,6 +1,14 @@
 /**
  * APIルートテスト共通ヘルパー
- * Supabaseクライアントと認証ガードのモック設定を提供する
+ *
+ * Supabase クライアントと認証ガード（api-auth.ts）のモック設定を提供する。
+ * テストファイルでは vi.mock('@supabase/supabase-js') で createClient を差し替え、
+ * vi.mock('@/lib/api-auth') で認証ガードを差し替える。
+ *
+ * 使い方:
+ *   const mockAdmin = createMockSupabaseAdmin();
+ *   vi.mock('@supabase/supabase-js', () => ({ createClient: vi.fn(() => mockAdmin) }));
+ *   vi.mock('@/lib/api-auth', () => authSuccessMocks());
  */
 import { vi } from 'vitest';
 import { NextResponse } from 'next/server';
@@ -8,7 +16,11 @@ import { NextResponse } from 'next/server';
 // ── Supabase createClient モック ──
 
 /**
- * チェーンメソッドを全てモックしたSupabase風オブジェクトを生成
+ * Supabase のクエリビルダーチェーン (.from().select().eq().single() 等) をモックする。
+ * resolvedData / resolvedError は .single(), .maybeSingle(), await 時の返り値になる。
+ *
+ * 複数クエリの応答を切り替えるには、テスト側で mockAdmin.from.mockImplementation() を
+ * 使い、呼び出し回数に応じて異なる createMockChain を返す。
  */
 export function createMockChain(resolvedData: unknown = null, resolvedError: unknown = null) {
   const chain: Record<string, ReturnType<typeof vi.fn>> = {
@@ -43,6 +55,13 @@ export function createMockChain(resolvedData: unknown = null, resolvedError: unk
   return chain;
 }
 
+/**
+ * service role key で作成する管理者用 Supabase クライアントのモック。
+ * from(), auth.admin (createUser/deleteUser), functions.invoke を提供する。
+ *
+ * 注意: auth.getUser や auth.admin.generateLink が必要な場合（impersonate 等）は
+ * このヘルパーでは足りないため、テスト側でカスタムモックを作成すること。
+ */
 export function createMockSupabaseAdmin(chain?: ReturnType<typeof createMockChain>) {
   const mockChain = chain ?? createMockChain([]);
   return {
@@ -60,9 +79,16 @@ export function createMockSupabaseAdmin(chain?: ReturnType<typeof createMockChai
   };
 }
 
-// ── 認証モック ──
+// ── 認証モック（src/lib/api-auth.ts の各関数をモックする） ──
 
-/** 認証成功（admin権限）のモック設定を返す */
+/**
+ * 認証成功のモック設定を返す。
+ * デフォルトは admin ロール。overrides で role / userId / schoolIds を変更可能。
+ *
+ * requireManager / requireAdmin → null（通過）
+ * getApiAuth → { userId, role, schoolIds } を返す
+ * isUserInScope → true（対象ユーザーはスコープ内）
+ */
 export function authSuccessMocks(overrides?: { role?: string; userId?: string; schoolIds?: string[] }) {
   const role = overrides?.role ?? 'admin';
   const userId = overrides?.userId ?? 'test-user-id';
@@ -79,7 +105,11 @@ export function authSuccessMocks(overrides?: { role?: string; userId?: string; s
   };
 }
 
-/** 認証失敗（未認証 401）のモック設定を返す */
+/**
+ * 認証失敗（未認証 401）のモック設定を返す。
+ * requireManager / requireAdmin → 401 レスポンスを返す
+ * isUserInScope / isSchoolInScope → false
+ */
 export function authFailMocks() {
   return {
     requireManager: vi.fn().mockResolvedValue(

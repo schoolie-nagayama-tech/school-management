@@ -2,21 +2,37 @@
 -- Phase 2: RLS school_id スコープ化
 -- 認証済みユーザーの行アクセスを check_school_access(school_id) でスコープ化
 --
--- 影響:
---   admin/owner/manager → 変更なし（check_school_access で全アクセス許可）
---   teacher → 所属教室(user_schools)のデータのみアクセス可能
+-- 背景:
+--   Phase 1 では「USING(true)」で全行公開の PERMISSIVE ポリシーが残っていたため、
+--   認証さえすれば他教室のデータも読み書きできる状態だった。
+--   本マイグレーションで check_school_access(school_id) に統一し、
+--   教師は user_schools に紐づく教室のデータのみ操作可能にする。
+--
+-- ロール別アクセス:
+--   admin/owner/manager → check_school_access が常に TRUE → 全教室のデータにアクセス可
+--   teacher → user_schools テーブルの紐づきで判定 → 所属教室のみ
 --
 -- 触らないもの:
---   - anon ポリシー（保護者ポータル・シフト公開フォーム等）
+--   - anon ポリシー（保護者ポータル・シフト公開フォーム等で必要）
 --   - school_id を持たないテーブル（subjects, textbooks 等のマスタデータ）
---   - user_profiles, user_schools（既存の auth.uid() ベースのポリシー）
+--   - user_profiles, user_schools（auth.uid() ベースの別ポリシーで管理）
+--
+-- 注意:
+--   seasonal_shift_submissions は本マイグレーションで school_scope のみに統一したが、
+--   教師の自分のみ制限が失われるため、後続の
+--   20260520_fix_seasonal_shift_teacher_scope.sql で RESTRICTIVE+PERMISSIVE に修正。
 -- ============================================================
 
 BEGIN;
 
 -- ────────────────────────────────────────────────────────────
 -- 0. check_student_access を修正（admin のみ → admin/owner/manager に拡張）
---    check_school_access と同じロール階層に合わせる
+--
+-- 修正前: admin のみ TRUE を返していたため、owner/manager が students テーブルに
+-- アクセスできないバグがあった。check_school_access と同じロール階層に統一する。
+--
+-- SECURITY DEFINER: RLS ポリシーから呼ばれるため、呼び出し元ユーザーの権限ではなく
+-- 関数定義者の権限で user_profiles / user_schools を参照する。
 -- ────────────────────────────────────────────────────────────
 CREATE OR REPLACE FUNCTION public.check_student_access(student_school_id uuid)
 RETURNS boolean
@@ -30,10 +46,12 @@ BEGIN
   FROM user_profiles
   WHERE id = auth.uid();
 
+  -- admin/owner/manager は全教室の生徒データにアクセス可
   IF user_role IN ('admin', 'owner', 'manager') THEN
     RETURN TRUE;
   END IF;
 
+  -- teacher は user_schools で紐づいた教室の生徒のみ
   RETURN EXISTS (
     SELECT 1 FROM user_schools us
     WHERE us.user_id = auth.uid()
@@ -198,7 +216,9 @@ CREATE POLICY "material_stock_txns_school_scope_auth"
 
 -- ────────────────────────────────────────────────────────────
 -- 9. スケジュール
---    schedule_closed_days は school_id が NULL のレコード（全教室共通）も許可
+--    schedule_closed_days は school_id が NULL のレコード（全教室共通の休日）も
+--    存在するため、NULL を許可する条件を追加。NULL を弾くと祝日等の共通休日が
+--    表示されなくなる。
 -- ────────────────────────────────────────────────────────────
 DROP POLICY IF EXISTS "schedule_entries_allow_all_auth" ON public.schedule_entries;
 CREATE POLICY "schedule_entries_school_scope_auth"
@@ -288,8 +308,9 @@ CREATE POLICY "seasonal_shift_settings_school_scope_auth"
   WITH CHECK (public.check_school_access(school_id));
 
 DROP POLICY IF EXISTS "seasonal_shift_submissions_auth" ON public.seasonal_shift_submissions;
--- seasonal_shift_submissions は後の migration で manager/teacher 分離ポリシーあり
--- そちらも school スコープ化
+-- NOTE: 20260429_seasonal_shift_user_id.sql で作成した manager/teacher 分離ポリシーを
+-- ここで school_scope のみに統合したが、教師の「自分の提出のみ」制限が失われる。
+-- → 後続の 20260520_fix_seasonal_shift_teacher_scope.sql で RESTRICTIVE+PERMISSIVE に修正
 DROP POLICY IF EXISTS "seasonal_shift_submissions_manager_all" ON public.seasonal_shift_submissions;
 DROP POLICY IF EXISTS "seasonal_shift_submissions_teacher_own" ON public.seasonal_shift_submissions;
 CREATE POLICY "seasonal_shift_submissions_school_scope_auth"
