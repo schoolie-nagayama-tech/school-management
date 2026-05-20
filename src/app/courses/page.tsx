@@ -697,9 +697,9 @@ export default function CoursesPage() {
                         {SEASON_LABELS[course.season]}
                       </span>
 
-                      {/* 中央: 名前 + 説明 */}
+                      {/* 中央: 名前 + テキスト + メタ情報 */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           {(() => {
                             const subjects = Array.from(new Set(
                               course.textbooks?.map((t) => t.textbook?.subject).filter(Boolean) as string[] ?? []
@@ -716,25 +716,33 @@ export default function CoursesPage() {
                           <span className="font-medium text-sm text-text-heading truncate">
                             {course.name}
                           </span>
-                          <span className="shrink-0 text-xs text-text-faint tabular-nums">
-                            {course.total_koma > 0 && `${course.total_koma}コマ`}
-                          </span>
                         </div>
-                        {/* 学年 + コメント */}
-                        <div className="mt-0.5 flex items-center gap-2 text-xs text-text-muted">
-                          <span>
-                            {course.target_grades.length > 0
-                              ? course.target_grades.map((g) => GRADE_LABELS[g]).join(' ')
-                              : '学年未設定'}
-                          </span>
-                          <span className="text-text-faint">|</span>
-                          <span className="tabular-nums">適用 {course.application_count || 0}件</span>
-                        </div>
+                        {/* テキスト名 */}
+                        {course.textbooks && course.textbooks.length > 0 && (
+                          <div className="mt-0.5 text-xs text-text-muted truncate">
+                            {course.textbooks.map((t) => t.textbook?.name).filter(Boolean).join('、')}
+                          </div>
+                        )}
                         {course.comment && (
-                          <p className="mt-1 text-xs text-text-muted/70 line-clamp-1">
+                          <p className="mt-0.5 text-xs text-text-muted/70 line-clamp-1">
                             {course.comment}
                           </p>
                         )}
+                      </div>
+
+                      {/* 右: メタ情報 */}
+                      <div className="shrink-0 flex items-center gap-3 text-xs text-text-muted tabular-nums">
+                        <span>
+                          {course.target_grades.length > 0
+                            ? course.target_grades.map((g) => GRADE_LABELS[g]).join(' ')
+                            : ''}
+                        </span>
+                        {course.total_koma > 0 && (
+                          <span className="text-text-faint">{course.total_koma}コマ</span>
+                        )}
+                        <span className={`min-w-[48px] text-right ${(course.application_count || 0) > 0 ? 'text-info font-medium' : 'text-text-faint'}`}>
+                          適用 {course.application_count || 0}件
+                        </span>
                       </div>
 
                       <ChevronRight className="w-4 h-4 text-text-faint shrink-0 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity" />
