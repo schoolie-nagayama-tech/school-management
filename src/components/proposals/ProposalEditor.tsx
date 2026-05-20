@@ -1406,16 +1406,6 @@ function UnitRow({
         </div>
       )}
 
-      {isActive && expanded && (
-        <div className="px-3 pb-2.5 pt-0">
-          <input
-            value={draft.reason}
-            onChange={(e) => onUpdate({ reason: e.target.value })}
-            className="w-full px-2.5 py-1.5 text-xs border border-border-default rounded-lg bg-surface-raised focus:ring-1 focus:ring-primary/20 focus:border-primary"
-            placeholder="この単元を講習で扱う理由（保護者に表示されます）"
-          />
-        </div>
-      )}
     </div>
   );
 }

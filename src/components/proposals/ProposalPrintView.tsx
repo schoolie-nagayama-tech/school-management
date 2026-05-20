@@ -114,7 +114,6 @@ export function ProposalPrintView({
               <th className="py-2 text-left font-semibold text-text-muted">単元名</th>
               <th className="py-2 text-center w-10 font-semibold text-text-muted">コマ</th>
               <th className="py-2 text-left font-semibold text-text-muted">指導意図</th>
-              <th className="py-2 text-left font-semibold text-text-muted">講習で扱う理由</th>
             </tr>
           </thead>
           <tbody>
@@ -146,7 +145,6 @@ export function ProposalPrintView({
                       </span>
                     )}
                   </td>
-                  <td className="py-1.5 text-text-body">{unit.reason}</td>
                 </tr>
               );
             })}
@@ -169,7 +167,6 @@ export function ProposalPrintView({
               <th className="py-2 text-center w-14 font-semibold text-text-muted">状況</th>
               <th className="py-2 text-center w-12 font-semibold text-text-muted">コマ</th>
               <th className="py-2 text-left font-semibold text-text-muted">指導意図</th>
-              <th className="py-2 text-left font-semibold text-text-muted">理由</th>
             </tr>
           </thead>
           <tbody>
@@ -231,9 +228,6 @@ export function ProposalPrintView({
                         {intentTag}
                       </span>
                     )}
-                  </td>
-                  <td className={`py-2 ${isTarget ? 'text-text-body' : 'text-text-faint'}`}>
-                    {isTarget ? unit?.reason : ''}
                   </td>
                 </tr>
               );

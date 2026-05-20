@@ -2705,6 +2705,43 @@ export const SUBJECT_LABELS: Record<string, string> = {
   [SUBJECT_CODES.CONV_5]: '換算内申(5科)',
   [SUBJECT_CODES.CONV_4]: '換算内申(4科)',
   [SUBJECT_CODES.CONV_TOTAL]: '換算内申(合計)',
+  // 小学校
+  elem_japanese: '国語', elem_math: '算数', elem_seikatsu: '生活',
+  elem_science: '理科', elem_social: '社会', elem_eng_activity: '外国語活動',
+  elem_english: '外国語', elem_music: '音楽', elem_art: '図画工作',
+  elem_pe: '体育', elem_home: '家庭',
+  // 中学校
+  jhs_japanese: '国語', jhs_math: '数学', jhs_english: '英語',
+  jhs_science: '理科', jhs_social_geo: '地理', jhs_social_history: '歴史',
+  jhs_social_civics: '公民', jhs_music: '音楽', jhs_art: '美術',
+  jhs_pe: '保健体育', jhs_tech_home: '技術・家庭',
+  // 高校 国語
+  hs_gendai_kokugo: '現代の国語', hs_gengo_bunka: '言語文化',
+  hs_ronri_kokugo: '論理国語', hs_bungaku_kokugo: '文学国語',
+  hs_kokugo_hyogen: '国語表現', hs_koten_tankyu: '古典探究',
+  // 高校 数学
+  hs_math_1: '数学Ⅰ', hs_math_a: '数学A', hs_math_2: '数学Ⅱ',
+  hs_math_b: '数学B', hs_math_3: '数学Ⅲ', hs_math_c: '数学C',
+  // 高校 英語
+  hs_eng_com_1: '英コⅠ', hs_eng_com_2: '英コⅡ', hs_eng_com_3: '英コⅢ',
+  hs_logic_expr_1: '論表Ⅰ', hs_logic_expr_2: '論表Ⅱ', hs_logic_expr_3: '論表Ⅲ',
+  // 高校 理科
+  hs_phys_basic: '物理基礎', hs_chem_basic: '化学基礎',
+  hs_bio_basic: '生物基礎', hs_earth_basic: '地学基礎',
+  hs_phys: '物理', hs_chem: '化学', hs_bio: '生物', hs_earth: '地学',
+  hs_kagaku_jinsei: '科学と人間生活',
+  // 高校 地歴公民
+  hs_chiri_sogo: '地理総合', hs_rekishi_sogo: '歴史総合',
+  hs_chiri_tankyu: '地理探究', hs_nihonshi_tankyu: '日本史探究',
+  hs_sekaishi_tankyu: '世界史探究',
+  hs_kokyo: '公共', hs_rinri: '倫理', hs_seikei: '政治・経済',
+  // 高校 その他
+  hs_info_1: '情報Ⅰ', hs_info_2: '情報Ⅱ',
+  hs_music_1: '音楽Ⅰ', hs_art_1: '美術Ⅰ', hs_calligraphy_1: '書道Ⅰ',
+  hs_pe: '体育', hs_health: '保健',
+  hs_home_basic: '家庭基礎', hs_home_general: '家庭総合',
+  hs_risu_tankyu_b: '理数探究基礎', hs_risu_tankyu: '理数探究',
+  hs_sogo_tankyu: '総合探究',
 };
 
 // 成績カテゴリの表示用マッピング

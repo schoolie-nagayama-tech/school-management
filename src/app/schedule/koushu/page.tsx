@@ -22,6 +22,7 @@ import {
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Subject } from '@/types/database';
+import { GRADE_LABELS } from '@/types/database';
 
 export default function KoushuPage() {
   const { selectedSchoolId } = useAuth();
@@ -44,6 +45,9 @@ export default function KoushuPage() {
   const [enrollmentFormOpen, setEnrollmentFormOpen] = useState(false);
   const [targetCourseId, setTargetCourseId] = useState<string | null>(null);
   const [editingEnrollment, setEditingEnrollment] = useState<KoushuEnrollment | null>(null);
+
+  // 学年フィルタ
+  const [filterGrade, setFilterGrade] = useState<number | null>(null);
 
   // 削除確認
   const [deletingCourse, setDeletingCourse] = useState<KoushuCourse | null>(null);
@@ -130,6 +134,14 @@ export default function KoushuPage() {
     ? (enrollmentsMap.get(targetCourseId) ?? []).map((e) => e.student_id)
     : [];
 
+  const availableGrades = Array.from(
+    new Set(courses.flatMap((c) => c.target_grades ?? []))
+  ).sort((a, b) => a - b);
+
+  const filteredCourses = filterGrade
+    ? courses.filter((c) => c.target_grades?.includes(filterGrade))
+    : courses;
+
   return (
     <AdminLayout headerTitle="講習スケジュール">
       <div className="max-w-4xl mx-auto py-6 px-4 space-y-6">
@@ -164,6 +176,36 @@ export default function KoushuPage() {
           <Loading size="md" />
         )}
 
+        {/* 学年フィルタ */}
+        {schoolId && !loading && courses.length > 0 && availableGrades.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-[var(--paragraph)] font-medium">学年:</span>
+            <button
+              onClick={() => setFilterGrade(null)}
+              className={`px-2.5 py-1 text-xs rounded-full border transition-colors ${
+                filterGrade === null
+                  ? 'bg-[var(--headline)] text-white border-[var(--headline)]'
+                  : 'bg-white text-[var(--paragraph)] border-[var(--stroke)] hover:bg-gray-50'
+              }`}
+            >
+              すべて
+            </button>
+            {availableGrades.map((g) => (
+              <button
+                key={g}
+                onClick={() => setFilterGrade(filterGrade === g ? null : g)}
+                className={`px-2.5 py-1 text-xs rounded-full border transition-colors ${
+                  filterGrade === g
+                    ? 'bg-[var(--headline)] text-white border-[var(--headline)]'
+                    : 'bg-white text-[var(--paragraph)] border-[var(--stroke)] hover:bg-gray-50'
+                }`}
+              >
+                {GRADE_LABELS[g] ?? `G${g}`}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* 講習なし */}
         {schoolId && !loading && courses.length === 0 && (
           <div className="text-center py-12 text-[var(--paragraph)]">
@@ -178,7 +220,7 @@ export default function KoushuPage() {
         {/* 講習一覧 */}
         {schoolId && !loading && courses.length > 0 && (
           <div className="space-y-3">
-            {courses.map((course) => (
+            {filteredCourses.map((course) => (
               <KoushuPeriodCard
                 key={course.id}
                 course={course}

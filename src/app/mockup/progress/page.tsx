@@ -1016,7 +1016,6 @@ function A_ProposalView() {
               <th className="py-2 text-left font-semibold text-gray-500">単元</th>
               <th className="py-2 text-center w-14 font-semibold text-gray-500">状況</th>
               <th className="py-2 text-center w-12 font-semibold text-gray-500">コマ</th>
-              <th className="py-2 text-left font-semibold text-gray-500">講習で扱う理由</th>
             </tr>
           </thead>
           <tbody>
@@ -1048,9 +1047,6 @@ function A_ProposalView() {
                   </td>
                   <td className="py-2 text-center font-bold text-[#1e3a5f]">
                     {isTarget ? u.koma : ''}
-                  </td>
-                  <td className={`py-2 ${isTarget ? 'text-gray-700' : 'text-gray-300'}`}>
-                    {isTarget && 'reason' in u ? u.reason : ''}
                   </td>
                 </tr>
               );
