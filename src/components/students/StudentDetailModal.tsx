@@ -613,7 +613,7 @@ export function StudentDetailModal({
 
         {activeTab === 'interviews' && student && (
           <div className="h-[60vh] overflow-y-auto pr-2">
-            <InterviewList studentId={student.id} schoolId={schoolId} />
+            <InterviewList studentId={student.id} schoolId={student.school_id ?? schoolId} />
           </div>
         )}
       </div>
