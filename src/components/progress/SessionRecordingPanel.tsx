@@ -134,11 +134,6 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
    * - lesson列クリック: unitActions に追加/削除
    * - school列クリック: schoolUnits に追加/削除
    */
-  // 教室長以上: 保存済みセッションを再編集可能にする
-  const unlockSession = useCallback((idx: number) => {
-    setSessions(prev => prev.map((s, i) => (i === idx ? { ...s, saved: false } : s)));
-  }, []);
-
   const handleCellToggle = useCallback(
     (curriculumItemId: number, column: 'school' | 1 | 2 | 3) => {
       if (!activeSession || (activeSession.saved && !canEditSaved)) return;
