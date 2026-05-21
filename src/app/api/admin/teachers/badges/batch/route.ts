@@ -50,7 +50,9 @@ export async function GET(request: NextRequest) {
       assignmentsByTeacher[tid].push(row);
     }
 
-    return NextResponse.json({ assignmentsByTeacher });
+    return NextResponse.json({ assignmentsByTeacher }, {
+      headers: { 'Cache-Control': 'private, max-age=10, stale-while-revalidate=20' },
+    });
   } catch (err) {
     console.error('GET /api/admin/teachers/badges/batch error:', err);
     return NextResponse.json({ error: 'バッジ付与情報の一括取得に失敗しました' }, { status: 500 });

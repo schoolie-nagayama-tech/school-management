@@ -52,6 +52,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       badges: badges || [],
       assignments: filteredAssignments,
+    }, {
+      headers: { 'Cache-Control': 'private, max-age=15, stale-while-revalidate=30' },
     });
   } catch (err) {
     console.error('GET /api/my/badges error:', err);

@@ -138,7 +138,29 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // ── Supabase セッション管理 ──
+  // ── 公開ルートはセッション更新をスキップ（DB往復を省いてレイテンシ削減） ──
+  const isPublicRoute =
+    pathname.startsWith('/portal/') ||
+    pathname.startsWith('/seasonal-shift/') ||
+    pathname.startsWith('/regular-shift/') ||
+    pathname.startsWith('/attendance/') ||
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/forgot-password') ||
+    pathname.startsWith('/auth/') ||
+    pathname.startsWith('/invite/') ||
+    pathname.startsWith('/offline') ||
+    pathname.startsWith('/api/portal/') ||
+    pathname.startsWith('/api/embed/') ||
+    pathname.startsWith('/api/seasonal-shift/public') ||
+    pathname.startsWith('/api/regular-shift/public') ||
+    pathname.startsWith('/api/invite/') ||
+    pathname.startsWith('/api/webhooks/');
+
+  if (isPublicRoute) {
+    return NextResponse.next();
+  }
+
+  // ── Supabase セッション管理（認証が必要なルートのみ） ──
   const supabaseResponse = NextResponse.next({
     request,
   });
