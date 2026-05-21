@@ -99,8 +99,15 @@ export default function CourseProgressPage() {
 
   // フィルター
   const [searchQuery, setSearchQuery] = useState('');
+  // フィルタ計算は重い memo を多数連動させるので 250ms デバウンスして打鍵中の再計算を抑える
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [gradeFilter, setGradeFilter] = useState<number | null>(null);
   const [showHidden, setShowHidden] = useState(false);
+
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearchQuery(searchQuery), 250);
+    return () => clearTimeout(id);
+  }, [searchQuery]);
 
   // 設定パネル（フィルター + 項目管理 をアコーディオン統合）
   const [showSettings, setShowSettings] = useState(false);
@@ -186,14 +193,14 @@ export default function CourseProgressPage() {
     return result;
   }, [items, profile?.role, showHidden]);
 
-  // フィルター適用
+  // フィルター適用（デバウンス後の検索クエリを使用）
   const filteredStudents = useMemo(() => {
     let result = students;
     if (gradeFilter !== null) {
       result = result.filter((s) => s.grade === gradeFilter);
     }
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
+    if (debouncedSearchQuery) {
+      const q = debouncedSearchQuery.toLowerCase();
       result = result.filter(
         (s) =>
           s.last_name.toLowerCase().includes(q) ||
@@ -203,7 +210,7 @@ export default function CourseProgressPage() {
       );
     }
     return result;
-  }, [students, gradeFilter, searchQuery]);
+  }, [students, gradeFilter, debouncedSearchQuery]);
 
   // ステータス変更
   const handleStatusChange = useCallback(

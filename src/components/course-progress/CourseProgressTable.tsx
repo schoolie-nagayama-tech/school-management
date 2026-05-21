@@ -245,16 +245,67 @@ export function CourseProgressTable({
     return map;
   }, [columnGroups]);
 
-  // 列ごとの集計（check: 完了数/対象数, number: 合計, date: 入力済み数）
-  const columnAggregates = useMemo(() => {
-    const agg: Record<string, { completed: number; total: number; sum: number; filled: number }> = {};
+  // ============================================================================
+  // 統合集計: items × students の二重ループを1パスで実行
+  //
+  // 以前は columnAggregates / groupCompletionRates / studentCompletionRates /
+  // studentGroupRates の4つの memo が独立に O(N×M) ループを回しており、
+  // 同じ progressMap.get() を約4倍呼び出していた。
+  // 1パスにまとめることで progressMap.get() の呼び出しと closure 生成を削減。
+  // ============================================================================
+  const tableAggregations = useMemo(() => {
+    type ColAgg = { completed: number; total: number; sum: number; filled: number };
+    type Rate = { completed: number; total: number };
+
+    const columnAgg: Record<string, ColAgg> = {};
+    const groupRates: Record<string, Rate> = {};
+    const studentRates: Record<string, Rate> = {};
+    const studentGroupRatesMap: Record<string, Record<string, Rate>> = {};
+    // セル単位の自動計算値キャッシュ（"studentId:itemId" → 値）
+    // 以前はレンダリング中に getAutoValue を毎セル呼んでいたが、
+    // 集計と同じパスで埋めて参照だけにする
+    const autoValueMap = new Map<string, number>();
+
+    // 各 item が属するグループキーを事前マップ化（ループ内で都度検索しない）
+    const itemToGroup = new Map<string, string>();
+    for (const g of columnGroups) {
+      for (const it of g.items) itemToGroup.set(it.id, g.key);
+    }
+
+    // check 列のみのリスト & グループ別 check 列数（生徒別合計の分母）
+    const checkItemsAll = items.filter((i) => i.column_type === 'check');
+    const checkCountByGroup: Record<string, number> = {};
+    for (const g of columnGroups) {
+      checkCountByGroup[g.key] = g.items.filter((i) => i.column_type === 'check').length;
+      groupRates[g.key] = { completed: 0, total: checkCountByGroup[g.key] * students.length };
+    }
+
+    // 各 item を初期化
     for (const item of items) {
-      let completed = 0;
-      let total = 0;
-      let sum = 0;
-      let filled = 0;
+      columnAgg[item.id] = { completed: 0, total: 0, sum: 0, filled: 0 };
+    }
+    // 各生徒を初期化
+    for (const s of students) {
+      studentRates[s.id] = { completed: 0, total: checkItemsAll.length };
+      studentGroupRatesMap[s.id] = {};
+      for (const g of columnGroups) {
+        if (checkCountByGroup[g.key] > 0) {
+          studentGroupRatesMap[s.id][g.key] = { completed: 0, total: checkCountByGroup[g.key] };
+        }
+      }
+    }
+
+    // ========== 1パスでまとめて集計 ==========
+    for (const item of items) {
+      const colAgg = columnAgg[item.id];
+      const groupKey = itemToGroup.get(item.id);
+      const isCheck = item.column_type === 'check';
+      const isNumber = item.column_type === 'number';
+      const isDate = item.column_type === 'date';
+      const isAutoNumber = !!item.auto_source && isNumber;
+
       for (const s of students) {
-        if (item.auto_source && item.column_type === 'number') {
+        if (isAutoNumber) {
           const sv = autoValues?.[s.id];
           let v = 0;
           if (sv) {
@@ -263,79 +314,54 @@ export function CourseProgressTable({
             else if (item.auto_source === 'proposed_extra') {
               const pt = sv.proposal_total ?? 0;
               v = Math.max(0, pt - (sv.course_sessions ?? 0));
+            } else if (item.auto_source === 'subject_proposal') {
+              v = getSubjectProposalValue(sv.subject_proposals, item.name);
             }
-            else if (item.auto_source === 'subject_proposal') v = getSubjectProposalValue(sv.subject_proposals, item.name);
           }
-          sum += v;
-          filled++;
+          colAgg.sum += v;
+          colAgg.filled++;
+          // セル描画で参照するためキャッシュ
+          autoValueMap.set(`${s.id}:${item.id}`, v);
         } else {
           const d = progressMap.get(`${s.id}:${item.id}`);
-          if (item.column_type === 'check') {
-            if (d?.status !== 'not_applicable') total++;
-            if (d?.status === 'completed') completed++;
-          } else if (item.column_type === 'number') {
-            if (d?.number_value != null) { sum += d.number_value; filled++; }
-          } else if (item.column_type === 'date') {
-            if (d?.date_value) filled++;
+          if (isCheck) {
+            if (d?.status !== 'not_applicable') colAgg.total++;
+            if (d?.status === 'completed') {
+              colAgg.completed++;
+              studentRates[s.id].completed++;
+              if (groupKey) {
+                groupRates[groupKey].completed++;
+                if (studentGroupRatesMap[s.id][groupKey]) {
+                  studentGroupRatesMap[s.id][groupKey].completed++;
+                }
+              }
+            }
+          } else if (isNumber) {
+            if (d?.number_value != null) {
+              colAgg.sum += d.number_value;
+              colAgg.filled++;
+            }
+          } else if (isDate) {
+            if (d?.date_value) colAgg.filled++;
           }
         }
       }
-      agg[item.id] = { completed, total, sum, filled };
     }
-    return agg;
-  }, [items, students, progressMap, autoValues]);
 
-  // グループ別進捗率
-  const groupCompletionRates = useMemo(() => {
-    const rates: Record<string, { completed: number; total: number }> = {};
-    for (const g of columnGroups) {
-      const checkItems = g.items.filter((i) => i.column_type === 'check');
-      let completed = 0;
-      const total = checkItems.length * students.length;
-      for (const item of checkItems) {
-        for (const s of students) {
-          const d = progressMap.get(`${s.id}:${item.id}`);
-          if (d?.status === 'completed') completed++;
-        }
-      }
-      rates[g.key] = { completed, total };
-    }
-    return rates;
-  }, [columnGroups, students, progressMap]);
+    return {
+      columnAggregates: columnAgg,
+      groupCompletionRates: groupRates,
+      studentCompletionRates: studentRates,
+      studentGroupRates: studentGroupRatesMap,
+      autoValueMap,
+    };
+  }, [items, students, progressMap, autoValues, columnGroups]);
 
-  // 生徒ごとの全体完了率
-  const studentCompletionRates = useMemo(() => {
-    const checkItems = items.filter((i) => i.column_type === 'check');
-    const rates: Record<string, { completed: number; total: number }> = {};
-    for (const s of students) {
-      let completed = 0;
-      for (const item of checkItems) {
-        const d = progressMap.get(`${s.id}:${item.id}`);
-        if (d?.status === 'completed') completed++;
-      }
-      rates[s.id] = { completed, total: checkItems.length };
-    }
-    return rates;
-  }, [items, students, progressMap]);
-
-  // 生徒ごとのグループ別完了率
-  const studentGroupRates = useMemo(() => {
-    const rates: Record<string, Record<string, { completed: number; total: number }>> = {};
-    for (const s of students) {
-      rates[s.id] = {};
-      for (const g of columnGroups) {
-        const checkItems = g.items.filter((i) => i.column_type === 'check');
-        if (checkItems.length === 0) continue;
-        let completed = 0;
-        for (const item of checkItems) {
-          const d = progressMap.get(`${s.id}:${item.id}`);
-          if (d?.status === 'completed') completed++;
-        }
-        rates[s.id][g.key] = { completed, total: checkItems.length };
-      }
-    }
-    return rates;
-  }, [students, columnGroups, progressMap]);
+  const columnAggregates = tableAggregations.columnAggregates;
+  const groupCompletionRates = tableAggregations.groupCompletionRates;
+  const studentCompletionRates = tableAggregations.studentCompletionRates;
+  const studentGroupRates = tableAggregations.studentGroupRates;
+  const autoValueMap = tableAggregations.autoValueMap;
 
   // チェックセルクリック
   const handleCheckClick = useCallback(
@@ -406,28 +432,8 @@ export function CourseProgressTable({
     }
   }, [editingHeader, editHeaderValue, onItemNameChange, onItemDeadlineChange]);
 
-  // 自動計算値
-  const getAutoValue = useCallback(
-    (studentId: string, autoSource: string | null, itemName?: string): number | null => {
-      if (!autoSource || !autoValues) return null;
-      const sv = autoValues[studentId];
-      if (!sv) return 0;
-      if (autoSource === 'regular_weekly') return sv.regular_weekly;
-      if (autoSource === 'course_sessions') return sv.course_sessions;
-      // 提示増コマ = 下書き提案コマ合計 - 講習期間通常回数
-      if (autoSource === 'proposed_extra') {
-        const proposalTotal = sv.proposal_total ?? 0;
-        const courseSessions = sv.course_sessions ?? 0;
-        return Math.max(0, proposalTotal - courseSessions);
-      }
-      // 進行表コマ数（科目別）
-      if (autoSource === 'subject_proposal') {
-        return getSubjectProposalValue(sv.subject_proposals, itemName || '');
-      }
-      return null;
-    },
-    [autoValues]
-  );
+  // 自動計算値は tableAggregations.autoValueMap (上記) に事前計算済み。
+  // 旧 getAutoValue ヘルパーはセル毎に呼ばれて O(N×M) のオーバーヘッドだったため廃止。
 
   // コンテナ幅を測定してセル幅を動的に計算
   const containerRef = useRef<HTMLDivElement>(null);
@@ -755,9 +761,9 @@ export function CourseProgressTable({
                       const d = progressMap.get(`${student.id}:${item.id}`);
                       const groupColor = g.color;
 
-                      // 自動計算
+                      // 自動計算（事前計算済み Map から参照）
                       if (item.auto_source && item.column_type === 'number') {
-                        const autoVal = getAutoValue(student.id, item.auto_source, item.name);
+                        const autoVal = autoValueMap.get(`${student.id}:${item.id}`) ?? null;
                         const showVal = autoVal != null && autoVal !== 0;
                         return (
                           <td key={item.id} className="border-b border-gray-100 p-0 text-center">
