@@ -116,19 +116,34 @@ export function CourseProgressWidget({ schoolId }: CourseProgressWidgetProps) {
   }, [soudanItem, students, progressData]);
 
   // --- 生徒面談実施 ---
-  const interviewItem = useMemo(
-    () => findItemByKeywords(items, ['生徒面談実施', '生徒面談', '面談実施']),
+  const studentInterviewItem = useMemo(
+    () => findItemByKeywords(items, ['生徒面談実施', '生徒面談']),
     [items]
   );
-  const interviewStats = useMemo(() => {
-    if (!interviewItem) return null;
+  const studentInterviewStats = useMemo(() => {
+    if (!studentInterviewItem) return null;
     let completed = 0;
     for (const s of students) {
-      const d = progressData.find((p) => p.student_id === s.id && p.item_id === interviewItem.id);
+      const d = progressData.find((p) => p.student_id === s.id && p.item_id === studentInterviewItem.id);
       if (d?.status === 'completed') completed++;
     }
     return { completed, total: students.length };
-  }, [interviewItem, students, progressData]);
+  }, [studentInterviewItem, students, progressData]);
+
+  // --- 父母面談実施 ---
+  const parentInterviewItem = useMemo(
+    () => findItemByKeywords(items, ['父母面談実施', '保護者面談実施', '父母面談', '保護者面談']),
+    [items]
+  );
+  const parentInterviewStats = useMemo(() => {
+    if (!parentInterviewItem) return null;
+    let completed = 0;
+    for (const s of students) {
+      const d = progressData.find((p) => p.student_id === s.id && p.item_id === parentInterviewItem.id);
+      if (d?.status === 'completed') completed++;
+    }
+    return { completed, total: students.length };
+  }, [parentInterviewItem, students, progressData]);
 
   // --- 教科別提案コマ数 ---
   const subjectItems = useMemo(
@@ -218,12 +233,8 @@ export function CourseProgressWidget({ schoolId }: CourseProgressWidgetProps) {
 
   if (items.length === 0) return null;
 
-  const hasAnyData = pcsStats || soudanStats || interviewStats || subjectTotals.grandTotal > 0 || komaStats.proposed > 0 || komaStats.decided > 0;
+  const hasAnyData = pcsStats || soudanStats || studentInterviewStats || parentInterviewStats || subjectTotals.grandTotal > 0 || komaStats.proposed > 0 || komaStats.decided > 0;
   if (!hasAnyData) return null;
-
-  const interviewRate = interviewStats && interviewStats.total > 0
-    ? Math.round((interviewStats.completed / interviewStats.total) * 100)
-    : 0;
 
   const seasonLabel = SEASON_LABELS[season];
 
@@ -277,21 +288,23 @@ export function CourseProgressWidget({ schoolId }: CourseProgressWidgetProps) {
             )}
 
             {/* 生徒面談実施 */}
-            {interviewStats && (
+            {studentInterviewStats && (
               <MetricChip
                 label="生徒面談"
-                value={interviewStats.completed}
-                total={interviewStats.total}
+                value={studentInterviewStats.completed}
+                total={studentInterviewStats.total}
                 color="green"
               />
             )}
 
-            {/* 面談実施率 */}
-            {interviewStats && (
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-emerald-200 bg-emerald-50 text-[11px]">
-                <span className="text-emerald-600 font-medium">面談実施率</span>
-                <span className="text-emerald-800 font-bold">{interviewRate}%</span>
-              </div>
+            {/* 父母面談実施 */}
+            {parentInterviewStats && (
+              <MetricChip
+                label="父母面談"
+                value={parentInterviewStats.completed}
+                total={parentInterviewStats.total}
+                color="green"
+              />
             )}
 
             {/* 増コマ回数 */}

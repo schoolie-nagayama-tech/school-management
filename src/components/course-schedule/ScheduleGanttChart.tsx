@@ -467,47 +467,6 @@ export function ScheduleGanttChart({
         </tr>
       </thead>
       <tbody>
-        {deadlineItems.length > 0 && (
-          <>
-            <tr>
-              <td colSpan={2} className="sticky left-0 z-20 bg-amber-50/80 border-b border-gray-200 px-3 py-1" style={{ borderLeft: '3px solid #f59e0b' }}>
-                <span className="text-[10px] text-amber-700 font-bold">進捗管理 期日</span>
-              </td>
-              {dates.map((d) => {
-                const isToday = isSameDay(d, today);
-                return (
-                  <td key={formatDate(d)} className={`border-b border-gray-200 ${isToday ? 'bg-red-50/50' : 'bg-amber-50/40'}`}>
-                    {isToday && <div className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-red-400 z-10 -translate-x-1/2 relative" />}
-                  </td>
-                );
-              })}
-            </tr>
-            {deadlineItems.map((item) => (
-              <tr key={`dl-${item.id}`}>
-                <td className="sticky left-0 z-10 bg-white border-b border-r border-gray-200 px-1 text-center" style={{ minWidth: LEFT_CHECK_W }}>
-                  <span className="text-amber-500 text-[10px]">&#9670;</span>
-                </td>
-                <td className="sticky z-10 bg-white border-b border-r border-gray-200 px-2 py-0.5" style={{ left: LEFT_CHECK_W, minWidth: LEFT_NAME_W }}>
-                  <div className="flex items-center gap-1">
-                    <span className="text-[10px] text-amber-800 truncate">{item.name}</span>
-                    {item.deadline && <span className="text-[9px] text-amber-500 shrink-0">{shortDate(item.deadline)}</span>}
-                  </div>
-                </td>
-                {dates.map((d) => {
-                  const dateStr = formatDate(d);
-                  const isToday = isSameDay(d, today);
-                  const isDL = item.deadline === dateStr;
-                  return (
-                    <td key={dateStr} className={`border-b border-r border-gray-100 relative ${isDL ? 'bg-amber-100' : ''}`}>
-                      {isToday && <div className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-red-400 z-10 -translate-x-1/2" />}
-                      {isDL && <div className="flex items-center justify-center h-full"><span className="text-[10px] text-amber-600 font-bold">&#9670;</span></div>}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </>
-        )}
         {categories.map(({ category, tasks: catTasks }, catIdx) => {
           const isCollapsed = collapsedCategories.has(category);
           const c = CATEGORY_COLORS[catIdx % CATEGORY_COLORS.length];
@@ -608,46 +567,6 @@ export function ScheduleGanttChart({
           </tr>
         </thead>
         <tbody>
-          {deadlineItems.length > 0 && (
-            <>
-              <tr>
-                <td colSpan={2} className="sticky left-0 z-20 bg-amber-50/80 border-b border-gray-200 px-3 py-1" style={{ borderLeft: '3px solid #f59e0b' }}>
-                  <span className="text-[10px] text-amber-700 font-bold">進捗管理 期日</span>
-                </td>
-                {weeks.map((w, wi) => {
-                  const hasToday = w.days.some((d) => isSameDay(d, today));
-                  return (
-                    <td key={wi} className={`border-b border-gray-200 ${hasToday ? 'bg-red-50/50' : 'bg-amber-50/40'}`}>
-                      {hasToday && <div className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-red-400 z-10 -translate-x-1/2 relative" />}
-                    </td>
-                  );
-                })}
-              </tr>
-              {deadlineItems.map((item) => (
-                <tr key={`dl-${item.id}`}>
-                  <td className="sticky left-0 z-10 bg-white border-b border-r border-gray-200 px-1 text-center" style={{ minWidth: LEFT_CHECK_W }}>
-                    <span className="text-amber-500 text-[10px]">&#9670;</span>
-                  </td>
-                  <td className="sticky z-10 bg-white border-b border-r border-gray-200 px-2 py-0.5" style={{ left: LEFT_CHECK_W, minWidth: LEFT_NAME_W }}>
-                    <div className="flex items-center gap-1">
-                      <span className="text-[10px] text-amber-800 truncate">{item.name}</span>
-                      {item.deadline && <span className="text-[9px] text-amber-500 shrink-0">{shortDate(item.deadline)}</span>}
-                    </div>
-                  </td>
-                  {weeks.map((w, wi) => {
-                    const hasDL = hasDeadlineInWeek(item, w.days);
-                    const hasToday = w.days.some((d) => isSameDay(d, today));
-                    return (
-                      <td key={wi} className={`border-b border-r border-gray-100 text-center relative ${hasDL ? 'bg-amber-100' : ''}`}>
-                        {hasToday && <div className="absolute top-0 bottom-0 left-1/2 w-[2px] bg-red-500/70 z-10 -translate-x-1/2" />}
-                        {hasDL && <span className="text-[10px] font-bold text-amber-600">&#9670;</span>}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </>
-          )}
           {categories.map(({ category, tasks: catTasks }, catIdx) => {
             const isCollapsed = collapsedCategories.has(category);
             const c = CATEGORY_COLORS[catIdx % CATEGORY_COLORS.length];

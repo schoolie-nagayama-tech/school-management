@@ -154,20 +154,37 @@ export function CourseProgressDashboard({
     );
   }, [items, proposedKomaItem]);
 
-  // --- 面談実施チェック項目 ---
-  const interviewItem = useMemo(() => {
-    return findItemByKeywords(items, ['生徒面談実施', '生徒面談', '面談実施']);
+  // --- 面談実施チェック項目（生徒面談・父母面談を分離） ---
+  const studentInterviewItem = useMemo(() => {
+    return findItemByKeywords(items, ['生徒面談実施', '生徒面談']);
   }, [items]);
 
-  const interviewCompletedCount = useMemo(() => {
-    if (!interviewItem) return 0;
+  const parentInterviewItem = useMemo(() => {
+    return findItemByKeywords(items, ['父母面談実施', '保護者面談実施', '父母面談', '保護者面談']);
+  }, [items]);
+
+  const studentInterviewCount = useMemo(() => {
+    if (!studentInterviewItem) return 0;
     let count = 0;
     for (const s of students) {
-      const d = progressData.find((p) => p.student_id === s.id && p.item_id === interviewItem.id);
+      const d = progressData.find((p) => p.student_id === s.id && p.item_id === studentInterviewItem.id);
       if (d?.status === 'completed') count++;
     }
     return count;
-  }, [interviewItem, students, progressData]);
+  }, [studentInterviewItem, students, progressData]);
+
+  const parentInterviewCount = useMemo(() => {
+    if (!parentInterviewItem) return 0;
+    let count = 0;
+    for (const s of students) {
+      const d = progressData.find((p) => p.student_id === s.id && p.item_id === parentInterviewItem.id);
+      if (d?.status === 'completed') count++;
+    }
+    return count;
+  }, [parentInterviewItem, students, progressData]);
+
+  // 面談実施の合計（ツールチップ・互換用）
+  const interviewCompletedCount = studentInterviewCount + parentInterviewCount;
 
   // --- 教科別コマ合計 ---
   const subjectItems = useMemo(
@@ -478,7 +495,7 @@ export function CourseProgressDashboard({
         <div className="bg-white rounded-xl border border-gray-200 p-4">
           <div className="text-xs text-gray-500 mb-2 flex items-center gap-1">
             進捗状況
-            <HelpTooltip text={"作成済: 提示増コマが1以上の生徒数\n面談実施済: 面談実施チェック済みの生徒数\n申込済: 増コマ決定が1以上の生徒数"} size={10} />
+            <HelpTooltip text={"作成済: 提示増コマが1以上の生徒数\n生徒面談: 生徒面談実施チェック済みの生徒数\n父母面談: 父母面談実施チェック済みの生徒数\n申込済: 増コマ決定が1以上の生徒数"} size={10} />
           </div>
           <div className="space-y-2">
             {/* 作成済み */}
@@ -491,16 +508,30 @@ export function CourseProgressDashboard({
                 <div className="h-1.5 rounded-full bg-[#f59e0b] transition-[width] duration-500 ease-out" style={{ width: `${students.length > 0 ? Math.round((proposedStudentCount / students.length) * 100) : 0}%` }} />
               </div>
             </div>
-            {/* 面談実施済み */}
-            <div>
-              <div className="flex items-center justify-between text-xs mb-0.5">
-                <span className="text-gray-500">面談実施済</span>
-                <span className="text-gray-700 font-medium">{interviewCompletedCount}<span className="text-gray-400 font-normal"> / {students.length}名</span></span>
+            {/* 生徒面談実施済み */}
+            {studentInterviewItem && (
+              <div>
+                <div className="flex items-center justify-between text-xs mb-0.5">
+                  <span className="text-gray-500">生徒面談</span>
+                  <span className="text-gray-700 font-medium">{studentInterviewCount}<span className="text-gray-400 font-normal"> / {students.length}名</span></span>
+                </div>
+                <div className="w-full bg-gray-100 rounded-full h-1.5">
+                  <div className="h-1.5 rounded-full bg-[#10b981] transition-[width] duration-500 ease-out" style={{ width: `${students.length > 0 ? Math.round((studentInterviewCount / students.length) * 100) : 0}%` }} />
+                </div>
               </div>
-              <div className="w-full bg-gray-100 rounded-full h-1.5">
-                <div className="h-1.5 rounded-full bg-[#10b981] transition-[width] duration-500 ease-out" style={{ width: `${students.length > 0 ? Math.round((interviewCompletedCount / students.length) * 100) : 0}%` }} />
+            )}
+            {/* 父母面談実施済み */}
+            {parentInterviewItem && (
+              <div>
+                <div className="flex items-center justify-between text-xs mb-0.5">
+                  <span className="text-gray-500">父母面談</span>
+                  <span className="text-gray-700 font-medium">{parentInterviewCount}<span className="text-gray-400 font-normal"> / {students.length}名</span></span>
+                </div>
+                <div className="w-full bg-gray-100 rounded-full h-1.5">
+                  <div className="h-1.5 rounded-full bg-[#059669] transition-[width] duration-500 ease-out" style={{ width: `${students.length > 0 ? Math.round((parentInterviewCount / students.length) * 100) : 0}%` }} />
+                </div>
               </div>
-            </div>
+            )}
             {/* 申込済み */}
             <div>
               <div className="flex items-center justify-between text-xs mb-0.5">
