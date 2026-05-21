@@ -1,14 +1,29 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { AdminLayout } from '@/components/layouts';
 import { Loading, InlineLoading } from '@/components/ui';
-import {
-  ScheduleGanttChart,
-  ScheduleMarkerInput,
-  ScheduleDateRange,
-  ScheduleBoard,
-} from '@/components/course-schedule';
+
+// 重い表示コンポーネントは遅延ロードして初期バンドルを軽くする
+const ScheduleGanttChart = dynamic(
+  () => import('@/components/course-schedule').then((m) => m.ScheduleGanttChart),
+  { ssr: false, loading: () => <div className="h-64 rounded-xl bg-gray-50 animate-pulse" /> }
+);
+const ScheduleBoard = dynamic(
+  () => import('@/components/course-schedule').then((m) => m.ScheduleBoard),
+  { ssr: false, loading: () => <div className="h-64 rounded-xl bg-gray-50 animate-pulse" /> }
+);
+// ScheduleMarkerInput と ScheduleDateRange はモーダル/編集UI内のため軽量だが、
+// 同じバンドルを参照するので一緒に dynamic 化（実コストはほぼゼロ）
+const ScheduleMarkerInput = dynamic(
+  () => import('@/components/course-schedule').then((m) => m.ScheduleMarkerInput),
+  { ssr: false }
+);
+const ScheduleDateRange = dynamic(
+  () => import('@/components/course-schedule').then((m) => m.ScheduleDateRange),
+  { ssr: false }
+);
 import { SeasonYearSelector } from '@/components/course-shared/SeasonYearSelector';
 import { TemplateApplyDialog } from '@/components/course-shared/TemplateApplyDialog';
 import {

@@ -701,6 +701,9 @@ export function CourseProgressTable({
                 <tr
                   key={student.id}
                   className={`${isEven ? 'bg-white' : 'bg-gray-50/50'} ${showGradeSep && si > 0 ? 'border-t-2 border-t-gray-300' : ''} hover:bg-blue-50/30`}
+                  // ネイティブの "windowing": 画面外の行はレイアウト・描画をスキップ。
+                  // containIntrinsicSize で off-screen 時のサイズを予約しスクロールバーの揺れを防ぐ。
+                  style={{ contentVisibility: 'auto', containIntrinsicSize: '32px' }}
                 >
                   {/* 学年 */}
                   <td

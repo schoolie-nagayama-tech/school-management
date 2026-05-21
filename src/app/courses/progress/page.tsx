@@ -1,10 +1,20 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { AdminLayout } from '@/components/layouts';
 import { Loading, InlineLoading } from '@/components/ui';
 import { ContextHelp } from '@/components/help/ContextHelp';
-import { CourseProgressDashboard, CourseProgressTable } from '@/components/course-progress';
+
+// 重いテーブル本体・ダッシュボードは初期バンドルに含めず、データ取得と並行して遅延ロード
+const CourseProgressDashboard = dynamic(
+  () => import('@/components/course-progress').then((m) => m.CourseProgressDashboard),
+  { ssr: false, loading: () => <div className="h-32 rounded-xl bg-gray-50 animate-pulse" /> }
+);
+const CourseProgressTable = dynamic(
+  () => import('@/components/course-progress').then((m) => m.CourseProgressTable),
+  { ssr: false, loading: () => <div className="h-96 rounded-xl bg-gray-50 animate-pulse" /> }
+);
 import { SeasonYearSelector } from '@/components/course-shared/SeasonYearSelector';
 import { TemplateApplyDialog } from '@/components/course-shared/TemplateApplyDialog';
 import { supabase } from '@/lib/supabase';
