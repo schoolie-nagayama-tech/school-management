@@ -197,23 +197,25 @@ export async function getBulletinPosts(
   if (options?.userId) {
     const postIds = posts.map(p => p.id);
     if (postIds.length > 0) {
-      const { data: reads } = await supabase
-        .from('bulletin_reads')
-        .select('post_id')
-        .eq('user_id', options.userId)
-        .in('post_id', postIds);
+      // 自分の既読と講師IDリストは独立しているので並列取得（シーケンシャル3クエリ → 2フェーズに削減）
+      const [readsResult, teacherProfilesResult] = await Promise.all([
+        supabase
+          .from('bulletin_reads')
+          .select('post_id')
+          .eq('user_id', options.userId)
+          .in('post_id', postIds),
+        supabase
+          .from('user_profiles')
+          .select('id')
+          .eq('role', 'teacher'),
+      ]);
 
-      const readPostIds = new Set((reads || []).map(r => r.post_id));
+      const readPostIds = new Set((readsResult.data || []).map(r => r.post_id));
+      const teacherIds = teacherProfilesResult.data
+        ? teacherProfilesResult.data.map(p => p.id)
+        : [];
 
-      // 既読数も取得（講師のみ）
-      // まず講師のuser_idを取得
-      const { data: teacherProfiles } = await supabase
-        .from('user_profiles')
-        .select('id')
-        .eq('role', 'teacher');
-
-      const teacherIds = teacherProfiles ? teacherProfiles.map(p => p.id) : [];
-
+      // 講師の既読数（前段の teacherIds に依存するため並列化不可）
       const { data: readCounts } = await supabase
         .from('bulletin_reads')
         .select('post_id')

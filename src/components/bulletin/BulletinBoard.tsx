@@ -133,11 +133,11 @@ export function BulletinBoard({ className = '' }: BulletinBoardProps) {
       }
 
       if (userId && canRead) {
-        let total = 0;
-        for (const schoolId of schoolIds) {
-          total += await getUnreadCount(schoolId, userId);
-        }
-        setUnreadCount(total);
+        // 複数教室の未読数を並列取得（シーケンシャル await → Promise.all で N回 → 1ラウンドトリップに削減）
+        const counts = await Promise.all(
+          schoolIds.map((schoolId) => getUnreadCount(schoolId, userId))
+        );
+        setUnreadCount(counts.reduce((sum, n) => sum + n, 0));
       } else {
         setUnreadCount(0);
       }
