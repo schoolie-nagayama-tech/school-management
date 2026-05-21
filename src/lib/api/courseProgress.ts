@@ -192,16 +192,4 @@ export async function updateStudentProgressDate(
 // =============================================
 
 export type AutoValues = Record<string, { regular_weekly: number; course_sessions: number; proposal_total?: number; subject_proposals?: Record<string, number> }>;
-
-export async function getAutoValues(
-  schoolId: string,
-  season: SeasonType,
-  year: number
-): Promise<AutoValues> {
-  const result = await fetchCoursePrepApi('get_auto_values', {
-    schoolId,
-    season,
-    year: String(year),
-  });
-  return (result.data || {}) as AutoValues;
-}
+// 単独取得関数 getAutoValues は廃止。batchFetchCoursePrepApi で 'auto_values' ターゲットを使うこと。
