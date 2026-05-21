@@ -1079,7 +1079,7 @@ function TableView({
   setExamRangesForTextbook,
   textbookTabs,
   onSelectTab,
-  role: _role,
+  role,
   viewMode,
   studentId,
   studentName,
@@ -1405,10 +1405,10 @@ function TableView({
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => { setSessionMode((v) => { if (v) setSessionSelection(null); return !v; }); }}
-                disabled={!activeExam && !sessionMode}
-                title={!activeExam ? '目標を設定してください' : undefined}
+                disabled={!activeExam && !sessionMode && role === 'teacher'}
+                title={!activeExam && role === 'teacher' ? '目標を設定してください' : undefined}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  sessionMode ? 'bg-[#dc2626] text-white hover:bg-[#b91c1c]' : !activeExam ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[#1e3a5f] text-white hover:bg-[#2a4d7a]'
+                  sessionMode ? 'bg-[#dc2626] text-white hover:bg-[#b91c1c]' : (!activeExam && role === 'teacher') ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[#1e3a5f] text-white hover:bg-[#2a4d7a]'
                 }`}
               >
                 {sessionMode ? 'セッション終了' : '授業を記録'}
@@ -1695,6 +1695,7 @@ function TableView({
           curriculumItems={progress}
           onSessionSaved={handleSessionSaved}
           onSelectionChange={setSessionSelection}
+          canEditSaved={role === 'manager'}
         />
       )}
 
@@ -1760,7 +1761,7 @@ function TableView({
                     isPaintCandidate={isPaintCandidate}
                     sessionMode={sessionMode && !isMeeting}
                     sessionSelection={sessionMode && !isMeeting ? sessionSelection : null}
-                    hasGoal={!!activeExam}
+                    hasGoal={!!activeExam || role === 'manager'}
                     onPaintRowClick={() => handlePaintRowClick(rowIdStr)}
                     onLocalPatch={(patch) => updateLocal(rowIdStr, patch)}
                     onSaveProgress={(patch) => saveProgressField(row, patch)}

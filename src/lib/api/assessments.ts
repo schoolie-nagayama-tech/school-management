@@ -53,7 +53,8 @@ export async function listAssessmentsBySchool(
     .in('school_id', schoolIds)
     .order('grade', { ascending: false })
     .order('exam_month', { ascending: false, nullsFirst: false })
-    .order('name_code', { ascending: true });
+    .order('name_code', { ascending: true })
+    .limit(5000);
 
   if (category) {
     query = query.eq('category', category);
@@ -72,17 +73,26 @@ export async function listAssessmentsBySchool(
 
   const assessmentsTyped = assessments as Assessment[];
   const assessmentIds = assessmentsTyped.map((a) => a.id);
-  const { data: scores, error: scoresError } = await supabase
-    .from('assessment_scores')
-    .select('*')
-    .in('assessment_id', assessmentIds);
 
-  if (scoresError) {
-    console.error('Error fetching assessment scores:', scoresError);
-    throw new Error('成績スコアの取得に失敗しました');
+  // assessment_scores はデフォルト1000行制限を超えうるためチャンク分割で取得
+  const CHUNK_SIZE = 100;
+  const allScores: AssessmentScore[] = [];
+  for (let i = 0; i < assessmentIds.length; i += CHUNK_SIZE) {
+    const chunk = assessmentIds.slice(i, i + CHUNK_SIZE);
+    const { data: scores, error: scoresError } = await supabase
+      .from('assessment_scores')
+      .select('*')
+      .in('assessment_id', chunk)
+      .limit(5000);
+
+    if (scoresError) {
+      console.error('Error fetching assessment scores:', scoresError);
+      throw new Error('成績スコアの取得に失敗しました');
+    }
+    allScores.push(...((scores || []) as AssessmentScore[]));
   }
 
-  const scoresTyped = (scores || []) as AssessmentScore[];
+  const scoresTyped = allScores;
   const assessmentsWithScores: AssessmentWithScores[] = assessmentsTyped.map((assessment) => ({
     ...assessment,
     scores: scoresTyped.filter((score) => score.assessment_id === assessment.id),

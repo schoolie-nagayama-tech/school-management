@@ -74,6 +74,8 @@ interface Props {
   onSessionSaved: () => void;
   /** 選択状態が変わるたびに呼ばれる（テーブル行ハイライト用） */
   onSelectionChange?: (sel: SessionSelection) => void;
+  /** 教室長以上: 保存済みセッションを再編集可能にする */
+  canEditSaved?: boolean;
 }
 
 export interface SessionRecordingPanelHandle {
@@ -87,6 +89,7 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
   curriculumItems,
   onSessionSaved,
   onSelectionChange,
+  canEditSaved = false,
 }, ref) {
   const { profile } = useAuth();
   const myName = profile?.display_name || '';
@@ -131,9 +134,14 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
    * - lesson列クリック: unitActions に追加/削除
    * - school列クリック: schoolUnits に追加/削除
    */
+  // 教室長以上: 保存済みセッションを再編集可能にする
+  const unlockSession = useCallback((idx: number) => {
+    setSessions(prev => prev.map((s, i) => (i === idx ? { ...s, saved: false } : s)));
+  }, []);
+
   const handleCellToggle = useCallback(
     (curriculumItemId: number, column: 'school' | 1 | 2 | 3) => {
-      if (!activeSession || activeSession.saved) return;
+      if (!activeSession || (activeSession.saved && !canEditSaved)) return;
 
       setSessions(prev => prev.map((s, i) => {
         if (i !== activeIdx) return s;
@@ -156,7 +164,7 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
         }
       }));
     },
-    [activeIdx, activeSession]
+    [activeIdx, activeSession, canEditSaved]
   );
 
   // Expose handleCellToggle to parent via ref
@@ -183,7 +191,7 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
   const saveSession = useCallback(
     async (idx: number) => {
       const s = sessions[idx];
-      if (!s || s.saved) return;
+      if (!s || (s.saved && !canEditSaved)) return;
 
       // バリデーション
       if (!s.date || !s.teacherName || !s.handover) {
@@ -221,7 +229,7 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
         setSaving(false);
       }
     },
-    [sessions, studentTextbookId, profile?.id, onSessionSaved]
+    [sessions, studentTextbookId, profile?.id, onSessionSaved, canEditSaved]
   );
 
   // ─── ヘルパー ───
@@ -262,12 +270,14 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
           const schoolItems = schoolUnitsForSession(session);
           const lessonItems = lessonUnitsForSession(session);
           const isFilled = session.teacherName && schoolItems.length > 0 && session.handover;
+          // 教室長以上は保存済みでも再編集可能
+          const isLocked = session.saved && !canEditSaved;
 
           return (
             <div
               key={session.id}
               className={`rounded-xl border overflow-hidden transition-colors ${
-                session.saved
+                isLocked
                   ? 'border-gray-200 bg-gray-50 opacity-75'
                   : hasIssue
                     ? 'border-amber-400 bg-amber-50/30'
@@ -286,7 +296,7 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
               >
                 <div
                   className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${
-                    session.saved
+                    isLocked
                       ? 'bg-green-100 text-green-700'
                       : hasIssue
                         ? 'bg-amber-500 text-white'
@@ -295,7 +305,7 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
                           : 'bg-gray-100 text-gray-600'
                   }`}
                 >
-                  {session.saved ? <Check className="w-4 h-4" /> : idx + 1}
+                  {isLocked ? <Check className="w-4 h-4" /> : idx + 1}
                 </div>
                 <div className="flex-1 text-left">
                   <div className="text-sm font-medium">
@@ -304,7 +314,9 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
                       <span className="ml-2 text-gray-500">{session.teacherName}</span>
                     )}
                     {session.saved && (
-                      <span className="ml-2 text-xs text-green-600 font-medium">保存済</span>
+                      <span className={`ml-2 text-xs font-medium ${isLocked ? 'text-green-600' : 'text-blue-600'}`}>
+                        {isLocked ? '保存済' : '保存済（編集中）'}
+                      </span>
                     )}
                   </div>
                   {session.handover && (
@@ -350,7 +362,7 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
                         type="date"
                         value={session.date}
                         onChange={e => updateField(idx, { date: e.target.value })}
-                        disabled={session.saved}
+                        disabled={isLocked}
                         className="mt-1 w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg disabled:bg-gray-100"
                       />
                     </div>
@@ -363,12 +375,12 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
                           value={session.teacherName}
                           onChange={e => updateField(idx, { teacherName: e.target.value })}
                           placeholder="講師名"
-                          disabled={session.saved}
+                          disabled={isLocked}
                           className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded-lg disabled:bg-gray-100"
                         />
                         <button
                           onClick={() => updateField(idx, { teacherName: myName })}
-                          disabled={session.saved}
+                          disabled={isLocked}
                           className="px-3 py-1.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg border border-gray-200 whitespace-nowrap disabled:opacity-50"
                         >
                           自分
@@ -439,7 +451,7 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
                       value={session.handover}
                       onChange={e => updateField(idx, { handover: e.target.value })}
                       placeholder="次の講師への引継ぎを入力..."
-                      disabled={session.saved}
+                      disabled={isLocked}
                       rows={2}
                       className="mt-1 w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg resize-none disabled:bg-gray-100"
                     />
@@ -452,7 +464,7 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
                         type="checkbox"
                         checked={session.homeworkNotDone}
                         onChange={e => updateField(idx, { homeworkNotDone: e.target.checked })}
-                        disabled={session.saved}
+                        disabled={isLocked}
                         className="rounded border-gray-300"
                       />
                       <span className={session.homeworkNotDone ? 'text-amber-700 font-medium' : 'text-gray-600'}>
@@ -464,7 +476,7 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
                         type="checkbox"
                         checked={session.tardy}
                         onChange={e => updateField(idx, { tardy: e.target.checked })}
-                        disabled={session.saved}
+                        disabled={isLocked}
                         className="rounded border-gray-300"
                       />
                       <span className={session.tardy ? 'text-amber-700 font-medium' : 'text-gray-600'}>
@@ -474,13 +486,13 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
                   </div>
 
                   {/* 保存ボタン */}
-                  {!session.saved && (
+                  {!isLocked && (
                     <button
                       onClick={() => saveSession(idx)}
                       disabled={saving}
                       className="w-full py-2 bg-[#1e3a5f] text-white text-sm font-medium rounded-lg hover:bg-[#2a4a6f] disabled:opacity-50 transition-colors"
                     >
-                      {saving ? '保存中...' : 'セッションを保存'}
+                      {saving ? '保存中...' : session.saved ? '修正を保存' : 'セッションを保存'}
                     </button>
                   )}
                 </div>

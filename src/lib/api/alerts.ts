@@ -883,7 +883,8 @@ export async function getAlertDismissals(schoolIds: string[]): Promise<AlertDism
   const { data, error } = await supabase
     .from('alert_dismissals')
     .select('*')
-    .in('school_id', schoolIds);
+    .in('school_id', schoolIds)
+    .limit(5000);
 
   if (error) {
     if (error.code === 'PGRST116' || error.message.includes('schema cache')) {

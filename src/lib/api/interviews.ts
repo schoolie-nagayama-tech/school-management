@@ -16,7 +16,8 @@ export async function getInterviewsBySchool(
     .select('*')
     .in('school_id', schoolIds)
     .order('interview_date', { ascending: false })
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(5000);
 
   if (error) {
     throw new Error(`面談記録の取得に失敗しました: ${error.message}`);
