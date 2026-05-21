@@ -6,7 +6,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { AlertCircle, ArrowUpDown, CheckSquare, ChevronRight, Copy, FileText, Plus, Search, Square, Trash2, X } from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
 import { Button, Loading, InlineLoading } from '@/components/ui';
-import { getSeasonalCourses, getCachedSeasonalCourses, createSeasonalCourse, deployCourseToSchools, deleteSeasonalCourse } from '@/lib/api/seasonalCourses';
+import { getCachedSeasonalCourses, createSeasonalCourse, deployCourseToSchools, deleteSeasonalCourse } from '@/lib/api/seasonalCourses';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
