@@ -11,6 +11,7 @@ import { Megaphone, ChevronDown, X, Menu, LogOut, Settings, LayoutDashboard } fr
 import { TierMedal } from '@/components/teacher/TierMedal';
 import { useTeacherBadgeCount } from '@/hooks/useTeacherBadgeCount';
 import { ThemeToggle } from './ThemeToggle';
+import { toSurnameOnly } from '@/lib/utils/teacherName';
 import { PushNotificationButton } from '@/components/ui/PushNotificationButton';
 
 interface AppHeaderProps {
@@ -602,7 +603,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                       {profile && !authLoading && (
                         <div className="px-3 py-2.5 border-b border-gray-100">
                           <div className="text-xs font-semibold text-gray-900 leading-tight">
-                            {profile.display_name || profile.email}
+                            {isTeacher ? toSurnameOnly(profile.display_name) || profile.email : profile.display_name || profile.email}
                           </div>
                           <div className="text-[10px] text-gray-500 leading-tight mt-0.5">
                             {USER_ROLE_LABELS[profile.role]}
@@ -744,7 +745,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
             {profile && (
               <div className="px-4 pt-2 mt-1 border-t border-white/20 text-[11px] text-white/80">
                 <div className="font-semibold text-white">
-                  {profile.display_name || profile.email}
+                  {isTeacher ? toSurnameOnly(profile.display_name) || profile.email : profile.display_name || profile.email}
                 </div>
                 <div>{USER_ROLE_LABELS[profile.role]}</div>
               </div>

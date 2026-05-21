@@ -25,6 +25,7 @@ import {
   type SessionUnitAction,
 } from '@/lib/api/progress-sessions';
 import type { ProgressSession, CurriculumItem } from '@/types/database';
+import { toSurnameOnly } from '@/lib/utils/teacherName';
 
 // ─── 型定義 ───
 export interface SessionDraft {
@@ -92,7 +93,9 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
   canEditSaved = false,
 }, ref) {
   const { profile } = useAuth();
-  const myName = profile?.display_name || '';
+  // 講師は苗字のみ表示（個人情報保護）
+  const isTeacher = profile?.role === 'teacher';
+  const myName = isTeacher ? toSurnameOnly(profile?.display_name) : (profile?.display_name || '');
 
   // 前回の引継ぎ
   const [lastSession, setLastSession] = useState<ProgressSession | null>(null);

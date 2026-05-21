@@ -72,6 +72,7 @@ import type {
   StudentTextbookExamRangeInsert,
   Textbook,
 } from '@/types/database';
+import { toSurnameOnly } from '@/lib/utils/teacherName';
 
 // ─────────────────────────────────────────────
 // 型
@@ -455,7 +456,7 @@ export default function NewProgressPage() {
             viewMode={effectiveViewMode}
             studentId={studentId}
             studentName={student ? `${student.last_name} ${student.first_name}` : ''}
-            selfName={profile?.display_name ?? ''}
+            selfName={isTeacher ? toSurnameOnly(profile?.display_name) : (profile?.display_name ?? '')}
             onBack={() => setView('cards')}
             onRefresh={refreshTextbooks}
             success={success}
@@ -1755,6 +1756,7 @@ function TableView({
                     groupStart={groupStart}
                     inheritedIntentTag={inheritedTag}
                     selfName={selfName}
+                    isTeacher={role === 'teacher'}
                     paintActive={paintActive}
                     paintMode={paintMode}
                     isPaintStart={isPaintStart}
@@ -2011,6 +2013,7 @@ function ProgressRow({
   groupStart = true,
   inheritedIntentTag = null,
   selfName = '',
+  isTeacher = false,
   paintActive = false,
   paintMode: _paintMode = null,
   isPaintStart = false,
@@ -2034,6 +2037,8 @@ function ProgressRow({
   inheritedIntentTag?: IntentTag | null;
   /** ログイン中ユーザーの display_name（講師名欄の自動補完用） */
   selfName?: string;
+  /** 講師権限: 講師名を苗字のみ表示 */
+  isTeacher?: boolean;
   /** 一括塗りモードが有効か */
   paintActive?: boolean;
   paintMode?: null | 'examRange' | 'intent';
@@ -2297,7 +2302,7 @@ function ProgressRow({
         <td className="px-3 py-2.5">
           {hasGoal ? (
             <TeacherNameInput
-              value={p?.teacher_name ?? ''}
+              value={isTeacher ? toSurnameOnly(p?.teacher_name) : (p?.teacher_name ?? '')}
               selfName={selfName}
               onSave={(v) => {
                 onLocalPatch({ teacher_name: v ?? undefined });
