@@ -238,23 +238,31 @@ export async function getSeasonalCourses(schoolId: string): Promise<SeasonalCour
 
   if (error) throw error;
 
-  // 適用数を取得
   const coursesTyped = (data || []) as SeasonalCourseWithDetails[];
-  const coursesWithCount = await Promise.all(
-    coursesTyped.map(async (course) => {
-      const { count } = await supabase
-        .from('seasonal_course_applications')
-        .select('*', { count: 'exact', head: true })
-        .eq('course_id', course.id);
-      
-      return {
-        ...course,
-        application_count: count || 0,
-      };
-    })
-  );
+  if (coursesTyped.length === 0) return [];
 
-  return coursesWithCount;
+  // 適用数を一括取得（N+1解消: コース毎にcountクエリ → 全コース分を1クエリで取得しJS側で集計）
+  const courseIds = coursesTyped.map((c) => c.id);
+  const { data: applications, error: appsError } = await supabase
+    .from('seasonal_course_applications')
+    .select('course_id')
+    .in('course_id', courseIds);
+
+  if (appsError) {
+    // 申込集計の失敗はメイン機能を止めない（application_count を 0 として続行）
+    console.warn('Failed to fetch application counts:', appsError);
+  }
+
+  const countMap = new Map<string, number>();
+  for (const app of applications || []) {
+    const cid = (app as { course_id: string }).course_id;
+    countMap.set(cid, (countMap.get(cid) || 0) + 1);
+  }
+
+  return coursesTyped.map((course) => ({
+    ...course,
+    application_count: countMap.get(course.id) || 0,
+  }));
 }
 
 /** 30秒TTLのキャッシュ付き getSeasonalCourses */
