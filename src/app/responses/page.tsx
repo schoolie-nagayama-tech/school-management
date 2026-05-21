@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AdminLayout } from '@/components/layouts';
 import { Loading } from '@/components/ui';
+import { ContextHelp } from '@/components/help/ContextHelp';
 import { getFormResponses, type FormResponseWithStudent } from '@/lib/api/form-responses';
 import { getFormPeriods } from '@/lib/api/form-periods';
 import { useMasterData } from '@/contexts/MasterDataContext';
@@ -545,6 +546,40 @@ export default function ResponsesPage() {
   return (
     <AdminLayout headerTitle="回答管理">
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* コンテキストヘルプ */}
+        <div className="flex justify-end mb-2">
+          <ContextHelp
+            searchQuery="回答"
+            topics={[
+              {
+                title: '回答を生徒に紐付ける',
+                description: '保護者からの回答を該当生徒に関連付けます。',
+                steps: [
+                  '未紐付けの回答を見つける',
+                  '回答行をクリック、または「詳細」リンクから詳細ページへ移動',
+                  '詳細ページで紐付け操作を実行',
+                ],
+              },
+              {
+                title: '回答をフィルタ・検索する',
+                description: 'フォーム種別や期間で回答を絞り込みます。',
+                steps: [
+                  '上部のクイックフィルタ（未処理・未計上等）を選択',
+                  'フォーム種別・期間・学年で更に絞り込み',
+                ],
+              },
+              {
+                title: '回答の詳細を確認する',
+                description: '個別の回答内容と処理状況を確認します。',
+                steps: [
+                  '生徒別ビュー: 回答行をクリックで詳細ページへ',
+                  '一覧ビュー: 「詳細」リンクをクリック',
+                ],
+              },
+            ]}
+          />
+        </div>
+
         {errorMessage && (
           <div className="mb-4 p-4 bg-danger/20 border border-danger rounded-lg">
             <p className="text-sm text-danger">{errorMessage}</p>

@@ -5,6 +5,7 @@ import { AdminLayout } from '@/components/layouts';
 import { useAuth } from '@/contexts/AuthContext';
 import { EmbedTokenManager } from '@/components/settings/EmbedTokenManager';
 import { ChevronRight } from 'lucide-react';
+import { ContextHelp } from '@/components/help/ContextHelp';
 import {
   User,
   Users,
@@ -181,6 +182,41 @@ export default function SettingsPage() {
   return (
     <AdminLayout headerTitle="設定">
       <div className="max-w-5xl mx-auto py-8 px-4">
+        {/* コンテキストヘルプ */}
+        <div className="flex justify-end mb-2">
+          <ContextHelp
+            searchQuery="設定"
+            topics={[
+              {
+                title: '教室情報を編集する',
+                description: '教室名やメール通知先を変更します。',
+                steps: [
+                  '「教室情報」をクリック',
+                  '教室名・通知メール・教室コードを編集',
+                  '「保存」で変更を確定',
+                ],
+              },
+              {
+                title: 'フォーム期間を設定する',
+                description: '保護者向けフォームの受付期間を管理します。',
+                steps: [
+                  '「保護者ポータル」セクションの「フォーム期間設定」をクリック',
+                  '対象フォームの受付開始日・終了日を設定',
+                  '「保存」で変更を確定',
+                ],
+              },
+              {
+                title: 'ポータルのURLを確認する',
+                description: '保護者ポータルの公開リンクを取得します。',
+                steps: [
+                  '「ポータル・フォーム設定」をクリック',
+                  '教室ごとのポータルURLをコピー',
+                ],
+              },
+            ]}
+          />
+        </div>
+
         <div className="space-y-8">
           {visibleGroups.map((group) => (
             <section key={group.title}>

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, FileText, Filter, Plus, Printer, Search, Trash2, X } from 'lucide-react';
+import { ContextHelp } from '@/components/help/ContextHelp';
 import { AdminLayout } from '@/components/layouts';
 import { InlineLoading, Loading } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
@@ -382,7 +383,40 @@ export default function CourseProposalsPage() {
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-lg font-bold text-text-heading">講習提案書</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg font-bold text-text-heading">講習提案書</h1>
+              <ContextHelp
+                searchQuery="提案書"
+                topics={[
+                  {
+                    title: '提案書を新規作成する',
+                    description: '生徒ごとの講習提案書を作成します。',
+                    steps: [
+                      '「新規作成」ボタンをクリック',
+                      '対象生徒を選択',
+                      '教科・コマ数を入力して保存',
+                    ],
+                  },
+                  {
+                    title: '提案書を印刷する',
+                    description: '保護者配布用にPDF印刷します。',
+                    steps: [
+                      '印刷したい提案書を選択',
+                      '「印刷」ボタンをクリック',
+                      'ブラウザの印刷ダイアログで出力',
+                    ],
+                  },
+                  {
+                    title: '提案書のステータスを更新する',
+                    description: '下書き→提案済→公開の流れを管理します。',
+                    steps: [
+                      '生徒名をクリックして提案書の詳細ページを開く',
+                      'ステータスを変更して保存',
+                    ],
+                  },
+                ]}
+              />
+            </div>
             {!loading && filtered.length > 0 && (
               <p className="text-xs text-text-muted mt-0.5">
                 {byStudent.size}名 / {filtered.length}件

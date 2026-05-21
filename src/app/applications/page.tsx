@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
 import { Loading, InlineLoading } from '@/components/ui';
+import { ContextHelp } from '@/components/help/ContextHelp';
 import { ApplicationTable, ApplicationFiltersPanel, ApplicationItemAccordion } from '@/components/applications';
 import { StudentDetailModal } from '@/components/students/StudentDetailModal';
 import {
@@ -315,6 +316,30 @@ export default function ApplicationsPage() {
     <AdminLayout
       headerTitle="申込状況管理"
     >
+      {/* コンテキストヘルプ */}
+      <div className="flex justify-end mb-2">
+        <ContextHelp
+          searchQuery="申込"
+          topics={[
+            {
+              title: '申込状況を確認する',
+              description: '生徒ごとの講習申込み状況を一覧で確認します。',
+              steps: [
+                '検索・学年・項目のフィルタで絞り込み',
+                '生徒行をクリックして詳細を確認',
+              ],
+            },
+            {
+              title: '申込項目を管理する',
+              description: '申込みの選択肢となる項目を追加・編集します。',
+              steps: [
+                '「項目管理」アコーディオンを開く',
+                '項目の追加・編集・削除を実行',
+              ],
+            },
+          ]}
+        />
+      </div>
 
       {/* エラーメッセージ */}
       {errorMessage && (

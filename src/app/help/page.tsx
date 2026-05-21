@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { useAuth } from '@/contexts/AuthContext';
@@ -28,6 +29,7 @@ import {
   Lightbulb,
   AlertTriangle,
   ArrowRight,
+  BookOpenCheck,
   type LucideIcon,
 } from 'lucide-react';
 import type { UserRole } from '@/types/database';
@@ -1427,6 +1429,73 @@ const FAQ_DATA: FaqCategory[] = [
         keywords: ['オフライン', '接続', 'ネット', '切れた'],
       },
       {
+        question: '保護者ポータルでフォームが表示されない',
+        answer: 'ポータルURLは正しいのにフォームが表示されない場合の確認チェックリストです。',
+        steps: [
+          'フォーム期間が作成されているか確認（設定 > 保護者ポータル > 各フォーム種類）',
+          'フォーム期間の「公開」トグルがONになっているか確認',
+          '受付開始日〜終了日が現在の日付を含んでいるか確認（終了日を過ぎると自動非表示）',
+          'ポータル設定で該当フォームが公開対象になっているか確認',
+          '正しい教室のポータルURLを使用しているか確認',
+        ],
+        tips: [
+          'フォームが表示されるには「フォーム期間が公開中」かつ「ポータル設定でフォーム公開ON」の両方が必要です',
+          'ブラウザのキャッシュが原因の場合もあるため、シークレットモードで確認してみてください',
+        ],
+        keywords: ['ポータル', '表示されない', 'フォーム', 'エラー', '保護者'],
+        roles: ['admin', 'manager'],
+        related: ['フォーム期間の設定方法', 'ポータルに表示するフォームの設定'],
+      },
+      {
+        question: 'アラートが表示されない・消えない',
+        answer: 'アラートの表示に関するよくある問題と解決方法です。',
+        steps: [
+          '【表示されない場合】アラート設定でそのアラート種別が「有効」になっているか確認',
+          '【表示されない場合】しきい値が適切か確認（例: 成績低下の基準が厳しすぎる場合は反応しない）',
+          '【消えない場合】アラートの条件がまだ満たされていないか確認（対応済みにしても条件が継続していると再表示）',
+          '【消えない場合】ブラウザをリロードして最新状態を取得',
+        ],
+        tips: [
+          '「対応済み」にしても根本原因を解消しなければ再表示されます（例: 成績を入力すれば「成績未入力」アラートは消える）',
+          'アラート設定の変更には室長以上の権限が必要です',
+        ],
+        keywords: ['アラート', '表示されない', '消えない', 'トラブル'],
+        roles: ['admin', 'manager'],
+        related: ['アラートの種類と意味', 'アラート設定のカスタマイズ'],
+      },
+      {
+        question: 'CSVインポートでエラーが出る',
+        answer: 'CSVインポート時のよくあるエラーと対処法です。',
+        steps: [
+          '「文字化け」が起きる → CSVをUTF-8で保存し直す（Excelの場合「CSV UTF-8」形式で保存）',
+          '「列数が一致しない」→ テンプレートの列構成と合っているか確認。余分なカンマがないかチェック',
+          '「重複エラー」→ 既に同名の生徒が登録済み。重複チェック画面で確認して「スキップ」または「上書き」を選択',
+          '「日付フォーマットエラー」→ 日付はYYYY-MM-DD形式（例: 2026-04-01）で入力',
+        ],
+        tips: [
+          '必ずテンプレートをダウンロードしてフォーマットを確認してから入力してください',
+          'Excel上でセルの書式が「日付」になっていると、CSV保存時に形式が変わる場合があります。「テキスト」形式に変更してから保存してください',
+        ],
+        keywords: ['CSV', 'エラー', 'インポート', '文字化け', '失敗'],
+        roles: ['admin', 'manager'],
+        related: ['CSV一括インポートの手順'],
+      },
+      {
+        question: '権限がなくて操作できない',
+        answer: '「権限がありません」と表示される場合の確認ポイントです。',
+        steps: [
+          '自分のロールを確認：ヘッダー右上の歯車アイコン → メニュー上部に表示名とロールが表示される',
+          '操作に必要なロールを確認：各ヘルプ項目に必要なロールが記載されている',
+          'ロールの変更が必要な場合は管理者に連絡',
+        ],
+        tips: [
+          '講師ロールでは、自分の出勤簿・マイバッジの確認と担当生徒の閲覧のみ可能です',
+          'メニューに項目が表示されない場合は、そのロールではアクセス権限がない機能です',
+        ],
+        keywords: ['権限', 'アクセス', '操作できない', 'ロール', '表示されない'],
+        related: ['ロール（権限）の種類'],
+      },
+      {
         question: 'ヘッダーメニューの構成（全体マップ）',
         answer: 'ヘッダーの各メニューからアクセスできる機能の全体像です。目的の機能がどこにあるかの早見表として使ってください。',
         steps: [
@@ -1448,6 +1517,29 @@ const FAQ_DATA: FaqCategory[] = [
       },
     ],
   },
+];
+
+interface GlossaryItem {
+  term: string;
+  reading?: string;
+  definition: string;
+}
+
+const GLOSSARY_DATA: GlossaryItem[] = [
+  { term: '換算内申', reading: 'かんさんないしん', definition: '各科目の評定を都立高校（65点満点）や神奈川県（45点満点）の入試基準に合わせて換算した内申点のこと。実技科目は2倍で計算されるなど、方式により計算方法が異なる。' },
+  { term: 'コマ種別', reading: 'こましゅべつ', definition: '授業1コマの出欠タイプ区分。「通常」「振替」「補習」「体験」など。座席表で色分け表示される。設定 > コマ種別設定で管理。' },
+  { term: '紐付け', reading: 'ひもづけ', definition: '保護者ポータルから送信された回答データを、システム上の生徒レコードと関連付ける操作。名前一致による自動紐付けと手動紐付けがある。' },
+  { term: 'フォーム期間', reading: 'ふぉーむきかん', definition: '各フォーム（面談希望・模試申込など）の受付開始日〜終了日の設定単位。公開すると保護者ポータルに表示される。期間外は自動非表示。' },
+  { term: '在籍状況', reading: 'ざいせきじょうきょう', definition: '生徒の現在のステータス。「在籍」「休会」「退会」の3種類。退会・休会の生徒は一覧のデフォルト表示から非表示になるが、データは保持される。' },
+  { term: '進行フィード', reading: 'しんこうふぃーど', definition: '授業ごとの進行状況（どの教材のどこまで進んだか）を時系列で記録するフィード。講師間の引き継ぎに活用する。' },
+  { term: '提案書', reading: 'ていあんしょ', definition: '講習時に生徒ごとの受講科目・コマ数・料金をまとめた保護者向け資料。講習管理から作成・印刷・PDF出力が可能。' },
+  { term: 'なりすまし', definition: '管理者が他のユーザー（室長・講師）として画面を操作できる機能。impersonate。そのユーザーに何が見えているかの確認やトラブルシューティングに使用。操作はログに記録される。' },
+  { term: 'ロール', definition: 'ユーザーの権限レベル。管理者（admin）・室長（manager）・講師（teacher）の3種類。ロールによってアクセスできるメニュー・機能が異なる。' },
+  { term: '休校日', reading: 'きゅうこうび', definition: '教室が休みになる日（祝日・年末年始・お盆など）。事前に登録しておくと、スケジュール一括生成時に自動でスキップされる。' },
+  { term: '教室コード', reading: 'きょうしつこーど', definition: '各教室に割り当てられた一意のコード。保護者ポータルのURL（/portal/[教室コード]）に使用される。教室設定で確認可能。' },
+  { term: '自動紐付け', reading: 'じどうひもづけ', definition: '保護者がフォームで入力した名前と、システム上の生徒名が一致した場合に自動で回答を生徒に関連付ける機能。表記揺れがある場合は手動紐付けが必要。' },
+  { term: '増コマ', reading: 'ぞうこま', definition: 'テスト対策などで通常の通塾コマ数に追加する授業のこと。保護者ポータルから増コマ申し込みフォームで申請可能。' },
+  { term: '会場模試 / 教室模試', reading: 'かいじょうもし / きょうしつもし', definition: '模試の実施形態。会場模試は外部会場で実施される公開模試、教室模試は教室内で実施するテスト。成績管理では両方の記録・偏差値推移を管理できる。' },
 ];
 
 const ROLE_LABELS: Record<RoleTag, string> = {
@@ -1692,10 +1784,13 @@ function FaqAccordion({
 
 export default function HelpPage() {
   const { profile } = useAuth();
-  const [searchQuery, setSearchQuery] = useState('');
+  const searchParams = useSearchParams();
+  const initialQuery = searchParams.get('q') || '';
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [roleFilter, setRoleFilter] = useState<RoleTag>('all');
   const [showMyRoleOnly, setShowMyRoleOnly] = useState(false);
+  const [showGlossary, setShowGlossary] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const myRole = mapUserRoleToTag(profile?.role as UserRole | undefined);
@@ -1741,6 +1836,15 @@ export default function HelpPage() {
   const totalResults = filteredData.reduce((sum, cat) => sum + cat.items.length, 0);
   const totalAll = FAQ_DATA.reduce((sum, cat) => sum + cat.items.length, 0);
   const isSearching = searchQuery.trim().length > 0;
+
+  const filteredGlossary = useMemo(() => {
+    if (!searchQuery.trim()) return GLOSSARY_DATA;
+    const terms = searchQuery.trim().toLowerCase().split(/\s+/);
+    return GLOSSARY_DATA.filter((item) => {
+      const target = `${item.term} ${item.reading || ''} ${item.definition}`.toLowerCase();
+      return terms.some((t) => target.includes(t));
+    });
+  }, [searchQuery]);
 
   const handleNavigateToQuestion = useCallback((question: string) => {
     setSearchQuery(question);
@@ -1904,6 +2008,46 @@ export default function HelpPage() {
             </div>
           )}
         </div>
+        {/* 用語集 */}
+        {(!selectedCategory || selectedCategory === 'glossary') && filteredGlossary.length > 0 && (
+          <div className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden bg-white dark:bg-gray-800">
+            <button
+              onClick={() => setShowGlossary(!showGlossary)}
+              className="w-full px-4 py-3 bg-[var(--surface)] border-b border-gray-200 dark:border-gray-700 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+            >
+              <BookOpenCheck className="w-5 h-5 text-[var(--primary)] shrink-0" />
+              <div className="flex-1 text-left">
+                <h2 className="text-base font-semibold text-[var(--headline)]">用語集</h2>
+                <p className="text-xs text-[var(--paragraph)] mt-0.5">システムで使われる専門用語の解説</p>
+              </div>
+              <span className="text-xs text-gray-400 mr-2">{filteredGlossary.length}件</span>
+              {showGlossary ? (
+                <ChevronUp className="w-4 h-4 text-gray-400 shrink-0" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
+              )}
+            </button>
+            {showGlossary && (
+              <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                {filteredGlossary.map((item, i) => (
+                  <div key={i} className="px-4 py-3">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-sm font-semibold text-[var(--headline)]">
+                        {highlightText(item.term, searchQuery)}
+                      </span>
+                      {item.reading && (
+                        <span className="text-[11px] text-gray-400">（{item.reading}）</span>
+                      )}
+                    </div>
+                    <p className="text-sm text-text-body mt-1 leading-relaxed">
+                      {highlightText(item.definition, searchQuery)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </AdminLayout>
   );

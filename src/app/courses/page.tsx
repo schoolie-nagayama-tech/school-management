@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { AlertCircle, ArrowUpDown, CheckSquare, ChevronRight, Copy, FileText, Plus, Search, Square, Trash2, X } from 'lucide-react';
+import { ContextHelp } from '@/components/help/ContextHelp';
 import { AdminLayout } from '@/components/layouts';
 import { Button, Loading, InlineLoading } from '@/components/ui';
 import { getCachedSeasonalCourses, createSeasonalCourse, deployCourseToSchools, deleteSeasonalCourse } from '@/lib/api/seasonalCourses';
@@ -446,6 +447,38 @@ export default function CoursesPage() {
       {/* ヘッダー + 検索・フィルタ・ソート（1行にまとめ） */}
       <div className="mb-3 flex items-center gap-3 flex-wrap">
         <h1 className="text-lg font-bold text-text-heading shrink-0">講習一覧</h1>
+        <ContextHelp
+          searchQuery="講習"
+          topics={[
+            {
+              title: '講習を新規作成する',
+              description: '季節講習のコースを登録します。',
+              steps: [
+                '右上の「+新規作成」ボタンをクリック',
+                '講習名、期、学年、教科などを入力',
+                '「保存」で講習を登録',
+              ],
+            },
+            {
+              title: '講習を全教室に展開する',
+              description: '作成した講習を各教室に一括配信します。',
+              steps: [
+                '展開したい講習にチェックを入れる',
+                '一括操作バーの「全教室に展開」をクリック',
+                '対象教室を確認して展開を実行',
+              ],
+            },
+            {
+              title: '講習を削除する',
+              description: '不要な講習を削除します。',
+              steps: [
+                '削除したい講習にチェックを入れる',
+                '一括操作バーの「削除」をクリック',
+                '確認ダイアログで削除を確定',
+              ],
+            },
+          ]}
+        />
 
         {!isLoading && courses.length > 0 && (
           <>

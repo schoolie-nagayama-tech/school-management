@@ -13,6 +13,7 @@ import { ToastContainer } from '@/components/ui';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui';
 import { Button, Loading } from '@/components/ui';
 import { Trash2, LogIn, Home } from 'lucide-react';
+import { ContextHelp } from '@/components/help/ContextHelp';
 import type { School, UserRole, UserProfile } from '@/types/database';
 import { USER_ROLE_LABELS, USER_ROLE_LEVELS } from '@/types/database';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
@@ -459,6 +460,37 @@ export default function UsersPage() {
               <Home className="w-5 h-5" />
             </Link>
             <h1 className="text-2xl font-bold text-text-heading">ユーザー管理</h1>
+            <ContextHelp
+              searchQuery="ユーザー"
+              topics={[
+                {
+                  title: 'ユーザーを追加する',
+                  description: '講師や管理者のアカウントを作成します。',
+                  steps: [
+                    '「+ユーザーを追加」ボタンをクリック',
+                    'メールアドレス・名前・ロールを入力',
+                    '表示されたログインID・パスワードを対象者に共有',
+                  ],
+                },
+                {
+                  title: '教室を追加・管理する',
+                  description: '教室の追加やデモ設定を管理します。',
+                  steps: [
+                    '「教室設定」タブに切り替え',
+                    '「+教室を追加」をクリック',
+                    '教室名とコードを入力して作成',
+                  ],
+                },
+                {
+                  title: 'ロール（権限）を変更する',
+                  description: 'ユーザーの操作権限を変更します。',
+                  steps: [
+                    'ユーザー行の「編集」ボタンをクリック',
+                    '編集モーダル内でロールを変更して保存',
+                  ],
+                },
+              ]}
+            />
           </div>
           {activeTab === 'users' && !isManager && (
             <Button onClick={() => setIsCreateDialogOpen(true)}>

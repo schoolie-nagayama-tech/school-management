@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
+import { ContextHelp } from '@/components/help/ContextHelp';
 import { Button, Loading } from '@/components/ui';
 import { ToastContainer } from '@/components/ui';
 import dynamic from 'next/dynamic';
@@ -731,6 +732,41 @@ export default function SchedulePage() {
   return (
     <AdminLayout headerTitle="座席表">
       <div className="space-y-6">
+        {/* コンテキストヘルプ */}
+        <div className="flex justify-end -mb-4">
+          <ContextHelp
+            searchQuery="座席表"
+            topics={[
+              {
+                title: '座席表の見方',
+                description: '日付ごとの時間帯×座席マスを表示します。',
+                steps: [
+                  '週カレンダーで表示週を切替',
+                  '各マスをクリックして生徒を配置',
+                  '講習フィルタで講習コマのみ表示も可能',
+                ],
+              },
+              {
+                title: '生徒をコマに配置する',
+                description: '空きマスに生徒を割り当てます。',
+                steps: [
+                  '空いているマスをクリック',
+                  '生徒選択ダイアログから生徒を選ぶ',
+                  '教科を選択して配置を確定',
+                ],
+              },
+              {
+                title: '時間帯を設定する',
+                description: 'コマの開始・終了時間を管理します。',
+                steps: [
+                  '「設定」→「コマ時間設定」ページを開く',
+                  '時間帯の追加・編集・削除を実行',
+                ],
+              },
+            ]}
+          />
+        </div>
+
         {selectedSchoolId === 'all' && (
           <SchoolSwitcher
             schools={schools}

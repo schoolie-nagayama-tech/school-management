@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AdminLayout } from '@/components/layouts';
 import { Loading, InlineLoading } from '@/components/ui';
+import { ContextHelp } from '@/components/help/ContextHelp';
 import { CourseProgressDashboard, CourseProgressTable } from '@/components/course-progress';
 import { SeasonYearSelector } from '@/components/course-shared/SeasonYearSelector';
 import { TemplateApplyDialog } from '@/components/course-shared/TemplateApplyDialog';
@@ -689,6 +690,41 @@ export default function CourseProgressPage() {
   return (
     <AdminLayout headerTitle="講習 進捗管理">
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* コンテキストヘルプ */}
+        <div className="flex justify-end mb-2">
+          <ContextHelp
+            searchQuery="進捗管理"
+            topics={[
+              {
+                title: '進捗を入力する',
+                description: '生徒ごとの講習進捗を記録します。',
+                steps: [
+                  '期・年を選択して対象データを表示',
+                  'テーブル内のセルをクリックして編集',
+                  '進捗ステータスやコマ数を入力',
+                ],
+              },
+              {
+                title: 'テンプレートを適用する',
+                description: '保存済みテンプレートから一括設定します。',
+                steps: [
+                  '「テンプレート適用」ボタンをクリック',
+                  '適用するテンプレートを選択',
+                  '上書き範囲を確認して適用',
+                ],
+              },
+              {
+                title: 'ダッシュボードで全体把握する',
+                description: '教室全体の進捗状況をグラフで確認します。',
+                steps: [
+                  'ページ上部のダッシュボードで完了率を確認',
+                  '遅れている生徒を素早く特定',
+                ],
+              },
+            ]}
+          />
+        </div>
+
         {isAllSelected && (
           <SchoolSwitcher
             schools={availableSchools}
