@@ -247,55 +247,6 @@ export default function CourseProposalsPage() {
     router.push(`/students/${studentId}/proposals/new?season=${season}&year=${currentYear}`);
   };
 
-  if (permissionLoading) {
-    return (
-      <AdminLayout headerTitle="提案書">
-        <Loading />
-      </AdminLayout>
-    );
-  }
-
-  if (!hasPermission) {
-    return (
-      <AdminLayout headerTitle="提案書">
-        <AccessDenied />
-      </AdminLayout>
-    );
-  }
-
-  if (printMode) {
-    return (
-      <AdminLayout headerTitle="提案書">
-        <div className="max-w-5xl mx-auto">
-          <div className="mb-4 flex gap-2 print:hidden">
-            <button
-              onClick={() => setPrintMode(false)}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border-default text-text-body rounded-lg hover:bg-surface-hover transition-colors duration-150"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              一覧に戻る
-            </button>
-            <button
-              onClick={() => window.print()}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-ink text-text-on-primary rounded-lg hover:brightness-[0.85] transition-[filter] duration-150"
-            >
-              <Printer className="w-3.5 h-3.5" />
-              印刷
-            </button>
-            <span className="text-sm text-text-muted self-center ml-2">{printStudentName} ({printData.length}件)</span>
-          </div>
-          <div className="space-y-8">
-            {printData.map((data, i) => (
-              <div key={i} className="print:break-before-page first:print:break-before-auto">
-                <ProposalPrintView {...data} />
-              </div>
-            ))}
-          </div>
-        </div>
-      </AdminLayout>
-    );
-  }
-
   // フィルタ用の選択肢を proposals から動的に生成
   const filterOptions = useMemo(() => {
     const subjects = new Set<string>();
@@ -375,6 +326,55 @@ export default function CourseProposalsPage() {
   for (const p of proposals) {
     const key = p.status === 'approved' ? 'sent' : p.status;
     statusCounts[key] = (statusCounts[key] ?? 0) + 1;
+  }
+
+  if (permissionLoading) {
+    return (
+      <AdminLayout headerTitle="提案書">
+        <Loading />
+      </AdminLayout>
+    );
+  }
+
+  if (!hasPermission) {
+    return (
+      <AdminLayout headerTitle="提案書">
+        <AccessDenied />
+      </AdminLayout>
+    );
+  }
+
+  if (printMode) {
+    return (
+      <AdminLayout headerTitle="提案書">
+        <div className="max-w-5xl mx-auto">
+          <div className="mb-4 flex gap-2 print:hidden">
+            <button
+              onClick={() => setPrintMode(false)}
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border-default text-text-body rounded-lg hover:bg-surface-hover transition-colors duration-150"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              一覧に戻る
+            </button>
+            <button
+              onClick={() => window.print()}
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-ink text-text-on-primary rounded-lg hover:brightness-[0.85] transition-[filter] duration-150"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              印刷
+            </button>
+            <span className="text-sm text-text-muted self-center ml-2">{printStudentName} ({printData.length}件)</span>
+          </div>
+          <div className="space-y-8">
+            {printData.map((data, i) => (
+              <div key={i} className="print:break-before-page first:print:break-before-auto">
+                <ProposalPrintView {...data} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </AdminLayout>
+    );
   }
 
   return (
