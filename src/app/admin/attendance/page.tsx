@@ -88,14 +88,14 @@ type SortOrder = 'name-asc' | 'name-desc' | 'amount-desc';
 
 export default function AttendanceManagementPage() {
   const router = useRouter();
-  const { profile, schoolIds: userSchoolIds } = useAuth();
+  // グローバルの教室選択に連動（ヘッダーのドロップダウンと同期）
+  const { profile, schoolIds: userSchoolIds, selectedSchoolId, setSelectedSchoolId } = useAuth();
   const { toasts, removeToast, success, error: toastError } = useToast();
 
   const isManager = profile?.role === 'manager';
   const isAdmin = profile?.role === 'admin' || profile?.role === 'owner';
 
   const [schools, setSchools] = useState<School[]>([]);
-  const [selectedSchoolId, setSelectedSchoolId] = useState<string>('all');
   const [selectedSchool, setSelectedSchool] = useState<School | null>(null);
   const [yearMonth, setYearMonth] = useState(getCurrentYearMonth());
   const [attendanceTypes, setAttendanceTypes] = useState<AttendanceType[]>([]);
@@ -142,13 +142,12 @@ export default function AttendanceManagementPage() {
     if (masterSchools.length > 0) setSchools(masterSchools);
   }, [masterSchools]);
 
-  useEffect(() => {
-    if (allowedSchools.length === 1 && selectedSchoolId === 'all') {
-      setSelectedSchoolId(allowedSchools[0].id);
-    }
-  }, [allowedSchools, selectedSchoolId]);
-
   const fetchData = useCallback(async () => {
+    // グローバル教室選択の初期化待ち（initialState isLoading=true なので false に戻す）
+    if (selectedSchoolId === null) {
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     try {
       const schoolId = selectedSchoolId === 'all' ? null : selectedSchoolId;
@@ -197,7 +196,7 @@ export default function AttendanceManagementPage() {
   }, [fetchData]);
 
   useEffect(() => {
-    if (selectedSchoolId === 'all') {
+    if (!selectedSchoolId || selectedSchoolId === 'all') {
       setSelectedSchool(null);
     } else {
       setSelectedSchool(allowedSchools.find((s) => s.id === selectedSchoolId) || null);
@@ -371,7 +370,7 @@ export default function AttendanceManagementPage() {
       toastError('旧コマ給と新コマ給を入力してください');
       return;
     }
-    const effectiveSchoolIds = selectedSchoolId === 'all'
+    const effectiveSchoolIds = !selectedSchoolId || selectedSchoolId === 'all'
       ? userSchoolIds
       : [selectedSchoolId];
     try {
@@ -391,7 +390,7 @@ export default function AttendanceManagementPage() {
   const handleClearKomaChange = async (sheet: SummaryRow) => {
     if (!sheet.teacher?.id && !sheet.teacher_id) return;
     const teacherId = sheet.teacher?.id || sheet.teacher_id!;
-    const effectiveSchoolIds = selectedSchoolId === 'all'
+    const effectiveSchoolIds = !selectedSchoolId || selectedSchoolId === 'all'
       ? userSchoolIds
       : [selectedSchoolId];
     try {
@@ -529,7 +528,7 @@ export default function AttendanceManagementPage() {
     );
   };
 
-  const showSchoolColumn = selectedSchoolId === 'all';
+  const showSchoolColumn = !selectedSchoolId || selectedSchoolId === 'all';
 
   const formatLateEarlyDate = (dateStr: string): string => {
     const date = new Date(dateStr);
@@ -645,10 +644,10 @@ export default function AttendanceManagementPage() {
                   </div>
                 )}
                 <div className="relative w-48">
-                  <Select value={selectedSchoolId} onValueChange={(v) => setSelectedSchoolId(v)}>
+                  <Select value={selectedSchoolId ?? 'all'} onValueChange={(v) => setSelectedSchoolId(v)}>
                     <SelectTrigger>
                       <SelectValue placeholder="教室を選択">
-                        {selectedSchoolId === 'all' ? '全教室' : allowedSchools.find((s) => s.id === selectedSchoolId)?.name}
+                        {!selectedSchoolId || selectedSchoolId === 'all' ? '全教室' : allowedSchools.find((s) => s.id === selectedSchoolId)?.name}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
