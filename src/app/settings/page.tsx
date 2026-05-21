@@ -7,6 +7,7 @@ import { EmbedTokenManager } from '@/components/settings/EmbedTokenManager';
 import { ChevronRight } from 'lucide-react';
 import {
   User,
+  Users,
   School,
   FileText,
   Globe,
@@ -29,96 +30,134 @@ interface SettingsItem {
   requiresManager?: boolean;
 }
 
-const settingsItems: SettingsItem[] = [
+interface SettingsGroup {
+  title: string;
+  items: SettingsItem[];
+}
+
+// カテゴリごとに設定項目をグルーピング
+const settingsGroups: SettingsGroup[] = [
   {
-    href: '/settings/account',
-    icon: <User className="w-5 h-5" />,
-    label: 'アカウント設定',
-    description: 'プロフィール・パスワード・Google連携',
+    title: 'アカウント・教室',
+    items: [
+      {
+        href: '/settings/account',
+        icon: <User className="w-5 h-5" />,
+        label: 'アカウント設定',
+        description: 'プロフィール・パスワード・Google連携',
+      },
+      {
+        href: '/settings/school',
+        icon: <School className="w-5 h-5" />,
+        label: '教室情報',
+        description: '教室名・住所・連絡先',
+        requiresManager: true,
+      },
+      {
+        href: '/users',
+        icon: <Users className="w-5 h-5" />,
+        label: 'ユーザー管理',
+        description: 'スタッフの追加・権限設定・教室割り当て',
+        requiresManager: true,
+      },
+    ],
   },
   {
-    href: '/settings/school',
-    icon: <School className="w-5 h-5" />,
-    label: '教室情報',
-    description: '教室名・住所・連絡先',
-    requiresManager: true,
+    title: '授業・教材',
+    items: [
+      {
+        href: '/settings/subjects',
+        icon: <ListChecks className="w-5 h-5" />,
+        label: '科目設定',
+        description: '成績ページで使う科目の追加・編集・削除',
+        requiresManager: true,
+      },
+      {
+        href: '/settings/textbooks',
+        icon: <BookOpen className="w-5 h-5" />,
+        label: '教材マスタ',
+        description: '教材・カリキュラムの登録・編集',
+        requiresManager: true,
+      },
+      {
+        href: '/admin/settings/attendance-types',
+        icon: <Clock className="w-5 h-5" />,
+        label: 'コマ種別設定',
+        description: '授業コマの種別（通常・補習など）',
+        requiresManager: true,
+      },
+      {
+        href: '/settings/time-slots',
+        icon: <Clock className="w-5 h-5" />,
+        label: 'コマ時間設定',
+        description: 'コマ番号・開始時刻・終了時刻の管理',
+        requiresManager: true,
+      },
+    ],
   },
   {
-    href: '/settings/portal',
-    icon: <Globe className="w-5 h-5" />,
-    label: 'ポータル・フォーム設定',
-    description: '保護者ポータルのメニュー・公開設定',
-    requiresManager: true,
+    title: '講習・研修',
+    items: [
+      {
+        href: '/settings/seasonal-shifts',
+        icon: <Calendar className="w-5 h-5" />,
+        label: '講習シフト設定',
+        description: '季節講習のシフト管理',
+        requiresManager: true,
+      },
+      {
+        href: '/settings/trainings',
+        icon: <GraduationCap className="w-5 h-5" />,
+        label: '研修マスタ',
+        description: '研修・講習のマスタ登録',
+        requiresManager: true,
+      },
+    ],
   },
   {
-    href: '/settings/forms/moshi',
-    icon: <FileText className="w-5 h-5" />,
-    label: 'フォーム期間設定',
-    description: '模試・模擬・集回数・曜日・相談・増コマの受付期間',
-    requiresManager: true,
+    title: '保護者ポータル',
+    items: [
+      {
+        href: '/settings/portal',
+        icon: <Globe className="w-5 h-5" />,
+        label: 'ポータル・フォーム設定',
+        description: '保護者ポータルのメニュー・公開設定',
+        requiresManager: true,
+      },
+      {
+        href: '/settings/forms/moshi',
+        icon: <FileText className="w-5 h-5" />,
+        label: 'フォーム期間設定',
+        description: '模試・模擬・集回数・曜日・相談・増コマの受付期間',
+        requiresManager: true,
+      },
+    ],
   },
   {
-    href: '/settings/textbooks',
-    icon: <BookOpen className="w-5 h-5" />,
-    label: '教材マスタ管理',
-    description: '教材・カリキュラムの登録・編集',
-    requiresManager: true,
-  },
-  {
-    href: '/settings/trainings',
-    icon: <GraduationCap className="w-5 h-5" />,
-    label: '研修マスタ管理',
-    description: '研修・講習のマスタ登録',
-    requiresManager: true,
-  },
-  {
-    href: '/settings/seasonal-shifts',
-    icon: <Calendar className="w-5 h-5" />,
-    label: '講習シフト設定',
-    description: '季節講習のシフト管理',
-    requiresManager: true,
-  },
-  {
-    href: '/settings/time-slots',
-    icon: <Clock className="w-5 h-5" />,
-    label: 'コマ時間設定',
-    description: 'コマ番号・開始時刻・終了時刻の管理',
-    requiresManager: true,
-  },
-  {
-    href: '/admin/settings/attendance-types',
-    icon: <Clock className="w-5 h-5" />,
-    label: 'コマ種別設定',
-    description: '授業コマの種別（通常・補習など）',
-    requiresManager: true,
-  },
-  {
-    href: '/settings/subjects',
-    icon: <ListChecks className="w-5 h-5" />,
-    label: '成績表科目マスタ',
-    description: '成績ページで使う科目の追加・編集・削除',
-    requiresManager: true,
-  },
-  {
-    href: '/settings/alerts',
-    icon: <Bell className="w-5 h-5" />,
-    label: 'アラート設定',
-    description: '成績低下・面談・申込・宿題未実施・遅刻などの発火条件',
-    requiresManager: true,
-  },
-  {
-    href: '/settings/integrations',
-    icon: <Link2 className="w-5 h-5" />,
-    label: '外部サービス連携',
-    description: 'Googleカレンダー連携状況の確認',
-    requiresAdmin: true,
-  },
-  {
-    href: '/admin/settings/security',
-    icon: <Shield className="w-5 h-5" />,
-    label: 'セキュリティ設定',
-    description: 'プライバシースクリーン・セッション管理',
-    requiresAdmin: true,
+    title: '通知・セキュリティ',
+    items: [
+      {
+        href: '/settings/alerts',
+        icon: <Bell className="w-5 h-5" />,
+        label: 'アラート設定',
+        description: '成績低下・面談・申込・宿題未実施・遅刻などの発火条件',
+        requiresManager: true,
+      },
+      {
+        href: '/admin/settings/security',
+        icon: <Shield className="w-5 h-5" />,
+        label: 'セキュリティ設定',
+        description: 'プライバシースクリーン・セッション管理',
+        requiresAdmin: true,
+      },
+      {
+        href: '/settings/integrations',
+        icon: <Link2 className="w-5 h-5" />,
+        label: '外部サービス連携',
+        description: 'Googleカレンダー連携状況の確認',
+        requiresAdmin: true,
+      },
+    ],
   },
 ];
 
@@ -127,31 +166,46 @@ export default function SettingsPage() {
   const isAdmin = profile?.role === 'admin' || profile?.role === 'owner';
   const isManager = isAdmin || profile?.role === 'manager';
 
-  const visibleItems = settingsItems.filter((item) => {
-    if (item.requiresAdmin && !isAdmin) return false;
-    if (item.requiresManager && !isManager) return false;
-    return true;
-  });
+  // 権限でフィルタしたグループ（項目が0件のグループは非表示）
+  const visibleGroups = settingsGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => {
+        if (item.requiresAdmin && !isAdmin) return false;
+        if (item.requiresManager && !isManager) return false;
+        return true;
+      }),
+    }))
+    .filter((group) => group.items.length > 0);
 
   return (
     <AdminLayout headerTitle="設定">
       <div className="max-w-5xl mx-auto py-8 px-4">
-        <div className="space-y-2">
-          {visibleItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="flex items-center gap-4 p-4 bg-surface-raised border border-border rounded-lg hover:bg-surface hover:border-border transition-colors duration-150"
-            >
-              <div className="flex-shrink-0 w-10 h-10 bg-surface-hover rounded-lg flex items-center justify-center text-text-body">
-                {item.icon}
+        <div className="space-y-8">
+          {visibleGroups.map((group) => (
+            <section key={group.title}>
+              <h2 className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-2 px-1">
+                {group.title}
+              </h2>
+              <div className="space-y-1.5">
+                {group.items.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="flex items-center gap-4 p-4 bg-surface-raised border border-border rounded-lg hover:bg-surface hover:border-border transition-colors duration-150"
+                  >
+                    <div className="flex-shrink-0 w-10 h-10 bg-surface-hover rounded-lg flex items-center justify-center text-text-body">
+                      {item.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-text-heading">{item.label}</div>
+                      <div className="text-sm text-text-muted">{item.description}</div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-text-faint flex-shrink-0" />
+                  </Link>
+                ))}
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-text-heading">{item.label}</div>
-                <div className="text-sm text-text-muted">{item.description}</div>
-              </div>
-              <ChevronRight className="w-5 h-5 text-text-faint flex-shrink-0" />
-            </Link>
+            </section>
           ))}
         </div>
 

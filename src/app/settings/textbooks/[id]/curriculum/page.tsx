@@ -13,8 +13,9 @@ import {
   createCurriculumItem,
   updateCurriculumItem,
   deleteCurriculumItem,
+  updateTextbook,
 } from '@/lib/api/textbooks';
-import type { Textbook, CurriculumItem, CurriculumItemInsert } from '@/types/database';
+import type { Textbook, CurriculumItem, CurriculumItemInsert, TextbookUpdate } from '@/types/database';
 import {
   Plus,
   Edit2,
@@ -23,6 +24,10 @@ import {
   GripVertical,
   Download,
   Upload,
+  Settings,
+  CheckSquare,
+  Square,
+  MinusSquare,
 } from 'lucide-react';
 
 const ITEM_TYPES: { value: string; label: string; color: string }[] = [
@@ -57,6 +62,22 @@ export default function CurriculumPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<ItemForm>(emptyForm);
   const [saving, setSaving] = useState(false);
+
+  // 教材情報編集モーダル
+  const [showTextbookModal, setShowTextbookModal] = useState(false);
+  const [textbookForm, setTextbookForm] = useState({
+    name: '',
+    publisher: '',
+    school_type: '',
+    grade: '',
+    subject: '',
+  });
+  const [textbookSaving, setTextbookSaving] = useState(false);
+
+  // 選択削除
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   // Bulk import
   const [showBulkModal, setShowBulkModal] = useState(false);
@@ -218,6 +239,87 @@ export default function CurriculumPage() {
     }
   };
 
+  // 教材情報編集
+  const openTextbookModal = () => {
+    if (!textbook) return;
+    setTextbookForm({
+      name: textbook.name || '',
+      publisher: textbook.publisher || '',
+      school_type: textbook.school_type || '',
+      grade: textbook.grade || '',
+      subject: textbook.subject || '',
+    });
+    setShowTextbookModal(true);
+  };
+
+  const handleTextbookSave = async () => {
+    if (!textbookForm.name.trim()) {
+      toastError('教材名を入力してください');
+      return;
+    }
+    setTextbookSaving(true);
+    try {
+      const update: TextbookUpdate = {
+        name: textbookForm.name.trim(),
+        publisher: textbookForm.publisher.trim() || null,
+        school_type: textbookForm.school_type || null,
+        grade: textbookForm.grade || null,
+        subject: textbookForm.subject || null,
+      };
+      await updateTextbook(textbookId, update);
+      toastSuccess('教材情報を更新しました');
+      setShowTextbookModal(false);
+      loadData();
+    } catch (e) {
+      toastError(`更新に失敗しました: ${e instanceof Error ? e.message : '不明なエラー'}`);
+    } finally {
+      setTextbookSaving(false);
+    }
+  };
+
+  // 選択削除
+  const toggleSelection = (id: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === items.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(items.map(i => i.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!window.confirm(`選択した${selectedIds.size}件の項目を削除しますか？`)) return;
+    setBulkDeleting(true);
+    try {
+      const ids = Array.from(selectedIds);
+      for (const id of ids) {
+        await deleteCurriculumItem(id);
+      }
+      toastSuccess(`${selectedIds.size}件の項目を削除しました`);
+      setSelectedIds(new Set());
+      setSelectionMode(false);
+      loadData();
+    } catch (e) {
+      toastError(`削除に失敗しました: ${e instanceof Error ? e.message : '不明なエラー'}`);
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
+
+  const exitSelectionMode = () => {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+  };
+
   // CSV Export
   const handleExport = () => {
     if (items.length === 0) return;
@@ -258,7 +360,16 @@ export default function CurriculumPage() {
             <Loading size="sm" label="読み込み中..." />
           ) : textbook ? (
             <>
-              <h1 className="text-xl font-bold text-text-heading">{textbook.name}</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold text-text-heading">{textbook.name}</h1>
+                <button
+                  onClick={openTextbookModal}
+                  className="p-1.5 text-text-muted hover:text-ink hover:bg-surface-hover rounded transition-colors duration-150"
+                  title="教材情報を編集"
+                >
+                  <Settings className="w-4 h-4" />
+                </button>
+              </div>
               <div className="flex items-center gap-2 mt-1 text-sm text-text-muted">
                 {textbook.publisher && <span>{textbook.publisher}</span>}
                 {textbook.school_type && <span className="px-1.5 py-0.5 bg-surface-hover rounded text-xs">{textbook.school_type}</span>}
@@ -274,27 +385,59 @@ export default function CurriculumPage() {
         {/* Actions */}
         {textbook && (
           <div className="flex items-center gap-2 mb-4">
-            <button
-              onClick={openAddModal}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-ink text-white text-sm rounded-lg hover:bg-ink/80 transition-colors duration-150"
-            >
-              <Plus className="w-4 h-4" />項目を追加
-            </button>
-            <button
-              onClick={() => setShowBulkModal(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-2 border border-border text-sm text-text-heading rounded-lg hover:bg-surface transition-colors duration-150"
-            >
-              <Upload className="w-4 h-4" />一括登録
-            </button>
-            {items.length > 0 && (
-              <button
-                onClick={handleExport}
-                className="inline-flex items-center gap-1.5 px-3 py-2 border border-border text-sm text-text-heading rounded-lg hover:bg-surface transition-colors duration-150"
-              >
-                <Download className="w-4 h-4" />CSV出力
-              </button>
+            {selectionMode ? (
+              <>
+                <button
+                  onClick={handleBulkDelete}
+                  disabled={selectedIds.size === 0 || bulkDeleting}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors duration-150"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  {bulkDeleting ? '削除中...' : `${selectedIds.size}件を削除`}
+                </button>
+                <button
+                  onClick={exitSelectionMode}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 border border-border text-sm text-text-heading rounded-lg hover:bg-surface transition-colors duration-150"
+                >
+                  キャンセル
+                </button>
+                <span className="text-sm text-text-muted ml-auto">
+                  {selectedIds.size} / {items.length}件 選択中
+                </span>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={openAddModal}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-ink text-white text-sm rounded-lg hover:bg-ink/80 transition-colors duration-150"
+                >
+                  <Plus className="w-4 h-4" />項目を追加
+                </button>
+                <button
+                  onClick={() => setShowBulkModal(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 border border-border text-sm text-text-heading rounded-lg hover:bg-surface transition-colors duration-150"
+                >
+                  <Upload className="w-4 h-4" />一括登録
+                </button>
+                {items.length > 0 && (
+                  <>
+                    <button
+                      onClick={handleExport}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 border border-border text-sm text-text-heading rounded-lg hover:bg-surface transition-colors duration-150"
+                    >
+                      <Download className="w-4 h-4" />CSV出力
+                    </button>
+                    <button
+                      onClick={() => setSelectionMode(true)}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 border border-border text-sm text-text-heading rounded-lg hover:bg-surface transition-colors duration-150"
+                    >
+                      <CheckSquare className="w-4 h-4" />選択削除
+                    </button>
+                  </>
+                )}
+                <span className="text-sm text-text-muted ml-auto">{items.length}件</span>
+              </>
             )}
-            <span className="text-sm text-text-muted ml-auto">{items.length}件</span>
           </div>
         )}
 
@@ -314,25 +457,50 @@ export default function CurriculumPage() {
             <table className="w-full">
               <thead>
                 <tr className="bg-surface border-infoorderorder border-border">
-                  <th className="w-8 px-2"></th>
+                  {selectionMode ? (
+                    <th className="w-10 px-2 text-center">
+                      <button onClick={toggleSelectAll} className="p-1 text-text-muted hover:text-ink">
+                        {selectedIds.size === items.length
+                          ? <CheckSquare className="w-4 h-4 text-ink" />
+                          : selectedIds.size > 0
+                            ? <MinusSquare className="w-4 h-4 text-ink" />
+                            : <Square className="w-4 h-4" />}
+                      </button>
+                    </th>
+                  ) : (
+                    <th className="w-8 px-2"></th>
+                  )}
                   <th className="text-text-dangeraintenter px-3 py-2.5 text-xs font-medium text-text-muted w-16">No.</th>
                   <th className="text-left px-3 py-2.5 text-xs font-medium text-text-muted">タイトル</th>
                   <th className="text-text-dangeraintenter px-3 py-2.5 text-xs font-medium text-text-muted w-24">種別</th>
-                  <th className="text-text-dangeraintenter px-3 py-2.5 text-xs font-medium text-text-muted w-24">操作</th>
+                  {!selectionMode && (
+                    <th className="text-text-dangeraintenter px-3 py-2.5 text-xs font-medium text-text-muted w-24">操作</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {items.map(item => {
                   const typeInfo = getTypeInfo(item.item_type);
                   const isChapter = item.item_type === 'chapter';
+                  const isSelected = selectedIds.has(item.id);
                   return (
                     <tr
                       key={item.id}
-                      className={`hover:bg-surface transition-colors ${isChapter ? 'bg-surface-hover' : ''}`}
+                      className={`hover:bg-surface transition-colors ${isChapter ? 'bg-surface-hover' : ''} ${isSelected ? 'bg-blue-50' : ''}`}
+                      onClick={selectionMode ? () => toggleSelection(item.id) : undefined}
+                      style={selectionMode ? { cursor: 'pointer' } : undefined}
                     >
-                      <td className="px-2 text-text-dangeraintenter text-border">
-                        <GripVertical className="w-4 h-4 inline" />
-                      </td>
+                      {selectionMode ? (
+                        <td className="px-2 text-center">
+                          {isSelected
+                            ? <CheckSquare className="w-4 h-4 inline text-ink" />
+                            : <Square className="w-4 h-4 inline text-text-muted" />}
+                        </td>
+                      ) : (
+                        <td className="px-2 text-text-dangeraintenter text-border">
+                          <GripVertical className="w-4 h-4 inline" />
+                        </td>
+                      )}
                       <td className="px-3 py-2.5 text-text-dangeraintenter text-sm text-text-muted">
                         {item.item_number || '-'}
                       </td>
@@ -344,22 +512,24 @@ export default function CurriculumPage() {
                           {typeInfo.label}
                         </span>
                       </td>
-                      <td className="px-3 py-2.5 text-text-dangeraintenter">
-                        <div className="flex items-center justify-center gap-1">
-                          <button
-                            onClick={() => openEditModal(item)}
-                            className="p-1.5 text-text-muted hover:text-ink hover:bg-surface-hover rounded transition-colors duration-150"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(item.id)}
-                            className="p-1.5 text-text-muted hover:text-red-600 hover:bg-red-50 rounded transition-colors duration-150"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
+                      {!selectionMode && (
+                        <td className="px-3 py-2.5 text-text-dangeraintenter">
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              onClick={() => openEditModal(item)}
+                              className="p-1.5 text-text-muted hover:text-ink hover:bg-surface-hover rounded transition-colors duration-150"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(item.id)}
+                              className="p-1.5 text-text-muted hover:text-red-600 hover:bg-red-50 rounded transition-colors duration-150"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   );
                 })}
@@ -422,6 +592,90 @@ export default function CurriculumPage() {
                   className="px-4 py-2 bg-ink text-white text-sm rounded-lg hover:bg-ink/80 disabled:opacity-50"
                 >
                   {saving ? '保存中...' : editingId ? '更新' : '追加'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Textbook Edit Modal */}
+        {showTextbookModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-surfacelack/40" onClick={() => setShowTextbookModal(false)}>
+            <div className="bg-surface-raised rounded-xl shadow-xl w-full max-w-md mx-4 p-6" onClick={e => e.stopPropagation()}>
+              <h2 className="text-lg font-bold text-text-heading mb-4">教材情報を編集</h2>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-text-heading mb-1">教材名 *</label>
+                  <input
+                    type="text"
+                    value={textbookForm.name}
+                    onChange={e => setTextbookForm({ ...textbookForm, name: e.target.value })}
+                    className="w-full px-3 py-2 border border-border rounded-lg text-sm"
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-text-heading mb-1">出版社</label>
+                  <input
+                    type="text"
+                    value={textbookForm.publisher}
+                    onChange={e => setTextbookForm({ ...textbookForm, publisher: e.target.value })}
+                    className="w-full px-3 py-2 border border-border rounded-lg text-sm"
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-text-heading mb-1">学校種別</label>
+                    <select
+                      value={textbookForm.school_type}
+                      onChange={e => setTextbookForm({ ...textbookForm, school_type: e.target.value })}
+                      className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised"
+                    >
+                      <option value="">未設定</option>
+                      <option value="小学">小学</option>
+                      <option value="中学">中学</option>
+                      <option value="高校">高校</option>
+                      <option value="共通">共通</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-text-heading mb-1">学年</label>
+                    <input
+                      type="text"
+                      value={textbookForm.grade}
+                      onChange={e => setTextbookForm({ ...textbookForm, grade: e.target.value })}
+                      className="w-full px-3 py-2 border border-border rounded-lg text-sm"
+                      placeholder="例: 1年"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-text-heading mb-1">教科</label>
+                    <select
+                      value={textbookForm.subject}
+                      onChange={e => setTextbookForm({ ...textbookForm, subject: e.target.value })}
+                      className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised"
+                    >
+                      <option value="">未設定</option>
+                      <option value="英語">英語</option>
+                      <option value="数学">数学</option>
+                      <option value="算数">算数</option>
+                      <option value="国語">国語</option>
+                      <option value="理科">理科</option>
+                      <option value="社会">社会</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 mt-6">
+                <button onClick={() => setShowTextbookModal(false)} className="px-4 py-2 text-sm text-text-muted">
+                  キャンセル
+                </button>
+                <button
+                  onClick={handleTextbookSave}
+                  disabled={textbookSaving}
+                  className="px-4 py-2 bg-ink text-white text-sm rounded-lg hover:bg-ink/80 disabled:opacity-50"
+                >
+                  {textbookSaving ? '保存中...' : '更新'}
                 </button>
               </div>
             </div>

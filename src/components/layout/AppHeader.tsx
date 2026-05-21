@@ -7,7 +7,6 @@ import { getUnreadCount } from '@/lib/api/bulletin';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { USER_ROLE_LABELS } from '@/types/database';
-import { SubjectSettings } from '@/components/settings';
 import { Megaphone, ChevronDown, X, Menu, LogOut, Settings, LayoutDashboard } from 'lucide-react';
 import { TierMedal } from '@/components/teacher/TierMedal';
 import { useTeacherBadgeCount } from '@/hooks/useTeacherBadgeCount';
@@ -42,7 +41,6 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
   const displaySchools = schools;
   const [showSchoolDropdown, setShowSchoolDropdown] = useState(false);
   const [showSettingsDropdown, setShowSettingsDropdown] = useState(false);
-  const [isSubjectSettingsOpen, setIsSubjectSettingsOpen] = useState(false);
   const [bulletinUnreadCount, setBulletinUnreadCount] = useState(0);
   const [showFormDropdown, setShowFormDropdown] = useState(false);
   const [showCourseDropdown, setShowCourseDropdown] = useState(false);
@@ -582,7 +580,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                 <LogOut className="w-4 h-4" />
               </button>
             )}
-            {(showAllLinks || permissions?.canAccessStudents || permissions?.canAccessSettings || profile?.role === 'admin') && (
+            {profile && !authLoading && (
               <div className="relative settings-dropdown-container">
                 <button
                   onClick={(e) => {
@@ -623,17 +621,6 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                           一括学年更新
                         </button>
                       )}
-                      {(showAllLinks || permissions?.canAccessStudents) && (
-                        <button
-                          onClick={() => {
-                            setIsSubjectSettingsOpen(true);
-                            setShowSettingsDropdown(false);
-                          }}
-                          className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 transition-colors duration-150"
-                        >
-                          科目設定
-                        </button>
-                      )}
                       {onSettingsClick && (
                         <button
                           onClick={() => {
@@ -656,46 +643,6 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                       >
                         すべての設定
                       </Link>
-                      <div className="border-t border-border my-1" />
-                      {(showAllLinks || permissions?.canAccessUsers) && (
-                        <Link
-                          href="/users"
-                          className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
-                            pathname === '/users' || pathname?.startsWith('/users/')
-                              ? 'bg-primary/10 text-primary font-semibold'
-                              : ''
-                          }`}
-                          onClick={() => setShowSettingsDropdown(false)}
-                        >
-                          ユーザー管理
-                        </Link>
-                      )}
-                      {(showAllLinks || permissions?.canAccessSettings) && (
-                        <Link
-                          href="/admin/settings/attendance-types"
-                          className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
-                            pathname?.startsWith('/admin/settings/attendance-types')
-                              ? 'bg-primary/10 text-primary font-semibold'
-                              : ''
-                          }`}
-                          onClick={() => setShowSettingsDropdown(false)}
-                        >
-                          コマ種別設定
-                        </Link>
-                      )}
-                      {profile?.role === 'admin' && (
-                        <Link
-                          href="/admin/settings/security"
-                          className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
-                            pathname === '/admin/settings/security' || pathname?.startsWith('/admin/settings/security')
-                              ? 'bg-primary/10 text-primary font-semibold'
-                              : ''
-                          }`}
-                          onClick={() => setShowSettingsDropdown(false)}
-                        >
-                          セキュリティ設定
-                        </Link>
-                      )}
                       <div className="border-t border-border my-1" />
                       {/* テーマ切替 */}
                       <div className="px-3 py-2 flex items-center justify-between">
@@ -814,11 +761,6 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
           </Link>
         )}
       </div>
-      {/* 科目設定モーダル（AppHeader内で一元管理） */}
-      <SubjectSettings
-        isOpen={isSubjectSettingsOpen}
-        onClose={() => setIsSubjectSettingsOpen(false)}
-      />
     </header>
   );
 }

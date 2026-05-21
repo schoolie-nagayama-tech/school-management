@@ -1115,30 +1115,31 @@ async function syncScheduleTaskCompletionFromProgress(
   itemId: string
 ) {
   // 1. このitemIdにリンクされたスケジュールタスクを取得
+  // name/season/year も含めて取得しておくことで、ループ内で taskInfo を再取得する必要をなくす（クエリ削減）
   const { data: scheduleTasks } = await supabaseAdmin
     .from('course_prep_schedule_tasks')
-    .select('id, is_completed')
+    .select('id, is_completed, name, season, year')
     .eq('linked_progress_item_id', itemId)
     .eq('school_id', schoolId);
 
   if (!scheduleTasks || scheduleTasks.length === 0) return;
 
-  // 2. 対象教室のアクティブ生徒数を取得
-  const { count: totalStudents } = await supabaseAdmin
-    .from('students')
-    .select('id', { count: 'exact', head: true })
-    .eq('school_id', schoolId)
-    .is('deleted_at', null);
+  // 2 & 3. 生徒数と完了済み生徒数を並列取得（互いに独立しているため安全）
+  const [{ count: totalStudents }, { count: completedCount }] = await Promise.all([
+    supabaseAdmin
+      .from('students')
+      .select('id', { count: 'exact', head: true })
+      .eq('school_id', schoolId)
+      .is('deleted_at', null),
+    supabaseAdmin
+      .from('course_prep_student_progress')
+      .select('id', { count: 'exact', head: true })
+      .eq('item_id', itemId)
+      .eq('school_id', schoolId)
+      .eq('status', 'completed'),
+  ]);
 
   if (!totalStudents || totalStudents === 0) return;
-
-  // 3. このitemIdの完了済み生徒数を取得
-  const { count: completedCount } = await supabaseAdmin
-    .from('course_prep_student_progress')
-    .select('id', { count: 'exact', head: true })
-    .eq('item_id', itemId)
-    .eq('school_id', schoolId)
-    .eq('status', 'completed');
 
   const allCompleted = (completedCount || 0) >= totalStudents;
 
@@ -1155,20 +1156,14 @@ async function syncScheduleTaskCompletionFromProgress(
     // 5. 業務進捗にカスケード同期（教室横断: 同名タスクのIDすべてで検索）
     // 同じschedule_taskから複数月のmonthly_tasks(Feb/Mar/Apr/May)が生成されうるため
     // ヒットした全monthly_tasksを更新する
-    const { data: taskInfo } = await supabaseAdmin
-      .from('course_prep_schedule_tasks')
-      .select('name, season, year')
-      .eq('id', task.id)
-      .single();
-
     let linkedMonthlyTasks: { id: string }[] = [];
-    if (taskInfo) {
+    if (task.name && task.season && task.year) {
       const { data: allRelatedSts } = await supabaseAdmin
         .from('course_prep_schedule_tasks')
         .select('id')
-        .eq('name', taskInfo.name)
-        .eq('season', taskInfo.season)
-        .eq('year', taskInfo.year);
+        .eq('name', task.name)
+        .eq('season', task.season)
+        .eq('year', task.year);
 
       const relatedIds = (allRelatedSts || []).map((s: { id: string }) => s.id);
       if (relatedIds.length > 0) {
