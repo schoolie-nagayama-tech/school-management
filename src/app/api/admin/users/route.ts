@@ -80,8 +80,11 @@ export async function GET(request: NextRequest) {
     }
 
     const profileList = profiles ?? [];
+    // ユーザー権限変更を即時反映するためキャッシュ不可
     const noCacheHeaders = {
-      'Cache-Control': 'private, max-age=5, stale-while-revalidate=15',
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+      'Pragma': 'no-cache',
+      'Expires': '0',
     };
     if (profileList.length === 0) {
       return NextResponse.json({ users: [] }, { headers: noCacheHeaders });
