@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, FileText, Filter, Plus, Printer, Search, Trash2 } from 'lucide-react';
+import { ArrowLeft, FileText, Filter, Plus, Printer, Search, Trash2, X } from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
 import { InlineLoading, Loading } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,7 +12,7 @@ import AccessDenied from '@/components/AccessDenied';
 import { getProposalsBySchool, getTextbookUnitsWithProgress, calcTotalKoma, calcTotalAppliedKoma, deleteProposal } from '@/lib/api/proposals';
 import { supabase } from '@/lib/supabase';
 import type { SeasonalProposalWithDetails, SeasonType, ProposalStatus } from '@/types/database';
-import { SEASON_LABELS, PROPOSAL_STATUS_LABELS } from '@/types/database';
+import { SEASON_LABELS, PROPOSAL_STATUS_LABELS, GRADE_LABELS } from '@/types/database';
 import { useLocalSchoolId } from '@/hooks/useLocalSchoolId';
 import { SchoolSwitcher } from '@/components/SchoolSwitcher';
 import { ProposalPrintView } from '@/components/proposals/ProposalPrintView';
@@ -74,6 +74,10 @@ export default function CourseProposalsPage() {
   const [filterYear, setFilterYear] = useState<number>(currentYear);
   const [filterSeason, setFilterSeason] = useState<SeasonType | ''>('');
   const [filterStatus, setFilterStatus] = useState<ProposalStatus | ''>('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterSubject, setFilterSubject] = useState('');
+  const [filterGrade, setFilterGrade] = useState('');
+  const [filterPublisher, setFilterPublisher] = useState('');
 
   // Student picker
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -292,25 +296,80 @@ export default function CourseProposalsPage() {
     );
   }
 
-  const filtered = filterStatus
-    ? proposals.filter((p) =>
+  // フィルタ用の選択肢を proposals から動的に生成
+  const filterOptions = useMemo(() => {
+    const subjects = new Set<string>();
+    const grades = new Set<number>();
+    const publishers = new Set<string>();
+    for (const p of proposals) {
+      if (p.textbook?.subject) subjects.add(p.textbook.subject);
+      if (p.student?.grade != null) grades.add(p.student.grade);
+      if (p.textbook?.publisher) publishers.add(p.textbook.publisher);
+    }
+    return {
+      subjects: Array.from(subjects).sort((a, b) => a.localeCompare(b, 'ja')),
+      grades: Array.from(grades).sort((a, b) => a - b),
+      publishers: Array.from(publishers).sort((a, b) => a.localeCompare(b, 'ja')),
+    };
+  }, [proposals]);
+
+  const activeFilterCount = [filterSubject, filterGrade, filterPublisher, searchQuery].filter(Boolean).length;
+
+  const clearAllFilters = () => {
+    setSearchQuery('');
+    setFilterSubject('');
+    setFilterGrade('');
+    setFilterPublisher('');
+  };
+
+  const filtered = useMemo(() => {
+    let result = proposals;
+
+    if (filterStatus) {
+      result = result.filter((p) =>
         filterStatus === 'sent'
           ? p.status === 'sent' || p.status === 'approved'
           : p.status === filterStatus
-      )
-    : proposals;
-
-  const byStudent = new Map<string, { name: string; studentId: string; proposals: SeasonalProposalWithDetails[] }>();
-  for (const p of filtered) {
-    const sid = p.student_id;
-    const sName = p.student
-      ? `${p.student.last_name} ${p.student.first_name}`
-      : '不明';
-    if (!byStudent.has(sid)) {
-      byStudent.set(sid, { name: sName, studentId: sid, proposals: [] });
+      );
     }
-    byStudent.get(sid)!.proposals.push(p);
-  }
+    if (filterSubject) {
+      result = result.filter((p) => p.textbook?.subject === filterSubject);
+    }
+    if (filterGrade) {
+      result = result.filter((p) => String(p.student?.grade) === filterGrade);
+    }
+    if (filterPublisher) {
+      result = result.filter((p) => p.textbook?.publisher === filterPublisher);
+    }
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter((p) => {
+        const studentName = p.student ? `${p.student.last_name}${p.student.first_name}` : '';
+        const textbookName = p.textbook?.name ?? '';
+        const subject = p.textbook?.subject ?? '';
+        const publisher = p.textbook?.publisher ?? '';
+        const theme = p.theme ?? '';
+        return [studentName, textbookName, subject, publisher, theme]
+          .some((v) => v.toLowerCase().includes(q));
+      });
+    }
+    return result;
+  }, [proposals, filterStatus, filterSubject, filterGrade, filterPublisher, searchQuery]);
+
+  const byStudent = useMemo(() => {
+    const map = new Map<string, { name: string; studentId: string; grade: number | null; proposals: SeasonalProposalWithDetails[] }>();
+    for (const p of filtered) {
+      const sid = p.student_id;
+      const sName = p.student
+        ? `${p.student.last_name} ${p.student.first_name}`
+        : '不明';
+      if (!map.has(sid)) {
+        map.set(sid, { name: sName, studentId: sid, grade: p.student?.grade ?? null, proposals: [] });
+      }
+      map.get(sid)!.proposals.push(p);
+    }
+    return map;
+  }, [filtered]);
 
   const statusCounts: Record<string, number> = { draft: 0, sent: 0 };
   for (const p of proposals) {
@@ -384,43 +443,113 @@ export default function CourseProposalsPage() {
           </div>
         </div>
 
-        <div className="flex gap-2 mb-4">
-          {VISIBLE_STATUSES.map((status) => (
-            <button
-              key={status}
-              onClick={() => setFilterStatus(filterStatus === status ? '' : status)}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg active:scale-[0.97] transition-[background-color,color,transform] duration-150 ease-out ${
-                filterStatus === status
-                  ? STATUS_FILTER_ACTIVE[status]
-                  : STATUS_FILTER_INACTIVE[status]
-              }`}
-            >
-              {PROPOSAL_STATUS_LABELS[status]} {statusCounts[status] ?? 0}
-            </button>
-          ))}
-        </div>
+        {/* 検索 + フィルタ */}
+        <div className="space-y-3 mb-4">
+          {/* テキスト検索 */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-faint" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="生徒名・テキスト名・準拠・テーマで検索..."
+              className="w-full pl-9 pr-8 py-2 text-sm border border-border-default rounded-lg bg-surface-raised text-text-body placeholder:text-text-faint focus:outline-none focus:ring-1 focus:ring-ink/30"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-faint hover:text-text-heading">
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
 
-        <div className="flex items-center gap-3 mb-4 text-xs">
-          <Filter className="w-3.5 h-3.5 text-text-faint" />
-          <select
-            value={filterYear}
-            onChange={(e) => setFilterYear(Number(e.target.value))}
-            className="px-2 py-1 border border-border-default rounded-lg text-xs bg-surface-raised text-text-body"
-          >
-            {[currentYear + 1, currentYear, currentYear - 1].map((y) => (
-              <option key={y} value={y}>{y}年</option>
+          {/* ステータス + フィルタ行 */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {VISIBLE_STATUSES.map((status) => (
+              <button
+                key={status}
+                onClick={() => setFilterStatus(filterStatus === status ? '' : status)}
+                className={`px-3 py-1.5 text-xs font-bold rounded-lg active:scale-[0.97] transition-[background-color,color,transform] duration-150 ease-out ${
+                  filterStatus === status
+                    ? STATUS_FILTER_ACTIVE[status]
+                    : STATUS_FILTER_INACTIVE[status]
+                }`}
+              >
+                {PROPOSAL_STATUS_LABELS[status]} {statusCounts[status] ?? 0}
+              </button>
             ))}
-          </select>
-          <select
-            value={filterSeason}
-            onChange={(e) => setFilterSeason(e.target.value as SeasonType | '')}
-            className="px-2 py-1 border border-border-default rounded-lg text-xs bg-surface-raised text-text-body"
-          >
-            <option value="">全シーズン</option>
-            {(['spring', 'summer', 'winter'] as SeasonType[]).map((s) => (
-              <option key={s} value={s}>{SEASON_LABELS[s]}</option>
-            ))}
-          </select>
+
+            <span className="w-px h-5 bg-border-default" />
+
+            <Filter className="w-3.5 h-3.5 text-text-faint" />
+            <select
+              value={filterYear}
+              onChange={(e) => setFilterYear(Number(e.target.value))}
+              className="px-2 py-1.5 border border-border-default rounded-lg text-xs bg-surface-raised text-text-body"
+            >
+              {[currentYear + 1, currentYear, currentYear - 1].map((y) => (
+                <option key={y} value={y}>{y}年</option>
+              ))}
+            </select>
+            <select
+              value={filterSeason}
+              onChange={(e) => setFilterSeason(e.target.value as SeasonType | '')}
+              className="px-2 py-1.5 border border-border-default rounded-lg text-xs bg-surface-raised text-text-body"
+            >
+              <option value="">全シーズン</option>
+              {(['spring', 'summer', 'winter'] as SeasonType[]).map((s) => (
+                <option key={s} value={s}>{SEASON_LABELS[s]}</option>
+              ))}
+            </select>
+
+            {filterOptions.subjects.length > 1 && (
+              <select
+                value={filterSubject}
+                onChange={(e) => setFilterSubject(e.target.value)}
+                className={`px-2 py-1.5 border rounded-lg text-xs ${filterSubject ? 'border-info bg-info-subtle text-info font-bold' : 'border-border-default bg-surface-raised text-text-body'}`}
+              >
+                <option value="">全科目</option>
+                {filterOptions.subjects.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            )}
+
+            {filterOptions.grades.length > 1 && (
+              <select
+                value={filterGrade}
+                onChange={(e) => setFilterGrade(e.target.value)}
+                className={`px-2 py-1.5 border rounded-lg text-xs ${filterGrade ? 'border-info bg-info-subtle text-info font-bold' : 'border-border-default bg-surface-raised text-text-body'}`}
+              >
+                <option value="">全学年</option>
+                {filterOptions.grades.map((g) => (
+                  <option key={g} value={String(g)}>{GRADE_LABELS[g] ?? `${g}年`}</option>
+                ))}
+              </select>
+            )}
+
+            {filterOptions.publishers.length > 1 && (
+              <select
+                value={filterPublisher}
+                onChange={(e) => setFilterPublisher(e.target.value)}
+                className={`px-2 py-1.5 border rounded-lg text-xs ${filterPublisher ? 'border-info bg-info-subtle text-info font-bold' : 'border-border-default bg-surface-raised text-text-body'}`}
+              >
+                <option value="">全準拠</option>
+                {filterOptions.publishers.map((pub) => (
+                  <option key={pub} value={pub}>{pub}</option>
+                ))}
+              </select>
+            )}
+
+            {activeFilterCount > 0 && (
+              <button
+                onClick={clearAllFilters}
+                className="inline-flex items-center gap-1 px-2 py-1.5 text-xs text-text-muted hover:text-text-heading transition-colors"
+              >
+                <X className="w-3 h-3" />
+                絞り込み解除
+              </button>
+            )}
+          </div>
         </div>
 
         {loading ? (
@@ -431,15 +560,22 @@ export default function CourseProposalsPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {Array.from(byStudent.values()).map(({ name, studentId, proposals: studentProposals }) => (
+            {Array.from(byStudent.values()).map(({ name, studentId, grade, proposals: studentProposals }) => (
               <div key={studentId} className="bg-surface-raised rounded-xl border border-border-default overflow-hidden">
                 <div className="px-4 py-2.5 border-b border-border-subtle bg-surface-hover/50 flex items-center justify-between">
-                  <Link
-                    href={`/students/${studentId}/proposals`}
-                    className="font-semibold text-sm text-text-heading hover:text-accent-ink transition-colors duration-150"
-                  >
-                    {name}
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href={`/students/${studentId}/proposals`}
+                      className="font-semibold text-sm text-text-heading hover:text-accent-ink transition-colors duration-150"
+                    >
+                      {name}
+                    </Link>
+                    {grade != null && (
+                      <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-gray-100 text-gray-500">
+                        {GRADE_LABELS[grade] ?? `${grade}年`}
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => handlePrintStudent(studentId, name, studentProposals)}
