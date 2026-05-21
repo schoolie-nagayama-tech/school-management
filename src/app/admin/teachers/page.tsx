@@ -20,7 +20,11 @@ import type { School, UserProfile, TeacherBadge, TeacherBadgeAssignment } from '
 import { normalizeLoginEmail, normalizePassword } from '@/lib/utils/loginId';
 import { BADGE_RANK_CONFIG } from '@/types/database';
 import { generateTeacherCSV, downloadCSV, type TeacherExportRow } from '@/lib/utils/csvUtils';
-import { TeacherCsvImportModal } from '@/components/csv/TeacherCsvImportModal';
+import dynamic from 'next/dynamic';
+const TeacherCsvImportModal = dynamic(
+  () => import('@/components/csv/TeacherCsvImportModal').then((m) => m.TeacherCsvImportModal),
+  { ssr: false }
+);
 import { displayLoginId } from '@/lib/utils/loginId';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { getTeacherBadges, getTeacherBadgeAssignments } from '@/lib/api/teacher-badges';

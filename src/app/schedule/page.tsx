@@ -7,13 +7,28 @@ import { AdminLayout } from '@/components/layouts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import { Button, Loading } from '@/components/ui';
 import { ToastContainer } from '@/components/ui';
-import {
-  WeeklyScheduleGrid,
-  TransferModeBar,
-  ScheduleDailyPrintView,
-  ScheduleToolbar,
-  ScheduleDialogs,
-} from '@/components/schedule';
+import dynamic from 'next/dynamic';
+
+const WeeklyScheduleGrid = dynamic(
+  () => import('@/components/schedule').then((m) => m.WeeklyScheduleGrid),
+  { ssr: false }
+);
+const TransferModeBar = dynamic(
+  () => import('@/components/schedule').then((m) => m.TransferModeBar),
+  { ssr: false }
+);
+const ScheduleDailyPrintView = dynamic(
+  () => import('@/components/schedule').then((m) => m.ScheduleDailyPrintView),
+  { ssr: false }
+);
+const ScheduleToolbar = dynamic(
+  () => import('@/components/schedule').then((m) => m.ScheduleToolbar),
+  { ssr: false }
+);
+const ScheduleDialogs = dynamic(
+  () => import('@/components/schedule').then((m) => m.ScheduleDialogs),
+  { ssr: false }
+);
 import { fetchWithAuth } from '@/lib/api/auth';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { getStudents } from '@/lib/api/students';

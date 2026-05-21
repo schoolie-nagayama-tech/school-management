@@ -10,9 +10,16 @@ import {
   StudentTable,
   DeleteConfirmDialog,
   StudentDetailModal,
-  StudentScores,
-  AttendanceMatrix,
 } from '@/components/students';
+
+const StudentScores = dynamic(
+  () => import('@/components/students').then((m) => m.StudentScores),
+  { ssr: false }
+);
+const AttendanceMatrix = dynamic(
+  () => import('@/components/students').then((m) => m.AttendanceMatrix),
+  { ssr: false }
+);
 import {
   getStudents,
   getStudentsPage,

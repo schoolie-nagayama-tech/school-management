@@ -9,6 +9,7 @@ import { getPermissions } from '@/types/database';
 import { getUserProfile, createUserProfile, updateLastLogin, getUserSchools, addUserToSchool } from '@/lib/api/auth';
 import { getSchools } from '@/lib/api/schools';
 import { Loading } from '@/components/ui';
+import { clearAllFetchCache } from '@/lib/utils/fetchCache';
 
 function isAbortError(err: unknown): boolean {
   if (!(err instanceof Error)) return false;
@@ -220,6 +221,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // ログアウト
   const handleSignOut = useCallback(async () => {
+    clearAllFetchCache();
     const supabase = createSupabaseBrowserClient();
     try {
       await supabase.auth.signOut({ scope: 'local' });

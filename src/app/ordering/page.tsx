@@ -3,14 +3,23 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AdminLayout } from '@/components/layouts';
 import { Button, Loading, InlineLoading } from '@/components/ui';
-import {
-  MaterialForm,
-  StockTransactionModal,
-} from '@/components/inventory';
+import dynamic from 'next/dynamic';
 import type { MaterialFormData } from '@/components/inventory';
 import Link from 'next/link';
-import { TextbookCatalog } from '@/components/ordering/TextbookCatalog';
 import type { CartItem } from '@/components/ordering/TextbookCatalog';
+
+const MaterialForm = dynamic(
+  () => import('@/components/inventory').then((m) => m.MaterialForm),
+  { ssr: false }
+);
+const StockTransactionModal = dynamic(
+  () => import('@/components/inventory').then((m) => m.StockTransactionModal),
+  { ssr: false }
+);
+const TextbookCatalog = dynamic(
+  () => import('@/components/ordering/TextbookCatalog').then((m) => m.TextbookCatalog),
+  { ssr: false }
+);
 import {
   getMaterials,
   createMaterial,

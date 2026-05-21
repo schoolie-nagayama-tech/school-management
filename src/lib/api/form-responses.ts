@@ -7,6 +7,7 @@ import type {
   Student,
 } from '@/types/database';
 import { getDefaultSchoolId } from './schools';
+import { withFetchCache } from '@/lib/utils/fetchCache';
 
 // ============================================
 // フォーム回答関連
@@ -125,6 +126,12 @@ export async function getFormResponses(
       : null,
   }));
 }
+
+/** 30秒TTLのキャッシュ付き getFormResponses */
+export const getCachedFormResponses = withFetchCache(getFormResponses, {
+  ttl: 30_000,
+  prefix: 'formResponses',
+});
 
 /**
  * 最近の未処理フォーム回答を取得（トップページの新着通知用）

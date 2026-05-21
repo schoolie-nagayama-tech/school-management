@@ -6,7 +6,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { AlertCircle, ArrowUpDown, CheckSquare, ChevronRight, Copy, FileText, Plus, Search, Square, Trash2, X } from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
 import { Button, Loading, InlineLoading } from '@/components/ui';
-import { getSeasonalCourses, createSeasonalCourse, deployCourseToSchools, deleteSeasonalCourse } from '@/lib/api/seasonalCourses';
+import { getSeasonalCourses, getCachedSeasonalCourses, createSeasonalCourse, deployCourseToSchools, deleteSeasonalCourse } from '@/lib/api/seasonalCourses';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
@@ -107,7 +107,7 @@ export default function CoursesPage() {
   const [newCourseComment, setNewCourseComment] = useState('');
   const [applyToAllSchools, setApplyToAllSchools] = useState(false);
 
-  const fetchCourses = useCallback(async () => {
+  const fetchCourses = useCallback(async (skipCache = false) => {
     setIsLoading(true);
     setErrorMessage('');
     try {
@@ -115,7 +115,8 @@ export default function CoursesPage() {
         setCourses([]);
         return;
       }
-      const data = await getSeasonalCourses(localSchoolId);
+      if (skipCache) getCachedSeasonalCourses.invalidate();
+      const data = await getCachedSeasonalCourses(localSchoolId);
       setCourses(data);
     } catch (error) {
       console.error('Error fetching courses:', error);
@@ -311,7 +312,7 @@ export default function CoursesPage() {
       }
       setSelected(new Set());
       alert(`${totalCreated}件を作成しました。${totalSkipped}件はスキップされました。`);
-      await fetchCourses();
+      await fetchCourses(true);
     } catch (error) {
       console.error('Error deploying courses:', error);
       setErrorMessage(getUserErrorMessage(error, '展開に失敗しました'));
@@ -325,6 +326,7 @@ export default function CoursesPage() {
     setDeletingId(courseId);
     try {
       await deleteSeasonalCourse(courseId);
+      getCachedSeasonalCourses.invalidate();
       setCourses((prev) => prev.filter((c) => c.id !== courseId));
       setSelected((prev) => {
         const next = new Set(prev);
@@ -394,7 +396,7 @@ export default function CoursesPage() {
       setNewCourseTotalKoma('');
       setNewCourseComment('');
       setApplyToAllSchools(false);
-      await fetchCourses();
+      await fetchCourses(true);
     } catch (error) {
       console.error('Error creating course:', error);
       setErrorMessage(getUserErrorMessage(error, '講習の作成に失敗しました'));

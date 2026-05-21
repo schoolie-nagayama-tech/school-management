@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { withFetchCache } from '@/lib/utils/fetchCache';
 import type {
   SeasonalCourse,
   SeasonalCourseTextbook,
@@ -255,6 +256,12 @@ export async function getSeasonalCourses(schoolId: string): Promise<SeasonalCour
 
   return coursesWithCount;
 }
+
+/** 30秒TTLのキャッシュ付き getSeasonalCourses */
+export const getCachedSeasonalCourses = withFetchCache(getSeasonalCourses, {
+  ttl: 30_000,
+  prefix: 'seasonalCourses',
+});
 
 // コースを取得（単体）
 export async function getSeasonalCourse(courseId: string): Promise<SeasonalCourseWithDetails | null> {

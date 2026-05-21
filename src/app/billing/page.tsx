@@ -4,14 +4,29 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
 import { Loading, InlineLoading } from '@/components/ui';
-import {
-  BillingPeriodSelector,
-  BillingTable,
-  BillingItemAccordion,
-  VocabBookStockCard,
-} from '@/components/billing';
+import dynamic from 'next/dynamic';
 import type { BillingFilters } from '@/components/billing';
-import { StudentDetailModal } from '@/components/students/StudentDetailModal';
+
+const BillingPeriodSelector = dynamic(
+  () => import('@/components/billing').then((m) => m.BillingPeriodSelector),
+  { ssr: false }
+);
+const BillingTable = dynamic(
+  () => import('@/components/billing').then((m) => m.BillingTable),
+  { ssr: false }
+);
+const BillingItemAccordion = dynamic(
+  () => import('@/components/billing').then((m) => m.BillingItemAccordion),
+  { ssr: false }
+);
+const VocabBookStockCard = dynamic(
+  () => import('@/components/billing').then((m) => m.VocabBookStockCard),
+  { ssr: false }
+);
+const StudentDetailModal = dynamic(
+  () => import('@/components/students/StudentDetailModal').then((m) => m.StudentDetailModal),
+  { ssr: false }
+);
 import { getStudents } from '@/lib/api/students';
 import {
   getBillingPeriods,

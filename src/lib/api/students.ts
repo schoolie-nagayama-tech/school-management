@@ -8,6 +8,7 @@ import type {
 } from '@/types/database';
 import { setStudentSubjects } from './subjects';
 import { getDefaultSchoolId } from './schools';
+import { withFetchCache } from '@/lib/utils/fetchCache';
 
 /** 一覧取得用（Row の列と一致。将来の列追加時は型と同期すること） */
 const STUDENT_LIST_COLUMNS =
@@ -306,6 +307,12 @@ export async function getStudents(
 
   return enrichStudentsWithRelations(students as Student[]);
 }
+
+/** 30秒TTLのキャッシュ付き getStudents。読み取り専用ページ向け。 */
+export const getCachedStudents = withFetchCache(getStudents, {
+  ttl: 30_000,
+  prefix: 'students',
+});
 
 /**
  * 生徒を検索（名前・かな・コードで部分一致、active のみ）
