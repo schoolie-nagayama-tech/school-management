@@ -42,6 +42,12 @@ function formatDeadline(deadline: string | null): string {
   return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
+// 小学校「算数」と中高「数学」は同一科目として扱う
+const SUBJECT_ALIASES: Record<string, string[]> = {
+  '数学': ['算数'],
+  '算数': ['数学'],
+};
+
 /** 科目名マッチング: auto_source='subject_proposal' の列に対して、科目名→コマ数を返す */
 function getSubjectProposalValue(
   subjectProposals: Record<string, number> | undefined,
@@ -53,6 +59,14 @@ function getSubjectProposalValue(
   // 列名に科目名が含まれるか（例: "提示コマ(英語)" に "英語" が含まれる）
   for (const [subject, count] of Object.entries(subjectProposals)) {
     if (itemName.includes(subject)) return count;
+  }
+  // 科目エイリアスで再マッチ（例: カラム「数学」に教科書の「算数」を対応させる）
+  for (const [alias, equivalents] of Object.entries(SUBJECT_ALIASES)) {
+    if (itemName.includes(alias)) {
+      for (const eq of equivalents) {
+        if (subjectProposals[eq] !== undefined) return subjectProposals[eq];
+      }
+    }
   }
   return 0;
 }
