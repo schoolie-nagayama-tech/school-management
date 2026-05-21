@@ -10,6 +10,9 @@ async function getAccessToken(): Promise<string> {
 
 /**
  * 講習準備サーバーAPI: 書き込み操作（POST）
+ *
+ * 副作用: 成功時にこの schoolId に対応する batchFetchCoursePrepApi のキャッシュを
+ * 自動的に無効化する。書き込み直後の部分再フェッチが古いキャッシュを返さないようにするため。
  */
 export async function callCoursePrepApi(
   action: string,
@@ -31,6 +34,8 @@ export async function callCoursePrepApi(
   if (!res.ok) {
     throw new Error(data.error || '操作に失敗しました');
   }
+  // 書き込み成功 → 対象 schoolId のキャッシュを無効化（古いデータの混入を防ぐ）
+  invalidateCoursePrepCache(schoolId);
   return data;
 }
 
