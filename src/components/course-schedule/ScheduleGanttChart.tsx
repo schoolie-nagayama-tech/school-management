@@ -274,7 +274,7 @@ function TaskNameCell({
 }
 
 export function ScheduleGanttChart({
-  tasks, deadlineItems = [], progressItems = [], progressSummary,
+  tasks, deadlineItems: _deadlineItems = [], progressItems = [], progressSummary,
   startDate, endDate, canEdit,
   onToggleComplete, onMarkerClick, onUpdateTask, onDeleteTask,
 }: ScheduleGanttChartProps) {
@@ -365,9 +365,6 @@ export function ScheduleGanttChart({
     return { hasBar, isStart: start, isEnd: end, isMilestoneInWeek: milestoneInWeek, hasMarker, markerLabel, markerColor };
   }, [isInBar, isBarStart, isBarEnd, getMarker]);
 
-  const hasDeadlineInWeek = useCallback((item: CourseProgressItem, weekDays: Date[]): boolean => {
-    return item.deadline ? weekDays.some((d) => formatDate(d) === item.deadline) : false;
-  }, []);
 
   /** バーの色クラスを返す */
   const getBarClasses = (task: ScheduleTaskWithMarkers, od: boolean): string => {

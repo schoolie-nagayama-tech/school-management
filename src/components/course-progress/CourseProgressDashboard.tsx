@@ -183,8 +183,6 @@ export function CourseProgressDashboard({
     return count;
   }, [parentInterviewItem, students, progressData]);
 
-  // 面談実施の合計（ツールチップ・互換用）
-  const interviewCompletedCount = studentInterviewCount + parentInterviewCount;
 
   // --- 教科別コマ合計 ---
   const subjectItems = useMemo(
