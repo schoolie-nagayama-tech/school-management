@@ -45,7 +45,7 @@ interface TeacherWithDetails extends UserProfile {
 }
 
 export default function TeachersPage() {
-  const { user, profile, permissions, isLoading: authLoading, getSelectedSchoolIds, demoSchoolIds } = useAuth();
+  const { user, profile, permissions, isLoading: authLoading, getSelectedSchoolIds, selectedSchoolId, demoSchoolIds } = useAuth();
   const { schools: masterSchools } = useMasterData();
   const { toasts, removeToast, success, error: toastError } = useToast();
   const [teachers, setTeachers] = useState<TeacherWithDetails[]>([]);
@@ -156,7 +156,7 @@ export default function TeachersPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [getSelectedSchoolIds, masterSchools, demoSchoolIds, isManager, toastError]);
+  }, [getSelectedSchoolIds, selectedSchoolId, masterSchools, demoSchoolIds, isManager, toastError]);
 
   // データ取得: 教室切替や master データ更新時に再読込
   // （loadData は getSelectedSchoolIds 経由で selectedSchoolId に依存しているため、

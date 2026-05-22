@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AdminLayout } from '@/components/layouts';
 import { Loading } from '@/components/ui';
 import { ToastContainer } from '@/components/ui';
@@ -19,7 +19,9 @@ type TopTab = 'badges' | 'trainings';
 type CategoryFilter = BadgeCategory | 'all';
 
 export default function TeacherBadgesPage() {
-  const { getSelectedSchoolIds } = useAuth();
+  const { getSelectedSchoolIds, selectedSchoolId } = useAuth();
+  // 教室切替時に安定した参照を維持（BadgeAssignDialog の不要な再取得を防止）
+  const schoolIds = useMemo(() => getSelectedSchoolIds(), [selectedSchoolId, getSelectedSchoolIds]);
   const { toasts, success, error: toastError, removeToast } = useToast();
 
   const [topTab, setTopTab] = useState<TopTab>('badges');
@@ -297,7 +299,7 @@ export default function TeacherBadgesPage() {
         <BadgeAssignDialog
           open={!!assignTarget}
           badge={assignTarget}
-          schoolIds={getSelectedSchoolIds()}
+          schoolIds={schoolIds}
           onClose={() => setAssignTarget(null)}
         />
 
