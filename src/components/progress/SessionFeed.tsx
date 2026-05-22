@@ -39,7 +39,8 @@ import {
   updateProgressSession,
   syncSessionToProgress,
 } from '@/lib/api/progress-sessions';
-import type { SmartAlert, SessionFeedFilter } from '@/lib/api/progress-sessions';
+import type { SmartAlert, SessionFeedFilter, FeedGoalSummary } from '@/lib/api/progress-sessions';
+import { getFeedGoalsByTextbooks } from '@/lib/api/progress-sessions';
 import type { ProgressSessionWithDetails } from '@/types/database';
 import { toSurnameOnly } from '@/lib/utils/teacherName';
 
@@ -78,6 +79,8 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
   // ── State ──
   const [sessions, setSessions] = useState<ProgressSessionWithDetails[]>([]);
   const [smartAlerts, setSmartAlerts] = useState<SmartAlert[]>([]);
+  // 目標 / 行動目標サマリ: student_textbook_id をキーに表示用情報を保持
+  const [goalMap, setGoalMap] = useState<Record<string, FeedGoalSummary>>({});
   const [tab, setTab] = useState<TabKey>('unconfirmed');
   const [loading, setLoading] = useState(true);
   const [alertsExpanded, setAlertsExpanded] = useState(true);
@@ -122,6 +125,19 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
 
       const data = await getSessionFeed(schoolIds, filter);
       setSessions(data);
+
+      // 目標 / 行動目標を一括取得（student_textbook_id 単位、重複除外）
+      const textbookIds = Array.from(
+        new Set(data.map((s) => s.student_textbook?.id).filter((v): v is string => !!v))
+      );
+      if (textbookIds.length > 0) {
+        getFeedGoalsByTextbooks(textbookIds).then(setGoalMap).catch((e) => {
+          console.error('Failed to fetch feed goals:', e);
+          setGoalMap({});
+        });
+      } else {
+        setGoalMap({});
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -312,6 +328,7 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
                   onInlineUpdate={(patch) => handleInlineUpdate(session.id, patch)}
                   onStudentClick={handleStudentClick}
                   trayRef={trayRef}
+                  goal={session.student_textbook?.id ? goalMap[session.student_textbook.id] : undefined}
                 />
               ))}
             </div>
@@ -343,12 +360,14 @@ interface SwipeableCardProps {
   onInlineUpdate: (patch: { handover?: string | null; homework_not_done?: boolean; tardy?: boolean }) => void;
   onStudentClick: (studentId: string, name: string) => void;
   trayRef: React.RefObject<HTMLDivElement | null>;
+  /** 目標 / 行動目標サマリ（カード表示用、未取得時 undefined） */
+  goal?: FeedGoalSummary;
 }
 
 function SwipeableCard({
   session, isTeacher, isFlying,
   showConfirmAction, showUnconfirmAction,
-  onConfirm, onUnconfirm, onInlineUpdate, onStudentClick, trayRef,
+  onConfirm, onUnconfirm, onInlineUpdate, onStudentClick, trayRef, goal,
 }: SwipeableCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [dragX, setDragX] = useState(0);
@@ -449,6 +468,7 @@ function SwipeableCard({
           onUnconfirm={onUnconfirm}
           onInlineUpdate={onInlineUpdate}
           onStudentClick={onStudentClick}
+          goal={goal}
         />
       </div>
     </div>
@@ -468,13 +488,15 @@ interface FeedCardProps {
   onStudentClick: (studentId: string, name: string) => void;
   /** コンパクト表示（ミニフィード用） */
   compact?: boolean;
+  /** 目標 / 行動目標サマリ */
+  goal?: FeedGoalSummary;
 }
 
 function FeedCard({
   session, isTeacher,
   showConfirmAction, showUnconfirmAction,
   onConfirm, onUnconfirm, onInlineUpdate, onStudentClick,
-  compact,
+  compact, goal,
 }: FeedCardProps) {
   const hasIssue = session.homework_not_done || session.tardy;
   const [editing, setEditing] = useState(false);
@@ -497,13 +519,21 @@ function FeedCard({
       .filter(l => l.student_progress?.curriculum_item)
       .sort((a, b) => (a.lesson_number ?? 0) - (b.lesson_number ?? 0))
       .map(l => {
-        const ci = l.student_progress!.curriculum_item!;
+        const sp = l.student_progress!;
+        const ci = sp.curriculum_item!;
         return {
           label: `${ci.item_number ?? ''} ${ci.title ?? ''}`.trim(),
           lessonNumber: l.lesson_number,
+          schoolProgressDate: sp.school_progress_date ?? null,
         };
       });
   }, [session.lessons]);
+
+  // 学校進度サマリ: 学校で進んだ単元数 / 全体（session の lessons の student_progress 由来）
+  const schoolReachedCount = useMemo(
+    () => lessonUnits.filter((u) => !!u.schoolProgressDate).length,
+    [lessonUnits]
+  );
 
   const isConfirmed = !!session.confirmed_at;
 
@@ -614,17 +644,72 @@ function FeedCard({
         </div>
       )}
 
-      {/* 指導単元 */}
+      {/* 指導単元（学校進度がある単元には小さい校マーカーを付与） */}
       {lessonUnits.length > 0 && (
         <div className="flex items-start gap-1.5 mb-1">
           <BookOpen className="w-3.5 h-3.5 text-gray-400 mt-0.5 shrink-0" />
           <div className="flex flex-wrap gap-1">
             {lessonUnits.map((u, i) => (
-              <span key={i} className="px-1.5 py-0.5 text-[10px] bg-gray-100 text-gray-700 rounded">
-                {u.label} <span className="text-gray-400">({u.lessonNumber}回目)</span>
+              <span
+                key={i}
+                className={`inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] rounded ${
+                  u.schoolProgressDate
+                    ? 'bg-blue-50 text-blue-800 border border-blue-200'
+                    : 'bg-gray-100 text-gray-700'
+                }`}
+                title={u.schoolProgressDate ? `学校進度: ${u.schoolProgressDate}` : undefined}
+              >
+                {u.schoolProgressDate && (
+                  <GraduationCap className="w-3 h-3 text-blue-500" aria-label="学校進度あり" />
+                )}
+                {u.label} <span className={u.schoolProgressDate ? 'text-blue-400' : 'text-gray-400'}>({u.lessonNumber}回目)</span>
               </span>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* 目標 + 行動目標 + 学校進度サマリ */}
+      {!compact && (goal?.exam || schoolReachedCount > 0) && (
+        <div className="mt-2 mb-1 flex flex-wrap items-center gap-2 text-[11px]">
+          {/* 試験目標 */}
+          {goal?.exam && (
+            <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 text-purple-800 border border-purple-200 rounded">
+              <Target className="w-3 h-3 text-purple-500" />
+              <span className="font-medium">{goal.exam.label}</span>
+              {goal.exam.examDate && (
+                <span className="text-purple-500">({goal.exam.examDate.replace(/-/g, '/')})</span>
+              )}
+              {goal.exam.targetScore != null && (
+                <span className="text-purple-600">目標 {goal.exam.targetScore}点</span>
+              )}
+            </div>
+          )}
+
+          {/* 行動目標 達成率 */}
+          {goal && goal.totalCount > 0 && (
+            <div
+              className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 text-green-800 border border-green-200 rounded"
+              title={goal.actionGoals.map((g) => `${g.achieved ? '✓' : '・'} ${g.title}`).join('\n')}
+            >
+              <Check className="w-3 h-3 text-green-600" />
+              <span className="font-medium">行動目標</span>
+              <span className="text-green-700">
+                {goal.achievedCount}/{goal.totalCount}
+              </span>
+            </div>
+          )}
+
+          {/* 学校進度サマリ（このセッションの単元のうち何件が学校で進行済か） */}
+          {schoolReachedCount > 0 && (
+            <div className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-800 border border-blue-200 rounded">
+              <GraduationCap className="w-3 h-3 text-blue-500" />
+              <span className="font-medium">学校進度</span>
+              <span className="text-blue-700">
+                {schoolReachedCount}/{lessonUnits.length}件
+              </span>
+            </div>
+          )}
         </div>
       )}
 

@@ -17,8 +17,10 @@ const FEED_SELECT = `
   ),
   lessons:student_progress_lessons(
     lesson_number,
+    lesson_date,
     student_progress:student_progress(
       curriculum_item_id,
+      school_progress_date,
       curriculum_item:curriculum_items(item_number, title)
     )
   )
@@ -695,4 +697,156 @@ export async function getSmartAlerts(
   });
 
   return alerts;
+}
+
+// ============================================
+// フィード用 目標・行動目標 一括取得
+// ============================================
+
+export interface FeedGoalSummary {
+  /** 直近の試験目標（複数あれば exam_date が早いものを優先） */
+  exam: {
+    id: string;
+    label: string;       // 試験名
+    examDate: string | null;
+    targetScore: number | null;
+  } | null;
+  /** その試験目標に紐づく行動目標 */
+  actionGoals: Array<{
+    id: string;
+    title: string;
+    achieved: boolean;
+    counterCurrent: number | null;
+    counterTarget: number | null;
+  }>;
+  achievedCount: number;
+  totalCount: number;
+}
+
+/**
+ * フィードカードに表示する 目標 / 行動目標 を student_textbook_id 単位で一括取得。
+ * 試験日が今日以降のものを優先し、なければ最新の試験を返す。
+ */
+export async function getFeedGoalsByTextbooks(
+  studentTextbookIds: string[]
+): Promise<Record<string, FeedGoalSummary>> {
+  if (studentTextbookIds.length === 0) return {};
+
+  // 試験目標を一括取得
+  const { data: exams, error: examErr } = await supabase
+    .from('student_textbook_exams')
+    .select('id, student_textbook_id, exam_date, target_score, custom_exam_name, exam_type_id')
+    .in('student_textbook_id', studentTextbookIds)
+    .order('exam_date', { ascending: true });
+  if (examErr) {
+    console.error('Failed to fetch feed exams:', examErr);
+    return {};
+  }
+  const examRows = (exams || []) as Array<{
+    id: string;
+    student_textbook_id: string;
+    exam_date: string | null;
+    target_score: number | null;
+    custom_exam_name: string | null;
+    exam_type_id: string | null;
+  }>;
+
+  // exam_type_id → name 解決のため exam_types を取得
+  const examTypeIds = Array.from(
+    new Set(examRows.map((r) => r.exam_type_id).filter((v): v is string => !!v))
+  );
+  const examTypeNameMap = new Map<string, string>();
+  if (examTypeIds.length > 0) {
+    const { data: types } = await supabase
+      .from('exam_types')
+      .select('id, name')
+      .in('id', examTypeIds);
+    for (const t of (types || []) as Array<{ id: string; name: string }>) {
+      examTypeNameMap.set(t.id, t.name);
+    }
+  }
+
+  // student_textbook ごとに「直近の未来の試験」または最新の試験を選択
+  const today = new Date().toISOString().slice(0, 10);
+  const examByTextbook = new Map<string, (typeof examRows)[0]>();
+  for (const e of examRows) {
+    const cur = examByTextbook.get(e.student_textbook_id);
+    if (!cur) {
+      examByTextbook.set(e.student_textbook_id, e);
+      continue;
+    }
+    // 未来の試験を優先（exam_date >= today）。両方未来なら早いほう、両方過去なら新しいほう。
+    const curFuture = (cur.exam_date ?? '') >= today;
+    const newFuture = (e.exam_date ?? '') >= today;
+    if (newFuture && !curFuture) examByTextbook.set(e.student_textbook_id, e);
+    else if (newFuture === curFuture) {
+      if (newFuture && (e.exam_date ?? '') < (cur.exam_date ?? '')) {
+        examByTextbook.set(e.student_textbook_id, e);
+      } else if (!newFuture && (e.exam_date ?? '') > (cur.exam_date ?? '')) {
+        examByTextbook.set(e.student_textbook_id, e);
+      }
+    }
+  }
+
+  // 行動目標を該当 examId 群で一括取得
+  const examIds = Array.from(examByTextbook.values()).map((e) => e.id);
+  const goalsByExam = new Map<string, Array<{
+    id: string;
+    title: string;
+    achieved: boolean;
+    counter_current: number | null;
+    counter_target: number | null;
+    sort_order: number | null;
+  }>>();
+  if (examIds.length > 0) {
+    const { data: goals } = await supabase
+      .from('action_goals')
+      .select('id, student_textbook_exam_id, title, achieved, counter_current, counter_target, sort_order')
+      .in('student_textbook_exam_id', examIds)
+      .order('sort_order', { ascending: true });
+    for (const g of (goals || []) as Array<{
+      id: string;
+      student_textbook_exam_id: string;
+      title: string;
+      achieved: boolean;
+      counter_current: number | null;
+      counter_target: number | null;
+      sort_order: number | null;
+    }>) {
+      const k = g.student_textbook_exam_id;
+      if (!goalsByExam.has(k)) goalsByExam.set(k, []);
+      goalsByExam.get(k)!.push(g);
+    }
+  }
+
+  // textbook_id → サマリへ
+  const out: Record<string, FeedGoalSummary> = {};
+  for (const tbId of studentTextbookIds) {
+    const exam = examByTextbook.get(tbId);
+    if (!exam) {
+      out[tbId] = { exam: null, actionGoals: [], achievedCount: 0, totalCount: 0 };
+      continue;
+    }
+    const label =
+      exam.custom_exam_name ?? (exam.exam_type_id ? examTypeNameMap.get(exam.exam_type_id) ?? 'テスト' : 'テスト');
+    const goals = goalsByExam.get(exam.id) ?? [];
+    out[tbId] = {
+      exam: {
+        id: exam.id,
+        label,
+        examDate: exam.exam_date,
+        targetScore: exam.target_score,
+      },
+      actionGoals: goals.map((g) => ({
+        id: g.id,
+        title: g.title,
+        achieved: g.achieved,
+        counterCurrent: g.counter_current,
+        counterTarget: g.counter_target,
+      })),
+      achievedCount: goals.filter((g) => g.achieved).length,
+      totalCount: goals.length,
+    };
+  }
+  return out;
 }

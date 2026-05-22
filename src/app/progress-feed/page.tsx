@@ -30,15 +30,14 @@ export default function ProgressFeedPage() {
 
   return (
     <AdminLayout headerTitle="進行フィード">
-      <div className="max-w-5xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-lg font-bold text-gray-900">進行フィード</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            直近の授業セッション記録を新着順で表示します
-          </p>
-        </div>
-        <SessionFeed />
+      {/* AdminLayout 既定の max-w-[1600px] を使用（他ページと統一） */}
+      <div className="mb-6">
+        <h1 className="text-lg font-bold text-gray-900">進行フィード</h1>
+        <p className="text-sm text-gray-500 mt-1">
+          直近の授業セッション記録を新着順で表示します
+        </p>
       </div>
+      <SessionFeed />
     </AdminLayout>
   );
 }

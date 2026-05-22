@@ -3295,8 +3295,12 @@ export type ProgressSessionUpdate = Database['public']['Tables']['progress_sessi
 
 /** レッスン + 単元情報（フィード表示用） */
 export type SessionLessonWithUnit = Pick<StudentProgressLesson, 'lesson_number'> & {
+  /** 学校進度比較や指導日表示で使う */
+  lesson_date?: string | null;
   student_progress?: {
     curriculum_item_id: number;
+    /** 学校が進んだ日（フィードカードに学校進度マーカーを出す） */
+    school_progress_date?: string | null;
     curriculum_item?: Pick<CurriculumItem, 'item_number' | 'title'> | null;
   } | null;
 };
