@@ -1,7 +1,7 @@
 'use client';
 
 import { Button, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge, Loading } from '@/components/ui';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 import type { ScheduleTimeSlot } from '@/types/schedule';
 
 function timeLabel(t: string): string {
@@ -14,10 +14,11 @@ interface TimeSlotTableProps {
   onEdit: (slot: ScheduleTimeSlot) => void;
   onDelete: (slot: ScheduleTimeSlot) => void;
   onAdd: () => void;
+  onMove?: (index: number, direction: 'up' | 'down') => void;
   isLoading?: boolean;
 }
 
-export function TimeSlotTable({ slots, onEdit, onDelete, onAdd, isLoading }: TimeSlotTableProps) {
+export function TimeSlotTable({ slots, onEdit, onDelete, onAdd, onMove, isLoading }: TimeSlotTableProps) {
   if (isLoading) {
     return (
       <Loading size="md" />
@@ -39,11 +40,12 @@ export function TimeSlotTable({ slots, onEdit, onDelete, onAdd, isLoading }: Tim
           <TableHead>開始時刻</TableHead>
           <TableHead>終了時刻</TableHead>
           <TableHead className="text-center">有効</TableHead>
+          <TableHead className="w-20">順序</TableHead>
           <TableHead className="w-24">操作</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {slots.map((slot) => (
+        {slots.map((slot, index) => (
           <TableRow key={slot.id}>
             <TableCell className="font-medium">{slot.slot_number}限</TableCell>
             <TableCell>{timeLabel(slot.start_time)}</TableCell>
@@ -54,6 +56,28 @@ export function TimeSlotTable({ slots, onEdit, onDelete, onAdd, isLoading }: Tim
               ) : (
                 <Badge variant="secondary">無効</Badge>
               )}
+            </TableCell>
+            <TableCell>
+              <div className="flex items-center gap-0.5">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="p-1 h-7 w-7"
+                  disabled={index === 0}
+                  onClick={() => onMove?.(index, 'up')}
+                >
+                  <ArrowUp className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="p-1 h-7 w-7"
+                  disabled={index === slots.length - 1}
+                  onClick={() => onMove?.(index, 'down')}
+                >
+                  <ArrowDown className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             </TableCell>
             <TableCell>
               <div className="flex items-center gap-1">

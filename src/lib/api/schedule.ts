@@ -81,11 +81,15 @@ export async function getTimeSlotById(id: string): Promise<ScheduleTimeSlot | nu
   return (data as ScheduleTimeSlot) ?? null;
 }
 
-/** 開始時刻順で slot_number を 1,2,3... に振り直す */
-async function reassignSlotNumbers(schoolId: string): Promise<void> {
-  const { error } = await db.rpc('reassign_slot_numbers', { p_school_id: schoolId });
+/** IDの配列順に slot_number を 1,2,3... に振り直す */
+export async function reorderTimeSlots(schoolId: string, orderedIds: string[]): Promise<void> {
+  const { error } = await db.rpc('reorder_time_slots', {
+    p_school_id: schoolId,
+    p_ordered_ids: orderedIds,
+  });
   if (error) {
-    console.error('Error reassigning slot numbers:', error);
+    console.error('Error reordering time slots:', error);
+    throw new Error('コマ番号の並び替えに失敗しました');
   }
 }
 
@@ -93,7 +97,6 @@ export async function createTimeSlot(
   schoolId: string,
   form: ScheduleTimeSlotFormData
 ): Promise<ScheduleTimeSlot> {
-  // 仮の slot_number で INSERT し、直後に時刻順で振り直す
   const { data, error } = await db
     .from('schedule_time_slots')
     .insert({
@@ -111,7 +114,6 @@ export async function createTimeSlot(
     console.error('Error creating time slot:', error);
     throw new Error('コマ時間の登録に失敗しました');
   }
-  await reassignSlotNumbers(schoolId);
   return data as ScheduleTimeSlot;
 }
 
@@ -130,10 +132,7 @@ export async function updateTimeSlot(
     console.error('Error updating time slot:', error);
     throw new Error('コマ時間の更新に失敗しました');
   }
-  // 時刻変更時に備えて振り直し
-  const slot = data as ScheduleTimeSlot;
-  await reassignSlotNumbers(slot.school_id);
-  return slot;
+  return data as ScheduleTimeSlot;
 }
 
 export async function deleteTimeSlot(id: string, schoolId: string): Promise<void> {
@@ -142,7 +141,6 @@ export async function deleteTimeSlot(id: string, schoolId: string): Promise<void
     console.error('Error deleting time slot:', error);
     throw new Error('コマ時間の削除に失敗しました。使用中の場合は削除できません。');
   }
-  await reassignSlotNumbers(schoolId);
 }
 
 /** コマ時間が通塾日程またはスケジュールで使用されているか */

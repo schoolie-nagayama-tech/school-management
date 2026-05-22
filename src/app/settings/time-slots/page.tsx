@@ -18,6 +18,7 @@ import {
   updateTimeSlot,
   deleteTimeSlot,
   isTimeSlotInUse,
+  reorderTimeSlots,
 } from '@/lib/api/schedule';
 import type { ScheduleTimeSlot, ScheduleTimeSlotFormData } from '@/types/schedule';
 import type { School } from '@/types/database';
@@ -86,6 +87,24 @@ export default function TimeSlotsSettingsPage() {
     }
   };
 
+  // 上下並び替え → slot_number を振り直し
+  const handleMove = async (index: number, direction: 'up' | 'down') => {
+    const swapIndex = direction === 'up' ? index - 1 : index + 1;
+    if (swapIndex < 0 || swapIndex >= slots.length || !selectedSchoolId) return;
+    const newSlots = [...slots];
+    [newSlots[index], newSlots[swapIndex]] = [newSlots[swapIndex], newSlots[index]];
+    setSlots(newSlots);
+    try {
+      await reorderTimeSlots(selectedSchoolId, newSlots.map((s) => s.id));
+      const data = await getTimeSlots(selectedSchoolId);
+      setSlots(data);
+    } catch (e) {
+      toastError((e as Error).message);
+      const data = await getTimeSlots(selectedSchoolId);
+      setSlots(data);
+    }
+  };
+
   const handleDeleteClick = (slot: ScheduleTimeSlot) => {
     setDeletingSlot(slot);
     setDeleteDialogOpen(true);
@@ -102,6 +121,11 @@ export default function TimeSlotsSettingsPage() {
         return;
       }
       await deleteTimeSlot(deletingSlot.id, selectedSchoolId!);
+      // 削除後にコマ番号を詰め直す
+      const remaining = slots.filter((s) => s.id !== deletingSlot.id);
+      if (remaining.length > 0) {
+        await reorderTimeSlots(selectedSchoolId!, remaining.map((s) => s.id));
+      }
       success('コマ時間を削除しました');
       const data = await getTimeSlots(selectedSchoolId!);
       setSlots(data);
@@ -176,6 +200,7 @@ export default function TimeSlotsSettingsPage() {
                 setFormOpen(true);
               }}
               onDelete={handleDeleteClick}
+              onMove={handleMove}
               onAdd={() => {
                 setEditingSlot(null);
                 setFormOpen(true);
