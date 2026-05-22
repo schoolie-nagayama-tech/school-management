@@ -709,38 +709,110 @@ a:focus-visible {
 }
 
 /* ─── 進行フィード: 確認カードがトレイへふわっと飛んでいくアニメーション ───
- * ゴミ箱に紙を投げ入れるイメージ。投げ出しの初速 → 頂点でふわっと滞空 →
- * 重力でゆっくりトレイに吸い込まれる。
- * 3つのキーフレームのみ + ease-out カーブで滑らかに繋ぐ。
+ * ゴミ箱に紙を投げ入れるイメージ。
+ * カクつきを完全に消すため、X と Y の動きを別要素に分離して合成する:
+ *  - 外側 (.session-fly): 0%→100% の単一段階で diagonal translate + scale + rotate + fade
+ *  - 内側 (.session-fly-hop): translateY のみで上下に弧を描く
+ * 外側は中間キーフレームがないため進路が変わらず、内側は単一軸の往復のみで
+ * 物理的な滑らかさが出る。
  * --fly-dx / --fly-dy はカード中心 → トレイ中心の差分(px)。
  * transform / opacity のみで GPU 加速され軽量。
  */
-@keyframes session-fly-to-tray {
-  0% {
+@keyframes session-fly-translate {
+  from {
     transform: translate(0, 0) rotate(0deg) scale(1);
     opacity: 1;
   }
-  50% {
-    /* 頂点: 軌道の中間、トレイより 100px 上にふわっと持ち上げる */
-    transform: translate(calc(var(--fly-dx) * 0.5), calc(var(--fly-dy) - 100px)) rotate(6deg) scale(0.55);
-    opacity: 1;
-  }
-  100% {
-    /* 着地: トレイの中心へ小さく折りたたまれて吸い込まれる */
-    transform: translate(var(--fly-dx), var(--fly-dy)) rotate(14deg) scale(0.1);
+  to {
+    transform: translate(var(--fly-dx), var(--fly-dy)) rotate(12deg) scale(0.1);
     opacity: 0;
   }
 }
+@keyframes session-fly-hop {
+  0%   { transform: translateY(0); }
+  50%  { transform: translateY(-110px); }
+  100% { transform: translateY(0); }
+}
 .session-fly {
-  /* ease-out 系: 投げ出し直後が速く、頂点〜着地でふわっと減速 */
-  animation: session-fly-to-tray 850ms cubic-bezier(0.16, 0.84, 0.32, 1) forwards;
+  /* 投げ出しが速く、着地でふわっと減速する ease-out 系 */
+  animation: session-fly-translate 850ms cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
   will-change: transform, opacity;
   z-index: 50;
 }
+.session-fly-hop {
+  /* 弧の頂点は ease-in-out で対称に滑らかに（上→ピーク→下が一筆書きに） */
+  animation: session-fly-hop 850ms cubic-bezier(0.45, 0, 0.55, 1) forwards;
+  will-change: transform;
+}
 @media (prefers-reduced-motion: reduce) {
-  .session-fly {
+  .session-fly, .session-fly-hop {
     animation: none;
+  }
+  .session-fly {
     opacity: 0;
     transition: opacity 0.2s ease;
+  }
+}
+
+/* ─── 進行表 提出フッターの登場アニメーション ───
+ * 画面下からスッと現れる。スムーズな ease-out で 240ms。
+ */
+@keyframes submit-footer-in {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+.submit-footer-enter {
+  animation: submit-footer-in 240ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* ─── ドロップダウンメニューの開閉アニメーション ───
+ * 上端から押し下げるように fade + scale。160ms で素早く。
+ */
+@keyframes dropdown-open {
+  from {
+    transform: scaleY(0.96) translateY(-4px);
+    opacity: 0;
+  }
+  to {
+    transform: scaleY(1) translateY(0);
+    opacity: 1;
+  }
+}
+.dropdown-enter {
+  transform-origin: top right;
+  animation: dropdown-open 160ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .submit-footer-enter, .dropdown-enter {
+    animation: none;
+  }
+}
+
+/* ─── 提出ボタン: 長時間放置時の注意喚起パルス ───
+ * 編集を1件以上していて1時間提出されていないとき、ボタンを優しく
+ * ちかちかさせて気付かせる（ring が広がってフェードアウト）。
+ * 主張しすぎないように、強い色の点滅ではなく ring の脈動にしている。
+ */
+@keyframes submit-idle-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.55), 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(220, 38, 38, 0), 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  }
+}
+.submit-idle-pulse {
+  animation: submit-idle-pulse 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .submit-idle-pulse {
+    animation: none;
   }
 }

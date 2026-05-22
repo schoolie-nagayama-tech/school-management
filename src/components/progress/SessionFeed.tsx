@@ -54,6 +54,10 @@ const TABS: { key: TabKey; label: string }[] = [
   { key: 'confirmed', label: '確認済' },
 ];
 
+// カード→トレイへ飛んでいくアニメーションの所要時間（globals.css の
+// .session-fly / .session-fly-hop と一致させる必要がある）。
+const FLY_TO_TRAY_DURATION_MS = 850;
+
 // ─── メインコンポーネント ───
 
 interface Props {
@@ -147,7 +151,7 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
       console.error(e);
     }
 
-    // アニメーション完了後にリストから除去（keyframes と同じ 850ms）
+    // アニメーション完了後にリストから除去
     setTimeout(() => {
       setSessions(prev => prev.filter(s => s.id !== sessionId));
       setFlyingIds(prev => {
@@ -155,7 +159,7 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
         next.delete(sessionId);
         return next;
       });
-    }, 850);
+    }, FLY_TO_TRAY_DURATION_MS);
   }, [profile?.id]);
 
   const handleUnconfirm = useCallback(async (sessionId: string) => {
@@ -433,16 +437,20 @@ function SwipeableCard({
         </div>
       )}
 
-      <FeedCard
-        session={session}
-        isTeacher={isTeacher}
-        showConfirmAction={showConfirmAction}
-        showUnconfirmAction={showUnconfirmAction}
-        onConfirm={onConfirm}
-        onUnconfirm={onUnconfirm}
-        onInlineUpdate={onInlineUpdate}
-        onStudentClick={onStudentClick}
-      />
+      {/* 飛んでいくとき、内側要素で Y方向の弧だけ別アニメーションに分離。
+       * 外側=直線(translate+scale+rotate)、内側=上下のhop のみ → 弧が滑らかになる */}
+      <div className={isFlying ? 'session-fly-hop' : undefined}>
+        <FeedCard
+          session={session}
+          isTeacher={isTeacher}
+          showConfirmAction={showConfirmAction}
+          showUnconfirmAction={showUnconfirmAction}
+          onConfirm={onConfirm}
+          onUnconfirm={onUnconfirm}
+          onInlineUpdate={onInlineUpdate}
+          onStudentClick={onStudentClick}
+        />
+      </div>
     </div>
   );
 }

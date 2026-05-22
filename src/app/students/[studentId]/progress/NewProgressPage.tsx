@@ -26,7 +26,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Eye, EyeOff, FileText, Plus, Send, Settings2, Trash2 } from 'lucide-react';
+import { Eye, EyeOff, FileText, Plus, RefreshCw, Send, Settings2, Trash2 } from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
 import { Button, Modal, Select, ToastContainer, Loading } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
@@ -1147,6 +1147,16 @@ function TableView({
   const [meetingCols, setMeetingCols] = useState<Record<MeetingCol, boolean>>(DEFAULT_COLS);
   const [colMenuOpen, setColMenuOpen] = useState(false);
 
+  // ESC で列設定ドロップダウンを閉じる
+  useEffect(() => {
+    if (!colMenuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setColMenuOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [colMenuOpen]);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
@@ -1318,12 +1328,15 @@ function TableView({
   // セッション記録モード以外で編集された行を追跡
   const [dirtyRows, setDirtyRows] = useState<Set<string>>(new Set());
   const [submitting, setSubmitting] = useState(false);
+  // 編集してから提出せず長時間放置されたら true に。ボタンをパルスで注意喚起。
+  const [idleAlert, setIdleAlert] = useState(false);
 
   // テキスト切替時に dirty をリセット
-  useEffect(() => { setDirtyRows(new Set()); }, [textbook.id]);
+  useEffect(() => { setDirtyRows(new Set()); setIdleAlert(false); }, [textbook.id]);
 
   const markDirty = useCallback((rowId: string) => {
     if (sessionMode) return; // セッション記録モード中は追跡しない
+    setIdleAlert(false); // 編集が入ったらアラートを解除
     setDirtyRows(prev => {
       if (prev.has(rowId)) return prev;
       const next = new Set(prev);
@@ -1331,6 +1344,18 @@ function TableView({
       return next;
     });
   }, [sessionMode]);
+
+  // 編集が1件以上ある状態で 1時間 (3,600,000ms) 提出されなかったら idleAlert を立てる。
+  // markDirty で再編集された場合は idleAlert=false に戻り、タイマーも貼り直し。
+  useEffect(() => {
+    if (dirtyRows.size === 0) {
+      setIdleAlert(false);
+      return;
+    }
+    const ONE_HOUR_MS = 60 * 60 * 1000;
+    const timer = setTimeout(() => setIdleAlert(true), ONE_HOUR_MS);
+    return () => clearTimeout(timer);
+  }, [dirtyRows]);
 
   // 提出: 直接入力からセッションを生成
   const handleSubmit = useCallback(async () => {
@@ -1344,6 +1369,7 @@ function TableView({
       if (result) {
         success(`${result.linkedCount}件の指導記録を提出しました`);
         setDirtyRows(new Set());
+        setIdleAlert(false);
         const rows = await getStudentProgress(textbook.id);
         setProgress(rows || []);
       } else {
@@ -1467,18 +1493,21 @@ function TableView({
           <div className="relative">
             <button
               onClick={() => setColMenuOpen((v) => !v)}
-              className="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-colors flex items-center gap-1"
+              aria-expanded={colMenuOpen}
+              aria-haspopup="menu"
+              aria-label={`列設定${hiddenColCount > 0 ? `（${hiddenColCount}列非表示中）` : ''}`}
+              className="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-colors flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1e3a5f]/40"
             >
               <Settings2 className="w-3.5 h-3.5" />
               列設定
               {hiddenColCount > 0 && (
-                <span className="px-1 py-0.5 text-[10px] bg-gray-200 text-gray-600 rounded font-medium">{hiddenColCount}</span>
+                <span className="px-1 py-0.5 text-[10px] bg-gray-200 text-gray-700 rounded font-medium">{hiddenColCount}</span>
               )}
             </button>
             {colMenuOpen && (
               <>
-                <div className="fixed inset-0 z-10" onClick={() => setColMenuOpen(false)} />
-                <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-[#e5e7eb] rounded-lg shadow-lg z-20 overflow-hidden">
+                <div className="fixed inset-0 z-30" onClick={() => setColMenuOpen(false)} />
+                <div role="menu" className="dropdown-enter absolute right-0 top-full mt-1 w-56 bg-white border border-[#e5e7eb] rounded-lg shadow-lg z-40 overflow-hidden">
                   <div className="px-3 py-2 text-[10px] text-[#6b7280] uppercase tracking-wider border-b border-[#f3f4f6] bg-[#f9fafb] flex items-center justify-between">
                     <span>{isMeeting ? '保護者に見せる列を選択' : '表示する列を選択'}</span>
                     {hiddenColCount > 0 && (
@@ -1691,55 +1720,6 @@ function TableView({
           />
         )}
 
-        {/* ツールバー: 一括設定（スティッキー） */}
-        {!isMeeting && (
-          <div className={`px-3 py-1.5 border rounded-lg flex items-center gap-3 flex-wrap sticky top-0 z-20 shadow-sm ${
-            isMeeting ? 'bg-[#fff7ed] border-[#fb923c]/30' : 'bg-[#f9fafb] border-[#e5e7eb]'
-          }`}>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[11px] font-medium text-[#4b5563]">一括:</span>
-              <div className="inline-flex rounded overflow-hidden border border-[#e5e7eb] text-[11px]">
-                {([
-                  { key: null, label: 'OFF' },
-                  { key: 'examRange' as const, label: '試験範囲' },
-                  { key: 'intent' as const, label: '指導意図' },
-                ]).map((m) => (
-                  <button
-                    key={m.label}
-                    onClick={() => { setPaintMode(m.key); setPaintValue(''); setPaintStart(null); }}
-                    className={`px-2 py-0.5 transition-colors ${
-                      paintMode === m.key
-                        ? 'bg-[#1e3a5f] text-white'
-                        : 'bg-white text-[#4b5563] hover:bg-[#f3f4f6]'
-                    }`}
-                  >
-                    {m.label}
-                  </button>
-                ))}
-              </div>
-              {paintMode === 'examRange' && (
-                <select value={paintValue} onChange={(e) => { setPaintValue(e.target.value); setPaintStart(null); }} className="px-1.5 py-0.5 text-[11px] border border-[#e5e7eb] rounded bg-white">
-                  <option value="">試験を選択</option>
-                  {examTypes.map((et) => <option key={et.id} value={et.id}>{et.name}</option>)}
-                </select>
-              )}
-              {paintMode === 'intent' && (
-                <select value={paintValue} onChange={(e) => { setPaintValue(e.target.value); setPaintStart(null); }} className="px-1.5 py-0.5 text-[11px] border border-[#e5e7eb] rounded bg-white">
-                  <option value="">意図を選択</option>
-                  {INTENT_TAGS.map((t) => <option key={t} value={t}>{t}</option>)}
-                </select>
-              )}
-              {paintMode && paintValue && (() => {
-                const startRow = paintStart ? progress.find((r) => String(r.id) === paintStart) : null;
-                const startLabel = startRow ? (itemNo(startRow) != null ? `項目${itemNo(startRow)}` : (startRow.title ?? '行')) : null;
-                return <span className="text-[11px] text-[#1e40af] font-medium">{paintStart == null ? '開始行をクリック' : `${startLabel} → 終了行をクリック`}</span>;
-              })()}
-              {paintStart != null && (
-                <button onClick={() => setPaintStart(null)} className="text-[11px] text-[#6b7280] hover:text-[#1f2937] underline">リセット</button>
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* セッション記録モード（新UI） */}
@@ -1887,31 +1867,97 @@ function TableView({
         />
       )}
 
-      {/* 提出フッター: 直接入力をセッションとしてフィードに反映 */}
+      {/* 提出フッター: 一括設定 + 入力完了後の提出ボタン
+       * - 一括設定（試験範囲/指導意図の塗りつぶしモード）を左に
+       * - 編集が1件もない時は提出ボタンが disabled
+       * - 提出中はスピナーを表示
+       * - 1時間放置されたら submit-idle-pulse で注意喚起
+       * - 登場時は下からスライドアップ（submit-footer-enter）
+       */}
       {!isMeeting && !sessionMode && (
-        <div className="sticky bottom-0 z-20 border-t border-gray-200 bg-white px-4 py-3 flex items-center justify-between shadow-[0_-2px_8px_rgba(0,0,0,0.06)]">
-          <span className="text-xs text-gray-500">
-            {dirtyRows.size > 0
-              ? `${dirtyRows.size}件の編集があります`
-              : '入力内容を提出してフィードに反映'}
-          </span>
-          <button
-            onClick={handleSubmit}
-            disabled={submitting || dirtyRows.size === 0}
-            className={`inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
-              dirtyRows.size > 0
-                ? 'bg-[#1e3a5f] text-white hover:bg-[#2a4d7a] shadow-sm'
-                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-            } disabled:opacity-50`}
-          >
-            <Send className="w-4 h-4" />
-            提出
-            {dirtyRows.size > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded text-[11px]">
-                {dirtyRows.size}
-              </span>
+        <div className="submit-footer-enter sticky bottom-0 z-20 border-t border-gray-200 bg-white px-4 py-2.5 flex items-center gap-3 flex-wrap shadow-[0_-2px_8px_rgba(0,0,0,0.06)]">
+          {/* 一括設定: 試験範囲・指導意図の連続塗りつぶし */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] font-medium text-gray-600">一括:</span>
+            <div className="inline-flex rounded overflow-hidden border border-gray-200 text-[11px]">
+              {([
+                { key: null, label: 'OFF' },
+                { key: 'examRange' as const, label: '試験範囲' },
+                { key: 'intent' as const, label: '指導意図' },
+              ]).map((m) => (
+                <button
+                  key={m.label}
+                  onClick={() => { setPaintMode(m.key); setPaintValue(''); setPaintStart(null); }}
+                  className={`px-2 py-0.5 transition-colors ${
+                    paintMode === m.key
+                      ? 'bg-[#1e3a5f] text-white'
+                      : 'bg-white text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+            {paintMode === 'examRange' && (
+              <select value={paintValue} onChange={(e) => { setPaintValue(e.target.value); setPaintStart(null); }} className="px-1.5 py-0.5 text-[11px] border border-gray-200 rounded bg-white">
+                <option value="">試験を選択</option>
+                {examTypes.map((et) => <option key={et.id} value={et.id}>{et.name}</option>)}
+              </select>
             )}
-          </button>
+            {paintMode === 'intent' && (
+              <select value={paintValue} onChange={(e) => { setPaintValue(e.target.value); setPaintStart(null); }} className="px-1.5 py-0.5 text-[11px] border border-gray-200 rounded bg-white">
+                <option value="">意図を選択</option>
+                {INTENT_TAGS.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            )}
+            {paintMode && paintValue && (() => {
+              const startRow = paintStart ? progress.find((r) => String(r.id) === paintStart) : null;
+              const startLabel = startRow ? (itemNo(startRow) != null ? `項目${itemNo(startRow)}` : (startRow.title ?? '行')) : null;
+              return <span className="text-[11px] text-[#1e40af] font-medium">{paintStart == null ? '開始行をクリック' : `${startLabel} → 終了行をクリック`}</span>;
+            })()}
+            {paintStart != null && (
+              <button onClick={() => setPaintStart(null)} className="text-[11px] text-gray-500 hover:text-gray-800 underline">リセット</button>
+            )}
+          </div>
+
+          {/* スペーサー */}
+          <div className="ml-auto flex items-center gap-3">
+            <span
+              aria-live="polite"
+              className={`text-xs ${
+                idleAlert ? 'text-[#dc2626] font-semibold' :
+                dirtyRows.size > 0 ? 'text-gray-700 font-medium' : 'text-gray-500'
+              }`}
+            >
+              {idleAlert
+                ? '未提出の入力があります'
+                : dirtyRows.size > 0
+                ? `${dirtyRows.size}件の編集があります`
+                : '入力完了後 提出'}
+            </span>
+            <button
+              onClick={handleSubmit}
+              disabled={submitting || dirtyRows.size === 0}
+              aria-label={dirtyRows.size > 0 ? `${dirtyRows.size}件の編集を提出` : '提出（編集なし）'}
+              className={`inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1e3a5f]/40 ${
+                dirtyRows.size > 0
+                  ? 'bg-[#1e3a5f] text-white hover:bg-[#2a4d7a] shadow-sm'
+                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              } ${idleAlert && dirtyRows.size > 0 ? 'submit-idle-pulse' : ''}`}
+            >
+              {submitting ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
+              {submitting ? '提出中…' : '提出'}
+              {!submitting && dirtyRows.size > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded text-[11px] font-medium">
+                  {dirtyRows.size}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
       )}
     </div>
