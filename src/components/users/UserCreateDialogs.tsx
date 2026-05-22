@@ -15,7 +15,7 @@ interface UserCreateDialogsProps {
   isResultDialogOpen: boolean;
   onResultDialogChange: (open: boolean) => void;
   schools: School[];
-  onCreateUser: (formData: { email: string; displayName: string; password: string; role: UserRole; schoolId: string }) => Promise<void>;
+  onCreateUser: (formData: { email: string; displayName: string; lastName: string; firstName: string; password: string; role: UserRole; schoolId: string }) => Promise<void>;
   createdUser: { email: string; password: string; displayName: string } | null;
   isSubmitting: boolean;
   onCopy: (text: string, field: string) => void;
@@ -37,16 +37,22 @@ export function UserCreateDialogs({
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
-    displayName: '',
+    lastName: '',
+    firstName: '',
+    displayName: '', // 後方互換（lastName + firstName から生成）
     password: '',
     role: 'manager' as UserRole,
     schoolId: schools[0]?.id || '',
   });
 
   const handleCreate = async () => {
-    await onCreateUser(formData);
+    // displayName を姓名から生成して渡す
+    const merged = { ...formData, displayName: [formData.lastName, formData.firstName].filter(Boolean).join(' ') };
+    await onCreateUser(merged);
     setFormData({
       email: '',
+      lastName: '',
+      firstName: '',
       displayName: '',
       password: '',
       role: 'manager',
@@ -79,16 +85,29 @@ export function UserCreateDialogs({
               />
               <p className="text-xs text-[#4b5563]/70">ログイン時に使用するIDです。未入力の場合は自動生成されます。</p>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="displayName">表示名 *</Label>
-              <Input
-                id="displayName"
-                value={formData.displayName}
-                onChange={(e) =>
-                  setFormData({ ...formData, displayName: e.target.value })
-                }
-                placeholder="山田 太郎"
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="lastName">姓 *</Label>
+                <Input
+                  id="lastName"
+                  value={formData.lastName}
+                  onChange={(e) =>
+                    setFormData({ ...formData, lastName: e.target.value })
+                  }
+                  placeholder="山田"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="firstName">名</Label>
+                <Input
+                  id="firstName"
+                  value={formData.firstName}
+                  onChange={(e) =>
+                    setFormData({ ...formData, firstName: e.target.value })
+                  }
+                  placeholder="太郎"
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">パスワード *</Label>

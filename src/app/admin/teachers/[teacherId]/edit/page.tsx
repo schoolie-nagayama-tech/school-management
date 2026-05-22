@@ -121,7 +121,8 @@ export default function TeacherEditPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [notFound, setNotFound] = useState(false);
 
-  const [editDisplayName, setEditDisplayName] = useState('');
+  const [editLastName, setEditLastName] = useState('');
+  const [editFirstName, setEditFirstName] = useState('');
   const [editSchoolIds, setEditSchoolIds] = useState<string[]>([]);
   const [editTeachableSubjectIds, setEditTeachableSubjectIds] = useState<string[]>([]);
   const [editAvailableSlotNumbersByDay, setEditAvailableSlotNumbersByDay] = useState<
@@ -235,7 +236,8 @@ export default function TeacherEditPage() {
         setAllBadges(badges);
         setBadgeAssignments(assignments);
 
-        setEditDisplayName(found.display_name || '');
+        setEditLastName(found.last_name || found.display_name || '');
+        setEditFirstName(found.first_name || '');
         const teacherSchoolIds = found.user_schools?.map((us) => us.school_id) || [];
         if (isManager) {
           const userSchoolIds = getSelectedSchoolIds();
@@ -348,7 +350,8 @@ export default function TeacherEditPage() {
         headers: { 'Content-Type': 'application/json' },
         cache: 'no-store',
         body: JSON.stringify({
-          display_name: editDisplayName,
+          last_name: editLastName,
+          first_name: editFirstName,
           teachable_subject_ids: editTeachableSubjectIds,
           available_days_of_week,
           available_slot_numbers_by_day: editAvailableSlotNumbersByDay,
@@ -470,14 +473,25 @@ export default function TeacherEditPage() {
                     className="w-full bg-surface text-text-body"
                   />
                 </div>
-                <div>
-                  <Label className="block text-sm font-medium text-text-muted mb-1.5">表示名</Label>
-                  <Input
-                    value={editDisplayName}
-                    onChange={(e) => setEditDisplayName(e.target.value)}
-                    placeholder="山田 太郎"
-                    className="w-full"
-                  />
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="block text-sm font-medium text-text-muted mb-1.5">姓</Label>
+                    <Input
+                      value={editLastName}
+                      onChange={(e) => setEditLastName(e.target.value)}
+                      placeholder="山田"
+                      className="w-full"
+                    />
+                  </div>
+                  <div>
+                    <Label className="block text-sm font-medium text-text-muted mb-1.5">名</Label>
+                    <Input
+                      value={editFirstName}
+                      onChange={(e) => setEditFirstName(e.target.value)}
+                      placeholder="太郎"
+                      className="w-full"
+                    />
+                  </div>
                 </div>
                 <div>
                   <Label className="block text-sm font-medium text-text-muted mb-1.5">担当教室</Label>

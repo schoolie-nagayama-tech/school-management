@@ -149,8 +149,8 @@ export default function UsersPage() {
   }, [authLoading, profile?.role, profile?.id, loadData]);
 
   // ユーザー作成
-  const handleCreate = async (formData: { email: string; displayName: string; password: string; role: UserRole; schoolId: string }) => {
-    if (!formData.displayName || !formData.password || !formData.schoolId) {
+  const handleCreate = async (formData: { email: string; displayName: string; lastName: string; firstName: string; password: string; role: UserRole; schoolId: string }) => {
+    if (!formData.lastName || !formData.password || !formData.schoolId) {
       toastError('必須項目を入力してください');
       return;
     }
@@ -169,7 +169,8 @@ export default function UsersPage() {
         body: JSON.stringify({
           email: formData.email ? normalizeLoginEmail(formData.email) : undefined,
           password: normalizePassword(formData.password),
-          displayName: formData.displayName,
+          lastName: formData.lastName,
+          firstName: formData.firstName,
           role: formData.role,
           schoolId: formData.schoolId,
         }),
@@ -218,7 +219,7 @@ export default function UsersPage() {
   };
 
   // ユーザー編集を保存
-  const handleSaveUser = async (displayName: string, role: UserRole, schoolIds: string[], defaultSchoolId: string) => {
+  const handleSaveUser = async (lastName: string, firstName: string, role: UserRole, schoolIds: string[], defaultSchoolId: string) => {
     if (!editingUser) return;
 
     setIsSaving(true);
@@ -231,7 +232,8 @@ export default function UsersPage() {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          display_name: displayName,
+          last_name: lastName,
+          first_name: firstName,
           role: role,
           default_school_id: resolvedDefaultSchoolId,
           school_ids: schoolIds,
@@ -251,8 +253,11 @@ export default function UsersPage() {
       const isEditingSelf = editingUser.id === profile?.id;
 
       // 楽観的更新
+      const displayName = [lastName, firstName].filter(Boolean).join(' ') || null;
       const updatedUser: UserWithDetails = {
         ...editingUser,
+        last_name: lastName || null,
+        first_name: firstName || null,
         display_name: displayName,
         default_school_id: resolvedDefaultSchoolId,
         ...(isEditingSelf

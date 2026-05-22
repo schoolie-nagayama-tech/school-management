@@ -51,6 +51,7 @@ import type {
 } from '@/types/database';
 import { GRADE_LABELS, SEASON_LABELS } from '@/types/database';
 import { useAuth } from '@/contexts/AuthContext';
+import { toSurnameOnly } from '@/lib/utils/teacherName';
 
 export default function LegacyProgressPage() {
   const params = useParams();
@@ -570,7 +571,7 @@ export default function LegacyProgressPage() {
               ${row.progress?.handover || '-'}
             </td>
             <td style="border: 1px solid #000; padding: 8px; ${borderBottom}">
-              ${row.progress?.teacher_name || '-'}
+              ${isTeacher ? toSurnameOnly(row.progress?.teacher_name) || '-' : row.progress?.teacher_name || '-'}
             </td>
           ` : ''}
         </tr>
@@ -1467,7 +1468,8 @@ export default function LegacyProgressPage() {
                         
                         // ローカルステートから値を取得（なければprogressから）
                         const localHandover = localHandoverMap.get(row.curriculumItem.id) ?? (progress?.handover || '');
-                        const localTeacherName = localTeacherNameMap.get(row.curriculumItem.id) ?? (progress?.teacher_name || '');
+                        const rawTeacherName = localTeacherNameMap.get(row.curriculumItem.id) ?? (progress?.teacher_name || '');
+                        const localTeacherName = isTeacher ? toSurnameOnly(rawTeacherName) : rawTeacherName;
                         return (
                           <tr
                             key={row.curriculumItem.id}

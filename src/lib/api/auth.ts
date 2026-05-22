@@ -149,16 +149,24 @@ export async function createUserProfile(
   email: string,
   role: UserRole,
   displayName?: string,
-  invitedBy?: string
+  invitedBy?: string,
+  lastName?: string,
+  firstName?: string,
 ): Promise<UserProfile> {
   const supabase = createSupabaseBrowserClient();
+  // 姓名が渡された場合は display_name を自動生成
+  const effectiveDisplayName = lastName
+    ? [lastName, firstName].filter(Boolean).join(' ')
+    : (displayName || null);
   const { data, error } = await supabase
     .from('user_profiles')
     .insert({
       id: userId,
       email,
       role,
-      display_name: displayName || null,
+      display_name: effectiveDisplayName,
+      last_name: lastName || null,
+      first_name: firstName || null,
       invited_by: invitedBy || null,
       invited_at: invitedBy ? new Date().toISOString() : null,
     })
@@ -172,7 +180,7 @@ export async function createUserProfile(
 // プロファイルを更新
 export async function updateUserProfile(
   userId: string,
-  updates: Partial<Pick<UserProfile, 'display_name' | 'role' | 'is_active' | 'teachable_subject_ids' | 'available_days_of_week' | 'default_school_id'>>
+  updates: Partial<Pick<UserProfile, 'display_name' | 'last_name' | 'first_name' | 'role' | 'is_active' | 'teachable_subject_ids' | 'available_days_of_week' | 'default_school_id'>>
 ): Promise<UserProfile> {
   const supabase = createSupabaseBrowserClient();
   const { data, error } = await supabase

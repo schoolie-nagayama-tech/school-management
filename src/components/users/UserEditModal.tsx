@@ -8,6 +8,8 @@ interface EditableUser {
   id: string;
   email: string;
   display_name: string | null;
+  last_name?: string | null;
+  first_name?: string | null;
   role: string;
   default_school_id?: string | null;
   user_schools?: Array<{
@@ -23,7 +25,7 @@ interface UserEditModalProps {
   profileId: string | undefined;
   schools: School[];
   isSaving: boolean;
-  onSave: (displayName: string, role: UserRole, schoolIds: string[], defaultSchoolId: string) => void;
+  onSave: (lastName: string, firstName: string, role: UserRole, schoolIds: string[], defaultSchoolId: string) => void;
   onClose: () => void;
 }
 
@@ -35,13 +37,16 @@ export function UserEditModal({
   onSave,
   onClose,
 }: UserEditModalProps) {
-  const [editDisplayName, setEditDisplayName] = useState('');
+  const [editLastName, setEditLastName] = useState('');
+  const [editFirstName, setEditFirstName] = useState('');
   const [editRole, setEditRole] = useState<UserRole>('manager');
   const [editSchoolIds, setEditSchoolIds] = useState<string[]>([]);
   const [editDefaultSchoolId, setEditDefaultSchoolId] = useState<string>('');
 
   useEffect(() => {
-    setEditDisplayName(editingUser.display_name || '');
+    // last_name が未設定なら display_name をフォールバック
+    setEditLastName(editingUser.last_name || editingUser.display_name || '');
+    setEditFirstName(editingUser.first_name || '');
     setEditRole(editingUser.role === 'teacher' ? 'manager' : (editingUser.role || 'manager') as UserRole);
     const ids = editingUser.user_schools?.map(us => us.school_id) || [];
     setEditSchoolIds(ids);
@@ -71,17 +76,27 @@ export function UserEditModal({
               className="w-full px-3 py-2 border border-[#e5e7eb]/30 rounded-lg bg-[#f3f4f6] text-[#4b5563]"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-[#1f2937] mb-1">
-              表示名
-            </label>
-            <input
-              type="text"
-              value={editDisplayName}
-              onChange={e => setEditDisplayName(e.target.value)}
-              className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
-              placeholder="山田 太郎"
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-[#1f2937] mb-1">姓</label>
+              <input
+                type="text"
+                value={editLastName}
+                onChange={e => setEditLastName(e.target.value)}
+                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                placeholder="山田"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#1f2937] mb-1">名</label>
+              <input
+                type="text"
+                value={editFirstName}
+                onChange={e => setEditFirstName(e.target.value)}
+                className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
+                placeholder="太郎"
+              />
+            </div>
           </div>
           {!isEditingSelf && (
           <div>
@@ -159,7 +174,7 @@ export function UserEditModal({
               キャンセル
             </button>
             <button
-              onClick={() => onSave(editDisplayName, editRole, editSchoolIds, editDefaultSchoolId)}
+              onClick={() => onSave(editLastName, editFirstName, editRole, editSchoolIds, editDefaultSchoolId)}
               disabled={isSaving}
               className="flex-1 px-4 py-2 bg-[#3b82f6] text-white font-bold rounded-lg hover:bg-[#60a5fa] transition-colors duration-150 disabled:opacity-50"
             >

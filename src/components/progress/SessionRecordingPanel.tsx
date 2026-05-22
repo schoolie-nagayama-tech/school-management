@@ -25,7 +25,7 @@ import {
   type SessionUnitAction,
 } from '@/lib/api/progress-sessions';
 import type { ProgressSession, CurriculumItem } from '@/types/database';
-import { toSurnameOnly } from '@/lib/utils/teacherName';
+import { getSurname, toSurnameOnly } from '@/lib/utils/teacherName';
 
 // ─── 型定義 ───
 export interface SessionDraft {
@@ -95,7 +95,7 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
   const { profile } = useAuth();
   // 講師は苗字のみ表示（個人情報保護）
   const isTeacher = profile?.role === 'teacher';
-  const myName = isTeacher ? toSurnameOnly(profile?.display_name) : (profile?.display_name || '');
+  const myName = isTeacher ? getSurname(profile) : (profile?.display_name || '');
 
   // 前回の引継ぎ
   const [lastSession, setLastSession] = useState<ProgressSession | null>(null);
@@ -252,7 +252,7 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
             <MessageSquare className="w-3.5 h-3.5 text-gray-400" />
             <span className="text-[11px] font-semibold text-gray-500">前回の引継ぎ</span>
             <span className="text-[11px] text-gray-400">
-              {lastSession.session_date?.replace(/-/g, '/')} {lastSession.teacher_name}
+              {lastSession.session_date?.replace(/-/g, '/')} {isTeacher ? toSurnameOnly(lastSession.teacher_name) : lastSession.teacher_name}
             </span>
           </div>
           <p className="text-sm text-gray-800">{lastSession.handover}</p>
@@ -309,7 +309,7 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
                   <div className="text-sm font-medium">
                     {session.date.replace(/-/g, '/')}
                     {session.teacherName && (
-                      <span className="ml-2 text-gray-500">{session.teacherName}</span>
+                      <span className="ml-2 text-gray-500">{isTeacher ? toSurnameOnly(session.teacherName) : session.teacherName}</span>
                     )}
                     {session.saved && (
                       <span className={`ml-2 text-xs font-medium ${isLocked ? 'text-green-600' : 'text-blue-600'}`}>

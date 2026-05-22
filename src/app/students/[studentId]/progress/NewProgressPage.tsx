@@ -72,7 +72,7 @@ import type {
   StudentTextbookExamRangeInsert,
   Textbook,
 } from '@/types/database';
-import { toSurnameOnly } from '@/lib/utils/teacherName';
+import { getSurname, toSurnameOnly } from '@/lib/utils/teacherName';
 
 // ─────────────────────────────────────────────
 // 型
@@ -456,7 +456,7 @@ export default function NewProgressPage() {
             viewMode={effectiveViewMode}
             studentId={studentId}
             studentName={student ? `${student.last_name} ${student.first_name}` : ''}
-            selfName={isTeacher ? toSurnameOnly(profile?.display_name) : (profile?.display_name ?? '')}
+            selfName={isTeacher ? getSurname(profile) : (profile?.display_name ?? '')}
             onBack={() => setView('cards')}
             onRefresh={refreshTextbooks}
             success={success}

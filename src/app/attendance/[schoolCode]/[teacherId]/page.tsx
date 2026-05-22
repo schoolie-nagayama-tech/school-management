@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/useToast';
 import { getSchoolByCode } from '@/lib/api/schools';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { getSurname, toSurnameOnly } from '@/lib/utils/teacherName';
 import { useTeacherBadgeCount } from '@/hooks/useTeacherBadgeCount';
 import { getTier } from '@/lib/teacher-tier';
 import {
@@ -110,7 +111,9 @@ export default function TeacherAttendancePage() {
       }
       setTeacher({
         id: teacherData.id,
-        name: teacherData.display_name || teacherData.email || '未設定',
+        name: profile?.role === 'teacher'
+          ? (profile?.last_name || toSurnameOnly(teacherData.display_name)) || teacherData.email || '未設定'
+          : teacherData.display_name || teacherData.email || '未設定',
       });
 
       // コマ種別 + 出勤簿（取得 or 作成）を並列

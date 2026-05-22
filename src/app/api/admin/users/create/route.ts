@@ -38,6 +38,8 @@ export async function POST(request: NextRequest) {
       email,
       password,
       displayName,
+      lastName,
+      firstName,
       role,
       schoolId,
       // 任意の拡張フィールド（CSVインポート等で使用）
@@ -49,6 +51,8 @@ export async function POST(request: NextRequest) {
       email?: string;
       password?: string;
       displayName?: string;
+      lastName?: string;
+      firstName?: string;
       role?: string;
       schoolId?: string;
       additionalSchoolIds?: string[];
@@ -56,6 +60,11 @@ export async function POST(request: NextRequest) {
       availableDaysOfWeek?: number[];
       isActive?: boolean;
     } = body;
+
+    // 姓名が渡された場合は display_name を自動生成
+    const effectiveDisplayName = lastName
+      ? [lastName, firstName].filter(Boolean).join(' ')
+      : (displayName || null);
 
     // バリデーション
     if (!password || !displayName || !role || !schoolId) {
@@ -174,7 +183,9 @@ export async function POST(request: NextRequest) {
         .insert({
           id: authData.user.id,
           email: finalEmail,
-          display_name: displayName,
+          display_name: effectiveDisplayName,
+          last_name: lastName || null,
+          first_name: firstName || null,
           role,
           is_active: effectiveIsActive,
           ...profileExtras,
@@ -194,7 +205,9 @@ export async function POST(request: NextRequest) {
         .from('user_profiles')
         .update({
           email: finalEmail,
-          display_name: displayName,
+          display_name: effectiveDisplayName,
+          last_name: lastName || null,
+          first_name: firstName || null,
           role,
           is_active: effectiveIsActive,
           ...profileExtras,

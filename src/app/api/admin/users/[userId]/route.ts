@@ -178,11 +178,18 @@ export async function PATCH(
     const isUserManagementEdit = 'school_ids' in body && (Array.isArray(rawSchoolIds) || typeof rawSchoolIds === 'string');
 
     if (isUserManagementEdit) {
-      const { display_name, role, default_school_id } = body;
+      const { display_name, last_name, first_name, role, default_school_id } = body;
       const profileUpdates: Record<string, unknown> = {
         updated_at: new Date().toISOString(),
       };
-      if (display_name !== undefined) profileUpdates.display_name = display_name;
+      // 姓名が渡された場合は display_name も連動更新
+      if (last_name !== undefined) {
+        profileUpdates.last_name = last_name || null;
+        profileUpdates.first_name = first_name || null;
+        profileUpdates.display_name = [last_name, first_name].filter(Boolean).join(' ') || null;
+      } else if (display_name !== undefined) {
+        profileUpdates.display_name = display_name;
+      }
       // 自分自身の編集では権限・教室は変更不可。デフォルト教室のみ変更可。
       if (!isEditingSelf) {
         if (role !== undefined) profileUpdates.role = role;
@@ -272,7 +279,13 @@ export async function PATCH(
     const profileUpdates: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
     };
-    if (body.display_name !== undefined) profileUpdates.display_name = body.display_name ?? null;
+    if (body.last_name !== undefined) {
+      profileUpdates.last_name = body.last_name || null;
+      profileUpdates.first_name = body.first_name || null;
+      profileUpdates.display_name = [body.last_name, body.first_name].filter(Boolean).join(' ') || null;
+    } else if (body.display_name !== undefined) {
+      profileUpdates.display_name = body.display_name ?? null;
+    }
     if (Array.isArray(body.teachable_subject_ids)) {
       profileUpdates.teachable_subject_ids = body.teachable_subject_ids;
     }

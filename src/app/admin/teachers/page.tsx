@@ -67,7 +67,8 @@ export default function TeachersPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
-    displayName: '',
+    lastName: '',
+    firstName: '',
     password: '',
     schoolId: '',
   });
@@ -198,7 +199,7 @@ export default function TeachersPage() {
 
   // 講師作成
   const handleCreate = async () => {
-    if (!formData.displayName || !formData.password || !formData.schoolId) {
+    if (!formData.lastName || !formData.password || !formData.schoolId) {
       toastError('必須項目を入力してください');
       return;
     }
@@ -217,7 +218,8 @@ export default function TeachersPage() {
         body: JSON.stringify({
           email: formData.email ? normalizeLoginEmail(formData.email) : undefined,
           password: normalizePassword(formData.password),
-          displayName: formData.displayName,
+          lastName: formData.lastName,
+          firstName: formData.firstName,
           role: 'teacher',
           schoolId: formData.schoolId,
         }),
@@ -232,13 +234,14 @@ export default function TeachersPage() {
       setCreatedTeacher({
         email: result.user?.email || result.user?.id || '',
         password: formData.password,
-        displayName: formData.displayName,
+        displayName: [formData.lastName, formData.firstName].filter(Boolean).join(' '),
       });
       setIsCreateDialogOpen(false);
       setIsResultDialogOpen(true);
       setFormData({
         email: '',
-        displayName: '',
+        lastName: '',
+        firstName: '',
         password: '',
         schoolId: schools[0]?.id || '',
       });
@@ -625,16 +628,29 @@ export default function TeachersPage() {
                 />
                 <p className="text-xs text-text-body/70">GrowのID・パスワードと同じものを入力してください。未入力の場合は自動生成されます。</p>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="displayName">表示名 *</Label>
-                <Input
-                  id="displayName"
-                  value={formData.displayName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, displayName: e.target.value })
-                  }
-                  placeholder="山田 太郎"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">姓 *</Label>
+                  <Input
+                    id="lastName"
+                    value={formData.lastName}
+                    onChange={(e) =>
+                      setFormData({ ...formData, lastName: e.target.value })
+                    }
+                    placeholder="山田"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">名</Label>
+                  <Input
+                    id="firstName"
+                    value={formData.firstName}
+                    onChange={(e) =>
+                      setFormData({ ...formData, firstName: e.target.value })
+                    }
+                    placeholder="太郎"
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">パスワード *</Label>

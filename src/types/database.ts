@@ -3520,6 +3520,10 @@ export interface UserProfile {
   id: string;
   email: string;
   display_name: string | null;
+  /** 姓（講師プライバシー用に分離保存） */
+  last_name: string | null;
+  /** 名 */
+  first_name: string | null;
   role: UserRole;
   is_active: boolean;
   invited_by: string | null;
