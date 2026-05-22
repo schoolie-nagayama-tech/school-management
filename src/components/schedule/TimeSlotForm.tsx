@@ -5,13 +5,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button, Input, Label, Switch } from '@/components/ui';
 import type { ScheduleTimeSlot, ScheduleTimeSlotFormData } from '@/types/schedule';
 
-const DEFAULT_SUGGESTIONS: { start: string; end: string }[] = [
-  { start: '16:00', end: '17:30' },
-  { start: '17:40', end: '19:10' },
-  { start: '19:20', end: '20:50' },
-  { start: '14:50', end: '16:20' },
-];
-
 function timeToInputValue(t: string): string {
   if (!t) return '';
   if (t.length >= 5) return t.slice(0, 5);
@@ -23,8 +16,8 @@ interface TimeSlotFormProps {
   onClose: () => void;
   onSubmit: (form: ScheduleTimeSlotFormData) => Promise<void>;
   editingSlot: ScheduleTimeSlot | null;
+  /** INSERT時に仮で使う slot_number（保存後に時刻順で自動振り直し） */
   nextSlotNumber: number;
-  nextDisplayOrder: number;
 }
 
 export function TimeSlotForm({
@@ -33,14 +26,13 @@ export function TimeSlotForm({
   onSubmit,
   editingSlot,
   nextSlotNumber,
-  nextDisplayOrder,
 }: TimeSlotFormProps) {
   const [form, setForm] = useState<ScheduleTimeSlotFormData>({
     slot_number: nextSlotNumber,
     start_time: '16:00',
     end_time: '17:30',
     is_active: true,
-    display_order: nextDisplayOrder,
+    display_order: 0,
   });
   const [saving, setSaving] = useState(false);
 
@@ -55,17 +47,16 @@ export function TimeSlotForm({
           display_order: editingSlot.display_order,
         });
       } else {
-        const next = DEFAULT_SUGGESTIONS[nextSlotNumber - 1] ?? DEFAULT_SUGGESTIONS[0];
         setForm({
           slot_number: nextSlotNumber,
-          start_time: next.start,
-          end_time: next.end,
+          start_time: '',
+          end_time: '',
           is_active: true,
-          display_order: nextDisplayOrder,
+          display_order: 0,
         });
       }
     }
-  }, [open, editingSlot, nextSlotNumber, nextDisplayOrder]);
+  }, [open, editingSlot, nextSlotNumber]);
 
   const handleSubmit = async () => {
     if (!form.start_time || !form.end_time) return;
@@ -85,30 +76,9 @@ export function TimeSlotForm({
           <DialogTitle>{editingSlot ? 'コマ時間を編集' : 'コマ時間を追加'}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="slot_number">コマ番号</Label>
-              <Input
-                id="slot_number"
-                type="number"
-                min={1}
-                max={7}
-                value={form.slot_number}
-                onChange={(e) => setForm({ ...form, slot_number: parseInt(e.target.value) || 1 })}
-                disabled={!!editingSlot}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="display_order">表示順</Label>
-              <Input
-                id="display_order"
-                type="number"
-                min={0}
-                value={form.display_order}
-                onChange={(e) => setForm({ ...form, display_order: parseInt(e.target.value) || 0 })}
-              />
-            </div>
-          </div>
+          <p className="text-sm text-[var(--paragraph)]">
+            コマ番号は開始時刻の早い順に自動で割り当てられます。
+          </p>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="start_time">開始時刻</Label>

@@ -66,7 +66,6 @@ export default function TimeSlotsSettingsPage() {
 
   const selectedSchool = schools.find((s) => s.id === selectedSchoolId);
   const nextSlotNumber = Math.max(0, ...slots.map((s) => s.slot_number)) + 1;
-  const nextDisplayOrder = Math.max(0, ...slots.map((s) => s.display_order)) + 1;
 
   const handleSave = async (form: ScheduleTimeSlotFormData) => {
     if (!selectedSchoolId) return;
@@ -102,7 +101,7 @@ export default function TimeSlotsSettingsPage() {
         setDeletingSlot(null);
         return;
       }
-      await deleteTimeSlot(deletingSlot.id);
+      await deleteTimeSlot(deletingSlot.id, selectedSchoolId!);
       success('コマ時間を削除しました');
       const data = await getTimeSlots(selectedSchoolId!);
       setSlots(data);
@@ -196,7 +195,6 @@ export default function TimeSlotsSettingsPage() {
         onSubmit={handleSave}
         editingSlot={editingSlot}
         nextSlotNumber={nextSlotNumber}
-        nextDisplayOrder={nextDisplayOrder}
       />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
