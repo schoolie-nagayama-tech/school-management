@@ -26,7 +26,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Eye, EyeOff, FileText, Plus, Trash2 } from 'lucide-react';
+import { Eye, EyeOff, FileText, Plus, Send, Trash2 } from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
 import { Button, Modal, Select, ToastContainer, Loading } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
@@ -48,7 +48,7 @@ import {
 import SessionRecordingPanel from '@/components/progress/SessionRecordingPanel';
 import type { SessionRecordingPanelHandle } from '@/components/progress/SessionRecordingPanel';
 import StudentSessionFeed from '@/components/progress/StudentSessionFeed';
-import { syncProgressToSession } from '@/lib/api/progress-sessions';
+import { syncProgressToSession, submitDirectInput } from '@/lib/api/progress-sessions';
 import { getStudent } from '@/lib/api/students';
 import { getExamTypes, getTextbooks } from '@/lib/api/textbooks';
 import {
@@ -1314,6 +1314,50 @@ function TableView({
     }
   }, [textbook.id, setProgress, success]);
 
+  // ─── 直接入力 dirty tracking（提出ボタン用） ───
+  // セッション記録モード以外で編集された行を追跡
+  const [dirtyRows, setDirtyRows] = useState<Set<string>>(new Set());
+  const [submitting, setSubmitting] = useState(false);
+
+  // テキスト切替時に dirty をリセット
+  useEffect(() => { setDirtyRows(new Set()); }, [textbook.id]);
+
+  const markDirty = useCallback((rowId: string) => {
+    if (sessionMode) return; // セッション記録モード中は追跡しない
+    setDirtyRows(prev => {
+      if (prev.has(rowId)) return prev;
+      const next = new Set(prev);
+      next.add(rowId);
+      return next;
+    });
+  }, [sessionMode]);
+
+  // 提出: 直接入力からセッションを生成
+  const handleSubmit = useCallback(async () => {
+    setSubmitting(true);
+    try {
+      const result = await submitDirectInput({
+        studentTextbookId: textbook.id,
+        teacherName: selfName,
+        teacherId: null,
+      });
+      if (result) {
+        success(`${result.linkedCount}件の指導記録を提出しました`);
+        setDirtyRows(new Set());
+        // データ再読込
+        const rows = await getStudentProgress(textbook.id);
+        setProgress(rows || []);
+      } else {
+        toastError('提出対象の指導記録がありません（指導日を入力してください）');
+      }
+    } catch (e) {
+      console.error(e);
+      toastError('提出に失敗しました');
+    } finally {
+      setSubmitting(false);
+    }
+  }, [textbook.id, selfName, setProgress, success, toastError]);
+
   // 編集ハンドラ（既存API呼出し、楽観的更新）
   // progress が null の場合も shell を作って UI を即反映できるようにする
   const updateLocal = (itemId: string, patch: Partial<CurriculumItemWithProgress['progress']>) => {
@@ -2063,7 +2107,7 @@ function ProgressRow({
   /** セッション記録モード */
   sessionMode?: boolean;
   /** セッションの選択状態（ハイライト用） */
-  sessionSelection?: { unitActions: Record<number, 1 | 2 | 3>; schoolUnits: Set<number> } | null;
+  sessionSelection?: { unitActions: Record<number, 1 | 2 | 3>; schoolUnits: Set<number>; sessionDate?: string } | null;
   /** 目標が設定されているか（未設定時は入力を無効化） */
   hasGoal?: boolean;
   onPaintRowClick?: () => void;
@@ -2254,7 +2298,9 @@ function ProgressRow({
               <span className="text-[#1f2937]">{(lessonDate(n) || '').replace(/^\d{4}-/, '') || '—'}</span>
             ) : sessionMode ? (
               <span className={`inline-block px-1.5 py-0.5 rounded text-xs ${lessonSelected ? 'bg-[#1e3a5f] text-white font-medium' : lessonDate(n) ? 'bg-[#1e3a5f]/10 text-[#1e3a5f] font-medium' : 'text-gray-400'}`}>
-                {lessonSelected ? `${n}回目` : lessonDate(n) ? lessonDate(n).replace(/^\d{4}-/, '').replace('-', '/') : '—'}
+                {lessonSelected
+                  ? (sessionSelection?.sessionDate ?? '').replace(/^\d{4}-/, '').replace('-', '/') || `${n}回目`
+                  : lessonDate(n) ? lessonDate(n).replace(/^\d{4}-/, '').replace('-', '/') : '—'}
               </span>
             ) : (
               <DateInputWithToday

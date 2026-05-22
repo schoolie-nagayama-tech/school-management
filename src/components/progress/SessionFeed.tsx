@@ -89,11 +89,20 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
   // 確認済みトレイの展開
   const [trayOpen, setTrayOpen] = useState(false);
 
-  // ── データ取得 ──
-  const load = useCallback(async () => {
+  // ── スマートアラート取得（タブ・フィルタと独立、schoolIds 変更時のみ再取得） ──
+  useEffect(() => {
+    if (schoolIds.length === 0) {
+      setSmartAlerts([]);
+      return;
+    }
+    getSmartAlerts(schoolIds).then(setSmartAlerts).catch(console.error);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schoolIdsKey]);
+
+  // ── セッション取得（タブ・フィルタ変更時に再取得） ──
+  const loadSessions = useCallback(async () => {
     if (schoolIds.length === 0) {
       setSessions([]);
-      setSmartAlerts([]);
       setLoading(false);
       return;
     }
@@ -107,12 +116,8 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
       if (dateFrom) filter.dateFrom = dateFrom;
       if (dateTo) filter.dateTo = dateTo;
 
-      const [data, alerts] = await Promise.all([
-        getSessionFeed(schoolIds, filter),
-        getSmartAlerts(schoolIds),
-      ]);
+      const data = await getSessionFeed(schoolIds, filter);
       setSessions(data);
-      setSmartAlerts(alerts);
     } catch (e) {
       console.error(e);
     } finally {
@@ -121,7 +126,15 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [schoolIdsKey, tab, studentFilter, dateFrom, dateTo]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { loadSessions(); }, [loadSessions]);
+
+  // ── 全データ更新（更新ボタン用） ──
+  const refreshAll = useCallback(() => {
+    if (schoolIds.length === 0) return;
+    getSmartAlerts(schoolIds).then(setSmartAlerts).catch(console.error);
+    loadSessions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schoolIdsKey, loadSessions]);
 
   // ── 確認ハンドラ ──
   const handleConfirm = useCallback(async (sessionId: string) => {
@@ -217,7 +230,7 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
             ))}
           </div>
           <button
-            onClick={load}
+            onClick={refreshAll}
             disabled={loading}
             className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
             title="更新"

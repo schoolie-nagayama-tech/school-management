@@ -251,6 +251,7 @@ export async function recordSession(params: {
   // 2. 各単元の student_progress を upsert + lesson 記録
   for (const action of unitActions) {
     // student_progress upsert（なければ作成）
+    // 宿題未提出・遅刻は行単位で個別管理するため、セッション保存時は上書きしない
     const { data: progress, error: progressError } = await supabase
       .from('student_progress')
       .upsert(
@@ -258,9 +259,6 @@ export async function recordSession(params: {
           student_textbook_id: studentTextbookId,
           curriculum_item_id: action.curriculumItemId,
           teacher_name: teacherName,
-          homework_not_done: homeworkNotDone,
-          tardy,
-          handover,
         },
         { onConflict: 'student_textbook_id,curriculum_item_id' }
       )
@@ -313,12 +311,82 @@ export async function recordSession(params: {
   return session;
 }
 
+/**
+ * 直接入力された進行データからセッションを生成する（「提出」ボタン用）。
+ *
+ * 指導日が入力済みかつ session_id 未紐付けの student_progress_lessons を検出し、
+ * それらをまとめて1つの progress_sessions に紐付ける。
+ * 引継ぎ・宿題未提出・遅刻は対象行のうち最後に更新されたものから取得。
+ */
+export async function submitDirectInput(params: {
+  studentTextbookId: string;
+  teacherName: string;
+  teacherId?: string | null;
+}): Promise<{ session: ProgressSession; linkedCount: number } | null> {
+  const { studentTextbookId, teacherName, teacherId } = params;
+
+  // student_progress → student_progress_lessons で session_id が null かつ lesson_date がある行を取得
+  const { data: progressRows } = await supabase
+    .from('student_progress')
+    .select('id, handover, homework_not_done, tardy, teacher_name, updated_at')
+    .eq('student_textbook_id', studentTextbookId);
+
+  if (!progressRows || progressRows.length === 0) return null;
+  const progressIds = progressRows.map((r) => r.id);
+
+  // session_id が null で lesson_date が入っているレッスンを検出
+  const { data: unlinkedLessons } = await supabase
+    .from('student_progress_lessons')
+    .select('id, student_progress_id, lesson_number, lesson_date')
+    .in('student_progress_id', progressIds)
+    .is('session_id', null)
+    .not('lesson_date', 'is', null);
+
+  if (!unlinkedLessons || unlinkedLessons.length === 0) return null;
+
+  // 代表値: 最新の更新行から引継ぎ・フラグを取得
+  const linkedProgressIds = [...new Set(unlinkedLessons.map((l) => l.student_progress_id))];
+  const linkedRows = progressRows
+    .filter((r) => linkedProgressIds.includes(r.id))
+    .sort((a, b) => (b.updated_at ?? '').localeCompare(a.updated_at ?? ''));
+  const representative = linkedRows[0];
+
+  // セッション日付: レッスンの lesson_date のうち最新を使う
+  const dates = unlinkedLessons
+    .map((l) => l.lesson_date as string)
+    .filter(Boolean)
+    .sort();
+  const sessionDate = dates[dates.length - 1] || new Date().toISOString().slice(0, 10);
+
+  // セッション作成
+  const session = await createProgressSession({
+    student_textbook_id: studentTextbookId,
+    session_date: sessionDate,
+    teacher_id: teacherId,
+    teacher_name: representative?.teacher_name || teacherName,
+    handover: representative?.handover || null,
+    homework_not_done: representative?.homework_not_done || false,
+    tardy: representative?.tardy || false,
+  });
+
+  // 未紐付けレッスンに session_id を設定
+  for (const lesson of unlinkedLessons) {
+    await supabase
+      .from('student_progress_lessons')
+      .update({ session_id: session.id })
+      .eq('id', lesson.id);
+  }
+
+  return { session, linkedCount: unlinkedLessons.length };
+}
+
 // ============================================
 // 進行表→セッション同期（編集時にフィードへ反映）
 // ============================================
 
 /** セッション共有フィールド: student_progress と progress_sessions の両方に存在 */
-const SESSION_SHARED_FIELDS = ['handover', 'homework_not_done', 'tardy', 'teacher_name'] as const;
+// 宿題未提出・遅刻・引継ぎは行単位で個別管理するため、セッション↔進行表の同期対象から外す
+const SESSION_SHARED_FIELDS = ['teacher_name'] as const;
 
 /**
  * 進行表で直接編集された内容を、紐付く progress_sessions にも同期する。

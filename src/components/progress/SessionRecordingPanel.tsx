@@ -33,8 +33,6 @@ export interface SessionDraft {
   date: string;
   teacherName: string;
   handover: string;
-  homeworkNotDone: boolean;
-  tardy: boolean;
   /** unitId → lesson column (lesson_number) */
   unitActions: Record<number, 1 | 2 | 3>;
   /** 学校進度としてマークした単元ID */
@@ -50,8 +48,6 @@ function createDraft(teacherName = ''): SessionDraft {
     date: todayIso(),
     teacherName,
     handover: '',
-    homeworkNotDone: false,
-    tardy: false,
     unitActions: {},
     schoolUnits: new Set(),
     saved: false,
@@ -62,6 +58,8 @@ function createDraft(teacherName = ''): SessionDraft {
 export interface SessionSelection {
   unitActions: Record<number, 1 | 2 | 3>;
   schoolUnits: Set<number>;
+  /** アクティブセッションの日付（テーブル表示用） */
+  sessionDate: string;
 }
 
 // ─── Props ───
@@ -127,8 +125,9 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
     onSelectionChange({
       unitActions: activeSession.unitActions,
       schoolUnits: activeSession.schoolUnits,
+      sessionDate: activeSession.date,
     });
-  }, [activeSession?.unitActions, activeSession?.schoolUnits, activeSession?.saved, activeIdx, onSelectionChange]);
+  }, [activeSession?.unitActions, activeSession?.schoolUnits, activeSession?.date, activeSession?.saved, activeIdx, onSelectionChange]);
 
   // ─── 外部から呼ばれるAPI ───
 
@@ -212,8 +211,8 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
           teacherId: profile?.id,
           teacherName: s.teacherName,
           handover: s.handover,
-          homeworkNotDone: s.homeworkNotDone,
-          tardy: s.tardy,
+          homeworkNotDone: false,
+          tardy: false,
           unitActions,
           schoolProgressUnits: Array.from(s.schoolUnits),
         });
@@ -264,7 +263,6 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
         {sessions.map((session, idx) => {
           const isExpanded = expandedId === session.id;
           const isActive = activeIdx === idx;
-          const hasIssue = session.homeworkNotDone || session.tardy;
           const schoolItems = schoolUnitsForSession(session);
           const lessonItems = lessonUnitsForSession(session);
           const isFilled = session.teacherName && schoolItems.length > 0 && session.handover;
@@ -277,11 +275,9 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
               className={`rounded-xl border overflow-hidden transition-colors ${
                 isLocked
                   ? 'border-gray-200 bg-gray-50 opacity-75'
-                  : hasIssue
-                    ? 'border-amber-400 bg-amber-50/30'
-                    : isActive
-                      ? 'border-[#1e3a5f] ring-1 ring-[#1e3a5f]/20 bg-white'
-                      : 'border-gray-200 bg-white'
+                  : isActive
+                    ? 'border-[#1e3a5f] ring-1 ring-[#1e3a5f]/20 bg-white'
+                    : 'border-gray-200 bg-white'
               }`}
             >
               {/* アコーディオンヘッダー */}
@@ -296,11 +292,9 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
                   className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${
                     isLocked
                       ? 'bg-green-100 text-green-700'
-                      : hasIssue
-                        ? 'bg-amber-500 text-white'
-                        : isActive
-                          ? 'bg-[#1e3a5f] text-white'
-                          : 'bg-gray-100 text-gray-600'
+                      : isActive
+                        ? 'bg-[#1e3a5f] text-white'
+                        : 'bg-gray-100 text-gray-600'
                   }`}
                 >
                   {isLocked ? <Check className="w-4 h-4" /> : idx + 1}
@@ -324,16 +318,6 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  {session.homeworkNotDone && (
-                    <span className="px-1.5 py-0.5 text-[10px] bg-amber-200 text-amber-900 rounded font-medium">
-                      宿未
-                    </span>
-                  )}
-                  {session.tardy && (
-                    <span className="px-1.5 py-0.5 text-[10px] bg-amber-200 text-amber-900 rounded font-medium">
-                      遅刻
-                    </span>
-                  )}
                   {isFilled ? (
                     <Check className="w-4 h-4 text-[#1e3a5f]" />
                   ) : (
@@ -434,6 +418,11 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
                           >
                             {item.item_number ?? ''} {item.title ?? ''}{' '}
                             <span className="text-gray-400">({lessonNumber}回目)</span>
+                            {session.date && (
+                              <span className="ml-1 text-gray-400">
+                                {session.date.replace(/^\d{4}-/, '').replace('-', '/')}
+                              </span>
+                            )}
                           </span>
                         ))
                       )}
@@ -455,33 +444,10 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
                     />
                   </div>
 
-                  {/* フラグ */}
-                  <div className="flex items-center gap-4">
-                    <label className="flex items-center gap-1.5 text-sm cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={session.homeworkNotDone}
-                        onChange={e => updateField(idx, { homeworkNotDone: e.target.checked })}
-                        disabled={isLocked}
-                        className="rounded border-gray-300"
-                      />
-                      <span className={session.homeworkNotDone ? 'text-amber-700 font-medium' : 'text-gray-600'}>
-                        宿題未提出
-                      </span>
-                    </label>
-                    <label className="flex items-center gap-1.5 text-sm cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={session.tardy}
-                        onChange={e => updateField(idx, { tardy: e.target.checked })}
-                        disabled={isLocked}
-                        className="rounded border-gray-300"
-                      />
-                      <span className={session.tardy ? 'text-amber-700 font-medium' : 'text-gray-600'}>
-                        遅刻
-                      </span>
-                    </label>
-                  </div>
+                  {/* 宿題未提出・遅刻は進行表の各行で個別にチェック */}
+                  <p className="text-[10px] text-gray-400">
+                    宿題未提出・遅刻は下の進行表で行ごとにチェックできます
+                  </p>
 
                   {/* 保存ボタン */}
                   {!isLocked && (
