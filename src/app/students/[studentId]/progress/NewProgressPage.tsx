@@ -47,6 +47,7 @@ import {
 } from '@/lib/api/progress';
 import SessionRecordingPanel from '@/components/progress/SessionRecordingPanel';
 import type { SessionRecordingPanelHandle } from '@/components/progress/SessionRecordingPanel';
+import StudentSessionFeed from '@/components/progress/StudentSessionFeed';
 import { syncProgressToSession } from '@/lib/api/progress-sessions';
 import { getStudent } from '@/lib/api/students';
 import { getExamTypes, getTextbooks } from '@/lib/api/textbooks';
@@ -421,6 +422,13 @@ export default function NewProgressPage() {
           <ViewSwitcher view={view} onChange={setView} />
         </div>
       </div>
+
+      {/* 生徒ミニフィード（カードビュー時、教師以外） */}
+      {!isTeacher && view === 'cards' && !isLoading && studentTextbooks.length > 0 && (
+        <div className="mb-4">
+          <StudentSessionFeed studentId={studentId} />
+        </div>
+      )}
 
       {isLoading ? (
         <Loading className="py-20" />

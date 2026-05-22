@@ -799,6 +799,8 @@ export type Database = {
           homework_not_done: boolean;
           tardy: boolean;
           schedule_entry_id: string | null;
+          confirmed_at: string | null;
+          confirmed_by: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -812,6 +814,8 @@ export type Database = {
           homework_not_done?: boolean;
           tardy?: boolean;
           schedule_entry_id?: string | null;
+          confirmed_at?: string | null;
+          confirmed_by?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -825,6 +829,8 @@ export type Database = {
           homework_not_done?: boolean;
           tardy?: boolean;
           schedule_entry_id?: string | null;
+          confirmed_at?: string | null;
+          confirmed_by?: string | null;
           created_at?: string;
           updated_at?: string;
         };

@@ -7,6 +7,23 @@ import type {
   StudentProgressLessonInsert,
 } from '@/types/database';
 
+/** Supabase select 句（フィード共通） */
+const FEED_SELECT = `
+  *,
+  student_textbook:student_textbooks(
+    *,
+    textbook:textbooks(*),
+    student:students(*)
+  ),
+  lessons:student_progress_lessons(
+    lesson_number,
+    student_progress:student_progress(
+      curriculum_item_id,
+      curriculum_item:curriculum_items(item_number, title)
+    )
+  )
+`;
+
 // ============================================
 // セッション CRUD
 // ============================================
@@ -64,6 +81,44 @@ export async function deleteProgressSession(id: string): Promise<void> {
 }
 
 // ============================================
+// 教室長確認
+// ============================================
+
+/**
+ * セッションを「確認済み」にする
+ */
+export async function confirmProgressSession(
+  sessionId: string,
+  confirmedBy: string
+): Promise<void> {
+  const { error } = await supabase
+    .from('progress_sessions')
+    .update({
+      confirmed_at: new Date().toISOString(),
+      confirmed_by: confirmedBy,
+    })
+    .eq('id', sessionId);
+
+  if (error) {
+    throw new Error(`確認に失敗しました: ${error.message}`);
+  }
+}
+
+/**
+ * 確認を取り消す
+ */
+export async function unconfirmProgressSession(sessionId: string): Promise<void> {
+  const { error } = await supabase
+    .from('progress_sessions')
+    .update({ confirmed_at: null, confirmed_by: null })
+    .eq('id', sessionId);
+
+  if (error) {
+    throw new Error(`確認取り消しに失敗しました: ${error.message}`);
+  }
+}
+
+// ============================================
 // セッション取得
 // ============================================
 
@@ -86,6 +141,37 @@ export async function getProgressSessions(
     throw new Error(`セッションの取得に失敗しました: ${error.message}`);
   }
   return (data || []) as ProgressSession[];
+}
+
+/**
+ * 生徒の全テキスト横断で直近セッションを取得（生徒詳細ミニフィード用）
+ */
+export async function getStudentSessionFeed(
+  studentId: string,
+  limit = 5
+): Promise<ProgressSessionWithDetails[]> {
+  // 生徒に紐づく student_textbook を全取得
+  const { data: stList } = await supabase
+    .from('student_textbooks')
+    .select('id')
+    .eq('student_id', studentId)
+    .eq('is_active', true);
+
+  if (!stList || stList.length === 0) return [];
+  const stIds = (stList as { id: string }[]).map((st) => st.id);
+
+  const { data, error } = await supabase
+    .from('progress_sessions')
+    .select(FEED_SELECT)
+    .in('student_textbook_id', stIds)
+    .order('session_date', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(`生徒セッションの取得に失敗しました: ${error.message}`);
+  }
+  return (data || []) as unknown as ProgressSessionWithDetails[];
 }
 
 /**
@@ -266,109 +352,129 @@ export async function syncProgressToSession(
   await updateProgressSession(lesson.session_id, sessionPatch);
 }
 
+/**
+ * セッション側で編集された内容を、紐付く student_progress にも同期する（逆方向）。
+ * progress_sessions → student_progress_lessons → student_progress の経路で特定。
+ */
+export async function syncSessionToProgress(
+  sessionId: string,
+  patch: Record<string, unknown>
+): Promise<void> {
+  const progressPatch: Record<string, unknown> = {};
+  for (const key of SESSION_SHARED_FIELDS) {
+    if (key in patch) {
+      progressPatch[key] = patch[key];
+    }
+  }
+  if (Object.keys(progressPatch).length === 0) return;
+
+  // このセッションに紐付く全 student_progress を取得
+  const { data: lessons } = await supabase
+    .from('student_progress_lessons')
+    .select('student_progress_id')
+    .eq('session_id', sessionId);
+
+  if (!lessons || lessons.length === 0) return;
+
+  const progressIds = [...new Set(lessons.map(l => l.student_progress_id))];
+  for (const pid of progressIds) {
+    await supabase
+      .from('student_progress')
+      .update(progressPatch)
+      .eq('id', pid);
+  }
+}
+
 // ============================================
 // 教室長フィード（②教室長UI用）
 // ============================================
 
+/** フィード取得フィルタ */
+export interface SessionFeedFilter {
+  alertsOnly?: boolean;
+  confirmedOnly?: boolean;
+  unconfirmedOnly?: boolean;
+  studentId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
 /**
- * 教室単位で直近のセッションをフィード取得
- * student_textbook → student, textbook 情報付き
+ * student_textbook_ids を school_id + 任意の student_id で取得
+ */
+async function getTextbookIds(
+  schoolIds: string[],
+  studentId?: string
+): Promise<string[]> {
+  const q = supabase
+    .from('student_textbooks')
+    .select('id, student_id')
+    .in('school_id', schoolIds)
+    .eq('is_active', true);
+
+  const { data, error } = await q;
+  if (error || !data || data.length === 0) return [];
+
+  let ids = data as { id: string; student_id: string | null }[];
+  if (studentId) {
+    ids = ids.filter((st) => st.student_id === studentId);
+  }
+  return ids.map((st) => st.id);
+}
+
+/**
+ * 統合フィード取得（フィルタ対応）
  */
 export async function getSessionFeed(
   schoolIds: string[],
-  limit = 30,
+  filter: SessionFeedFilter = {},
+  limit = 50,
   offset = 0
 ): Promise<ProgressSessionWithDetails[]> {
   if (schoolIds.length === 0) return [];
 
-  // student_textbooks を school_id でフィルタして取得
-  const { data: stList, error: stError } = await supabase
-    .from('student_textbooks')
-    .select('id')
-    .in('school_id', schoolIds)
-    .eq('is_active', true);
+  const stIds = await getTextbookIds(schoolIds, filter.studentId);
+  if (stIds.length === 0) return [];
 
-  if (stError || !stList || stList.length === 0) return [];
-
-  const stIds = (stList as { id: string }[]).map((st) => st.id);
-
-  // セッション取得（指導単元情報も含む）
-  const { data: sessions, error: sessError } = await supabase
+  let q = supabase
     .from('progress_sessions')
-    .select(`
-      *,
-      student_textbook:student_textbooks(
-        *,
-        textbook:textbooks(*),
-        student:students(*)
-      ),
-      lessons:student_progress_lessons(
-        lesson_number,
-        student_progress:student_progress(
-          curriculum_item_id,
-          curriculum_item:curriculum_items(item_number, title)
-        )
-      )
-    `)
+    .select(FEED_SELECT)
     .in('student_textbook_id', stIds)
     .order('session_date', { ascending: false })
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
-  if (sessError) {
-    throw new Error(`フィードの取得に失敗しました: ${sessError.message}`);
+  if (filter.alertsOnly) {
+    q = q.or('homework_not_done.eq.true,tardy.eq.true');
+  }
+  if (filter.confirmedOnly) {
+    q = q.not('confirmed_at', 'is', null);
+  }
+  if (filter.unconfirmedOnly) {
+    q = q.is('confirmed_at', null);
+  }
+  if (filter.dateFrom) {
+    q = q.gte('session_date', filter.dateFrom);
+  }
+  if (filter.dateTo) {
+    q = q.lte('session_date', filter.dateTo);
   }
 
-  return (sessions || []) as unknown as ProgressSessionWithDetails[];
+  const { data, error } = await q;
+  if (error) {
+    throw new Error(`フィードの取得に失敗しました: ${error.message}`);
+  }
+  return (data || []) as unknown as ProgressSessionWithDetails[];
 }
 
 /**
- * 要注意セッション（宿題未/遅刻）のみフィルタ取得
+ * 後方互換: 要注意フィードのみ取得
  */
 export async function getAlertSessionFeed(
   schoolIds: string[],
   limit = 30
 ): Promise<ProgressSessionWithDetails[]> {
-  if (schoolIds.length === 0) return [];
-
-  const { data: stList, error: stError } = await supabase
-    .from('student_textbooks')
-    .select('id')
-    .in('school_id', schoolIds)
-    .eq('is_active', true);
-
-  if (stError || !stList || stList.length === 0) return [];
-
-  const stIds = (stList as { id: string }[]).map((st) => st.id);
-
-  const { data: sessions, error: sessError } = await supabase
-    .from('progress_sessions')
-    .select(`
-      *,
-      student_textbook:student_textbooks(
-        *,
-        textbook:textbooks(*),
-        student:students(*)
-      ),
-      lessons:student_progress_lessons(
-        lesson_number,
-        student_progress:student_progress(
-          curriculum_item_id,
-          curriculum_item:curriculum_items(item_number, title)
-        )
-      )
-    `)
-    .in('student_textbook_id', stIds)
-    .or('homework_not_done.eq.true,tardy.eq.true')
-    .order('session_date', { ascending: false })
-    .order('created_at', { ascending: false })
-    .limit(limit);
-
-  if (sessError) {
-    throw new Error(`要注意フィードの取得に失敗しました: ${sessError.message}`);
-  }
-
-  return (sessions || []) as unknown as ProgressSessionWithDetails[];
+  return getSessionFeed(schoolIds, { alertsOnly: true }, limit);
 }
 
 // ============================================
