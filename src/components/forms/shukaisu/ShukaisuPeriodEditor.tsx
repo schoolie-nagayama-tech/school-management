@@ -5,7 +5,7 @@ import { Modal, Input, Button, Select } from '@/components/ui';
 import { createShukaisuPeriod, updateShukaisuPeriod } from '@/lib/api/shukaisu';
 import { createFormPeriodForSchools, updateFormPeriodForSchools } from '@/lib/api/form-periods';
 import { getApplicationItems } from '@/lib/api/applications';
-import { getClassPeriods, formatPeriodsToText } from '@/lib/api/class-periods';
+import { getClassPeriodsAsync, formatPeriodsToText } from '@/lib/api/class-periods';
 import type { ShukaisuPeriod, ShukaisuSettings } from '@/types/forms/shukaisu';
 import type { ApplicationItem } from '@/types/database';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
@@ -26,12 +26,6 @@ const DEFAULT_DESCRIPTION = `週回数・曜日・時間・科目の変更をご
 
 ※変更が決まりましたら、Growにてご連絡いたします。`;
 
-const DEFAULT_PERIODS = [
-  { code: '4', label: '4限(14:25-15:55)' },
-  { code: '5', label: '5限(16:20-17:50)' },
-  { code: '6', label: '6限(18:00-19:30)' },
-  { code: '7', label: '7限(19:40-21:10)' },
-];
 
 export function ShukaisuPeriodEditor({
   isOpen,
@@ -53,9 +47,7 @@ export function ShukaisuPeriodEditor({
   const [title, setTitle] = useState('週回数変更');
   const [description, setDescription] = useState(DEFAULT_DESCRIPTION);
   const [daysText, setDaysText] = useState('月\n火\n水\n木\n金\n土');
-  const [periodsText, setPeriodsText] = useState(
-    DEFAULT_PERIODS.map((p) => `${p.code},${p.label}`).join('\n')
-  );
+  const [periodsText, setPeriodsText] = useState('');
   const [weeklyOptionsText, setWeeklyOptionsText] = useState('1,2,3,4,5');
   const [publishStart, setPublishStart] = useState('');
   const [publishEnd, setPublishEnd] = useState('');
@@ -100,46 +92,51 @@ export function ShukaisuPeriodEditor({
     if (isOpen) {
       const targetIds = schoolIds && schoolIds.length > 0 ? schoolIds : schoolId ? [schoolId] : undefined;
       getApplicationItems(targetIds, true).then(setApplicationItems).catch(console.error);
-      if (period) {
-        // 編集モード（科目はテーブルから学年で自動参照するため指定不要）
-        const settings = period.settings;
-        setPeriodKey(period.period_key);
-        setTitle(period.title);
-        setDescription(settings.description || DEFAULT_DESCRIPTION);
-        setDaysText(settings.available_days?.join('\n') || '月\n火\n水\n木\n金\n土');
-        setPeriodsText(
-          settings.available_periods?.map((p) => `${p.code},${p.label}`).join('\n') ||
-          DEFAULT_PERIODS.map((p) => `${p.code},${p.label}`).join('\n')
-        );
-        setWeeklyOptionsText(settings.weekly_options?.join(',') || '1,2,3,4,5');
-        setPublishStart(
-          period.publish_start
-            ? new Date(period.publish_start).toISOString().slice(0, 16)
-            : ''
-        );
-        setPublishEnd(
-          period.publish_end
-            ? new Date(period.publish_end).toISOString().slice(0, 16)
-            : ''
-        );
-        setCompletionMessage(
-          settings.completion_message ||
-            '変更申請を受け付けました。\n内容を確認の上、Growにてご連絡いたします。'
-        );
-        setLinkedApplicationItemId(period.linked_application_item_id || '');
-      } else {
-        // 新規作成モード（共通設定の授業の時間帯を初期値に）
-        setPeriodKey(generatePeriodKey());
-        setTitle('週回数変更');
-        setDescription(DEFAULT_DESCRIPTION);
-        setDaysText('月\n火\n水\n木\n金\n土');
-        setPeriodsText(formatPeriodsToText(getClassPeriods(schoolId)));
-        setWeeklyOptionsText('1,2,3,4,5');
-        setPublishStart('');
-        setPublishEnd('');
-        setCompletionMessage('変更申請を受け付けました。\n内容を確認の上、Growにてご連絡いたします。');
-        setLinkedApplicationItemId('');
-      }
+      // コマ時間マスタから時限リストを非同期で取得して初期化
+      const initPeriods = async () => {
+        const masterPeriods = schoolId ? await getClassPeriodsAsync(schoolId) : [];
+        const masterText = masterPeriods.length > 0 ? formatPeriodsToText(masterPeriods) : '';
+
+        if (period) {
+          const settings = period.settings;
+          setPeriodKey(period.period_key);
+          setTitle(period.title);
+          setDescription(settings.description || DEFAULT_DESCRIPTION);
+          setDaysText(settings.available_days?.join('\n') || '月\n火\n水\n木\n金\n土');
+          setPeriodsText(
+            settings.available_periods?.map((p) => `${p.code},${p.label}`).join('\n') ||
+            masterText
+          );
+          setWeeklyOptionsText(settings.weekly_options?.join(',') || '1,2,3,4,5');
+          setPublishStart(
+            period.publish_start
+              ? new Date(period.publish_start).toISOString().slice(0, 16)
+              : ''
+          );
+          setPublishEnd(
+            period.publish_end
+              ? new Date(period.publish_end).toISOString().slice(0, 16)
+              : ''
+          );
+          setCompletionMessage(
+            settings.completion_message ||
+              '変更申請を受け付けました。\n内容を確認の上、Growにてご連絡いたします。'
+          );
+          setLinkedApplicationItemId(period.linked_application_item_id || '');
+        } else {
+          setPeriodKey(generatePeriodKey());
+          setTitle('週回数変更');
+          setDescription(DEFAULT_DESCRIPTION);
+          setDaysText('月\n火\n水\n木\n金\n土');
+          setPeriodsText(masterText);
+          setWeeklyOptionsText('1,2,3,4,5');
+          setPublishStart('');
+          setPublishEnd('');
+          setCompletionMessage('変更申請を受け付けました。\n内容を確認の上、Growにてご連絡いたします。');
+          setLinkedApplicationItemId('');
+        }
+      };
+      initPeriods();
       setError('');
     }
     if (isOpen && period && allowedSchools && allowedSchools.length > 0) {

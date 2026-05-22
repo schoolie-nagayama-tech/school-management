@@ -5,7 +5,7 @@ import { Modal, Input, Button, Select } from '@/components/ui';
 import { createYoubiPeriod, updateYoubiPeriod } from '@/lib/api/youbi';
 import { createFormPeriodForSchools, updateFormPeriodForSchools } from '@/lib/api/form-periods';
 import { getApplicationItems } from '@/lib/api/applications';
-import { getClassPeriods } from '@/lib/api/class-periods';
+import { getClassPeriodsAsync, type ClassPeriodItem } from '@/lib/api/class-periods';
 import type { YoubiPeriod, YoubiSettings } from '@/types/forms/youbi';
 import type { ApplicationItem } from '@/types/database';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
@@ -42,6 +42,9 @@ export function YoubiPeriodEditor({
   const [selectedSchoolIdsForUpdate, setSelectedSchoolIdsForUpdate] = useState<string[]>([]);
   const [selectedSchoolIdsForCreate, setSelectedSchoolIdsForCreate] = useState<string[]>([]);
 
+  // コマ時間マスタから取得した時限リスト
+  const [classPeriods, setClassPeriods] = useState<ClassPeriodItem[]>([]);
+
   // フォームデータ
   const [periodKey, setPeriodKey] = useState('');
   const [title, setTitle] = useState('曜日変更');
@@ -76,6 +79,9 @@ export function YoubiPeriodEditor({
     if (isOpen) {
       const targetIds = schoolIds && schoolIds.length > 0 ? schoolIds : schoolId ? [schoolId] : undefined;
       getApplicationItems(targetIds, true).then(setApplicationItems).catch(console.error);
+      if (schoolId) {
+        getClassPeriodsAsync(schoolId).then(setClassPeriods).catch(() => {});
+      }
       if (period) {
         // 編集モード
         const settings = period.settings;
@@ -133,7 +139,7 @@ export function YoubiPeriodEditor({
       setError('曜日を入力してください');
       return false;
     }
-    if (getClassPeriods(schoolId).length === 0) {
+    if (classPeriods.length === 0) {
       setError('共通設定で時限を登録してください');
       return false;
     }
@@ -152,7 +158,7 @@ export function YoubiPeriodEditor({
       const settings: YoubiSettings = {
         description: description.trim(),
         available_days: parseLines(daysText),
-        available_periods: getClassPeriods(schoolId),
+        available_periods: classPeriods,
         available_subjects: [], // 科目はフォームで科目テーブルを学年別に自動参照
         completion_message: completionMessage.trim(),
       };
@@ -326,7 +332,7 @@ export function YoubiPeriodEditor({
               時限（共通設定を使用）
             </label>
             <div className="border border-[#e5e7eb] rounded-lg bg-[#f9fafb] px-3 py-2 text-sm font-mono space-y-0.5">
-              {getClassPeriods(schoolId).map((p) => (
+              {classPeriods.map((p) => (
                 <div key={p.code} className="text-[#1f2937]">
                   {p.code} : {p.label}
                 </div>

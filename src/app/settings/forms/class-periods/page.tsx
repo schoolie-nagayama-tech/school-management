@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { Button, ToastContainer, Loading } from '@/components/ui';
 import {
-  getClassPeriods,
+  getClassPeriodsAsync,
   setClassPeriods,
   formatPeriodsToText,
   parsePeriodsText,
@@ -28,10 +28,11 @@ export default function ClassPeriodsSettingsPage() {
   const [isDirty, setIsDirty] = useState(false);
 
   useEffect(() => {
-    if (schoolId && typeof window !== 'undefined') {
-      const periods = getClassPeriods(schoolId);
-      setPeriodsText(formatPeriodsToText(periods));
-      setIsDirty(false);
+    if (schoolId) {
+      getClassPeriodsAsync(schoolId).then((periods) => {
+        setPeriodsText(formatPeriodsToText(periods));
+        setIsDirty(false);
+      });
     }
   }, [schoolId]);
 
@@ -63,9 +64,13 @@ export default function ClassPeriodsSettingsPage() {
     }
   };
 
-  const handleResetToDefault = () => {
-    const defaultPeriods = getClassPeriods(undefined);
-    setPeriodsText(formatPeriodsToText(defaultPeriods));
+  const handleResetToDefault = async () => {
+    // localStorage キャッシュを消してマスタから再取得
+    if (schoolId && typeof window !== 'undefined') {
+      window.localStorage.removeItem(`class_periods_${schoolId}`);
+    }
+    const periods = await getClassPeriodsAsync(schoolId);
+    setPeriodsText(formatPeriodsToText(periods));
     setIsDirty(true);
   };
 

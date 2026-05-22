@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
@@ -13,6 +13,8 @@ import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
 import { ShiftSlotMatrix, type SlotSettingRow } from '@/components/seasonal-shift/ShiftSlotMatrix';
 import { generateDefaultSlotSettings } from '@/lib/utils/seasonalShiftSlots';
+import { getActiveTimeSlots } from '@/lib/api/schedule';
+import { formatSlotsForShift } from '@/lib/utils/timeSlotDefaults';
 
 export default function NewSeasonalShiftPage() {
   const router = useRouter();
@@ -29,10 +31,27 @@ export default function NewSeasonalShiftPage() {
     end_date: '',
     deadline: '',
     description: '',
-    weekday_slots: '12:50-14:20,14:45-16:15,16:20-17:50,17:55-19:25,19:30-21:00',
-    saturday_slots: '12:50-14:20,14:45-16:15,16:20-17:50,17:55-19:25,19:30-21:00',
+    weekday_slots: '',
+    saturday_slots: '',
     status: 'draft' as 'draft' | 'published',
   });
+
+  // コマ時間マスタからデフォルトの時間帯を取得
+  useEffect(() => {
+    const schoolIds = getSelectedSchoolIds();
+    const schoolId = schoolIds.length > 0 ? schoolIds[0] : getDefaultSchoolId();
+    getActiveTimeSlots(schoolId).then((slots) => {
+      if (slots.length > 0) {
+        const defaultSlots = formatSlotsForShift(slots);
+        setForm((p) => ({
+          ...p,
+          weekday_slots: p.weekday_slots || defaultSlots,
+          saturday_slots: p.saturday_slots || defaultSlots,
+        }));
+      }
+    }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const timeSlotsArray = form.weekday_slots
     ? form.weekday_slots.split(',').map((s) => s.trim()).filter(Boolean)
