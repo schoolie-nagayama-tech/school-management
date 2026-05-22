@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { AlertItem } from './AlertItem';
+import { AlertItem, SENSITIVE_ALERT_ICONS } from './AlertItem';
 import { getAlertsLight, getAlertsHeavy, mergeStudentAlerts, invalidateAlertCache } from '@/lib/api/alerts';
 import type { StudentAlerts, Alert } from '@/types/alerts';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,7 +12,8 @@ import { ChevronDown, ChevronUp, Info, AlertTriangle, X } from 'lucide-react';
 import { InlineLoading } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import { dismissAlert } from '@/lib/api/alerts';
-import { ALERT_TYPE_LABELS, ALERT_TYPE_COLORS, DISMISSABLE_ALERT_TYPES } from '@/types/alerts';
+import { ALERT_TYPE_LABELS, ALERT_TYPE_COLORS, DISMISSABLE_ALERT_TYPES, SENSITIVE_ALERT_TYPES } from '@/types/alerts';
+import type { AlertType } from '@/types/alerts';
 
 interface AlertBoardProps {
   className?: string;
@@ -56,6 +57,14 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
     homework_not_done: '宿題未実施の回数がしきい値を超えている',
     tardy: '遅刻の回数がしきい値を超えている',
     course_prep_overdue: '講習準備の期日が近い、または超過',
+  };
+
+  // 講師画面でアイコン併記＋具体メッセージを伏せる際の補足説明
+  const teacherMaskDescriptions: Partial<Record<AlertType, string>> = {
+    score_drop: '成績が下がった生徒（具体的な点数は非表示）',
+    homework_not_done: '宿題未実施が複数回ある生徒（回数は非表示）',
+    tardy: '遅刻が複数回ある生徒（回数は非表示）',
+    interview_overdue: '面談から日数が経過した生徒（具体日数は非表示）',
   };
 
   const fetchAlerts = useCallback(async (skipCache = false) => {
@@ -277,19 +286,30 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
               </button>
             </div>
             <div className="space-y-2">
-              {Object.entries(ALERT_TYPE_LABELS).map(([type, label]) => (
-                <div key={type} className="flex items-start gap-2">
-                  <span className={`px-2 py-1 text-xs font-medium rounded ${ALERT_TYPE_COLORS[type as keyof typeof ALERT_TYPE_COLORS]}`}>
-                    {label}
-                  </span>
-                  <span className="text-sm text-[#4b5563] flex-1">
-                    {alertTypeDescriptions[type]}
-                  </span>
-                </div>
-              ))}
+              {Object.entries(ALERT_TYPE_LABELS).map(([type, label]) => {
+                const alertType = type as AlertType;
+                const isSensitiveType = SENSITIVE_ALERT_TYPES.has(alertType);
+                const Icon = isTeacher && isSensitiveType ? SENSITIVE_ALERT_ICONS[alertType] : null;
+                const desc = isTeacher && isSensitiveType
+                  ? (teacherMaskDescriptions[alertType] || alertTypeDescriptions[type])
+                  : alertTypeDescriptions[type];
+                return (
+                  <div key={type} className="flex items-start gap-2">
+                    <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded ${ALERT_TYPE_COLORS[alertType]}`}>
+                      {Icon && <Icon className="w-3 h-3" />}
+                      {label}
+                    </span>
+                    <span className="text-sm text-[#4b5563] flex-1">
+                      {desc}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
             <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-400 leading-relaxed">
-              成績低下・宿題未実施・遅刻は「対応済み」で消去。その他は実績入力で自動的に消えます。
+              {isTeacher
+                ? '個人情報保護のため、生徒名は学年＋姓のみ、具体的な点数や回数は非表示にしています。'
+                : '成績低下・宿題未実施・遅刻は「対応済み」で消去。その他は実績入力で自動的に消えます。'}
             </div>
           </div>
         </div>

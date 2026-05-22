@@ -6,8 +6,8 @@ import { ALERT_TYPE_LABELS, ALERT_TYPE_COLORS, DISMISSABLE_ALERT_TYPES, SENSITIV
 import { Button } from '@/components/ui';
 import { TrendingDown, BookOpen, Clock, MessageCircle } from 'lucide-react';
 
-/** マスク時に表示するアイコン（ネガティブ系アラート） */
-const SENSITIVE_ALERT_ICONS: Partial<Record<AlertType, React.ComponentType<{ className?: string }>>> = {
+/** マスク時にラベル横に出すアイコン（ネガティブ系アラート） */
+export const SENSITIVE_ALERT_ICONS: Partial<Record<AlertType, React.ComponentType<{ className?: string }>>> = {
   score_drop: TrendingDown,
   homework_not_done: BookOpen,
   tardy: Clock,
@@ -18,7 +18,7 @@ interface AlertItemProps {
   alert: Alert;
   onDismiss?: (alert: Alert) => void;
   canDismiss?: boolean;
-  /** 講師画面：ネガティブ情報をアイコンのみに簡略化 */
+  /** 講師画面：ネガティブ情報の具体メッセージを非表示にしアイコンを併記 */
   masked?: boolean;
 }
 
@@ -77,21 +77,16 @@ export function AlertItem({ alert, onDismiss, canDismiss = false, masked = false
     <span className="text-xs text-gray-700 truncate">{alert.message}</span>
   );
 
-  // マスク時のネガティブ系はアイコンのみ表示
+  // マスク時のネガティブ系はラベル横にアイコンを併記
   const Icon = isSensitive ? SENSITIVE_ALERT_ICONS[alert.alert_type] : null;
 
   return (
     <div className={`flex items-center justify-between gap-2 py-1 px-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors duration-150 ${urgencyStyle}`}>
       <div className="flex items-center gap-2 flex-1 min-w-0">
-        {isSensitive && Icon ? (
-          <span className={`shrink-0 p-1 rounded ${ALERT_TYPE_COLORS[alert.alert_type]}`}>
-            <Icon className="w-3.5 h-3.5" />
-          </span>
-        ) : (
-          <span className={`shrink-0 px-1.5 py-0.5 rounded text-xs font-medium ${ALERT_TYPE_COLORS[alert.alert_type]}`}>
-            {ALERT_TYPE_LABELS[alert.alert_type]}
-          </span>
-        )}
+        <span className={`shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium ${ALERT_TYPE_COLORS[alert.alert_type]}`}>
+          {isSensitive && Icon && <Icon className="w-3 h-3" />}
+          {ALERT_TYPE_LABELS[alert.alert_type]}
+        </span>
         {messageNode}
       </div>
       {canDismiss && onDismiss && DISMISSABLE_ALERT_TYPES.has(alert.alert_type) && (
