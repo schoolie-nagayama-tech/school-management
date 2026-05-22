@@ -28,10 +28,12 @@ interface BadgeAssignDialogProps {
   /** 表示する講師を絞り込む教室ID。未指定なら全講師表示 */
   schoolIds?: string[];
   onClose: () => void;
+  onSuccess?: (msg: string) => void;
+  onError?: (msg: string) => void;
 }
 
 /** バッジを講師にまとめて付与/剥奪するダイアログ */
-export function BadgeAssignDialog({ open, badge, schoolIds, onClose }: BadgeAssignDialogProps) {
+export function BadgeAssignDialog({ open, badge, schoolIds, onClose, onSuccess, onError }: BadgeAssignDialogProps) {
   const [teachers, setTeachers] = useState<TeacherSummary[]>([]);
   const [assignedIds, setAssignedIds] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState('');
@@ -79,10 +81,15 @@ export function BadgeAssignDialog({ open, badge, schoolIds, onClose }: BadgeAssi
 
   if (!open || !badge) return null;
 
+  const teacherName = (t: TeacherSummary) =>
+    [t.last_name, t.first_name].filter(Boolean).join(' ') || t.display_name || '(名前未設定)';
+
   const handleToggle = async (teacherId: string) => {
     setTogglingIds((prev) => new Set(prev).add(teacherId));
 
     const wasAssigned = assignedIds.has(teacherId);
+    const teacher = teachers.find((t) => t.id === teacherId);
+    const name = teacher ? teacherName(teacher) : '講師';
     setAssignedIds((prev) => {
       const next = new Set(prev);
       if (wasAssigned) next.delete(teacherId);
@@ -93,13 +100,15 @@ export function BadgeAssignDialog({ open, badge, schoolIds, onClose }: BadgeAssi
     try {
       await toggleTeacherBadge(teacherId, { badgeId: badge.id });
       emitTeacherBadgesChanged(teacherId);
-    } catch {
+      onSuccess?.(wasAssigned ? `${name} から剥奪しました` : `${name} に付与しました`);
+    } catch (e) {
       setAssignedIds((prev) => {
         const next = new Set(prev);
         if (wasAssigned) next.add(teacherId);
         else next.delete(teacherId);
         return next;
       });
+      onError?.(e instanceof Error ? e.message : 'バッジの付与/剥奪に失敗しました');
     } finally {
       setTogglingIds((prev) => {
         const next = new Set(prev);
@@ -108,9 +117,6 @@ export function BadgeAssignDialog({ open, badge, schoolIds, onClose }: BadgeAssi
       });
     }
   };
-
-  const teacherName = (t: TeacherSummary) =>
-    [t.last_name, t.first_name].filter(Boolean).join(' ') || t.display_name || '(名前未設定)';
 
   const filtered = search.trim()
     ? teachers.filter((t) => teacherName(t).includes(search.trim()))

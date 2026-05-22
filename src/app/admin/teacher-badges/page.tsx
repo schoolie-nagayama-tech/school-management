@@ -63,32 +63,54 @@ export default function TeacherBadgesPage() {
     description: string;
     sort_order: number;
   }): Promise<TeacherBadge> => {
-    if (editTarget) {
-      const updated = await updateTeacherBadge(editTarget.id, data);
-      setBadges((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
-      return updated;
-    } else {
-      const created = await createTeacherBadge(data);
-      setBadges((prev) => [...prev, created]);
-      return created;
+    try {
+      if (editTarget) {
+        const updated = await updateTeacherBadge(editTarget.id, data);
+        setBadges((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
+        success(`「${updated.name}」を更新しました`);
+        return updated;
+      } else {
+        const created = await createTeacherBadge(data);
+        setBadges((prev) => [...prev, created]);
+        success(`「${created.name}」を作成しました`);
+        return created;
+      }
+    } catch (e) {
+      toastError(e instanceof Error ? e.message : 'バッジの保存に失敗しました');
+      throw e;
     }
   };
 
   const handleDisable = async (badge: TeacherBadge) => {
     if (!confirm(`「${badge.name}」を無効化しますか？\n（付与済みのデータは残りますが、新規付与はできなくなります）`)) return;
-    await deleteTeacherBadge(badge.id);
-    setBadges((prev) => prev.map((b) => (b.id === badge.id ? { ...b, is_active: false } : b)));
+    try {
+      await deleteTeacherBadge(badge.id);
+      setBadges((prev) => prev.map((b) => (b.id === badge.id ? { ...b, is_active: false } : b)));
+      success(`「${badge.name}」を無効化しました`);
+    } catch (e) {
+      toastError(e instanceof Error ? e.message : '無効化に失敗しました');
+    }
   };
 
   const handleEnable = async (badge: TeacherBadge) => {
-    const updated = await updateTeacherBadge(badge.id, { is_active: true });
-    setBadges((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
+    try {
+      const updated = await updateTeacherBadge(badge.id, { is_active: true });
+      setBadges((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
+      success(`「${updated.name}」を再有効化しました`);
+    } catch (e) {
+      toastError(e instanceof Error ? e.message : '再有効化に失敗しました');
+    }
   };
 
   const handleHardDelete = async (badge: TeacherBadge) => {
     if (!confirm(`「${badge.name}」を完全に削除しますか？\n付与済みの全データも削除されます。この操作は取り消せません。`)) return;
-    await deleteTeacherBadge(badge.id, { hard: true });
-    setBadges((prev) => prev.filter((b) => b.id !== badge.id));
+    try {
+      await deleteTeacherBadge(badge.id, { hard: true });
+      setBadges((prev) => prev.filter((b) => b.id !== badge.id));
+      success(`「${badge.name}」を削除しました`);
+    } catch (e) {
+      toastError(e instanceof Error ? e.message : '削除に失敗しました');
+    }
   };
 
   const handleDialogClose = () => {
@@ -301,6 +323,8 @@ export default function TeacherBadgesPage() {
           badge={assignTarget}
           schoolIds={schoolIds}
           onClose={() => setAssignTarget(null)}
+          onSuccess={success}
+          onError={toastError}
         />
 
         <ToastContainer toasts={toasts} onRemove={removeToast} />
