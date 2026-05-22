@@ -42,6 +42,8 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
 
   // 対応済み操作はmanager以上のみ
   const canDismiss = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
+  // 講師画面：生徒に見える可能性があるためネガティブ情報をマスク
+  const isTeacher = profile?.role === 'teacher';
 
   // アラートタイプの説明
   const alertTypeDescriptions: Record<string, string> = {
@@ -337,6 +339,7 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
                         studentAlert={studentAlert}
                         handleDismiss={handleDismiss}
                         canDismiss={canDismiss}
+                        masked={isTeacher}
                       />
                     ))}
                   </div>
@@ -350,6 +353,7 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
                 studentAlert={studentAlert}
                 handleDismiss={handleDismiss}
                 canDismiss={canDismiss}
+                masked={isTeacher}
               />
             ))
           )}
@@ -363,20 +367,30 @@ function StudentAlertCard({
   studentAlert,
   handleDismiss,
   canDismiss,
+  masked = false,
 }: {
   studentAlert: StudentAlerts;
   handleDismiss: (alert: Alert) => void;
   canDismiss: boolean;
+  /** 講師画面：姓＋学年のみ表示、ネガティブ情報マスク */
+  masked?: boolean;
 }) {
+  // 講師画面では学年＋姓のみ（"田中 太郎" → "田中"）
+  const displayName = masked
+    ? `${GRADE_LABELS[studentAlert.grade] || studentAlert.grade} ${studentAlert.student_name.split(/\s+/)[0]}`
+    : studentAlert.student_name;
+
   return (
     <div className="rounded-lg border border-gray-200 overflow-hidden bg-white">
       <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border-b border-gray-200">
         <span className="font-semibold text-sm text-[#1a1a1a]">
-          {studentAlert.student_name}
+          {displayName}
         </span>
-        <span className="text-xs text-gray-500">
-          ({GRADE_LABELS[studentAlert.grade] || studentAlert.grade})
-        </span>
+        {!masked && (
+          <span className="text-xs text-gray-500">
+            ({GRADE_LABELS[studentAlert.grade] || studentAlert.grade})
+          </span>
+        )}
       </div>
       <div className="p-2 space-y-1">
         {studentAlert.alerts.map((alert) => (
@@ -385,6 +399,7 @@ function StudentAlertCard({
             alert={alert}
             onDismiss={handleDismiss}
             canDismiss={canDismiss}
+            masked={masked}
           />
         ))}
       </div>

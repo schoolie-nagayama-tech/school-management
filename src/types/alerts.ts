@@ -112,6 +112,17 @@ export interface AlertThresholds {
 }
 
 /**
+ * 講師画面でマスクするアラートタイプ（生徒のネガティブ情報）。
+ * 講師の画面は生徒にも見えるため、ラベルテキスト・メッセージを非表示にする。
+ */
+export const SENSITIVE_ALERT_TYPES: ReadonlySet<AlertType> = new Set<AlertType>([
+  'score_drop',
+  'homework_not_done',
+  'tardy',
+  'interview_overdue',
+]);
+
+/**
  * 対応済みボタンで手動 dismiss できるアラートタイプ。
  * これ以外は実績入力（面談記録・成績入力など）で自動的に消える。
  */
