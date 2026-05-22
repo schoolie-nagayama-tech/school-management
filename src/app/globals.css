@@ -707,3 +707,43 @@ a:focus-visible {
   .subject-editor-enter { animation: none; }
   .subject-editor-enter > * { transition: none; }
 }
+
+/* ─── 進行フィード: 確認カードがトレイへ飛んでいくアニメーション ───
+ * 放物線軌道で上方向に弧を描きながらトレイに吸い込まれ、
+ * 進行に合わせてスケールが段階的に縮小し最後に折りたたまれて消える。
+ * --fly-dx / --fly-dy はカード位置からトレイまでの差分（px）。
+ * transform / opacity のみで完結するため GPU 加速され軽量。
+ */
+@keyframes session-fly-to-tray {
+  0% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+    opacity: 1;
+  }
+  35% {
+    /* 頂点: X方向は半分、Y方向はトレイより 110px 上に持ち上げる */
+    transform: translate(calc(var(--fly-dx) * 0.5), calc(var(--fly-dy) - 110px)) rotate(-4deg) scale(0.82);
+    opacity: 0.95;
+  }
+  70% {
+    /* 下降途中: 大幅に縮小しながらトレイ手前へ */
+    transform: translate(calc(var(--fly-dx) * 0.88), calc(var(--fly-dy) - 24px)) rotate(10deg) scale(0.38);
+    opacity: 0.7;
+  }
+  100% {
+    /* 着地: トレイの中心に小さく折りたたまれて吸い込まれる */
+    transform: translate(var(--fly-dx), var(--fly-dy)) rotate(18deg) scale(0.08);
+    opacity: 0;
+  }
+}
+.session-fly {
+  animation: session-fly-to-tray 700ms cubic-bezier(0.45, 0.05, 0.55, 0.95) forwards;
+  will-change: transform, opacity;
+  z-index: 50;
+}
+@media (prefers-reduced-motion: reduce) {
+  .session-fly {
+    animation: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+}

@@ -26,7 +26,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Eye, EyeOff, FileText, Plus, Send, Trash2 } from 'lucide-react';
+import { Eye, EyeOff, FileText, Plus, Send, Settings2, Trash2 } from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
 import { Button, Modal, Select, ToastContainer, Loading } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
@@ -1463,6 +1463,47 @@ function TableView({
               {textbook.is_draft ? '講師非公開中' : '講師に公開中'}
             </button>
           )}
+          {/* 列設定ドロップダウン（面談/通常 両モードで使用可能） */}
+          <div className="relative">
+            <button
+              onClick={() => setColMenuOpen((v) => !v)}
+              className="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-colors flex items-center gap-1"
+            >
+              <Settings2 className="w-3.5 h-3.5" />
+              列設定
+              {hiddenColCount > 0 && (
+                <span className="px-1 py-0.5 text-[10px] bg-gray-200 text-gray-600 rounded font-medium">{hiddenColCount}</span>
+              )}
+            </button>
+            {colMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setColMenuOpen(false)} />
+                <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-[#e5e7eb] rounded-lg shadow-lg z-20 overflow-hidden">
+                  <div className="px-3 py-2 text-[10px] text-[#6b7280] uppercase tracking-wider border-b border-[#f3f4f6] bg-[#f9fafb] flex items-center justify-between">
+                    <span>{isMeeting ? '保護者に見せる列を選択' : '表示する列を選択'}</span>
+                    {hiddenColCount > 0 && (
+                      <button onClick={resetCols} className="text-[10px] text-[#1e40af] hover:underline normal-case">
+                        全表示
+                      </button>
+                    )}
+                  </div>
+                  {colOptions.map((c) => (
+                    <label key={c.key} className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-[#f9fafb] cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={meetingCols[c.key]}
+                        onChange={() => toggleCol(c.key)}
+                        className="w-4 h-4 accent-[#1e3a5f]"
+                      />
+                      <span className={meetingCols[c.key] ? 'text-[#1f2937]' : 'text-[#9ca3af]'}>
+                        {c.label}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
           {!isMeeting && (
             <div className="flex items-center gap-1.5">
               <button
@@ -1650,57 +1691,11 @@ function TableView({
           />
         )}
 
-        {/* ツールバー: 列設定 + まとめて設定 + 提出ボタン（スティッキー） */}
-        <div className={`px-3 py-1.5 border rounded-lg flex items-center gap-3 flex-wrap sticky top-0 z-20 shadow-sm ${
-          isMeeting ? 'bg-[#fff7ed] border-[#fb923c]/30' : 'bg-[#f9fafb] border-[#e5e7eb]'
-        }`}>
-          {/* 列設定 */}
-          <div className="flex items-center gap-1.5">
-            {hiddenColCount > 0 && (
-              <span className="text-[11px] text-[#6b7280]">{hiddenColCount}列非表示</span>
-            )}
-            {hiddenColCount > 0 && (
-              <button onClick={resetCols} className="text-[11px] text-[#1e40af] hover:underline">
-                全表示
-              </button>
-            )}
-            <div className="relative">
-              <button
-                onClick={() => setColMenuOpen((v) => !v)}
-                className="px-2 py-1 text-[11px] font-medium bg-white border border-[#e5e7eb] rounded hover:bg-[#f3f4f6] text-[#4b5563]"
-              >
-                列設定 ▾
-              </button>
-              {colMenuOpen && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setColMenuOpen(false)} />
-                  <div className="absolute left-0 top-full mt-1 w-56 bg-white border border-[#e5e7eb] rounded-lg shadow-lg z-20 overflow-hidden">
-                    <div className="px-3 py-2 text-[10px] text-[#6b7280] uppercase tracking-wider border-b border-[#f3f4f6] bg-[#f9fafb]">
-                      {isMeeting ? '保護者に見せる列を選択' : '表示する列を選択'}
-                    </div>
-                    {colOptions.map((c) => (
-                      <label key={c.key} className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-[#f9fafb] cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={meetingCols[c.key]}
-                          onChange={() => toggleCol(c.key)}
-                          className="w-4 h-4 accent-[#1e3a5f]"
-                        />
-                        <span className={meetingCols[c.key] ? 'text-[#1f2937]' : 'text-[#9ca3af]'}>
-                          {c.label}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
-          <div className="h-4 w-px bg-[#e5e7eb]" />
-
-          {/* まとめて設定 */}
-          {!isMeeting && (
+        {/* ツールバー: 一括設定（スティッキー） */}
+        {!isMeeting && (
+          <div className={`px-3 py-1.5 border rounded-lg flex items-center gap-3 flex-wrap sticky top-0 z-20 shadow-sm ${
+            isMeeting ? 'bg-[#fff7ed] border-[#fb923c]/30' : 'bg-[#f9fafb] border-[#e5e7eb]'
+          }`}>
             <div className="flex items-center gap-1.5">
               <span className="text-[11px] font-medium text-[#4b5563]">一括:</span>
               <div className="inline-flex rounded overflow-hidden border border-[#e5e7eb] text-[11px]">
@@ -1743,32 +1738,8 @@ function TableView({
                 <button onClick={() => setPaintStart(null)} className="text-[11px] text-[#6b7280] hover:text-[#1f2937] underline">リセット</button>
               )}
             </div>
-          )}
-
-          {/* 提出ボタン: 直接入力をセッションとしてフィードに反映 */}
-          {!isMeeting && !sessionMode && (
-            <>
-              <div className="flex-1" />
-              <button
-                onClick={handleSubmit}
-                disabled={submitting}
-                className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  dirtyRows.size > 0
-                    ? 'bg-[#1e3a5f] text-white hover:bg-[#2a4d7a] shadow-sm'
-                    : 'bg-white text-[#4b5563] border border-[#e5e7eb] hover:bg-[#f3f4f6]'
-                } disabled:opacity-50`}
-              >
-                <Send className="w-3.5 h-3.5" />
-                提出
-                {dirtyRows.size > 0 && (
-                  <span className="ml-0.5 px-1.5 py-0.5 bg-white/20 rounded text-[10px]">
-                    {dirtyRows.size}
-                  </span>
-                )}
-              </button>
-            </>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* セッション記録モード（新UI） */}
@@ -1914,6 +1885,34 @@ function TableView({
           }}
           toastError={toastError}
         />
+      )}
+
+      {/* 提出フッター: 直接入力をセッションとしてフィードに反映 */}
+      {!isMeeting && !sessionMode && (
+        <div className="sticky bottom-0 z-20 border-t border-gray-200 bg-white px-4 py-3 flex items-center justify-between shadow-[0_-2px_8px_rgba(0,0,0,0.06)]">
+          <span className="text-xs text-gray-500">
+            {dirtyRows.size > 0
+              ? `${dirtyRows.size}件の編集があります`
+              : '入力内容を提出してフィードに反映'}
+          </span>
+          <button
+            onClick={handleSubmit}
+            disabled={submitting || dirtyRows.size === 0}
+            className={`inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
+              dirtyRows.size > 0
+                ? 'bg-[#1e3a5f] text-white hover:bg-[#2a4d7a] shadow-sm'
+                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+            } disabled:opacity-50`}
+          >
+            <Send className="w-4 h-4" />
+            提出
+            {dirtyRows.size > 0 && (
+              <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded text-[11px]">
+                {dirtyRows.size}
+              </span>
+            )}
+          </button>
+        </div>
       )}
     </div>
   );

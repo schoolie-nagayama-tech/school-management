@@ -147,7 +147,7 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
       console.error(e);
     }
 
-    // アニメーション完了後にリストから除去
+    // アニメーション完了後にリストから除去（keyframes と同じ 700ms）
     setTimeout(() => {
       setSessions(prev => prev.filter(s => s.id !== sessionId));
       setFlyingIds(prev => {
@@ -155,7 +155,7 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
         next.delete(sessionId);
         return next;
       });
-    }, 600);
+    }, 700);
   }, [profile?.id]);
 
   const handleUnconfirm = useCallback(async (sessionId: string) => {
@@ -380,35 +380,37 @@ function SwipeableCard({
   const swipeIsRight = dragX > 0;
   const rotation = isDragging ? dragX * 0.02 : 0;
 
-  // 飛んでいくアニメーション: トレイ位置に向かって飛ぶ
-  const flyStyle = useMemo(() => {
+  // 飛んでいくアニメーション: トレイへ放物線軌道で吸い込まれる
+  // dx/dy は CSS 変数として渡し、keyframes (session-fly-to-tray) 側で
+  // 頂点を上に持ち上げ・段階的にスケールダウンする弧を描く。
+  const flyStyle = useMemo<React.CSSProperties>(() => {
     if (!isFlying) return {};
     const trayEl = trayRef.current;
     const cardEl = cardRef.current;
     if (!trayEl || !cardEl) {
+      // フォールバック: 参照が取れない場合は右斜め上に吸い込む簡易軌道
       return {
-        transform: 'translateX(120%) rotate(8deg) scale(0.7)',
-        opacity: 0,
-        transition: 'all 0.6s cubic-bezier(0.32, 0.94, 0.60, 1)',
+        ['--fly-dx' as string]: '320px',
+        ['--fly-dy' as string]: '-40px',
+        position: 'relative',
       };
     }
     const trayRect = trayEl.getBoundingClientRect();
     const cardRect = cardEl.getBoundingClientRect();
-    const dx = trayRect.left - cardRect.left;
-    const dy = trayRect.top - cardRect.top;
+    // トレイの中心に着地させる（カードもスケール後の中心が合うよう中心同士で計算）
+    const dx = (trayRect.left + trayRect.width / 2) - (cardRect.left + cardRect.width / 2);
+    const dy = (trayRect.top + trayRect.height / 2) - (cardRect.top + cardRect.height / 2);
     return {
-      transform: `translate(${dx}px, ${dy}px) rotate(6deg) scale(0.3)`,
-      opacity: 0,
-      transition: 'all 0.6s cubic-bezier(0.32, 0.94, 0.60, 1)',
-      zIndex: 50,
-      position: 'relative' as const,
+      ['--fly-dx' as string]: `${dx}px`,
+      ['--fly-dy' as string]: `${dy}px`,
+      position: 'relative',
     };
   }, [isFlying, trayRef]);
 
   return (
     <div
       ref={cardRef}
-      className={`relative ${isFlying ? '' : 'transition-transform'}`}
+      className={`relative ${isFlying ? 'session-fly' : 'transition-transform'}`}
       style={
         isFlying ? flyStyle : {
           transform: isDragging ? `translateX(${dragX}px) rotate(${rotation}deg)` : undefined,
