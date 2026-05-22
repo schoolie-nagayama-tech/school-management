@@ -103,6 +103,17 @@ export async function toggleTeacherBadge(
 }
 
 // =====================================================
+// バッジ別の付与済み講師ID一覧
+// =====================================================
+
+export async function getBadgeAssignees(badgeId: string): Promise<string[]> {
+  const res = await fetchWithAuth(`/api/admin/teacher-badges/${badgeId}/assignees?t=${Date.now()}`);
+  if (!res.ok) throw new Error('付与情報の取得に失敗しました');
+  const json = await res.json();
+  return json.assignedTeacherIds;
+}
+
+// =====================================================
 // マイバッジ（講師自身）
 // =====================================================
 

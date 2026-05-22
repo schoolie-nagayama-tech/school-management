@@ -27,7 +27,9 @@ import type { School, UserProfile, Subject, TeacherBadge, TeacherBadgeAssignment
 import type { ScheduleTimeSlot } from '@/types/schedule';
 import { BadgeGrid } from '@/components/teacher-badges/BadgeGrid';
 import { BadgeProgress } from '@/components/teacher-badges/BadgeProgress';
+import { BadgeTemplateDialog } from '@/components/teacher-badges/BadgeTemplateDialog';
 import type { BadgeRank } from '@/types/database';
+import { createTeacherBadge } from '@/lib/api/teacher-badges';
 
 const DAY_LABELS: { value: number; label: string }[] = [
   { value: 0, label: '日' },
@@ -130,6 +132,7 @@ export default function TeacherEditPage() {
   >({});
   const [allBadges, setAllBadges] = useState<TeacherBadge[]>([]);
   const [badgeAssignments, setBadgeAssignments] = useState<TeacherBadgeAssignment[]>([]);
+  const [badgeCreateDialogOpen, setBadgeCreateDialogOpen] = useState(false);
 
   const [trainings, setTrainings] = useState<TeacherTraining[]>([]);
   const [trainingMasters, setTrainingMasters] = useState<TrainingMaster[]>([]);
@@ -673,36 +676,49 @@ export default function TeacherEditPage() {
             </div>
 
             {/* バッジ / トロフィー */}
-            {allBadges.length > 0 && (
               <div className="bg-surface-raised rounded-xl border border-border p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-4 pb-2 border-b border-border">
                   <h2 className="text-base font-semibold text-text-heading">
                     バッジ / トロフィー
                   </h2>
+                  <button
+                    type="button"
+                    onClick={() => setBadgeCreateDialogOpen(true)}
+                    className="text-xs px-3 py-1.5 rounded-md border border-border hover:bg-surface hover:border-ink/30 text-text-muted transition-colors duration-150"
+                  >
+                    + バッジを新規作成
+                  </button>
                 </div>
-                <div className="mb-4">
-                  <BadgeProgress
-                    earned={badgeAssignments.length}
-                    total={allBadges.length}
-                    rankCounts={badgeAssignments.reduce((acc, a) => {
-                      const rank = a.badge?.rank || allBadges.find((b) => b.id === a.badge_id)?.rank;
-                      if (rank) acc[rank] = (acc[rank] || 0) + 1;
-                      return acc;
-                    }, {} as Partial<Record<BadgeRank, number>>)}
+                {allBadges.length > 0 && (
+                  <>
+                    <div className="mb-4">
+                      <BadgeProgress
+                        earned={badgeAssignments.length}
+                        total={allBadges.length}
+                        rankCounts={badgeAssignments.reduce((acc, a) => {
+                          const rank = a.badge?.rank || allBadges.find((b) => b.id === a.badge_id)?.rank;
+                          if (rank) acc[rank] = (acc[rank] || 0) + 1;
+                          return acc;
+                        }, {} as Partial<Record<BadgeRank, number>>)}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-500 mb-3">
+                      クリックでバッジの付与 / 剥奪を切り替えます
+                    </p>
+                  </>
+                )}
+                {allBadges.length > 0 ? (
+                  <BadgeGrid
+                    badges={allBadges}
+                    assignments={badgeAssignments}
+                    onBadgeClick={(badge) => handleBadgeToggle(badge)}
+                    interactive
+                    groupByCategory
                   />
-                </div>
-                <p className="text-xs text-gray-500 mb-3">
-                  クリックでバッジの付与 / 剥奪を切り替えます
-                </p>
-                <BadgeGrid
-                  badges={allBadges}
-                  assignments={badgeAssignments}
-                  onBadgeClick={(badge) => handleBadgeToggle(badge)}
-                  interactive
-                  groupByCategory
-                />
+                ) : (
+                  <p className="text-sm text-gray-400 py-2">バッジがまだ登録されていません。上の「+ バッジを新規作成」から作成できます。</p>
+                )}
               </div>
-            )}
 
             {/* 研修参加履歴 */}
             <div className="bg-surface-raised rounded-xl border border-border p-6 shadow-sm">
@@ -720,8 +736,8 @@ export default function TeacherEditPage() {
                     {trainingMasters.length === 0 ? (
                       <div className="mt-1 text-xs text-gray-500">
                         研修マスタが未登録です。
-                        <Link href="/settings/trainings" className="text-ink hover:underline ml-1">
-                          設定 &gt; 研修マスタ管理
+                        <Link href="/admin/teacher-badges" className="text-ink hover:underline ml-1">
+                          バッジ管理 &gt; 研修マスタ
                         </Link>
                         で登録してください。
                       </div>
@@ -830,6 +846,30 @@ export default function TeacherEditPage() {
           </div>
         </div>
       </div>
+      {/* バッジ新規作成ダイアログ（講師編集からバッジを直接作成） */}
+      <BadgeTemplateDialog
+        open={badgeCreateDialogOpen}
+        onClose={async () => {
+          setBadgeCreateDialogOpen(false);
+          // 作成されたバッジと付与情報をリフレッシュ
+          if (teacherId) {
+            const [badges, assignments] = await Promise.all([
+              getTeacherBadges().catch(() => [] as TeacherBadge[]),
+              getTeacherBadgeAssignments(teacherId).catch(() => [] as TeacherBadgeAssignment[]),
+            ]);
+            setAllBadges(badges);
+            setBadgeAssignments(assignments);
+          }
+        }}
+        onSave={async (data) => {
+          const created = await createTeacherBadge(data);
+          setAllBadges((prev) => [...prev, created]);
+          success('バッジを作成しました');
+          return created;
+        }}
+        autoAssignTeacherId={teacherId}
+      />
+
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       {ConfirmDialog}
     </AdminLayout>

@@ -17,7 +17,6 @@ import {
   Clock,
   Link2,
   BookOpen,
-  GraduationCap,
   Bell,
   ListChecks,
   ClipboardList,
@@ -105,20 +104,13 @@ const settingsGroups: SettingsGroup[] = [
     ],
   },
   {
-    title: '講習・研修',
+    title: '講習',
     items: [
       {
         href: '/settings/seasonal-shifts',
         icon: <Calendar className="w-5 h-5" />,
         label: '講習シフト設定',
         description: '季節講習のシフト管理',
-        requiresManager: true,
-      },
-      {
-        href: '/settings/trainings',
-        icon: <GraduationCap className="w-5 h-5" />,
-        label: '研修マスタ',
-        description: '研修・講習のマスタ登録',
         requiresManager: true,
       },
     ],
