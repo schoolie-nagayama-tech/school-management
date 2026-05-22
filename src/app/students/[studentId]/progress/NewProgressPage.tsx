@@ -1344,7 +1344,6 @@ function TableView({
       if (result) {
         success(`${result.linkedCount}件の指導記録を提出しました`);
         setDirtyRows(new Set());
-        // データ再読込
         const rows = await getStudentProgress(textbook.id);
         setProgress(rows || []);
       } else {
@@ -1401,12 +1400,13 @@ function TableView({
         if (progressId) {
           syncProgressToSession(progressId, patch).catch(console.error);
         }
+        markDirty(String(row.id));
       } catch (e) {
         console.error(e);
         toastError('保存に失敗しました');
       }
     },
-    [textbook.id, toastError, setProgress]
+    [textbook.id, toastError, setProgress, markDirty]
   );
 
   const saveLessonField = useCallback(
@@ -1421,12 +1421,13 @@ function TableView({
           lesson_number: lessonNumber,
           lesson_date: date,
         });
+        markDirty(String(row.id));
       } catch (e) {
         console.error(e);
         toastError('指導日の保存に失敗しました');
       }
     },
-    [toastError]
+    [toastError, markDirty]
   );
 
   return (
@@ -1649,8 +1650,8 @@ function TableView({
           />
         )}
 
-        {/* ツールバー: 列設定 + まとめて設定（1行にまとめ） */}
-        <div className={`px-3 py-1.5 border rounded-lg flex items-center gap-3 flex-wrap ${
+        {/* ツールバー: 列設定 + まとめて設定 + 提出ボタン（スティッキー） */}
+        <div className={`px-3 py-1.5 border rounded-lg flex items-center gap-3 flex-wrap sticky top-0 z-20 shadow-sm ${
           isMeeting ? 'bg-[#fff7ed] border-[#fb923c]/30' : 'bg-[#f9fafb] border-[#e5e7eb]'
         }`}>
           {/* 列設定 */}
@@ -1742,6 +1743,30 @@ function TableView({
                 <button onClick={() => setPaintStart(null)} className="text-[11px] text-[#6b7280] hover:text-[#1f2937] underline">リセット</button>
               )}
             </div>
+          )}
+
+          {/* 提出ボタン: 直接入力をセッションとしてフィードに反映 */}
+          {!isMeeting && !sessionMode && (
+            <>
+              <div className="flex-1" />
+              <button
+                onClick={handleSubmit}
+                disabled={submitting}
+                className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  dirtyRows.size > 0
+                    ? 'bg-[#1e3a5f] text-white hover:bg-[#2a4d7a] shadow-sm'
+                    : 'bg-white text-[#4b5563] border border-[#e5e7eb] hover:bg-[#f3f4f6]'
+                } disabled:opacity-50`}
+              >
+                <Send className="w-3.5 h-3.5" />
+                提出
+                {dirtyRows.size > 0 && (
+                  <span className="ml-0.5 px-1.5 py-0.5 bg-white/20 rounded text-[10px]">
+                    {dirtyRows.size}
+                  </span>
+                )}
+              </button>
+            </>
           )}
         </div>
       </div>

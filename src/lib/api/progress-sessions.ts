@@ -345,7 +345,7 @@ export async function submitDirectInput(params: {
   if (!unlinkedLessons || unlinkedLessons.length === 0) return null;
 
   // 代表値: 最新の更新行から引継ぎ・フラグを取得
-  const linkedProgressIds = [...new Set(unlinkedLessons.map((l) => l.student_progress_id))];
+  const linkedProgressIds = Array.from(new Set(unlinkedLessons.map((l) => l.student_progress_id)));
   const linkedRows = progressRows
     .filter((r) => linkedProgressIds.includes(r.id))
     .sort((a, b) => (b.updated_at ?? '').localeCompare(a.updated_at ?? ''));
