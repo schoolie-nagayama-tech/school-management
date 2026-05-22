@@ -376,7 +376,7 @@ export async function syncSessionToProgress(
 
   if (!lessons || lessons.length === 0) return;
 
-  const progressIds = [...new Set(lessons.map(l => l.student_progress_id))];
+  const progressIds = Array.from(new Set(lessons.map(l => l.student_progress_id)));
   for (const pid of progressIds) {
     await supabase
       .from('student_progress')
