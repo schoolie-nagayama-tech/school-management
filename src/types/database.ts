@@ -3287,9 +3287,17 @@ export type ProgressSession = Database['public']['Tables']['progress_sessions'][
 export type ProgressSessionInsert = Database['public']['Tables']['progress_sessions']['Insert'];
 export type ProgressSessionUpdate = Database['public']['Tables']['progress_sessions']['Update'];
 
+/** レッスン + 単元情報（フィード表示用） */
+export type SessionLessonWithUnit = Pick<StudentProgressLesson, 'lesson_number'> & {
+  student_progress?: {
+    curriculum_item_id: number;
+    curriculum_item?: Pick<CurriculumItem, 'item_number' | 'title'> | null;
+  } | null;
+};
+
 /** セッション + 紐付き指導日 + 生徒/テキスト情報 */
 export type ProgressSessionWithDetails = ProgressSession & {
-  lessons?: StudentProgressLesson[];
+  lessons?: SessionLessonWithUnit[];
   student_textbook?: StudentTextbook & { textbook: Textbook; student?: Student };
 };
 

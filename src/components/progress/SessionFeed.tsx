@@ -13,6 +13,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   AlertTriangle,
+  BookOpen,
   Calendar,
   GraduationCap,
   MessageSquare,
@@ -28,6 +29,7 @@ import {
 } from '@/lib/api/progress-sessions';
 import type { SmartAlert } from '@/lib/api/progress-sessions';
 import type { ProgressSessionWithDetails } from '@/types/database';
+import { toSurnameOnly } from '@/lib/utils/teacherName';
 
 type Filter = 'all' | 'alerts';
 
@@ -37,7 +39,8 @@ interface Props {
 }
 
 export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
-  const { schoolIds: allSchoolIds, selectedSchoolId } = useAuth();
+  const { schoolIds: allSchoolIds, selectedSchoolId, profile } = useAuth();
+  const isTeacher = profile?.role === 'teacher';
   // propSchoolIds があればそれを使う。なければ選択中の教室。
   // 'all' の場合はデモ教室も含む全教室IDを使う（getSelectedSchoolIds はデモ除外するため使わない）
   const schoolIds = useMemo(() => {
@@ -135,7 +138,7 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
       ) : (
         <div className="space-y-2">
           {sessions.map(session => (
-            <FeedCard key={session.id} session={session} />
+            <FeedCard key={session.id} session={session} isTeacher={isTeacher} />
           ))}
         </div>
       )}
@@ -145,7 +148,7 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
 
 // ─── フィードカード ───
 
-function FeedCard({ session }: { session: ProgressSessionWithDetails }) {
+function FeedCard({ session, isTeacher }: { session: ProgressSessionWithDetails; isTeacher: boolean }) {
   const hasIssue = session.homework_not_done || session.tardy;
 
   // student_textbook 経由で生徒名、テキスト名を取得
@@ -155,6 +158,26 @@ function FeedCard({ session }: { session: ProgressSessionWithDetails }) {
     : '—';
   const studentId = st?.student?.id;
   const textbookName = st?.textbook?.name || '—';
+
+  // 講師名（講師ロールは姓のみ表示）
+  const displayTeacher = session.teacher_name
+    ? isTeacher ? toSurnameOnly(session.teacher_name) : session.teacher_name
+    : null;
+
+  // 指導単元: lessons から単元名を抽出
+  const lessonUnits = useMemo(() => {
+    if (!session.lessons || session.lessons.length === 0) return [];
+    return session.lessons
+      .filter(l => l.student_progress?.curriculum_item)
+      .sort((a, b) => (a.lesson_number ?? 0) - (b.lesson_number ?? 0))
+      .map(l => {
+        const ci = l.student_progress!.curriculum_item!;
+        return {
+          label: `${ci.item_number ?? ''} ${ci.title ?? ''}`.trim(),
+          lessonNumber: l.lesson_number,
+        };
+      });
+  }, [session.lessons]);
 
   const content = (
     <div
@@ -174,8 +197,8 @@ function FeedCard({ session }: { session: ProgressSessionWithDetails }) {
           <div className="text-xs text-gray-500">
             {session.session_date?.replace(/-/g, '/')}
           </div>
-          {session.teacher_name && (
-            <div className="text-xs text-gray-400">{session.teacher_name}</div>
+          {displayTeacher && (
+            <div className="text-xs text-gray-400">{displayTeacher}</div>
           )}
         </div>
       </div>
@@ -194,6 +217,23 @@ function FeedCard({ session }: { session: ProgressSessionWithDetails }) {
               遅刻
             </span>
           )}
+        </div>
+      )}
+
+      {/* 指導単元 */}
+      {lessonUnits.length > 0 && (
+        <div className="flex items-start gap-1.5 mb-1">
+          <BookOpen className="w-3.5 h-3.5 text-gray-400 mt-0.5 shrink-0" />
+          <div className="flex flex-wrap gap-1">
+            {lessonUnits.map((u, i) => (
+              <span
+                key={i}
+                className="px-1.5 py-0.5 text-[10px] bg-gray-100 text-gray-700 rounded"
+              >
+                {u.label} <span className="text-gray-400">({u.lessonNumber}回目)</span>
+              </span>
+            ))}
+          </div>
         </div>
       )}
 

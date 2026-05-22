@@ -20,6 +20,7 @@ import {
   GraduationCap,
   Bell,
   ListChecks,
+  ClipboardList,
 } from 'lucide-react';
 
 interface SettingsItem {
@@ -92,6 +93,13 @@ const settingsGroups: SettingsGroup[] = [
         icon: <Clock className="w-5 h-5" />,
         label: 'コマ時間設定',
         description: 'コマ番号・開始時刻・終了時刻の管理',
+        requiresManager: true,
+      },
+      {
+        href: '/settings/exam-types',
+        icon: <ClipboardList className="w-5 h-5" />,
+        label: '試験名マスタ',
+        description: '進行表の目標設定・試験範囲で使う試験名の管理',
         requiresManager: true,
       },
     ],

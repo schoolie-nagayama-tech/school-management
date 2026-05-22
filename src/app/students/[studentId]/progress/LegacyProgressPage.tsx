@@ -174,15 +174,15 @@ export default function LegacyProgressPage() {
     }
   }, []);
 
-  // テスト名マスタを取得
+  // テスト名マスタを取得（生徒の所属教室を渡す）
   const fetchExamTypes = useCallback(async () => {
     try {
-      const data = await getExamTypes();
+      const data = await getExamTypes(student?.school_id ?? undefined);
       setExamTypes(data);
     } catch (err) {
       console.error('Error fetching exam types:', err);
     }
-  }, []);
+  }, [student?.school_id]);
 
   // 進行記録を取得
   const fetchProgress = useCallback(async () => {
@@ -656,7 +656,7 @@ export default function LegacyProgressPage() {
     }
   }, [student, selectedGradeCategory]);
 
-  // 初回読み込み
+  // 初回読み込み（生徒・教材は並列、試験名マスタは生徒取得後に実行）
   useEffect(() => {
     const load = async () => {
       setIsLoading(true);
@@ -664,12 +664,18 @@ export default function LegacyProgressPage() {
         fetchStudent(),
         fetchStudentTextbooks(),
         fetchTextbooks(),
-        fetchExamTypes(),
       ]);
       setIsLoading(false);
     };
     load();
-  }, [fetchStudent, fetchStudentTextbooks, fetchTextbooks, fetchExamTypes]);
+  }, [fetchStudent, fetchStudentTextbooks, fetchTextbooks]);
+
+  // 生徒の school_id が確定したら試験名マスタを取得
+  useEffect(() => {
+    if (student?.school_id) {
+      fetchExamTypes();
+    }
+  }, [student?.school_id, fetchExamTypes]);
 
   // 選択テキストが変更されたら進行記録を取得
   useEffect(() => {

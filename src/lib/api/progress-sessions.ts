@@ -228,6 +228,45 @@ export async function recordSession(params: {
 }
 
 // ============================================
+// 進行表→セッション同期（編集時にフィードへ反映）
+// ============================================
+
+/** セッション共有フィールド: student_progress と progress_sessions の両方に存在 */
+const SESSION_SHARED_FIELDS = ['handover', 'homework_not_done', 'tardy', 'teacher_name'] as const;
+
+/**
+ * 進行表で直接編集された内容を、紐付く progress_sessions にも同期する。
+ * student_progress_lessons.session_id 経由で最新セッションを特定し更新する。
+ */
+export async function syncProgressToSession(
+  studentProgressId: string,
+  patch: Record<string, unknown>
+): Promise<void> {
+  // セッションに関係するフィールドだけ抽出
+  const sessionPatch: ProgressSessionUpdate = {};
+  for (const key of SESSION_SHARED_FIELDS) {
+    if (key in patch) {
+      (sessionPatch as Record<string, unknown>)[key] = patch[key];
+    }
+  }
+  if (Object.keys(sessionPatch).length === 0) return;
+
+  // 紐付くレッスンから最新の session_id を取得
+  const { data: lesson } = await supabase
+    .from('student_progress_lessons')
+    .select('session_id')
+    .eq('student_progress_id', studentProgressId)
+    .not('session_id', 'is', null)
+    .order('lesson_number', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!lesson?.session_id) return;
+
+  await updateProgressSession(lesson.session_id, sessionPatch);
+}
+
+// ============================================
 // 教室長フィード（②教室長UI用）
 // ============================================
 
@@ -253,7 +292,7 @@ export async function getSessionFeed(
 
   const stIds = (stList as { id: string }[]).map((st) => st.id);
 
-  // セッション取得
+  // セッション取得（指導単元情報も含む）
   const { data: sessions, error: sessError } = await supabase
     .from('progress_sessions')
     .select(`
@@ -262,6 +301,13 @@ export async function getSessionFeed(
         *,
         textbook:textbooks(*),
         student:students(*)
+      ),
+      lessons:student_progress_lessons(
+        lesson_number,
+        student_progress:student_progress(
+          curriculum_item_id,
+          curriculum_item:curriculum_items(item_number, title)
+        )
       )
     `)
     .in('student_textbook_id', stIds)
@@ -303,6 +349,13 @@ export async function getAlertSessionFeed(
         *,
         textbook:textbooks(*),
         student:students(*)
+      ),
+      lessons:student_progress_lessons(
+        lesson_number,
+        student_progress:student_progress(
+          curriculum_item_id,
+          curriculum_item:curriculum_items(item_number, title)
+        )
       )
     `)
     .in('student_textbook_id', stIds)

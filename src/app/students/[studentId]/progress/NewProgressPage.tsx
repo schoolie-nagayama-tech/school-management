@@ -47,6 +47,7 @@ import {
 } from '@/lib/api/progress';
 import SessionRecordingPanel from '@/components/progress/SessionRecordingPanel';
 import type { SessionRecordingPanelHandle } from '@/components/progress/SessionRecordingPanel';
+import { syncProgressToSession } from '@/lib/api/progress-sessions';
 import { getStudent } from '@/lib/api/students';
 import { getExamTypes, getTextbooks } from '@/lib/api/textbooks';
 import {
@@ -159,11 +160,13 @@ export default function NewProgressPage() {
       setIsLoading(true);
       try {
         const schoolIds = getSelectedSchoolIds();
-        const [s, tbs, ets] = await Promise.all([
+        // 生徒情報を先に取得（school_id を試験名マスタ取得に使うため）
+        const [s, tbs] = await Promise.all([
           getStudent(studentId, schoolIds.length > 0 ? schoolIds : undefined),
           getStudentTextbooks(studentId),
-          getExamTypes(),
         ]);
+        // 生徒の所属教室の試験名マスタを取得
+        const ets = await getExamTypes(s?.school_id ?? undefined);
         setStudent(s);
         // 進行表で管理しないものは除外（所持教材一覧では別途扱う）
         const baseTbs = (tbs || []).filter((tb) => (tb as { track_progress?: boolean }).track_progress === true);
@@ -1340,6 +1343,11 @@ function TableView({
               ? { ...r, progress: { ...(r.progress || {}), ...(saved as object) } as CurriculumItemWithProgress['progress'] }
               : r
           ));
+        }
+        // セッション共有フィールドが変更されたら progress_sessions にも同期（フィード反映）
+        const progressId = row.progress?.id || (saved as { id?: string })?.id;
+        if (progressId) {
+          syncProgressToSession(progressId, patch).catch(console.error);
         }
       } catch (e) {
         console.error(e);

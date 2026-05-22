@@ -169,7 +169,8 @@
       "Bash(node .agents/skills/i-impeccable/scripts/cleanup-deprecated.mjs)",
       "Bash(node /c/Users/ytaka/.claude/skills/i-impeccable/scripts/cleanup-deprecated.mjs)",
       "Bash(xargs cat *)",
-      "Bash(node -e \"const pkg = require\\('./package.json'\\); console.log\\(pkg.dependencies['@serwist/next'], pkg.dependencies['serwist']\\)\")"
+      "Bash(node -e \"const pkg = require\\('./package.json'\\); console.log\\(pkg.dependencies['@serwist/next'], pkg.dependencies['serwist']\\)\")",
+      "Bash(Get-Content supabase/migrations/20260430_progress_sessions.sql)"
     ]
   }
 }
