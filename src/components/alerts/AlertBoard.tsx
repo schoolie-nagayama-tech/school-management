@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { AlertItem, SENSITIVE_ALERT_ICONS } from './AlertItem';
+import { AlertItem, SENSITIVE_ALERT_ICONS, MASKED_ALERT_LABEL_OVERRIDES } from './AlertItem';
 import { getAlertsLight, getAlertsHeavy, mergeStudentAlerts, invalidateAlertCache } from '@/lib/api/alerts';
 import type { StudentAlerts, Alert } from '@/types/alerts';
 import { useAuth } from '@/contexts/AuthContext';
@@ -61,7 +61,7 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
 
   // 講師画面でアイコン併記＋具体メッセージを伏せる際の補足説明
   const teacherMaskDescriptions: Partial<Record<AlertType, string>> = {
-    score_drop: '成績が下がった生徒（具体的な点数は非表示）',
+    score_drop: '成績が下がった科目（点数は非表示）',
     homework_not_done: '宿題未実施が複数回ある生徒（回数は非表示）',
     tardy: '遅刻が複数回ある生徒（回数は非表示）',
     interview_overdue: '面談から日数が経過した生徒（具体日数は非表示）',
@@ -290,6 +290,9 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
                 const alertType = type as AlertType;
                 const isSensitiveType = SENSITIVE_ALERT_TYPES.has(alertType);
                 const Icon = isTeacher && isSensitiveType ? SENSITIVE_ALERT_ICONS[alertType] : null;
+                const displayLabel = isTeacher && isSensitiveType
+                  ? (MASKED_ALERT_LABEL_OVERRIDES[alertType] || label)
+                  : label;
                 const desc = isTeacher && isSensitiveType
                   ? (teacherMaskDescriptions[alertType] || alertTypeDescriptions[type])
                   : alertTypeDescriptions[type];
@@ -297,7 +300,7 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
                   <div key={type} className="flex items-start gap-2">
                     <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded ${ALERT_TYPE_COLORS[alertType]}`}>
                       {Icon && <Icon className="w-3 h-3" />}
-                      {label}
+                      {displayLabel}
                     </span>
                     <span className="text-sm text-[#4b5563] flex-1">
                       {desc}

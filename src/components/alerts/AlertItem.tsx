@@ -14,6 +14,19 @@ export const SENSITIVE_ALERT_ICONS: Partial<Record<AlertType, React.ComponentTyp
   interview_overdue: MessageCircle,
 };
 
+/** マスク時にラベル名を差し替える（"成績低下" → "成績"のように婉曲化） */
+export const MASKED_ALERT_LABEL_OVERRIDES: Partial<Record<AlertType, string>> = {
+  score_drop: '成績',
+};
+
+/** マスク時に表示する代替メッセージ。個人情報（点数や回数など）を含まない要素のみ返す */
+export function getMaskedMessage(alert: Alert): string | null {
+  if (alert.alert_type === 'score_drop' && alert.details?.subject) {
+    return alert.details.subject;
+  }
+  return null;
+}
+
 interface AlertItemProps {
   alert: Alert;
   onDismiss?: (alert: Alert) => void;
@@ -64,8 +77,11 @@ export function AlertItem({ alert, onDismiss, canDismiss = false, masked = false
   const editHref = getEditHref(alert);
   const isSensitive = masked && SENSITIVE_ALERT_TYPES.has(alert.alert_type);
 
-  // マスク時はネガティブ系のメッセージを非表示
-  const messageNode = isSensitive ? null : editHref ? (
+  // マスク時はネガティブ系の具体メッセージを非表示。科目名など個人情報ではない要素は別途出す
+  const maskedMessage = isSensitive ? getMaskedMessage(alert) : null;
+  const messageNode = isSensitive ? (
+    maskedMessage ? <span className="text-xs text-gray-700 truncate">{maskedMessage}</span> : null
+  ) : editHref ? (
     <Link
       href={editHref}
       className="text-xs text-gray-700 hover:text-[#1e3a5f] hover:underline truncate"
@@ -79,13 +95,15 @@ export function AlertItem({ alert, onDismiss, canDismiss = false, masked = false
 
   // マスク時のネガティブ系はラベル横にアイコンを併記
   const Icon = isSensitive ? SENSITIVE_ALERT_ICONS[alert.alert_type] : null;
+  // マスク時はラベルを婉曲表現に差し替え（score_drop → "成績"）
+  const displayLabel = (isSensitive && MASKED_ALERT_LABEL_OVERRIDES[alert.alert_type]) || ALERT_TYPE_LABELS[alert.alert_type];
 
   return (
     <div className={`flex items-center justify-between gap-2 py-1 px-2 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors duration-150 ${urgencyStyle}`}>
       <div className="flex items-center gap-2 flex-1 min-w-0">
         <span className={`shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium ${ALERT_TYPE_COLORS[alert.alert_type]}`}>
           {isSensitive && Icon && <Icon className="w-3 h-3" />}
-          {ALERT_TYPE_LABELS[alert.alert_type]}
+          {displayLabel}
         </span>
         {messageNode}
       </div>

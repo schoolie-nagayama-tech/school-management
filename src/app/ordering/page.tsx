@@ -57,7 +57,7 @@ export default function OrderingPage() {
   // Data state
   const [materials, setMaterials] = useState<Material[]>([]);
   const [orders, setOrders] = useState<MaterialOrderWithDetails[]>([]);
-  const [students, setStudents] = useState<{ id: string; last_name: string; first_name: string; grade: number | null }[]>([]);
+  const [students, setStudents] = useState<{ id: string; school_id: string; last_name: string; first_name: string; grade: number | null }[]>([]);
   const [textbooks, setTextbooks] = useState<Textbook[]>([]);
   const [activeBillingPeriod, setActiveBillingPeriod] = useState<BillingPeriod | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -100,6 +100,7 @@ export default function OrderingPage() {
           .filter((s) => s.status === 'active')
           .map((s) => ({
             id: s.id,
+            school_id: s.school_id,
             last_name: s.last_name,
             first_name: s.first_name,
             grade: s.grade,
@@ -172,6 +173,9 @@ export default function OrderingPage() {
   };
 
   const SAMPLE_VALUE = '__SAMPLE__';
+  // 単語練習帳は教室ごとに在庫を持つため、発注時に生徒の所属教室から減算する。
+  // 他の教材は従来通り選択中の最初の教室 (schoolIds[0]) で扱う。
+  const VOCAB_BOOK_NAME = '単語練習帳';
 
   // --- Textbook Ordering (with auto stock decrement) ---
   const handleTextbookOrder = async (
@@ -180,21 +184,34 @@ export default function OrderingPage() {
     quantity: number,
     notes: string
   ) => {
-    const schoolId = schoolIds.length > 0 ? schoolIds[0] : undefined;
     const isSample = studentId === SAMPLE_VALUE;
+    const isVocab = textbookName === VOCAB_BOOK_NAME;
 
-    // Check if a material already exists with this textbook name
-    let material = materials.find((m) => m.name === textbookName);
+    // 単語練習帳 + 実生徒の場合は生徒の所属教室を、それ以外は schoolIds[0] を使う
+    const student = !isSample ? students.find((s) => s.id === studentId) : null;
+    const targetSchoolId =
+      isVocab && student?.school_id
+        ? student.school_id
+        : schoolIds.length > 0
+        ? schoolIds[0]
+        : undefined;
+
+    // 該当教室の material を取得（単語練習帳は教室別レコードを正確に当てる必要がある）
+    let material = materials.find(
+      (m) =>
+        m.name === textbookName &&
+        (targetSchoolId ? m.school_id === targetSchoolId : true)
+    );
 
     if (!material) {
-      // Create a new material for this textbook
+      // 該当教室分の material を作成（単語練習帳は targetSchoolId のみ、他は schoolIds 全体に作成）
       material = await createMaterial(
-        {
-          name: textbookName,
-          category: 'テキスト',
-          unit: '冊',
-        },
-        schoolIds.length > 0 ? schoolIds : undefined
+        { name: textbookName, category: 'テキスト', unit: '冊' },
+        isVocab && targetSchoolId
+          ? [targetSchoolId]
+          : schoolIds.length > 0
+          ? schoolIds
+          : undefined
       );
     }
 
@@ -206,16 +223,16 @@ export default function OrderingPage() {
     };
 
     if (!isSample && activeBillingPeriod) {
-      await createOrderWithBilling(orderData, activeBillingPeriod.id, schoolId);
+      await createOrderWithBilling(orderData, activeBillingPeriod.id, targetSchoolId);
     } else {
-      await createOrder(orderData, schoolId);
+      await createOrder(orderData, targetSchoolId);
     }
 
     // Auto-decrement stock by creating an 'out' transaction
-    if (schoolId) {
+    if (targetSchoolId) {
       try {
         await createStockTransaction({
-          school_id: schoolId,
+          school_id: targetSchoolId,
           material_id: material.id,
           transaction_type: 'out',
           quantity,
@@ -232,72 +249,96 @@ export default function OrderingPage() {
   };
 
   // --- Bulk Order (Cart) ---
+  // 単語練習帳は生徒の所属教室から在庫減算するため、item ごとに対象教室を決定して
+  // 発注レコード・在庫減算の school_id を分ける（他の教材は schoolIds[0] のまま）。
   const handleBulkOrder = async (items: CartItem[]) => {
-    const schoolId = schoolIds.length > 0 ? schoolIds[0] : undefined;
+    const fallbackSchoolId = schoolIds.length > 0 ? schoolIds[0] : undefined;
 
-    // Ensure materials exist for all items
+    // (school_id, material name) で材料をキャッシュ。単語練習帳は教室別レコードを使うので
+    // material_name 単独では衝突するためキーに school_id を含める。
+    const materialKey = (name: string, schoolId: string | undefined) => `${schoolId ?? ''}::${name}`;
     const materialCache = new Map<string, Material>();
     for (const m of materials) {
-      materialCache.set(m.name, m);
+      materialCache.set(materialKey(m.name, m.school_id), m);
     }
 
-    const orderEntries: Array<{
+    type Entry = {
       material_id: string;
       student_id?: string;
       is_sample?: boolean;
       quantity: number;
       notes?: string;
-    }> = [];
+      targetSchoolId: string | undefined;
+    };
+    const orderEntries: Entry[] = [];
 
     for (const item of items) {
-      let material = materialCache.get(item.textbookName);
+      const isSample = item.studentId === SAMPLE_VALUE;
+      const isVocab = item.textbookName === VOCAB_BOOK_NAME;
+      const student = !isSample ? students.find((s) => s.id === item.studentId) : null;
+      const targetSchoolId =
+        isVocab && student?.school_id ? student.school_id : fallbackSchoolId;
+
+      let material = materialCache.get(materialKey(item.textbookName, targetSchoolId));
       if (!material) {
         material = await createMaterial(
           { name: item.textbookName, category: 'テキスト', unit: '冊' },
-          schoolIds.length > 0 ? schoolIds : undefined
+          isVocab && targetSchoolId
+            ? [targetSchoolId]
+            : schoolIds.length > 0
+            ? schoolIds
+            : undefined
         );
-        materialCache.set(item.textbookName, material);
+        materialCache.set(materialKey(material.name, material.school_id), material);
       }
-      const isSample = item.studentId === SAMPLE_VALUE;
+
       orderEntries.push({
         material_id: material.id,
         ...(isSample ? { is_sample: true } : { student_id: item.studentId }),
         quantity: item.quantity,
+        targetSchoolId,
       });
     }
 
-    // Bulk insert orders
+    // 発注レコード作成（target school 別にグルーピング）
     if (activeBillingPeriod) {
-      // With billing: create individually for billing linkage
       for (const entry of orderEntries) {
-        await createOrderWithBilling(entry, activeBillingPeriod.id, schoolId);
+        const { targetSchoolId, ...orderData } = entry;
+        await createOrderWithBilling(orderData, activeBillingPeriod.id, targetSchoolId);
       }
     } else {
-      // 見本発注が混在する場合は個別に作成
-      const hasSample = orderEntries.some((e) => e.is_sample);
-      if (hasSample) {
+      // 単語練習帳が混在すると school_id が異なるため、bulk insert は単一 school 用に分割
+      const hasMixedSchool =
+        new Set(orderEntries.map((e) => e.targetSchoolId)).size > 1 ||
+        orderEntries.some((e) => e.is_sample);
+      if (hasMixedSchool) {
         for (const entry of orderEntries) {
-          await createOrder(entry, schoolId);
+          const { targetSchoolId, ...orderData } = entry;
+          await createOrder(orderData, targetSchoolId);
         }
       } else {
-        await createBulkOrders(orderEntries as Array<{ material_id: string; student_id: string; quantity: number }>, schoolId);
+        const { targetSchoolId } = orderEntries[0] ?? { targetSchoolId: fallbackSchoolId };
+        const payload = orderEntries.map(({ targetSchoolId: _ts, ...rest }) => rest);
+        await createBulkOrders(
+          payload as Array<{ material_id: string; student_id: string; quantity: number }>,
+          targetSchoolId
+        );
       }
     }
 
-    // Auto-decrement stock
-    if (schoolId) {
-      for (const entry of orderEntries) {
-        try {
-          await createStockTransaction({
-            school_id: schoolId,
-            material_id: entry.material_id,
-            transaction_type: 'out',
-            quantity: entry.quantity,
-            reason: '発注による自動出庫',
-          });
-        } catch {
-          console.warn('Auto stock decrement failed');
-        }
+    // 在庫減算（item ごとに targetSchoolId を使う）
+    for (const entry of orderEntries) {
+      if (!entry.targetSchoolId) continue;
+      try {
+        await createStockTransaction({
+          school_id: entry.targetSchoolId,
+          material_id: entry.material_id,
+          transaction_type: 'out',
+          quantity: entry.quantity,
+          reason: entry.is_sample ? '見本発注による自動出庫' : '発注による自動出庫',
+        });
+      } catch {
+        console.warn('Auto stock decrement failed');
       }
     }
 

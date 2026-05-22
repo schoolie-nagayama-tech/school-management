@@ -136,7 +136,8 @@ export async function fetchAlertSources(schoolIds: string[]): Promise<AlertSourc
     getAlertSettingsBySchools(schoolIds).catch(() => new Map<string, AlertSetting[]>()),
   ]);
 
-  const students = allStudents.filter((s) => s.status === 'active');
+  // プログラミング受講生はアラート対象外（成績・宿題等の指標がコース性質上合わないため）
+  const students = allStudents.filter((s) => s.status === 'active' && !s.is_programming);
   const applications = applicationsResult ?? [];
   const pendingTasks = pendingTasksResult ?? [];
   const { byStudent: textbooksByStudent, examTypeNames } = textbooksResult;
@@ -979,7 +980,8 @@ async function fetchAlertSourcesLight(schoolIds: string[]): Promise<Partial<Aler
       getPendingTasksBySchools(schoolIds).catch((e) => { console.warn('未完了タスクの取得に失敗しました:', e); return []; }),
       getAlertSettingsBySchools(schoolIds).catch(() => new Map<string, AlertSetting[]>()),
     ]);
-  const students = allStudents.filter((s) => s.status === 'active');
+  // プログラミング受講生はアラート対象外
+  const students = allStudents.filter((s) => s.status === 'active' && !s.is_programming);
 
   return {
     students,
@@ -1018,7 +1020,8 @@ async function fetchAlertSourcesHeavy(schoolIds: string[]): Promise<Partial<Aler
     fetchCoursePrepAlertData(schoolIds),
     getAlertSettingsBySchools(schoolIds).catch(() => new Map<string, AlertSetting[]>()),
   ]);
-  const students = allStudents.filter((s) => s.status === 'active');
+  // プログラミング受講生はアラート対象外
+  const students = allStudents.filter((s) => s.status === 'active' && !s.is_programming);
 
   const { byStudent: textbooksByStudent, examTypeNames } = textbooksResult;
 
