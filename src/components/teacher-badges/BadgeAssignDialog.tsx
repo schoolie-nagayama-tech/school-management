@@ -9,21 +9,29 @@ import { fetchWithAuth } from '@/lib/api/auth';
 import { emitTeacherBadgesChanged } from '@/lib/teacher-badge-events';
 import { Search } from 'lucide-react';
 
+interface UserSchool {
+  school_id: string;
+  school?: { id: string; name: string };
+}
+
 interface TeacherSummary {
   id: string;
   display_name: string;
   last_name?: string;
   first_name?: string;
+  user_schools?: UserSchool[];
 }
 
 interface BadgeAssignDialogProps {
   open: boolean;
   badge: TeacherBadge | null;
+  /** 表示する講師を絞り込む教室ID。未指定なら全講師表示 */
+  schoolIds?: string[];
   onClose: () => void;
 }
 
 /** バッジを講師にまとめて付与/剥奪するダイアログ */
-export function BadgeAssignDialog({ open, badge, onClose }: BadgeAssignDialogProps) {
+export function BadgeAssignDialog({ open, badge, schoolIds, onClose }: BadgeAssignDialogProps) {
   const [teachers, setTeachers] = useState<TeacherSummary[]>([]);
   const [assignedIds, setAssignedIds] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState('');
@@ -39,14 +47,20 @@ export function BadgeAssignDialog({ open, badge, onClose }: BadgeAssignDialogPro
       ]);
       if (teachersRes.ok) {
         const data = await teachersRes.json();
-        setTeachers(
-          (data.users || []).map((u: TeacherSummary) => ({
-            id: u.id,
-            display_name: u.display_name,
-            last_name: u.last_name,
-            first_name: u.first_name,
-          }))
-        );
+        let users: TeacherSummary[] = (data.users || []).map((u: TeacherSummary) => ({
+          id: u.id,
+          display_name: u.display_name,
+          last_name: u.last_name,
+          first_name: u.first_name,
+          user_schools: u.user_schools,
+        }));
+        // 教室IDで絞り込み
+        if (schoolIds && schoolIds.length > 0) {
+          users = users.filter((u) =>
+            (u.user_schools || []).some((us) => schoolIds.includes(us.school_id))
+          );
+        }
+        setTeachers(users);
       }
       setAssignedIds(new Set(assigned));
     } catch {
@@ -54,7 +68,7 @@ export function BadgeAssignDialog({ open, badge, onClose }: BadgeAssignDialogPro
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [schoolIds]);
 
   useEffect(() => {
     if (open && badge) {

@@ -12,12 +12,14 @@ import { BadgeIcon } from '@/components/teacher-badges/BadgeIcon';
 import { BadgeTemplateDialog } from '@/components/teacher-badges/BadgeTemplateDialog';
 import { BadgeAssignDialog } from '@/components/teacher-badges/BadgeAssignDialog';
 import { TrainingMastersPanel } from '@/components/teacher-badges/TrainingMastersPanel';
+import { useAuth } from '@/contexts/AuthContext';
 import { Award, GraduationCap } from 'lucide-react';
 
 type TopTab = 'badges' | 'trainings';
 type CategoryFilter = BadgeCategory | 'all';
 
 export default function TeacherBadgesPage() {
+  const { getSelectedSchoolIds } = useAuth();
   const { toasts, success, error: toastError, removeToast } = useToast();
 
   const [topTab, setTopTab] = useState<TopTab>('badges');
@@ -295,6 +297,7 @@ export default function TeacherBadgesPage() {
         <BadgeAssignDialog
           open={!!assignTarget}
           badge={assignTarget}
+          schoolIds={getSelectedSchoolIds()}
           onClose={() => setAssignTarget(null)}
         />
 
