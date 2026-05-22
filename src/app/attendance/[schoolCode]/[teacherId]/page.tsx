@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/useToast';
 import { getSchoolByCode } from '@/lib/api/schools';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { getSurname, toSurnameOnly } from '@/lib/utils/teacherName';
+import { toSurnameOnly } from '@/lib/utils/teacherName';
 import { useTeacherBadgeCount } from '@/hooks/useTeacherBadgeCount';
 import { getTier } from '@/lib/teacher-tier';
 import {
