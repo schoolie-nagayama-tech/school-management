@@ -267,7 +267,7 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
         </div>
       </div>
 
-      {/* 2カラム: フィード + 確認済トレイ */}
+      {/* 2カラム: フィード + 確認済トレイ（常時表示で統一レイアウト） */}
       <div className="flex gap-4">
         {/* 左: フィードリスト */}
         <div className="flex-1 min-w-0">
@@ -301,15 +301,13 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
           )}
         </div>
 
-        {/* 右: 確認済みトレイ（未確認タブのときのみ） */}
-        {tab === 'unconfirmed' && (
-          <ConfirmedTray
-            ref={trayRef}
-            schoolIds={schoolIds}
-            open={trayOpen}
-            onToggle={() => setTrayOpen(v => !v)}
-          />
-        )}
+        {/* 右: 確認済みトレイ（全タブ共通） */}
+        <ConfirmedTray
+          ref={trayRef}
+          schoolIds={schoolIds}
+          open={trayOpen}
+          onToggle={() => setTrayOpen(v => !v)}
+        />
       </div>
     </div>
   );
