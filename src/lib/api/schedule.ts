@@ -135,7 +135,7 @@ export async function updateTimeSlot(
   return data as ScheduleTimeSlot;
 }
 
-export async function deleteTimeSlot(id: string, schoolId: string): Promise<void> {
+export async function deleteTimeSlot(id: string, _schoolId: string): Promise<void> {
   const { error } = await db.from('schedule_time_slots').delete().eq('id', id);
   if (error) {
     console.error('Error deleting time slot:', error);
