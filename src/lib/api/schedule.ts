@@ -41,8 +41,8 @@ export async function getTimeSlots(schoolId: string): Promise<ScheduleTimeSlot[]
     .from('schedule_time_slots')
     .select('*')
     .eq('school_id', schoolId)
-    .order('display_order', { ascending: true })
-    .order('slot_number', { ascending: true });
+    .order('slot_number', { ascending: true })
+    .order('display_order', { ascending: true });
 
   if (error) {
     console.error('Error fetching time slots:', error);
@@ -57,8 +57,8 @@ export async function getActiveTimeSlots(schoolId: string): Promise<ScheduleTime
     .select('*')
     .eq('school_id', schoolId)
     .eq('is_active', true)
-    .order('display_order', { ascending: true })
-    .order('slot_number', { ascending: true });
+    .order('slot_number', { ascending: true })
+    .order('display_order', { ascending: true });
 
   if (error) {
     console.error('Error fetching active time slots:', error);
