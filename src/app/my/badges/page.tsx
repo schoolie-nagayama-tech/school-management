@@ -10,6 +10,7 @@ import { Loading } from '@/components/ui';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { BadgeGrid } from '@/components/teacher-badges/BadgeGrid';
 import { BadgeProgress } from '@/components/teacher-badges/BadgeProgress';
+import { GrowthScene, getStageLabel } from '@/components/teacher-badges/GrowthScene';
 import { getTier, getNextTier } from '@/lib/teacher-tier';
 
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -83,21 +84,36 @@ export default function MyBadgesPage() {
                 </p>
                 <span className={`tier-dot tier-dot-${tier.key} !w-3 !h-3 mt-1`} aria-hidden />
               </div>
-              <div className="flex items-baseline justify-between gap-4 mb-3">
-                <span className="text-[40px] font-bold text-gray-900 tabular-nums leading-none">
-                  {assignments.length}
-                  <span className="text-lg text-gray-400 font-normal ml-1">
-                    / {badges.length}
+              <div className="flex items-end gap-4 mb-3">
+                {/* 左: 数値 */}
+                <div className="flex-shrink-0">
+                  <span className="text-[40px] font-bold text-gray-900 tabular-nums leading-none block">
+                    {assignments.length}
+                    <span className="text-lg text-gray-400 font-normal ml-1">
+                      / {badges.length}
+                    </span>
                   </span>
-                </span>
+                  <span className="mt-2 inline-block text-[10px] font-semibold tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                    {getStageLabel(assignments.length, badges.length)}
+                  </span>
+                </div>
+                {/* 中央〜右: 成長シーン */}
+                <div className="hidden sm:block flex-1 max-w-[320px] mx-auto">
+                  <GrowthScene earned={assignments.length} total={badges.length} />
+                </div>
+                {/* 右: 次の節目 */}
                 {nextTier && (
-                  <span className="text-xs text-gray-500 text-right leading-tight">
+                  <span className="text-xs text-gray-500 text-right leading-tight flex-shrink-0 self-end pb-1">
                     次の節目まで<br />
                     <b className="text-gray-900 text-sm font-bold tabular-nums">
                       あと {remaining} 個
                     </b>
                   </span>
                 )}
+              </div>
+              {/* モバイル用: 数値と節目の下にシーン */}
+              <div className="sm:hidden mb-3 -mt-1">
+                <GrowthScene earned={assignments.length} total={badges.length} />
               </div>
               <BadgeProgress
                 earned={assignments.length}
