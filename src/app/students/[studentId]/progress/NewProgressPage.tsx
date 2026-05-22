@@ -1496,7 +1496,7 @@ function TableView({
               aria-expanded={colMenuOpen}
               aria-haspopup="menu"
               aria-label={`列設定${hiddenColCount > 0 ? `（${hiddenColCount}列非表示中）` : ''}`}
-              className="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-colors flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1e3a5f]/40"
+              className="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-800 active:scale-[0.97] transition-[background-color,transform,color] duration-150 ease-out flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1e3a5f]/40"
             >
               <Settings2 className="w-3.5 h-3.5" />
               列設定
@@ -1539,8 +1539,12 @@ function TableView({
                 onClick={() => { setSessionMode((v) => { if (v) setSessionSelection(null); return !v; }); }}
                 disabled={!activeExam && !sessionMode && role === 'teacher'}
                 title={!activeExam && role === 'teacher' ? '目標を設定してください' : undefined}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  sessionMode ? 'bg-[#dc2626] text-white hover:bg-[#b91c1c]' : (!activeExam && role === 'teacher') ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[#1e3a5f] text-white hover:bg-[#2a4d7a]'
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-[background-color,transform] duration-150 ease-out ${
+                  sessionMode
+                    ? 'bg-[#dc2626] text-white hover:bg-[#b91c1c] active:scale-[0.97]'
+                    : (!activeExam && role === 'teacher')
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-[#1e3a5f] text-white hover:bg-[#2a4d7a] active:scale-[0.97]'
                 }`}
               >
                 {sessionMode ? 'セッション終了' : '授業を記録'}
@@ -1939,9 +1943,9 @@ function TableView({
               onClick={handleSubmit}
               disabled={submitting || dirtyRows.size === 0}
               aria-label={dirtyRows.size > 0 ? `${dirtyRows.size}件の編集を提出` : '提出（編集なし）'}
-              className={`inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1e3a5f]/40 ${
+              className={`inline-flex items-center gap-1.5 px-5 py-2 rounded-lg text-sm font-semibold transition-[background-color,transform] duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1e3a5f]/40 ${
                 dirtyRows.size > 0
-                  ? 'bg-[#1e3a5f] text-white hover:bg-[#2a4d7a] shadow-sm'
+                  ? 'bg-[#1e3a5f] text-white hover:bg-[#2a4d7a] active:scale-[0.97] shadow-sm'
                   : 'bg-gray-100 text-gray-400 cursor-not-allowed'
               } ${idleAlert && dirtyRows.size > 0 ? 'submit-idle-pulse' : ''}`}
             >

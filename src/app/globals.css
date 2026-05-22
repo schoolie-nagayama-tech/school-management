@@ -734,14 +734,14 @@ a:focus-visible {
   100% { transform: translateY(0); }
 }
 .session-fly {
-  /* 投げ出しが速く、着地でふわっと減速する ease-out 系 */
-  animation: session-fly-translate 850ms cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+  /* 投げ出しが速く、着地でふわっと減速する強めの ease-out */
+  animation: session-fly-translate 500ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
   will-change: transform, opacity;
   z-index: 50;
 }
 .session-fly-hop {
-  /* 弧の頂点は ease-in-out で対称に滑らかに（上→ピーク→下が一筆書きに） */
-  animation: session-fly-hop 850ms cubic-bezier(0.45, 0, 0.55, 1) forwards;
+  /* 弧の頂点は対称な ease-in-out で滑らかに（上→ピーク→下が一筆書きに） */
+  animation: session-fly-hop 500ms cubic-bezier(0.33, 0, 0.67, 1) forwards;
   will-change: transform;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -797,22 +797,37 @@ a:focus-visible {
 
 /* ─── 提出ボタン: 長時間放置時の注意喚起パルス ───
  * 編集を1件以上していて1時間提出されていないとき、ボタンを優しく
- * ちかちかさせて気付かせる（ring が広がってフェードアウト）。
- * 主張しすぎないように、強い色の点滅ではなく ring の脈動にしている。
+ * ちかちかさせて気付かせる。
+ * 疑似要素 (::before) を用いて transform + opacity のみで GPU 加速。
+ * border-radius はボタン側の rounded-lg (8px) と一致させる必要あり。
  */
-@keyframes submit-idle-pulse {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.55), 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  }
-  50% {
-    box-shadow: 0 0 0 8px rgba(220, 38, 38, 0), 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  }
-}
 .submit-idle-pulse {
-  animation: submit-idle-pulse 1.6s ease-in-out infinite;
+  position: relative;
+  isolation: isolate;
+}
+.submit-idle-pulse::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  border: 2px solid rgba(220, 38, 38, 0.6);
+  pointer-events: none;
+  z-index: -1;
+  animation: submit-idle-pulse-ring 1.2s cubic-bezier(0.33, 0, 0.67, 1) infinite;
+  will-change: transform, opacity;
+}
+@keyframes submit-idle-pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.18);
+    opacity: 0;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .submit-idle-pulse {
+  .submit-idle-pulse::before {
     animation: none;
   }
 }

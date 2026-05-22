@@ -56,7 +56,7 @@ const TABS: { key: TabKey; label: string }[] = [
 
 // カード→トレイへ飛んでいくアニメーションの所要時間（globals.css の
 // .session-fly / .session-fly-hop と一致させる必要がある）。
-const FLY_TO_TRAY_DURATION_MS = 850;
+const FLY_TO_TRAY_DURATION_MS = 500;
 
 // ─── メインコンポーネント ───
 
