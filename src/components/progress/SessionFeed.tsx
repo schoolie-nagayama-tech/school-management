@@ -147,7 +147,7 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
       console.error(e);
     }
 
-    // アニメーション完了後にリストから除去（keyframes と同じ 700ms）
+    // アニメーション完了後にリストから除去（keyframes と同じ 850ms）
     setTimeout(() => {
       setSessions(prev => prev.filter(s => s.id !== sessionId));
       setFlyingIds(prev => {
@@ -155,7 +155,7 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
         next.delete(sessionId);
         return next;
       });
-    }, 700);
+    }, 850);
   }, [profile?.id]);
 
   const handleUnconfirm = useCallback(async (sessionId: string) => {
