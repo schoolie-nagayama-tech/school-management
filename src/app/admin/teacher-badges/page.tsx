@@ -10,6 +10,7 @@ import { BADGE_CATEGORY_CONFIG, BADGE_RANK_CONFIG } from '@/types/database';
 import { getTeacherBadges, createTeacherBadge, updateTeacherBadge, deleteTeacherBadge } from '@/lib/api/teacher-badges';
 import { BadgeIcon } from '@/components/teacher-badges/BadgeIcon';
 import { BadgeTemplateDialog } from '@/components/teacher-badges/BadgeTemplateDialog';
+import { BadgeAssignDialog } from '@/components/teacher-badges/BadgeAssignDialog';
 import { TrainingMastersPanel } from '@/components/teacher-badges/TrainingMastersPanel';
 import { Award, GraduationCap } from 'lucide-react';
 
@@ -25,6 +26,7 @@ export default function TeacherBadgesPage() {
   const [filter, setFilter] = useState<CategoryFilter>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<TeacherBadge | null>(null);
+  const [assignTarget, setAssignTarget] = useState<TeacherBadge | null>(null);
 
   const fetchBadges = useCallback(async () => {
     try {
@@ -228,6 +230,14 @@ export default function TeacherBadgesPage() {
                           </td>
                           <td className="px-4 py-3 text-right">
                             <div className="flex justify-end gap-3">
+                              {!inactive && (
+                                <button
+                                  onClick={() => setAssignTarget(badge)}
+                                  className="text-xs text-sky-600 hover:underline font-medium"
+                                >
+                                  適用
+                                </button>
+                              )}
                               <button
                                 onClick={() => handleEdit(badge)}
                                 className="text-xs text-ink hover:underline"
@@ -280,6 +290,12 @@ export default function TeacherBadgesPage() {
           onClose={handleDialogClose}
           onSave={handleSave}
           initial={editTarget}
+        />
+
+        <BadgeAssignDialog
+          open={!!assignTarget}
+          badge={assignTarget}
+          onClose={() => setAssignTarget(null)}
         />
 
         <ToastContainer toasts={toasts} onRemove={removeToast} />

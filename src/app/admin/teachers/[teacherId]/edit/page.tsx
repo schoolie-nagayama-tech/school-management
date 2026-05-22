@@ -847,11 +847,11 @@ export default function TeacherEditPage() {
         </div>
       </div>
       {/* バッジ新規作成ダイアログ（講師編集からバッジを直接作成） */}
+      {/* バッジ新規作成ダイアログ（作成後にこの講師へ自動付与） */}
       <BadgeTemplateDialog
         open={badgeCreateDialogOpen}
         onClose={async () => {
           setBadgeCreateDialogOpen(false);
-          // 作成されたバッジと付与情報をリフレッシュ
           if (teacherId) {
             const [badges, assignments] = await Promise.all([
               getTeacherBadges().catch(() => [] as TeacherBadge[]),
@@ -863,11 +863,20 @@ export default function TeacherEditPage() {
         }}
         onSave={async (data) => {
           const created = await createTeacherBadge(data);
+          // 作成後にこの講師へ自動付与
+          if (teacherId) {
+            try {
+              const result = await toggleTeacherBadge(teacherId, { badgeId: created.id });
+              if (result.action === 'assigned' && result.assignment) {
+                setBadgeAssignments((prev) => [...prev, result.assignment!]);
+              }
+              emitTeacherBadgesChanged(teacherId);
+            } catch { /* 付与失敗は無視、リフレッシュで拾う */ }
+          }
           setAllBadges((prev) => [...prev, created]);
-          success('バッジを作成しました');
+          success('バッジを作成し、この講師に付与しました');
           return created;
         }}
-        autoAssignTeacherId={teacherId}
       />
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
