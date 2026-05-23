@@ -4,8 +4,10 @@
  * バッジ獲得進捗を「巣のはじまり → 大樹と鳥の家族」の成長物語で表現するSVGシーン。
  * システム名 NEST にちなみ、最終的に鳥の家族が住む巣ができる構成。
  *
+ * デザイン方針: 背景は描かず、デフォルメ＋フラット塗りで植物と鳥に集中する。
+ *
  * Stage の刻み:
- *   0   : 0個 — 草地に卵
+ *   0   : 0個 — 卵
  *   1   : 〜15% — 卵が割れる + 芽吹き
  *   2   : 〜30% — 若芽 + ひよこ
  *   3   : 〜55% — 苗木 + 子鳥
@@ -45,138 +47,79 @@ export function getStageLabel(earned: number, total: number): string {
   return STAGE_LABELS[getStage(earned, total)];
 }
 
+// パレット — フラット＆デフォルメ
+const C = {
+  leafLight: '#86efac',
+  leaf: '#4ade80',
+  leafDark: '#22c55e',
+  leafShade: '#16a34a',
+  trunk: '#a16207',
+  trunkDark: '#78350f',
+  bird: '#fcd34d',
+  birdShade: '#f59e0b',
+  wing: '#d97706',
+  beak: '#fb923c',
+  eye: '#1f2937',
+  eyeShine: '#ffffff',
+  eggShell: '#fef3c7',
+  eggDot: '#fbbf24',
+  nest: '#92400e',
+  nestDark: '#5b2c0a',
+  flower: '#fbcfe8',
+  flowerCenter: '#ec4899',
+  flowerHeart: '#fef9c3',
+};
+
 export function GrowthScene({ earned, total, className = '' }: GrowthSceneProps) {
   const stage = getStage(earned, total);
 
   return (
     <svg
-      viewBox="0 0 320 130"
+      viewBox="0 0 300 120"
       className={`w-full h-auto growth-scene ${className}`}
       preserveAspectRatio="xMidYMax meet"
       aria-label={`成長ステージ: ${STAGE_LABELS[stage]}`}
       role="img"
     >
       <style>{`
-        .growth-scene .sun-glow { animation: growth-sun-pulse 6s ease-in-out infinite; transform-origin: 280px 28px; }
-        .growth-scene .canopy { animation: growth-sway 7s ease-in-out infinite; transform-origin: 85px 110px; }
+        .growth-scene .canopy { animation: growth-sway 7s ease-in-out infinite; transform-origin: 100px 110px; transform-box: fill-box; }
         .growth-scene .bird-bob { animation: growth-bob 3.4s ease-in-out infinite; }
-        @keyframes growth-sun-pulse { 0%,100% { opacity: 0.85; transform: scale(1); } 50% { opacity: 1; transform: scale(1.08); } }
-        @keyframes growth-sway { 0%,100% { transform: rotate(-0.6deg); } 50% { transform: rotate(0.6deg); } }
+        @keyframes growth-sway { 0%,100% { transform: rotate(-0.7deg); } 50% { transform: rotate(0.7deg); } }
         @keyframes growth-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-1.5px); } }
         @media (prefers-reduced-motion: reduce) {
-          .growth-scene .sun-glow, .growth-scene .canopy, .growth-scene .bird-bob { animation: none; }
+          .growth-scene .canopy, .growth-scene .bird-bob { animation: none; }
         }
       `}</style>
-      <defs>
-        {/* 朝焼けの空 */}
-        <linearGradient id="growth-sky" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor="#fef3c7" />
-          <stop offset="45%" stopColor="#fce7f3" />
-          <stop offset="100%" stopColor="#dbeafe" />
-        </linearGradient>
 
-        {/* 地面 */}
-        <linearGradient id="growth-ground" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor="#bbf7d0" />
-          <stop offset="100%" stopColor="#4ade80" />
-        </linearGradient>
-
-        {/* 幹 — ぬくもりのある木目調 */}
-        <linearGradient id="growth-trunk" x1="0" x2="1" y1="0" y2="0">
-          <stop offset="0%" stopColor="#78350f" />
-          <stop offset="50%" stopColor="#b45309" />
-          <stop offset="100%" stopColor="#451a03" />
-        </linearGradient>
-
-        {/* 葉 — 立体感を出す放射状 */}
-        <radialGradient id="growth-leaves" cx="0.35" cy="0.35" r="0.8">
-          <stop offset="0%" stopColor="#bbf7d0" />
-          <stop offset="60%" stopColor="#4ade80" />
-          <stop offset="100%" stopColor="#15803d" />
-        </radialGradient>
-
-        {/* 鳥の体 — 黄→オレンジ */}
-        <linearGradient id="growth-bird" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor="#fef3c7" />
-          <stop offset="55%" stopColor="#fbbf24" />
-          <stop offset="100%" stopColor="#d97706" />
-        </linearGradient>
-
-        {/* 巣 */}
-        <linearGradient id="growth-nest" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor="#b45309" />
-          <stop offset="100%" stopColor="#451a03" />
-        </linearGradient>
-
-        {/* 太陽のグロー */}
-        <radialGradient id="growth-sun">
-          <stop offset="0%" stopColor="#fde047" />
-          <stop offset="70%" stopColor="#fcd34d" stopOpacity="0.5" />
-          <stop offset="100%" stopColor="#fcd34d" stopOpacity="0" />
-        </radialGradient>
-      </defs>
-
-      {/* 空 */}
-      <rect width="320" height="130" fill="url(#growth-sky)" rx="10" />
-
-      {/* 太陽 */}
-      <circle cx="280" cy="28" r="22" fill="url(#growth-sun)" className="sun-glow" />
-      <circle cx="280" cy="28" r="10" fill="#fde047" />
-
-      {/* 遠景の丘 */}
-      <path
-        d="M -10 95 Q 80 70 160 90 T 330 85 L 330 130 L -10 130 Z"
-        fill="#a7f3d0"
-        opacity="0.65"
-      />
-      <path
-        d="M -10 105 Q 100 92 210 102 T 330 100 L 330 130 L -10 130 Z"
-        fill="#86efac"
-        opacity="0.75"
-      />
-
-      {/* 地面 */}
-      <path
-        d="M -10 110 Q 160 102 330 110 L 330 130 L -10 130 Z"
-        fill="url(#growth-ground)"
-      />
-
-      {/* 草の演出（軽く） */}
-      <g stroke="#16a34a" strokeWidth="1" fill="none" strokeLinecap="round" opacity="0.7">
-        <path d="M 30 116 L 30 112 M 32 117 L 33 113" />
-        <path d="M 130 117 L 130 114 M 132 117 L 133 114" />
-        <path d="M 270 117 L 270 113 M 272 117 L 273 113" />
-        <path d="M 165 119 L 165 116" />
-      </g>
-
-      {/* 植物（左寄り） */}
+      {/* 植物（左寄り、ステージ3以降は揺れる） */}
       <g className={stage >= 3 ? 'canopy' : undefined}>{renderPlant(stage)}</g>
 
-      {/* 鳥・巣（右寄り） */}
+      {/* 鳥・巣（右寄り、ステージ2-4ではボブ） */}
       <g className={stage >= 2 && stage <= 4 ? 'bird-bob' : undefined}>{renderBirdScene(stage)}</g>
     </svg>
   );
 }
 
-/** ステージごとの植物（土→芽→若芽→苗木→若木→花咲く木→大樹） */
-function renderPlant(stage: number): React.ReactElement {
+/** ステージごとの植物 */
+function renderPlant(stage: number): React.ReactElement | null {
   if (stage === 0) {
-    // 土の盛り上がりと種
+    // 種だけ（控えめ）
     return (
       <g>
-        <ellipse cx="85" cy="111" rx="11" ry="3" fill="#78350f" opacity="0.45" />
-        <ellipse cx="85" cy="109" rx="3" ry="2" fill="#451a03" />
+        <ellipse cx="100" cy="108" rx="6" ry="2" fill={C.leafShade} opacity="0.3" />
+        <ellipse cx="100" cy="106" rx="3" ry="2" fill={C.trunkDark} />
       </g>
     );
   }
   if (stage === 1) {
-    // 芽吹き — 細い茎に双葉
+    // 芽吹き — 双葉
     return (
       <g>
-        <ellipse cx="85" cy="111" rx="10" ry="2.5" fill="#78350f" opacity="0.45" />
-        <path d="M 85 110 Q 85 105 85 100" stroke="#16a34a" strokeWidth="1.5" fill="none" strokeLinecap="round" />
-        <ellipse cx="80" cy="101" rx="4" ry="2.5" fill="url(#growth-leaves)" transform="rotate(-35 80 101)" />
-        <ellipse cx="90" cy="101" rx="4" ry="2.5" fill="url(#growth-leaves)" transform="rotate(35 90 101)" />
+        <path d="M 100 110 Q 100 102 100 94" stroke={C.leafShade} strokeWidth="2" fill="none" strokeLinecap="round" />
+        <circle cx="93" cy="95" r="5.5" fill={C.leaf} />
+        <circle cx="93" cy="95" r="2" fill={C.leafLight} />
+        <circle cx="107" cy="95" r="5.5" fill={C.leaf} />
+        <circle cx="107" cy="95" r="2" fill={C.leafLight} />
       </g>
     );
   }
@@ -184,58 +127,63 @@ function renderPlant(stage: number): React.ReactElement {
     // 若芽 — 茎が伸びて葉が増える
     return (
       <g>
-        <path d="M 85 110 Q 84 100 85 88" stroke="#16a34a" strokeWidth="2" fill="none" strokeLinecap="round" />
-        <ellipse cx="77" cy="95" rx="5.5" ry="3" fill="url(#growth-leaves)" transform="rotate(-30 77 95)" />
-        <ellipse cx="93" cy="95" rx="5.5" ry="3" fill="url(#growth-leaves)" transform="rotate(30 93 95)" />
-        <ellipse cx="85" cy="85" rx="4" ry="3" fill="url(#growth-leaves)" />
-        <ellipse cx="79" cy="88" rx="3" ry="2" fill="url(#growth-leaves)" transform="rotate(-40 79 88)" />
-        <ellipse cx="91" cy="88" rx="3" ry="2" fill="url(#growth-leaves)" transform="rotate(40 91 88)" />
+        <path d="M 100 110 Q 99 95 100 80" stroke={C.leafShade} strokeWidth="2.5" fill="none" strokeLinecap="round" />
+        <ellipse cx="89" cy="92" rx="7" ry="4" fill={C.leaf} transform="rotate(-25 89 92)" />
+        <ellipse cx="111" cy="92" rx="7" ry="4" fill={C.leaf} transform="rotate(25 111 92)" />
+        <circle cx="100" cy="78" r="7" fill={C.leaf} />
+        <circle cx="100" cy="78" r="3" fill={C.leafLight} />
       </g>
     );
   }
   if (stage === 3) {
-    // 苗木 — 細い幹に小さなキャノピー
+    // 苗木 — 太めの幹に雲形キャノピー
     return (
       <g>
-        <rect x="83" y="68" width="4" height="44" fill="url(#growth-trunk)" rx="1" />
-        <circle cx="85" cy="63" r="18" fill="url(#growth-leaves)" />
-        <circle cx="72" cy="73" r="11" fill="url(#growth-leaves)" />
-        <circle cx="98" cy="73" r="11" fill="url(#growth-leaves)" />
-        <circle cx="80" cy="55" r="9" fill="url(#growth-leaves)" opacity="0.9" />
-        <circle cx="92" cy="55" r="9" fill="url(#growth-leaves)" opacity="0.9" />
+        <rect x="96" y="68" width="8" height="44" fill={C.trunk} rx="2" />
+        <rect x="96" y="68" width="2" height="44" fill={C.trunkDark} rx="1" opacity="0.5" />
+        {/* キャノピー（雲形） */}
+        <circle cx="100" cy="60" r="22" fill={C.leaf} />
+        <circle cx="82" cy="68" r="13" fill={C.leaf} />
+        <circle cx="118" cy="68" r="13" fill={C.leaf} />
+        <circle cx="92" cy="50" r="11" fill={C.leafLight} opacity="0.6" />
       </g>
     );
   }
   if (stage === 4) {
-    // 若木 — 枝が伸びてキャノピー充実
+    // 若木 — 枝が伸びキャノピー大きく
     return (
       <g>
-        <rect x="80" y="52" width="10" height="60" fill="url(#growth-trunk)" rx="1.5" />
-        <path d="M 85 68 L 64 80" stroke="url(#growth-trunk)" strokeWidth="3.5" strokeLinecap="round" />
-        <path d="M 85 68 L 106 80" stroke="url(#growth-trunk)" strokeWidth="3.5" strokeLinecap="round" />
-        <circle cx="85" cy="48" r="26" fill="url(#growth-leaves)" />
-        <circle cx="58" cy="65" r="18" fill="url(#growth-leaves)" />
-        <circle cx="112" cy="65" r="18" fill="url(#growth-leaves)" />
-        <circle cx="72" cy="38" r="14" fill="url(#growth-leaves)" opacity="0.95" />
-        <circle cx="98" cy="38" r="14" fill="url(#growth-leaves)" opacity="0.95" />
+        <rect x="94" y="55" width="12" height="57" fill={C.trunk} rx="2" />
+        <rect x="94" y="55" width="3" height="57" fill={C.trunkDark} rx="1" opacity="0.5" />
+        {/* 枝 */}
+        <path d="M 100 70 L 80 80" stroke={C.trunk} strokeWidth="4" strokeLinecap="round" />
+        <path d="M 100 70 L 120 80" stroke={C.trunk} strokeWidth="4" strokeLinecap="round" />
+        {/* キャノピー */}
+        <circle cx="100" cy="45" r="28" fill={C.leaf} />
+        <circle cx="72" cy="62" r="17" fill={C.leaf} />
+        <circle cx="128" cy="62" r="17" fill={C.leaf} />
+        <circle cx="88" cy="32" r="14" fill={C.leafLight} opacity="0.6" />
+        <circle cx="112" cy="32" r="14" fill={C.leafLight} opacity="0.6" />
       </g>
     );
   }
   if (stage === 5) {
-    // 花咲く木 — 花が点在
+    // 花咲く木
     return (
       <g>
-        <rect x="78" y="42" width="14" height="70" fill="url(#growth-trunk)" rx="2" />
-        <path d="M 85 58 L 55 75" stroke="url(#growth-trunk)" strokeWidth="4.5" strokeLinecap="round" />
-        <path d="M 85 58 L 115 75" stroke="url(#growth-trunk)" strokeWidth="4.5" strokeLinecap="round" />
-        <path d="M 85 75 L 68 92" stroke="url(#growth-trunk)" strokeWidth="3.5" strokeLinecap="round" />
-        <circle cx="85" cy="38" r="30" fill="url(#growth-leaves)" />
-        <circle cx="52" cy="60" r="23" fill="url(#growth-leaves)" />
-        <circle cx="118" cy="60" r="23" fill="url(#growth-leaves)" />
-        <circle cx="68" cy="30" r="16" fill="url(#growth-leaves)" opacity="0.95" />
-        <circle cx="102" cy="30" r="16" fill="url(#growth-leaves)" opacity="0.95" />
+        <rect x="92" y="45" width="16" height="67" fill={C.trunk} rx="2.5" />
+        <rect x="92" y="45" width="4" height="67" fill={C.trunkDark} rx="1.5" opacity="0.5" />
+        <path d="M 100 60 L 70 75" stroke={C.trunk} strokeWidth="5" strokeLinecap="round" />
+        <path d="M 100 60 L 130 75" stroke={C.trunk} strokeWidth="5" strokeLinecap="round" />
+        {/* キャノピー */}
+        <circle cx="100" cy="38" r="32" fill={C.leaf} />
+        <circle cx="65" cy="60" r="20" fill={C.leaf} />
+        <circle cx="135" cy="60" r="20" fill={C.leaf} />
+        <circle cx="82" cy="22" r="16" fill={C.leafLight} opacity="0.6" />
+        <circle cx="118" cy="22" r="16" fill={C.leafLight} opacity="0.6" />
+        {/* 花 */}
         {renderFlowers([
-          [62, 42], [78, 25], [102, 42], [92, 55], [55, 50], [115, 50], [85, 18],
+          [75, 40], [92, 22], [118, 40], [108, 55], [70, 50], [130, 50], [100, 15],
         ])}
       </g>
     );
@@ -243,36 +191,38 @@ function renderPlant(stage: number): React.ReactElement {
   // Stage 6 — 大樹
   return (
     <g>
-      <rect x="75" y="32" width="20" height="80" fill="url(#growth-trunk)" rx="2.5" />
-      <path d="M 85 48 L 48 75" stroke="url(#growth-trunk)" strokeWidth="6" strokeLinecap="round" />
-      <path d="M 85 48 L 122 75" stroke="url(#growth-trunk)" strokeWidth="6" strokeLinecap="round" />
-      <path d="M 85 62 L 62 95" stroke="url(#growth-trunk)" strokeWidth="4.5" strokeLinecap="round" />
-      <path d="M 85 62 L 108 95" stroke="url(#growth-trunk)" strokeWidth="4.5" strokeLinecap="round" />
+      <rect x="89" y="35" width="22" height="77" fill={C.trunk} rx="3" />
+      <rect x="89" y="35" width="5" height="77" fill={C.trunkDark} rx="2" opacity="0.5" />
+      <path d="M 100 52 L 60 75" stroke={C.trunk} strokeWidth="6" strokeLinecap="round" />
+      <path d="M 100 52 L 140 75" stroke={C.trunk} strokeWidth="6" strokeLinecap="round" />
+      <path d="M 100 65 L 75 95" stroke={C.trunk} strokeWidth="4.5" strokeLinecap="round" />
+      <path d="M 100 65 L 125 95" stroke={C.trunk} strokeWidth="4.5" strokeLinecap="round" />
       {/* キャノピー */}
-      <circle cx="85" cy="28" r="36" fill="url(#growth-leaves)" />
-      <circle cx="46" cy="55" r="27" fill="url(#growth-leaves)" />
-      <circle cx="124" cy="55" r="27" fill="url(#growth-leaves)" />
-      <circle cx="66" cy="80" r="19" fill="url(#growth-leaves)" />
-      <circle cx="104" cy="80" r="19" fill="url(#growth-leaves)" />
-      <circle cx="62" cy="18" r="18" fill="url(#growth-leaves)" opacity="0.95" />
-      <circle cx="108" cy="18" r="18" fill="url(#growth-leaves)" opacity="0.95" />
+      <circle cx="100" cy="30" r="38" fill={C.leaf} />
+      <circle cx="58" cy="55" r="25" fill={C.leaf} />
+      <circle cx="142" cy="55" r="25" fill={C.leaf} />
+      <circle cx="75" cy="80" r="18" fill={C.leaf} />
+      <circle cx="125" cy="80" r="18" fill={C.leaf} />
+      <circle cx="78" cy="15" r="18" fill={C.leafLight} opacity="0.6" />
+      <circle cx="122" cy="15" r="18" fill={C.leafLight} opacity="0.6" />
+      {/* 花 */}
       {renderFlowers([
-        [58, 30], [100, 35], [75, 12], [118, 50], [45, 55], [85, 50],
-        [55, 75], [120, 80], [70, 28], [95, 65],
+        [62, 28], [108, 32], [78, 8], [138, 50], [50, 55], [98, 50],
+        [55, 75], [142, 78], [82, 25], [115, 65], [95, 18],
       ])}
     </g>
   );
 }
 
-/** 花の描画 — 中心に淡いピンク */
+/** 花の描画 — シンプルな三層構造 */
 function renderFlowers(positions: Array<[number, number]>): React.ReactElement {
   return (
     <g>
       {positions.map(([cx, cy], i) => (
         <g key={i}>
-          <circle cx={cx} cy={cy} r="3" fill="#fbcfe8" />
-          <circle cx={cx} cy={cy} r="1.5" fill="#fce7f3" />
-          <circle cx={cx} cy={cy} r="0.6" fill="#fde047" />
+          <circle cx={cx} cy={cy} r="3.2" fill={C.flower} />
+          <circle cx={cx} cy={cy} r="1.4" fill={C.flowerCenter} />
+          <circle cx={cx} cy={cy} r="0.5" fill={C.flowerHeart} />
         </g>
       ))}
     </g>
@@ -282,132 +232,132 @@ function renderFlowers(positions: Array<[number, number]>): React.ReactElement {
 /** ステージごとの鳥と巣 */
 function renderBirdScene(stage: number): React.ReactElement {
   if (stage === 0) {
-    // 卵だけ
+    // 卵だけ — 中央寄りに大きめに置いて主役感を出す
     return (
       <g>
-        <ellipse cx="220" cy="105" rx="8" ry="11" fill="#fefce8" stroke="#fbbf24" strokeWidth="0.8" />
-        <ellipse cx="217" cy="100" rx="3" ry="4" fill="#ffffff" opacity="0.55" />
-        <circle cx="222" cy="103" r="0.6" fill="#fbbf24" opacity="0.5" />
-        <circle cx="218" cy="108" r="0.6" fill="#fbbf24" opacity="0.5" />
-        <circle cx="224" cy="110" r="0.6" fill="#fbbf24" opacity="0.5" />
+        <ellipse cx="210" cy="92" rx="14" ry="18" fill={C.eggShell} />
+        <ellipse cx="205" cy="82" rx="4" ry="6" fill="#fff" opacity="0.55" />
+        <circle cx="213" cy="88" r="0.9" fill={C.eggDot} />
+        <circle cx="207" cy="95" r="0.9" fill={C.eggDot} />
+        <circle cx="215" cy="100" r="0.9" fill={C.eggDot} />
+        <circle cx="204" cy="101" r="0.9" fill={C.eggDot} />
       </g>
     );
   }
   if (stage === 1) {
-    // 卵が割れて顔だけ出す
+    // 卵が割れて顔だけ
     return (
       <g>
         <path
-          d="M 212 105 Q 212 96 220 96 Q 228 96 228 105 Q 228 113 220 116 Q 212 113 212 105 Z"
-          fill="#fefce8"
-          stroke="#fbbf24"
-          strokeWidth="0.8"
+          d="M 196 100 Q 196 86 210 86 Q 224 86 224 100 Q 224 111 210 114 Q 196 111 196 100 Z"
+          fill={C.eggShell}
         />
-        {/* 割れたエッジ */}
         <path
-          d="M 213 100 L 215 102 L 217 99 L 219 102 L 221 99 L 223 102 L 225 99 L 227 102"
-          stroke="#fbbf24"
-          strokeWidth="0.6"
+          d="M 196 92 L 199 95 L 204 89 L 209 95 L 214 89 L 219 95 L 224 92"
+          stroke={C.eggDot}
+          strokeWidth="1"
           fill="none"
+          strokeLinecap="round"
         />
         {/* ひよこ頭 */}
-        <circle cx="220" cy="97" r="5.5" fill="url(#growth-bird)" />
-        <circle cx="218" cy="96" r="0.9" fill="#1f2937" />
-        <circle cx="222" cy="96" r="0.9" fill="#1f2937" />
-        <polygon points="225,98 228,99 225,100" fill="#f97316" />
+        <circle cx="210" cy="88" r="7" fill={C.bird} />
+        <circle cx="207" cy="87" r="1.2" fill={C.eye} />
+        <circle cx="213" cy="87" r="1.2" fill={C.eye} />
+        <circle cx="207" cy="86.5" r="0.4" fill={C.eyeShine} />
+        <circle cx="213" cy="86.5" r="0.4" fill={C.eyeShine} />
+        <polygon points="216,89 220,90 216,91" fill={C.beak} />
       </g>
     );
   }
   if (stage === 2) {
-    // 立ち上がったひよこ
+    // ひよこ — 丸い体に大きな頭
     return (
       <g>
-        {/* 割れた卵の殻が地面に残る */}
-        <path d="M 232 110 Q 235 104 240 108 L 232 112 Z" fill="#fefce8" stroke="#fbbf24" strokeWidth="0.6" />
-        <path d="M 244 109 Q 247 105 250 108 L 244 111 Z" fill="#fefce8" stroke="#fbbf24" strokeWidth="0.6" />
-        {/* ひよこ本体 */}
-        <ellipse cx="218" cy="103" rx="8" ry="6" fill="url(#growth-bird)" />
-        <circle cx="218" cy="94" r="6" fill="url(#growth-bird)" />
-        <circle cx="216" cy="93" r="1" fill="#1f2937" />
-        <circle cx="220" cy="93" r="1" fill="#1f2937" />
-        <circle cx="216" cy="93" r="0.3" fill="#fff" />
-        <circle cx="220" cy="93" r="0.3" fill="#fff" />
-        <polygon points="222,95 226,96 222,97" fill="#f97316" />
+        <ellipse cx="210" cy="98" rx="11" ry="9" fill={C.bird} />
+        <ellipse cx="210" cy="103" rx="10" ry="3" fill={C.birdShade} opacity="0.35" />
+        <circle cx="210" cy="84" r="10" fill={C.bird} />
+        <circle cx="206" cy="83" r="1.6" fill={C.eye} />
+        <circle cx="214" cy="83" r="1.6" fill={C.eye} />
+        <circle cx="206" cy="82.3" r="0.6" fill={C.eyeShine} />
+        <circle cx="214" cy="82.3" r="0.6" fill={C.eyeShine} />
+        <polygon points="218,86 223,87 218,88" fill={C.beak} />
+        {/* 頬の赤み */}
+        <circle cx="201" cy="87" r="1.5" fill="#fda4af" opacity="0.6" />
+        <circle cx="219" cy="87" r="1.5" fill="#fda4af" opacity="0.6" />
+        {/* 翼の小さな膨らみ */}
+        <ellipse cx="201" cy="98" rx="3.5" ry="5" fill={C.birdShade} transform="rotate(-15 201 98)" />
         {/* 足 */}
-        <line x1="215" y1="109" x2="215" y2="112" stroke="#f97316" strokeWidth="1.2" strokeLinecap="round" />
-        <line x1="221" y1="109" x2="221" y2="112" stroke="#f97316" strokeWidth="1.2" strokeLinecap="round" />
-        {/* 翼の蕾 */}
-        <ellipse cx="213" cy="102" rx="2.5" ry="3.5" fill="#d97706" opacity="0.7" transform="rotate(-20 213 102)" />
+        <path d="M 205 107 L 205 111 M 203 111 L 207 111" stroke={C.beak} strokeWidth="1.5" strokeLinecap="round" fill="none" />
+        <path d="M 215 107 L 215 111 M 213 111 L 217 111" stroke={C.beak} strokeWidth="1.5" strokeLinecap="round" fill="none" />
       </g>
     );
   }
   if (stage === 3) {
-    // 子鳥 — 苗木の根元あたり
+    // 子鳥 — ややスリムに、翼がしっかり
     return (
       <g>
-        <ellipse cx="225" cy="100" rx="10" ry="8" fill="url(#growth-bird)" />
-        <circle cx="225" cy="89" r="7" fill="url(#growth-bird)" />
-        <circle cx="222" cy="88" r="1.1" fill="#1f2937" />
-        <circle cx="228" cy="88" r="1.1" fill="#1f2937" />
-        <circle cx="222" cy="87.5" r="0.4" fill="#fff" />
-        <circle cx="228" cy="87.5" r="0.4" fill="#fff" />
-        <polygon points="231,91 236,92 231,93" fill="#f97316" />
+        <ellipse cx="215" cy="95" rx="12" ry="10" fill={C.bird} />
+        <circle cx="215" cy="80" r="9" fill={C.bird} />
+        <circle cx="211" cy="79" r="1.6" fill={C.eye} />
+        <circle cx="219" cy="79" r="1.6" fill={C.eye} />
+        <circle cx="211" cy="78.3" r="0.6" fill={C.eyeShine} />
+        <circle cx="219" cy="78.3" r="0.6" fill={C.eyeShine} />
+        <polygon points="223,82 228,83 223,84" fill={C.beak} />
         {/* 翼 */}
-        <ellipse cx="219" cy="100" rx="4" ry="6" fill="#d97706" transform="rotate(-15 219 100)" />
+        <path d="M 207 91 Q 200 95 204 105 Q 210 102 211 95 Z" fill={C.wing} />
+        {/* 尻尾 */}
+        <path d="M 226 95 L 233 92 L 230 99 Z" fill={C.wing} />
         {/* 足 */}
-        <line x1="221" y1="107" x2="221" y2="111" stroke="#f97316" strokeWidth="1.4" strokeLinecap="round" />
-        <line x1="229" y1="107" x2="229" y2="111" stroke="#f97316" strokeWidth="1.4" strokeLinecap="round" />
+        <path d="M 210 105 L 210 110 M 207 110 L 213 110" stroke={C.beak} strokeWidth="1.5" strokeLinecap="round" fill="none" />
+        <path d="M 220 105 L 220 110 M 217 110 L 223 110" stroke={C.beak} strokeWidth="1.5" strokeLinecap="round" fill="none" />
       </g>
     );
   }
   if (stage === 4) {
-    // 親鳥になりつつある鳥 — 枝にとまる
+    // 親鳥 — 枝にとまる
     return (
-      <g>
-        {/* 鳥本体（枝の上） */}
-        <g transform="translate(225, 75)">
-          <ellipse cx="0" cy="5" rx="11" ry="8.5" fill="url(#growth-bird)" />
-          <circle cx="0" cy="-5" r="7.5" fill="url(#growth-bird)" />
-          <circle cx="-2.5" cy="-6" r="1.2" fill="#1f2937" />
-          <circle cx="2.5" cy="-6" r="1.2" fill="#1f2937" />
-          <circle cx="-2.5" cy="-6.3" r="0.4" fill="#fff" />
-          <circle cx="2.5" cy="-6.3" r="0.4" fill="#fff" />
-          <polygon points="6,-3 11,-2 6,-1" fill="#f97316" />
-          {/* 翼 */}
-          <path d="M -3 -2 Q -10 0 -8 8 Q -3 6 -1 2 Z" fill="#d97706" />
-          {/* 尻尾 */}
-          <path d="M -10 5 L -16 3 L -14 8 Z" fill="#d97706" />
-          {/* 足（枝つかむ） */}
-          <line x1="-3" y1="13" x2="-3" y2="16" stroke="#f97316" strokeWidth="1.4" strokeLinecap="round" />
-          <line x1="3" y1="13" x2="3" y2="16" stroke="#f97316" strokeWidth="1.4" strokeLinecap="round" />
-        </g>
+      <g transform="translate(215, 72)">
+        <ellipse cx="0" cy="6" rx="12" ry="9" fill={C.bird} />
+        <circle cx="0" cy="-4" r="8" fill={C.bird} />
+        <circle cx="-3" cy="-5" r="1.6" fill={C.eye} />
+        <circle cx="3" cy="-5" r="1.6" fill={C.eye} />
+        <circle cx="-3" cy="-5.7" r="0.6" fill={C.eyeShine} />
+        <circle cx="3" cy="-5.7" r="0.6" fill={C.eyeShine} />
+        <polygon points="7,-2 12,-1 7,0" fill={C.beak} />
+        {/* 翼 */}
+        <path d="M -4 -1 Q -12 2 -10 11 Q -3 8 -2 4 Z" fill={C.wing} />
+        {/* 尻尾 */}
+        <path d="M -11 6 L -18 4 L -15 11 Z" fill={C.wing} />
+        {/* 足（枝つかむ） */}
+        <path d="M -3 14 L -3 17" stroke={C.beak} strokeWidth="1.6" strokeLinecap="round" />
+        <path d="M 3 14 L 3 17" stroke={C.beak} strokeWidth="1.6" strokeLinecap="round" />
       </g>
     );
   }
   if (stage === 5) {
-    // 巣ができはじめ。枝の上に巣＋親鳥
+    // 巣ができはじめ — 親鳥が縁にとまる
     return (
       <g>
-        {/* 巣（小） */}
-        <ellipse cx="225" cy="68" rx="16" ry="6" fill="url(#growth-nest)" />
-        <ellipse cx="225" cy="65" rx="14" ry="4.5" fill="#92400e" />
+        {/* 巣 */}
+        <ellipse cx="215" cy="65" rx="18" ry="7" fill={C.nest} />
+        <ellipse cx="215" cy="62" rx="16" ry="5" fill={C.nestDark} />
         {/* 巣の枝のテクスチャ */}
-        <g stroke="#451a03" strokeWidth="0.6" fill="none" strokeLinecap="round">
-          <path d="M 213 67 Q 217 69 221 67" />
-          <path d="M 224 68 Q 228 70 232 68" />
-          <path d="M 218 65 Q 222 67 226 65" />
+        <g stroke={C.nestDark} strokeWidth="0.8" fill="none" strokeLinecap="round" opacity="0.7">
+          <path d="M 200 65 Q 207 67 213 65" />
+          <path d="M 215 66 Q 222 68 230 66" />
+          <path d="M 207 62 Q 213 64 220 62" />
         </g>
-        {/* 親鳥（巣の縁にとまる） */}
-        <g transform="translate(238, 55)">
-          <ellipse cx="0" cy="5" rx="10" ry="7.5" fill="url(#growth-bird)" />
-          <circle cx="0" cy="-4" r="7" fill="url(#growth-bird)" />
-          <circle cx="-2.5" cy="-5" r="1.2" fill="#1f2937" />
-          <circle cx="2.5" cy="-5" r="1.2" fill="#1f2937" />
-          <circle cx="-2.5" cy="-5.3" r="0.4" fill="#fff" />
-          <circle cx="2.5" cy="-5.3" r="0.4" fill="#fff" />
-          <polygon points="6,-3 11,-2 6,-1" fill="#f97316" />
-          <path d="M -3 -1 Q -10 1 -8 9 Q -3 7 -1 3 Z" fill="#d97706" />
-          <path d="M -10 5 L -16 3 L -14 8 Z" fill="#d97706" />
+        {/* 親鳥 */}
+        <g transform="translate(230, 52)">
+          <ellipse cx="0" cy="5" rx="11" ry="8" fill={C.bird} />
+          <circle cx="0" cy="-4" r="7.5" fill={C.bird} />
+          <circle cx="-3" cy="-5" r="1.4" fill={C.eye} />
+          <circle cx="3" cy="-5" r="1.4" fill={C.eye} />
+          <circle cx="-3" cy="-5.6" r="0.5" fill={C.eyeShine} />
+          <circle cx="3" cy="-5.6" r="0.5" fill={C.eyeShine} />
+          <polygon points="6,-2 11,-1 6,0" fill={C.beak} />
+          <path d="M -4 -1 Q -11 2 -9 10 Q -3 7 -2 3 Z" fill={C.wing} />
+          <path d="M -10 5 L -17 3 L -14 10 Z" fill={C.wing} />
         </g>
       </g>
     );
@@ -416,52 +366,38 @@ function renderBirdScene(stage: number): React.ReactElement {
   return (
     <g>
       {/* 大きな巣 */}
-      <ellipse cx="225" cy="62" rx="22" ry="9" fill="url(#growth-nest)" />
-      <ellipse cx="225" cy="58" rx="20" ry="6.5" fill="#92400e" />
+      <ellipse cx="215" cy="62" rx="25" ry="10" fill={C.nest} />
+      <ellipse cx="215" cy="58" rx="22" ry="7" fill={C.nestDark} />
       {/* 巣の枝テクスチャ */}
-      <g stroke="#451a03" strokeWidth="0.7" fill="none" strokeLinecap="round">
-        <path d="M 209 61 Q 215 64 221 61" />
-        <path d="M 224 62 Q 230 65 236 62" />
-        <path d="M 213 58 Q 219 61 225 58" />
-        <path d="M 226 59 Q 233 62 239 59" />
-        <path d="M 218 56 Q 225 53 232 56" />
+      <g stroke={C.nestDark} strokeWidth="0.9" fill="none" strokeLinecap="round" opacity="0.6">
+        <path d="M 195 62 Q 203 65 211 62" />
+        <path d="M 213 63 Q 222 66 232 63" />
+        <path d="M 200 58 Q 208 61 216 58" />
+        <path d="M 218 59 Q 226 62 234 59" />
+        <path d="M 207 55 Q 215 52 224 55" />
       </g>
-      {/* 親鳥（巣のふちにとまる） */}
-      <g transform="translate(242, 48)">
-        <ellipse cx="0" cy="5" rx="11" ry="8" fill="url(#growth-bird)" />
-        <circle cx="0" cy="-5" r="7.5" fill="url(#growth-bird)" />
-        <circle cx="-2.5" cy="-6" r="1.2" fill="#1f2937" />
-        <circle cx="2.5" cy="-6" r="1.2" fill="#1f2937" />
-        <circle cx="-2.5" cy="-6.3" r="0.4" fill="#fff" />
-        <circle cx="2.5" cy="-6.3" r="0.4" fill="#fff" />
-        <polygon points="6,-4 12,-3 6,-2" fill="#f97316" />
-        <path d="M -3 -2 Q -11 0 -9 9 Q -3 7 -1 3 Z" fill="#d97706" />
-        <path d="M -10 6 L -17 3 L -14 9 Z" fill="#d97706" />
+      {/* 親鳥 */}
+      <g transform="translate(238, 45)">
+        <ellipse cx="0" cy="5" rx="12" ry="9" fill={C.bird} />
+        <circle cx="0" cy="-5" r="8" fill={C.bird} />
+        <circle cx="-3" cy="-6" r="1.6" fill={C.eye} />
+        <circle cx="3" cy="-6" r="1.6" fill={C.eye} />
+        <circle cx="-3" cy="-6.7" r="0.6" fill={C.eyeShine} />
+        <circle cx="3" cy="-6.7" r="0.6" fill={C.eyeShine} />
+        <polygon points="7,-3 13,-2 7,-1" fill={C.beak} />
+        <path d="M -4 -2 Q -12 1 -10 10 Q -3 7 -2 3 Z" fill={C.wing} />
+        <path d="M -11 6 L -19 3 L -15 11 Z" fill={C.wing} />
       </g>
-      {/* 雛 1 */}
-      <g transform="translate(216, 54)">
-        <ellipse cx="0" cy="0" rx="4" ry="3.5" fill="url(#growth-bird)" />
-        <circle cx="0" cy="-3" r="3" fill="url(#growth-bird)" />
-        <circle cx="-1" cy="-3.5" r="0.6" fill="#1f2937" />
-        <circle cx="1" cy="-3.5" r="0.6" fill="#1f2937" />
-        <polygon points="2.5,-2.5 5,-2 2.5,-1.5" fill="#f97316" />
-      </g>
-      {/* 雛 2 */}
-      <g transform="translate(225, 54)">
-        <ellipse cx="0" cy="0" rx="4" ry="3.5" fill="url(#growth-bird)" />
-        <circle cx="0" cy="-3" r="3" fill="url(#growth-bird)" />
-        <circle cx="-1" cy="-3.5" r="0.6" fill="#1f2937" />
-        <circle cx="1" cy="-3.5" r="0.6" fill="#1f2937" />
-        <polygon points="2.5,-2.5 5,-2 2.5,-1.5" fill="#f97316" />
-      </g>
-      {/* 雛 3 */}
-      <g transform="translate(234, 54)">
-        <ellipse cx="0" cy="0" rx="4" ry="3.5" fill="url(#growth-bird)" />
-        <circle cx="0" cy="-3" r="3" fill="url(#growth-bird)" />
-        <circle cx="-1" cy="-3.5" r="0.6" fill="#1f2937" />
-        <circle cx="1" cy="-3.5" r="0.6" fill="#1f2937" />
-        <polygon points="2.5,-2.5 5,-2 2.5,-1.5" fill="#f97316" />
-      </g>
+      {/* 雛たち */}
+      {[200, 211, 222].map((x, i) => (
+        <g key={i} transform={`translate(${x}, 53)`}>
+          <ellipse cx="0" cy="0" rx="4.5" ry="3.8" fill={C.bird} />
+          <circle cx="0" cy="-3.5" r="3.5" fill={C.bird} />
+          <circle cx="-1.2" cy="-4" r="0.7" fill={C.eye} />
+          <circle cx="1.2" cy="-4" r="0.7" fill={C.eye} />
+          <polygon points="3,-3 5.5,-2.5 3,-2" fill={C.beak} />
+        </g>
+      ))}
     </g>
   );
 }
