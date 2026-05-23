@@ -644,13 +644,13 @@ export default function StudentsPage() {
         {/* 出勤簿未提出アラート（講師向け） */}
         {isTeacher && <AttendanceUnsubmittedAlert />}
 
-        {/* 業務進捗ウィジェット（教室長以上のみ） */}
-        {!isTeacher && <TaskProgressWidget schoolIds={getSelectedSchoolIds()} schoolId={selectedSchoolId || undefined} schools={moveSchoolOptions.map(s => ({ id: s.id, name: s.name }))} />}
-
-        {/* 外部ツール（Grow・らくプリ等）クイックリンク：全ロールに表示 */}
+        {/* 外部ツール（Grow・らくプリ等）クイックリンク：全ロールに表示。業務進捗より上に置く */}
         <div className="mb-4">
           <QuickLinksBar />
         </div>
+
+        {/* 業務進捗ウィジェット（教室長以上のみ） */}
+        {!isTeacher && <TaskProgressWidget schoolIds={getSelectedSchoolIds()} schoolId={selectedSchoolId || undefined} schools={moveSchoolOptions.map(s => ({ id: s.id, name: s.name }))} />}
 
         {/* 講師: 連絡掲示板 ↔ アラート を横並び / 管理側: 従来のレイアウト */}
         {isTeacher ? (
