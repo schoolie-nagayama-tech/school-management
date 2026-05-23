@@ -10,6 +10,8 @@ import { USER_ROLE_LABELS } from '@/types/database';
 import { Megaphone, ChevronDown, X, Menu, LogOut, Settings, LayoutDashboard } from 'lucide-react';
 import { TierMedal } from '@/components/teacher/TierMedal';
 import { useTeacherBadgeCount } from '@/hooks/useTeacherBadgeCount';
+import { BadgeFlowerField } from '@/components/badges/HiddenFlower';
+import { HEADER_FLOWERS } from '@/components/badges/flowerPlacements';
 import { ThemeToggle } from './ThemeToggle';
 import { getSurname } from '@/lib/utils/teacherName';
 import { PushNotificationButton } from '@/components/ui/PushNotificationButton';
@@ -164,7 +166,8 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
   }, [showSchoolDropdown, showSettingsDropdown]);
 
   return (
-    <header className="bg-primary shadow-md print:hidden">
+    <header className="relative bg-primary shadow-md print:hidden">
+      <BadgeFlowerField count={badgeCount ?? 0} placements={HEADER_FLOWERS} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14">
           <div className="flex items-center gap-4">
