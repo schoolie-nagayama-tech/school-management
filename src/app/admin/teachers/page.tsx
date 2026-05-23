@@ -30,6 +30,8 @@ import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { getTeacherBadges, getTeacherBadgeAssignments } from '@/lib/api/teacher-badges';
 import { onTeacherBadgesChanged } from '@/lib/teacher-badge-events';
 import { BadgeIcon } from '@/components/teacher-badges/BadgeIcon';
+import { BadgeGlint } from '@/components/badges/BadgeGlint';
+import { useFreshBadgeTeachers } from '@/hooks/useFreshBadgeTeachers';
 
 interface TeacherWithDetails extends UserProfile {
   user_schools?: Array<{
@@ -91,6 +93,9 @@ export default function TeachersPage() {
   const [badgeFilter, setBadgeFilter] = useState<string>('all');
   const [schoolFilter, setSchoolFilter] = useState<string>('all');
   const [sortByBadges, setSortByBadges] = useState(false);
+
+  // 今日新しいバッジを取った講師ID（名前横に閃光を出すため）
+  const freshBadgeTeacherIds = useFreshBadgeTeachers();
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -489,7 +494,10 @@ export default function TeachersPage() {
                     })().map(teacher => (
                       <tr key={teacher.id} className="hover:bg-surface-hover/50">
                         <td className="px-4 py-3 text-sm text-text-heading">
-                          {teacher.display_name || '-'}
+                          <span className="inline-flex items-center gap-1.5">
+                            {teacher.display_name || '-'}
+                            {freshBadgeTeacherIds.has(teacher.id) && <BadgeGlint />}
+                          </span>
                         </td>
                         <td className="px-4 py-3 text-sm text-text-body">{displayLoginId(teacher.email)}</td>
                         <td className="px-4 py-3 text-sm text-text-body">

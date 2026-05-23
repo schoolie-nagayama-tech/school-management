@@ -7,6 +7,7 @@ import { BadgeIcon } from './BadgeIcon';
 import { getBadgeAssignees, toggleTeacherBadge } from '@/lib/api/teacher-badges';
 import { fetchWithAuth } from '@/lib/api/auth';
 import { emitTeacherBadgesChanged } from '@/lib/teacher-badge-events';
+import { invalidateFreshBadgeTeachers } from '@/hooks/useFreshBadgeTeachers';
 import { Search } from 'lucide-react';
 
 interface UserSchool {
@@ -100,6 +101,7 @@ export function BadgeAssignDialog({ open, badge, schoolIds, onClose, onSuccess, 
     try {
       await toggleTeacherBadge(teacherId, { badgeId: badge.id });
       emitTeacherBadgesChanged(teacherId);
+      invalidateFreshBadgeTeachers();
       onSuccess?.(wasAssigned ? `${name} から剥奪しました` : `${name} に付与しました`);
     } catch (e) {
       setAssignedIds((prev) => {
