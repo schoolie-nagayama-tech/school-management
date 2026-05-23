@@ -47,14 +47,18 @@ export function getStageLabel(earned: number, total: number): string {
   return STAGE_LABELS[getStage(earned, total)];
 }
 
-// パレット — フラット＆デフォルメ
+// パレット — depositphotos 風の自然な木テイスト
 const C = {
-  leafLight: '#86efac',
-  leaf: '#4ade80',
-  leafDark: '#22c55e',
-  leafShade: '#16a34a',
-  trunk: '#a16207',
-  trunkDark: '#78350f',
+  // 葉 — 2トーンで奥行き
+  leafLight: '#9ccc65',
+  leafDark: '#558b2f',
+  // ステム（若い頃の緑色の茎）
+  stem: '#7cb342',
+  stemDark: '#558b2f',
+  // 幹 — 落ち着いた焦茶
+  trunk: '#5d4037',
+  trunkDark: '#3e2723',
+  // 鳥（変更なし、kawaii調）
   bird: '#fcd34d',
   birdShade: '#f59e0b',
   wing: '#d97706',
@@ -63,12 +67,63 @@ const C = {
   eyeShine: '#ffffff',
   eggShell: '#fef3c7',
   eggDot: '#fbbf24',
-  nest: '#92400e',
-  nestDark: '#5b2c0a',
+  // 巣
+  nest: '#8d6e63',
+  nestDark: '#5d4037',
+  // 花
   flower: '#fbcfe8',
   flowerCenter: '#ec4899',
   flowerHeart: '#fef9c3',
 };
+
+/** 一枚の葉 — 縦長楕円を回転 */
+function leaf(
+  cx: number,
+  cy: number,
+  size: number,
+  rot: number,
+  color: string,
+  key?: number | string,
+): React.ReactElement {
+  return (
+    <ellipse
+      key={key}
+      cx={cx}
+      cy={cy}
+      rx={size * 0.42}
+      ry={size}
+      fill={color}
+      transform={`rotate(${rot} ${cx} ${cy})`}
+    />
+  );
+}
+
+/** 葉のクラスター — 中心点周りに8枚程度を配置（暗葉→明葉の順で描く） */
+function leafCluster(cx: number, cy: number, scale = 1, keyPrefix = ''): React.ReactElement {
+  const base = 5 * scale;
+  // [dx, dy, rotation, sizeMult, color]
+  const config: Array<[number, number, number, number, string]> = [
+    // 暗い葉（奥側）
+    [-3.2, 1.5, -55, 1, C.leafDark],
+    [3.2, 1.5, 55, 1, C.leafDark],
+    [-1.8, -3.5, -20, 0.95, C.leafDark],
+    [1.8, -3.5, 20, 0.95, C.leafDark],
+    [0, 3.5, 0, 0.95, C.leafDark],
+    // 明るい葉（手前）
+    [-4.2, -0.5, -80, 0.85, C.leafLight],
+    [4.2, -0.5, 80, 0.85, C.leafLight],
+    [0, -5.2, 0, 0.9, C.leafLight],
+    [-1.2, 0, -30, 0.7, C.leafLight],
+    [1.2, 0, 30, 0.7, C.leafLight],
+  ];
+  return (
+    <g>
+      {config.map(([dx, dy, rot, mult, color], i) =>
+        leaf(cx + dx * scale, cy + dy * scale, base * mult, rot, color, `${keyPrefix}${i}`),
+      )}
+    </g>
+  );
+}
 
 export function GrowthScene({ earned, total, className = '' }: GrowthSceneProps) {
   const stage = getStage(earned, total);
@@ -100,115 +155,126 @@ export function GrowthScene({ earned, total, className = '' }: GrowthSceneProps)
   );
 }
 
-/** ステージごとの植物 */
+/** ステージごとの植物 — 自然な木イラスト風 */
 function renderPlant(stage: number): React.ReactElement | null {
   if (stage === 0) {
-    // 種だけ（控えめ）
+    // 土から芽が出始めた瞬間
     return (
       <g>
-        <ellipse cx="100" cy="108" rx="6" ry="2" fill={C.leafShade} opacity="0.3" />
-        <ellipse cx="100" cy="106" rx="3" ry="2" fill={C.trunkDark} />
+        <ellipse cx="100" cy="111" rx="7" ry="1.8" fill={C.trunkDark} opacity="0.35" />
+        <path d="M 100 110 Q 99 108 100 106" stroke={C.stem} strokeWidth="1.2" fill="none" strokeLinecap="round" />
       </g>
     );
   }
   if (stage === 1) {
-    // 芽吹き — 双葉
+    // 双葉 — 茎にたまご型の葉が2枚
     return (
       <g>
-        <path d="M 100 110 Q 100 102 100 94" stroke={C.leafShade} strokeWidth="2" fill="none" strokeLinecap="round" />
-        <circle cx="93" cy="95" r="5.5" fill={C.leaf} />
-        <circle cx="93" cy="95" r="2" fill={C.leafLight} />
-        <circle cx="107" cy="95" r="5.5" fill={C.leaf} />
-        <circle cx="107" cy="95" r="2" fill={C.leafLight} />
+        <path d="M 100 110 Q 100 104 100 99" stroke={C.stem} strokeWidth="1.5" fill="none" strokeLinecap="round" />
+        {leaf(94, 99, 5.5, -60, C.leafLight)}
+        {leaf(106, 99, 5.5, 60, C.leafLight)}
       </g>
     );
   }
   if (stage === 2) {
-    // 若芽 — 茎が伸びて葉が増える
+    // 若芽 — 茎が伸び、葉が増えてふっくら
     return (
       <g>
-        <path d="M 100 110 Q 99 95 100 80" stroke={C.leafShade} strokeWidth="2.5" fill="none" strokeLinecap="round" />
-        <ellipse cx="89" cy="92" rx="7" ry="4" fill={C.leaf} transform="rotate(-25 89 92)" />
-        <ellipse cx="111" cy="92" rx="7" ry="4" fill={C.leaf} transform="rotate(25 111 92)" />
-        <circle cx="100" cy="78" r="7" fill={C.leaf} />
-        <circle cx="100" cy="78" r="3" fill={C.leafLight} />
+        <path d="M 100 110 Q 99 96 100 86" stroke={C.stem} strokeWidth="1.8" fill="none" strokeLinecap="round" />
+        <path d="M 100 96 Q 96 93 92 90" stroke={C.stem} strokeWidth="1.2" fill="none" strokeLinecap="round" />
+        <path d="M 100 96 Q 104 93 108 90" stroke={C.stem} strokeWidth="1.2" fill="none" strokeLinecap="round" />
+        {leaf(92, 89, 5, -75, C.leafDark)}
+        {leaf(108, 89, 5, 75, C.leafDark)}
+        {leaf(100, 84, 6, 0, C.leafLight)}
+        {leaf(95, 87, 4.5, -30, C.leafLight)}
+        {leaf(105, 87, 4.5, 30, C.leafLight)}
       </g>
     );
   }
   if (stage === 3) {
-    // 苗木 — 太めの幹に雲形キャノピー
+    // 小さな茂み — まだ幹なし、茎と枝で葉のクラスター3つ
     return (
       <g>
-        <rect x="96" y="68" width="8" height="44" fill={C.trunk} rx="2" />
-        <rect x="96" y="68" width="2" height="44" fill={C.trunkDark} rx="1" opacity="0.5" />
-        {/* キャノピー（雲形） */}
-        <circle cx="100" cy="60" r="22" fill={C.leaf} />
-        <circle cx="82" cy="68" r="13" fill={C.leaf} />
-        <circle cx="118" cy="68" r="13" fill={C.leaf} />
-        <circle cx="92" cy="50" r="11" fill={C.leafLight} opacity="0.6" />
+        <path d="M 100 110 Q 99 90 100 80" stroke={C.stemDark} strokeWidth="2.2" fill="none" strokeLinecap="round" />
+        <path d="M 100 96 Q 92 90 84 84" stroke={C.stemDark} strokeWidth="1.6" fill="none" strokeLinecap="round" />
+        <path d="M 100 96 Q 108 90 116 84" stroke={C.stemDark} strokeWidth="1.6" fill="none" strokeLinecap="round" />
+        {leafCluster(84, 82, 0.85, 'c1-')}
+        {leafCluster(116, 82, 0.85, 'c2-')}
+        {leafCluster(100, 76, 0.95, 'c3-')}
       </g>
     );
   }
   if (stage === 4) {
-    // 若木 — 枝が伸びキャノピー大きく
+    // 苗木 — 細い焦茶の幹が見え始める
     return (
       <g>
-        <rect x="94" y="55" width="12" height="57" fill={C.trunk} rx="2" />
-        <rect x="94" y="55" width="3" height="57" fill={C.trunkDark} rx="1" opacity="0.5" />
+        {/* 主幹（曲線でやわらかさ） */}
+        <path d="M 100 110 Q 99 88 101 70" stroke={C.trunk} strokeWidth="3.5" fill="none" strokeLinecap="round" />
         {/* 枝 */}
-        <path d="M 100 70 L 80 80" stroke={C.trunk} strokeWidth="4" strokeLinecap="round" />
-        <path d="M 100 70 L 120 80" stroke={C.trunk} strokeWidth="4" strokeLinecap="round" />
-        {/* キャノピー */}
-        <circle cx="100" cy="45" r="28" fill={C.leaf} />
-        <circle cx="72" cy="62" r="17" fill={C.leaf} />
-        <circle cx="128" cy="62" r="17" fill={C.leaf} />
-        <circle cx="88" cy="32" r="14" fill={C.leafLight} opacity="0.6" />
-        <circle cx="112" cy="32" r="14" fill={C.leafLight} opacity="0.6" />
+        <path d="M 100 88 Q 92 82 80 78" stroke={C.trunk} strokeWidth="2.2" fill="none" strokeLinecap="round" />
+        <path d="M 101 84 Q 110 78 122 74" stroke={C.trunk} strokeWidth="2.2" fill="none" strokeLinecap="round" />
+        <path d="M 101 78 Q 96 70 92 65" stroke={C.trunk} strokeWidth="1.8" fill="none" strokeLinecap="round" />
+        <path d="M 101 76 Q 108 70 113 64" stroke={C.trunk} strokeWidth="1.8" fill="none" strokeLinecap="round" />
+        {/* クラスター */}
+        {leafCluster(80, 76, 0.95, 'c1-')}
+        {leafCluster(122, 72, 0.95, 'c2-')}
+        {leafCluster(92, 62, 0.9, 'c3-')}
+        {leafCluster(113, 60, 0.9, 'c4-')}
+        {leafCluster(101, 66, 1, 'c5-')}
       </g>
     );
   }
   if (stage === 5) {
-    // 花咲く木
+    // 若木 — 幹が太く、枝が広がり、葉のクラスターが増える
     return (
       <g>
-        <rect x="92" y="45" width="16" height="67" fill={C.trunk} rx="2.5" />
-        <rect x="92" y="45" width="4" height="67" fill={C.trunkDark} rx="1.5" opacity="0.5" />
-        <path d="M 100 60 L 70 75" stroke={C.trunk} strokeWidth="5" strokeLinecap="round" />
-        <path d="M 100 60 L 130 75" stroke={C.trunk} strokeWidth="5" strokeLinecap="round" />
-        {/* キャノピー */}
-        <circle cx="100" cy="38" r="32" fill={C.leaf} />
-        <circle cx="65" cy="60" r="20" fill={C.leaf} />
-        <circle cx="135" cy="60" r="20" fill={C.leaf} />
-        <circle cx="82" cy="22" r="16" fill={C.leafLight} opacity="0.6" />
-        <circle cx="118" cy="22" r="16" fill={C.leafLight} opacity="0.6" />
-        {/* 花 */}
-        {renderFlowers([
-          [75, 40], [92, 22], [118, 40], [108, 55], [70, 50], [130, 50], [100, 15],
-        ])}
+        {/* 主幹 */}
+        <path d="M 100 110 Q 98 80 102 50" stroke={C.trunk} strokeWidth="5" fill="none" strokeLinecap="round" />
+        {/* 枝 */}
+        <path d="M 100 86 Q 88 78 72 72" stroke={C.trunk} strokeWidth="3" fill="none" strokeLinecap="round" />
+        <path d="M 101 80 Q 114 72 128 66" stroke={C.trunk} strokeWidth="3" fill="none" strokeLinecap="round" />
+        <path d="M 101 70 Q 94 60 86 52" stroke={C.trunk} strokeWidth="2.5" fill="none" strokeLinecap="round" />
+        <path d="M 102 60 Q 110 50 118 44" stroke={C.trunk} strokeWidth="2.5" fill="none" strokeLinecap="round" />
+        <path d="M 102 55 Q 100 42 100 36" stroke={C.trunk} strokeWidth="2.2" fill="none" strokeLinecap="round" />
+        {/* クラスター */}
+        {leafCluster(72, 70, 1.05, 'c1-')}
+        {leafCluster(128, 64, 1.05, 'c2-')}
+        {leafCluster(86, 50, 1, 'c3-')}
+        {leafCluster(118, 42, 1, 'c4-')}
+        {leafCluster(100, 36, 1.1, 'c5-')}
+        {leafCluster(98, 58, 0.9, 'c6-')}
+        {leafCluster(112, 56, 0.9, 'c7-')}
+        {renderFlowers([[78, 68], [126, 62], [92, 48], [114, 42], [100, 32]])}
       </g>
     );
   }
-  // Stage 6 — 大樹
+  // Stage 6 — 大樹（さらに枝多く、葉と花が豊富）
   return (
     <g>
-      <rect x="89" y="35" width="22" height="77" fill={C.trunk} rx="3" />
-      <rect x="89" y="35" width="5" height="77" fill={C.trunkDark} rx="2" opacity="0.5" />
-      <path d="M 100 52 L 60 75" stroke={C.trunk} strokeWidth="6" strokeLinecap="round" />
-      <path d="M 100 52 L 140 75" stroke={C.trunk} strokeWidth="6" strokeLinecap="round" />
-      <path d="M 100 65 L 75 95" stroke={C.trunk} strokeWidth="4.5" strokeLinecap="round" />
-      <path d="M 100 65 L 125 95" stroke={C.trunk} strokeWidth="4.5" strokeLinecap="round" />
-      {/* キャノピー */}
-      <circle cx="100" cy="30" r="38" fill={C.leaf} />
-      <circle cx="58" cy="55" r="25" fill={C.leaf} />
-      <circle cx="142" cy="55" r="25" fill={C.leaf} />
-      <circle cx="75" cy="80" r="18" fill={C.leaf} />
-      <circle cx="125" cy="80" r="18" fill={C.leaf} />
-      <circle cx="78" cy="15" r="18" fill={C.leafLight} opacity="0.6" />
-      <circle cx="122" cy="15" r="18" fill={C.leafLight} opacity="0.6" />
-      {/* 花 */}
+      {/* 主幹 */}
+      <path d="M 100 110 Q 97 72 102 38" stroke={C.trunk} strokeWidth="6" fill="none" strokeLinecap="round" />
+      {/* 主要な枝 */}
+      <path d="M 100 90 Q 84 78 64 70" stroke={C.trunk} strokeWidth="4" fill="none" strokeLinecap="round" />
+      <path d="M 101 85 Q 118 76 136 68" stroke={C.trunk} strokeWidth="4" fill="none" strokeLinecap="round" />
+      <path d="M 101 72 Q 90 60 78 50" stroke={C.trunk} strokeWidth="3.2" fill="none" strokeLinecap="round" />
+      <path d="M 102 65 Q 116 52 130 42" stroke={C.trunk} strokeWidth="3.2" fill="none" strokeLinecap="round" />
+      <path d="M 102 55 Q 96 40 94 28" stroke={C.trunk} strokeWidth="2.8" fill="none" strokeLinecap="round" />
+      <path d="M 103 48 Q 110 34 114 22" stroke={C.trunk} strokeWidth="2.8" fill="none" strokeLinecap="round" />
+      <path d="M 102 42 Q 102 30 102 20" stroke={C.trunk} strokeWidth="2.5" fill="none" strokeLinecap="round" />
+      {/* 葉クラスター（多層） */}
+      {leafCluster(64, 68, 1.1, 'c1-')}
+      {leafCluster(136, 66, 1.1, 'c2-')}
+      {leafCluster(78, 48, 1.05, 'c3-')}
+      {leafCluster(130, 40, 1.05, 'c4-')}
+      {leafCluster(94, 26, 1.05, 'c5-')}
+      {leafCluster(114, 20, 1.05, 'c6-')}
+      {leafCluster(102, 18, 1.15, 'c7-')}
+      {leafCluster(85, 60, 0.95, 'c8-')}
+      {leafCluster(118, 54, 0.95, 'c9-')}
+      {leafCluster(100, 44, 1, 'c10-')}
       {renderFlowers([
-        [62, 28], [108, 32], [78, 8], [138, 50], [50, 55], [98, 50],
-        [55, 75], [142, 78], [82, 25], [115, 65], [95, 18],
+        [70, 64], [132, 62], [82, 46], [126, 38], [98, 22],
+        [110, 18], [102, 14], [88, 56], [120, 50], [100, 40],
       ])}
     </g>
   );
