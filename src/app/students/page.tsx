@@ -63,6 +63,12 @@ const BulletinBoard = dynamic(
   }
 );
 
+// 外部ツール（Grow・らくプリ等）への上部クイックリンク
+const QuickLinksBar = dynamic(
+  () => import('@/components/quick-links/QuickLinksBar').then((m) => m.QuickLinksBar),
+  { ssr: false }
+);
+
 const NotificationFeed = dynamic(
   () => import('@/components/notifications/NotificationFeed').then((m) => m.NotificationFeed),
   {
@@ -640,6 +646,11 @@ export default function StudentsPage() {
 
         {/* 業務進捗ウィジェット（教室長以上のみ） */}
         {!isTeacher && <TaskProgressWidget schoolIds={getSelectedSchoolIds()} schoolId={selectedSchoolId || undefined} schools={moveSchoolOptions.map(s => ({ id: s.id, name: s.name }))} />}
+
+        {/* 外部ツール（Grow・らくプリ等）クイックリンク：全ロールに表示 */}
+        <div className="mb-4">
+          <QuickLinksBar />
+        </div>
 
         {/* 講師: 連絡掲示板 ↔ アラート を横並び / 管理側: 従来のレイアウト */}
         {isTeacher ? (

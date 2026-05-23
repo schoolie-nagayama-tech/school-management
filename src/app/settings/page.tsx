@@ -20,6 +20,7 @@ import {
   Bell,
   ListChecks,
   ClipboardList,
+  Link as LinkIcon,
 } from 'lucide-react';
 
 interface SettingsItem {
@@ -59,6 +60,13 @@ const settingsGroups: SettingsGroup[] = [
         icon: <Users className="w-5 h-5" />,
         label: 'ユーザー管理',
         description: 'スタッフの追加・権限設定・教室割り当て',
+        requiresManager: true,
+      },
+      {
+        href: '/settings/quick-links',
+        icon: <LinkIcon className="w-5 h-5" />,
+        label: 'クイックリンク',
+        description: '生徒管理ページ上部に表示する外部ツール（Grow・らくプリ等）へのリンク',
         requiresManager: true,
       },
     ],
