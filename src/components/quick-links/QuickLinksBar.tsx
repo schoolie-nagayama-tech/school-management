@@ -16,7 +16,7 @@ interface QuickLinksBarProps {
  * 講師にとっては「リンクが何もなければ何も出ない」状態にする。
  */
 export function QuickLinksBar({ className = '' }: QuickLinksBarProps) {
-  const { profile } = useAuth();
+  const { profile, isLoading: authLoading } = useAuth();
   const [links, setLinks] = useState<QuickLink[]>([]);
   const [loaded, setLoaded] = useState(false);
 
@@ -24,7 +24,11 @@ export function QuickLinksBar({ className = '' }: QuickLinksBarProps) {
   const canManage =
     profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
 
+  // 認証ロードが終わってからフェッチする（セッション未取得の状態で叩くと
+  // Authorization ヘッダーが付かず、API 側で 401 → 空配列が確定してしまうため）。
+  // profile?.id を依存に入れることで、ログイン直後にも自動で再取得される。
   useEffect(() => {
+    if (authLoading || !profile?.id) return;
     let cancelled = false;
     void (async () => {
       const data = await getQuickLinks();
@@ -36,7 +40,7 @@ export function QuickLinksBar({ className = '' }: QuickLinksBarProps) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [authLoading, profile?.id]);
 
   // 初回ロード前は描画しない（CLS抑制）
   if (!loaded) return null;

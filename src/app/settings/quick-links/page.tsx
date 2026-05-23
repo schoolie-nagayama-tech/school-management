@@ -47,7 +47,9 @@ export default function QuickLinksSettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
 
+  // 認証ロード完了後に初期取得する（セッション未確定だとトークン無しになり 401 → 空が返る）
   useEffect(() => {
+    if (!profile?.id) return;
     let cancelled = false;
     void (async () => {
       const data = await getQuickLinks();
@@ -59,7 +61,7 @@ export default function QuickLinksSettingsPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [profile?.id]);
 
   // 行を追加
   const handleAdd = useCallback(() => {
