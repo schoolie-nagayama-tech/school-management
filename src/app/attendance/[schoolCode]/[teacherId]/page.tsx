@@ -14,6 +14,7 @@ import { toSurnameOnly } from '@/lib/utils/teacherName';
 import { useTeacherBadgeCount } from '@/hooks/useTeacherBadgeCount';
 import { getTier } from '@/lib/teacher-tier';
 import { HiddenFlower } from '@/components/badges/HiddenFlower';
+import { BadgeStars } from '@/components/badges/BadgeStars';
 import {
   getActiveAttendanceTypes,
   getOrCreateAttendanceSheet,
@@ -343,6 +344,9 @@ export default function TeacherAttendancePage() {
             <div className="text-center">
               <p className="text-sm text-text-body">{school?.name}</p>
               <p className="font-bold">{teacher?.name}</p>
+              {isOwner && badgeCount !== null && badgeCount > 0 && (
+                <BadgeStars count={badgeCount} className="mt-0.5" />
+              )}
             </div>
             <Badge className={ATTENDANCE_STATUS_COLORS[status]}>
               {ATTENDANCE_STATUS_LABELS[status]}
