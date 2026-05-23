@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toSurnameOnly } from '@/lib/utils/teacherName';
 import { useTeacherBadgeCount } from '@/hooks/useTeacherBadgeCount';
 import { getTier } from '@/lib/teacher-tier';
+import { HiddenFlower } from '@/components/badges/HiddenFlower';
 import {
   getActiveAttendanceTypes,
   getOrCreateAttendanceSheet,
@@ -68,6 +69,7 @@ export default function TeacherAttendancePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isSubmitDialogOpen, setIsSubmitDialogOpen] = useState(false);
+  const [showThanks, setShowThanks] = useState(false);
   const [isWithdrawDialogOpen, setIsWithdrawDialogOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [prevMonthUnsubmitted, setPrevMonthUnsubmitted] = useState<string | null>(null);
@@ -255,8 +257,10 @@ export default function TeacherAttendancePage() {
     try {
       await submitAttendanceSheet(sheetId);
       setStatus('submitted');
-      success('提出しました');
       setIsSubmitDialogOpen(false);
+      // ボタン近くに感謝のポップアップを表示（4秒で自動消去）
+      setShowThanks(true);
+      setTimeout(() => setShowThanks(false), 4000);
     } catch (err) {
       console.error('Failed to submit:', err);
       toastError('提出に失敗しました');
@@ -520,7 +524,38 @@ export default function TeacherAttendancePage() {
         </div>
 
         {/* 操作ボタン */}
-        <div className="mt-6 flex justify-center gap-4">
+        <div className="relative mt-6 flex justify-center gap-4">
+          {/* 提出完了のポンっと感謝ポップアップ */}
+          {showThanks && (
+            <div
+              className="absolute left-1/2 -top-2 -translate-x-1/2 -translate-y-full z-30 pointer-events-none"
+              style={{ animation: 'thanks-pop 0.5s cubic-bezier(.34,1.56,.64,1) both, thanks-fade-out .5s ease-in 3.5s forwards' }}
+            >
+              <div className="relative bg-gradient-to-br from-pink-50 to-white border border-pink-200 rounded-2xl shadow-lg px-5 py-3 whitespace-nowrap">
+                <p className="text-sm font-bold text-pink-700 leading-tight">提出しました！</p>
+                <p className="text-xs text-gray-600 mt-1 leading-tight">今月もありがとうございました！</p>
+                <span className="absolute -top-2 -right-2"><HiddenFlower size={16} rotate={20} opacity={0.85} /></span>
+                <span className="absolute -bottom-1 -left-1"><HiddenFlower size={12} rotate={-30} opacity={0.7} color="#F8BBD0" /></span>
+                <span className="absolute -top-1 left-3"><HiddenFlower size={10} rotate={45} opacity={0.6} color="#FCE4EC" /></span>
+                {/* 吹き出しの三角 */}
+                <span
+                  className="absolute left-1/2 -translate-x-1/2 -bottom-2 w-3 h-3 bg-white border-r border-b border-pink-200 rotate-45"
+                  aria-hidden
+                />
+              </div>
+              <style>{`
+                @keyframes thanks-pop {
+                  0% { transform: translate(-50%, calc(-100% + 14px)) scale(.5); opacity: 0; }
+                  60% { transform: translate(-50%, calc(-100% - 4px)) scale(1.06); opacity: 1; }
+                  100% { transform: translate(-50%, -100%) scale(1); opacity: 1; }
+                }
+                @keyframes thanks-fade-out {
+                  0% { opacity: 1; }
+                  100% { opacity: 0; transform: translate(-50%, calc(-100% + 6px)) scale(.95); }
+                }
+              `}</style>
+            </div>
+          )}
           {status === 'draft' && (
             <Button onClick={() => setIsSubmitDialogOpen(true)}>
               <Send className="h-4 w-4 mr-2" />
