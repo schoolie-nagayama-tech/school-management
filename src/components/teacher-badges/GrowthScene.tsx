@@ -4,12 +4,8 @@
  * バッジ獲得進捗を「巣のはじまり → 大樹と鳥の家族」の成長物語で表現するSVGシーン。
  * システム名 NEST にちなみ、最終的に鳥の家族が住む巣ができる構成。
  *
- * 設計方針:
- *   - すべて手描き illustration 調（生成的なクラスタは使わない）
- *   - 葉は大きなベジェ曲線ブロブ + ハイライト2層
- *   - 幹は塗りつぶしのテーパー型
- *   - 鳥は kawaii 装飾なしのシルエット（目はドット1個、頬の赤み等なし）
- *   - 参考SVG（viewBox 148×108）の座標系を維持
+ * Figma 制作指示書のパレットとパスデータをそのまま使用。
+ * Stage 0-1 は Figma で完成したデザインの移植、Stage 2-6 は同じ意匠言語の暫定実装。
  */
 
 import type { CSSProperties } from 'react';
@@ -34,10 +30,10 @@ function getStage(earned: number, total: number): number {
 export const STAGE_LABELS = [
   'はじまり',
   '芽吹き',
-  'すくすく',
+  '誕生',
   '若木',
-  '育つ木',
-  '花咲く',
+  '開花',
+  '巣づくり',
   'NEST 完成',
 ];
 
@@ -45,442 +41,602 @@ export function getStageLabel(earned: number, total: number): string {
   return STAGE_LABELS[getStage(earned, total)];
 }
 
+// Figma 指示書のパレット
 const C = {
-  stem: '#4E342E',
+  // 葉 — 4色レイヤー（奥→手前）
+  leaf1: '#66BB6A',
+  leaf2: '#81C784',
+  leaf3: '#A5D6A7',
+  leaf4: '#C8E6C9',
+  // 幹/茎
   trunk: '#5D4037',
-  trunkShade: '#3E2723',
-  trunkSoft: '#8D6E63',
-  trunkLight: '#A1887F',
-  leafDark: '#558B2F',
-  leafBase: '#7CB342',
-  leafLight: '#9CCC65',
-  leafShine: '#C5E1A5',
-  eggShell: '#F5F0E0',
-  eggShine: '#FBF8F0',
-  eggSpec1: '#C8B898',
-  eggSpec2: '#C0B088',
-  bird: '#F4B860',
-  birdShade: '#D98F3D',
-  wing: '#A05A1F',
-  beak: '#5D4037',
+  // 卵/巣
+  eggShell: '#FFF8E1',
+  eggSpec: '#D7CCC8',
+  nestDark: '#8D6E63',
+  nestMid: '#795548',
+  // ひよこ
+  chickBase: '#FFD54F',
+  chickShade: '#FFCA28',
+  beak: '#FF8F00',
+  cheek: '#FFAB91',
+  // 成鳥
+  birdBase: '#795548',
+  birdMid: '#8D6E63',
+  birdBelly: '#BCAAA4',
+  // 花
+  flower: '#F48FB1',
+  flowerCenter: '#FFF9C4',
+  // 地面影
+  shadow: '#D7CCC8',
+  // 目
   eye: '#1F2937',
-  flower: '#F8BBD0',
-  flowerCenter: '#EC407A',
-  flowerHeart: '#FFF59D',
-  ground: '#8D6E63',
+  eyeShine: '#FFFFFF',
 };
+
+const STAGE_FRAMES: Record<number, { w: number; h: number }> = {
+  0: { w: 80, h: 70 },
+  1: { w: 80, h: 75 },
+  2: { w: 90, h: 80 },
+  3: { w: 100, h: 90 },
+  4: { w: 110, h: 100 },
+  5: { w: 115, h: 110 },
+  6: { w: 120, h: 115 },
+};
+
+const VIEW_W = 200;
+const VIEW_H = 120;
 
 export function GrowthScene({ earned, total, className = '' }: GrowthSceneProps) {
   const stage = getStage(earned, total);
+  const frame = STAGE_FRAMES[stage];
+  const tx = (VIEW_W - frame.w) / 2;
+  const ty = VIEW_H - frame.h;
 
   return (
     <svg
-      viewBox="0 0 148 108"
+      viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
       className={`w-full h-auto growth-scene ${className}`}
       preserveAspectRatio="xMidYMax meet"
       aria-label={`成長ステージ: ${STAGE_LABELS[stage]}`}
       role="img"
     >
       <style>{`
-        .growth-scene .pop { animation: gs-pop .85s cubic-bezier(.34,1.56,.64,1) both; transform-box: fill-box; transform-origin: 54px 98px; }
-        .growth-scene .sway { animation: gs-sway 6.5s ease-in-out 1s infinite; transform-box: fill-box; transform-origin: 54px 100px; }
-        .growth-scene .rock { animation: gs-rock 7s ease-in-out 2.5s infinite; transform-box: fill-box; transform-origin: 112px 92px; }
+        .growth-scene .pop { animation: gs-pop .85s cubic-bezier(.34,1.56,.64,1) both; transform-box: fill-box; transform-origin: bottom center; }
+        .growth-scene .sway { animation: gs-sway 6.5s ease-in-out 1s infinite; transform-box: fill-box; transform-origin: bottom center; }
+        .growth-scene .bob { animation: gs-bob 3.4s ease-in-out infinite; }
+        .growth-scene .rock { animation: gs-rock 7s ease-in-out 2.5s infinite; transform-box: fill-box; transform-origin: center; }
         @keyframes gs-pop { 0% { transform: scaleY(.2) scaleX(.6); opacity: 0; } 100% { transform: scaleY(1) scaleX(1); opacity: 1; } }
         @keyframes gs-sway { 0%,100% { transform: rotate(-.5deg); } 50% { transform: rotate(.5deg); } }
+        @keyframes gs-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-1.5px); } }
         @keyframes gs-rock { 0%,80%,100% { transform: rotate(0); } 84% { transform: rotate(2deg); } 88% { transform: rotate(-1.2deg); } 91% { transform: rotate(.6deg); } 94% { transform: rotate(0); } }
         @media (prefers-reduced-motion: reduce) {
-          .growth-scene .pop, .growth-scene .sway, .growth-scene .rock { animation: none; }
+          .growth-scene .pop, .growth-scene .sway, .growth-scene .bob, .growth-scene .rock { animation: none; }
         }
       `}</style>
 
-      <ellipse cx="74" cy="100" rx="52" ry="3" fill={C.ground} opacity="0.12" />
-
-      <g className="sway">
-        <g className="pop">{renderPlant(stage)}</g>
-      </g>
-
-      <g
-        className={stage === 0 ? 'rock' : undefined}
-        style={stage === 0 ? ({ transformOrigin: '112px 92px' } as CSSProperties) : undefined}
-      >
-        {renderBirdScene(stage)}
-      </g>
+      <g transform={`translate(${tx} ${ty})`}>{renderStage(stage)}</g>
     </svg>
   );
 }
 
-/** 葉のブロブ — 一個の大きな有機シェイプを 2層フィルで描く */
-function leafBlob(d: string, hd: string, base: string = C.leafBase): React.ReactElement {
+function renderStage(stage: number): React.ReactElement {
+  switch (stage) {
+    case 0:
+      return <Stage0 />;
+    case 1:
+      return <Stage1 />;
+    case 2:
+      return <Stage2 />;
+    case 3:
+      return <Stage3 />;
+    case 4:
+      return <Stage4 />;
+    case 5:
+      return <Stage5 />;
+    case 6:
+    default:
+      return <Stage6 />;
+  }
+}
+
+/** ------------------------------------------------------------------ */
+/** Stage 0 — はじまり（Figma 移植）                                       */
+/** ------------------------------------------------------------------ */
+function Stage0(): React.ReactElement {
   return (
     <g>
-      <path d={d} fill={base} />
-      <path d={hd} fill={base === C.leafBase ? C.leafLight : C.leafShine} opacity="0.55" />
+      <ellipse cx="40" cy="66" rx="30" ry="2" fill={C.shadow} opacity="0.25" />
+      <g className="sway">
+        <g className="pop">
+          {/* 茎 */}
+          <path
+            d="M 28 65 C 27 58 29 48 28 36"
+            stroke={C.trunk}
+            strokeWidth="1.4"
+            fill="none"
+            strokeLinecap="round"
+          />
+          {/* 左の双葉（3色重ね） */}
+          <path d="M 27 42 C 19 36 9 33 3 37 C 6 45 17 48 27 45 Z" fill={C.leaf1} />
+          <path d="M 27 42 C 21 37 12 35 7 38 C 10 44 18 47 27 44 Z" fill={C.leaf2} />
+          <path d="M 27 42 C 22 39 15 37 11 39 C 13 43 20 46 27 44 Z" fill={C.leaf3} />
+          {/* 右の双葉（小・3色重ね） */}
+          <path d="M 29 45 C 36 41 45 39 49 42 C 45 48 36 50 29 47 Z" fill={C.leaf1} />
+          <path d="M 29 45 C 35 42 42 40 46 43 C 43 47 36 49 29 46 Z" fill={C.leaf2} />
+          <path d="M 29 45 C 34 43 39 42 43 44 C 41 47 35 48 29 46 Z" fill={C.leaf3} />
+          {/* 芽 */}
+          <path d="M 27 36 C 26 33 27 30 28 27 C 30 30 30 33 29 36 Z" fill={C.leaf2} />
+          <path d="M 27.5 35 C 27 32 27.5 30 28 28 C 29 30 29 32 28.5 35 Z" fill={C.leaf3} />
+        </g>
+      </g>
+      {/* 巣 */}
+      <g className="rock" style={{ transformOrigin: '60px 58px' } as CSSProperties}>
+        <path
+          d="M 50 60 C 53 56 56 54 60 54 C 64 54 67 56 70 60"
+          stroke={C.nestDark}
+          strokeWidth="1.5"
+          fill="none"
+          strokeLinecap="round"
+        />
+        <path
+          d="M 52 60 C 54 57 57 56 60 56 C 63 56 66 57 68 60"
+          stroke={C.nestMid}
+          strokeWidth="1.1"
+          fill="none"
+          strokeLinecap="round"
+        />
+        <path
+          d="M 50 60 C 52 63 56 65 60 65 C 64 65 68 63 70 60"
+          stroke={C.nestDark}
+          strokeWidth="1.7"
+          fill="none"
+          strokeLinecap="round"
+        />
+        {/* 卵 */}
+        <path
+          d="M 60 48 C 64 48 67 51 67 56 C 67 60 64 63 60 63 C 56 63 53 60 53 56 C 53 51 56 48 60 48 Z"
+          fill={C.eggShell}
+        />
+        <path
+          d="M 58 50 C 61 50 63 52 64 55 C 64 58 62 60 59 60 C 56 60 55 58 56 55 C 56 52 56 50 58 50 Z"
+          fill="#FFFFFF"
+          opacity="0.45"
+        />
+        <circle cx="56" cy="53" r="0.5" fill={C.eggSpec} opacity="0.4" />
+        <circle cx="64" cy="52" r="0.4" fill={C.eggSpec} opacity="0.35" />
+        <circle cx="66" cy="57" r="0.4" fill={C.eggSpec} opacity="0.3" />
+        <circle cx="57" cy="59" r="0.4" fill={C.eggSpec} opacity="0.3" />
+      </g>
     </g>
   );
 }
 
-/** 幹/枝 — 塗りつぶしのテーパー型（左右の制御点で形を作る） */
-function trunkShape(d: string, fill: string = C.trunk): React.ReactElement {
-  return <path d={d} fill={fill} />;
+/** ------------------------------------------------------------------ */
+/** Stage 1 — 芽吹き（Figma 移植）                                         */
+/** ------------------------------------------------------------------ */
+function Stage1(): React.ReactElement {
+  return (
+    <g>
+      <ellipse cx="40" cy="71" rx="30" ry="2" fill={C.shadow} opacity="0.25" />
+      <g className="sway">
+        <g className="pop">
+          <path
+            d="M 28 70 C 27 62 29 50 28 36 C 27 26 29 20 28 14"
+            stroke={C.trunk}
+            strokeWidth="1.5"
+            fill="none"
+            strokeLinecap="round"
+          />
+          {/* Pair 1 (lowest, largest) */}
+          <path d="M 27 50 C 19 44 9 41 4 45 C 8 52 18 56 27 53 Z" fill={C.leaf1} />
+          <path d="M 27 50 C 21 46 13 44 8 47 C 10 52 19 55 27 52 Z" fill={C.leaf2} />
+          <path d="M 27 50 C 22 47 16 46 11 47 C 13 51 20 54 27 52 Z" fill={C.leaf3} />
+          <path d="M 29 52 C 36 48 45 46 49 49 C 45 54 36 57 29 54 Z" fill={C.leaf1} />
+          <path d="M 29 52 C 35 49 42 47 46 50 C 43 54 36 56 29 53 Z" fill={C.leaf2} />
+          <path d="M 29 52 C 34 50 39 49 43 51 C 41 54 35 55 29 53 Z" fill={C.leaf3} />
+          {/* Pair 2 */}
+          <path d="M 27 38 C 21 33 12 30 7 33 C 10 39 19 42 27 40 Z" fill={C.leaf1} />
+          <path d="M 27 38 C 22 35 15 33 10 35 C 12 39 19 41 27 40 Z" fill={C.leaf2} />
+          <path d="M 27 38 C 23 36 17 35 13 36 C 14 38 20 40 27 40 Z" fill={C.leaf3} />
+          <path d="M 29 40 C 35 36 42 34 47 36 C 44 41 36 43 29 42 Z" fill={C.leaf1} />
+          <path d="M 29 40 C 35 37 40 36 44 37 C 42 40 35 42 29 41 Z" fill={C.leaf2} />
+          <path d="M 29 40 C 34 38 38 37 42 38 C 40 40 35 41 29 41 Z" fill={C.leaf3} />
+          {/* Pair 3 */}
+          <path d="M 27 27 C 22 23 14 21 10 23 C 12 27 19 30 27 28 Z" fill={C.leaf1} />
+          <path d="M 27 27 C 23 24 17 23 13 24 C 14 27 20 29 27 28 Z" fill={C.leaf2} />
+          <path d="M 29 29 C 33 25 39 23 44 24 C 42 28 36 30 29 30 Z" fill={C.leaf1} />
+          <path d="M 29 29 C 33 26 38 25 41 26 C 40 28 35 30 29 30 Z" fill={C.leaf2} />
+          {/* Pair 4 (smallest) */}
+          <path d="M 27 19 C 23 17 18 16 15 17 C 17 20 21 22 27 20 Z" fill={C.leaf2} />
+          <path d="M 27 19 C 24 18 20 17 17 18 C 19 19 22 21 27 20 Z" fill={C.leaf3} />
+          <path d="M 29 21 C 33 18 38 17 41 18 C 40 21 35 22 29 22 Z" fill={C.leaf2} />
+          <path d="M 29 21 C 33 19 37 18 39 19 C 38 21 34 22 29 22 Z" fill={C.leaf3} />
+          {/* 大きくなった芽 */}
+          <path d="M 26 14 C 25 11 26 7 28 3 C 30 7 31 11 30 14 Z" fill={C.leaf2} />
+          <path d="M 27 13 C 26 10 27 7 28 5 C 29 7 30 10 29 13 Z" fill={C.leaf3} />
+        </g>
+      </g>
+      {/* 巣＋ひび割れた卵 */}
+      <g>
+        <path
+          d="M 50 64 C 53 60 56 58 60 58 C 64 58 67 60 70 64"
+          stroke={C.nestDark}
+          strokeWidth="1.5"
+          fill="none"
+          strokeLinecap="round"
+        />
+        <path
+          d="M 52 64 C 54 61 57 60 60 60 C 63 60 66 61 68 64"
+          stroke={C.nestMid}
+          strokeWidth="1.1"
+          fill="none"
+          strokeLinecap="round"
+        />
+        <path
+          d="M 50 64 C 52 67 56 69 60 69 C 64 69 68 67 70 64"
+          stroke={C.nestDark}
+          strokeWidth="1.7"
+          fill="none"
+          strokeLinecap="round"
+        />
+        {/* 卵下半分 */}
+        <path
+          d="M 60 56 C 64 56 67 58 67 62 C 67 65 64 67 60 67 C 56 67 53 65 53 62 C 53 58 56 56 60 56 Z"
+          fill={C.eggShell}
+        />
+        {/* ひび — ジグザグ */}
+        <path
+          d="M 53 55 L 55 57 L 57 54 L 60 56 L 62 53 L 65 56 L 67 54"
+          stroke={C.eggSpec}
+          strokeWidth="0.8"
+          fill="none"
+          strokeLinecap="round"
+        />
+        <circle cx="56" cy="61" r="0.5" fill={C.eggSpec} opacity="0.4" />
+        <circle cx="64" cy="60" r="0.4" fill={C.eggSpec} opacity="0.35" />
+        <circle cx="58" cy="65" r="0.4" fill={C.eggSpec} opacity="0.3" />
+      </g>
+    </g>
+  );
 }
 
-/** 鳥のシルエット — kawaii 装飾なし */
-function bird(cx: number, cy: number, scale = 1, facing: 'left' | 'right' = 'right'): React.ReactElement {
-  const s = scale;
+/** ------------------------------------------------------------------ */
+/** Stage 2 — 誕生（暫定: 同じ意匠言語）                                    */
+/** ------------------------------------------------------------------ */
+function Stage2(): React.ReactElement {
+  return (
+    <g>
+      <ellipse cx="45" cy="76" rx="35" ry="2" fill={C.shadow} opacity="0.25" />
+      <g className="sway">
+        <g className="pop">
+          {/* 茎 */}
+          <path
+            d="M 28 74 C 27 64 29 50 28 32 C 27 22 29 14 28 8"
+            stroke={C.trunk}
+            strokeWidth="1.8"
+            fill="none"
+            strokeLinecap="round"
+          />
+          {/* 4箇所のクラスタ（3色） */}
+          {leafCluster(18, 56, 1.0, 'left')}
+          {leafCluster(38, 56, 1.0, 'right')}
+          {leafCluster(15, 38, 0.85, 'left')}
+          {leafCluster(41, 38, 0.85, 'right')}
+          {leafCluster(17, 24, 0.7, 'left')}
+          {leafCluster(39, 24, 0.7, 'right')}
+          <path d="M 26 12 C 25 8 27 4 28 0 C 30 4 31 8 30 12 Z" fill={C.leaf2} />
+          <path d="M 27 11 C 26 8 27 5 28 3 C 29 5 30 8 29 11 Z" fill={C.leaf3} />
+        </g>
+      </g>
+      {/* ひよこ */}
+      <g className="bob">
+        <ellipse cx="62" cy="58" rx="11" ry="9" fill={C.chickBase} />
+        <ellipse cx="62" cy="62" rx="10" ry="3" fill={C.chickShade} opacity="0.5" />
+        <circle cx="62" cy="44" r="9" fill={C.chickBase} />
+        <ellipse cx="55" cy="46" rx="2" ry="1.5" fill={C.cheek} opacity="0.25" />
+        <ellipse cx="69" cy="46" rx="2" ry="1.5" fill={C.cheek} opacity="0.25" />
+        <circle cx="58" cy="43" r="1.5" fill={C.eye} />
+        <circle cx="66" cy="43" r="1.5" fill={C.eye} />
+        <circle cx="58" cy="42.4" r="0.5" fill={C.eyeShine} />
+        <circle cx="66" cy="42.4" r="0.5" fill={C.eyeShine} />
+        <path d="M 62 47 L 65 49 L 62 51 Z" fill={C.beak} />
+        <path d="M 58 67 L 58 73" stroke={C.beak} strokeWidth="1.2" strokeLinecap="round" />
+        <path d="M 66 67 L 66 73" stroke={C.beak} strokeWidth="1.2" strokeLinecap="round" />
+        <path d="M 53 56 C 50 58 50 62 53 64 C 56 63 56 58 53 56 Z" fill={C.chickShade} />
+      </g>
+    </g>
+  );
+}
+
+/** ------------------------------------------------------------------ */
+/** Stage 3 — 若木（暫定）                                                */
+/** ------------------------------------------------------------------ */
+function Stage3(): React.ReactElement {
+  return (
+    <g>
+      <ellipse cx="50" cy="86" rx="42" ry="2.5" fill={C.shadow} opacity="0.25" />
+      <g className="sway">
+        <g className="pop">
+          {/* 幹 */}
+          <path
+            d="M 32 85 C 31 70 33 50 32 26"
+            stroke={C.trunk}
+            strokeWidth="2.2"
+            fill="none"
+            strokeLinecap="round"
+          />
+          {/* 枝 */}
+          <path d="M 32 60 C 24 56 16 50 10 46" stroke={C.trunk} strokeWidth="1.5" fill="none" strokeLinecap="round" />
+          <path d="M 32 60 C 40 56 48 50 54 46" stroke={C.trunk} strokeWidth="1.5" fill="none" strokeLinecap="round" />
+          <path d="M 32 42 C 26 38 22 32 18 26" stroke={C.trunk} strokeWidth="1.4" fill="none" strokeLinecap="round" />
+          <path d="M 32 42 C 38 38 42 32 46 26" stroke={C.trunk} strokeWidth="1.4" fill="none" strokeLinecap="round" />
+          {/* 葉クラスタ */}
+          {leafCluster(10, 44, 1.0, 'left')}
+          {leafCluster(54, 44, 1.0, 'right')}
+          {leafCluster(18, 24, 0.9, 'left')}
+          {leafCluster(46, 24, 0.9, 'right')}
+          {leafCluster(32, 18, 1.0, 'right')}
+        </g>
+      </g>
+      {/* 若鳥（茶色） */}
+      <g className="bob">
+        <ellipse cx="72" cy="68" rx="10" ry="8" fill={C.birdBase} />
+        <ellipse cx="72" cy="72" rx="9" ry="3" fill={C.birdBelly} opacity="0.7" />
+        <circle cx="72" cy="58" r="7" fill={C.birdMid} />
+        <circle cx="69" cy="57" r="1.2" fill={C.eye} />
+        <circle cx="75" cy="57" r="1.2" fill={C.eye} />
+        <circle cx="69" cy="56.5" r="0.4" fill={C.eyeShine} />
+        <circle cx="75" cy="56.5" r="0.4" fill={C.eyeShine} />
+        <path d="M 78 59 L 82 60 L 78 61 Z" fill={C.beak} />
+        <path d="M 80 68 L 86 66 L 84 72 Z" fill={C.birdBase} />
+        <path d="M 68 76 L 68 80" stroke={C.beak} strokeWidth="1.2" strokeLinecap="round" />
+        <path d="M 76 76 L 76 80" stroke={C.beak} strokeWidth="1.2" strokeLinecap="round" />
+      </g>
+    </g>
+  );
+}
+
+/** ------------------------------------------------------------------ */
+/** Stage 4 — 開花（暫定）                                                */
+/** ------------------------------------------------------------------ */
+function Stage4(): React.ReactElement {
+  return (
+    <g>
+      <ellipse cx="55" cy="96" rx="48" ry="3" fill={C.shadow} opacity="0.25" />
+      <g className="sway">
+        <g className="pop">
+          <path
+            d="M 36 95 C 35 76 37 52 36 20"
+            stroke={C.trunk}
+            strokeWidth="2.8"
+            fill="none"
+            strokeLinecap="round"
+          />
+          <path d="M 36 70 C 26 66 14 60 6 56" stroke={C.trunk} strokeWidth="1.8" fill="none" strokeLinecap="round" />
+          <path d="M 36 70 C 46 66 58 60 66 56" stroke={C.trunk} strokeWidth="1.8" fill="none" strokeLinecap="round" />
+          <path d="M 36 50 C 28 46 22 40 16 32" stroke={C.trunk} strokeWidth="1.6" fill="none" strokeLinecap="round" />
+          <path d="M 36 50 C 44 46 50 40 56 32" stroke={C.trunk} strokeWidth="1.6" fill="none" strokeLinecap="round" />
+          <path d="M 36 32 C 32 26 30 18 30 12" stroke={C.trunk} strokeWidth="1.4" fill="none" strokeLinecap="round" />
+          <path d="M 36 32 C 40 26 42 18 42 12" stroke={C.trunk} strokeWidth="1.4" fill="none" strokeLinecap="round" />
+          {leafCluster(6, 54, 1.0, 'left')}
+          {leafCluster(66, 54, 1.0, 'right')}
+          {leafCluster(16, 30, 0.9, 'left')}
+          {leafCluster(56, 30, 0.9, 'right')}
+          {leafCluster(30, 10, 0.85, 'left')}
+          {leafCluster(42, 10, 0.85, 'right')}
+          {leafCluster(36, 4, 0.95, 'right')}
+          {/* 花 */}
+          {flower(12, 50)}
+          {flower(60, 50)}
+          {flower(22, 28)}
+          {flower(50, 28)}
+          {flower(30, 14)}
+          {flower(42, 14)}
+        </g>
+      </g>
+      {/* 鳥つがい */}
+      <g className="bob">
+        {smallBird(82, 70, 'right')}
+        {smallBird(98, 80, 'left')}
+      </g>
+    </g>
+  );
+}
+
+/** ------------------------------------------------------------------ */
+/** Stage 5 — 巣づくり（暫定）                                             */
+/** ------------------------------------------------------------------ */
+function Stage5(): React.ReactElement {
+  return (
+    <g>
+      <ellipse cx="58" cy="106" rx="52" ry="3" fill={C.shadow} opacity="0.25" />
+      <g className="sway">
+        <g className="pop">
+          <path
+            d="M 40 105 C 39 80 41 50 40 12"
+            stroke={C.trunk}
+            strokeWidth="3.2"
+            fill="none"
+            strokeLinecap="round"
+          />
+          <path d="M 40 78 C 28 74 14 68 4 64" stroke={C.trunk} strokeWidth="2" fill="none" strokeLinecap="round" />
+          <path d="M 40 78 C 52 74 66 68 76 64" stroke={C.trunk} strokeWidth="2" fill="none" strokeLinecap="round" />
+          <path d="M 40 56 C 30 52 22 44 16 36" stroke={C.trunk} strokeWidth="1.8" fill="none" strokeLinecap="round" />
+          <path d="M 40 56 C 50 52 58 44 64 36" stroke={C.trunk} strokeWidth="1.8" fill="none" strokeLinecap="round" />
+          <path d="M 40 36 C 34 30 30 22 28 14" stroke={C.trunk} strokeWidth="1.6" fill="none" strokeLinecap="round" />
+          <path d="M 40 36 C 46 30 50 22 52 14" stroke={C.trunk} strokeWidth="1.6" fill="none" strokeLinecap="round" />
+          <path d="M 40 16 C 40 10 40 6 40 2" stroke={C.trunk} strokeWidth="1.4" fill="none" strokeLinecap="round" />
+          {leafCluster(4, 62, 1.05, 'left')}
+          {leafCluster(76, 62, 1.05, 'right')}
+          {leafCluster(16, 34, 1.0, 'left')}
+          {leafCluster(64, 34, 1.0, 'right')}
+          {leafCluster(28, 12, 0.9, 'left')}
+          {leafCluster(52, 12, 0.9, 'right')}
+          {leafCluster(40, 0, 1.0, 'right')}
+          {flower(10, 58)}
+          {flower(70, 58)}
+          {flower(22, 32)}
+          {flower(58, 32)}
+          {flower(40, 4)}
+          {/* 巣 (枝の上に) */}
+          <path
+            d="M 70 50 C 73 46 76 44 80 44 C 84 44 87 46 90 50"
+            stroke={C.nestDark}
+            strokeWidth="1.8"
+            fill="none"
+            strokeLinecap="round"
+          />
+          <path
+            d="M 70 50 C 72 53 76 55 80 55 C 84 55 88 53 90 50"
+            stroke={C.nestDark}
+            strokeWidth="2"
+            fill="none"
+            strokeLinecap="round"
+          />
+          {/* 卵 3個 */}
+          <ellipse cx="76" cy="48" rx="2.5" ry="3" fill={C.eggShell} />
+          <ellipse cx="80" cy="47.5" rx="2.5" ry="3" fill={C.eggShell} />
+          <ellipse cx="84" cy="48" rx="2.5" ry="3" fill={C.eggShell} />
+        </g>
+      </g>
+      {/* 鳥 2羽 */}
+      <g className="bob">
+        {smallBird(94, 50, 'left')}
+        {smallBird(60, 80, 'right')}
+      </g>
+    </g>
+  );
+}
+
+/** ------------------------------------------------------------------ */
+/** Stage 6 — NEST 完成（暫定）                                           */
+/** ------------------------------------------------------------------ */
+function Stage6(): React.ReactElement {
+  return (
+    <g>
+      <ellipse cx="60" cy="111" rx="55" ry="3" fill={C.shadow} opacity="0.25" />
+      <g className="sway">
+        <g className="pop">
+          <path
+            d="M 42 110 C 41 80 43 48 42 8"
+            stroke={C.trunk}
+            strokeWidth="3.8"
+            fill="none"
+            strokeLinecap="round"
+          />
+          <path d="M 42 82 C 28 78 12 70 0 66" stroke={C.trunk} strokeWidth="2.4" fill="none" strokeLinecap="round" />
+          <path d="M 42 82 C 56 78 72 70 84 66" stroke={C.trunk} strokeWidth="2.4" fill="none" strokeLinecap="round" />
+          <path d="M 42 60 C 30 56 20 46 12 36" stroke={C.trunk} strokeWidth="2" fill="none" strokeLinecap="round" />
+          <path d="M 42 60 C 54 56 64 46 72 36" stroke={C.trunk} strokeWidth="2" fill="none" strokeLinecap="round" />
+          <path d="M 42 40 C 34 32 28 22 24 12" stroke={C.trunk} strokeWidth="1.8" fill="none" strokeLinecap="round" />
+          <path d="M 42 40 C 50 32 56 22 60 12" stroke={C.trunk} strokeWidth="1.8" fill="none" strokeLinecap="round" />
+          <path d="M 42 18 C 40 12 38 6 38 2" stroke={C.trunk} strokeWidth="1.6" fill="none" strokeLinecap="round" />
+          <path d="M 42 18 C 44 12 46 6 46 2" stroke={C.trunk} strokeWidth="1.6" fill="none" strokeLinecap="round" />
+          {leafCluster(0, 64, 1.1, 'left')}
+          {leafCluster(84, 64, 1.1, 'right')}
+          {leafCluster(12, 34, 1.0, 'left')}
+          {leafCluster(72, 34, 1.0, 'right')}
+          {leafCluster(24, 10, 0.95, 'left')}
+          {leafCluster(60, 10, 0.95, 'right')}
+          {leafCluster(42, -2, 1.05, 'right')}
+          {leafCluster(38, 0, 0.85, 'left')}
+          {flower(8, 60)}
+          {flower(78, 60)}
+          {flower(18, 30)}
+          {flower(66, 30)}
+          {flower(30, 6)}
+          {flower(54, 6)}
+          {flower(42, -4)}
+          {/* 巣（枝の上） */}
+          <path
+            d="M 70 56 C 74 52 78 50 84 50 C 90 50 94 52 98 56"
+            stroke={C.nestDark}
+            strokeWidth="2"
+            fill="none"
+            strokeLinecap="round"
+          />
+          <path
+            d="M 70 56 C 73 60 78 62 84 62 C 90 62 95 60 98 56"
+            stroke={C.nestDark}
+            strokeWidth="2.2"
+            fill="none"
+            strokeLinecap="round"
+          />
+          {/* 雛 3 羽 */}
+          {[76, 84, 92].map((x, i) => (
+            <g key={i}>
+              <ellipse cx={x} cy="52" rx="3" ry="2.5" fill={C.chickBase} />
+              <circle cx={x} cy="50" r="2.5" fill={C.chickBase} />
+              <circle cx={x - 0.8} cy="49.7" r="0.4" fill={C.eye} />
+              <circle cx={x + 0.8} cy="49.7" r="0.4" fill={C.eye} />
+              <path d={`M ${x + 2.5} 50.5 L ${x + 4} 51 L ${x + 2.5} 51.5 Z`} fill={C.beak} />
+            </g>
+          ))}
+        </g>
+      </g>
+      {/* 親鳥（枝に止まる） */}
+      <g className="bob">
+        {smallBird(102, 60, 'left')}
+      </g>
+      {/* 飛ぶ鳥（翼を広げた） */}
+      <g>
+        <ellipse cx="20" cy="20" rx="4" ry="2.5" fill={C.birdBase} />
+        <path d="M 16 20 C 12 16 8 16 6 18 C 10 20 14 20 16 20 Z" fill={C.birdMid} />
+        <path d="M 24 20 C 28 16 32 16 34 18 C 30 20 26 20 24 20 Z" fill={C.birdMid} />
+        <path d="M 23 19 L 25 19 L 23 20 Z" fill={C.beak} />
+      </g>
+    </g>
+  );
+}
+
+/** ------------------------------------------------------------------ */
+/** Helpers                                                            */
+/** ------------------------------------------------------------------ */
+
+/** 3色レイヤの葉クラスター（同方向） */
+function leafCluster(cx: number, cy: number, scale: number, dir: 'left' | 'right'): React.ReactElement {
+  const offsets: Array<[number, number]> = dir === 'left' ? [[-2, -2], [0, 0], [2, 2]] : [[2, -2], [0, 0], [-2, 2]];
+  const colors = [C.leaf1, C.leaf2, C.leaf3];
+  const w = 9 * scale;
+  const h = 6 * scale;
+  return (
+    <g key={`lc-${cx}-${cy}`}>
+      {colors.map((color, i) => {
+        const x = cx + offsets[i][0] * scale;
+        const y = cy + offsets[i][1] * scale;
+        const d =
+          dir === 'left'
+            ? `M ${x} ${y} C ${x - w} ${y - h * 0.5} ${x - w} ${y + h * 0.5} ${x - w * 0.3} ${y + h * 0.7} C ${x - w * 0.1} ${y + h * 0.5} ${x} ${y + h * 0.3} ${x} ${y} Z`
+            : `M ${x} ${y} C ${x + w} ${y - h * 0.5} ${x + w} ${y + h * 0.5} ${x + w * 0.3} ${y + h * 0.7} C ${x + w * 0.1} ${y + h * 0.5} ${x} ${y + h * 0.3} ${x} ${y} Z`;
+        return <path key={i} d={d} fill={color} />;
+      })}
+    </g>
+  );
+}
+
+/** 花 */
+function flower(cx: number, cy: number): React.ReactElement {
+  return (
+    <g key={`fl-${cx}-${cy}`}>
+      <circle cx={cx} cy={cy} r="2.2" fill={C.flower} opacity="0.85" />
+      <circle cx={cx} cy={cy} r="0.8" fill={C.flowerCenter} />
+    </g>
+  );
+}
+
+/** 小型の成鳥 */
+function smallBird(cx: number, cy: number, facing: 'left' | 'right'): React.ReactElement {
   const dir = facing === 'right' ? 1 : -1;
   return (
-    <g transform={`translate(${cx} ${cy})${facing === 'left' ? ' scale(-1 1)' : ''}`}>
-      {/* 体 */}
-      <path
-        d={`M 0 0 C ${-9 * s} ${-1 * s} ${-10 * s} ${5 * s} ${-7 * s} ${7 * s} C ${-3 * s} ${9 * s} ${4 * s} ${9 * s} ${8 * s} ${6 * s} C ${11 * s} ${3 * s} ${11 * s} ${-2 * s} ${8 * s} ${-3 * s} C ${5 * s} ${-5 * s} ${1 * s} ${-3 * s} 0 0 Z`}
-        fill={C.bird}
-      />
-      {/* 翼 */}
-      <path
-        d={`M ${-3 * s} ${1 * s} C ${1 * s} ${0 * s} ${4 * s} ${2 * s} ${4 * s} ${5 * s} C ${1 * s} ${7 * s} ${-3 * s} ${6 * s} ${-3 * s} ${1 * s} Z`}
-        fill={C.wing}
-        opacity="0.55"
-      />
-      {/* くちばし */}
-      <polygon points={`${8 * s * dir},${-1 * s} ${11 * s * dir},0 ${8 * s * dir},${1 * s}`} fill={C.beak} />
-      {/* 目 — ドット1個 */}
-      <circle cx={5 * s * dir} cy={-1 * s} r={0.7 * s} fill={C.eye} />
-    </g>
-  );
-}
-
-/** ステージごとの植物 */
-function renderPlant(stage: number): React.ReactElement | null {
-  if (stage === 0) {
-    // 参考SVG verbatim
-    return (
-      <g>
-        <path d="M 54 98 C 52 88 56 78 53 68" stroke={C.stem} strokeWidth="1.6" fill="none" strokeLinecap="round" />
-        <path d="M 53 70 C 42 58 26 44 14 46 C 16 58 36 74 53 72 Z" fill={C.leafBase} />
-        <path d="M 53 70 C 44 60 30 48 20 50 C 22 60 40 72 53 72 Z" fill={C.leafLight} opacity="0.55" />
-        <path d="M 52 71 C 40 62 26 54 18 50" stroke={C.leafDark} strokeWidth="0.55" fill="none" strokeLinecap="round" opacity="0.35" />
-        <path d="M 55 72 C 64 62 78 54 86 58 C 82 68 68 78 55 74 Z" fill={C.leafBase} />
-        <path d="M 55 72 C 62 64 74 58 80 60 C 78 68 68 76 55 74 Z" fill={C.leafLight} opacity="0.55" />
-        <path d="M 55 73 C 64 66 76 60 82 60" stroke={C.leafDark} strokeWidth="0.5" fill="none" strokeLinecap="round" opacity="0.35" />
-        <path d="M 52 68 C 50 62 52 56 54 52 C 56 56 56 62 55 68 Z" fill={C.leafLight} />
-        <path d="M 53 66 C 52 62 52.5 58 54 55 C 55 58 55 62 54.5 66 Z" fill={C.leafShine} opacity="0.5" />
-      </g>
-    );
-  }
-  if (stage === 1) {
-    // 茎が伸び、双葉が広がり、新葉が一枚追加
-    return (
-      <g>
-        <path d="M 54 98 C 52 86 56 70 54 54" stroke={C.stem} strokeWidth="1.7" fill="none" strokeLinecap="round" />
-        {/* 左葉（広がり） */}
-        <path d="M 53 70 C 40 60 22 46 10 48 C 12 62 32 78 53 74 Z" fill={C.leafBase} />
-        <path d="M 53 70 C 42 62 26 52 16 54 C 18 62 38 74 53 74 Z" fill={C.leafLight} opacity="0.55" />
-        <path d="M 52 71 C 38 64 22 56 14 52" stroke={C.leafDark} strokeWidth="0.55" fill="none" strokeLinecap="round" opacity="0.35" />
-        {/* 右葉（広がり） */}
-        <path d="M 55 72 C 68 62 86 54 96 58 C 92 68 74 80 55 76 Z" fill={C.leafBase} />
-        <path d="M 55 72 C 66 64 80 58 88 60 C 86 68 72 76 55 76 Z" fill={C.leafLight} opacity="0.55" />
-        <path d="M 55 73 C 66 66 80 60 88 60" stroke={C.leafDark} strokeWidth="0.5" fill="none" strokeLinecap="round" opacity="0.35" />
-        {/* 上の新葉 */}
-        <path d="M 53 56 C 48 50 44 40 46 32 C 52 36 56 46 56 56 Z" fill={C.leafBase} />
-        <path d="M 53 56 C 50 50 48 42 50 36 C 53 40 55 46 56 56 Z" fill={C.leafLight} opacity="0.55" />
-        <path d="M 54 56 C 56 50 60 42 64 38" stroke={C.leafDark} strokeWidth="0.45" fill="none" strokeLinecap="round" opacity="0.35" />
-      </g>
-    );
-  }
-  if (stage === 2) {
-    // 若い茂み — 2 個の大葉ブロブを構成
-    return (
-      <g>
-        <path d="M 54 98 C 52 80 56 60 54 42" stroke={C.stem} strokeWidth="2" fill="none" strokeLinecap="round" />
-        {/* 下の大葉群 */}
-        {leafBlob(
-          'M 53 74 C 28 64 12 50 6 56 C 8 70 30 82 53 78 Z',
-          'M 53 74 C 32 66 18 56 14 60 C 16 70 32 78 53 78 Z',
-        )}
-        {leafBlob(
-          'M 55 74 C 78 62 94 50 100 58 C 96 70 78 84 55 78 Z',
-          'M 55 74 C 76 64 90 56 94 62 C 92 70 78 80 55 78 Z',
-        )}
-        {/* 上の葉ブロブ */}
-        {leafBlob(
-          'M 52 52 C 36 44 28 32 32 26 C 44 26 56 36 56 50 Z',
-          'M 52 52 C 40 44 34 36 38 32 C 46 32 54 38 56 50 Z',
-        )}
-        {leafBlob(
-          'M 56 52 C 70 44 78 32 76 26 C 64 26 56 36 56 50 Z',
-          'M 56 52 C 68 44 74 36 72 32 C 64 32 58 38 56 50 Z',
-        )}
-        {/* てっぺん */}
-        {leafBlob(
-          'M 50 42 C 46 30 50 18 56 14 C 60 22 60 32 56 42 Z',
-          'M 51 40 C 50 30 53 22 55 18 C 57 24 57 32 55 40 Z',
-          C.leafLight,
-        )}
-      </g>
-    );
-  }
-  if (stage === 3) {
-    // 茂みが立体的に — 3段の葉ブロブ
-    return (
-      <g>
-        <path d="M 54 98 C 52 74 56 50 54 24" stroke={C.trunk} strokeWidth="2.6" fill="none" strokeLinecap="round" />
-        {/* 下段の葉群 */}
-        {leafBlob(
-          'M 53 72 C 22 60 0 46 0 56 C 4 70 28 84 53 78 Z',
-          'M 53 72 C 26 62 8 54 8 60 C 12 68 30 78 53 78 Z',
-        )}
-        {leafBlob(
-          'M 55 72 C 84 58 108 46 108 56 C 104 70 82 86 55 78 Z',
-          'M 55 72 C 80 62 102 54 100 60 C 96 68 78 80 55 78 Z',
-        )}
-        {/* 中段 */}
-        {leafBlob(
-          'M 52 48 C 30 38 18 24 24 18 C 40 18 56 30 58 46 Z',
-          'M 52 48 C 34 40 24 30 30 26 C 42 26 54 36 58 46 Z',
-        )}
-        {leafBlob(
-          'M 56 48 C 78 38 90 24 84 18 C 68 18 56 30 56 46 Z',
-          'M 56 48 C 74 40 84 30 78 26 C 66 26 56 36 56 46 Z',
-        )}
-        {/* 上 */}
-        {leafBlob(
-          'M 48 30 C 38 20 40 6 48 0 C 56 6 58 18 54 30 Z',
-          'M 49 28 C 44 22 46 12 50 8 C 54 12 55 20 53 28 Z',
-          C.leafLight,
-        )}
-        {leafBlob(
-          'M 58 30 C 68 20 66 6 58 0 C 50 6 50 18 54 30 Z',
-          'M 57 28 C 62 22 60 12 56 8 C 52 12 51 20 53 28 Z',
-          C.leafLight,
-        )}
-      </g>
-    );
-  }
-  if (stage === 4) {
-    // 苗木 — 塗りつぶしの幹 + 大きな葉ブロブ
-    return (
-      <g>
-        {/* 幹 — 塗りつぶしテーパー */}
-        {trunkShape('M 50 98 C 49 78 53 56 55 30 C 57 56 59 78 58 98 Z')}
-        {trunkShape('M 50 98 C 49 78 53 56 54 30 C 55 56 55 78 53 98 Z', C.trunkShade)}
-        {/* 枝 */}
-        {trunkShape('M 54 64 C 38 56 22 48 16 52 C 26 56 38 62 54 68 Z')}
-        {trunkShape('M 54 56 C 70 48 88 38 96 44 C 84 50 68 56 54 60 Z')}
-        {/* 大きな葉ブロブ — 左下 */}
-        {leafBlob(
-          'M 22 56 C 0 50 -8 36 0 28 C 16 24 36 36 38 56 Z',
-          'M 22 56 C 6 50 4 40 8 36 C 22 34 34 42 38 56 Z',
-        )}
-        {/* 右下 */}
-        {leafBlob(
-          'M 86 48 C 110 44 122 30 116 22 C 100 20 80 34 76 48 Z',
-          'M 86 48 C 102 44 110 36 106 32 C 92 32 82 40 76 48 Z',
-        )}
-        {/* 上中央 */}
-        {leafBlob(
-          'M 36 28 C 18 18 22 0 36 -2 C 56 0 64 22 56 32 Z',
-          'M 36 28 C 24 22 26 10 36 8 C 50 10 56 22 56 32 Z',
-        )}
-        {leafBlob(
-          'M 74 24 C 92 16 90 -2 74 -2 C 56 0 50 18 56 30 Z',
-          'M 72 24 C 84 18 82 6 72 6 C 60 8 56 18 56 30 Z',
-        )}
-        {/* てっぺん */}
-        {leafBlob(
-          'M 46 8 C 42 -4 50 -16 56 -16 C 64 -16 70 0 64 12 Z',
-          'M 48 6 C 46 -2 52 -10 56 -10 C 60 -10 64 -2 62 8 Z',
-          C.leafLight,
-        )}
-      </g>
-    );
-  }
-  if (stage === 5) {
-    // 若木に花
-    return (
-      <g>
-        {trunkShape('M 48 98 C 47 76 53 50 56 20 C 59 50 61 76 60 98 Z')}
-        {trunkShape('M 48 98 C 48 76 53 50 55 20 C 56 50 56 76 53 98 Z', C.trunkShade)}
-        {trunkShape('M 56 60 C 36 50 16 38 8 44 C 22 50 38 58 56 64 Z')}
-        {trunkShape('M 56 50 C 74 38 92 24 102 30 C 88 38 70 48 56 54 Z')}
-        {trunkShape('M 56 30 C 50 20 46 8 50 0 C 56 6 58 18 58 30 Z')}
-        {/* 葉ブロブ */}
-        {leafBlob(
-          'M 14 48 C -8 42 -16 26 -6 18 C 14 14 38 28 40 50 Z',
-          'M 14 48 C 0 42 -4 32 0 28 C 16 24 30 34 40 50 Z',
-        )}
-        {leafBlob(
-          'M 96 36 C 122 32 134 14 124 6 C 104 4 80 22 78 38 Z',
-          'M 96 36 C 112 32 120 22 114 18 C 98 18 86 28 78 38 Z',
-        )}
-        {leafBlob(
-          'M 30 14 C 8 4 14 -16 32 -16 C 56 -14 64 8 56 22 Z',
-          'M 30 14 C 16 6 20 -6 32 -6 C 50 -4 56 8 56 22 Z',
-        )}
-        {leafBlob(
-          'M 82 8 C 102 -4 96 -22 78 -20 C 56 -16 50 4 56 22 Z',
-          'M 80 8 C 92 -2 88 -12 78 -12 C 62 -10 56 6 56 22 Z',
-        )}
-        {leafBlob(
-          'M 42 -4 C 38 -18 48 -32 56 -32 C 64 -32 72 -18 68 -4 C 60 4 50 4 42 -4 Z',
-          'M 44 -6 C 42 -16 50 -24 56 -24 C 62 -24 68 -16 66 -6 C 60 -2 52 -2 44 -6 Z',
-          C.leafLight,
-        )}
-        {renderFlowers([[6, 44], [104, 32], [30, 6], [80, 0], [56, -24]])}
-      </g>
-    );
-  }
-  // Stage 6 — 大樹
-  return (
-    <g>
-      {trunkShape('M 46 98 C 45 70 53 40 58 4 C 63 40 65 70 62 98 Z')}
-      {trunkShape('M 46 98 C 46 70 53 40 56 4 C 58 40 58 70 53 98 Z', C.trunkShade)}
-      {trunkShape('M 56 60 C 32 48 8 32 -4 38 C 18 48 38 56 56 64 Z')}
-      {trunkShape('M 58 48 C 80 32 104 16 116 22 C 96 34 76 44 58 54 Z')}
-      {trunkShape('M 56 28 C 48 14 44 -4 50 -16 C 58 -6 62 10 60 30 Z')}
-      {trunkShape('M 58 22 C 70 4 84 -16 90 -8 C 80 6 70 18 60 32 Z')}
-      {/* 大きな葉ブロブ */}
-      {leafBlob(
-        'M 4 44 C -22 38 -28 20 -16 10 C 8 4 36 22 40 48 Z',
-        'M 4 44 C -10 40 -14 28 -8 22 C 10 16 28 28 40 48 Z',
-      )}
-      {leafBlob(
-        'M 110 30 C 138 26 146 6 132 -4 C 110 -4 80 16 78 36 Z',
-        'M 110 30 C 128 28 132 14 124 8 C 108 8 88 22 78 36 Z',
-      )}
-      {leafBlob(
-        'M 18 -4 C -6 -12 -2 -34 22 -36 C 50 -34 66 -10 56 8 Z',
-        'M 18 -4 C 2 -10 4 -22 22 -24 C 44 -22 56 -8 56 8 Z',
-      )}
-      {leafBlob(
-        'M 90 -10 C 116 -22 110 -42 86 -42 C 60 -38 50 -14 56 8 Z',
-        'M 90 -10 C 104 -18 100 -30 86 -30 C 66 -28 54 -14 56 8 Z',
-      )}
-      {leafBlob(
-        'M 38 -22 C 26 -38 38 -56 56 -56 C 74 -56 86 -38 74 -22 C 60 -14 50 -14 38 -22 Z',
-        'M 40 -24 C 32 -34 42 -46 56 -46 C 70 -46 80 -34 72 -24 C 62 -18 52 -18 40 -24 Z',
-        C.leafLight,
-      )}
-      {leafBlob(
-        'M 36 22 C 20 14 14 -2 28 -8 C 46 -6 56 8 56 22 Z',
-        'M 36 22 C 24 14 22 4 32 0 C 46 2 54 12 56 22 Z',
-      )}
-      {leafBlob(
-        'M 76 18 C 92 8 96 -8 84 -10 C 66 -6 56 8 56 22 Z',
-        'M 76 18 C 86 10 88 0 80 -2 C 66 0 58 10 56 22 Z',
-      )}
-      {renderFlowers([
-        [-8, 40], [122, 24], [16, -16], [94, -22], [54, -50],
-        [36, 10], [80, 6], [26, -32], [88, -34],
-      ])}
-    </g>
-  );
-}
-
-/** 花 — 控えめな3層 */
-function renderFlowers(positions: Array<[number, number]>): React.ReactElement {
-  return (
-    <g>
-      {positions.map(([cx, cy], i) => (
-        <g key={i}>
-          <circle cx={cx} cy={cy} r="2.4" fill={C.flower} />
-          <circle cx={cx} cy={cy} r="1" fill={C.flowerCenter} />
-          <circle cx={cx} cy={cy} r="0.4" fill={C.flowerHeart} />
-        </g>
-      ))}
-    </g>
-  );
-}
-
-/** ステージごとの鳥・卵・巣 */
-function renderBirdScene(stage: number): React.ReactElement {
-  if (stage === 0) {
-    // 参考SVG verbatim — 巣の中の卵
-    return (
-      <g>
-        <path d="M 98 96 C 102 88 106 84 112 84 C 118 84 122 88 126 96" stroke={C.trunkSoft} strokeWidth="1.8" fill="none" strokeLinecap="round" />
-        <path d="M 100 97 C 104 91 108 88 112 88 C 116 88 120 91 124 97" stroke={C.trunkLight} strokeWidth="1.3" fill="none" strokeLinecap="round" />
-        <path d="M 98 96 C 100 99 106 102 112 102 C 118 102 124 99 126 96" stroke={C.trunkSoft} strokeWidth="2" fill="none" strokeLinecap="round" />
-        <path d="M 112 78 C 119 78 124 83 124 91 C 124 97 120 101 112 101 C 104 101 100 97 100 91 C 100 83 105 78 112 78 Z" fill={C.eggShell} />
-        <path d="M 109 80 C 114 79 118 82 120 87 C 121 90 119 94 116 95 C 113 96 110 94 109 90 C 108 86 108 82 109 80 Z" fill={C.eggShine} opacity="0.5" />
-        <circle cx="106" cy="86" r="0.8" fill={C.eggSpec1} opacity="0.35" />
-        <circle cx="117" cy="84" r="0.55" fill={C.eggSpec2} opacity="0.3" />
-        <circle cx="119" cy="90" r="0.7" fill={C.eggSpec1} opacity="0.25" />
-        <circle cx="107" cy="92" r="0.6" fill={C.eggSpec2} opacity="0.2" />
-      </g>
-    );
-  }
-  if (stage === 1) {
-    // 卵にひび（中は見せない）
-    return (
-      <g>
-        <path d="M 98 96 C 102 88 106 84 112 84 C 118 84 122 88 126 96" stroke={C.trunkSoft} strokeWidth="1.8" fill="none" strokeLinecap="round" />
-        <path d="M 100 97 C 104 91 108 88 112 88 C 116 88 120 91 124 97" stroke={C.trunkLight} strokeWidth="1.3" fill="none" strokeLinecap="round" />
-        <path d="M 98 96 C 100 99 106 102 112 102 C 118 102 124 99 126 96" stroke={C.trunkSoft} strokeWidth="2" fill="none" strokeLinecap="round" />
-        {/* 上半分 — 少しずれる */}
-        <path d="M 110 78 C 117 78 122 83 122 88 L 102 87 C 102 83 105 78 110 78 Z" fill={C.eggShell} transform="rotate(-8 112 85)" />
-        {/* 下半分 */}
-        <path d="M 112 88 C 119 88 124 90 124 91 C 124 97 120 101 112 101 C 104 101 100 97 100 91 C 100 90 105 88 112 88 Z" fill={C.eggShell} />
-        {/* ひび — ジグザグ */}
-        <path d="M 100 90 L 103 91 L 106 87 L 109 90 L 112 86 L 115 89 L 118 87 L 121 90 L 124 89" stroke={C.eggSpec1} strokeWidth="0.6" fill="none" strokeLinecap="round" />
-        <circle cx="107" cy="92" r="0.6" fill={C.eggSpec2} opacity="0.25" />
-        <circle cx="117" cy="96" r="0.7" fill={C.eggSpec1} opacity="0.25" />
-      </g>
-    );
-  }
-  if (stage === 2) {
-    // 卵殻のかけら + ひよこシルエット
-    return (
-      <g>
-        {/* 卵殻のかけら（2片） */}
-        <path d="M 96 102 C 98 96 103 96 105 100 L 96 102 Z" fill={C.eggShell} />
-        <path d="M 124 100 C 122 95 128 95 130 100 L 124 100 Z" fill={C.eggShell} />
-        {/* ひよこ — シンプルなシルエット */}
-        {bird(112, 94, 1.1)}
-      </g>
-    );
-  }
-  if (stage === 3) {
-    // 鳥 — もう少しおとな
-    return <g>{bird(112, 86, 1.15)}</g>;
-  }
-  if (stage === 4) {
-    // 枝の上の鳥
-    return <g>{bird(110, 72, 1.15)}</g>;
-  }
-  if (stage === 5) {
-    // 巣 + 親鳥
-    return (
-      <g>
-        <path d="M 96 58 C 100 50 106 46 112 46 C 118 46 124 50 128 58" stroke={C.trunkSoft} strokeWidth="1.8" fill="none" strokeLinecap="round" />
-        <path d="M 98 59 C 102 53 108 50 112 50 C 116 50 122 53 126 59" stroke={C.trunkLight} strokeWidth="1.3" fill="none" strokeLinecap="round" />
-        <path d="M 96 58 C 98 62 104 65 112 65 C 120 65 126 62 128 58" stroke={C.trunkSoft} strokeWidth="2" fill="none" strokeLinecap="round" />
-        {bird(128, 46, 1.05, 'left')}
-        {/* 巣に運ぶ小枝 */}
-        <path d="M 116 44 L 122 42" stroke={C.trunk} strokeWidth="1" strokeLinecap="round" />
-      </g>
-    );
-  }
-  // Stage 6 — 巣に家族
-  return (
-    <g>
-      {/* 巣 */}
-      <path d="M 92 46 C 98 36 108 32 114 32 C 120 32 132 36 138 46" stroke={C.trunkSoft} strokeWidth="2" fill="none" strokeLinecap="round" />
-      <path d="M 95 48 C 100 40 108 36 114 36 C 120 36 128 40 135 48" stroke={C.trunkLight} strokeWidth="1.4" fill="none" strokeLinecap="round" />
-      <path d="M 92 46 C 94 51 102 55 114 55 C 126 55 136 51 138 46" stroke={C.trunkSoft} strokeWidth="2.2" fill="none" strokeLinecap="round" />
-      <g stroke={C.trunkSoft} strokeWidth="0.7" fill="none" strokeLinecap="round" opacity="0.45">
-        <path d="M 98 46 C 104 48 112 46 117 48" />
-        <path d="M 112 44 C 119 46 126 44 132 46" />
-      </g>
-      {/* 親鳥 */}
-      {bird(138, 36, 1.1, 'left')}
-      {/* 雛 — 簡略 */}
-      {[100, 110, 120].map((x, i) => (
-        <g key={i} transform={`translate(${x} 44)`}>
-          <ellipse cx="0" cy="0" rx="4" ry="3.4" fill={C.bird} />
-          <circle cx="-1.5" cy="-1" r="0.7" fill={C.eye} />
-          <polygon points="3,0 5,1 3,2" fill={C.beak} />
-        </g>
-      ))}
+    <g key={`bird-${cx}-${cy}`} transform={facing === 'left' ? `translate(${cx * 2} 0) scale(-1 1)` : undefined}>
+      <ellipse cx={cx} cy={cy} rx="7" ry="5.5" fill={C.birdBase} />
+      <ellipse cx={cx - 1} cy={cy + 1.5} rx="5.5" ry="2.5" fill={C.birdBelly} opacity="0.85" />
+      <circle cx={cx + 4} cy={cy - 3} r="4.5" fill={C.birdMid} />
+      <circle cx={cx + 5} cy={cy - 3.5} r="0.9" fill={C.eye} />
+      <circle cx={cx + 5} cy={cy - 3.8} r="0.3" fill={C.eyeShine} />
+      <path d={`M ${cx + 8} ${cy - 3} L ${cx + 11} ${cy - 2.5} L ${cx + 8} ${cy - 2} Z`} fill={C.beak} />
+      <path d={`M ${cx - 7} ${cy + 1} L ${cx - 11} ${cy} L ${cx - 8} ${cy + 4} Z`} fill={C.birdBase} />
     </g>
   );
 }
