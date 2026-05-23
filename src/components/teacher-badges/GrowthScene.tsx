@@ -627,7 +627,6 @@ function flower(cx: number, cy: number): React.ReactElement {
 
 /** 小型の成鳥 */
 function smallBird(cx: number, cy: number, facing: 'left' | 'right'): React.ReactElement {
-  const dir = facing === 'right' ? 1 : -1;
   return (
     <g key={`bird-${cx}-${cy}`} transform={facing === 'left' ? `translate(${cx * 2} 0) scale(-1 1)` : undefined}>
       <ellipse cx={cx} cy={cy} rx="7" ry="5.5" fill={C.birdBase} />
