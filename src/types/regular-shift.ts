@@ -54,6 +54,8 @@ export interface RegularShiftSubmission {
   allow_edit: boolean;
   edit_token: string;
   seat_chart_entered: boolean;
+  /** 紐づけ済みアカウント (user_profiles.id)。未紐づけは null */
+  user_id?: string | null;
   created_at: string;
   updated_at: string;
 }

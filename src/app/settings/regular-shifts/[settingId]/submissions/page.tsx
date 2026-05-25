@@ -18,6 +18,7 @@ import {
   resendRegularShiftEditEmail,
   deleteRegularShiftSubmission,
   toggleRegularShiftSeatChartEntered,
+  updateRegularShiftSubmissionUserId,
 } from '@/lib/api/regular-shift';
 import type {
   RegularShiftSetting,
@@ -29,6 +30,9 @@ import { RegularSubmissionDetailMatrix } from '@/components/regular-shift/Regula
 import { RegularOperationsDashboard } from '@/components/regular-shift/RegularOperationsDashboard';
 import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
+import { SubmissionAccountLinkCell } from '@/components/shift-link/SubmissionAccountLinkCell';
+import { UnsubmittedTeachersSection } from '@/components/shift-link/UnsubmittedTeachersSection';
+import { getSchoolTeacherAccounts, type SchoolTeacherAccount } from '@/lib/api/school-teachers';
 
 export default function RegularShiftSubmissionsPage() {
   const params = useParams();
@@ -47,6 +51,9 @@ export default function RegularShiftSubmissionsPage() {
   const [allowingId, setAllowingId] = useState<string | null>(null);
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [linkingId, setLinkingId] = useState<string | null>(null);
+  const [teacherAccounts, setTeacherAccounts] = useState<SchoolTeacherAccount[]>([]);
+  const [teachersLoading, setTeachersLoading] = useState(true);
   const [detailSubmission, setDetailSubmission] = useState<{
     id: string;
     teacher_name: string;
@@ -76,6 +83,20 @@ export default function RegularShiftSubmissionsPage() {
       setAttendanceCounts(counts);
       setSlotSettings(slots);
       setTeacherSlotCounts(teachers);
+
+      // 設定に対応する教室の講師アカウント一覧（紐づけドロップダウン用）を取得
+      if (s?.school_id) {
+        setTeachersLoading(true);
+        try {
+          const accounts = await getSchoolTeacherAccounts(s.school_id);
+          setTeacherAccounts(accounts);
+        } catch (e) {
+          console.warn('Failed to fetch teacher accounts:', e);
+          setTeacherAccounts([]);
+        } finally {
+          setTeachersLoading(false);
+        }
+      }
     } catch (err) {
       console.error(err);
       error(err instanceof Error ? err.message : '取得に失敗しました');
@@ -87,6 +108,27 @@ export default function RegularShiftSubmissionsPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  /** 提出への講師アカウント紐づけを更新 */
+  const handleLinkAccount = async (submissionId: string, userId: string | null) => {
+    setLinkingId(submissionId);
+    try {
+      await updateRegularShiftSubmissionUserId(submissionId, userId);
+      setSubmissions((prev) =>
+        prev.map((s) => (s.id === submissionId ? { ...s, user_id: userId } : s))
+      );
+      success(userId ? 'アカウントを紐づけました' : 'アカウント紐づけを解除しました');
+    } catch (err) {
+      error(err instanceof Error ? err.message : 'アカウント紐づけに失敗しました');
+    } finally {
+      setLinkingId(null);
+    }
+  };
+
+  // 既に他の提出に紐づいているアカウントを候補から除外するための集合
+  const linkedUserIdSet = new Set(
+    submissions.map((s) => s.user_id).filter((id): id is string => !!id)
+  );
 
   const handleDelete = async (sub: RegularShiftSubmission) => {
     if (!(await confirm({ title: '削除確認', description: `${sub.teacher_name} さんの提出を削除しますか？\nこの操作は取り消せません。`, confirmLabel: '削除', variant: 'danger' }))) return;
@@ -217,6 +259,15 @@ export default function RegularShiftSubmissionsPage() {
           </div>
         )}
 
+        {/* 未提出講師セクション（アカウント紐づけベース） */}
+        {setting && (
+          <UnsubmittedTeachersSection
+            teacherAccounts={teacherAccounts}
+            submittedUserIds={linkedUserIdSet}
+            isLoading={teachersLoading}
+          />
+        )}
+
         {isLoading ? (
           <Loading size="md" />
         ) : submissions.length === 0 ? (
@@ -230,6 +281,7 @@ export default function RegularShiftSubmissionsPage() {
                 <tr className="bg-surface-hover border-infoorderorder border-border">
                   <th className="px-4 py-3 text-left font-semibold text-text-heading">講師名</th>
                   <th className="px-4 py-3 text-left font-semibold text-text-heading">メール</th>
+                  <th className="px-4 py-3 text-left font-semibold text-text-heading">アカウント</th>
                   <th className="px-4 py-3 text-left font-semibold text-text-heading">提出日時</th>
                   <th className="px-4 py-3 text-text-dangeraintenter font-semibold text-text-heading">修正許可</th>
                   <th className="px-4 py-3 text-text-dangeraintenter font-semibold text-text-heading">座席表反映</th>
@@ -241,6 +293,17 @@ export default function RegularShiftSubmissionsPage() {
                   <tr key={sub.id} className="border-infoorderorder border-border/60 hover:bg-surface transition-colors duration-150">
                     <td className="px-4 py-3 font-medium text-text-heading">{sub.teacher_name}</td>
                     <td className="px-4 py-3 text-text-body">{sub.teacher_email}</td>
+                    <td className="px-4 py-3">
+                      <SubmissionAccountLinkCell
+                        userId={sub.user_id}
+                        // 自分が今紐づいているものは候補に残す。他の提出に紐づき済みのアカウントは除外。
+                        teacherAccounts={teacherAccounts.filter(
+                          (a) => a.id === sub.user_id || !linkedUserIdSet.has(a.id)
+                        )}
+                        isUpdating={linkingId === sub.id}
+                        onChange={(uid) => handleLinkAccount(sub.id, uid)}
+                      />
+                    </td>
                     <td className="px-4 py-3 text-text-body">{formatDate(sub.submitted_at)}</td>
                     <td className="px-4 py-3 text-text-dangeraintenter">
                       {sub.allow_edit ? (

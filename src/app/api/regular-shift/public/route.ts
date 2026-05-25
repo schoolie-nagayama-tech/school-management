@@ -123,6 +123,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // メールが既存講師アカウントと一致したら自動で user_id をセット
+    // （正規化済みの小文字メールで照合。大文字小文字違いの取り違えを防ぐ）
+    const { data: matchedProfile } = await supabaseAdmin
+      .from('user_profiles')
+      .select('id')
+      .ilike('email', teacherEmail)
+      .eq('is_active', true)
+      .maybeSingle();
+    const linkedUserId = matchedProfile?.id ?? null;
+
     // Insert submission
     const { data: submission, error: submissionError } = await supabaseAdmin
       .from('regular_shift_submissions')
@@ -132,6 +142,7 @@ export async function POST(request: NextRequest) {
         teacher_name: teacherName,
         teacher_email: teacherEmail,
         notes,
+        user_id: linkedUserId,
       })
       .select('*')
       .single();

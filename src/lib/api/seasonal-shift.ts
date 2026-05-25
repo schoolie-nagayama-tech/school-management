@@ -292,6 +292,27 @@ export async function updateSeasonalShiftSeatChartEntered(
   if (error) throw new Error(`Failed to update seat chart: ${error.message}`);
 }
 
+/**
+ * 提出に対する講師アカウント紐づけを更新する（管理者用、ログイン必須）。
+ * - userId に null を渡すと紐づけを解除
+ * - 部分ユニーク制約 (setting_id, user_id) で同一設定への重複紐づけを防ぐ
+ */
+export async function updateSeasonalShiftSubmissionUserId(
+  submissionId: string,
+  userId: string | null
+): Promise<void> {
+  const { error } = await supabase
+    .from('seasonal_shift_submissions')
+    .update({ user_id: userId, updated_at: new Date().toISOString() })
+    .eq('id', submissionId);
+  if (error) {
+    if (error.code === '23505') {
+      throw new Error('このアカウントは既に他の提出と紐づいています');
+    }
+    throw new Error(`アカウント紐づけの更新に失敗しました: ${error.message}`);
+  }
+}
+
 /** Delete submission (slots are cascade deleted) */
 export async function deleteSeasonalShiftSubmission(submissionId: string): Promise<void> {
   const { error } = await supabase
