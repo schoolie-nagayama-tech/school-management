@@ -58,6 +58,15 @@ export type Database = {
           subject_other: string | null;
           is_programming: boolean;
           is_sibling: boolean;
+          /** 退塾予定日 'YYYY-MM-DD'。この日以降は座席表生成・5週目計算から除外。NULLは在籍中 */
+          withdrawal_date: string | null;
+          // 講師希望（マッチング/手動配置のフィルタ用）
+          /** 希望講師性別。NULL=指定なし、'male'|'female' */
+          preferred_teacher_gender: 'male' | 'female' | null;
+          /** 担当固定講師IDの配列。マッチングで優先 */
+          fixed_teacher_ids: string[];
+          /** 指名NG講師IDの配列。マッチングで除外 */
+          excluded_teacher_ids: string[];
           deleted_at: string | null;
           created_at: string;
           updated_at: string;
@@ -78,6 +87,10 @@ export type Database = {
           subject_other?: string | null;
           is_programming?: boolean;
           is_sibling?: boolean;
+          withdrawal_date?: string | null;
+          preferred_teacher_gender?: 'male' | 'female' | null;
+          fixed_teacher_ids?: string[];
+          excluded_teacher_ids?: string[];
           deleted_at?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -98,6 +111,10 @@ export type Database = {
           subject_other?: string | null;
           is_programming?: boolean;
           is_sibling?: boolean;
+          withdrawal_date?: string | null;
+          preferred_teacher_gender?: 'male' | 'female' | null;
+          fixed_teacher_ids?: string[];
+          excluded_teacher_ids?: string[];
           deleted_at?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -872,6 +889,8 @@ export type Database = {
           available_slot_numbers_by_day?: Record<string, number[]> | null;
           default_school_id?: string | null;
           exit_date?: string | null;
+          /** 性別。NULL=未設定。生徒の「女性講師希望」マッチングなどで参照する */
+          gender?: 'male' | 'female' | 'other' | null;
         };
         Insert: {
           id?: string;
@@ -889,6 +908,7 @@ export type Database = {
           available_slot_numbers_by_day?: Record<string, number[]> | null;
           default_school_id?: string | null;
           exit_date?: string | null;
+          gender?: 'male' | 'female' | 'other' | null;
         };
         Update: {
           id?: string;
@@ -906,6 +926,44 @@ export type Database = {
           available_slot_numbers_by_day?: Record<string, number[]> | null;
           default_school_id?: string | null;
           exit_date?: string | null;
+          gender?: 'male' | 'female' | 'other' | null;
+        };
+        Relationships: [];
+      };
+      school_class_capacity: {
+        Row: {
+          id: string;
+          school_id: string;
+          // 個別 1講師あたり生徒数（デフォルト2）
+          max_students_per_teacher_individual: number;
+          // 個別 教室全体の同時席数（デフォルト12）
+          total_individual_seats: number;
+          // 集団 1コマあたり生徒数（デフォルト8）
+          max_students_per_group: number;
+          // 集団 同時開催コマ数（デフォルト1）
+          max_concurrent_groups: number;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          max_students_per_teacher_individual?: number;
+          total_individual_seats?: number;
+          max_students_per_group?: number;
+          max_concurrent_groups?: number;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          max_students_per_teacher_individual?: number;
+          total_individual_seats?: number;
+          max_students_per_group?: number;
+          max_concurrent_groups?: number;
+          created_at?: string | null;
+          updated_at?: string | null;
         };
         Relationships: [];
       };
@@ -1353,6 +1411,8 @@ export type Database = {
           end_time: string;
           is_active: boolean;
           display_order: number;
+          // 個別/集団でコマ時間を別建てにするためのフラグ
+          formation: 'individual' | 'group';
           created_at: string | null;
           updated_at: string | null;
         };
@@ -1364,6 +1424,7 @@ export type Database = {
           end_time: string;
           is_active?: boolean;
           display_order?: number;
+          formation?: 'individual' | 'group';
           created_at?: string | null;
           updated_at?: string | null;
         };
@@ -1375,6 +1436,7 @@ export type Database = {
           end_time?: string;
           is_active?: boolean;
           display_order?: number;
+          formation?: 'individual' | 'group';
           created_at?: string | null;
           updated_at?: string | null;
         };
@@ -1419,6 +1481,12 @@ export type Database = {
           seat_label: string | null;
           period_type: string;
           is_active: boolean;
+          /** 適用開始日 'YYYY-MM-DD'。NOT NULL（default '2020-01-01'） */
+          effective_from: string;
+          /** 適用終了日 'YYYY-MM-DD' or null。NULLは無期限 */
+          effective_until: string | null;
+          // 形態: schedule_entries.formation に引き継がれる
+          formation: 'individual' | 'group';
           created_at: string | null;
           updated_at: string | null;
         };
@@ -1433,6 +1501,9 @@ export type Database = {
           seat_label?: string | null;
           period_type?: string;
           is_active?: boolean;
+          effective_from?: string;
+          effective_until?: string | null;
+          formation?: 'individual' | 'group';
           created_at?: string | null;
           updated_at?: string | null;
         };
@@ -1447,6 +1518,9 @@ export type Database = {
           seat_label?: string | null;
           period_type?: string;
           is_active?: boolean;
+          effective_from?: string;
+          effective_until?: string | null;
+          formation?: 'individual' | 'group';
           created_at?: string | null;
           updated_at?: string | null;
         };
@@ -1463,6 +1537,10 @@ export type Database = {
           subject_ids: string[];
           seat_label: string | null;
           regular_pattern_id: string | null;
+          // 種別: 通常授業=regular / 講習=koushu
+          kind: 'regular' | 'koushu';
+          // 形態: 個別=individual / 集団=group
+          formation: 'individual' | 'group';
           status: 'scheduled' | 'completed' | 'cancelled' | 'transferred_out' | 'transferred_in';
           attendance_status: string | null;
           attendance_recorded_at: string | null;
@@ -1470,6 +1548,8 @@ export type Database = {
           note: string | null;
           transfer_from_id: string | null;
           transfer_to_id: string | null;
+          // 振替期限。transferred_out のエントリで「元授業日の翌月末日」がセットされる
+          transfer_deadline: string | null;
           created_at: string | null;
           updated_at: string | null;
         };
@@ -1483,6 +1563,10 @@ export type Database = {
           subject_ids?: string[];
           seat_label?: string | null;
           regular_pattern_id?: string | null;
+          // 未指定時は regular（DBデフォルト）
+          kind?: 'regular' | 'koushu';
+          // 未指定時は individual（DBデフォルト）
+          formation?: 'individual' | 'group';
           status?: 'scheduled' | 'completed' | 'cancelled' | 'transferred_out' | 'transferred_in';
           attendance_status?: string | null;
           attendance_recorded_at?: string | null;
@@ -1490,6 +1574,7 @@ export type Database = {
           note?: string | null;
           transfer_from_id?: string | null;
           transfer_to_id?: string | null;
+          transfer_deadline?: string | null;
           created_at?: string | null;
           updated_at?: string | null;
         };
@@ -1503,6 +1588,8 @@ export type Database = {
           subject_ids?: string[];
           seat_label?: string | null;
           regular_pattern_id?: string | null;
+          kind?: 'regular' | 'koushu';
+          formation?: 'individual' | 'group';
           status?: 'scheduled' | 'completed' | 'cancelled' | 'transferred_out' | 'transferred_in';
           attendance_status?: string | null;
           attendance_recorded_at?: string | null;
@@ -1510,6 +1597,7 @@ export type Database = {
           note?: string | null;
           transfer_from_id?: string | null;
           transfer_to_id?: string | null;
+          transfer_deadline?: string | null;
           created_at?: string | null;
           updated_at?: string | null;
         };

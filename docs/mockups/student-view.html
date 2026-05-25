@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>生徒/保護者ビュー モック</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif; background: #f5f6f8; color: #1f2328; font-size: 14px; padding: 20px; }
+  .app { max-width: 880px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); overflow: hidden; }
+
+  .hero { padding: 24px; background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: white; }
+  .hero .label { font-size: 11px; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px; }
+  .hero h1 { font-size: 26px; font-weight: 700; margin-top: 4px; }
+  .hero .meta { font-size: 13px; margin-top: 8px; opacity: 0.9; display: flex; gap: 14px; flex-wrap: wrap; }
+  .hero .meta span { display: flex; align-items: center; gap: 4px; }
+  .hero .meta strong { font-weight: 600; }
+  .hero .badge { display: inline-block; padding: 3px 8px; background: rgba(255,255,255,0.2); border-radius: 4px; font-size: 11px; }
+
+  .tabs { display: flex; border-bottom: 1px solid #e5e7eb; background: white; padding: 0 24px; }
+  .tab { padding: 14px 16px; font-size: 13px; cursor: pointer; color: #6b7280; border-bottom: 2px solid transparent; font-weight: 500; }
+  .tab.active { color: #4f46e5; border-bottom-color: #4f46e5; font-weight: 600; }
+
+  .section { padding: 20px 24px; border-bottom: 1px solid #f3f4f6; }
+  .section h2 { font-size: 13px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .section h2 .count { background: #eef2ff; color: #4f46e5; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+
+  /* Week navigator */
+  .week-nav { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+  .week-nav button { padding: 6px 10px; border: 1px solid #d1d5db; background: white; border-radius: 6px; cursor: pointer; font-size: 12px; }
+  .week-nav .week-label { font-weight: 600; font-size: 14px; }
+  .week-nav select { padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px; }
+
+  /* Schedule list */
+  .day-block { margin-bottom: 16px; }
+  .day-block .day-label { font-size: 12px; font-weight: 600; color: #6b7280; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid #f3f4f6; }
+  .day-block .day-label.today { color: #4f46e5; }
+  .day-block .day-label .date { font-size: 16px; font-weight: 700; color: #1f2328; margin-right: 6px; }
+  .day-block .day-label .today-pill { background: #4f46e5; color: white; padding: 1px 8px; border-radius: 10px; font-size: 10px; margin-left: 8px; }
+
+  .lesson-card {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    overflow: hidden;
+    background: white;
+  }
+  .lesson-card .time-strip {
+    width: 80px;
+    padding: 10px 8px;
+    background: #f9fafb;
+    text-align: center;
+    border-right: 1px solid #e5e7eb;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .lesson-card .time-strip .period { font-size: 10px; color: #6b7280; font-weight: 600; }
+  .lesson-card .time-strip .start { font-size: 14px; font-weight: 700; color: #1f2328; }
+  .lesson-card .time-strip .end { font-size: 10px; color: #6b7280; }
+  .lesson-card .body { flex: 1; padding: 10px 14px; }
+  .lesson-card .body .top { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .lesson-card .body .subject { font-size: 15px; font-weight: 700; }
+  .lesson-card .body .kind-tag { font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: 600; }
+  .lesson-card .body .kind-tag.regular { background: #dbeafe; color: #1e40af; }
+  .lesson-card .body .kind-tag.koushu { background: #fef3c7; color: #92400e; }
+  .lesson-card .body .kind-tag.group { background: #ede9fe; color: #5b21b6; }
+  .lesson-card .body .meta { font-size: 12px; color: #6b7280; display: flex; gap: 12px; flex-wrap: wrap; }
+  .lesson-card .body .meta span strong { color: #1f2328; font-weight: 600; }
+  .lesson-card .status {
+    width: 90px;
+    padding: 10px 8px;
+    border-left: 1px solid #e5e7eb;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 4px;
+  }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .status-dot.present { background: #16a34a; }
+  .status-dot.absent { background: #ef4444; }
+  .status-dot.late { background: #f59e0b; }
+  .status-dot.upcoming { background: #d1d5db; }
+  .status-text { font-size: 11px; font-weight: 600; }
+  .status-text.present { color: #166534; }
+  .status-text.absent { color: #991b1b; }
+  .status-text.late { color: #92400e; }
+  .status-text.upcoming { color: #6b7280; }
+  .has-report { font-size: 10px; color: #4f46e5; margin-top: 2px; cursor: pointer; text-decoration: underline; }
+
+  .lesson-card.transferred .body .subject::after { content: " (振替)"; color: #ea580c; font-size: 12px; font-weight: 500; }
+  .lesson-card.closed { opacity: 0.5; }
+  .lesson-card.canceled { background: #f9fafb; }
+  .lesson-card.canceled .body .subject { text-decoration: line-through; color: #9ca3af; }
+
+  /* Transfer notice */
+  .transfer-notice { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+  .transfer-notice .ic { width: 28px; height: 28px; background: #ea580c; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; flex-shrink: 0; }
+  .transfer-notice .text { flex: 1; font-size: 12px; color: #9a3412; }
+  .transfer-notice .text strong { display: block; font-size: 13px; margin-bottom: 2px; }
+  .transfer-notice .deadline { font-size: 11px; color: #ea580c; font-weight: 600; }
+
+  /* Report list */
+  .report-item { padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 8px; cursor: pointer; transition: all 0.1s; }
+  .report-item:hover { border-color: #4f46e5; background: #fafbff; }
+  .report-item .head { display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .report-item .title { font-size: 13px; font-weight: 600; }
+  .report-item .date { font-size: 11px; color: #6b7280; }
+  .report-item .preview { font-size: 12px; color: #6b7280; line-height: 1.5; }
+  .report-item .stats { margin-top: 6px; font-size: 11px; color: #6b7280; display: flex; gap: 12px; }
+  .report-item .stats span strong { color: #1f2328; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="label">通塾日程</div>
+    <h1>田中 太郎</h1>
+    <div class="meta">
+      <span><strong>中学2年生</strong></span>
+      <span>クラス: <strong>中2A</strong></span>
+      <span class="badge">通常週2 + 夏期講習 8コマ</span>
+      <span class="badge">担当: 山田T</span>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active">今週の予定</div>
+    <div class="tab">月間カレンダー</div>
+    <div class="tab">過去の授業報告</div>
+    <div class="tab">出欠履歴</div>
+  </div>
+
+  <!-- 振替通知 -->
+  <div class="section" style="padding-bottom: 0;">
+    <div class="transfer-notice">
+      <div class="ic">!</div>
+      <div class="text">
+        <strong>振替が確定しました</strong>
+        2026/7/15 (月) 19:30〜 数学 → <strong>2026/7/18 (木) 19:30〜</strong> に変更
+      </div>
+      <div class="deadline">期限: 2026/8/31</div>
+    </div>
+  </div>
+
+  <!-- Week navigator -->
+  <div class="section" style="padding-top: 16px;">
+    <div class="week-nav">
+      <button>&lsaquo;</button>
+      <span class="week-label">2026年 7月22日 (月) 〜 7月27日 (土)</span>
+      <button>&rsaquo;</button>
+      <select style="margin-left: auto;">
+        <option>2026年7月</option>
+        <option>2026年8月</option>
+      </select>
+    </div>
+
+    <!-- 月曜 -->
+    <div class="day-block">
+      <div class="day-label today">
+        <span class="date">7/22</span>(月) <span class="today-pill">今日</span>
+      </div>
+      <div class="lesson-card">
+        <div class="time-strip">
+          <div class="period">3限</div>
+          <div class="start">16:40</div>
+          <div class="end">- 18:10</div>
+        </div>
+        <div class="body">
+          <div class="top">
+            <span class="subject">英語</span>
+            <span class="kind-tag regular">通常</span>
+          </div>
+          <div class="meta">
+            <span>講師: <strong>山田T</strong></span>
+            <span>教材: <strong>NEW HORIZON 2 / p.42-45</strong></span>
+            <span>座席: <strong>B-3</strong></span>
+          </div>
+        </div>
+        <div class="status">
+          <span class="status-dot upcoming"></span>
+          <span class="status-text upcoming">予定</span>
+        </div>
+      </div>
+      <div class="lesson-card">
+        <div class="time-strip">
+          <div class="period">講習1</div>
+          <div class="start">19:30</div>
+          <div class="end">- 21:00</div>
+        </div>
+        <div class="body">
+          <div class="top">
+            <span class="subject">数学</span>
+            <span class="kind-tag koushu">夏期講習</span>
+          </div>
+          <div class="meta">
+            <span>講師: <strong>鈴木T</strong></span>
+            <span>単元: <strong>連立方程式</strong></span>
+            <span>座席: <strong>A-1</strong></span>
+          </div>
+        </div>
+        <div class="status">
+          <span class="status-dot upcoming"></span>
+          <span class="status-text upcoming">予定</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 火曜 -->
+    <div class="day-block">
+      <div class="day-label"><span class="date">7/23</span>(火)</div>
+      <div class="lesson-card">
+        <div class="time-strip">
+          <div class="period">講習1</div>
+          <div class="start">14:45</div>
+          <div class="end">- 16:15</div>
+        </div>
+        <div class="body">
+          <div class="top">
+            <span class="subject">英語</span>
+            <span class="kind-tag koushu">夏期講習</span>
+          </div>
+          <div class="meta">
+            <span>講師: <strong>佐藤T</strong></span>
+            <span>単元: <strong>不定詞</strong></span>
+            <span>座席: <strong>C-2</strong></span>
+          </div>
+        </div>
+        <div class="status">
+          <span class="status-dot upcoming"></span>
+          <span class="status-text upcoming">予定</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 水曜 -->
+    <div class="day-block">
+      <div class="day-label"><span class="date">7/24</span>(水)</div>
+      <div class="lesson-card">
+        <div class="time-strip">
+          <div class="period">集団1</div>
+          <div class="start">14:00</div>
+          <div class="end">- 15:30</div>
+        </div>
+        <div class="body">
+          <div class="top">
+            <span class="subject">中3 受験対策クラス</span>
+            <span class="kind-tag group">集団</span>
+          </div>
+          <div class="meta">
+            <span>講師: <strong>中村T</strong></span>
+            <span>参加: <strong>5名</strong></span>
+            <span>教室: <strong>大教室</strong></span>
+          </div>
+        </div>
+        <div class="status">
+          <span class="status-dot upcoming"></span>
+          <span class="status-text upcoming">予定</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 木曜 (振替コマ) -->
+    <div class="day-block">
+      <div class="day-label"><span class="date">7/25</span>(木)</div>
+      <div class="lesson-card transferred">
+        <div class="time-strip">
+          <div class="period">3限</div>
+          <div class="start">19:30</div>
+          <div class="end">- 21:00</div>
+        </div>
+        <div class="body">
+          <div class="top">
+            <span class="subject">数学</span>
+            <span class="kind-tag regular">通常</span>
+          </div>
+          <div class="meta">
+            <span>講師: <strong>山田T</strong></span>
+            <span>振替元: <strong>7/15 (月) 19:30</strong></span>
+            <span>座席: <strong>B-1</strong></span>
+          </div>
+        </div>
+        <div class="status">
+          <span class="status-dot upcoming"></span>
+          <span class="status-text upcoming">予定</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 金曜 -->
+    <div class="day-block">
+      <div class="day-label"><span class="date">7/26</span>(金)</div>
+      <div class="lesson-card">
+        <div class="time-strip">
+          <div class="period">講習2</div>
+          <div class="start">14:45</div>
+          <div class="end">- 16:15</div>
+        </div>
+        <div class="body">
+          <div class="top">
+            <span class="subject">数学</span>
+            <span class="kind-tag koushu">夏期講習</span>
+          </div>
+          <div class="meta">
+            <span>講師: <strong>鈴木T</strong></span>
+            <span>単元: <strong>関数の応用</strong></span>
+            <span>座席: <strong>A-2</strong></span>
+          </div>
+        </div>
+        <div class="status">
+          <span class="status-dot upcoming"></span>
+          <span class="status-text upcoming">予定</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 土曜 -->
+    <div class="day-block">
+      <div class="day-label"><span class="date">7/27</span>(土)</div>
+      <div class="lesson-card closed">
+        <div class="time-strip" style="background: #fef2f2;">
+          <div class="period">休講</div>
+        </div>
+        <div class="body" style="display: flex; align-items: center;">
+          <span style="color: #991b1b; font-weight: 600;">本日は休講日です</span>
+        </div>
+        <div class="status"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 過去の授業報告 (プレビュー) -->
+  <div class="section">
+    <h2>最近の授業報告 <span class="count">3</span></h2>
+
+    <div class="report-item">
+      <div class="head">
+        <div class="title">英語 / 山田T</div>
+        <div class="date">2026/7/15 (月) 3限</div>
+      </div>
+      <div class="preview">
+        単語テスト 18/20 合格。不定詞の用法に苦戦している場面があったが、最終的に...
+      </div>
+      <div class="stats">
+        <span>宿題実施 <strong>100%</strong></span>
+        <span>宿題正答率 <strong>85%</strong></span>
+        <span>確認テスト <strong>18/20</strong> 合格</span>
+      </div>
+    </div>
+
+    <div class="report-item">
+      <div class="head">
+        <div class="title">数学 / 鈴木T</div>
+        <div class="date">2026/7/12 (金) 4限</div>
+      </div>
+      <div class="preview">
+        連立方程式の文章題で計算ミスが目立った。次回までに...
+      </div>
+      <div class="stats">
+        <span>宿題実施 <strong>80%</strong></span>
+        <span>宿題正答率 <strong>72%</strong></span>
+        <span>本日正答率 <strong>65%</strong></span>
+      </div>
+    </div>
+
+    <div class="report-item">
+      <div class="head">
+        <div class="title">英語 / 山田T</div>
+        <div class="date">2026/7/8 (月) 3限</div>
+      </div>
+      <div class="preview">
+        新出単語の理解は良好。リスニングの練習を増やしていきたい...
+      </div>
+      <div class="stats">
+        <span>宿題実施 <strong>100%</strong></span>
+        <span>単語テスト <strong>20/20</strong> 合格</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -14,6 +14,7 @@ import {
   createRegularPattern,
   updateRegularPattern,
   regenerateCurrentWeekIfNeeded,
+  scheduleRegularPatternChangeFrom,
 } from '@/lib/api/schedule';
 import { DAY_OF_WEEK_LABELS, SCHEDULE_PERIOD_LABELS } from '@/types/schedule';
 import type {
@@ -39,6 +40,15 @@ function gradeToCategory(grade: number): 'elementary' | 'middle' | 'high' {
   if (grade <= 6) return 'elementary';
   if (grade <= 9) return 'middle';
   return 'high';
+}
+
+/** 翌月1日を YYYY-MM-DD で返す（「来月から変更」のデフォルト値） */
+function getNextMonthFirstDay(): string {
+  const d = new Date();
+  d.setMonth(d.getMonth() + 1, 1);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  return `${y}-${m}-01`;
 }
 
 export interface RegularScheduleFormModalProps {
@@ -73,6 +83,12 @@ export function RegularScheduleFormModal({
   const [teacherId, setTeacherId] = useState('');
   const [subjectIds, setSubjectIds] = useState<string[]>([]);
   const [periodType, setPeriodType] = useState<SchedulePeriodType>('regular');
+  // 適用開始モード: 'now' = 既存を即時上書き / 'future' = 指定日から（新パターン作成・旧パターンに終了日）
+  const [applyMode, setApplyMode] = useState<'now' | 'future'>('now');
+  // 適用開始日（future モード時。デフォルトは翌月1日）
+  const [effectiveFrom, setEffectiveFrom] = useState<string>(getNextMonthFirstDay());
+  // 終了日（任意。退塾・期間限定変更用）
+  const [effectiveUntil, setEffectiveUntil] = useState<string>('');
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -97,6 +113,9 @@ export function RegularScheduleFormModal({
       setTeacherId(pattern.teacher_id ?? '');
       setSubjectIds(pattern.subject_ids ?? []);
       setPeriodType(pattern.period_type ?? 'regular');
+      setApplyMode('now');
+      setEffectiveFrom(getNextMonthFirstDay());
+      setEffectiveUntil(pattern.effective_until ?? '');
     } else {
       setDayOfWeek(1);
       setTimeSlotId(timeSlots[0]?.id ?? '');
@@ -104,6 +123,9 @@ export function RegularScheduleFormModal({
       setSubjectIds(initSubs);
       setTeacherId('');
       setPeriodType('regular');
+      setApplyMode('now');
+      setEffectiveFrom(getNextMonthFirstDay());
+      setEffectiveUntil('');
     }
   }, [open, pattern, timeSlots, subjects, studentGrade]);
 
@@ -142,14 +164,26 @@ export function RegularScheduleFormModal({
         subject_ids: subjectIds,
         seat_label: '',
         period_type: periodType,
+        effective_until: effectiveUntil || null,
       };
       if (isEdit && pattern) {
-        await updateRegularPattern(pattern.id, form);
+        if (applyMode === 'future') {
+          // 「来月から」変更：旧パターンに終了日をセットし、新パターンを effective_from から開始
+          await scheduleRegularPatternChangeFrom(pattern.id, effectiveFrom, form, schoolId);
+        } else {
+          // 即時変更：既存行をそのまま更新（effective_until のみ変えたい場合もここで処理）
+          await updateRegularPattern(pattern.id, form);
+        }
         await regenerateCurrentWeekIfNeeded(schoolId, profile?.id);
         onSuccess();
         onClose();
       } else {
-        await createRegularPattern(schoolId, form);
+        // 新規追加：effective_from は applyMode によって今日 or 指定日
+        const createForm: ScheduleRegularPatternFormData = {
+          ...form,
+          effective_from: applyMode === 'future' ? effectiveFrom : undefined,
+        };
+        await createRegularPattern(schoolId, createForm);
         await regenerateCurrentWeekIfNeeded(schoolId, profile?.id);
         onSuccess();
         onClose();
@@ -277,6 +311,65 @@ export function RegularScheduleFormModal({
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* 適用範囲（バージョン管理）— 過去月の請求と整合を取るため、変更日を予約できる */}
+          <div className="border-t border-[var(--stroke)] pt-3 space-y-2">
+            <label className="block text-xs font-medium text-[var(--paragraph)]">
+              いつから適用
+            </label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setApplyMode('now')}
+                className={`flex-1 px-3 py-1.5 rounded text-sm border ${
+                  applyMode === 'now'
+                    ? 'bg-[#1e3a5f] text-white border-[#1e3a5f]'
+                    : 'bg-white border-[var(--stroke)] text-[var(--paragraph)] hover:bg-[var(--surface)]'
+                }`}
+              >
+                今すぐ反映
+              </button>
+              <button
+                type="button"
+                onClick={() => setApplyMode('future')}
+                className={`flex-1 px-3 py-1.5 rounded text-sm border ${
+                  applyMode === 'future'
+                    ? 'bg-[#1e3a5f] text-white border-[#1e3a5f]'
+                    : 'bg-white border-[var(--stroke)] text-[var(--paragraph)] hover:bg-[var(--surface)]'
+                }`}
+              >
+                指定日から
+              </button>
+            </div>
+            {applyMode === 'future' && (
+              <div>
+                <input
+                  type="date"
+                  value={effectiveFrom}
+                  onChange={(e) => setEffectiveFrom(e.target.value)}
+                  className="w-full px-3 py-2 border border-[var(--stroke)] rounded-md text-sm bg-white"
+                />
+                <p className="text-[11px] text-[var(--paragraph-light)] mt-1">
+                  {isEdit
+                    ? 'この日以降に新しい設定が適用され、これまでの設定はこの日の前日で終了します（過去月の請求計算に影響しません）'
+                    : 'この日から新しい通塾日程として登録されます'}
+                </p>
+              </div>
+            )}
+
+            <label className="block text-xs font-medium text-[var(--paragraph)] pt-2">
+              終了日（任意）
+            </label>
+            <input
+              type="date"
+              value={effectiveUntil}
+              onChange={(e) => setEffectiveUntil(e.target.value)}
+              className="w-full px-3 py-2 border border-[var(--stroke)] rounded-md text-sm bg-white"
+            />
+            <p className="text-[11px] text-[var(--paragraph-light)]">
+              退塾や期間限定の通塾の場合に指定。空欄なら無期限。
+            </p>
           </div>
 
           {errorMessage && (

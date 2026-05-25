@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>生徒/保護者 ダッシュボード v3</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif; background: #f5f6f8; color: #1f2328; font-size: 14px; padding: 20px; }
+  .app { max-width: 900px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); overflow: hidden; }
+
+  .hero { padding: 24px; background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: white; }
+  .hero .label { font-size: 11px; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px; }
+  .hero h1 { font-size: 26px; font-weight: 700; margin-top: 4px; }
+  .hero .meta { font-size: 13px; margin-top: 8px; opacity: 0.95; display: flex; gap: 14px; flex-wrap: wrap; }
+  .hero .meta strong { font-weight: 600; }
+  .hero .badge { display: inline-block; padding: 3px 8px; background: rgba(255,255,255,0.2); border-radius: 4px; font-size: 11px; }
+
+  .tabs { display: flex; border-bottom: 1px solid #e5e7eb; background: white; padding: 0 24px; }
+  .tab { padding: 14px 16px; font-size: 13px; cursor: pointer; color: #6b7280; border-bottom: 2px solid transparent; font-weight: 500; }
+  .tab.active { color: #4f46e5; border-bottom-color: #4f46e5; font-weight: 600; }
+  .tab .tab-dot { background: #ef4444; color: white; font-size: 9px; padding: 1px 6px; border-radius: 8px; margin-left: 4px; font-weight: 700; }
+
+  /* Notification banner */
+  .notice-area { padding: 16px 24px 0; }
+  .transfer-notice { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .transfer-notice .ic { width: 28px; height: 28px; background: #ea580c; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; flex-shrink: 0; }
+  .transfer-notice .text { flex: 1; font-size: 12px; color: #9a3412; }
+  .transfer-notice .text strong { display: block; font-size: 13px; margin-bottom: 2px; }
+  .transfer-notice .deadline { font-size: 11px; color: #ea580c; font-weight: 600; }
+
+  /* Dashboard grid: 2-col */
+  .dash-grid { padding: 20px 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .dash-card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; background: white; }
+  .dash-card.full { grid-column: 1 / -1; }
+  .dash-card h2 { font-size: 12px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .dash-card h2 .count { background: #eef2ff; color: #4f46e5; padding: 2px 8px; border-radius: 10px; font-size: 11px; }
+  .dash-card h2 .more { margin-left: auto; font-size: 11px; color: #4f46e5; font-weight: 500; cursor: pointer; text-decoration: none; }
+
+  /* 1週間の授業 (シンプル) */
+  .week-list { display: flex; flex-direction: column; gap: 6px; }
+  .week-item { display: grid; grid-template-columns: 80px 1fr; gap: 12px; align-items: center; padding: 8px 12px; border: 1px solid #f3f4f6; border-radius: 6px; background: #fafbfc; }
+  .week-item.today { background: #eef2ff; border-color: #c7d2fe; }
+  .week-item.today .date strong { color: #4f46e5; }
+  .week-item .date { font-size: 11px; color: #6b7280; }
+  .week-item .date strong { display: block; font-size: 15px; color: #1f2328; }
+  .week-item .subjects { display: flex; gap: 4px; flex-wrap: wrap; }
+  .subj-tag {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+  .subj-tag.eng { background: #dbeafe; color: #1e40af; }
+  .subj-tag.math { background: #fef3c7; color: #92400e; }
+  .subj-tag.jpn { background: #dcfce7; color: #166534; }
+  .subj-tag.sci { background: #ede9fe; color: #6b21a8; }
+  .subj-tag.soc { background: #fce7f3; color: #9d174d; }
+  .subj-tag.group { background: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe; }
+  .week-item .none { color: #9ca3af; font-size: 11px; font-style: italic; }
+
+  /* 出欠サマリ */
+  .att-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .att-cell { padding: 12px 8px; text-align: center; border-radius: 8px; background: #fafbfc; }
+  .att-cell .val { font-size: 22px; font-weight: 800; }
+  .att-cell .label { font-size: 10px; color: #6b7280; font-weight: 600; margin-top: 2px; }
+  .att-cell.present .val { color: #16a34a; }
+  .att-cell.absent .val { color: #ef4444; }
+  .att-cell.late .val { color: #f59e0b; }
+  .att-cell.transfer .val { color: #6366f1; }
+
+  /* 今月の進度 */
+  .progress-list { display: flex; flex-direction: column; gap: 8px; }
+  .prog-row { display: grid; grid-template-columns: 60px 1fr 50px; gap: 10px; align-items: center; }
+  .prog-row .name { font-size: 12px; font-weight: 600; }
+  .prog-bar { height: 8px; background: #f3f4f6; border-radius: 4px; overflow: hidden; }
+  .prog-bar .fill { height: 100%; background: #4f46e5; border-radius: 4px; }
+  .prog-bar .fill.high { background: #16a34a; }
+  .prog-bar .fill.mid { background: #f59e0b; }
+  .prog-pct { font-size: 11px; color: #6b7280; text-align: right; font-weight: 600; }
+
+  /* 科目ごと最新報告 */
+  .latest-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+  .subject-card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; background: white; cursor: pointer; transition: all 0.1s; }
+  .subject-card:hover { border-color: #4f46e5; box-shadow: 0 4px 12px rgba(79,70,229,0.08); }
+  .subject-card .subj-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .subject-card .subject-name { font-size: 14px; font-weight: 700; }
+  .subject-card .subject-name.eng { color: #1e40af; }
+  .subject-card .subject-name.math { color: #b45309; }
+  .subject-card .subject-name.jpn { color: #166534; }
+  .subject-card .subject-name.sci { color: #6b21a8; }
+  .subject-card .subject-name.soc { color: #9f1239; }
+  .subject-card .date { font-size: 10px; color: #9ca3af; background: #f3f4f6; padding: 2px 6px; border-radius: 3px; }
+  .subject-card .teacher { font-size: 10px; color: #6b7280; margin-bottom: 6px; }
+  .subject-card .preview { font-size: 11px; color: #4b5563; line-height: 1.4; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; margin-bottom: 8px; }
+  .subject-card .quick-stats { display: flex; gap: 4px; flex-wrap: wrap; }
+  .subject-card .stat-pill { font-size: 9.5px; padding: 1px 5px; background: #f3f4f6; border-radius: 3px; color: #6b7280; }
+  .subject-card .stat-pill strong { color: #1f2328; font-weight: 600; }
+  .subject-card .stat-pill.ok { background: #dcfce7; color: #166534; }
+  .subject-card.no-data { background: #f9fafb; opacity: 0.7; cursor: default; }
+  .subject-card.no-data .preview { color: #9ca3af; font-style: italic; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="label">マイページ</div>
+    <h1>田中 太郎</h1>
+    <div class="meta">
+      <span><strong>中学2年生</strong></span>
+      <span>クラス: <strong>中2A</strong></span>
+      <span class="badge">通常週2 + 夏期講習 8コマ</span>
+      <span class="badge">担当: 山田</span>
+    </div>
+  </div>
+
+  <!-- TABS (ホームがデフォルト) -->
+  <div class="tabs">
+    <div class="tab active">ホーム</div>
+    <div class="tab">授業スケジュール</div>
+    <div class="tab">授業報告 <span class="tab-dot">3</span></div>
+    <div class="tab">出欠履歴</div>
+  </div>
+
+  <!-- 通知エリア (上部固定) -->
+  <div class="notice-area">
+    <div class="transfer-notice">
+      <div class="ic">!</div>
+      <div class="text">
+        <strong>振替が確定しました</strong>
+        2026/7/15 (月) 19:30〜 数学 → <strong>2026/7/18 (木) 19:30〜</strong> に変更
+      </div>
+      <div class="deadline">期限: 2026/8/31</div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="dash-grid">
+
+    <!-- 今後1週間の授業 (シンプル: 日付+科目) -->
+    <div class="dash-card full">
+      <h2>今後1週間の授業 <a href="#" class="more">詳細を見る →</a></h2>
+      <div class="week-list">
+        <div class="week-item today">
+          <div class="date">月<strong>7/22</strong></div>
+          <div class="subjects">
+            <span class="subj-tag eng">英語</span>
+            <span class="subj-tag math">数学</span>
+          </div>
+        </div>
+        <div class="week-item">
+          <div class="date">火<strong>7/23</strong></div>
+          <div class="subjects">
+            <span class="subj-tag eng">英語</span>
+          </div>
+        </div>
+        <div class="week-item">
+          <div class="date">水<strong>7/24</strong></div>
+          <div class="subjects">
+            <span class="subj-tag group">中3 受験対策 (集団)</span>
+          </div>
+        </div>
+        <div class="week-item">
+          <div class="date">木<strong>7/25</strong></div>
+          <div class="subjects">
+            <span class="subj-tag math">数学 (振替)</span>
+          </div>
+        </div>
+        <div class="week-item">
+          <div class="date">金<strong>7/26</strong></div>
+          <div class="subjects">
+            <span class="subj-tag math">数学</span>
+          </div>
+        </div>
+        <div class="week-item">
+          <div class="date">土<strong>7/27</strong></div>
+          <div class="subjects">
+            <span class="none">休講日</span>
+          </div>
+        </div>
+        <div class="week-item">
+          <div class="date">日<strong>7/28</strong></div>
+          <div class="subjects">
+            <span class="none">休塾日</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 今月の出欠サマリ -->
+    <div class="dash-card">
+      <h2>今月の出欠 <span class="count">7月</span></h2>
+      <div class="att-grid">
+        <div class="att-cell present">
+          <div class="val">10</div>
+          <div class="label">出席</div>
+        </div>
+        <div class="att-cell absent">
+          <div class="val">1</div>
+          <div class="label">欠席</div>
+        </div>
+        <div class="att-cell late">
+          <div class="val">0</div>
+          <div class="label">遅刻</div>
+        </div>
+        <div class="att-cell transfer">
+          <div class="val">2</div>
+          <div class="label">振替</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 進度サマリ -->
+    <div class="dash-card">
+      <h2>今月の進度 <a href="#" class="more">進行表を見る →</a></h2>
+      <div class="progress-list">
+        <div class="prog-row">
+          <span class="name">英語</span>
+          <div class="prog-bar"><div class="fill" style="width:72%"></div></div>
+          <span class="prog-pct">Unit 5/7</span>
+        </div>
+        <div class="prog-row">
+          <span class="name">数学</span>
+          <div class="prog-bar"><div class="fill mid" style="width:50%"></div></div>
+          <span class="prog-pct">5/10章</span>
+        </div>
+        <div class="prog-row">
+          <span class="name">国語</span>
+          <div class="prog-bar"><div class="fill high" style="width:80%"></div></div>
+          <span class="prog-pct">8/10章</span>
+        </div>
+        <div class="prog-row">
+          <span class="name">理科</span>
+          <div class="prog-bar"><div class="fill mid" style="width:55%"></div></div>
+          <span class="prog-pct">11/20章</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 科目ごとの最新報告 -->
+    <div class="dash-card full">
+      <h2>科目ごとの最新の授業報告 <span class="count">5科目</span> <a href="#" class="more">過去の報告書を見る →</a></h2>
+      <div class="latest-grid">
+        <div class="subject-card">
+          <div class="subj-head">
+            <div class="subject-name eng">英語</div>
+            <div class="date">7/15 (月)</div>
+          </div>
+          <div class="teacher">担当: 山田</div>
+          <div class="preview">単語テスト 18/20 合格。不定詞の用法に苦戦したが、最終的に自分で例文を作れるようになった。</div>
+          <div class="quick-stats">
+            <span class="stat-pill ok">単語 <strong>18/20</strong></span>
+            <span class="stat-pill">宿題 <strong>100%</strong></span>
+          </div>
+        </div>
+        <div class="subject-card">
+          <div class="subj-head">
+            <div class="subject-name math">数学</div>
+            <div class="date">7/12 (金)</div>
+          </div>
+          <div class="teacher">担当: 鈴木</div>
+          <div class="preview">連立方程式の文章題で計算ミスが目立った。次回までに基礎ドリルを再度復習しておくこと。</div>
+          <div class="quick-stats">
+            <span class="stat-pill">宿題 <strong>80%</strong></span>
+            <span class="stat-pill">正答率 <strong>65%</strong></span>
+          </div>
+        </div>
+        <div class="subject-card">
+          <div class="subj-head">
+            <div class="subject-name jpn">国語</div>
+            <div class="date">7/10 (水)</div>
+          </div>
+          <div class="teacher">担当: 中村</div>
+          <div class="preview">説明文の読解は前回より精度が上がってきた。漢字の書き取りに引き続き取り組むこと。</div>
+          <div class="quick-stats">
+            <span class="stat-pill ok">漢字 <strong>15/15</strong></span>
+            <span class="stat-pill">正答率 <strong>82%</strong></span>
+          </div>
+        </div>
+        <div class="subject-card">
+          <div class="subj-head">
+            <div class="subject-name sci">理科</div>
+            <div class="date">7/8 (月)</div>
+          </div>
+          <div class="teacher">担当: 山田</div>
+          <div class="preview">化学反応式は概念理解OK。計算問題でモル比を間違える場面があった。</div>
+          <div class="quick-stats">
+            <span class="stat-pill">宿題 <strong>90%</strong></span>
+            <span class="stat-pill">正答率 <strong>75%</strong></span>
+          </div>
+        </div>
+        <div class="subject-card no-data">
+          <div class="subj-head">
+            <div class="subject-name soc">社会</div>
+            <div class="date">-</div>
+          </div>
+          <div class="teacher">担当: -</div>
+          <div class="preview">まだ授業がありません</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+</body>
+</html>

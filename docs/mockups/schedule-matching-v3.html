@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>講習マッチング v3 - 週表示ベース</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif; background: #f5f6f8; color: #1f2328; font-size: 13px; padding: 20px; }
+  .app { max-width: 1700px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); overflow: hidden; }
+  .header { padding: 16px 24px; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: space-between; }
+  .header h1 { font-size: 17px; font-weight: 600; }
+  .breadcrumb { font-size: 12px; color: #6b7280; margin-top: 2px; }
+  .btn { padding: 7px 14px; border-radius: 6px; font-size: 12px; cursor: pointer; border: 1px solid #d1d5db; background: white; }
+  .btn-primary { background: #4f46e5; color: white; border: none; font-weight: 600; }
+
+  .toolbar { padding: 12px 24px; background: #fafbfc; border-bottom: 1px solid #e5e7eb; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .spacer { flex: 1; }
+  .view-toggle { display: flex; background: #f3f4f6; border-radius: 6px; padding: 3px; }
+  .view-toggle button { border: none; background: transparent; padding: 5px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; color: #6b7280; }
+  .view-toggle .active { background: white; color: #1f2328; font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+  .mode-toggle { display: flex; background: #eef2ff; border-radius: 8px; padding: 3px; border: 1px solid #c7d2fe; margin-left: 8px; }
+  .mode-toggle button { border: none; background: transparent; padding: 5px 12px; border-radius: 5px; font-size: 12px; cursor: pointer; color: #4f46e5; }
+  .mode-toggle .active { background: #4f46e5; color: white; font-weight: 600; }
+
+  .banner { padding: 12px 24px; background: linear-gradient(90deg, #fefce8, #fffbeb); border-bottom: 1px solid #fde68a; display: flex; align-items: center; gap: 14px; }
+  .banner .badge { width: 28px; height: 28px; background: #facc15; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 13px; }
+  .banner-text { flex: 1; font-size: 12px; }
+  .banner-text strong { font-size: 13px; }
+  .banner-text small { display: block; color: #6b7280; margin-top: 2px; font-size: 11px; }
+
+  .stats { padding: 10px 24px; display: flex; gap: 20px; background: white; border-bottom: 1px solid #f3f4f6; font-size: 11px; }
+  .stat-label { color: #6b7280; }
+  .stat-value { font-weight: 600; }
+  .stat-value.ok { color: #16a34a; }
+  .stat-value.warn { color: #ea580c; }
+
+  /* Lane */
+  .lane-section { padding: 18px 24px 12px; }
+  .lane-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid #e5e7eb; }
+  .lane-header h2 { font-size: 14px; font-weight: 700; }
+  .lane-badge { padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; }
+  .lane-badge.indiv { background: #dbeafe; color: #1e40af; }
+  .lane-badge.group { background: #ede9fe; color: #5b21b6; }
+  .lane-header .lane-meta { color: #6b7280; font-size: 11px; margin-left: auto; }
+
+  /* Week grid */
+  .week-grid {
+    display: grid;
+    grid-template-columns: 80px repeat(6, 1fr);
+    gap: 4px;
+  }
+  .week-grid .day-head {
+    background: #f9fafb;
+    padding: 8px 4px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 6px 6px 0 0;
+    border-bottom: 2px solid #e5e7eb;
+  }
+  .week-grid .day-head .date { font-size: 14px; font-weight: 800; color: #1f2328; }
+  .week-grid .day-head .day { font-size: 10px; color: #6b7280; margin-left: 4px; }
+  .week-grid .day-head.today { background: #eef2ff; }
+  .week-grid .day-head.today .date { color: #4f46e5; }
+  .week-grid .day-head.closed { background: #fef2f2; color: #991b1b; }
+
+  .week-grid .slot-head {
+    background: #f9fafb;
+    padding: 8px 4px;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: #6b7280;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    border-radius: 4px;
+  }
+  .week-grid .slot-head .time { font-size: 9px; color: #9ca3af; margin-top: 2px; }
+  .week-grid .cell {
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    min-height: 130px;
+    background: white;
+    padding: 5px;
+    display: flex; flex-direction: column; gap: 3px;
+    overflow: hidden;
+  }
+  .week-grid .cell.closed { background: #fef2f2; border-color: #fecaca; display: flex; align-items: center; justify-content: center; color: #991b1b; font-size: 11px; }
+  .week-grid .cell.empty { background: #fafbfc; }
+  .week-grid .cell.warning { border-color: #f59e0b; border-width: 2px; background: #fffbeb; }
+
+  .teacher-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 10px;
+    background: #f9fafb;
+  }
+  .teacher-row .t-name { font-weight: 700; flex-shrink: 0; }
+  .teacher-row .t-stus { color: #4b5563; line-height: 1.3; }
+  .teacher-row.has-draft { background: linear-gradient(90deg, #fef3c7, #fef9c3); }
+  .teacher-row.has-draft .t-name { color: #92400e; }
+
+  .stu-pill {
+    display: inline-block;
+    padding: 1px 5px;
+    margin: 1px 2px 1px 0;
+    border-radius: 3px;
+    font-size: 9.5px;
+    line-height: 1.3;
+  }
+  .stu-pill.pub { background: #dbeafe; color: #1e3a8a; }
+  .stu-pill.draft { background: #fef3c7; color: #78350f; border: 1px dashed #f59e0b; }
+  .star { color: #f59e0b; font-size: 8px; }
+
+  .cell-footer { margin-top: auto; display: flex; gap: 4px; padding-top: 3px; border-top: 1px dashed #e5e7eb; }
+  .summary-chip { font-size: 9px; padding: 1px 5px; border-radius: 3px; font-weight: 600; }
+  .summary-chip.tch { background: #f3f4f6; color: #374151; }
+  .summary-chip.stu { background: #dbeafe; color: #1e40af; }
+  .summary-chip.dft { background: #fef3c7; color: #92400e; }
+  .summary-chip.warn { background: #fef2f2; color: #991b1b; }
+
+  /* Group lane week */
+  .group-week-grid {
+    display: grid;
+    grid-template-columns: 80px repeat(6, 1fr);
+    gap: 4px;
+  }
+  .group-cell {
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    min-height: 80px;
+    padding: 6px;
+    background: white;
+  }
+  .group-cell.closed { background: #fef2f2; border-color: #fecaca; color: #991b1b; display: flex; align-items: center; justify-content: center; }
+  .group-card {
+    background: #ede9fe;
+    border-left: 3px solid #8b5cf6;
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+  }
+  .group-card.draft { background: linear-gradient(135deg, #fef3c7, #ede9fe); border-left-color: #f59e0b; border-style: dashed solid solid solid; border-width: 1px 1px 1px 3px; }
+  .group-card .title { font-weight: 700; color: #5b21b6; }
+  .group-card .teacher-line { font-size: 10px; color: #6b21a8; margin-top: 2px; }
+  .group-card .members-line { font-size: 10px; color: #6b7280; margin-top: 1px; }
+
+  .overlap-rail { padding: 10px 24px; background: #fff7ed; border-top: 1px solid #fed7aa; border-bottom: 1px solid #fed7aa; display: flex; align-items: center; gap: 12px; font-size: 12px; }
+  .overlap-rail .ic { width: 22px; height: 22px; background: #ea580c; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; }
+  .overlap-rail strong { color: #9a3412; }
+  .overlap-chip { display: inline-block; padding: 3px 8px; background: white; border: 1px solid #fdba74; border-radius: 4px; margin: 0 4px; font-size: 11px; color: #9a3412; }
+
+  .unmatched-bar { padding: 14px 24px; background: #fef2f2; border-top: 2px solid #fca5a5; display: flex; align-items: center; gap: 14px; }
+  .unmatched-bar .ic { width: 26px; height: 26px; background: #ef4444; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+  .unmatched-bar strong { font-size: 13px; color: #991b1b; }
+  .unmatched-chip { display: inline-block; padding: 3px 8px; background: white; border: 1px solid #fca5a5; border-radius: 4px; margin: 2px 4px 2px 0; font-size: 11px; color: #991b1b; cursor: pointer; }
+
+  .legend { padding: 12px 24px; background: #fafbfc; border-top: 1px solid #e5e7eb; display: flex; gap: 18px; font-size: 11px; color: #6b7280; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-swatch { width: 14px; height: 14px; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div>
+      <h1>授業スケジュール（座席表）- 2026年 夏期講習</h1>
+      <div class="breadcrumb">スケジュール / 座席表 / マッチングモード (週表示)</div>
+    </div>
+    <div>
+      <button class="btn">印刷</button>
+      <button class="btn">授業生徒数設定</button>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <button class="btn">&lsaquo; 前週</button>
+    <span style="font-weight:600; margin: 0 8px;">2026年 7月22日(月) 〜 7月27日(土)</span>
+    <button class="btn">次週 &rsaquo;</button>
+    <button class="btn">今週</button>
+    <span style="margin-left:16px; color:#6b7280; font-size:12px;">講習:</span>
+    <select class="btn">
+      <option>2026年 夏期講習</option>
+    </select>
+    <div class="spacer"></div>
+    <div class="view-toggle">
+      <button class="active">週</button>
+      <button>日</button>
+    </div>
+    <div class="mode-toggle">
+      <button>通常モード</button>
+      <button class="active">マッチングモード</button>
+    </div>
+  </div>
+
+  <div class="banner">
+    <div class="badge">★</div>
+    <div class="banner-text">
+      <strong>マッチング下書きを表示中 (点線枠・★マーク)</strong>
+      <small>セルクリックで詳細編集（日表示に切替）。ドラッグで移動、右クリックで削除。</small>
+    </div>
+    <button class="btn">差分追加で再実行</button>
+    <button class="btn">部分再実行...</button>
+    <button class="btn btn-primary">下書きを全部公開</button>
+  </div>
+
+  <div class="stats">
+    <div><span class="stat-label">提出:</span> <span class="stat-value">講師 12/15</span> / <span class="stat-value">生徒 28/30</span></div>
+    <div><span class="stat-label">週合計:</span> <span class="stat-value ok">公開 48 + 下書き 124</span></div>
+    <div><span class="stat-label">未マッチ:</span> <span class="stat-value warn">3名 / 7コマ</span></div>
+    <div><span class="stat-label">時間重複違反:</span> <span class="stat-value warn">2件</span></div>
+    <div><span class="stat-label">最終実行:</span> <span class="stat-value">2分前</span></div>
+  </div>
+
+  <!-- 個別レーン (週表示) -->
+  <div class="lane-section">
+    <div class="lane-header">
+      <h2>個別指導</h2>
+      <span class="lane-badge indiv">個別</span>
+      <span class="lane-meta">12ブース・1講師につき生徒2名まで・セルクリックで日表示へ</span>
+    </div>
+    <div class="week-grid">
+      <div></div>
+      <div class="day-head today">
+        <span class="date">7/22</span><span class="day">月</span>
+        <div style="font-size:9px; color:#9ca3af; font-weight:500; margin-top:2px;">今日</div>
+      </div>
+      <div class="day-head"><span class="date">7/23</span><span class="day">火</span></div>
+      <div class="day-head"><span class="date">7/24</span><span class="day">水</span></div>
+      <div class="day-head"><span class="date">7/25</span><span class="day">木</span></div>
+      <div class="day-head"><span class="date">7/26</span><span class="day">金</span></div>
+      <div class="day-head closed"><span class="date">7/27</span><span class="day">土</span><br>休講</div>
+
+      <!-- 個別1限 -->
+      <div class="slot-head">個別1限<span class="time">13:00<br>14:20</span></div>
+      <div class="cell">
+        <div class="teacher-row"><span class="t-name">山田</span><div class="t-stus"><span class="stu-pill pub">田中 太郎</span></div></div>
+        <div class="teacher-row has-draft"><span class="t-name">鈴木</span><div class="t-stus"><span class="stu-pill draft"><span class="star">★</span>佐藤 美咲</span></div></div>
+        <div class="teacher-row has-draft"><span class="t-name">田中</span><div class="t-stus"><span class="stu-pill draft"><span class="star">★</span>高橋 健太</span><span class="stu-pill draft"><span class="star">★</span>渡辺 結衣</span></div></div>
+        <div class="teacher-row"><span class="t-name">中村</span><div class="t-stus"><span class="stu-pill pub">小川 翔太</span></div></div>
+        <div class="cell-footer">
+          <span class="summary-chip tch">講師 4</span>
+          <span class="summary-chip stu">生徒 5</span>
+          <span class="summary-chip dft">下書 3</span>
+        </div>
+      </div>
+      <div class="cell">
+        <div class="teacher-row has-draft"><span class="t-name">山田</span><div class="t-stus"><span class="stu-pill draft"><span class="star">★</span>田中 太郎</span></div></div>
+        <div class="teacher-row has-draft"><span class="t-name">佐藤</span><div class="t-stus"><span class="stu-pill draft"><span class="star">★</span>木村 さくら</span></div></div>
+        <div class="teacher-row"><span class="t-name">中村</span><div class="t-stus"><span class="stu-pill pub">伊藤 翔</span></div></div>
+        <div class="cell-footer">
+          <span class="summary-chip tch">講師 3</span>
+          <span class="summary-chip stu">生徒 3</span>
+          <span class="summary-chip dft">下書 2</span>
+        </div>
+      </div>
+      <div class="cell empty"></div>
+      <div class="cell">
+        <div class="teacher-row"><span class="t-name">山田</span><div class="t-stus"><span class="stu-pill pub">田中 太郎</span><span class="stu-pill pub">伊東 蓮</span></div></div>
+        <div class="teacher-row has-draft"><span class="t-name">小林</span><div class="t-stus"><span class="stu-pill draft"><span class="star">★</span>渡辺 結衣</span></div></div>
+        <div class="cell-footer">
+          <span class="summary-chip tch">講師 2</span>
+          <span class="summary-chip stu">生徒 3</span>
+          <span class="summary-chip dft">下書 1</span>
+        </div>
+      </div>
+      <div class="cell">
+        <div class="teacher-row has-draft"><span class="t-name">鈴木</span><div class="t-stus"><span class="stu-pill draft"><span class="star">★</span>三浦 さやか</span></div></div>
+        <div class="teacher-row has-draft"><span class="t-name">吉田</span><div class="t-stus"><span class="stu-pill draft"><span class="star">★</span>青木 海斗</span><span class="stu-pill draft"><span class="star">★</span>岡田 美月</span></div></div>
+        <div class="cell-footer">
+          <span class="summary-chip tch">講師 2</span>
+          <span class="summary-chip stu">生徒 3</span>
+          <span class="summary-chip dft">下書 3</span>
+        </div>
+      </div>
+      <div class="cell closed">休講日</div>
+
+      <!-- 個別2限 -->
+      <div class="slot-head">個別2限<span class="time">14:45<br>16:15</span></div>
+      <div class="cell warning">
+        <div class="teacher-row has-draft"><span class="t-name">山田</span><div class="t-stus"><span class="stu-pill pub">田中 太郎</span><span class="stu-pill draft"><span class="star">★</span>佐藤 美咲</span><span class="stu-pill draft"><span class="star">★</span>高橋 健太</span></div></div>
+        <div class="teacher-row"><span class="t-name">中村</span><div class="t-stus"><span class="stu-pill pub">伊東 蓮</span></div></div>
+        <div class="cell-footer">
+          <span class="summary-chip warn">⚠ 山田 1対3</span>
+          <span class="summary-chip stu">生徒 4</span>
+        </div>
+      </div>
+      <div class="cell">
+        <div class="teacher-row has-draft"><span class="t-name">鈴木</span><div class="t-stus"><span class="stu-pill draft"><span class="star">★</span>渡辺 結衣</span></div></div>
+        <div class="teacher-row has-draft"><span class="t-name">田中</span><div class="t-stus"><span class="stu-pill draft"><span class="star">★</span>木村 さくら</span><span class="stu-pill draft"><span class="star">★</span>林 大翔</span></div></div>
+        <div class="teacher-row"><span class="t-name">山本</span><div class="t-stus"><span class="stu-pill pub">青木 海斗</span></div></div>
+        <div class="cell-footer">
+          <span class="summary-chip tch">講師 3</span>
+          <span class="summary-chip stu">生徒 4</span>
+          <span class="summary-chip dft">下書 3</span>
+        </div>
+      </div>
+      <div class="cell">
+        <div class="teacher-row has-draft"><span class="t-name">山田</span><div class="t-stus"><span class="stu-pill draft"><span class="star">★</span>佐藤 美咲</span></div></div>
+        <div class="teacher-row"><span class="t-name">中村</span><div class="t-stus"><span class="stu-pill pub">伊東 蓮</span></div></div>
+        <div class="cell-footer">
+          <span class="summary-chip tch">講師 2</span>
+          <span class="summary-chip stu">生徒 2</span>
+          <span class="summary-chip dft">下書 1</span>
+        </div>
+      </div>
+      <div class="cell">
+        <div class="teacher-row has-draft"><span class="t-name">鈴木</span><div class="t-stus"><span class="stu-pill draft"><span class="star">★</span>三浦 さやか</span></div></div>
+        <div class="teacher-row has-draft"><span class="t-name">吉田</span><div class="t-stus"><span class="stu-pill draft"><span class="star">★</span>岡田 美月</span></div></div>
+        <div class="cell-footer">
+          <span class="summary-chip tch">講師 2</span>
+          <span class="summary-chip stu">生徒 2</span>
+          <span class="summary-chip dft">下書 2</span>
+        </div>
+      </div>
+      <div class="cell">
+        <div class="teacher-row has-draft"><span class="t-name">渡辺</span><div class="t-stus"><span class="stu-pill draft"><span class="star">★</span>石川 翼</span></div></div>
+        <div class="teacher-row"><span class="t-name">伊藤</span><div class="t-stus"><span class="stu-pill pub">中島 蒼</span></div></div>
+        <div class="cell-footer">
+          <span class="summary-chip tch">講師 2</span>
+          <span class="summary-chip stu">生徒 2</span>
+          <span class="summary-chip dft">下書 1</span>
+        </div>
+      </div>
+      <div class="cell closed">休講日</div>
+
+      <!-- 個別3限 -->
+      <div class="slot-head">個別3限<span class="time">16:40<br>18:10</span></div>
+      <div class="cell">
+        <div class="teacher-row"><span class="t-name">山田</span><div class="t-stus"><span class="stu-pill pub">田中 太郎</span></div></div>
+        <div class="teacher-row has-draft"><span class="t-name">鈴木</span><div class="t-stus"><span class="stu-pill pub">高橋 健太</span><span class="stu-pill draft"><span class="star">★</span>佐藤 美咲</span></div></div>
+        <div class="teacher-row has-draft"><span class="t-name">小林</span><div class="t-stus"><span class="stu-pill draft"><span class="star">★</span>渡辺 結衣</span></div></div>
+        <div class="cell-footer">
+          <span class="summary-chip tch">講師 3</span>
+          <span class="summary-chip stu">生徒 4</span>
+          <span class="summary-chip dft">下書 2</span>
+        </div>
+      </div>
+      <div class="cell">
+        <div class="teacher-row"><span class="t-name">山田</span><div class="t-stus"><span class="stu-pill pub">伊東 蓮</span></div></div>
+        <div class="teacher-row has-draft"><span class="t-name">山本</span><div class="t-stus"><span class="stu-pill draft"><span class="star">★</span>三浦 さやか</span></div></div>
+        <div class="cell-footer">
+          <span class="summary-chip tch">講師 2</span>
+          <span class="summary-chip stu">生徒 2</span>
+          <span class="summary-chip dft">下書 1</span>
+        </div>
+      </div>
+      <div class="cell empty"></div>
+      <div class="cell">
+        <div class="teacher-row has-draft"><span class="t-name">山田</span><div class="t-stus"><span class="stu-pill draft"><span class="star">★</span>田中 太郎</span></div></div>
+        <div class="teacher-row"><span class="t-name">鈴木</span><div class="t-stus"><span class="stu-pill pub">伊東 蓮</span></div></div>
+        <div class="cell-footer">
+          <span class="summary-chip tch">講師 2</span>
+          <span class="summary-chip stu">生徒 2</span>
+          <span class="summary-chip dft">下書 1</span>
+        </div>
+      </div>
+      <div class="cell">
+        <div class="teacher-row has-draft"><span class="t-name">中村</span><div class="t-stus"><span class="stu-pill draft"><span class="star">★</span>木村 さくら</span></div></div>
+        <div class="cell-footer">
+          <span class="summary-chip tch">講師 1</span>
+          <span class="summary-chip stu">生徒 1</span>
+          <span class="summary-chip dft">下書 1</span>
+        </div>
+      </div>
+      <div class="cell closed">休講日</div>
+
+      <!-- 個別4限 -->
+      <div class="slot-head">個別4限<span class="time">19:30<br>21:00</span><br><small style="color:#ea580c; font-size:9px;">⚠重複</small></div>
+      <div class="cell">
+        <div class="teacher-row"><span class="t-name">山田</span><div class="t-stus"><span class="stu-pill pub">田中 太郎</span></div></div>
+        <div class="teacher-row has-draft"><span class="t-name">鈴木</span><div class="t-stus"><span class="stu-pill draft"><span class="star">★</span>高橋 健太</span></div></div>
+        <div class="teacher-row has-draft"><span class="t-name">小林</span><div class="t-stus"><span class="stu-pill draft"><span class="star">★</span>渡辺 結衣</span></div></div>
+        <div class="cell-footer">
+          <span class="summary-chip warn">⚠ 集団と重複</span>
+        </div>
+      </div>
+      <div class="cell">
+        <div class="teacher-row"><span class="t-name">中村</span><div class="t-stus"><span class="stu-pill pub">伊東 蓮</span></div></div>
+        <div class="cell-footer">
+          <span class="summary-chip tch">講師 1</span>
+          <span class="summary-chip stu">生徒 1</span>
+        </div>
+      </div>
+      <div class="cell">
+        <div class="teacher-row has-draft"><span class="t-name">鈴木</span><div class="t-stus"><span class="stu-pill draft"><span class="star">★</span>高橋 健太</span><span class="stu-pill draft"><span class="star">★</span>渡辺 結衣</span></div></div>
+        <div class="cell-footer">
+          <span class="summary-chip tch">講師 1</span>
+          <span class="summary-chip stu">生徒 2</span>
+          <span class="summary-chip dft">下書 2</span>
+        </div>
+      </div>
+      <div class="cell">
+        <div class="teacher-row"><span class="t-name">山田</span><div class="t-stus"><span class="stu-pill pub">伊東 蓮</span></div></div>
+        <div class="cell-footer">
+          <span class="summary-chip tch">講師 1</span>
+          <span class="summary-chip stu">生徒 1</span>
+        </div>
+      </div>
+      <div class="cell">
+        <div class="teacher-row has-draft"><span class="t-name">山田</span><div class="t-stus"><span class="stu-pill draft"><span class="star">★</span>佐藤 美咲</span></div></div>
+        <div class="cell-footer">
+          <span class="summary-chip tch">講師 1</span>
+          <span class="summary-chip stu">生徒 1</span>
+          <span class="summary-chip dft">下書 1</span>
+        </div>
+      </div>
+      <div class="cell closed">休講日</div>
+    </div>
+  </div>
+
+  <!-- 時間重複アラート -->
+  <div class="overlap-rail">
+    <div class="ic">!</div>
+    <div style="flex:1;">
+      <strong>個別4限 (19:30-21:00) と 集団3限 (20:20-21:20) は時間重複</strong>
+      <span style="color:#6b7280; font-size:11px;">同じ講師・生徒は両方には入れられません。違反:</span>
+      <span class="overlap-chip">7/22 渡辺 結衣</span>
+      <span class="overlap-chip">7/22 小林 講師</span>
+    </div>
+  </div>
+
+  <!-- 集団レーン (週表示) -->
+  <div class="lane-section">
+    <div class="lane-header">
+      <h2>集団指導</h2>
+      <span class="lane-badge group">集団</span>
+      <span class="lane-meta">1室・1コマ最大8名</span>
+    </div>
+    <div class="group-week-grid">
+      <div></div>
+      <div class="day-head today"><span class="date">7/22</span><span class="day">月</span></div>
+      <div class="day-head"><span class="date">7/23</span><span class="day">火</span></div>
+      <div class="day-head"><span class="date">7/24</span><span class="day">水</span></div>
+      <div class="day-head"><span class="date">7/25</span><span class="day">木</span></div>
+      <div class="day-head"><span class="date">7/26</span><span class="day">金</span></div>
+      <div class="day-head closed"><span class="date">7/27</span><span class="day">土</span><br>休講</div>
+
+      <div class="slot-head">集団1限<span class="time">14:00<br>15:30</span></div>
+      <div class="group-cell"><div class="group-card"><div class="title">中3 受験対策</div><div class="teacher-line">講師: 中村</div><div class="members-line">5名: 田中・佐藤・高橋・伊藤・木村</div></div></div>
+      <div class="group-cell"></div>
+      <div class="group-cell"><div class="group-card draft"><div class="title"><span class="star">★</span>中2 数学</div><div class="teacher-line">講師: 山本</div><div class="members-line">3名: 渡辺・青木・林</div></div></div>
+      <div class="group-cell"></div>
+      <div class="group-cell"><div class="group-card"><div class="title">中3 受験対策</div><div class="teacher-line">講師: 中村</div><div class="members-line">5名</div></div></div>
+      <div class="group-cell closed">休講日</div>
+
+      <div class="slot-head">集団2限<span class="time">15:50<br>17:20</span></div>
+      <div class="group-cell"></div>
+      <div class="group-cell"><div class="group-card draft"><div class="title"><span class="star">★</span>小6 算国</div><div class="teacher-line">講師: 小林</div><div class="members-line">4名: 小川・木村・林・三浦</div></div></div>
+      <div class="group-cell"></div>
+      <div class="group-cell"><div class="group-card draft"><div class="title"><span class="star">★</span>小6 算国</div><div class="teacher-line">講師: 小林</div><div class="members-line">4名</div></div></div>
+      <div class="group-cell"></div>
+      <div class="group-cell closed">休講日</div>
+
+      <div class="slot-head">集団3限<span class="time">20:20<br>21:20</span><br><small style="color:#ea580c; font-size:9px;">⚠重複</small></div>
+      <div class="group-cell"><div class="group-card draft"><div class="title"><span class="star">★</span>中2 英語集中</div><div class="teacher-line">講師: 小林</div><div class="members-line">4名: 渡辺・山田・青木・林</div></div></div>
+      <div class="group-cell"></div>
+      <div class="group-cell"></div>
+      <div class="group-cell"><div class="group-card draft"><div class="title"><span class="star">★</span>中3 英語集中</div><div class="teacher-line">講師: 吉田</div><div class="members-line">3名: 高橋・伊藤・木村</div></div></div>
+      <div class="group-cell"></div>
+      <div class="group-cell closed">休講日</div>
+    </div>
+  </div>
+
+  <!-- 未マッチ -->
+  <div class="unmatched-bar">
+    <div class="ic">!</div>
+    <div style="flex:1;">
+      <strong>未マッチ: 3名 / 計7コマ</strong> <span style="color:#6b7280; font-size:11px;">クリックで手動配置モード</span>
+      <div style="margin-top:6px;">
+        <span class="unmatched-chip">田中 太郎 (中2) 残2コマ ・ 数学</span>
+        <span class="unmatched-chip">高橋 花子 (中3) 残3コマ ・ 英語</span>
+        <span class="unmatched-chip">伊藤 翔 (小5) 残2コマ ・ 国語</span>
+      </div>
+    </div>
+    <button class="btn">未マッチ一覧をDL</button>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><span class="legend-swatch" style="background:#dbeafe;"></span>公開済(個別)</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:#fef3c7; border:1px dashed #f59e0b;"></span>★ 下書き(個別)</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:#ede9fe; border-left:3px solid #8b5cf6;"></span>公開済(集団)</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:linear-gradient(135deg,#fef3c7,#ede9fe); border:1px dashed #f59e0b;"></span>★ 下書き(集団)</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:#fffbeb; border:2px solid #f59e0b;"></span>容量超過 / 重複</div>
+    <div class="legend-item">セルクリック → 日表示に切替で詳細編集</div>
+  </div>
+
+</div>
+</body>
+</html>

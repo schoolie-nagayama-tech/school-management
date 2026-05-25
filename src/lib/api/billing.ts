@@ -460,20 +460,24 @@ export async function autoFillFifthWeekBilling(
   // 3. 全生徒を取得
   const { data: allStudents, error: studentsError } = await supabase
     .from('students')
-    .select('id, school_id, is_programming')
+    .select('id, school_id, is_programming, withdrawal_date')
     .in('school_id', targetSchoolIds)
     .is('deleted_at', null);
 
   if (studentsError) throw new Error(`生徒の取得に失敗: ${studentsError.message}`);
   if (!allStudents || allStudents.length === 0) return { updated: 0, skipped: 0 };
 
-  // 4. Fetch regular patterns for all schools
+  // 4. Fetch regular patterns active as of the target month start
+  //    過去月の請求は当時の通塾日程、未来予約は反映されないようにする
+  const targetMonthStart = `${year}-${String(month).padStart(2, '0')}-01`;
   const { data: patterns, error: patternError } = await supabase
     .from('schedule_regular_patterns')
-    .select('student_id, day_of_week, is_active')
+    .select('student_id, day_of_week, is_active, effective_from, effective_until')
     .in('school_id', targetSchoolIds)
     .eq('is_active', true)
-    .eq('period_type', 'regular');
+    .eq('period_type', 'regular')
+    .lte('effective_from', targetMonthStart)
+    .or(`effective_until.is.null,effective_until.gte.${targetMonthStart}`);
 
   if (patternError) throw new Error(`通塾日程の取得に失敗: ${patternError.message}`);
 
@@ -485,7 +489,9 @@ export async function autoFillFifthWeekBilling(
   const skipped = 0;
 
   for (const student of allStudents) {
-    const quantity = student.is_programming ? 0 : (slotMap.get(student.id) || 0);
+    // 対象月初時点で退塾済みの生徒は0コマ
+    const withdrawnByMonth = student.withdrawal_date && student.withdrawal_date < targetMonthStart;
+    const quantity = withdrawnByMonth ? 0 : (student.is_programming ? 0 : (slotMap.get(student.id) || 0));
 
     // Check if record exists
     const { data: existing } = await supabase
@@ -1126,20 +1132,24 @@ export async function calcFifthWeekBilling(
     return { updated, skipped: 0 };
   }
 
-  // 5. 5週目がある月 → 通塾日程からコマ数を計算
+  // 5. 5週目がある月 → 対象月（翌月）初時点で有効な通塾日程からコマ数を計算
+  //    過去月の請求を再計算しても、当時の通塾日程で正しく算出される
+  const targetMonthStart = `${targetYear}-${String(targetMonth).padStart(2, '0')}-01`;
   const { data: patterns, error: patternError } = await supabase
     .from('schedule_regular_patterns')
-    .select('student_id, day_of_week, is_active')
+    .select('student_id, day_of_week, is_active, effective_from, effective_until')
     .in('school_id', targetSchoolIds)
     .eq('is_active', true)
-    .eq('period_type', 'regular');
+    .eq('period_type', 'regular')
+    .lte('effective_from', targetMonthStart)
+    .or(`effective_until.is.null,effective_until.gte.${targetMonthStart}`);
 
   if (patternError) throw new Error(`通塾日程の取得に失敗: ${patternError.message}`);
 
   // 通塾日程に含まれる全生徒＋通塾日程がない生徒も0にする
   const { data: allStudents, error: allStudentsError } = await supabase
     .from('students')
-    .select('id, school_id, is_programming')
+    .select('id, school_id, is_programming, withdrawal_date')
     .in('school_id', targetSchoolIds)
     .is('deleted_at', null);
 
@@ -1162,7 +1172,9 @@ export async function calcFifthWeekBilling(
   for (const item of fifthWeekItems) {
     for (const student of allStudents) {
       const rawSlots = slotMap.get(student.id) || 0;
-      const quantity = student.is_programming ? 0 : rawSlots;
+      // 対象月初時点で退塾済みの生徒は0コマ
+      const withdrawnByMonth = student.withdrawal_date && student.withdrawal_date < targetMonthStart;
+      const quantity = withdrawnByMonth ? 0 : (student.is_programming ? 0 : rawSlots);
 
       const { data: existing } = await supabase
         .from('student_billings')

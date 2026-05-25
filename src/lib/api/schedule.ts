@@ -8,6 +8,7 @@ import type {
   ScheduleRegularPatternFormData,
   ScheduleEntry,
   ScheduleEntryFormData,
+  ScheduleEntryFormation,
   ScheduleGenerationResult,
   TimeConflictResult,
 } from '@/types/schedule';
@@ -36,11 +37,18 @@ async function ensureUserIsTeacher(teacherId: string): Promise<void> {
 // コマ時間マスタ
 // ========================================
 
-export async function getTimeSlots(schoolId: string): Promise<ScheduleTimeSlot[]> {
-  const { data, error } = await db
-    .from('schedule_time_slots')
-    .select('*')
-    .eq('school_id', schoolId)
+/**
+ * コマ時間を取得。formation を指定すれば該当形態のみ、未指定なら全件。
+ * 既存呼び出しは全件を期待しているので互換性のため formation は optional に。
+ */
+export async function getTimeSlots(
+  schoolId: string,
+  formation?: ScheduleEntryFormation
+): Promise<ScheduleTimeSlot[]> {
+  let q = db.from('schedule_time_slots').select('*').eq('school_id', schoolId);
+  if (formation) q = q.eq('formation', formation);
+  const { data, error } = await q
+    .order('formation', { ascending: true })
     .order('slot_number', { ascending: true })
     .order('display_order', { ascending: true });
 
@@ -51,12 +59,18 @@ export async function getTimeSlots(schoolId: string): Promise<ScheduleTimeSlot[]
   return (data || []) as ScheduleTimeSlot[];
 }
 
-export async function getActiveTimeSlots(schoolId: string): Promise<ScheduleTimeSlot[]> {
-  const { data, error } = await db
+export async function getActiveTimeSlots(
+  schoolId: string,
+  formation?: ScheduleEntryFormation
+): Promise<ScheduleTimeSlot[]> {
+  let q = db
     .from('schedule_time_slots')
     .select('*')
     .eq('school_id', schoolId)
-    .eq('is_active', true)
+    .eq('is_active', true);
+  if (formation) q = q.eq('formation', formation);
+  const { data, error } = await q
+    .order('formation', { ascending: true })
     .order('slot_number', { ascending: true })
     .order('display_order', { ascending: true });
 
@@ -106,6 +120,8 @@ export async function createTimeSlot(
       end_time: form.end_time,
       is_active: form.is_active,
       display_order: form.display_order,
+      // 形態：未指定は個別（既存マスタとの互換）。集団用は明示的に渡す。
+      formation: form.formation ?? 'individual',
     })
     .select()
     .single();
@@ -361,9 +377,17 @@ export async function checkStudentTimeConflict(
 // 通塾日程（通常授業パターン）
 // ========================================
 
+/**
+ * 通塾日程を取得
+ *
+ * filters.asOfDate を指定すると「その日時点で有効なパターン」のみ取得する
+ *  - effective_from <= asOfDate
+ *  - effective_until IS NULL OR effective_until >= asOfDate
+ * 指定しない場合は is_active=true 全件（UI 編集用、過去・未来予約も含めて見える）
+ */
 export async function getRegularPatterns(
   schoolId: string,
-  filters?: { studentId?: string; dayOfWeek?: number; periodType?: string }
+  filters?: { studentId?: string; dayOfWeek?: number; periodType?: string; asOfDate?: string }
 ): Promise<ScheduleRegularPattern[]> {
   let query = db
     .from('schedule_regular_patterns')
@@ -381,6 +405,12 @@ export async function getRegularPatterns(
   if (filters?.studentId) query = query.eq('student_id', filters.studentId);
   if (filters?.dayOfWeek !== undefined) query = query.eq('day_of_week', filters.dayOfWeek);
   if (filters?.periodType) query = query.eq('period_type', filters.periodType);
+  if (filters?.asOfDate) {
+    // effective_from <= asOfDate AND (effective_until IS NULL OR effective_until >= asOfDate)
+    query = query
+      .lte('effective_from', filters.asOfDate)
+      .or(`effective_until.is.null,effective_until.gte.${filters.asOfDate}`);
+  }
 
   query = query.order('day_of_week').order('time_slot_id');
 
@@ -433,6 +463,10 @@ export async function createRegularPattern(
       seat_label: form.seat_label || null,
       period_type: form.period_type,
       is_active: true,
+      effective_from: form.effective_from || todayStr(),
+      effective_until: form.effective_until ?? null,
+      // 形態：未指定は個別。集団パターンを作るときは form.formation='group' を渡す。
+      formation: form.formation ?? 'individual',
     })
     .select()
     .single();
@@ -442,6 +476,106 @@ export async function createRegularPattern(
     throw new Error('通塾日程の登録に失敗しました');
   }
   return data as ScheduleRegularPattern;
+}
+
+/** 今日の YYYY-MM-DD（JST想定） */
+function todayStr(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
+}
+
+/** 指定日の前日を YYYY-MM-DD で返す */
+function prevDay(dateStr: string): string {
+  const d = new Date(dateStr + 'T12:00:00');
+  d.setDate(d.getDate() - 1);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
+}
+
+/**
+ * 通塾日程を「指定日から」変更する
+ *
+ * 既存パターンの effective_until を変更日の前日にし、
+ * 新しい設定で effective_from = 変更日 のパターンを作成する。
+ * これにより、過去月の請求計算は変更前の通塾日程で計算され続ける。
+ *
+ * 例：週2→週3 を 2026-04-01 から
+ *  - 既存の週2パターンに effective_until=2026-03-31 をセット
+ *  - 新規に週3分のパターンを effective_from=2026-04-01 で作成
+ */
+export async function scheduleRegularPatternChangeFrom(
+  patternId: string,
+  fromDate: string,
+  form: ScheduleRegularPatternFormData,
+  schoolId: string
+): Promise<ScheduleRegularPattern> {
+  if (form.teacher_id) {
+    await ensureUserIsTeacher(form.teacher_id);
+  }
+
+  // 1. 既存パターンに effective_until をセット（変更日の前日まで有効）
+  const until = prevDay(fromDate);
+  const { error: updErr } = await db
+    .from('schedule_regular_patterns')
+    .update({ effective_until: until })
+    .eq('id', patternId);
+  if (updErr) {
+    console.error('Error setting effective_until on previous pattern:', updErr);
+    throw new Error('既存通塾日程の終了日設定に失敗しました');
+  }
+
+  // 2. 新規パターンを effective_from=fromDate で作成
+  const { data, error } = await db
+    .from('schedule_regular_patterns')
+    .insert({
+      school_id: schoolId,
+      student_id: form.student_id,
+      day_of_week: form.day_of_week,
+      time_slot_id: form.time_slot_id,
+      teacher_id: form.teacher_id,
+      subject_ids: form.subject_ids || [],
+      seat_label: form.seat_label || null,
+      period_type: form.period_type,
+      is_active: true,
+      effective_from: fromDate,
+      effective_until: form.effective_until ?? null,
+      // 形態：未指定なら個別。指定日から「個別→集団」や「集団→個別」へ切り替えるシナリオもありえる
+      formation: form.formation ?? 'individual',
+    })
+    .select()
+    .single();
+
+  if (error) {
+    // ロールバック：旧パターンの effective_until を null に戻す
+    await db.from('schedule_regular_patterns').update({ effective_until: null }).eq('id', patternId);
+    console.error('Error creating new pattern for scheduled change:', error);
+    throw new Error('新しい通塾日程の登録に失敗しました');
+  }
+  return data as ScheduleRegularPattern;
+}
+
+/**
+ * 通塾日程を「指定日で終了」させる（退塾・コマ削減の予約）
+ *
+ * effective_until をセットするだけ。null を渡すと予約解除（無期限化）。
+ */
+export async function endRegularPatternOn(
+  patternId: string,
+  endDate: string | null
+): Promise<void> {
+  const { error } = await db
+    .from('schedule_regular_patterns')
+    .update({ effective_until: endDate })
+    .eq('id', patternId);
+  if (error) {
+    console.error('Error setting effective_until:', error);
+    throw new Error('通塾日程の終了日設定に失敗しました');
+  }
 }
 
 export async function updateRegularPattern(
@@ -483,6 +617,8 @@ export async function updateRegularPattern(
   if (form.subject_ids !== undefined) updatePayload.subject_ids = form.subject_ids;
   if (form.seat_label !== undefined) updatePayload.seat_label = form.seat_label || null;
   if (form.period_type !== undefined) updatePayload.period_type = form.period_type;
+  if (form.effective_from !== undefined) updatePayload.effective_from = form.effective_from;
+  if (form.effective_until !== undefined) updatePayload.effective_until = form.effective_until;
 
   const { data, error } = await db
     .from('schedule_regular_patterns')
@@ -604,7 +740,23 @@ export async function generateWeeklySchedule(
   const fromStr = weekStart.toISOString().slice(0, 10);
   const toStr = weekEnd.toISOString().slice(0, 10);
 
+  // 週内に effective_from/until が切り替わる可能性があるので、is_active のパターンを全件取得し
+  // 日ごとに有効か判定する
   const patterns = await getRegularPatterns(schoolId);
+
+  // 退塾日マップ：退塾予定日を持つ生徒は、その日以降のエントリ生成対象外
+  const studentIds = Array.from(new Set(patterns.map((p) => p.student_id)));
+  const withdrawalMap = new Map<string, string>();
+  if (studentIds.length > 0) {
+    const { data: studs } = await db
+      .from('students')
+      .select('id, withdrawal_date')
+      .in('id', studentIds)
+      .not('withdrawal_date', 'is', null);
+    for (const s of (studs || []) as { id: string; withdrawal_date: string | null }[]) {
+      if (s.withdrawal_date) withdrawalMap.set(s.id, s.withdrawal_date);
+    }
+  }
 
   type EntryRow = {
     school_id: string;
@@ -616,6 +768,10 @@ export async function generateWeeklySchedule(
     seat_label: string | null;
     regular_pattern_id: string;
     status: string;
+    // 種別（regular/koushu）と形態（individual/group）
+    // 通塾日程からの生成は常に regular。formation は将来 p.formation を引き継ぐ予定。
+    kind: 'regular' | 'koushu';
+    formation: 'individual' | 'group';
   };
   const entryKey = (e: { entry_date: string; time_slot_id: string; teacher_id: string; student_id: string }) =>
     `${e.entry_date}-${e.time_slot_id}-${e.teacher_id}-${e.student_id}`;
@@ -628,7 +784,13 @@ export async function generateWeeklySchedule(
       dDate.setUTCDate(weekStart.getUTCDate() + d);
       if (dDate.getUTCDay() !== p.day_of_week) continue;
       const dateStr = dDate.toISOString().slice(0, 10);
-      const e = {
+      // effective_from/until で日付が有効範囲内か
+      if (p.effective_from && dateStr < p.effective_from) continue;
+      if (p.effective_until && dateStr > p.effective_until) continue;
+      // 退塾予定日以降は生成しない
+      const wd = withdrawalMap.get(p.student_id);
+      if (wd && dateStr >= wd) continue;
+      const e: EntryRow = {
         school_id: schoolId,
         entry_date: dateStr,
         time_slot_id: p.time_slot_id,
@@ -638,6 +800,10 @@ export async function generateWeeklySchedule(
         seat_label: p.seat_label || null,
         regular_pattern_id: p.id,
         status: 'scheduled',
+        // 通塾日程から生成される=通常授業。
+        // formation はパターン側の値を引き継ぐ（個別パターンなら個別、集団パターンなら集団のエントリに）。
+        kind: 'regular',
+        formation: p.formation ?? 'individual',
       };
       entriesMap.set(entryKey(e), e);
     }
@@ -694,6 +860,20 @@ export async function getExpectedEntryKeysFromPatterns(
   const weekStart = new Date(weekStartDate);
   const keys = new Set<string>();
   const patterns = await getRegularPatterns(schoolId);
+
+  const studentIds = Array.from(new Set(patterns.map((p) => p.student_id)));
+  const withdrawalMap = new Map<string, string>();
+  if (studentIds.length > 0) {
+    const { data: studs } = await db
+      .from('students')
+      .select('id, withdrawal_date')
+      .in('id', studentIds)
+      .not('withdrawal_date', 'is', null);
+    for (const s of (studs || []) as { id: string; withdrawal_date: string | null }[]) {
+      if (s.withdrawal_date) withdrawalMap.set(s.id, s.withdrawal_date);
+    }
+  }
+
   for (const p of patterns) {
     if (!p.time_slot) continue;
     for (let d = 0; d < 7; d++) {
@@ -701,6 +881,10 @@ export async function getExpectedEntryKeysFromPatterns(
       dDate.setUTCDate(weekStart.getUTCDate() + d);
       if (dDate.getUTCDay() !== p.day_of_week) continue;
       const dateStr = dDate.toISOString().slice(0, 10);
+      if (p.effective_from && dateStr < p.effective_from) continue;
+      if (p.effective_until && dateStr > p.effective_until) continue;
+      const wd = withdrawalMap.get(p.student_id);
+      if (wd && dateStr >= wd) continue;
       keys.add(`${dateStr}-${p.time_slot_id}-${p.student_id}`);
     }
   }
@@ -733,14 +917,28 @@ export function getWeekStartForDate(dateStr: string): string {
   return `${y}-${m}-${dayNum}`;
 }
 
-/** 通塾日程変更後に今週の座席表を自動再生成。失敗時は無視（ユーザーは手動で再生成可能） */
+/**
+ * 通塾日程変更後に「今週から先4週」分の座席表を自動再生成
+ *
+ * 未来時点からの変更（effective_from が翌月など）にも反映させるため、
+ * 単週ではなく複数週まとめて再生成する。失敗時は無視（手動再生成可能）。
+ */
 export async function regenerateCurrentWeekIfNeeded(
   schoolId: string,
-  userId?: string
+  userId?: string,
+  options?: { weeksAhead?: number }
 ): Promise<void> {
+  const weeks = options?.weeksAhead ?? 4;
   try {
-    const weekStart = getCurrentWeekStartDateStr();
-    await generateWeeklySchedule(schoolId, weekStart, userId);
+    const baseStart = getCurrentWeekStartDateStr();
+    for (let i = 0; i < weeks; i++) {
+      const d = new Date(baseStart + 'T12:00:00');
+      d.setDate(d.getDate() + i * 7);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      await generateWeeklySchedule(schoolId, `${y}-${m}-${dd}`, userId);
+    }
   } catch (e) {
     console.warn('通塾日程の自動反映に失敗しました:', e);
   }
@@ -806,6 +1004,64 @@ export async function getSlotEntries(
   return (data || []) as ScheduleEntry[];
 }
 
+/**
+ * 講師の時間重複チェック。
+ * 指定日 × 指定時刻範囲に、その講師の別エントリが既にある場合は重複情報を返す。
+ *
+ * 個別と集団でコマ時間が違っても、時刻範囲が物理的に重なれば NG。
+ * （例：講師Aが個別 19:30-21:00 と集団 20:20-21:20 の両方に入っている）
+ */
+export async function checkTeacherTimeConflict(
+  teacherId: string,
+  entryDate: string,
+  startTime: string,
+  endTime: string,
+  options?: { excludeScheduleEntryId?: string }
+): Promise<TimeConflictResult | null> {
+  const excludeEntryId = options?.excludeScheduleEntryId;
+
+  const { data: entries, error } = await db
+    .from('schedule_entries')
+    .select(
+      'id, entry_date, time_slot_id, student_id, time_slot:schedule_time_slots(start_time, end_time), student:students(last_name, first_name)'
+    )
+    .eq('teacher_id', teacherId)
+    .eq('entry_date', entryDate)
+    .in('status', ['scheduled', 'completed', 'transferred_in']);
+
+  if (error || !entries?.length) return null;
+
+  for (const row of entries as Array<{
+    id: string;
+    time_slot_id: string;
+    student_id: string;
+    time_slot?: { start_time: string; end_time: string }[] | { start_time: string; end_time: string };
+    student?: { last_name: string; first_name: string }[] | { last_name: string; first_name: string };
+  }>) {
+    if (row.id === excludeEntryId) continue;
+    const slot = Array.isArray(row.time_slot) ? row.time_slot[0] : row.time_slot;
+    const student = Array.isArray(row.student) ? row.student[0] : row.student;
+    if (!slot) continue;
+    if (timeRangesOverlap(startTime, endTime, slot.start_time ?? '', slot.end_time ?? '')) {
+      const studentName = student ? `${student.last_name}${student.first_name}` : '別の生徒';
+      return {
+        type: 'schedule_entry',
+        conflictWith: {
+          id: row.id,
+          date: entryDate,
+          startTime: slot.start_time ?? '',
+          endTime: slot.end_time ?? '',
+          // 講師重複なので「衝突相手」は生徒（同じ講師がこの生徒のコマと被っている）
+          teacherName: studentName,
+          subjectName: '',
+        },
+        message: `この講師は ${entryDate} の ${slot.start_time?.slice(0, 5)}-${slot.end_time?.slice(0, 5)}（${studentName}）と時間が重複しています`,
+      };
+    }
+  }
+  return null;
+}
+
 /** 授業を1件追加 */
 export async function createScheduleEntry(
   schoolId: string,
@@ -815,6 +1071,32 @@ export async function createScheduleEntry(
   options?: { regular_pattern_id?: string | null; status?: string }
 ): Promise<ScheduleEntry> {
   await ensureUserIsTeacher(form.teacher_id);
+
+  // 同時刻重複チェック：個別と集団でコマ時間が違っても、時刻範囲が重なれば配置不可
+  const targetSlot = await getTimeSlotById(slotId);
+  if (targetSlot) {
+    const studentConflict = await checkStudentTimeConflict(
+      form.student_id,
+      // dayOfWeek は specificDate を渡せば使われないが、型上必須なので date から計算
+      new Date(date + 'T12:00:00').getDay(),
+      targetSlot.start_time,
+      targetSlot.end_time,
+      { specificDate: date }
+    );
+    if (studentConflict) {
+      throw new Error(`生徒の時間重複: ${studentConflict.message}`);
+    }
+    const teacherConflict = await checkTeacherTimeConflict(
+      form.teacher_id,
+      date,
+      targetSlot.start_time,
+      targetSlot.end_time
+    );
+    if (teacherConflict) {
+      throw new Error(`講師の時間重複: ${teacherConflict.message}`);
+    }
+  }
+
   const { data, error } = await db
     .from('schedule_entries')
     .insert({
@@ -828,6 +1110,11 @@ export async function createScheduleEntry(
       note: form.note || null,
       regular_pattern_id: options?.regular_pattern_id ?? null,
       status: options?.status ?? 'scheduled',
+      // 種別・形態：未指定なら DB デフォルト (regular / individual) が入る。
+      // 講習コマを手動配置する場合は呼び出し側で kind='koushu' を渡す。
+      // 集団コマを作る場合は formation='group' を渡す。
+      kind: form.kind ?? 'regular',
+      formation: form.formation ?? 'individual',
     })
     .select()
     .single();
@@ -956,6 +1243,21 @@ export async function deleteScheduleEntry(id: string): Promise<void> {
   }
 }
 
+/**
+ * 元授業日付（'YYYY-MM-DD'）から振替期限「翌月末日」を計算
+ * 例：2026-05-15 → 2026-06-30、2026-12-31 → 2027-01-31
+ */
+export function calcTransferDeadline(originalDateStr: string): string {
+  // ローカルタイムゾーンで Date を作る（'T12:00:00' を付与してDST境界を避ける）
+  const d = new Date(originalDateStr + 'T12:00:00');
+  // 翌月の0日 = 当月の最終日。翌月+1の0日で翌月末を取得する
+  const target = new Date(d.getFullYear(), d.getMonth() + 2, 0);
+  const y = target.getFullYear();
+  const m = String(target.getMonth() + 1).padStart(2, '0');
+  const dd = String(target.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
+}
+
 /** 振替: 元を transferred_out にし、振替先を transferred_in で作成し相互リンク */
 export async function createTransferEntry(
   schoolId: string,
@@ -966,9 +1268,26 @@ export async function createTransferEntry(
   seatLabel?: string | null
 ): Promise<{ from: ScheduleEntry; to: ScheduleEntry }> {
   await ensureUserIsTeacher(targetTeacherId);
+
+  // 元エントリの日付を先に取得（期限計算のため）
+  const { data: srcRow, error: srcErr } = await db
+    .from('schedule_entries')
+    .select('entry_date')
+    .eq('id', fromEntryId)
+    .single();
+  if (srcErr || !srcRow) {
+    console.error('Error fetching transfer source:', srcErr);
+    throw new Error('振替元の取得に失敗しました');
+  }
+  const deadline = calcTransferDeadline((srcRow as { entry_date: string }).entry_date);
+
   const { data: fromRow, error: updateErr } = await db
     .from('schedule_entries')
-    .update({ status: 'transferred_out' })
+    .update({
+      status: 'transferred_out',
+      // 振替期限：元授業日の翌月末日。空きコマで未消化のままだと督促対象になる
+      transfer_deadline: deadline,
+    })
     .eq('id', fromEntryId)
     .select()
     .single();
@@ -1033,7 +1352,12 @@ export async function revertTransferEntry(transferredInEntryId: string): Promise
 
   const { error: updateErr } = await db
     .from('schedule_entries')
-    .update({ status: 'scheduled', transfer_to_id: null })
+    .update({
+      status: 'scheduled',
+      transfer_to_id: null,
+      // 振替を取り消す = 元の通常授業に戻す。期限管理対象外にする
+      transfer_deadline: null,
+    })
     .eq('id', fromId);
 
   if (updateErr) {
@@ -1050,4 +1374,137 @@ export async function revertTransferEntry(transferredInEntryId: string): Promise
     console.error('Error deleting transfer target:', deleteErr);
     throw new Error('振替先の削除に失敗しました');
   }
+}
+
+// ========================================
+// ズレ検知（通塾日程 vs 座席表エントリ）
+// ========================================
+// 振替期限管理（督促ボード用）
+// ========================================
+
+/**
+ * 「振替元（transferred_out）かつ振替先が未確定」のエントリを取得。
+ * 督促ボードで「期限切れ間近の振替: N件」を表示するための一覧。
+ *
+ * @param schoolIds 表示対象の学校ID（複数校対応）
+ * @param thresholdDays 「N日以内に期限が来るもの」を対象にする。デフォルト14日。
+ *                      負の値（期限切れ）も含めるため、 transfer_deadline <= today + threshold で絞る。
+ */
+export async function getPendingTransfers(
+  schoolIds: string[],
+  thresholdDays = 14
+): Promise<ScheduleEntry[]> {
+  if (schoolIds.length === 0) return [];
+  const now = new Date();
+  const limit = new Date(now);
+  limit.setDate(limit.getDate() + thresholdDays);
+  const limitStr = limit.toISOString().slice(0, 10);
+
+  const { data, error } = await db
+    .from('schedule_entries')
+    .select(
+      '*, time_slot:schedule_time_slots(*), student:students(id, last_name, first_name, grade), teacher:user_profiles!schedule_entries_teacher_id_fkey(id, display_name, email)'
+    )
+    .in('school_id', schoolIds)
+    .eq('status', 'transferred_out')
+    .is('transfer_to_id', null) // 振替先未確定のみ
+    .not('transfer_deadline', 'is', null)
+    .lte('transfer_deadline', limitStr)
+    .order('transfer_deadline', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching pending transfers:', error);
+    throw new Error('未消化振替の取得に失敗しました');
+  }
+  type Row = ScheduleEntry & {
+    time_slot?: ScheduleTimeSlot[] | ScheduleTimeSlot;
+    student?: { id: string; last_name: string; first_name: string; grade: number }[] | { id: string; last_name: string; first_name: string; grade: number };
+    teacher?: { id: string; display_name: string | null; email: string | null }[] | { id: string; display_name: string | null; email: string | null };
+  };
+  const rows = (data || []) as Row[];
+  return rows.map((r) => ({
+    ...r,
+    time_slot: Array.isArray(r.time_slot) ? r.time_slot[0] : r.time_slot,
+    student: Array.isArray(r.student) ? r.student[0] : r.student,
+    teacher: Array.isArray(r.teacher) ? r.teacher[0] : r.teacher,
+  })) as ScheduleEntry[];
+}
+
+// ========================================
+
+export interface ScheduleDriftWeek {
+  /** 週の月曜日 'YYYY-MM-DD' */
+  weekStart: string;
+  /** 通塾日程に存在するが、座席表に未生成のキー数（missing） */
+  missingCount: number;
+  /** 座席表に存在するが、通塾日程からは期待されていないキー数（extra）。
+   *  振替・手動追加を除いた regular_pattern_id 付きのもののみ */
+  extraCount: number;
+}
+
+/**
+ * 指定週範囲の「通塾日程と座席表のズレ」を検出
+ *
+ * - missing: 期待されるが座席表に無い（パターンを変更したのに反映されていない）
+ * - extra:   regular_pattern_id 付きの座席表エントリのうち、現在のパターンから期待されないもの
+ *            （古いパターンで生成されたまま残っている可能性）
+ *
+ * @param fromWeekStart 検査開始週の月曜日 'YYYY-MM-DD'
+ * @param weeksAhead 何週先まで見るか（デフォルト4週）
+ */
+export async function detectScheduleDrift(
+  schoolId: string,
+  fromWeekStart: string,
+  weeksAhead = 4
+): Promise<ScheduleDriftWeek[]> {
+  const results: ScheduleDriftWeek[] = [];
+
+  for (let i = 0; i < weeksAhead; i++) {
+    const d = new Date(fromWeekStart + 'T12:00:00');
+    d.setDate(d.getDate() + i * 7);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const weekStart = `${y}-${m}-${dd}`;
+
+    const weekEnd = new Date(d);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    const ey = weekEnd.getFullYear();
+    const em = String(weekEnd.getMonth() + 1).padStart(2, '0');
+    const ed = String(weekEnd.getDate()).padStart(2, '0');
+    const weekEndStr = `${ey}-${em}-${ed}`;
+
+    // 期待されるエントリキー
+    const expected = await getExpectedEntryKeysFromPatterns(schoolId, weekStart);
+
+    // 実際の座席表エントリ（regular_pattern_id 付き・cancelled/transferred_out 以外）
+    const { data: entries } = await db
+      .from('schedule_entries')
+      .select('entry_date, time_slot_id, student_id, regular_pattern_id, status')
+      .eq('school_id', schoolId)
+      .gte('entry_date', weekStart)
+      .lte('entry_date', weekEndStr)
+      .not('regular_pattern_id', 'is', null)
+      .in('status', ['scheduled', 'completed']);
+
+    const actualSet = new Set<string>();
+    for (const e of (entries || []) as { entry_date: string; time_slot_id: string; student_id: string }[]) {
+      actualSet.add(`${e.entry_date}-${e.time_slot_id}-${e.student_id}`);
+    }
+
+    let missing = 0;
+    Array.from(expected).forEach((k) => {
+      if (!actualSet.has(k)) missing++;
+    });
+    let extra = 0;
+    Array.from(actualSet).forEach((k) => {
+      if (!expected.has(k)) extra++;
+    });
+
+    if (missing > 0 || extra > 0) {
+      results.push({ weekStart, missingCount: missing, extraCount: extra });
+    }
+  }
+
+  return results;
 }

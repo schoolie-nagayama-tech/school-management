@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>授業報告書 v3 - 進行表双方向リンク</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif; background: #f5f6f8; color: #1f2328; font-size: 14px; padding: 20px; }
+  .app { max-width: 800px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); overflow: hidden; }
+
+  .header { padding: 20px 24px; background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white; }
+  .header .label { font-size: 11px; opacity: 0.7; text-transform: uppercase; letter-spacing: 1px; }
+  .header h1 { font-size: 20px; font-weight: 700; margin-top: 4px; }
+  .header .meta { font-size: 12px; margin-top: 8px; opacity: 0.85; display: flex; gap: 14px; flex-wrap: wrap; }
+  .header .chip { background: rgba(255,255,255,0.15); padding: 3px 8px; border-radius: 4px; }
+
+  .status-bar { padding: 10px 24px; background: #fffbeb; border-bottom: 1px solid #fde68a; display: flex; align-items: center; gap: 10px; font-size: 12px; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; }
+  .status-bar strong { color: #92400e; }
+  .status-bar .deadline { margin-left: auto; color: #ea580c; font-weight: 600; }
+
+  /* 進行表サマリー */
+  .progress-summary { padding: 12px 24px; background: #eef2ff; border-bottom: 1px solid #c7d2fe; }
+  .progress-summary .label { font-size: 10px; color: #4f46e5; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .progress-row { display: flex; gap: 14px; align-items: center; font-size: 12px; flex-wrap: wrap; }
+  .progress-row strong { color: #1f2328; }
+  .progress-row .sep { color: #4f46e5; opacity: 0.5; }
+
+  .section { padding: 18px 24px; border-bottom: 1px solid #f3f4f6; }
+  .section h2 { font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .link-tag { background: #eef2ff; color: #4f46e5; font-size: 9px; padding: 1px 6px; border-radius: 3px; }
+  .link-tag.outbound { background: #fef3c7; color: #92400e; }
+  .field { margin-bottom: 12px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label { display: block; font-size: 11px; color: #6b7280; margin-bottom: 4px; font-weight: 600; }
+  .field input[type="text"], .field textarea, .field select {
+    width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-family: inherit; font-size: 13px;
+  }
+  .field textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
+  .field .helper { font-size: 10px; color: #9ca3af; margin-top: 2px; }
+  .field .helper.warn { color: #92400e; }
+
+  /* Goals */
+  .goal-stack { display: flex; flex-direction: column; gap: 10px; }
+  .goal-item { padding: 10px 12px; border-radius: 6px; border: 1px solid #e5e7eb; }
+  .goal-item.mid-term { background: #f9fafb; border-style: dashed; }
+  .goal-item.short-term { background: white; border: 2px solid #4f46e5; }
+  .goal-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .goal-badge { font-size: 9px; padding: 2px 6px; border-radius: 3px; font-weight: 700; }
+  .goal-badge.mid { background: #f3f4f6; color: #4b5563; }
+  .goal-badge.short { background: #4f46e5; color: white; }
+  .goal-source { font-size: 10px; color: #9ca3af; }
+  .goal-text { font-size: 13px; color: #1f2328; }
+  .goal-text.editable input { width: 100%; padding: 6px 8px; border: 1px solid #c7d2fe; border-radius: 4px; font-size: 13px; }
+
+  /* 教材+単元セット */
+  .lesson-set-list { display: flex; flex-direction: column; gap: 10px; }
+  .lesson-set { padding: 12px; border: 1px solid #e5e7eb; border-radius: 8px; background: white; }
+  .lesson-set.main { border-color: #4f46e5; border-width: 2px; background: #fafbff; }
+  .lesson-set.sub { background: #fafbfc; }
+  .set-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .set-badge { font-size: 9px; padding: 2px 6px; border-radius: 3px; font-weight: 700; }
+  .set-badge.main { background: #4f46e5; color: white; }
+  .set-badge.sub { background: #6b7280; color: white; }
+  .set-textbook { font-size: 13px; font-weight: 700; flex: 1; }
+  .set-remove { background: transparent; border: none; color: #9ca3af; cursor: pointer; font-size: 16px; padding: 2px 8px; }
+  .set-body { display: grid; grid-template-columns: 1fr; gap: 10px; }
+
+  /* 単元複数選択 (chips) */
+  .units-field label { display: block; font-size: 10px; color: #6b7280; margin-bottom: 4px; font-weight: 600; }
+  .units-input {
+    border: 1px solid #d1d5db; border-radius: 6px; padding: 6px 8px; background: white; min-height: 40px;
+    display: flex; flex-wrap: wrap; gap: 4px; align-items: center;
+  }
+  .unit-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; background: #4f46e5; color: white; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .unit-chip .x { cursor: pointer; opacity: 0.8; margin-left: 2px; }
+  .unit-chip.suggest { background: #f3f4f6; color: #6b7280; border: 1px dashed #c7d2fe; }
+  .unit-add-trigger { color: #4f46e5; font-size: 11px; padding: 3px 6px; cursor: pointer; }
+
+  /* Page input with p. prefix */
+  .page-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .page-input-wrap { position: relative; }
+  .page-input-wrap .p-prefix { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #6b7280; font-size: 13px; font-weight: 600; pointer-events: none; }
+  .page-input-wrap input { width: 100%; padding: 8px 10px 8px 28px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; }
+
+  .add-set { padding: 10px; background: white; border: 1px dashed #c7d2fe; border-radius: 6px; color: #4f46e5; cursor: pointer; text-align: center; font-size: 12px; font-weight: 600; }
+  .add-set:hover { background: #eef2ff; }
+
+  /* Slider */
+  .slider-row { display: grid; grid-template-columns: 1fr 60px; gap: 12px; align-items: center; }
+  .slider-track input[type=range] { width: 100%; -webkit-appearance: none; appearance: none; height: 6px; background: #e5e7eb; border-radius: 3px; outline: none; }
+  .slider-track input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: #4f46e5; border-radius: 50%; cursor: pointer; border: 3px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+  .slider-value { font-size: 18px; font-weight: 700; color: #4f46e5; text-align: right; }
+  .slider-value .unit { font-size: 11px; color: #6b7280; font-weight: 500; }
+
+  /* Test */
+  .test-row { display: grid; grid-template-columns: 1fr 70px 70px 140px; gap: 8px; align-items: end; padding: 10px; background: #fafbfc; border-radius: 6px; margin-bottom: 8px; }
+  .test-row input[type="number"] { width: 100%; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 13px; text-align: center; }
+  .test-row .test-name { font-size: 12px; font-weight: 600; padding-bottom: 6px; }
+  .pass-toggle { display: flex; border: 1px solid #d1d5db; border-radius: 6px; overflow: hidden; }
+  .pass-toggle button { flex: 1; padding: 6px; background: white; border: none; cursor: pointer; font-size: 11px; font-weight: 600; color: #6b7280; }
+  .pass-toggle .pass.active { background: #16a34a; color: white; }
+  .pass-toggle .fail.active { background: #ef4444; color: white; }
+
+  /* Critique with AI assist */
+  .ai-assist-row { display: flex; gap: 8px; margin-bottom: 8px; }
+  .ai-assist-btn { padding: 6px 12px; background: linear-gradient(135deg, #8b5cf6, #6366f1); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
+  .ai-future { font-size: 10px; color: #6b7280; padding: 6px 10px; background: #f3f4f6; border-radius: 4px; }
+
+  /* Homework */
+  .hw-section .hw-meta { font-size: 11px; color: #6b7280; margin-bottom: 8px; padding: 8px 10px; background: #eef2ff; border-radius: 4px; }
+  .hw-meta strong { color: #4f46e5; }
+  .hw-list { display: flex; flex-direction: column; gap: 6px; }
+  .hw-row { display: grid; grid-template-columns: 64px 1fr 30px; gap: 8px; align-items: center; }
+  .hw-row .date-pill { display: inline-block; padding: 3px 8px; background: #eef2ff; color: #4338ca; border-radius: 4px; font-size: 11px; font-weight: 600; text-align: center; }
+  .hw-row input { padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 12px; }
+  .hw-row .remove-btn { background: transparent; border: 1px solid #e5e7eb; border-radius: 4px; color: #9ca3af; cursor: pointer; width: 28px; height: 28px; }
+  .add-hw { padding: 8px; background: white; border: 1px dashed #c7d2fe; border-radius: 6px; color: #4f46e5; cursor: pointer; text-align: center; font-size: 12px; font-weight: 600; margin-top: 6px; }
+
+  /* Subject-specific */
+  .subject-section { padding: 14px; background: linear-gradient(135deg, #fef3c7, #fef9c3); border-radius: 8px; border: 1px solid #fde68a; }
+  .subject-section .label-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .subject-section .label-row .badge { font-size: 10px; padding: 2px 8px; background: #f59e0b; color: white; border-radius: 3px; font-weight: 600; }
+  .subject-section h3 { font-size: 13px; font-weight: 700; color: #92400e; }
+  .range-row { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; align-items: end; }
+  .range-row label { font-size: 11px; color: #6b7280; }
+  .range-row input, .range-row select { padding: 6px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 12px; width: 100%; }
+
+  .footer { padding: 16px 24px; background: #fafbfc; display: flex; gap: 10px; align-items: center; }
+  .footer .auto-saved { flex: 1; font-size: 11px; color: #9ca3af; }
+  .btn { padding: 10px 18px; border-radius: 6px; font-size: 13px; cursor: pointer; border: 1px solid #d1d5db; background: white; font-weight: 600; }
+  .btn-primary { background: #4f46e5; color: white; border: none; }
+  .btn-ghost { background: transparent; border: none; color: #6b7280; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="label">授業報告書</div>
+    <h1>2026/7/22 (月) 3限 ・ 英語</h1>
+    <div class="meta">
+      <span class="chip">田中 太郎 (中学2年)</span>
+      <span class="chip">講師: 山田</span>
+      <span class="chip">教室: 池袋校</span>
+      <span class="chip">座席: B-3</span>
+    </div>
+  </div>
+
+  <div class="status-bar">
+    <span class="status-dot"></span>
+    <strong>下書き保存中</strong> ・ 室長承認後に保護者へ公開されます
+    <span class="deadline">提出期限: 本日 23:59</span>
+  </div>
+
+  <!-- 進行表サマリー -->
+  <div class="progress-summary">
+    <div class="label">進行表からの情報 (参考)</div>
+    <div class="progress-row">
+      <span>メイン教材: <strong>NEW HORIZON 2</strong></span>
+      <span class="sep">|</span>
+      <span>これまでの進度: <strong>Unit 5 完了</strong></span>
+      <span class="sep">|</span>
+      <span>次の単元 (おすすめ): <strong>Unit 6</strong></span>
+      <span class="sep">|</span>
+      <span>前回の学校進度: <strong>Unit 5 Lesson 2</strong> (7/18 更新)</span>
+      <span class="sep">|</span>
+      <a href="#" style="color: #4f46e5; font-size: 11px;">進行表を開く →</a>
+    </div>
+  </div>
+
+  <!-- 1. 目標 -->
+  <div class="section">
+    <h2>1. 目標 <span class="link-tag">進行表から取得</span></h2>
+    <div class="goal-stack">
+      <div class="goal-item mid-term">
+        <div class="goal-head">
+          <span class="goal-badge mid">中期: 教材目標</span>
+          <span class="goal-source">student_textbook_exams (試験: 2026/9/15)</span>
+        </div>
+        <div class="goal-text">期末テスト Unit 1-7 で 85点以上を取る</div>
+      </div>
+      <div class="goal-item mid-term">
+        <div class="goal-head">
+          <span class="goal-badge mid">中期: 行動目標</span>
+          <span class="goal-source">action_goals</span>
+        </div>
+        <div class="goal-text">英文を音読し、不定詞の3用法を例文で説明できる</div>
+      </div>
+      <div class="goal-item short-term">
+        <div class="goal-head">
+          <span class="goal-badge short">短期: この授業の目標</span>
+          <span class="goal-source" style="margin-left:auto;">↑ 中期目標を踏まえて入力</span>
+        </div>
+        <div class="goal-text editable">
+          <input type="text" value="不定詞の名詞用法を5問以上正しく訳せる" placeholder="今日の授業のゴールを入力">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 学校進度 (報告書 → 進行表) -->
+  <div class="section">
+    <h2>2. 学校進度 <span class="link-tag outbound">→ 進行表へ転記</span></h2>
+    <div class="field">
+      <label>授業時にヒアリングして記入 (保存時に進行表の最新学校進度に転記されます)</label>
+      <input type="text" value="Unit 5 - Lesson 2" placeholder="例: Unit 5 Lesson 2">
+      <div class="helper warn">この欄を更新すると、進行表の「学校進度」が自動で書き換わります</div>
+    </div>
+  </div>
+
+  <!-- 3. 今日の授業内容 (単元+教材セット、進行表へ転記) -->
+  <div class="section">
+    <h2>3. 今日の授業内容 <span class="link-tag outbound">→ 進行表へ転記</span></h2>
+    <div style="font-size: 11px; color: #6b7280; margin-bottom: 10px;">
+      教材ごとに「単元 (複数選択可) + ページ範囲」をセットで指定。保存時にメイン教材は <code>application_count+1</code>、サブ教材も同様に進行表へ転記されます。
+    </div>
+
+    <div class="lesson-set-list">
+
+      <!-- メイン教材セット -->
+      <div class="lesson-set main">
+        <div class="set-head">
+          <span class="set-badge main">メイン</span>
+          <div class="set-textbook">
+            <select style="border: none; background: transparent; font-weight: 700; font-size: 13px; padding: 0;">
+              <option>NEW HORIZON 2</option>
+            </select>
+          </div>
+        </div>
+        <div class="set-body">
+          <div class="units-field">
+            <label>授業単元 (複数選択可)</label>
+            <div class="units-input">
+              <span class="unit-chip">Unit 6 不定詞の名詞用法<span class="x">×</span></span>
+              <span class="unit-chip">Unit 6 不定詞の形容詞用法<span class="x">×</span></span>
+              <span class="unit-add-trigger">+ 単元追加</span>
+              <span class="unit-chip suggest">+ Unit 6 副詞用法 (進行表おすすめ)</span>
+            </div>
+          </div>
+          <div class="page-grid">
+            <div>
+              <label style="font-size: 10px; color:#6b7280; font-weight:600;">開始ページ</label>
+              <div class="page-input-wrap">
+                <span class="p-prefix">p.</span>
+                <input type="number" value="46">
+              </div>
+            </div>
+            <div>
+              <label style="font-size: 10px; color:#6b7280; font-weight:600;">終了ページ</label>
+              <div class="page-input-wrap">
+                <span class="p-prefix">p.</span>
+                <input type="number" value="49">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- サブ教材セット -->
+      <div class="lesson-set sub">
+        <div class="set-head">
+          <span class="set-badge sub">サブ補助</span>
+          <div class="set-textbook">
+            <select style="border: none; background: transparent; font-weight: 700; font-size: 13px; padding: 0;">
+              <option>夏期講習 英語ドリル</option>
+            </select>
+          </div>
+          <button class="set-remove" title="削除">×</button>
+        </div>
+        <div class="set-body">
+          <div class="units-field">
+            <label>授業単元 (複数選択可)</label>
+            <div class="units-input">
+              <span class="unit-chip">不定詞 基礎演習<span class="x">×</span></span>
+              <span class="unit-add-trigger">+ 単元追加</span>
+            </div>
+          </div>
+          <div class="page-grid">
+            <div>
+              <label style="font-size: 10px; color:#6b7280; font-weight:600;">開始ページ</label>
+              <div class="page-input-wrap">
+                <span class="p-prefix">p.</span>
+                <input type="number" value="12">
+              </div>
+            </div>
+            <div>
+              <label style="font-size: 10px; color:#6b7280; font-weight:600;">終了ページ</label>
+              <div class="page-input-wrap">
+                <span class="p-prefix">p.</span>
+                <input type="number" value="15">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="add-set">+ サブ教材セットを追加 (補助教材)</div>
+
+    </div>
+  </div>
+
+  <!-- 4. 宿題・テスト -->
+  <div class="section">
+    <h2>4. 宿題・テスト結果</h2>
+
+    <div class="field">
+      <label>宿題実施状況</label>
+      <div class="slider-row">
+        <div class="slider-track"><input type="range" min="0" max="100" value="100"></div>
+        <div class="slider-value">100<span class="unit">%</span></div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>宿題正答率</label>
+      <div class="slider-row">
+        <div class="slider-track"><input type="range" min="0" max="100" value="85"></div>
+        <div class="slider-value">85<span class="unit">%</span></div>
+      </div>
+    </div>
+
+    <div class="field" style="margin-top: 16px;">
+      <label>テスト結果 <span style="font-weight:normal; color:#9ca3af;">(集計用に保存・テスト管理機能とは独立)</span></label>
+      <div class="test-row">
+        <div class="test-name">英単語テスト</div>
+        <input type="number" value="18">
+        <input type="number" value="20">
+        <div class="pass-toggle">
+          <button class="pass active">合格</button>
+          <button class="fail">不合格</button>
+        </div>
+      </div>
+      <div class="test-row">
+        <div class="test-name">確認テスト</div>
+        <input type="number">
+        <input type="number">
+        <div class="pass-toggle">
+          <button class="pass">合格</button>
+          <button class="fail">不合格</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>本日の問題正答率</label>
+      <div class="slider-row">
+        <div class="slider-track"><input type="range" min="0" max="100" value="78"></div>
+        <div class="slider-value">78<span class="unit">%</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. 講評 (AI assist) -->
+  <div class="section">
+    <h2>5. 講評 <span class="link-tag" style="background:#ede9fe; color:#6d28d9;">将来: AI下書き</span></h2>
+    <div class="ai-assist-row">
+      <button class="ai-assist-btn" disabled style="opacity:0.5; cursor:not-allowed;">★ AIで下書き生成 (将来機能)</button>
+      <div class="ai-future">テスト結果・宿題実施・進行表データから AI が下書き → 講師が加筆修正</div>
+    </div>
+    <textarea placeholder="5行程度で記入">単語テストは合格点でしたが、特に動詞の活用に苦手意識があるようです。
+不定詞の名詞用法について、最初は混乱していたものの、例文を一緒に作る中で理解が深まりました。
+次回はもう少し難易度の高い文章にも触れていきたいと思います。
+家庭学習では音読を継続することをお勧めします。</textarea>
+    <div class="helper">現在 4行 / 推奨 5行</div>
+  </div>
+
+  <!-- 6. 次回までの宿題 (日割り) -->
+  <div class="section hw-section">
+    <h2>6. 次回までの宿題 <span class="link-tag">日付自動割当</span></h2>
+    <div class="hw-meta">
+      次回授業: <strong>2026/7/25 (木) 19:30</strong> ・ 残り <strong>3日</strong>間 → 等分配 (1日あたり 2〜3枠)
+    </div>
+    <div class="hw-list">
+      <div class="hw-row"><span class="date-pill">7/23 火</span><input type="text" value="ワーク p.30-31"><button class="remove-btn">×</button></div>
+      <div class="hw-row"><span class="date-pill">7/23 火</span><input type="text" value="単語ノート Unit 6 まとめ"><button class="remove-btn">×</button></div>
+      <div class="hw-row"><span class="date-pill">7/23 火</span><input type="text" value="教科書 p.46 音読 10回"><button class="remove-btn">×</button></div>
+      <div class="hw-row"><span class="date-pill">7/24 水</span><input type="text" value="ワーク p.32-33"><button class="remove-btn">×</button></div>
+      <div class="hw-row"><span class="date-pill">7/24 水</span><input type="text" value="単語練習 10個"><button class="remove-btn">×</button></div>
+      <div class="hw-row"><span class="date-pill">7/25 木</span><input type="text" value="教科書 p.47 音読 10回"><button class="remove-btn">×</button></div>
+      <div class="hw-row"><span class="date-pill">7/25 木</span><input type="text" value="ワーク p.34 まとめ問題"><button class="remove-btn">×</button></div>
+    </div>
+    <div class="add-hw">+ 宿題枠を追加</div>
+  </div>
+
+  <!-- 7. 科目別 -->
+  <div class="section">
+    <h2>7. 科目別欄 (英語: 単語練習)</h2>
+    <div class="subject-section">
+      <div class="label-row">
+        <span class="badge">英語</span>
+        <h3>単語練習</h3>
+      </div>
+      <div class="range-row">
+        <div><label>練習範囲</label><input type="text" value="Unit 6 単語"></div>
+        <div><label>ページ</label>
+          <div class="page-input-wrap">
+            <span class="p-prefix">p.</span>
+            <input type="text" value="46-49" style="padding-left: 28px;">
+          </div>
+        </div>
+        <div><label>1日の練習回数</label><select><option>3回</option><option selected>5回</option><option>10回</option></select></div>
+        <div><label>期間</label><select><option>3日間</option><option selected>1週間</option></select></div>
+      </div>
+      <div style="margin-top: 8px; font-size: 11px; color: #92400e;">
+        <strong>「Unit 6 単語 (p.46-49)」を1日5回、1週間練習帳に書いて暗記してくる</strong>
+      </div>
+    </div>
+    <div style="margin-top: 8px; font-size: 11px; color: #9ca3af; text-align: center;">
+      ※ 数学なら「計算練習」、国語なら「漢字練習」に自動切替
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="auto-saved">最終保存: 2分前 (自動)</div>
+    <button class="btn btn-ghost">過去の報告書を見る</button>
+    <button class="btn">下書き保存</button>
+    <button class="btn btn-primary">送信 (室長承認待ち)</button>
+  </div>
+
+</div>
+</body>
+</html>

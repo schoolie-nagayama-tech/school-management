@@ -54,6 +54,7 @@ export function StudentForm({
     club: student?.club || '',
     is_programming: student?.is_programming ?? false,
     is_sibling: student?.is_sibling ?? false,
+    withdrawal_date: student?.withdrawal_date || '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -79,6 +80,7 @@ export function StudentForm({
         club: student.club || '',
         is_programming: student.is_programming ?? false,
         is_sibling: student.is_sibling ?? false,
+        withdrawal_date: student.withdrawal_date || '',
       });
     }
   }, [student]);
@@ -157,9 +159,14 @@ export function StudentForm({
 
     if (!validate()) return;
 
+    // withdrawal_date は空欄を null として送る（DB の DATE 型は空文字を許容しない）
+    const normalized = {
+      ...formData,
+      withdrawal_date: formData.withdrawal_date || null,
+    };
     const submitData = isEdit
-      ? (formData as StudentUpdate)
-      : ({ ...formData, school_id: selectedSchoolId } as StudentInsert);
+      ? (normalized as StudentUpdate)
+      : ({ ...normalized, school_id: selectedSchoolId } as StudentInsert);
 
     await onSubmit(submitData);
   };
@@ -242,6 +249,25 @@ export function StudentForm({
           options={statusOptions}
           required
         />
+      )}
+
+      {/* 退塾予定日（編集時のみ表示）— 入力すればこの日以降は座席表生成・5週目計算から除外 */}
+      {isEdit && (
+        <div>
+          <label className="block text-sm font-medium text-[#1f2937] mb-1">
+            退塾予定日
+          </label>
+          <input
+            type="date"
+            name="withdrawal_date"
+            value={formData.withdrawal_date}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg text-sm bg-white"
+          />
+          <p className="text-xs text-[#6b7280] mt-1">
+            この日以降は座席表・5週目請求から自動的に除外されます。空欄なら在籍中扱い。
+          </p>
+        </div>
       )}
 
       {/* 学校名 */}

@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>講習マッチングモード モック</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    background: #f7f7f8;
+    color: #1f2328;
+    font-size: 14px;
+    padding: 24px;
+  }
+  .app {
+    max-width: 1320px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    overflow: hidden;
+  }
+
+  /* ---- Header ---- */
+  .header {
+    padding: 16px 24px;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .header h1 { font-size: 16px; font-weight: 600; }
+  .breadcrumb { font-size: 12px; color: #6b7280; margin-top: 2px; }
+
+  /* ---- Toolbar ---- */
+  .toolbar {
+    padding: 12px 24px;
+    background: #fafbfc;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .nav-btn {
+    padding: 6px 12px;
+    border: 1px solid #d1d5db;
+    background: white;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .week-label { font-weight: 600; margin: 0 8px; }
+  .spacer { flex: 1; }
+  .mode-toggle {
+    display: flex;
+    background: #eef2ff;
+    border-radius: 8px;
+    padding: 3px;
+    border: 1px solid #c7d2fe;
+  }
+  .mode-toggle button {
+    border: none;
+    background: transparent;
+    padding: 5px 12px;
+    border-radius: 5px;
+    font-size: 12px;
+    cursor: pointer;
+    color: #4f46e5;
+  }
+  .mode-toggle .active {
+    background: #4f46e5;
+    color: white;
+    font-weight: 600;
+  }
+
+  /* ---- Matching banner ---- */
+  .matching-banner {
+    padding: 14px 24px;
+    background: linear-gradient(90deg, #fefce8, #fffbeb);
+    border-bottom: 1px solid #fde68a;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .matching-banner .icon {
+    width: 32px; height: 32px;
+    background: #facc15;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: bold;
+  }
+  .banner-text { flex: 1; }
+  .banner-text strong { font-size: 13px; }
+  .banner-text small { display: block; color: #6b7280; margin-top: 2px; font-size: 11px; }
+  .banner-actions { display: flex; gap: 8px; }
+  .btn-primary {
+    padding: 8px 16px;
+    background: #4f46e5;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .btn-secondary {
+    padding: 8px 14px;
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+  .btn-ghost {
+    padding: 6px 10px;
+    background: transparent;
+    border: none;
+    color: #4f46e5;
+    cursor: pointer;
+    font-size: 12px;
+  }
+
+  /* ---- Stats ---- */
+  .stats {
+    padding: 12px 24px;
+    display: flex;
+    gap: 24px;
+    background: white;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 12px;
+  }
+  .stat { display: flex; align-items: center; gap: 6px; }
+  .stat-label { color: #6b7280; }
+  .stat-value { font-weight: 600; }
+  .stat-value.ok { color: #16a34a; }
+  .stat-value.warn { color: #ea580c; }
+
+  /* ---- Schedule grid ---- */
+  .grid-wrap {
+    padding: 16px 24px;
+    overflow-x: auto;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 70px repeat(6, 1fr);
+    gap: 6px;
+    min-width: 1000px;
+  }
+  .time-header, .day-header {
+    padding: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+    text-align: center;
+  }
+  .day-header { background: #f9fafb; border-radius: 6px; }
+  .time-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: #6b7280;
+    font-weight: 600;
+  }
+
+  .cell {
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    min-height: 110px;
+    padding: 6px;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .teacher-tag {
+    font-size: 10px;
+    color: #6b7280;
+    font-weight: 600;
+    padding: 2px 6px;
+    background: #f3f4f6;
+    border-radius: 3px;
+    align-self: flex-start;
+  }
+  .teacher-tag.has-shift { background: #dcfce7; color: #166534; }
+
+  .student-card {
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: grab;
+  }
+  /* 公開済み = 通常授業 */
+  .student-card.published {
+    background: #dbeafe;
+    color: #1e40af;
+    border-left: 3px solid #3b82f6;
+  }
+  /* 下書き = マッチング提案 */
+  .student-card.draft {
+    background: #fef3c7;
+    color: #92400e;
+    border-left: 3px solid #f59e0b;
+    border-style: dashed;
+    border-width: 1px 1px 1px 3px;
+  }
+  /* 集団 */
+  .student-card.group {
+    background: #ede9fe;
+    color: #5b21b6;
+    border-left: 3px solid #8b5cf6;
+  }
+  /* 集団下書き */
+  .student-card.group.draft {
+    background: linear-gradient(135deg, #fef3c7 0%, #ede9fe 100%);
+    border-left: 3px solid #f59e0b;
+    border-style: dashed;
+    border-width: 1px 1px 1px 3px;
+  }
+  .star { color: #f59e0b; font-weight: bold; font-size: 9px; }
+
+  .cell.closed {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #991b1b;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+  }
+  .cell.over-capacity {
+    border-color: #ef4444;
+    border-width: 2px;
+    background: #fef2f2;
+  }
+  .capacity-warning {
+    font-size: 9px;
+    color: #dc2626;
+    font-weight: 600;
+    margin-top: 2px;
+  }
+
+  /* ---- Unmatched footer ---- */
+  .unmatched-bar {
+    margin-top: 16px;
+    padding: 14px 24px;
+    background: #fef2f2;
+    border-top: 2px solid #fca5a5;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-radius: 0 0 12px 12px;
+  }
+  .unmatched-icon {
+    width: 28px; height: 28px;
+    background: #ef4444;
+    color: white;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+  }
+  .unmatched-list { flex: 1; }
+  .unmatched-list strong { font-size: 13px; color: #991b1b; }
+  .unmatched-chip {
+    display: inline-block;
+    padding: 3px 8px;
+    background: white;
+    border: 1px solid #fca5a5;
+    border-radius: 4px;
+    margin: 2px 4px 2px 0;
+    font-size: 11px;
+    color: #991b1b;
+    cursor: pointer;
+  }
+  .unmatched-chip:hover { background: #fef2f2; }
+
+  /* ---- Legend ---- */
+  .legend {
+    padding: 12px 24px;
+    background: #fafbfc;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    gap: 24px;
+    font-size: 11px;
+    color: #6b7280;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-swatch { width: 14px; height: 14px; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div>
+      <h1>座席表 - 2026年 夏期講習</h1>
+      <div class="breadcrumb">スケジュール / 座席表 / マッチングモード</div>
+    </div>
+    <div>
+      <button class="btn-secondary">印刷</button>
+      <button class="btn-secondary">設定</button>
+    </div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <button class="nav-btn">&lsaquo; 前週</button>
+    <span class="week-label">7月22日(月) 〜 7月27日(土)</span>
+    <button class="nav-btn">次週 &rsaquo;</button>
+    <button class="nav-btn">今週</button>
+
+    <span style="margin-left:16px; color:#6b7280; font-size:12px;">講習フィルタ:</span>
+    <select class="nav-btn">
+      <option>2026年 夏期講習</option>
+      <option>表示中: 通常授業 + 夏期講習</option>
+    </select>
+
+    <div class="spacer"></div>
+
+    <div class="mode-toggle">
+      <button>通常モード</button>
+      <button class="active">マッチングモード</button>
+    </div>
+  </div>
+
+  <!-- MATCHING BANNER -->
+  <div class="matching-banner">
+    <div class="icon">★</div>
+    <div class="banner-text">
+      <strong>マッチング下書きを表示中 (★マーク・点線枠)</strong>
+      <small>ドラッグで移動 / クリックで講師変更 / 右クリックで削除。公開すると正式な座席表に反映されます。</small>
+    </div>
+    <div class="banner-actions">
+      <button class="btn-secondary">差分追加で再実行</button>
+      <button class="btn-secondary">部分再実行...</button>
+      <button class="btn-primary">下書きを全部公開</button>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats">
+    <div class="stat"><span class="stat-label">提出状況:</span> <span class="stat-value">講師 12/15</span> <span class="stat-value">生徒 28/30</span></div>
+    <div class="stat"><span class="stat-label">配置済み:</span> <span class="stat-value ok">公開 24コマ + 下書き 38コマ</span></div>
+    <div class="stat"><span class="stat-label">未マッチ:</span> <span class="stat-value warn">3名 / 計7コマ</span></div>
+    <div class="stat"><span class="stat-label">最終実行:</span> <span class="stat-value">2分前</span></div>
+  </div>
+
+  <!-- GRID -->
+  <div class="grid-wrap">
+    <div class="grid">
+      <div class="time-header"></div>
+      <div class="day-header">7/22 月</div>
+      <div class="day-header">7/23 火</div>
+      <div class="day-header">7/24 水</div>
+      <div class="day-header">7/25 木</div>
+      <div class="day-header">7/26 金</div>
+      <div class="day-header">7/27 土</div>
+
+      <!-- 1限 -->
+      <div class="time-cell">1限<br>13:00<br>14:20</div>
+      <div class="cell">
+        <span class="teacher-tag has-shift">山田T</span>
+        <div class="student-card published">田中 (数)</div>
+        <div class="student-card draft"><span class="star">★</span>佐藤 (英)</div>
+      </div>
+      <div class="cell">
+        <span class="teacher-tag has-shift">鈴木T</span>
+        <div class="student-card draft"><span class="star">★</span>高橋 (数)</div>
+        <div class="student-card draft"><span class="star">★</span>渡辺 (数)</div>
+      </div>
+      <div class="cell">
+        <span class="teacher-tag">枠なし</span>
+      </div>
+      <div class="cell">
+        <span class="teacher-tag has-shift">山田T</span>
+        <div class="student-card published">田中 (数)</div>
+        <div class="student-card draft"><span class="star">★</span>伊藤 (英)</div>
+      </div>
+      <div class="cell">
+        <span class="teacher-tag has-shift">中村T</span>
+        <div class="student-card group">中3集団 (5名)</div>
+      </div>
+      <div class="cell closed">休講日</div>
+
+      <!-- 2限 -->
+      <div class="time-cell">2限<br>14:45<br>16:15</div>
+      <div class="cell">
+        <span class="teacher-tag has-shift">鈴木T</span>
+        <div class="student-card draft"><span class="star">★</span>木村 (国)</div>
+      </div>
+      <div class="cell over-capacity">
+        <span class="teacher-tag has-shift">山田T</span>
+        <div class="student-card published">田中 (数)</div>
+        <div class="student-card draft"><span class="star">★</span>佐藤 (英)</div>
+        <div class="student-card draft"><span class="star">★</span>高橋 (数)</div>
+        <div class="capacity-warning">⚠ 1対2上限超過</div>
+      </div>
+      <div class="cell">
+        <span class="teacher-tag has-shift">山田T</span>
+        <div class="student-card draft"><span class="star">★</span>渡辺 (英)</div>
+      </div>
+      <div class="cell">
+        <span class="teacher-tag has-shift">中村T</span>
+        <div class="student-card draft"><span class="star">★</span>伊藤 (数)</div>
+        <div class="student-card draft"><span class="star">★</span>木村 (数)</div>
+      </div>
+      <div class="cell">
+        <span class="teacher-tag">枠なし</span>
+      </div>
+      <div class="cell closed">休講日</div>
+
+      <!-- 3限 -->
+      <div class="time-cell">3限<br>16:40<br>18:10</div>
+      <div class="cell">
+        <span class="teacher-tag has-shift">山田T</span>
+        <div class="student-card published">田中 (数)</div>
+      </div>
+      <div class="cell">
+        <span class="teacher-tag has-shift">鈴木T</span>
+        <div class="student-card published">高橋 (英)</div>
+        <div class="student-card draft"><span class="star">★</span>佐藤 (数)</div>
+      </div>
+      <div class="cell">
+        <span class="teacher-tag has-shift">中村T</span>
+        <div class="student-card group draft"><span class="star">★</span>中3集団 (4名)</div>
+      </div>
+      <div class="cell">
+        <span class="teacher-tag has-shift">山田T</span>
+        <div class="student-card published">伊藤 (英)</div>
+      </div>
+      <div class="cell">
+        <span class="teacher-tag has-shift">鈴木T</span>
+        <div class="student-card draft"><span class="star">★</span>木村 (国)</div>
+      </div>
+      <div class="cell closed">休講日</div>
+
+      <!-- 4限 -->
+      <div class="time-cell">4限<br>19:00<br>20:30</div>
+      <div class="cell">
+        <span class="teacher-tag has-shift">山田T</span>
+        <div class="student-card published">田中 (英)</div>
+      </div>
+      <div class="cell">
+        <span class="teacher-tag has-shift">中村T</span>
+        <div class="student-card group">中3集団 (5名)</div>
+      </div>
+      <div class="cell">
+        <span class="teacher-tag has-shift">鈴木T</span>
+        <div class="student-card draft"><span class="star">★</span>高橋 (国)</div>
+        <div class="student-card draft"><span class="star">★</span>渡辺 (数)</div>
+      </div>
+      <div class="cell">
+        <span class="teacher-tag has-shift">山田T</span>
+        <div class="student-card published">伊藤 (数)</div>
+      </div>
+      <div class="cell">
+        <span class="teacher-tag has-shift">山田T</span>
+        <div class="student-card draft"><span class="star">★</span>佐藤 (英)</div>
+      </div>
+      <div class="cell closed">休講日</div>
+    </div>
+  </div>
+
+  <!-- UNMATCHED -->
+  <div class="unmatched-bar">
+    <div class="unmatched-icon">!</div>
+    <div class="unmatched-list">
+      <strong>未マッチ: 3名 / 計7コマ</strong> &nbsp; <span style="color:#6b7280; font-size:11px;">クリックで手動配置モード</span>
+      <div style="margin-top:6px;">
+        <span class="unmatched-chip">田中 太郎 残2コマ (数学)</span>
+        <span class="unmatched-chip">高橋 花子 残3コマ (英語)</span>
+        <span class="unmatched-chip">伊藤 翔 残2コマ (国語)</span>
+      </div>
+    </div>
+    <button class="btn-secondary">未マッチ一覧をDL</button>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <div class="legend-item"><span class="legend-swatch" style="background:#dbeafe; border-left:3px solid #3b82f6;"></span>公開済み(個別)</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:#fef3c7; border-left:3px solid #f59e0b; border-style:dashed; border-width:1px 1px 1px 3px;"></span>★ 下書き(個別)</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:#ede9fe; border-left:3px solid #8b5cf6;"></span>公開済み(集団)</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:linear-gradient(135deg, #fef3c7, #ede9fe); border-left:3px solid #f59e0b; border-style:dashed; border-width:1px 1px 1px 3px;"></span>★ 下書き(集団)</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:#dcfce7;"></span>シフト提出済み講師</div>
+    <div class="legend-item"><span class="legend-swatch" style="background:#fef2f2; border:2px solid #ef4444;"></span>容量超過警告</div>
+  </div>
+
+</div>
+</body>
+</html>
