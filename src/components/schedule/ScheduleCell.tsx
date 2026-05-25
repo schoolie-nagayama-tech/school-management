@@ -24,9 +24,9 @@ function daysUntil(targetDateStr: string): number {
 }
 
 const ATTENDANCE_BG: Record<string, string> = {
-  present: 'bg-green-100',
-  absent: 'bg-red-100',
-  late: 'bg-amber-100',
+  present: 'bg-success-subtle',
+  absent: 'bg-danger-subtle',
+  late: 'bg-warning-subtle',
 };
 const DEFAULT_BG = 'bg-white';
 
@@ -65,8 +65,8 @@ export const ScheduleCell = React.memo(function ScheduleCell({
   return (
     <td
       className={`border border-[var(--surface)] p-1 min-w-[120px] align-top ${
-        isDragging ? 'opacity-50' : ''
-      }`}
+ isDragging ? 'opacity-50' : ''
+ }`}
       onClick={(e) => {
         if (activeEntries.length === 0) onClick(e);
       }}
@@ -83,9 +83,9 @@ export const ScheduleCell = React.memo(function ScheduleCell({
           // 期限切れ=赤、7日以内=黄、それ以外=灰
           const chipClass = (() => {
             if (daysLeft == null) return '';
-            if (daysLeft < 0) return 'bg-red-100 text-red-800 border border-red-300';
-            if (daysLeft <= 7) return 'bg-amber-100 text-amber-800 border border-amber-300';
-            return 'bg-gray-100 text-gray-700 border border-gray-300';
+            if (daysLeft < 0) return 'bg-danger-subtle text-danger border border-danger';
+            if (daysLeft <= 7) return 'bg-warning-subtle text-warning border border-warning';
+            return 'bg-surface text-text-body border border-border-default';
           })();
           const chipLabel = (() => {
             if (daysLeft == null) return null;

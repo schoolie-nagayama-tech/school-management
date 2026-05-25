@@ -185,19 +185,19 @@ export default function StudentLessonReportsPage() {
         {/* ヒーロー */}
         {student && (
           <Card>
-            <CardContent className="p-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-md">
-              <div className="text-xs uppercase tracking-wide opacity-80">授業報告</div>
+            <CardContent className="p-4 bg-ink text-text-on-primary rounded-md">
+              <div className="text-xs uppercase tracking-wide text-text-on-primary/70">授業報告</div>
               <div className="text-2xl font-bold mt-1">
                 {student.last_name} {student.first_name}
               </div>
-              <div className="text-sm mt-1 opacity-90">{gradeLabel(student.grade)}</div>
+              <div className="text-sm mt-1 text-text-on-primary/80">{gradeLabel(student.grade)}</div>
             </CardContent>
           </Card>
         )}
 
         {reports.length === 0 ? (
           <Card>
-            <CardContent className="p-8 text-center text-gray-500">
+            <CardContent className="p-8 text-center text-text-muted">
               公開済みの授業報告書はまだありません
             </CardContent>
           </Card>
@@ -205,40 +205,40 @@ export default function StudentLessonReportsPage() {
           <>
             {/* 科目ごとの最新 */}
             <div>
-              <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+              <h2 className="text-xs font-bold text-text-muted uppercase tracking-wide mb-2">
                 科目ごとの最新報告
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {Array.from(latestBySubject.entries()).map(([subject, r]) => (
                   <Card
                     key={r.id}
-                    className="hover:border-indigo-300 cursor-pointer"
+                    className="hover:border-info cursor-pointer"
                     onClick={() => router.push(`/lesson-reports/${r.schedule_entry_id}`)}
                   >
                     <CardContent className="p-3">
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-bold text-sm">{subject}</span>
-                        <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                        <span className="text-xs text-text-muted bg-surface px-1.5 py-0.5 rounded">
                           {r.lesson_date}
                         </span>
                       </div>
-                      <div className="text-xs text-gray-500 mb-2">
+                      <div className="text-xs text-text-muted mb-2">
                         担当: {r.teacher?.display_name ?? '-'}
                       </div>
-                      <div className="text-xs text-gray-700 line-clamp-2 mb-2">
+                      <div className="text-xs text-text-body line-clamp-2 mb-2">
                         {r.review_comment || r.short_term_goal || '記述なし'}
                       </div>
                       <div className="flex gap-1 flex-wrap text-[10px]">
                         {r.homework_completion_pct != null && (
-                          <span className="px-1.5 py-0.5 bg-gray-100 rounded">
+                          <span className="px-1.5 py-0.5 bg-surface rounded">
                             宿題 <strong>{r.homework_completion_pct}%</strong>
                           </span>
                         )}
                         {r.vocab_test_score != null && r.vocab_test_total != null && (
                           <span
                             className={`px-1.5 py-0.5 rounded ${
-                              r.vocab_test_passed ? 'bg-green-100 text-green-700' : 'bg-gray-100'
-                            }`}
+ r.vocab_test_passed ? 'bg-success-subtle text-success' : 'bg-surface'
+ }`}
                           >
                             単語 <strong>{r.vocab_test_score}/{r.vocab_test_total}</strong>
                           </span>
@@ -246,8 +246,8 @@ export default function StudentLessonReportsPage() {
                         {r.check_test_score != null && r.check_test_total != null && (
                           <span
                             className={`px-1.5 py-0.5 rounded ${
-                              r.check_test_passed ? 'bg-green-100 text-green-700' : 'bg-gray-100'
-                            }`}
+ r.check_test_passed ? 'bg-success-subtle text-success' : 'bg-surface'
+ }`}
                           >
                             確認 <strong>{r.check_test_score}/{r.check_test_total}</strong>
                           </span>
@@ -261,17 +261,17 @@ export default function StudentLessonReportsPage() {
 
             {/* 過去全件 + フィルタ */}
             <div>
-              <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+              <h2 className="text-xs font-bold text-text-muted uppercase tracking-wide mb-2">
                 過去の報告書 ({filteredReports.length} 件)
               </h2>
               <div className="flex gap-1 mb-2 flex-wrap">
                 <button
                   type="button"
                   className={`px-2 py-1 text-xs rounded border ${
-                    subjectFilter === 'all'
-                      ? 'bg-indigo-600 text-white border-indigo-600'
-                      : 'bg-white text-gray-600 border-gray-300'
-                  }`}
+ subjectFilter === 'all'
+ ? 'bg-info text-white border-info'
+ : 'bg-white text-text-muted border-border-default'
+ }`}
                   onClick={() => setSubjectFilter('all')}
                 >
                   すべて
@@ -281,10 +281,10 @@ export default function StudentLessonReportsPage() {
                     key={s}
                     type="button"
                     className={`px-2 py-1 text-xs rounded border ${
-                      subjectFilter === s
-                        ? 'bg-indigo-600 text-white border-indigo-600'
-                        : 'bg-white text-gray-600 border-gray-300'
-                    }`}
+ subjectFilter === s
+ ? 'bg-info text-white border-info'
+ : 'bg-white text-text-muted border-border-default'
+ }`}
                     onClick={() => setSubjectFilter(s)}
                   >
                     {s}
@@ -298,24 +298,24 @@ export default function StudentLessonReportsPage() {
                   return (
                     <Card
                       key={r.id}
-                      className="hover:border-indigo-300 cursor-pointer"
+                      className="hover:border-info cursor-pointer"
                       onClick={() => router.push(`/lesson-reports/${r.schedule_entry_id}`)}
                     >
                       <CardContent className="p-2 flex items-center gap-3">
                         <div className="w-20 flex-shrink-0">
                           <div className="text-sm font-bold tabular-nums">{r.lesson_date}</div>
                         </div>
-                        <span className="px-2 py-0.5 bg-gray-100 text-xs rounded font-semibold flex-shrink-0">
+                        <span className="px-2 py-0.5 bg-surface text-xs rounded font-semibold flex-shrink-0">
                           {subject}
                         </span>
-                        <div className="flex-1 min-w-0 text-xs text-gray-600 truncate">
+                        <div className="flex-1 min-w-0 text-xs text-text-muted truncate">
                           {r.review_comment || r.short_term_goal || '記述なし'}
                         </div>
-                        <span className="text-xs text-gray-500 flex-shrink-0">
+                        <span className="text-xs text-text-muted flex-shrink-0">
                           {r.teacher?.display_name ?? ''}
                         </span>
-                        <FileText className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                        <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                        <FileText className="w-4 h-4 text-text-faint flex-shrink-0" />
+                        <ChevronRight className="w-4 h-4 text-text-faint flex-shrink-0" />
                       </CardContent>
                     </Card>
                   );

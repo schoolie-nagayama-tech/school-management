@@ -105,11 +105,11 @@ export default function StudentDashboardPage() {
   // 生徒コード未入力 or 取得失敗時：入力フォーム
   if (!data) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-surface flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
           <CardContent className="p-6 space-y-3">
             <h1 className="text-lg font-bold">生徒ダッシュボード</h1>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-text-muted">
               校舎から案内された生徒コードを入力してください。
             </p>
             <input
@@ -126,7 +126,7 @@ export default function StudentDashboardPage() {
             >
               {isLoading ? '取得中...' : '表示'}
             </Button>
-            {errorMsg && <p className="text-sm text-red-600">{errorMsg}</p>}
+            {errorMsg && <p className="text-sm text-danger">{errorMsg}</p>}
           </CardContent>
         </Card>
       </div>
@@ -138,17 +138,17 @@ export default function StudentDashboardPage() {
   const att = data.attendance_this_month;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-6">
+    <div className="min-h-screen bg-surface py-6">
       <div className="max-w-3xl mx-auto px-4 space-y-4">
 
         {/* ヒーロー */}
         <Card>
-          <CardContent className="p-5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-md">
-            <div className="text-xs opacity-80 uppercase tracking-wide">マイページ</div>
+          <CardContent className="p-5 bg-ink text-text-on-primary rounded-md">
+            <div className="text-xs text-text-on-primary/70 uppercase tracking-wide">マイページ</div>
             <h1 className="text-2xl font-bold mt-1">
               {data.student.last_name} {data.student.first_name}
             </h1>
-            <div className="text-sm mt-1 opacity-90">
+            <div className="text-sm mt-1 text-text-on-primary/80">
               {gradeLabel(data.student.grade)} ・ {data.school.name}
             </div>
           </CardContent>
@@ -157,11 +157,11 @@ export default function StudentDashboardPage() {
         {/* 今後1週間 */}
         <Card>
           <CardContent className="p-4">
-            <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+            <h2 className="text-xs font-bold text-text-muted uppercase tracking-wide mb-2">
               今後1週間の授業
             </h2>
             {data.upcoming.length === 0 ? (
-              <p className="text-sm text-gray-500 py-2">予定はありません</p>
+              <p className="text-sm text-text-muted py-2">予定はありません</p>
             ) : (
               <ul className="space-y-1">
                 {data.upcoming.map((u) => {
@@ -175,24 +175,24 @@ export default function StudentDashboardPage() {
                       <span className="font-bold tabular-nums w-20 flex-shrink-0">
                         {formatDateShort(u.entry_date)}
                       </span>
-                      <span className="text-xs text-gray-500 w-16 flex-shrink-0">
+                      <span className="text-xs text-text-muted w-16 flex-shrink-0">
                         {slot ? `${slot.start_time?.slice(0, 5)}〜` : ''}
                       </span>
                       <span className="flex-1 min-w-0">
                         担当: {teacher?.display_name ?? '-'}
                       </span>
                       {u.kind === 'koushu' && (
-                        <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 text-[10px] rounded font-semibold">
+                        <span className="px-1.5 py-0.5 bg-warning-subtle text-warning text-[10px] rounded font-semibold">
                           講習
                         </span>
                       )}
                       {u.formation === 'group' && (
-                        <span className="px-1.5 py-0.5 bg-purple-100 text-purple-800 text-[10px] rounded font-semibold">
+                        <span className="px-1.5 py-0.5 bg-ink-subtle text-ink text-[10px] rounded font-semibold">
                           集団
                         </span>
                       )}
                       {u.transfer_from_id && (
-                        <span className="px-1.5 py-0.5 bg-orange-100 text-orange-800 text-[10px] rounded font-semibold">
+                        <span className="px-1.5 py-0.5 bg-warning-subtle text-warning text-[10px] rounded font-semibold">
                           振替
                         </span>
                       )}
@@ -207,7 +207,7 @@ export default function StudentDashboardPage() {
         {/* 今月の出欠サマリ */}
         <Card>
           <CardContent className="p-4">
-            <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+            <h2 className="text-xs font-bold text-text-muted uppercase tracking-wide mb-2">
               今月の出欠
             </h2>
             <div className="grid grid-cols-4 gap-2">
@@ -222,11 +222,11 @@ export default function StudentDashboardPage() {
         {/* 科目ごとの最新報告 */}
         <Card>
           <CardContent className="p-4">
-            <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+            <h2 className="text-xs font-bold text-text-muted uppercase tracking-wide mb-2">
               科目ごとの最新の授業報告
             </h2>
             {data.latest_reports_by_subject.length === 0 ? (
-              <p className="text-sm text-gray-500 py-2">
+              <p className="text-sm text-text-muted py-2">
                 公開済みの報告書はまだありません
               </p>
             ) : (
@@ -235,25 +235,25 @@ export default function StudentDashboardPage() {
                   <div key={r.id} className="p-3 border rounded">
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-bold text-sm">{r.subject}</span>
-                      <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                      <span className="text-xs text-text-muted bg-surface px-1.5 py-0.5 rounded">
                         {r.lesson_date}
                       </span>
                     </div>
-                    <div className="text-xs text-gray-500 mb-1">担当: {r.teacher_name ?? '-'}</div>
-                    <div className="text-xs text-gray-700 line-clamp-2 mb-1">
+                    <div className="text-xs text-text-muted mb-1">担当: {r.teacher_name ?? '-'}</div>
+                    <div className="text-xs text-text-body line-clamp-2 mb-1">
                       {r.preview || '記述なし'}
                     </div>
                     <div className="flex gap-1 flex-wrap">
                       {r.homework_completion_pct != null && (
-                        <span className="px-1.5 py-0.5 bg-gray-100 text-[10px] rounded">
+                        <span className="px-1.5 py-0.5 bg-surface text-[10px] rounded">
                           宿題 <strong>{r.homework_completion_pct}%</strong>
                         </span>
                       )}
                       {r.vocab_test_score != null && r.vocab_test_total != null && (
                         <span
                           className={`px-1.5 py-0.5 text-[10px] rounded ${
-                            r.vocab_test_passed ? 'bg-green-100 text-green-700' : 'bg-gray-100'
-                          }`}
+ r.vocab_test_passed ? 'bg-success-subtle text-success' : 'bg-surface'
+ }`}
                         >
                           単語 <strong>{r.vocab_test_score}/{r.vocab_test_total}</strong>
                         </span>
@@ -261,8 +261,8 @@ export default function StudentDashboardPage() {
                       {r.check_test_score != null && r.check_test_total != null && (
                         <span
                           className={`px-1.5 py-0.5 text-[10px] rounded ${
-                            r.check_test_passed ? 'bg-green-100 text-green-700' : 'bg-gray-100'
-                          }`}
+ r.check_test_passed ? 'bg-success-subtle text-success' : 'bg-surface'
+ }`}
                         >
                           確認 <strong>{r.check_test_score}/{r.check_test_total}</strong>
                         </span>
@@ -275,7 +275,7 @@ export default function StudentDashboardPage() {
           </CardContent>
         </Card>
 
-        <p className="text-xs text-gray-400 text-center pb-4">
+        <p className="text-xs text-text-faint text-center pb-4">
           ※ 仮実装。生徒アカウント整備後にサインインベースに置き換え予定です。
         </p>
       </div>
@@ -293,15 +293,15 @@ function AttBox({
   color: 'green' | 'red' | 'amber' | 'indigo';
 }) {
   const colorClass = {
-    green: 'text-green-700',
-    red: 'text-red-700',
-    amber: 'text-amber-700',
-    indigo: 'text-indigo-700',
+    green: 'text-success',
+    red: 'text-danger',
+    amber: 'text-warning',
+    indigo: 'text-info',
   }[color];
   return (
-    <div className="text-center bg-gray-50 rounded p-2">
+    <div className="text-center bg-surface rounded p-2">
       <div className={`text-2xl font-bold ${colorClass}`}>{value}</div>
-      <div className="text-[10px] text-gray-500 font-semibold mt-0.5">{label}</div>
+      <div className="text-[10px] text-text-muted font-semibold mt-0.5">{label}</div>
     </div>
   );
 }

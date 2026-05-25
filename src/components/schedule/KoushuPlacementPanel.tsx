@@ -87,14 +87,14 @@ export function KoushuPlacementPanel({
   const totalPlaced = rows.reduce((s, r) => s + r.placed, 0);
 
   return (
-    <Card className="border-amber-300">
+    <Card className="border-warning">
       <CardContent className="p-3">
         <div className="flex items-center gap-2 mb-2">
-          <Target className="w-4 h-4 text-amber-700" />
+          <Target className="w-4 h-4 text-warning" />
           <span className="font-semibold text-sm">
             講習配置: {course.name}
           </span>
-          <span className="text-xs text-gray-600 ml-auto">
+          <span className="text-xs text-text-muted ml-auto">
             {totalPlaced} / {totalEnrolled} コマ
             {totalEnrolled > 0 && ` (${Math.round((totalPlaced / totalEnrolled) * 100)}%)`}
           </span>
@@ -102,7 +102,7 @@ export function KoushuPlacementPanel({
             <button
               type="button"
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-text-faint hover:text-text-muted"
               title="閉じる"
             >
               <X className="w-4 h-4" />
@@ -111,20 +111,20 @@ export function KoushuPlacementPanel({
         </div>
 
         {placingStudentId && (
-          <div className="mb-2 px-2 py-1 bg-indigo-100 border border-indigo-300 rounded text-xs text-indigo-900">
+          <div className="mb-2 px-2 py-1 bg-info-subtle border border-info rounded text-xs text-info">
             <strong>配置モード中:</strong> 座席表の空きセルをクリックすると該当生徒の講習コマが追加されます。
             もう一度ボタンを押すと配置モードを終了します。
           </div>
         )}
 
         {isLoading ? (
-          <p className="text-xs text-gray-500 py-2">読み込み中...</p>
+          <p className="text-xs text-text-muted py-2">読み込み中...</p>
         ) : rows.length === 0 ? (
-          <p className="text-xs text-gray-500 py-2">この講習に申し込みはありません</p>
+          <p className="text-xs text-text-muted py-2">この講習に申し込みはありません</p>
         ) : (
           <div className="max-h-60 overflow-y-auto">
             <table className="w-full text-xs">
-              <thead className="text-left text-gray-500">
+              <thead className="text-left text-text-muted">
                 <tr>
                   <th className="py-1 px-1">生徒</th>
                   <th className="py-1 px-1 text-right">配置/申込</th>
@@ -137,25 +137,25 @@ export function KoushuPlacementPanel({
                   const isComplete = remaining <= 0;
                   const isPlacing = placingStudentId === r.student_id;
                   return (
-                    <tr key={r.student_id} className="border-t border-gray-100">
+                    <tr key={r.student_id} className="border-t border-border-subtle">
                       <td className="py-1 px-1">
                         <span className="font-medium">
                           {r.student?.last_name} {r.student?.first_name}
                         </span>
-                        <span className="text-gray-500 ml-1">
+                        <span className="text-text-muted ml-1">
                           ({r.student ? gradeLabel(r.student.grade) : ''})
                         </span>
                       </td>
                       <td className="py-1 px-1 text-right tabular-nums">
                         {isComplete ? (
-                          <span className="inline-flex items-center gap-1 text-green-700 font-semibold">
+                          <span className="inline-flex items-center gap-1 text-success font-semibold">
                             <CheckCircle className="w-3 h-3" />
                             {r.placed}/{r.enrolled}
                           </span>
                         ) : (
-                          <span className={r.placed > 0 ? 'text-amber-700' : 'text-red-700'}>
+                          <span className={r.placed > 0 ? 'text-warning' : 'text-danger'}>
                             {r.placed}/{r.enrolled}
-                            <span className="text-gray-500 ml-1">(残{remaining})</span>
+                            <span className="text-text-muted ml-1">(残{remaining})</span>
                           </span>
                         )}
                       </td>
@@ -165,10 +165,10 @@ export function KoushuPlacementPanel({
                             type="button"
                             onClick={() => onStartPlacement(r.student_id, r.subject_ids)}
                             className={`text-xs px-2 py-0.5 rounded ${
-                              isPlacing
-                                ? 'bg-indigo-600 text-white'
-                                : 'bg-white border border-indigo-300 text-indigo-700 hover:bg-indigo-50'
-                            }`}
+ isPlacing
+ ? 'bg-info text-white'
+ : 'bg-white border border-info text-info hover:bg-info-subtle'
+ }`}
                           >
                             {isPlacing ? '終了' : '配置する'}
                           </button>

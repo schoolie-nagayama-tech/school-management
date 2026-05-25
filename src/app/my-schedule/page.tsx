@@ -231,7 +231,7 @@ export default function MySchedulePage() {
 
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">授業スケジュール</h1>
-          <Link href="/today" className="text-sm text-indigo-600 hover:underline">
+          <Link href="/today" className="text-sm text-info hover:underline">
             本日のみ表示 →
           </Link>
         </div>
@@ -258,8 +258,8 @@ export default function MySchedulePage() {
                 type="button"
                 onClick={() => setMode('week')}
                 className={`px-3 py-1 text-xs font-semibold flex items-center gap-1 ${
-                  mode === 'week' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600'
-                }`}
+ mode === 'week' ? 'bg-info text-white' : 'bg-white text-text-muted'
+ }`}
               >
                 <CalendarRange className="w-3 h-3" />
                 週
@@ -268,8 +268,8 @@ export default function MySchedulePage() {
                 type="button"
                 onClick={() => setMode('month')}
                 className={`px-3 py-1 text-xs font-semibold flex items-center gap-1 ${
-                  mode === 'month' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600'
-                }`}
+ mode === 'month' ? 'bg-info text-white' : 'bg-white text-text-muted'
+ }`}
               >
                 <CalendarDays className="w-3 h-3" />
                 月
@@ -288,25 +288,25 @@ export default function MySchedulePage() {
               const dayEntries = entriesByDate.get(key) ?? [];
               const isToday = ymd(new Date()) === key;
               return (
-                <Card key={key} className={isToday ? 'border-indigo-400 border-2' : ''}>
+                <Card key={key} className={isToday ? 'border-info border-2' : ''}>
                   <CardContent className="p-3">
                     <div
                       className={`text-sm font-bold mb-2 flex items-center gap-2 ${
-                        isToday ? 'text-indigo-700' : ''
-                      }`}
+ isToday ? 'text-info' : ''
+ }`}
                     >
                       {formatDateLong(d)}
                       {isToday && (
-                        <span className="px-1.5 py-0.5 bg-indigo-600 text-white rounded text-[10px]">
+                        <span className="px-1.5 py-0.5 bg-info text-white rounded text-[10px]">
                           今日
                         </span>
                       )}
-                      <span className="ml-auto text-xs text-gray-500 font-normal">
+                      <span className="ml-auto text-xs text-text-muted font-normal">
                         {dayEntries.length} コマ
                       </span>
                     </div>
                     {dayEntries.length === 0 ? (
-                      <p className="text-xs text-gray-400 py-2">この日は授業がありません</p>
+                      <p className="text-xs text-text-faint py-2">この日は授業がありません</p>
                     ) : (
                       <ul className="space-y-1">
                         {dayEntries.map((e) => (
@@ -329,7 +329,7 @@ export default function MySchedulePage() {
           <>
             <Card>
               <CardContent className="p-2">
-                <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-gray-500 mb-1">
+                <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-text-muted mb-1">
                   {['月', '火', '水', '木', '金', '土', '日'].map((w) => (
                     <div key={w}>{w}</div>
                   ))}
@@ -347,25 +347,25 @@ export default function MySchedulePage() {
                         key={key}
                         onClick={() => setMonthSelectedDate(isSelected ? null : key)}
                         className={`aspect-square rounded text-xs flex flex-col items-center justify-center transition-colors border ${
-                          !inMonth
-                            ? 'bg-gray-50 text-gray-300 border-transparent'
-                            : isSelected
-                              ? 'bg-indigo-600 text-white border-indigo-600'
-                              : isToday
-                                ? 'border-indigo-400 bg-white'
-                                : 'bg-white border-gray-200 hover:bg-gray-50'
-                        }`}
+ !inMonth
+ ? 'bg-surface text-text-faint border-transparent'
+ : isSelected
+ ? 'bg-info text-white border-info'
+ : isToday
+ ? 'border-info bg-white'
+ : 'bg-white border-border-subtle hover:bg-surface'
+ }`}
                       >
                         <span className="font-semibold">{d.getDate()}</span>
                         {count > 0 && (
                           <span
                             className={`text-[10px] mt-0.5 px-1 rounded ${
-                              isSelected
-                                ? 'bg-white/20'
-                                : count > 4
-                                  ? 'bg-red-100 text-red-700'
-                                  : 'bg-indigo-100 text-indigo-700'
-                            }`}
+ isSelected
+ ? 'bg-white/20'
+ : count > 4
+ ? 'bg-danger-subtle text-danger'
+ : 'bg-info-subtle text-info'
+ }`}
                           >
                             {count}コマ
                           </span>
@@ -384,7 +384,7 @@ export default function MySchedulePage() {
                     {formatDateLong(new Date(monthSelectedDate + 'T12:00:00'))}
                   </h2>
                   {(entriesByDate.get(monthSelectedDate) ?? []).length === 0 ? (
-                    <p className="text-xs text-gray-400 py-2">この日は授業がありません</p>
+                    <p className="text-xs text-text-faint py-2">この日は授業がありません</p>
                   ) : (
                     <ul className="space-y-1">
                       {(entriesByDate.get(monthSelectedDate) ?? []).map((e) => (
@@ -423,7 +423,7 @@ function EntryRow({
   const slot = entry.time_slot;
   const att = entry.attendance_status;
   return (
-    <li className="border border-gray-100 rounded-md p-2 bg-white">
+    <li className="border border-border-subtle rounded-md p-2 bg-white">
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-sm font-semibold tabular-nums w-20 flex-shrink-0">
           {slot ? `${slot.start_time?.slice(0, 5)}` : '-'}
@@ -431,17 +431,17 @@ function EntryRow({
         <span className="text-sm flex-1 min-w-0 truncate">
           {studentName}
           {entry.student && (
-            <span className="text-xs text-gray-500 ml-1">
+            <span className="text-xs text-text-muted ml-1">
               ({gradeLabel(entry.student.grade)})
             </span>
           )}
           {entry.kind === 'koushu' && (
-            <span className="ml-1 px-1 bg-amber-100 text-amber-800 text-[10px] rounded font-semibold">
+            <span className="ml-1 px-1 bg-warning-subtle text-warning text-[10px] rounded font-semibold">
               講習
             </span>
           )}
           {entry.formation === 'group' && (
-            <span className="ml-1 px-1 bg-purple-100 text-purple-800 text-[10px] rounded font-semibold">
+            <span className="ml-1 px-1 bg-ink-subtle text-ink text-[10px] rounded font-semibold">
               集団
             </span>
           )}
@@ -477,21 +477,21 @@ function EntryRow({
 
         <Link
           href={`/lesson-reports/${entry.id}`}
-          className="text-xs text-indigo-600 hover:underline flex items-center gap-0.5 flex-shrink-0"
+          className="text-xs text-info hover:underline flex items-center gap-0.5 flex-shrink-0"
         >
           <FileText className="w-3 h-3" />
           報告書
           {entry.report && (
             <span
               className={`ml-0.5 px-1 rounded text-[9px] font-bold ${
-                entry.report.status === 'approved'
-                  ? 'bg-green-100 text-green-700'
-                  : entry.report.status === 'submitted'
-                    ? 'bg-amber-100 text-amber-700'
-                    : entry.report.status === 'rejected'
-                      ? 'bg-red-100 text-red-700'
-                      : 'bg-gray-100 text-gray-700'
-              }`}
+ entry.report.status === 'approved'
+ ? 'bg-success-subtle text-success'
+ : entry.report.status === 'submitted'
+ ? 'bg-warning-subtle text-warning'
+ : entry.report.status === 'rejected'
+ ? 'bg-danger-subtle text-danger'
+ : 'bg-surface text-text-body'
+ }`}
             >
               {entry.report.status === 'approved'
                 ? '済'
@@ -525,11 +525,11 @@ function AttBtn({
 }) {
   const colorClass = active
     ? color === 'green'
-      ? 'bg-green-600 text-white'
+      ? 'bg-success text-white'
       : color === 'red'
-        ? 'bg-red-600 text-white'
-        : 'bg-amber-500 text-white'
-    : 'bg-white text-gray-500 hover:bg-gray-50';
+        ? 'bg-danger text-white'
+        : 'bg-warning text-white'
+    : 'bg-white text-text-muted hover:bg-surface';
   return (
     <button
       type="button"

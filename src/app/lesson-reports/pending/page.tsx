@@ -123,7 +123,7 @@ export default function PendingReportsPage() {
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="max-w-5xl mx-auto p-4 space-y-4">
         <h1 className="text-2xl font-bold">授業報告書 承認待ち</h1>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-text-muted">
           講師から提出された報告書を確認し、承認 or 差し戻しを行ってください。
           承認すると保護者ポータルに公開されます。
         </p>
@@ -132,7 +132,7 @@ export default function PendingReportsPage() {
           <Loading />
         ) : reports.length === 0 ? (
           <Card>
-            <CardContent className="p-8 text-center text-gray-500">
+            <CardContent className="p-8 text-center text-text-muted">
               承認待ちの報告書はありません
             </CardContent>
           </Card>
@@ -148,7 +148,7 @@ export default function PendingReportsPage() {
                 ? new Date(r.submitted_at).toLocaleString('ja-JP')
                 : '-';
               return (
-                <Card key={r.id} className="hover:border-amber-300">
+                <Card key={r.id} className="hover:border-warning">
                   <CardContent className="p-3 flex items-center gap-3">
                     <button
                       type="button"
@@ -161,18 +161,18 @@ export default function PendingReportsPage() {
                       <div className="flex-1 min-w-0">
                         <div className="font-bold">
                           {studentName}{' '}
-                          <span className="text-xs text-gray-500 font-normal">（{grade}）</span>
+                          <span className="text-xs text-text-muted font-normal">（{grade}）</span>
                         </div>
-                        <div className="text-xs text-gray-500 mt-0.5">
+                        <div className="text-xs text-text-muted mt-0.5">
                           講師: {teacherName} ・ 提出: {submittedAt}
                         </div>
                         {r.short_term_goal && (
-                          <div className="text-xs text-gray-700 mt-1 truncate">
+                          <div className="text-xs text-text-body mt-1 truncate">
                             目標: {r.short_term_goal}
                           </div>
                         )}
                       </div>
-                      <ChevronRight className="w-4 h-4 text-gray-400" />
+                      <ChevronRight className="w-4 h-4 text-text-faint" />
                     </button>
                     <Button
                       variant="outline"

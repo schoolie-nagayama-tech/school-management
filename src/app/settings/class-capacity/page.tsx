@@ -110,17 +110,17 @@ export default function ClassCapacitySettingsPage() {
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="max-w-3xl mx-auto py-6 space-y-6">
         <div className="flex items-center gap-3">
-          <Users className="w-6 h-6 text-indigo-600" />
+          <Users className="w-6 h-6 text-info" />
           <h1 className="text-2xl font-bold">授業生徒数設定</h1>
         </div>
 
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-text-muted">
           学校ごとに個別指導・集団指導の生徒数上限を設定します。座席表配置時のバリデーションや、将来のマッチング機能の容量制約として使用されます。
         </p>
 
         {/* 教室選択 */}
         <div className="flex items-center gap-3">
-          <label className="text-sm font-medium text-gray-700">教室:</label>
+          <label className="text-sm font-medium text-text-body">教室:</label>
           <Select value={selectedSchoolId} onValueChange={setSelectedSchoolId}>
             <SelectTrigger className="w-64">
               <SelectValue placeholder="教室を選択" />
@@ -226,10 +226,10 @@ function NumberField({
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <label className="block text-sm font-medium text-text-body mb-1">{label}</label>
       <input
         type="number"
-        className="w-32 px-3 py-2 border border-gray-300 rounded-md"
+        className="w-32 px-3 py-2 border border-border-default rounded-md"
         value={value}
         min={min}
         max={max}
@@ -238,7 +238,7 @@ function NumberField({
           if (!Number.isNaN(v)) onChange(v);
         }}
       />
-      <p className="mt-1 text-xs text-gray-500">{hint}</p>
+      <p className="mt-1 text-xs text-text-muted">{hint}</p>
     </div>
   );
 }

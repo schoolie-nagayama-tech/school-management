@@ -149,34 +149,34 @@ export default function TodayPage() {
   const statusBadge = (status: ClassReportStatus | null | undefined) => {
     if (!status) {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-semibold">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-danger-subtle text-danger rounded text-xs font-semibold">
           <AlertCircle className="w-3 h-3" /> 未提出
         </span>
       );
     }
     if (status === 'draft') {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 text-amber-800 rounded text-xs font-semibold">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-warning-subtle text-warning rounded text-xs font-semibold">
           <Clock className="w-3 h-3" /> 下書き
         </span>
       );
     }
     if (status === 'submitted') {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-700 rounded text-xs font-semibold">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-surface text-text-body rounded text-xs font-semibold">
           <Clock className="w-3 h-3" /> 承認待ち
         </span>
       );
     }
     if (status === 'approved') {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-100 text-green-800 rounded text-xs font-semibold">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-success-subtle text-success rounded text-xs font-semibold">
           <CheckCircle className="w-3 h-3" /> 公開済
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-semibold">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-danger-subtle text-danger rounded text-xs font-semibold">
         差し戻し
       </span>
     );
@@ -193,7 +193,7 @@ export default function TodayPage() {
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold">本日の授業</h1>
           {isTeacherOnly && profile && (
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-text-muted">
               （{profile.display_name || profile.email}）
             </span>
           )}
@@ -211,7 +211,7 @@ export default function TodayPage() {
                 <button
                   type="button"
                   onClick={() => setDate(todayStr())}
-                  className="text-xs text-indigo-600 underline"
+                  className="text-xs text-info underline"
                 >
                   本日に戻る
                 </button>
@@ -229,23 +229,23 @@ export default function TodayPage() {
             <Card>
               <CardContent className="p-3 text-center">
                 <div className="text-2xl font-bold">{entries.length}</div>
-                <div className="text-xs text-gray-500">本日のコマ</div>
+                <div className="text-xs text-text-muted">本日のコマ</div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-3 text-center">
-                <div className={`text-2xl font-bold ${unreported > 0 ? 'text-red-600' : 'text-gray-400'}`}>
+                <div className={`text-2xl font-bold ${unreported > 0 ? 'text-danger' : 'text-text-faint'}`}>
                   {unreported}
                 </div>
-                <div className="text-xs text-gray-500">未提出</div>
+                <div className="text-xs text-text-muted">未提出</div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-3 text-center">
-                <div className={`text-2xl font-bold ${drafts > 0 ? 'text-amber-600' : 'text-gray-400'}`}>
+                <div className={`text-2xl font-bold ${drafts > 0 ? 'text-warning' : 'text-text-faint'}`}>
                   {drafts}
                 </div>
-                <div className="text-xs text-gray-500">下書き中</div>
+                <div className="text-xs text-text-muted">下書き中</div>
               </CardContent>
             </Card>
           </div>
@@ -256,7 +256,7 @@ export default function TodayPage() {
           <Loading />
         ) : entries.length === 0 ? (
           <Card>
-            <CardContent className="p-8 text-center text-gray-500">
+            <CardContent className="p-8 text-center text-text-muted">
               この日に担当授業はありません
             </CardContent>
           </Card>
@@ -274,43 +274,43 @@ export default function TodayPage() {
                   href={`/lesson-reports/${entry.id}`}
                   className="block"
                 >
-                  <Card className="hover:border-indigo-300 transition-colors cursor-pointer">
+                  <Card className="hover:border-info transition-colors cursor-pointer">
                     <CardContent className="p-3 flex items-center gap-3">
-                      <div className="w-20 flex-shrink-0 text-center bg-gray-50 rounded py-2">
-                        <div className="text-xs text-gray-500 font-semibold">
+                      <div className="w-20 flex-shrink-0 text-center bg-surface rounded py-2">
+                        <div className="text-xs text-text-muted font-semibold">
                           {slot ? `${slot.slot_number}限` : ''}
                         </div>
                         <div className="text-sm font-bold tabular-nums">
                           {slot?.start_time?.slice(0, 5) ?? '-'}
                         </div>
-                        <div className="text-[10px] text-gray-500">
+                        <div className="text-[10px] text-text-muted">
                           〜{slot?.end_time?.slice(0, 5) ?? ''}
                         </div>
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="font-bold">{studentName}</span>
-                          <span className="text-xs text-gray-500">（{grade}）</span>
+                          <span className="text-xs text-text-muted">（{grade}）</span>
                           {entry.kind === 'koushu' && (
-                            <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 text-[10px] rounded font-semibold">
+                            <span className="px-1.5 py-0.5 bg-warning-subtle text-warning text-[10px] rounded font-semibold">
                               講習
                             </span>
                           )}
                           {entry.formation === 'group' && (
-                            <span className="px-1.5 py-0.5 bg-purple-100 text-purple-800 text-[10px] rounded font-semibold">
+                            <span className="px-1.5 py-0.5 bg-ink-subtle text-ink text-[10px] rounded font-semibold">
                               集団
                             </span>
                           )}
                         </div>
                         {!isTeacherOnly && (
-                          <div className="text-xs text-gray-500 mt-0.5">
+                          <div className="text-xs text-text-muted mt-0.5">
                             担当: {entry.teacher?.display_name ?? '-'}
                           </div>
                         )}
                       </div>
                       <div className="flex flex-col items-end gap-1">
                         {statusBadge(entry.report?.status)}
-                        <span className="text-xs text-indigo-600 flex items-center gap-1">
+                        <span className="text-xs text-info flex items-center gap-1">
                           <FileText className="w-3 h-3" />
                           報告書を{entry.report ? '編集' : '記入'}
                         </span>

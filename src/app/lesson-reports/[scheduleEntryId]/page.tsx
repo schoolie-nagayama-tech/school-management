@@ -397,14 +397,14 @@ export default function LessonReportFormPage() {
           {existingReport && (
             <span
               className={`px-2 py-0.5 rounded text-xs font-medium ${
-                existingReport.status === 'draft'
-                  ? 'bg-gray-100 text-gray-700'
-                  : existingReport.status === 'submitted'
-                    ? 'bg-amber-100 text-amber-800'
-                    : existingReport.status === 'approved'
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-red-100 text-red-800'
-              }`}
+ existingReport.status === 'draft'
+ ? 'bg-surface text-text-body'
+ : existingReport.status === 'submitted'
+ ? 'bg-warning-subtle text-warning'
+ : existingReport.status === 'approved'
+ ? 'bg-success-subtle text-success'
+ : 'bg-danger-subtle text-danger'
+ }`}
             >
               {existingReport.status === 'draft'
                 ? '下書き'
@@ -419,7 +419,7 @@ export default function LessonReportFormPage() {
 
         {/* 授業情報サマリ */}
         <Card>
-          <CardContent className="p-4 bg-slate-800 text-white rounded-md">
+          <CardContent className="p-4 bg-ink text-white rounded-md">
             <div className="text-xs opacity-70 uppercase tracking-wide">{form.lesson_date} {slotLabel}</div>
             <div className="text-xl font-bold mt-1">
               {studentName} <span className="text-sm font-normal opacity-80">（{gradeLabel}）</span>
@@ -429,7 +429,7 @@ export default function LessonReportFormPage() {
         </Card>
 
         {existingReport?.status === 'rejected' && existingReport.rejection_reason && (
-          <div className="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-800">
+          <div className="bg-danger-subtle border border-danger rounded p-3 text-sm text-danger">
             <div className="font-medium">差し戻し理由:</div>
             <div className="mt-1 whitespace-pre-wrap">{existingReport.rejection_reason}</div>
           </div>
@@ -439,7 +439,7 @@ export default function LessonReportFormPage() {
         <Section title="1. 目標">
           <Field label="中期: 教材目標 (進行表から取得・スナップショット)" hint="保存時点の進行表内容を保存します">
             <textarea
-              className="w-full px-3 py-2 border rounded-md text-sm bg-gray-50"
+              className="w-full px-3 py-2 border rounded-md text-sm bg-surface"
               rows={2}
               value={form.mid_term_goal_snapshot}
               onChange={(e) => setForm((f) => ({ ...f, mid_term_goal_snapshot: e.target.value }))}
@@ -448,7 +448,7 @@ export default function LessonReportFormPage() {
           </Field>
           <Field label="中期: 行動目標 (進行表から取得・スナップショット)">
             <textarea
-              className="w-full px-3 py-2 border rounded-md text-sm bg-gray-50"
+              className="w-full px-3 py-2 border rounded-md text-sm bg-surface"
               rows={2}
               value={form.mid_action_goal_snapshot}
               onChange={(e) => setForm((f) => ({ ...f, mid_action_goal_snapshot: e.target.value }))}
@@ -458,7 +458,7 @@ export default function LessonReportFormPage() {
           <Field label="短期: この授業の目標" hint="↑ 中期目標を踏まえて入力">
             <input
               type="text"
-              className="w-full px-3 py-2 border-2 border-indigo-300 rounded-md text-sm"
+              className="w-full px-3 py-2 border-2 border-info rounded-md text-sm"
               value={form.short_term_goal}
               onChange={(e) => setForm((f) => ({ ...f, short_term_goal: e.target.value }))}
               placeholder="例：不定詞の名詞用法を5問以上正しく訳せる"
@@ -491,14 +491,14 @@ export default function LessonReportFormPage() {
                 <div
                   key={idx}
                   className={`p-3 border rounded-md ${
-                    u.is_main ? 'border-indigo-300 border-2 bg-indigo-50/30' : 'bg-gray-50'
-                  }`}
+ u.is_main ? 'border-info border-2 bg-info-subtle/30' : 'bg-surface'
+ }`}
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <span
                       className={`px-2 py-0.5 rounded text-xs font-bold ${
-                        u.is_main ? 'bg-indigo-600 text-white' : 'bg-gray-500 text-white'
-                      }`}
+ u.is_main ? 'bg-info text-white' : 'bg-gray-500 text-white'
+ }`}
                     >
                       {u.is_main ? 'メイン' : 'サブ'}
                     </span>
@@ -516,7 +516,7 @@ export default function LessonReportFormPage() {
                     {!u.is_main && (
                       <button
                         type="button"
-                        className="text-gray-400 hover:text-red-600"
+                        className="text-text-faint hover:text-danger"
                         onClick={() => removeUnit(idx)}
                         title="このセットを削除"
                       >
@@ -532,7 +532,7 @@ export default function LessonReportFormPage() {
                         return (
                           <span
                             key={itemId}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-600 text-white text-xs rounded"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 bg-info text-white text-xs rounded"
                           >
                             {item?.title ?? `単元#${itemId}`}
                             <button
@@ -559,7 +559,7 @@ export default function LessonReportFormPage() {
                             });
                           }
                         }}
-                        className="px-2 py-0.5 text-xs border rounded text-indigo-600"
+                        className="px-2 py-0.5 text-xs border rounded text-info"
                       >
                         <option value="">+ 単元追加</option>
                         {opt?.curriculum_items
@@ -576,7 +576,7 @@ export default function LessonReportFormPage() {
                   <div className="grid grid-cols-2 gap-2">
                     <Field label="開始ページ">
                       <div className="relative">
-                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-semibold pointer-events-none">
+                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-text-muted text-sm font-semibold pointer-events-none">
                           p.
                         </span>
                         <input
@@ -593,7 +593,7 @@ export default function LessonReportFormPage() {
                     </Field>
                     <Field label="終了ページ">
                       <div className="relative">
-                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-semibold pointer-events-none">
+                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-text-muted text-sm font-semibold pointer-events-none">
                           p.
                         </span>
                         <input
@@ -615,7 +615,7 @@ export default function LessonReportFormPage() {
             <button
               type="button"
               onClick={() => addUnit(false)}
-              className="w-full py-2 border-2 border-dashed border-indigo-300 rounded-md text-sm text-indigo-600 hover:bg-indigo-50"
+              className="w-full py-2 border-2 border-dashed border-info rounded-md text-sm text-info hover:bg-info-subtle"
             >
               <Plus className="inline w-4 h-4 mr-1" />
               サブ教材セットを追加（補助教材）
@@ -669,20 +669,20 @@ export default function LessonReportFormPage() {
             onChange={(e) => setForm((f) => ({ ...f, review_comment: e.target.value }))}
             placeholder="5行程度で記入"
           />
-          <div className="text-xs text-gray-500 mt-1">
+          <div className="text-xs text-text-muted mt-1">
             現在 {reviewLineCount} 行 / 推奨 5 行
           </div>
         </Section>
 
         {/* 6. 次回までの宿題 */}
         <Section title="6. 次回までの宿題（日付自動割当）">
-          <div className="text-xs text-gray-600 mb-2 p-2 bg-indigo-50 rounded">
+          <div className="text-xs text-text-muted mb-2 p-2 bg-info-subtle rounded">
             次回授業: <strong>{nextLessonDate}</strong> ・ 残り{' '}
             <strong>{daysBetween(nextLessonDate, form.lesson_date || todayStr())}日</strong>
             <button
               type="button"
               onClick={autoDistributeHomeworkDates}
-              className="ml-2 px-2 py-0.5 text-xs bg-indigo-600 text-white rounded"
+              className="ml-2 px-2 py-0.5 text-xs bg-info text-white rounded"
             >
               <Wand2 className="inline w-3 h-3 mr-1" />
               日付を等分配
@@ -707,7 +707,7 @@ export default function LessonReportFormPage() {
                 <button
                   type="button"
                   onClick={() => removeHomeworkRow(idx)}
-                  className="text-gray-400 hover:text-red-600"
+                  className="text-text-faint hover:text-danger"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -716,7 +716,7 @@ export default function LessonReportFormPage() {
             <button
               type="button"
               onClick={addHomeworkRow}
-              className="w-full py-2 border-2 border-dashed border-indigo-300 rounded text-sm text-indigo-600 hover:bg-indigo-50"
+              className="w-full py-2 border-2 border-dashed border-info rounded text-sm text-info hover:bg-info-subtle"
             >
               <Plus className="inline w-4 h-4 mr-1" />
               宿題枠を追加
@@ -734,7 +734,7 @@ export default function LessonReportFormPage() {
 
         {/* フッター */}
         <div className="sticky bottom-0 bg-white border-t p-3 flex items-center gap-2 -mx-4 px-4">
-          <span className="text-xs text-gray-500 flex-1">
+          <span className="text-xs text-text-muted flex-1">
             {existingReport?.updated_at ? `最終保存: ${new Date(existingReport.updated_at).toLocaleString('ja-JP')}` : '未保存'}
           </span>
           <Button variant="outline" onClick={() => router.back()} disabled={isSaving}>
@@ -760,7 +760,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return (
     <Card>
       <CardContent className="p-4 space-y-3">
-        <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wide">{title}</h2>
+        <h2 className="text-xs font-bold text-text-muted uppercase tracking-wide">{title}</h2>
         {children}
       </CardContent>
     </Card>
@@ -778,9 +778,9 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-xs font-semibold text-gray-600 mb-1">{label}</label>
+      <label className="block text-xs font-semibold text-text-muted mb-1">{label}</label>
       {children}
-      {hint && <p className="text-[10px] text-gray-400 mt-1">{hint}</p>}
+      {hint && <p className="text-[10px] text-text-faint mt-1">{hint}</p>}
     </div>
   );
 }
@@ -796,7 +796,7 @@ function SliderField({
 }) {
   return (
     <div>
-      <label className="block text-xs font-semibold text-gray-600 mb-1">{label}</label>
+      <label className="block text-xs font-semibold text-text-muted mb-1">{label}</label>
       <div className="grid grid-cols-[1fr_60px] gap-3 items-center">
         <input
           type="range"
@@ -806,9 +806,9 @@ function SliderField({
           onChange={(e) => onChange(parseInt(e.target.value, 10))}
           className="w-full"
         />
-        <div className="text-lg font-bold text-indigo-600 text-right tabular-nums">
+        <div className="text-lg font-bold text-info text-right tabular-nums">
           {value ?? '-'}
-          <span className="text-xs text-gray-500 font-medium">%</span>
+          <span className="text-xs text-text-muted font-medium">%</span>
         </div>
       </div>
     </div>
@@ -833,7 +833,7 @@ function TestRow({
   onPassedChange: (v: boolean | null) => void;
 }) {
   return (
-    <div className="grid grid-cols-[1fr_70px_70px_140px] gap-2 items-end p-2 bg-gray-50 rounded">
+    <div className="grid grid-cols-[1fr_70px_70px_140px] gap-2 items-end p-2 bg-surface rounded">
       <div className="text-sm font-semibold pb-1">{label}</div>
       <input
         type="number"
@@ -851,14 +851,14 @@ function TestRow({
         <button
           type="button"
           onClick={() => onPassedChange(true)}
-          className={`flex-1 py-1 text-xs font-bold ${passed === true ? 'bg-green-600 text-white' : 'text-gray-500'}`}
+          className={`flex-1 py-1 text-xs font-bold ${passed === true ? 'bg-success text-white' : 'text-text-muted'}`}
         >
           合格
         </button>
         <button
           type="button"
           onClick={() => onPassedChange(false)}
-          className={`flex-1 py-1 text-xs font-bold ${passed === false ? 'bg-red-600 text-white' : 'text-gray-500'}`}
+          className={`flex-1 py-1 text-xs font-bold ${passed === false ? 'bg-danger text-white' : 'text-text-muted'}`}
         >
           不合格
         </button>
@@ -908,7 +908,7 @@ function SubjectSpecificField({
       </div>
 
       {kind !== 'none' && v && (
-        <div className="p-3 bg-amber-50 border border-amber-200 rounded-md grid grid-cols-2 md:grid-cols-4 gap-2">
+        <div className="p-3 bg-warning-subtle border border-warning rounded-md grid grid-cols-2 md:grid-cols-4 gap-2">
           <Field label="練習範囲">
             <input
               type="text"
@@ -919,7 +919,7 @@ function SubjectSpecificField({
           </Field>
           <Field label="ページ">
             <div className="relative">
-              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500 text-xs pointer-events-none">
+              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-text-muted text-xs pointer-events-none">
                 p.
               </span>
               <input

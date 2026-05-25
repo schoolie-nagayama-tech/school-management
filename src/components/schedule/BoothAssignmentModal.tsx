@@ -153,7 +153,7 @@ export function BoothAssignmentModal({
         </DialogHeader>
 
         <div className="space-y-3">
-          <div className="flex items-center justify-between text-xs text-gray-600">
+          <div className="flex items-center justify-between text-xs text-text-muted">
             <span>
               印刷時に講師名の隣に表示される番号です。教室全体席数: <strong>{totalSeats}</strong>
             </span>
@@ -169,13 +169,13 @@ export function BoothAssignmentModal({
           </div>
 
           {rows.length === 0 ? (
-            <p className="py-8 text-center text-sm text-gray-500">
+            <p className="py-8 text-center text-sm text-text-muted">
               この日に授業のある講師が見つかりません
             </p>
           ) : (
             <div className="max-h-[60vh] overflow-y-auto border rounded-md">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 sticky top-0">
+                <thead className="bg-surface sticky top-0">
                   <tr>
                     <th className="text-left px-3 py-2 font-medium">講師名</th>
                     <th className="text-left px-3 py-2 font-medium w-32">ブース番号</th>
@@ -193,10 +193,10 @@ export function BoothAssignmentModal({
                           value={r.boothNo || ''}
                           placeholder="未設定"
                           className={`w-20 px-2 py-1 border rounded ${
-                            duplicateBooths.has(r.boothNo)
-                              ? 'border-red-500 bg-red-50'
-                              : 'border-gray-300'
-                          }`}
+ duplicateBooths.has(r.boothNo)
+ ? 'border-danger bg-danger-subtle'
+ : 'border-border-default'
+ }`}
                           onChange={(e) => {
                             const v = parseInt(e.target.value, 10);
                             const next = Number.isNaN(v) ? 0 : Math.max(0, v);
@@ -216,7 +216,7 @@ export function BoothAssignmentModal({
           )}
 
           {hasDuplicates && (
-            <div className="text-sm text-red-600">
+            <div className="text-sm text-danger">
               重複している番号: {Array.from(duplicateBooths).sort((a, b) => a - b).join(', ')}
             </div>
           )}

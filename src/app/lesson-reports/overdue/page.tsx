@@ -96,7 +96,7 @@ export default function OverdueReportsPage() {
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-2xl font-bold">授業報告書 督促一覧</h1>
           <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-600">経過日数:</label>
+            <label className="text-sm text-text-muted">経過日数:</label>
             <Select
               value={String(threshold)}
               onValueChange={(v) => setThreshold(parseInt(v, 10))}
@@ -113,7 +113,7 @@ export default function OverdueReportsPage() {
             </Select>
           </div>
         </div>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-text-muted">
           授業日から指定日数経過しても報告書が「未提出」または「下書き」のままのコマです。
           講師ごとにまとめて表示しているので、督促連絡の参考にしてください。
         </p>
@@ -122,7 +122,7 @@ export default function OverdueReportsPage() {
           <Loading />
         ) : targets.length === 0 ? (
           <Card>
-            <CardContent className="p-8 text-center text-gray-500">
+            <CardContent className="p-8 text-center text-text-muted">
               督促対象の報告書はありません
             </CardContent>
           </Card>
@@ -131,10 +131,10 @@ export default function OverdueReportsPage() {
             {byTeacher.map(([teacherId, { teacherName, entries }]) => (
               <Card key={teacherId}>
                 <CardContent className="p-0">
-                  <div className="flex items-center gap-2 px-4 py-3 bg-amber-50 border-b border-amber-200">
-                    <AlertTriangle className="w-4 h-4 text-amber-700" />
+                  <div className="flex items-center gap-2 px-4 py-3 bg-warning-subtle border-b border-warning">
+                    <AlertTriangle className="w-4 h-4 text-warning" />
                     <span className="font-semibold">{teacherName}</span>
-                    <span className="text-sm text-amber-800">
+                    <span className="text-sm text-warning">
                       未提出/下書き <strong>{entries.length}</strong> 件
                     </span>
                   </div>
@@ -142,32 +142,32 @@ export default function OverdueReportsPage() {
                     {entries.map((t) => {
                       const overdueClass =
                         t.days_overdue >= 7
-                          ? 'bg-red-100 text-red-800'
+                          ? 'bg-danger-subtle text-danger'
                           : t.days_overdue >= 3
-                            ? 'bg-amber-100 text-amber-800'
-                            : 'bg-gray-100 text-gray-700';
+                            ? 'bg-warning-subtle text-warning'
+                            : 'bg-surface text-text-body';
                       return (
                         <li
                           key={t.schedule_entry_id}
-                          className="px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center gap-3"
+                          className="px-4 py-3 hover:bg-surface cursor-pointer flex items-center gap-3"
                           onClick={() => router.push(`/lesson-reports/${t.schedule_entry_id}`)}
                         >
                           <div className="w-24 flex-shrink-0">
                             <div className="text-sm font-semibold tabular-nums">
                               {t.entry_date}
                             </div>
-                            <div className="text-xs text-gray-500">
+                            <div className="text-xs text-text-muted">
                               {t.slot_number ? `${t.slot_number}限` : '-'}
                             </div>
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="text-sm font-medium">
                               {t.student_name}{' '}
-                              <span className="text-xs text-gray-500">
+                              <span className="text-xs text-text-muted">
                                 （{gradeLabel(t.student_grade)}）
                               </span>
                             </div>
-                            <div className="text-xs text-gray-500 mt-0.5">
+                            <div className="text-xs text-text-muted mt-0.5">
                               {t.report_status === 'draft' ? '下書き保存中' : '未提出'}
                             </div>
                           </div>
@@ -176,7 +176,7 @@ export default function OverdueReportsPage() {
                           >
                             {t.days_overdue}日経過
                           </span>
-                          <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                          <ChevronRight className="w-4 h-4 text-text-faint flex-shrink-0" />
                         </li>
                       );
                     })}

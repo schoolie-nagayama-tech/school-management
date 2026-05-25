@@ -215,7 +215,7 @@ export default function StudentShiftFormPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-surface">
         <Loading />
       </div>
     );
@@ -223,11 +223,11 @@ export default function StudentShiftFormPage() {
 
   if (!data) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-surface p-4">
         <Card className="max-w-md w-full">
           <CardContent className="p-6 text-center">
-            <p className="text-red-600 font-semibold">フォームが見つかりませんでした</p>
-            <p className="text-sm text-gray-500 mt-2">
+            <p className="text-danger font-semibold">フォームが見つかりませんでした</p>
+            <p className="text-sm text-text-muted mt-2">
               URLが正しいか確認するか、校舎にお問い合わせください。
             </p>
           </CardContent>
@@ -238,12 +238,12 @@ export default function StudentShiftFormPage() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="min-h-screen flex items-center justify-center bg-surface p-4">
         <Card className="max-w-md w-full">
           <CardContent className="p-8 text-center">
             <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-3" />
             <h2 className="text-xl font-bold mb-2">送信完了</h2>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-text-muted">
               ご提出いただきありがとうございました。
             </p>
           </CardContent>
@@ -253,21 +253,21 @@ export default function StudentShiftFormPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-6">
+    <div className="min-h-screen bg-surface py-6">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="max-w-3xl mx-auto px-4 space-y-4">
         <Card>
           <CardContent className="p-4">
             <h1 className="text-xl font-bold mb-1">{data.setting.name}</h1>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-text-muted">
               通塾可能日時の確認フォーム
             </p>
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-xs text-text-muted mt-2">
               期間: {data.setting.start_date} 〜 {data.setting.end_date}
               {data.setting.deadline && ` ・ 締切: ${data.setting.deadline}`}
             </p>
             {data.setting.description && (
-              <p className="text-sm mt-3 whitespace-pre-wrap text-gray-700">
+              <p className="text-sm mt-3 whitespace-pre-wrap text-text-body">
                 {data.setting.description}
               </p>
             )}
@@ -280,7 +280,7 @@ export default function StudentShiftFormPage() {
             <CardContent className="p-4 space-y-3">
               <h2 className="text-sm font-bold">生徒確認</h2>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
+                <label className="block text-xs font-medium text-text-muted mb-1">
                   生徒コード（校舎から案内されたもの）
                 </label>
                 <input
@@ -300,19 +300,19 @@ export default function StudentShiftFormPage() {
           <>
             <Card>
               <CardContent className="p-4 space-y-3">
-                <div className="bg-indigo-50 border border-indigo-200 rounded p-3 text-sm">
+                <div className="bg-info-subtle border border-info rounded p-3 text-sm">
                   生徒: <strong>{data.student.last_name} {data.student.first_name}</strong>
-                  <span className="text-gray-500 ml-1">（{gradeLabel(data.student.grade)}）</span>
+                  <span className="text-text-muted ml-1">（{gradeLabel(data.student.grade)}）</span>
                 </div>
 
                 {data.existing_submission && !editToken && (
-                  <div className="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-800">
+                  <div className="bg-danger-subtle border border-danger rounded p-3 text-sm text-danger">
                     既に提出済みです。修正には校舎の許可が必要です。
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                  <label className="block text-xs font-medium text-text-muted mb-1">
                     保護者メールアドレス（必須）
                   </label>
                   <input
@@ -324,7 +324,7 @@ export default function StudentShiftFormPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                  <label className="block text-xs font-medium text-text-muted mb-1">
                     お名前（任意）
                   </label>
                   <input
@@ -341,7 +341,7 @@ export default function StudentShiftFormPage() {
             <Card>
               <CardContent className="p-4">
                 <h2 className="text-sm font-bold mb-2">通塾可能日時を選択</h2>
-                <p className="text-xs text-gray-500 mb-3">
+                <p className="text-xs text-text-muted mb-3">
                   チェックした日時のコマで講習を組みます。日付の見出しをクリックすると全選択／全解除できます。
                 </p>
                 <div className="overflow-x-auto">
@@ -360,8 +360,8 @@ export default function StudentShiftFormPage() {
                                 type="button"
                                 onClick={() => toggleAllInDay(d)}
                                 className={`block w-full text-center px-1 py-0.5 rounded ${
-                                  allOn ? 'bg-indigo-100 text-indigo-700' : 'hover:bg-gray-100'
-                                }`}
+ allOn ? 'bg-info-subtle text-info' : 'hover:bg-surface'
+ }`}
                               >
                                 {d.slice(5)}
                               </button>
@@ -388,7 +388,7 @@ export default function StudentShiftFormPage() {
                                     className="w-4 h-4 accent-indigo-600 cursor-pointer"
                                   />
                                 ) : (
-                                  <span className="text-gray-300">—</span>
+                                  <span className="text-text-faint">—</span>
                                 )}
                               </td>
                             );
@@ -398,7 +398,7 @@ export default function StudentShiftFormPage() {
                     </tbody>
                   </table>
                 </div>
-                <p className="text-xs text-gray-500 mt-2">
+                <p className="text-xs text-text-muted mt-2">
                   選択中: <strong>{selected.size}</strong> コマ
                 </p>
               </CardContent>
@@ -406,7 +406,7 @@ export default function StudentShiftFormPage() {
 
             <Card>
               <CardContent className="p-4 space-y-2">
-                <label className="block text-xs font-medium text-gray-600">備考（任意）</label>
+                <label className="block text-xs font-medium text-text-muted">備考（任意）</label>
                 <textarea
                   rows={3}
                   value={notes}

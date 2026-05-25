@@ -61,7 +61,7 @@ export function ScheduleDriftCheckPanel({
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 p-6 text-sm text-gray-500">
+      <div className="flex items-center gap-2 p-6 text-sm text-text-muted">
         <Loader2 className="w-4 h-4 animate-spin" />
         スケジュール側のコマ数を集計中...
       </div>
@@ -69,7 +69,7 @@ export function ScheduleDriftCheckPanel({
   }
 
   if (error) {
-    return <div className="p-4 text-sm text-red-600">{error}</div>;
+    return <div className="p-4 text-sm text-danger">{error}</div>;
   }
 
   if (!counts) return null;
@@ -85,10 +85,10 @@ export function ScheduleDriftCheckPanel({
   const totalDiff = teacherReportedTotal - scheduleTotal;
 
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
-      <div className="px-4 py-3 bg-gray-50 border-b">
+    <div className="border border-border-subtle rounded-lg overflow-hidden bg-white">
+      <div className="px-4 py-3 bg-surface border-b">
         <h3 className="font-semibold text-sm">スケジュール照合</h3>
-        <p className="text-xs text-gray-600 mt-1">
+        <p className="text-xs text-text-muted mt-1">
           講師の自己申告と座席表側の集計を並べて表示します。差分があれば実態と照らして判断してください
           （準備給・自習対応など座席表に出ない種別は集計対象外）。
         </p>
@@ -97,24 +97,24 @@ export function ScheduleDriftCheckPanel({
       {/* 月合計サマリ */}
       <div className="px-4 py-3 grid grid-cols-3 gap-3 bg-white border-b text-sm">
         <div>
-          <div className="text-xs text-gray-500">講師申告（月合計）</div>
+          <div className="text-xs text-text-muted">講師申告（月合計）</div>
           <div className="text-lg font-semibold">{teacherReportedTotal} コマ</div>
         </div>
         <div>
-          <div className="text-xs text-gray-500">座席表集計（通常+講習）</div>
+          <div className="text-xs text-text-muted">座席表集計（通常+講習）</div>
           <div className="text-lg font-semibold">
             {scheduleTotal} コマ
-            <span className="ml-1 text-xs text-gray-500">
+            <span className="ml-1 text-xs text-text-muted">
               (通常 {counts.totalRegular} / 講習 {counts.totalKoushu})
             </span>
           </div>
         </div>
         <div>
-          <div className="text-xs text-gray-500">差分</div>
+          <div className="text-xs text-text-muted">差分</div>
           <div
             className={`text-lg font-semibold ${
-              totalDiff === 0 ? 'text-green-700' : 'text-red-700'
-            }`}
+ totalDiff === 0 ? 'text-success' : 'text-danger'
+ }`}
           >
             {totalDiff === 0 ? '一致 ✓' : totalDiff > 0 ? `+${totalDiff}` : `${totalDiff}`}
           </div>
@@ -124,7 +124,7 @@ export function ScheduleDriftCheckPanel({
       {/* 日別比較テーブル */}
       <div className="max-h-96 overflow-y-auto">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 sticky top-0">
+          <thead className="bg-surface sticky top-0">
             <tr>
               <th className="text-left px-3 py-2 font-medium w-28">日付</th>
               <th className="text-right px-3 py-2 font-medium w-20">講師申告</th>
@@ -135,7 +135,7 @@ export function ScheduleDriftCheckPanel({
           <tbody>
             {allDates.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-3 py-6 text-center text-sm text-gray-500">
+                <td colSpan={4} className="px-3 py-6 text-center text-sm text-text-muted">
                   この月にコマ記録がありません
                 </td>
               </tr>
@@ -147,19 +147,19 @@ export function ScheduleDriftCheckPanel({
                 const diff = reported - scheduleSum;
                 const isMatch = diff === 0;
                 return (
-                  <tr key={date} className={`border-t ${isMatch ? '' : 'bg-red-50'}`}>
+                  <tr key={date} className={`border-t ${isMatch ? '' : 'bg-danger-subtle'}`}>
                     <td className="px-3 py-2 tabular-nums">{date}</td>
                     <td className="px-3 py-2 text-right tabular-nums">{reported}</td>
                     <td className="px-3 py-2 text-right tabular-nums">
                       {scheduleSum}
-                      <span className="ml-1 text-xs text-gray-500">
+                      <span className="ml-1 text-xs text-text-muted">
                         ({kindCounts.regular} / {kindCounts.koushu})
                       </span>
                     </td>
                     <td
                       className={`px-3 py-2 text-right tabular-nums font-medium ${
-                        isMatch ? 'text-gray-400' : 'text-red-700'
-                      }`}
+ isMatch ? 'text-text-faint' : 'text-danger'
+ }`}
                     >
                       {isMatch ? '✓' : diff > 0 ? `+${diff}` : `${diff}`}
                     </td>

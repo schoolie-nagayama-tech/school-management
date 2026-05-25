@@ -120,12 +120,12 @@ export default function TransferNotificationsPage() {
   const statusBadge = (s: TransferNotificationStatus) => {
     const cls =
       s === 'pending'
-        ? 'bg-amber-100 text-amber-800'
+        ? 'bg-warning-subtle text-warning'
         : s === 'sent'
-          ? 'bg-green-100 text-green-800'
+          ? 'bg-success-subtle text-success'
           : s === 'failed'
-            ? 'bg-red-100 text-red-800'
-            : 'bg-gray-100 text-gray-600';
+            ? 'bg-danger-subtle text-danger'
+            : 'bg-surface text-text-muted';
     const label =
       s === 'pending' ? '未送信' : s === 'sent' ? '送信済' : s === 'failed' ? '失敗' : 'スキップ';
     return (
@@ -151,7 +151,7 @@ export default function TransferNotificationsPage() {
             </SelectContent>
           </Select>
         </div>
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-text-muted">
           振替が確定したコマの通知レコード。実際のメール/LINE送信は別途行い、送信後は「送信済みにマーク」してください。
           通知が不要な場合は「スキップ」で記録できます。
         </p>
@@ -160,7 +160,7 @@ export default function TransferNotificationsPage() {
           <Loading />
         ) : notifications.length === 0 ? (
           <Card>
-            <CardContent className="p-8 text-center text-gray-500">
+            <CardContent className="p-8 text-center text-text-muted">
               該当する通知はありません
             </CardContent>
           </Card>
@@ -177,29 +177,29 @@ export default function TransferNotificationsPage() {
                       <div className="flex items-center gap-2 mb-1">
                         <span className="font-bold">{studentName}</span>
                         {n.student && (
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs text-text-muted">
                             ({gradeLabel(n.student.grade)})
                           </span>
                         )}
                         {statusBadge(n.delivery_status)}
                       </div>
-                      <div className="text-sm text-gray-700">
-                        <span className="line-through text-gray-500">
+                      <div className="text-sm text-text-body">
+                        <span className="line-through text-text-muted">
                           {n.from_date} {n.from_time_slot_label}
                         </span>
-                        <span className="mx-2 text-indigo-600 font-bold">→</span>
+                        <span className="mx-2 text-info font-bold">→</span>
                         <span className="font-semibold">
                           {n.to_date} {n.to_time_slot_label}
                         </span>
                       </div>
                       {n.sent_to && (
-                        <div className="text-xs text-gray-500 mt-1">
+                        <div className="text-xs text-text-muted mt-1">
                           送信先: {n.sent_to} ({n.delivery_method})・
                           {n.sent_at && new Date(n.sent_at).toLocaleString('ja-JP')}
                         </div>
                       )}
                       {n.error_message && (
-                        <div className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                        <div className="text-xs text-danger mt-1 flex items-center gap-1">
                           <AlertCircle className="w-3 h-3" />
                           {n.error_message}
                         </div>
@@ -239,11 +239,11 @@ export default function TransferNotificationsPage() {
             <DialogTitle>送信済みにマーク</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-text-muted">
               実際に送信した方法と宛先を記録します（事後ログ）。
             </p>
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1">送信方法</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">送信方法</label>
               <Select value={markMethod} onValueChange={setMarkMethod}>
                 <SelectTrigger>
                   <SelectValue />
@@ -258,7 +258,7 @@ export default function TransferNotificationsPage() {
               </Select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1">送信先</label>
+              <label className="block text-xs font-semibold text-text-muted mb-1">送信先</label>
               <input
                 type="text"
                 value={markSentTo}
@@ -267,7 +267,7 @@ export default function TransferNotificationsPage() {
                 className="w-full px-3 py-2 border rounded-md text-sm"
               />
             </div>
-            <div className="flex items-center gap-2 text-xs text-gray-500 bg-indigo-50 p-2 rounded">
+            <div className="flex items-center gap-2 text-xs text-text-muted bg-info-subtle p-2 rounded">
               <Mail className="w-3 h-3" />
               将来：Edge Function が pending を自動送信する仕組みに置き換える予定
             </div>

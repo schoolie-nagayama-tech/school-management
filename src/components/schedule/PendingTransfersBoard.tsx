@@ -81,19 +81,19 @@ export function PendingTransfersBoard({
   const soonCount = entries.length - overdueCount;
 
   return (
-    <div className="border border-amber-200 bg-amber-50 rounded-lg overflow-hidden mb-4">
+    <div className="border border-warning bg-warning-subtle rounded-lg overflow-hidden mb-4">
       <button
         type="button"
         onClick={() => setCollapsed((c) => !c)}
-        className="w-full px-4 py-3 flex items-center gap-2 text-left hover:bg-amber-100/50 transition-colors"
+        className="w-full px-4 py-3 flex items-center gap-2 text-left hover:bg-warning-subtle/50 transition-colors"
       >
-        <AlertTriangle className="w-4 h-4 text-amber-700 flex-shrink-0" />
-        <span className="font-medium text-amber-900 text-sm">
+        <AlertTriangle className="w-4 h-4 text-warning flex-shrink-0" />
+        <span className="font-medium text-warning text-sm">
           振替期限の対応待ち
         </span>
-        <span className="text-xs text-amber-800">
+        <span className="text-xs text-warning">
           {overdueCount > 0 && (
-            <span className="font-semibold text-red-700">
+            <span className="font-semibold text-danger">
               期限切れ {overdueCount}件
             </span>
           )}
@@ -101,12 +101,12 @@ export function PendingTransfersBoard({
           {soonCount > 0 && <span>期限間近 {soonCount}件</span>}
         </span>
         <ChevronRight
-          className={`ml-auto w-4 h-4 text-amber-700 transition-transform ${collapsed ? '' : 'rotate-90'}`}
+          className={`ml-auto w-4 h-4 text-warning transition-transform ${collapsed ? '' : 'rotate-90'}`}
         />
       </button>
 
       {!collapsed && (
-        <div className="border-t border-amber-200 max-h-80 overflow-y-auto bg-white">
+        <div className="border-t border-warning max-h-80 overflow-y-auto bg-white">
           <ul className="divide-y divide-gray-100">
             {entries.map((entry) => {
               const studentName = entry.student
@@ -120,10 +120,10 @@ export function PendingTransfersBoard({
               const daysLeft = deadline ? daysUntil(deadline) : null;
 
               const chipClass = (() => {
-                if (daysLeft == null) return 'bg-gray-100 text-gray-700';
-                if (daysLeft < 0) return 'bg-red-100 text-red-800';
-                if (daysLeft <= 7) return 'bg-amber-100 text-amber-800';
-                return 'bg-gray-100 text-gray-700';
+                if (daysLeft == null) return 'bg-surface text-text-body';
+                if (daysLeft < 0) return 'bg-danger-subtle text-danger';
+                if (daysLeft <= 7) return 'bg-warning-subtle text-warning';
+                return 'bg-surface text-text-body';
               })();
               const chipLabel = (() => {
                 if (daysLeft == null) return '期限未設定';
@@ -135,23 +135,23 @@ export function PendingTransfersBoard({
               return (
                 <li
                   key={entry.id}
-                  className="px-4 py-3 hover:bg-amber-50/40 cursor-pointer transition-colors"
+                  className="px-4 py-3 hover:bg-warning-subtle/40 cursor-pointer transition-colors"
                   onClick={() => onSelectEntry?.(entry)}
                 >
                   <div className="flex items-center gap-3 text-sm">
                     <div className="flex-1 min-w-0">
                       <div className="font-medium truncate">{studentName}</div>
-                      <div className="text-xs text-gray-500 truncate">
+                      <div className="text-xs text-text-muted truncate">
                         欠席日: {entry.entry_date} {slotLabel} ・ 担当: {teacherName}
                       </div>
                     </div>
                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium flex-shrink-0 ${chipClass}`}>
                       {chipLabel}
                     </span>
-                    <span className="text-xs text-gray-400 flex-shrink-0">
+                    <span className="text-xs text-text-faint flex-shrink-0">
                       期限: {deadline}
                     </span>
-                    <ChevronRight className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                    <ChevronRight className="w-4 h-4 text-text-faint flex-shrink-0" />
                   </div>
                 </li>
               );
