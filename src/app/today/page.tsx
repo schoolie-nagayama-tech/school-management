@@ -262,7 +262,7 @@ export default function TodayPage() {
           </Card>
         ) : (
           <div className="space-y-2">
-            {entries.map((entry) => {
+            {entries.map((entry, idx) => {
               const studentName = entry.student
                 ? `${entry.student.last_name} ${entry.student.first_name}`
                 : entry.student_id;
@@ -272,9 +272,12 @@ export default function TodayPage() {
                 <Link
                   key={entry.id}
                   href={`/lesson-reports/${entry.id}`}
-                  className="block"
+                  // 40ms 刻みでカードがフェードイン。
+                  // 9件目以降は最大値で頭打ち（長すぎる遅延は逆効果）
+                  className="block stagger-item"
+                  style={{ '--stagger-index': Math.min(idx, 8) } as React.CSSProperties}
                 >
-                  <Card className="hover:border-info transition-colors cursor-pointer">
+                  <Card className="hover:border-info cursor-pointer transition-[background-color,border-color,color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.99]">
                     <CardContent className="p-3 flex items-center gap-3">
                       <div className="w-20 flex-shrink-0 text-center bg-surface rounded py-2">
                         <div className="text-xs text-text-muted font-semibold">

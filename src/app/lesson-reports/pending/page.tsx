@@ -138,7 +138,7 @@ export default function PendingReportsPage() {
           </Card>
         ) : (
           <div className="space-y-2">
-            {reports.map((r) => {
+            {reports.map((r, idx) => {
               const studentName = r.student
                 ? `${r.student.last_name} ${r.student.first_name}`
                 : r.student_id;
@@ -148,7 +148,14 @@ export default function PendingReportsPage() {
                 ? new Date(r.submitted_at).toLocaleString('ja-JP')
                 : '-';
               return (
-                <Card key={r.id} className="hover:border-warning">
+                // stagger: 9件目以降は遅延上限で頭打ち。
+                // Card は style を受けないので div でラップして CSS 変数を渡す。
+                <div
+                  key={r.id}
+                  className="stagger-item"
+                  style={{ '--stagger-index': Math.min(idx, 8) } as React.CSSProperties}
+                >
+                <Card className="hover:border-warning transition-[border-color] duration-150 ease-[var(--ease-out)]">
                   <CardContent className="p-3 flex items-center gap-3">
                     <button
                       type="button"
@@ -196,6 +203,7 @@ export default function PendingReportsPage() {
                     </Button>
                   </CardContent>
                 </Card>
+                </div>
               );
             })}
           </div>

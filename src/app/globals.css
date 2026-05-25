@@ -56,9 +56,13 @@
   --accent-ink: oklch(30% 0.07 257);
   --accent-ink-subtle: oklch(95% 0.02 257);
 
-  /* === Motion === */
+  /* === Motion ===
+     カーブは Emil Kowalski のフレームワークに合わせ、標準より punch のある custom bezier。
+     UI: 出現は ease-out（即時反応）、画面内移動は ease-in-out（自然な加減速）、
+     ドロワー/シート系は iOS like の ease-drawer。 */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 
   /* === 互換レイヤー（既存コードで参照中） === */
   --background: var(--bg);
@@ -75,6 +79,46 @@
   --secondary: var(--surface);
   --tertiary: var(--danger);
   --main: var(--bg);
+}
+
+/* リストエントリのスタッガー表示用ユーティリティ。
+   親に複数の .stagger-item を並べると、--stagger-index 経由で 40ms 刻みで遅延フェードイン。
+   - opacity と translateY のみ animate（transform を GPU に乗せる）
+   - 8 件超は遅延が長くなりすぎるので index は計算側でクランプする想定 */
+@keyframes stagger-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.stagger-item {
+  opacity: 0;
+  animation: stagger-fade-in 240ms var(--ease-out) forwards;
+  animation-delay: calc(var(--stagger-index, 0) * 40ms);
+}
+
+/* prefers-reduced-motion: 動きを減らすが完全に殺さない。
+   - opacity のフェードは残す（comprehension を助ける）
+   - transform 由来の motion は無効化
+   - アニメーション尺は短くする */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 80ms !important;
+    scroll-behavior: auto !important;
+  }
+  .stagger-item {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }
 
 :root.dark {

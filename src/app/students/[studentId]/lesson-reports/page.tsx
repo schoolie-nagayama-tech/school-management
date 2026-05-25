@@ -212,7 +212,7 @@ export default function StudentLessonReportsPage() {
                 {Array.from(latestBySubject.entries()).map(([subject, r]) => (
                   <Card
                     key={r.id}
-                    className="hover:border-info cursor-pointer"
+                    className="hover:border-info cursor-pointer transition-[background-color,border-color,color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.99]"
                     onClick={() => router.push(`/lesson-reports/${r.schedule_entry_id}`)}
                   >
                     <CardContent className="p-3">
@@ -298,7 +298,7 @@ export default function StudentLessonReportsPage() {
                   return (
                     <Card
                       key={r.id}
-                      className="hover:border-info cursor-pointer"
+                      className="hover:border-info cursor-pointer transition-[background-color,border-color,color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.99]"
                       onClick={() => router.push(`/lesson-reports/${r.schedule_entry_id}`)}
                     >
                       <CardContent className="p-2 flex items-center gap-3">

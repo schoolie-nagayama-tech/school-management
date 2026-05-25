@@ -85,7 +85,7 @@ export function PendingTransfersBoard({
       <button
         type="button"
         onClick={() => setCollapsed((c) => !c)}
-        className="w-full px-4 py-3 flex items-center gap-2 text-left hover:bg-warning-subtle/50 transition-colors"
+        className="w-full px-4 py-3 flex items-center gap-2 text-left hover:bg-warning-subtle/50 transition-[background-color,border-color,color] duration-150 ease-[var(--ease-out)]"
       >
         <AlertTriangle className="w-4 h-4 text-warning flex-shrink-0" />
         <span className="font-medium text-warning text-sm">
@@ -101,7 +101,7 @@ export function PendingTransfersBoard({
           {soonCount > 0 && <span>期限間近 {soonCount}件</span>}
         </span>
         <ChevronRight
-          className={`ml-auto w-4 h-4 text-warning transition-transform ${collapsed ? '' : 'rotate-90'}`}
+          className={`ml-auto w-4 h-4 text-warning transition-transform duration-150 ease-[var(--ease-out)] ${collapsed ? '' : 'rotate-90'}`}
         />
       </button>
 
@@ -135,7 +135,7 @@ export function PendingTransfersBoard({
               return (
                 <li
                   key={entry.id}
-                  className="px-4 py-3 hover:bg-warning-subtle/40 cursor-pointer transition-colors"
+                  className="px-4 py-3 hover:bg-warning-subtle/40 cursor-pointer transition-[background-color,border-color,color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.98]"
                   onClick={() => onSelectEntry?.(entry)}
                 >
                   <div className="flex items-center gap-3 text-sm">

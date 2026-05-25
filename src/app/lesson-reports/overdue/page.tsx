@@ -149,7 +149,7 @@ export default function OverdueReportsPage() {
                       return (
                         <li
                           key={t.schedule_entry_id}
-                          className="px-4 py-3 hover:bg-surface cursor-pointer flex items-center gap-3"
+                          className="px-4 py-3 hover:bg-surface cursor-pointer flex items-center gap-3 active:scale-[0.98] transition-transform duration-150 ease-[var(--ease-out)]"
                           onClick={() => router.push(`/lesson-reports/${t.schedule_entry_id}`)}
                         >
                           <div className="w-24 flex-shrink-0">

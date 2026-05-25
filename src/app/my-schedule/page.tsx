@@ -231,7 +231,7 @@ export default function MySchedulePage() {
 
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">授業スケジュール</h1>
-          <Link href="/today" className="text-sm text-info hover:underline">
+          <Link href="/today" className="text-sm text-info hover:underline underline-offset-2">
             本日のみ表示 →
           </Link>
         </div>
@@ -346,7 +346,7 @@ export default function MySchedulePage() {
                         type="button"
                         key={key}
                         onClick={() => setMonthSelectedDate(isSelected ? null : key)}
-                        className={`aspect-square rounded text-xs flex flex-col items-center justify-center transition-colors border ${
+                        className={`aspect-square rounded text-xs flex flex-col items-center justify-center transition-[background-color,border-color,color] duration-150 ease-[var(--ease-out)] border ${
  !inMonth
  ? 'bg-surface text-text-faint border-transparent'
  : isSelected
@@ -477,7 +477,7 @@ function EntryRow({
 
         <Link
           href={`/lesson-reports/${entry.id}`}
-          className="text-xs text-info hover:underline flex items-center gap-0.5 flex-shrink-0"
+          className="text-xs text-info hover:underline underline-offset-2 flex items-center gap-0.5 flex-shrink-0"
         >
           <FileText className="w-3 h-3" />
           報告書

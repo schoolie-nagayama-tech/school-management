@@ -542,7 +542,7 @@ export default function LessonReportFormPage() {
                                   curriculum_item_ids: u.curriculum_item_ids.filter((id) => id !== itemId),
                                 })
                               }
-                              className="hover:opacity-70"
+                              className="hover:opacity-70 transition-opacity duration-150 ease-[var(--ease-out)]"
                             >
                               ×
                             </button>
