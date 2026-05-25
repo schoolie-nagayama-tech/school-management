@@ -382,7 +382,7 @@ export default function TestPrepEditor() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => router.back()}
-              className="text-sm text-text-muted hover:text-text-body"
+              className="text-sm text-text-muted hover:text-text-body transition-colors"
             >
               ← 戻る
             </button>
@@ -396,7 +396,7 @@ export default function TestPrepEditor() {
             {!isNew && (
               <button
                 onClick={handleDelete}
-                className="px-3 py-1.5 text-xs text-text-muted hover:text-red-600 border border-border rounded-lg"
+                className="px-3 py-1.5 text-xs text-text-muted hover:text-red-600 border border-border rounded-lg transition-colors"
               >
                 削除
               </button>
@@ -404,14 +404,14 @@ export default function TestPrepEditor() {
             <button
               onClick={() => handleSave('draft')}
               disabled={saving}
-              className="px-4 py-2 text-sm border border-border rounded-lg hover:bg-surface-hover transition-colors disabled:opacity-50"
+              className="px-4 py-2 text-sm border border-border rounded-lg hover:bg-surface-hover transition-[colors,transform] active:scale-[0.97] disabled:opacity-50"
             >
               下書き保存
             </button>
             <button
               onClick={() => handleSave('published')}
               disabled={saving}
-              className="px-4 py-2 text-sm bg-primary text-primary-contrast font-medium rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50"
+              className="px-4 py-2 text-sm bg-primary text-primary-contrast font-medium rounded-lg hover:bg-primary-dark transition-[colors,transform] active:scale-[0.97] disabled:opacity-50"
             >
               保存して公開
             </button>
@@ -496,7 +496,7 @@ export default function TestPrepEditor() {
 
           <button
             onClick={addSubject}
-            className="w-full py-3 border-2 border-dashed border-border rounded-xl text-sm text-text-muted hover:border-text-faint hover:text-text-body transition-colors"
+            className="w-full py-3 border-2 border-dashed border-border rounded-xl text-sm text-text-muted hover:border-text-faint hover:text-text-body transition-[colors,transform] active:scale-[0.99]"
           >
             + 科目を追加
           </button>
@@ -531,7 +531,7 @@ export default function TestPrepEditor() {
                   );
                   success('URLをコピーしました');
                 }}
-                className="px-4 py-2 text-sm bg-primary text-primary-contrast rounded-lg hover:bg-primary-dark"
+                className="px-4 py-2 text-sm bg-primary text-primary-contrast rounded-lg hover:bg-primary-dark transition-[colors,transform] active:scale-[0.97]"
               >
                 コピー
               </button>

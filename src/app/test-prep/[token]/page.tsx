@@ -291,7 +291,7 @@ function ZoukomaSection({
           </div>
           <button
             onClick={() => setShowForm((v) => !v)}
-            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-[colors,transform] active:scale-[0.97]"
           >
             {showForm ? '閉じる' : '申し込みフォームを開く'}
           </button>
@@ -352,7 +352,7 @@ function ZoukomaSection({
           <button
             type="button"
             onClick={() => alert('申込機能は実装中です')}
-            className="w-full py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors text-sm"
+            className="w-full py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-[colors,transform] active:scale-[0.97] text-sm"
           >
             増コマを申し込む
           </button>

@@ -57,7 +57,7 @@ export default function TestPrepList() {
         </div>
         <button
           onClick={() => router.push(`/students/${studentId}/test-prep/new`)}
-          className="px-4 py-2 text-sm bg-primary text-primary-contrast font-medium rounded-lg hover:bg-primary-dark transition-colors"
+          className="px-4 py-2 text-sm bg-primary text-primary-contrast font-medium rounded-lg hover:bg-primary-dark transition-[colors,transform] active:scale-[0.97]"
         >
           + 新規作成
         </button>
@@ -68,7 +68,7 @@ export default function TestPrepList() {
           <p className="text-text-muted mb-4">テスト対策提案書はまだありません</p>
           <button
             onClick={() => router.push(`/students/${studentId}/test-prep/new`)}
-            className="px-4 py-2 text-sm bg-primary text-primary-contrast rounded-lg hover:bg-primary-dark"
+            className="px-4 py-2 text-sm bg-primary text-primary-contrast rounded-lg hover:bg-primary-dark transition-[colors,transform] active:scale-[0.97]"
           >
             提案書を作成
           </button>
@@ -79,7 +79,7 @@ export default function TestPrepList() {
             <button
               key={p.id}
               onClick={() => router.push(`/students/${studentId}/test-prep/${p.id}`)}
-              className="w-full text-left bg-surface-raised rounded-xl border border-border p-4 hover:bg-surface-hover transition-colors"
+              className="w-full text-left bg-surface-raised rounded-xl border border-border p-4 hover:bg-surface-hover hover:-translate-y-px transition-[colors,transform] active:scale-[0.99]"
             >
               <div className="flex items-center justify-between">
                 <div>
