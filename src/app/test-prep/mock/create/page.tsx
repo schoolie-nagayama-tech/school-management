@@ -276,7 +276,7 @@ export default function TestPrepCreateMock() {
    ------------------------------------------------------------------ */
 function SubjectEditor({
   subject,
-  _gradeCategory,
+  gradeCategory: _gradeCategory,
   onUpdateScore,
   onAddUnit,
   onUpdateUnit,
