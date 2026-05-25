@@ -30,6 +30,22 @@ const ScheduleDialogs = dynamic(
   () => import('@/components/schedule').then((m) => m.ScheduleDialogs),
   { ssr: false }
 );
+const ScheduleDriftBanner = dynamic(
+  () => import('@/components/schedule/ScheduleDriftBanner').then((m) => m.ScheduleDriftBanner),
+  { ssr: false }
+);
+const BoothAssignmentModal = dynamic(
+  () => import('@/components/schedule/BoothAssignmentModal').then((m) => m.BoothAssignmentModal),
+  { ssr: false }
+);
+const PendingTransfersBoard = dynamic(
+  () => import('@/components/schedule/PendingTransfersBoard').then((m) => m.PendingTransfersBoard),
+  { ssr: false }
+);
+const KoushuPlacementPanel = dynamic(
+  () => import('@/components/schedule/KoushuPlacementPanel').then((m) => m.KoushuPlacementPanel),
+  { ssr: false }
+);
 import { fetchWithAuth } from '@/lib/api/auth';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { getStudents } from '@/lib/api/students';
@@ -146,6 +162,19 @@ export default function SchedulePage() {
   const [teacherDetailOpen, setTeacherDetailOpen] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState<typeof teachers[0] | null>(null);
   const [printDay, setPrintDay] = useState<string | null>(null);
+  // ブース番号設定モーダル：印刷時に講師名の隣に表示される番号を編集する
+  const [boothAssignDate, setBoothAssignDate] = useState<string | null>(null);
+  // 印刷ビューに渡す日次のブース番号マップ。印刷直前にフェッチして埋める
+  const [printBoothMap, setPrintBoothMap] = useState<Map<string, Map<string, number>>>(new Map());
+
+  // 講習配置モード
+  //   placingKoushuStudent: 配置中の生徒情報（クリックで空きセルに講習コマを追加するモード）
+  //   koushuPanelRefreshKey: 配置成功時にインクリメント→パネル側の残数を再フェッチ
+  const [placingKoushuStudent, setPlacingKoushuStudent] = useState<{
+    studentId: string;
+    subjectIds: string[];
+  } | null>(null);
+  const [koushuPanelRefreshKey, setKoushuPanelRefreshKey] = useState(0);
   const [scheduleSettingsOpen, setScheduleSettingsOpen] = useState(false);
   const [scheduleGenerateConfirmOpen, setScheduleGenerateConfirmOpen] = useState(false);
   const [scheduleGenerateHasExisting, setScheduleGenerateHasExisting] = useState(false);
@@ -364,9 +393,34 @@ export default function SchedulePage() {
     setAddTeacherModalOpen(false);
   }, [addTeacherTarget]);
 
-  const handleAddStudent = useCallback((date: string, slotId: string, teacherId: string) => {
-    setAddTarget({ date, slotId, teacherId });
-  }, []);
+  const handleAddStudent = useCallback(
+    async (date: string, slotId: string, teacherId: string) => {
+      // 講習配置モード中なら通常モーダルではなく直接生成
+      if (placingKoushuStudent && schoolId) {
+        try {
+          const { createScheduleEntry } = await import('@/lib/api/schedule');
+          await createScheduleEntry(schoolId, date, slotId, {
+            teacher_id: teacherId,
+            student_id: placingKoushuStudent.studentId,
+            subject_ids: placingKoushuStudent.subjectIds,
+            seat_label: '',
+            note: '',
+            kind: 'koushu',
+            formation: 'individual',
+          });
+          success('講習コマを配置しました');
+          await refreshEntries();
+          setKoushuPanelRefreshKey((k) => k + 1);
+        } catch (e) {
+          toastError(e instanceof Error ? e.message : '配置に失敗しました');
+        }
+        return;
+      }
+      // 通常モード：生徒選択モーダルを開く
+      setAddTarget({ date, slotId, teacherId });
+    },
+    [placingKoushuStudent, schoolId, success, refreshEntries, toastError]
+  );
 
   const handleRemoveTeacher = useCallback((
     date: string,
@@ -444,6 +498,37 @@ export default function SchedulePage() {
     setPrintDay(dateStr);
   }, []);
 
+  /** 日付横の # アイコン: ブース番号設定モーダルを開く */
+  const handleBoothAssign = useCallback((dateStr: string) => {
+    setBoothAssignDate(dateStr);
+  }, []);
+
+  // 印刷日が決まったら、その日のブース割当をフェッチして印刷ビューに渡す。
+  // 番号設定モーダルで保存→閉じた直後に印刷した場合も、最新値を取得して反映できる。
+  useEffect(() => {
+    if (!printDay || !schoolId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { getBoothNoMapForDate } = await import('@/lib/api/schedule-daily-booth');
+        const map = await getBoothNoMapForDate(schoolId, printDay);
+        if (!cancelled) {
+          setPrintBoothMap((prev) => {
+            const next = new Map(prev);
+            next.set(printDay, map);
+            return next;
+          });
+        }
+      } catch (e) {
+        // 取得失敗時は番号無しで印刷（後方互換）
+        console.warn('Failed to fetch booth assignments for print:', e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [printDay, schoolId]);
+
   useEffect(() => {
     if (!printDay) return;
     const doPrint = () => {
@@ -452,7 +537,8 @@ export default function SchedulePage() {
     const onAfterPrint = () => {
       setPrintDay(null);
     };
-    const t = setTimeout(doPrint, 150);
+    // ブース番号フェッチが間に合うよう少し長めに待つ
+    const t = setTimeout(doPrint, 300);
     window.addEventListener('afterprint', onAfterPrint);
     return () => {
       clearTimeout(t);
@@ -787,6 +873,48 @@ export default function SchedulePage() {
           onKoushuSelect={handleKoushuSelect}
         />
 
+        {schoolId && (
+          <ScheduleDriftBanner schoolId={schoolId} userId={profile?.id} />
+        )}
+
+        {/* 講習選択中は配置パネルを表示。空きセルクリックで講習コマを追加できる「配置モード」を提供 */}
+        {selectedKoushu && (
+          <KoushuPlacementPanel
+            course={selectedKoushu}
+            onStartPlacement={(studentId, subjectIds) => {
+              // 同じ生徒を再クリックでモード解除
+              if (placingKoushuStudent?.studentId === studentId) {
+                setPlacingKoushuStudent(null);
+              } else {
+                setPlacingKoushuStudent({ studentId, subjectIds });
+              }
+            }}
+            placingStudentId={placingKoushuStudent?.studentId ?? null}
+            refreshKey={koushuPanelRefreshKey}
+            onClose={() => {
+              setPlacingKoushuStudent(null);
+              handleKoushuSelect(null);
+            }}
+          />
+        )}
+
+        {/* 振替期限切れ間近の督促ボード。
+            0件のときは内部で何も描画しないので、空ボードでスペースを食わない */}
+        {schoolId && (
+          <PendingTransfersBoard
+            schoolIds={[schoolId]}
+            onSelectEntry={(entry) => {
+              // 振替元のあった日付に飛ぶ。週単位で扱う必要があるため、その週の月曜にジャンプ。
+              const d = new Date(entry.entry_date + 'T12:00:00');
+              const dow = d.getDay();
+              const diff = (dow + 6) % 7; // 月曜=0 になるオフセット
+              const monday = new Date(d);
+              monday.setDate(d.getDate() - diff);
+              setWeekStart(monday);
+            }}
+          />
+        )}
+
         {!schoolId ? (
           <Card>
             <CardContent className="py-8 text-center text-[var(--paragraph)]">
@@ -845,6 +973,7 @@ export default function SchedulePage() {
                         entries={entriesWithSubjects}
                         schoolName={selectedSchool?.name}
                         singleDate={printDay}
+                        boothMapByDate={printBoothMap}
                       />
                     </div>
                   )}
@@ -883,6 +1012,7 @@ export default function SchedulePage() {
                       onStudentEntryDrop={handleStudentEntryDrop}
                       onTransferTargetClick={handleTransferTargetClick}
                       onPrintDay={handlePrintDay}
+                      onBoothAssign={handleBoothAssign}
                       onTransferCancel={() => setTransferMode(null)}
                       getKoushuInfo={selectedKoushu ? getKoushuInfo : undefined}
                     />
@@ -974,6 +1104,32 @@ export default function SchedulePage() {
         onRemoveTeacherConfirmClose={() => setRemoveTeacherConfirm(null)}
         onRemoveTeacherConfirm={handleRemoveTeacherConfirm}
       />
+
+      {/* 日次ブース番号設定モーダル：印刷時に講師名の隣に番号を出すための事前設定 */}
+      {boothAssignDate && schoolId && (
+        <BoothAssignmentModal
+          open={!!boothAssignDate}
+          onClose={() => setBoothAssignDate(null)}
+          schoolId={schoolId}
+          date={boothAssignDate}
+          entries={entriesWithSubjects}
+          totalSeats={12 /* TODO: school_class_capacity.total_individual_seats から取得 */}
+          onSaved={() => {
+            // 保存直後に印刷ビュー用のマップも更新しておく（即印刷ボタンを押されても反映される）
+            if (boothAssignDate && schoolId) {
+              import('@/lib/api/schedule-daily-booth').then(({ getBoothNoMapForDate }) => {
+                getBoothNoMapForDate(schoolId, boothAssignDate).then((map) => {
+                  setPrintBoothMap((prev) => {
+                    const next = new Map(prev);
+                    next.set(boothAssignDate, map);
+                    return next;
+                  });
+                });
+              });
+            }
+          }}
+        />
+      )}
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </AdminLayout>

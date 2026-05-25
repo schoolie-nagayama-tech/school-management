@@ -142,6 +142,52 @@ export async function deleteKoushu(courseId: string): Promise<void> {
 // 講習申し込み管理（koushu_enrollments）
 // =====================================================
 
+/**
+ * 講習申し込みの「残数」を取得：申し込みコマ数に対し、座席表に何コマ配置済みかを集計。
+ *
+ * 用途：座席表の「講習配置パネル」で「Aさん 5コマ中 3コマ配置済み」のように表示する。
+ *
+ * @returns Map<student_id, { enrolled: 申込コマ数, placed: 座席表配置済み, subject_ids }>
+ */
+export async function getKoushuPlacementProgress(
+  course: KoushuCourse
+): Promise<Map<string, { enrolled: number; placed: number; subject_ids: string[]; student: KoushuEnrollment['student'] }>> {
+  if (!course.start_date || !course.end_date) {
+    return new Map();
+  }
+  const enrollments = await getKoushuEnrollments(course.id);
+  if (enrollments.length === 0) return new Map();
+
+  // 該当期間 × 該当生徒 × kind='koushu' の schedule_entries を取得して集計
+  const studentIds = enrollments.map((e) => e.student_id);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: entries } = await (supabase as any)
+    .from('schedule_entries')
+    .select('student_id')
+    .eq('school_id', course.school_id)
+    .eq('kind', 'koushu')
+    .in('student_id', studentIds)
+    .gte('entry_date', course.start_date)
+    .lte('entry_date', course.end_date)
+    .in('status', ['scheduled', 'completed', 'transferred_in']);
+
+  const placedMap = new Map<string, number>();
+  for (const e of (entries || []) as { student_id: string }[]) {
+    placedMap.set(e.student_id, (placedMap.get(e.student_id) ?? 0) + 1);
+  }
+
+  const result = new Map<string, { enrolled: number; placed: number; subject_ids: string[]; student: KoushuEnrollment['student'] }>();
+  for (const en of enrollments) {
+    result.set(en.student_id, {
+      enrolled: en.koma_count,
+      placed: placedMap.get(en.student_id) ?? 0,
+      subject_ids: en.subject_ids,
+      student: en.student,
+    });
+  }
+  return result;
+}
+
 /** 講習の申し込み一覧（生徒情報付き）を取得 */
 export async function getKoushuEnrollments(courseId: string): Promise<KoushuEnrollment[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
