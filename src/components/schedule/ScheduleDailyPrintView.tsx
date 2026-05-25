@@ -37,6 +37,12 @@ export interface ScheduleDailyPrintViewProps {
   schoolName?: string;
   /** 指定時はその日付のみ出力（日付横の印刷アイコン用） */
   singleDate?: string;
+  /**
+   * 日次のブース番号マップ。{ [date]: Map<teacherId, boothNo> } の形式。
+   * 指定された講師にだけブース番号 [N] を講師名の隣に表示する。
+   * 渡されなかった日 or 講師は番号無し（後方互換）。
+   */
+  boothMapByDate?: Map<string, Map<string, number>>;
 }
 
 export function ScheduleDailyPrintView({
@@ -45,6 +51,7 @@ export function ScheduleDailyPrintView({
   entries,
   schoolName = '',
   singleDate,
+  boothMapByDate,
 }: ScheduleDailyPrintViewProps) {
   const datesToShow = singleDate ? [singleDate] : weekDates;
   return (
@@ -54,6 +61,8 @@ export function ScheduleDailyPrintView({
           slot,
           groups: groupByTeacher(entries, dateStr, slot.id),
         }));
+        // この日のブース番号マップ（無ければ空）
+        const boothMap = boothMapByDate?.get(dateStr) ?? new Map<string, number>();
 
         return (
           <div
@@ -82,12 +91,34 @@ export function ScheduleDailyPrintView({
                       </div>
                     </td>
                     <td className="py-1">
-                      {Array.from(groups.entries()).map(([teacherId, slotEntries]) => {
+                      {Array.from(groups.entries())
+                        // ブース番号がある講師は番号順、無いものはその後
+                        .sort(([aId], [bId]) => {
+                          const a = boothMap.get(aId);
+                          const b = boothMap.get(bId);
+                          if (a == null && b == null) return 0;
+                          if (a == null) return 1;
+                          if (b == null) return -1;
+                          return a - b;
+                        })
+                        .map(([teacherId, slotEntries]) => {
                         const teacher = slotEntries[0]?.teacher;
                         const name =
                           teacher?.display_name || teacher?.email || teacherId;
+                        // この講師の本日のブース番号（未設定なら null）
+                        const boothNo = boothMap.get(teacherId);
                         return (
                           <div key={teacherId} className="mb-1">
+                            {boothNo != null && (
+                              // 印刷用なので Tailwind だけで完結させる。背景塗りつぶしは
+                              // 印刷時に色が出ないプリンタもあるので、枠線でも見えるよう border も併用。
+                              <span
+                                className="inline-block min-w-[20px] mr-1 px-1 text-center font-bold border border-black"
+                                style={{ fontVariantNumeric: 'tabular-nums' }}
+                              >
+                                {boothNo}
+                              </span>
+                            )}
                             <span className="font-medium">{name}</span>
                             <ul className="ml-3 list-disc text-[9px]">
                               {slotEntries.map((e) => {

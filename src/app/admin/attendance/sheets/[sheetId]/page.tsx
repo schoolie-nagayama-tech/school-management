@@ -33,6 +33,7 @@ import {
   type AttendanceSheet,
   type AttendanceSheetStatus,
 } from '@/types/attendance';
+import { ScheduleDriftCheckPanel } from '@/components/attendance/ScheduleDriftCheckPanel';
 
 export default function AttendanceSheetDetailPage() {
   const params = useParams();
@@ -445,6 +446,42 @@ export default function AttendanceSheetDetailPage() {
             </Button>
           )}
         </div>
+
+        {/* スケジュール照合パネル：講師申告と座席表側コマ数の差分チェック */}
+        {sheet && (
+          <div className="mt-4">
+            <ScheduleDriftCheckPanel
+              schoolId={sheet.school_id}
+              teacherId={sheet.teacher_id}
+              yearMonth={sheet.year_month}
+              teacherReportedByDate={(() => {
+                // attendance_records (date_typeId → value) を date → 合計コマ に集約
+                // count 単位の attendance_type のみ「コマ数」として加算（hours は除外）
+                const countTypeIds = new Set(
+                  attendanceTypes.filter((t) => t.unit === 'count').map((t) => t.id)
+                );
+                const byDate = new Map<string, number>();
+                records.forEach((value, key) => {
+                  const [date, typeId] = key.split('_');
+                  if (!countTypeIds.has(typeId)) return;
+                  byDate.set(date, (byDate.get(date) ?? 0) + value);
+                });
+                return byDate;
+              })()}
+              teacherReportedTotal={(() => {
+                const countTypeIds = new Set(
+                  attendanceTypes.filter((t) => t.unit === 'count').map((t) => t.id)
+                );
+                let total = 0;
+                records.forEach((value, key) => {
+                  const [, typeId] = key.split('_');
+                  if (countTypeIds.has(typeId)) total += value;
+                });
+                return total;
+              })()}
+            />
+          </div>
+        )}
       </div>
 
       {/* 差し戻しダイアログ */}

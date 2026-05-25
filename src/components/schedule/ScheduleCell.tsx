@@ -10,6 +10,19 @@ function gradeLabel(g: number): string {
   return `高${g - 9}`;
 }
 
+/**
+ * 今日からターゲット日付までの日数。
+ * 正の値：未来、0：今日、負の値：過去（期限切れ）
+ * ローカルタイムゾーンで日単位に切り下げて比較する。
+ */
+function daysUntil(targetDateStr: string): number {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const target = new Date(targetDateStr + 'T12:00:00');
+  const tgt = new Date(target.getFullYear(), target.getMonth(), target.getDate()).getTime();
+  return Math.round((tgt - today) / (24 * 60 * 60 * 1000));
+}
+
 const ATTENDANCE_BG: Record<string, string> = {
   present: 'bg-green-100',
   absent: 'bg-red-100',
@@ -63,17 +76,36 @@ export const ScheduleCell = React.memo(function ScheduleCell({
           const studentName = entry.student
             ? `${entry.student.last_name} ${entry.student.first_name}（${gradeLabel(entry.student.grade)}）`
             : entry.student_id;
-          const _transferToDate = entry.transfer_to_id
-            ? '' // 振替先日付は必要なら entry に含める
-            : '';
+          // 振替期限チップ表示用：未消化（transfer_to_id 無し）かつ期限ありのものだけ
+          const isUnresolved = !entry.transfer_to_id;
+          const deadline = entry.transfer_deadline ?? null;
+          const daysLeft = isUnresolved && deadline ? daysUntil(deadline) : null;
+          // 期限切れ=赤、7日以内=黄、それ以外=灰
+          const chipClass = (() => {
+            if (daysLeft == null) return '';
+            if (daysLeft < 0) return 'bg-red-100 text-red-800 border border-red-300';
+            if (daysLeft <= 7) return 'bg-amber-100 text-amber-800 border border-amber-300';
+            return 'bg-gray-100 text-gray-700 border border-gray-300';
+          })();
+          const chipLabel = (() => {
+            if (daysLeft == null) return null;
+            if (daysLeft < 0) return `期限切れ (${-daysLeft}日経過)`;
+            if (daysLeft === 0) return '期限：今日';
+            return `振替期限 ${daysLeft}日`;
+          })();
           return (
             <div
               key={entry.id}
-              className="rounded px-2 py-1 text-xs bg-[var(--stroke)] text-[var(--paragraph-light)] line-through"
+              className="rounded px-2 py-1 text-xs bg-[var(--stroke)] text-[var(--paragraph-light)]"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="truncate">{studentName}</div>
-              <div className="text-[10px]">→ 振替先へ</div>
+              <div className="truncate line-through">{studentName}</div>
+              <div className="text-[10px] line-through">→ 振替先へ</div>
+              {chipLabel && (
+                <div className={`mt-1 inline-block rounded px-1.5 py-0.5 text-[10px] font-medium ${chipClass}`}>
+                  {chipLabel}
+                </div>
+              )}
             </div>
           );
         })}

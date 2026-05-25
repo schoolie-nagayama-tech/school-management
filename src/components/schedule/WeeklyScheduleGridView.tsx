@@ -61,6 +61,8 @@ export interface WeeklyScheduleGridViewProps {
   onTransferClick?: (entry: ScheduleEntry) => void;
   onTransferTargetClick?: (date: string, slotId: string, teacherId: string) => void;
   onPrintDay?: (date: string) => void;
+  /** 日付横のブース番号設定アイコン。印刷時に講師名の隣に表示される番号を編集するモーダルを開く */
+  onBoothAssign?: (date: string) => void;
   /** 曜日ヘッダー行の一番右に表示する要素（例: 通塾日程ボタン） */
   headerRightContent?: React.ReactNode;
   getKoushuInfo?: (studentId: string) => { enrolled: number; scheduled: number } | null;
@@ -89,6 +91,7 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
     onTransferClick,
     onTransferTargetClick,
     onPrintDay,
+    onBoothAssign,
     headerRightContent,
     getKoushuInfo,
   } = props;
@@ -136,6 +139,20 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
                 )}
                 <span className={`text-lg tabular-nums ${isToday ? 'font-bold' : 'font-semibold'}`}>{dayNum}</span>
                 <span className="text-xs text-gray-500">{weekday}</span>
+                {onBoothAssign && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onBoothAssign(dateStr);
+                    }}
+                    className="ml-0.5 p-0.5 rounded text-gray-400 hover:text-indigo-600 hover:bg-gray-200/80 no-print transition-colors duration-150 text-[10px] font-bold w-5 h-5 flex items-center justify-center border border-gray-300"
+                    title={`${dateLong} のブース番号を設定`}
+                    aria-label={`${dateLong} のブース番号を設定`}
+                  >
+                    #
+                  </button>
+                )}
                 {onPrintDay && (
                   <button
                     type="button"
