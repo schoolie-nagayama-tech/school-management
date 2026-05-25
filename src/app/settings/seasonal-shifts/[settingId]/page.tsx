@@ -17,6 +17,7 @@ import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
 import { ShiftSlotMatrix, type SlotSettingRow } from '@/components/seasonal-shift/ShiftSlotMatrix';
 import { generateDefaultSlotSettings } from '@/lib/utils/seasonalShiftSlots';
+import { useMasterTimeSlots } from '@/hooks/useMasterTimeSlots';
 
 export default function SeasonalShiftDetailPage() {
   const params = useParams();
@@ -31,14 +32,14 @@ export default function SeasonalShiftDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const { slots: masterSlots, slotsString: masterSlotsString, isLoading: masterLoading } =
+    useMasterTimeSlots();
   const [form, setForm] = useState({
     name: '',
     start_date: '',
     end_date: '',
     deadline: '',
     description: '',
-    weekday_slots: '',
-    saturday_slots: '',
     status: 'draft' as 'draft' | 'published',
   });
 
@@ -61,19 +62,15 @@ export default function SeasonalShiftDetailPage() {
         end_date: s.end_date,
         deadline: s.deadline,
         description: s.description ?? '',
-        weekday_slots: s.weekday_slots,
-        saturday_slots: s.saturday_slots,
         status: s.status,
       });
-      const timeSlotsFromSetting = s.weekday_slots.split(',').map((x) => x.trim()).filter(Boolean);
+      // 時間帯はマスタから引くため、ここでは既存スロット設定の is_open のみを引き継ぐ
       setSlotSettings(
-        slots.length > 0
-          ? slots.map((row) => ({
-              slot_date: row.slot_date,
-              time_slot: row.time_slot,
-              is_open: row.is_open,
-            }))
-          : generateDefaultSlotSettings(s.start_date, s.end_date, timeSlotsFromSetting)
+        slots.map((row) => ({
+          slot_date: row.slot_date,
+          time_slot: row.time_slot,
+          is_open: row.is_open,
+        }))
       );
     } catch (err) {
       console.error(err);
@@ -87,13 +84,29 @@ export default function SeasonalShiftDetailPage() {
     fetchData();
   }, [fetchData]);
 
-  const timeSlotsArray = form.weekday_slots
-    ? form.weekday_slots.split(',').map((s) => s.trim()).filter(Boolean)
-    : [];
+  const timeSlotsArray = masterSlots;
+
+  // 既存 slot_settings をマスタ時間帯にリキー: 一致行は is_open 維持、不足はデフォルト生成
+  const mergedSlotSettings = (() => {
+    if (!form.start_date || !form.end_date || timeSlotsArray.length === 0) return [];
+    const defaults = generateDefaultSlotSettings(form.start_date, form.end_date, timeSlotsArray);
+    const existingByKey = new Map<string, boolean>(
+      slotSettings.map((row) => [`${row.slot_date}|${row.time_slot}`, row.is_open])
+    );
+    return defaults.map((row) => {
+      const key = `${row.slot_date}|${row.time_slot}`;
+      const existing = existingByKey.get(key);
+      return existing !== undefined ? { ...row, is_open: existing } : row;
+    });
+  })();
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!settingId) return;
+    if (masterSlots.length === 0) {
+      error('コマ時間マスタが未設定です。先に時間帯マスタを登録してください。');
+      return;
+    }
     setIsSubmitting(true);
     try {
       await updateSeasonalShiftSetting(settingId, {
@@ -102,17 +115,23 @@ export default function SeasonalShiftDetailPage() {
         end_date: form.end_date,
         deadline: form.deadline,
         description: form.description.trim(),
-        weekday_slots: form.weekday_slots.trim(),
-        saturday_slots: form.saturday_slots.trim(),
+        // 平日/土曜の時間帯は常にコマ時間マスタの値を採用する（手動編集は廃止）
+        weekday_slots: masterSlotsString,
+        saturday_slots: masterSlotsString,
         status: form.status,
       });
-      const toSave =
-        slotSettings.length > 0
-          ? slotSettings.map((s) => ({ ...s, setting_id: settingId }))
-          : generateDefaultSlotSettings(form.start_date, form.end_date, timeSlotsArray).map((s) => ({
-              ...s,
-              setting_id: settingId,
-            }));
+      // マトリクスの値を保存。ユーザー操作分を優先し、未操作の日時はデフォルト値で埋める。
+      const editedKeys = new Set(slotSettings.map((s) => `${s.slot_date}|${s.time_slot}`));
+      const toSave = mergedSlotSettings.map((s) => {
+        const wasEdited = editedKeys.has(`${s.slot_date}|${s.time_slot}`);
+        const edited = wasEdited
+          ? slotSettings.find((r) => r.slot_date === s.slot_date && r.time_slot === s.time_slot)
+          : null;
+        return {
+          ...(edited ?? s),
+          setting_id: settingId,
+        };
+      });
       if (toSave.length > 0) {
         await setSeasonalShiftSlotSettings(settingId, toSave);
       }
@@ -237,24 +256,20 @@ export default function SeasonalShiftDetailPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-text-heading mb-1">平日の時間帯 *</label>
-            <input
-              type="text"
-              required
-              value={form.weekday_slots}
-              onChange={(e) => setForm((p) => ({ ...p, weekday_slots: e.target.value }))}
-              className="w-full px-3 py-2 border border-border rounded-lg text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-text-heading mb-1">土曜の時間帯 *</label>
-            <input
-              type="text"
-              required
-              value={form.saturday_slots}
-              onChange={(e) => setForm((p) => ({ ...p, saturday_slots: e.target.value }))}
-              className="w-full px-3 py-2 border border-border rounded-lg text-sm"
-            />
+            <label className="block text-sm font-medium text-text-heading mb-1">時間帯</label>
+            <div className="px-3 py-2 border border-border rounded-lg text-sm bg-surface text-text-body">
+              {masterLoading
+                ? '読み込み中...'
+                : masterSlots.length > 0
+                ? masterSlots.join('、')
+                : 'コマ時間マスタが未設定です'}
+            </div>
+            <p className="mt-1 text-xs text-text-muted">
+              <Link href="/schedule" className="text-info hover:underline">
+                コマ時間マスタ
+              </Link>
+              で設定中の時間帯を使用します。
+            </p>
           </div>
           {form.start_date && form.end_date && timeSlotsArray.length > 0 && (
             <div className="border-t border-border pt-4">
@@ -262,7 +277,7 @@ export default function SeasonalShiftDetailPage() {
                 startDate={form.start_date}
                 endDate={form.end_date}
                 timeSlots={timeSlotsArray}
-                value={slotSettings}
+                value={mergedSlotSettings}
                 onChange={setSlotSettings}
               />
             </div>

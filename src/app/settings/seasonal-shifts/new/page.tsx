@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
@@ -13,8 +13,7 @@ import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
 import { ShiftSlotMatrix, type SlotSettingRow } from '@/components/seasonal-shift/ShiftSlotMatrix';
 import { generateDefaultSlotSettings } from '@/lib/utils/seasonalShiftSlots';
-import { getActiveTimeSlots } from '@/lib/api/schedule';
-import { formatSlotsForShift } from '@/lib/utils/timeSlotDefaults';
+import { useMasterTimeSlots } from '@/hooks/useMasterTimeSlots';
 
 export default function NewSeasonalShiftPage() {
   const router = useRouter();
@@ -25,42 +24,27 @@ export default function NewSeasonalShiftPage() {
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [slotSettings, setSlotSettings] = useState<SlotSettingRow[]>([]);
+  const { slots: masterSlots, slotsString: masterSlotsString, isLoading: masterLoading } =
+    useMasterTimeSlots();
   const [form, setForm] = useState({
     name: '',
     start_date: '',
     end_date: '',
     deadline: '',
     description: '',
-    weekday_slots: '',
-    saturday_slots: '',
     status: 'draft' as 'draft' | 'published',
   });
 
-  // コマ時間マスタからデフォルトの時間帯を取得
-  useEffect(() => {
-    const schoolIds = getSelectedSchoolIds();
-    const schoolId = schoolIds.length > 0 ? schoolIds[0] : getDefaultSchoolId();
-    getActiveTimeSlots(schoolId).then((slots) => {
-      if (slots.length > 0) {
-        const defaultSlots = formatSlotsForShift(slots);
-        setForm((p) => ({
-          ...p,
-          weekday_slots: p.weekday_slots || defaultSlots,
-          saturday_slots: p.saturday_slots || defaultSlots,
-        }));
-      }
-    }).catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const timeSlotsArray = form.weekday_slots
-    ? form.weekday_slots.split(',').map((s) => s.trim()).filter(Boolean)
-    : [];
+  const timeSlotsArray = masterSlots;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const schoolIds = getSelectedSchoolIds();
     const schoolId = schoolIds.length > 0 ? schoolIds[0] : getDefaultSchoolId();
+    if (masterSlots.length === 0) {
+      error('コマ時間マスタが未設定です。先に時間帯マスタを登録してください。');
+      return;
+    }
     setIsSubmitting(true);
     try {
       const created = await createSeasonalShiftSetting({
@@ -70,8 +54,9 @@ export default function NewSeasonalShiftPage() {
         end_date: form.end_date,
         deadline: form.deadline,
         description: form.description.trim(),
-        weekday_slots: form.weekday_slots.trim(),
-        saturday_slots: form.saturday_slots.trim(),
+        // 平日/土曜の時間帯は常にコマ時間マスタの値を採用する（手動編集は廃止）
+        weekday_slots: masterSlotsString,
+        saturday_slots: masterSlotsString,
         status: form.status,
       });
       const slotsToSave =
@@ -173,26 +158,20 @@ export default function NewSeasonalShiftPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-text-heading mb-1">平日の時間帯（カンマ区切り） *</label>
-            <input
-              type="text"
-              required
-              value={form.weekday_slots}
-              onChange={(e) => setForm((p) => ({ ...p, weekday_slots: e.target.value }))}
-              placeholder="12:50-14:20,14:45-16:15,..."
-              className="w-full px-3 py-2 border border-border rounded-lg text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-text-heading mb-1">土曜の時間帯（カンマ区切り） *</label>
-            <input
-              type="text"
-              required
-              value={form.saturday_slots}
-              onChange={(e) => setForm((p) => ({ ...p, saturday_slots: e.target.value }))}
-              placeholder="平日と同じ形式"
-              className="w-full px-3 py-2 border border-border rounded-lg text-sm"
-            />
+            <label className="block text-sm font-medium text-text-heading mb-1">時間帯</label>
+            <div className="px-3 py-2 border border-border rounded-lg text-sm bg-surface text-text-body">
+              {masterLoading
+                ? '読み込み中...'
+                : masterSlots.length > 0
+                ? masterSlots.join('、')
+                : 'コマ時間マスタが未設定です'}
+            </div>
+            <p className="mt-1 text-xs text-text-muted">
+              <Link href="/schedule" className="text-info hover:underline">
+                コマ時間マスタ
+              </Link>
+              で設定中の時間帯を使用します。
+            </p>
           </div>
           {form.start_date && form.end_date && timeSlotsArray.length > 0 && (
             <div className="border-t border-border pt-4">
