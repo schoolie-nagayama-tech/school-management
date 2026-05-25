@@ -2,20 +2,14 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import { createSupabaseBrowserClient } from '@/lib/supabase';
 import {
-  getPublishedSeasonalShiftSetting,
-  getSeasonalShiftSlotSettings,
-  createMySeasonalShiftSubmission,
-  getMySeasonalShiftSubmission,
-  updateMySeasonalShiftSubmission,
+  getPublishedSeasonalShiftSettingPublic,
+  createSeasonalShiftSubmission,
 } from '@/lib/api/seasonal-shift';
-import type { SeasonalShiftSetting, SubmissionWithSlots } from '@/types/seasonal-shift';
-import type { UserProfile } from '@/types/database';
+import type { SeasonalShiftSetting } from '@/types/seasonal-shift';
 import { Loading } from '@/components/ui';
 
 type SlotKey = string; // "YYYY-MM-DD|HH:MM-HH:MM"
-type AuthState = 'loading' | 'unauthenticated' | 'authenticated';
 
 function getDatesBetween(start: string, end: string): string[] {
   const dates: string[] = [];
@@ -28,71 +22,47 @@ function getDatesBetween(start: string, end: string): string[] {
   return dates;
 }
 
+/**
+ * 季節シフト提出ページ（公開・ログイン不要）。
+ * 既存提出の修正は `/seasonal-shift/[settingId]/edit/[editToken]` 経由で行うため、
+ * このページは新規提出専用とし、サーバー側のユニーク制約 (teacher_email × setting_id)
+ * で多重提出を 409 として返す。
+ */
 export default function SeasonalShiftFormPage() {
   const params = useParams();
   const settingId = params.settingId as string;
 
-  const [authState, setAuthState] = useState<AuthState>('loading');
-  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [setting, setSetting] = useState<SeasonalShiftSetting | null>(null);
   const [slotSettings, setSlotSettings] = useState<
     { slot_date: string; time_slot: string; is_open: boolean }[]
   >([]);
-  const [existingSubmission, setExistingSubmission] = useState<SubmissionWithSlots | null>(null);
   const [selected, setSelected] = useState<Set<SlotKey>>(new Set());
+  const [teacherName, setTeacherName] = useState('');
+  const [teacherEmail, setTeacherEmail] = useState('');
   const [notes, setNotes] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDone, setIsDone] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // 認証チェック
-  useEffect(() => {
-    const supabase = createSupabaseBrowserClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) {
-        setAuthState('unauthenticated');
-        return;
-      }
-      setAuthState('authenticated');
-      supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle()
-        .then(({ data }) => setProfile(data as UserProfile | null));
-    });
-  }, []);
-
   const fetchData = useCallback(async () => {
     if (!settingId) return;
     setIsLoading(true);
     setErrorMessage('');
     try {
-      const [s, slots, existing] = await Promise.all([
-        getPublishedSeasonalShiftSetting(settingId),
-        getSeasonalShiftSlotSettings(settingId),
-        getMySeasonalShiftSubmission(settingId),
-      ]);
-      if (!s) {
+      const result = await getPublishedSeasonalShiftSettingPublic(settingId);
+      if (!result) {
         setSetting(null);
         return;
       }
-      setSetting(s);
+      setSetting(result.setting);
       setSlotSettings(
-        slots.map((r) => ({ slot_date: r.slot_date, time_slot: r.time_slot, is_open: r.is_open }))
+        result.slotSettings.map((r) => ({
+          slot_date: r.slot_date,
+          time_slot: r.time_slot,
+          is_open: r.is_open,
+        }))
       );
-      if (existing) {
-        setExistingSubmission(existing);
-        if (existing.allow_edit) {
-          setNotes(existing.notes ?? '');
-          const pre = new Set<SlotKey>();
-          (existing.slots ?? []).forEach((slot) => {
-            if (slot.available) pre.add(`${slot.shift_date}|${slot.time_slot}`);
-          });
-          setSelected(pre);
-        }
-      }
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : '読み込みに失敗しました');
     } finally {
@@ -101,10 +71,8 @@ export default function SeasonalShiftFormPage() {
   }, [settingId]);
 
   useEffect(() => {
-    if (authState === 'authenticated') {
-      fetchData();
-    }
-  }, [authState, fetchData]);
+    fetchData();
+  }, [fetchData]);
 
   const dates = setting ? getDatesBetween(setting.start_date, setting.end_date) : [];
   const timeSlots = setting
@@ -158,6 +126,10 @@ export default function SeasonalShiftFormPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!setting) return;
+    if (!teacherName.trim() || !teacherEmail.trim()) {
+      setErrorMessage('名前とメールアドレスを入力してください');
+      return;
+    }
     setIsSubmitting(true);
     setErrorMessage('');
     try {
@@ -165,15 +137,16 @@ export default function SeasonalShiftFormPage() {
         const [date, timeSlot] = key.split('|');
         return { shift_date: date, time_slot: timeSlot, available: true as const };
       });
-
-      if (existingSubmission?.allow_edit) {
-        await updateMySeasonalShiftSubmission(settingId, { notes: notes.trim() }, slots);
-      } else {
-        await createMySeasonalShiftSubmission(
-          { setting_id: settingId, school_id: setting.school_id, notes: notes.trim() },
-          slots
-        );
-      }
+      await createSeasonalShiftSubmission(
+        {
+          setting_id: settingId,
+          school_id: setting.school_id,
+          teacher_name: teacherName.trim(),
+          teacher_email: teacherEmail.trim(),
+          notes: notes.trim(),
+        },
+        slots
+      );
       setIsDone(true);
     } catch (err) {
       setErrorMessage(err instanceof Error ? err.message : '提出に失敗しました');
@@ -181,35 +154,6 @@ export default function SeasonalShiftFormPage() {
       setIsSubmitting(false);
     }
   };
-
-  // ─── 認証ローディング ───
-  if (authState === 'loading') {
-    return (
-      <div className="min-h-screen bg-surface-hover flex items-center justify-center">
-        <Loading />
-      </div>
-    );
-  }
-
-  // ─── 未ログイン ───
-  if (authState === 'unauthenticated') {
-    return (
-      <div className="min-h-screen bg-surface-hover flex items-center justify-center p-4">
-        <div className="bg-surface-raised rounded-xl border border-border p-8 max-w-sm w-full text-center">
-          <h1 className="text-xl font-bold text-text-heading mb-3">ログインが必要です</h1>
-          <p className="text-sm text-text-muted mb-6">
-            シフト提出にはアカウントへのログインが必要です。
-          </p>
-          <a
-            href={`/login?redirect=${encodeURIComponent(`/seasonal-shift/${settingId}`)}`}
-            className="block w-full px-4 py-2.5 bg-[#d32f2f] hover:bg-[#b71c1c] text-white font-semibold rounded-lg text-sm transition-colors"
-          >
-            ログイン
-          </a>
-        </div>
-      </div>
-    );
-  }
 
   // ─── データローディング ───
   if (isLoading) {
@@ -241,7 +185,7 @@ export default function SeasonalShiftFormPage() {
         <div className="max-w-lg mx-auto px-4 py-8">
           <div className="bg-surface-raised rounded-xl border border-border p-8 text-center">
             <h2 className="text-xl font-bold text-text-heading mb-4">
-              {existingSubmission?.allow_edit ? '修正を提出しました' : 'シフト提出が完了しました'}
+              シフト提出が完了しました
             </h2>
             <p className="text-text-body text-sm">ご提出ありがとうございました。</p>
           </div>
@@ -250,55 +194,15 @@ export default function SeasonalShiftFormPage() {
     );
   }
 
-  // ─── 提出済み（修正不可） ───
-  if (existingSubmission && !existingSubmission.allow_edit) {
-    const submittedAt = new Date(existingSubmission.submitted_at).toLocaleString('ja-JP');
-    const slotCount = (existingSubmission.slots ?? []).filter((s) => s.available).length;
-    return (
-      <div className="min-h-screen bg-surface-hover">
-        <div className="max-w-lg mx-auto px-4 py-8">
-          <div className="bg-surface-raised rounded-xl border border-border p-8">
-            <h2 className="text-xl font-bold text-text-heading mb-2">提出済み</h2>
-            <p className="text-sm text-text-muted mb-4">{setting.name}</p>
-            <dl className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <dt className="text-text-muted">提出日時</dt>
-                <dd className="text-text-heading font-medium">{submittedAt}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-text-muted">出勤可能コマ数</dt>
-                <dd className="text-text-heading font-medium">{slotCount} コマ</dd>
-              </div>
-              {existingSubmission.notes && (
-                <div>
-                  <dt className="text-text-muted mb-1">備考</dt>
-                  <dd className="text-text-heading whitespace-pre-line">{existingSubmission.notes}</dd>
-                </div>
-              )}
-            </dl>
-            <p className="mt-6 text-xs text-text-faint">
-              内容の修正が必要な場合は担当者にお問い合わせください。
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ─── 提出フォーム（新規 or 修正） ───
-  const isEdit = !!existingSubmission?.allow_edit;
+  // ─── 提出フォーム ───
   const uniqueSlots = [...timeSlots];
   const uniqueDates = [...dates];
-  const displayName = profile?.display_name ?? profile?.email ?? '';
 
   return (
     <div className="min-h-screen bg-surface-hover">
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="bg-surface-raised rounded-xl border border-border p-6 mb-6">
           <h1 className="text-2xl font-bold text-text-heading mb-2">{setting.name}</h1>
-          {isEdit && (
-            <p className="text-sm text-amber-600 font-medium mb-2">修正を受け付けています</p>
-          )}
           {setting.description && (
             <p className="text-text-body whitespace-pre-line mb-4">{setting.description}</p>
           )}
@@ -308,9 +212,25 @@ export default function SeasonalShiftFormPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="bg-surface-raised rounded-xl border border-border p-6 space-y-6">
-          <div className="p-3 bg-surface rounded-lg border border-border">
-            <p className="text-xs text-text-muted mb-0.5">提出者</p>
-            <p className="text-sm font-medium text-text-heading">{displayName}</p>
+          <div>
+            <label className="block text-sm font-medium text-text-heading mb-1">お名前 *</label>
+            <input
+              type="text"
+              required
+              value={teacherName}
+              onChange={(e) => setTeacherName(e.target.value)}
+              className="w-full max-w-md px-3 py-2 border border-border rounded-lg text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-text-heading mb-1">メールアドレス *</label>
+            <input
+              type="email"
+              required
+              value={teacherEmail}
+              onChange={(e) => setTeacherEmail(e.target.value)}
+              className="w-full max-w-md px-3 py-2 border border-border rounded-lg text-sm"
+            />
           </div>
 
           <div>
@@ -407,7 +327,7 @@ export default function SeasonalShiftFormPage() {
             disabled={isSubmitting}
             className="px-6 py-3 bg-[#d32f2f] hover:bg-[#b71c1c] disabled:opacity-50 text-white font-semibold rounded-lg transition-colors duration-150"
           >
-            {isSubmitting ? '送信中...' : isEdit ? '修正を提出する' : '提出する'}
+            {isSubmitting ? '送信中...' : '提出する'}
           </button>
         </form>
       </div>

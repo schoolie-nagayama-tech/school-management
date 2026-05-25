@@ -53,6 +53,36 @@ export async function getPublishedSeasonalShiftSetting(
   return data as SeasonalShiftSetting | null;
 }
 
+/**
+ * 公開 API 経由で公開済みの設定とスロット設定を取得する（ログイン不要）。
+ * 講師の提出ページでは RLS で弾かれるため、サービスロール経由のエンドポイントを使う。
+ */
+export async function getPublishedSeasonalShiftSettingPublic(
+  settingId: string
+): Promise<{ setting: SeasonalShiftSetting; slotSettings: SlotSetting[] } | null> {
+  const res = await fetch(
+    `/api/seasonal-shift/public?settingId=${encodeURIComponent(settingId)}`,
+    { cache: 'no-store' }
+  );
+
+  if (res.status === 404) return null;
+
+  const payload = (await res.json().catch(() => ({}))) as {
+    error?: string;
+    setting?: SeasonalShiftSetting;
+    slotSettings?: SlotSetting[];
+  };
+
+  if (!res.ok || !payload.setting) {
+    throw new Error(payload.error ?? 'Failed to get setting');
+  }
+
+  return {
+    setting: payload.setting,
+    slotSettings: payload.slotSettings ?? [],
+  };
+}
+
 export async function createSeasonalShiftSetting(
   input: SeasonalShiftSettingInsert
 ): Promise<SeasonalShiftSetting> {

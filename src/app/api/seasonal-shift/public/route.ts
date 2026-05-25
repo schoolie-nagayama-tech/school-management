@@ -164,3 +164,59 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+/**
+ * GET: 公開済みの季節シフト設定とスロット設定を取得する
+ * 講師がログイン不要で提出フォームを開けるよう、サービスロールキー経由で
+ * RLS を迂回して setting と slot_settings を返す。
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const settingId = searchParams.get('settingId')?.trim();
+
+    if (!settingId) {
+      return NextResponse.json(
+        { error: 'settingId is required' },
+        { status: 400 }
+      );
+    }
+
+    const supabaseAdmin = getSupabaseAdmin();
+
+    const { data: setting, error: settingError } = await supabaseAdmin
+      .from('seasonal_shift_settings')
+      .select('*')
+      .eq('id', settingId)
+      .eq('status', 'published')
+      .maybeSingle();
+
+    if (settingError) {
+      throw settingError;
+    }
+
+    if (!setting) {
+      return NextResponse.json(
+        { error: 'Published shift setting not found' },
+        { status: 404 }
+      );
+    }
+
+    const { data: slotSettings, error: slotError } = await supabaseAdmin
+      .from('seasonal_shift_slot_settings')
+      .select('*')
+      .eq('setting_id', settingId);
+
+    if (slotError) {
+      throw slotError;
+    }
+
+    return NextResponse.json({ setting, slotSettings: slotSettings ?? [] });
+  } catch (error) {
+    console.error('[seasonal-shift/public] GET failed:', error);
+    return NextResponse.json(
+      { error: 'Failed to get setting' },
+      { status: 500 }
+    );
+  }
+}
