@@ -311,10 +311,14 @@ export default function ProposalEditor() {
       }
 
       if (!isNew && proposal) {
+        // 保存済みデータの復元: koma_count / applied_koma / reason は復元するが、
+        // selected（左チェックボックス）は意図的に false のままにする。
+        // 「保存後はチェックボックスを空にしておきたい」というユーザー要望のため、
+        // 保存状態の可視化は行のハイライト（isActive = koma_count > 0）で行い、
+        // チェックボックスはシフトクリックなどの選択操作専用とする。
         for (const u of proposal.units) {
           const d = drafts.get(u.curriculum_item_id);
           if (d) {
-            d.selected = true;
             d.koma_count = u.koma_count;
             d.applied_koma = u.applied_koma ?? 0;
             d.reason = u.reason;
@@ -581,6 +585,16 @@ export default function ProposalEditor() {
       });
 
       addToast('保存しました', 'success');
+
+      // 保存後はチェックボックスを空状態に戻す（要望）。
+      // 保存内容は koma_count > 0 でハイライト表示されるため、選択状態をクリアしても可視性は保たれる。
+      setUnitDrafts((prev) => {
+        const next = new Map(prev);
+        Array.from(next.entries()).forEach(([k, d]) => {
+          if (d.selected) next.set(k, { ...d, selected: false });
+        });
+        return next;
+      });
 
       if (isNew) {
         router.replace(`/students/${studentId}/proposals/${result.id}`);
