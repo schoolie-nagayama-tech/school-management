@@ -187,8 +187,7 @@ export default function TestPrepEditor() {
       if (studentData) {
         await loadMasterUnits(studentId);
       }
-    } catch (e) {
-      console.error(e);
+    } catch {
       showError('データの読み込みに失敗しました');
     } finally {
       setLoading(false);
@@ -290,8 +289,7 @@ export default function TestPrepEditor() {
         setStatus(targetStatus);
         success('保存しました');
       }
-    } catch (e) {
-      console.error(e);
+    } catch {
       showError('保存に失敗しました');
     } finally {
       setSaving(false);
@@ -615,7 +613,7 @@ function SubjectEditor({
           </div>
           <button
             onClick={onRemoveSubject}
-            className="text-gray-400 hover:text-red-400 text-xs ml-2"
+            className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-400 text-sm rounded transition-colors"
             title="科目を削除"
           >
             ×
@@ -774,7 +772,7 @@ function SubjectEditor({
               </button>
               <button
                 onClick={() => setShowAddMenu(false)}
-                className="px-3 py-1.5 text-xs text-text-faint hover:text-text-body"
+                className="px-3 py-1.5 text-xs text-text-faint hover:text-text-body transition-colors"
               >
                 閉じる
               </button>

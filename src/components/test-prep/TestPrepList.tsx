@@ -7,9 +7,9 @@ import type { TestPrepProposal, TestPrepStatus } from '@/types/test-prep';
 import { TEST_PREP_STATUS_LABELS } from '@/types/test-prep';
 
 const STATUS_STYLES: Record<TestPrepStatus, string> = {
-  draft: 'bg-gray-100 text-gray-600',
-  sent: 'bg-yellow-100 text-yellow-700',
-  published: 'bg-green-100 text-green-700',
+  draft: 'bg-surface-hover text-text-muted',
+  sent: 'bg-warning-subtle text-yellow-700',
+  published: 'bg-success-subtle text-green-700',
 };
 
 export default function TestPrepList() {
@@ -24,8 +24,8 @@ export default function TestPrepList() {
     try {
       const data = await getTestPrepProposalsByStudent(studentId);
       setProposals(data);
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // handled by loading state
     } finally {
       setLoading(false);
     }

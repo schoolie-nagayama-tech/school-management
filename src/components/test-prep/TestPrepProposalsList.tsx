@@ -13,9 +13,9 @@ type ProposalRow = TestPrepProposal & {
 };
 
 const STATUS_STYLES: Record<TestPrepStatus, string> = {
-  draft: 'bg-gray-100 text-gray-600',
-  sent: 'bg-yellow-100 text-yellow-700',
-  published: 'bg-green-100 text-green-700',
+  draft: 'bg-surface-hover text-text-muted',
+  sent: 'bg-warning-subtle text-yellow-700',
+  published: 'bg-success-subtle text-green-700',
 };
 
 function gradeName(grade: number): string {
@@ -38,8 +38,8 @@ export default function TestPrepProposalsList() {
         schoolIds.length === 1 ? schoolIds[0] : schoolIds
       );
       setProposals(data);
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // handled by empty state
     } finally {
       setLoading(false);
     }
@@ -69,23 +69,26 @@ export default function TestPrepProposalsList() {
       </div>
 
       {/* ステータスフィルタ */}
-      <div className="flex gap-2 mb-4">
-        {(['all', 'draft', 'sent', 'published'] as const).map((s) => (
-          <button
-            key={s}
-            onClick={() => setFilter(s)}
-            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-              filter === s
-                ? 'bg-primary text-primary-contrast'
-                : 'bg-surface-hover text-text-muted hover:text-text-body'
-            }`}
-          >
-            {s === 'all' ? 'すべて' : TEST_PREP_STATUS_LABELS[s]}
-            {s === 'all'
-              ? ` (${proposals.length})`
-              : ` (${proposals.filter((p) => p.status === s).length})`}
-          </button>
-        ))}
+      <div className="flex items-center gap-1.5 mb-4">
+        {(['all', 'draft', 'sent', 'published'] as const).map((s) => {
+          const count = s === 'all'
+            ? proposals.length
+            : proposals.filter((p) => p.status === s).length;
+          return (
+            <button
+              key={s}
+              onClick={() => setFilter(s)}
+              className={`px-2.5 py-1 text-[11px] font-medium rounded-lg transition-colors ${
+                filter === s
+                  ? 'bg-primary text-primary-contrast'
+                  : 'bg-surface-hover text-text-muted hover:text-text-body'
+              }`}
+            >
+              {s === 'all' ? 'すべて' : TEST_PREP_STATUS_LABELS[s]}
+              <span className="ml-1 tabular-nums">{count}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* 一覧 */}
