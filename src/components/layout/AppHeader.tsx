@@ -274,10 +274,21 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                     >
                       面談記録追加
                     </Link>
+                    <Link
+                      href="/test-prep-proposals"
+
+                      className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
+                        pathname?.startsWith('/test-prep-proposals')
+                          ? 'bg-primary/10 text-primary font-semibold'
+                          : ''
+                      }`}
+                    >
+                      テスト対策提案書
+                    </Link>
                     {(showAllLinks || permissions?.canAccessPortal) && (
                       <Link
                         href="/settings/portal"
-  
+
                         className={`block px-3 py-2 text-xs hover:bg-gray-50 transition-colors ${
                           pathname === '/settings/portal' || pathname?.startsWith('/settings/portal')
                             ? 'bg-primary/10 text-primary font-semibold'

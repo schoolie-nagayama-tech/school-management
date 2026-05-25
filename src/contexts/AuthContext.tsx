@@ -33,7 +33,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // 認証不要のパス（講師シフト提出フォーム・修正フォーム含む）
-const PUBLIC_PATHS = ['/login', '/forgot-password', '/auth/callback', '/auth/reset-password', '/portal', '/seasonal-shift', '/regular-shift'];
+const PUBLIC_PATHS = ['/login', '/forgot-password', '/auth/callback', '/auth/reset-password', '/portal', '/seasonal-shift', '/regular-shift', '/test-prep'];
 
 // 招待からの登録パス
 const INVITE_PATH = '/invite';

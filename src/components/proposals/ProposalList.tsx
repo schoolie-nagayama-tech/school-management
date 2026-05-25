@@ -277,6 +277,12 @@ export default function ProposalList() {
               </button>
             )}
             <Link
+              href={`/students/${studentId}/test-prep`}
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border-default text-text-body rounded-lg hover:bg-surface-hover transition-colors duration-150"
+            >
+              テスト対策
+            </Link>
+            <Link
               href={`/students/${studentId}/proposals/new?season=${currentSeason}&year=${currentYear}`}
               className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-ink text-text-on-primary rounded-lg hover:brightness-[0.85] transition-[filter] duration-150"
             >
