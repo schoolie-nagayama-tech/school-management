@@ -1329,6 +1329,38 @@ export async function createTransferEntry(
 
   if (linkErr) console.warn('Link transfer_to_id failed:', linkErr);
 
+  // 振替確定通知レコードを記録（保護者通知用）
+  // 実際の送信は将来 Edge Function が pending 状態のものを拾って送る運用。
+  // ここでINSERTが失敗しても振替自体は成立しているので、警告だけにしてthrowしない。
+  try {
+    // 時刻ラベルを冗長で残す（後でエントリが消えても情報を保持）
+    const fromSlotLabel = fromEntry.time_slot
+      ? `${fromEntry.time_slot.start_time?.slice(0, 5)}〜${fromEntry.time_slot.end_time?.slice(0, 5)}`
+      : null;
+    const { data: targetSlot } = await db
+      .from('schedule_time_slots')
+      .select('start_time, end_time')
+      .eq('id', targetSlotId)
+      .maybeSingle();
+    const toSlotLabel = targetSlot
+      ? `${(targetSlot as { start_time: string }).start_time?.slice(0, 5)}〜${(targetSlot as { end_time: string }).end_time?.slice(0, 5)}`
+      : null;
+
+    await db.from('transfer_notifications').insert({
+      school_id: schoolId,
+      student_id: fromEntry.student_id,
+      from_entry_id: fromEntryId,
+      to_entry_id: toEntry.id,
+      from_date: fromEntry.entry_date,
+      to_date: targetDate,
+      from_time_slot_label: fromSlotLabel,
+      to_time_slot_label: toSlotLabel,
+      // delivery_status はデフォルト 'pending'
+    });
+  } catch (notifyErr) {
+    console.warn('Failed to record transfer notification:', notifyErr);
+  }
+
   return { from: fromEntry, to: toEntry };
 }
 
