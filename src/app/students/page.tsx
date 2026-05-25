@@ -588,41 +588,6 @@ export default function StudentsPage() {
     >
       <ToastContainer toasts={toasts} onRemove={removeToast} />
 
-      {/* コンテキストヘルプ */}
-      <div className="flex justify-end mb-2">
-        <ContextHelp
-          searchQuery="生徒"
-          topics={[
-            {
-              title: '生徒を新規登録する',
-              description: '生徒情報を手動で追加します。',
-              steps: [
-                '「新規登録」ボタンをクリック',
-                'フォームに氏名・学年・所属教室を入力',
-                '「保存」をクリックして登録完了',
-              ],
-            },
-            {
-              title: '生徒の詳細を確認・編集する',
-              description: '成績や面談記録など生徒の全情報を確認できます。',
-              steps: [
-                '一覧から生徒名をクリック',
-                '詳細モーダルが開き、タブで情報を切替',
-                '「編集」で情報を変更、「保存」で確定',
-              ],
-            },
-            {
-              title: '生徒を検索・フィルタする',
-              description: '名前や学年で素早く絞り込みます。',
-              steps: [
-                '検索バーに氏名・フリガナ・コードを入力',
-                '学年フィルタや在籍状況で絞り込み',
-              ],
-            },
-          ]}
-        />
-      </div>
-
       {/* エラーメッセージ */}
         {errorMessage && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
@@ -644,9 +609,43 @@ export default function StudentsPage() {
         {/* 出勤簿未提出アラート（講師向け） */}
         {isTeacher && <AttendanceUnsubmittedAlert />}
 
-        {/* 外部ツール（Grow・らくプリ等）クイックリンク：全ロールに表示。業務進捗より上に置く */}
-        <div className="mb-4">
-          <QuickLinksBar />
+        {/* 外部ツール（Grow・らくプリ等）クイックリンク + コンテキストヘルプ：
+            ヘルプアイコン単体で1行使うのは縦余白が無駄なため、クイックリンクと横並びにする */}
+        <div className="mb-4 flex items-start gap-2">
+          <div className="flex-1 min-w-0">
+            <QuickLinksBar />
+          </div>
+          <ContextHelp
+            searchQuery="生徒"
+            topics={[
+              {
+                title: '生徒を新規登録する',
+                description: '生徒情報を手動で追加します。',
+                steps: [
+                  '「新規登録」ボタンをクリック',
+                  'フォームに氏名・学年・所属教室を入力',
+                  '「保存」をクリックして登録完了',
+                ],
+              },
+              {
+                title: '生徒の詳細を確認・編集する',
+                description: '成績や面談記録など生徒の全情報を確認できます。',
+                steps: [
+                  '一覧から生徒名をクリック',
+                  '詳細モーダルが開き、タブで情報を切替',
+                  '「編集」で情報を変更、「保存」で確定',
+                ],
+              },
+              {
+                title: '生徒を検索・フィルタする',
+                description: '名前や学年で素早く絞り込みます。',
+                steps: [
+                  '検索バーに氏名・フリガナ・コードを入力',
+                  '学年フィルタや在籍状況で絞り込み',
+                ],
+              },
+            ]}
+          />
         </div>
 
         {/* 業務進捗ウィジェット（教室長以上のみ） */}
