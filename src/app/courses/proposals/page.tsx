@@ -51,6 +51,9 @@ interface StudentOption {
   id: string;
   last_name: string;
   first_name: string;
+  last_name_kana: string | null;
+  first_name_kana: string | null;
+  grade: number | null;
 }
 
 function getCurrentSeason(): SeasonType {
@@ -202,13 +205,14 @@ export default function CourseProposalsPage() {
         setStudents([]);
         return;
       }
+      // 並び順: ふりがな（last_name_kana）昇順。学年グループ表示の前提として安定ソートを担保するため kana を使う
       const { data, error } = await supabase
         .from('students')
-        .select('id, last_name, first_name')
+        .select('id, last_name, first_name, last_name_kana, first_name_kana, grade')
         .in('school_id', ids)
         .eq('status', 'active')
         .is('deleted_at', null)
-        .order('last_name');
+        .order('last_name_kana', { ascending: true });
       if (error) throw error;
       setStudents((data ?? []) as StudentOption[]);
     } catch {
@@ -236,11 +240,31 @@ export default function CourseProposalsPage() {
     return () => document.removeEventListener('mousedown', handler);
   }, [pickerOpen]);
 
+  // 検索は氏名・ふりがな両方にヒットさせる（カナだけ入力されてもマッチさせるため）
   const filteredStudents = pickerQuery
-    ? students.filter((s) =>
-        `${s.last_name}${s.first_name}`.includes(pickerQuery)
-      )
+    ? students.filter((s) => {
+        const haystack = `${s.last_name}${s.first_name}${s.last_name_kana ?? ''}${s.first_name_kana ?? ''}`;
+        return haystack.includes(pickerQuery);
+      })
     : students;
+
+  // 学年でグループ化し、上位学年（高3 → 既卒 → 小1の順は不自然なので、高3 → 高1 → 中3 → 小1 と降順）から並べる
+  // 100名規模では「学年でまず絞り込む」のが最速の探し方なので、グループ見出しを挟んで一覧性を上げる
+  const groupedByGrade = useMemo(() => {
+    const groups = new Map<number | null, StudentOption[]>();
+    for (const s of filteredStudents) {
+      const key = s.grade ?? null;
+      const list = groups.get(key) ?? [];
+      list.push(s);
+      groups.set(key, list);
+    }
+    // grade 値が大きいほど学年が上（高3=12）。降順にソートし、未設定（null）は末尾
+    return Array.from(groups.entries()).sort(([a], [b]) => {
+      if (a === null) return 1;
+      if (b === null) return -1;
+      return b - a;
+    });
+  }, [filteredStudents]);
 
   const handleSelectStudent = (studentId: string) => {
     setPickerOpen(false);
@@ -440,7 +464,7 @@ export default function CourseProposalsPage() {
                 新規作成
               </button>
               {pickerOpen && (
-                <div className="absolute right-0 top-full mt-1 w-64 bg-surface-raised border border-border-default rounded-xl shadow-lg z-50 overflow-hidden">
+                <div className="absolute right-0 top-full mt-1 w-80 bg-surface-raised border border-border-default rounded-xl shadow-lg z-50 overflow-hidden">
                   <div className="p-2 border-b border-border-subtle">
                     <div className="relative">
                       <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-faint" />
@@ -449,25 +473,36 @@ export default function CourseProposalsPage() {
                         type="text"
                         value={pickerQuery}
                         onChange={(e) => setPickerQuery(e.target.value)}
-                        placeholder="生徒を検索..."
+                        placeholder="氏名・ふりがなで検索..."
                         className="w-full pl-8 pr-3 py-1.5 text-xs border border-border-default rounded-lg bg-surface-raised text-text-body placeholder:text-text-faint focus:outline-none focus:ring-1 focus:ring-ink/30"
                       />
                     </div>
                   </div>
-                  <div className="max-h-60 overflow-y-auto">
+                  <div className="max-h-96 overflow-y-auto">
                     {studentsLoading ? (
                       <div className="py-4 text-center text-xs text-text-faint">読み込み中...</div>
                     ) : filteredStudents.length === 0 ? (
                       <div className="py-4 text-center text-xs text-text-faint">該当する生徒がいません</div>
                     ) : (
-                      filteredStudents.map((s) => (
-                        <button
-                          key={s.id}
-                          onClick={() => handleSelectStudent(s.id)}
-                          className="w-full text-left px-3 py-2 text-sm text-text-body hover:bg-surface-hover transition-colors duration-150"
-                        >
-                          {s.last_name} {s.first_name}
-                        </button>
+                      groupedByGrade.map(([grade, list]) => (
+                        <div key={grade ?? 'unknown'}>
+                          <div className="sticky top-0 px-3 py-1 bg-surface-hover/95 backdrop-blur text-[10px] font-bold text-text-muted border-b border-border-subtle">
+                            {grade != null ? (GRADE_LABELS[grade] ?? `${grade}年`) : '学年未設定'}
+                            <span className="ml-1 font-normal text-text-faint">{list.length}名</span>
+                          </div>
+                          {list.map((s) => (
+                            <button
+                              key={s.id}
+                              onClick={() => handleSelectStudent(s.id)}
+                              className="w-full text-left px-3 py-2 text-sm text-text-body hover:bg-surface-hover transition-colors duration-150 flex items-center gap-2"
+                            >
+                              <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-gray-100 text-gray-500 shrink-0">
+                                {s.grade != null ? (GRADE_LABELS[s.grade] ?? `${s.grade}年`) : '—'}
+                              </span>
+                              <span className="truncate">{s.last_name} {s.first_name}</span>
+                            </button>
+                          ))}
+                        </div>
                       ))
                     )}
                   </div>
