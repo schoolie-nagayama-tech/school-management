@@ -1,6 +1,6 @@
 // テスト対策提案書の型定義
 
-import type { Student, Textbook, CurriculumItem } from '@/types/database';
+import type { Student, CurriculumItem } from '@/types/database';
 
 // 提案書ステータス
 export type TestPrepStatus = 'draft' | 'sent' | 'published';

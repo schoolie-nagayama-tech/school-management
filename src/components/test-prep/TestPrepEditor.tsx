@@ -56,7 +56,7 @@ function genId() {
 export default function TestPrepEditor() {
   const params = useParams();
   const router = useRouter();
-  const { user, profile, getSelectedSchoolIds } = useAuth();
+  const { user, getSelectedSchoolIds } = useAuth();
   const { toasts, removeToast, success, error: showError } = useToast();
 
   const studentId = params?.studentId as string;
@@ -150,7 +150,7 @@ export default function TestPrepEditor() {
         const cat = gradeCategory(studentData.grade);
         if (cat === 'middle') {
           setSubjects(
-            GRADE_SUBJECT_TEMPLATES.middle.map((name, i) => ({
+            GRADE_SUBJECT_TEMPLATES.middle.map((name) => ({
               tempId: genId(),
               subject_name: name,
               target_score: null,
@@ -180,7 +180,6 @@ export default function TestPrepEditor() {
           );
         }
         // タイトル自動生成
-        const examTypeName = '';
         setTitle('テスト対策');
       }
 

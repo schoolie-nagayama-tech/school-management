@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
 import { getTestPrepProposalsByStudent } from '@/lib/api/test-prep-proposals';
 import type { TestPrepProposal, TestPrepStatus } from '@/types/test-prep';
 import { TEST_PREP_STATUS_LABELS } from '@/types/test-prep';

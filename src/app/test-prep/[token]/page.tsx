@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import type { TestPrepProposalWithDetails, SelfAssessment } from '@/types/test-prep';
+import type { TestPrepProposalWithDetails } from '@/types/test-prep';
 import { SELF_ASSESSMENT_LABELS } from '@/types/test-prep';
 import { getTestPrepProposalByToken } from '@/lib/api/test-prep-proposals';
 
