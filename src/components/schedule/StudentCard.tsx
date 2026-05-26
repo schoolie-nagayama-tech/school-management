@@ -81,8 +81,10 @@ export const StudentCard = React.memo(function StudentCard({
       <div className="flex items-center gap-1">
         <p className={`text-sm font-semibold leading-tight truncate flex-1 min-w-0 ${isTransferredOut ? 'text-gray-500' : 'text-gray-900'}`}>
           {studentName}
+          {/* 学年は名前のすぐ右に括弧書きでくっつける。
+              フォントは少し小さく抑えるが、視認できる程度のコントラストを保つ。 */}
+          <span className="ml-1 text-xs font-normal text-gray-500">({grade})</span>
         </p>
-        <span className="text-[10px] text-gray-400 flex-shrink-0">{grade}</span>
         {canTransfer && (
           <button
             type="button"

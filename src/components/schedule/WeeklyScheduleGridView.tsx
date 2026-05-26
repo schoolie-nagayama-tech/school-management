@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
+import { ChevronDown } from 'lucide-react';
 import {
   DndContext,
   DragOverlay,
@@ -97,6 +98,18 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
   } = props;
 
   const todayLocal = getTodayLocalDateStr();
+
+  // 「生徒0コマのスロット」をアコーディオン折りたたみする状態。
+  // デフォルトは折りたたみ。ユーザーが手動で開いたものだけ記録する（slot.id をキーに）
+  const [expandedEmptySlots, setExpandedEmptySlots] = useState<Set<string>>(new Set());
+  const toggleEmptySlot = (slotId: string) => {
+    setExpandedEmptySlots((prev) => {
+      const next = new Set(prev);
+      if (next.has(slotId)) next.delete(slotId);
+      else next.add(slotId);
+      return next;
+    });
+  };
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
@@ -178,7 +191,45 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
         </div>
 
         {/* 時間帯ごとに横セクション（横ライン・zebra・余白） */}
-        {timeSlots.map((slot, slotIndex) => (
+        {timeSlots.map((slot, slotIndex) => {
+          // この slot で1週間分のすべてのセルに生徒が居るか先に判定。
+          // 全部 empty なら折りたたみ表示（ノイズになる空白行を抑える）
+          const slotTotalStudents = weekDates.reduce((sum, d) => {
+            const groups = getTeacherGroupsForCell(d, slot.id, slot.slot_number);
+            return (
+              sum +
+              groups.reduce(
+                (s, g) => s + g.entries.filter((e) => e.status !== 'cancelled' && e.status !== 'transferred_out').length,
+                0
+              )
+            );
+          }, 0);
+          const isEmptySlot = slotTotalStudents === 0;
+          const isExpanded = expandedEmptySlots.has(slot.id);
+
+          // 空コマ × 折りたたみ中 → コンパクトな見出し1行だけ
+          if (isEmptySlot && !isExpanded) {
+            return (
+              <button
+                key={slot.id}
+                type="button"
+                onClick={() => toggleEmptySlot(slot.id)}
+                className={`w-full text-left border-t border-gray-200 px-2 py-1.5 flex items-center gap-2 hover:bg-gray-50 transition-[background-color] duration-150 ease-[var(--ease-out)] ${slotIndex % 2 === 1 ? 'bg-gray-50' : ''}`}
+                aria-expanded={false}
+              >
+                <ChevronDown className="w-3.5 h-3.5 text-gray-300 -rotate-90 transition-transform duration-150" />
+                <span className="text-sm font-semibold text-gray-500">
+                  <span className="tabular-nums">{slot.slot_number}</span>限
+                </span>
+                <span className="text-[10px] text-gray-400 tabular-nums">
+                  {slot.start_time?.slice(0, 5)}〜{slot.end_time?.slice(0, 5)}
+                </span>
+                <span className="ml-auto text-[11px] text-gray-400">授業なし（クリックで開く）</span>
+              </button>
+            );
+          }
+
+          return (
           <div
             key={slot.id}
             className={`border-t border-gray-200 pt-2 pb-3 ${slotIndex % 2 === 1 ? 'bg-gray-50' : ''}`}
@@ -189,7 +240,18 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
             >
               {/* 時間ラベル */}
               <div className="flex flex-col justify-center pl-0 pr-2 border-r border-gray-200">
-                <div className="text-sm font-semibold text-gray-700">
+                <div className="text-sm font-semibold text-gray-700 flex items-center gap-1">
+                  {/* 空コマ展開中は折りたたみアイコンを出す */}
+                  {isEmptySlot && isExpanded && (
+                    <button
+                      type="button"
+                      onClick={() => toggleEmptySlot(slot.id)}
+                      className="text-gray-300 hover:text-gray-500 transition-colors duration-150"
+                      aria-label="折りたたむ"
+                    >
+                      <ChevronDown className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                   <span className="tabular-nums">{slot.slot_number}</span>限
                 </div>
                 <div className="text-[10px] text-gray-400 mt-0.5 tabular-nums">
@@ -239,7 +301,8 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
               {headerRightContent && <div className="min-w-0" aria-hidden />}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       <DragOverlay>
