@@ -1444,9 +1444,9 @@ function buildTeacherNameIndex(
     if (!firstId.has(key)) firstId.set(key, t.id);
   }
   const result = new Map<string, string>();
-  for (const [key, id] of firstId) {
+  firstId.forEach((id, key) => {
     if (counts.get(key) === 1) result.set(key, id);
-  }
+  });
   return result;
 }
 
