@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import type { TestPrepProposalWithDetails } from '@/types/test-prep';
+import type { TestPrepProposalWithDetails, TestPrepProposalUnit } from '@/types/test-prep';
 import { SELF_ASSESSMENT_LABELS } from '@/types/test-prep';
 import { getTestPrepProposalByToken } from '@/lib/api/test-prep-proposals';
 
@@ -205,6 +205,34 @@ export default function TestPrepPublicPage() {
   );
 }
 
+// グループ情報を付与した表示用行データを構築
+function buildGroupedRows(units: TestPrepProposalUnit[]) {
+  const rows: Array<{
+    unit: TestPrepProposalUnit;
+    isGroupStart: boolean;
+    isGroupMember: boolean;
+    groupSize: number;
+  }> = [];
+  const list = units || [];
+  let i = 0;
+  while (i < list.length) {
+    const u = list[i];
+    if (u.group_id) {
+      const gid = u.group_id;
+      const start = i;
+      while (i < list.length && list[i].group_id === gid) i++;
+      const size = i - start;
+      for (let j = start; j < i; j++) {
+        rows.push({ unit: list[j], isGroupStart: j === start, isGroupMember: true, groupSize: size });
+      }
+    } else {
+      rows.push({ unit: u, isGroupStart: false, isGroupMember: false, groupSize: 1 });
+      i++;
+    }
+  }
+  return rows;
+}
+
 // 科目ブロック
 function SubjectBlock({
   subject,
@@ -212,6 +240,7 @@ function SubjectBlock({
   subject: TestPrepProposalWithDetails['subjects'][number];
 }) {
   const totalKoma = (subject.units || []).reduce((sum, u) => sum + u.koma_count, 0);
+  const rows = buildGroupedRows(subject.units || []);
 
   return (
     <div className="border border-gray-200 rounded-xl overflow-hidden">
@@ -232,17 +261,28 @@ function SubjectBlock({
           </tr>
         </thead>
         <tbody>
-          {(subject.units || []).map((unit) => (
-            <tr key={unit.id} className="border-t border-gray-100">
-              <td className="px-2 py-1.5 text-gray-700">{unit.unit_name}</td>
+          {rows.map((row) => (
+            <tr
+              key={row.unit.id}
+              className={`border-t border-gray-100 ${row.isGroupMember ? 'bg-blue-50/30' : ''}`}
+            >
+              <td className="px-2 py-1.5 text-gray-700">{row.unit.unit_name}</td>
               <td className="text-center">
-                {unit.self_assessment && (
-                  <span className={ASSESSMENT_STYLES[unit.self_assessment] || ''}>
-                    {unit.self_assessment}
+                {row.unit.self_assessment && (
+                  <span className={ASSESSMENT_STYLES[row.unit.self_assessment] || ''}>
+                    {row.unit.self_assessment}
                   </span>
                 )}
               </td>
-              <td className="text-center font-medium text-gray-800">{unit.koma_count}</td>
+              {row.isGroupMember ? (
+                row.isGroupStart ? (
+                  <td className="text-center font-medium text-gray-800 bg-blue-50/50" rowSpan={row.groupSize}>
+                    {row.unit.koma_count}
+                  </td>
+                ) : null
+              ) : (
+                <td className="text-center font-medium text-gray-800">{row.unit.koma_count}</td>
+              )}
             </tr>
           ))}
         </tbody>

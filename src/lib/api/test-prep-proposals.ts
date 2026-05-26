@@ -132,6 +132,7 @@ export async function createTestPrepProposal(
       unit_name: string;
       self_assessment?: string | null;
       koma_count: number;
+      group_id?: string | null;
       sort_order: number;
     }>;
   }>
@@ -161,12 +162,13 @@ export async function createTestPrepProposal(
     if (subjError) throw new Error(`Failed to create subject: ${subjError.message}`);
 
     if (subj.units.length > 0) {
-      const unitRows = subj.units.map((u: { curriculum_item_id?: number | null; unit_name: string; self_assessment?: string | null; koma_count: number; sort_order: number }, ui: number) => ({
+      const unitRows = subj.units.map((u: { curriculum_item_id?: number | null; unit_name: string; self_assessment?: string | null; koma_count: number; group_id?: string | null; sort_order: number }, ui: number) => ({
         subject_id: subjData.id,
         curriculum_item_id: u.curriculum_item_id ?? null,
         unit_name: u.unit_name,
         self_assessment: u.self_assessment ?? null,
         koma_count: u.koma_count,
+        group_id: u.group_id ?? null,
         sort_order: u.sort_order ?? ui,
       }));
       const { error: unitError } = await db()
@@ -217,6 +219,7 @@ export async function replaceTestPrepSubjects(
       unit_name: string;
       self_assessment?: string | null;
       koma_count: number;
+      group_id?: string | null;
       sort_order: number;
     }>;
   }>
@@ -244,12 +247,13 @@ export async function replaceTestPrepSubjects(
     if (subjError) throw new Error(`Failed to create subject: ${subjError.message}`);
 
     if (subj.units.length > 0) {
-      const unitRows = subj.units.map((u: { curriculum_item_id?: number | null; unit_name: string; self_assessment?: string | null; koma_count: number; sort_order: number }, ui: number) => ({
+      const unitRows = subj.units.map((u: { curriculum_item_id?: number | null; unit_name: string; self_assessment?: string | null; koma_count: number; group_id?: string | null; sort_order: number }, ui: number) => ({
         subject_id: subjData.id,
         curriculum_item_id: u.curriculum_item_id ?? null,
         unit_name: u.unit_name,
         self_assessment: u.self_assessment ?? null,
         koma_count: u.koma_count,
+        group_id: u.group_id ?? null,
         sort_order: u.sort_order ?? ui,
       }));
       const { error: unitError } = await db()

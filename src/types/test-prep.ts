@@ -63,6 +63,7 @@ export interface TestPrepProposalUnit {
   unit_name: string;
   self_assessment: SelfAssessment | null;
   koma_count: number;
+  group_id: string | null;
   sort_order: number;
   // JOIN
   curriculum_item?: CurriculumItem;
@@ -98,6 +99,7 @@ export interface TestPrepProposalUnitInsert {
   unit_name: string;
   self_assessment?: SelfAssessment | null;
   koma_count?: number;
+  group_id?: string | null;
   sort_order?: number;
 }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Printer, Copy, Check, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -34,6 +34,7 @@ interface UnitDraft {
   unit_name: string;
   self_assessment: SelfAssessment | null;
   koma_count: number;
+  group_id: string | null;
   fromMaster: boolean;
 }
 
@@ -168,6 +169,7 @@ export default function TestPrepEditor() {
                 unit_name: u.unit_name,
                 self_assessment: u.self_assessment,
                 koma_count: u.koma_count,
+                group_id: u.group_id ?? null,
                 fromMaster: !!u.curriculum_item_id,
               })),
             }))
@@ -306,6 +308,7 @@ export default function TestPrepEditor() {
           unit_name: u.unit_name,
           self_assessment: u.self_assessment,
           koma_count: u.koma_count,
+          group_id: u.group_id,
           sort_order: ui,
         })),
       }));
@@ -416,10 +419,66 @@ export default function TestPrepEditor() {
 
   const removeUnit = (subjectTempId: string, unitTempId: string) => {
     setSubjects((prev) =>
+      prev.map((s) => {
+        if (s.tempId !== subjectTempId) return s;
+        const removing = s.units.find((u) => u.tempId === unitTempId);
+        let newUnits = s.units.filter((u) => u.tempId !== unitTempId);
+
+        // グループ内の単元削除時: リーダー移管 or 自動解除
+        if (removing?.group_id) {
+          const remaining = newUnits.filter((u) => u.group_id === removing.group_id);
+          if (remaining.length === 1) {
+            const koma = removing.koma_count > 0 ? removing.koma_count : remaining[0].koma_count;
+            newUnits = newUnits.map((u) =>
+              u.group_id === removing.group_id ? { ...u, group_id: null, koma_count: koma || 1 } : u
+            );
+          } else if (remaining.length > 1 && removing.koma_count > 0) {
+            newUnits = newUnits.map((u) =>
+              u.tempId === remaining[0].tempId ? { ...u, koma_count: removing.koma_count } : u
+            );
+          }
+        }
+
+        return { ...s, units: newUnits };
+      })
+    );
+  };
+
+  // 複数単元を1コマにまとめる
+  const groupUnits = (subjectTempId: string, unitTempIds: string[]) => {
+    if (unitTempIds.length < 2) return;
+    const gid = genId();
+    setSubjects((prev) =>
+      prev.map((s) => {
+        if (s.tempId !== subjectTempId) return s;
+        const targetSet = new Set(unitTempIds);
+        const grouped = s.units.filter((u) => targetSet.has(u.tempId));
+        const newUnits: UnitDraft[] = [];
+        let inserted = false;
+        for (const u of s.units) {
+          if (targetSet.has(u.tempId)) {
+            if (!inserted) {
+              grouped.forEach((gu, idx) => {
+                newUnits.push({ ...gu, group_id: gid, koma_count: idx === 0 ? 1 : 0 });
+              });
+              inserted = true;
+            }
+          } else {
+            newUnits.push(u);
+          }
+        }
+        return { ...s, units: newUnits };
+      })
+    );
+  };
+
+  // まとめを解除（各単元を個別コマ=1に戻す）
+  const ungroupUnits = (subjectTempId: string, groupId: string) => {
+    setSubjects((prev) =>
       prev.map((s) =>
-        s.tempId === subjectTempId
-          ? { ...s, units: s.units.filter((u) => u.tempId !== unitTempId) }
-          : s
+        s.tempId !== subjectTempId
+          ? s
+          : { ...s, units: s.units.map((u) => (u.group_id === groupId ? { ...u, group_id: null, koma_count: 1 } : u)) }
       )
     );
   };
@@ -561,6 +620,8 @@ export default function TestPrepEditor() {
               onUpdateUnit={(unitId, patch) => updateUnit(subject.tempId, unitId, patch)}
               onRemoveUnit={(unitId) => removeUnit(subject.tempId, unitId)}
               onRemoveSubject={() => removeSubject(subject.tempId)}
+              onGroupUnits={(unitIds) => groupUnits(subject.tempId, unitIds)}
+              onUngroupUnits={(groupId) => ungroupUnits(subject.tempId, groupId)}
             />
           ))}
 
@@ -738,6 +799,8 @@ function SubjectEditor({
   onUpdateUnit,
   onRemoveUnit,
   onRemoveSubject,
+  onGroupUnits,
+  onUngroupUnits,
 }: {
   subject: SubjectDraft;
   allTextbooks: TextbookOption[];
@@ -748,10 +811,13 @@ function SubjectEditor({
   onUpdateUnit: (unitId: string, patch: Partial<UnitDraft>) => void;
   onRemoveUnit: (unitId: string) => void;
   onRemoveSubject: () => void;
+  onGroupUnits: (unitIds: string[]) => void;
+  onUngroupUnits: (groupId: string) => void;
 }) {
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [selectedTextbookId, setSelectedTextbookId] = useState<number | null>(null);
   const [freeInput, setFreeInput] = useState('');
+  const [selectedUnitIds, setSelectedUnitIds] = useState<Set<string>>(new Set());
   const totalKoma = subject.units.reduce((sum, u) => sum + u.koma_count, 0);
 
   // この科目に一致するテキストを抽出
@@ -770,6 +836,43 @@ function SubjectEditor({
     const next = selectedTextbookId === tbId ? null : tbId;
     setSelectedTextbookId(next);
     if (next) await onLoadUnits(next);
+  };
+
+  // グループ情報を付与した表示用行データ
+  const renderRows = useMemo(() => {
+    const rows: Array<{
+      unit: UnitDraft;
+      isGroupStart: boolean;
+      isGroupMember: boolean;
+      groupSize: number;
+    }> = [];
+    let i = 0;
+    while (i < subject.units.length) {
+      const u = subject.units[i];
+      if (u.group_id) {
+        const gid = u.group_id;
+        const start = i;
+        while (i < subject.units.length && subject.units[i].group_id === gid) i++;
+        const size = i - start;
+        for (let j = start; j < i; j++) {
+          rows.push({
+            unit: subject.units[j],
+            isGroupStart: j === start,
+            isGroupMember: true,
+            groupSize: size,
+          });
+        }
+      } else {
+        rows.push({ unit: u, isGroupStart: false, isGroupMember: false, groupSize: 1 });
+        i++;
+      }
+    }
+    return rows;
+  }, [subject.units]);
+
+  const handleGroup = () => {
+    onGroupUnits(Array.from(selectedUnitIds));
+    setSelectedUnitIds(new Set());
   };
 
   return (
@@ -815,6 +918,7 @@ function SubjectEditor({
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-surface text-text-muted text-xs">
+              <th className="w-8 print:hidden" />
               <th className="text-left px-4 py-2 font-medium w-1/2">単元名</th>
               <th className="text-center px-2 py-2 font-medium w-24">自己評価</th>
               <th className="text-center px-2 py-2 font-medium w-24">コマ数</th>
@@ -822,23 +926,48 @@ function SubjectEditor({
             </tr>
           </thead>
           <tbody>
-            {subject.units.map((unit) => (
-              <tr key={unit.tempId} className="border-t border-border hover:bg-surface-hover/50">
+            {renderRows.map((row) => (
+              <tr
+                key={row.unit.tempId}
+                className={`border-t border-border hover:bg-surface-hover/50 ${
+                  row.isGroupMember ? 'bg-blue-50/40 border-l-2 border-l-blue-400' : ''
+                }`}
+              >
+                {/* チェックボックス（未グループのみ） */}
+                <td className="w-8 text-center px-1 py-2 print:hidden">
+                  {!row.isGroupMember && (
+                    <input
+                      type="checkbox"
+                      checked={selectedUnitIds.has(row.unit.tempId)}
+                      onChange={(e) => {
+                        const next = new Set(selectedUnitIds);
+                        if (e.target.checked) next.add(row.unit.tempId);
+                        else next.delete(row.unit.tempId);
+                        setSelectedUnitIds(next);
+                      }}
+                      className="w-3.5 h-3.5 rounded border-gray-300 text-primary accent-primary"
+                    />
+                  )}
+                </td>
+
+                {/* 単元名 */}
                 <td className="px-4 py-2">
                   <div className="flex items-center gap-2">
-                    {unit.fromMaster && (
+                    {row.unit.fromMaster && (
                       <span className="shrink-0 px-1.5 py-0.5 text-[10px] bg-blue-100 text-blue-700 rounded">
                         マスタ
                       </span>
                     )}
-                    <span className="text-text-body">{unit.unit_name}</span>
+                    <span className="text-text-body">{row.unit.unit_name}</span>
                   </div>
                 </td>
+
+                {/* 自己評価 */}
                 <td className="text-center px-2 py-2">
                   <select
-                    value={unit.self_assessment || ''}
+                    value={row.unit.self_assessment || ''}
                     onChange={(e) =>
-                      onUpdateUnit(unit.tempId, {
+                      onUpdateUnit(row.unit.tempId, {
                         self_assessment: (e.target.value || null) as SelfAssessment | null,
                       })
                     }
@@ -846,26 +975,52 @@ function SubjectEditor({
                   >
                     <option value="">-</option>
                     {SELF_ASSESSMENTS.map((a) => (
-                      <option key={a} value={a}>
-                        {a}
-                      </option>
+                      <option key={a} value={a}>{a}</option>
                     ))}
                   </select>
                 </td>
-                <td className="text-center px-2 py-2">
-                  <input
-                    type="number"
-                    value={unit.koma_count}
-                    onChange={(e) =>
-                      onUpdateUnit(unit.tempId, { koma_count: Math.max(0, Number(e.target.value)) })
-                    }
-                    min={0}
-                    className="w-16 px-2 py-1 border border-border rounded text-sm text-center bg-surface-raised print:border-none print:bg-transparent"
-                  />
-                </td>
+
+                {/* コマ数 — グループ先頭は rowSpan、グループ内は省略 */}
+                {row.isGroupMember ? (
+                  row.isGroupStart ? (
+                    <td className="text-center px-2 py-2 bg-blue-50/60" rowSpan={row.groupSize}>
+                      <div className="flex flex-col items-center gap-1">
+                        <input
+                          type="number"
+                          value={row.unit.koma_count}
+                          onChange={(e) =>
+                            onUpdateUnit(row.unit.tempId, { koma_count: Math.max(0, Number(e.target.value)) })
+                          }
+                          min={0}
+                          className="w-16 px-2 py-1 border border-blue-200 rounded text-sm text-center bg-white"
+                        />
+                        <button
+                          onClick={() => onUngroupUnits(row.unit.group_id!)}
+                          className="text-[10px] text-blue-500 hover:text-blue-700 transition-colors print:hidden"
+                        >
+                          解除
+                        </button>
+                      </div>
+                    </td>
+                  ) : null
+                ) : (
+                  <td className="text-center px-2 py-2">
+                    <input
+                      type="number"
+                      value={row.unit.koma_count}
+                      onChange={(e) =>
+                        onUpdateUnit(row.unit.tempId, { koma_count: Math.max(0, Number(e.target.value)) })
+                      }
+                      min={0}
+                      className="w-16 px-2 py-1 border border-border rounded text-sm text-center bg-surface-raised print:border-none print:bg-transparent"
+                    />
+                  </td>
+                )}
+
+                {/* 削除 */}
                 <td className="px-2 py-2 text-center print:hidden">
                   <button
-                    onClick={() => onRemoveUnit(unit.tempId)}
+                    onClick={() => onRemoveUnit(row.unit.tempId)}
                     className="text-text-faint hover:text-red-500 transition-colors"
                   >
                     ×
@@ -875,7 +1030,7 @@ function SubjectEditor({
             ))}
             {subject.units.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-4 text-center text-text-faint text-xs">
+                <td colSpan={5} className="px-4 py-4 text-center text-text-faint text-xs">
                   単元を追加してください
                 </td>
               </tr>
@@ -884,6 +1039,7 @@ function SubjectEditor({
           {subject.units.length > 0 && (
             <tfoot>
               <tr className="border-t-2 border-border bg-surface font-bold text-sm">
+                <td className="print:hidden" />
                 <td className="px-4 py-2 text-text-muted">合計</td>
                 <td />
                 <td className="text-center text-primary">{totalKoma}</td>
@@ -893,6 +1049,19 @@ function SubjectEditor({
           )}
         </table>
       </div>
+
+      {/* まとめるバー（2件以上選択時に表示） */}
+      {selectedUnitIds.size >= 2 && (
+        <div className="px-4 py-2 bg-blue-50 border-t border-blue-100 flex items-center justify-between print:hidden">
+          <span className="text-xs text-blue-700">{selectedUnitIds.size}件の単元を選択中</span>
+          <button
+            onClick={handleGroup}
+            className="px-3 py-1 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-[colors,transform] active:scale-[0.97]"
+          >
+            まとめる
+          </button>
+        </div>
+      )}
 
       {/* 単元追加（テキスト選択→単元選択） */}
       <div className="px-4 py-3 border-t border-border bg-surface/50 print:hidden">
@@ -938,6 +1107,7 @@ function SubjectEditor({
                           unit_name: item.title,
                           self_assessment: null,
                           koma_count: 1,
+                          group_id: null,
                           fromMaster: true,
                         })
                       }
@@ -968,6 +1138,7 @@ function SubjectEditor({
                       unit_name: freeInput.trim(),
                       self_assessment: null,
                       koma_count: 1,
+                      group_id: null,
                       fromMaster: false,
                     });
                     setFreeInput('');
@@ -984,6 +1155,7 @@ function SubjectEditor({
                       unit_name: freeInput.trim(),
                       self_assessment: null,
                       koma_count: 1,
+                      group_id: null,
                       fromMaster: false,
                     });
                     setFreeInput('');
