@@ -1,16 +1,28 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { Plus, Search } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 import { getTestPrepProposalsWithStudent } from '@/lib/api/test-prep-proposals';
 import type { TestPrepProposal, TestPrepStatus } from '@/types/test-prep';
 import { TEST_PREP_STATUS_LABELS } from '@/types/test-prep';
+import { GRADE_LABELS } from '@/types/database';
 
 type ProposalRow = TestPrepProposal & {
   student: { last_name: string; first_name: string; grade: number } | null;
   exam_type: { name: string } | null;
 };
+
+interface StudentOption {
+  id: string;
+  last_name: string;
+  first_name: string;
+  last_name_kana: string | null;
+  first_name_kana: string | null;
+  grade: number | null;
+}
 
 const STATUS_STYLES: Record<TestPrepStatus, string> = {
   draft: 'bg-surface-hover text-text-muted',
@@ -26,10 +38,18 @@ function gradeName(grade: number): string {
 
 export default function TestPrepProposalsList() {
   const router = useRouter();
-  const { schoolIds } = useAuth();
+  const { schoolIds, selectedSchoolId, getSelectedSchoolIds } = useAuth();
   const [loading, setLoading] = useState(true);
   const [proposals, setProposals] = useState<ProposalRow[]>([]);
   const [filter, setFilter] = useState<TestPrepStatus | 'all'>('all');
+
+  // 生徒ピッカー
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerQuery, setPickerQuery] = useState('');
+  const [students, setStudents] = useState<StudentOption[]>([]);
+  const [studentsLoading, setStudentsLoading] = useState(false);
+  const pickerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const loadData = useCallback(async () => {
     if (!schoolIds || schoolIds.length === 0) return;
@@ -49,6 +69,81 @@ export default function TestPrepProposalsList() {
     loadData();
   }, [loadData]);
 
+  // 生徒一覧の取得（ふりがな昇順）
+  const loadStudents = useCallback(async () => {
+    setStudentsLoading(true);
+    try {
+      const ids = selectedSchoolId && selectedSchoolId !== 'all'
+        ? [selectedSchoolId]
+        : getSelectedSchoolIds();
+      if (ids.length === 0) {
+        setStudents([]);
+        return;
+      }
+      const { data, error } = await supabase
+        .from('students')
+        .select('id, last_name, first_name, last_name_kana, first_name_kana, grade')
+        .in('school_id', ids)
+        .eq('status', 'active')
+        .is('deleted_at', null)
+        .order('last_name_kana', { ascending: true });
+      if (error) throw error;
+      setStudents((data ?? []) as StudentOption[]);
+    } catch {
+      setStudents([]);
+    } finally {
+      setStudentsLoading(false);
+    }
+  }, [schoolIds, selectedSchoolId, getSelectedSchoolIds]);
+
+  const openPicker = useCallback(() => {
+    setPickerOpen(true);
+    setPickerQuery('');
+    loadStudents();
+    setTimeout(() => inputRef.current?.focus(), 50);
+  }, [loadStudents]);
+
+  // ピッカー外クリックで閉じる
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setPickerOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [pickerOpen]);
+
+  // 氏名・ふりがな両方で検索
+  const filteredStudents = pickerQuery
+    ? students.filter((s) => {
+        const haystack = `${s.last_name}${s.first_name}${s.last_name_kana ?? ''}${s.first_name_kana ?? ''}`;
+        return haystack.includes(pickerQuery);
+      })
+    : students;
+
+  // 学年グループ化（上位学年から降順、未設定は末尾）
+  const groupedByGrade = useMemo(() => {
+    const groups = new Map<number | null, StudentOption[]>();
+    for (const s of filteredStudents) {
+      const key = s.grade ?? null;
+      const list = groups.get(key) ?? [];
+      list.push(s);
+      groups.set(key, list);
+    }
+    return Array.from(groups.entries()).sort(([a], [b]) => {
+      if (a === null) return 1;
+      if (b === null) return -1;
+      return b - a;
+    });
+  }, [filteredStudents]);
+
+  const handleSelectStudent = (studentId: string) => {
+    setPickerOpen(false);
+    router.push(`/students/${studentId}/test-prep/new`);
+  };
+
   const filtered = filter === 'all'
     ? proposals
     : proposals.filter((p) => p.status === filter);
@@ -66,6 +161,60 @@ export default function TestPrepProposalsList() {
       {/* ヘッダー */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold text-text-heading">テスト対策提案書</h2>
+        <div className="relative" ref={pickerRef}>
+          <button
+            onClick={openPicker}
+            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-ink text-text-on-primary rounded-lg hover:brightness-[0.85] active:scale-[0.97] transition-[filter,transform] duration-150 ease-out"
+          >
+            <Plus className="w-3 h-3" />
+            新規作成
+          </button>
+          {pickerOpen && (
+            <div className="absolute right-0 top-full mt-1 w-80 bg-surface-raised border border-border-default rounded-xl shadow-lg z-50 overflow-hidden">
+              <div className="p-2 border-b border-border-subtle">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-faint" />
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={pickerQuery}
+                    onChange={(e) => setPickerQuery(e.target.value)}
+                    placeholder="氏名・ふりがなで検索..."
+                    className="w-full pl-8 pr-3 py-1.5 text-xs border border-border-default rounded-lg bg-surface-raised text-text-body placeholder:text-text-faint focus:outline-none focus:ring-1 focus:ring-ink/30"
+                  />
+                </div>
+              </div>
+              <div className="max-h-96 overflow-y-auto">
+                {studentsLoading ? (
+                  <div className="py-4 text-center text-xs text-text-faint">読み込み中...</div>
+                ) : filteredStudents.length === 0 ? (
+                  <div className="py-4 text-center text-xs text-text-faint">該当する生徒がいません</div>
+                ) : (
+                  groupedByGrade.map(([grade, list]) => (
+                    <div key={grade ?? 'unknown'}>
+                      <div className="sticky top-0 px-3 py-1 bg-surface-hover/95 backdrop-blur text-[10px] font-bold text-text-muted border-b border-border-subtle">
+                        {grade != null ? (GRADE_LABELS[grade] ?? `${grade}年`) : '学年未設定'}
+                        <span className="ml-1 font-normal text-text-faint">{list.length}名</span>
+                      </div>
+                      {list.map((s) => (
+                        <button
+                          key={s.id}
+                          onClick={() => handleSelectStudent(s.id)}
+                          className="w-full text-left px-3 py-2 text-sm text-text-body hover:bg-surface-hover transition-colors duration-150 flex items-center gap-2"
+                        >
+                          <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-gray-100 text-gray-500 shrink-0">
+                            {s.grade != null ? (GRADE_LABELS[s.grade] ?? `${s.grade}年`) : '—'}
+                          </span>
+                          <span className="truncate">{s.last_name} {s.first_name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ステータスフィルタ */}
