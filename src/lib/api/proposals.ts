@@ -23,6 +23,33 @@ const fromProposals = () => supabase.from('seasonal_proposals' as any);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const fromProposalUnits = () => supabase.from('seasonal_proposal_units' as any);
 
+/**
+ * proposal_ids に紐づくユニットを全件取得する。
+ * PostgREST のデフォルト行数上限（1000）に当たって一部の提案書のユニットが
+ * 欠落するのを防ぐため、1000件単位でページネーションして全部取り切る。
+ * 教室全体（数十名×複数提案書）だと合計ユニット数が1000を超えやすく、
+ * 一覧画面で「未設定」と誤表示されるバグの原因になっていた。
+ */
+async function fetchAllUnitsByProposalIds(proposalIds: string[]): Promise<SeasonalProposalUnit[]> {
+  if (proposalIds.length === 0) return [];
+  const PAGE_SIZE = 1000;
+  const all: SeasonalProposalUnit[] = [];
+  for (let offset = 0; ; offset += PAGE_SIZE) {
+    const { data, error } = await fromProposalUnits()
+      .select('*')
+      .in('proposal_id', proposalIds)
+      .range(offset, offset + PAGE_SIZE - 1);
+    if (error) {
+      // 失敗時は取得済み分で打ち切り（一覧表示が完全に止まるよりは良い）
+      break;
+    }
+    const page = (data ?? []) as unknown as SeasonalProposalUnit[];
+    all.push(...page);
+    if (page.length < PAGE_SIZE) break;
+  }
+  return all;
+}
+
 // ============================================
 // 提案書 CRUD
 // ============================================
@@ -139,12 +166,10 @@ export async function getProposalsByStudent(
   if (proposals.length === 0) return [];
 
   const proposalIds = proposals.map((d) => d.id);
-  const { data: allUnits } = await fromProposalUnits()
-    .select('*')
-    .in('proposal_id', proposalIds);
+  const allUnits = await fetchAllUnitsByProposalIds(proposalIds);
 
   const unitsByProposal = new Map<string, SeasonalProposalUnit[]>();
-  for (const u of (allUnits ?? []) as unknown as SeasonalProposalUnit[]) {
+  for (const u of allUnits) {
     const list = unitsByProposal.get(u.proposal_id) ?? [];
     list.push(u);
     unitsByProposal.set(u.proposal_id, list);
@@ -188,12 +213,10 @@ export async function getProposalsBySchool(
   const proposalIds = ((data ?? []) as unknown as { id: string }[]).map((d) => d.id);
   if (proposalIds.length === 0) return [];
 
-  const { data: allUnits } = await fromProposalUnits()
-    .select('*')
-    .in('proposal_id', proposalIds);
+  const allUnits = await fetchAllUnitsByProposalIds(proposalIds);
 
   const unitsByProposal = new Map<string, SeasonalProposalUnit[]>();
-  for (const u of (allUnits ?? []) as unknown as SeasonalProposalUnit[]) {
+  for (const u of allUnits) {
     const list = unitsByProposal.get(u.proposal_id) ?? [];
     list.push(u);
     unitsByProposal.set(u.proposal_id, list);
