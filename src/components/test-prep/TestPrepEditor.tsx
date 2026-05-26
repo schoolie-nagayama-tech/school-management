@@ -42,12 +42,13 @@ interface SubjectDraft {
   units: UnitDraft[];
 }
 
-// 生徒に紐づくテキスト情報
-interface StudentTextbookOption {
-  id: string;
+// テキスト選択肢（全テキストから条件フィルタ）
+interface TextbookOption {
   textbook_id: number;
   textbook_name: string;
   subject: string | null;
+  publisher: string | null;
+  grade: string | null;
 }
 
 function gradeCategory(grade: number): 'middle' | 'high' | 'elementary' {
@@ -84,8 +85,8 @@ export default function TestPrepEditor() {
   const [status, setStatus] = useState<TestPrepStatus>('draft');
   const [zoukomaPeriods, setZoukomaPeriods] = useState<Array<{ id: string; title: string; period_key: string }>>([]);
 
-  // テキスト→単元選択用
-  const [studentTextbooks, setStudentTextbooks] = useState<StudentTextbookOption[]>([]);
+  // テキスト→単元選択用（全テキストから条件フィルタ）
+  const [allTextbooks, setAllTextbooks] = useState<TextbookOption[]>([]);
   const [masterUnits, setMasterUnits] = useState<Map<number, CurriculumItem[]>>(new Map());
 
   // 公開後のフィードバック表示
@@ -123,9 +124,9 @@ export default function TestPrepEditor() {
         setZoukomaPeriods((periods || []) as Array<{ id: string; title: string; period_key: string }>);
       }
 
-      // 生徒のテキスト一覧を取得
+      // テキスト一覧を取得（科目・学年・準拠でフィルタ）
       if (studentData) {
-        await loadStudentTextbooks(studentId);
+        await loadTextbooks(studentData);
       }
 
       if (!isNew && proposalId) {
@@ -194,40 +195,54 @@ export default function TestPrepEditor() {
     }
   }, [studentId, proposalId, isNew, getSelectedSchoolIds, showError]);
 
-  // 生徒のテキスト一覧 + 各テキストの単元を取得
-  const loadStudentTextbooks = async (sid: string) => {
-    const { data: stbs } = await supabase
-      .from('student_textbooks')
-      .select('id, textbook_id, textbook:textbooks(id, name, subject)')
-      .eq('student_id', sid)
-      .eq('is_active', true);
+  // 科目・学年・準拠条件でテキスト全体から検索
+  // 中学以下: 同科目 + 同学年(grade_category) + 準拠あり(publisher非null)
+  // 高校: 同科目のみ（全テキスト）
+  const loadTextbooks = async (studentData: Student) => {
+    const cat = gradeCategory(studentData.grade);
+    const isHighSchool = cat === 'high';
 
-    const tbOptions: StudentTextbookOption[] = [];
-    const unitMap = new Map<number, CurriculumItem[]>();
+    let query = supabase
+      .from('textbooks')
+      .select('id, name, subject, publisher, grade, grade_category')
+      .order('subject')
+      .order('name');
 
-    for (const stb of (stbs || []) as Array<{ id: string; textbook_id: number; textbook: { id: number; name: string; subject: string | null } | null }>) {
-      if (!stb.textbook) continue;
-      tbOptions.push({
-        id: stb.id,
-        textbook_id: stb.textbook.id,
-        textbook_name: stb.textbook.name,
-        subject: stb.textbook.subject,
-      });
-
-      if (!unitMap.has(stb.textbook.id)) {
-        const { data: items } = await supabase
-          .from('curriculum_items')
-          .select('*')
-          .eq('textbook_id', stb.textbook.id)
-          .order('item_number');
-        if (items && items.length > 0) {
-          unitMap.set(stb.textbook.id, items as CurriculumItem[]);
-        }
-      }
+    if (isHighSchool) {
+      query = query.eq('grade_category', 'high');
+    } else {
+      query = query
+        .eq('grade_category', cat)
+        .not('publisher', 'is', null);
     }
 
-    setStudentTextbooks(tbOptions);
-    setMasterUnits(unitMap);
+    const { data: textbooks } = await query;
+
+    const tbOptions: TextbookOption[] = [];
+    for (const tb of (textbooks || []) as Array<{ id: number; name: string; subject: string | null; publisher: string | null; grade: string | null }>) {
+      tbOptions.push({
+        textbook_id: tb.id,
+        textbook_name: tb.name,
+        subject: tb.subject,
+        publisher: tb.publisher,
+        grade: tb.grade,
+      });
+    }
+
+    setAllTextbooks(tbOptions);
+  };
+
+  // テキスト選択時に単元をオンデマンドでロード
+  const loadUnitsForTextbook = async (textbookId: number) => {
+    if (masterUnits.has(textbookId)) return;
+    const { data: items } = await supabase
+      .from('curriculum_items')
+      .select('*')
+      .eq('textbook_id', textbookId)
+      .order('item_number');
+    if (items && items.length > 0) {
+      setMasterUnits((prev) => new Map(prev).set(textbookId, items as CurriculumItem[]));
+    }
   };
 
   useEffect(() => {
@@ -494,8 +509,9 @@ export default function TestPrepEditor() {
             <SubjectEditor
               key={subject.tempId}
               subject={subject}
-              studentTextbooks={studentTextbooks}
+              allTextbooks={allTextbooks}
               masterUnits={masterUnits}
+              onLoadUnits={loadUnitsForTextbook}
               onUpdateSubject={(patch) => updateSubject(subject.tempId, patch)}
               onAddUnit={(unit) => addUnit(subject.tempId, unit)}
               onUpdateUnit={(unitId, patch) => updateUnit(subject.tempId, unitId, patch)}
@@ -650,8 +666,9 @@ function StatusBadge({ status }: { status: TestPrepStatus }) {
 
 function SubjectEditor({
   subject,
-  studentTextbooks,
+  allTextbooks,
   masterUnits,
+  onLoadUnits,
   onUpdateSubject,
   onAddUnit,
   onUpdateUnit,
@@ -659,8 +676,9 @@ function SubjectEditor({
   onRemoveSubject,
 }: {
   subject: SubjectDraft;
-  studentTextbooks: StudentTextbookOption[];
+  allTextbooks: TextbookOption[];
   masterUnits: Map<number, CurriculumItem[]>;
+  onLoadUnits: (textbookId: number) => Promise<void>;
   onUpdateSubject: (patch: Partial<SubjectDraft>) => void;
   onAddUnit: (unit: Omit<UnitDraft, 'tempId'>) => void;
   onUpdateUnit: (unitId: string, patch: Partial<UnitDraft>) => void;
@@ -672,12 +690,10 @@ function SubjectEditor({
   const [freeInput, setFreeInput] = useState('');
   const totalKoma = subject.units.reduce((sum, u) => sum + u.koma_count, 0);
 
-  // この科目に関連するテキスト（同じ教科名のもの）
-  const relevantTextbooks = studentTextbooks.filter(
+  // この科目に一致するテキストを抽出
+  const availableTextbooks = allTextbooks.filter(
     (tb) => tb.subject === subject.subject_name
   );
-  // 関連テキストがなければ全テキストを表示
-  const availableTextbooks = relevantTextbooks.length > 0 ? relevantTextbooks : studentTextbooks;
 
   // 選択中テキストの単元一覧（既に追加済みを除外）
   const addedItemIds = new Set(subject.units.map((u) => u.curriculum_item_id).filter(Boolean));
@@ -685,12 +701,12 @@ function SubjectEditor({
     ? (masterUnits.get(selectedTextbookId) || []).filter((m) => !addedItemIds.has(m.id))
     : [];
 
-  // テキストが1つしかなければ自動選択
-  useEffect(() => {
-    if (relevantTextbooks.length === 1 && !selectedTextbookId) {
-      setSelectedTextbookId(relevantTextbooks[0].textbook_id);
-    }
-  }, [relevantTextbooks, selectedTextbookId]);
+  // テキスト選択時に単元をオンデマンドロード
+  const handleSelectTextbook = async (tbId: number) => {
+    const next = selectedTextbookId === tbId ? null : tbId;
+    setSelectedTextbookId(next);
+    if (next) await onLoadUnits(next);
+  };
 
   return (
     <div className="bg-surface-raised rounded-xl border border-border overflow-hidden print:break-inside-avoid">
@@ -822,21 +838,19 @@ function SubjectEditor({
             {availableTextbooks.length > 0 && (
               <div>
                 <p className="text-xs text-text-faint mb-1.5">テキストを選択</p>
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
                   {availableTextbooks.map((tb) => (
                     <button
                       key={tb.textbook_id}
-                      onClick={() => setSelectedTextbookId(
-                        selectedTextbookId === tb.textbook_id ? null : tb.textbook_id
-                      )}
+                      onClick={() => handleSelectTextbook(tb.textbook_id)}
                       className={`inline-flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg border transition-colors ${
                         selectedTextbookId === tb.textbook_id
                           ? 'bg-blue-50 text-blue-700 border-blue-300 font-medium'
                           : 'bg-surface-raised text-text-body border-border hover:bg-surface-hover'
                       }`}
                     >
-                      {tb.subject && (
-                        <span className="text-[10px] text-text-faint">{tb.subject}</span>
+                      {tb.publisher && (
+                        <span className="text-[10px] text-text-faint">{tb.publisher}</span>
                       )}
                       {tb.textbook_name}
                       <ChevronDown className={`w-3 h-3 transition-transform ${selectedTextbookId === tb.textbook_id ? 'rotate-180' : ''}`} />

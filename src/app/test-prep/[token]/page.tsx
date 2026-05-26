@@ -24,7 +24,7 @@ export default function TestPrepPublicPage() {
   const params = useParams();
   const token = params?.token as string;
   const [loading, setLoading] = useState(true);
-  const [proposal, setProposal] = useState<(TestPrepProposalWithDetails & { school?: { name: string; logo_url: string | null }; zoukoma_period?: Record<string, unknown> | null }) | null>(null);
+  const [proposal, setProposal] = useState<(TestPrepProposalWithDetails & { school?: { name: string; code: string | null; logo_url: string | null }; zoukoma_period?: Record<string, unknown> | null }) | null>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -66,8 +66,9 @@ export default function TestPrepPublicPage() {
     ? `${proposal.student.last_name} ${proposal.student.first_name}`
     : '---';
   const studentGrade = proposal.student ? gradeName(proposal.student.grade) : '---';
-  const schoolObj = (proposal as unknown as Record<string, unknown>).school as { name: string } | undefined;
+  const schoolObj = (proposal as unknown as Record<string, unknown>).school as { name: string; code: string | null } | undefined;
   const schoolName = schoolObj?.name || '';
+  const schoolCode = schoolObj?.code || null;
   const teacherName = proposal.teacher?.display_name || '';
   const examName = proposal.exam_type?.name || '';
 
@@ -184,7 +185,13 @@ export default function TestPrepPublicPage() {
 
         {/* 増コマ申込セクション（印刷時非表示） */}
         <div className="print:hidden mt-8">
-          <ZoukomaSection proposal={proposal} />
+          <ZoukomaSection
+            proposal={proposal}
+            schoolCode={schoolCode}
+            studentName={studentName}
+            studentGrade={studentGrade}
+            totalKoma={totalKoma}
+          />
         </div>
       </div>
 
@@ -251,16 +258,23 @@ function SubjectBlock({
   );
 }
 
-// 増コマ申込セクション
+// 増コマ申込セクション — ポータルの増コマフォームへリンク
 function ZoukomaSection({
   proposal,
+  schoolCode,
+  studentName,
+  studentGrade,
+  totalKoma,
 }: {
   proposal: TestPrepProposalWithDetails & { zoukoma_period?: Record<string, unknown> | null };
+  schoolCode: string | null;
+  studentName: string;
+  studentGrade: string;
+  totalKoma: number;
 }) {
-  const [showForm, setShowForm] = useState(false);
   const period = proposal.zoukoma_period;
 
-  if (!period) {
+  if (!period || !schoolCode) {
     return (
       <div className="bg-white rounded-2xl border border-gray-200 p-6 text-center">
         <p className="text-gray-500">増コマ申込の受付期間外です</p>
@@ -268,96 +282,61 @@ function ZoukomaSection({
     );
   }
 
-  // 科目別コマ数を計算
+  // 科目別コマ数
   const subjectKoma = proposal.subjects.map((s) => ({
     name: s.subject_name,
     koma: (s.units || []).reduce((sum, u) => sum + u.koma_count, 0),
   }));
 
-  const studentName = proposal.student
-    ? `${proposal.student.last_name} ${proposal.student.first_name}`
-    : '';
-  const studentGrade = proposal.student ? gradeName(proposal.student.grade) : '';
+  // 増コマフォームURL（提案コマ数・生徒名・学年をクエリパラメータで渡す）
+  const zoukomaUrl = `/portal/${schoolCode}/zoukoma?` + new URLSearchParams({
+    name: studentName,
+    grade: studentGrade,
+    koma: String(totalKoma),
+  }).toString();
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="font-bold text-gray-900 text-lg">テスト対策 増コマ申し込み</h2>
-            <p className="text-sm text-gray-500 mt-0.5">
-              提案内容をもとに増コマをお申し込みいただけます
-            </p>
-          </div>
-          <button
-            onClick={() => setShowForm((v) => !v)}
-            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-[colors,transform] active:scale-[0.97]"
-          >
-            {showForm ? '閉じる' : '申し込みフォームを開く'}
-          </button>
-        </div>
+      <div className="px-6 py-5 bg-gradient-to-r from-blue-50 to-white">
+        <h2 className="font-bold text-gray-900 text-lg">テスト対策 増コマ申し込み</h2>
+        <p className="text-sm text-gray-500 mt-0.5">
+          提案内容をもとに増コマをお申し込みいただけます
+        </p>
       </div>
-      {showForm && (
-        <div className="p-6">
-          <div className="p-4 bg-blue-50 rounded-lg border border-blue-100 mb-4">
-            <p className="text-xs text-blue-600 font-medium mb-2">提案書から自動入力済み</p>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <span className="text-gray-500 text-xs">生徒名</span>
-                <p className="font-medium text-gray-900">{studentName}</p>
-              </div>
-              <div>
-                <span className="text-gray-500 text-xs">学年</span>
-                <p className="font-medium text-gray-900">{studentGrade}</p>
-              </div>
-            </div>
+
+      <div className="px-6 py-4 border-t border-gray-100">
+        {/* 提案内容サマリー */}
+        <div className="flex items-center gap-6 mb-4 text-sm">
+          <div>
+            <span className="text-gray-400 text-xs">生徒</span>
+            <p className="font-medium text-gray-900">{studentName} ({studentGrade})</p>
           </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">科目ごとのコマ数</label>
-            <div className="space-y-2">
-              {subjectKoma.map((sk) => (
-                <div key={sk.name} className="flex items-center gap-3">
-                  <span className="w-20 text-sm text-gray-700">{sk.name}</span>
-                  <input
-                    type="number"
-                    defaultValue={sk.koma}
-                    min={0}
-                    className="w-20 px-3 py-1.5 border border-gray-300 rounded-lg text-sm text-center"
-                  />
-                  <span className="text-xs text-gray-400">コマ</span>
-                </div>
-              ))}
-            </div>
+          <div>
+            <span className="text-gray-400 text-xs">提案コマ数</span>
+            <p className="font-bold text-red-600 text-lg">{totalKoma}<span className="text-sm font-normal text-gray-500 ml-0.5">コマ</span></p>
           </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">保護者メールアドレス</label>
-            <input
-              type="email"
-              placeholder="example@email.com"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">備考</label>
-            <textarea
-              rows={2}
-              placeholder="ご質問やご要望があればお書きください"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none"
-            />
-          </div>
-          <p className="text-xs text-gray-400 mb-4">
-            ※ 実際の申込フォーム（日程選択・料金確認を含む）は増コマ申込ページで受け付けます。
-            このフォームは提案内容をもとにした簡易申込です。
-          </p>
-          <button
-            type="button"
-            onClick={() => alert('申込機能は実装中です')}
-            className="w-full py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-[colors,transform] active:scale-[0.97] text-sm"
-          >
-            増コマを申し込む
-          </button>
         </div>
-      )}
+
+        {/* 科目別内訳 */}
+        <div className="flex flex-wrap gap-2 mb-5">
+          {subjectKoma.map((sk) => (
+            <span key={sk.name} className="px-2.5 py-1 bg-gray-100 rounded-lg text-xs text-gray-700">
+              {sk.name} <span className="font-bold">{sk.koma}</span>コマ
+            </span>
+          ))}
+        </div>
+
+        {/* 増コマフォームへのリンク */}
+        <a
+          href={zoukomaUrl}
+          className="block w-full py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-[colors,transform] active:scale-[0.97] text-sm text-center"
+        >
+          増コマを申し込む
+        </a>
+        <p className="text-xs text-gray-400 mt-2 text-center">
+          増コマ申込フォームに移動します
+        </p>
+      </div>
     </div>
   );
 }
