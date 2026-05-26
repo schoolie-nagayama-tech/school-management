@@ -39,7 +39,6 @@ import { supabase } from '@/lib/supabase';
 import { getStudentTextbooks } from '@/lib/api/progress';
 import { getCurriculumItems } from '@/lib/api/textbooks';
 import { ChevronLeft, Plus, X, Save, Send, Wand2 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
 
 // 座席表系テーブルは Database 型未登録なので any でクエリ
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -101,7 +100,7 @@ async function getNextLessonDate(studentId: string, fromDate: string): Promise<s
 export default function LessonReportFormPage() {
   const params = useParams();
   const router = useRouter();
-  const { profile } = useAuth();
+  // 将来 useAuth から取得した profile を使った権限制御を入れる予定（今は schedule_entry の teacher_id をそのまま使用）
   const { toasts, removeToast, success, error: toastError } = useToast();
   const scheduleEntryId = params.scheduleEntryId as string;
 
