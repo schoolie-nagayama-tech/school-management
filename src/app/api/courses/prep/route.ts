@@ -70,14 +70,23 @@ async function fetchSubjectProposals(
         type UnitRow = { proposal_id: string; koma_count: number; group_id: number };
         const allUnits: UnitRow[] = [];
         const BATCH = 500;
+        const ROW_PAGE = 1000; // PostgREST のデフォルト行数上限
         for (let i = 0; i < proposalIds.length; i += BATCH) {
           const batch = proposalIds.slice(i, i + BATCH);
-          const { data: units } = await supabaseAdmin
-            .from('seasonal_proposal_units')
-            .select('proposal_id, koma_count, group_id')
-            .in('proposal_id', batch)
-            .gt('koma_count', 0);
-          if (units) allUnits.push(...(units as UnitRow[]));
+          // PostgREST のデフォルト行数上限（1000）に当たって欠落するのを防ぐため、
+          // バッチ内でも .range() でページネーションして取り切る。
+          // これがないと「進捗表の提案コマが実際より少なく見える」バグになる。
+          for (let offset = 0; ; offset += ROW_PAGE) {
+            const { data: units } = await supabaseAdmin
+              .from('seasonal_proposal_units')
+              .select('proposal_id, koma_count, group_id')
+              .in('proposal_id', batch)
+              .gt('koma_count', 0)
+              .range(offset, offset + ROW_PAGE - 1);
+            const page = (units ?? []) as UnitRow[];
+            allUnits.push(...page);
+            if (page.length < ROW_PAGE) break;
+          }
         }
 
         const unitsByProposal = new Map<string, UnitRow[]>();
