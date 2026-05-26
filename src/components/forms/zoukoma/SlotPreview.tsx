@@ -3,6 +3,20 @@
 import { useMemo } from 'react';
 import type { ScheduleConfig, TimeSlot } from '@/types/forms/zoukoma';
 
+/** ローカル日付で YYYY-MM-DD を返す（toISOString は UTC 変換で JST では前日にずれる） */
+function toLocalDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+/** YYYY-MM-DD 文字列をローカル日付として Date に戻す */
+function parseLocalDateStr(s: string): Date {
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
 interface SlotPreviewProps {
   schedule: ScheduleConfig | null;
 }
@@ -51,14 +65,14 @@ export function SlotPreview({ schedule }: SlotPreviewProps) {
           return;
         }
 
-        const slotId = `${date.toISOString().split('T')[0]}_${period}`;
+        const slotId = `${toLocalDateStr(date)}_${period}`;
         const timeRange = `${periodConfig.start_time}–${periodConfig.end_time}`;
         const dateStr = `${date.getMonth() + 1}/${date.getDate()}`;
         const label = `${dateStr}(${dayName}) ${period}限 ${timeRange}`;
 
         slots.push({
           id: slotId,
-          date: date.toISOString().split('T')[0],
+          date: toLocalDateStr(date),
           dayOfWeek: dayName,
           period,
           label,
@@ -108,7 +122,10 @@ export function SlotPreview({ schedule }: SlotPreviewProps) {
         <tbody>
           {Object.entries(slotsByDate).map(([date, dateSlots]) => {
             const dateStr = dateSlots[0]
-              ? `${new Date(date).getMonth() + 1}/${new Date(date).getDate()}(${dateSlots[0].dayOfWeek})`
+              ? (() => {
+                  const d = parseLocalDateStr(date);
+                  return `${d.getMonth() + 1}/${d.getDate()}(${dateSlots[0].dayOfWeek})`;
+                })()
               : date;
 
             return (

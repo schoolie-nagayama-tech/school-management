@@ -3,6 +3,21 @@
 import { useMemo } from 'react';
 import type { TimeSlot, ZoukomaSettings, PeriodConfig } from '@/types/forms/zoukoma';
 
+/** ローカル日付で YYYY-MM-DD を返す（toISOString は UTC 変換するため JST では前日になり、
+ *  getDay() で取った曜日と1日ずれてしまうので使わない） */
+function toLocalDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+/** YYYY-MM-DD 文字列をローカル日付として Date に戻す。new Date(str) だと UTC 解釈になる */
+function parseLocalDateStr(s: string): Date {
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
 /** 期間設定が未登録のときに使うデフォルト時限（平日のみ・土日なし） */
 const DEFAULT_PERIODS_FALLBACK: PeriodConfig[] = [
   { code: '5', start_time: '16:20', end_time: '17:50', available_saturday: false, available_sunday: false, available_weekday: true },
@@ -50,14 +65,14 @@ export function generateAllSlots(settings: ZoukomaSettings): TimeSlot[] {
 
       if (!shouldShow) return;
 
-      const slotId = `${date.toISOString().split('T')[0]}_${period}`;
+      const slotId = `${toLocalDateStr(date)}_${period}`;
       const timeRange = `${periodConfig.start_time}–${periodConfig.end_time}`;
       const dateStr = `${date.getMonth() + 1}/${date.getDate()}`;
       const label = `${dateStr}(${dayName}) ${period}限 ${timeRange}`;
 
       slots.push({
         id: slotId,
-        date: date.toISOString().split('T')[0],
+        date: toLocalDateStr(date),
         dayOfWeek: dayName,
         period,
         label,
@@ -213,7 +228,12 @@ export function SlotTable({
         <tbody>
           {Object.entries(slotsByDate).map(([date, dateSlots]) => {
             const dateStr = dateSlots[0]
-              ? `${new Date(date).getMonth() + 1}/${new Date(date).getDate()}(${dateSlots[0].dayOfWeek})`
+              ? (() => {
+                  // date は toLocalDateStr で作ったローカル日付文字列。new Date(str) だと UTC 解釈で
+                  // JST では前日扱いになりうるため、明示的にローカル日付へ戻す
+                  const d = parseLocalDateStr(date);
+                  return `${d.getMonth() + 1}/${d.getDate()}(${dateSlots[0].dayOfWeek})`;
+                })()
               : date;
             const allDateSelected = dateSlots.every((s) =>
               selectedSlotSet.has(s.id)
