@@ -17,10 +17,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui';
 import {
-  getKoushuPlacementProgress,
-  type KoushuCourse,
-  type KoushuEnrollment,
-} from '@/lib/api/seasonalCourses';
+  getKoushuPlacementProgressByPeriod,
+  type KoushuPeriodInfo,
+} from '@/lib/api/koushu-period';
 import { CheckCircle, Target, X } from 'lucide-react';
 
 interface PlacementRow {
@@ -28,11 +27,15 @@ interface PlacementRow {
   enrolled: number;
   placed: number;
   subject_ids: string[];
-  student: KoushuEnrollment['student'];
+  student?: { id: string; last_name: string; first_name: string; grade: number };
 }
 
 interface Props {
-  course: KoushuCourse;
+  /**
+   * 講習期間。course_prep_periods から取得した「春期/夏期/冬期 × 年 × school_id」のレコード。
+   * 申込集計は seasonal_courses.season = period.season を満たす全コースから合算する。
+   */
+  period: KoushuPeriodInfo;
   /** 「配置する」ボタンクリック時：親が「配置モード」に入る */
   onStartPlacement?: (studentId: string, subjectIds: string[]) => void;
   /** 配置モード中の生徒ID（バインド側で管理）。配置1コマ追加するたびに再フェッチさせる用にバージョンキーを持つ */
@@ -50,7 +53,7 @@ function gradeLabel(g: number): string {
 }
 
 export function KoushuPlacementPanel({
-  course,
+  period,
   onStartPlacement,
   placingStudentId,
   refreshKey,
@@ -62,12 +65,12 @@ export function KoushuPlacementPanel({
   const load = useCallback(async () => {
     setIsLoading(true);
     try {
-      const map = await getKoushuPlacementProgress(course);
+      const map = await getKoushuPlacementProgressByPeriod(period);
       const list: PlacementRow[] = [];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      for (const [student_id, v] of (map as any).entries()) {
+      // Map iteration: Array.from で TS target 互換を確保
+      Array.from(map.entries()).forEach(([student_id, v]) => {
         list.push({ student_id, ...v });
-      }
+      });
       // 残コマ数が多い順 → 申込多い順
       list.sort((a, b) => (b.enrolled - b.placed) - (a.enrolled - a.placed) || b.enrolled - a.enrolled);
       setRows(list);
@@ -77,7 +80,7 @@ export function KoushuPlacementPanel({
     } finally {
       setIsLoading(false);
     }
-  }, [course]);
+  }, [period]);
 
   useEffect(() => {
     load();
@@ -92,7 +95,7 @@ export function KoushuPlacementPanel({
         <div className="flex items-center gap-2 mb-2">
           <Target className="w-4 h-4 text-warning" />
           <span className="font-semibold text-sm">
-            講習配置: {course.name}
+            講習配置: {period.label} ({period.schedule_start_date} 〜 {period.schedule_end_date})
           </span>
           <span className="text-xs text-text-muted ml-auto">
             {totalPlaced} / {totalEnrolled} コマ

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui';
 import { Settings, ChevronDown, GraduationCap } from 'lucide-react';
-import type { KoushuCourse } from '@/lib/api/seasonalCourses';
+import type { KoushuPeriodInfo } from '@/lib/api/koushu-period';
 
 const DAY_LABELS: { value: number; label: string }[] = [
   { value: 0, label: '日' },
@@ -48,12 +48,14 @@ interface ScheduleToolbarProps {
   weekStartStr: string;
   schoolId: string;
   visibleDaysOfWeek: number[];
-  koushuList: KoushuCourse[];
-  selectedKoushu: KoushuCourse | null;
+  // 講習選択は course_prep_periods (春期/夏期/冬期 × 年) ベース。
+  // seasonal_courses は座席表とは独立した「生徒別プラン」のためここでは扱わない。
+  koushuList: KoushuPeriodInfo[];
+  selectedKoushu: KoushuPeriodInfo | null;
   onWeekChange: (newWeekStart: Date) => void;
   onSettingsOpen: () => void;
   onVisibleDaysChange: (days: number[]) => void;
-  onKoushuSelect: (course: KoushuCourse | null) => void;
+  onKoushuSelect: (period: KoushuPeriodInfo | null) => void;
 }
 
 export function ScheduleToolbar({
@@ -196,22 +198,23 @@ export function ScheduleToolbar({
               講習管理
             </Button>
           </Link>
-          {/* 講習モード切替 */}
+          {/* 講習モード切替（期間ベース）
+              course_prep_periods で start/end_date が設定された春期/夏期/冬期から選択。 */}
           {koushuList.length > 0 && (
             <div className="flex items-center gap-1.5">
               <span className="text-xs text-[var(--paragraph)]">講習:</span>
               <select
                 value={selectedKoushu?.id ?? ''}
                 onChange={(e) => {
-                  const course = koushuList.find((k) => k.id === e.target.value) ?? null;
-                  onKoushuSelect(course);
+                  const period = koushuList.find((k) => k.id === e.target.value) ?? null;
+                  onKoushuSelect(period);
                 }}
                 className="text-xs px-2 py-1 border border-[var(--stroke)] rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
               >
                 <option value="">通常</option>
                 {koushuList.map((k) => (
                   <option key={k.id} value={k.id}>
-                    {k.name}
+                    {k.label}
                   </option>
                 ))}
               </select>

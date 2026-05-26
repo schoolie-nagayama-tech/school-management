@@ -74,12 +74,11 @@ import { useToast } from '@/hooks/useToast';
 import { Clock, BookOpen } from 'lucide-react';
 import { SchoolSwitcher } from '@/components/SchoolSwitcher';
 import {
-  getSchoolKoushu,
   getKoushuEnrollments,
   getKoushuScheduledCounts,
-  type KoushuCourse,
   type KoushuEnrollment,
 } from '@/lib/api/seasonalCourses';
+import { getKoushuPeriods, type KoushuPeriodInfo } from '@/lib/api/koushu-period';
 
 function getWeekStart(d: Date): Date {
   const day = d.getDay();
@@ -187,8 +186,10 @@ export default function SchedulePage() {
   const [scheduleGenerateLoading, setScheduleGenerateLoading] = useState(false);
 
   // ---- 講習モード ----
-  const [koushuList, setKoushuList] = useState<KoushuCourse[]>([]);
-  const [selectedKoushu, setSelectedKoushu] = useState<KoushuCourse | null>(null);
+  // 講習選択は「course_prep_periods (春期/夏期/冬期 × 年)」ベース。
+  // seasonal_courses は座席表とは独立した「生徒別プラン」を扱うテーブルなのでここでは使わない。
+  const [koushuList, setKoushuList] = useState<KoushuPeriodInfo[]>([]);
+  const [selectedKoushu, setSelectedKoushu] = useState<KoushuPeriodInfo | null>(null);
   const [koushuEnrollments, setKoushuEnrollments] = useState<Map<string, KoushuEnrollment>>(new Map());
   const [koushuScheduledCounts, setKoushuScheduledCounts] = useState<Map<string, number>>(new Map());
 
@@ -345,28 +346,53 @@ export default function SchedulePage() {
     };
   }, [schoolId]);
 
-  // 講習リストをロード（schoolId 変更時）
+  // 講習期間リストをロード（schoolId 変更時）
+  // course_prep_periods から「設定済み（start/end あり）」を全部表示
   useEffect(() => {
     if (!schoolId) { setKoushuList([]); return; }
-    getSchoolKoushu(schoolId).then(setKoushuList).catch(() => setKoushuList([]));
+    getKoushuPeriods(schoolId).then(setKoushuList).catch(() => setKoushuList([]));
   }, [schoolId]);
 
-  // 講習モード選択時: 申し込みデータ + 期間スケジュール済み数を取得
-  const handleKoushuSelect = useCallback(async (course: KoushuCourse | null) => {
-    setSelectedKoushu(course);
-    if (!course) {
+  // 講習期間選択時: 該当 season の全 seasonal_courses から enrollments を集約
+  // 同生徒が複数コース申込なら koma_count を合算
+  const handleKoushuSelect = useCallback(async (period: KoushuPeriodInfo | null) => {
+    setSelectedKoushu(period);
+    if (!period) {
       setKoushuEnrollments(new Map());
       setKoushuScheduledCounts(new Map());
       return;
     }
-    const enrollments = await getKoushuEnrollments(course.id);
-    const enrollMap = new Map(enrollments.map((e) => [e.student_id, e]));
+    // 該当 season + school_id のコースを集めて全部 enrollment を引く
+    const { getSchoolKoushu } = await import('@/lib/api/seasonalCourses');
+    const allCourses = await getSchoolKoushu(period.school_id);
+    const matchingCourseIds = allCourses
+      .filter((c) => c.season === period.season)
+      .map((c) => c.id);
+
+    const enrollMap = new Map<string, KoushuEnrollment>();
+    for (const cid of matchingCourseIds) {
+      const enrollments = await getKoushuEnrollments(cid);
+      for (const e of enrollments) {
+        const existing = enrollMap.get(e.student_id);
+        if (existing) {
+          // 同一生徒の複数コース申込はコマ数を合算、科目はマージ
+          enrollMap.set(e.student_id, {
+            ...existing,
+            koma_count: existing.koma_count + e.koma_count,
+            subject_ids: Array.from(new Set([...existing.subject_ids, ...e.subject_ids])),
+          });
+        } else {
+          enrollMap.set(e.student_id, e);
+        }
+      }
+    }
     setKoushuEnrollments(enrollMap);
-    if (course.start_date && course.end_date && enrollMap.size > 0) {
+
+    if (enrollMap.size > 0) {
       const counts = await getKoushuScheduledCounts(
         schoolId,
-        course.start_date,
-        course.end_date,
+        period.schedule_start_date,
+        period.schedule_end_date,
         Array.from(enrollMap.keys())
       );
       setKoushuScheduledCounts(counts);
@@ -917,7 +943,7 @@ export default function SchedulePage() {
         {/* 講習選択中は配置パネルを表示。空きセルクリックで講習コマを追加できる「配置モード」を提供 */}
         {selectedKoushu && (
           <KoushuPlacementPanel
-            course={selectedKoushu}
+            period={selectedKoushu}
             onStartPlacement={(studentId, subjectIds) => {
               // 同じ生徒を再クリックでモード解除
               if (placingKoushuStudent?.studentId === studentId) {
