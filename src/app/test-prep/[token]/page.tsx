@@ -24,7 +24,7 @@ export default function TestPrepPublicPage() {
   const params = useParams();
   const token = params?.token as string;
   const [loading, setLoading] = useState(true);
-  const [proposal, setProposal] = useState<(TestPrepProposalWithDetails & { school?: { name: string; code: string | null; logo_url: string | null }; zoukoma_period?: Record<string, unknown> | null }) | null>(null);
+  const [proposal, setProposal] = useState<(TestPrepProposalWithDetails & { school?: { name: string; code: string | null; logo_url: string | null } }) | null>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -299,6 +299,7 @@ function SubjectBlock({
 }
 
 // 増コマ申込セクション — ポータルの増コマフォームへリンク
+// schoolCode があればリンクを表示（期間の有効判定はポータル側で行う）
 function ZoukomaSection({
   proposal,
   schoolCode,
@@ -306,21 +307,13 @@ function ZoukomaSection({
   studentGrade,
   totalKoma,
 }: {
-  proposal: TestPrepProposalWithDetails & { zoukoma_period?: Record<string, unknown> | null };
+  proposal: TestPrepProposalWithDetails;
   schoolCode: string | null;
   studentName: string;
   studentGrade: string;
   totalKoma: number;
 }) {
-  const period = proposal.zoukoma_period;
-
-  if (!period || !schoolCode) {
-    return (
-      <div className="bg-white rounded-2xl border border-gray-200 p-6 text-center">
-        <p className="text-gray-500">増コマ申込の受付期間外です</p>
-      </div>
-    );
-  }
+  if (!schoolCode) return null;
 
   // 科目別コマ数
   const subjectKoma = proposal.subjects.map((s) => ({
