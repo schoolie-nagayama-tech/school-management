@@ -3,14 +3,33 @@ import { getSchoolByCode } from '@/lib/api/schools';
 import { getActiveZoukomaPeriod } from '@/lib/api/zoukoma';
 import { ZoukomaForm } from '@/components/forms/zoukoma/ZoukomaForm';
 
+// クエリパラメータから初期値を構築（提案書からの遷移時に自動入力）
+// name=生徒名, grade=学年, s_英語=2, s_数学=3 ...
+function buildInitialValues(query: Record<string, string | string[] | undefined>) {
+  const name = typeof query.name === 'string' ? query.name : undefined;
+  const grade = typeof query.grade === 'string' ? query.grade : undefined;
+  const subjects: Record<string, number> = {};
+  for (const [key, val] of Object.entries(query)) {
+    if (key.startsWith('s_') && typeof val === 'string') {
+      const n = Number(val);
+      if (n > 0) subjects[key.slice(2)] = n;
+    }
+  }
+  if (!name && !grade && Object.keys(subjects).length === 0) return undefined;
+  return { studentName: name, grade, subjects };
+}
+
 interface ZoukomaPortalPageProps {
   params: Promise<{ schoolCode: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 export default async function ZoukomaPortalPage({
   params,
+  searchParams,
 }: ZoukomaPortalPageProps) {
   const { schoolCode } = await params;
+  const query = await searchParams;
 
   // 教室情報を取得
   const school = await getSchoolByCode(schoolCode);
@@ -54,7 +73,11 @@ export default async function ZoukomaPortalPage({
               )}
             </header>
             <div className="bg-white rounded-xl border border-[#e5e7eb] p-6">
-              <ZoukomaForm school={school} period={period} />
+              <ZoukomaForm
+                school={school}
+                period={period}
+                initialValues={buildInitialValues(query)}
+              />
             </div>
           </>
         )}

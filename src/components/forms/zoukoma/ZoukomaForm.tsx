@@ -30,20 +30,25 @@ interface ZoukomaFormProps {
   school: School;
   period: ZoukomaPeriod;
   isPreview?: boolean;
+  initialValues?: {
+    studentName?: string;
+    grade?: string;
+    subjects?: Record<string, number>;
+  };
 }
 
-export function ZoukomaForm({ school, period, isPreview }: ZoukomaFormProps) {
+export function ZoukomaForm({ school, period, isPreview, initialValues }: ZoukomaFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submittingRef = useRef(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // フォームデータ
-  const [studentName, setStudentName] = useState('');
-  const [selectedGrade, setSelectedGrade] = useState<string>('');
+  // フォームデータ（提案書からの遷移時は initialValues で自動入力）
+  const [studentName, setStudentName] = useState(initialValues?.studentName ?? '');
+  const [selectedGrade, setSelectedGrade] = useState<string>(initialValues?.grade ?? '');
   const [email, setEmail] = useState('');
   const [subjectValues, setSubjectValues] = useState<Record<string, number>>(
-    {}
+    initialValues?.subjects ?? {}
   );
   // バツ印モード: 出席できない日程を選択
   const [unavailableSlots, setUnavailableSlots] = useState<string[]>([]);

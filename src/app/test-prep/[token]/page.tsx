@@ -321,12 +321,12 @@ function ZoukomaSection({
     koma: (s.units || []).reduce((sum, u) => sum + u.koma_count, 0),
   }));
 
-  // 増コマフォームURL（提案コマ数・生徒名・学年をクエリパラメータで渡す）
-  const zoukomaUrl = `/portal/${schoolCode}/zoukoma?` + new URLSearchParams({
-    name: studentName,
-    grade: studentGrade,
-    koma: String(totalKoma),
-  }).toString();
+  // 増コマフォームURL（生徒名・学年・科目別コマ数をクエリパラメータで渡す）
+  const params = new URLSearchParams({ name: studentName, grade: studentGrade });
+  for (const sk of subjectKoma) {
+    if (sk.koma > 0) params.set(`s_${sk.name}`, String(sk.koma));
+  }
+  const zoukomaUrl = `/portal/${schoolCode}/zoukoma?${params.toString()}`;
 
   return (
     <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
