@@ -154,6 +154,9 @@ export default function SchedulePage() {
   const [initialTransferTarget, setInitialTransferTarget] = useState<{ date: string; slotId: string } | null>(null);
   const [transferMode, setTransferMode] = useState<{ sourceEntry: ScheduleEntry } | null>(null);
   const [emptyTeacherSlots, setEmptyTeacherSlots] = useState<Record<string, string[]>>({});
+  // 通常シフトから「この曜日この時間帯に出勤可能」と提出した講師IDを byDayOfWeek で保持。
+  // 各セル描画時に「曜日 → 出勤可能講師ID 一覧」を引いて空き枠として並べる。
+  const [shiftByDow, setShiftByDow] = useState<Map<number, string[]>>(new Map());
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingEntry, setDeletingEntry] = useState<ScheduleEntry | null>(null);
   const [removeTeacherConfirm, setRemoveTeacherConfirm] = useState<{
@@ -317,6 +320,29 @@ export default function SchedulePage() {
   useEffect(() => {
     if (!schoolId) return;
     getStudents(undefined, [schoolId]).then(setStudents).catch(() => setStudents([]));
+  }, [schoolId]);
+
+  // 通常シフト提出から「曜日 → 出勤可能講師ID」を構築。
+  // teacher_email <-> user_profiles.email でマッチ。失敗時は空マップで運用継続。
+  useEffect(() => {
+    if (!schoolId) {
+      setShiftByDow(new Map());
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const { getShiftAvailableTeachers } = await import('@/lib/api/schedule');
+        const { byDayOfWeek } = await getShiftAvailableTeachers(schoolId);
+        if (!cancelled) setShiftByDow(byDayOfWeek);
+      } catch (e) {
+        console.warn('Shift availability fetch failed:', e);
+        if (!cancelled) setShiftByDow(new Map());
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [schoolId]);
 
   // 講習リストをロード（schoolId 変更時）
@@ -1011,6 +1037,7 @@ export default function SchedulePage() {
                       closedDates={closedDates}
                       teachers={teachers}
                       emptyTeacherSlots={emptyTeacherSlots}
+                      shiftAvailableByDow={shiftByDow}
                       maxStudentsPerTeacher={MAX_STUDENTS_PER_TEACHER}
                       transferMode={transferMode}
                       onEmptyTeacherSlotsChange={setEmptyTeacherSlots}

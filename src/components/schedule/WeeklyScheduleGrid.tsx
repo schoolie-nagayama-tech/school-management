@@ -85,6 +85,12 @@ export interface WeeklyScheduleGridProps {
   closedDates: string[];
   teachers: TeacherOption[];
   emptyTeacherSlots: Record<string, string[]>;
+  /**
+   * 通常シフトから「曜日 → 出勤可能な講師ID 配列」のマップ。
+   * 各セル描画時に「その日の曜日」を引いて空き枠の講師カードを自動配置する。
+   * 未指定なら自動表示はしない（後方互換）。
+   */
+  shiftAvailableByDow?: Map<number, string[]>;
   maxStudentsPerTeacher: number;
   transferMode: { sourceEntry: ScheduleEntry } | null;
   onEmptyTeacherSlotsChange: (next: Record<string, string[]>) => void;
@@ -121,6 +127,7 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
     closedDates,
     teachers,
     emptyTeacherSlots,
+    shiftAvailableByDow,
     maxStudentsPerTeacher,
     transferMode,
     onAddTeacher,
@@ -219,9 +226,22 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
           merged.push({ teacher, entries: [], isAvailableOnly: true });
       }
 
+      // (C) 通常シフト提出から「この曜日に出勤可能」な講師を空き枠で自動表示。
+      // 曜日 (0=日 〜 6=土) を date から計算。ローカル日時で扱う。
+      if (shiftAvailableByDow && shiftAvailableByDow.size > 0) {
+        const dow = new Date(dateStr + 'T12:00:00').getDay();
+        const shiftIds = shiftAvailableByDow.get(dow) ?? [];
+        for (const tid of shiftIds) {
+          if (merged.some((m) => m.teacher.id === tid)) continue;
+          const teacher = teachersMap.get(tid);
+          if (teacher)
+            merged.push({ teacher, entries: [], isAvailableOnly: true });
+        }
+      }
+
       return merged;
     },
-    [entries, teachersForSchool, emptyTeacherSlots, teachersMap]
+    [entries, teachersForSchool, emptyTeacherSlots, teachersMap, shiftAvailableByDow]
   );
 
   return (

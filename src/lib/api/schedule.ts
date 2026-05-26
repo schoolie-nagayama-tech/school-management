@@ -1416,6 +1416,117 @@ export async function revertTransferEntry(transferredInEntryId: string): Promise
 // ========================================
 // ズレ検知（通塾日程 vs 座席表エントリ）
 // ========================================
+// 講師シフトからの「出勤可能講師」自動表示
+// ========================================
+
+export interface ShiftAvailability {
+  /** day_of_week (0=日, 1=月, ..., 6=土) ごとの「出勤可能な user_profiles.id」一覧 */
+  byDayOfWeek: Map<number, string[]>;
+  /**
+   * 細かい時間帯までマッチさせたい用途向け：
+   *   キー: `${day_of_week}|${time_slot_label}` （例: "1|14:00-15:30"）
+   *   値: その曜日・時間帯に出勤可能な user_profiles.id 配列
+   */
+  byDayAndSlot: Map<string, string[]>;
+}
+
+/**
+ * 通常シフト提出から「出勤可能な講師の (曜日 / 時間帯)」を集約して返す。
+ *
+ * 重要な前提:
+ *  - regular_shift_submissions には user_id がほぼ未紐付け（teacher_email/teacher_name のみ）。
+ *  - そこで teacher_email <-> user_profiles.email で LEFT JOIN 相当の解決を行う。
+ *  - メアド不一致の提出はマッチ対象外（座席表には出ない）。
+ *
+ * 対象:
+ *  - status='published' の最新シフト設定だけ集約。
+ *  - 同じ school_id に複数 published があれば全部 union（夏期向け・通年など複数提出された場合の救済）。
+ */
+export async function getShiftAvailableTeachers(schoolId: string): Promise<ShiftAvailability> {
+  // 1. published な setting を全部取得
+  const { data: settings, error: setErr } = await db
+    .from('regular_shift_settings')
+    .select('id')
+    .eq('school_id', schoolId)
+    .eq('status', 'published');
+  if (setErr) {
+    console.warn('getShiftAvailableTeachers: settings fetch error', setErr);
+    return { byDayOfWeek: new Map(), byDayAndSlot: new Map() };
+  }
+  const settingIds = ((settings || []) as { id: string }[]).map((s) => s.id);
+  if (settingIds.length === 0) return { byDayOfWeek: new Map(), byDayAndSlot: new Map() };
+
+  // 2. 提出ヘッダ（teacher_email -> 提出ID）を全部取得
+  const { data: subs, error: subErr } = await db
+    .from('regular_shift_submissions')
+    .select('id, teacher_email')
+    .in('setting_id', settingIds);
+  if (subErr) {
+    console.warn('getShiftAvailableTeachers: submissions fetch error', subErr);
+    return { byDayOfWeek: new Map(), byDayAndSlot: new Map() };
+  }
+  const submissions = (subs || []) as { id: string; teacher_email: string | null }[];
+  if (submissions.length === 0) return { byDayOfWeek: new Map(), byDayAndSlot: new Map() };
+
+  // 3. メアドで user_profiles を逆引き（小文字化して大小無視マッチ）
+  const emails = Array.from(
+    new Set(submissions.map((s) => s.teacher_email?.toLowerCase()).filter((e): e is string => !!e))
+  );
+  const emailToUserId = new Map<string, string>();
+  if (emails.length > 0) {
+    const { data: users } = await db
+      .from('user_profiles')
+      .select('id, email')
+      .in('email', emails);
+    for (const u of (users || []) as { id: string; email: string }[]) {
+      if (u.email) emailToUserId.set(u.email.toLowerCase(), u.id);
+    }
+  }
+
+  // 4. submission_id → user_id のマップを作成
+  const submissionToUserId = new Map<string, string>();
+  for (const s of submissions) {
+    const userId = s.teacher_email ? emailToUserId.get(s.teacher_email.toLowerCase()) : null;
+    if (userId) submissionToUserId.set(s.id, userId);
+  }
+
+  // 5. 該当 submission の available スロット全部取得
+  const submissionIds = Array.from(submissionToUserId.keys());
+  if (submissionIds.length === 0) return { byDayOfWeek: new Map(), byDayAndSlot: new Map() };
+
+  const { data: slots } = await db
+    .from('regular_shift_submission_slots')
+    .select('submission_id, day_of_week, time_slot, available')
+    .in('submission_id', submissionIds)
+    .eq('available', true);
+
+  // 6. (曜日) と (曜日|時間帯) で集約
+  const byDayOfWeek = new Map<number, Set<string>>();
+  const byDayAndSlot = new Map<string, Set<string>>();
+  for (const s of (slots || []) as {
+    submission_id: string;
+    day_of_week: number;
+    time_slot: string;
+  }[]) {
+    const uid = submissionToUserId.get(s.submission_id);
+    if (!uid) continue;
+    if (!byDayOfWeek.has(s.day_of_week)) byDayOfWeek.set(s.day_of_week, new Set());
+    byDayOfWeek.get(s.day_of_week)!.add(uid);
+    const key = `${s.day_of_week}|${s.time_slot}`;
+    if (!byDayAndSlot.has(key)) byDayAndSlot.set(key, new Set());
+    byDayAndSlot.get(key)!.add(uid);
+  }
+
+  // Set → Array 化
+  const dayResult = new Map<number, string[]>();
+  for (const [k, v] of Array.from(byDayOfWeek.entries())) dayResult.set(k, Array.from(v));
+  const slotResult = new Map<string, string[]>();
+  for (const [k, v] of Array.from(byDayAndSlot.entries())) slotResult.set(k, Array.from(v));
+
+  return { byDayOfWeek: dayResult, byDayAndSlot: slotResult };
+}
+
+// ========================================
 // 振替期限管理（督促ボード用）
 // ========================================
 
