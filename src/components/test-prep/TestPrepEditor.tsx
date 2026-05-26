@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { Printer, Copy, Check, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
 import { ToastContainer } from '@/components/ui';
@@ -25,7 +26,6 @@ import {
   GRADE_SUBJECT_TEMPLATES,
 } from '@/types/test-prep';
 
-// 科目エディタの1行
 interface UnitDraft {
   tempId: string;
   curriculum_item_id: number | null;
@@ -42,7 +42,14 @@ interface SubjectDraft {
   units: UnitDraft[];
 }
 
-// 学年カテゴリ判定
+// 生徒に紐づくテキスト情報
+interface StudentTextbookOption {
+  id: string;
+  textbook_id: number;
+  textbook_name: string;
+  subject: string | null;
+}
+
 function gradeCategory(grade: number): 'middle' | 'high' | 'elementary' {
   if (grade >= 10) return 'high';
   if (grade >= 7) return 'middle';
@@ -63,35 +70,35 @@ export default function TestPrepEditor() {
   const proposalId = params?.proposalId as string | undefined;
   const isNew = !proposalId;
 
-  // データ
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [student, setStudent] = useState<Student | null>(null);
   const [examTypes, setExamTypes] = useState<ExamType[]>([]);
   const [proposal, setProposal] = useState<TestPrepProposalWithDetails | null>(null);
 
-  // フォーム
   const [title, setTitle] = useState('');
   const [examTypeId, setExamTypeId] = useState<string>('');
   const [zoukomaPeriodId, setZoukomaPeriodId] = useState<string>('');
   const [notes, setNotes] = useState('');
   const [subjects, setSubjects] = useState<SubjectDraft[]>([]);
   const [status, setStatus] = useState<TestPrepStatus>('draft');
-
-  // 増コマ期間候補
   const [zoukomaPeriods, setZoukomaPeriods] = useState<Array<{ id: string; title: string; period_key: string }>>([]);
 
-  // テキストマスタの単元候補（科目名 → 単元名[]）
-  const [masterUnits, setMasterUnits] = useState<Map<string, CurriculumItem[]>>(new Map());
+  // テキスト→単元選択用
+  const [studentTextbooks, setStudentTextbooks] = useState<StudentTextbookOption[]>([]);
+  const [masterUnits, setMasterUnits] = useState<Map<number, CurriculumItem[]>>(new Map());
 
-  // 初期データロード
+  // 公開後のフィードバック表示
+  const [justPublished, setJustPublished] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const urlSectionRef = useRef<HTMLElement>(null);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const schoolIds = getSelectedSchoolIds();
       const schoolId = schoolIds[0];
 
-      // 生徒情報
       const { data: rawStudent } = await supabase
         .from('students')
         .select('*')
@@ -100,13 +107,11 @@ export default function TestPrepEditor() {
       const studentData = rawStudent as Student | null;
       if (studentData) setStudent(studentData);
 
-      // 試験種別
       if (schoolId) {
         const types = await getExamTypes(schoolId);
         setExamTypes(types);
       }
 
-      // 増コマ期間
       if (schoolId) {
         const { data: periods } = await supabase
           .from('form_periods')
@@ -118,7 +123,11 @@ export default function TestPrepEditor() {
         setZoukomaPeriods((periods || []) as Array<{ id: string; title: string; period_key: string }>);
       }
 
-      // 既存提案書のロード
+      // 生徒のテキスト一覧を取得
+      if (studentData) {
+        await loadStudentTextbooks(studentId);
+      }
+
       if (!isNew && proposalId) {
         const detail = await getTestPrepProposalWithDetails(proposalId);
         if (detail) {
@@ -128,7 +137,6 @@ export default function TestPrepEditor() {
           setZoukomaPeriodId(detail.zoukoma_period_id || '');
           setNotes(detail.notes || '');
           setStatus(detail.status);
-          // 科目・単元をドラフトに変換
           setSubjects(
             detail.subjects.map((s) => ({
               tempId: s.id,
@@ -146,7 +154,6 @@ export default function TestPrepEditor() {
           );
         }
       } else if (studentData) {
-        // 新規: 学年テンプレートから科目を自動生成
         const cat = gradeCategory(studentData.grade);
         if (cat === 'middle') {
           setSubjects(
@@ -158,7 +165,6 @@ export default function TestPrepEditor() {
             }))
           );
         } else if (cat === 'high') {
-          // 高校: 生徒の教科書から科目を取得
           const { data: stbs } = await supabase
             .from('student_textbooks')
             .select('textbook:textbooks(subject)')
@@ -179,13 +185,7 @@ export default function TestPrepEditor() {
             }))
           );
         }
-        // タイトル自動生成
         setTitle('テスト対策');
-      }
-
-      // テキストマスタ単元候補をロード
-      if (studentData) {
-        await loadMasterUnits(studentId);
       }
     } catch {
       showError('データの読み込みに失敗しました');
@@ -194,40 +194,46 @@ export default function TestPrepEditor() {
     }
   }, [studentId, proposalId, isNew, getSelectedSchoolIds, showError]);
 
-  // テキストマスタから単元候補を取得（科目名→CurriculumItem[] のマップ）
-  const loadMasterUnits = async (sid: string) => {
-    const { data: stbsFull } = await supabase
+  // 生徒のテキスト一覧 + 各テキストの単元を取得
+  const loadStudentTextbooks = async (sid: string) => {
+    const { data: stbs } = await supabase
       .from('student_textbooks')
-      .select('id, textbook_id, textbook:textbooks(id, subject)')
+      .select('id, textbook_id, textbook:textbooks(id, name, subject)')
       .eq('student_id', sid)
       .eq('is_active', true);
 
-    const map = new Map<string, CurriculumItem[]>();
-    for (const stb of (stbsFull || []) as Array<{ id: string; textbook_id: number; textbook: { id: number; subject: string | null } | null }>) {
-      const subject = stb.textbook?.subject;
-      const tbId = stb.textbook?.id;
-      if (!subject || !tbId) continue;
+    const tbOptions: StudentTextbookOption[] = [];
+    const unitMap = new Map<number, CurriculumItem[]>();
 
-      const { data: items } = await supabase
-        .from('curriculum_items')
-        .select('*')
-        .eq('textbook_id', tbId)
-        .order('item_number');
+    for (const stb of (stbs || []) as Array<{ id: string; textbook_id: number; textbook: { id: number; name: string; subject: string | null } | null }>) {
+      if (!stb.textbook) continue;
+      tbOptions.push({
+        id: stb.id,
+        textbook_id: stb.textbook.id,
+        textbook_name: stb.textbook.name,
+        subject: stb.textbook.subject,
+      });
 
-      if (items && items.length > 0) {
-        const existing = map.get(subject) || [];
-        map.set(subject, [...existing, ...(items as CurriculumItem[])]);
+      if (!unitMap.has(stb.textbook.id)) {
+        const { data: items } = await supabase
+          .from('curriculum_items')
+          .select('*')
+          .eq('textbook_id', stb.textbook.id)
+          .order('item_number');
+        if (items && items.length > 0) {
+          unitMap.set(stb.textbook.id, items as CurriculumItem[]);
+        }
       }
     }
 
-    setMasterUnits(map);
+    setStudentTextbooks(tbOptions);
+    setMasterUnits(unitMap);
   };
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  // タイトル自動更新
   useEffect(() => {
     if (isNew && student && examTypeId) {
       const et = examTypes.find((t) => t.id === examTypeId);
@@ -260,6 +266,7 @@ export default function TestPrepEditor() {
       }));
 
       const targetStatus = newStatus || status;
+      const isPublishing = targetStatus === 'published';
 
       if (isNew) {
         const created = await createTestPrepProposal(
@@ -275,7 +282,10 @@ export default function TestPrepEditor() {
           },
           subjectsPayload
         );
-        success('提案書を作成しました');
+        if (isPublishing) {
+          setJustPublished(true);
+        }
+        success(isPublishing ? '提案書を公開しました' : '提案書を作成しました');
         router.replace(`/students/${studentId}/test-prep/${created.id}`);
       } else {
         await updateTestPrepProposal(proposalId!, {
@@ -287,7 +297,20 @@ export default function TestPrepEditor() {
         });
         await replaceTestPrepSubjects(proposalId!, subjectsPayload);
         setStatus(targetStatus);
-        success('保存しました');
+
+        if (isPublishing && status !== 'published') {
+          setJustPublished(true);
+          // 再取得してtokenを取得
+          const updated = await getTestPrepProposalWithDetails(proposalId!);
+          if (updated) setProposal(updated);
+          success('提案書を公開しました');
+          // URL欄へスクロール
+          setTimeout(() => {
+            urlSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 200);
+        } else {
+          success('保存しました');
+        }
       }
     } catch {
       showError('保存に失敗しました');
@@ -296,14 +319,13 @@ export default function TestPrepEditor() {
     }
   };
 
-  // 削除
   const handleDelete = async () => {
     if (!proposalId) return;
     if (!window.confirm('この提案書を削除しますか？')) return;
     try {
       await deleteTestPrepProposal(proposalId);
       success('削除しました');
-      router.replace(`/students/${studentId}/proposals`);
+      router.replace(`/students/${studentId}/test-prep`);
     } catch {
       showError('削除に失敗しました');
     }
@@ -324,7 +346,6 @@ export default function TestPrepEditor() {
     setSubjects((prev) => prev.map((s) => (s.tempId === tempId ? { ...s, ...patch } : s)));
   };
 
-  // 単元操作
   const addUnit = (subjectTempId: string, unit: Omit<UnitDraft, 'tempId'>) => {
     setSubjects((prev) =>
       prev.map((s) =>
@@ -355,10 +376,26 @@ export default function TestPrepEditor() {
     );
   };
 
+  const handleCopyUrl = () => {
+    if (!proposal?.token) return;
+    navigator.clipboard.writeText(`${window.location.origin}/test-prep/${proposal.token}`);
+    setCopied(true);
+    success('URLをコピーしました');
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
   const totalKoma = subjects.reduce(
     (sum, s) => sum + s.units.reduce((us, u) => us + u.koma_count, 0),
     0
   );
+
+  const publicUrl = proposal?.token
+    ? `${typeof window !== 'undefined' ? window.location.origin : ''}/test-prep/${proposal.token}`
+    : null;
 
   if (loading) {
     return (
@@ -373,57 +410,29 @@ export default function TestPrepEditor() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-5xl mx-auto print:max-w-none">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
 
-      {/* ヘッダー */}
-      <div className="sticky top-0 z-30 bg-surface-raised/90 backdrop-blur border-b border-border px-6 py-3 -mx-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => router.back()}
-              className="text-sm text-text-muted hover:text-text-body transition-colors"
-            >
-              ← 戻る
-            </button>
-            <span className="text-border">|</span>
-            <h1 className="font-bold text-text-heading">
-              {isNew ? 'テスト対策提案書 作成' : 'テスト対策提案書 編集'}
-            </h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <StatusBadge status={status} />
-            {!isNew && (
-              <button
-                onClick={handleDelete}
-                className="px-3 py-1.5 text-xs text-text-muted hover:text-red-600 border border-border rounded-lg transition-colors"
-              >
-                削除
-              </button>
-            )}
-            <button
-              onClick={() => handleSave('draft')}
-              disabled={saving}
-              className="px-4 py-2 text-sm border border-border rounded-lg hover:bg-surface-hover transition-[colors,transform] active:scale-[0.97] disabled:opacity-50"
-            >
-              下書き保存
-            </button>
-            <button
-              onClick={() => handleSave('published')}
-              disabled={saving}
-              className="px-4 py-2 text-sm bg-primary text-primary-contrast font-medium rounded-lg hover:bg-primary-dark transition-[colors,transform] active:scale-[0.97] disabled:opacity-50"
-            >
-              保存して公開
-            </button>
-          </div>
-        </div>
+      {/* ヘッダー（タイトルのみ、ボタンは下へ移動） */}
+      <div className="flex items-center gap-3 mb-6 print:hidden">
+        <button
+          onClick={() => router.back()}
+          className="text-sm text-text-muted hover:text-text-body transition-colors"
+        >
+          ← 戻る
+        </button>
+        <span className="text-border">|</span>
+        <h1 className="font-bold text-text-heading">
+          {isNew ? 'テスト対策提案書 作成' : 'テスト対策提案書 編集'}
+        </h1>
+        <StatusBadge status={status} />
       </div>
 
-      <div className="space-y-6 py-6">
+      <div className="space-y-6">
         {/* 基本情報 */}
-        <section className="bg-surface-raised rounded-xl border border-border p-6">
-          <h2 className="text-sm font-bold text-text-muted uppercase tracking-wide mb-4">基本情報</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <section className="bg-surface-raised rounded-xl border border-border p-6 print:border-none print:p-0 print:rounded-none">
+          <h2 className="text-sm font-bold text-text-muted uppercase tracking-wide mb-4 print:hidden">基本情報</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 print:hidden">
             <div>
               <label className="block text-sm font-medium text-text-body mb-1">生徒</label>
               <div className="px-3 py-2 bg-surface rounded-lg border border-border text-sm">
@@ -460,7 +469,7 @@ export default function TestPrepEditor() {
               </select>
             </div>
           </div>
-          <div className="mt-4">
+          <div className="mt-4 print:hidden">
             <label className="block text-sm font-medium text-text-body mb-1">タイトル</label>
             <input
               type="text"
@@ -474,7 +483,7 @@ export default function TestPrepEditor() {
 
         {/* 科目・単元 */}
         <section className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between print:hidden">
             <h2 className="text-sm font-bold text-text-muted uppercase tracking-wide">科目・単元</h2>
             <div className="text-sm text-text-muted">
               合計: <span className="font-bold text-primary text-lg">{totalKoma}</span> コマ
@@ -485,7 +494,8 @@ export default function TestPrepEditor() {
             <SubjectEditor
               key={subject.tempId}
               subject={subject}
-              masterUnits={masterUnits.get(subject.subject_name) || []}
+              studentTextbooks={studentTextbooks}
+              masterUnits={masterUnits}
               onUpdateSubject={(patch) => updateSubject(subject.tempId, patch)}
               onAddUnit={(unit) => addUnit(subject.tempId, unit)}
               onUpdateUnit={(unitId, patch) => updateUnit(subject.tempId, unitId, patch)}
@@ -496,14 +506,14 @@ export default function TestPrepEditor() {
 
           <button
             onClick={addSubject}
-            className="w-full py-3 border-2 border-dashed border-border rounded-xl text-sm text-text-muted hover:border-text-faint hover:text-text-body transition-[colors,transform] active:scale-[0.99]"
+            className="w-full py-3 border-2 border-dashed border-border rounded-xl text-sm text-text-muted hover:border-text-faint hover:text-text-body transition-[colors,transform] active:scale-[0.99] print:hidden"
           >
             + 科目を追加
           </button>
         </section>
 
         {/* メモ */}
-        <section className="bg-surface-raised rounded-xl border border-border p-6">
+        <section className="bg-surface-raised rounded-xl border border-border p-6 print:hidden">
           <h2 className="text-sm font-bold text-text-muted uppercase tracking-wide mb-3">講師メモ</h2>
           <textarea
             value={notes}
@@ -514,31 +524,106 @@ export default function TestPrepEditor() {
           />
         </section>
 
-        {/* 共有URL（公開済みの場合） */}
+        {/* 共有URL + 印刷（公開済みの場合） */}
         {!isNew && proposal?.token && status !== 'draft' && (
-          <section className="bg-surface-raised rounded-xl border border-border p-6">
-            <h2 className="text-sm font-bold text-text-muted uppercase tracking-wide mb-3">共有URL</h2>
-            <div className="flex items-center gap-2">
-              <input
-                readOnly
-                value={`${typeof window !== 'undefined' ? window.location.origin : ''}/test-prep/${proposal.token}`}
-                className="flex-1 px-3 py-2 border border-border rounded-lg text-sm bg-surface font-mono text-text-body"
-              />
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(
-                    `${window.location.origin}/test-prep/${proposal.token}`
-                  );
-                  success('URLをコピーしました');
-                }}
-                className="px-4 py-2 text-sm bg-primary text-primary-contrast rounded-lg hover:bg-primary-dark transition-[colors,transform] active:scale-[0.97]"
-              >
-                コピー
-              </button>
+          <section
+            ref={urlSectionRef}
+            className={`rounded-xl border overflow-hidden print:hidden transition-all duration-500 ${
+              justPublished
+                ? 'bg-success-subtle border-green-300 ring-2 ring-green-200'
+                : 'bg-surface-raised border-border'
+            }`}
+          >
+            {justPublished && (
+              <div className="px-6 py-3 bg-green-100 border-b border-green-200 flex items-center gap-2">
+                <Check className="w-4 h-4 text-green-600" />
+                <span className="text-sm font-medium text-green-800">提案書が公開されました</span>
+              </div>
+            )}
+            <div className="p-6">
+              <h2 className="text-sm font-bold text-text-muted uppercase tracking-wide mb-3">共有URL</h2>
+              <div className="flex items-center gap-2">
+                <input
+                  readOnly
+                  value={publicUrl || ''}
+                  className="flex-1 px-3 py-2 border border-border rounded-lg text-sm bg-surface font-mono text-text-body"
+                />
+                <button
+                  onClick={handleCopyUrl}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-sm bg-primary text-primary-contrast rounded-lg hover:bg-primary-dark transition-[colors,transform] active:scale-[0.97]"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? 'コピー済' : 'コピー'}
+                </button>
+                <button
+                  onClick={handlePrint}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-sm border border-border rounded-lg hover:bg-surface-hover transition-[colors,transform] active:scale-[0.97]"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  印刷
+                </button>
+              </div>
             </div>
           </section>
         )}
+
+        {/* 操作ボタン（下部に配置） */}
+        <section className="flex items-center justify-between py-4 border-t border-border print:hidden">
+          <div className="flex items-center gap-2">
+            {!isNew && (
+              <button
+                onClick={handleDelete}
+                className="px-3 py-2 text-sm text-text-muted hover:text-red-600 border border-border rounded-lg transition-colors"
+              >
+                削除
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleSave('draft')}
+              disabled={saving}
+              className="px-4 py-2 text-sm border border-border rounded-lg hover:bg-surface-hover transition-[colors,transform] active:scale-[0.97] disabled:opacity-50"
+            >
+              下書き保存
+            </button>
+            <button
+              onClick={() => handleSave('published')}
+              disabled={saving}
+              className="px-4 py-2 text-sm bg-primary text-primary-contrast font-medium rounded-lg hover:bg-primary-dark transition-[colors,transform] active:scale-[0.97] disabled:opacity-50"
+            >
+              保存して公開
+            </button>
+          </div>
+        </section>
       </div>
+
+      {/* 印刷用QRコード */}
+      {publicUrl && (
+        <div className="hidden print:block mt-8 border-t-2 border-dashed border-gray-300 pt-6">
+          <div className="flex items-center gap-6">
+            <img
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(publicUrl)}`}
+              alt="QR Code"
+              className="w-28 h-28"
+            />
+            <div>
+              <p className="font-bold text-gray-900">テスト対策 提案書</p>
+              <p className="text-sm text-gray-600 mt-1">
+                上のQRコードを読み取るか、以下のURLからご確認ください。
+              </p>
+              <p className="text-sm text-blue-600 mt-1 font-mono break-all">{publicUrl}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @media print {
+          @page { size: A4 portrait; margin: 15mm; }
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        }
+      `}</style>
     </div>
   );
 }
@@ -565,6 +650,7 @@ function StatusBadge({ status }: { status: TestPrepStatus }) {
 
 function SubjectEditor({
   subject,
+  studentTextbooks,
   masterUnits,
   onUpdateSubject,
   onAddUnit,
@@ -573,7 +659,8 @@ function SubjectEditor({
   onRemoveSubject,
 }: {
   subject: SubjectDraft;
-  masterUnits: CurriculumItem[];
+  studentTextbooks: StudentTextbookOption[];
+  masterUnits: Map<number, CurriculumItem[]>;
   onUpdateSubject: (patch: Partial<SubjectDraft>) => void;
   onAddUnit: (unit: Omit<UnitDraft, 'tempId'>) => void;
   onUpdateUnit: (unitId: string, patch: Partial<UnitDraft>) => void;
@@ -581,20 +668,37 @@ function SubjectEditor({
   onRemoveSubject: () => void;
 }) {
   const [showAddMenu, setShowAddMenu] = useState(false);
+  const [selectedTextbookId, setSelectedTextbookId] = useState<number | null>(null);
   const [freeInput, setFreeInput] = useState('');
   const totalKoma = subject.units.reduce((sum, u) => sum + u.koma_count, 0);
 
-  // 既に追加済みの単元を除外
+  // この科目に関連するテキスト（同じ教科名のもの）
+  const relevantTextbooks = studentTextbooks.filter(
+    (tb) => tb.subject === subject.subject_name
+  );
+  // 関連テキストがなければ全テキストを表示
+  const availableTextbooks = relevantTextbooks.length > 0 ? relevantTextbooks : studentTextbooks;
+
+  // 選択中テキストの単元一覧（既に追加済みを除外）
   const addedItemIds = new Set(subject.units.map((u) => u.curriculum_item_id).filter(Boolean));
-  const availableMaster = masterUnits.filter((m) => !addedItemIds.has(m.id));
+  const textbookUnits = selectedTextbookId
+    ? (masterUnits.get(selectedTextbookId) || []).filter((m) => !addedItemIds.has(m.id))
+    : [];
+
+  // テキストが1つしかなければ自動選択
+  useEffect(() => {
+    if (relevantTextbooks.length === 1 && !selectedTextbookId) {
+      setSelectedTextbookId(relevantTextbooks[0].textbook_id);
+    }
+  }, [relevantTextbooks, selectedTextbookId]);
 
   return (
-    <div className="bg-surface-raised rounded-xl border border-border overflow-hidden">
+    <div className="bg-surface-raised rounded-xl border border-border overflow-hidden print:break-inside-avoid">
       {/* 科目ヘッダー */}
       <div className="px-4 py-3 bg-text-heading flex items-center justify-between">
         <span className="font-bold text-primary-contrast">{subject.subject_name}</span>
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 print:hidden">
             <span className="text-xs text-gray-300">目標点</span>
             <input
               type="number"
@@ -608,12 +712,17 @@ function SubjectEditor({
               className="w-16 px-2 py-1 text-sm text-center rounded border border-gray-600 bg-gray-700 text-white placeholder-gray-400"
             />
           </div>
+          {subject.target_score != null && (
+            <span className="hidden print:inline text-xs text-gray-300">
+              目標 <span className="text-yellow-300 font-bold">{subject.target_score}</span>点
+            </span>
+          )}
           <div className="text-sm text-gray-300">
             計 <span className="text-yellow-300 font-bold">{totalKoma}</span> コマ
           </div>
           <button
             onClick={onRemoveSubject}
-            className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-400 text-sm rounded transition-colors"
+            className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-400 text-sm rounded transition-colors print:hidden"
             title="科目を削除"
           >
             ×
@@ -629,7 +738,7 @@ function SubjectEditor({
               <th className="text-left px-4 py-2 font-medium w-1/2">単元名</th>
               <th className="text-center px-2 py-2 font-medium w-24">自己評価</th>
               <th className="text-center px-2 py-2 font-medium w-24">コマ数</th>
-              <th className="w-10" />
+              <th className="w-10 print:hidden" />
             </tr>
           </thead>
           <tbody>
@@ -653,7 +762,7 @@ function SubjectEditor({
                         self_assessment: (e.target.value || null) as SelfAssessment | null,
                       })
                     }
-                    className="px-2 py-1 border border-border rounded text-sm text-center bg-surface-raised"
+                    className="px-2 py-1 border border-border rounded text-sm text-center bg-surface-raised print:border-none print:bg-transparent print:appearance-none"
                   >
                     <option value="">-</option>
                     {SELF_ASSESSMENTS.map((a) => (
@@ -671,10 +780,10 @@ function SubjectEditor({
                       onUpdateUnit(unit.tempId, { koma_count: Math.max(0, Number(e.target.value)) })
                     }
                     min={0}
-                    className="w-16 px-2 py-1 border border-border rounded text-sm text-center bg-surface-raised"
+                    className="w-16 px-2 py-1 border border-border rounded text-sm text-center bg-surface-raised print:border-none print:bg-transparent"
                   />
                 </td>
-                <td className="px-2 py-2 text-center">
+                <td className="px-2 py-2 text-center print:hidden">
                   <button
                     onClick={() => onRemoveUnit(unit.tempId)}
                     className="text-text-faint hover:text-red-500 transition-colors"
@@ -698,22 +807,51 @@ function SubjectEditor({
                 <td className="px-4 py-2 text-text-muted">合計</td>
                 <td />
                 <td className="text-center text-primary">{totalKoma}</td>
-                <td />
+                <td className="print:hidden" />
               </tr>
             </tfoot>
           )}
         </table>
       </div>
 
-      {/* 単元追加 */}
-      <div className="px-4 py-3 border-t border-border bg-surface/50">
+      {/* 単元追加（テキスト選択→単元選択） */}
+      <div className="px-4 py-3 border-t border-border bg-surface/50 print:hidden">
         {showAddMenu ? (
-          <div className="space-y-2">
-            {availableMaster.length > 0 && (
+          <div className="space-y-3">
+            {/* テキスト選択 */}
+            {availableTextbooks.length > 0 && (
               <div>
-                <p className="text-xs text-text-faint mb-1">テキストマスタの単元</p>
+                <p className="text-xs text-text-faint mb-1.5">テキストを選択</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {availableMaster.map((item) => (
+                  {availableTextbooks.map((tb) => (
+                    <button
+                      key={tb.textbook_id}
+                      onClick={() => setSelectedTextbookId(
+                        selectedTextbookId === tb.textbook_id ? null : tb.textbook_id
+                      )}
+                      className={`inline-flex items-center gap-1 px-2.5 py-1.5 text-xs rounded-lg border transition-colors ${
+                        selectedTextbookId === tb.textbook_id
+                          ? 'bg-blue-50 text-blue-700 border-blue-300 font-medium'
+                          : 'bg-surface-raised text-text-body border-border hover:bg-surface-hover'
+                      }`}
+                    >
+                      {tb.subject && (
+                        <span className="text-[10px] text-text-faint">{tb.subject}</span>
+                      )}
+                      {tb.textbook_name}
+                      <ChevronDown className={`w-3 h-3 transition-transform ${selectedTextbookId === tb.textbook_id ? 'rotate-180' : ''}`} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 選択したテキストの単元一覧 */}
+            {selectedTextbookId && textbookUnits.length > 0 && (
+              <div>
+                <p className="text-xs text-text-faint mb-1.5">単元を追加</p>
+                <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto">
+                  {textbookUnits.map((item) => (
                     <button
                       key={item.id}
                       onClick={() =>
@@ -733,7 +871,14 @@ function SubjectEditor({
                 </div>
               </div>
             )}
-            <div className="flex items-center gap-2 mt-2">
+            {selectedTextbookId && textbookUnits.length === 0 && (
+              <p className="text-xs text-text-faint">
+                このテキストの単元はすべて追加済みです
+              </p>
+            )}
+
+            {/* 手入力 */}
+            <div className="flex items-center gap-2">
               <input
                 type="text"
                 value={freeInput}
@@ -771,7 +916,7 @@ function SubjectEditor({
                 追加
               </button>
               <button
-                onClick={() => setShowAddMenu(false)}
+                onClick={() => { setShowAddMenu(false); setSelectedTextbookId(null); }}
                 className="px-3 py-1.5 text-xs text-text-faint hover:text-text-body transition-colors"
               >
                 閉じる
