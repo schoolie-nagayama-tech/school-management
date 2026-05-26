@@ -323,8 +323,8 @@ export default function SchedulePage() {
     getStudents(undefined, [schoolId]).then(setStudents).catch(() => setStudents([]));
   }, [schoolId]);
 
-  // 通常シフト提出から「曜日 → 出勤可能講師ID」を構築。
-  // teacher_email <-> user_profiles.email でマッチ。失敗時は空マップで運用継続。
+  // 「現在有効な講師シフト」を期間付きで取得（通常 + 講習 を union）。
+  // 期間外の古い submission は除外される。teacher_email <-> user_profiles.email で解決。
   useEffect(() => {
     if (!schoolId) {
       setShiftByDow(new Map());
@@ -333,8 +333,10 @@ export default function SchedulePage() {
     let cancelled = false;
     (async () => {
       try {
-        const { getShiftAvailableTeachers } = await import('@/lib/api/schedule');
-        const { byDayOfWeek } = await getShiftAvailableTeachers(schoolId);
+        const { getCurrentTeacherShifts } = await import('@/lib/api/teacher-shifts');
+        // weekStart を基準日にして「その週時点で有効な」シフトを取得
+        const asOf = weekStartStr;
+        const { byDayOfWeek } = await getCurrentTeacherShifts(schoolId, asOf);
         if (!cancelled) setShiftByDow(byDayOfWeek);
       } catch (e) {
         console.warn('Shift availability fetch failed:', e);
@@ -344,7 +346,7 @@ export default function SchedulePage() {
     return () => {
       cancelled = true;
     };
-  }, [schoolId]);
+  }, [schoolId, weekStartStr]);
 
   // 講習期間リストをロード（schoolId 変更時）
   // course_prep_periods から「設定済み（start/end あり）」を全部表示
