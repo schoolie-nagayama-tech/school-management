@@ -7,6 +7,13 @@ import { WeeklyScheduleGridView } from './WeeklyScheduleGridView';
 import type { ScheduleEntry, ScheduleTimeSlot } from '@/types/schedule';
 import type { TeacherGroup } from './DayCell';
 
+/**
+ * 担当未決定エントリ用の擬似講師ID。
+ * teacher_id が NULL のエントリをまとめる1グループとして扱うためのキー。
+ * 既存の TeacherGroup 構造を保ったまま「担当未決定」を1講師として描画できる。
+ */
+export const UNASSIGNED_TEACHER_ID = '__unassigned__';
+
 function groupEntriesByTeacher(
   entries: ScheduleEntry[],
   date: string,
@@ -18,7 +25,20 @@ function groupEntriesByTeacher(
   );
   const byTeacher = new Map<string, TeacherGroup>();
   for (const entry of filtered) {
-    const tid = entry.teacher_id;
+    // teacher_id が NULL の場合は担当未決定グループに集約する
+    const rawTid = entry.teacher_id as string | null | undefined;
+    if (!rawTid) {
+      if (!byTeacher.has(UNASSIGNED_TEACHER_ID)) {
+        byTeacher.set(UNASSIGNED_TEACHER_ID, {
+          teacher: { id: UNASSIGNED_TEACHER_ID, display_name: '担当未決定', email: null },
+          entries: [],
+          isAvailableOnly: false,
+        });
+      }
+      byTeacher.get(UNASSIGNED_TEACHER_ID)!.entries.push(entry);
+      continue;
+    }
+    const tid = rawTid;
     const fromList = teachersMap.get(tid);
     const fromEntry = entry.teacher ?? { id: tid, display_name: null, email: null };
     // 講師一覧にいない場合：schedule_entries.teacher_id が user_profiles の誰かを指しているが、
@@ -36,7 +56,14 @@ function groupEntriesByTeacher(
     }
     byTeacher.get(tid)!.entries.push(entry);
   }
-  return Array.from(byTeacher.values());
+  // 担当未決定グループは末尾に並べる（既存講師の後）
+  const result = Array.from(byTeacher.values());
+  result.sort((a, b) => {
+    if (a.teacher.id === UNASSIGNED_TEACHER_ID) return 1;
+    if (b.teacher.id === UNASSIGNED_TEACHER_ID) return -1;
+    return 0;
+  });
+  return result;
 }
 
 export interface TeacherOption {

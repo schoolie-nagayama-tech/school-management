@@ -1532,7 +1532,8 @@ export type Database = {
           school_id: string;
           entry_date: string;
           time_slot_id: string;
-          teacher_id: string;
+          // 担当未決定エントリは NULL（通塾日程の teacher_id がまだ未定の場合）
+          teacher_id: string | null;
           student_id: string;
           subject_ids: string[];
           seat_label: string | null;
@@ -1558,7 +1559,8 @@ export type Database = {
           school_id: string;
           entry_date: string;
           time_slot_id: string;
-          teacher_id: string;
+          // 担当未決定エントリは null を指定
+          teacher_id?: string | null;
           student_id: string;
           subject_ids?: string[];
           seat_label?: string | null;
@@ -1583,7 +1585,7 @@ export type Database = {
           school_id?: string;
           entry_date?: string;
           time_slot_id?: string;
-          teacher_id?: string;
+          teacher_id?: string | null;
           student_id?: string;
           subject_ids?: string[];
           seat_label?: string | null;

@@ -194,6 +194,9 @@ export interface ScheduleEntry {
   kind: ScheduleEntryKind;
   /** 授業形態（個別 / 集団） */
   formation: ScheduleEntryFormation;
+  // 注意: 上の teacher_id は型上 string になっているが、
+  // 「担当未決定」エントリでは NULL になる場合がある。
+  // 既存呼び出し側との互換のため string 表記のまま運用し、null チェックを使用側で行う。
   attendance_status: AttendanceStatusType;
   attendance_recorded_at?: string | null;
   attendance_recorded_by?: string | null;

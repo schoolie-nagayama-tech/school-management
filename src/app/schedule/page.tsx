@@ -117,6 +117,9 @@ export default function SchedulePage() {
   const [weekStart, setWeekStart] = useState<Date>(() => getWeekStart(new Date()));
   const [timeSlotsCount, setTimeSlotsCount] = useState(0);
   const [patternsCount, setPatternsCount] = useState(0);
+  // 初期ロード完了フラグ：これが true になるまで「コマ時間未設定」「通塾日程未登録」のカードを抑制する。
+  // count=0 のままだと初期描画で誤って未設定カードがチラつく問題を防ぐ。
+  const [bootstrapped, setBootstrapped] = useState(false);
   const [, setGeneratedCount] = useState<number | null>(null);
 
   const [timeSlots, setTimeSlots] = useState<ScheduleTimeSlot[]>([]);
@@ -300,8 +303,16 @@ export default function SchedulePage() {
       .catch(() => {
         setTimeSlotsCount(0);
         setPatternsCount(0);
+      })
+      .finally(() => {
+        setBootstrapped(true);
       });
   }, [schoolId, masterSubjects]);
+
+  // 教室を切り替えた瞬間に古い「未設定」カードが出ないよう、school 変更時にフラグをリセット
+  useEffect(() => {
+    setBootstrapped(false);
+  }, [schoolId]);
 
   useEffect(() => {
     if (!schoolId) return;
@@ -923,7 +934,7 @@ export default function SchedulePage() {
           </Card>
         ) : (
           <>
-            {timeSlotsCount === 0 && (
+            {bootstrapped && timeSlotsCount === 0 && (
               <Card className="border-[var(--primary)]/40 bg-[var(--primary-subtle)]">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-[var(--headline)]">
@@ -942,7 +953,7 @@ export default function SchedulePage() {
               </Card>
             )}
 
-            {timeSlotsCount > 0 && patternsCount === 0 && (
+            {bootstrapped && timeSlotsCount > 0 && patternsCount === 0 && (
               <Card className="border-[var(--primary)]/40 bg-[var(--primary-subtle)]">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-[var(--headline)]">

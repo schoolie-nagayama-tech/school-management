@@ -87,7 +87,10 @@ export const TeacherCard = React.memo(function TeacherCard({
   // 有効生徒数（満員・残席カウント用: 振替元は除く）
   const activeEntries = displayEntries.filter((e) => e.status !== 'transferred_out');
   const canAddStudent = !isClosed && activeEntries.length < maxStudents;
-  const displayName = teacher.display_name || teacher.email || '—';
+  // 担当未決定エントリのグループは特殊ID (__unassigned__) で識別。
+  // 「講師」ではなく「担当未決定」の枠として配色を変えて見せる。
+  const isUnassigned = teacher.id === '__unassigned__';
+  const displayName = isUnassigned ? '担当未決定' : (teacher.display_name || teacher.email || '—');
 
   const canDrop = useMemo(() => {
     if (!activeDragEntry) return false;
@@ -142,7 +145,10 @@ export const TeacherCard = React.memo(function TeacherCard({
     <div
       className={`
         group relative rounded-xl border transition-[box-shadow,background-color,border-color] duration-150 ease-out
-        border-[color:color-mix(in_oklch,var(--primary)_25%,#e5e7eb)] bg-white shadow-sm hover:shadow-md hover:bg-gray-50
+        ${isUnassigned
+          // 担当未決定: 破線ボーダー + 薄い warning 着色で「決まっていない」を視覚化
+          ? 'border-dashed border-warning bg-warning-subtle/40 shadow-sm hover:shadow-md hover:bg-warning-subtle/60'
+          : 'border-[color:color-mix(in_oklch,var(--primary)_25%,#e5e7eb)] bg-white shadow-sm hover:shadow-md hover:bg-gray-50'}
         ${transferMode ? 'cursor-pointer hover:border-[var(--primary)]/40 hover:bg-gray-50/50' : ''}
         ${isOverAndCanDrop ? 'ring-2 ring-green-400 bg-green-50/50' : ''}
         ${isOverAndCannotDrop ? 'ring-2 ring-red-200 bg-red-50/50 cursor-not-allowed' : ''}
@@ -160,7 +166,7 @@ export const TeacherCard = React.memo(function TeacherCard({
           }
         }}
       >
-        <span className="min-w-0 truncate flex-1 text-sm font-medium text-gray-700">
+        <span className={`min-w-0 truncate flex-1 text-sm font-medium ${isUnassigned ? 'text-warning' : 'text-gray-700'}`}>
           {displayName}
         </span>
         <span className="flex-shrink-0 ml-2 text-right tabular-nums text-xs text-gray-400">

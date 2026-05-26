@@ -762,7 +762,8 @@ export async function generateWeeklySchedule(
     school_id: string;
     entry_date: string;
     time_slot_id: string;
-    teacher_id: string;
+    // 担当未決定パターンも生成対象になったため nullable
+    teacher_id: string | null;
     student_id: string;
     subject_ids: string[];
     seat_label: string | null;
@@ -773,12 +774,14 @@ export async function generateWeeklySchedule(
     kind: 'regular' | 'koushu';
     formation: 'individual' | 'group';
   };
-  const entryKey = (e: { entry_date: string; time_slot_id: string; teacher_id: string; student_id: string }) =>
-    `${e.entry_date}-${e.time_slot_id}-${e.teacher_id}-${e.student_id}`;
+  // teacher_id が NULL のものは ハイフン+null で識別。NULL 同士のキー衝突を防ぐ
+  const entryKey = (e: { entry_date: string; time_slot_id: string; teacher_id: string | null; student_id: string }) =>
+    `${e.entry_date}-${e.time_slot_id}-${e.teacher_id ?? 'null'}-${e.student_id}`;
   const entriesMap = new Map<string, EntryRow>();
 
   for (const p of patterns) {
-    if (!p.time_slot || !p.teacher_id) continue; // 講師未設定のパターンはスケジュール生成対象外
+    // 時間帯マスタ未設定のパターンだけスキップ。teacher_id NULL は「担当未決定」エントリとして生成する。
+    if (!p.time_slot) continue;
     for (let d = 0; d < 7; d++) {
       const dDate = new Date(weekStart);
       dDate.setUTCDate(weekStart.getUTCDate() + d);
@@ -823,14 +826,16 @@ export async function generateWeeklySchedule(
     throw new Error('既存スケジュールの削除に失敗しました');
   }
 
-  const uniqueTeacherIds = Array.from(new Set(entries.map((e) => e.teacher_id)));
+  // 担当未決定エントリは teacher_id=NULL のためスキップ。設定済み講師だけ teacher ロール検証する
+  const uniqueTeacherIds = Array.from(
+    new Set(entries.map((e) => e.teacher_id).filter((id): id is string => !!id))
+  );
   await Promise.all(uniqueTeacherIds.map((tid) => ensureUserIsTeacher(tid)));
 
   if (entries.length > 0) {
-    const { error: insError } = await db.from('schedule_entries').upsert(entries, {
-      onConflict: 'school_id,entry_date,time_slot_id,teacher_id,student_id',
-      ignoreDuplicates: true,
-    });
+    // teacher_id が NULL の行は ON CONFLICT が機能しないため、純粋な INSERT で扱う。
+    // 重複は事前に entriesMap で除去済み、かつ上の DELETE で対象週は空になっているので衝突しない。
+    const { error: insError } = await db.from('schedule_entries').insert(entries);
     if (insError) {
       console.error('Error inserting schedule entries:', insError);
       const msg =
