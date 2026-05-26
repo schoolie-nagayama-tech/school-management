@@ -25,27 +25,35 @@ const fromProposalUnits = () => supabase.from('seasonal_proposal_units' as any);
 
 /**
  * proposal_ids に紐づくユニットを全件取得する。
- * PostgREST のデフォルト行数上限（1000）に当たって一部の提案書のユニットが
- * 欠落するのを防ぐため、1000件単位でページネーションして全部取り切る。
- * 教室全体（数十名×複数提案書）だと合計ユニット数が1000を超えやすく、
- * 一覧画面で「未設定」と誤表示されるバグの原因になっていた。
+ * PostgREST のデフォルト 1000 行上限に当たらないよう、proposal_id を小バッチで
+ * チャンクして取得する。.range() ベースのページネーションは ORDER BY 無しだと
+ * ページ間で同じ行が重複するケースがあるため使わない。
+ * 1 提案書あたりの最大ユニット数は実データで 55 程度なので、15 提案書/バッチで
+ * 1 クエリあたり 825 行以下に抑え、安全マージンを確保する。
+ * 重複防止のため id ベースで dedup する（バッチ境界での意図せぬ重複を保険として除外）。
  */
 async function fetchAllUnitsByProposalIds(proposalIds: string[]): Promise<SeasonalProposalUnit[]> {
   if (proposalIds.length === 0) return [];
-  const PAGE_SIZE = 1000;
+  const BATCH = 15;
   const all: SeasonalProposalUnit[] = [];
-  for (let offset = 0; ; offset += PAGE_SIZE) {
+  const seen = new Set<string>();
+  for (let i = 0; i < proposalIds.length; i += BATCH) {
+    const batch = proposalIds.slice(i, i + BATCH);
     const { data, error } = await fromProposalUnits()
       .select('*')
-      .in('proposal_id', proposalIds)
-      .range(offset, offset + PAGE_SIZE - 1);
+      .in('proposal_id', batch);
     if (error) {
       // 失敗時は取得済み分で打ち切り（一覧表示が完全に止まるよりは良い）
       break;
     }
-    const page = (data ?? []) as unknown as SeasonalProposalUnit[];
-    all.push(...page);
-    if (page.length < PAGE_SIZE) break;
+    const page = (data ?? []) as unknown as (SeasonalProposalUnit & { id?: string })[];
+    for (const u of page) {
+      if (u.id) {
+        if (seen.has(u.id)) continue;
+        seen.add(u.id);
+      }
+      all.push(u);
+    }
   }
   return all;
 }

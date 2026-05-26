@@ -67,25 +67,25 @@ async function fetchSubjectProposals(
 
         const proposalIds = (proposals as { id: string }[]).map((p) => p.id);
 
-        type UnitRow = { proposal_id: string; koma_count: number; group_id: number };
+        type UnitRow = { id: string; proposal_id: string; koma_count: number; group_id: number };
         const allUnits: UnitRow[] = [];
-        const BATCH = 500;
-        const ROW_PAGE = 1000; // PostgREST のデフォルト行数上限
+        const seenUnitIds = new Set<string>();
+        // 1 提案書あたり最大 ~55 ユニット。15 提案書/バッチで 1 クエリ最大 825 行に抑え、
+        // PostgREST のデフォルト 1000 行上限の余裕内に収める。
+        // .range() は ORDER BY 無しだとページ間重複が起きうるので使わない。id で dedup。
+        const BATCH = 15;
         for (let i = 0; i < proposalIds.length; i += BATCH) {
           const batch = proposalIds.slice(i, i + BATCH);
-          // PostgREST のデフォルト行数上限（1000）に当たって欠落するのを防ぐため、
-          // バッチ内でも .range() でページネーションして取り切る。
-          // これがないと「進捗表の提案コマが実際より少なく見える」バグになる。
-          for (let offset = 0; ; offset += ROW_PAGE) {
-            const { data: units } = await supabaseAdmin
-              .from('seasonal_proposal_units')
-              .select('proposal_id, koma_count, group_id')
-              .in('proposal_id', batch)
-              .gt('koma_count', 0)
-              .range(offset, offset + ROW_PAGE - 1);
-            const page = (units ?? []) as UnitRow[];
-            allUnits.push(...page);
-            if (page.length < ROW_PAGE) break;
+          const { data: units } = await supabaseAdmin
+            .from('seasonal_proposal_units')
+            .select('id, proposal_id, koma_count, group_id')
+            .in('proposal_id', batch)
+            .gt('koma_count', 0);
+          const page = (units ?? []) as UnitRow[];
+          for (const u of page) {
+            if (seenUnitIds.has(u.id)) continue;
+            seenUnitIds.add(u.id);
+            allUnits.push(u);
           }
         }
 
