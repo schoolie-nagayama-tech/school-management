@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { normalizePersonName } from '@/lib/utils/personName';
 
 export const dynamic = 'force-dynamic';
 
@@ -123,15 +124,38 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // メールが既存講師アカウントと一致したら自動で user_id をセット
-    // （正規化済みの小文字メールで照合。大文字小文字違いの取り違えを防ぐ）
+    // 講師アカウント紐づけ: (1) メール一致 (2) 同一教室の氏名一致（候補1名のみ）
     const { data: matchedProfile } = await supabaseAdmin
       .from('user_profiles')
       .select('id')
       .ilike('email', teacherEmail)
+      .eq('role', 'teacher')
       .eq('is_active', true)
       .maybeSingle();
-    const linkedUserId = matchedProfile?.id ?? null;
+    let linkedUserId = matchedProfile?.id ?? null;
+
+    if (!linkedUserId) {
+      const nameKey = normalizePersonName(teacherName);
+      if (nameKey) {
+        const { data: schoolLinks } = await supabaseAdmin
+          .from('user_schools')
+          .select('user_id')
+          .eq('school_id', schoolId);
+        const schoolUserIds = (schoolLinks ?? []).map((r) => r.user_id);
+        if (schoolUserIds.length > 0) {
+          const { data: schoolTeachers } = await supabaseAdmin
+            .from('user_profiles')
+            .select('id, display_name')
+            .in('id', schoolUserIds)
+            .eq('role', 'teacher')
+            .eq('is_active', true);
+          const nameMatches = (schoolTeachers ?? []).filter(
+            (t) => normalizePersonName(t.display_name) === nameKey
+          );
+          if (nameMatches.length === 1) linkedUserId = nameMatches[0].id;
+        }
+      }
+    }
 
     // Insert submission
     const { data: submission, error: submissionError } = await supabaseAdmin

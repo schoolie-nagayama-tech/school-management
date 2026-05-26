@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { normalizePersonName } from '@/lib/utils/personName';
 import type {
   ScheduleTimeSlot,
   ScheduleTimeSlotFormData,
@@ -1430,17 +1431,36 @@ export interface ShiftAvailability {
   byDayAndSlot: Map<string, string[]>;
 }
 
+/** 教室の講師 display_name → user_id（同名が2人以上いる名前は除外） */
+function buildTeacherNameIndex(
+  teachers: { id: string; display_name: string | null }[]
+): Map<string, string> {
+  const counts = new Map<string, number>();
+  const firstId = new Map<string, string>();
+  for (const t of teachers) {
+    const key = normalizePersonName(t.display_name);
+    if (!key) continue;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+    if (!firstId.has(key)) firstId.set(key, t.id);
+  }
+  const result = new Map<string, string>();
+  for (const [key, id] of firstId) {
+    if (counts.get(key) === 1) result.set(key, id);
+  }
+  return result;
+}
+
 /**
  * 通常シフト提出から「出勤可能な講師の (曜日 / 時間帯)」を集約して返す。
  *
- * 重要な前提:
- *  - regular_shift_submissions には user_id がほぼ未紐付け（teacher_email/teacher_name のみ）。
- *  - そこで teacher_email <-> user_profiles.email で LEFT JOIN 相当の解決を行う。
- *  - メアド不一致の提出はマッチ対象外（座席表には出ない）。
+ * 提出 → user_profiles.id の解決順:
+ *  1. regular_shift_submissions.user_id（管理画面で紐づけ済み）
+ *  2. teacher_email ↔ user_profiles.email（大文字小文字無視）
+ *  3. 同一教室の teacher_name ↔ display_name（空白除去後の完全一致、同名は除外）
  *
  * 対象:
- *  - status='published' の最新シフト設定だけ集約。
- *  - 同じ school_id に複数 published があれば全部 union（夏期向け・通年など複数提出された場合の救済）。
+ *  - status='published' のシフト設定を集約。
+ *  - 同じ school_id に複数 published があれば全部 union。
  */
 export async function getShiftAvailableTeachers(schoolId: string): Promise<ShiftAvailability> {
   // 1. published な setting を全部取得
@@ -1456,19 +1476,25 @@ export async function getShiftAvailableTeachers(schoolId: string): Promise<Shift
   const settingIds = ((settings || []) as { id: string }[]).map((s) => s.id);
   if (settingIds.length === 0) return { byDayOfWeek: new Map(), byDayAndSlot: new Map() };
 
-  // 2. 提出ヘッダ（teacher_email -> 提出ID）を全部取得
+  // 2. 提出ヘッダを取得
   const { data: subs, error: subErr } = await db
     .from('regular_shift_submissions')
-    .select('id, teacher_email')
+    .select('id, teacher_email, teacher_name, user_id, school_id')
     .in('setting_id', settingIds);
   if (subErr) {
     console.warn('getShiftAvailableTeachers: submissions fetch error', subErr);
     return { byDayOfWeek: new Map(), byDayAndSlot: new Map() };
   }
-  const submissions = (subs || []) as { id: string; teacher_email: string | null }[];
+  const submissions = (subs || []) as {
+    id: string;
+    teacher_email: string | null;
+    teacher_name: string;
+    user_id: string | null;
+    school_id: string;
+  }[];
   if (submissions.length === 0) return { byDayOfWeek: new Map(), byDayAndSlot: new Map() };
 
-  // 3. メアドで user_profiles を逆引き（小文字化して大小無視マッチ）
+  // 3. メアド逆引き
   const emails = Array.from(
     new Set(submissions.map((s) => s.teacher_email?.toLowerCase()).filter((e): e is string => !!e))
   );
@@ -1483,14 +1509,44 @@ export async function getShiftAvailableTeachers(schoolId: string): Promise<Shift
     }
   }
 
-  // 4. submission_id → user_id のマップを作成
-  const submissionToUserId = new Map<string, string>();
-  for (const s of submissions) {
-    const userId = s.teacher_email ? emailToUserId.get(s.teacher_email.toLowerCase()) : null;
-    if (userId) submissionToUserId.set(s.id, userId);
+  // 4. 教室の講師一覧（氏名フォールバック用）
+  const { data: schoolLinks } = await db
+    .from('user_schools')
+    .select('user_id')
+    .eq('school_id', schoolId);
+  const schoolUserIds = ((schoolLinks || []) as { user_id: string }[]).map((r) => r.user_id);
+  let nameToUserId = new Map<string, string>();
+  if (schoolUserIds.length > 0) {
+    const { data: schoolTeachers } = await db
+      .from('user_profiles')
+      .select('id, display_name')
+      .in('id', schoolUserIds)
+      .eq('role', 'teacher')
+      .eq('is_active', true);
+    nameToUserId = buildTeacherNameIndex(
+      (schoolTeachers || []) as { id: string; display_name: string | null }[]
+    );
   }
 
-  // 5. 該当 submission の available スロット全部取得
+  // 5. submission_id → user_id
+  const submissionToUserId = new Map<string, string>();
+  for (const s of submissions) {
+    if (s.user_id) {
+      submissionToUserId.set(s.id, s.user_id);
+      continue;
+    }
+    const byEmail = s.teacher_email
+      ? emailToUserId.get(s.teacher_email.toLowerCase())
+      : undefined;
+    if (byEmail) {
+      submissionToUserId.set(s.id, byEmail);
+      continue;
+    }
+    const byName = nameToUserId.get(normalizePersonName(s.teacher_name));
+    if (byName) submissionToUserId.set(s.id, byName);
+  }
+
+  // 6. 該当 submission の available スロット全部取得
   const submissionIds = Array.from(submissionToUserId.keys());
   if (submissionIds.length === 0) return { byDayOfWeek: new Map(), byDayAndSlot: new Map() };
 
