@@ -567,8 +567,8 @@ export default function TestPrepEditor() {
           </section>
         )}
 
-        {/* 操作ボタン（下部に配置） */}
-        <section className="flex items-center justify-between py-4 border-t border-border print:hidden">
+        {/* 操作ボタン（下部スティッキー） */}
+        <section className="sticky bottom-0 z-30 flex items-center justify-between py-3 px-6 -mx-6 border-t border-border bg-surface-raised/95 backdrop-blur print:hidden">
           <div className="flex items-center gap-2">
             {!isNew && (
               <button
