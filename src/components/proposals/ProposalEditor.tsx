@@ -20,6 +20,7 @@ import {
   Printer,
   Save,
   Search,
+  Star,
   Trash2,
 } from 'lucide-react';
 import {
@@ -50,6 +51,11 @@ import {
 } from '@/lib/api/proposals';
 import type { ProposalUnitInput } from '@/lib/api/proposals';
 import { getTextbooks } from '@/lib/api/textbooks';
+import {
+  addFavoriteTextbook,
+  getFavoriteTextbookIds,
+  removeFavoriteTextbook,
+} from '@/lib/api/textbook-favorites';
 import { getCourseCurriculum } from '@/lib/api/seasonalCourses';
 import { supabase } from '@/lib/supabase';
 import type {
@@ -178,6 +184,9 @@ export default function ProposalEditor() {
   const [allTextbooks, setAllTextbooks] = useState<Textbook[]>([]);
   const [showTextbookPicker, setShowTextbookPicker] = useState(false);
   const [textbookSearch, setTextbookSearch] = useState('');
+  // テキスト選択画面で上位表示するためのお気に入り集合。ユーザー個人ごと（DB保存）
+  const [favoriteTextbookIds, setFavoriteTextbookIds] = useState<Set<number>>(new Set());
+  const [favoriteTogglePending, setFavoriteTogglePending] = useState<number | null>(null);
   const [tbFilterSchoolType, setTbFilterSchoolType] = useState('');
   const [tbFilterSubject, setTbFilterSubject] = useState('');
   const [tbFilterGrade, setTbFilterGrade] = useState('');
@@ -234,6 +243,13 @@ export default function ProposalEditor() {
 
       let tbId = selectedTextbookId;
       let stbId = studentTextbookId;
+      // フェッチした提案書を関数スコープで保持して、後段のユニット復元で参照する。
+      // React state の `proposal` をクロージャ越しに参照すると、setProposal(data) は
+      // 非同期で同一実行コンテキスト内では古い値のままに見えるため、保存直後の遷移後に
+      // koma_count が復元されず空のドラフトで UI が描画されてしまう。
+      // 直後にもう一度保存を押すと空ユニットで DB が上書きされ、未設定表示と
+      // 進捗集計欠落のデータ消失バグになっていた。
+      let fetchedProposal: SeasonalProposalWithDetails | null = null;
 
       if (!isNew && proposalId) {
         const data = await getProposal(proposalId);
@@ -241,6 +257,7 @@ export default function ProposalEditor() {
           addToast('提案書が見つかりません', 'error');
           return;
         }
+        fetchedProposal = data;
         setProposal(data);
         stbId = data.student_textbook_id;
         setStudentTextbookId(stbId);
@@ -286,6 +303,15 @@ export default function ProposalEditor() {
       const textbooks = await getTextbooks();
       setAllTextbooks(textbooks);
 
+      // お気に入り集合を取得（テキスト選択画面で上位表示するため）
+      // 失敗しても通常動作はできるので例外でブロックしない
+      try {
+        const favIds = await getFavoriteTextbookIds();
+        setFavoriteTextbookIds(favIds);
+      } catch {
+        // ignore
+      }
+
       if (!tbId) {
         setLoading(false);
         if (isNew) setShowTextbookPicker(true);
@@ -310,13 +336,13 @@ export default function ProposalEditor() {
         });
       }
 
-      if (!isNew && proposal) {
+      if (!isNew && fetchedProposal) {
         // 保存済みデータの復元: koma_count / applied_koma / reason は復元するが、
         // selected（左チェックボックス）は意図的に false のままにする。
         // 「保存後はチェックボックスを空にしておきたい」というユーザー要望のため、
         // 保存状態の可視化は行のハイライト（isActive = koma_count > 0）で行い、
         // チェックボックスはシフトクリックなどの選択操作専用とする。
-        for (const u of proposal.units) {
+        for (const u of fetchedProposal.units) {
           const d = drafts.get(u.curriculum_item_id);
           if (d) {
             d.koma_count = u.koma_count;
@@ -363,6 +389,35 @@ export default function ProposalEditor() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // テキストのお気に入り切り替え。楽観的更新でクリック反応を即時にし、失敗時のみロールバック。
+  const handleToggleFavoriteTextbook = async (textbookId: number) => {
+    if (favoriteTogglePending === textbookId) return;
+    const isFav = favoriteTextbookIds.has(textbookId);
+    setFavoriteTogglePending(textbookId);
+    // 楽観的更新
+    setFavoriteTextbookIds((prev) => {
+      const next = new Set(prev);
+      if (isFav) next.delete(textbookId);
+      else next.add(textbookId);
+      return next;
+    });
+    try {
+      if (isFav) await removeFavoriteTextbook(textbookId);
+      else await addFavoriteTextbook(textbookId);
+    } catch {
+      // 失敗時はロールバック
+      setFavoriteTextbookIds((prev) => {
+        const next = new Set(prev);
+        if (isFav) next.add(textbookId);
+        else next.delete(textbookId);
+        return next;
+      });
+      addToast('お気に入りの更新に失敗しました', 'error');
+    } finally {
+      setFavoriteTogglePending(null);
+    }
+  };
 
   const handleSelectTextbook = async (tb: Textbook) => {
     setSelectedTextbookId(tb.id);
@@ -762,6 +817,11 @@ export default function ProposalEditor() {
         return true;
       })
       .sort((a, b) => {
+        // お気に入りを最優先で上位表示。テキスト数が多くて絞り込みが面倒という
+        // 要望への対応で、よく使う教材を即座に拾えるようにする。
+        const favA = favoriteTextbookIds.has(a.id) ? 0 : 1;
+        const favB = favoriteTextbookIds.has(b.id) ? 0 : 1;
+        if (favA !== favB) return favA - favB;
         const subjA = SUBJECT_ORDER.indexOf(a.subject || '');
         const subjB = SUBJECT_ORDER.indexOf(b.subject || '');
         if (subjA !== subjB) return (subjA === -1 ? 999 : subjA) - (subjB === -1 ? 999 : subjB);
@@ -770,6 +830,9 @@ export default function ProposalEditor() {
         if (grA !== grB) return (grA === -1 ? 999 : grA) - (grB === -1 ? 999 : grB);
         return a.name.localeCompare(b.name, 'ja');
       });
+
+    // お気に入りとそれ以外の境界 index（区切り線を入れるため）
+    const favoriteEndIdx = filtered.findIndex((tb) => !favoriteTextbookIds.has(tb.id));
 
     return (
       <div className="max-w-5xl mx-auto">
@@ -833,18 +896,49 @@ export default function ProposalEditor() {
         </div>
 
         <div className="space-y-1 max-h-[60vh] overflow-y-auto">
-          {filtered.map((tb) => (
-            <button
-              key={tb.id}
-              onClick={() => handleSelectTextbook(tb)}
-              className="w-full text-left px-4 py-3 bg-surface-raised rounded-lg border border-border-default hover:border-accent-ink/30 hover:bg-accent-ink-subtle active:scale-[0.99] transition-[background-color,border-color,transform] duration-150 ease-out"
-            >
-              <div className="text-sm font-medium text-text-heading">{tb.name}</div>
-              <div className="text-xs text-text-muted mt-0.5">
-                {[tb.subject, tb.publisher, tb.grade].filter(Boolean).join(' / ')}
+          {filtered.map((tb, idx) => {
+            const isFav = favoriteTextbookIds.has(tb.id);
+            // お気に入り群の最後と通常群の境目に区切り線を出す（お気に入りが1件以上ありかつ非お気に入りも存在する場合のみ）
+            const showDivider = favoriteEndIdx > 0 && idx === favoriteEndIdx;
+            return (
+              <div key={tb.id}>
+                {showDivider && (
+                  <div className="my-2 border-t border-border-subtle" aria-hidden="true" />
+                )}
+                <div className="relative">
+                  <button
+                    onClick={() => handleSelectTextbook(tb)}
+                    className="w-full text-left pl-4 pr-12 py-3 bg-surface-raised rounded-lg border border-border-default hover:border-accent-ink/30 hover:bg-accent-ink-subtle active:scale-[0.99] transition-[background-color,border-color,transform] duration-150 ease-out"
+                  >
+                    <div className="text-sm font-medium text-text-heading">{tb.name}</div>
+                    <div className="text-xs text-text-muted mt-0.5">
+                      {[tb.subject, tb.publisher, tb.grade].filter(Boolean).join(' / ')}
+                    </div>
+                  </button>
+                  {/* お気に入りトグル。row 本体の onClick とは独立させたいので絶対配置の別ボタンにする */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleToggleFavoriteTextbook(tb.id);
+                    }}
+                    disabled={favoriteTogglePending === tb.id}
+                    aria-label={isFav ? 'お気に入りを解除' : 'お気に入りに追加'}
+                    title={isFav ? 'お気に入りを解除' : 'お気に入りに追加'}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md hover:bg-surface-hover active:scale-90 transition-[background-color,transform] duration-150 disabled:opacity-50"
+                  >
+                    <Star
+                      className={`w-4 h-4 transition-colors duration-150 ${
+                        isFav
+                          ? 'fill-amber-400 text-amber-400'
+                          : 'text-text-faint hover:text-amber-400'
+                      }`}
+                    />
+                  </button>
+                </div>
               </div>
-            </button>
-          ))}
+            );
+          })}
           {filtered.length === 0 && (
             <div className="py-8 text-center text-sm text-text-faint">該当するテキストがありません</div>
           )}
