@@ -15,7 +15,9 @@ import {
   deleteTestPrepProposal,
 } from '@/lib/api/test-prep-proposals';
 import { getExamTypes } from '@/lib/api/textbooks';
-import type { Student, ExamType, CurriculumItem } from '@/types/database';
+import { getSubjects } from '@/lib/api/subjects';
+import type { Student, ExamType, CurriculumItem, Subject } from '@/types/database';
+import { GRADE_LABELS } from '@/types/database';
 import type {
   TestPrepProposalWithDetails,
   TestPrepStatus,
@@ -89,6 +91,10 @@ export default function TestPrepEditor() {
   const [allTextbooks, setAllTextbooks] = useState<TextbookOption[]>([]);
   const [masterUnits, setMasterUnits] = useState<Map<number, CurriculumItem[]>>(new Map());
 
+  // 科目追加用（DB登録済み科目一覧）
+  const [availableSubjects, setAvailableSubjects] = useState<Subject[]>([]);
+  const [teacherName, setTeacherName] = useState('');
+
   // 公開後のフィードバック表示
   const [justPublished, setJustPublished] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -124,9 +130,22 @@ export default function TestPrepEditor() {
         setZoukomaPeriods((periods || []) as Array<{ id: string; title: string; period_key: string }>);
       }
 
-      // テキスト一覧を取得（科目・学年・準拠でフィルタ）
+      // テキスト一覧を取得（科目・学年・準拠でフィルタ）+ 科目マスタ
       if (studentData) {
+        const cat = gradeCategory(studentData.grade);
         await loadTextbooks(studentData);
+        const subs = await getSubjects(cat);
+        setAvailableSubjects(subs);
+      }
+
+      // 講師名（印刷用）
+      if (user?.id) {
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('display_name')
+          .eq('id', user.id)
+          .single();
+        if (profile?.display_name) setTeacherName(profile.display_name);
       }
 
       if (!isNew && proposalId) {
@@ -196,11 +215,19 @@ export default function TestPrepEditor() {
   }, [studentId, proposalId, isNew, getSelectedSchoolIds, showError]);
 
   // 科目・学年・準拠条件でテキスト全体から検索
-  // 中学以下: 同科目 + 同学年(grade_category) + 準拠あり(publisher非null)
+  // 中学以下: 同科目 + 同学年 + 準拠あり(publisher非null)
   // 高校: 同科目のみ（全テキスト）
   const loadTextbooks = async (studentData: Student) => {
     const cat = gradeCategory(studentData.grade);
     const isHighSchool = cat === 'high';
+
+    // 生徒の学年をテキストのgrade形式に変換（'1年','2年','3年'）
+    // 中学: grade 7→1年, 8→2年, 9→3年  小学: grade 1→1年 ... 6→6年
+    const textbookGrade = cat === 'middle'
+      ? `${studentData.grade - 6}年`
+      : cat === 'elementary'
+        ? `${studentData.grade}年`
+        : null;
 
     let query = supabase
       .from('textbooks')
@@ -214,6 +241,9 @@ export default function TestPrepEditor() {
       query = query
         .eq('grade_category', cat)
         .not('publisher', 'is', null);
+      if (textbookGrade) {
+        query = query.eq('grade', textbookGrade);
+      }
     }
 
     const { data: textbooks } = await query;
@@ -347,9 +377,12 @@ export default function TestPrepEditor() {
   };
 
   // 科目操作
-  const addSubject = () => {
-    const name = prompt('科目名を入力してください');
-    if (!name?.trim()) return;
+  // 既に追加済みの科目名を除いた選択肢
+  const addedSubjectNames = new Set(subjects.map((s) => s.subject_name));
+  const subjectOptions = availableSubjects.filter((s) => !addedSubjectNames.has(s.name));
+
+  const addSubject = (name: string) => {
+    if (!name.trim() || addedSubjectNames.has(name.trim())) return;
     setSubjects((prev) => [...prev, { tempId: genId(), subject_name: name.trim(), target_score: null, units: [] }]);
   };
 
@@ -427,6 +460,17 @@ export default function TestPrepEditor() {
   return (
     <div className="max-w-5xl mx-auto print:max-w-none">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
+
+      {/* 印刷用ヘッダー */}
+      <div className="hidden print:block mb-4">
+        <h1 className="text-lg font-bold text-gray-900">{title || 'テスト対策提案書'}</h1>
+        <div className="flex items-center gap-4 mt-1 text-sm text-gray-600">
+          <span>生徒: <span className="font-medium text-gray-900">{student.last_name} {student.first_name}</span></span>
+          <span>{GRADE_LABELS[student.grade] || `${student.grade}年`}</span>
+          {teacherName && <span>担当: {teacherName}</span>}
+          <span>合計 {totalKoma} コマ</span>
+        </div>
+      </div>
 
       {/* ヘッダー（タイトルのみ、ボタンは下へ移動） */}
       <div className="flex items-center gap-3 mb-6 print:hidden">
@@ -520,12 +564,27 @@ export default function TestPrepEditor() {
             />
           ))}
 
-          <button
-            onClick={addSubject}
-            className="w-full py-3 border-2 border-dashed border-border rounded-xl text-sm text-text-muted hover:border-text-faint hover:text-text-body transition-[colors,transform] active:scale-[0.99] print:hidden"
-          >
-            + 科目を追加
-          </button>
+          {subjectOptions.length > 0 ? (
+            <div className="flex items-center gap-2 print:hidden">
+              <select
+                defaultValue=""
+                onChange={(e) => {
+                  if (e.target.value) {
+                    addSubject(e.target.value);
+                    e.target.value = '';
+                  }
+                }}
+                className="flex-1 py-2.5 px-3 border-2 border-dashed border-border rounded-xl text-sm text-text-muted bg-transparent hover:border-text-faint focus:border-primary"
+              >
+                <option value="" disabled>+ 科目を追加...</option>
+                {subjectOptions.map((s) => (
+                  <option key={s.id} value={s.name}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <p className="text-xs text-text-faint text-center py-2 print:hidden">追加可能な科目はありません</p>
+          )}
         </section>
 
         {/* メモ */}
@@ -636,8 +695,13 @@ export default function TestPrepEditor() {
 
       <style>{`
         @media print {
-          @page { size: A4 portrait; margin: 15mm; }
-          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          @page { size: A4 portrait; margin: 10mm 12mm; }
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; font-size: 11px; }
+          /* A4 1枚に収めるためコンパクト化 */
+          table { font-size: 10px; }
+          td, th { padding: 2px 6px !important; }
+          .space-y-6 > * + * { margin-top: 8px !important; }
+          .space-y-4 > * + * { margin-top: 6px !important; }
         }
       `}</style>
     </div>
