@@ -192,6 +192,13 @@ export default function RegularPatternsPage() {
               ← 座席表に戻る
             </Link>
             <h1 className="text-2xl font-bold text-[var(--headline)]">通塾日程</h1>
+            {/* 担当未決定パターンへの講師割当画面への入口 */}
+            <Link
+              href="/schedule/regular-patterns/match"
+              className="text-xs text-info hover:underline underline-offset-2 transition-colors duration-150"
+            >
+              講師マッチング →
+            </Link>
           </div>
           <div className="flex items-center gap-4">
             <Select value={selectedSchoolId} onValueChange={setSelectedSchoolId}>

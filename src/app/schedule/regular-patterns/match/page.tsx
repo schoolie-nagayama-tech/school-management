@@ -1,0 +1,326 @@
+'use client';
+
+/**
+ * 通塾日程パターン × 講師マッチング画面
+ *
+ * URL: /schedule/regular-patterns/match
+ *
+ * 用途：teacher_id NULL の通塾日程パターンに講師を割り当てる作業を支援。
+ *      415件 / 266 生徒（実データ時点）の運用作業を効率化する。
+ *
+ * 表示：
+ *  - 未割当パターン一覧（曜日 → コマ順）
+ *  - 各行に「候補講師」をスコア順で表示（◎担当固定 / ○過去担当 / 教科対応 / 性別一致）
+ *  - ワンクリック割当：pattern.teacher_id 更新 + 未来の schedule_entries も同時更新
+ *
+ * フィルタ：
+ *  - 曜日（月〜土）
+ *  - 「候補1人だけ→即決可能なパターン」だけ表示
+ *  - 未割当残数の表示
+ */
+
+import { useState, useEffect, useCallback } from 'react';
+import { AdminLayout } from '@/components/layouts';
+import { Card, CardContent } from '@/components/ui';
+import { Button } from '@/components/ui';
+import { ToastContainer, Loading } from '@/components/ui';
+import { useToast } from '@/hooks/useToast';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  getUnassignedPatterns,
+  getPatternMatchCandidates,
+  assignTeacherToPattern,
+  type UnassignedPatternRow,
+  type PatternMatchCandidate,
+} from '@/lib/api/pattern-matching';
+import { CheckCircle2, Filter, RefreshCw, Sparkles } from 'lucide-react';
+import AccessDenied from '@/components/AccessDenied';
+
+const DAY_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
+
+function gradeLabel(g: number): string {
+  if (g <= 6) return `小${g}`;
+  if (g <= 9) return `中${g - 6}`;
+  return `高${g - 9}`;
+}
+
+export default function PatternMatchPage() {
+  const { profile, selectedSchoolId, getSelectedSchoolIds } = useAuth();
+  const { toasts, removeToast, success, error: toastError } = useToast();
+
+  const [patterns, setPatterns] = useState<UnassignedPatternRow[]>([]);
+  const [candidatesByPattern, setCandidatesByPattern] = useState<
+    Map<string, PatternMatchCandidate[]>
+  >(new Map());
+  const [isLoading, setIsLoading] = useState(true);
+  const [actingPatternId, setActingPatternId] = useState<string | null>(null);
+  const [filterDay, setFilterDay] = useState<number | 'all'>('all');
+  const [filterSingleCandidate, setFilterSingleCandidate] = useState(false);
+
+  const isManager =
+    profile?.role === 'admin' || profile?.role === 'manager' || profile?.role === 'owner';
+
+  // 単一の school 選択を前提 (複数校選択時は最初の1校)
+  const schoolId =
+    selectedSchoolId && selectedSchoolId !== 'all'
+      ? selectedSchoolId
+      : getSelectedSchoolIds()[0] ?? null;
+
+  const load = useCallback(async () => {
+    if (!schoolId) return;
+    setIsLoading(true);
+    try {
+      const rows = await getUnassignedPatterns(schoolId);
+      setPatterns(rows);
+
+      // 候補を並列に取得（1パターンずつ getPatternMatchCandidates）
+      // 数百件あると遅くなるので、まず最大30件だけ並列展開し、残りは遅延
+      const initial = rows.slice(0, 30);
+      const candMap = new Map<string, PatternMatchCandidate[]>();
+      await Promise.all(
+        initial.map(async (p) => {
+          try {
+            const c = await getPatternMatchCandidates(schoolId, p);
+            candMap.set(p.id, c);
+          } catch {
+            candMap.set(p.id, []);
+          }
+        })
+      );
+      setCandidatesByPattern(candMap);
+
+      // 残りはバックグラウンドで順次取得
+      const rest = rows.slice(30);
+      void (async () => {
+        for (const p of rest) {
+          try {
+            const c = await getPatternMatchCandidates(schoolId, p);
+            setCandidatesByPattern((prev) => {
+              const next = new Map(prev);
+              next.set(p.id, c);
+              return next;
+            });
+          } catch {
+            /* noop */
+          }
+        }
+      })();
+    } catch (e) {
+      toastError(e instanceof Error ? e.message : '取得に失敗しました');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [schoolId, toastError]);
+
+  useEffect(() => {
+    if (isManager) load();
+  }, [isManager, load]);
+
+  const handleAssign = async (patternId: string, teacherId: string) => {
+    setActingPatternId(patternId);
+    try {
+      const result = await assignTeacherToPattern(patternId, teacherId);
+      success(`割当完了（${result.entriesUpdated} 件のエントリも更新）`);
+      // パターンをローカルから削除（同じ画面に出続けないように）
+      setPatterns((prev) => prev.filter((p) => p.id !== patternId));
+      setCandidatesByPattern((prev) => {
+        const next = new Map(prev);
+        next.delete(patternId);
+        return next;
+      });
+    } catch (e) {
+      toastError(e instanceof Error ? e.message : '割当に失敗しました');
+    } finally {
+      setActingPatternId(null);
+    }
+  };
+
+  if (!isManager) return <AccessDenied />;
+
+  // フィルタ適用後の表示対象
+  const visible = patterns.filter((p) => {
+    if (filterDay !== 'all' && p.day_of_week !== filterDay) return false;
+    if (filterSingleCandidate) {
+      const c = candidatesByPattern.get(p.id);
+      if (!c || c.length !== 1) return false;
+    }
+    return true;
+  });
+
+  // 曜日×コマでグルーピング
+  const grouped = new Map<string, UnassignedPatternRow[]>();
+  for (const p of visible) {
+    const key = `${p.day_of_week}|${p.time_slot?.slot_number ?? 0}`;
+    if (!grouped.has(key)) grouped.set(key, []);
+    grouped.get(key)!.push(p);
+  }
+
+  return (
+    <AdminLayout>
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
+      <div className="max-w-5xl mx-auto p-4 space-y-4">
+
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">通塾日程 講師マッチング</h1>
+            <p className="text-sm text-text-muted mt-1">
+              担当未決定の通塾日程に講師を割り当てます。シフト・教科対応・希望ルールを考慮した候補を表示。
+            </p>
+          </div>
+          <Button variant="outline" size="sm" onClick={load} disabled={isLoading}>
+            <RefreshCw className={`w-3.5 h-3.5 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
+            再取得
+          </Button>
+        </div>
+
+        <Card>
+          <CardContent className="p-3 flex flex-wrap items-center gap-3">
+            <Filter className="w-4 h-4 text-text-muted" />
+            <span className="text-sm font-semibold">フィルタ:</span>
+            <div className="flex gap-1">
+              <button
+                type="button"
+                onClick={() => setFilterDay('all')}
+                className={`px-2 py-1 text-xs rounded border ${
+                  filterDay === 'all'
+                    ? 'bg-info text-white border-info'
+                    : 'bg-white text-text-muted border-border-default'
+                }`}
+              >
+                全曜日
+              </button>
+              {[1, 2, 3, 4, 5, 6].map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  onClick={() => setFilterDay(d)}
+                  className={`px-2 py-1 text-xs rounded border ${
+                    filterDay === d
+                      ? 'bg-info text-white border-info'
+                      : 'bg-white text-text-muted border-border-default'
+                  }`}
+                >
+                  {DAY_LABELS[d]}
+                </button>
+              ))}
+            </div>
+            <label className="flex items-center gap-1.5 text-xs cursor-pointer ml-3">
+              <input
+                type="checkbox"
+                checked={filterSingleCandidate}
+                onChange={(e) => setFilterSingleCandidate(e.target.checked)}
+                className="accent-info"
+              />
+              候補1人のみ（即決可）
+            </label>
+            <div className="ml-auto text-xs text-text-muted">
+              残: <strong className="text-text-body">{patterns.length}</strong> 件
+              {visible.length !== patterns.length && (
+                <> / 表示: <strong className="text-text-body">{visible.length}</strong> 件</>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {isLoading ? (
+          <Loading />
+        ) : visible.length === 0 ? (
+          <Card>
+            <CardContent className="p-8 text-center text-text-muted">
+              <Sparkles className="w-8 h-8 mx-auto mb-2 text-success" />
+              {patterns.length === 0
+                ? '担当未決定パターンはありません。マッチング完了！'
+                : '現在のフィルタに該当する候補はありません'}
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-4">
+            {Array.from(grouped.entries())
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([groupKey, groupPatterns]) => {
+                const [dowStr, slotNum] = groupKey.split('|');
+                const dow = parseInt(dowStr, 10);
+                const slotLabel = groupPatterns[0]?.time_slot;
+                return (
+                  <Card key={groupKey}>
+                    <CardContent className="p-0">
+                      <div className="px-4 py-2 bg-surface border-b text-sm font-semibold flex items-center gap-2">
+                        <span className="text-info">{DAY_LABELS[dow]}曜</span>
+                        <span>{slotNum}限</span>
+                        {slotLabel && (
+                          <span className="text-xs text-text-muted">
+                            ({slotLabel.start_time?.slice(0, 5)}〜{slotLabel.end_time?.slice(0, 5)})
+                          </span>
+                        )}
+                        <span className="ml-auto text-xs text-text-muted">
+                          {groupPatterns.length} 件
+                        </span>
+                      </div>
+                      <ul className="divide-y divide-border-subtle">
+                        {groupPatterns.map((p) => {
+                          const studentName = p.student
+                            ? `${p.student.last_name} ${p.student.first_name}`
+                            : p.student_id;
+                          const grade = p.student ? gradeLabel(p.student.grade) : '';
+                          const candidates = candidatesByPattern.get(p.id);
+                          return (
+                            <li key={p.id} className="px-4 py-3">
+                              <div className="flex items-start gap-3 flex-wrap">
+                                <div className="min-w-[150px]">
+                                  <div className="font-semibold text-sm">{studentName}</div>
+                                  <div className="text-xs text-text-muted">{grade}</div>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  {candidates === undefined ? (
+                                    <span className="text-xs text-text-faint">候補を読込中...</span>
+                                  ) : candidates.length === 0 ? (
+                                    <span className="text-xs text-danger">
+                                      候補なし（出勤可能講師なし or 全員除外）
+                                    </span>
+                                  ) : (
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {candidates.slice(0, 6).map((c) => (
+                                        <button
+                                          key={c.user_id}
+                                          type="button"
+                                          onClick={() => handleAssign(p.id, c.user_id)}
+                                          disabled={actingPatternId === p.id}
+                                          className={`group inline-flex items-center gap-1 px-2 py-1 rounded border text-xs transition-[background-color,border-color,transform] duration-150 ease-[var(--ease-out)] active:scale-[0.97] disabled:opacity-50 ${
+                                            c.score >= 50
+                                              ? 'bg-success-subtle border-success text-success font-semibold hover:bg-success/15'
+                                              : c.score >= 30
+                                                ? 'bg-info-subtle border-info text-info hover:bg-info/15'
+                                                : 'bg-white border-border-default text-text-body hover:bg-surface'
+                                          }`}
+                                          title={`スコア: ${c.score} / ${c.reasons.join('・')}${c.warnings.length ? ' / ⚠ ' + c.warnings.join('・') : ''}`}
+                                        >
+                                          {c.score >= 50 && <CheckCircle2 className="w-3 h-3" />}
+                                          <span>{c.display_name || c.email || '名無し'}</span>
+                                          <span className="text-[10px] opacity-70 tabular-nums">
+                                            {c.score}
+                                          </span>
+                                        </button>
+                                      ))}
+                                      {candidates.length > 6 && (
+                                        <span className="text-xs text-text-faint self-center">
+                                          +他 {candidates.length - 6} 名
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+          </div>
+        )}
+      </div>
+    </AdminLayout>
+  );
+}
