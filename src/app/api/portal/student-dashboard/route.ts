@@ -15,14 +15,21 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-const adminDb = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false },
-});
+// クライアントはリクエスト時に作る（モジュールロード時に作ると、
+// Next.js のビルド時ページデータ収集フェーズで env が無い CI 環境などで
+// `supabaseUrl is required` で落ちる）
+function getAdminDb(): SupabaseClient {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) {
+    throw new Error('Supabase env vars are not configured');
+  }
+  return createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
 
 function ymd(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -36,6 +43,8 @@ export async function GET(req: NextRequest) {
   if (!schoolCode || !studentCode) {
     return NextResponse.json({ error: 'missing_params' }, { status: 400 });
   }
+
+  const adminDb = getAdminDb();
 
   // 学校・生徒を特定
   const { data: school } = await adminDb

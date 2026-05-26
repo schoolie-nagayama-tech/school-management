@@ -14,15 +14,21 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-// service role クライアント。RLS をバイパスして INSERT を行う
-const adminDb = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
-  auth: { persistSession: false, autoRefreshToken: false },
-});
+// service role クライアントはリクエスト時に作る。モジュールロード時に作ると、
+// Next.js のビルド時ページデータ収集フェーズで env が無い CI 環境などで
+// `supabaseUrl is required` でビルドが落ちる。
+function getAdminDb(): SupabaseClient {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) {
+    throw new Error('Supabase env vars are not configured');
+  }
+  return createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
 
 interface SubmitBody {
   setting_id: string;
@@ -49,6 +55,8 @@ export async function POST(req: NextRequest) {
   if (!Array.isArray(body.selected_slots) || body.selected_slots.length === 0) {
     return NextResponse.json({ error: 'no_slots_selected' }, { status: 400 });
   }
+
+  const adminDb = getAdminDb();
 
   // setting を確認（published のみ受け付け）
   const { data: setting, error: settingErr } = await adminDb
@@ -183,6 +191,8 @@ export async function GET(req: NextRequest) {
   if (!settingId) {
     return NextResponse.json({ error: 'missing_setting_id' }, { status: 400 });
   }
+
+  const adminDb = getAdminDb();
 
   // 設定 + 開講日時マトリクスを取得
   const { data: setting, error: settingErr } = await adminDb
