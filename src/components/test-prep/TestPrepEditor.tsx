@@ -373,7 +373,7 @@ export default function TestPrepEditor() {
     try {
       await deleteTestPrepProposal(proposalId);
       success('削除しました');
-      router.replace(`/students/${studentId}/test-prep`);
+      router.replace('/test-prep-proposals');
     } catch {
       showError('削除に失敗しました');
     }
