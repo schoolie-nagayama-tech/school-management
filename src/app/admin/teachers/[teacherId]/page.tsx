@@ -8,6 +8,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { fetchWithAuth } from '@/lib/api/auth';
 import { getActiveTimeSlots } from '@/lib/api/schedule';
+import {
+  getSingleTeacherShift,
+  getTeacherShiftHistory,
+  type SingleTeacherShift,
+  type TeacherShiftHistoryEntry,
+} from '@/lib/api/teacher-shifts';
 import { getTeacherBadges, getTeacherBadgeAssignments } from '@/lib/api/teacher-badges';
 import { getTeacherTrainings } from '@/lib/api/teacher-trainings';
 import { onTeacherBadgesChanged } from '@/lib/teacher-badge-events';
@@ -78,6 +84,9 @@ export default function TeacherDetailPage() {
   const [trainings, setTrainings] = useState<TeacherTraining[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  // 「提出データ由来」の現在シフト（期間考慮の自動算出）と全提出履歴
+  const [liveShift, setLiveShift] = useState<SingleTeacherShift | null>(null);
+  const [shiftHistory, setShiftHistory] = useState<TeacherShiftHistoryEntry[]>([]);
 
   useEffect(() => {
     if (!teacherId) return;
@@ -123,6 +132,17 @@ export default function TeacherDetailPage() {
           }
           all.sort((a, b) => a.slot_number - b.slot_number);
           setScheduleTimeSlots(all);
+
+          // 講師のシフト（現在有効分 + 履歴）を取得。
+          // 在籍校が複数あれば最初の1校を基準にする。期間考慮はAPI側で実施。
+          const primaryId = schoolIds[0];
+          const [live, history] = await Promise.all([
+            getSingleTeacherShift(primaryId, teacherId).catch(() => null),
+            getTeacherShiftHistory(primaryId, teacherId).catch(() => []),
+          ]);
+          if (cancelled) return;
+          setLiveShift(live);
+          setShiftHistory(history);
         }
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -350,6 +370,104 @@ export default function TeacherDetailPage() {
               </div>
             )}
           </Panel>
+
+          {/* 勤務シフト：提出データ由来（期間考慮）
+              通常シフト + 講習シフトを統合し「今日有効な」曜日×時間帯を表示。
+              上の「出勤可能コマ」は手動編集（user_profiles）の静的値、こちらはシフト提出由来の動的値。
+              両方を並べることで「申請と実際の登録値のズレ」も把握できる。 */}
+          <Panel title="勤務シフト（提出データ由来・現在有効）">
+            {!liveShift || liveShift.daysOfWeek.length === 0 ? (
+              <EmptyText>現在有効なシフト提出がありません</EmptyText>
+            ) : (
+              <div className="space-y-2">
+                <div className="text-xs text-gray-500">
+                  ソース:{' '}
+                  {liveShift.sources.length === 0
+                    ? '—'
+                    : liveShift.sources.map((s) => (s === 'regular' ? '通常シフト' : '講習シフト')).join(' + ')}
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {liveShift.daysOfWeek.map((dow) => {
+                    const slots = liveShift.slotsByDay.get(dow) ?? [];
+                    return (
+                      <div
+                        key={dow}
+                        className="inline-flex flex-col gap-0.5 px-2 py-1 rounded border border-emerald-200 bg-emerald-50/50"
+                      >
+                        <span className="text-xs font-semibold text-emerald-900">{DAY_LABELS[dow]}曜</span>
+                        <span className="text-[10px] text-emerald-700">
+                          {slots.length > 0 ? slots.sort().join(' / ') : '—'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </Panel>
+
+          {/* シフト提出履歴：通常 + 講習を時系列で並べる。
+              「いつどの設定で何曜日を提出したか」を一覧化、過去の出勤履歴も追える。 */}
+          <Panel title="シフト提出履歴">
+            {shiftHistory.length === 0 ? (
+              <EmptyText>シフト提出履歴がありません</EmptyText>
+            ) : (
+              <ul className="divide-y divide-gray-100">
+                {shiftHistory.map((h) => {
+                  // 曜日 → 時間帯 リスト
+                  const byDow = new Map<number, string[]>();
+                  for (const sl of h.slots) {
+                    if (!byDow.has(sl.day_of_week)) byDow.set(sl.day_of_week, []);
+                    byDow.get(sl.day_of_week)!.push(sl.time_slot);
+                  }
+                  const period = (() => {
+                    const f = h.effective_from ?? '';
+                    const u = h.effective_until ?? '';
+                    if (!f && !u) return '期間未設定';
+                    return `${f || '〜'} 〜 ${u || '無期限'}`;
+                  })();
+                  return (
+                    <li key={h.submission_id} className="py-2 text-sm">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span
+                          className={`px-1.5 py-0.5 text-[10px] rounded font-semibold ${
+                            h.source === 'regular'
+                              ? 'bg-info-subtle text-info'
+                              : 'bg-warning-subtle text-warning'
+                          }`}
+                        >
+                          {h.source === 'regular' ? '通常' : '講習'}
+                        </span>
+                        <span className="font-semibold">{h.setting_name || '名称未設定'}</span>
+                        <span className="text-xs text-gray-500">{period}</span>
+                        {h.submitted_at && (
+                          <span className="text-[10px] text-gray-400">
+                            提出: {new Date(h.submitted_at).toLocaleDateString('ja-JP')}
+                          </span>
+                        )}
+                      </div>
+                      {byDow.size > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1 pl-2">
+                          {Array.from(byDow.entries())
+                            .sort(([a], [b]) => a - b)
+                            .map(([dow, slots]) => (
+                              <span
+                                key={dow}
+                                className="inline-flex items-center gap-1 text-[10px] text-gray-600 bg-gray-50 px-1.5 py-0.5 rounded"
+                              >
+                                <strong>{DAY_LABELS[dow]}</strong>
+                                <span className="text-gray-500">{slots.length} 枠</span>
+                              </span>
+                            ))}
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </Panel>
+
           {/* 研修参加履歴 */}
           <Panel title="研修参加履歴">
             {trainings.length === 0 ? (

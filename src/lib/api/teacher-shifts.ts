@@ -279,6 +279,136 @@ export interface SingleTeacherShift {
   sources: Array<'regular' | 'seasonal'>;
 }
 
+/**
+ * 講師詳細ページで「過去・現在・未来の全シフト履歴」を時系列で見せるための取得関数。
+ * 通常シフトと講習シフトを統合し、setting 単位で1レコードずつ返す。
+ */
+export interface TeacherShiftHistoryEntry {
+  source: 'regular' | 'seasonal';
+  setting_id: string;
+  setting_name: string | null;
+  effective_from: string | null;
+  effective_until: string | null;
+  /** その setting でこの講師が提出した「曜日×時間帯」 */
+  slots: Array<{ day_of_week: number; time_slot: string }>;
+  submission_id: string;
+  submitted_at: string | null;
+}
+
+export async function getTeacherShiftHistory(
+  schoolId: string,
+  userId: string
+): Promise<TeacherShiftHistoryEntry[]> {
+  // 1. 講師のメアドを取得 (submission との照合キー)
+  const { data: profile } = await db
+    .from('user_profiles')
+    .select('email')
+    .eq('id', userId)
+    .maybeSingle();
+  const email = (profile as { email?: string } | null)?.email?.toLowerCase();
+  if (!email) return [];
+
+  // 2. 通常シフト: setting + submission + slots を一括取得
+  const { data: regularSubs } = await db
+    .from('regular_shift_submissions')
+    .select(
+      'id, teacher_email, submitted_at, setting:regular_shift_settings(id, name, effective_from, effective_until, status), slots:regular_shift_submission_slots(day_of_week, time_slot, available)'
+    )
+    .eq('school_id', schoolId);
+
+  // 3. 講習シフト
+  const { data: seasonalSubs } = await db
+    .from('seasonal_shift_submissions')
+    .select(
+      'id, teacher_email, submitted_at, setting:seasonal_shift_settings(id, name, start_date, end_date, status), slots:seasonal_shift_submission_slots(shift_date, time_slot, available)'
+    )
+    .eq('school_id', schoolId);
+
+  const result: TeacherShiftHistoryEntry[] = [];
+
+  type RegularSetting = {
+    id: string;
+    name: string | null;
+    effective_from: string | null;
+    effective_until: string | null;
+    status: string;
+  };
+  type RegularRow = {
+    id: string;
+    teacher_email: string | null;
+    submitted_at: string | null;
+    setting: RegularSetting | RegularSetting[] | null;
+    slots: Array<{ day_of_week: number; time_slot: string; available: boolean }> | null;
+  };
+  for (const s of (regularSubs || []) as RegularRow[]) {
+    if (s.teacher_email?.toLowerCase() !== email) continue;
+    const setting = Array.isArray(s.setting) ? s.setting[0] : s.setting;
+    if (!setting) continue;
+    result.push({
+      source: 'regular',
+      setting_id: setting.id,
+      setting_name: setting.name,
+      effective_from: setting.effective_from,
+      effective_until: setting.effective_until,
+      slots: (s.slots ?? [])
+        .filter((sl) => sl.available)
+        .map((sl) => ({ day_of_week: sl.day_of_week, time_slot: sl.time_slot })),
+      submission_id: s.id,
+      submitted_at: s.submitted_at,
+    });
+  }
+
+  type SeasonalSetting = {
+    id: string;
+    name: string | null;
+    start_date: string | null;
+    end_date: string | null;
+    status: string;
+  };
+  type SeasonalRow = {
+    id: string;
+    teacher_email: string | null;
+    submitted_at: string | null;
+    setting: SeasonalSetting | SeasonalSetting[] | null;
+    slots: Array<{ shift_date: string; time_slot: string; available: boolean }> | null;
+  };
+  for (const s of (seasonalSubs || []) as SeasonalRow[]) {
+    if (s.teacher_email?.toLowerCase() !== email) continue;
+    const setting = Array.isArray(s.setting) ? s.setting[0] : s.setting;
+    if (!setting) continue;
+    // 講習シフトは shift_date から day_of_week を逆算
+    const slotMap = new Map<string, Set<string>>();
+    for (const sl of s.slots ?? []) {
+      if (!sl.available) continue;
+      const dow = new Date(sl.shift_date + 'T12:00:00').getDay();
+      const key = `${dow}|${sl.time_slot}`;
+      if (!slotMap.has(key)) slotMap.set(key, new Set());
+      slotMap.get(key)!.add(sl.shift_date);
+    }
+    result.push({
+      source: 'seasonal',
+      setting_id: setting.id,
+      setting_name: setting.name,
+      effective_from: setting.start_date,
+      effective_until: setting.end_date,
+      slots: Array.from(slotMap.keys()).map((k) => {
+        const [dowStr, time_slot] = k.split('|');
+        return { day_of_week: parseInt(dowStr, 10), time_slot };
+      }),
+      submission_id: s.id,
+      submitted_at: s.submitted_at,
+    });
+  }
+
+  // 期間順（effective_from 降順）：最新の有効期間が先頭
+  result.sort((a, b) => {
+    const af = a.effective_from || '';
+    const bf = b.effective_from || '';
+    return bf.localeCompare(af);
+  });
+  return result;
+}
+
 export async function getSingleTeacherShift(
   schoolId: string,
   userId: string,
