@@ -75,7 +75,10 @@ export async function createInterview(
     throw new Error(`面談記録の作成に失敗しました: ${error.message}`);
   }
 
-  // 面談記録作成時に interview_overdue アラートを自動で対応済みにする
+  // 面談記録作成時に interview_overdue アラートを自動で対応済みにする。
+  // アラート計算は interviews を新しい順で参照するため、新しい記録があれば
+  // alert candidate 自体が生成されなくなる。ただしユーザー画面のアラートは
+  // メモリキャッシュ（最大15s）越しに古い候補が見え続けるので、必ず invalidate する。
   if (input.interview_type !== 'task') {
     try {
       const { data: existingInterviews } = await supabase
@@ -91,10 +94,14 @@ export async function createInterview(
         : null;
       const alertKey = `interview:${previousDate || 'never'}`;
 
-      await dismissAlert(schoolId, studentId, 'interview_overdue', alertKey, undefined, '面談記録の登録により自動消去');
+      // dismiss は best-effort（unique 制約違反など）。失敗しても invalidate は実行する
+      try {
+        await dismissAlert(schoolId, studentId, 'interview_overdue', alertKey, undefined, '面談記録の登録により自動消去');
+      } catch (_) {
+        // 既に dismiss 済みなど。アラート計算側で新記録が反映されるため致命的ではない
+      }
+    } finally {
       invalidateAlertCache([schoolId]);
-    } catch (_) {
-      // アラート消去は best-effort
     }
   }
 

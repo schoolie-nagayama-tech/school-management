@@ -92,7 +92,21 @@ export async function linkTranscriptToStudent(
     .filter(Boolean)
     .join('\n\n');
 
-  const interview = await createInterview(transcript.school_id, studentId, {
+  // 面談記録は「生徒の所属教室」に紐付ける必要がある。
+  // transcript.school_id（アップロード時の教室）と student.school_id が違う場合
+  // （管理者が他教室の生徒に紐付けるなど）、アラート集計は生徒の教室で行われるため
+  // transcript.school_id を使うと新しい面談記録がアラート側で見えず "未更新" が消えない。
+  const { data: studentRow, error: studentErr } = await supabase
+    .from('students')
+    .select('school_id')
+    .eq('id', studentId)
+    .maybeSingle();
+  if (studentErr || !studentRow) {
+    throw new Error(`生徒情報の取得に失敗しました: ${studentErr?.message ?? '見つかりません'}`);
+  }
+  const interviewSchoolId = studentRow.school_id as string;
+
+  const interview = await createInterview(interviewSchoolId, studentId, {
     interview_date: interviewDate,
     interview_type: interviewType,
     content,

@@ -383,14 +383,19 @@ function buildInterviewOverdueCandidates(sources: AlertSources): Alert[] {
 
   for (const student of sources.students) {
     const interviews = sources.interviewsByStudent.get(student.id) ?? [];
+    // 生の "YYYY-MM-DD" 文字列を保持。alert_key は DB に保存された raw date と
+    // 一致させる必要があるため、Date 経由（toISOString）で生成するとJSTタイムゾーンで
+    // 1日ずれて createInterview 側の dismiss 記録とマッチしなくなる。
+    const rawLastInterviewDate: string | null =
+      interviews.length > 0 ? interviews[0].interview_date : null;
     const lastInterviewDate =
-      interviews.length > 0 ? (() => { const d = new Date(interviews[0].interview_date); d.setHours(0, 0, 0, 0); return d; })() : null;
+      rawLastInterviewDate ? (() => { const d = new Date(rawLastInterviewDate); d.setHours(0, 0, 0, 0); return d; })() : null;
     const daysDiff = lastInterviewDate
       ? Math.floor((today.getTime() - lastInterviewDate.getTime()) / (1000 * 60 * 60 * 24))
       : Infinity;
 
     if (daysDiff > overdueThreshold) {
-      const alertKey = `interview:${lastInterviewDate ? lastInterviewDate.toISOString().split('T')[0] : 'never'}`;
+      const alertKey = `interview:${rawLastInterviewDate ?? 'never'}`;
       alerts.push({
         id: `${student.id}:interview_overdue:${alertKey}`,
         student_id: student.id,
@@ -828,12 +833,23 @@ function setCached<T>(cache: Map<string, CacheEntry<T>>, key: string, data: T): 
 }
 
 /**
- * アラートキャッシュを無効化（dismiss 後などに呼び出す）
+ * アラートキャッシュを無効化（dismiss 後などに呼び出す）。
+ * キャッシュキーは sorted(schoolIds).join(',') なので、たとえば
+ * createInterview から [singleSchool] で呼ばれても、ユーザーが「すべて」や
+ * 複数教室を見ていてキャッシュキーが多教室結合になっている場合は単一キーの
+ * delete だけでは消せない。そこで、引数の schoolId のいずれかを含むキャッシュ
+ * エントリを全て無効化する。
  */
 export function invalidateAlertCache(schoolIds: string[]): void {
-  const key = cacheKey(schoolIds);
-  cacheLight.delete(key);
-  cacheHeavy.delete(key);
+  if (schoolIds.length === 0) {
+    cacheLight.clear();
+    cacheHeavy.clear();
+    return;
+  }
+  const targets = new Set(schoolIds);
+  const matchesAny = (key: string) => key.split(',').some((id) => targets.has(id));
+  for (const k of [...cacheLight.keys()]) if (matchesAny(k)) cacheLight.delete(k);
+  for (const k of [...cacheHeavy.keys()]) if (matchesAny(k)) cacheHeavy.delete(k);
 }
 
 // ============================================
