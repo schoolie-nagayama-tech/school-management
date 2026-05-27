@@ -14,6 +14,11 @@ import {
   type SingleTeacherShift,
   type TeacherShiftHistoryEntry,
 } from '@/lib/api/teacher-shifts';
+import {
+  getAvailabilityPeriods,
+  syncAllRegularShifts,
+  type TeacherAvailabilityPeriod,
+} from '@/lib/api/teacher-availability';
 import { getTeacherBadges, getTeacherBadgeAssignments } from '@/lib/api/teacher-badges';
 import { getTeacherTrainings } from '@/lib/api/teacher-trainings';
 import { onTeacherBadgesChanged } from '@/lib/teacher-badge-events';
@@ -87,6 +92,9 @@ export default function TeacherDetailPage() {
   // 「提出データ由来」の現在シフト（期間考慮の自動算出）と全提出履歴
   const [liveShift, setLiveShift] = useState<SingleTeacherShift | null>(null);
   const [shiftHistory, setShiftHistory] = useState<TeacherShiftHistoryEntry[]>([]);
+  // 出勤可能期間一覧（teacher_availability_periods）：manual / regular_shift 両方
+  const [availabilityPeriods, setAvailabilityPeriods] = useState<TeacherAvailabilityPeriod[]>([]);
+  const [isResyncing, setIsResyncing] = useState(false);
 
   useEffect(() => {
     if (!teacherId) return;
@@ -136,13 +144,15 @@ export default function TeacherDetailPage() {
           // 講師のシフト（現在有効分 + 履歴）を取得。
           // 在籍校が複数あれば最初の1校を基準にする。期間考慮はAPI側で実施。
           const primaryId = schoolIds[0];
-          const [live, history] = await Promise.all([
+          const [live, history, periods] = await Promise.all([
             getSingleTeacherShift(primaryId, teacherId).catch(() => null),
             getTeacherShiftHistory(primaryId, teacherId).catch(() => []),
+            getAvailabilityPeriods(teacherId).catch(() => [] as TeacherAvailabilityPeriod[]),
           ]);
           if (cancelled) return;
           setLiveShift(live);
           setShiftHistory(history);
+          setAvailabilityPeriods(periods);
         }
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -406,6 +416,33 @@ export default function TeacherDetailPage() {
             )}
           </Panel>
 
+          {/* 出勤可能期間一覧：teacher_availability_periods
+              - 通常シフト提出から自動反映された期間 (source=regular_shift) と、
+                手動編集の期間 (source=manual) の両方を時系列で表示。
+              - 同一日に複数 period がある場合、リード側で manual > regular_shift の優先順位。
+              - 「再同期」ボタンで提出データから手動再構築できる（緊急時の整合性確保用）。 */}
+          <AvailabilityPeriodsPanel
+            periods={availabilityPeriods}
+            isResyncing={isResyncing}
+            onResync={async () => {
+              if (!teacher) return;
+              const schoolIds = (teacher.user_schools || []).map((us) => us.school_id);
+              if (schoolIds.length === 0) return;
+              setIsResyncing(true);
+              try {
+                for (const sid of schoolIds) {
+                  await syncAllRegularShifts(sid);
+                }
+                const refreshed = await getAvailabilityPeriods(teacherId!);
+                setAvailabilityPeriods(refreshed);
+              } catch (e) {
+                console.error('resync failed', e);
+              } finally {
+                setIsResyncing(false);
+              }
+            }}
+          />
+
           {/* シフト提出履歴：通常 + 講習を時系列で並べる。
               「いつどの設定で何曜日を提出したか」を一覧化、過去の出勤履歴も追える。 */}
           <Panel title="シフト提出履歴">
@@ -616,3 +653,155 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
 function EmptyText({ children }: { children: React.ReactNode }) {
   return <p className="text-sm text-gray-400 py-2">{children}</p>;
 }
+
+// =========================================================
+// 出勤可能期間パネル (teacher_availability_periods)
+// =========================================================
+
+function AvailabilityPeriodsPanel({
+  periods,
+  isResyncing,
+  onResync,
+}: {
+  periods: TeacherAvailabilityPeriod[];
+  isResyncing: boolean;
+  onResync: () => Promise<void> | void;
+}) {
+  const today = new Date().toISOString().slice(0, 10);
+
+  // 期間を「現在有効 / 未来予定 / 過去」に分類
+  const current: TeacherAvailabilityPeriod[] = [];
+  const future: TeacherAvailabilityPeriod[] = [];
+  const past: TeacherAvailabilityPeriod[] = [];
+  for (const p of periods) {
+    const startsLater = p.effective_from > today;
+    const endsBefore = p.effective_until && p.effective_until < today;
+    if (startsLater) future.push(p);
+    else if (endsBefore) past.push(p);
+    else current.push(p);
+  }
+
+  return (
+    <div className="bg-surface-raised border border-gray-200 rounded-xl p-5">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-sm font-bold text-gray-800">出勤可能期間</h2>
+        <button
+          type="button"
+          onClick={() => onResync()}
+          disabled={isResyncing}
+          className="text-xs px-2 py-1 rounded border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+          title="シフト提出から teacher_availability_periods を再構築"
+        >
+          {isResyncing ? '再同期中...' : 'シフトから再同期'}
+        </button>
+      </div>
+
+      {periods.length === 0 ? (
+        <EmptyText>登録された期間がありません</EmptyText>
+      ) : (
+        <div className="space-y-4">
+          {current.length > 0 && (
+            <PeriodGroup
+              label="現在有効"
+              accent="success"
+              periods={current}
+            />
+          )}
+          {future.length > 0 && (
+            <PeriodGroup label="今後の予定" accent="info" periods={future} />
+          )}
+          {past.length > 0 && (
+            <details className="text-sm">
+              <summary className="cursor-pointer text-xs text-gray-500 hover:text-gray-700">
+                過去の期間 ({past.length} 件)
+              </summary>
+              <div className="mt-2">
+                <PeriodGroup label="" accent="muted" periods={past} />
+              </div>
+            </details>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PeriodGroup({
+  label,
+  accent,
+  periods,
+}: {
+  label: string;
+  accent: 'success' | 'info' | 'muted';
+  periods: TeacherAvailabilityPeriod[];
+}) {
+  const accentBorder =
+    accent === 'success'
+      ? 'border-emerald-200 bg-emerald-50/40'
+      : accent === 'info'
+        ? 'border-sky-200 bg-sky-50/40'
+        : 'border-gray-200 bg-gray-50/40';
+  return (
+    <div>
+      {label && (
+        <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+          {label}
+        </div>
+      )}
+      <ul className="space-y-2">
+        {periods.map((p) => (
+          <li key={p.id} className={`border rounded-lg p-3 ${accentBorder}`}>
+            <div className="flex items-center gap-2 flex-wrap mb-1.5">
+              <span
+                className={`px-1.5 py-0.5 text-[10px] rounded font-semibold ${
+                  p.source === 'manual'
+                    ? 'bg-info-subtle text-info'
+                    : 'bg-warning-subtle text-warning'
+                }`}
+                title={
+                  p.source === 'manual'
+                    ? '手動編集された期間。優先される。'
+                    : '通常シフト提出から自動反映された期間。'
+                }
+              >
+                {p.source === 'manual' ? '手動' : 'シフト由来'}
+              </span>
+              <span className="text-xs text-gray-700">
+                {p.effective_from} 〜 {p.effective_until || '無期限'}
+              </span>
+            </div>
+            {p.available_days_of_week.length === 0 ? (
+              <span className="text-[11px] text-gray-400">出勤可能曜日なし</span>
+            ) : (
+              <div className="flex flex-wrap gap-1">
+                {p.available_days_of_week.map((dow) => {
+                  const slots = p.available_time_slots_by_day?.[String(dow)] ?? [];
+                  const nums = p.available_slot_numbers_by_day?.[String(dow)] ?? [];
+                  const slotLabel =
+                    slots.length > 0
+                      ? slots.join(' / ')
+                      : nums.length > 0
+                        ? nums.map((n) => `${n}限`).join(' / ')
+                        : '時間帯未指定';
+                  return (
+                    <span
+                      key={dow}
+                      className="inline-flex flex-col gap-0.5 px-2 py-1 rounded border border-gray-200 bg-white text-[11px]"
+                    >
+                      <strong className="text-gray-800">{DAY_LABELS[dow]}曜</strong>
+                      <span className="text-gray-500">{slotLabel}</span>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+            {p.notes && (
+              <p className="mt-1.5 text-[10px] text-gray-400 italic">{p.notes}</p>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+

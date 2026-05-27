@@ -3,6 +3,10 @@
  */
 import { supabase } from '@/lib/supabase';
 import { fetchWithAuth } from '@/lib/api/auth';
+import {
+  deleteAvailabilityForSubmission,
+  syncRegularShiftToAvailability,
+} from '@/lib/api/teacher-availability';
 import type {
   RegularShiftSetting,
   RegularShiftSettingInsert,
@@ -110,6 +114,21 @@ export async function updateRegularShiftSetting(
     .single();
 
   if (error) throw new Error(`Failed to update regular shift setting: ${error.message}`);
+
+  // 期間 (effective_from/until) や status が変わった可能性があるので、
+  // 紐づく submission の availability period をすべて再同期する
+  try {
+    const { data: subs } = await supabase
+      .from('regular_shift_submissions')
+      .select('id')
+      .eq('setting_id', id);
+    for (const s of ((subs ?? []) as Array<{ id: string }>)) {
+      await syncRegularShiftToAvailability(s.id);
+    }
+  } catch (e) {
+    console.warn('[regular-shift] resync after setting update failed:', e);
+  }
+
   return data as RegularShiftSetting;
 }
 
@@ -304,6 +323,12 @@ export async function updateRegularShiftSubmissionUserId(
 
 /** Delete submission (slots are cascade deleted) */
 export async function deleteRegularShiftSubmission(submissionId: string): Promise<void> {
+  // 先に teacher_availability_periods から対応 period を削除（外部キー無いので手動）
+  try {
+    await deleteAvailabilityForSubmission(submissionId);
+  } catch (e) {
+    console.warn('[regular-shift] delete availability failed:', e);
+  }
   const { error } = await supabase
     .from('regular_shift_submissions')
     .delete()

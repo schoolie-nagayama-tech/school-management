@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { normalizePersonName } from '@/lib/utils/personName';
+import { syncRegularShiftToAvailability } from '@/lib/api/teacher-availability';
 
 export const dynamic = 'force-dynamic';
 
@@ -204,6 +205,19 @@ export async function POST(request: NextRequest) {
       await invokeNotification(supabaseAdmin, 'submitted', submission.id);
     } catch (notifyError) {
       console.warn('[regular-shift/public] notify failed:', notifyError);
+    }
+
+    // 出勤可能期間 (teacher_availability_periods) へ自動反映
+    // 失敗してもシフト提出自体は成功扱い（ログのみ残す）
+    try {
+      const syncResult = await syncRegularShiftToAvailability(submission.id, {
+        client: supabaseAdmin,
+      });
+      if (!syncResult.ok) {
+        console.warn('[regular-shift/public] availability sync skipped:', syncResult.reason);
+      }
+    } catch (syncError) {
+      console.warn('[regular-shift/public] availability sync failed:', syncError);
     }
 
     return NextResponse.json({ submission });

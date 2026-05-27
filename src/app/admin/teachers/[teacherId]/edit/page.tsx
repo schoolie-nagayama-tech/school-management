@@ -22,6 +22,7 @@ import { ChevronLeft } from 'lucide-react';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { getActiveTimeSlots } from '@/lib/api/schedule';
 import { getTeacherBadges, getTeacherBadgeAssignments, toggleTeacherBadge } from '@/lib/api/teacher-badges';
+import { upsertManualAvailability } from '@/lib/api/teacher-availability';
 import { emitTeacherBadgesChanged } from '@/lib/teacher-badge-events';
 import type { School, UserProfile, Subject, TeacherBadge, TeacherBadgeAssignment } from '@/types/database';
 import type { ScheduleTimeSlot } from '@/types/schedule';
@@ -380,6 +381,28 @@ export default function TeacherEditPage() {
       }
       for (const schoolId of toRemove) {
         await removeUserFromSchool(teacher.id, schoolId);
+      }
+
+      // 出勤可能期間 (teacher_availability_periods) を manual ソースで保存。
+      // 期間：今日〜無期限。シフト由来 (regular_shift) より優先される。
+      // 編集UIに期間ピッカーがないので、運用上は「最新の手動編集が以降ずっと有効」になる。
+      // 期間粒度の編集は将来 /admin/teachers/[id] の出勤可能期間パネルから可能にする。
+      try {
+        const today = new Date().toISOString().slice(0, 10);
+        for (const schoolId of editSchoolIds) {
+          await upsertManualAvailability({
+            user_id: teacher.id,
+            school_id: schoolId,
+            effective_from: today,
+            effective_until: null,
+            available_days_of_week,
+            available_slot_numbers_by_day: editAvailableSlotNumbersByDay,
+            notes: '講師詳細編集から保存',
+          });
+        }
+      } catch (availErr) {
+        // 出勤可能期間の保存失敗は user_profiles 更新には影響させない（互換のため）
+        console.warn('[teachers/edit] availability period upsert failed:', availErr);
       }
 
       success('講師を更新しました');
