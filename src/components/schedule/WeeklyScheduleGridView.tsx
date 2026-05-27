@@ -267,6 +267,13 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
                 <div className="text-[10px] text-gray-400 mt-0.5 tabular-nums">
                   {slot.start_time?.slice(0, 5)}〜{slot.end_time?.slice(0, 5)}
                 </div>
+                {/* 未配置のあるコマは時間ラベル直下にバッジ表示 → 折りたたまれていなくても一目で把握 */}
+                {slotUnassignedCount > 0 && (
+                  <div className="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-warning text-white text-[10px] font-bold w-fit">
+                    <span className="inline-block w-1 h-1 rounded-full bg-white animate-pulse" />
+                    未配置 {slotUnassignedCount}
+                  </div>
+                )}
               </div>
 
               {/* 各日のセル */}
