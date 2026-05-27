@@ -21,11 +21,16 @@ import {
 } from '@/lib/api/seasonalCourses';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { useAuth } from '@/contexts/AuthContext';
+import AccessDenied from '@/components/AccessDenied';
 import type { Subject } from '@/types/database';
 import { GRADE_LABELS } from '@/types/database';
 
 export default function KoushuPage() {
-  const { selectedSchoolId } = useAuth();
+  const { profile, selectedSchoolId } = useAuth();
+  // 教室長以上（admin / owner / manager）のみ閲覧可能。
+  // 入口は未公開だが URL 直アクセス時の権限ガード。
+  const isManager =
+    profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
   const { subjects: masterSubjects } = useMasterData();
   const schoolId = selectedSchoolId ?? '';
 
@@ -141,6 +146,8 @@ export default function KoushuPage() {
   const filteredCourses = filterGrade
     ? courses.filter((c) => c.target_grades?.includes(filterGrade))
     : courses;
+
+  if (!isManager) return <AccessDenied />;
 
   return (
     <AdminLayout headerTitle="講習スケジュール">
