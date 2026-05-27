@@ -786,6 +786,29 @@ export default function SchedulePage() {
       const isSameSlot =
         entry.entry_date === targetDate && entry.time_slot_id === targetSlotId;
       if (isSameSlot) {
+        // 【未定 → 講師確定】の D&D は「このコマだけ / 毎週このコマ」を確認する。
+        // 即時 moveScheduleEntry で write してしまうと「今後ずっと続くのか今回だけか」
+        // が分からないまま固定化される事故が起きるため、必ず確認 floating bar 経由にする。
+        if (!entry.teacher_id && targetTeacherId) {
+          const teacher = teachers.find((t) => t.id === targetTeacherId);
+          if (teacher) {
+            const studentName = entry.student
+              ? `${entry.student.last_name ?? ''}${entry.student.first_name ?? ''}`.trim() || '生徒'
+              : '生徒';
+            const slot = timeSlots.find((s) => s.id === targetSlotId);
+            const slotLabel = slot ? `${slot.slot_number}限` : '';
+            const dateLabel = `${targetDate.slice(5).replace('-', '/')} ${slotLabel}`;
+            setPendingAssignment({
+              entryId: entry.id,
+              teacherId: targetTeacherId,
+              teacherName: teacher.display_name || teacher.email || '講師',
+              studentName,
+              dateLabel,
+              regularPatternId: entry.regular_pattern_id ?? null,
+            });
+            return;
+          }
+        }
         await moveScheduleEntry(entry.id, targetDate, targetSlotId, targetTeacherId);
         success('授業を移動しました');
         refreshEntries();
@@ -805,7 +828,7 @@ export default function SchedulePage() {
     } catch (e) {
       toastError((e as Error).message);
     }
-  }, [entriesWithSubjects, entries, schoolId, success, refreshEntries, toastError]);
+  }, [entriesWithSubjects, entries, schoolId, success, refreshEntries, toastError, teachers, timeSlots]);
 
   // 出勤可能講師カードを担当未決定エントリにD&Dしたとき：
   // - 即時には確定せず、画面下に「このコマだけ / 毎週このコマ」の選択バーを出す
