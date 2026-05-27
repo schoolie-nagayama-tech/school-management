@@ -67,48 +67,54 @@ export const DayCell = React.memo(function DayCell({
     );
   }
 
+  // 2列表示で縦圧縮：講師カードを grid で並べる。1列のときの動作は変わらないが、
+  // 講師数が増えても縦に伸び続けず、画面密度が上がる。
+  // 1セル幅が狭い時 (xs) は 1 列、それ以外 2 列。
   return (
-    <div className="py-1 space-y-1 min-h-[40px]">
-      {teacherGroups.map((group) => (
-        <TeacherCard
-          key={group.teacher.id}
-          teacher={group.teacher}
-          entries={group.entries}
-          isAvailableOnly={group.isAvailableOnly}
-          date={date}
-          timeSlotId={timeSlot.id}
-          maxStudents={maxStudentsPerTeacher}
-          isClosed={false}
-          onAddStudent={() => onAddStudent(group.teacher.id)}
-          onRemoveTeacher={() =>
-            onRemoveTeacher(
-              group.teacher.id,
-              group.entries.filter(
-                (e) => e.status !== 'cancelled' && e.status !== 'transferred_out'
-              ).length
-            )
-          }
-          onStudentClick={onStudentClick}
-          onTransferClick={onTransferClick}
-          activeDragId={activeDragId}
-          activeDragEntry={activeDragEntry}
-          transferMode={transferMode}
-          onTransferTargetClick={onTransferTargetClick}
-          getKoushuInfo={getKoushuInfo}
-        />
-      ))}
-      {!transferMode && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onAddTeacher(teacherGroups.map((g) => g.teacher.id));
-          }}
-          className="w-full py-1 text-[10px] text-gray-300 hover:text-gray-500 rounded-lg transition-colors duration-200"
-        >
-          + 講師追加
-        </button>
-      )}
+    <div className="py-1 min-h-[40px]">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-1">
+        {teacherGroups.map((group) => (
+          <TeacherCard
+            key={group.teacher.id}
+            teacher={group.teacher}
+            entries={group.entries}
+            isAvailableOnly={group.isAvailableOnly}
+            date={date}
+            timeSlotId={timeSlot.id}
+            maxStudents={maxStudentsPerTeacher}
+            isClosed={false}
+            onAddStudent={() => onAddStudent(group.teacher.id)}
+            onRemoveTeacher={() =>
+              onRemoveTeacher(
+                group.teacher.id,
+                group.entries.filter(
+                  (e) => e.status !== 'cancelled' && e.status !== 'transferred_out'
+                ).length
+              )
+            }
+            onStudentClick={onStudentClick}
+            onTransferClick={onTransferClick}
+            activeDragId={activeDragId}
+            activeDragEntry={activeDragEntry}
+            transferMode={transferMode}
+            onTransferTargetClick={onTransferTargetClick}
+            getKoushuInfo={getKoushuInfo}
+          />
+        ))}
+        {!transferMode && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddTeacher(teacherGroups.map((g) => g.teacher.id));
+            }}
+            // 講師追加ボタンは grid の最後に1セル分。空きカードと見た目を合わせて薄く。
+            className="col-span-full py-1 text-[10px] text-gray-300 hover:text-gray-500 rounded-lg transition-colors duration-200"
+          >
+            + 講師追加
+          </button>
+        )}
+      </div>
     </div>
   );
 });

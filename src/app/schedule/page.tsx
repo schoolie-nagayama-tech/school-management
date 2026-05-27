@@ -65,6 +65,7 @@ import {
   revertTransferEntry,
   deleteRegularPattern,
   cancelFutureEntriesByRegularPatternId,
+  getMonthlyTransferUsage,
 } from '@/lib/api/schedule';
 import { assignTeacherToPattern } from '@/lib/api/pattern-matching';
 import type { ScheduleEntry, ScheduleEntryFormData, ScheduleTimeSlot } from '@/types/schedule';
@@ -164,6 +165,18 @@ export default function SchedulePage() {
     regularPatternId: string | null;
   } | null>(null);
   const [isAssigning, setIsAssigning] = useState(false);
+
+  // 振替上限超過時の確認待ち状態。
+  // 「警告 → 一拍置く → もう一度で実行」フロー用。
+  // null = 通常、{...} = 「もう一度クリックで実行」モード
+  const [transferOverLimitConfirm, setTransferOverLimitConfirm] = useState<{
+    entryId: string;
+    targetDate: string;
+    targetSlotId: string;
+    targetTeacherId: string;
+    studentName: string;
+    usage: { limit: number; used: number; monthLabel: string };
+  } | null>(null);
   const [emptyTeacherSlots, setEmptyTeacherSlots] = useState<Record<string, string[]>>({});
   // 通常シフトから「この曜日この時間帯に出勤可能」と提出した講師IDを byDayOfWeek で保持。
   // 各セル描画時に「曜日 → 出勤可能講師ID 一覧」を引いて空き枠として並べる。
@@ -815,6 +828,33 @@ export default function SchedulePage() {
         return;
       }
       // 別日または別コマ → 振替
+      // 月内振替上限を事前チェック。上限以上に達してたら確認モードへ。
+      // 「警告 → もう一度クリックで実行」フロー (transferOverLimitConfirm が立つ)。
+      const isAlreadyConfirmed =
+        transferOverLimitConfirm?.entryId === entry.id &&
+        transferOverLimitConfirm?.targetDate === targetDate &&
+        transferOverLimitConfirm?.targetSlotId === targetSlotId &&
+        transferOverLimitConfirm?.targetTeacherId === targetTeacherId;
+      if (!isAlreadyConfirmed) {
+        const usage = await getMonthlyTransferUsage(entry.student_id, entry.entry_date);
+        if (usage.used >= usage.limit) {
+          const studentName = entry.student
+            ? `${entry.student.last_name ?? ''}${entry.student.first_name ?? ''}`.trim() || '生徒'
+            : '生徒';
+          setTransferOverLimitConfirm({
+            entryId: entry.id,
+            targetDate,
+            targetSlotId,
+            targetTeacherId,
+            studentName,
+            usage,
+          });
+          toastError(
+            `${studentName} は ${usage.monthLabel} の振替が ${usage.used}/${usage.limit} 件で既に上限。もう一度ドラッグすれば例外で登録できます`
+          );
+          return;
+        }
+      }
       await createTransferEntry(
         schoolId,
         entry.id,
@@ -824,11 +864,12 @@ export default function SchedulePage() {
         null
       );
       success('振替を登録しました');
+      setTransferOverLimitConfirm(null);
       refreshEntries();
     } catch (e) {
       toastError((e as Error).message);
     }
-  }, [entriesWithSubjects, entries, schoolId, success, refreshEntries, toastError, teachers, timeSlots]);
+  }, [entriesWithSubjects, entries, schoolId, success, refreshEntries, toastError, teachers, timeSlots, transferOverLimitConfirm]);
 
   // 出勤可能講師カードを担当未決定エントリにD&Dしたとき：
   // - 即時には確定せず、画面下に「このコマだけ / 毎週このコマ」の選択バーを出す

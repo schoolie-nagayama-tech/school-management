@@ -1370,6 +1370,54 @@ export async function createTransferEntry(
   return { from: fromEntry, to: toEntry };
 }
 
+/**
+ * 当月の振替上限・使用回数を返す。
+ *
+ * - 上限 = 生徒の通塾日程パターン (schedule_regular_patterns) の有効行数。
+ *   「週N回授業がある生徒は月N回まで振替できる」というルール。
+ * - 使用 = 当月内に entry_date が含まれる「振替元 (status=transferred_out)」の件数。
+ *   schedule_entries.transfer_from_id を辿ると元の月にカウントされるので、
+ *   ここでは「振替元エントリ」を月で数える。
+ *
+ * 戻り値: { limit, used, isExceeded }
+ *  - isExceeded: 既に超過しているか (== used > limit)
+ *  - すでに上限ぴったりの場合 isExceeded=false、追加振替で +1 すると超過。
+ *
+ * monthAnchor: 月の判定に使う任意日 (YYYY-MM-DD)。省略時は今日。
+ */
+export async function getMonthlyTransferUsage(
+  studentId: string,
+  monthAnchor?: string
+): Promise<{ limit: number; used: number; isExceeded: boolean; monthLabel: string }> {
+  const anchor = monthAnchor ? new Date(monthAnchor + 'T12:00:00') : new Date();
+  const y = anchor.getFullYear();
+  const m = anchor.getMonth(); // 0-11
+  const monthStart = `${y}-${String(m + 1).padStart(2, '0')}-01`;
+  const lastDay = new Date(y, m + 1, 0).getDate();
+  const monthEnd = `${y}-${String(m + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+  const monthLabel = `${y}年${m + 1}月`;
+
+  // 上限：その生徒の有効な通塾日程パターン数
+  const { data: patterns } = await db
+    .from('schedule_regular_patterns')
+    .select('id')
+    .eq('student_id', studentId)
+    .eq('is_active', true);
+  const limit = (patterns as Array<{ id: string }> | null)?.length ?? 0;
+
+  // 使用：その月内に entry_date が含まれる「振替元」(transferred_out) の件数
+  const { data: usedEntries } = await db
+    .from('schedule_entries')
+    .select('id')
+    .eq('student_id', studentId)
+    .eq('status', 'transferred_out')
+    .gte('entry_date', monthStart)
+    .lte('entry_date', monthEnd);
+  const used = (usedEntries as Array<{ id: string }> | null)?.length ?? 0;
+
+  return { limit, used, isExceeded: used > limit, monthLabel };
+}
+
 /** 振替を元に戻す: 振替先(transferred_in)を削除し、振替元を通常(scheduled)に戻す */
 export async function revertTransferEntry(transferredInEntryId: string): Promise<void> {
   const { data: toRow, error: fetchErr } = await db

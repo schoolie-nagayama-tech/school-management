@@ -3,10 +3,23 @@
 import React from 'react';
 import type { ScheduleEntry, ScheduleTimeSlot } from '@/types/schedule';
 
+/**
+ * 日次印刷ビュー（A4縦・1日1ページ・2列レイアウト）
+ *
+ * 設計:
+ *  - 用紙: A4 縦 (210mm × 297mm)
+ *  - 1ページ1日。複数日指定なら page-break-after で改ページ
+ *  - コマ枠を 2 列 grid で配置（縦圧縮）。コマ数 5〜7 で 3 行に収まる
+ *  - 各コマ内: 講師ごとに mini card、ブース番号 + 講師名 + 生徒一覧
+ *  - 文字小さめ + 密度高めで A4 1 枚に収める
+ */
+
 function formatDateHeader(dateStr: string): string {
-  const d = new Date(dateStr + 'Z');
-  const week = ['日', '月', '火', '水', '木', '金', '土'][d.getUTCDay()];
-  return `${dateStr} (${week})`;
+  const d = new Date(dateStr + 'T12:00:00');
+  const week = ['日', '月', '火', '水', '木', '金', '土'][d.getDay()];
+  const m = d.getMonth() + 1;
+  const day = d.getDate();
+  return `${d.getFullYear()}年${m}月${day}日 (${week})`;
 }
 
 function groupByTeacher(
@@ -23,7 +36,7 @@ function groupByTeacher(
   );
   const byTeacher = new Map<string, ScheduleEntry[]>();
   for (const entry of filtered) {
-    const tid = entry.teacher_id;
+    const tid = entry.teacher_id ?? '__unassigned__';
     if (!byTeacher.has(tid)) byTeacher.set(tid, []);
     byTeacher.get(tid)!.push(entry);
   }
@@ -54,103 +67,135 @@ export function ScheduleDailyPrintView({
   boothMapByDate,
 }: ScheduleDailyPrintViewProps) {
   const datesToShow = singleDate ? [singleDate] : weekDates;
-  return (
-    <div id="schedule-daily-print" className="hidden print:block bg-white text-black">
-      {datesToShow.map((dateStr) => {
-        const groupsBySlot = timeSlots.map((slot) => ({
-          slot,
-          groups: groupByTeacher(entries, dateStr, slot.id),
-        }));
-        // この日のブース番号マップ（無ければ空）
-        const boothMap = boothMapByDate?.get(dateStr) ?? new Map<string, number>();
 
-        return (
-          <div
-            key={dateStr}
-            className="p-4"
-            style={{ pageBreakAfter: 'always' }}
-          >
-            <h2 className="text-base font-bold mb-2">
-              {formatDateHeader(dateStr)}
-              {schoolName ? ` — ${schoolName}` : ''}
-            </h2>
-            <table className="w-full text-[10px] border-collapse">
-              <thead>
-                <tr className="border-b border-gray-300">
-                  <th className="text-left py-1 w-20">コマ</th>
-                  <th className="text-left py-1">講師・生徒</th>
-                </tr>
-              </thead>
-              <tbody>
-                {groupsBySlot.map(({ slot, groups }) => (
-                  <tr key={slot.id} className="border-b border-gray-200 align-top">
-                    <td className="py-1 pr-2 font-medium">
-                      {slot.slot_number}限
-                      <div className="text-[9px] text-gray-500">
-                        {slot.start_time?.slice(0, 5)}〜{slot.end_time?.slice(0, 5)}
+  return (
+    <>
+      {/* A4 縦サイズ指定: @page で印刷時の用紙とマージンを最適化 */}
+      <style jsx global>{`
+        @media print {
+          @page {
+            size: A4 portrait;
+            margin: 8mm;
+          }
+          #schedule-daily-print {
+            font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif;
+          }
+        }
+      `}</style>
+
+      <div id="schedule-daily-print" className="hidden print:block bg-white text-black">
+        {datesToShow.map((dateStr) => {
+          const boothMap = boothMapByDate?.get(dateStr) ?? new Map<string, number>();
+          const slotsWithGroups = timeSlots.map((slot) => ({
+            slot,
+            groups: groupByTeacher(entries, dateStr, slot.id),
+          }));
+
+          return (
+            <div
+              key={dateStr}
+              className="p-2"
+              style={{ pageBreakAfter: 'always' }}
+            >
+              {/* ヘッダー: 教室名 + 日付。1行に収めて縦スペース節約 */}
+              <div className="flex items-end justify-between border-b-2 border-black pb-1 mb-2">
+                <h2 className="text-lg font-bold leading-tight">
+                  {formatDateHeader(dateStr)}
+                </h2>
+                {schoolName && (
+                  <span className="text-sm font-medium text-gray-700">{schoolName}</span>
+                )}
+              </div>
+
+              {/* コマを 2 列で並べる。コマ数 6 でも 3 行で収まり、A4縦1枚に余裕 */}
+              <div className="grid grid-cols-2 gap-2">
+                {slotsWithGroups.map(({ slot, groups }) => {
+                  const sortedGroups = Array.from(groups.entries()).sort(([aId], [bId]) => {
+                    const a = boothMap.get(aId);
+                    const b = boothMap.get(bId);
+                    if (a == null && b == null) return 0;
+                    if (a == null) return 1;
+                    if (b == null) return -1;
+                    return a - b;
+                  });
+
+                  return (
+                    <div
+                      key={slot.id}
+                      className="border border-gray-400 rounded p-1.5 break-inside-avoid"
+                    >
+                      {/* コマヘッダー: 限数 + 時間帯 */}
+                      <div className="flex items-baseline gap-2 border-b border-gray-300 pb-1 mb-1">
+                        <span className="text-base font-bold leading-none">{slot.slot_number}限</span>
+                        <span className="text-[10px] text-gray-600 tabular-nums">
+                          {slot.start_time?.slice(0, 5)}〜{slot.end_time?.slice(0, 5)}
+                        </span>
+                        <span className="ml-auto text-[10px] text-gray-500">
+                          {Array.from(groups.values()).reduce((sum, arr) => sum + arr.length, 0)} 名
+                        </span>
                       </div>
-                    </td>
-                    <td className="py-1">
-                      {Array.from(groups.entries())
-                        // ブース番号がある講師は番号順、無いものはその後
-                        .sort(([aId], [bId]) => {
-                          const a = boothMap.get(aId);
-                          const b = boothMap.get(bId);
-                          if (a == null && b == null) return 0;
-                          if (a == null) return 1;
-                          if (b == null) return -1;
-                          return a - b;
-                        })
-                        .map(([teacherId, slotEntries]) => {
-                        const teacher = slotEntries[0]?.teacher;
-                        const name =
-                          teacher?.display_name || teacher?.email || teacherId;
-                        // この講師の本日のブース番号（未設定なら null）
-                        const boothNo = boothMap.get(teacherId);
-                        return (
-                          <div key={teacherId} className="mb-1">
-                            {boothNo != null && (
-                              // 印刷用なので Tailwind だけで完結させる。背景塗りつぶしは
-                              // 印刷時に色が出ないプリンタもあるので、枠線でも見えるよう border も併用。
-                              <span
-                                className="inline-block min-w-[20px] mr-1 px-1 text-center font-bold border border-black"
-                                style={{ fontVariantNumeric: 'tabular-nums' }}
-                              >
-                                {boothNo}
-                              </span>
-                            )}
-                            <span className="font-medium">{name}</span>
-                            <ul className="ml-3 list-disc text-[9px]">
-                              {slotEntries.map((e) => {
-                                const studentName = e.student
-                                  ? `${e.student.last_name}${e.student.first_name}`
-                                  : e.student_id;
-                                const subj = (e.subjects ?? [])
-                                  ?.map((s: { name?: string }) => s?.name)
-                                  .filter(Boolean)
-                                  .join('/');
-                                return (
-                                  <li key={e.id}>
-                                    {studentName}
-                                    {subj ? ` (${subj})` : ''}
-                                  </li>
-                                );
-                              })}
-                            </ul>
-                          </div>
-                        );
-                      })}
-                      {groups.size === 0 && (
-                        <span className="text-gray-400">—</span>
+
+                      {sortedGroups.length === 0 ? (
+                        <div className="text-[10px] text-gray-300 py-2 text-center">—</div>
+                      ) : (
+                        <ul className="space-y-0.5">
+                          {sortedGroups.map(([teacherId, slotEntries]) => {
+                            const teacher = slotEntries[0]?.teacher;
+                            const name =
+                              teacherId === '__unassigned__'
+                                ? '担当未定'
+                                : teacher?.display_name || teacher?.email || teacherId;
+                            const boothNo = boothMap.get(teacherId);
+                            return (
+                              <li key={teacherId} className="text-[10px] leading-tight">
+                                <div className="flex items-center gap-1">
+                                  {boothNo != null && (
+                                    <span
+                                      className="inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 text-[9px] font-bold border border-black bg-black text-white rounded-sm"
+                                      style={{ fontVariantNumeric: 'tabular-nums' }}
+                                    >
+                                      {boothNo}
+                                    </span>
+                                  )}
+                                  <span
+                                    className={`font-semibold ${
+                                      teacherId === '__unassigned__' ? 'text-gray-500' : ''
+                                    }`}
+                                  >
+                                    {name}
+                                  </span>
+                                </div>
+                                <div className="ml-[20px] text-gray-700">
+                                  {slotEntries.map((e, i) => {
+                                    const studentName = e.student
+                                      ? `${e.student.last_name}${e.student.first_name}`
+                                      : e.student_id;
+                                    const subj = (e.subjects ?? [])
+                                      ?.map((s: { name?: string }) => s?.name)
+                                      .filter(Boolean)
+                                      .join('/');
+                                    return (
+                                      <span key={e.id}>
+                                        {i > 0 && <span className="text-gray-300">、</span>}
+                                        {studentName}
+                                        {subj && <span className="text-gray-500">({subj})</span>}
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              </li>
+                            );
+                          })}
+                        </ul>
                       )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        );
-      })}
-    </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </>
   );
 }
