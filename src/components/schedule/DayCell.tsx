@@ -47,6 +47,7 @@ export interface DayCellProps {
   onTransferClick?: (entry: ScheduleEntry) => void;
   onTransferTargetClick?: (date: string, slotId: string, teacherId: string) => void;
   getKoushuInfo?: (studentId: string) => { enrolled: number; scheduled: number } | null;
+  subjectNameById?: Map<string, string>;
 }
 
 export const DayCell = React.memo(function DayCell({
@@ -65,6 +66,7 @@ export const DayCell = React.memo(function DayCell({
   onTransferClick,
   onTransferTargetClick,
   getKoushuInfo,
+  subjectNameById,
 }: DayCellProps) {
   if (isClosed) {
     return (
@@ -106,6 +108,7 @@ export const DayCell = React.memo(function DayCell({
             transferMode={transferMode}
             onTransferTargetClick={onTransferTargetClick}
             getKoushuInfo={getKoushuInfo}
+            subjectNameById={subjectNameById}
           />
         ))}
         {!transferMode && (

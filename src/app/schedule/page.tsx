@@ -1285,6 +1285,7 @@ export default function SchedulePage() {
                       onStudentEntryDrop={handleStudentEntryDrop}
                       onTeacherDropOnUnassigned={handleTeacherDropOnUnassigned}
                       onConstraintViolation={(reason) => toastError(reason)}
+                      subjectNameById={new Map(masterSubjects.map((s) => [s.id, s.name]))}
                       onTransferTargetClick={handleTransferTargetClick}
                       onPrintDay={handlePrintDay}
                       onBoothAssign={handleBoothAssign}

@@ -67,6 +67,7 @@ export interface WeeklyScheduleGridViewProps {
   /** 曜日ヘッダー行の一番右に表示する要素（例: 通塾日程ボタン） */
   headerRightContent?: React.ReactNode;
   getKoushuInfo?: (studentId: string) => { enrolled: number; scheduled: number } | null;
+  subjectNameById?: Map<string, string>;
 }
 
 export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
@@ -95,6 +96,7 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
     onBoothAssign,
     headerRightContent,
     getKoushuInfo,
+    subjectNameById,
   } = props;
 
   const todayLocal = getTodayLocalDateStr();
@@ -294,6 +296,7 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
                           : undefined
                       }
                       getKoushuInfo={getKoushuInfo}
+                      subjectNameById={subjectNameById}
                     />
                   </div>
                 );

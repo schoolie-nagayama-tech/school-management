@@ -92,6 +92,8 @@ export interface TeacherCardProps {
   onTransferTargetClick?: (date: string, slotId: string, teacherId: string) => void;
   /** 講習モード: 生徒IDから申し込み情報を返すコールバック */
   getKoushuInfo?: (studentId: string) => { enrolled: number; scheduled: number } | null;
+  /** 講師ミニラベル（指導科目）表示用の subjectId → 名前 マップ */
+  subjectNameById?: Map<string, string>;
 }
 
 export const TeacherCard = React.memo(function TeacherCard({
@@ -111,6 +113,7 @@ export const TeacherCard = React.memo(function TeacherCard({
   transferMode,
   onTransferTargetClick,
   getKoushuInfo,
+  subjectNameById,
 }: TeacherCardProps) {
   const dropId = getTeacherSlotId(date, timeSlotId, teacher.id);
   const { isOver, setNodeRef } = useDroppable({ id: dropId });
@@ -206,8 +209,37 @@ export const TeacherCard = React.memo(function TeacherCard({
   const remaining = maxStudents - activeEntries.length;
   const slotLabel = remaining === 0 ? '満員' : `残${remaining}`;
 
+  // K-3: 講師のミニラベル
+  // 担当未決定や講師未登録は除外（teacher.id が正規IDの時のみ表示）。
+  // 指導科目は最大3つまで頭文字。性別はアイコン。tooltip で全体を見せる。
+  const teachableLabels = (() => {
+    if (isUnassigned) return [] as string[];
+    const ids = teacher.teachable_subject_ids ?? [];
+    if (ids.length === 0 || !subjectNameById) return [] as string[];
+    return ids
+      .map((id) => subjectNameById.get(id))
+      .filter((n): n is string => !!n);
+  })();
+  const teachableTooltip =
+    teachableLabels.length > 0 ? `指導: ${teachableLabels.join('・')}` : '';
+  const genderLabel =
+    teacher.gender === 'male' ? '男' : teacher.gender === 'female' ? '女' : '';
+
   const isOverAndCanDrop = isOver && (canDrop || canAcceptTeacherDrop);
   const isOverAndCannotDrop = isOver && !canDrop && !canAcceptTeacherDrop && activeDragEntry;
+
+  // K-2: ドラッグ中の「探索ハイライト」
+  // 生徒カードをドラッグしている最中、ドロップ可能なセルは ring を出して目立たせ、
+  // 不可能なセルは半透明 + グレースケールで目立たなくする（ノイズ削減）。
+  // canDrop=true（同じセル除く）以外で false の場合だけ抑制をかける。
+  const isDragInProgress = !!activeDragEntry;
+  const isSameCell =
+    activeDragEntry &&
+    activeDragEntry.entry_date === date &&
+    activeDragEntry.time_slot_id === timeSlotId &&
+    activeDragEntry.teacher_id === teacher.id;
+  const isDimmedDuringDrag =
+    isDragInProgress && !canDrop && !canAcceptTeacherDrop && !isSameCell;
 
   const handleTransferClick = () => {
     if (transferMode && onTransferTargetClick) onTransferTargetClick(date, timeSlotId, teacher.id);
@@ -216,9 +248,15 @@ export const TeacherCard = React.memo(function TeacherCard({
   // 出勤可能だが授業なし → コンパクトな1行バッジ表示。
   // ドラッグ可能。担当未決定セル（破線warningの「未定: 生徒名」）にドロップすると割当できる。
   if (isAvailableOnly) {
+    // ドラッグソース (setDragRef) とドロップターゲット (setNodeRef) を同じ要素に統合する。
+    // 自分自身に落とすことは canDrop の同セル判定で弾かれるので問題ない。
+    const combinedRef = (node: HTMLDivElement | null) => {
+      setDragRef(node);
+      setNodeRef(node);
+    };
     return (
       <div
-        ref={setDragRef}
+        ref={combinedRef}
         {...dragAttrs}
         {...dragListeners}
         className={`
@@ -227,6 +265,10 @@ export const TeacherCard = React.memo(function TeacherCard({
           transition-[opacity,box-shadow,background-color] duration-150
           ${isDragging ? 'opacity-40' : 'hover:bg-white hover:border-gray-300 hover:text-gray-600 hover:shadow-sm'}
           ${transferMode ? 'cursor-pointer hover:border-[var(--primary)]/40 hover:bg-gray-50' : ''}
+          ${canDrop && !isOver ? 'ring-1 ring-emerald-400/60 ring-offset-1' : ''}
+          ${isOverAndCanDrop ? 'ring-2 ring-green-400 bg-green-50' : ''}
+          ${isOverAndCannotDrop ? 'ring-2 ring-red-400 bg-red-50 cursor-not-allowed' : ''}
+          ${isDimmedDuringDrag ? 'opacity-30 grayscale' : ''}
         `}
         onClick={transferMode ? handleTransferClick : undefined}
         role={transferMode ? 'button' : undefined}
@@ -260,6 +302,8 @@ export const TeacherCard = React.memo(function TeacherCard({
           : 'border-[color:color-mix(in_oklch,var(--primary)_25%,#e5e7eb)] bg-white shadow-sm hover:shadow-md hover:bg-gray-50'}
         ${transferMode ? 'cursor-pointer hover:border-[var(--primary)]/40 hover:bg-gray-50/50' : ''}
         ${canAcceptTeacherDrop && !isOver ? 'ring-1 ring-info/30 ring-offset-1' : ''}
+        ${canDrop && !isOver ? 'ring-1 ring-emerald-400/60 ring-offset-1' : ''}
+        ${isDimmedDuringDrag ? 'opacity-30 grayscale' : ''}
         ${isOverAndCanDrop ? 'ring-2 ring-green-400 bg-green-50/50' : ''}
         ${isOverAndCannotDrop ? 'ring-2 ring-red-400 bg-red-50/50 cursor-not-allowed' : ''}
       `}
@@ -285,7 +329,19 @@ export const TeacherCard = React.memo(function TeacherCard({
       >
         <span className={`min-w-0 truncate flex-1 text-xs font-medium ${isUnassigned ? 'text-warning' : 'text-gray-700'}`}>
           {displayName}
+          {/* 性別アイコン（M/F）。指導可能科目チップは下の行に出す */}
+          {genderLabel && (
+            <span
+              className={`ml-1 inline-block text-[9px] font-bold align-middle ${
+                teacher.gender === 'male' ? 'text-blue-500' : 'text-pink-500'
+              }`}
+              title={`${genderLabel}性`}
+            >
+              {genderLabel}
+            </span>
+          )}
         </span>
+        <span className="flex-shrink-0 ml-1 text-[10px] text-gray-400 tabular-nums">{slotLabel}</span>
         <button
           type="button"
           onClick={(e) => {
@@ -299,6 +355,22 @@ export const TeacherCard = React.memo(function TeacherCard({
           ×
         </button>
       </div>
+      {/* 指導可能科目のミニチップ。最大3個、超過分は +N */}
+      {teachableLabels.length > 0 && (
+        <div className="flex gap-0.5 px-1.5 py-0.5 border-b border-gray-100 overflow-hidden" title={teachableTooltip}>
+          {teachableLabels.slice(0, 3).map((label) => (
+            <span
+              key={label}
+              className="inline-block px-1 py-0 rounded text-[9px] leading-tight text-sky-700 bg-sky-50 border border-sky-100 whitespace-nowrap"
+            >
+              {label}
+            </span>
+          ))}
+          {teachableLabels.length > 3 && (
+            <span className="text-[9px] text-gray-400 leading-tight">+{teachableLabels.length - 3}</span>
+          )}
+        </div>
+      )}
 
       <div ref={setNodeRef} className="relative p-1 rounded-b-xl">
         <div className="space-y-1">

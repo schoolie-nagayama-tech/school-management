@@ -157,6 +157,8 @@ export interface WeeklyScheduleGridProps {
   /** 曜日ヘッダー行の一番右に表示する要素（例: 通塾日程ボタン） */
   headerRightContent?: React.ReactNode;
   getKoushuInfo?: (studentId: string) => { enrolled: number; scheduled: number } | null;
+  /** 講師カードのミニラベル表示用：科目ID → 名前 */
+  subjectNameById?: Map<string, string>;
 }
 
 export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
@@ -185,6 +187,7 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
     onBoothAssign,
     headerRightContent,
     getKoushuInfo,
+    subjectNameById,
   } = props;
 
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -372,6 +375,7 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
       onBoothAssign={onBoothAssign}
       headerRightContent={headerRightContent}
       getKoushuInfo={getKoushuInfo}
+      subjectNameById={subjectNameById}
     />
   );
 }
