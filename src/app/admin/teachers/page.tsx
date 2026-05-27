@@ -91,8 +91,17 @@ export default function TeachersPage() {
   const [allBadges, setAllBadges] = useState<TeacherBadge[]>([]);
   const [teacherBadgeMap, setTeacherBadgeMap] = useState<Map<string, TeacherBadgeAssignment[]>>(new Map());
   const [badgeFilter, setBadgeFilter] = useState<string>('all');
-  const [schoolFilter, setSchoolFilter] = useState<string>('all');
+  // ページ内「教室:」フィルタ。ヘッダーの教室セレクタ (selectedSchoolId) と同期させ、
+  // 編集→保存→一覧に戻ったときも選択中教室に絞り込まれた状態を維持する。
+  const [schoolFilter, setSchoolFilter] = useState<string>(() =>
+    selectedSchoolId && selectedSchoolId !== 'all' ? selectedSchoolId : 'all'
+  );
   const [sortByBadges, setSortByBadges] = useState(false);
+
+  // ヘッダーの教室選択が変わったら、ページ内フィルタも追随させる
+  useEffect(() => {
+    setSchoolFilter(selectedSchoolId && selectedSchoolId !== 'all' ? selectedSchoolId : 'all');
+  }, [selectedSchoolId]);
 
   // 今日新しいバッジを取った講師ID（名前横に閃光を出すため）
   const freshBadgeTeacherIds = useFreshBadgeTeachers();
