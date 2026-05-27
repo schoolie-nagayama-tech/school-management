@@ -567,6 +567,11 @@ export default function TeachersPage() {
                                 詳細
                               </Button>
                             </Link>
+                            <Link href={`/admin/teachers/${teacher.id}/edit`}>
+                              <Button variant="ghost" className="p-2">
+                                編集
+                              </Button>
+                            </Link>
                             <Button
                               variant="ghost"
                               onClick={() => handleToggleActive(teacher)}
