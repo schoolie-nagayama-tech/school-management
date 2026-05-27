@@ -175,7 +175,7 @@ export const TeacherCard = React.memo(function TeacherCard({
         {...dragAttrs}
         {...dragListeners}
         className={`
-          flex items-center gap-1 px-2 py-1 rounded-lg border border-dashed border-gray-200
+          flex items-center gap-0.5 px-1.5 py-0.5 rounded-md border border-dashed border-gray-200
           bg-gray-50/50 text-gray-400 cursor-grab active:cursor-grabbing
           transition-[opacity,box-shadow,background-color] duration-150
           ${isDragging ? 'opacity-40' : 'hover:bg-white hover:border-gray-300 hover:text-gray-600 hover:shadow-sm'}
@@ -185,13 +185,12 @@ export const TeacherCard = React.memo(function TeacherCard({
         role={transferMode ? 'button' : undefined}
         title="ドラッグして担当未決定セルに割当できます"
       >
-        <GripVertical className="w-3 h-3 text-gray-300 flex-shrink-0" />
-        <span className="text-xs truncate flex-1 min-w-0">{displayName}</span>
-        <span className="text-[10px] text-gray-300 flex-shrink-0 tabular-nums">{slotLabel}</span>
+        <GripVertical className="w-2.5 h-2.5 text-gray-300 flex-shrink-0" />
+        <span className="text-[11px] truncate flex-1 min-w-0">{displayName}</span>
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); onRemoveTeacher(); }}
-          className="flex-shrink-0 w-4 h-4 flex items-center justify-center rounded text-gray-300 hover:text-red-400 text-xs"
+          className="flex-shrink-0 w-3.5 h-3.5 flex items-center justify-center rounded text-gray-300 hover:text-red-400 text-[10px]"
           aria-label="講師を削除"
         >
           ×
@@ -222,7 +221,7 @@ export const TeacherCard = React.memo(function TeacherCard({
     >
       {/* ヘッダー：振替モード中もクリックで振替先を選べるよう onClick を設定 */}
       <div
-        className="flex justify-between items-center px-2 py-1.5 border-b border-gray-100"
+        className="flex justify-between items-center px-1.5 py-1 border-b border-gray-100"
         onClick={(e) => {
           if (transferMode) {
             e.stopPropagation();
@@ -230,11 +229,8 @@ export const TeacherCard = React.memo(function TeacherCard({
           }
         }}
       >
-        <span className={`min-w-0 truncate flex-1 text-sm font-medium ${isUnassigned ? 'text-warning' : 'text-gray-700'}`}>
+        <span className={`min-w-0 truncate flex-1 text-xs font-medium ${isUnassigned ? 'text-warning' : 'text-gray-700'}`}>
           {displayName}
-        </span>
-        <span className="flex-shrink-0 ml-2 text-right tabular-nums text-xs text-gray-400">
-          {slotLabel}
         </span>
         <button
           type="button"
@@ -243,14 +239,14 @@ export const TeacherCard = React.memo(function TeacherCard({
             e.stopPropagation();
             onRemoveTeacher();
           }}
-          className="flex-shrink-0 ml-1 w-5 h-5 flex items-center justify-center rounded text-gray-400 hover:text-red-500 hover:bg-red-50 text-xs"
+          className="flex-shrink-0 ml-1 w-4 h-4 flex items-center justify-center rounded text-gray-300 hover:text-red-500 hover:bg-red-50 text-[10px]"
           aria-label="講師を削除"
         >
           ×
         </button>
       </div>
 
-      <div ref={setNodeRef} className="relative p-1.5 rounded-b-xl">
+      <div ref={setNodeRef} className="relative p-1 rounded-b-xl">
         <div className="space-y-1">
           {displayEntries.map((entry) => {
             const ki = getKoushuInfo?.(entry.student_id);

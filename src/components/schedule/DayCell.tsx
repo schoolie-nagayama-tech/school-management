@@ -72,7 +72,7 @@ export const DayCell = React.memo(function DayCell({
   // 1セル幅が狭い時 (xs) は 1 列、それ以外 2 列。
   return (
     <div className="py-1 min-h-[40px]">
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-1">
+      <div className="grid grid-cols-2 gap-1">
         {teacherGroups.map((group) => (
           <TeacherCard
             key={group.teacher.id}
