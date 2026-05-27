@@ -74,7 +74,7 @@ import type { School, Student, Subject } from '@/types/database';
 import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
-import { Clock, BookOpen } from 'lucide-react';
+import { Clock, BookOpen, GraduationCap, FileText } from 'lucide-react';
 import { SchoolSwitcher } from '@/components/SchoolSwitcher';
 import {
   getKoushuEnrollments,
@@ -1131,8 +1131,33 @@ export default function SchedulePage() {
     );
   }
 
+  // 右上に置く見本誘導ボタン（講習機能・報告書）
+  // 現状ナビメニューには露出していないが、関係者にデモする用途の常設リンク。
+  // 個別の報告書 URL はサンプルとして任意の scheduleEntryId を選ぶ動線が無いため、
+  // 「承認待ち一覧」を入口にしてそこから1件選んで開く設計とする。
+  const headerActions = (
+    <div className="flex items-center gap-2">
+      <Link
+        href="/schedule/koushu"
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-border-default rounded-lg bg-white text-text-body hover:bg-surface hover:border-info/40 hover:text-info transition-colors"
+        title="講習スケジュールを開く（デモ用）"
+      >
+        <GraduationCap className="w-3.5 h-3.5" />
+        講習
+      </Link>
+      <Link
+        href="/lesson-reports/pending"
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-border-default rounded-lg bg-white text-text-body hover:bg-surface hover:border-info/40 hover:text-info transition-colors"
+        title="授業報告書一覧を開く（デモ用）"
+      >
+        <FileText className="w-3.5 h-3.5" />
+        報告書
+      </Link>
+    </div>
+  );
+
   return (
-    <AdminLayout headerTitle="座席表">
+    <AdminLayout headerTitle="座席表" actions={headerActions}>
       <div className="space-y-6">
         {/* コンテキストヘルプ */}
         <div className="flex justify-end -mb-4">
