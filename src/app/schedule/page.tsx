@@ -439,6 +439,29 @@ export default function SchedulePage() {
     refreshEntries();
   }, [refreshEntries]);
 
+  // タブ復帰 / window focus 時の自動再取得。
+  // マッチング画面で割当した後に座席表へ戻ったとき、古いキャッシュではなく最新を出すため。
+  // 10 秒以内の再フォーカスは throttle してスパムリロードを避ける。
+  useEffect(() => {
+    if (!schoolId) return;
+    let lastReloadAt = Date.now();
+    const THROTTLE_MS = 10_000;
+
+    const tryReload = () => {
+      if (document.visibilityState === 'hidden') return;
+      if (Date.now() - lastReloadAt < THROTTLE_MS) return;
+      lastReloadAt = Date.now();
+      refreshEntries();
+    };
+
+    window.addEventListener('focus', tryReload);
+    document.addEventListener('visibilitychange', tryReload);
+    return () => {
+      window.removeEventListener('focus', tryReload);
+      document.removeEventListener('visibilitychange', tryReload);
+    };
+  }, [schoolId, refreshEntries]);
+
   const handleEntryClick = useCallback((entry: ScheduleEntry, e: React.MouseEvent) => {
     e.stopPropagation();
     setActionModalEntry(entry);
