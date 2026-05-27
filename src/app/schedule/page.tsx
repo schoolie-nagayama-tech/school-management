@@ -42,10 +42,6 @@ const PendingTransfersBoard = dynamic(
   () => import('@/components/schedule/PendingTransfersBoard').then((m) => m.PendingTransfersBoard),
   { ssr: false }
 );
-const UnassignedEntriesPool = dynamic(
-  () => import('@/components/schedule/UnassignedEntriesPool').then((m) => m.UnassignedEntriesPool),
-  { ssr: false }
-);
 const KoushuPlacementPanel = dynamic(
   () => import('@/components/schedule/KoushuPlacementPanel').then((m) => m.KoushuPlacementPanel),
   { ssr: false }
@@ -1197,30 +1193,29 @@ export default function SchedulePage() {
           <ScheduleDriftBanner schoolId={schoolId} userId={profile?.id} />
         )}
 
-        {/* 担当未決定エントリプール: 座席表から切り離して上部に集約。
-            生徒チップをドラッグして座席表内の講師セルにドロップすると割当できる。
-            一括マッチング画面への導線もここに集約。 */}
+        {/* 担当未決定エントリのサマリ：未配置の合計数 + 一括マッチング画面への導線。
+            実際の未配置生徒は各 DayCell の下部にミニチップで表示されるので、
+            ここは「全体の進捗」と「機械的に決めたい場合の導線」だけ */}
         {(() => {
           const unassignedCount = displayEntries.filter(
             (e) => !e.teacher_id && e.status !== 'cancelled' && e.status !== 'transferred_out'
           ).length;
-          if (unassignedCount === 0 || !timeSlots.length) return null;
+          if (unassignedCount === 0) return null;
           return (
-            <div className="space-y-1.5 print:hidden">
-              <div className="flex items-center gap-2 text-xs text-text-muted">
-                <Link
-                  href="/schedule/regular-patterns/match"
-                  className="ml-auto text-info hover:underline font-semibold"
-                >
-                  一括マッチング画面で機械的に決める →
-                </Link>
-              </div>
-              <UnassignedEntriesPool
-                entries={displayEntries}
-                timeSlots={timeSlots}
-                weekDates={weekDates}
-                subjectNameById={new Map(masterSubjects.map((s) => [s.id, s.name]))}
-              />
+            <div className="flex items-center gap-3 px-3 py-1.5 rounded-lg bg-warning-subtle/40 border border-warning/30 text-xs print:hidden">
+              <span className="text-warning font-semibold flex items-center gap-1.5">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-warning animate-pulse" />
+                今週の未配置: {unassignedCount} コマ
+              </span>
+              <span className="text-text-muted">
+                各コマ下部のチップを上の講師カードへドラッグして割当
+              </span>
+              <Link
+                href="/schedule/regular-patterns/match"
+                className="ml-auto text-info hover:underline font-semibold"
+              >
+                一括マッチング画面で機械的に決める →
+              </Link>
             </div>
           );
         })()}

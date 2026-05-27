@@ -289,6 +289,24 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
     [teachers, schoolId]
   );
 
+  /**
+   * セル (dateStr, slotId) の未配置エントリ (teacher_id NULL) を返す。
+   * DayCell に渡してミニチップとして表示する。
+   */
+  const getUnassignedEntriesForCell = useCallback(
+    (dateStr: string, slotId: string): ScheduleEntry[] => {
+      return entries.filter(
+        (e) =>
+          e.entry_date === dateStr &&
+          e.time_slot_id === slotId &&
+          !e.teacher_id &&
+          e.status !== 'cancelled' &&
+          e.status !== 'transferred_out'
+      );
+    },
+    [entries]
+  );
+
   /** セル (dateStr, slotId) に出勤可能な講師を全員含む teacherGroups */
   const getTeacherGroupsForCell = useCallback(
     (dateStr: string, slotId: string, _slotNumber: number) => {
@@ -349,6 +367,7 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
         groupEntriesByTeacher(e, d, s, teachersMap)
       }
       getTeacherGroupsForCell={getTeacherGroupsForCell}
+      getUnassignedEntriesForCell={getUnassignedEntriesForCell}
       onDragStart={(e) => setActiveId(String(e.active.id))}
       onDragEnd={handleDragEnd}
       onAddTeacher={onAddTeacher}

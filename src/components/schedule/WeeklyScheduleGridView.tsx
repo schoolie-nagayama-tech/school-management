@@ -53,6 +53,8 @@ export interface WeeklyScheduleGridViewProps {
   activeEntry: ScheduleEntry | null;
   groupEntriesByTeacher: (entries: ScheduleEntry[], date: string, slotId: string) => TeacherGroup[];
   getTeacherGroupsForCell: (dateStr: string, slotId: string, slotNumber: number) => TeacherGroup[];
+  /** セル別の未配置エントリ (teacher_id NULL) を取得 */
+  getUnassignedEntriesForCell?: (dateStr: string, slotId: string) => ScheduleEntry[];
   onDragStart: (e: DragStartEvent) => void;
   onDragEnd: (event: DragEndEvent) => void;
   onAddTeacher: (date: string, slotId: string, existingTeacherIds: string[]) => void;
@@ -84,6 +86,7 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
     activeEntry,
     groupEntriesByTeacher: _groupEntriesByTeacher,
     getTeacherGroupsForCell,
+    getUnassignedEntriesForCell,
     onDragStart,
     onDragEnd,
     onAddTeacher,
@@ -278,6 +281,9 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
                       timeSlot={slot}
                       isClosed={isClosed}
                       teacherGroups={teacherGroups}
+                      unassignedEntries={
+                        getUnassignedEntriesForCell?.(dateStr, slot.id) ?? []
+                      }
                       maxStudentsPerTeacher={maxStudentsPerTeacher}
                       activeDragId={activeId}
                       activeDragEntry={activeEntry}
