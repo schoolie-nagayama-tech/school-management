@@ -34,6 +34,7 @@ import {
   type UnassignedPatternRow,
   type PatternMatchCandidate,
 } from '@/lib/api/pattern-matching';
+import { logScheduleChange } from '@/lib/api/schedule-change-logs';
 import { CheckCircle2, Filter, RefreshCw, Sparkles, Info, X } from 'lucide-react';
 import AccessDenied from '@/components/AccessDenied';
 
@@ -132,7 +133,21 @@ export default function PatternMatchPage() {
   const handleAssign = async (patternId: string, teacherId: string) => {
     setActingPatternId(patternId);
     try {
+      const pattern = patterns.find((p) => p.id === patternId);
       const result = await assignTeacherToPattern(patternId, teacherId);
+      // 履歴ログ：マッチング画面からの恒久割当
+      if (schoolId && pattern) {
+        await logScheduleChange({
+          school_id: schoolId,
+          actor_user_id: profile?.id ?? null,
+          action_type: 'pattern_assign',
+          pattern_id: patternId,
+          student_id: pattern.student_id,
+          before_teacher_id: null,
+          after_teacher_id: teacherId,
+          description: `一括マッチング画面から割当 (${result.entriesUpdated} 件の未来エントリも更新)`,
+        });
+      }
       success(`割当完了（${result.entriesUpdated} 件のエントリも更新）`);
       // パターンをローカルから削除（同じ画面に出続けないように）
       setPatterns((prev) => prev.filter((p) => p.id !== patternId));

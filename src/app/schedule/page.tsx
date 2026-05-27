@@ -68,6 +68,7 @@ import {
   getMonthlyTransferUsage,
 } from '@/lib/api/schedule';
 import { assignTeacherToPattern } from '@/lib/api/pattern-matching';
+import { logScheduleChange } from '@/lib/api/schedule-change-logs';
 import type { ScheduleEntry, ScheduleEntryFormData, ScheduleTimeSlot } from '@/types/schedule';
 import type { School, Student, Subject } from '@/types/database';
 import AccessDenied from '@/components/AccessDenied';
@@ -792,6 +793,18 @@ export default function SchedulePage() {
           fromEntry.teacher_id === targetTeacherId
         ) {
           await revertTransferEntry(entry.id);
+          await logScheduleChange({
+            school_id: schoolId,
+            actor_user_id: profile?.id ?? null,
+            action_type: 'transfer_revert',
+            entry_id: entry.id,
+            student_id: entry.student_id,
+            before_teacher_id: entry.teacher_id ?? null,
+            after_teacher_id: null,
+            affected_date: entry.entry_date,
+            affected_slot_id: entry.time_slot_id,
+            description: '振替を取消',
+          });
           success('元の授業に戻しました');
           refreshEntries();
           return;
@@ -825,6 +838,18 @@ export default function SchedulePage() {
           }
         }
         await moveScheduleEntry(entry.id, targetDate, targetSlotId, targetTeacherId);
+        await logScheduleChange({
+          school_id: schoolId,
+          actor_user_id: profile?.id ?? null,
+          action_type: 'entry_reassign',
+          entry_id: entry.id,
+          student_id: entry.student_id,
+          before_teacher_id: entry.teacher_id ?? null,
+          after_teacher_id: targetTeacherId,
+          affected_date: targetDate,
+          affected_slot_id: targetSlotId,
+          description: '同日内の担当講師を変更（移動）',
+        });
         success('授業を移動しました');
         refreshEntries();
         return;
@@ -865,13 +890,25 @@ export default function SchedulePage() {
         targetTeacherId,
         null
       );
+      await logScheduleChange({
+        school_id: schoolId,
+        actor_user_id: profile?.id ?? null,
+        action_type: 'transfer_create',
+        entry_id: entry.id,
+        student_id: entry.student_id,
+        before_teacher_id: entry.teacher_id ?? null,
+        after_teacher_id: targetTeacherId,
+        affected_date: entry.entry_date,
+        affected_slot_id: entry.time_slot_id,
+        description: `${entry.entry_date} → ${targetDate} へ振替`,
+      });
       success('振替を登録しました');
       setTransferOverLimitConfirm(null);
       refreshEntries();
     } catch (e) {
       toastError((e as Error).message);
     }
-  }, [entriesWithSubjects, entries, schoolId, success, refreshEntries, toastError, teachers, timeSlots, transferOverLimitConfirm]);
+  }, [entriesWithSubjects, entries, schoolId, success, refreshEntries, toastError, teachers, timeSlots, transferOverLimitConfirm, profile?.id]);
 
   // 出勤可能講師カードを担当未決定エントリにD&Dしたとき：
   // - 即時には確定せず、画面下に「このコマだけ / 毎週このコマ」の選択バーを出す
@@ -905,9 +942,25 @@ export default function SchedulePage() {
     if (!pendingAssignment) return;
     setIsAssigning(true);
     try {
+      const beforeEntry = entriesWithSubjects.find((e) => e.id === pendingAssignment.entryId);
       await updateScheduleEntry(pendingAssignment.entryId, {
         teacher_id: pendingAssignment.teacherId,
       });
+      // 履歴ログ：このコマだけ割当 / 担当変更
+      if (schoolId && beforeEntry) {
+        await logScheduleChange({
+          school_id: schoolId,
+          actor_user_id: profile?.id ?? null,
+          action_type: beforeEntry.teacher_id ? 'entry_reassign' : 'entry_assign',
+          entry_id: pendingAssignment.entryId,
+          student_id: beforeEntry.student_id,
+          before_teacher_id: beforeEntry.teacher_id ?? null,
+          after_teacher_id: pendingAssignment.teacherId,
+          affected_date: beforeEntry.entry_date,
+          affected_slot_id: beforeEntry.time_slot_id,
+          description: `${pendingAssignment.dateLabel} のみ ${pendingAssignment.teacherName} に割当`,
+        });
+      }
       success(`${pendingAssignment.dateLabel}のみ ${pendingAssignment.teacherName} に割当`);
       setPendingAssignment(null);
       refreshEntries();
@@ -916,7 +969,7 @@ export default function SchedulePage() {
     } finally {
       setIsAssigning(false);
     }
-  }, [pendingAssignment, success, toastError, refreshEntries]);
+  }, [pendingAssignment, success, toastError, refreshEntries, entriesWithSubjects, schoolId, profile?.id]);
 
   // 「毎週このコマ」: 通塾日程パターンと未来エントリを一括更新
   const confirmAssignPermanent = useCallback(async () => {
@@ -928,10 +981,27 @@ export default function SchedulePage() {
     }
     setIsAssigning(true);
     try {
+      const beforeEntry = entriesWithSubjects.find((e) => e.id === pendingAssignment.entryId);
       const result = await assignTeacherToPattern(
         pendingAssignment.regularPatternId,
         pendingAssignment.teacherId
       );
+      // 履歴ログ：パターン割当（恒久）
+      if (schoolId && beforeEntry) {
+        await logScheduleChange({
+          school_id: schoolId,
+          actor_user_id: profile?.id ?? null,
+          action_type: 'pattern_assign',
+          pattern_id: pendingAssignment.regularPatternId,
+          entry_id: pendingAssignment.entryId,
+          student_id: beforeEntry.student_id,
+          before_teacher_id: beforeEntry.teacher_id ?? null,
+          after_teacher_id: pendingAssignment.teacherId,
+          affected_date: beforeEntry.entry_date,
+          affected_slot_id: beforeEntry.time_slot_id,
+          description: `毎週このコマを ${pendingAssignment.teacherName} に割当（${result.entriesUpdated}件のコマも更新）`,
+        });
+      }
       success(
         `${pendingAssignment.studentName} の毎週分に ${pendingAssignment.teacherName} を割当（${result.entriesUpdated}件のコマも更新）`
       );
@@ -942,7 +1012,7 @@ export default function SchedulePage() {
     } finally {
       setIsAssigning(false);
     }
-  }, [pendingAssignment, success, toastError, refreshEntries, confirmAssignTransient]);
+  }, [pendingAssignment, success, toastError, refreshEntries, confirmAssignTransient, entriesWithSubjects, schoolId, profile?.id]);
 
   const selectedSchool = useMemo(() => schools.find((s) => s.id === schoolId), [schools, schoolId]);
 
