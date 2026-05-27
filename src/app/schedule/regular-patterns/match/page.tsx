@@ -19,13 +19,14 @@
  *  - 未割当残数の表示
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { AdminLayout } from '@/components/layouts';
 import { Card, CardContent } from '@/components/ui';
 import { Button } from '@/components/ui';
 import { ToastContainer, Loading } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMasterData } from '@/contexts/MasterDataContext';
 import {
   getUnassignedPatterns,
   getPatternMatchCandidates,
@@ -33,7 +34,7 @@ import {
   type UnassignedPatternRow,
   type PatternMatchCandidate,
 } from '@/lib/api/pattern-matching';
-import { CheckCircle2, Filter, RefreshCw, Sparkles } from 'lucide-react';
+import { CheckCircle2, Filter, RefreshCw, Sparkles, Info, X } from 'lucide-react';
 import AccessDenied from '@/components/AccessDenied';
 
 const DAY_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
@@ -46,6 +47,7 @@ function gradeLabel(g: number): string {
 
 export default function PatternMatchPage() {
   const { profile, selectedSchoolId, getSelectedSchoolIds } = useAuth();
+  const { subjects: masterSubjects } = useMasterData();
   const { toasts, removeToast, success, error: toastError } = useToast();
 
   const [patterns, setPatterns] = useState<UnassignedPatternRow[]>([]);
@@ -56,6 +58,17 @@ export default function PatternMatchPage() {
   const [actingPatternId, setActingPatternId] = useState<string | null>(null);
   const [filterDay, setFilterDay] = useState<number | 'all'>('all');
   const [filterSingleCandidate, setFilterSingleCandidate] = useState(false);
+  const [showLegend, setShowLegend] = useState(false);
+  // 「全候補を見る」モーダルで開いているパターン
+  const [allCandidatesPattern, setAllCandidatesPattern] = useState<UnassignedPatternRow | null>(
+    null
+  );
+
+  // 科目ID → 名前への解決マップ
+  const subjectNameById = useMemo(
+    () => new Map(masterSubjects.map((s) => [s.id, s.name])),
+    [masterSubjects]
+  );
 
   const isManager =
     profile?.role === 'admin' || profile?.role === 'manager' || profile?.role === 'owner';
@@ -156,7 +169,7 @@ export default function PatternMatchPage() {
   }
 
   return (
-    <AdminLayout>
+    <AdminLayout headerTitle="通塾日程 講師マッチング">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="max-w-5xl mx-auto p-4 space-y-4">
 
@@ -167,11 +180,59 @@ export default function PatternMatchPage() {
               担当未決定の通塾日程に講師を割り当てます。シフト・教科対応・希望ルールを考慮した候補を表示。
             </p>
           </div>
-          <Button variant="outline" size="sm" onClick={load} disabled={isLoading}>
-            <RefreshCw className={`w-3.5 h-3.5 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
-            再取得
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowLegend((v) => !v)}
+              title="スコアの意味と色分けを表示"
+            >
+              <Info className="w-3.5 h-3.5 mr-1" />
+              凡例
+            </Button>
+            <Button variant="outline" size="sm" onClick={load} disabled={isLoading}>
+              <RefreshCw className={`w-3.5 h-3.5 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
+              再取得
+            </Button>
+          </div>
         </div>
+
+        {/* スコア凡例：講師バッジ横の数字や色の意味を1パネルで説明 */}
+        {showLegend && (
+          <Card>
+            <CardContent className="p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold flex items-center gap-1.5">
+                  <Info className="w-3.5 h-3.5 text-info" />
+                  講師バッジの読み方
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowLegend(false)}
+                  className="text-xs text-text-muted hover:text-text-body"
+                  aria-label="凡例を閉じる"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <div className="text-xs text-text-muted leading-relaxed">
+                バッジ右の数字は <strong>マッチングスコア</strong>。高いほど推薦度が高い。
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
+                <ScorePill score="50+" color="success" label="◎ 担当固定" />
+                <ScorePill score="30+" color="info" label="○ 過去6か月担当" />
+                <ScorePill score="20+" color="muted" label="教科対応" />
+                <ScorePill score="10+" color="muted" label="希望性別一致" />
+                <ScorePill score="5" color="muted" label="ベース: 出勤可能" />
+                <ScorePill score="+5" color="muted" label="当該コマも出勤可" />
+              </div>
+              <div className="text-[11px] text-text-faint pt-1 border-t border-border-subtle">
+                色: <span className="text-success font-semibold">緑=即決推奨 (50+)</span> ／
+                <span className="text-info font-semibold ml-1">青=有力 (30+)</span> ／ 白=候補
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardContent className="p-3 flex flex-wrap items-center gap-3">
@@ -266,9 +327,22 @@ export default function PatternMatchPage() {
                           return (
                             <li key={p.id} className="px-4 py-3">
                               <div className="flex items-start gap-3 flex-wrap">
-                                <div className="min-w-[150px]">
+                                <div className="min-w-[180px]">
                                   <div className="font-semibold text-sm">{studentName}</div>
                                   <div className="text-xs text-text-muted">{grade}</div>
+                                  {/* 科目チップ：何の授業をする予定の枠か一目で分かるように */}
+                                  {p.subject_ids && p.subject_ids.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 mt-1">
+                                      {p.subject_ids.map((sid) => (
+                                        <span
+                                          key={sid}
+                                          className="inline-block px-1.5 py-0.5 text-[10px] rounded bg-sky-50 text-sky-800 border border-sky-200"
+                                        >
+                                          {subjectNameById.get(sid) ?? sid.slice(0, 6)}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   {candidates === undefined ? (
@@ -302,9 +376,13 @@ export default function PatternMatchPage() {
                                         </button>
                                       ))}
                                       {candidates.length > 6 && (
-                                        <span className="text-xs text-text-faint self-center">
-                                          +他 {candidates.length - 6} 名
-                                        </span>
+                                        <button
+                                          type="button"
+                                          onClick={() => setAllCandidatesPattern(p)}
+                                          className="text-xs text-info hover:underline self-center px-1.5 py-1 rounded hover:bg-info-subtle/50 transition-colors"
+                                        >
+                                          全候補 {candidates.length} 名を見る →
+                                        </button>
                                       )}
                                     </div>
                                   )}
@@ -321,6 +399,165 @@ export default function PatternMatchPage() {
           </div>
         )}
       </div>
+
+      {/* 全候補モーダル：6人で打ち切らず、除外された候補も含めて全部見せる */}
+      {allCandidatesPattern && (
+        <AllCandidatesModal
+          pattern={allCandidatesPattern}
+          candidates={candidatesByPattern.get(allCandidatesPattern.id) ?? []}
+          subjectNameById={subjectNameById}
+          isActing={actingPatternId === allCandidatesPattern.id}
+          onAssign={(teacherId) => {
+            handleAssign(allCandidatesPattern.id, teacherId);
+            setAllCandidatesPattern(null);
+          }}
+          onClose={() => setAllCandidatesPattern(null)}
+        />
+      )}
     </AdminLayout>
+  );
+}
+
+// =========================================================
+// 凡例用の小さなチップ
+// =========================================================
+function ScorePill({
+  score,
+  color,
+  label,
+}: {
+  score: string;
+  color: 'success' | 'info' | 'muted';
+  label: string;
+}) {
+  const cls =
+    color === 'success'
+      ? 'bg-success-subtle border-success text-success'
+      : color === 'info'
+        ? 'bg-info-subtle border-info text-info'
+        : 'bg-white border-border-default text-text-body';
+  return (
+    <div className="flex items-center gap-1.5">
+      <span
+        className={`inline-flex items-center justify-center min-w-[36px] px-1.5 py-0.5 rounded border text-[10px] font-semibold tabular-nums ${cls}`}
+      >
+        {score}
+      </span>
+      <span className="text-text-muted">{label}</span>
+    </div>
+  );
+}
+
+// =========================================================
+// 全候補モーダル
+// =========================================================
+function AllCandidatesModal({
+  pattern,
+  candidates,
+  subjectNameById,
+  isActing,
+  onAssign,
+  onClose,
+}: {
+  pattern: UnassignedPatternRow;
+  candidates: PatternMatchCandidate[];
+  subjectNameById: Map<string, string>;
+  isActing: boolean;
+  onAssign: (teacherId: string) => void;
+  onClose: () => void;
+}) {
+  const studentName = pattern.student
+    ? `${pattern.student.last_name} ${pattern.student.first_name}`
+    : pattern.student_id;
+  const grade = pattern.student ? gradeLabel(pattern.student.grade) : '';
+  const dowLabel = DAY_LABELS[pattern.day_of_week];
+  const slot = pattern.time_slot;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div className="px-5 py-3 border-b border-border-subtle sticky top-0 bg-white flex items-center justify-between">
+          <div className="min-w-0">
+            <h3 className="text-base font-bold text-text-heading truncate">
+              {studentName} <span className="text-xs font-normal text-text-muted ml-1">{grade}</span>
+            </h3>
+            <p className="text-xs text-text-muted">
+              {dowLabel}曜 {slot?.slot_number}限
+              {slot && ` (${slot.start_time?.slice(0, 5)}〜${slot.end_time?.slice(0, 5)})`}
+              {pattern.subject_ids && pattern.subject_ids.length > 0 && (
+                <span className="ml-2">
+                  {pattern.subject_ids.map((sid) => subjectNameById.get(sid) ?? sid).join('・')}
+                </span>
+              )}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-text-muted hover:text-text-body p-1"
+            aria-label="閉じる"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="p-4">
+          {candidates.length === 0 ? (
+            <p className="text-sm text-text-muted text-center py-8">
+              候補講師が見つかりません
+            </p>
+          ) : (
+            <ul className="space-y-1.5">
+              {candidates.map((c) => (
+                <li key={c.user_id}>
+                  <button
+                    type="button"
+                    onClick={() => onAssign(c.user_id)}
+                    disabled={isActing}
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg border text-left transition-colors duration-150 disabled:opacity-50 ${
+                      c.score >= 50
+                        ? 'bg-success-subtle border-success hover:bg-success/15'
+                        : c.score >= 30
+                          ? 'bg-info-subtle border-info hover:bg-info/15'
+                          : 'bg-white border-border-default hover:bg-surface'
+                    }`}
+                  >
+                    <span
+                      className={`flex-shrink-0 inline-flex items-center justify-center w-10 h-7 rounded border text-xs font-bold tabular-nums ${
+                        c.score >= 50
+                          ? 'bg-white border-success text-success'
+                          : c.score >= 30
+                            ? 'bg-white border-info text-info'
+                            : 'bg-surface border-border-default text-text-body'
+                      }`}
+                    >
+                      {c.score}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold text-text-body truncate">
+                        {c.score >= 50 && <CheckCircle2 className="inline w-3.5 h-3.5 mr-1 text-success" />}
+                        {c.display_name || c.email || '名無し'}
+                      </div>
+                      {(c.reasons.length > 0 || c.warnings.length > 0) && (
+                        <div className="text-[11px] text-text-muted mt-0.5 flex flex-wrap gap-x-1.5 gap-y-0.5">
+                          {c.reasons.map((r, i) => (
+                            <span key={`r-${i}`}>・{r}</span>
+                          ))}
+                          {c.warnings.map((w, i) => (
+                            <span key={`w-${i}`} className="text-warning">
+                              ⚠ {w}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

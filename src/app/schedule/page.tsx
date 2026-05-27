@@ -1034,6 +1034,32 @@ export default function SchedulePage() {
           <ScheduleDriftBanner schoolId={schoolId} userId={profile?.id} />
         )}
 
+        {/* 担当未決定エントリのサマリバナー：今週の未決定件数 + マッチング画面への導線
+            「未決定があると授業ができない緊急事態」なので画面上部で目立たせる */}
+        {(() => {
+          const unassignedCount = displayEntries.filter(
+            (e) => !e.teacher_id && e.status !== 'cancelled' && e.status !== 'transferred_out'
+          ).length;
+          if (unassignedCount === 0) return null;
+          return (
+            <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-warning-subtle/60 border border-warning/30 text-sm print:hidden">
+              <span className="text-warning font-semibold flex items-center gap-1.5">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-warning animate-pulse" />
+                担当未決定: {unassignedCount} コマ
+              </span>
+              <span className="text-xs text-text-muted">
+                座席表でドラッグ&ドロップ、または一括マッチング画面で割当できます
+              </span>
+              <Link
+                href="/schedule/regular-patterns/match"
+                className="ml-auto text-xs text-info hover:underline font-semibold"
+              >
+                一括マッチング画面へ →
+              </Link>
+            </div>
+          );
+        })()}
+
         {/* 講習選択中は配置パネルを表示。空きセルクリックで講習コマを追加できる「配置モード」を提供 */}
         {selectedKoushu && (
           <KoushuPlacementPanel
