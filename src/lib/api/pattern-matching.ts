@@ -245,16 +245,22 @@ export async function assignTeacherToPattern(
     throw new Error('パターンの講師更新に失敗しました');
   }
 
-  // 2. 既存エントリ更新（当日以降の担当未決定エントリのみ）
+  // 2. 既存エントリ更新（当日以降のパターン由来エントリすべて）
   //    JST タイムゾーン基準で「今日」を計算しないと、UTC が日付境界またぐ朝〜夜の時間帯で
   //    「当日」が翌日 or 昨日扱いになり、当日のコマが更新対象から外れる事故が起きる。
   //    en-CA ロケールは "YYYY-MM-DD" 形式で UTC ではなく指定タイムゾーンの日付を返す。
+  //
+  //    フィルタ方針：
+  //    - 旧仕様の `.is('teacher_id', null)` は「未配置のみ更新」で再割当が反映されなかった
+  //    - 「再割当（A→B）」も当日から反映させるため、teacher_id NULL チェックを外す
+  //    - 振替系（transferred_in / transferred_out）は触らない → status='scheduled' で絞り込み
+  //    - これにより当日に振替予約があっても、その講師は維持される
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Tokyo' });
   let query = db
     .from('schedule_entries')
     .update({ teacher_id: teacherId })
     .eq('regular_pattern_id', patternId)
-    .is('teacher_id', null);
+    .eq('status', 'scheduled');
   if (options?.updateFutureEntriesOnly !== false) {
     query = query.gte('entry_date', today);
   }
