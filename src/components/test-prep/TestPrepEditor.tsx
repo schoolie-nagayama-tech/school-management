@@ -954,7 +954,7 @@ function SubjectEditor({
                 <td className="px-4 py-2">
                   <div className="flex items-center gap-2">
                     {row.unit.fromMaster && (
-                      <span className="shrink-0 px-1.5 py-0.5 text-[10px] bg-blue-100 text-blue-700 rounded">
+                      <span className="shrink-0 px-1.5 py-0.5 text-[10px] bg-blue-100 text-blue-700 rounded print:hidden">
                         マスタ
                       </span>
                     )}
