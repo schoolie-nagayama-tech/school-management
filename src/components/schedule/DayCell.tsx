@@ -5,7 +5,14 @@ import { TeacherCard } from './TeacherCard';
 import type { ScheduleEntry, ScheduleTimeSlot } from '@/types/schedule';
 
 export interface TeacherGroup {
-  teacher: { id: string; display_name: string | null; email: string | null };
+  teacher: {
+    id: string;
+    display_name: string | null;
+    email: string | null;
+    /** D&D 制約チェックに使用 */
+    teachable_subject_ids?: string[] | null;
+    gender?: 'male' | 'female' | 'other' | null;
+  };
   entries: ScheduleEntry[];
   isAvailableOnly: boolean; // true = 出勤可能だが授業なし
 }

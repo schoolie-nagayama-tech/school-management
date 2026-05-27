@@ -678,7 +678,7 @@ export async function getScheduleEntries(
   toDate: string
 ): Promise<ScheduleEntry[]> {
   const selectWithJoins =
-    '*, time_slot:schedule_time_slots(*), student:students(id, last_name, first_name, grade), teacher:user_profiles!schedule_entries_teacher_id_fkey(id, display_name, email)';
+    '*, time_slot:schedule_time_slots(*), student:students(id, last_name, first_name, grade, preferred_teacher_gender, fixed_teacher_ids, excluded_teacher_ids), teacher:user_profiles!schedule_entries_teacher_id_fkey(id, display_name, email)';
   const result = await db
     .from('schedule_entries')
     .select(selectWithJoins)
@@ -1655,7 +1655,7 @@ export async function getPendingTransfers(
   const { data, error } = await db
     .from('schedule_entries')
     .select(
-      '*, time_slot:schedule_time_slots(*), student:students(id, last_name, first_name, grade), teacher:user_profiles!schedule_entries_teacher_id_fkey(id, display_name, email)'
+      '*, time_slot:schedule_time_slots(*), student:students(id, last_name, first_name, grade, preferred_teacher_gender, fixed_teacher_ids, excluded_teacher_ids), teacher:user_profiles!schedule_entries_teacher_id_fkey(id, display_name, email)'
     )
     .in('school_id', schoolIds)
     .eq('status', 'transferred_out')

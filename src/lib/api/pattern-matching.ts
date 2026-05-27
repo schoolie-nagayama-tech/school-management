@@ -174,14 +174,20 @@ export async function getPatternMatchCandidates(
       score += 30;
       reasons.push('過去担当');
     }
-    // +20: 教科対応 (パターンの subject_ids と1つ以上重複)
+    // 教科対応：講師が指導可能科目を持っていて、生徒のパターン科目と1つも重複しなければ
+    // ハード除外。teachable_subject_ids が空/未設定の講師は「全科目可」扱いで通す。
     const teachable = new Set(p.teachable_subject_ids ?? []);
-    const teachableMatch = pattern.subject_ids.some((sid) => teachable.has(sid));
-    if (teachableMatch) {
+    const teachableMatch =
+      teachable.size === 0 ||
+      pattern.subject_ids.length === 0 ||
+      pattern.subject_ids.some((sid) => teachable.has(sid));
+    if (!teachableMatch) {
+      // 指導科目外はそもそも候補に含めない
+      continue;
+    }
+    if (teachable.size > 0 && pattern.subject_ids.length > 0) {
       score += 20;
       reasons.push('教科対応');
-    } else if (pattern.subject_ids.length > 0 && teachable.size > 0) {
-      warnings.push('教科未対応');
     }
     // +10: 性別希望に合致 (希望ありの場合)
     if (stu.preferred_teacher_gender && p.gender === stu.preferred_teacher_gender) {

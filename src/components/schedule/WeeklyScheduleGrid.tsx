@@ -29,11 +29,19 @@ export function parseUnassignedTeacherId(id: string): string | null {
  */
 export const UNASSIGNED_TEACHER_ID = '__unassigned__';
 
+type TeacherCardInfo = {
+  id: string;
+  display_name: string | null;
+  email: string | null;
+  teachable_subject_ids?: string[] | null;
+  gender?: 'male' | 'female' | 'other' | null;
+};
+
 function groupEntriesByTeacher(
   entries: ScheduleEntry[],
   date: string,
   slotId: string,
-  teachersMap: Map<string, { id: string; display_name: string | null; email: string | null }>
+  teachersMap: Map<string, TeacherCardInfo>
 ): TeacherGroup[] {
   const filtered = entries.filter(
     (e) => e.entry_date === date && e.time_slot_id === slotId
@@ -89,6 +97,9 @@ export interface TeacherOption {
   user_schools?: Array<{ school_id: string }>;
   available_days_of_week?: number[] | null;
   available_slot_numbers_by_day?: Record<string, number[]> | null;
+  /** D&D 制約チェック用 */
+  teachable_subject_ids?: string[] | null;
+  gender?: 'male' | 'female' | 'other' | null;
 }
 
 
@@ -134,6 +145,11 @@ export interface WeeklyScheduleGridProps {
     date: string;
     slotId: string;
   }) => void;
+  /**
+   * D&D 制約違反でドロップ拒否したときに呼ばれる。
+   * トースト表示などに使う。
+   */
+  onConstraintViolation?: (reason: string) => void;
   onTransferTargetClick?: (date: string, slotId: string, teacherId: string) => void;
   onPrintDay?: (date: string) => void;
   onBoothAssign?: (date: string) => void;
@@ -163,6 +179,7 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
     onTeacherCardMove: _onTeacherCardMove,
     onStudentEntryDrop,
     onTeacherDropOnUnassigned,
+    onConstraintViolation,
     onTransferTargetClick,
     onPrintDay,
     onBoothAssign,
@@ -175,7 +192,17 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
   const teachersMap = useMemo(
     () =>
       new Map(
-        teachers.map((t) => [t.id, { id: t.id, display_name: t.display_name, email: t.email }])
+        teachers.map((t) => [
+          t.id,
+          {
+            id: t.id,
+            display_name: t.display_name,
+            email: t.email,
+            // D&D 制約チェックに使う
+            teachable_subject_ids: t.teachable_subject_ids ?? null,
+            gender: t.gender ?? null,
+          },
+        ])
       ),
     [teachers]
   );
@@ -233,6 +260,31 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
       );
       if (targetEntries.some((e) => e.student_id === entry.student_id)) return;
       if (targetEntries.length >= maxStudentsPerTeacher) return;
+      // 制約チェック（最終ガード）: 視覚的に拒否表示しているものは実体でも止める
+      const targetTeacher = teachers.find((t) => t.id === overSlot.teacherId);
+      if (targetTeacher) {
+        // 指導科目
+        const teachable = targetTeacher.teachable_subject_ids ?? [];
+        if (teachable.length > 0 && entry.subject_ids?.length > 0) {
+          const teachableSet = new Set(teachable);
+          if (!entry.subject_ids.some((sid) => teachableSet.has(sid))) {
+            onConstraintViolation?.('指導科目外の講師です');
+            return;
+          }
+        }
+        // 除外指定
+        const excluded = entry.student?.excluded_teacher_ids ?? [];
+        if (excluded.includes(overSlot.teacherId)) {
+          onConstraintViolation?.('担当除外指定の講師です');
+          return;
+        }
+        // 性別希望
+        const preferred = entry.student?.preferred_teacher_gender;
+        if (preferred && targetTeacher.gender && targetTeacher.gender !== preferred) {
+          onConstraintViolation?.(`${preferred === 'male' ? '男性' : '女性'}講師希望のため割当不可`);
+          return;
+        }
+      }
       onStudentEntryDrop(String(active.id), overSlot.date, overSlot.slotId, overSlot.teacherId);
       return;
     }

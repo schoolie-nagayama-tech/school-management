@@ -135,6 +135,8 @@ export default function SchedulePage() {
       teachable_subject_ids?: string[] | null;
       available_days_of_week?: number[] | null;
       available_slot_numbers_by_day?: Record<string, number[]> | null;
+      /** D&D 制約チェックに使用 */
+      gender?: 'male' | 'female' | 'other' | null;
     }>
   >([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -1282,6 +1284,7 @@ export default function SchedulePage() {
                       onTeacherCardMove={handleTeacherCardMove}
                       onStudentEntryDrop={handleStudentEntryDrop}
                       onTeacherDropOnUnassigned={handleTeacherDropOnUnassigned}
+                      onConstraintViolation={(reason) => toastError(reason)}
                       onTransferTargetClick={handleTransferTargetClick}
                       onPrintDay={handlePrintDay}
                       onBoothAssign={handleBoothAssign}

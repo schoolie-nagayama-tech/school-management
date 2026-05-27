@@ -64,7 +64,15 @@ export function parseTeacherCardId(
 }
 
 export interface TeacherCardProps {
-  teacher: { id: string; display_name: string | null; email: string | null };
+  teacher: {
+    id: string;
+    display_name: string | null;
+    email: string | null;
+    /** D&D制約チェックに使用：指導可能科目 (空/未設定なら全科目可) */
+    teachable_subject_ids?: string[] | null;
+    /** D&D制約チェックに使用：性別 */
+    gender?: 'male' | 'female' | 'other' | null;
+  };
   entries: ScheduleEntry[];
   /** true = 出勤可能だが授業なし */
   isAvailableOnly?: boolean;
@@ -136,18 +144,57 @@ export const TeacherCard = React.memo(function TeacherCard({
     ? teacher.display_name || '担当未決定'
     : (teacher.display_name || teacher.email || '—');
 
-  const canDrop = useMemo(() => {
-    if (!activeDragEntry) return false;
+  // D&D 制約チェック。基本制約 + 講師×生徒の相性制約。
+  // 不一致なら canDrop=false で赤 ring 表示、ドロップ無効。
+  const dropConstraint = useMemo<{
+    canDrop: boolean;
+    reason: string | null;
+  }>(() => {
+    if (!activeDragEntry) return { canDrop: false, reason: null };
+    // 同じセル（移動元）にドロップ → 無意味
     const isSourceBlock =
       activeDragEntry.entry_date === date &&
       activeDragEntry.time_slot_id === timeSlotId &&
       activeDragEntry.teacher_id === teacher.id;
-    if (isSourceBlock) return false;
+    if (isSourceBlock) return { canDrop: false, reason: null };
+    // 既に同生徒がこの講師にいる → 二重不可
     const hasStudent = activeEntries.some((e) => e.student_id === activeDragEntry.student_id);
-    if (hasStudent) return false;
-    if (activeEntries.length >= maxStudents) return false;
-    return true;
-  }, [activeDragEntry, date, timeSlotId, teacher.id, activeEntries, maxStudents]);
+    if (hasStudent) return { canDrop: false, reason: '同じ生徒が既に在籍' };
+    // 満員
+    if (activeEntries.length >= maxStudents) return { canDrop: false, reason: '満員' };
+
+    // 担当未決定セルへの講師D&D（旧フロー）はそもそも生徒エントリでないのでここに来ない
+
+    // 講師の指導可能科目チェック (生徒の subject_ids と1つも重複しなければ不可)
+    // teachable_subject_ids が空/未設定の講師は「全科目可」扱い
+    const teachable = teacher.teachable_subject_ids ?? [];
+    if (teachable.length > 0 && activeDragEntry.subject_ids?.length > 0) {
+      const teachableSet = new Set(teachable);
+      const matches = activeDragEntry.subject_ids.some((sid) => teachableSet.has(sid));
+      if (!matches) return { canDrop: false, reason: '指導科目外' };
+    }
+
+    // 担当除外講師にこの講師が含まれていれば不可
+    const excluded = activeDragEntry.student?.excluded_teacher_ids ?? [];
+    if (excluded.includes(teacher.id)) return { canDrop: false, reason: '担当除外指定' };
+
+    // 性別希望チェック (希望ありで講師性別が不一致なら不可)
+    const preferred = activeDragEntry.student?.preferred_teacher_gender;
+    if (preferred && teacher.gender && teacher.gender !== preferred) {
+      return { canDrop: false, reason: `${preferred === 'male' ? '男性' : '女性'}講師希望` };
+    }
+    return { canDrop: true, reason: null };
+  }, [
+    activeDragEntry,
+    date,
+    timeSlotId,
+    teacher.id,
+    teacher.teachable_subject_ids,
+    teacher.gender,
+    activeEntries,
+    maxStudents,
+  ]);
+  const canDrop = dropConstraint.canDrop;
 
   // 「出勤可能講師カードを担当未決定セルにドロップする」ためのフラグ。
   // この間は対象セルをハイライトして「ここに落とせる」と伝える。
@@ -214,11 +261,18 @@ export const TeacherCard = React.memo(function TeacherCard({
         ${transferMode ? 'cursor-pointer hover:border-[var(--primary)]/40 hover:bg-gray-50/50' : ''}
         ${canAcceptTeacherDrop && !isOver ? 'ring-1 ring-info/30 ring-offset-1' : ''}
         ${isOverAndCanDrop ? 'ring-2 ring-green-400 bg-green-50/50' : ''}
-        ${isOverAndCannotDrop ? 'ring-2 ring-red-200 bg-red-50/50 cursor-not-allowed' : ''}
+        ${isOverAndCannotDrop ? 'ring-2 ring-red-400 bg-red-50/50 cursor-not-allowed' : ''}
       `}
       onClick={transferMode && onTransferTargetClick ? handleTransferClick : undefined}
       role={transferMode && onTransferTargetClick ? 'button' : undefined}
+      title={isOverAndCannotDrop && dropConstraint.reason ? `この講師には割当不可: ${dropConstraint.reason}` : undefined}
     >
+      {/* ドロップ拒否時に理由バッジを表示。短時間だけ出すミニトースト的な見せ方。 */}
+      {isOverAndCannotDrop && dropConstraint.reason && (
+        <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-10 px-2 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-semibold shadow whitespace-nowrap pointer-events-none">
+          {dropConstraint.reason}
+        </div>
+      )}
       {/* ヘッダー：振替モード中もクリックで振替先を選べるよう onClick を設定 */}
       <div
         className="flex justify-between items-center px-1.5 py-1 border-b border-gray-100"

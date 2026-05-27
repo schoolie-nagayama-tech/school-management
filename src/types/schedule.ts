@@ -111,7 +111,18 @@ export interface ScheduleRegularPattern {
   created_at: string;
   updated_at: string;
   // リレーション
-  student?: { id: string; last_name: string; first_name: string; grade: number };
+  student?: {
+    id: string;
+    last_name: string;
+    first_name: string;
+    grade: number;
+    /** 講師希望性別（D&D制約に使用） */
+    preferred_teacher_gender?: 'male' | 'female' | null;
+    /** 担当固定講師（D&D時の優先判定に使用） */
+    fixed_teacher_ids?: string[] | null;
+    /** 担当除外講師（D&Dブロック対象） */
+    excluded_teacher_ids?: string[] | null;
+  };
   time_slot?: ScheduleTimeSlot;
   teacher?: { id: string; display_name: string | null; email: string | null } | null;
   subjects?: { id: string; name: string }[];
@@ -212,7 +223,18 @@ export interface ScheduleEntry {
   created_at: string;
   updated_at: string;
   // リレーション
-  student?: { id: string; last_name: string; first_name: string; grade: number };
+  student?: {
+    id: string;
+    last_name: string;
+    first_name: string;
+    grade: number;
+    /** 講師希望性別（D&D制約に使用） */
+    preferred_teacher_gender?: 'male' | 'female' | null;
+    /** 担当固定講師（D&D時の優先判定に使用） */
+    fixed_teacher_ids?: string[] | null;
+    /** 担当除外講師（D&Dブロック対象） */
+    excluded_teacher_ids?: string[] | null;
+  };
   time_slot?: ScheduleTimeSlot;
   teacher?: { id: string; display_name: string | null; email: string | null };
   subjects?: { id: string; name: string }[];
