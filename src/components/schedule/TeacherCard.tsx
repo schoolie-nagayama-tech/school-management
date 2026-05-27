@@ -117,7 +117,10 @@ export const TeacherCard = React.memo(function TeacherCard({
     isDragging,
   } = useDraggable({
     id: dragId,
-    disabled: !isAvailableOnly || teacher.id === '__unassigned__',
+    disabled:
+      !isAvailableOnly ||
+      teacher.id === '__unassigned__' ||
+      teacher.id.startsWith('__unassigned__:'),
   });
 
   // 表示対象: キャンセル以外すべて（振替元 transferred_out も表示して取り消し線スタイルで見せる）
@@ -125,10 +128,10 @@ export const TeacherCard = React.memo(function TeacherCard({
   // 有効生徒数（満員・残席カウント用: 振替元は除く）
   const activeEntries = displayEntries.filter((e) => e.status !== 'transferred_out');
   const canAddStudent = !isClosed && activeEntries.length < maxStudents;
-  // 担当未決定エントリのグループは特殊ID (__unassigned__ または __unassigned__|<entryId>) で識別。
+  // 担当未決定エントリのグループは特殊ID (__unassigned__ または __unassigned__:<entryId>) で識別。
   // 「講師」ではなく「担当未決定」の枠として配色を変えて見せる。
   const isUnassigned =
-    teacher.id === '__unassigned__' || teacher.id.startsWith('__unassigned__|');
+    teacher.id === '__unassigned__' || teacher.id.startsWith('__unassigned__:');
   const displayName = isUnassigned
     ? teacher.display_name || '担当未決定'
     : (teacher.display_name || teacher.email || '—');
@@ -146,11 +149,18 @@ export const TeacherCard = React.memo(function TeacherCard({
     return true;
   }, [activeDragEntry, date, timeSlotId, teacher.id, activeEntries, maxStudents]);
 
+  // 「出勤可能講師カードを担当未決定セルにドロップする」ためのフラグ。
+  // この間は対象セルをハイライトして「ここに落とせる」と伝える。
+  const isUnassignedDropTarget =
+    teacher.id === '__unassigned__' || teacher.id.startsWith('__unassigned__:');
+  const isTeacherDragActive = _activeDragId?.startsWith('avail-teacher-') ?? false;
+  const canAcceptTeacherDrop = isUnassignedDropTarget && isTeacherDragActive;
+
   const remaining = maxStudents - activeEntries.length;
   const slotLabel = remaining === 0 ? '満員' : `残${remaining}`;
 
-  const isOverAndCanDrop = isOver && canDrop;
-  const isOverAndCannotDrop = isOver && !canDrop && activeDragEntry;
+  const isOverAndCanDrop = isOver && (canDrop || canAcceptTeacherDrop);
+  const isOverAndCannotDrop = isOver && !canDrop && !canAcceptTeacherDrop && activeDragEntry;
 
   const handleTransferClick = () => {
     if (transferMode && onTransferTargetClick) onTransferTargetClick(date, timeSlotId, teacher.id);
@@ -191,7 +201,11 @@ export const TeacherCard = React.memo(function TeacherCard({
   }
 
   return (
+    // 担当未決定セルのときは「セル全体」をドロップターゲットにする (ヘッダーも含む)。
+    // 通常の TeacherCard は body 内部 (.setNodeRef) だけが droppable で問題ないが、
+    // 担当未決定は学生1名で隙間が狭く、ヘッダー上に落としやすいので拡張する。
     <div
+      ref={isUnassigned ? setNodeRef : undefined}
       className={`
         group relative rounded-xl border transition-[box-shadow,background-color,border-color] duration-150 ease-out
         ${isUnassigned
@@ -199,6 +213,7 @@ export const TeacherCard = React.memo(function TeacherCard({
           ? 'border-dashed border-warning bg-warning-subtle/40 shadow-sm hover:shadow-md hover:bg-warning-subtle/60'
           : 'border-[color:color-mix(in_oklch,var(--primary)_25%,#e5e7eb)] bg-white shadow-sm hover:shadow-md hover:bg-gray-50'}
         ${transferMode ? 'cursor-pointer hover:border-[var(--primary)]/40 hover:bg-gray-50/50' : ''}
+        ${canAcceptTeacherDrop && !isOver ? 'ring-1 ring-info/30 ring-offset-1' : ''}
         ${isOverAndCanDrop ? 'ring-2 ring-green-400 bg-green-50/50' : ''}
         ${isOverAndCannotDrop ? 'ring-2 ring-red-200 bg-red-50/50 cursor-not-allowed' : ''}
       `}

@@ -9,16 +9,17 @@ import type { TeacherGroup } from './DayCell';
 
 /**
  * 担当未決定エントリは個別ドロップターゲットにするため、teacher.id を
- * `__unassigned__|<entry_id>` 形式で識別する。
- * 通常の teacher_id 形式と衝突しないよう '|' で区切る。
+ * `__unassigned__:<entry_id>` 形式で識別する。
+ * 区切り文字に '|' は使わない: teacher-slot ID 全体が `${date}|${slotId}|${teacher.id}` の
+ * 3パーツ形式なので、teacher.id 側で '|' を含むと parseTeacherSlotId が弾いてしまう。
  */
 export function makeUnassignedTeacherId(entryId: string): string {
-  return `__unassigned__|${entryId}`;
+  return `__unassigned__:${entryId}`;
 }
 
 export function parseUnassignedTeacherId(id: string): string | null {
-  if (!id.startsWith('__unassigned__|')) return null;
-  return id.slice('__unassigned__|'.length);
+  if (!id.startsWith('__unassigned__:')) return null;
+  return id.slice('__unassigned__:'.length);
 }
 
 /**
