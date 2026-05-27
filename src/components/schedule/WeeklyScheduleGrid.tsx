@@ -2,10 +2,24 @@
 
 import React, { useCallback, useMemo, useState } from 'react';
 import type { DragEndEvent } from '@dnd-kit/core';
-import { parseTeacherSlotId } from './TeacherCard';
+import { parseTeacherSlotId, parseAvailableTeacherDragId } from './TeacherCard';
 import { WeeklyScheduleGridView } from './WeeklyScheduleGridView';
 import type { ScheduleEntry, ScheduleTimeSlot } from '@/types/schedule';
 import type { TeacherGroup } from './DayCell';
+
+/**
+ * 担当未決定エントリは個別ドロップターゲットにするため、teacher.id を
+ * `__unassigned__|<entry_id>` 形式で識別する。
+ * 通常の teacher_id 形式と衝突しないよう '|' で区切る。
+ */
+export function makeUnassignedTeacherId(entryId: string): string {
+  return `__unassigned__|${entryId}`;
+}
+
+export function parseUnassignedTeacherId(id: string): string | null {
+  if (!id.startsWith('__unassigned__|')) return null;
+  return id.slice('__unassigned__|'.length);
+}
 
 /**
  * 担当未決定エントリ用の擬似講師ID。
@@ -24,18 +38,24 @@ function groupEntriesByTeacher(
     (e) => e.entry_date === date && e.time_slot_id === slotId
   );
   const byTeacher = new Map<string, TeacherGroup>();
+  const unassignedGroups: TeacherGroup[] = [];
   for (const entry of filtered) {
-    // teacher_id が NULL の場合は担当未決定グループに集約する
+    // teacher_id が NULL の場合は「エントリごとに独立した担当未決定グループ」を作る。
+    // これにより各エントリが個別のドロップターゲットになり、講師カードを D&D で割当可能。
     const rawTid = entry.teacher_id as string | null | undefined;
     if (!rawTid) {
-      if (!byTeacher.has(UNASSIGNED_TEACHER_ID)) {
-        byTeacher.set(UNASSIGNED_TEACHER_ID, {
-          teacher: { id: UNASSIGNED_TEACHER_ID, display_name: '担当未決定', email: null },
-          entries: [],
-          isAvailableOnly: false,
-        });
-      }
-      byTeacher.get(UNASSIGNED_TEACHER_ID)!.entries.push(entry);
+      const studentName = entry.student
+        ? `${entry.student.last_name ?? ''}${entry.student.first_name ?? ''}`.trim() || '担当未決定'
+        : '担当未決定';
+      unassignedGroups.push({
+        teacher: {
+          id: makeUnassignedTeacherId(entry.id),
+          display_name: `未定: ${studentName}`,
+          email: null,
+        },
+        entries: [entry],
+        isAvailableOnly: false,
+      });
       continue;
     }
     const tid = rawTid;
@@ -56,14 +76,8 @@ function groupEntriesByTeacher(
     }
     byTeacher.get(tid)!.entries.push(entry);
   }
-  // 担当未決定グループは末尾に並べる（既存講師の後）
-  const result = Array.from(byTeacher.values());
-  result.sort((a, b) => {
-    if (a.teacher.id === UNASSIGNED_TEACHER_ID) return 1;
-    if (b.teacher.id === UNASSIGNED_TEACHER_ID) return -1;
-    return 0;
-  });
-  return result;
+  // 担当未決定エントリは末尾にまとめて並べる（既存講師の後）
+  return [...Array.from(byTeacher.values()), ...unassignedGroups];
 }
 
 export interface TeacherOption {
@@ -109,6 +123,16 @@ export interface WeeklyScheduleGridProps {
     targetSlotId: string,
     targetTeacherId: string
   ) => void;
+  /**
+   * 「出勤可能（授業なし）」講師カードを担当未決定エントリにドロップしたとき呼ばれる。
+   * 親側で「このコマだけ / 毎週このコマ」の選択UIを出す。
+   */
+  onTeacherDropOnUnassigned?: (params: {
+    teacherId: string;
+    entryId: string;
+    date: string;
+    slotId: string;
+  }) => void;
   onTransferTargetClick?: (date: string, slotId: string, teacherId: string) => void;
   onPrintDay?: (date: string) => void;
   onBoothAssign?: (date: string) => void;
@@ -137,6 +161,7 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
     onTransferClick,
     onTeacherCardMove: _onTeacherCardMove,
     onStudentEntryDrop,
+    onTeacherDropOnUnassigned,
     onTransferTargetClick,
     onPrintDay,
     onBoothAssign,
@@ -155,7 +180,12 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
   );
 
   const activeEntry = useMemo(() => {
-    if (!activeId || activeId.startsWith('teacher-card-') || activeId.startsWith('teacher-slot-'))
+    if (
+      !activeId ||
+      activeId.startsWith('teacher-card-') ||
+      activeId.startsWith('teacher-slot-') ||
+      activeId.startsWith('avail-teacher-')
+    )
       return null;
     return entries.find((e) => e.id === activeId) ?? null;
   }, [activeId, entries]);
@@ -165,8 +195,25 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
     setActiveId(null);
     if (!over || over.id === active.id) return;
 
-    // 生徒カードのドロップ → 講師ブロックに振替
     const overSlot = parseTeacherSlotId(String(over.id));
+
+    // [1] 「出勤可能講師」 → 「担当未決定エントリ」へのドロップ
+    //     ドロップ先 teacher.id が __unassigned__|<entryId> 形式なら割当処理に振る
+    const availDrag = parseAvailableTeacherDragId(String(active.id));
+    if (availDrag && overSlot && onTeacherDropOnUnassigned) {
+      const targetEntryId = parseUnassignedTeacherId(overSlot.teacherId);
+      if (targetEntryId) {
+        onTeacherDropOnUnassigned({
+          teacherId: availDrag.teacherId,
+          entryId: targetEntryId,
+          date: overSlot.date,
+          slotId: overSlot.slotId,
+        });
+        return;
+      }
+    }
+
+    // [2] 生徒カードのドロップ → 講師ブロックに振替
     if (overSlot && onStudentEntryDrop) {
       const entry = entries.find((e) => e.id === String(active.id));
       if (!entry || closedDates.includes(overSlot.date)) return;

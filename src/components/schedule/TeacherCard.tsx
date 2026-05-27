@@ -1,13 +1,38 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { useDroppable } from '@dnd-kit/core';
+import { useDroppable, useDraggable } from '@dnd-kit/core';
 import { DraggableStudentCard } from './DraggableStudentCard';
-import { Plus } from 'lucide-react';
+import { Plus, GripVertical } from 'lucide-react';
 import type { ScheduleEntry } from '@/types/schedule';
 
 /** 講師ブロックをドロップ先として識別するID（生徒D&D用） */
 const TEACHER_SLOT_DROP_PREFIX = 'teacher-slot-';
+
+/**
+ * 「出勤可能だが授業なし」講師カードをドラッグソースとして識別するID。
+ * D&Dで担当未決定セルに割当できるようにするため。
+ * ドラッグペイロードは teacherId そのもの。
+ */
+const AVAIL_TEACHER_DRAG_PREFIX = 'avail-teacher-';
+
+export function getAvailableTeacherDragId(
+  date: string,
+  slotId: string,
+  teacherId: string
+): string {
+  return `${AVAIL_TEACHER_DRAG_PREFIX}${date}|${slotId}|${teacherId}`;
+}
+
+export function parseAvailableTeacherDragId(
+  id: string
+): { date: string; slotId: string; teacherId: string } | null {
+  if (!id.startsWith(AVAIL_TEACHER_DRAG_PREFIX)) return null;
+  const rest = id.slice(AVAIL_TEACHER_DRAG_PREFIX.length);
+  const parts = rest.split('|');
+  if (parts.length !== 3) return null;
+  return { date: parts[0], slotId: parts[1], teacherId: parts[2] };
+}
 
 export function getTeacherSlotId(date: string, slotId: string, teacherId: string): string {
   return `${TEACHER_SLOT_DROP_PREFIX}${date}|${slotId}|${teacherId}`;
@@ -82,15 +107,31 @@ export const TeacherCard = React.memo(function TeacherCard({
   const dropId = getTeacherSlotId(date, timeSlotId, teacher.id);
   const { isOver, setNodeRef } = useDroppable({ id: dropId });
 
+  // 「出勤可能だが授業なし」のカードはドラッグ可能（担当未決定セルへ割当する用途）。
+  // ドラッグソースID には date / slotId / teacherId を埋め込み、ドロップ受け側で同期解析できる形に。
+  const dragId = getAvailableTeacherDragId(date, timeSlotId, teacher.id);
+  const {
+    attributes: dragAttrs,
+    listeners: dragListeners,
+    setNodeRef: setDragRef,
+    isDragging,
+  } = useDraggable({
+    id: dragId,
+    disabled: !isAvailableOnly || teacher.id === '__unassigned__',
+  });
+
   // 表示対象: キャンセル以外すべて（振替元 transferred_out も表示して取り消し線スタイルで見せる）
   const displayEntries = entries.filter((e) => e.status !== 'cancelled');
   // 有効生徒数（満員・残席カウント用: 振替元は除く）
   const activeEntries = displayEntries.filter((e) => e.status !== 'transferred_out');
   const canAddStudent = !isClosed && activeEntries.length < maxStudents;
-  // 担当未決定エントリのグループは特殊ID (__unassigned__) で識別。
+  // 担当未決定エントリのグループは特殊ID (__unassigned__ または __unassigned__|<entryId>) で識別。
   // 「講師」ではなく「担当未決定」の枠として配色を変えて見せる。
-  const isUnassigned = teacher.id === '__unassigned__';
-  const displayName = isUnassigned ? '担当未決定' : (teacher.display_name || teacher.email || '—');
+  const isUnassigned =
+    teacher.id === '__unassigned__' || teacher.id.startsWith('__unassigned__|');
+  const displayName = isUnassigned
+    ? teacher.display_name || '担当未決定'
+    : (teacher.display_name || teacher.email || '—');
 
   const canDrop = useMemo(() => {
     if (!activeDragEntry) return false;
@@ -115,18 +156,26 @@ export const TeacherCard = React.memo(function TeacherCard({
     if (transferMode && onTransferTargetClick) onTransferTargetClick(date, timeSlotId, teacher.id);
   };
 
-  // 出勤可能だが授業なし → コンパクトな1行バッジ表示
+  // 出勤可能だが授業なし → コンパクトな1行バッジ表示。
+  // ドラッグ可能。担当未決定セル（破線warningの「未定: 生徒名」）にドロップすると割当できる。
   if (isAvailableOnly) {
     return (
       <div
+        ref={setDragRef}
+        {...dragAttrs}
+        {...dragListeners}
         className={`
           flex items-center gap-1 px-2 py-1 rounded-lg border border-dashed border-gray-200
-          bg-gray-50/50 text-gray-400
+          bg-gray-50/50 text-gray-400 cursor-grab active:cursor-grabbing
+          transition-[opacity,box-shadow,background-color] duration-150
+          ${isDragging ? 'opacity-40' : 'hover:bg-white hover:border-gray-300 hover:text-gray-600 hover:shadow-sm'}
           ${transferMode ? 'cursor-pointer hover:border-[var(--primary)]/40 hover:bg-gray-50' : ''}
         `}
         onClick={transferMode ? handleTransferClick : undefined}
         role={transferMode ? 'button' : undefined}
+        title="ドラッグして担当未決定セルに割当できます"
       >
+        <GripVertical className="w-3 h-3 text-gray-300 flex-shrink-0" />
         <span className="text-xs truncate flex-1 min-w-0">{displayName}</span>
         <span className="text-[10px] text-gray-300 flex-shrink-0 tabular-nums">{slotLabel}</span>
         <button

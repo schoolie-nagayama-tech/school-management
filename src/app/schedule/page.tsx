@@ -66,6 +66,7 @@ import {
   deleteRegularPattern,
   cancelFutureEntriesByRegularPatternId,
 } from '@/lib/api/schedule';
+import { assignTeacherToPattern } from '@/lib/api/pattern-matching';
 import type { ScheduleEntry, ScheduleEntryFormData, ScheduleTimeSlot } from '@/types/schedule';
 import type { School, Student, Subject } from '@/types/database';
 import AccessDenied from '@/components/AccessDenied';
@@ -152,6 +153,17 @@ export default function SchedulePage() {
   const [transferringEntry, setTransferringEntry] = useState<ScheduleEntry | null>(null);
   const [initialTransferTarget, setInitialTransferTarget] = useState<{ date: string; slotId: string } | null>(null);
   const [transferMode, setTransferMode] = useState<{ sourceEntry: ScheduleEntry } | null>(null);
+  // 担当未決定エントリに講師カードを D&D したときの確定待ち状態。
+  // floating action bar で「このコマだけ」「毎週このコマ」のワンクリック選択を表示する。
+  const [pendingAssignment, setPendingAssignment] = useState<{
+    entryId: string;
+    teacherId: string;
+    teacherName: string;
+    studentName: string;
+    dateLabel: string;
+    regularPatternId: string | null;
+  } | null>(null);
+  const [isAssigning, setIsAssigning] = useState(false);
   const [emptyTeacherSlots, setEmptyTeacherSlots] = useState<Record<string, string[]>>({});
   // 通常シフトから「この曜日この時間帯に出勤可能」と提出した講師IDを byDayOfWeek で保持。
   // 各セル描画時に「曜日 → 出勤可能講師ID 一覧」を引いて空き枠として並べる。
@@ -772,6 +784,77 @@ export default function SchedulePage() {
     }
   }, [entriesWithSubjects, entries, schoolId, success, refreshEntries, toastError]);
 
+  // 出勤可能講師カードを担当未決定エントリにD&Dしたとき：
+  // - 即時には確定せず、画面下に「このコマだけ / 毎週このコマ」の選択バーを出す
+  // - 選択でハードな更新（DB書き込み）に進む
+  const handleTeacherDropOnUnassigned = useCallback(
+    (params: { teacherId: string; entryId: string; date: string; slotId: string }) => {
+      const entry = entriesWithSubjects.find((e) => e.id === params.entryId);
+      if (!entry) return;
+      const teacher = teachers.find((t) => t.id === params.teacherId);
+      if (!teacher) return;
+      const studentName = entry.student
+        ? `${entry.student.last_name ?? ''}${entry.student.first_name ?? ''}`.trim() || '生徒'
+        : '生徒';
+      const slot = timeSlots.find((s) => s.id === params.slotId);
+      const slotLabel = slot ? `${slot.slot_number}限` : '';
+      const dateLabel = `${params.date.slice(5).replace('-', '/')} ${slotLabel}`;
+      setPendingAssignment({
+        entryId: params.entryId,
+        teacherId: params.teacherId,
+        teacherName: teacher.display_name || teacher.email || '講師',
+        studentName,
+        dateLabel,
+        regularPatternId: (entry as ScheduleEntry).regular_pattern_id ?? null,
+      });
+    },
+    [entriesWithSubjects, teachers, timeSlots]
+  );
+
+  // 「このコマだけ」: schedule_entries 1行だけ teacher_id を埋める
+  const confirmAssignTransient = useCallback(async () => {
+    if (!pendingAssignment) return;
+    setIsAssigning(true);
+    try {
+      await updateScheduleEntry(pendingAssignment.entryId, {
+        teacher_id: pendingAssignment.teacherId,
+      });
+      success(`${pendingAssignment.dateLabel}のみ ${pendingAssignment.teacherName} に割当`);
+      setPendingAssignment(null);
+      refreshEntries();
+    } catch (e) {
+      toastError((e as Error).message);
+    } finally {
+      setIsAssigning(false);
+    }
+  }, [pendingAssignment, success, toastError, refreshEntries]);
+
+  // 「毎週このコマ」: 通塾日程パターンと未来エントリを一括更新
+  const confirmAssignPermanent = useCallback(async () => {
+    if (!pendingAssignment) return;
+    if (!pendingAssignment.regularPatternId) {
+      // パターン紐付き無し → 「このコマだけ」と同等動作にフォールバック
+      await confirmAssignTransient();
+      return;
+    }
+    setIsAssigning(true);
+    try {
+      const result = await assignTeacherToPattern(
+        pendingAssignment.regularPatternId,
+        pendingAssignment.teacherId
+      );
+      success(
+        `${pendingAssignment.studentName} の毎週分に ${pendingAssignment.teacherName} を割当（${result.entriesUpdated}件のコマも更新）`
+      );
+      setPendingAssignment(null);
+      refreshEntries();
+    } catch (e) {
+      toastError((e as Error).message);
+    } finally {
+      setIsAssigning(false);
+    }
+  }, [pendingAssignment, success, toastError, refreshEntries, confirmAssignTransient]);
+
   const selectedSchool = useMemo(() => schools.find((s) => s.id === schoolId), [schools, schoolId]);
 
   /** 講師が選択科目を指導可能か。teachable_subject_ids が空/未設定の講師は全科目可 */
@@ -1085,6 +1168,7 @@ export default function SchedulePage() {
                       onTransferClick={handleTransferClickFromCard}
                       onTeacherCardMove={handleTeacherCardMove}
                       onStudentEntryDrop={handleStudentEntryDrop}
+                      onTeacherDropOnUnassigned={handleTeacherDropOnUnassigned}
                       onTransferTargetClick={handleTransferTargetClick}
                       onPrintDay={handlePrintDay}
                       onBoothAssign={handleBoothAssign}
@@ -1207,6 +1291,60 @@ export default function SchedulePage() {
       )}
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
+
+      {/* 担当未決定エントリへの講師D&D後の確定バー。
+          このコマだけ / 毎週このコマ のワンクリック選択。 */}
+      {pendingAssignment && (
+        <div
+          className="fixed left-1/2 bottom-6 -translate-x-1/2 z-50 print:hidden
+                     bg-white border border-gray-200 rounded-2xl shadow-2xl px-4 py-3
+                     flex items-center gap-3 max-w-[min(640px,calc(100%-1.5rem))]
+                     animate-in fade-in slide-in-from-bottom-3 duration-200"
+          role="dialog"
+          aria-label="担当の確定"
+        >
+          <div className="min-w-0 flex-1">
+            <div className="text-[11px] text-gray-500">担当を割当しますか？</div>
+            <div className="text-sm font-semibold text-gray-800 truncate">
+              {pendingAssignment.studentName}
+              <span className="mx-1.5 text-gray-300">→</span>
+              <span className="text-info">{pendingAssignment.teacherName}</span>
+              <span className="ml-2 text-xs font-normal text-gray-500">
+                ({pendingAssignment.dateLabel})
+              </span>
+            </div>
+          </div>
+          <div className="flex gap-1.5 flex-shrink-0">
+            <button
+              type="button"
+              onClick={confirmAssignTransient}
+              disabled={isAssigning}
+              className="px-3 py-1.5 text-xs rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              title="このコマだけ teacher_id を埋める（パターン未変更、翌週は再び未決定）"
+            >
+              このコマだけ
+            </button>
+            <button
+              type="button"
+              onClick={confirmAssignPermanent}
+              disabled={isAssigning || !pendingAssignment.regularPatternId}
+              className="px-3 py-1.5 text-xs rounded-lg bg-info text-white hover:bg-info/90 disabled:opacity-50 transition-colors font-semibold"
+              title="通塾日程パターンに紐付け、未来のコマも一括更新"
+            >
+              毎週このコマ
+            </button>
+            <button
+              type="button"
+              onClick={() => setPendingAssignment(null)}
+              disabled={isAssigning}
+              className="px-2 py-1.5 text-xs rounded-lg text-gray-400 hover:text-gray-700 disabled:opacity-50 transition-colors"
+              aria-label="キャンセル"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 }
