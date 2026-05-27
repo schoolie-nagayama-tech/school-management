@@ -198,7 +198,8 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
         {/* 時間帯ごとに横セクション（横ライン・zebra・余白） */}
         {timeSlots.map((slot, slotIndex) => {
           // この slot で1週間分のすべてのセルに生徒が居るか先に判定。
-          // 全部 empty なら折りたたみ表示（ノイズになる空白行を抑える）
+          // 全部 empty なら折りたたみ表示（ノイズになる空白行を抑える）。
+          // ただし「未配置エントリがある」コマは絶対に折りたたまない：見逃しを避けるため。
           const slotTotalStudents = weekDates.reduce((sum, d) => {
             const groups = getTeacherGroupsForCell(d, slot.id, slot.slot_number);
             return (
@@ -209,7 +210,11 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
               )
             );
           }, 0);
-          const isEmptySlot = slotTotalStudents === 0;
+          const slotUnassignedCount = weekDates.reduce(
+            (sum, d) => sum + (getUnassignedEntriesForCell?.(d, slot.id).length ?? 0),
+            0
+          );
+          const isEmptySlot = slotTotalStudents === 0 && slotUnassignedCount === 0;
           const isExpanded = expandedEmptySlots.has(slot.id);
 
           // 空コマ × 折りたたみ中 → コンパクトな見出し1行だけ
