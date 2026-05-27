@@ -9,14 +9,13 @@ import { useMasterData } from '@/contexts/MasterDataContext';
 import { fetchWithAuth } from '@/lib/api/auth';
 import { getActiveTimeSlots } from '@/lib/api/schedule';
 import {
-  getSingleTeacherShift,
   getTeacherShiftHistory,
-  type SingleTeacherShift,
   type TeacherShiftHistoryEntry,
 } from '@/lib/api/teacher-shifts';
 import {
   deleteAvailabilityPeriod,
   getAvailabilityPeriods,
+  getEffectiveAvailability,
   syncAllRegularShifts,
   upsertManualAvailability,
   type TeacherAvailabilityPeriod,
@@ -91,11 +90,12 @@ export default function TeacherDetailPage() {
   const [trainings, setTrainings] = useState<TeacherTraining[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  // 「提出データ由来」の現在シフト（期間考慮の自動算出）と全提出履歴
-  const [liveShift, setLiveShift] = useState<SingleTeacherShift | null>(null);
+  // シフト提出履歴（生ログ表示用。表示優先順位は availability period 経由）
   const [shiftHistory, setShiftHistory] = useState<TeacherShiftHistoryEntry[]>([]);
   // 出勤可能期間一覧（teacher_availability_periods）：manual / regular_shift 両方
   const [availabilityPeriods, setAvailabilityPeriods] = useState<TeacherAvailabilityPeriod[]>([]);
+  // 「今日有効な」出勤可能（manual > regular_shift 解決済み）
+  const [effectiveAvailability, setEffectiveAvailability] = useState<TeacherAvailabilityPeriod | null>(null);
   const [isResyncing, setIsResyncing] = useState(false);
 
   useEffect(() => {
@@ -146,15 +146,17 @@ export default function TeacherDetailPage() {
           // 講師のシフト（現在有効分 + 履歴）を取得。
           // 在籍校が複数あれば最初の1校を基準にする。期間考慮はAPI側で実施。
           const primaryId = schoolIds[0];
-          const [live, history, periods] = await Promise.all([
-            getSingleTeacherShift(primaryId, teacherId).catch(() => null),
+          const [history, periods, effective] = await Promise.all([
             getTeacherShiftHistory(primaryId, teacherId).catch(() => []),
             getAvailabilityPeriods(teacherId).catch(() => [] as TeacherAvailabilityPeriod[]),
+            getEffectiveAvailability(teacherId, undefined, { schoolId: primaryId }).catch(
+              () => null
+            ),
           ]);
           if (cancelled) return;
-          setLiveShift(live);
           setShiftHistory(history);
           setAvailabilityPeriods(periods);
+          setEffectiveAvailability(effective);
         }
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -227,8 +229,27 @@ export default function TeacherDetailPage() {
     subjectsByCategory[cat].push(s);
   }
 
-  const slotsByDay = normalizeToSlotNumbersByDay(teacher.available_slot_numbers_by_day);
+  // 「今日有効な」出勤可能を slot_number ベースで描画。
+  // effective が無ければ user_profiles の旧値にフォールバック（過渡期データ）。
+  const slotsByDay: Record<string, number[]> = effectiveAvailability?.available_slot_numbers_by_day
+    && Object.keys(effectiveAvailability.available_slot_numbers_by_day).length > 0
+    ? Object.fromEntries(
+        Object.entries(effectiveAvailability.available_slot_numbers_by_day).map(([k, v]) => [
+          k,
+          Array.isArray(v) ? (v as number[]) : [],
+        ])
+      )
+    : normalizeToSlotNumbersByDay(teacher.available_slot_numbers_by_day);
   const totalAvailableSlots = Object.values(slotsByDay).reduce((sum, arr) => sum + arr.length, 0);
+  // 「いつ時点の出勤可能か」ラベル
+  const effectiveLabel = effectiveAvailability
+    ? `${effectiveAvailability.effective_from} 〜 ${effectiveAvailability.effective_until || '無期限'}`
+    : null;
+  const effectiveSourceLabel = effectiveAvailability
+    ? effectiveAvailability.source === 'manual'
+      ? '手動設定'
+      : 'シフト提出由来'
+    : null;
 
   const earnedBadges = badgeAssignments
     .map((a) => allBadges.find((b) => b.id === a.badge_id))
@@ -338,81 +359,73 @@ export default function TeacherDetailPage() {
             )}
           </Panel>
 
-          {/* 出勤可能コマ マトリクス */}
+          {/* 出勤可能コマ マトリクス
+              ソース: teacher_availability_periods の effective（manual > regular_shift で解決済み）。
+              未登録時は user_profiles の旧値にフォールバック表示（過渡期データ用）。
+              「いつ時点で」「どのソース由来か」をヘッダで明示し、編集は下の「出勤可能期間」から行う。 */}
           <Panel title="出勤可能コマ">
             {scheduleTimeSlots.length === 0 || totalAvailableSlots === 0 ? (
               <EmptyText>未設定</EmptyText>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse text-xs">
-                  <thead>
-                    <tr>
-                      <th className="p-2 border border-gray-200 bg-gray-50 text-left font-semibold text-gray-600">コマ</th>
-                      {DAY_LABELS.map((d, i) => (
-                        <th key={i} className="p-2 border border-gray-200 bg-gray-50 text-center font-semibold text-gray-600 min-w-[42px]">
-                          {d}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {scheduleTimeSlots.map((slot) => (
-                      <tr key={slot.slot_number}>
-                        <td className="p-2 border border-gray-200 text-gray-700 whitespace-nowrap">
-                          <span className="font-semibold">{slot.slot_number}</span>
-                          <span className="ml-1 text-gray-400">{slot.start_time}〜{slot.end_time}</span>
-                        </td>
-                        {DAY_LABELS.map((_, dayIdx) => {
-                          const available = (slotsByDay[String(dayIdx)] || []).includes(slot.slot_number);
-                          return (
-                            <td
-                              key={dayIdx}
-                              className={`p-2 border border-gray-200 text-center ${
-                                available ? 'bg-emerald-50' : 'bg-surface-raised'
-                              }`}
-                            >
-                              {available && <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </Panel>
-
-          {/* 勤務シフト：提出データ由来（期間考慮）
-              通常シフト + 講習シフトを統合し「今日有効な」曜日×時間帯を表示。
-              上の「出勤可能コマ」は手動編集（user_profiles）の静的値、こちらはシフト提出由来の動的値。
-              両方を並べることで「申請と実際の登録値のズレ」も把握できる。 */}
-          <Panel title="勤務シフト（提出データ由来・現在有効）">
-            {!liveShift || liveShift.daysOfWeek.length === 0 ? (
-              <EmptyText>現在有効なシフト提出がありません</EmptyText>
-            ) : (
               <div className="space-y-2">
-                <div className="text-xs text-gray-500">
-                  ソース:{' '}
-                  {liveShift.sources.length === 0
-                    ? '—'
-                    : liveShift.sources.map((s) => (s === 'regular' ? '通常シフト' : '講習シフト')).join(' + ')}
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {liveShift.daysOfWeek.map((dow) => {
-                    const slots = liveShift.slotsByDay.get(dow) ?? [];
-                    return (
-                      <div
-                        key={dow}
-                        className="inline-flex flex-col gap-0.5 px-2 py-1 rounded border border-emerald-200 bg-emerald-50/50"
-                      >
-                        <span className="text-xs font-semibold text-emerald-900">{DAY_LABELS[dow]}曜</span>
-                        <span className="text-[10px] text-emerald-700">
-                          {slots.length > 0 ? slots.sort().join(' / ') : '—'}
-                        </span>
-                      </div>
-                    );
-                  })}
+                {effectiveAvailability ? (
+                  <div className="flex items-center gap-2 flex-wrap text-[11px] text-gray-500">
+                    <span>現在有効分:</span>
+                    <span className="font-semibold text-gray-700">{effectiveLabel}</span>
+                    <span
+                      className={`px-1.5 py-0.5 rounded font-semibold ${
+                        effectiveAvailability.source === 'manual'
+                          ? 'bg-info-subtle text-info'
+                          : 'bg-warning-subtle text-warning'
+                      }`}
+                    >
+                      {effectiveSourceLabel}
+                    </span>
+                    <span className="ml-auto text-gray-400">
+                      編集は下の「出勤可能期間」から
+                    </span>
+                  </div>
+                ) : (
+                  <div className="text-[11px] text-gray-400">
+                    出勤可能期間が登録されていないため、旧設定値を表示しています
+                  </div>
+                )}
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse text-xs">
+                    <thead>
+                      <tr>
+                        <th className="p-2 border border-gray-200 bg-gray-50 text-left font-semibold text-gray-600">コマ</th>
+                        {DAY_LABELS.map((d, i) => (
+                          <th key={i} className="p-2 border border-gray-200 bg-gray-50 text-center font-semibold text-gray-600 min-w-[42px]">
+                            {d}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {scheduleTimeSlots.map((slot) => (
+                        <tr key={slot.slot_number}>
+                          <td className="p-2 border border-gray-200 text-gray-700 whitespace-nowrap">
+                            <span className="font-semibold">{slot.slot_number}</span>
+                            <span className="ml-1 text-gray-400">{slot.start_time}〜{slot.end_time}</span>
+                          </td>
+                          {DAY_LABELS.map((_, dayIdx) => {
+                            const available = (slotsByDay[String(dayIdx)] || []).includes(slot.slot_number);
+                            return (
+                              <td
+                                key={dayIdx}
+                                className={`p-2 border border-gray-200 text-center ${
+                                  available ? 'bg-emerald-50' : 'bg-surface-raised'
+                                }`}
+                              >
+                                {available && <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}
@@ -441,8 +454,14 @@ export default function TeacherDetailPage() {
                 for (const sid of sids) {
                   await syncAllRegularShifts(sid);
                 }
-                const refreshed = await getAvailabilityPeriods(teacherId!);
+                const [refreshed, eff] = await Promise.all([
+                  getAvailabilityPeriods(teacherId!),
+                  getEffectiveAvailability(teacherId!, undefined, { schoolId: sids[0] }).catch(
+                    () => null
+                  ),
+                ]);
                 setAvailabilityPeriods(refreshed);
+                setEffectiveAvailability(eff);
               } catch (e) {
                 console.error('resync failed', e);
               } finally {
@@ -450,8 +469,19 @@ export default function TeacherDetailPage() {
               }
             }}
             onChanged={async () => {
-              const refreshed = await getAvailabilityPeriods(teacherId!);
+              if (!teacherId) return;
+              const sids = (teacher.user_schools || []).map((us) => us.school_id);
+              const primary = sids[0];
+              const [refreshed, eff] = await Promise.all([
+                getAvailabilityPeriods(teacherId),
+                primary
+                  ? getEffectiveAvailability(teacherId, undefined, { schoolId: primary }).catch(
+                      () => null
+                    )
+                  : Promise.resolve(null),
+              ]);
               setAvailabilityPeriods(refreshed);
+              setEffectiveAvailability(eff);
             }}
           />
 
