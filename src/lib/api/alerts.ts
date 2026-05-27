@@ -848,8 +848,8 @@ export function invalidateAlertCache(schoolIds: string[]): void {
   }
   const targets = new Set(schoolIds);
   const matchesAny = (key: string) => key.split(',').some((id) => targets.has(id));
-  for (const k of [...cacheLight.keys()]) if (matchesAny(k)) cacheLight.delete(k);
-  for (const k of [...cacheHeavy.keys()]) if (matchesAny(k)) cacheHeavy.delete(k);
+  for (const k of Array.from(cacheLight.keys())) if (matchesAny(k)) cacheLight.delete(k);
+  for (const k of Array.from(cacheHeavy.keys())) if (matchesAny(k)) cacheHeavy.delete(k);
 }
 
 // ============================================
