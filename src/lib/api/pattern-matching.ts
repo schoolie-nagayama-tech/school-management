@@ -13,6 +13,7 @@
 
 import { supabase } from '@/lib/supabase';
 import { getCurrentTeacherShifts } from '@/lib/api/teacher-shifts';
+import { getAvailabilityDayMap } from '@/lib/api/teacher-availability';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
@@ -83,9 +84,27 @@ export async function getPatternMatchCandidates(
   pattern: UnassignedPatternRow,
   asOfDate?: string
 ): Promise<PatternMatchCandidate[]> {
-  // 1. 当該曜日に出勤可能な講師IDを取得（期間考慮）
-  const shifts = await getCurrentTeacherShifts(schoolId, asOfDate);
-  const dowAvailable = shifts.byDayOfWeek.get(pattern.day_of_week) ?? [];
+  // 1. 当該曜日に出勤可能な講師IDを取得
+  //    第1優先: teacher_availability_periods（manual > regular_shift で正規化済み）
+  //    フォールバック: 上記が空のときのみ生のシフト提出 (getCurrentTeacherShifts)
+  //    細粒度の slot_number 一致は warning 付与に活用（除外はしない、誤判定回避）
+  const dayMap = await getAvailabilityDayMap(schoolId, asOfDate);
+  let dowAvailable = dayMap.byDayOfWeek.get(pattern.day_of_week) ?? [];
+  let slotAvailableSet = new Set<string>();
+  if (pattern.time_slot?.slot_number) {
+    slotAvailableSet = new Set(
+      dayMap.byDayAndSlotNumber.get(`${pattern.day_of_week}|${pattern.time_slot.slot_number}`) ?? []
+    );
+  }
+  if (dowAvailable.length === 0 && dayMap.byDayOfWeek.size === 0) {
+    // period が1件も無いときだけ旧APIにフォールバック
+    const shifts = await getCurrentTeacherShifts(schoolId, asOfDate);
+    dowAvailable = shifts.byDayOfWeek.get(pattern.day_of_week) ?? [];
+    if (pattern.time_slot?.slot_number) {
+      const fbSlot = shifts.byDayAndSlot.get(`${pattern.day_of_week}|${pattern.time_slot.slot_number}`) ?? [];
+      slotAvailableSet = new Set(fbSlot);
+    }
+  }
   if (dowAvailable.length === 0) return [];
 
   // 2. 学生の希望ルールを取得
@@ -172,6 +191,16 @@ export async function getPatternMatchCandidates(
     // +5: 出勤可能 (前提条件、ベースライン)
     score += 5;
     reasons.push('出勤可能');
+
+    // 細粒度: 当該コマ番号にも出勤可能なら +5、無ければ警告（除外はしない）
+    if (slotAvailableSet.size > 0) {
+      if (slotAvailableSet.has(p.id)) {
+        score += 5;
+        reasons.push('当該コマ出勤可');
+      } else {
+        warnings.push('該当コマは未提出');
+      }
+    }
 
     candidates.push({
       user_id: p.id,

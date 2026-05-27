@@ -323,8 +323,10 @@ export default function SchedulePage() {
     getStudents(undefined, [schoolId]).then(setStudents).catch(() => setStudents([]));
   }, [schoolId]);
 
-  // 「現在有効な講師シフト」を期間付きで取得（通常 + 講習 を union）。
-  // 期間外の古い submission は除外される。teacher_email <-> user_profiles.email で解決。
+  // 「現在有効な講師の出勤可能曜日」を期間付きで取得。
+  // - 第1優先: teacher_availability_periods (manual > regular_shift)
+  // - フォールバック: 上記が空のときのみ生のシフト提出 (getCurrentTeacherShifts) で代用
+  //   ※ period が未同期な過渡期データを取りこぼさないため
   useEffect(() => {
     if (!schoolId) {
       setShiftByDow(new Map());
@@ -333,11 +335,18 @@ export default function SchedulePage() {
     let cancelled = false;
     (async () => {
       try {
-        const { getCurrentTeacherShifts } = await import('@/lib/api/teacher-shifts');
-        // weekStart を基準日にして「その週時点で有効な」シフトを取得
+        const { getAvailabilityDayMap } = await import('@/lib/api/teacher-availability');
         const asOf = weekStartStr;
-        const { byDayOfWeek } = await getCurrentTeacherShifts(schoolId, asOf);
-        if (!cancelled) setShiftByDow(byDayOfWeek);
+        const { byDayOfWeek } = await getAvailabilityDayMap(schoolId, asOf);
+
+        if (byDayOfWeek.size > 0) {
+          if (!cancelled) setShiftByDow(byDayOfWeek);
+          return;
+        }
+        // period が1件もなければ旧APIにフォールバック
+        const { getCurrentTeacherShifts } = await import('@/lib/api/teacher-shifts');
+        const fallback = await getCurrentTeacherShifts(schoolId, asOf);
+        if (!cancelled) setShiftByDow(fallback.byDayOfWeek);
       } catch (e) {
         console.warn('Shift availability fetch failed:', e);
         if (!cancelled) setShiftByDow(new Map());

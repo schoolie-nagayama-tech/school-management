@@ -267,6 +267,50 @@ export async function getAvailabilityPeriods(
   return (data ?? []) as TeacherAvailabilityPeriod[];
 }
 
+/**
+ * 学校全体の availability を dow / dow|slot_number ベースに展開して返す。
+ * 座席表 (WeeklyScheduleGrid) の shiftAvailableByDow と互換の形式。
+ *
+ * - byDayOfWeek: 曜日 (0-6) → 出勤可能 user_id[]
+ * - byDayAndSlotNumber: `${dow}|${slot_number}` → 出勤可能 user_id[]（細粒度フィルタ用）
+ */
+export async function getAvailabilityDayMap(
+  schoolId: string,
+  asOfDate?: string,
+  options?: { client?: AnyClient }
+): Promise<{
+  byDayOfWeek: Map<number, string[]>;
+  byDayAndSlotNumber: Map<string, string[]>;
+  sourcesByUserId: Map<string, AvailabilitySource>;
+}> {
+  const byUser = await getCurrentAvailabilityBySchool(schoolId, asOfDate, options);
+  const dowMap = new Map<number, Set<string>>();
+  const slotMap = new Map<string, Set<string>>();
+  const sources = new Map<string, AvailabilitySource>();
+
+  for (const [uid, p] of Array.from(byUser.entries())) {
+    sources.set(uid, p.source);
+    for (const dow of p.available_days_of_week) {
+      if (!dowMap.has(dow)) dowMap.set(dow, new Set());
+      dowMap.get(dow)!.add(uid);
+
+      const slotNums = p.available_slot_numbers_by_day?.[String(dow)] ?? [];
+      for (const n of slotNums) {
+        const key = `${dow}|${n}`;
+        if (!slotMap.has(key)) slotMap.set(key, new Set());
+        slotMap.get(key)!.add(uid);
+      }
+    }
+  }
+
+  const byDayOfWeek = new Map<number, string[]>();
+  Array.from(dowMap.entries()).forEach(([k, v]) => byDayOfWeek.set(k, Array.from(v)));
+  const byDayAndSlotNumber = new Map<string, string[]>();
+  Array.from(slotMap.entries()).forEach(([k, v]) => byDayAndSlotNumber.set(k, Array.from(v)));
+
+  return { byDayOfWeek, byDayAndSlotNumber, sourcesByUserId: sources };
+}
+
 /** 学校全体の「今日有効な」availability を user_id ごとに返す。座席表/マッチング向け */
 export async function getCurrentAvailabilityBySchool(
   schoolId: string,
