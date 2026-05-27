@@ -42,6 +42,10 @@ const PendingTransfersBoard = dynamic(
   () => import('@/components/schedule/PendingTransfersBoard').then((m) => m.PendingTransfersBoard),
   { ssr: false }
 );
+const UnassignedEntriesPool = dynamic(
+  () => import('@/components/schedule/UnassignedEntriesPool').then((m) => m.UnassignedEntriesPool),
+  { ssr: false }
+);
 const KoushuPlacementPanel = dynamic(
   () => import('@/components/schedule/KoushuPlacementPanel').then((m) => m.KoushuPlacementPanel),
   { ssr: false }
@@ -1193,28 +1197,30 @@ export default function SchedulePage() {
           <ScheduleDriftBanner schoolId={schoolId} userId={profile?.id} />
         )}
 
-        {/* 担当未決定エントリのサマリバナー：今週の未決定件数 + マッチング画面への導線
-            「未決定があると授業ができない緊急事態」なので画面上部で目立たせる */}
+        {/* 担当未決定エントリプール: 座席表から切り離して上部に集約。
+            生徒チップをドラッグして座席表内の講師セルにドロップすると割当できる。
+            一括マッチング画面への導線もここに集約。 */}
         {(() => {
           const unassignedCount = displayEntries.filter(
             (e) => !e.teacher_id && e.status !== 'cancelled' && e.status !== 'transferred_out'
           ).length;
-          if (unassignedCount === 0) return null;
+          if (unassignedCount === 0 || !timeSlots.length) return null;
           return (
-            <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-warning-subtle/60 border border-warning/30 text-sm print:hidden">
-              <span className="text-warning font-semibold flex items-center gap-1.5">
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-warning animate-pulse" />
-                担当未決定: {unassignedCount} コマ
-              </span>
-              <span className="text-xs text-text-muted">
-                座席表でドラッグ&ドロップ、または一括マッチング画面で割当できます
-              </span>
-              <Link
-                href="/schedule/regular-patterns/match"
-                className="ml-auto text-xs text-info hover:underline font-semibold"
-              >
-                一括マッチング画面へ →
-              </Link>
+            <div className="space-y-1.5 print:hidden">
+              <div className="flex items-center gap-2 text-xs text-text-muted">
+                <Link
+                  href="/schedule/regular-patterns/match"
+                  className="ml-auto text-info hover:underline font-semibold"
+                >
+                  一括マッチング画面で機械的に決める →
+                </Link>
+              </div>
+              <UnassignedEntriesPool
+                entries={displayEntries}
+                timeSlots={timeSlots}
+                weekDates={weekDates}
+                subjectNameById={new Map(masterSubjects.map((s) => [s.id, s.name]))}
+              />
             </div>
           );
         })()}

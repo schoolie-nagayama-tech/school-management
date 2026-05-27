@@ -76,12 +76,11 @@ export const DayCell = React.memo(function DayCell({
     );
   }
 
-  // 2列表示で縦圧縮：講師カードを grid で並べる。1列のときの動作は変わらないが、
-  // 講師数が増えても縦に伸び続けず、画面密度が上がる。
-  // 1セル幅が狭い時 (xs) は 1 列、それ以外 2 列。
+  // 1列表示に戻す（生徒名の可読性優先）。
+  // 担当未決定エントリは座席表から除外して上部の「未設定プール」に集約する設計に変更。
   return (
     <div className="py-1 min-h-[40px]">
-      <div className="grid grid-cols-2 gap-1">
+      <div className="space-y-1">
         {teacherGroups.map((group) => (
           <TeacherCard
             key={group.teacher.id}
@@ -118,8 +117,7 @@ export const DayCell = React.memo(function DayCell({
               e.stopPropagation();
               onAddTeacher(teacherGroups.map((g) => g.teacher.id));
             }}
-            // 講師追加ボタンは grid の最後に1セル分。空きカードと見た目を合わせて薄く。
-            className="col-span-full py-1 text-[10px] text-gray-300 hover:text-gray-500 rounded-lg transition-colors duration-200"
+            className="w-full py-1 text-[10px] text-gray-300 hover:text-gray-500 rounded-lg transition-colors duration-200"
           >
             + 講師追加
           </button>

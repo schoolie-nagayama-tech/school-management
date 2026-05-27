@@ -47,24 +47,11 @@ function groupEntriesByTeacher(
     (e) => e.entry_date === date && e.time_slot_id === slotId
   );
   const byTeacher = new Map<string, TeacherGroup>();
-  const unassignedGroups: TeacherGroup[] = [];
   for (const entry of filtered) {
-    // teacher_id が NULL の場合は「エントリごとに独立した担当未決定グループ」を作る。
-    // これにより各エントリが個別のドロップターゲットになり、講師カードを D&D で割当可能。
+    // 担当未決定エントリ (teacher_id NULL) は座席表本体から除外。
+    // 上部の「未設定プール」(UnassignedEntriesPool) に集約して表示し、そこからD&D割当する設計。
     const rawTid = entry.teacher_id as string | null | undefined;
     if (!rawTid) {
-      const studentName = entry.student
-        ? `${entry.student.last_name ?? ''}${entry.student.first_name ?? ''}`.trim() || '担当未決定'
-        : '担当未決定';
-      unassignedGroups.push({
-        teacher: {
-          id: makeUnassignedTeacherId(entry.id),
-          display_name: `未定: ${studentName}`,
-          email: null,
-        },
-        entries: [entry],
-        isAvailableOnly: false,
-      });
       continue;
     }
     const tid = rawTid;
@@ -85,8 +72,7 @@ function groupEntriesByTeacher(
     }
     byTeacher.get(tid)!.entries.push(entry);
   }
-  // 担当未決定エントリは末尾にまとめて並べる（既存講師の後）
-  return [...Array.from(byTeacher.values()), ...unassignedGroups];
+  return Array.from(byTeacher.values());
 }
 
 export interface TeacherOption {
