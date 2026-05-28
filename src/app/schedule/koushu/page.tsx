@@ -150,7 +150,7 @@ export default function KoushuPage() {
   if (!isManager) return <AccessDenied />;
 
   return (
-    <AdminLayout headerTitle="講習スケジュール">
+    <AdminLayout headerTitle="講習コース">
       <div className="space-y-6">
         {/* ヘッダー */}
         <div className="flex items-center justify-between gap-4">
@@ -160,14 +160,14 @@ export default function KoushuPage() {
                 <ArrowLeft className="w-5 h-5" />
               </button>
             </Link>
-            <h1 className="text-xl font-bold text-[var(--headline)]">講習管理</h1>
+            <h1 className="text-xl font-bold text-[var(--headline)]">講習コース</h1>
           </div>
           <Button
             onClick={() => { setEditingCourse(null); setPeriodFormOpen(true); }}
             className="flex items-center gap-1"
           >
             <Plus className="w-4 h-4" />
-            講習を追加
+            コースを追加
           </Button>
         </div>
 
@@ -219,7 +219,7 @@ export default function KoushuPage() {
             <p className="mb-4">まだ講習が登録されていません。</p>
             <Button onClick={() => { setEditingCourse(null); setPeriodFormOpen(true); }}>
               <Plus className="w-4 h-4 mr-1" />
-              最初の講習を追加
+              最初のコースを追加
             </Button>
           </div>
         )}
