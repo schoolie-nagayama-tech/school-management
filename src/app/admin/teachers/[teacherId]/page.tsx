@@ -283,13 +283,13 @@ export default function TeacherDetailPage() {
         <div className="flex gap-2">
           <Link
             href="/admin/teachers"
-            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg bg-surface-raised transition-colors duration-150"
+            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg bg-surface-raised transition-[color,background-color] duration-150 ease-out active:scale-[0.97]"
           >
             一覧に戻る
           </Link>
           <Link
             href={`/admin/teachers/${teacher.id}/edit`}
-            className="px-4 py-2 text-sm font-medium text-white bg-ink rounded-lg hover:brightness-[0.85] transition-colors duration-150"
+            className="px-4 py-2 text-sm font-medium text-white bg-ink rounded-lg hover:brightness-[0.85] transition-[filter] duration-150 ease-out active:scale-[0.97]"
           >
             編集
           </Link>
@@ -297,7 +297,7 @@ export default function TeacherDetailPage() {
       }
     >
       {/* ヒーローカード */}
-      <div className={`${heroBgClass} relative overflow-hidden rounded-2xl p-6 mb-6 shadow-lg text-white transition-colors duration-500`}>
+      <div className={`${heroBgClass} relative overflow-hidden rounded-2xl p-6 mb-6 shadow-lg text-white transition-[background] duration-500 ease-out`}>
         <div className="flex items-center gap-5">
           <div className="flex-1 min-w-0">
             <h1 className="text-2xl font-bold truncate">{teacher.display_name || '(未設定)'}</h1>
@@ -509,7 +509,7 @@ export default function TeacherDetailPage() {
                     <li key={h.submission_id} className="py-2 text-sm">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span
-                          className={`px-1.5 py-0.5 text-[10px] rounded font-semibold ${
+                          className={`px-1.5 py-0.5 text-[11px] rounded font-semibold ${
                             h.source === 'regular'
                               ? 'bg-info-subtle text-info'
                               : 'bg-warning-subtle text-warning'
@@ -520,7 +520,7 @@ export default function TeacherDetailPage() {
                         <span className="font-semibold">{h.setting_name || '名称未設定'}</span>
                         <span className="text-xs text-gray-500">{period}</span>
                         {h.submitted_at && (
-                          <span className="text-[10px] text-gray-400">
+                          <span className="text-[11px] text-gray-400">
                             提出: {new Date(h.submitted_at).toLocaleDateString('ja-JP')}
                           </span>
                         )}
@@ -532,7 +532,7 @@ export default function TeacherDetailPage() {
                             .map(([dow, slots]) => (
                               <span
                                 key={dow}
-                                className="inline-flex items-center gap-1 text-[10px] text-gray-600 bg-gray-50 px-1.5 py-0.5 rounded"
+                                className="inline-flex items-center gap-1 text-[11px] text-gray-600 bg-gray-50 px-1.5 py-0.5 rounded"
                               >
                                 <strong>{DAY_LABELS[dow]}</strong>
                                 <span className="text-gray-500">{slots.length} 枠</span>
@@ -606,7 +606,7 @@ export default function TeacherDetailPage() {
                     style={{ borderColor: `${cfg.color}40`, backgroundColor: `${cfg.color}08` }}
                   >
                     <div className="text-lg font-bold" style={{ color: cfg.color }}>{rankCounts[r]}</div>
-                    <div className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: cfg.color }}>
+                    <div className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: cfg.color }}>
                       {cfg.label}
                     </div>
                   </div>
@@ -627,7 +627,7 @@ export default function TeacherDetailPage() {
                       >
                         <BadgeIcon icon={b.icon} size={18} />
                       </div>
-                      <div className="text-[10px] text-gray-600 mt-1 truncate w-full">{b.name}</div>
+                      <div className="text-[11px] text-gray-600 mt-1 truncate w-full">{b.name}</div>
                     </div>
                   );
                 })}
@@ -673,10 +673,10 @@ export default function TeacherDetailPage() {
 
 function StatCard({ label, value, unit }: { label: string; value: number; unit?: string }) {
   return (
-    <div className="bg-surface-raised border border-gray-200 rounded-xl p-4">
+    <div className="bg-surface-raised border border-gray-200 rounded-xl p-4 hover:border-gray-300 transition-[border-color] duration-150 ease-out">
       <div className="text-xs text-gray-500 mb-1">{label}</div>
       <div className="flex items-baseline gap-1">
-        <span className="text-2xl font-bold text-gray-900">{value}</span>
+        <span className="text-2xl font-bold text-gray-900 tabular-nums">{value}</span>
         {unit && <span className="text-xs text-gray-400">{unit}</span>}
       </div>
     </div>
@@ -762,7 +762,7 @@ function AvailabilityPeriodsPanel({
           <button
             type="button"
             onClick={() => setEditorTarget('new')}
-            className="text-xs px-2 py-1 rounded border border-info bg-info-subtle text-info hover:bg-info/10 transition-colors"
+            className="text-xs px-2 py-1 rounded border border-info bg-info-subtle text-info hover:bg-info/10 transition-[background-color] duration-150 ease-out active:scale-[0.97]"
             disabled={schoolIds.length === 0}
             title={schoolIds.length === 0 ? '所属校未設定のため追加不可' : '新しい期間を追加'}
           >
@@ -772,7 +772,7 @@ function AvailabilityPeriodsPanel({
             type="button"
             onClick={() => onResync()}
             disabled={isResyncing}
-            className="text-xs px-2 py-1 rounded border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+            className="text-xs px-2 py-1 rounded border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition-[background-color] duration-150 ease-out active:scale-[0.97]"
             title="シフト提出から teacher_availability_periods を再構築"
           >
             {isResyncing ? '再同期中...' : 'シフトから再同期'}
@@ -875,7 +875,7 @@ function PeriodGroup({
           <li key={p.id} className={`border rounded-lg p-3 ${accentBorder}`}>
             <div className="flex items-center gap-2 flex-wrap mb-1.5">
               <span
-                className={`px-1.5 py-0.5 text-[10px] rounded font-semibold ${
+                className={`px-1.5 py-0.5 text-[11px] rounded font-semibold ${
                   p.source === 'manual'
                     ? 'bg-info-subtle text-info'
                     : 'bg-warning-subtle text-warning'
@@ -892,13 +892,13 @@ function PeriodGroup({
                 {p.effective_from} 〜 {p.effective_until || '無期限'}
               </span>
               {schoolNames[p.school_id] && (
-                <span className="text-[10px] text-gray-500">{schoolNames[p.school_id]}</span>
+                <span className="text-[11px] text-gray-500">{schoolNames[p.school_id]}</span>
               )}
               <span className="ml-auto flex gap-1">
                 <button
                   type="button"
                   onClick={() => onEdit(p)}
-                  className="text-[10px] px-1.5 py-0.5 rounded border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 transition-colors"
+                  className="text-[11px] px-1.5 py-0.5 rounded border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 transition-[background-color] duration-150 ease-out active:scale-[0.97]"
                 >
                   {p.source === 'manual' ? '編集' : '上書きを作成'}
                 </button>
@@ -906,7 +906,7 @@ function PeriodGroup({
                   <button
                     type="button"
                     onClick={() => onDelete(p)}
-                    className="text-[10px] px-1.5 py-0.5 rounded border border-danger/40 bg-white text-danger hover:bg-danger/5 transition-colors"
+                    className="text-[11px] px-1.5 py-0.5 rounded border border-danger/40 bg-white text-danger hover:bg-danger/5 transition-[background-color] duration-150 ease-out active:scale-[0.97]"
                   >
                     削除
                   </button>
@@ -939,7 +939,7 @@ function PeriodGroup({
               </div>
             )}
             {p.notes && (
-              <p className="mt-1.5 text-[10px] text-gray-400 italic">{p.notes}</p>
+              <p className="mt-1.5 text-[11px] text-gray-400 italic">{p.notes}</p>
             )}
           </li>
         ))}
@@ -1055,8 +1055,8 @@ function AvailabilityEditorModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4 animate-[fade-in_150ms_ease-out]">
+      <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]">
         <div className="px-5 py-3 border-b border-gray-200 flex items-center justify-between">
           <h3 className="text-base font-bold text-gray-800">
             {isEdit ? '出勤可能期間を編集' : '出勤可能期間を追加'}
@@ -1064,7 +1064,7 @@ function AvailabilityEditorModal({
           <button
             type="button"
             onClick={onClose}
-            className="text-sm text-gray-500 hover:text-gray-800"
+            className="text-sm text-gray-500 hover:text-gray-800 transition-[color] duration-150 ease-out active:scale-[0.97]"
           >
             ✕
           </button>
@@ -1155,7 +1155,7 @@ function AvailabilityEditorModal({
                             <td
                               key={dayIdx}
                               onClick={() => toggleCell(dayIdx, slot.slot_number)}
-                              className={`p-1.5 border border-gray-200 text-center cursor-pointer transition-colors select-none ${
+                              className={`p-1.5 border border-gray-200 text-center cursor-pointer transition-[background-color] duration-100 ease-out select-none ${
                                 checked
                                   ? 'bg-emerald-100 hover:bg-emerald-200'
                                   : 'bg-white hover:bg-gray-50'

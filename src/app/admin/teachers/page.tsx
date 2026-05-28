@@ -370,7 +370,7 @@ export default function TeachersPage() {
           <div className="flex items-center gap-4">
             <Link
               href="/students"
-              className="flex items-center gap-2 text-text-heading hover:text-info transition-colors duration-150"
+              className="flex items-center gap-2 text-text-heading hover:text-info transition-[color] duration-150 ease-out active:scale-[0.97]"
               title="ホームに戻る"
             >
               <Home className="w-5 h-5" />
@@ -501,7 +501,7 @@ export default function TeachersPage() {
                       }
                       return list;
                     })().map(teacher => (
-                      <tr key={teacher.id} className="hover:bg-surface-hover/50">
+                      <tr key={teacher.id} className="hover:bg-surface-hover/50 transition-[background-color] duration-100 ease-out">
                         <td className="px-4 py-3 text-sm text-text-heading">
                           <span className="inline-flex items-center gap-1.5">
                             {teacher.display_name || '-'}
@@ -538,7 +538,7 @@ export default function TeachersPage() {
                                     return (
                                       <span
                                         key={a.id}
-                                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium border"
+                                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium border"
                                         style={{ color: rankConfig.color, borderColor: `${rankConfig.color}40` }}
                                         title={badge.name}
                                       >
@@ -548,7 +548,7 @@ export default function TeachersPage() {
                                     );
                                   })}
                                   {rest > 0 && (
-                                    <span className="text-[10px] text-gray-400">+{rest}</span>
+                                    <span className="text-[11px] text-gray-400">+{rest}</span>
                                   )}
                                 </div>
                               );
@@ -599,7 +599,7 @@ export default function TeachersPage() {
                                     toastError((e as Error).message);
                                   }
                                 }}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:border-amber-400 transition-colors cursor-pointer"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded border border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100 hover:border-amber-400 transition-[background-color,border-color] duration-150 ease-out active:scale-[0.97] cursor-pointer"
                                 title="この講師としてログイン"
                               >
                                 <LogIn className="h-3 w-3" />

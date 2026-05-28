@@ -465,7 +465,7 @@ export default function TeacherEditPage() {
           <div className="flex items-center gap-4">
             <Link
               href="/admin/teachers"
-              className="flex items-center gap-2 text-text-body hover:text-[#ff8e3c] transition-colors duration-150"
+              className="flex items-center gap-2 text-text-body hover:text-[#ff8e3c] transition-[color] duration-150 ease-out active:scale-[0.97]"
             >
               <ChevronLeft className="w-4 h-4" />
               講師一覧に戻る
@@ -559,14 +559,14 @@ export default function TeacherEditPage() {
                   <button
                     type="button"
                     onClick={() => setEditTeachableSubjectIds(subjects.map((s) => s.id))}
-                    className="text-xs px-3 py-1.5 rounded-md border border-border hover:bg-surface hover:border-[#ff8e3c]/50 text-text-muted"
+                    className="text-xs px-3 py-1.5 rounded-md border border-border hover:bg-surface hover:border-[#ff8e3c]/50 text-text-muted transition-[background-color,border-color] duration-150 ease-out active:scale-[0.97]"
                   >
                     全科目選択
                   </button>
                   <button
                     type="button"
                     onClick={() => setEditTeachableSubjectIds([])}
-                    className="text-xs px-3 py-1.5 rounded-md border border-border hover:bg-surface hover:border-[#ff8e3c]/50 text-text-muted"
+                    className="text-xs px-3 py-1.5 rounded-md border border-border hover:bg-surface hover:border-[#ff8e3c]/50 text-text-muted transition-[background-color,border-color] duration-150 ease-out active:scale-[0.97]"
                   >
                     全科目解除
                   </button>
@@ -589,7 +589,7 @@ export default function TeacherEditPage() {
                                 [...prev.filter((id) => !ids.includes(id)), ...ids]
                               );
                             }}
-                            className="text-[10px] px-2 py-0.5 rounded border border-border hover:bg-surface text-text-muted"
+                            className="text-[11px] px-2 py-0.5 rounded border border-border hover:bg-surface text-text-muted transition-[background-color] duration-150 ease-out active:scale-[0.97]"
                           >
                             全選択
                           </button>
@@ -600,7 +600,7 @@ export default function TeacherEditPage() {
                                 prev.filter((id) => !items.some((s) => s.id === id))
                               )
                             }
-                            className="text-[10px] px-2 py-0.5 rounded border border-border hover:bg-surface text-text-muted"
+                            className="text-[11px] px-2 py-0.5 rounded border border-border hover:bg-surface text-text-muted transition-[background-color] duration-150 ease-out active:scale-[0.97]"
                           >
                             全解除
                           </button>
@@ -653,7 +653,7 @@ export default function TeacherEditPage() {
                         {scheduleTimeSlots.map((slot) => (
                           <th key={slot.id} className="text-center py-2 px-1 font-medium text-text-muted min-w-[5rem]">
                             <div>{slot.slot_number}限</div>
-                            <div className="text-[10px] font-normal text-text-faint tabular-nums mt-0.5">
+                            <div className="text-[11px] font-normal text-text-faint tabular-nums mt-0.5">
                               {slot.start_time?.slice(0, 5)}〜{slot.end_time?.slice(0, 5)}
                             </div>
                           </th>
@@ -707,7 +707,7 @@ export default function TeacherEditPage() {
                   <button
                     type="button"
                     onClick={() => setBadgeCreateDialogOpen(true)}
-                    className="text-xs px-3 py-1.5 rounded-md border border-border hover:bg-surface hover:border-ink/30 text-text-muted transition-colors duration-150"
+                    className="text-xs px-3 py-1.5 rounded-md border border-border hover:bg-surface hover:border-ink/30 text-text-muted transition-[background-color,border-color] duration-150 ease-out active:scale-[0.97]"
                   >
                     + バッジを新規作成
                   </button>
@@ -857,7 +857,7 @@ export default function TeacherEditPage() {
                       <button
                         type="button"
                         onClick={() => handleDeleteTraining(t)}
-                        className="text-xs text-red-600 hover:text-red-700 hover:underline flex-shrink-0"
+                        className="text-xs text-red-600 hover:text-red-700 hover:underline flex-shrink-0 transition-[color] duration-150 ease-out active:scale-[0.97]"
                       >
                         削除
                       </button>
