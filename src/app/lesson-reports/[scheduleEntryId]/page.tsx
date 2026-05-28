@@ -363,31 +363,31 @@ export default function LessonReportFormPage() {
     [form.review_comment]
   );
 
-  // 宿題日付の等分配
+  // 宿題日付の自動入力：授業の翌日から1日ずつ順に振り、次回授業日でクランプ。
+  // 「等分配（コマ数で日を割る）」をやめ、「次回授業日までの連続した日付」を入れる方式。
+  // 行が次回授業日までの日数より多い場合は、超過分は次回授業日に丸める。
   const autoDistributeHomeworkDates = useCallback(() => {
-    const today = form.lesson_date || todayStr();
-    const totalDays = Math.max(1, daysBetween(nextLessonDate, today));
-    const slots = form.homework_assignments.length || 7;
-    const perDay = Math.max(1, Math.floor(slots / totalDays));
-    let dayOffset = 0;
-    let countInDay = 0;
-    const updated = form.homework_assignments.map((a) => {
-      if (countInDay >= perDay && dayOffset < totalDays - 1) {
-        dayOffset += 1;
-        countInDay = 0;
-      }
-      countInDay += 1;
-      return { ...a, date: addDays(today, dayOffset + 1) };
+    const base = form.lesson_date || todayStr();
+    const updated = form.homework_assignments.map((a, i) => {
+      let d = addDays(base, i + 1); // 授業翌日 = i:0、翌々日 = i:1 ...
+      if (nextLessonDate && d > nextLessonDate) d = nextLessonDate; // 次回授業日でクランプ
+      return { ...a, date: d };
     });
     setForm((f) => ({ ...f, homework_assignments: updated }));
   }, [form.lesson_date, form.homework_assignments, nextLessonDate]);
 
-  // 宿題行操作
+  // 宿題行操作：追加時、その行の日付も「授業翌日からの連番（次回授業日でクランプ）」で自動セット。
   const addHomeworkRow = () =>
-    setForm((f) => ({
-      ...f,
-      homework_assignments: [...f.homework_assignments, { date: '', text: '' }],
-    }));
+    setForm((f) => {
+      const base = f.lesson_date || todayStr();
+      const i = f.homework_assignments.length;
+      let d = addDays(base, i + 1);
+      if (nextLessonDate && d > nextLessonDate) d = nextLessonDate;
+      return {
+        ...f,
+        homework_assignments: [...f.homework_assignments, { date: d, text: '' }],
+      };
+    });
   const removeHomeworkRow = (idx: number) =>
     setForm((f) => ({
       ...f,
@@ -572,15 +572,48 @@ export default function LessonReportFormPage() {
         <Section title="2. 学校進度">
           <Field
             label="学校進度（保存時に進行表に転記されます）"
-            hint="この欄を更新すると、進行表の「学校進度」が自動で書き換わります"
+            hint="進行表と同期するため、教材の単元から選択します。教材が未登録の場合のみ自由入力になります"
           >
-            <input
-              type="text"
-              className="w-full px-3 py-2 border rounded-md text-sm"
-              value={form.school_progress}
-              onChange={(e) => setForm((f) => ({ ...f, school_progress: e.target.value }))}
-              placeholder="例: Unit 5 - Lesson 2"
-            />
+            {textbookOptions.length === 0 ? (
+              // 教材未登録時のフォールバック：自由入力
+              <input
+                type="text"
+                className="w-full px-3 py-2 border rounded-md text-sm"
+                value={form.school_progress}
+                onChange={(e) => setForm((f) => ({ ...f, school_progress: e.target.value }))}
+                placeholder="例: Unit 5 - Lesson 2"
+              />
+            ) : (
+              <select
+                className="w-full px-3 py-2 border rounded-md text-sm bg-white"
+                value={form.school_progress}
+                onChange={(e) => setForm((f) => ({ ...f, school_progress: e.target.value }))}
+              >
+                <option value="">選択してください</option>
+                {/* 既存の自由記述値が選択肢に無い場合は、その値を先頭に残して消えないようにする */}
+                {form.school_progress &&
+                  !textbookOptions.some((opt) =>
+                    opt.curriculum_items.some(
+                      (it) => `${opt.textbook_name} / ${it.title}` === form.school_progress
+                    )
+                  ) && <option value={form.school_progress}>{form.school_progress}（既存）</option>}
+                {textbookOptions.map((opt) => (
+                  <optgroup key={opt.id} label={opt.textbook_name}>
+                    {opt.curriculum_items
+                      .slice()
+                      .sort((a, b) => a.sort_order - b.sort_order)
+                      .map((it) => {
+                        const label = `${opt.textbook_name} / ${it.title}`;
+                        return (
+                          <option key={it.id} value={label}>
+                            {it.title}
+                          </option>
+                        );
+                      })}
+                  </optgroup>
+                ))}
+              </select>
+            )}
           </Field>
         </Section>
 
@@ -777,7 +810,7 @@ export default function LessonReportFormPage() {
         </Section>
 
         {/* 6. 次回までの宿題 */}
-        <Section title="6. 次回までの宿題（日付自動割当）">
+        <Section title="6. 次回までの宿題（授業翌日〜次回授業日に自動割当）">
           <div className="text-xs text-text-muted mb-2 p-2 bg-info-subtle rounded">
             次回授業: <strong>{nextLessonDate}</strong> ・ 残り{' '}
             <strong>{daysBetween(nextLessonDate, form.lesson_date || todayStr())}日</strong>
@@ -787,7 +820,7 @@ export default function LessonReportFormPage() {
               className="ml-2 px-2 py-0.5 text-xs bg-info text-white rounded"
             >
               <Wand2 className="inline w-3 h-3 mr-1" />
-              日付を等分配
+              次回授業日まで日付を入れる
             </button>
           </div>
           <div className="space-y-1">
