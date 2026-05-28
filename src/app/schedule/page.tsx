@@ -455,28 +455,10 @@ export default function SchedulePage() {
     refreshEntries();
   }, [refreshEntries]);
 
-  // タブ復帰 / window focus 時の自動再取得。
-  // マッチング画面で割当した後に座席表へ戻ったとき、古いキャッシュではなく最新を出すため。
-  // 10 秒以内の再フォーカスは throttle してスパムリロードを避ける。
-  useEffect(() => {
-    if (!schoolId) return;
-    let lastReloadAt = Date.now();
-    const THROTTLE_MS = 10_000;
-
-    const tryReload = () => {
-      if (document.visibilityState === 'hidden') return;
-      if (Date.now() - lastReloadAt < THROTTLE_MS) return;
-      lastReloadAt = Date.now();
-      refreshEntries();
-    };
-
-    window.addEventListener('focus', tryReload);
-    document.addEventListener('visibilitychange', tryReload);
-    return () => {
-      window.removeEventListener('focus', tryReload);
-      document.removeEventListener('visibilitychange', tryReload);
-    };
-  }, [schoolId, refreshEntries]);
+  // NOTE: 以前は window focus / visibilitychange で自動 refreshEntries していたが、
+  // 「定期的に再読み込みが入って描画が重い」というフィードバックを受けて撤去。
+  // 他画面（マッチング等）の変更を取り込みたい場合は、ツールバーの「再取得」ボタンや
+  // 週の切替で明示的にリロードする運用とする。
 
   const handleEntryClick = useCallback((entry: ScheduleEntry, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -1113,6 +1095,16 @@ export default function SchedulePage() {
       for (const entry of toDelete) {
         await deleteScheduleEntry(entry.id);
       }
+      // 削除後もこの講師を「出勤可能・授業なし」のグレーカードとして残す。
+      // entries から消えるとカードごと消えてしまうため、emptyTeacherSlots に明示追加して
+      // isAvailableOnly 表示（グレーアウト）を維持する。
+      const cellKey = `${date}-${slotId}`;
+      setEmptyTeacherSlots((prev) => {
+        const next = { ...prev };
+        const arr = next[cellKey] ?? [];
+        if (!arr.includes(teacherId)) next[cellKey] = [...arr, teacherId];
+        return next;
+      });
       success('講師の授業を削除しました');
       setRemoveTeacherConfirm(null);
       refreshEntries();
