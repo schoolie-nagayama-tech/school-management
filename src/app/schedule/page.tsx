@@ -1197,8 +1197,9 @@ export default function SchedulePage() {
         type="button"
         onClick={() => {
           if (koushuList.length === 0) {
-            // 講習期間が未設定なら管理画面で作ってもらう
-            router.push('/schedule/koushu');
+            // 講習期間が未設定なら講習期間設定（course_prep_periods）へ誘導。
+            // コース管理(/schedule/koushu)はテンプレ置き場でスケジュールに無関係なので飛ばさない。
+            router.push('/courses/progress');
             return;
           }
           // トグル：選択中なら解除、未選択なら最初の期間で講習モードに入る
@@ -1211,7 +1212,7 @@ export default function SchedulePage() {
         }`}
         title={
           koushuList.length === 0
-            ? '講習期間が未設定です。講習管理ページで作成します'
+            ? '講習期間が未設定です。講習期間の設定画面へ移動します'
             : isKoushuMode
               ? '講習モードを解除して通常表示に戻す'
               : '座席表を講習モードに切り替える'
