@@ -986,6 +986,12 @@ export default function SchedulePage() {
         pendingAssignment.regularPatternId,
         pendingAssignment.teacherId
       );
+      // 当日漏れ防止：ドロップ対象エントリ自体を確実に直接更新する。
+      // assignTeacherToPattern は entry_date >= JST今日 のパターン由来エントリを一括更新するが、
+      // 万一日付境界やデータ不整合で当日コマが漏れても、ドロップした当日コマは確実に反映させる。
+      await updateScheduleEntry(pendingAssignment.entryId, {
+        teacher_id: pendingAssignment.teacherId,
+      });
       // 履歴ログ：パターン割当（恒久）
       if (schoolId && beforeEntry) {
         await logScheduleChange({
