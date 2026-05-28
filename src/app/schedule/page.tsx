@@ -67,7 +67,7 @@ import {
   cancelFutureEntriesByRegularPatternId,
   getMonthlyTransferUsage,
 } from '@/lib/api/schedule';
-import { assignTeacherToPattern, reassignTeacherFromToday } from '@/lib/api/pattern-matching';
+import { reassignTeacherFromToday } from '@/lib/api/pattern-matching';
 import { logScheduleChange } from '@/lib/api/schedule-change-logs';
 import type { ScheduleEntry, ScheduleEntryFormData, ScheduleTimeSlot } from '@/types/schedule';
 import type { School, Student, Subject } from '@/types/database';
