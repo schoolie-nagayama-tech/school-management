@@ -414,6 +414,14 @@ export async function syncProposalToProgress(
   let stbId = proposal.student_textbook_id;
   let textbookCreated = false;
 
+  // 既に紐付け済みの場合でも track_progress を有効化（テンプレ適用で作った下書きは false のままなので公開時にONにする）
+  if (stbId) {
+    await supabase
+      .from('student_textbooks')
+      .update({ track_progress: true })
+      .eq('id', stbId);
+  }
+
   // student_textbook が未紐付けの場合は作成
   if (!stbId) {
     // 既存の student_textbook を探す

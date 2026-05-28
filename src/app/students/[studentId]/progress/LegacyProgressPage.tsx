@@ -97,7 +97,8 @@ export default function LegacyProgressPage() {
   const [isApplyCourseModalOpen, setIsApplyCourseModalOpen] = useState(false);
   const [availableCourses, setAvailableCourses] = useState<SeasonalCourseWithDetails[]>([]);
   const [selectedCourseId, setSelectedCourseId] = useState<string>('');
-  const [courseApplyMode, setCourseApplyMode] = useState<'overwrite' | 'add'>('overwrite');
+  // 下書き登録では実質未使用だが、applyCoursesToStudents への履歴記録の applied_mode 値として渡す
+  const [courseApplyMode] = useState<'overwrite' | 'add'>('overwrite');
   
   // 引継ぎと講師名のローカルステート（各行ごと）
   const [localHandoverMap, setLocalHandoverMap] = useState<Map<number, string>>(new Map());
@@ -632,7 +633,7 @@ export default function LegacyProgressPage() {
       await fetchProgress();
       setIsApplyCourseModalOpen(false);
       setSelectedCourseId('');
-      success('コースを適用しました');
+      success('下書きの提案書を作成しました（提案書編集画面で「公開」すると進行表に反映されます）');
     } catch (err) {
       console.error('Error applying course:', err);
       error(err instanceof Error ? err.message : 'コースの適用に失敗しました');
@@ -1933,7 +1934,7 @@ export default function LegacyProgressPage() {
             setIsApplyCourseModalOpen(false);
             setSelectedCourseId('');
           }}
-          title="コースを適用"
+          title="講習コースを下書き登録"
           size="md"
         >
           <div className="space-y-4">
@@ -1977,50 +1978,9 @@ export default function LegacyProgressPage() {
                   </div>
                 </div>
 
-                {/* 適用モード */}
-                <div>
-                  <label className="block text-sm font-medium text-[#1f2937] mb-2">
-                    適用モード
-                  </label>
-                  <div className="flex gap-2">
-                    <label
-                      className={`flex-1 p-3 rounded-lg border-2 cursor-pointer text-center transition-colors ${
-                        courseApplyMode === 'overwrite'
-                          ? 'border-[#3b82f6] bg-[#3b82f6]/10'
-                          : 'border-[#f3f4f6] hover:border-[#3b82f6]'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="applyMode"
-                        value="overwrite"
-                        checked={courseApplyMode === 'overwrite'}
-                        onChange={() => setCourseApplyMode('overwrite')}
-                        className="hidden"
-                      />
-                      <div className="font-medium text-[#1f2937]">上書き</div>
-                      <div className="text-xs text-[#4b5563]">既存を置き換え</div>
-                    </label>
-                    <label
-                      className={`flex-1 p-3 rounded-lg border-2 cursor-pointer text-center transition-colors ${
-                        courseApplyMode === 'add'
-                          ? 'border-[#3b82f6] bg-[#3b82f6]/10'
-                          : 'border-[#f3f4f6] hover:border-[#3b82f6]'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="applyMode"
-                        value="add"
-                        checked={courseApplyMode === 'add'}
-                        onChange={() => setCourseApplyMode('add')}
-                        className="hidden"
-                      />
-                      <div className="font-medium text-[#1f2937]">加算</div>
-                      <div className="text-xs text-[#4b5563]">既存に追加</div>
-                    </label>
-                  </div>
-                </div>
+                <p className="text-xs text-[#4b5563] leading-relaxed">
+                  下書きの提案書を作成します。進行表への反映・講師への公開は、提案書編集画面から「公開」を行ったときに反映されます。
+                </p>
               </>
             )}
 
@@ -2039,7 +1999,7 @@ export default function LegacyProgressPage() {
                 onClick={handleApplyCourse}
                 disabled={!selectedCourseId}
               >
-                適用
+                下書き登録
               </Button>
             </div>
           </div>

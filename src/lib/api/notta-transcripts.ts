@@ -66,8 +66,68 @@ export async function getRecentUnlinkedTranscripts(
 }
 
 /**
+ * Notta の AI Notes 既知セクション見出し（行頭一致で判定）。
+ * 並び順は表示順を兼ねるが、本文に出てきた順をそのまま尊重する。
+ */
+const NOTTA_SECTION_HEADERS = [
+  '前回の確認',
+  '塾からの報告',
+  '保護者からの要望',
+  '生徒からの要望',
+  '相談事項',
+  '今後の方針',
+  '総合メモ',
+  'メモ',
+] as const;
+
+/**
+ * Notta の生 transcript を講師が読みやすい本文に整形する。
+ *
+ * Notta が吐く transcript は同じ内容を 2 度持っているケースがある：
+ *   1) 上半分: AI 要約のインライン版（改行なしの塊、読みにくい）
+ *   2) 下半分: "タイトル: ... 日時: ... URL ... AI Notes" の後に構造化版
+ * 構造化版（AI Notes 以降）の方が改行付きで読みやすいので、それが存在すれば
+ * そちらだけを採用し、インライン要約とメタ情報の重複は破棄する。
+ * 重ねて行頭のセクション見出しを強調し、本文を箇条書きに変換する。
+ */
+export function formatNottaTranscript(raw: string): string {
+  if (!raw) return '';
+
+  // 不可視文字（左→右マーク等）を除去
+  const sanitized = raw.replace(/[‎‏]/g, '');
+
+  // "AI Notes" マーカーがあれば、そこから後ろの構造化部分のみ採用。
+  // 無ければ全体を対象にする（旧フォーマット互換）。
+  const aiNotesMatch = sanitized.match(/(?:^|\n)\s*AI\s*Notes\s*\n/);
+  const body = aiNotesMatch
+    ? sanitized.slice(aiNotesMatch.index! + aiNotesMatch[0].length)
+    : sanitized;
+
+  const lines = body.split('\n').map((l) => l.trim());
+  const headerSet = new Set<string>(NOTTA_SECTION_HEADERS);
+  const out: string[] = [];
+  let inSection = false;
+
+  for (const line of lines) {
+    if (!line) continue;
+    if (headerSet.has(line)) {
+      if (out.length > 0) out.push(''); // セクション間に空行
+      out.push(`■ ${line}`);
+      inSection = true;
+      continue;
+    }
+    // 既存の bullet マーカー（• や ・）を除去してから揃える
+    const stripped = line.replace(/^[•・\-*]\s*/, '').trim();
+    if (!stripped) continue;
+    out.push(inSection ? `・${stripped}` : stripped);
+  }
+
+  return out.join('\n');
+}
+
+/**
  * 文字起こしを生徒（面談記録）に紐付ける。
- * 1. student_interviews にレコードを作成（content = 文字起こし本文 + メタ情報）
+ * 1. student_interviews にレコードを作成（content = 整形済み本文 + メタ情報）
  * 2. notta_transcripts の linked_student_id / linked_interview_id / linked_at を更新
  */
 export async function linkTranscriptToStudent(
@@ -80,15 +140,26 @@ export async function linkTranscriptToStudent(
     options.interviewDate ||
     (transcript.recorded_at ? transcript.recorded_at.slice(0, 10) : new Date().toISOString().slice(0, 10));
 
+  // 録音日時は JST 表記に整形（DB は UTC 保存）
+  const recordedAtJst = transcript.recorded_at
+    ? new Date(transcript.recorded_at).toLocaleString('ja-JP', {
+        timeZone: 'Asia/Tokyo',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit',
+      })
+    : null;
+
   const header = [
     transcript.title ? `【タイトル】${transcript.title}` : null,
-    transcript.recorded_at ? `【録音日時】${transcript.recorded_at}` : null,
+    recordedAtJst ? `【録音日時】${recordedAtJst}` : null,
     transcript.audio_url ? `【音声URL】${transcript.audio_url}` : null,
   ]
     .filter(Boolean)
     .join('\n');
 
-  const content = [header, '--- Notta 文字起こし ---', transcript.transcript]
+  const formattedBody = formatNottaTranscript(transcript.transcript);
+
+  const content = [header, '--- Notta 要約 ---', formattedBody]
     .filter(Boolean)
     .join('\n\n');
 

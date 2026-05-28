@@ -52,16 +52,36 @@ export async function getStudentInterviews(studentId: string): Promise<StudentIn
 
 /**
  * 面談記録を作成
+ *
+ * 注: 引数 schoolId はフォールバック扱い。実際には生徒の所属教室を DB から引いて
+ * それを使う。これは「アラート集計が生徒の school_id で interview を fetch する」ため、
+ * interview.school_id ≠ student.school_id だと新しい記録がアラート側で見えなくなる
+ * （= 面談未更新アラートが消えない）バグを防ぐため。
  */
 export async function createInterview(
   schoolId: string,
   studentId: string,
   input: StudentInterviewInput
 ): Promise<StudentInterview> {
+  // 生徒の所属教室を取得して school_id を強制的に揃える
+  let effectiveSchoolId = schoolId;
+  try {
+    const { data: studentRow } = await supabase
+      .from('students')
+      .select('school_id')
+      .eq('id', studentId)
+      .maybeSingle();
+    if (studentRow?.school_id) {
+      effectiveSchoolId = studentRow.school_id as string;
+    }
+  } catch {
+    // 取得失敗時は呼び出し側の schoolId にフォールバック
+  }
+
   const { data, error } = await supabase
     .from('student_interviews')
     .insert({
-      school_id: schoolId,
+      school_id: effectiveSchoolId,
       student_id: studentId,
       interview_date: input.interview_date,
       interview_type: input.interview_type,

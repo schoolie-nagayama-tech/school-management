@@ -763,8 +763,8 @@ export default function CoursesPage() {
                             </span>
                           )}
                           {(course.application_count || 0) > 0 && (
-                            <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 text-[10px] font-medium tabular-nums">
-                              適用 {course.application_count}件
+                            <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 text-[10px] font-medium tabular-nums" title="下書きで適用済みの生徒数">
+                              下書き {course.application_count}件
                             </span>
                           )}
                           {course.textbooks && course.textbooks.length > 0 && (

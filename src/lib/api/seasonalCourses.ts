@@ -673,7 +673,11 @@ export async function ungroupCourseCurriculumItems(
 // 生徒への適用
 // =====================================================
 
-// コースを生徒に適用（提案書レコードも作成）
+// コースを生徒に適用（下書きの提案書のみ作成）
+// 進行表(student_progress)反映・student_textbooks の講師公開は行わず、
+// 編集者が提案書編集画面から個別に「公開」することで初めて反映される。
+// 適用履歴(seasonal_course_applications) は「下書き適用済み」の意味で記録するため残す。
+// mode は呼び出し元との互換のため残しているが、下書き作成では履歴の applied_mode 値以外は未使用。
 export async function applyCoursesToStudents(
   courseId: string,
   studentIds: string[],
@@ -685,7 +689,6 @@ export async function applyCoursesToStudents(
   if (studentIds.length === 0) return;
 
   const textbookIds = course.textbooks.map((ct) => ct.textbook_id);
-  const now = new Date().toISOString();
   const stMap = new Map<string, string>();
 
   // Step 1: 既存 student_textbooks を一括取得
@@ -710,6 +713,8 @@ export async function applyCoursesToStudents(
           textbook_id: ct.textbook_id,
           is_active: true,
           season: course.season,
+          // 下書き登録なので講師には公開しない。publishProposal が is_draft=false にして公開する。
+          is_draft: true,
         });
       }
     }
@@ -827,105 +832,10 @@ export async function applyCoursesToStudents(
     }
   }
 
-  // Step 4: student_progress の同期（カリキュラム設定があるテキストのみ）
-  const allStIds = Array.from(new Set(Array.from(stMap.values())));
-  const textbooksWithCurriculum = course.textbooks.filter((ct) => !textbooksWithoutCurriculum.has(ct.textbook_id));
+  // 下書き登録なので、進行表(student_progress)同期・student_textbooks の公開はここでは行わない。
+  // 提案書編集画面から publishProposal を呼び出した時点で反映される。
 
-  if (textbooksWithCurriculum.length > 0) {
-    if (mode === 'overwrite') {
-      const progressRows = [];
-      for (const studentId of studentIds) {
-        for (const ct of textbooksWithCurriculum) {
-          const stId = stMap.get(`${studentId}:${ct.textbook_id}`);
-          if (!stId) continue;
-          for (const setting of curriculumByTextbook.get(ct.textbook_id) || []) {
-            progressRows.push({
-              student_textbook_id: stId,
-              curriculum_item_id: setting.curriculum_item_id,
-              proposal_count: setting.proposal_count,
-              application_count: setting.proposal_count,
-              group_number: setting.group_number,
-              updated_at: now,
-            });
-          }
-        }
-      }
-      if (progressRows.length > 0) {
-        const { error } = await supabase
-          .from('student_progress')
-          .upsert(progressRows as never, { onConflict: 'student_textbook_id,curriculum_item_id' });
-        if (error) throw error;
-      }
-    } else {
-      const stIdsWithCurriculum = textbooksWithCurriculum.flatMap((ct) =>
-        studentIds.map((sid) => stMap.get(`${sid}:${ct.textbook_id}`)).filter(Boolean) as string[]
-      );
-      const { data: existingProgress } = await supabase
-        .from('student_progress')
-        .select('id, student_textbook_id, curriculum_item_id, proposal_count, application_count, group_number')
-        .in('student_textbook_id', stIdsWithCurriculum);
-
-      type ExistingProgress = { id: string; student_textbook_id: string; curriculum_item_id: number; proposal_count: number | null; application_count: number | null; group_number: number | null };
-      const progressMap = new Map<string, ExistingProgress>(
-        ((existingProgress || []) as ExistingProgress[]).map((p) => [
-          `${p.student_textbook_id}:${p.curriculum_item_id}`,
-          p,
-        ])
-      );
-
-      const toInsert = [];
-      const toUpdate: { id: string; proposal_count: number; application_count: number; group_number: number | null }[] = [];
-
-      for (const studentId of studentIds) {
-        for (const ct of textbooksWithCurriculum) {
-          const stId = stMap.get(`${studentId}:${ct.textbook_id}`);
-          if (!stId) continue;
-          for (const setting of curriculumByTextbook.get(ct.textbook_id) || []) {
-            const key = `${stId}:${setting.curriculum_item_id}`;
-            const existing = progressMap.get(key);
-            if (existing) {
-              toUpdate.push({
-                id: existing.id,
-                proposal_count: (existing.proposal_count || 0) + setting.proposal_count,
-                application_count: (existing.application_count || 0) + setting.proposal_count,
-                group_number: setting.group_number,
-              });
-            } else {
-              toInsert.push({
-                student_textbook_id: stId,
-                curriculum_item_id: setting.curriculum_item_id,
-                proposal_count: setting.proposal_count,
-                application_count: setting.proposal_count,
-                group_number: setting.group_number,
-              });
-            }
-          }
-        }
-      }
-
-      await Promise.all([
-        toInsert.length > 0
-          ? supabase.from('student_progress').insert(toInsert as never)
-          : Promise.resolve(),
-        ...toUpdate.map((u) =>
-          supabase
-            .from('student_progress')
-            .update({ proposal_count: u.proposal_count, application_count: u.application_count, group_number: u.group_number, updated_at: now } as never)
-            .eq('id', u.id)
-        ),
-      ]);
-    }
-  }
-
-  // Step 5: student_textbooks を講師に公開（publishProposal と同じ）
-  if (allStIds.length > 0) {
-    await supabase
-      .from('student_textbooks')
-      .update({ is_draft: false } as never)
-      .in('id', allStIds);
-  }
-
-  // Step 6: 適用履歴を一括INSERT
+  // 適用履歴を一括INSERT（「下書きとして適用済み」の意味で記録）
   await supabase.from('seasonal_course_applications').insert(
     studentIds.map((studentId) => ({
       course_id: courseId,

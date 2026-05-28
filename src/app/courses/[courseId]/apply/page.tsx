@@ -39,7 +39,8 @@ export default function CourseApplyPage() {
   const [isApplying, setIsApplying] = useState(false);
 
   const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
-  const [applyMode, setApplyMode] = useState<'overwrite' | 'add'>('overwrite');
+  // 下書き登録では実質未使用だが、applyCoursesToStudents の履歴記録の applied_mode 値として渡す
+  const [applyMode] = useState<'overwrite' | 'add'>('overwrite');
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   const [filterGrade, setFilterGrade] = useState<number | ''>('');
@@ -138,7 +139,7 @@ export default function CourseApplyPage() {
       await fetchApplications();
       setSelectedStudentIds(new Set());
       setIsConfirmOpen(false);
-      success(`${selectedStudentIds.size}名に適用しました`);
+      success(`${selectedStudentIds.size}名に下書き登録しました`);
     } catch (err) {
       error(err instanceof Error ? err.message : '適用に失敗しました');
     } finally {
@@ -185,37 +186,18 @@ export default function CourseApplyPage() {
             </div>
             <div className="flex items-center gap-1.5 text-text-muted">
               <Users className="w-3.5 h-3.5" />
-              <span className="text-xs">適用済み</span>
+              <span className="text-xs">下書き登録済</span>
               <span className="text-lg font-bold text-info">{applications.length}</span>
               <span className="text-xs">名</span>
             </div>
           </div>
         </div>
 
-        {/* 適用モード */}
-        <div className="p-4 bg-surface-raised rounded-xl border border-border-default mb-4">
-          <div className="text-xs font-bold text-text-muted mb-2">適用モード</div>
-          <div className="flex gap-3">
-            {(['overwrite', 'add'] as const).map((mode) => (
-              <button
-                key={mode}
-                onClick={() => setApplyMode(mode)}
-                className={`flex-1 p-3 rounded-lg border text-left transition-[border-color,background-color] duration-150 ease-out active:scale-[0.99] ${
-                  applyMode === mode
-                    ? 'border-ink bg-ink/5'
-                    : 'border-border-default hover:border-text-muted'
-                }`}
-              >
-                <div className={`text-sm font-bold ${applyMode === mode ? 'text-text-heading' : 'text-text-muted'}`}>
-                  {mode === 'overwrite' ? '上書き' : '加算'}
-                </div>
-                <div className="text-[11px] text-text-muted mt-0.5">
-                  {mode === 'overwrite'
-                    ? '既存の提案回数を上書きします。グループ化も上書きされます。'
-                    : '既存の提案回数に加算します。グループ化は上書きされます。'}
-                </div>
-              </button>
-            ))}
+        {/* 下書き登録の説明 */}
+        <div className="p-3 bg-surface-raised rounded-xl border border-border-default mb-4">
+          <div className="text-xs text-text-muted leading-relaxed">
+            この操作は<span className="font-bold text-text-heading">下書きの提案書</span>を作成するだけです。
+            進行表への反映・講師への公開は行われません。提案書一覧から確認し「公開」したタイミングで反映されます。
           </div>
         </div>
 
@@ -263,7 +245,7 @@ export default function CourseApplyPage() {
               disabled={!hasSelection}
               className="inline-flex items-center gap-1 px-3 py-1.5 text-[11px] font-bold bg-ink text-text-on-primary rounded-lg hover:brightness-[0.85] active:scale-[0.97] transition-[filter,transform] duration-150 ease-out disabled:opacity-40 disabled:pointer-events-none"
             >
-              選択した{selectedStudentIds.size}名に適用
+              選択した{selectedStudentIds.size}名に下書き登録
             </button>
           </div>
 
@@ -301,13 +283,13 @@ export default function CourseApplyPage() {
                     <span className="text-xs text-text-muted w-10 text-center shrink-0">
                       {GRADE_LABELS[student.grade] || student.grade}
                     </span>
-                    <span className="w-16 text-center shrink-0">
+                    <span className="w-24 text-center shrink-0">
                       {isApplied ? (
-                        <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-info-subtle text-info">
-                          適用済み
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded bg-info-subtle text-info" title="下書きの提案書が作成されています">
+                          下書き作成済
                         </span>
                       ) : (
-                        <span className="text-[10px] text-text-faint">未適用</span>
+                        <span className="text-[10px] text-text-faint">未登録</span>
                       )}
                     </span>
                   </div>
@@ -317,20 +299,18 @@ export default function CourseApplyPage() {
           </div>
         </div>
 
-        {/* 適用履歴 */}
+        {/* 下書き登録履歴 */}
         {applications.length > 0 && (
           <div className="mt-4 bg-surface-raised rounded-xl border border-border-default overflow-hidden">
-            <div className="px-4 py-2.5 border-b border-border-subtle">
-              <span className="text-xs font-bold text-text-muted">適用履歴</span>
+            <div className="px-4 py-2.5 border-b border-border-subtle flex items-center gap-2">
+              <span className="text-xs font-bold text-text-muted">下書き登録履歴</span>
+              <span className="text-[10px] text-text-faint">（生徒ごとに編集して「公開」すると進行表に反映されます）</span>
             </div>
             <div className="divide-y divide-border-subtle max-h-48 overflow-y-auto">
               {applications.map(app => (
                 <div key={app.id} className="flex items-center gap-4 px-4 py-2 text-xs">
                   <span className="text-text-heading flex-1 min-w-0 truncate">
                     {app.student?.last_name} {app.student?.first_name}
-                  </span>
-                  <span className="text-text-muted shrink-0">
-                    {app.applied_mode === 'overwrite' ? '上書き' : '加算'}
                   </span>
                   <span className="text-text-faint shrink-0">
                     {new Date(app.applied_at).toLocaleString('ja-JP')}
@@ -346,8 +326,8 @@ export default function CourseApplyPage() {
       {isConfirmOpen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
           <div className="bg-surface-raised rounded-xl border border-border-default p-5 max-w-sm w-full animate-in fade-in zoom-in-[0.97] duration-150">
-            <h2 className="text-sm font-bold text-text-heading mb-3">適用の確認</h2>
-            <p className="text-xs text-text-body mb-3">以下の内容で適用します。よろしいですか？</p>
+            <h2 className="text-sm font-bold text-text-heading mb-3">下書き登録の確認</h2>
+            <p className="text-xs text-text-body mb-3">以下の内容で下書きの提案書を作成します。よろしいですか？</p>
             <div className="p-3 bg-surface-hover/50 rounded-lg space-y-1.5 text-xs mb-4">
               <div className="flex justify-between">
                 <span className="text-text-muted">コース:</span>
@@ -358,12 +338,6 @@ export default function CourseApplyPage() {
                 <span className="font-medium text-text-heading">{selectedStudentIds.size}名</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-text-muted">モード:</span>
-                <span className="font-medium text-text-heading">
-                  {applyMode === 'overwrite' ? '上書き' : '加算'}
-                </span>
-              </div>
-              <div className="flex justify-between">
                 <span className="text-text-muted">テキスト:</span>
                 <span className="font-medium text-text-heading">{course.textbooks?.length || 0}冊</span>
               </div>
@@ -372,6 +346,9 @@ export default function CourseApplyPage() {
                 <span className="font-bold text-accent-ink">{course.total_koma}コマ</span>
               </div>
             </div>
+            <p className="text-[11px] text-text-faint mb-3">
+              ※ 進行表への反映と講師への公開は、提案書ごとに「公開」を行ったときに反映されます。
+            </p>
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setIsConfirmOpen(false)}
@@ -384,7 +361,7 @@ export default function CourseApplyPage() {
                 disabled={isApplying}
                 className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold bg-ink text-text-on-primary rounded-lg hover:brightness-[0.85] active:scale-[0.97] transition-[filter,transform] duration-150 ease-out disabled:opacity-50"
               >
-                {isApplying ? <InlineLoading size="sm" label="適用中..." /> : '適用する'}
+                {isApplying ? <InlineLoading size="sm" label="登録中..." /> : '下書き登録する'}
               </button>
             </div>
           </div>

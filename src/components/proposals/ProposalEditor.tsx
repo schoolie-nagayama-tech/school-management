@@ -670,7 +670,7 @@ export default function ProposalEditor() {
 
     // 公開は確認ダイアログ
     if (newStatus === 'approved') {
-      if (!window.confirm('提案書を公開しますか？\n\n申込コマ数が進行表に反映され、講師に公開されます。')) return;
+      if (!window.confirm('提案書を公開しますか？\n\n以下が実行されます:\n・申込コマ数が生徒の進行表に反映されます\n・テキストが進行表に表示されるようになります\n・講師ビューに公開されます')) return;
     }
 
     setStatusChanging(true);

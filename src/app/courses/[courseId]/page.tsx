@@ -717,9 +717,10 @@ export default function CourseDetailPage() {
                   <Link
                     href={`/courses/${courseId}/apply`}
                     className="px-3 py-1.5 text-[11px] font-medium text-text-body border border-border-default rounded-lg hover:bg-surface-hover transition-colors duration-150 flex items-center gap-1"
+                    title="生徒ごとに下書きの提案書を作成します"
                   >
                     <Users className="w-3 h-3" />
-                    生徒に適用する
+                    生徒に下書き登録
                   </Link>
                 </div>
               </div>
