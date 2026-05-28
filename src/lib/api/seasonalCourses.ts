@@ -764,17 +764,6 @@ export async function applyCoursesToStudents(
 
       if (settings.length === 0 && hasCurriculum) continue;
 
-      let totalKoma = 0;
-      const seenGroups = new Set<number>();
-      for (const s of settings) {
-        if (!s.group_number || s.group_number === 0) {
-          totalKoma += s.proposal_count;
-        } else if (!seenGroups.has(s.group_number)) {
-          seenGroups.add(s.group_number);
-          totalKoma += s.proposal_count;
-        }
-      }
-
       proposalInserts.push({
         student_id: studentId,
         textbook_id: ct.textbook_id,
@@ -784,7 +773,8 @@ export async function applyCoursesToStudents(
         year,
         theme: course.name,
         status: 'draft',
-        applied_koma: totalKoma,
+        // 下書き段階では「申込」は未確定。提案済/公開にしたタイミングで koma_count から初期化される。
+        applied_koma: 0,
       });
     }
   }
@@ -816,7 +806,8 @@ export async function applyCoursesToStudents(
             proposal_id: proposalId,
             curriculum_item_id: s.curriculum_item_id,
             koma_count: s.proposal_count,
-            applied_koma: s.proposal_count,
+            // 下書きでは申込未確定。提案済/公開時に koma_count から初期化される。
+            applied_koma: 0,
             reason: '',
             group_id: s.group_number ?? 0,
             intent_tag: null,
