@@ -1221,12 +1221,12 @@ export default function SchedulePage() {
         {isKoushuMode ? '講習モード中' : '講習'}
       </button>
       <Link
-        href="/lesson-reports/pending"
+        href="/lesson-reports/sample"
         className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-border-default rounded-lg bg-white text-text-body hover:bg-surface hover:border-info/40 hover:text-info transition-colors"
-        title="授業報告書一覧を開く（デモ用）"
+        title="授業報告書の見本（ダミー）を開く"
       >
         <FileText className="w-3.5 h-3.5" />
-        報告書
+        報告書見本
       </Link>
     </div>
   );

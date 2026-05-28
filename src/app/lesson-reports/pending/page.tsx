@@ -18,6 +18,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { AdminLayout } from '@/components/layouts';
 import { Card, CardContent } from '@/components/ui';
 import { Button } from '@/components/ui';
@@ -122,11 +123,21 @@ export default function PendingReportsPage() {
     <AdminLayout>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold">授業報告書 承認待ち</h1>
-        <p className="text-sm text-text-muted">
-          講師から提出された報告書を確認し、承認 or 差し戻しを行ってください。
-          承認すると保護者ポータルに公開されます。
-        </p>
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <h1 className="text-2xl font-bold">授業報告書 承認待ち</h1>
+            <p className="text-sm text-text-muted">
+              講師から提出された報告書を確認し、承認 or 差し戻しを行ってください。
+              承認すると保護者ポータルに公開されます。
+            </p>
+          </div>
+          <Link
+            href="/lesson-reports/sample"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-border-default rounded-lg bg-white text-text-body hover:bg-surface hover:border-info/40 hover:text-info transition-colors flex-shrink-0"
+          >
+            報告書の見本を見る →
+          </Link>
+        </div>
 
         {isLoading ? (
           <Loading />

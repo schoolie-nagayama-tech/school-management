@@ -631,7 +631,10 @@ export default function CourseProposalsPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {Array.from(byStudent.values()).map(({ name, studentId, grade, proposals: studentProposals }, groupIndex) => (
+            {Array.from(byStudent.values()).map(({ name, studentId, grade, proposals: studentProposals }, groupIndex) => {
+              // 生徒の全提案書の合計コマ数（名前横に表示）
+              const totalKoma = studentProposals.reduce((sum, p) => sum + calcTotalKoma(p.units), 0);
+              return (
               <div
                 key={studentId}
                 className="bg-surface-raised rounded-xl border border-border-default overflow-hidden feed-card-enter"
@@ -650,6 +653,9 @@ export default function CourseProposalsPage() {
                         {GRADE_LABELS[grade] ?? `${grade}年`}
                       </span>
                     )}
+                    <span className="px-1.5 py-0.5 text-[11px] font-bold rounded bg-info-subtle text-info">
+                      合計 {totalKoma}コマ
+                    </span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <button
@@ -729,7 +735,8 @@ export default function CourseProposalsPage() {
                   })}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
