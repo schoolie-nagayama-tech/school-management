@@ -30,6 +30,9 @@ import {
   X,
   Save,
   Send,
+  Smartphone,
+  CheckCircle2,
+  Star,
 } from 'lucide-react';
 
 // ─── ダミーデータ（固定見本） ───────────────────────────
@@ -107,8 +110,9 @@ function SectionTitle({ icon, children }: { icon: React.ReactNode; children: Rea
 const W = (d: string) => ['日', '月', '火', '水', '木', '金', '土'][new Date(d + 'T12:00:00').getDay()];
 
 export default function LessonReportSamplePage() {
-  // 表示モード: preview=完成イメージ（保護者が見る形）, form=入力画面（講師が書く形）
-  const [mode, setMode] = useState<'preview' | 'form'>('preview');
+  // 表示モード: preview=室長が承認時に見る完成形 / form=講師が書く入力画面 /
+  //            portal=生徒・保護者がポータルで見る形
+  const [mode, setMode] = useState<'preview' | 'form' | 'portal'>('preview');
 
   return (
     <AdminLayout headerTitle="授業報告書（見本）">
@@ -124,21 +128,11 @@ export default function LessonReportSamplePage() {
           </Link>
         </div>
         <div className="rounded-lg bg-info-subtle border border-info/30 px-3 py-2 text-xs text-info">
-          これは授業報告書の<strong>見本（ダミーデータ）</strong>です。実際は講師が授業ごとに「入力画面」で記入し、室長が承認して保護者に「完成イメージ」が公開されます。
+          これは授業報告書の<strong>見本（ダミーデータ）</strong>です。講師が「入力画面」で記入 → 室長が「完成イメージ」を確認・承認 → 生徒・保護者に「保護者の見え方」で公開されます。
         </div>
 
         {/* モード切替タブ */}
-        <div className="flex gap-1 p-1 bg-surface rounded-lg border border-border-subtle w-fit">
-          <button
-            type="button"
-            onClick={() => setMode('preview')}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-              mode === 'preview' ? 'bg-white shadow-sm text-info' : 'text-text-muted hover:text-text-body'
-            }`}
-          >
-            <Eye className="w-3.5 h-3.5" />
-            完成イメージ
-          </button>
+        <div className="flex gap-1 p-1 bg-surface rounded-lg border border-border-subtle w-fit flex-wrap">
           <button
             type="button"
             onClick={() => setMode('form')}
@@ -147,12 +141,34 @@ export default function LessonReportSamplePage() {
             }`}
           >
             <Pencil className="w-3.5 h-3.5" />
-            入力画面
+            入力画面（講師）
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('preview')}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+              mode === 'preview' ? 'bg-white shadow-sm text-info' : 'text-text-muted hover:text-text-body'
+            }`}
+          >
+            <Eye className="w-3.5 h-3.5" />
+            完成イメージ（室長）
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('portal')}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+              mode === 'portal' ? 'bg-white shadow-sm text-info' : 'text-text-muted hover:text-text-body'
+            }`}
+          >
+            <Smartphone className="w-3.5 h-3.5" />
+            保護者の見え方
           </button>
         </div>
 
         {mode === 'form' ? (
           <SampleForm />
+        ) : mode === 'portal' ? (
+          <PortalView />
         ) : (
         <>
         {/* 完成イメージ（保護者が見る形） */}
@@ -575,6 +591,127 @@ function SampleForm() {
           <Send className="w-4 h-4 mr-1" />
           提出（承認待ちへ）
         </Button>
+      </div>
+    </div>
+  );
+}
+
+// ─── 保護者の見え方（生徒・保護者がポータルで見る形）──────────
+// スマホ表示を想定したやさしいトーンのカード。専門用語を減らし、
+// 「がんばり」「先生から」など保護者に伝わる言葉で見せる。
+function PortalView() {
+  return (
+    <div className="space-y-3">
+      {/* スマホ枠っぽい見せ方で「生徒・保護者の画面」と分かるように */}
+      <div className="mx-auto max-w-sm">
+        <div className="rounded-[2rem] border-4 border-gray-800 bg-gray-800 p-2 shadow-xl">
+          <div className="rounded-[1.5rem] bg-gradient-to-b from-sky-50 to-white overflow-hidden">
+            {/* ステータスバー風 */}
+            <div className="bg-info text-white px-4 py-3">
+              <div className="text-[11px] opacity-80">スクールIE ○○校 保護者ページ</div>
+              <div className="text-base font-bold">{SAMPLE.studentName} さんの授業レポート</div>
+            </div>
+
+            <div className="p-3 space-y-3 max-h-[70vh] overflow-y-auto">
+              {/* 日付 */}
+              <div className="text-center text-xs text-text-muted">
+                {SAMPLE.lessonDate}（{W(SAMPLE.lessonDate)}）{SAMPLE.subjects.join('・')} ／ {SAMPLE.teacherName} 先生
+              </div>
+
+              {/* 先生からのひとこと（講評を主役に） */}
+              <div className="rounded-2xl bg-white border border-sky-100 shadow-sm p-4">
+                <div className="flex items-center gap-1.5 text-sm font-bold text-info mb-2">
+                  <MessageSquareText className="w-4 h-4" />
+                  先生から
+                </div>
+                <p className="text-sm text-text-body leading-relaxed">{SAMPLE.reviewComment}</p>
+              </div>
+
+              {/* がんばり（達成度をやさしく） */}
+              <div className="rounded-2xl bg-white border border-sky-100 shadow-sm p-4">
+                <div className="flex items-center gap-1.5 text-sm font-bold text-success mb-3">
+                  <Star className="w-4 h-4" />
+                  今日のがんばり
+                </div>
+                <div className="space-y-2.5">
+                  {[
+                    { label: '宿題をやってきた', value: SAMPLE.homeworkCompletionPct },
+                    { label: '宿題の正解率', value: SAMPLE.homeworkCorrectPct },
+                    { label: '今日の理解度', value: SAMPLE.todayCorrectPct },
+                  ].map((s) => (
+                    <div key={s.label}>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-text-body">{s.label}</span>
+                        <span className="font-bold text-success tabular-nums">{s.value}%</span>
+                      </div>
+                      <div className="h-2.5 rounded-full bg-gray-100 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-success"
+                          style={{ width: `${s.value}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 flex gap-2 flex-wrap">
+                  <span className="px-2 py-1 rounded-full bg-success-subtle text-success text-xs font-semibold">
+                    単語テスト {SAMPLE.vocab.score}/{SAMPLE.vocab.total} 合格
+                  </span>
+                  <span className="px-2 py-1 rounded-full bg-success-subtle text-success text-xs font-semibold">
+                    チェックテスト {SAMPLE.check.score}/{SAMPLE.check.total} 合格
+                  </span>
+                </div>
+              </div>
+
+              {/* 今日やったこと */}
+              <div className="rounded-2xl bg-white border border-sky-100 shadow-sm p-4">
+                <div className="flex items-center gap-1.5 text-sm font-bold text-info mb-2">
+                  <BookOpen className="w-4 h-4" />
+                  今日やったこと
+                </div>
+                <ul className="space-y-1 text-sm text-text-body">
+                  {SAMPLE.units.map((u, i) => (
+                    <li key={i} className="flex items-start gap-1.5">
+                      <span className="text-info mt-0.5">・</span>
+                      <span>
+                        {u.textbook}（{u.unit} / {u.pages}）
+                      </span>
+                    </li>
+                  ))}
+                  <li className="flex items-start gap-1.5 text-text-muted">
+                    <span className="mt-0.5">・</span>
+                    <span>学校の進み: {SAMPLE.schoolProgress}</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* 次回までの宿題（チェックリスト風） */}
+              <div className="rounded-2xl bg-white border border-sky-100 shadow-sm p-4">
+                <div className="flex items-center gap-1.5 text-sm font-bold text-warning mb-2">
+                  <CalendarDays className="w-4 h-4" />
+                  次回までの宿題
+                </div>
+                <ul className="space-y-1.5">
+                  {SAMPLE.homeworkAssignments.map((h, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm">
+                      <CheckCircle2 className="w-4 h-4 text-gray-300 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <span className="text-[11px] font-semibold text-warning">
+                          {h.date.slice(5).replace('-', '/')}（{W(h.date)}）まで
+                        </span>
+                        <div className="text-text-body">{h.text}</div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <p className="text-center text-[10px] text-text-faint pt-1 pb-2">
+                ※ これは保護者ポータルでの表示見本です
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
