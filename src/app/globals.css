@@ -816,11 +816,29 @@ a:focus-visible {
 .feed-card-enter {
   animation: feed-card-enter 300ms cubic-bezier(0.23, 1, 0.32, 1) both;
 }
+
+/* ─── Popover / Dropdown 出現アニメーション ───
+ * trigger 側で transform-origin を設定すること（例: origin-top-right）。
+ * scale(0.95) + opacity(0) からスタートし、scale(0) の不自然さを回避。
+ */
+@keyframes popover-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .feed-card-enter {
     animation: none;
     opacity: 1;
   }
+  /* popover-enter は Tailwind animate-[] 経由なのでここでは
+   * 汎用 animation:none が効く（@keyframes 自体は残して OK） */
 }
 
 /* ─── 進行表 提出フッターの登場アニメーション ───

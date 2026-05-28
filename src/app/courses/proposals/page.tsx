@@ -376,14 +376,14 @@ export default function CourseProposalsPage() {
           <div className="mb-4 flex gap-2 print:hidden">
             <button
               onClick={() => setPrintMode(false)}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border-default text-text-body rounded-lg hover:bg-surface-hover transition-colors duration-150"
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border-default text-text-body rounded-lg hover:bg-surface-hover transition-[background-color] duration-150 ease-out active:scale-[0.97]"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               一覧に戻る
             </button>
             <button
               onClick={() => window.print()}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-ink text-text-on-primary rounded-lg hover:brightness-[0.85] transition-[filter] duration-150"
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-ink text-text-on-primary rounded-lg hover:brightness-[0.85] transition-[filter] duration-150 active:scale-[0.97]"
             >
               <Printer className="w-3.5 h-3.5" />
               印刷
@@ -464,7 +464,7 @@ export default function CourseProposalsPage() {
                 新規作成
               </button>
               {pickerOpen && (
-                <div className="absolute right-0 top-full mt-1 w-80 bg-surface-raised border border-border-default rounded-xl shadow-lg z-50 overflow-hidden">
+                <div className="absolute right-0 top-full mt-1 w-80 bg-surface-raised border border-border-default rounded-xl shadow-lg z-50 overflow-hidden origin-top-right animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]">
                   <div className="p-2 border-b border-border-subtle">
                     <div className="relative">
                       <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-faint" />
@@ -494,9 +494,9 @@ export default function CourseProposalsPage() {
                             <button
                               key={s.id}
                               onClick={() => handleSelectStudent(s.id)}
-                              className="w-full text-left px-3 py-2 text-sm text-text-body hover:bg-surface-hover transition-colors duration-150 flex items-center gap-2"
+                              className="w-full text-left px-3 py-2 text-sm text-text-body hover:bg-surface-hover transition-[background-color] duration-150 ease-out active:bg-surface-hover flex items-center gap-2"
                             >
-                              <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-gray-100 text-gray-500 shrink-0">
+                              <span className="px-1.5 py-0.5 text-[11px] font-medium rounded bg-gray-100 text-gray-500 shrink-0">
                                 {s.grade != null ? (GRADE_LABELS[s.grade] ?? `${s.grade}年`) : '—'}
                               </span>
                               <span className="truncate">{s.last_name} {s.first_name}</span>
@@ -612,7 +612,7 @@ export default function CourseProposalsPage() {
             {activeFilterCount > 0 && (
               <button
                 onClick={clearAllFilters}
-                className="inline-flex items-center gap-1 px-2 py-1.5 text-xs text-text-muted hover:text-text-heading transition-colors"
+                className="inline-flex items-center gap-1 px-2 py-1.5 text-xs text-text-muted hover:text-text-heading hover:underline transition-[color] duration-150 ease-out active:scale-[0.97]"
               >
                 <X className="w-3 h-3" />
                 絞り込み解除
@@ -624,23 +624,29 @@ export default function CourseProposalsPage() {
         {loading ? (
           <Loading size="md" />
         ) : filtered.length === 0 ? (
-          <div className="py-12 text-center text-sm text-text-faint">
-            該当する提案書はありません
+          <div className="py-16 text-center">
+            <FileText className="w-8 h-8 text-text-faint/50 mx-auto mb-3" />
+            <p className="text-sm text-text-muted">該当する提案書はありません</p>
+            <p className="text-xs text-text-faint mt-1">条件を変更して再検索してください</p>
           </div>
         ) : (
           <div className="space-y-4">
-            {Array.from(byStudent.values()).map(({ name, studentId, grade, proposals: studentProposals }) => (
-              <div key={studentId} className="bg-surface-raised rounded-xl border border-border-default overflow-hidden">
+            {Array.from(byStudent.values()).map(({ name, studentId, grade, proposals: studentProposals }, groupIndex) => (
+              <div
+                key={studentId}
+                className="bg-surface-raised rounded-xl border border-border-default overflow-hidden feed-card-enter"
+                style={{ animationDelay: groupIndex < 10 ? `${groupIndex * 40}ms` : undefined }}
+              >
                 <div className="px-4 py-2.5 border-b border-border-subtle bg-surface-hover/50 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Link
                       href={`/students/${studentId}/proposals`}
-                      className="font-semibold text-sm text-text-heading hover:text-accent-ink transition-colors duration-150"
+                      className="font-semibold text-sm text-text-heading hover:text-accent-ink transition-[color] duration-150 ease-out"
                     >
                       {name}
                     </Link>
                     {grade != null && (
-                      <span className="px-1.5 py-0.5 text-[10px] font-medium rounded bg-gray-100 text-gray-500">
+                      <span className="px-1.5 py-0.5 text-[11px] font-medium rounded bg-gray-100 text-gray-500">
                         {GRADE_LABELS[grade] ?? `${grade}年`}
                       </span>
                     )}
@@ -649,7 +655,7 @@ export default function CourseProposalsPage() {
                     <button
                       onClick={() => handlePrintStudent(studentId, name, studentProposals)}
                       disabled={printLoading === studentId}
-                      className="p-1 text-text-faint hover:text-text-heading transition-colors duration-150 disabled:opacity-50"
+                      className="p-1 text-text-faint hover:text-text-heading transition-[color] duration-150 ease-out active:scale-95 disabled:opacity-50"
                       title="この生徒の提案書を印刷"
                     >
                       {printLoading === studentId ? (
@@ -660,7 +666,7 @@ export default function CourseProposalsPage() {
                     </button>
                     <Link
                       href={`/students/${studentId}/proposals/new?season=${getCurrentSeason()}&year=${currentYear}`}
-                      className="text-text-muted hover:text-text-heading transition-colors duration-150"
+                      className="text-text-muted hover:text-text-heading transition-[color] duration-150 ease-out active:scale-95"
                       title="この生徒の提案書を作成"
                     >
                       <Plus className="w-3.5 h-3.5" />
@@ -683,7 +689,7 @@ export default function CourseProposalsPage() {
                               {p.textbook?.subject && (() => {
                                 const colors = SUBJECT_BADGE_COLORS[p.textbook!.subject!] ?? DEFAULT_BADGE_COLOR;
                                 return (
-                                  <span className={`inline-flex px-1.5 py-0.5 text-[10px] font-bold rounded shrink-0 ${colors.bg} ${colors.text}`}>
+                                  <span className={`inline-flex px-1.5 py-0.5 text-[11px] font-bold rounded shrink-0 ${colors.bg} ${colors.text}`}>
                                     {p.textbook!.subject}
                                   </span>
                                 );
@@ -706,14 +712,14 @@ export default function CourseProposalsPage() {
                           </div>
                         </Link>
                         <span
-                          className={`px-2 py-0.5 text-[10px] font-bold rounded shrink-0 ${STATUS_BADGE[p.status]}`}
+                          className={`px-2 py-0.5 text-[11px] font-bold rounded shrink-0 ${STATUS_BADGE[p.status]}`}
                         >
                           {PROPOSAL_STATUS_LABELS[p.status]}
                         </span>
                         <button
                           onClick={() => handleDelete(p.id)}
                           disabled={deletingId === p.id}
-                          className="opacity-0 group-hover:opacity-100 p-1 text-text-faint hover:text-danger transition-[color,opacity] duration-150 ease-out shrink-0 disabled:opacity-50"
+                          className="sm:opacity-0 sm:group-hover:opacity-100 p-1 text-text-faint hover:text-danger transition-[color,opacity] duration-150 ease-out active:scale-95 shrink-0 disabled:opacity-50"
                           title="削除"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
