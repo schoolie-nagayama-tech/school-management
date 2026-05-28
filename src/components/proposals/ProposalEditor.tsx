@@ -709,6 +709,27 @@ export default function ProposalEditor() {
           }));
         await saveProposalUnits(proposalId, unitInputs);
         await publishProposal(proposalId);
+      } else if (newStatus === 'draft') {
+        // 下書きに戻す: 申込コマ数は未確定に戻す（提案済で入れた申込を0クリア）。
+        // 提案回数(koma_count)は保持し、再度提案済にした時に申込が再初期化される。
+        const updated = new Map(unitDrafts);
+        Array.from(updated.entries()).forEach(([, d]) => {
+          updated.set(d.curriculum_item_id, { ...d, applied_koma: 0 });
+        });
+        setUnitDrafts(updated);
+
+        const unitInputs = Array.from(updated.values())
+          .filter((d) => d.koma_count > 0)
+          .map((u) => ({
+            curriculum_item_id: u.curriculum_item_id,
+            koma_count: u.koma_count,
+            applied_koma: 0,
+            reason: u.reason,
+            group_id: u.group_id,
+            intent_tag: u.intent_tag,
+          }));
+        await saveProposalUnits(proposalId, unitInputs);
+        await updateProposal(proposalId, { status: newStatus, applied_koma: 0 });
       } else {
         await updateProposal(proposalId, { status: newStatus });
       }
