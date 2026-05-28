@@ -145,6 +145,10 @@ export interface WeeklyScheduleGridProps {
   getKoushuInfo?: (studentId: string) => { enrolled: number; scheduled: number } | null;
   /** 講師カードのミニラベル表示用：科目ID → 名前 */
   subjectNameById?: Map<string, string>;
+  /** 講師欠勤マップ。キー: `${date}|${timeSlotId}|${userId}` */
+  absenceKeySet?: Set<string>;
+  /** 講師カードの欠勤トグル */
+  onToggleAbsence?: (date: string, slotId: string, teacherId: string) => void;
 }
 
 export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
@@ -174,6 +178,8 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
     headerRightContent,
     getKoushuInfo,
     subjectNameById,
+    absenceKeySet,
+    onToggleAbsence,
   } = props;
 
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -381,6 +387,8 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
       headerRightContent={headerRightContent}
       getKoushuInfo={getKoushuInfo}
       subjectNameById={subjectNameById}
+      absenceKeySet={absenceKeySet}
+      onToggleAbsence={onToggleAbsence}
     />
   );
 }

@@ -3,7 +3,7 @@
 import React, { useMemo } from 'react';
 import { useDroppable, useDraggable } from '@dnd-kit/core';
 import { DraggableStudentCard } from './DraggableStudentCard';
-import { Plus, GripVertical } from 'lucide-react';
+import { Plus, GripVertical, UserX, UserCheck } from 'lucide-react';
 import type { ScheduleEntry } from '@/types/schedule';
 
 /** 講師ブロックをドロップ先として識別するID（生徒D&D用） */
@@ -94,6 +94,10 @@ export interface TeacherCardProps {
   getKoushuInfo?: (studentId: string) => { enrolled: number; scheduled: number } | null;
   /** 講師ミニラベル（指導科目）表示用の subjectId → 名前 マップ */
   subjectNameById?: Map<string, string>;
+  /** この講師がこのコマで欠勤か */
+  isAbsent?: boolean;
+  /** 欠勤トグル（未指定なら欠勤ボタンを出さない＝担当未決定セル等） */
+  onToggleAbsence?: () => void;
 }
 
 export const TeacherCard = React.memo(function TeacherCard({
@@ -114,6 +118,8 @@ export const TeacherCard = React.memo(function TeacherCard({
   onTransferTargetClick,
   getKoushuInfo,
   subjectNameById,
+  isAbsent = false,
+  onToggleAbsence,
 }: TeacherCardProps) {
   const dropId = getTeacherSlotId(date, timeSlotId, teacher.id);
   const { isOver, setNodeRef } = useDroppable({ id: dropId });
@@ -306,11 +312,18 @@ export const TeacherCard = React.memo(function TeacherCard({
         ${isDimmedDuringDrag ? 'opacity-30 grayscale' : ''}
         ${isOverAndCanDrop ? 'ring-2 ring-green-400 bg-green-50/50' : ''}
         ${isOverAndCannotDrop ? 'ring-2 ring-red-400 bg-red-50/50 cursor-not-allowed' : ''}
+        ${isAbsent ? 'opacity-60 bg-[repeating-linear-gradient(45deg,transparent,transparent_6px,color-mix(in_oklch,var(--danger)_8%,transparent)_6px,color-mix(in_oklch,var(--danger)_8%,transparent)_12px)] border-danger/40' : ''}
       `}
       onClick={transferMode && onTransferTargetClick ? handleTransferClick : undefined}
       role={transferMode && onTransferTargetClick ? 'button' : undefined}
       title={isOverAndCannotDrop && dropConstraint.reason ? `この講師には割当不可: ${dropConstraint.reason}` : undefined}
     >
+      {/* 欠勤バッジ：このコマで欠勤の講師に赤バッジを重ねる */}
+      {isAbsent && (
+        <div className="absolute -top-2 left-2 z-10 px-1.5 py-0.5 rounded-full bg-danger text-white text-[9px] font-bold shadow pointer-events-none">
+          欠勤
+        </div>
+      )}
       {/* ドロップ拒否時に理由バッジを表示。短時間だけ出すミニトースト的な見せ方。 */}
       {isOverAndCannotDrop && dropConstraint.reason && (
         <div className="absolute -top-2 left-1/2 -translate-x-1/2 z-10 px-2 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-semibold shadow whitespace-nowrap pointer-events-none">
@@ -342,6 +355,26 @@ export const TeacherCard = React.memo(function TeacherCard({
           )}
         </span>
         <span className="flex-shrink-0 ml-1 text-[10px] text-gray-400 tabular-nums">{slotLabel}</span>
+        {/* 欠勤トグル：欠勤なら UserCheck（出勤に戻す）、出勤なら UserX（欠勤にする） */}
+        {onToggleAbsence && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onToggleAbsence();
+            }}
+            className={`flex-shrink-0 ml-1 w-4 h-4 flex items-center justify-center rounded transition-colors ${
+              isAbsent
+                ? 'text-danger hover:bg-danger/10'
+                : 'text-gray-300 hover:text-danger hover:bg-danger/5'
+            }`}
+            aria-label={isAbsent ? '出勤に戻す' : '欠勤にする'}
+            title={isAbsent ? '出勤に戻す' : 'このコマを欠勤にする'}
+          >
+            {isAbsent ? <UserCheck className="w-3 h-3" /> : <UserX className="w-3 h-3" />}
+          </button>
+        )}
         <button
           type="button"
           onClick={(e) => {

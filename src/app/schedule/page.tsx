@@ -184,6 +184,8 @@ export default function SchedulePage() {
   // 通常シフトから「この曜日この時間帯に出勤可能」と提出した講師IDを byDayOfWeek で保持。
   // 各セル描画時に「曜日 → 出勤可能講師ID 一覧」を引いて空き枠として並べる。
   const [shiftByDow, setShiftByDow] = useState<Map<number, string[]>>(new Map());
+  // 講師欠勤マップ（コマ単位）。キー: `${date}|${timeSlotId}|${userId}`
+  const [absenceKeySet, setAbsenceKeySet] = useState<Set<string>>(new Set());
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingEntry, setDeletingEntry] = useState<ScheduleEntry | null>(null);
   const [removeTeacherConfirm, setRemoveTeacherConfirm] = useState<{
@@ -267,6 +269,16 @@ export default function SchedulePage() {
   const refreshEntries = useCallback(async () => {
     if (!schoolId) return;
     setEntriesLoading(true);
+    // 講師欠勤マップを並行取得（座席表の講師カード欠勤表示用）
+    void (async () => {
+      try {
+        const { getTeacherAbsences } = await import('@/lib/api/teacher-absences');
+        const { keySet } = await getTeacherAbsences(schoolId, weekStartStr, weekEndStr);
+        setAbsenceKeySet(keySet);
+      } catch {
+        /* noop: 欠勤取得失敗は座席表表示に影響させない */
+      }
+    })();
     try {
       const [initialList, closed] = await Promise.all([
         getScheduleEntries(schoolId, weekStartStr, weekEndStr),
@@ -1011,6 +1023,42 @@ export default function SchedulePage() {
     }
   }, [pendingAssignment, success, toastError, refreshEntries, confirmAssignTransient, entriesWithSubjects, schoolId, profile?.id]);
 
+  // 講師欠勤トグル（コマ単位）。欠勤なら解除、出勤なら欠勤登録。生徒は触らない。
+  const handleToggleAbsence = useCallback(
+    async (date: string, slotId: string, teacherId: string) => {
+      if (!schoolId) return;
+      const { markTeacherAbsent, unmarkTeacherAbsent, absenceKey } = await import(
+        '@/lib/api/teacher-absences'
+      );
+      const key = absenceKey(date, slotId, teacherId);
+      const isAbsent = absenceKeySet.has(key);
+      try {
+        if (isAbsent) {
+          await unmarkTeacherAbsent(teacherId, date, slotId);
+          setAbsenceKeySet((prev) => {
+            const next = new Set(prev);
+            next.delete(key);
+            return next;
+          });
+          success('出勤に戻しました');
+        } else {
+          await markTeacherAbsent({
+            schoolId,
+            userId: teacherId,
+            date,
+            timeSlotId: slotId,
+            createdBy: profile?.id ?? null,
+          });
+          setAbsenceKeySet((prev) => new Set(prev).add(key));
+          success('欠勤として登録しました');
+        }
+      } catch (e) {
+        toastError((e as Error).message);
+      }
+    },
+    [schoolId, absenceKeySet, profile?.id, success, toastError]
+  );
+
   const selectedSchool = useMemo(() => schools.find((s) => s.id === schoolId), [schools, schoolId]);
 
   /** 講師が選択科目を指導可能か。teachable_subject_ids が空/未設定の講師は全科目可 */
@@ -1389,6 +1437,8 @@ export default function SchedulePage() {
                       onTeacherDropOnUnassigned={handleTeacherDropOnUnassigned}
                       onConstraintViolation={(reason) => toastError(reason)}
                       subjectNameById={new Map(masterSubjects.map((s) => [s.id, s.name]))}
+                      absenceKeySet={absenceKeySet}
+                      onToggleAbsence={handleToggleAbsence}
                       onTransferTargetClick={handleTransferTargetClick}
                       onPrintDay={handlePrintDay}
                       onBoothAssign={handleBoothAssign}

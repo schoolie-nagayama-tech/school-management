@@ -101,6 +101,9 @@ export interface DayCellProps {
   onTransferTargetClick?: (date: string, slotId: string, teacherId: string) => void;
   getKoushuInfo?: (studentId: string) => { enrolled: number; scheduled: number } | null;
   subjectNameById?: Map<string, string>;
+  /** 講師欠勤マップ。キー: `${date}|${timeSlotId}|${userId}` */
+  absenceKeySet?: Set<string>;
+  onToggleAbsence?: (date: string, slotId: string, teacherId: string) => void;
 }
 
 export const DayCell = React.memo(function DayCell({
@@ -121,6 +124,8 @@ export const DayCell = React.memo(function DayCell({
   onTransferTargetClick,
   getKoushuInfo,
   subjectNameById,
+  absenceKeySet,
+  onToggleAbsence,
 }: DayCellProps) {
   if (isClosed) {
     return (
@@ -165,6 +170,12 @@ export const DayCell = React.memo(function DayCell({
             onTransferTargetClick={onTransferTargetClick}
             getKoushuInfo={getKoushuInfo}
             subjectNameById={subjectNameById}
+            isAbsent={absenceKeySet?.has(`${date}|${timeSlot.id}|${group.teacher.id}`) ?? false}
+            onToggleAbsence={
+              onToggleAbsence && !group.teacher.id.startsWith('__unassigned__')
+                ? () => onToggleAbsence(date, timeSlot.id, group.teacher.id)
+                : undefined
+            }
           />
         ))}
         {!transferMode && (

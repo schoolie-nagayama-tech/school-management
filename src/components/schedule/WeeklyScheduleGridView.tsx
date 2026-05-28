@@ -70,6 +70,8 @@ export interface WeeklyScheduleGridViewProps {
   headerRightContent?: React.ReactNode;
   getKoushuInfo?: (studentId: string) => { enrolled: number; scheduled: number } | null;
   subjectNameById?: Map<string, string>;
+  absenceKeySet?: Set<string>;
+  onToggleAbsence?: (date: string, slotId: string, teacherId: string) => void;
 }
 
 export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
@@ -100,6 +102,8 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
     headerRightContent,
     getKoushuInfo,
     subjectNameById,
+    absenceKeySet,
+    onToggleAbsence,
   } = props;
 
   const todayLocal = getTodayLocalDateStr();
@@ -315,6 +319,8 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
                       }
                       getKoushuInfo={getKoushuInfo}
                       subjectNameById={subjectNameById}
+                      absenceKeySet={absenceKeySet}
+                      onToggleAbsence={onToggleAbsence}
                     />
                   </div>
                 );
