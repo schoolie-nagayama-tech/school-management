@@ -239,7 +239,7 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
               <button
                 key={t.key}
                 onClick={() => setTab(t.key)}
-                className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                className={`px-3 py-1.5 text-sm rounded-lg transition-[background-color,color] duration-150 ease-out active:scale-[0.97] ${
                   tab === t.key
                     ? 'bg-[#1e3a5f] text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -282,17 +282,17 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
           {studentFilter && (
             <button
               onClick={() => { setStudentFilter(null); setStudentFilterName(''); }}
-              className="flex items-center gap-1 px-2 py-1 text-xs bg-[#1e3a5f] text-white rounded-lg"
+              className="flex items-center gap-1 px-2 py-1 text-xs bg-[#1e3a5f] text-white rounded-lg active:scale-[0.97]"
             >
               <Search className="w-3 h-3" />
               {studentFilterName}
-              <X className="w-3 h-3" />
+              <X className="w-3 h-3 hover:bg-white/20 rounded-full" />
             </button>
           )}
           {(dateFrom || dateTo) && (
             <button
               onClick={() => { setDateFrom(''); setDateTo(''); }}
-              className="text-xs text-gray-400 hover:text-gray-600"
+              className="px-2 py-1 text-xs text-gray-400 hover:text-gray-600 hover:underline rounded"
             >
               日付クリア
             </button>
@@ -307,18 +307,23 @@ export default function SessionFeed({ schoolIds: propSchoolIds }: Props) {
           {loading && sessions.length === 0 ? (
             <Loading size="md" />
           ) : sessions.length === 0 ? (
-            <div className="py-12 text-center text-sm text-gray-400">
-              {tab === 'alerts' ? '要注意のセッションはありません'
-                : tab === 'confirmed' ? '確認済みのセッションはありません'
-                : tab === 'unconfirmed' ? '未確認のセッションはありません'
-                : 'セッションがありません'}
+            <div className="py-16 text-center">
+              <Archive className="w-8 h-8 text-gray-300 mx-auto mb-3" />
+              <p className="text-sm text-gray-500">
+                {tab === 'alerts' ? '要注意のセッションはありません'
+                  : tab === 'confirmed' ? '確認済みのセッションはありません'
+                  : tab === 'unconfirmed' ? '未確認のセッションはありません'
+                  : 'セッションがありません'}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">条件を変更して再検索してください</p>
             </div>
           ) : (
             <div className="space-y-2">
-              {sessions.map(session => (
+              {sessions.map((session, index) => (
                 <SwipeableCard
                   key={session.id}
                   session={session}
+                  staggerIndex={index}
                   isTeacher={isTeacher}
                   isFlying={flyingIds.has(session.id)}
                   showConfirmAction={tab !== 'confirmed'}
@@ -362,22 +367,27 @@ interface SwipeableCardProps {
   trayRef: React.RefObject<HTMLDivElement | null>;
   /** 目標 / 行動目標サマリ（カード表示用、未取得時 undefined） */
   goal?: FeedGoalSummary;
+  /** stagger animation index */
+  staggerIndex?: number;
 }
 
 function SwipeableCard({
   session, isTeacher, isFlying,
   showConfirmAction, showUnconfirmAction,
   onConfirm, onUnconfirm, onInlineUpdate, onStudentClick, trayRef, goal,
+  staggerIndex = 0,
 }: SwipeableCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const startX = useRef(0);
+  const dragStartTime = useRef<number>(0);
 
   // ── スワイプジェスチャー ──
   const handlePointerDown = (e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest('[data-no-swipe]')) return;
     startX.current = e.clientX;
+    dragStartTime.current = Date.now();
     setIsDragging(true);
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   };
@@ -391,8 +401,10 @@ function SwipeableCard({
   const handlePointerUp = () => {
     if (!isDragging) return;
     setIsDragging(false);
-    // 右に150px以上 → 確認
-    if (dragX > 150 && showConfirmAction) {
+    // 距離閾値 or velocity 閾値（素早いフリック対応）
+    const elapsed = Date.now() - dragStartTime.current;
+    const velocity = Math.abs(dragX) / elapsed;
+    if (dragX > 0 && (dragX > 150 || velocity > 0.11) && showConfirmAction) {
       onConfirm();
     }
     setDragX(0);
@@ -433,13 +445,15 @@ function SwipeableCard({
   return (
     <div
       ref={cardRef}
-      className={`relative ${isFlying ? 'session-fly' : 'transition-transform'}`}
-      style={
-        isFlying ? flyStyle : {
+      className={`relative ${isFlying ? 'session-fly' : 'feed-card-enter'}`}
+      style={{
+        ...(isFlying ? flyStyle : {
           transform: isDragging ? `translateX(${dragX}px) rotate(${rotation}deg)` : undefined,
-          transition: isDragging ? 'none' : 'transform 0.3s ease',
-        }
-      }
+          transition: isDragging ? 'none' : 'transform 200ms cubic-bezier(0.23, 1, 0.32, 1)',
+        }),
+        // stagger: 最初の10枚のみ（それ以降は delay 不要）
+        animationDelay: !isFlying && staggerIndex < 10 ? `${staggerIndex * 40}ms` : undefined,
+      }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
@@ -448,7 +462,7 @@ function SwipeableCard({
       {/* スワイプヒント背景 */}
       {isDragging && swipeIsRight && (
         <div
-          className="absolute inset-0 rounded-xl bg-green-400 flex items-center justify-start pl-6"
+          className="absolute inset-0 rounded-xl bg-green-500/80 backdrop-blur-sm flex items-center justify-start pl-6"
           style={{ opacity: swipeHintOpacity }}
         >
           <Check className="w-8 h-8 text-white" />
@@ -578,7 +592,7 @@ function FeedCard({
             {!editing && !compact && (
               <button
                 onClick={() => { setEditing(true); setEditHandover(session.handover || ''); }}
-                className="p-1 text-gray-300 hover:text-gray-500 rounded"
+                className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded active:scale-95"
                 title="編集"
               >
                 <Pencil className="w-3.5 h-3.5" />
@@ -587,7 +601,7 @@ function FeedCard({
             {showConfirmAction && (
               <button
                 onClick={(e) => { e.stopPropagation(); onConfirm(); }}
-                className="p-1.5 text-green-500 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors"
+                className="p-1.5 text-green-500 hover:text-green-700 hover:bg-green-50 rounded-lg transition-[background-color,color] duration-150 ease-out active:scale-95"
                 title="確認"
               >
                 <Check className="w-4 h-4" />
@@ -596,7 +610,7 @@ function FeedCard({
             {showUnconfirmAction && (
               <button
                 onClick={(e) => { e.stopPropagation(); onUnconfirm(); }}
-                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-[background-color,color] duration-150 ease-out active:scale-95"
                 title="確認を戻す"
               >
                 <X className="w-4 h-4" />
@@ -634,10 +648,10 @@ function FeedCard({
           ) : (
             <>
               {session.homework_not_done && (
-                <span className="px-1.5 py-0.5 text-[10px] bg-amber-200 text-amber-900 rounded font-medium">宿題未提出</span>
+                <span className="px-1.5 py-0.5 text-[11px] bg-amber-200 text-amber-900 rounded font-medium">宿題未提出</span>
               )}
               {session.tardy && (
-                <span className="px-1.5 py-0.5 text-[10px] bg-amber-200 text-amber-900 rounded font-medium">遅刻</span>
+                <span className="px-1.5 py-0.5 text-[11px] bg-amber-200 text-amber-900 rounded font-medium">遅刻</span>
               )}
             </>
           )}
@@ -726,13 +740,13 @@ function FeedCard({
           <div className="flex gap-1 justify-end">
             <button
               onClick={() => setEditing(false)}
-              className="px-3 py-1 text-xs text-gray-500 hover:bg-gray-100 rounded-lg"
+              className="px-3 py-1 text-xs text-gray-500 hover:bg-gray-100 rounded-lg active:scale-[0.97]"
             >
               キャンセル
             </button>
             <button
               onClick={handleSaveEdit}
-              className="px-3 py-1 text-xs bg-[#1e3a5f] text-white rounded-lg hover:bg-[#2a4a6f]"
+              className="px-3 py-1 text-xs bg-[#1e3a5f] text-white rounded-lg hover:bg-[#2a4a6f] active:scale-[0.97]"
             >
               保存
             </button>
@@ -799,16 +813,15 @@ const ConfirmedTray = React.forwardRef<
       className="w-64 shrink-0 hidden lg:block"
     >
       <div className="sticky top-4">
-        {/* トレイヘッダー（書類ケースのアイコン） */}
+        {/* トレイヘッダー */}
         <button
           onClick={onToggle}
-          className="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-t-xl hover:bg-gray-100 transition-colors"
+          className="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-t-xl hover:bg-gray-100 transition-[background-color] duration-150 ease-out active:scale-[0.99]"
         >
           <div className="flex items-center gap-2">
             <div className="relative">
               <Archive className="w-5 h-5 text-gray-500" />
-              {/* 書類が溜まっている表現（重ねた紙のアニメーション） */}
-              <div className="absolute -top-1 -right-1.5 w-4 h-4 bg-green-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+              <div className="absolute -top-1 -right-1.5 min-w-[18px] h-[18px] bg-green-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center tabular-nums">
                 {count || ''}
               </div>
             </div>
@@ -817,23 +830,27 @@ const ConfirmedTray = React.forwardRef<
           {open ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
         </button>
 
-        {/* トレイ本体：書類が重なって見えるスタック表現 */}
+        {/* トレイ本体: CSS Grid で高さをアニメーション（max-height ハックより正確） */}
         <div
-          className={`border border-t-0 border-gray-200 rounded-b-xl bg-white overflow-hidden transition-all duration-300 ${
-            open ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'
-          }`}
+          className="border border-t-0 border-gray-200 rounded-b-xl bg-white grid transition-[grid-template-rows,opacity] duration-250 ease-out"
+          style={{
+            gridTemplateRows: open ? '1fr' : '0fr',
+            opacity: open ? 1 : 0,
+          }}
         >
-          {sessions.length === 0 ? (
-            <div className="py-8 text-center text-xs text-gray-400">
-              まだ確認済みのセッションはありません
-            </div>
-          ) : (
-            <div className="p-2 space-y-1.5 max-h-[560px] overflow-y-auto">
-              {sessions.map(s => (
-                <TrayCard key={s.id} session={s} />
-              ))}
-            </div>
-          )}
+          <div className="overflow-hidden min-h-0">
+            {sessions.length === 0 ? (
+              <div className="py-8 text-center text-xs text-gray-400">
+                まだ確認済みのセッションはありません
+              </div>
+            ) : (
+              <div className="p-2 space-y-1.5 max-h-[560px] overflow-y-auto">
+                {sessions.map(s => (
+                  <TrayCard key={s.id} session={s} />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -849,7 +866,7 @@ function TrayCard({ session }: { session: ProgressSessionWithDetails }) {
   return (
     <Link
       href={studentId ? `/students/${studentId}/progress` : '#'}
-      className="block px-2.5 py-2 rounded-lg border border-gray-100 bg-gray-50/50 hover:bg-white transition-colors"
+      className="block px-2.5 py-2 rounded-lg border border-gray-100 bg-gray-50/50 hover:bg-white transition-[background-color] duration-150 ease-out"
     >
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-medium text-gray-800 truncate">{studentName}</span>
@@ -901,7 +918,7 @@ function SmartAlertBoard({
     <div className="rounded-xl border border-amber-200 bg-amber-50/50 overflow-hidden">
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-amber-50 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-amber-50 transition-[background-color] duration-150 ease-out active:scale-[0.995]"
       >
         <div className="flex items-center gap-2">
           <AlertTriangle className="w-4 h-4 text-amber-600" />
@@ -936,7 +953,7 @@ function SmartAlertItem({ alert }: { alert: SmartAlert }) {
   return (
     <Link href={`/students/${alert.studentId}/progress`} className="block">
       <div
-        className={`flex items-start gap-3 px-3 py-2.5 rounded-lg transition-colors hover:bg-white ${
+        className={`flex items-start gap-3 px-3 py-2.5 rounded-lg transition-[background-color] duration-150 ease-out hover:bg-white ${
           isUrgent ? 'bg-red-50/60' : 'bg-white/60'
         }`}
       >
