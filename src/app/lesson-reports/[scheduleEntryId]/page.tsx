@@ -103,6 +103,9 @@ export default function LessonReportFormPage() {
   // 将来 useAuth から取得した profile を使った権限制御を入れる予定（今は schedule_entry の teacher_id をそのまま使用）
   const { toasts, removeToast, success, error: toastError } = useToast();
   const scheduleEntryId = params.scheduleEntryId as string;
+  // デモモード: /lesson-reports/demo でアクセスすると、DBを使わずダミーデータで
+  // 実際の入力フォームを開く。保存・提出は無効化（見本のため）。
+  const isDemo = scheduleEntryId === 'demo';
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -140,6 +143,94 @@ export default function LessonReportFormPage() {
   // ---- 初期データ取得 ----
   const load = useCallback(async () => {
     setIsLoading(true);
+    // デモモード: DBを使わずダミーデータで実フォームを表示
+    if (isDemo) {
+      const demoEntry: ScheduleEntryInfo = {
+        id: 'demo',
+        school_id: 'demo',
+        entry_date: '2026-05-28',
+        student_id: 'demo-student',
+        teacher_id: 'demo-teacher',
+        subject_ids: ['demo-eng'],
+        time_slot: { slot_number: 3, start_time: '16:20', end_time: '17:50' },
+        student: { id: 'demo-student', last_name: '山田', first_name: '太郎', grade: 8 },
+        teacher: { id: 'demo-teacher', display_name: '田中 花子', email: null },
+      };
+      setEntry(demoEntry);
+      setNextLessonDate('2026-06-04');
+      const demoTextbooks: StudentTextbookOption[] = [
+        {
+          id: 'tb-main',
+          textbook_id: 1,
+          textbook_name: 'New Horizon 中2 英語',
+          curriculum_items: [
+            { id: 1, title: 'Unit 6 現在完了形', sort_order: 1 },
+            { id: 2, title: 'Unit 7 不定詞', sort_order: 2 },
+          ],
+        },
+        {
+          id: 'tb-sub',
+          textbook_id: 2,
+          textbook_name: '英文法ドリル',
+          curriculum_items: [{ id: 3, title: '現在完了形（継続）', sort_order: 1 }],
+        },
+      ];
+      setTextbookOptions(demoTextbooks);
+      setForm({
+        schedule_entry_id: 'demo',
+        student_id: 'demo-student',
+        teacher_id: 'demo-teacher',
+        lesson_date: '2026-05-28',
+        short_term_goal: '現在完了形（継続・経験・完了）の使い分けを理解し、例文を5つ作れる',
+        mid_term_goal_snapshot: '英文法 Unit 5〜8 を完了し、1学期期末で 80 点以上を取る',
+        mid_action_goal_snapshot: '宿題を毎回提出し、間違えた問題を翌日に必ず復習する',
+        school_progress: '教科書 p.62 現在完了形（継続用法）',
+        homework_completion_pct: 90,
+        homework_correct_pct: 75,
+        today_correct_pct: 85,
+        vocab_test_score: 18,
+        vocab_test_total: 20,
+        vocab_test_passed: true,
+        check_test_score: 8,
+        check_test_total: 10,
+        check_test_passed: true,
+        review_comment:
+          '現在完了形の「継続」用法はよく理解できていました。have/has の使い分けも問題ありません。次回は「経験」用法（ever / never）を中心に進めます。',
+        homework_assignments: [
+          { date: '2026-05-29', text: '英文法ドリル p.23〜24（現在完了形・経験）' },
+          { date: '2026-05-30', text: '単語練習 Unit 6（46〜49）3回ずつ' },
+          { date: '2026-06-01', text: '教科書 p.63 音読 + Q&A ノート作成' },
+        ],
+        subject_specific: {
+          kind: 'vocab',
+          range: 'Unit 6 単語',
+          pages: '46-49',
+          times_per_day: 3,
+          duration: '1週間',
+        },
+        status: 'draft',
+        units: [
+          {
+            student_textbook_id: 'tb-main',
+            is_main: true,
+            curriculum_item_ids: [1],
+            page_start: 48,
+            page_end: 52,
+            display_order: 0,
+          },
+          {
+            student_textbook_id: 'tb-sub',
+            is_main: false,
+            curriculum_item_ids: [3],
+            page_start: 20,
+            page_end: 22,
+            display_order: 1,
+          },
+        ],
+      });
+      setIsLoading(false);
+      return;
+    }
     try {
       // 1. schedule_entry を取得
       const { data: entryRow, error: entryErr } = await db
@@ -260,7 +351,7 @@ export default function LessonReportFormPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [scheduleEntryId, toastError]);
+  }, [scheduleEntryId, toastError, isDemo]);
 
   useEffect(() => {
     load();
@@ -340,6 +431,11 @@ export default function LessonReportFormPage() {
   // 保存
   const handleSave = async (nextStatus: 'draft' | 'submitted') => {
     if (!entry) return;
+    // デモモードは保存・提出しない（見本のため）
+    if (isDemo) {
+      toastError('これは入力画面の見本です。実際の授業からはここで保存・提出できます。');
+      return;
+    }
     setIsSaving(true);
     try {
       await upsertClassReport(entry.school_id, { ...form, status: nextStatus });
@@ -385,6 +481,13 @@ export default function LessonReportFormPage() {
     <AdminLayout>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="space-y-4">
+
+        {/* デモモードの注記バナー */}
+        {isDemo && (
+          <div className="rounded-lg bg-warning-subtle border border-warning/30 px-3 py-2 text-xs text-warning">
+            <strong>入力画面の見本（ダミーデータ）</strong>です。実際の授業からはここで記入して保存・提出します。このページでは保存されません。
+          </div>
+        )}
 
         {/* ヘッダー */}
         <div className="flex items-center gap-3">
