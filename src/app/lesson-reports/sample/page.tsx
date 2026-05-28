@@ -16,6 +16,7 @@ import { AdminLayout } from '@/components/layouts';
 import { Card, CardContent } from '@/components/ui';
 import { Button } from '@/components/ui';
 import Link from 'next/link';
+import { DemoProgressPreview } from '@/components/lesson-reports/DemoProgressPreview';
 import {
   ChevronLeft,
   Target,
@@ -378,6 +379,10 @@ export default function LessonReportSamplePage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* 室長の確認画面でも進行表をマージして表示。
+            報告書の内容と進行フィードを同じページで突き合わせて承認できる動線。 */}
+        <DemoProgressPreview />
         </>
         )}
       </div>
