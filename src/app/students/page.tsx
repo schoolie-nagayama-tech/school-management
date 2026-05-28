@@ -714,7 +714,7 @@ export default function StudentsPage() {
                 setActiveTab(tab.key);
                 router.replace(`/students${tab.key === 'roster' ? '' : `?tab=${tab.key}`}`, { scroll: false });
               }}
-              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-[color,border-color] duration-150 ease-out whitespace-nowrap ${
                 activeTab === tab.key
                   ? 'border-ink text-ink'
                   : 'border-transparent text-text-muted hover:text-text-body hover:border-border-strong'
@@ -817,7 +817,7 @@ export default function StudentsPage() {
                   })();
                 }}
                 className={`
-                  inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors
+                  inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-[background-color,color,border-color] duration-150 ease-out active:scale-[0.97]
                   ${
                     showInactive
                       ? 'bg-ink text-white hover:bg-ink/90 border border-ink'
@@ -854,7 +854,7 @@ export default function StudentsPage() {
                   {isExporting ? 'エクスポート中...' : 'CSVエクスポート ▾'}
                 </Button>
                 {exportMenuOpen && (
-                  <div className="absolute right-0 top-full mt-1 bg-surface-raised rounded-lg shadow-lg border border-border z-50 min-w-[140px] overflow-hidden dropdown-menu dropdown-menu-right">
+                  <div className="absolute right-0 top-full mt-1 bg-surface-raised rounded-lg shadow-lg border border-border z-50 min-w-[140px] overflow-hidden origin-top-right animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]">
                     {[
                       { label: '生徒一覧', onClick: handleExportStudents },
                       { label: '成績', onClick: handleExportAssessments },
@@ -863,7 +863,7 @@ export default function StudentsPage() {
                       <button
                         key={item.label}
                         onClick={item.onClick}
-                        className="w-full text-left px-4 py-2 text-sm text-text-heading hover:bg-surface-hover transition-colors duration-150"
+                        className="w-full text-left px-4 py-2 text-sm text-text-heading hover:bg-surface-hover transition-[background-color] duration-150 ease-out"
                       >
                         {item.label}
                       </button>
@@ -915,7 +915,7 @@ export default function StudentsPage() {
             </Button>
             <button
               onClick={() => setSelectedIds(new Set())}
-              className="ml-auto text-sm text-text-muted hover:text-text-body"
+              className="ml-auto text-sm text-text-muted hover:text-text-body transition-[color] duration-150 ease-out"
             >
               選択解除
             </button>
@@ -948,31 +948,31 @@ export default function StudentsPage() {
               <button
                 onClick={() => setCurrentPage(1)}
                 disabled={currentPage === 1}
-                className="px-2 py-1 text-sm rounded border border-border disabled:opacity-40 hover:bg-surface-hover"
+                className="px-2 py-1 text-sm rounded border border-border disabled:opacity-40 hover:bg-surface-hover transition-[background-color] duration-150 ease-out active:scale-[0.97]"
               >
                 «
               </button>
               <button
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-1 text-sm rounded border border-border disabled:opacity-40 hover:bg-surface-hover"
+                className="px-3 py-1 text-sm rounded border border-border disabled:opacity-40 hover:bg-surface-hover transition-[background-color] duration-150 ease-out active:scale-[0.97]"
               >
                 ‹ 前
               </button>
-              <span className="px-3 py-1 text-sm text-ink font-medium">
+              <span className="px-3 py-1 text-sm text-ink font-medium tabular-nums">
                 {currentPage} / {rosterTotalPages}
               </span>
               <button
                 onClick={() => setCurrentPage((p) => Math.min(rosterTotalPages, p + 1))}
                 disabled={currentPage === rosterTotalPages}
-                className="px-3 py-1 text-sm rounded border border-border disabled:opacity-40 hover:bg-surface-hover"
+                className="px-3 py-1 text-sm rounded border border-border disabled:opacity-40 hover:bg-surface-hover transition-[background-color] duration-150 ease-out active:scale-[0.97]"
               >
                 次 ›
               </button>
               <button
                 onClick={() => setCurrentPage(rosterTotalPages)}
                 disabled={currentPage === rosterTotalPages}
-                className="px-2 py-1 text-sm rounded border border-border disabled:opacity-40 hover:bg-surface-hover"
+                className="px-2 py-1 text-sm rounded border border-border disabled:opacity-40 hover:bg-surface-hover transition-[background-color] duration-150 ease-out active:scale-[0.97]"
               >
                 »
               </button>

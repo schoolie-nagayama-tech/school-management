@@ -296,7 +296,7 @@ export default function StudentScoresPage() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <Link
             href="/students"
-            className="text-sm text-[var(--paragraph)] hover:text-[var(--primary)]"
+            className="text-sm text-[var(--paragraph)] hover:text-[var(--primary)] transition-[color] duration-150 ease-out"
           >
             ← 生徒一覧に戻る
           </Link>

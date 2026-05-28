@@ -786,7 +786,7 @@ function ModeSwitcher({ mode, onChange }: { mode: ViewMode; onChange: (m: ViewMo
         <button
           key={m}
           onClick={() => onChange(m)}
-          className={`px-2.5 py-1.5 transition-colors ${
+          className={`px-2.5 py-1.5 transition-[background-color,color] duration-150 ease-out ${
             mode === m ? 'bg-[#1e3a5f] text-white' : 'text-[#4b5563] hover:bg-[#f3f4f6]'
           }`}
         >
@@ -804,7 +804,7 @@ function ViewSwitcher({ view, onChange }: { view: View; onChange: (v: View) => v
         <button
           key={v}
           onClick={() => onChange(v)}
-          className={`px-3 py-1.5 transition-colors ${
+          className={`px-3 py-1.5 transition-[background-color,color] duration-150 ease-out ${
             view === v ? 'bg-[#1e3a5f] text-white' : 'text-[#4b5563] hover:bg-[#f3f4f6]'
           }`}
         >
@@ -900,7 +900,7 @@ function CardsView({
             <div key={col} className="flex flex-col gap-2">
               <div className={`${tint.bg} ${tint.accent} border rounded-lg px-2 py-2 text-center sticky top-0`}>
                 <div className={`${tint.text} text-lg font-bold leading-tight`}>{col}</div>
-                <div className="text-[10px] text-[#6b7280] mt-0.5">{items.length} 冊</div>
+                <div className="text-[11px] text-[#6b7280] mt-0.5">{items.length} 冊</div>
               </div>
               {items.map((tb, i) => {
                   const ae = activeExamOf(tb, examTypes);
@@ -977,13 +977,13 @@ function TextbookCard({
     >
       {/* 並べ替えボタン（右上） */}
       <div className="flex items-start justify-between gap-1 mb-1">
-        <div className={`text-[10px] font-bold ${tint.text}`}>{subjectColumn}</div>
+        <div className={`text-[11px] font-bold ${tint.text}`}>{subjectColumn}</div>
         <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
           {onDelete && (
             <button
               type="button"
               onClick={onDelete}
-              className="w-5 h-5 rounded border border-[#e5e7eb] bg-white text-[#9ca3af] hover:text-red-500 hover:border-red-300 hover:bg-red-50 flex items-center justify-center transition-colors duration-150"
+              className="w-5 h-5 rounded border border-[#e5e7eb] bg-white text-[#9ca3af] hover:text-red-500 hover:border-red-300 hover:bg-red-50 flex items-center justify-center transition-[background-color,color,border-color] duration-150 ease-out active:scale-[0.97]"
               title="削除"
             >
               <Trash2 className="w-3 h-3" />
@@ -1007,7 +1007,7 @@ function TextbookCard({
             type="button"
             disabled={!canMoveUp}
             onClick={() => onReorder('up')}
-            className="w-5 h-5 rounded border border-[#e5e7eb] bg-white text-[10px] text-[#6b7280] hover:bg-[#f3f4f6] disabled:opacity-30 disabled:hover:bg-white"
+            className="w-5 h-5 rounded border border-[#e5e7eb] bg-white text-[11px] text-[#6b7280] hover:bg-[#f3f4f6] disabled:opacity-30 disabled:hover:bg-white"
             title="上へ"
           >
             ▲
@@ -1016,7 +1016,7 @@ function TextbookCard({
             type="button"
             disabled={!canMoveDown}
             onClick={() => onReorder('down')}
-            className="w-5 h-5 rounded border border-[#e5e7eb] bg-white text-[10px] text-[#6b7280] hover:bg-[#f3f4f6] disabled:opacity-30 disabled:hover:bg-white"
+            className="w-5 h-5 rounded border border-[#e5e7eb] bg-white text-[11px] text-[#6b7280] hover:bg-[#f3f4f6] disabled:opacity-30 disabled:hover:bg-white"
             title="下へ"
           >
             ▼
@@ -1047,14 +1047,14 @@ function TextbookCard({
             {season}
           </span>
         )}
-        {textbook.is_draft && <span className="text-[10px] px-1.5 py-0.5 bg-gray-200 text-gray-700 rounded font-bold border border-gray-400">非公開</span>}
+        {textbook.is_draft && <span className="text-[11px] px-1.5 py-0.5 bg-gray-200 text-gray-700 rounded font-bold border border-gray-400">非公開</span>}
       </div>
 
       {/* 目標設定（コンパクト） */}
       {activeExam ? (
         <div className="mb-1.5 p-1.5 bg-gradient-to-br from-[#eff6ff] to-[#dbeafe]/50 border border-[#1e40af]/20 rounded">
-          <div className="text-[10px] font-semibold text-[#1e3a5f] truncate mb-0.5">{activeExam.name}</div>
-          <div className="flex items-center justify-between gap-1 text-[10px] text-[#1e3a5f]">
+          <div className="text-[11px] font-semibold text-[#1e3a5f] truncate mb-0.5">{activeExam.name}</div>
+          <div className="flex items-center justify-between gap-1 text-[11px] text-[#1e3a5f]">
             <span>
               残<strong className="text-sm font-bold ml-0.5">{activeExam.daysLeft ?? '—'}</strong>日
             </span>
@@ -1067,19 +1067,19 @@ function TextbookCard({
           </div>
         </div>
       ) : (
-        <div className="mb-1.5 px-1.5 py-1.5 bg-amber-50 border border-amber-300 rounded text-[10px] text-amber-700 text-center font-medium">
+        <div className="mb-1.5 px-1.5 py-1.5 bg-amber-50 border border-amber-300 rounded text-[11px] text-amber-700 text-center font-medium">
           目標未設定
         </div>
       )}
 
       {stalled && (
-        <div className="mb-1 px-1.5 py-0.5 bg-amber-50 text-amber-800 text-[10px] rounded border border-amber-200 text-center">
+        <div className="mb-1 px-1.5 py-0.5 bg-amber-50 text-amber-800 text-[11px] rounded border border-amber-200 text-center">
           直近進捗なし
         </div>
       )}
 
       {/* 進捗サマリー */}
-      <div className="text-[10px] text-[#6b7280] text-center">
+      <div className="text-[11px] text-[#6b7280] text-center">
         学習済み {done}/{total}
       </div>
     </div>
@@ -1473,12 +1473,12 @@ function TableView({
           <button onClick={onBack} className="text-sm text-[#4b5563] hover:text-[#1f2937]">← テキスト一覧</button>
           <h2 className="text-base font-semibold text-[#1f2937]">{textbook.textbook?.name ?? '教科書'}</h2>
           {textbook.is_draft && (
-            <span className="px-2 py-0.5 bg-gray-200 text-gray-700 rounded text-[10px] font-bold border border-gray-400">
+            <span className="px-2 py-0.5 bg-gray-200 text-gray-700 rounded text-[11px] font-bold border border-gray-400">
               非公開
             </span>
           )}
           {isMeeting && (
-            <span className="px-2 py-0.5 bg-[#fef3c7] text-[#92400e] rounded-full text-[10px] font-semibold uppercase tracking-wider">
+            <span className="px-2 py-0.5 bg-[#fef3c7] text-[#92400e] rounded-full text-[11px] font-semibold uppercase tracking-wider">
               面談用・プラン表示
             </span>
           )}
@@ -1487,7 +1487,7 @@ function TableView({
           {onTogglePublish && !isMeeting && (
             <button
               onClick={() => onTogglePublish(textbook.id)}
-              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors inline-flex items-center gap-1.5 ${
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-[background-color,color,border-color] duration-150 ease-out active:scale-[0.97] inline-flex items-center gap-1.5 ${
                 textbook.is_draft
                   ? 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
                   : 'bg-white text-[#1e40af] border-[#bfdbfe] hover:bg-[#eff6ff]'
@@ -1510,17 +1510,17 @@ function TableView({
               <Settings2 className="w-3.5 h-3.5" />
               列設定
               {hiddenColCount > 0 && (
-                <span className="px-1 py-0.5 text-[10px] bg-gray-200 text-gray-700 rounded font-medium">{hiddenColCount}</span>
+                <span className="px-1 py-0.5 text-[11px] bg-gray-200 text-gray-700 rounded font-medium">{hiddenColCount}</span>
               )}
             </button>
             {colMenuOpen && (
               <>
                 <div className="fixed inset-0 z-30" onClick={() => setColMenuOpen(false)} />
                 <div role="menu" className="dropdown-enter absolute right-0 top-full mt-1 w-56 bg-white border border-[#e5e7eb] rounded-lg shadow-lg z-40 overflow-hidden">
-                  <div className="px-3 py-2 text-[10px] text-[#6b7280] uppercase tracking-wider border-b border-[#f3f4f6] bg-[#f9fafb] flex items-center justify-between">
+                  <div className="px-3 py-2 text-[11px] text-[#6b7280] uppercase tracking-wider border-b border-[#f3f4f6] bg-[#f9fafb] flex items-center justify-between">
                     <span>{isMeeting ? '保護者に見せる列を選択' : '表示する列を選択'}</span>
                     {hiddenColCount > 0 && (
-                      <button onClick={resetCols} className="text-[10px] text-[#1e40af] hover:underline normal-case">
+                      <button onClick={resetCols} className="text-[11px] text-[#1e40af] hover:underline normal-case">
                         全表示
                       </button>
                     )}
@@ -1560,14 +1560,14 @@ function TableView({
               </button>
               <Link
                 href={`/students/${studentId}/proposals`}
-                className="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-colors flex items-center gap-1"
+                className="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-[background-color] duration-150 ease-out active:scale-[0.97] flex items-center gap-1"
               >
                 <FileText className="w-3.5 h-3.5" />
                 提案書一覧
               </Link>
               <Link
                 href={`/students/${studentId}/proposals/new?stbId=${textbook.id}&textbookId=${textbook.textbook_id}&season=${textbook.season || 'summer'}&year=${new Date().getFullYear()}`}
-                className="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-colors flex items-center gap-1"
+                className="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 transition-[background-color] duration-150 ease-out active:scale-[0.97] flex items-center gap-1"
               >
                 <Plus className="w-3.5 h-3.5" />
                 提案書作成
@@ -1584,7 +1584,7 @@ function TableView({
             <button
               key={tb.id}
               onClick={() => onSelectTab(tb.id)}
-              className={`px-3 py-1.5 text-xs rounded-lg whitespace-nowrap transition-colors ${
+              className={`px-3 py-1.5 text-xs rounded-lg whitespace-nowrap transition-[background-color,color] duration-150 ease-out ${
                 tb.id === textbook.id
                   ? 'bg-[#1e3a5f] text-white'
                   : 'bg-white text-[#4b5563] border border-[#e5e7eb] hover:bg-[#f3f4f6]'
@@ -1609,7 +1609,7 @@ function TableView({
               {!isMeeting && (
                 <button
                   onClick={() => { setGoalModalEditingId(activeExam.id); setGoalModalOpen(true); }}
-                  className="px-2 py-0.5 text-[11px] bg-white border border-[#1e40af]/20 rounded text-[#1e40af] hover:bg-[#1e40af] hover:text-white transition-colors"
+                  className="px-2 py-0.5 text-[11px] bg-white border border-[#1e40af]/20 rounded text-[#1e40af] hover:bg-[#1e40af] hover:text-white transition-[background-color,color] duration-150 ease-out active:scale-[0.97]"
                 >
                   編集
                 </button>
@@ -1619,12 +1619,12 @@ function TableView({
               <div className="text-center">
                 <div className="text-[9px] text-[#6b7280] font-semibold uppercase">残り</div>
                 <span className="text-lg font-bold text-[#1e3a5f]">{activeExam.daysLeft ?? '—'}</span>
-                {activeExam.daysLeft != null && <span className="text-[10px] text-[#6b7280]">日</span>}
+                {activeExam.daysLeft != null && <span className="text-[11px] text-[#6b7280]">日</span>}
               </div>
               <div className="text-center">
                 <div className="text-[9px] text-[#6b7280] font-semibold uppercase">目標</div>
                 <span className="text-lg font-bold text-[#1e3a5f]">{activeExam.targetScore ?? '—'}</span>
-                {activeExam.targetScore != null && <span className="text-[10px] text-[#6b7280]">点</span>}
+                {activeExam.targetScore != null && <span className="text-[11px] text-[#6b7280]">点</span>}
               </div>
               <div className="text-center">
                 <div className="text-[9px] text-[#6b7280] font-semibold uppercase">行動目標</div>
@@ -1654,7 +1654,7 @@ function TableView({
             {!isMeeting && (
               <button
                 onClick={() => { setGoalModalEditingId(null); setGoalModalOpen(true); }}
-                className="px-4 py-2 bg-amber-500 text-white text-xs font-bold rounded-lg hover:bg-amber-600 transition-colors whitespace-nowrap"
+                className="px-4 py-2 bg-amber-500 text-white text-xs font-bold rounded-lg hover:bg-amber-600 transition-[background-color] duration-150 ease-out active:scale-[0.97] whitespace-nowrap"
               >
                 目標を設定する
               </button>
@@ -1901,7 +1901,7 @@ function TableView({
                 <button
                   key={m.label}
                   onClick={() => { setPaintMode(m.key); setPaintValue(''); setPaintStart(null); }}
-                  className={`px-2 py-0.5 transition-colors ${
+                  className={`px-2 py-0.5 transition-[background-color,color] duration-150 ease-out ${
                     paintMode === m.key
                       ? 'bg-[#1e3a5f] text-white'
                       : 'bg-white text-gray-600 hover:bg-gray-100'
@@ -2055,12 +2055,12 @@ function ExamGoalEditModal({
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/40 z-40 animate-[fade-in_150ms_ease-out]" onClick={onClose} />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col pointer-events-auto">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col pointer-events-auto animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]">
           <header className="px-6 py-4 border-b border-[#e5e7eb] flex items-center justify-between">
             <h2 className="font-bold text-[#1f2937] text-lg">{editing ? '目標を編集' : '目標を設定'}</h2>
-            <button onClick={onClose} className="w-8 h-8 rounded hover:bg-[#f3f4f6] text-[#6b7280]">✕</button>
+            <button onClick={onClose} className="w-8 h-8 rounded hover:bg-[#f3f4f6] text-[#6b7280] transition-[color] duration-150 ease-out active:scale-[0.97]">✕</button>
           </header>
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
             <div>
@@ -2241,7 +2241,7 @@ function ProgressRow({
       <td className="px-3 py-2.5 text-[#6b7280] text-xs">{row.item_number ?? ''}</td>
       <td className="px-3 py-2.5 text-[#1f2937]">
         <div className="flex items-center gap-1.5 flex-wrap">
-          {groupBadge && <span className="inline-block px-1.5 py-0.5 bg-[#eff6ff] text-[#1e40af] text-[10px] rounded">{groupBadge}</span>}
+          {groupBadge && <span className="inline-block px-1.5 py-0.5 bg-[#eff6ff] text-[#1e40af] text-[11px] rounded">{groupBadge}</span>}
           <span>{row.title}</span>
           {/* 指導意図: 先頭行は編集可 / 継承行は薄く表示 */}
           {groupStart ? (
@@ -2249,7 +2249,7 @@ function ProgressRow({
               (() => {
                 const tag = isIntentTag(p?.intent_tag) ? p?.intent_tag as IntentTag : null;
                 return tag ? (
-                  <span className={`inline-block px-1.5 py-0 border rounded-full text-[10px] bg-white ${INTENT_TAG_COLOR[tag]}`}>
+                  <span className={`inline-block px-1.5 py-0 border rounded-full text-[11px] bg-white ${INTENT_TAG_COLOR[tag]}`}>
                     {tag}
                   </span>
                 ) : null;
@@ -2480,14 +2480,14 @@ function IntentTagPicker({
       {currentTag ? (
         <button
           onClick={() => setOpen(!open)}
-          className={`inline-block px-1.5 py-0 border rounded-full text-[10px] bg-white hover:shadow-sm transition-shadow ${INTENT_TAG_COLOR[currentTag]}`}
+          className={`inline-block px-1.5 py-0 border rounded-full text-[11px] bg-white hover:shadow-sm transition-shadow ${INTENT_TAG_COLOR[currentTag]}`}
         >
           {currentTag}
         </button>
       ) : (
         <button
           onClick={() => setOpen(!open)}
-          className="inline-block px-1.5 py-0 border border-dashed border-[#d1d5db] rounded-full text-[10px] text-[#9ca3af] hover:border-[#1e3a5f] hover:text-[#1e3a5f]"
+          className="inline-block px-1.5 py-0 border border-dashed border-[#d1d5db] rounded-full text-[11px] text-[#9ca3af] hover:border-[#1e3a5f] hover:text-[#1e3a5f]"
         >
           ＋指導意図
         </button>
@@ -2495,8 +2495,8 @@ function IntentTagPicker({
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-full mt-1 w-44 bg-white border border-[#e5e7eb] rounded-lg shadow-lg z-20 overflow-hidden">
-            <div className="px-3 py-1.5 text-[10px] text-[#6b7280] uppercase tracking-wider border-b border-[#f3f4f6]">指導意図を選ぶ</div>
+          <div className="absolute left-0 top-full mt-1 w-44 bg-white border border-[#e5e7eb] rounded-lg shadow-lg z-20 overflow-hidden origin-top-left animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]">
+            <div className="px-3 py-1.5 text-[11px] text-[#6b7280] uppercase tracking-wider border-b border-[#f3f4f6]">指導意図を選ぶ</div>
             {INTENT_TAGS.map((t) => (
               <button
                 key={t}
@@ -2560,14 +2560,14 @@ function DateInputWithToday({
       <div className="flex items-center gap-0.5 group">
         <button
           onClick={(e) => { e.stopPropagation(); setEditing(true); setTimeout(() => inputRef.current?.showPicker?.(), 50); }}
-          className="px-1.5 py-1 text-xs text-[#1f2937] hover:bg-[#f3f4f6] rounded transition-colors cursor-pointer"
+          className="px-1.5 py-1 text-xs text-[#1f2937] hover:bg-[#f3f4f6] rounded transition-[background-color] duration-150 ease-out cursor-pointer"
           title="クリックで日付を変更"
         >
           {localVal.replace(/^\d{4}-/, '').replace('-', '/')}
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); setLocalVal(''); onSave(null); }}
-          className="px-1 py-0.5 text-[10px] text-[#9ca3af] hover:text-red-500 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+          className="px-1 py-0.5 text-[11px] text-[#9ca3af] hover:text-red-500 rounded opacity-0 group-hover:opacity-100 transition-opacity"
           title="日付をクリア"
         >
           ×
@@ -2593,7 +2593,7 @@ function DateInputWithToday({
       {isEmpty && !editing && (
         <button
           onClick={(e) => { e.stopPropagation(); const t = todayIso(); setLocalVal(t); onSave(t); }}
-          className="px-1.5 py-0.5 text-[10px] bg-[#eff6ff] text-[#1e40af] border border-[#dbeafe] rounded hover:bg-[#dbeafe] whitespace-nowrap"
+          className="px-1.5 py-0.5 text-[11px] bg-[#eff6ff] text-[#1e40af] border border-[#dbeafe] rounded hover:bg-[#dbeafe] whitespace-nowrap"
           title="今日の日付を入力"
         >
           今日
@@ -2602,7 +2602,7 @@ function DateInputWithToday({
       {editing && (
         <button
           onClick={(e) => { e.stopPropagation(); setLocalVal(''); onSave(null); setEditing(false); }}
-          className="px-1.5 py-0.5 text-[10px] text-red-600 hover:bg-red-50 rounded"
+          className="px-1.5 py-0.5 text-[11px] text-red-600 hover:bg-red-50 rounded"
           title="日付をクリア"
         >
           取消
@@ -2644,7 +2644,7 @@ function TeacherNameInput({
       {isEmpty && selfName && (
         <button
           onClick={(e) => { e.stopPropagation(); setLocalVal(selfName); onSave(selfName); }}
-          className="px-1.5 py-0.5 text-[10px] bg-[#eff6ff] text-[#1e40af] border border-[#dbeafe] rounded hover:bg-[#dbeafe] whitespace-nowrap"
+          className="px-1.5 py-0.5 text-[11px] bg-[#eff6ff] text-[#1e40af] border border-[#dbeafe] rounded hover:bg-[#dbeafe] whitespace-nowrap"
           title={`${selfName}（自分）を入力`}
         >
           自分
@@ -2803,7 +2803,7 @@ function ActionGoalsSection({
               {copyOpen && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setCopyOpen(false)} />
-                  <div className="absolute right-0 top-full mt-1 w-64 bg-white border border-[#e5e7eb] rounded-lg shadow-lg z-20 overflow-hidden">
+                  <div className="absolute right-0 top-full mt-1 w-64 bg-white border border-[#e5e7eb] rounded-lg shadow-lg z-20 overflow-hidden origin-top-right animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]">
                     {copySources.map((e) => {
                       const name = examTypes.find((t) => t.id === e.exam_type_id)?.name || e.custom_exam_name || '試験';
                       return (
@@ -2813,7 +2813,7 @@ function ActionGoalsSection({
                           className="w-full px-3 py-2 text-left text-sm hover:bg-[#f9fafb] border-b border-[#f3f4f6] last:border-0"
                         >
                           <div className="font-medium text-[#1f2937]">{name}</div>
-                          <div className="text-[10px] text-[#6b7280] mt-0.5">{e.exam_date} / 目標{e.target_score ?? '—'}点</div>
+                          <div className="text-[11px] text-[#6b7280] mt-0.5">{e.exam_date} / 目標{e.target_score ?? '—'}点</div>
                         </button>
                       );
                     })}
@@ -2965,7 +2965,7 @@ function _ExamRangesSection({
         {!isMeeting && (
           <button
             onClick={() => onOpenEdit(null, null)}
-            className="px-2.5 py-1 text-xs bg-white border border-[#1e3a5f]/20 rounded text-[#1e3a5f] hover:bg-[#1e3a5f] hover:text-white transition-colors duration-150"
+            className="px-2.5 py-1 text-xs bg-white border border-[#1e3a5f]/20 rounded text-[#1e3a5f] hover:bg-[#1e3a5f] hover:text-white transition-[background-color,color] duration-150 ease-out active:scale-[0.97]"
           >
             ＋ 範囲を追加
           </button>
@@ -2990,20 +2990,20 @@ function _ExamRangesSection({
                   <strong className="text-[#1e3a5f]">{name}</strong>
                   <span className="text-[#6b7280]">|</span>
                   <span className="text-[#1f2937]">{label}</span>
-                  <span className="text-[10px] text-[#6b7280]">
+                  <span className="text-[11px] text-[#6b7280]">
                     （項目{r.range_start_item_number}〜{r.range_end_item_number}）
                   </span>
                   {!isMeeting && (
                     <>
                       <button
                         onClick={() => onOpenEdit(r.id, r.exam_type_id)}
-                        className="ml-1 px-1.5 py-0.5 text-[10px] text-[#1e40af] hover:bg-white rounded"
+                        className="ml-1 px-1.5 py-0.5 text-[11px] text-[#1e40af] hover:bg-white rounded"
                       >
                         編集
                       </button>
                       <button
                         onClick={() => onDelete(r.id)}
-                        className="px-1.5 py-0.5 text-[10px] text-red-600 hover:bg-red-50 rounded"
+                        className="px-1.5 py-0.5 text-[11px] text-red-600 hover:bg-red-50 rounded"
                       >
                         削除
                       </button>
@@ -3048,7 +3048,7 @@ function ExamRangesInline({
         {!isMeeting && (
           <button
             onClick={() => onOpenEdit(null, null)}
-            className="px-2 py-0.5 text-[11px] bg-[#f9fafb] border border-[#e5e7eb] rounded text-[#1e3a5f] hover:bg-[#1e3a5f] hover:text-white transition-colors"
+            className="px-2 py-0.5 text-[11px] bg-[#f9fafb] border border-[#e5e7eb] rounded text-[#1e3a5f] hover:bg-[#1e3a5f] hover:text-white transition-[background-color,color] duration-150 ease-out active:scale-[0.97]"
           >
             ＋ 追加
           </button>
@@ -3070,11 +3070,11 @@ function ExamRangesInline({
                 <strong className="text-[#1e3a5f]">{name}</strong>
                 <span className="text-[#6b7280]">|</span>
                 <span className="text-[#1f2937]">{label}</span>
-                <span className="text-[10px] text-[#6b7280]">（{r.range_start_item_number}〜{r.range_end_item_number}）</span>
+                <span className="text-[11px] text-[#6b7280]">（{r.range_start_item_number}〜{r.range_end_item_number}）</span>
                 {!isMeeting && (
                   <>
-                    <button onClick={() => onOpenEdit(r.id, r.exam_type_id)} className="px-1 text-[10px] text-[#1e40af] hover:underline">編集</button>
-                    <button onClick={() => onDelete(r.id)} className="px-1 text-[10px] text-red-500 hover:underline">削除</button>
+                    <button onClick={() => onOpenEdit(r.id, r.exam_type_id)} className="px-1 text-[11px] text-[#1e40af] hover:underline">編集</button>
+                    <button onClick={() => onDelete(r.id)} className="px-1 text-[11px] text-red-500 hover:underline">削除</button>
                   </>
                 )}
               </span>
@@ -3203,12 +3203,12 @@ function ExamRangeModal({
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/40 z-40" onClick={onClose} />
+      <div className="fixed inset-0 bg-black/40 z-40 animate-[fade-in_150ms_ease-out]" onClick={onClose} />
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col pointer-events-auto">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col pointer-events-auto animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]">
           <header className="px-6 py-4 border-b border-[#e5e7eb] flex items-center justify-between">
             <h2 className="font-bold text-[#1f2937] text-lg">{initialRangeId ? '試験範囲を編集' : '試験範囲を設定'}</h2>
-            <button onClick={onClose} className="w-8 h-8 rounded hover:bg-[#f3f4f6] text-[#6b7280]">✕</button>
+            <button onClick={onClose} className="w-8 h-8 rounded hover:bg-[#f3f4f6] text-[#6b7280] transition-[color] duration-150 ease-out active:scale-[0.97]">✕</button>
           </header>
           <div className="flex-1 overflow-y-auto p-6 space-y-5">
             {/* 対象の試験（マスタから選択） */}
@@ -3265,7 +3265,7 @@ function ExamRangeModal({
                           else if (n - rangeStart < rangeEnd - n) setRangeStart(n);
                           else setRangeEnd(n);
                         }}
-                        className={`px-2 py-1 text-[11px] rounded border transition-colors whitespace-nowrap ${
+                        className={`px-2 py-1 text-[11px] rounded border transition-[background-color,color,border-color] duration-150 ease-out whitespace-nowrap ${
                           inRange
                             ? 'bg-[#1e3a5f] text-white border-[#1e3a5f]'
                             : 'bg-white text-[#4b5563] border-[#e5e7eb] hover:bg-[#f3f4f6]'

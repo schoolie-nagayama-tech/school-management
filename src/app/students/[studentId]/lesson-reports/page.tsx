@@ -228,7 +228,7 @@ export default function StudentLessonReportsPage() {
                       <div className="text-xs text-text-body line-clamp-2 mb-2">
                         {r.review_comment || r.short_term_goal || '記述なし'}
                       </div>
-                      <div className="flex gap-1 flex-wrap text-[10px]">
+                      <div className="flex gap-1 flex-wrap text-[11px]">
                         {r.homework_completion_pct != null && (
                           <span className="px-1.5 py-0.5 bg-surface rounded">
                             宿題 <strong>{r.homework_completion_pct}%</strong>
@@ -267,7 +267,7 @@ export default function StudentLessonReportsPage() {
               <div className="flex gap-1 mb-2 flex-wrap">
                 <button
                   type="button"
-                  className={`px-2 py-1 text-xs rounded border ${
+                  className={`px-2 py-1 text-xs rounded border transition-[background-color,color,border-color] duration-150 ease-out active:scale-[0.97] ${
  subjectFilter === 'all'
  ? 'bg-info text-white border-info'
  : 'bg-white text-text-muted border-border-default'
@@ -280,7 +280,7 @@ export default function StudentLessonReportsPage() {
                   <button
                     key={s}
                     type="button"
-                    className={`px-2 py-1 text-xs rounded border ${
+                    className={`px-2 py-1 text-xs rounded border transition-[background-color,color,border-color] duration-150 ease-out active:scale-[0.97] ${
  subjectFilter === s
  ? 'bg-info text-white border-info'
  : 'bg-white text-text-muted border-border-default'

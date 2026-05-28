@@ -61,7 +61,7 @@ export default function StudentSchedulePage() {
           <div className="mt-4">
             <Link
               href="/students"
-              className="text-[var(--primary)] hover:underline"
+              className="text-[var(--primary)] hover:underline transition-[color] duration-150 ease-out"
             >
               生徒一覧へ
             </Link>
@@ -80,7 +80,7 @@ export default function StudentSchedulePage() {
         <div className="flex items-center gap-4">
           <Link
             href="/students"
-            className="text-sm text-[var(--paragraph)] hover:text-[var(--primary)]"
+            className="text-sm text-[var(--paragraph)] hover:text-[var(--primary)] transition-[color] duration-150 ease-out"
           >
             ← 生徒一覧
           </Link>
