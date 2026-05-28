@@ -151,6 +151,17 @@ const STATUS_COLORS: Record<string, { active: string }> = {
 };
 const STATUS_INACTIVE = 'bg-transparent text-text-faint border border-border-default hover:bg-surface-hover hover:text-text-muted';
 
+// 科目バッジ配色（提案書一覧・講習一覧と統一）
+const SUBJECT_BADGE_COLORS: Record<string, { bg: string; text: string }> = {
+  '英語': { bg: 'bg-blue-50', text: 'text-blue-700' },
+  '数学': { bg: 'bg-red-50', text: 'text-red-700' },
+  '算数': { bg: 'bg-red-50', text: 'text-red-700' },
+  '国語': { bg: 'bg-green-50', text: 'text-green-700' },
+  '理科': { bg: 'bg-amber-50', text: 'text-amber-700' },
+  '社会': { bg: 'bg-purple-50', text: 'text-purple-700' },
+};
+const DEFAULT_SUBJECT_BADGE = { bg: 'bg-gray-100', text: 'text-gray-600' };
+
 export default function ProposalEditor() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -927,9 +938,19 @@ export default function ProposalEditor() {
                     onClick={() => handleSelectTextbook(tb)}
                     className="w-full text-left pl-4 pr-12 py-3 bg-surface-raised rounded-lg border border-border-default hover:border-accent-ink/30 hover:bg-accent-ink-subtle active:scale-[0.99] transition-[background-color,border-color,transform] duration-150 ease-out"
                   >
-                    <div className="text-sm font-medium text-text-heading">{tb.name}</div>
+                    <div className="flex items-center gap-1.5">
+                      {tb.subject && (() => {
+                        const c = SUBJECT_BADGE_COLORS[tb.subject] ?? DEFAULT_SUBJECT_BADGE;
+                        return (
+                          <span className={`inline-flex px-1.5 py-0.5 text-[10px] font-bold rounded shrink-0 ${c.bg} ${c.text}`}>
+                            {tb.subject}
+                          </span>
+                        );
+                      })()}
+                      <span className="text-sm font-medium text-text-heading">{tb.name}</span>
+                    </div>
                     <div className="text-xs text-text-muted mt-0.5">
-                      {[tb.subject, tb.publisher, tb.grade].filter(Boolean).join(' / ')}
+                      {[tb.publisher, tb.grade].filter(Boolean).join(' / ')}
                     </div>
                   </button>
                   {/* お気に入りトグル。row 本体の onClick とは独立させたいので絶対配置の別ボタンにする */}
