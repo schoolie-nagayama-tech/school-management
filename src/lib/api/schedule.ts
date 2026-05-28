@@ -800,18 +800,22 @@ export async function generateWeeklySchedule(
     }
   }
 
-  // 振替済み枠 (transferred_out / transferred_in) の student-date-slot を退避。
-  // これらは「振替で別日に移動済み」なので、再生成でパターンから重複エントリを作らない。
-  // 退避しないと、振替元の枠を空きとみなして再生成→振替戻し時に生徒が2件になる (N-4)。
-  const { data: transferredRows } = await db
+  // 再生成スキップ対象の枠 (student-date-slot) を退避。
+  // DELETE は status IN ('scheduled','completed') のみ消すので、それ以外
+  // (transferred_out / transferred_in / cancelled) は行が残る。
+  // 残る行と同じ (school,date,slot,teacher,student) を INSERT すると UNIQUE 違反で
+  // 再生成が丸ごと失敗する（「スケジュールの取得に失敗」の原因）。
+  // また transferred は N-4（振替戻しで重複）対策でもスキップが必要。
+  // → 残存する全ステータスの枠を生成スキップする。
+  const { data: skipRows } = await db
     .from('schedule_entries')
     .select('entry_date, time_slot_id, student_id')
     .eq('school_id', schoolId)
     .gte('entry_date', fromStr)
     .lte('entry_date', toStr)
-    .in('status', ['transferred_out', 'transferred_in']);
+    .in('status', ['transferred_out', 'transferred_in', 'cancelled']);
   const transferredKeys = new Set(
-    ((transferredRows ?? []) as Array<{ entry_date: string; time_slot_id: string; student_id: string }>).map(
+    ((skipRows ?? []) as Array<{ entry_date: string; time_slot_id: string; student_id: string }>).map(
       (e) => `${e.entry_date}-${e.time_slot_id}-${e.student_id}`
     )
   );
