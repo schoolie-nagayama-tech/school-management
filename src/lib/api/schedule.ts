@@ -775,6 +775,31 @@ export async function generateWeeklySchedule(
     kind: 'regular' | 'koushu';
     formation: 'individual' | 'group';
   };
+  // 【重要】再生成は対象週を全削除→再INSERT する破壊的処理。
+  // 「このコマだけ」割当 (schedule_entries.teacher_id を直接更新するが
+  // パターンの teacher_id は NULL のまま) が再生成で消える事故を防ぐため、
+  // 削除前に既存エントリの「手動割当された teacher_id」を退避し、
+  // パターンが NULL の場合はそれを引き継ぐ。
+  //   キー: entry_date-time_slot_id-student_id (teacher は含めない＝同一コマ同一生徒で一意)
+  const { data: existingForCarry } = await db
+    .from('schedule_entries')
+    .select('entry_date, time_slot_id, student_id, teacher_id')
+    .eq('school_id', schoolId)
+    .gte('entry_date', fromStr)
+    .lte('entry_date', toStr)
+    .in('status', ['scheduled', 'completed']);
+  const manualTeacherCarry = new Map<string, string>();
+  for (const e of (existingForCarry ?? []) as Array<{
+    entry_date: string;
+    time_slot_id: string;
+    student_id: string;
+    teacher_id: string | null;
+  }>) {
+    if (e.teacher_id) {
+      manualTeacherCarry.set(`${e.entry_date}-${e.time_slot_id}-${e.student_id}`, e.teacher_id);
+    }
+  }
+
   // teacher_id が NULL のものは ハイフン+null で識別。NULL 同士のキー衝突を防ぐ
   const entryKey = (e: { entry_date: string; time_slot_id: string; teacher_id: string | null; student_id: string }) =>
     `${e.entry_date}-${e.time_slot_id}-${e.teacher_id ?? 'null'}-${e.student_id}`;
@@ -794,11 +819,14 @@ export async function generateWeeklySchedule(
       // 退塾予定日以降は生成しない
       const wd = withdrawalMap.get(p.student_id);
       if (wd && dateStr >= wd) continue;
+      // パターンの teacher_id が NULL でも、既存エントリで手動割当されていればそれを維持する
+      const carryKey = `${dateStr}-${p.time_slot_id}-${p.student_id}`;
+      const teacherId = p.teacher_id ?? manualTeacherCarry.get(carryKey) ?? null;
       const e: EntryRow = {
         school_id: schoolId,
         entry_date: dateStr,
         time_slot_id: p.time_slot_id,
-        teacher_id: p.teacher_id,
+        teacher_id: teacherId,
         student_id: p.student_id,
         subject_ids: p.subject_ids || [],
         seat_label: p.seat_label || null,
