@@ -24,12 +24,6 @@ function gradeLabel(grade: number): string {
   return `高${grade - 9}`;
 }
 
-function formatDate(d: string | null) {
-  if (!d) return '未設定';
-  const dt = new Date(d + 'T00:00:00');
-  return `${dt.getMonth() + 1}/${dt.getDate()}`;
-}
-
 interface KoushuPeriodCardProps {
   course: KoushuCourse;
   enrollments: KoushuEnrollment[];
@@ -86,10 +80,8 @@ export function KoushuPeriodCard({
           {course.name}
         </span>
 
-        {/* 期間 */}
-        <span className="text-xs text-[var(--paragraph)] shrink-0 hidden sm:block">
-          {formatDate(course.start_date)} 〜 {formatDate(course.end_date)}
-        </span>
+        {/* 期間欄は廃止：講習期間は course_prep_periods で全生徒統一のため、
+            コース（テンプレート）個別の期間は意味を持たない。 */}
 
         {/* 登録人数 */}
         <span className="flex items-center gap-1 text-xs text-[var(--paragraph)] shrink-0">
@@ -126,11 +118,6 @@ export function KoushuPeriodCard({
       {/* 展開: 生徒一覧 */}
       {expanded && (
         <div className="border-t border-gray-100 bg-gray-50">
-          {/* 期間（スマホ用） */}
-          <div className="px-4 pt-2 pb-1 text-xs text-[var(--paragraph)] sm:hidden">
-            期間: {formatDate(course.start_date)} 〜 {formatDate(course.end_date)}
-          </div>
-
           {enrollmentsLoading ? (
             <Loading size="md" />
           ) : (
