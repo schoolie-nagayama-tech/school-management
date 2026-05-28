@@ -800,6 +800,22 @@ export async function generateWeeklySchedule(
     }
   }
 
+  // 振替済み枠 (transferred_out / transferred_in) の student-date-slot を退避。
+  // これらは「振替で別日に移動済み」なので、再生成でパターンから重複エントリを作らない。
+  // 退避しないと、振替元の枠を空きとみなして再生成→振替戻し時に生徒が2件になる (N-4)。
+  const { data: transferredRows } = await db
+    .from('schedule_entries')
+    .select('entry_date, time_slot_id, student_id')
+    .eq('school_id', schoolId)
+    .gte('entry_date', fromStr)
+    .lte('entry_date', toStr)
+    .in('status', ['transferred_out', 'transferred_in']);
+  const transferredKeys = new Set(
+    ((transferredRows ?? []) as Array<{ entry_date: string; time_slot_id: string; student_id: string }>).map(
+      (e) => `${e.entry_date}-${e.time_slot_id}-${e.student_id}`
+    )
+  );
+
   // teacher_id が NULL のものは ハイフン+null で識別。NULL 同士のキー衝突を防ぐ
   const entryKey = (e: { entry_date: string; time_slot_id: string; teacher_id: string | null; student_id: string }) =>
     `${e.entry_date}-${e.time_slot_id}-${e.teacher_id ?? 'null'}-${e.student_id}`;
@@ -819,8 +835,10 @@ export async function generateWeeklySchedule(
       // 退塾予定日以降は生成しない
       const wd = withdrawalMap.get(p.student_id);
       if (wd && dateStr >= wd) continue;
-      // パターンの teacher_id が NULL でも、既存エントリで手動割当されていればそれを維持する
+      // 振替済みの枠は再生成しない（重複防止 N-4）
       const carryKey = `${dateStr}-${p.time_slot_id}-${p.student_id}`;
+      if (transferredKeys.has(carryKey)) continue;
+      // パターンの teacher_id が NULL でも、既存エントリで手動割当されていればそれを維持する
       const teacherId = p.teacher_id ?? manualTeacherCarry.get(carryKey) ?? null;
       const e: EntryRow = {
         school_id: schoolId,

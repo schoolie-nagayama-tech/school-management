@@ -287,7 +287,15 @@ export default function SchedulePage() {
         const expected = await getExpectedEntryKeysFromPatterns(schoolId, weekStartStr);
         const actual = new Set(
           list
-            .filter((e) => e.status === 'scheduled' || e.status === 'completed')
+            // transferred_out（振替元）も「枠は確保済み」とみなす。
+            // これを除外すると振替済みの枠が「空き」判定になり、再生成で重複エントリが
+            // 生まれ、振替を戻した時に同じ生徒が2件出るバグになる (N-4)。
+            .filter(
+              (e) =>
+                e.status === 'scheduled' ||
+                e.status === 'completed' ||
+                e.status === 'transferred_out'
+            )
             .map((e) => `${e.entry_date}-${e.time_slot_id}-${e.student_id}`)
         );
         const outOfSync =
