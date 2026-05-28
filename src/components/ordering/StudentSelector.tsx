@@ -100,7 +100,7 @@ export function StudentSelector({ students, value, onChange, disabled, showSampl
           onFocus={() => setIsOpen(true)}
           placeholder="生徒を検索..."
           disabled={disabled}
-          className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white placeholder-gray-400 focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f] transition-colors duration-150"
+          className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white placeholder-gray-400 focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f] transition-[border-color] duration-150 ease-out"
         />
       )}
       {isOpen && !disabled && (
@@ -108,7 +108,7 @@ export function StudentSelector({ students, value, onChange, disabled, showSampl
           {showSampleOption && (
             <button
               type="button"
-              className="w-full text-left px-3 py-1.5 text-sm hover:bg-purple-50 transition-colors flex items-center gap-2 border-b border-gray-100"
+              className="w-full text-left px-3 py-1.5 text-sm hover:bg-purple-50 transition-[background-color] duration-150 ease-out flex items-center gap-2 border-b border-gray-100"
               onClick={() => handleSelect(SAMPLE_VALUE)}
             >
               <span className="text-xs text-purple-500 w-6">--</span>
@@ -122,7 +122,7 @@ export function StudentSelector({ students, value, onChange, disabled, showSampl
               <button
                 key={s.id}
                 type="button"
-                className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 transition-colors flex items-center gap-2"
+                className="w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 transition-[background-color] duration-150 ease-out flex items-center gap-2"
                 onClick={() => handleSelect(s.id)}
               >
                 <span className="text-xs text-gray-400 w-6">{gradeLabel(s.grade)}</span>

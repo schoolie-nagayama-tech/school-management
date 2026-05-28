@@ -113,7 +113,7 @@ export function StockTransactionModal({
             理由
           </label>
           <textarea
-            className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg bg-white text-[#4b5563] placeholder-[#4b5563]/40 transition-colors duration-150 focus:ring-2 focus:ring-[#3b82f6] focus:border-[#3b82f6]"
+            className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg bg-white text-[#4b5563] placeholder-[#4b5563]/40 transition-[border-color] duration-150 ease-out focus:ring-2 focus:ring-[#3b82f6] focus:border-[#3b82f6]"
             rows={2}
             value={reason}
             onChange={(e) => setReason(e.target.value)}

@@ -384,10 +384,10 @@ export function TaskProgressWidget({ schoolIds, schoolId, schools: schoolsProp }
       <div className="flex items-center gap-2 mb-2">
         <GraduationCap className="w-3.5 h-3.5 text-indigo-500" />
         <span className="text-[11px] font-bold text-gray-600">講習進捗</span>
-        <span className="text-[10px] text-gray-400">{year}年 {seasonLabel}</span>
+        <span className="text-[11px] text-gray-400">{year}年 {seasonLabel}</span>
         <Link
           href="/courses/progress"
-          className="ml-auto flex items-center gap-0.5 text-[10px] text-blue-500 hover:text-blue-700 font-medium transition-colors"
+          className="ml-auto flex items-center gap-0.5 text-[11px] text-blue-500 hover:text-blue-700 font-medium transition-[color] duration-150 ease-out"
         >
           詳細
           <ArrowRight className="w-3 h-3" />
@@ -396,7 +396,7 @@ export function TaskProgressWidget({ schoolIds, schoolId, schools: schoolsProp }
       {allSchoolMetrics.map((m, idx) => (
         <div key={m.schoolId} className={idx > 0 ? 'mt-2.5 pt-2.5 border-t border-gray-100' : ''}>
           {allSchoolMetrics.length > 1 && (
-            <div className="text-[10px] font-bold text-gray-500 mb-1.5">{m.schoolName}</div>
+            <div className="text-[11px] font-bold text-gray-500 mb-1.5">{m.schoolName}</div>
           )}
           <div className="flex flex-wrap gap-2">
             {m.pcsStats && <CourseMetricChip label="PCS回収" value={m.pcsStats.completed} total={m.pcsStats.total} color="blue" />}
@@ -419,14 +419,14 @@ export function TaskProgressWidget({ schoolIds, schoolId, schools: schoolsProp }
           </div>
           {m.subjectTotals.subjects.length > 0 && (
             <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-              <span className="text-[10px] text-gray-400 mr-0.5">提案コマ:</span>
+              <span className="text-[11px] text-gray-400 mr-0.5">提案コマ:</span>
               {m.subjectTotals.subjects.map((s) => (
-                <span key={s.name} className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-gray-200 bg-gray-50 text-[10px]">
+                <span key={s.name} className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-gray-200 bg-gray-50 text-[11px]">
                   <span className="text-gray-500">{s.name}</span>
                   <span className="text-gray-800 font-bold">{s.total}</span>
                 </span>
               ))}
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-indigo-200 bg-indigo-50 text-[10px]">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-indigo-200 bg-indigo-50 text-[11px]">
                 <span className="text-indigo-600 font-medium">合計</span>
                 <span className="text-indigo-800 font-bold">{m.subjectTotals.grandTotal}</span>
               </span>
@@ -453,7 +453,7 @@ export function TaskProgressWidget({ schoolIds, schoolId, schools: schoolsProp }
           </div>
           <Link
             href="/tasks"
-            className="flex items-center gap-1 text-xs text-green-700 hover:text-green-900 font-medium transition-colors"
+            className="flex items-center gap-1 text-xs text-green-700 hover:text-green-900 font-medium transition-[color] duration-150 ease-out"
           >
             業務進捗を見る
             <ArrowRight className="w-3.5 h-3.5" />
@@ -487,13 +487,13 @@ export function TaskProgressWidget({ schoolIds, schoolId, schools: schoolsProp }
           <ListTodo className="w-4 h-4 text-gray-500" />
           <span className="text-sm font-bold text-gray-700">業務進捗</span>
           <span className="text-xs text-gray-400">{monthLabel}</span>
-          <span className="text-[10px] text-gray-400">
+          <span className="text-[11px] text-gray-400">
             残 {data.tasks.length}件
           </span>
         </button>
         <Link
           href="/tasks"
-          className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors"
+          className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 font-medium transition-[color] duration-150 ease-out"
         >
           詳細を見る
           <ArrowRight className="w-3.5 h-3.5" />
@@ -572,7 +572,7 @@ function CourseMetricChip({ label, value, total, color }: {
       <span className={`${colors.value} font-bold`}>{value}</span>
       <span className={colors.sub}>/</span>
       <span className={colors.label}>{total}</span>
-      <span className={`${colors.sub} text-[10px]`}>({pct}%)</span>
+      <span className={`${colors.sub} text-[11px]`}>({pct}%)</span>
     </div>
   );
 }

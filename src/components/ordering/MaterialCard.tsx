@@ -95,7 +95,7 @@ export function MaterialCard({
           <div className="relative">
             <button
               onClick={() => setShowMenu(!showMenu)}
-              className="p-1 text-gray-400 hover:text-gray-600 rounded transition-colors duration-150"
+              className="p-1 text-gray-400 hover:text-gray-600 rounded transition-[background-color,color] duration-150 ease-out"
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
@@ -153,20 +153,20 @@ export function MaterialCard({
         <button
           onClick={() => onStockIn(material)}
           disabled={!canEdit}
-          className="flex-1 text-xs py-1.5 rounded-lg border border-green-200 text-green-700 hover:bg-green-50 disabled:opacity-50 transition-colors duration-150"
+          className="flex-1 text-xs py-1.5 rounded-lg border border-green-200 text-green-700 hover:bg-green-50 disabled:opacity-50 transition-[background-color,color] duration-150 ease-out"
         >
           <Inbox className="inline h-3 w-3 mr-1" />入庫
         </button>
         <button
           onClick={() => onStockOut(material)}
           disabled={!canEdit}
-          className="flex-1 text-xs py-1.5 rounded-lg border border-orange-200 text-orange-700 hover:bg-orange-50 disabled:opacity-50 transition-colors duration-150"
+          className="flex-1 text-xs py-1.5 rounded-lg border border-orange-200 text-orange-700 hover:bg-orange-50 disabled:opacity-50 transition-[background-color,color] duration-150 ease-out"
         >
           <Send className="inline h-3 w-3 mr-1" />出庫
         </button>
         <button
           onClick={() => onHistory(material)}
-          className="flex-1 text-xs py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors duration-150"
+          className="flex-1 text-xs py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-[background-color,color] duration-150 ease-out"
         >
           <ClipboardList className="inline h-3 w-3 mr-1" />履歴
         </button>
@@ -229,7 +229,7 @@ export function MaterialCard({
               onChange={(e) => setNotes(e.target.value)}
               placeholder="メモ（任意）"
               disabled={isOrdering}
-              className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white placeholder-gray-400 focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f] transition-colors duration-150"
+              className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white placeholder-gray-400 focus:ring-2 focus:ring-[#1e3a5f]/20 focus:border-[#1e3a5f] transition-[background-color,color] duration-150 ease-out"
             />
           </div>
 
@@ -237,7 +237,7 @@ export function MaterialCard({
           <button
             onClick={handleOrder}
             disabled={!selectedStudentId || isOrdering}
-            className={`w-full py-2 rounded-lg font-medium text-sm transition-colors ${
+            className={`w-full py-2 rounded-lg font-medium text-sm transition-[background-color,color] duration-150 ease-out ${
               orderSuccess
                 ? 'bg-green-600 text-white'
                 : 'bg-[#1e3a5f] text-white hover:bg-[#162d4a] disabled:opacity-50 disabled:cursor-not-allowed'

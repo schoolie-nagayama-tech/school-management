@@ -383,7 +383,7 @@ export default function OrderingPage() {
         <div className="flex items-center gap-2">
           <Link
             href="/ordering/history"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-colors duration-150"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition-[background-color] duration-150 ease-out active:scale-[0.97]"
           >
             発注履歴
             {(() => {
@@ -393,17 +393,17 @@ export default function OrderingPage() {
               return (
                 <>
                   {unconfirmed > 0 && (
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-yellow-100 text-yellow-700" title="未確認">
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] font-bold bg-yellow-100 text-yellow-700" title="未確認">
                       未確認 {unconfirmed}
                     </span>
                   )}
                   {ordered > 0 && (
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700" title="発注済み">
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-700" title="発注済み">
                       発注済 {ordered}
                     </span>
                   )}
                   {delivered > 0 && (
-                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700" title="発送済み">
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] font-bold bg-green-100 text-green-700" title="発送済み">
                       発送済 {delivered}
                     </span>
                   )}

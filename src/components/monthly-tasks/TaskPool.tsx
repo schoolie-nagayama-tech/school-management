@@ -135,7 +135,7 @@ export function TaskPool({
       <div className="flex items-center">
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="flex-1 flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50 transition-colors duration-150"
+          className="flex-1 flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50 transition-[background-color] duration-150 ease-out"
         >
           {isExpanded ? (
             <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
@@ -145,7 +145,7 @@ export function TaskPool({
           <Layers className="w-3.5 h-3.5 text-gray-500" />
           <span className="text-xs font-bold text-gray-700">タスクプール</span>
           {poolItems.length > 0 && (
-            <span className="text-[10px] text-gray-400 ml-auto">{poolItems.length}件</span>
+            <span className="text-[11px] text-gray-400 ml-auto">{poolItems.length}件</span>
           )}
         </button>
         {/* ゴミ箱ドロップゾーン */}
@@ -173,13 +173,13 @@ export function TaskPool({
           {/* テンプレート選択（プールが空のときだけでなく常に表示） */}
           {canEdit && templates.length > 0 && (
             <div>
-              <p className="text-[10px] text-gray-400 mb-1.5">テンプレートを選択してプールに読み込み:</p>
+              <p className="text-[11px] text-gray-400 mb-1.5">テンプレートを選択してプールに読み込み:</p>
               <div className="flex flex-wrap gap-1">
                 {templates.map((tpl) => (
                   <button
                     key={tpl.id}
                     onClick={() => handleLoadTemplate(tpl)}
-                    className={`text-xs px-2 py-1 rounded transition-colors ${
+                    className={`text-xs px-2 py-1 rounded transition-[background-color,color] duration-150 ease-out ${
                       selectedTemplateId === tpl.id
                         ? 'bg-[#d32f2f] text-white'
                         : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
@@ -193,18 +193,18 @@ export function TaskPool({
             </div>
           )}
           {canEdit && templates.length === 0 && poolItems.length === 0 && (
-            <p className="text-[10px] text-gray-300 italic">テンプレートなし（テンプレートボタンから作成できます）</p>
+            <p className="text-[11px] text-gray-300 italic">テンプレートなし（テンプレートボタンから作成できます）</p>
           )}
 
           {/* プールアイテム */}
           {poolItems.length > 0 && (
             <div className="space-y-1 max-h-64 overflow-y-auto">
               <div className="flex items-center justify-between mb-1">
-                <p className="text-[10px] text-gray-400">タスクリストにD&D、または＋ボタンで日付を選んで追加</p>
+                <p className="text-[11px] text-gray-400">タスクリストにD&D、または＋ボタンで日付を選んで追加</p>
                 {canEdit && (
                   <button
                     onClick={() => { onSetPoolItems([]); setSelectedTemplateId(null); }}
-                    className="text-[10px] text-gray-400 hover:text-red-500"
+                    className="text-[11px] text-gray-400 hover:text-red-500"
                   >
                     クリア
                   </button>
@@ -305,7 +305,7 @@ export function TaskPool({
                       draggable={canEdit}
                       onDragStart={(e) => handleDragStart(e, item, idx)}
                       onDragEnd={handleDragEnd}
-                      className={`flex items-center gap-1 text-xs px-2 py-1.5 border rounded-lg transition-colors group ${
+                      className={`flex items-center gap-1 text-xs px-2 py-1.5 border rounded-lg transition-[background-color] duration-150 ease-out group ${
                         canEdit ? 'cursor-grab active:cursor-grabbing hover:shadow-sm hover:border-blue-300' : ''
                       } ${
                         item.category === 'business'
@@ -318,7 +318,7 @@ export function TaskPool({
                         item.category === 'business' ? 'bg-orange-400' : 'bg-purple-400'
                       }`} />
                       <span className="truncate flex-1">{item.task_name}</span>
-                      <span className="text-[10px] text-gray-400 flex-shrink-0">{item.day_of_month}日</span>
+                      <span className="text-[11px] text-gray-400 flex-shrink-0">{item.day_of_month}日</span>
                       {/* 編集ボタン */}
                       {canEdit && (
                         <button
@@ -356,7 +356,7 @@ export function TaskPool({
                   setSelectedTemplateId(null);
                 }
               }}
-              className="w-full text-xs py-1.5 bg-[#d32f2f] text-white rounded hover:bg-[#b71c1c] transition-colors duration-150"
+              className="w-full text-xs py-1.5 bg-[#d32f2f] text-white rounded hover:bg-[#b71c1c] transition-[background-color] duration-150 ease-out"
             >
               テンプレート日付で一括配置
             </button>

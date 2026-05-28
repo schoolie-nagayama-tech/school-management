@@ -244,7 +244,7 @@ export function TaskSummaryPanel({
       <div className="grid grid-cols-3 gap-3 flex-shrink-0">
         {/* Overall progress */}
         <div className="bg-white rounded-lg border border-gray-200 p-3">
-          <div className="text-[10px] text-gray-500 mb-1">全体進捗</div>
+          <div className="text-[11px] text-gray-500 mb-1">全体進捗</div>
           <div className="flex items-end gap-2">
             <span className="text-2xl font-bold text-gray-800">{stats.percent}%</span>
             <span className="text-xs text-gray-400 pb-1">
@@ -265,7 +265,7 @@ export function TaskSummaryPanel({
         <div className={`rounded-lg border p-3 ${
           stats.overdueCount > 0 ? 'bg-red-50 border-red-200' : 'bg-white border-gray-200'
         }`}>
-          <div className="text-[10px] text-gray-500 mb-1">超過タスク</div>
+          <div className="text-[11px] text-gray-500 mb-1">超過タスク</div>
           <div className="flex items-end gap-2">
             <span className={`text-2xl font-bold ${stats.overdueCount > 0 ? 'text-red-600' : 'text-gray-800'}`}>
               {stats.overdueCount}
@@ -274,7 +274,7 @@ export function TaskSummaryPanel({
           </div>
           {stats.overdueCount > 0 && (
             <>
-              <div className="mt-1 text-[10px] text-red-500 flex items-center gap-1">
+              <div className="mt-1 text-[11px] text-red-500 flex items-center gap-1">
                 <AlertTriangle className="w-3 h-3" />
                 早めに対応してください
               </div>
@@ -289,7 +289,7 @@ export function TaskSummaryPanel({
                       <div className="font-medium text-red-800 truncate">{task.task_name}</div>
                       <div className="text-red-500 mt-0.5 flex items-center justify-between">
                         <span>{formatDate(task.task_date)}</span>
-                        <span className="text-[10px]">
+                        <span className="text-[11px]">
                           未: {incompleteSchools.map((s) => s.name.slice(0, 3)).join(', ')}
                         </span>
                       </div>
@@ -303,7 +303,7 @@ export function TaskSummaryPanel({
 
         {/* School progress */}
         <div className="bg-white rounded-lg border border-gray-200 p-3">
-          <div className="text-[10px] text-gray-500 mb-1.5 flex items-center gap-1">
+          <div className="text-[11px] text-gray-500 mb-1.5 flex items-center gap-1">
             <Building2 className="w-3 h-3" />
             教室別進捗
           </div>
@@ -321,7 +321,7 @@ export function TaskSummaryPanel({
                     style={{ width: `${percent}%` }}
                   />
                 </div>
-                <span className="text-[10px] text-gray-400 w-10 text-right">{completed}/{total}</span>
+                <span className="text-[11px] text-gray-400 w-10 text-right">{completed}/{total}</span>
               </div>
             ))
           )}
@@ -333,7 +333,7 @@ export function TaskSummaryPanel({
         <div className="flex items-center gap-1.5 mb-2">
           <Clock className="w-3.5 h-3.5 text-gray-500" />
           <span className="text-xs font-bold text-gray-600">今後7日間のタスク</span>
-          <span className="text-[10px] text-gray-400">({upcomingTasks.length}件)</span>
+          <span className="text-[11px] text-gray-400">({upcomingTasks.length}件)</span>
           {googleCalendarId && upcomingTasks.length > 0 && !isTaskDragging && (
             <span className="text-[9px] text-gray-300 ml-auto">カレンダーにD&D可</span>
           )}
@@ -380,7 +380,7 @@ export function TaskSummaryPanel({
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => handleOpenAddEvent()}
-                className="flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] text-blue-600 hover:bg-blue-50 rounded transition-colors duration-150"
+                className="flex items-center gap-0.5 px-1.5 py-0.5 text-[11px] text-blue-600 hover:bg-blue-50 rounded transition-[background-color,color] duration-150 ease-out"
                 title="予定を追加"
               >
                 <Plus className="w-3 h-3" />
@@ -390,7 +390,7 @@ export function TaskSummaryPanel({
               <button onClick={() => setWeekOffset(w => w - 1)} className="px-1 py-0.5 text-gray-400 hover:text-gray-600 text-xs">◀</button>
               <button
                 onClick={() => setWeekOffset(0)}
-                className={`px-2 py-0.5 text-[10px] rounded transition-colors ${weekOffset === 0 ? 'bg-blue-100 text-blue-700 font-bold' : 'text-gray-500 hover:bg-gray-100'}`}
+                className={`px-2 py-0.5 text-[11px] rounded transition-[background-color,color] duration-150 ease-out ${weekOffset === 0 ? 'bg-blue-100 text-blue-700 font-bold' : 'text-gray-500 hover:bg-gray-100'}`}
               >
                 今週
               </button>
@@ -399,7 +399,7 @@ export function TaskSummaryPanel({
               <button
                 onClick={onRefreshCalendar}
                 disabled={calendarLoading}
-                className="text-gray-400 hover:text-gray-600 transition-colors duration-150"
+                className="text-gray-400 hover:text-gray-600 transition-[background-color,color] duration-150 ease-out"
                 title="更新"
               >
                 <RefreshCw className={`w-3 h-3 ${calendarLoading ? 'animate-spin' : ''}`} />
@@ -485,7 +485,7 @@ export function TaskSummaryPanel({
               <button
                 onClick={handleCreateEvent}
                 disabled={!newEventSummary.trim() || isCreatingEvent}
-                className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors ml-auto"
+                className="text-xs px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-[background-color,color] duration-150 ease-out ml-auto"
               >
                 {isCreatingEvent ? '追加中...' : '追加'}
               </button>
@@ -525,7 +525,7 @@ export function TaskSummaryPanel({
                 return (
                   <div
                     key={dateStr}
-                    className={`flex flex-col border-r last:border-r-0 transition-colors ${
+                    className={`flex flex-col border-r last:border-r-0 transition-[background-color] duration-150 ease-out ${
                       calDropDate === dateStr ? 'bg-green-50 ring-2 ring-inset ring-green-400' :
                       isToday ? 'bg-blue-50/50' : ''
                     }`}
@@ -535,7 +535,7 @@ export function TaskSummaryPanel({
                   >
                     {/* 曜日ヘッダー */}
                     <div
-                      className={`text-center py-1 border-b text-[10px] font-medium cursor-pointer hover:bg-gray-100 ${
+                      className={`text-center py-1 border-b text-[11px] font-medium cursor-pointer hover:bg-gray-100 ${
                         calDropDate === dateStr ? 'bg-green-100 text-green-700' :
                         isToday ? 'bg-blue-100 text-blue-700' :
                         isSun ? 'text-red-500 bg-gray-50' :
@@ -561,7 +561,7 @@ export function TaskSummaryPanel({
                         return (
                           <div
                             key={evt.id}
-                            className={`rounded px-1 py-0.5 text-[10px] leading-tight truncate cursor-default ${
+                            className={`rounded px-1 py-0.5 text-[11px] leading-tight truncate cursor-default ${
                               evt.allDay
                                 ? 'bg-blue-100 text-blue-800 font-medium'
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'

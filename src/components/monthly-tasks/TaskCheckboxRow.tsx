@@ -62,7 +62,7 @@ export function TaskCheckboxRow({
 
   return (
     <div
-      className={`group flex items-center gap-1.5 py-1 px-1 rounded text-xs transition-colors hover:bg-gray-50 ${
+      className={`group flex items-center gap-1.5 py-1 px-1 rounded text-xs transition-[background-color] duration-150 ease-out hover:bg-gray-50 ${
         allDone ? 'opacity-50' : ''
       }`}
     >
@@ -118,7 +118,7 @@ export function TaskCheckboxRow({
             {showDeleteConfirm ? (
               <button
                 onClick={() => { onDeleteTask(task.id); setShowDeleteConfirm(false); }}
-                className="flex-shrink-0 text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity text-[10px]"
+                className="flex-shrink-0 text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity text-[11px]"
               >
                 削除
               </button>
@@ -145,7 +145,7 @@ export function TaskCheckboxRow({
               key={school.id}
               onClick={() => canEdit && onToggleCheck(task.id, school.id, !isChecked)}
               disabled={!canEdit}
-              className={`w-7 h-6 flex items-center justify-center rounded text-[10px] font-medium transition-colors ${
+              className={`w-7 h-6 flex items-center justify-center rounded text-[11px] font-medium transition-[background-color,color] duration-150 ease-out ${
                 isChecked
                   ? 'bg-green-100 text-green-700 border border-green-300'
                   : 'bg-white text-gray-400 border border-gray-200 hover:border-gray-300'
@@ -173,14 +173,14 @@ export function TaskCheckboxRow({
           <div className="flex justify-end gap-1 mt-1">
             <button
               onClick={() => setShowNote(false)}
-              className="text-[10px] px-2 py-0.5 text-gray-500 hover:text-gray-700"
+              className="text-[11px] px-2 py-0.5 text-gray-500 hover:text-gray-700"
             >
               閉じる
             </button>
             {canEdit && (
               <button
                 onClick={handleNoteSubmit}
-                className="text-[10px] px-2 py-0.5 bg-blue-500 text-white rounded hover:bg-blue-600"
+                className="text-[11px] px-2 py-0.5 bg-blue-500 text-white rounded hover:bg-blue-600"
               >
                 保存
               </button>

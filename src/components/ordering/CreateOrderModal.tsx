@@ -236,7 +236,7 @@ export function CreateOrderModal({ isOpen, onClose, onCreated, schoolIds }: Crea
                   type="button"
                   onClick={addSlot}
                   disabled={studentIds.length >= 20}
-                  className="flex items-center gap-1 text-xs text-[#1e3a5f] hover:text-[#2d4a6f] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="flex items-center gap-1 text-xs text-[#1e3a5f] hover:text-[#2d4a6f] disabled:opacity-40 disabled:cursor-not-allowed transition-[color] duration-150 ease-out"
                 >
                   <UserPlus className="w-3.5 h-3.5" />
                   冊数を追加
@@ -276,7 +276,7 @@ export function CreateOrderModal({ isOpen, onClose, onCreated, schoolIds }: Crea
                         <button
                           type="button"
                           onClick={() => removeSlot(index)}
-                          className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors flex-shrink-0"
+                          className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-[color] duration-150 ease-out flex-shrink-0"
                           title="この行を削除"
                         >
                           <Minus className="w-4 h-4" />
@@ -292,7 +292,7 @@ export function CreateOrderModal({ isOpen, onClose, onCreated, schoolIds }: Crea
                 <button
                   type="button"
                   onClick={addSlot}
-                  className="mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 border border-dashed border-gray-300 rounded-lg text-xs text-gray-500 hover:border-[#1e3a5f] hover:text-[#1e3a5f] transition-colors"
+                  className="mt-2 w-full flex items-center justify-center gap-1.5 py-1.5 border border-dashed border-gray-300 rounded-lg text-xs text-gray-500 hover:border-[#1e3a5f] hover:text-[#1e3a5f] transition-[color] duration-150 ease-out"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   もう1冊追加

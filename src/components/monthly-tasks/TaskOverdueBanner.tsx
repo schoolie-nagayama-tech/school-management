@@ -29,13 +29,13 @@ export function TaskOverdueBanner() {
   return (
     <Link
       href="/tasks"
-      className="flex items-center gap-2 px-4 py-2.5 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors mb-4"
+      className="flex items-center gap-2 px-4 py-2.5 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-[background-color] duration-150 ease-out mb-4"
     >
       <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0" />
       <span className="text-xs font-medium text-red-700">
         期日超過の業務タスクが {overdueCount}件 あります
       </span>
-      <span className="text-[10px] text-red-500 ml-auto">確認する →</span>
+      <span className="text-[11px] text-red-500 ml-auto">確認する →</span>
     </Link>
   );
 }

@@ -152,7 +152,7 @@ export default function OrderHistoryPage() {
       <div className="flex items-center justify-between mb-6">
         <Link
           href="/ordering"
-          className="flex items-center gap-1.5 text-sm text-info hover:text-ink transition-colors duration-150"
+          className="flex items-center gap-1.5 text-sm text-info hover:text-ink transition-[color] duration-150 ease-out"
         >
           <ArrowLeft className="w-4 h-4" />
           教材・発注管理に戻る
@@ -184,7 +184,7 @@ export default function OrderHistoryPage() {
             <div className="mt-2 text-center">
               <button
                 onClick={() => setShowAllDistributed((v) => !v)}
-                className="text-xs text-gray-500 hover:text-ink transition-colors"
+                className="text-xs text-gray-500 hover:text-ink transition-[color] duration-150 ease-out"
               >
                 {showAllDistributed
                   ? '1ヶ月以上前の配布済みを隠す'

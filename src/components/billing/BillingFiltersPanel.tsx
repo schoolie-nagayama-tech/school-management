@@ -65,7 +65,7 @@ export function BillingFiltersPanel({
         {hasActiveFilters && (
           <button
             onClick={onReset}
-            className="text-sm text-[#4b5563] hover:text-[#3b82f6] underline transition-colors duration-150"
+            className="text-sm text-[#4b5563] hover:text-[#3b82f6] underline transition-[color] duration-150 ease-out"
           >
             リセット
           </button>
@@ -80,7 +80,7 @@ export function BillingFiltersPanel({
               検索: {filters.search}
               <button
                 onClick={() => onChange({ search: '' })}
-                className="hover:text-[#3b82f6] transition-colors duration-150"
+                className="hover:text-[#3b82f6] transition-[color] duration-150 ease-out"
               >
                 <X className="w-3 h-3" />
               </button>
@@ -91,7 +91,7 @@ export function BillingFiltersPanel({
               学年: {GRADE_LABELS[filters.grade]}
               <button
                 onClick={() => onChange({ grade: null })}
-                className="hover:text-[#3b82f6] transition-colors duration-150"
+                className="hover:text-[#3b82f6] transition-[color] duration-150 ease-out"
               >
                 <X className="w-3 h-3" />
               </button>

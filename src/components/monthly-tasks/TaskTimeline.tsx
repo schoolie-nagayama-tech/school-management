@@ -156,7 +156,7 @@ export function TaskTimeline({
           >
             {/* 日付ヘッダー */}
             <button
-              className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50/50 transition-colors duration-150"
+              className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-gray-50/50 transition-[background-color] duration-150 ease-out"
               onClick={() => toggleCollapse(date)}
             >
               {isCollapsed ? (
@@ -168,15 +168,15 @@ export function TaskTimeline({
                 {formatDateHeader(date)}
               </span>
               {isToday && (
-                <span className="text-[10px] px-1.5 py-0.5 bg-blue-500 text-white rounded font-bold">
+                <span className="text-[11px] px-1.5 py-0.5 bg-blue-500 text-white rounded font-bold">
                   TODAY
                 </span>
               )}
-              <span className="text-[10px] text-gray-400 ml-auto">
+              <span className="text-[11px] text-gray-400 ml-auto">
                 {completedCount}/{dateTasks.length}
               </span>
               {allDone && dateTasks.length > 0 && (
-                <span className="text-[10px] text-green-600 font-medium">完了</span>
+                <span className="text-[11px] text-green-600 font-medium">完了</span>
               )}
             </button>
 
@@ -187,7 +187,7 @@ export function TaskTimeline({
                 {businessTasks.length > 0 && (
                   <div>
                     {(businessTasks.length > 0 && courseTasks.length > 0) && (
-                      <div className="text-[10px] text-orange-600 font-medium mb-0.5 pl-1">業務</div>
+                      <div className="text-[11px] text-orange-600 font-medium mb-0.5 pl-1">業務</div>
                     )}
                     {businessTasks.map((task) => (
                       <TaskCheckboxRow
@@ -208,7 +208,7 @@ export function TaskTimeline({
                 {courseTasks.length > 0 && (
                   <div>
                     {(businessTasks.length > 0 && courseTasks.length > 0) && (
-                      <div className="text-[10px] text-purple-600 font-medium mb-0.5 pl-1 mt-1">講習</div>
+                      <div className="text-[11px] text-purple-600 font-medium mb-0.5 pl-1 mt-1">講習</div>
                     )}
                     {courseTasks.map((task) => (
                       <TaskCheckboxRow
@@ -233,7 +233,7 @@ export function TaskTimeline({
                         <select
                           value={newTaskCategory}
                           onChange={(e) => setNewTaskCategory(e.target.value as MonthlyTaskCategory)}
-                          className="text-[10px] px-1 py-1 border rounded bg-white"
+                          className="text-[11px] px-1 py-1 border rounded bg-white"
                         >
                           <option value="business">業務</option>
                           <option value="course">講習</option>
@@ -265,7 +265,7 @@ export function TaskTimeline({
                     ) : (
                       <button
                         onClick={() => setAddingForDate(date)}
-                        className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-gray-600 pl-1 mt-0.5"
+                        className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-gray-600 pl-1 mt-0.5"
                       >
                         <Plus className="w-3 h-3" />
                         タスク追加

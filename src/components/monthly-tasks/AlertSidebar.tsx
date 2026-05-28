@@ -94,7 +94,7 @@ export function AlertSidebar({ tasks, schools }: AlertSidebarProps) {
                   </div>
                   <div className="text-red-500 mt-0.5 flex items-center justify-between">
                     <span>{formatDate(task.task_date)}</span>
-                    <span className="text-[10px]">
+                    <span className="text-[11px]">
                       未: {incompleteSchools.map((s) => s.name.slice(0, 3)).join(', ')}
                     </span>
                   </div>

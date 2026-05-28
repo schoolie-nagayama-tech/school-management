@@ -115,7 +115,7 @@ export function TaskCalendar({
         {WEEKDAY_LABELS.map((label, i) => (
           <div
             key={label}
-            className={`text-center text-[10px] font-medium py-1 ${
+            className={`text-center text-[11px] font-medium py-1 ${
               i === 5 ? 'text-blue-500' : i === 6 ? 'text-red-500' : 'text-gray-500'
             }`}
           >
@@ -171,7 +171,7 @@ export function TaskCalendar({
                 <span
                   className={`text-xs font-medium leading-none ${
                     isToday
-                      ? 'bg-blue-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px]'
+                      ? 'bg-blue-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-[11px]'
                       : dow === 5
                       ? 'text-blue-600'
                       : dow === 6
@@ -225,7 +225,7 @@ export function TaskCalendar({
       </div>
 
       {/* 凡例 */}
-      <div className="flex items-center gap-3 mt-2 text-[10px] text-gray-500">
+      <div className="flex items-center gap-3 mt-2 text-[11px] text-gray-500">
         <div className="flex items-center gap-1">
           <div className="w-2 h-2 rounded-full bg-orange-400" />
           業務

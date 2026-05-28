@@ -125,7 +125,7 @@ export function VocabBookStockCard({ schoolIds, refreshKey }: VocabBookStockCard
                 setEditValue(String(material.stock_quantity));
                 setIsEditing(true);
               }}
-              className="p-0.5 text-gray-400 hover:text-blue-600 transition-colors"
+              className="p-0.5 text-gray-400 hover:text-blue-600 transition-[color] duration-150 ease-out"
               title="在庫数を調整"
             >
               <Pencil className="w-3.5 h-3.5" />

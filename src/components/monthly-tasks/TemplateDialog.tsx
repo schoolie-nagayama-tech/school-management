@@ -162,7 +162,7 @@ export function TemplateDialog({
                   <select
                     value={item.category}
                     onChange={(e) => updateItem(idx, { category: e.target.value as 'business' | 'course' })}
-                    className={`px-1.5 py-1 border rounded text-[10px] font-medium focus:outline-none focus:ring-1 focus:ring-blue-400 ${
+                    className={`px-1.5 py-1 border rounded text-[11px] font-medium focus:outline-none focus:ring-1 focus:ring-blue-400 ${
                       item.category === 'business'
                         ? 'border-orange-300 text-orange-600 bg-orange-50'
                         : 'border-purple-300 text-purple-600 bg-purple-50'
@@ -188,7 +188,7 @@ export function TemplateDialog({
           <div className="flex items-center justify-end gap-2 px-5 py-3 border-t flex-shrink-0">
             <button
               onClick={() => setEditingTemplate(null)}
-              className="text-xs px-3 py-1.5 text-gray-500 hover:text-gray-700 transition-colors duration-150"
+              className="text-xs px-3 py-1.5 text-gray-500 hover:text-gray-700 transition-[color] duration-150 ease-out"
               disabled={isSaving}
             >
               キャンセル
@@ -196,7 +196,7 @@ export function TemplateDialog({
             <button
               onClick={handleSaveEdit}
               disabled={isSaving || !editName.trim()}
-              className="flex items-center gap-1 text-xs px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors duration-150"
+              className="flex items-center gap-1 text-xs px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-[background-color] duration-150 ease-out"
             >
               <Save className="w-3.5 h-3.5" />
               {isSaving ? '保存中...' : '保存'}
@@ -228,7 +228,7 @@ export function TemplateDialog({
             ) : (
               <div className="space-y-2">
                 {templates.map((tpl) => (
-                  <div key={tpl.id} className="border rounded-lg hover:bg-gray-50 transition-colors duration-150">
+                  <div key={tpl.id} className="border rounded-lg hover:bg-gray-50 transition-[background-color] duration-150 ease-out">
                     <div className="flex items-center gap-2 p-2">
                       {/* 展開ボタン */}
                       <button
@@ -243,7 +243,7 @@ export function TemplateDialog({
                       </button>
                       <div className="flex-1 min-w-0">
                         <div className="text-xs font-medium truncate">{tpl.name}</div>
-                        <div className="text-[10px] text-gray-400">
+                        <div className="text-[11px] text-gray-400">
                           {tpl.template_data.length}件のタスク
                           {tpl.is_default && (
                             <span className="ml-1 px-1 py-0.5 bg-blue-100 text-blue-600 rounded">デフォルト</span>
@@ -264,7 +264,7 @@ export function TemplateDialog({
                         {confirmGenerateId === tpl.id ? (
                           <button
                             onClick={() => onGenerate(tpl.id)}
-                            className="text-[10px] px-2 py-1 bg-orange-500 text-white rounded hover:bg-orange-600"
+                            className="text-[11px] px-2 py-1 bg-orange-500 text-white rounded hover:bg-orange-600"
                           >
                             追加生成
                           </button>
@@ -280,7 +280,7 @@ export function TemplateDialog({
                         {confirmDeleteId === tpl.id ? (
                           <button
                             onClick={() => { onDelete(tpl.id); setConfirmDeleteId(null); }}
-                            className="text-[10px] px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                            className="text-[11px] px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600"
                           >
                             削除
                           </button>

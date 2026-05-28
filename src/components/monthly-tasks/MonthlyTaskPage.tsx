@@ -507,17 +507,17 @@ export function MonthlyTaskPage() {
       <div className="flex items-center gap-3 pb-3 border-b flex-shrink-0">
         {/* 月選択 */}
         <div className="flex items-center gap-1">
-          <button onClick={goToPrevMonth} className="p-1.5 rounded hover:bg-gray-100 transition-colors duration-150">
+          <button onClick={goToPrevMonth} className="p-1.5 rounded hover:bg-gray-100 transition-[background-color] duration-150 ease-out">
             <ChevronLeft className="w-5 h-5" />
           </button>
           <span className="text-lg font-bold min-w-[130px] text-center">
             {year}年{month}月
           </span>
-          <button onClick={goToNextMonth} className="p-1.5 rounded hover:bg-gray-100 transition-colors duration-150">
+          <button onClick={goToNextMonth} className="p-1.5 rounded hover:bg-gray-100 transition-[background-color] duration-150 ease-out">
             <ChevronRight className="w-5 h-5" />
           </button>
           {!isCurrentMonth && (
-            <button onClick={goToCurrentMonth} className="ml-1 px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-colors duration-150">
+            <button onClick={goToCurrentMonth} className="ml-1 px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded transition-[background-color] duration-150 ease-out">
               今月
             </button>
           )}
@@ -549,7 +549,7 @@ export function MonthlyTaskPage() {
             <button
               onClick={handleSyncCourse}
               disabled={isSyncing}
-              className="flex items-center gap-1 px-3 py-1.5 text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 rounded transition-colors disabled:opacity-50"
+              className="flex items-center gap-1 px-3 py-1.5 text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 rounded transition-[background-color] duration-150 ease-out disabled:opacity-50"
             >
               <Download className="w-3.5 h-3.5" />
               {isSyncing ? '取込中...' : '講習取込'}
@@ -557,7 +557,7 @@ export function MonthlyTaskPage() {
             {courseTaskCount > 0 && (
               <button
                 onClick={handleDeleteCourseTasks}
-                className="flex items-center gap-1 px-3 py-1.5 text-xs bg-red-50 text-red-600 hover:bg-red-100 rounded transition-colors duration-150"
+                className="flex items-center gap-1 px-3 py-1.5 text-xs bg-red-50 text-red-600 hover:bg-red-100 rounded transition-[background-color] duration-150 ease-out"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 講習削除({courseTaskCount})
@@ -565,7 +565,7 @@ export function MonthlyTaskPage() {
             )}
             <button
               onClick={handleOpenTemplateDialog}
-              className="flex items-center gap-1 px-3 py-1.5 text-xs bg-gray-50 text-gray-700 hover:bg-gray-100 rounded transition-colors duration-150"
+              className="flex items-center gap-1 px-3 py-1.5 text-xs bg-gray-50 text-gray-700 hover:bg-gray-100 rounded transition-[background-color] duration-150 ease-out"
             >
               <Settings className="w-3.5 h-3.5" />
               テンプレート

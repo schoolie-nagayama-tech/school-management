@@ -105,7 +105,7 @@ export function MaterialForm({
             説明
           </label>
           <textarea
-            className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg bg-white text-[#4b5563] placeholder-[#4b5563]/40 transition-colors duration-150 focus:ring-2 focus:ring-[#3b82f6] focus:border-[#3b82f6]"
+            className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg bg-white text-[#4b5563] placeholder-[#4b5563]/40 transition-[border-color] duration-150 ease-out focus:ring-2 focus:ring-[#3b82f6] focus:border-[#3b82f6]"
             rows={2}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -134,7 +134,7 @@ export function MaterialForm({
                 <button
                   key={suggestion}
                   type="button"
-                  className="w-full text-left px-3 py-2 text-sm text-[#4b5563] hover:bg-[#f3f4f6] transition-colors duration-150"
+                  className="w-full text-left px-3 py-2 text-sm text-[#4b5563] hover:bg-[#f3f4f6] transition-[border-color] duration-150 ease-out"
                   onClick={() => {
                     setCategory(suggestion);
                     setShowSuggestions(false);

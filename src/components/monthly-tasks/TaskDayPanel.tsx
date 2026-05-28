@@ -105,7 +105,7 @@ export function TaskDayPanel({
           </span>
         </div>
         {dayTasks.length > 0 && (
-          <div className="text-[10px] text-gray-500 mt-1">
+          <div className="text-[11px] text-gray-500 mt-1">
             {completedCount}/{dayTasks.length}件完了
           </div>
         )}
@@ -123,7 +123,7 @@ export function TaskDayPanel({
             {/* 業務系 */}
             {businessTasks.length > 0 && (
               <div>
-                <div className="text-[10px] font-medium text-orange-600 mb-1 flex items-center gap-1">
+                <div className="text-[11px] font-medium text-orange-600 mb-1 flex items-center gap-1">
                   <div className="w-2 h-2 rounded-full bg-orange-400" />
                   業務 ({businessTasks.length})
                 </div>
@@ -153,7 +153,7 @@ export function TaskDayPanel({
             {/* 講習系 */}
             {courseTasks.length > 0 && (
               <div>
-                <div className="text-[10px] font-medium text-purple-600 mb-1 flex items-center gap-1">
+                <div className="text-[11px] font-medium text-purple-600 mb-1 flex items-center gap-1">
                   <div className="w-2 h-2 rounded-full bg-purple-400" />
                   講習 ({courseTasks.length})
                 </div>
@@ -190,7 +190,7 @@ export function TaskDayPanel({
                 <select
                   value={newCategory}
                   onChange={(e) => setNewCategory(e.target.value as MonthlyTaskCategory)}
-                  className="text-[10px] px-1 py-1 border rounded bg-white"
+                  className="text-[11px] px-1 py-1 border rounded bg-white"
                 >
                   <option value="business">業務</option>
                   <option value="course">講習</option>

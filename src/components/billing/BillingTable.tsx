@@ -448,7 +448,7 @@ export function BillingTable({
                           {onBillingChange && isManagerOrAbove ? (
                             <>
                               <div
-                                className="flex-1 flex items-center justify-center gap-1 cursor-pointer hover:bg-white/10 rounded px-1 py-0.5 transition-colors duration-150"
+                                className="flex-1 flex items-center justify-center gap-1 cursor-pointer hover:bg-white/10 rounded px-1 py-0.5 transition-[background-color] duration-150 ease-out"
                                 onClick={() => {
                                   setEditingItemId(item.id);
                                   setEditingName(item.name);
@@ -459,7 +459,7 @@ export function BillingTable({
                                 <Pencil className="h-3 w-3 text-white/40 opacity-0 group-hover:opacity-100 transition-opacity duration-150" />
                               </div>
                               <button
-                                className="text-[10px] text-red-300 hover:text-red-200 opacity-0 group-hover:opacity-100 transition-opacity px-1 py-0.5 rounded hover:bg-red-500/20"
+                                className="text-[11px] text-red-300 hover:text-red-200 opacity-0 group-hover:opacity-100 transition-opacity px-1 py-0.5 rounded hover:bg-red-500/20"
                                 onClick={async (e) => {
                                   e.stopPropagation();
                                   if (
@@ -505,7 +505,7 @@ export function BillingTable({
                           <div className="flex items-center gap-1">
                             {showAutoFillButton && (
                               <button
-                                className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-400/30 text-amber-200 hover:bg-amber-400/50 transition-colors duration-150 disabled:opacity-50"
+                                className="text-[11px] px-1.5 py-0.5 rounded-full bg-amber-400/30 text-amber-200 hover:bg-amber-400/50 transition-[background-color] duration-150 ease-out disabled:opacity-50"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   if (billingPeriodId) {
@@ -522,7 +522,7 @@ export function BillingTable({
                             )}
                             {item.linked_form_type && !isTeacher && billingPeriodId && schoolIds && (
                               <button
-                                className="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-400/30 text-cyan-200 hover:bg-cyan-400/50 transition-colors duration-150 disabled:opacity-50"
+                                className="text-[11px] px-1.5 py-0.5 rounded-full bg-cyan-400/30 text-cyan-200 hover:bg-cyan-400/50 transition-[background-color] duration-150 ease-out disabled:opacity-50"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleFormSync(item.id);
@@ -535,7 +535,7 @@ export function BillingTable({
                             )}
                             {item.source_type === 'order' && !isTeacher && periodStartDate && schoolIds && (
                               <button
-                                className="text-[10px] px-1.5 py-0.5 rounded-full bg-purple-400/30 text-purple-200 hover:bg-purple-400/50 transition-colors duration-150"
+                                className="text-[11px] px-1.5 py-0.5 rounded-full bg-purple-400/30 text-purple-200 hover:bg-purple-400/50 transition-[background-color] duration-150 ease-out"
                                 title="発注管理から同期"
                                 onClick={async (e) => {
                                   e.stopPropagation();
@@ -579,14 +579,14 @@ export function BillingTable({
                   {summary.valueType === 'number' ? (
                     <div className="flex flex-col items-center">
                       <span className="text-[11px] font-bold text-[#1e3a5f]">{summary.numberHasValueCount}名</span>
-                      <span className={`text-[10px] ${summary.numberBilledCount === summary.numberHasValueCount && summary.numberHasValueCount > 0 ? 'text-green-600' : 'text-orange-500'}`}>
+                      <span className={`text-[11px] ${summary.numberBilledCount === summary.numberHasValueCount && summary.numberHasValueCount > 0 ? 'text-green-600' : 'text-orange-500'}`}>
                         計上 {summary.numberBilledCount}/{summary.numberHasValueCount}
                       </span>
                     </div>
                   ) : summary.valueType === 'text' ? (
                     <div className="flex flex-col items-center">
                       <span className="text-[11px] font-bold text-[#1e3a5f]">{summary.textHasValueCount}名</span>
-                      <span className={`text-[10px] ${summary.textBilledCount === summary.textHasValueCount && summary.textHasValueCount > 0 ? 'text-green-600' : 'text-orange-500'}`}>
+                      <span className={`text-[11px] ${summary.textBilledCount === summary.textHasValueCount && summary.textHasValueCount > 0 ? 'text-green-600' : 'text-orange-500'}`}>
                         計上 {summary.textBilledCount}/{summary.textHasValueCount}
                       </span>
                     </div>
@@ -596,7 +596,7 @@ export function BillingTable({
                         {summary.billedCount}/{summary.totalStudents}
                       </span>
                       {summary.hasQuantityData && (
-                        <span className="text-[10px] text-[#4b5563]">
+                        <span className="text-[11px] text-[#4b5563]">
                           計{summary.quantitySum}コマ
                         </span>
                       )}
@@ -612,13 +612,13 @@ export function BillingTable({
               return (
                 <tr
                   key={student.id}
-                  className={`border-b border-[#e5e7eb] hover:bg-[#e8f0fe] transition-colors duration-150 ${rowBg}`}
+                  className={`border-b border-[#e5e7eb] hover:bg-[#e8f0fe] transition-[background-color] duration-150 ease-out ${rowBg}`}
                 >
                   <td className={`px-3 py-2 text-xs text-[#4b5563] border-r border-[#e5e7eb] sticky left-0 ${rowBg} z-20 w-[60px]`}>
                     {GRADE_LABELS[student.grade] || student.grade}
                   </td>
                   <td
-                    className={`px-3 py-2 text-xs text-[#1f2937] border-r border-[#e5e7eb] sticky left-[60px] ${rowBg} z-20 w-[160px] whitespace-nowrap transition-colors duration-150 ${
+                    className={`px-3 py-2 text-xs text-[#1f2937] border-r border-[#e5e7eb] sticky left-[60px] ${rowBg} z-20 w-[160px] whitespace-nowrap transition-[background-color] duration-150 ease-out ${
                       onStudentClick ? 'cursor-pointer hover:text-[#3b82f6]' : ''
                     }`}
                     style={{ boxShadow: '4px 0 6px -2px rgba(0,0,0,0.08)' }}
@@ -648,7 +648,7 @@ export function BillingTable({
                         return (
                           <td
                             key={item.id}
-                            className={`px-1 py-1 text-center border-r border-[#e5e7eb] transition-colors duration-150 ${bgClass} ${
+                            className={`px-1 py-1 text-center border-r border-[#e5e7eb] transition-[background-color] duration-150 ease-out ${bgClass} ${
                               isUpdating ? 'opacity-50' : ''
                             } ${canEditCell && onBillingChange ? 'cursor-pointer hover:bg-blue-50' : ''}`}
                             onClick={() => {
@@ -667,7 +667,7 @@ export function BillingTable({
                                 </span>
                                 {canEditCell && onBillingChange && hasValue && (
                                   <button
-                                    className={`text-[11px] leading-none rounded-md px-2 py-0.5 font-medium transition-colors ${
+                                    className={`text-[11px] leading-none rounded-md px-2 py-0.5 font-medium transition-[background-color,color] duration-150 ease-out ${
                                       isBilled
                                         ? 'bg-green-500 text-white hover:bg-green-600'
                                         : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
@@ -691,7 +691,7 @@ export function BillingTable({
                       return (
                         <td
                           key={item.id}
-                          className={`px-1 py-1 text-center border-r border-[#e5e7eb] transition-colors duration-150 relative ${bgClass} ${
+                          className={`px-1 py-1 text-center border-r border-[#e5e7eb] transition-[background-color] duration-150 ease-out relative ${bgClass} ${
                             isUpdating ? 'opacity-50' : ''
                           } ${canEditCell && onBillingChange && !isEditingThis ? 'cursor-pointer hover:bg-blue-50' : ''}`}
                           onClick={() => {
@@ -728,7 +728,7 @@ export function BillingTable({
                               </span>
                               {canEditCell && onBillingChange && hasValue && (
                                 <button
-                                  className={`text-[11px] leading-none rounded-md px-2 py-0.5 font-medium transition-colors ${
+                                  className={`text-[11px] leading-none rounded-md px-2 py-0.5 font-medium transition-[background-color,color] duration-150 ease-out ${
                                     isBilled
                                       ? 'bg-green-500 text-white hover:bg-green-600'
                                       : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
@@ -760,7 +760,7 @@ export function BillingTable({
                       return (
                         <td
                           key={item.id}
-                          className={`px-1 py-1 text-center border-r border-[#e5e7eb] transition-colors duration-150 relative ${bgClass} ${
+                          className={`px-1 py-1 text-center border-r border-[#e5e7eb] transition-[background-color] duration-150 ease-out relative ${bgClass} ${
                             isUpdating ? 'opacity-50' : ''
                           } ${canEditCell && onBillingChange && !isEditingThis ? 'cursor-pointer hover:bg-blue-50' : ''}`}
                           onClick={() => {
@@ -799,7 +799,7 @@ export function BillingTable({
                               {/* 計上ボタン */}
                               {canEditCell && onBillingChange && hasValue && (
                                 <button
-                                  className={`text-[11px] leading-none rounded-md px-2 py-0.5 font-medium transition-colors ${
+                                  className={`text-[11px] leading-none rounded-md px-2 py-0.5 font-medium transition-[background-color,color] duration-150 ease-out ${
                                     isBilled
                                       ? 'bg-green-500 text-white hover:bg-green-600'
                                       : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
@@ -826,7 +826,7 @@ export function BillingTable({
                     return (
                       <td
                         key={item.id}
-                        className={`px-3 py-2 text-center border-r border-[#e5e7eb] transition-colors duration-150 ${
+                        className={`px-3 py-2 text-center border-r border-[#e5e7eb] transition-[background-color] duration-150 ease-out ${
                           isBilled ? 'bg-green-100' : ''
                         } ${
                           isUpdating

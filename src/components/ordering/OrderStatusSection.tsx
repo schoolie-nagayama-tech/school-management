@@ -115,7 +115,7 @@ export function OrderStatusSection({
               e.stopPropagation();
               handleBulkAction();
             }}
-            className={`text-xs px-3 py-1.5 rounded-md font-medium transition-colors ${
+            className={`text-xs px-3 py-1.5 rounded-md font-medium transition-[background-color,color] duration-150 ease-out ${
               bulkLoading
                 ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                 : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300 cursor-pointer'
@@ -280,7 +280,7 @@ function UnconfirmedSection({
         </thead>
         <tbody>
           {rows.map((order) => (
-            <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-150">
+            <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50 transition-[background-color,color] duration-150 ease-out">
               <td className="py-2 px-4 text-sm text-gray-900">{order.material?.name || '-'}</td>
               <td className="py-2 px-4 text-sm text-gray-600">{getSchoolName(order)}</td>
               <td className="py-2 px-4 text-sm text-gray-600">
@@ -298,7 +298,7 @@ function UnconfirmedSection({
                   <td className="py-2 px-4 text-center">
                     <button
                       onClick={() => { if (confirm('この発注を削除しますか？')) onDelete(order.id); }}
-                      className="text-xs text-gray-400 hover:text-red-600 transition-colors duration-150"
+                      className="text-xs text-gray-400 hover:text-red-600 transition-[background-color,color] duration-150 ease-out"
                     >
                       削除
                     </button>
@@ -343,7 +343,7 @@ function OrderedSection({
             {schoolName}
           </div>
           {schoolOrders.map((order) => (
-            <div key={order.id} className="flex items-center justify-between px-4 py-1.5 pl-8 hover:bg-gray-50 transition-colors duration-150">
+            <div key={order.id} className="flex items-center justify-between px-4 py-1.5 pl-8 hover:bg-gray-50 transition-[background-color,color] duration-150 ease-out">
               <div className="flex items-center gap-4 flex-1 min-w-0">
                 <span className="text-sm text-gray-900 truncate">{order.material?.name || '-'}</span>
                 <span className="text-sm text-gray-600 whitespace-nowrap">{order.quantity}冊</span>
@@ -359,7 +359,7 @@ function OrderedSection({
                   <StatusDropdown order={order} changingId={changingId} onStatusChange={onStatusChange} />
                   <button
                     onClick={() => { if (confirm('この発注を削除しますか？')) onDelete(order.id); }}
-                    className="text-xs text-gray-400 hover:text-red-600 transition-colors duration-150"
+                    className="text-xs text-gray-400 hover:text-red-600 transition-[background-color,color] duration-150 ease-out"
                   >
                     削除
                   </button>
@@ -421,7 +421,7 @@ function DeliveredSection({
             const grade = parseInt(parts[1], 10);
             const gradeLabel = GRADE_LABELS[grade] || '';
             return studentOrders.map((order) => (
-              <div key={order.id} className="flex items-center justify-between px-4 py-1.5 pl-8 hover:bg-gray-50 transition-colors duration-150">
+              <div key={order.id} className="flex items-center justify-between px-4 py-1.5 pl-8 hover:bg-gray-50 transition-[background-color,color] duration-150 ease-out">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   <span className="text-sm text-gray-900 whitespace-nowrap">
                     {name}{gradeLabel ? `（${gradeLabel}）` : ''}
@@ -475,7 +475,7 @@ function DistributedSection({
             {schoolName}
           </div>
           {schoolOrders.map((order) => (
-            <div key={order.id} className="flex items-center justify-between px-4 py-1.5 pl-8 hover:bg-gray-50 transition-colors duration-150">
+            <div key={order.id} className="flex items-center justify-between px-4 py-1.5 pl-8 hover:bg-gray-50 transition-[background-color,color] duration-150 ease-out">
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <span className="text-xs text-gray-400 whitespace-nowrap">
                   {formatDate(order.distributed_at || order.created_at)}
