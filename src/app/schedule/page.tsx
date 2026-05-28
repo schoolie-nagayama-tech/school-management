@@ -1516,15 +1516,15 @@ export default function SchedulePage() {
           このコマだけ / 毎週このコマ のワンクリック選択。 */}
       {pendingAssignment && (
         <div
-          className="fixed left-1/2 bottom-6 -translate-x-1/2 z-50 print:hidden
-                     bg-white border border-gray-200 rounded-2xl shadow-2xl px-4 py-3
-                     flex items-center gap-3 max-w-[min(640px,calc(100%-1.5rem))]
-                     animate-in fade-in slide-in-from-bottom-3 duration-200"
+          className="assign-bar-enter fixed left-1/2 bottom-6 -translate-x-1/2 z-50 print:hidden
+                     bg-white border-2 border-info/40 rounded-2xl px-4 py-3
+                     flex items-center gap-3 max-w-[min(640px,calc(100%-1.5rem))]"
+          style={{ boxShadow: '0 20px 40px -12px rgba(0,0,0,0.35)' }}
           role="dialog"
           aria-label="担当の確定"
         >
           <div className="min-w-0 flex-1">
-            <div className="text-[11px] text-gray-500">担当を割当しますか？</div>
+            <div className="text-[11px] text-info font-semibold">担当を割当しますか？</div>
             <div className="text-sm font-semibold text-gray-800 truncate">
               {pendingAssignment.studentName}
               <span className="mx-1.5 text-gray-300">→</span>
