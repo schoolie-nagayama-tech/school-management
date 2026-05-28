@@ -1186,20 +1186,40 @@ export default function SchedulePage() {
     );
   }
 
-  // 右上に置く見本誘導ボタン（講習機能・報告書）
-  // 現状ナビメニューには露出していないが、関係者にデモする用途の常設リンク。
-  // 個別の報告書 URL はサンプルとして任意の scheduleEntryId を選ぶ動線が無いため、
-  // 「承認待ち一覧」を入口にしてそこから1件選んで開く設計とする。
+  // 右上の入口ボタン（講習モード切替・報告書）
+  // 「講習」は座席表内の講習モードを ON/OFF するトグル。
+  //  - 講習期間あり: 最初の期間を選択して座席表を講習モードに（選択中なら解除）
+  //  - 講習期間なし: 講習管理ページ (/schedule/koushu) へ誘導してまず期間を作ってもらう
+  const isKoushuMode = !!selectedKoushu;
   const headerActions = (
     <div className="flex items-center gap-2">
-      <Link
-        href="/schedule/koushu"
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-border-default rounded-lg bg-white text-text-body hover:bg-surface hover:border-info/40 hover:text-info transition-colors"
-        title="講習スケジュールを開く（デモ用）"
+      <button
+        type="button"
+        onClick={() => {
+          if (koushuList.length === 0) {
+            // 講習期間が未設定なら管理画面で作ってもらう
+            router.push('/schedule/koushu');
+            return;
+          }
+          // トグル：選択中なら解除、未選択なら最初の期間で講習モードに入る
+          handleKoushuSelect(isKoushuMode ? null : koushuList[0]);
+        }}
+        className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-lg transition-colors ${
+          isKoushuMode
+            ? 'border-info bg-info text-white hover:bg-info/90'
+            : 'border-border-default bg-white text-text-body hover:bg-surface hover:border-info/40 hover:text-info'
+        }`}
+        title={
+          koushuList.length === 0
+            ? '講習期間が未設定です。講習管理ページで作成します'
+            : isKoushuMode
+              ? '講習モードを解除して通常表示に戻す'
+              : '座席表を講習モードに切り替える'
+        }
       >
         <GraduationCap className="w-3.5 h-3.5" />
-        講習
-      </Link>
+        {isKoushuMode ? '講習モード中' : '講習'}
+      </button>
       <Link
         href="/lesson-reports/pending"
         className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-border-default rounded-lg bg-white text-text-body hover:bg-surface hover:border-info/40 hover:text-info transition-colors"
