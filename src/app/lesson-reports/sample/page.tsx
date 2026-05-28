@@ -11,8 +11,10 @@
  * 実際の入力フォームは /lesson-reports/[scheduleEntryId]。
  */
 
+import { useState } from 'react';
 import { AdminLayout } from '@/components/layouts';
 import { Card, CardContent } from '@/components/ui';
+import { Button } from '@/components/ui';
 import Link from 'next/link';
 import {
   ChevronLeft,
@@ -22,6 +24,12 @@ import {
   MessageSquareText,
   CalendarDays,
   GraduationCap,
+  Eye,
+  Pencil,
+  Plus,
+  X,
+  Save,
+  Send,
 } from 'lucide-react';
 
 // ─── ダミーデータ（固定見本） ───────────────────────────
@@ -99,6 +107,9 @@ function SectionTitle({ icon, children }: { icon: React.ReactNode; children: Rea
 const W = (d: string) => ['日', '月', '火', '水', '木', '金', '土'][new Date(d + 'T12:00:00').getDay()];
 
 export default function LessonReportSamplePage() {
+  // 表示モード: preview=完成イメージ（保護者が見る形）, form=入力画面（講師が書く形）
+  const [mode, setMode] = useState<'preview' | 'form'>('preview');
+
   return (
     <AdminLayout headerTitle="授業報告書（見本）">
       <div className="max-w-2xl mx-auto p-4 space-y-4">
@@ -113,8 +124,38 @@ export default function LessonReportSamplePage() {
           </Link>
         </div>
         <div className="rounded-lg bg-info-subtle border border-info/30 px-3 py-2 text-xs text-info">
-          これは授業報告書の<strong>見本（ダミーデータ）</strong>です。実際は講師が授業ごとにこの内容を入力し、室長が承認して保護者に公開します。
+          これは授業報告書の<strong>見本（ダミーデータ）</strong>です。実際は講師が授業ごとに「入力画面」で記入し、室長が承認して保護者に「完成イメージ」が公開されます。
         </div>
+
+        {/* モード切替タブ */}
+        <div className="flex gap-1 p-1 bg-surface rounded-lg border border-border-subtle w-fit">
+          <button
+            type="button"
+            onClick={() => setMode('preview')}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+              mode === 'preview' ? 'bg-white shadow-sm text-info' : 'text-text-muted hover:text-text-body'
+            }`}
+          >
+            <Eye className="w-3.5 h-3.5" />
+            完成イメージ
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('form')}
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+              mode === 'form' ? 'bg-white shadow-sm text-info' : 'text-text-muted hover:text-text-body'
+            }`}
+          >
+            <Pencil className="w-3.5 h-3.5" />
+            入力画面
+          </button>
+        </div>
+
+        {mode === 'form' ? (
+          <SampleForm />
+        ) : (
+        <>
+        {/* 完成イメージ（保護者が見る形） */}
 
         {/* ヘッダー：生徒・講師・日付 */}
         <Card>
@@ -309,7 +350,232 @@ export default function LessonReportSamplePage() {
             </div>
           </CardContent>
         </Card>
+        </>
+        )}
       </div>
     </AdminLayout>
+  );
+}
+
+// ─── 入力画面の見本（講師が書くフォーム）──────────────────
+// ダミー初期値が入った編集フォームの見た目。実際に入力欄を触れるが保存はしない。
+function SampleForm() {
+  const [shortGoal, setShortGoal] = useState(SAMPLE.shortTermGoal);
+  const [schoolProgress, setSchoolProgress] = useState(SAMPLE.schoolProgress);
+  const [review, setReview] = useState(SAMPLE.reviewComment);
+  const [hwDone, setHwDone] = useState(SAMPLE.homeworkCompletionPct);
+  const [hwCorrect, setHwCorrect] = useState(SAMPLE.homeworkCorrectPct);
+  const [todayCorrect, setTodayCorrect] = useState(SAMPLE.todayCorrectPct);
+  const [homeworks, setHomeworks] = useState(SAMPLE.homeworkAssignments);
+
+  const labelCls = 'block text-xs font-semibold text-text-muted mb-1';
+  const inputCls =
+    'w-full px-2.5 py-1.5 text-sm border border-border-default rounded-lg focus:border-info focus:outline-none';
+
+  const fakeSave = (label: string) => {
+    alert(`【見本】${label}は保存されません。実際のフォームでは保存・提出が動作します。`);
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* 授業情報（読み取り） */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="text-sm">
+              <span className="font-bold">{SAMPLE.studentName}</span>
+              <span className="ml-1 text-text-muted">{SAMPLE.grade}</span>
+              <span className="mx-2 text-text-faint">|</span>
+              <span className="text-text-muted">
+                {SAMPLE.lessonDate}（{W(SAMPLE.lessonDate)}）{SAMPLE.slotLabel}
+              </span>
+            </div>
+            <span className="text-xs text-text-muted">担当: {SAMPLE.teacherName}</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 目標 */}
+      <Card>
+        <CardContent className="p-4 space-y-3">
+          <SectionTitle icon={<Target className="w-4 h-4 text-info" />}>目標</SectionTitle>
+          <div className="rounded-lg bg-surface border border-border-subtle p-2.5">
+            <div className="text-[10px] text-text-muted font-semibold mb-0.5">
+              中期目標（進行表から自動表示・編集不可）
+            </div>
+            <div className="text-sm text-text-body">{SAMPLE.midTermGoal}</div>
+          </div>
+          <div>
+            <label className={labelCls}>この授業の目標（短期）</label>
+            <textarea
+              value={shortGoal}
+              onChange={(e) => setShortGoal(e.target.value)}
+              rows={2}
+              className={inputCls}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 学習内容 */}
+      <Card>
+        <CardContent className="p-4 space-y-3">
+          <SectionTitle icon={<BookOpen className="w-4 h-4 text-info" />}>学習内容</SectionTitle>
+          <div>
+            <label className={labelCls}>学校進度</label>
+            <input
+              value={schoolProgress}
+              onChange={(e) => setSchoolProgress(e.target.value)}
+              className={inputCls}
+            />
+          </div>
+          <div>
+            <label className={labelCls}>使用教材（メイン / サブ）</label>
+            <div className="space-y-1.5">
+              {SAMPLE.units.map((u, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-2 rounded-lg border border-border-subtle p-2"
+                >
+                  <span
+                    className={`px-1.5 py-0.5 text-[10px] rounded font-semibold ${
+                      u.isMain ? 'bg-info text-white' : 'bg-gray-100 text-gray-600'
+                    }`}
+                  >
+                    {u.isMain ? 'メイン' : 'サブ'}
+                  </span>
+                  <span className="text-sm flex-1">{u.textbook}（{u.unit} / {u.pages}）</span>
+                  <button type="button" className="text-text-faint hover:text-danger">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => fakeSave('教材の追加')}
+                className="inline-flex items-center gap-1 text-xs text-info hover:underline"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                教材を追加
+              </button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 達成度（スライダー） */}
+      <Card>
+        <CardContent className="p-4 space-y-3">
+          <SectionTitle icon={<ClipboardCheck className="w-4 h-4 text-info" />}>
+            達成度・テスト
+          </SectionTitle>
+          {[
+            { label: '宿題実施率', value: hwDone, set: setHwDone, color: 'var(--info)' },
+            { label: '宿題正答率', value: hwCorrect, set: setHwCorrect, color: 'var(--warning)' },
+            { label: '本日正答率', value: todayCorrect, set: setTodayCorrect, color: 'var(--success)' },
+          ].map((s) => (
+            <div key={s.label}>
+              <div className="flex justify-between text-xs mb-1">
+                <span className="text-text-muted">{s.label}</span>
+                <span className="font-bold tabular-nums" style={{ color: s.color }}>
+                  {s.value}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={5}
+                value={s.value}
+                onChange={(e) => s.set(Number(e.target.value))}
+                className="w-full accent-info"
+              />
+            </div>
+          ))}
+          <div className="flex gap-3 flex-wrap pt-1">
+            <div>
+              <label className={labelCls}>単語テスト</label>
+              <div className="flex items-center gap-1">
+                <input defaultValue={SAMPLE.vocab.score} className="w-12 px-1.5 py-1 text-sm border border-border-default rounded text-center" />
+                <span className="text-text-muted text-sm">/</span>
+                <input defaultValue={SAMPLE.vocab.total} className="w-12 px-1.5 py-1 text-sm border border-border-default rounded text-center" />
+              </div>
+            </div>
+            <div>
+              <label className={labelCls}>チェックテスト</label>
+              <div className="flex items-center gap-1">
+                <input defaultValue={SAMPLE.check.score} className="w-12 px-1.5 py-1 text-sm border border-border-default rounded text-center" />
+                <span className="text-text-muted text-sm">/</span>
+                <input defaultValue={SAMPLE.check.total} className="w-12 px-1.5 py-1 text-sm border border-border-default rounded text-center" />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 講評 */}
+      <Card>
+        <CardContent className="p-4 space-y-2">
+          <SectionTitle icon={<MessageSquareText className="w-4 h-4 text-info" />}>講評</SectionTitle>
+          <textarea
+            value={review}
+            onChange={(e) => setReview(e.target.value)}
+            rows={4}
+            className={inputCls}
+          />
+        </CardContent>
+      </Card>
+
+      {/* 次回宿題（日割り） */}
+      <Card>
+        <CardContent className="p-4 space-y-2">
+          <SectionTitle icon={<CalendarDays className="w-4 h-4 text-info" />}>
+            次回までの宿題
+          </SectionTitle>
+          {homeworks.map((h, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <input
+                type="date"
+                defaultValue={h.date}
+                className="px-2 py-1 text-xs border border-border-default rounded"
+              />
+              <input
+                defaultValue={h.text}
+                className="flex-1 px-2.5 py-1.5 text-sm border border-border-default rounded-lg"
+              />
+              <button
+                type="button"
+                onClick={() => setHomeworks(homeworks.filter((_, idx) => idx !== i))}
+                className="text-text-faint hover:text-danger"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() =>
+              setHomeworks([...homeworks, { date: '', text: '' }])
+            }
+            className="inline-flex items-center gap-1 text-xs text-info hover:underline"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            宿題を追加
+          </button>
+        </CardContent>
+      </Card>
+
+      {/* 保存・提出ボタン（見本のため動作しない） */}
+      <div className="flex justify-end gap-2 pb-4">
+        <Button variant="outline" onClick={() => fakeSave('下書き保存')}>
+          <Save className="w-4 h-4 mr-1" />
+          下書き保存
+        </Button>
+        <Button onClick={() => fakeSave('提出')}>
+          <Send className="w-4 h-4 mr-1" />
+          提出（承認待ちへ）
+        </Button>
+      </div>
+    </div>
   );
 }
