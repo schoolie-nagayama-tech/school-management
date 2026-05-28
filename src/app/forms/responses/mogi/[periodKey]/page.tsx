@@ -284,8 +284,8 @@ export default function MogiResponsePage() {
   return (
     <>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <AdminLayout headerTitle={`${periodKey} Vもぎ申込 回答一覧`} narrow>
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <AdminLayout headerTitle={`${periodKey} Vもぎ申込 回答一覧`}>
+      <main>
         {errorMessage && (
           <div className="mb-6 p-4 bg-danger/10 border border-danger rounded-lg">
             <p className="text-sm text-danger">{errorMessage}</p>

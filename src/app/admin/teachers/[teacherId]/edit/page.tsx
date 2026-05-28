@@ -459,7 +459,7 @@ export default function TeacherEditPage() {
 
   return (
     <AdminLayout headerTitle="講師詳細">
-      <div className="p-6 max-w-6xl mx-auto">
+      <div>
         {/* ヘッダー */}
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">

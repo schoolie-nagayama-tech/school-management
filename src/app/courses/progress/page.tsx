@@ -699,7 +699,7 @@ export default function CourseProgressPage() {
 
   return (
     <AdminLayout headerTitle="講習 進捗管理">
-      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div>
         {/* コンテキストヘルプ */}
         <div className="flex justify-end mb-2">
           <ContextHelp

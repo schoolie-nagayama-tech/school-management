@@ -121,7 +121,7 @@ export default function PendingReportsPage() {
   return (
     <AdminLayout>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <div className="max-w-5xl mx-auto p-4 space-y-4">
+      <div className="space-y-4">
         <h1 className="text-2xl font-bold">授業報告書 承認待ち</h1>
         <p className="text-sm text-text-muted">
           講師から提出された報告書を確認し、承認 or 差し戻しを行ってください。

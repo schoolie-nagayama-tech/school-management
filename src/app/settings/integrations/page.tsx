@@ -62,7 +62,7 @@ export default function IntegrationsPage() {
 
   return (
     <AdminLayout headerTitle="外部サービス連携">
-      <div className="max-w-4xl mx-auto">
+      <div>
         <Link
           href="/settings"
           className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4 transition-colors duration-150"

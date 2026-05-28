@@ -233,7 +233,7 @@ export default function ProposalList() {
   const hasSelection = selected.size > 0;
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div>
       {/* ヘッダー */}
       <div className="mb-6">
         <div className="flex items-center gap-2 mb-3">

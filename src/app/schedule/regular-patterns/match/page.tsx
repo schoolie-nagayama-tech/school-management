@@ -186,7 +186,7 @@ export default function PatternMatchPage() {
   return (
     <AdminLayout headerTitle="通塾日程 講師マッチング">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <div className="max-w-5xl mx-auto p-4 space-y-4">
+      <div className="space-y-4">
 
         <div className="flex items-center justify-between">
           <div>

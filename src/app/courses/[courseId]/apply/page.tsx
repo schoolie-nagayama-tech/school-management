@@ -165,7 +165,7 @@ export default function CourseApplyPage() {
   return (
     <AdminLayout headerTitle="講習管理">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <div className="max-w-5xl mx-auto">
+      <div>
 
         {/* ヘッダー */}
         <div className="mb-4">

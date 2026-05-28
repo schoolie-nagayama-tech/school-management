@@ -852,7 +852,7 @@ export default function ProposalEditor() {
     const favoriteEndIdx = filtered.findIndex((tb) => !favoriteTextbookIds.has(tb.id));
 
     return (
-      <div className="max-w-5xl mx-auto">
+      <div>
         <div className="mb-6">
           <Link
             href={`/students/${studentId}/proposals`}
@@ -969,7 +969,7 @@ export default function ProposalEditor() {
   // 編集モード
   // ════════════════════════════════════════
   return (
-    <div className="max-w-5xl mx-auto pb-20" ref={topRef}>
+    <div className="pb-20" ref={topRef}>
       {/* ヘッダー */}
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
@@ -1189,9 +1189,9 @@ export default function ProposalEditor() {
 
       </div>
 
-      {/* スティッキーボトムバー */}
+      {/* スティッキーボトムバー（コンテンツ幅 max-w-[1600px] に合わせる） */}
       <div className="fixed bottom-0 left-0 right-0 z-30 bg-surface-raised/95 backdrop-blur-sm border-t border-border-default print:hidden">
-        <div className="max-w-5xl mx-auto px-4 py-2.5 flex items-center gap-3">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center gap-3">
           <div className="text-xs font-bold text-text-muted shrink-0">
             <span className="text-accent-ink">{activeUnits.length}単元 / {totalKoma}コマ</span>
             {totalAppliedKoma != null && totalAppliedKoma > 0 && (

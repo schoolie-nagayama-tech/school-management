@@ -404,7 +404,7 @@ export default function CourseProposalsPage() {
 
   return (
     <AdminLayout headerTitle="提案書">
-      <div className="max-w-5xl mx-auto">
+      <div>
         <div className="flex items-center justify-between mb-6">
           <div>
             <div className="flex items-center gap-2">

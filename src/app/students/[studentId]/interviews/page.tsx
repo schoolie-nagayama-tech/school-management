@@ -60,7 +60,7 @@ export default function StudentInterviewsPage() {
 
   return (
     <AdminLayout headerTitle="面談記録">
-      <div className="max-w-4xl mx-auto">
+      <div>
         {/* ヘッダー */}
         <div className="mb-6">
           <Button

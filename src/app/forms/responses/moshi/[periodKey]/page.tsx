@@ -355,7 +355,7 @@ export default function MoshiResponsePage() {
   return (
     <>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <AdminLayout headerTitle={`${periodKey} オープン模試申し込み 回答一覧`} narrow>
+      <AdminLayout headerTitle={`${periodKey} オープン模試申し込み 回答一覧`}>
         {errorMessage && (
           <div className="mb-6 p-4 bg-danger/10 border border-danger rounded-lg">
             <p className="text-sm text-danger">{errorMessage}</p>

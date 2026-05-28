@@ -196,7 +196,7 @@ export default function SettingsPage() {
 
   return (
     <AdminLayout headerTitle="設定">
-      <div className="max-w-5xl mx-auto py-8 px-4">
+      <div>
         {/* コンテキストヘルプ */}
         <div className="flex justify-end mb-2">
           <ContextHelp

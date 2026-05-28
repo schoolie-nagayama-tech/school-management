@@ -153,7 +153,7 @@ export default function MogiSettingsPage() {
   return (
     <div>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <AdminLayout headerTitle="Vもぎ申込 設定" narrow>
+      <AdminLayout headerTitle="Vもぎ申込 設定">
         <div className="mb-4">
           <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text-heading transition-colors duration-150">
             <ChevronLeft className="w-4 h-4" />

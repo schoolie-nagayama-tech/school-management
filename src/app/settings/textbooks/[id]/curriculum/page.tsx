@@ -350,7 +350,7 @@ export default function CurriculumPage() {
 
   return (
     <AdminLayout headerTitle="カリキュラム管理">
-      <div className="max-w-4xl mx-auto py-6 px-4">
+      <div>
         {/* Header */}
         <div className="mb-6">
           <button onClick={() => router.back()} className="inline-flex items-center text-sm text-text-muted hover:text-text-heading mb-4 transition-colors duration-150">

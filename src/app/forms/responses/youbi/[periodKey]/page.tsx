@@ -253,7 +253,7 @@ export default function YoubiResponsePage() {
   return (
     <>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <AdminLayout headerTitle={`${periodKey} 曜日変更 回答一覧`} narrow>
+      <AdminLayout headerTitle={`${periodKey} 曜日変更 回答一覧`}>
         {errorMessage && (
           <div className="mb-6 p-4 bg-danger/10 border border-danger rounded-lg">
             <p className="text-sm text-danger">{errorMessage}</p>

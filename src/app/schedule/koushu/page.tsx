@@ -151,7 +151,7 @@ export default function KoushuPage() {
 
   return (
     <AdminLayout headerTitle="講習スケジュール">
-      <div className="max-w-4xl mx-auto py-6 px-4 space-y-6">
+      <div className="space-y-6">
         {/* ヘッダー */}
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">

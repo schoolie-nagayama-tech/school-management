@@ -150,7 +150,7 @@ export default function MoshiSettingsPage() {
   return (
     <div>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <AdminLayout headerTitle="オープン模試申し込み 設定" narrow>
+      <AdminLayout headerTitle="オープン模試申し込み 設定">
         <div className="mb-4">
           <Link href="/settings" className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text-heading transition-colors duration-150">
             <ChevronLeft className="w-4 h-4" />

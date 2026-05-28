@@ -157,7 +157,7 @@ export default function QuickLinksSettingsPage() {
   return (
     <AdminLayout headerTitle="クイックリンク設定">
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <div className="max-w-3xl mx-auto py-6 px-4">
+      <div>
         {/* パンくず */}
         <div className="mb-4">
           <Link

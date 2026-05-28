@@ -76,7 +76,7 @@ export default function ClassPeriodsSettingsPage() {
 
   if (permissionLoading) {
     return (
-      <AdminLayout narrow>
+      <AdminLayout>
         <Loading size="md" />
       </AdminLayout>
     );
@@ -84,7 +84,7 @@ export default function ClassPeriodsSettingsPage() {
 
   if (!hasPermission) {
     return (
-      <AdminLayout narrow>
+      <AdminLayout>
         <AccessDenied message="設定ページは教室長以上のみアクセス可能です" />
       </AdminLayout>
     );
@@ -93,7 +93,7 @@ export default function ClassPeriodsSettingsPage() {
   return (
     <div>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <AdminLayout headerTitle="授業の時間帯" narrow>
+      <AdminLayout headerTitle="授業の時間帯">
         <div className="max-w-2xl">
           <div className="mb-4">
             <Link

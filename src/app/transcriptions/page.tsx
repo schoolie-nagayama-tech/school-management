@@ -88,7 +88,7 @@ export default function TranscriptionsPage() {
   };
 
   return (
-    <AdminLayout headerTitle="面談記録追加" narrow>
+    <AdminLayout headerTitle="面談記録追加">
       <div>
         {/* ページヘッダー */}
         <div className="mb-5 pb-4 border-b border-border">

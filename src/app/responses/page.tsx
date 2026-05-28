@@ -545,7 +545,7 @@ export default function ResponsesPage() {
 
   return (
     <AdminLayout headerTitle="回答管理">
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div>
         {/* コンテキストヘルプ */}
         <div className="flex justify-end mb-2">
           <ContextHelp

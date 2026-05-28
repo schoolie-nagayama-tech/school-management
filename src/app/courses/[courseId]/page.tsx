@@ -491,7 +491,7 @@ export default function CourseDetailPage() {
     <AdminLayout headerTitle={`コース編集 - ${course.name}`}>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
 
-      <div className="max-w-5xl mx-auto">
+      <div>
         {/* ヘッダー */}
         <div className="mb-5">
           <Link

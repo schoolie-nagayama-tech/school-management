@@ -108,7 +108,7 @@ export default function ClassCapacitySettingsPage() {
   return (
     <AdminLayout>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <div className="max-w-3xl mx-auto py-6 space-y-6">
+      <div className="space-y-6">
         <div className="flex items-center gap-3">
           <Users className="w-6 h-6 text-info" />
           <h1 className="text-2xl font-bold">授業生徒数設定</h1>

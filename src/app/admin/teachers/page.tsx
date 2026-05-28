@@ -364,7 +364,7 @@ export default function TeachersPage() {
 
   return (
     <AdminLayout headerTitle="講師管理">
-      <div className="p-6 max-w-[1600px] mx-auto">
+      <div>
         {/* ヘッダー */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">

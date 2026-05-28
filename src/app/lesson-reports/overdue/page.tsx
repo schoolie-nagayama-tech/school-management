@@ -92,7 +92,7 @@ export default function OverdueReportsPage() {
   return (
     <AdminLayout>
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-      <div className="max-w-5xl mx-auto p-4 space-y-4">
+      <div className="space-y-4">
         <div className="flex items-center justify-between gap-3">
           <h1 className="text-2xl font-bold">授業報告書 督促一覧</h1>
           <div className="flex items-center gap-2">
