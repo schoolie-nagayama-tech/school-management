@@ -274,3 +274,94 @@ export async function assignTeacherToPattern(
     entriesUpdated: (updated as Array<{ id: string }>)?.length ?? 0,
   };
 }
+
+/**
+ * 「毎週このコマ」割当の本体。期間概念 (effective_from/until) を活かして担当を確定する。
+ *
+ * 分岐:
+ *  - 対象パターンが未配置 (teacher_id NULL) → assignTeacherToPattern で単純上書き
+ *    （過去も未配置だったので期間分割は不要）
+ *  - 対象パターンが既に別講師 (A→B 変更) → 当日から期間分割
+ *    1) 旧パターンを effective_until = 前日 で締める（過去の A 担当実績を保護）
+ *    2) 新パターンを effective_from = 当日 / teacher = B で作成
+ *    3) 当日以降の scheduled エントリを新パターンに付け替え + teacher_id を B に更新
+ *
+ * これにより「いつから誰が担当か」が通塾日程の期間として正しく記録される。
+ */
+export async function reassignTeacherFromToday(
+  patternId: string,
+  newTeacherId: string,
+  schoolId: string
+): Promise<{ mode: 'overwrite' | 'split'; entriesUpdated: number; newPatternId?: string }> {
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Tokyo' });
+
+  // 現在のパターンを取得
+  const { data: pat, error: patErr } = await db
+    .from('schedule_regular_patterns')
+    .select('*')
+    .eq('id', patternId)
+    .maybeSingle();
+  if (patErr || !pat) throw new Error('通塾日程パターンの取得に失敗しました');
+
+  const currentTeacherId = pat.teacher_id as string | null;
+
+  // 未配置 or 同じ講師 → 単純上書き（分割不要）
+  if (!currentTeacherId || currentTeacherId === newTeacherId) {
+    const r = await assignTeacherToPattern(patternId, newTeacherId);
+    return { mode: 'overwrite', entriesUpdated: r.entriesUpdated };
+  }
+
+  // A→B 変更 → 期間分割
+  // 1) 旧パターンを前日で締める
+  const prev = new Date(today + 'T12:00:00');
+  prev.setDate(prev.getDate() - 1);
+  const untilStr = prev.toLocaleDateString('en-CA', { timeZone: 'Asia/Tokyo' });
+  const { error: closeErr } = await db
+    .from('schedule_regular_patterns')
+    .update({ effective_until: untilStr })
+    .eq('id', patternId);
+  if (closeErr) throw new Error('既存パターンの終了日設定に失敗しました');
+
+  // 2) 新パターンを当日から作成（旧パターンの属性を引き継ぐ）
+  const { data: newPat, error: insErr } = await db
+    .from('schedule_regular_patterns')
+    .insert({
+      school_id: schoolId,
+      student_id: pat.student_id,
+      day_of_week: pat.day_of_week,
+      time_slot_id: pat.time_slot_id,
+      teacher_id: newTeacherId,
+      subject_ids: pat.subject_ids ?? [],
+      seat_label: pat.seat_label ?? null,
+      period_type: pat.period_type,
+      is_active: true,
+      effective_from: today,
+      effective_until: pat.effective_until ?? null,
+      formation: pat.formation ?? 'individual',
+    })
+    .select('id')
+    .single();
+  if (insErr || !newPat) {
+    // ロールバック：旧パターンの effective_until を戻す
+    await db.from('schedule_regular_patterns').update({ effective_until: pat.effective_until ?? null }).eq('id', patternId);
+    throw new Error('新しい通塾日程の作成に失敗しました');
+  }
+
+  // 3) 当日以降の scheduled エントリを新パターンに付け替え + teacher 更新
+  const { data: updated, error: entErr } = await db
+    .from('schedule_entries')
+    .update({ teacher_id: newTeacherId, regular_pattern_id: newPat.id })
+    .eq('regular_pattern_id', patternId)
+    .eq('status', 'scheduled')
+    .gte('entry_date', today)
+    .select('id');
+  if (entErr) {
+    console.warn('新パターンへのエントリ付け替えに一部失敗:', entErr.message);
+  }
+
+  return {
+    mode: 'split',
+    entriesUpdated: (updated as Array<{ id: string }>)?.length ?? 0,
+    newPatternId: newPat.id,
+  };
+}

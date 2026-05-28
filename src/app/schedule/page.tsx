@@ -67,7 +67,7 @@ import {
   cancelFutureEntriesByRegularPatternId,
   getMonthlyTransferUsage,
 } from '@/lib/api/schedule';
-import { assignTeacherToPattern } from '@/lib/api/pattern-matching';
+import { assignTeacherToPattern, reassignTeacherFromToday } from '@/lib/api/pattern-matching';
 import { logScheduleChange } from '@/lib/api/schedule-change-logs';
 import type { ScheduleEntry, ScheduleEntryFormData, ScheduleTimeSlot } from '@/types/schedule';
 import type { School, Student, Subject } from '@/types/database';
@@ -964,13 +964,14 @@ export default function SchedulePage() {
     setIsAssigning(true);
     try {
       const beforeEntry = entriesWithSubjects.find((e) => e.id === pendingAssignment.entryId);
-      const result = await assignTeacherToPattern(
+      // 期間概念を活かした割当：未配置は単純上書き、A→B 変更は当日から期間分割。
+      const result = await reassignTeacherFromToday(
         pendingAssignment.regularPatternId,
-        pendingAssignment.teacherId
+        pendingAssignment.teacherId,
+        schoolId!
       );
       // 当日漏れ防止：ドロップ対象エントリ自体を確実に直接更新する。
-      // assignTeacherToPattern は entry_date >= JST今日 のパターン由来エントリを一括更新するが、
-      // 万一日付境界やデータ不整合で当日コマが漏れても、ドロップした当日コマは確実に反映させる。
+      // （split 時は新パターンに付け替え済みだが、念のため teacher_id を確実化）
       await updateScheduleEntry(pendingAssignment.entryId, {
         teacher_id: pendingAssignment.teacherId,
       });
