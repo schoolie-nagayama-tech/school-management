@@ -40,7 +40,7 @@ import {
   rejectClassReport,
 } from '@/lib/api/class-reports';
 import type { ClassReport } from '@/types/class-report';
-import { CheckCircle, XCircle, ChevronRight } from 'lucide-react';
+import { CheckCircle, XCircle, ChevronRight, ChevronLeft } from 'lucide-react';
 import AccessDenied from '@/components/AccessDenied';
 
 function gradeLabel(g: number): string {
@@ -120,7 +120,18 @@ export default function PendingReportsPage() {
   if (!isManager) return <AccessDenied />;
 
   return (
-    <AdminLayout>
+    <AdminLayout
+      headerTitle="授業報告書 承認待ち"
+      actions={
+        <Link
+          href="/schedule"
+          className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg bg-surface-raised transition-colors duration-150"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          座席表に戻る
+        </Link>
+      }
+    >
       <ToastContainer toasts={toasts} onRemove={removeToast} />
       <div className="space-y-4">
         <div className="flex items-start justify-between gap-3 flex-wrap">
