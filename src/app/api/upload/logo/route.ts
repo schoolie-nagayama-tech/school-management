@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { getApiAuth } from '@/lib/api-auth';
+import { getApiAuth, isSchoolInScope } from '@/lib/api-auth';
 
 function getSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -14,9 +14,18 @@ function getSupabaseAdmin() {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await getApiAuth(request);
+    // getApiAuth は { auth, cookieResponse } を返すため、必ず分割代入で auth を取り出す。
+    // （以前は `const auth = await getApiAuth(...)` としており、返り値オブジェクトが常に
+    //  truthy になるため `if (!auth)` が機能せず未認証リクエストが通過していた）
+    const { auth } = await getApiAuth(request);
     if (!auth) {
       return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
+    }
+
+    // ロゴ変更は教室のブランディング設定。マネージャー以上のみ許可。
+    const roleLower = auth.role.toLowerCase();
+    if (roleLower !== 'admin' && roleLower !== 'owner' && roleLower !== 'manager') {
+      return NextResponse.json({ error: '権限がありません' }, { status: 403 });
     }
 
     const formData = await request.formData();
@@ -28,6 +37,12 @@ export async function POST(request: NextRequest) {
         { error: 'file と schoolId は必須です' },
         { status: 400 }
       );
+    }
+
+    // service role で RLS をバイパスするため、対象教室が操作者のスコープ内かを必ず検証する
+    // （admin/owner は schoolIds に全教室が入るため常に通過）
+    if (!isSchoolInScope(schoolId, auth.schoolIds)) {
+      return NextResponse.json({ error: 'この教室を操作する権限がありません' }, { status: 403 });
     }
 
     // ファイルサイズ制限（2MB）

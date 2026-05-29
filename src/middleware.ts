@@ -22,6 +22,9 @@ const PUBLIC_RATE_LIMITS: Array<{
   { path: '/api/embed/', limit: 60, windowSeconds: 60 },
   // 招待完了 — 1IPあたり 10リクエスト/分
   { path: '/api/invite/complete', limit: 10, windowSeconds: 60 },
+  // 招待情報取得（トークン照合）— 1IPあたり 30リクエスト/分（トークン総当たりの多層防御）
+  // 注: /api/invite/complete を先に評価するため complete は上の専用ルールが適用される
+  { path: '/api/invite/', limit: 30, windowSeconds: 60 },
 ];
 
 function getClientIp(request: NextRequest): string {

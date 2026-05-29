@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { requireManager } from '@/lib/api-auth';
+import { requireManager, getApiAuth } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -59,6 +59,19 @@ export async function DELETE(
     const { badgeId } = await params;
     const db = getSupabaseAdmin();
     const hard = request.nextUrl.searchParams.get('hard') === '1';
+
+    // 物理削除は全教室の付与を CASCADE で消す不可逆操作のため admin/owner 限定。
+    // 論理削除（無効化）は manager でも可。
+    if (hard) {
+      const { auth } = await getApiAuth(request);
+      const role = auth?.role.toLowerCase();
+      if (role !== 'admin' && role !== 'owner') {
+        return NextResponse.json(
+          { error: 'バッジの完全削除は管理者のみ実行できます' },
+          { status: 403 }
+        );
+      }
+    }
 
     if (hard) {
       // 完全削除（割り当ても CASCADE で消える）

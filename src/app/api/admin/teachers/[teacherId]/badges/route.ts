@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { requireManager } from '@/lib/api-auth';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { getApiAuth, isUserInScope } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,16 +16,42 @@ function getSupabaseAdmin() {
   );
 }
 
+/**
+ * マネージャー以上であること＋対象講師が呼び出し元の教室スコープ内であることを検証する。
+ * service role は RLS を無視するため、対象 teacherId の所属チェックが唯一の越権防止策。
+ * @returns 権限OKなら null、NGなら NextResponse（401/403）
+ */
+async function authorizeForTeacher(
+  request: NextRequest,
+  teacherId: string,
+  db: SupabaseClient
+): Promise<NextResponse | null> {
+  const { auth } = await getApiAuth(request);
+  if (!auth) {
+    return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
+  }
+  const role = auth.role.toLowerCase();
+  if (role !== 'admin' && role !== 'owner' && role !== 'manager') {
+    return NextResponse.json({ error: '権限がありません' }, { status: 403 });
+  }
+  // admin/owner は全教室を持つためバイパス。manager は対象講師との教室共有を必須に。
+  const isGlobal = role === 'admin' || role === 'owner';
+  if (!isGlobal && !(await isUserInScope(teacherId, auth.schoolIds, db))) {
+    return NextResponse.json({ error: 'この講師を操作する権限がありません' }, { status: 403 });
+  }
+  return null;
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ teacherId: string }> }
 ) {
   try {
-    const authError = await requireManager(request);
-    if (authError) return authError;
-
     const { teacherId } = await params;
     const db = getSupabaseAdmin();
+
+    const authError = await authorizeForTeacher(request, teacherId, db);
+    if (authError) return authError;
 
     const { data, error } = await db
       .from('teacher_badge_assignments')
@@ -47,11 +74,12 @@ export async function POST(
   { params }: { params: Promise<{ teacherId: string }> }
 ) {
   try {
-    const authError = await requireManager(request);
-    if (authError) return authError;
-
     const { teacherId } = await params;
     const db = getSupabaseAdmin();
+
+    const authError = await authorizeForTeacher(request, teacherId, db);
+    if (authError) return authError;
+
     const body = await request.json();
     const { badgeId, completedAt, note } = body;
 

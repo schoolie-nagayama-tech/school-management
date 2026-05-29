@@ -387,26 +387,16 @@ export async function createInvitation(
 }
 
 // 招待をトークンで取得
+// anon が user_invitations を直読みすると「フィルタ無しの SELECT」で全招待を列挙
+// できてしまうため、トークン一致の1件だけを返すサービスロール API 経由で取得する。
+// （未受諾・未失効の検証もサーバー側で実施）
 export async function getInvitationByToken(token: string): Promise<UserInvitation | null> {
-  const supabase = createSupabaseBrowserClient();
-  const { data, error } = await supabase
-    .from('user_invitations')
-    .select('*')
-    .eq('token', token)
-    .is('accepted_at', null)
-    .single();
-
-  if (error) {
-    if (error.code === 'PGRST116') return null;
-    throw error;
+  const res = await fetch(`/api/invite/${encodeURIComponent(token)}`);
+  if (!res.ok) {
+    if (res.status === 404) return null;
+    throw new Error('招待情報の取得に失敗しました');
   }
-
-  // 有効期限チェック
-  if (new Date((data as UserInvitation).expires_at) < new Date()) {
-    return null;
-  }
-
-  return data as UserInvitation;
+  return (await res.json()) as UserInvitation;
 }
 
 // 招待を承諾

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { requireManager } from '@/lib/api-auth';
+import { getApiAuth } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,8 +21,15 @@ export async function GET(
   { params }: { params: Promise<{ badgeId: string }> }
 ) {
   try {
-    const authError = await requireManager(request);
-    if (authError) return authError;
+    const { auth } = await getApiAuth(request);
+    if (!auth) {
+      return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
+    }
+    const role = auth.role.toLowerCase();
+    if (role !== 'admin' && role !== 'owner' && role !== 'manager') {
+      return NextResponse.json({ error: '権限がありません' }, { status: 403 });
+    }
+    const isGlobal = role === 'admin' || role === 'owner';
 
     const { badgeId } = await params;
     const db = getSupabaseAdmin();
@@ -34,7 +41,18 @@ export async function GET(
 
     if (error) throw error;
 
-    const assignedTeacherIds = (data || []).map((a: { teacher_id: string }) => a.teacher_id);
+    let assignedTeacherIds = (data || []).map((a: { teacher_id: string }) => a.teacher_id);
+
+    // manager は自分の教室に所属する講師の付与のみ見えるように絞る
+    if (!isGlobal) {
+      const { data: scopeRows } = await db
+        .from('user_schools')
+        .select('user_id')
+        .in('school_id', auth.schoolIds);
+      const allowed = new Set((scopeRows || []).map((r) => String(r.user_id)));
+      assignedTeacherIds = assignedTeacherIds.filter((id) => allowed.has(String(id)));
+    }
+
     return NextResponse.json({ assignedTeacherIds });
   } catch (err) {
     console.error('GET /api/admin/teacher-badges/[badgeId]/assignees error:', err);

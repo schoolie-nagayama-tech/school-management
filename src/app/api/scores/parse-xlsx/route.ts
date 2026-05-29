@@ -1,17 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getApiAuth } from '@/lib/api-auth';
+
+// アップロードを受け付ける最大ファイルサイズ（10MB）。
+// 未認証＋サイズ無制限だと、誰でも巨大ファイルを xlsx パーサに通して
+// メモリ枯渇（DoS）やパーサ脆弱性を突けるため上限を設ける。
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 /**
  * POST /api/scores/parse-xlsx
  *
  * xlsx/csv ファイルを受け取り、行データ (string|number|undefined)[][] を返す。
  * xlsx は動的 require でサーバーサイドのみ使用（クライアントバンドル対象外）。
+ *
+ * 認証必須: 解析のみで DB 書込はしないが、未認証だと任意ファイルを
+ * xlsx パーサ（既知の Prototype Pollution / ReDoS）に通せてしまうため、
+ * ログイン済みユーザーに限定する（スコア取込はスタッフ機能）。
  */
 export async function POST(req: NextRequest) {
   try {
+    const { auth } = await getApiAuth(req);
+    if (!auth) {
+      return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
+    }
+
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
     if (!file) {
       return NextResponse.json({ error: 'ファイルが見つかりません' }, { status: 400 });
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: 'ファイルサイズは10MB以下にしてください' },
+        { status: 400 }
+      );
     }
 
     const buf = await file.arrayBuffer();

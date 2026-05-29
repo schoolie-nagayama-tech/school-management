@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { requireManager } from '@/lib/api-auth';
+import { getApiAuth } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,8 +56,19 @@ function getSupabaseAdmin() {
 
 export async function GET(request: NextRequest) {
   try {
-    const authError = await requireManager(request);
-    if (authError) return authError;
+    // 呼び出し元の認証情報を取得（教室スコープ絞り込みに schoolIds が必要なため
+    // requireManager ではなく getApiAuth を使う）
+    const { auth } = await getApiAuth(request);
+    if (!auth) {
+      return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
+    }
+    const callerRole = auth.role.toLowerCase();
+    if (callerRole !== 'admin' && callerRole !== 'owner' && callerRole !== 'manager') {
+      return NextResponse.json({ error: '権限がありません' }, { status: 403 });
+    }
+    // admin/owner は全教室（schoolIds に全教室が入る）。manager は自分の教室のみに絞る。
+    const isGlobalRole = callerRole === 'admin' || callerRole === 'owner';
+
     const supabaseAdmin = getSupabaseAdmin();
     const roleParam = request.nextUrl.searchParams.get('role');
     const requestTs = request.nextUrl.searchParams.get('t');
@@ -131,7 +142,18 @@ export async function GET(request: NextRequest) {
       user_schools: userSchoolsByUserId[String(profile.id)] || [],
     }));
 
-    return NextResponse.json({ users: usersWithSchools }, { headers: noCacheHeaders });
+    // manager は自分の所属教室に紐づくユーザーのみ閲覧可（他教室・上位権限者の
+    // プロファイル/メール流出を防ぐ）。admin/owner はそのまま全件。
+    const scopedUsers = isGlobalRole
+      ? usersWithSchools
+      : usersWithSchools.filter((u) => {
+          const callerSchools = new Set(auth.schoolIds);
+          return ((u.user_schools as Array<{ school_id?: string | null }>) || []).some(
+            (us) => us.school_id != null && callerSchools.has(String(us.school_id))
+          );
+        });
+
+    return NextResponse.json({ users: scopedUsers }, { headers: noCacheHeaders });
   } catch (error: unknown) {
     console.error('Failed to fetch users:', error);
     return NextResponse.json(
