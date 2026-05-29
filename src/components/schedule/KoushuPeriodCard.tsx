@@ -153,6 +153,15 @@ export function KoushuPeriodCard({
                             {en.student ? gradeLabel(en.student.grade) : '—'}
                           </td>
                           <td className="px-4 py-2 text-[var(--paragraph)]">
+                            <span
+                              className={`mr-1.5 inline-block px-1.5 py-0.5 rounded text-[10px] font-medium align-middle ${
+                                en.formation === 'group'
+                                  ? 'bg-violet-50 text-violet-700 border border-violet-100'
+                                  : 'bg-sky-50 text-sky-700 border border-sky-100'
+                              }`}
+                            >
+                              {en.formation === 'group' ? '集団' : '個別'}
+                            </span>
                             <span className="font-semibold text-[var(--headline)]">
                               {en.koma_count}
                             </span>

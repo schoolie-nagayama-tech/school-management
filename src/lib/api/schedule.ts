@@ -785,6 +785,7 @@ export async function generateWeeklySchedule(
     .from('schedule_entries')
     .select('entry_date, time_slot_id, student_id, teacher_id')
     .eq('school_id', schoolId)
+    .eq('kind', 'regular')
     .gte('entry_date', fromStr)
     .lte('entry_date', toStr)
     .in('status', ['scheduled', 'completed']);
@@ -801,19 +802,18 @@ export async function generateWeeklySchedule(
   }
 
   // 再生成スキップ対象の枠 (student-date-slot) を退避。
-  // DELETE は status IN ('scheduled','completed') のみ消すので、それ以外
-  // (transferred_out / transferred_in / cancelled) は行が残る。
-  // 残る行と同じ (school,date,slot,teacher,student) を INSERT すると UNIQUE 違反で
-  // 再生成が丸ごと失敗する（「スケジュールの取得に失敗」の原因）。
-  // また transferred は N-4（振替戻しで重複）対策でもスキップが必要。
-  // → 残存する全ステータスの枠を生成スキップする。
+  // DELETE は kind='regular' かつ status IN ('scheduled','completed') のみ消すので、それ以外は行が残る:
+  //  - 通常授業の transferred_out / transferred_in / cancelled（N-4 振替戻し重複対策）
+  //  - 講習コマ (kind='koushu') 全ステータス（DELETE 対象外。残った講習行と同 (school,date,slot,teacher,student)
+  //    を INSERT すると UNIQUE 違反で再生成が丸ごと失敗するため＝講習巻き込み対策）
+  // 残る行と同じ枠を生成すると UNIQUE 違反になるので、これらは生成スキップする。
   const { data: skipRows } = await db
     .from('schedule_entries')
     .select('entry_date, time_slot_id, student_id')
     .eq('school_id', schoolId)
     .gte('entry_date', fromStr)
     .lte('entry_date', toStr)
-    .in('status', ['transferred_out', 'transferred_in', 'cancelled']);
+    .or('kind.eq.koushu,status.in.(transferred_out,transferred_in,cancelled)');
   const transferredKeys = new Set(
     ((skipRows ?? []) as Array<{ entry_date: string; time_slot_id: string; student_id: string }>).map(
       (e) => `${e.entry_date}-${e.time_slot_id}-${e.student_id}`
@@ -864,10 +864,13 @@ export async function generateWeeklySchedule(
   }
   const entries: EntryRow[] = Array.from(entriesMap.values());
 
+  // kind='regular' のみ削除する。講習コマ (kind='koushu') は通塾日程の再生成対象外なので残す
+  // （講習配置が通塾日程の再生成で消える事故を防ぐ）。
   const { error: delError } = await db
     .from('schedule_entries')
     .delete()
     .eq('school_id', schoolId)
+    .eq('kind', 'regular')
     .gte('entry_date', fromStr)
     .lte('entry_date', toStr)
     .in('status', ['scheduled', 'completed']);

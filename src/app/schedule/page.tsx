@@ -69,7 +69,8 @@ import {
 } from '@/lib/api/schedule';
 import { reassignTeacherFromToday } from '@/lib/api/pattern-matching';
 import { logScheduleChange } from '@/lib/api/schedule-change-logs';
-import type { ScheduleEntry, ScheduleEntryFormData, ScheduleTimeSlot } from '@/types/schedule';
+import type { ScheduleEntry, ScheduleEntryFormData, ScheduleTimeSlot, SchoolClassCapacityFormData } from '@/types/schedule';
+import { getClassCapacity, DEFAULT_CLASS_CAPACITY } from '@/lib/api/school-class-capacity';
 import type { School, Student, Subject } from '@/types/database';
 import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
@@ -225,7 +226,8 @@ export default function SchedulePage() {
 
   const router = useRouter();
 
-  const MAX_STUDENTS_PER_TEACHER = 2;
+  // 授業生徒数設定（個別の1講師あたり上限・教室座席数・集団上限）。schoolId 変更時に読み込み、未設定校は DEFAULT。
+  const [capacity, setCapacity] = useState<SchoolClassCapacityFormData>(DEFAULT_CLASS_CAPACITY);
 
   const VISIBLE_DAYS_STORAGE_KEY = 'schedule_visible_days';
   const defaultVisibleDays = [1, 2, 3, 4, 5, 6]; // 月〜土
@@ -412,6 +414,14 @@ export default function SchedulePage() {
     getKoushuPeriods(schoolId).then(setKoushuList).catch(() => setKoushuList([]));
   }, [schoolId]);
 
+  // 授業生徒数設定をロード（schoolId 変更時）。失敗・未設定はデフォルト値で動かす。
+  useEffect(() => {
+    if (!schoolId) { setCapacity(DEFAULT_CLASS_CAPACITY); return; }
+    getClassCapacity(schoolId)
+      .then((c) => setCapacity(c ?? DEFAULT_CLASS_CAPACITY))
+      .catch(() => setCapacity(DEFAULT_CLASS_CAPACITY));
+  }, [schoolId]);
+
   // 講習期間選択時: 該当 season の全 seasonal_courses から enrollments を集約
   // 同生徒が複数コース申込なら koma_count を合算
   const handleKoushuSelect = useCallback(async (period: KoushuPeriodInfo | null) => {
@@ -432,6 +442,8 @@ export default function SchedulePage() {
     for (const cid of matchingCourseIds) {
       const enrollments = await getKoushuEnrollments(cid);
       for (const e of enrollments) {
+        // P1: 座席表の講習モードは個別のみ対象（集団レーンは Phase 3）
+        if (e.formation !== 'individual') continue;
         const existing = enrollMap.get(e.student_id);
         if (existing) {
           // 同一生徒の複数コース申込はコマ数を合算、科目はマージ
@@ -452,7 +464,8 @@ export default function SchedulePage() {
         schoolId,
         period.schedule_start_date,
         period.schedule_end_date,
-        Array.from(enrollMap.keys())
+        Array.from(enrollMap.keys()),
+        'individual'
       );
       setKoushuScheduledCounts(counts);
     } else {
@@ -1445,7 +1458,7 @@ export default function SchedulePage() {
                       teachers={teachers}
                       emptyTeacherSlots={emptyTeacherSlots}
                       shiftAvailableByDow={shiftByDow}
-                      maxStudentsPerTeacher={MAX_STUDENTS_PER_TEACHER}
+                      maxStudentsPerTeacher={capacity.max_students_per_teacher_individual}
                       transferMode={transferMode}
                       onEmptyTeacherSlotsChange={setEmptyTeacherSlots}
                       onAddTeacher={handleAddTeacher}
@@ -1563,7 +1576,7 @@ export default function SchedulePage() {
           schoolId={schoolId}
           date={boothAssignDate}
           entries={entriesWithSubjects}
-          totalSeats={12 /* TODO: school_class_capacity.total_individual_seats から取得 */}
+          totalSeats={capacity.total_individual_seats}
           onSaved={() => {
             // 保存直後に印刷ビュー用のマップも更新しておく（即印刷ボタンを押されても反映される）
             if (boothAssignDate && schoolId) {

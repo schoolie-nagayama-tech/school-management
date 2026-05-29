@@ -7,7 +7,7 @@ import { AdminLayout } from '@/components/layouts';
 import { Button, Loading } from '@/components/ui';
 import { KoushuPeriodCard } from '@/components/schedule/KoushuPeriodCard';
 import { KoushuPeriodFormModal } from '@/components/schedule/KoushuPeriodFormModal';
-import { KoushuEnrollmentFormModal } from '@/components/schedule/KoushuEnrollmentFormModal';
+import { KoushuEnrollmentFormModal, type EnrollmentRow } from '@/components/schedule/KoushuEnrollmentFormModal';
 import {
   getSchoolKoushu,
   createKoushu,
@@ -19,6 +19,7 @@ import {
   type KoushuCourse,
   type KoushuEnrollment,
 } from '@/lib/api/seasonalCourses';
+import { getKoushuPeriods, type KoushuPeriodInfo } from '@/lib/api/koushu-period';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import AccessDenied from '@/components/AccessDenied';
@@ -36,6 +37,8 @@ export default function KoushuPage() {
 
   const [courses, setCourses] = useState<KoushuCourse[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  // 設定済みの講習期間（個別コマ数の初期値＝通常授業回数の算出に使う）
+  const [koushuPeriods, setKoushuPeriods] = useState<KoushuPeriodInfo[]>([]);
   const [loading, setLoading] = useState(false);
 
   // 各コースの申し込みデータ（展開時にロード）
@@ -72,6 +75,12 @@ export default function KoushuPage() {
 
   useEffect(() => { loadCourses(); }, [loadCourses]);
 
+  // 講習期間（course_prep_periods）をロード。コースの season に対応する期間を申込モーダルへ渡す。
+  useEffect(() => {
+    if (!schoolId) { setKoushuPeriods([]); return; }
+    getKoushuPeriods(schoolId).then(setKoushuPeriods).catch(() => setKoushuPeriods([]));
+  }, [schoolId]);
+
   const loadEnrollments = useCallback(async (courseId: string) => {
     setEnrollmentsLoadingSet((prev) => new Set(prev).add(courseId));
     try {
@@ -107,9 +116,12 @@ export default function KoushuPage() {
   };
 
   // ---- 申し込み CRUD ----
-  const handleSaveEnrollment = async (studentId: string, komaCount: number, subjectIds: string[]) => {
+  // 個別/集団それぞれの行を formation 別に upsert する（同一生徒でも formation ごとに1行）。
+  const handleSaveEnrollment = async (studentId: string, rows: EnrollmentRow[]) => {
     if (!targetCourseId) return;
-    await upsertKoushuEnrollment(targetCourseId, studentId, komaCount, subjectIds);
+    for (const r of rows) {
+      await upsertKoushuEnrollment(targetCourseId, studentId, r.komaCount, r.subjectIds, r.formation);
+    }
     await loadEnrollments(targetCourseId);
     // enrollment_count を更新するためにコース一覧も再取得
     await loadCourses();
@@ -138,6 +150,12 @@ export default function KoushuPage() {
   const existingStudentIds = targetCourseId
     ? (enrollmentsMap.get(targetCourseId) ?? []).map((e) => e.student_id)
     : [];
+
+  // 対象コースの season に対応する講習期間（個別コマ数の初期値＝通常授業回数の算出に使う）
+  const targetCourse = courses.find((c) => c.id === targetCourseId);
+  const matchedPeriod = targetCourse
+    ? (koushuPeriods.find((p) => p.season === targetCourse.season) ?? null)
+    : null;
 
   const availableGrades = Array.from(
     new Set(courses.flatMap((c) => c.target_grades ?? []))
@@ -265,6 +283,7 @@ export default function KoushuPage() {
         subjects={subjects}
         existingStudentIds={editingEnrollment ? [] : existingStudentIds}
         initialData={editingEnrollment}
+        period={matchedPeriod}
         onSave={handleSaveEnrollment}
       />
 

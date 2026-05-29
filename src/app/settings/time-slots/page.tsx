@@ -20,7 +20,7 @@ import {
   isTimeSlotInUse,
   reorderTimeSlots,
 } from '@/lib/api/schedule';
-import type { ScheduleTimeSlot, ScheduleTimeSlotFormData } from '@/types/schedule';
+import type { ScheduleTimeSlot, ScheduleTimeSlotFormData, ScheduleEntryFormation } from '@/types/schedule';
 import type { School } from '@/types/database';
 import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
@@ -31,6 +31,8 @@ export default function TimeSlotsSettingsPage() {
   const [schools, setSchools] = useState<School[]>([]);
   const [selectedSchoolId, setSelectedSchoolId] = useState<string>('');
   const [slots, setSlots] = useState<ScheduleTimeSlot[]>([]);
+  // 個別/集団でコマ時間は別建て（個別1限13:00 と 集団1限14:00 等）。タブで切り替えて formation 別に管理。
+  const [selectedFormation, setSelectedFormation] = useState<ScheduleEntryFormation>('individual');
   const [isLoading, setIsLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
   const [editingSlot, setEditingSlot] = useState<ScheduleTimeSlot | null>(null);
@@ -59,11 +61,11 @@ export default function TimeSlotsSettingsPage() {
   useEffect(() => {
     if (!selectedSchoolId) return;
     setIsLoading(true);
-    getTimeSlots(selectedSchoolId)
+    getTimeSlots(selectedSchoolId, selectedFormation)
       .then(setSlots)
       .catch(() => toastError('コマ時間の取得に失敗しました'))
       .finally(() => setIsLoading(false));
-  }, [selectedSchoolId, toastError]);
+  }, [selectedSchoolId, selectedFormation, toastError]);
 
   const selectedSchool = schools.find((s) => s.id === selectedSchoolId);
   const nextSlotNumber = Math.max(0, ...slots.map((s) => s.slot_number)) + 1;
@@ -72,13 +74,15 @@ export default function TimeSlotsSettingsPage() {
     if (!selectedSchoolId) return;
     try {
       if (editingSlot) {
-        await updateTimeSlot(editingSlot.id, form);
+        // 編集時は元のコマの formation を維持（タブ切替で誤って付け替えないように）
+        await updateTimeSlot(editingSlot.id, { ...form, formation: editingSlot.formation });
         success('コマ時間を更新しました');
       } else {
-        await createTimeSlot(selectedSchoolId, form);
+        // 新規は現在表示中の formation（個別/集団タブ）で作成
+        await createTimeSlot(selectedSchoolId, { ...form, formation: selectedFormation });
         success('コマ時間を追加しました');
       }
-      const data = await getTimeSlots(selectedSchoolId);
+      const data = await getTimeSlots(selectedSchoolId, selectedFormation);
       setSlots(data);
       setFormOpen(false);
       setEditingSlot(null);
@@ -96,11 +100,11 @@ export default function TimeSlotsSettingsPage() {
     setSlots(newSlots);
     try {
       await reorderTimeSlots(selectedSchoolId, newSlots.map((s) => s.id));
-      const data = await getTimeSlots(selectedSchoolId);
+      const data = await getTimeSlots(selectedSchoolId, selectedFormation);
       setSlots(data);
     } catch (e) {
       toastError((e as Error).message);
-      const data = await getTimeSlots(selectedSchoolId);
+      const data = await getTimeSlots(selectedSchoolId, selectedFormation);
       setSlots(data);
     }
   };
@@ -127,7 +131,7 @@ export default function TimeSlotsSettingsPage() {
         await reorderTimeSlots(selectedSchoolId!, remaining.map((s) => s.id));
       }
       success('コマ時間を削除しました');
-      const data = await getTimeSlots(selectedSchoolId!);
+      const data = await getTimeSlots(selectedSchoolId!, selectedFormation);
       setSlots(data);
       setDeleteDialogOpen(false);
       setDeletingSlot(null);
@@ -163,6 +167,26 @@ export default function TimeSlotsSettingsPage() {
             <h1 className="text-text-headingxl font-bold text-[var(--headline)]">コマ時間設定</h1>
           </div>
           <div className="flex items-center gap-4">
+            {/* 個別/集団でコマ時間は別建て。タブで表示・追加対象の formation を切り替える */}
+            <div className="inline-flex rounded-lg border border-border-default bg-white p-0.5">
+              {([
+                { key: 'individual', label: '個別' },
+                { key: 'group', label: '集団' },
+              ] as const).map((f) => (
+                <button
+                  key={f.key}
+                  type="button"
+                  onClick={() => setSelectedFormation(f.key)}
+                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                    selectedFormation === f.key
+                      ? 'bg-[var(--primary)] text-white'
+                      : 'text-text-body hover:bg-surface'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
             <Select value={selectedSchoolId} onValueChange={setSelectedSchoolId}>
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="教室を選択">

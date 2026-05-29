@@ -10,6 +10,7 @@ import type {
   CurriculumItem,
   CourseCurriculumRow,
 } from '@/types/database';
+import type { ScheduleEntryFormation } from '@/types/schedule';
 
 // =====================================================
 // 講習機能（座席表連携）用の型定義
@@ -37,6 +38,8 @@ export interface KoushuEnrollment {
   id: string;
   course_id: string;
   student_id: string;
+  /** 個別 / 集団。同一生徒でも formation 別に行を持つ（UNIQUE: course_id+student_id+formation） */
+  formation: ScheduleEntryFormation;
   koma_count: number;
   subject_ids: string[];
   created_at: string | null;
@@ -201,12 +204,16 @@ export async function getKoushuEnrollments(courseId: string): Promise<KoushuEnro
   return (data || []) as KoushuEnrollment[];
 }
 
-/** 申し込みを登録・更新（upsert） */
+/**
+ * 申し込みを登録・更新（upsert）。
+ * formation 別に1行（UNIQUE: course_id+student_id+formation）。formation 省略時は個別扱い（後方互換）。
+ */
 export async function upsertKoushuEnrollment(
   courseId: string,
   studentId: string,
   komaCount: number,
-  subjectIds: string[]
+  subjectIds: string[],
+  formation: ScheduleEntryFormation = 'individual'
 ): Promise<void> {
   // koushu_enrollments は生成型に含まれないため as never でキャスト
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -216,11 +223,12 @@ export async function upsertKoushuEnrollment(
       {
         course_id: courseId,
         student_id: studentId,
+        formation,
         koma_count: komaCount,
         subject_ids: subjectIds,
         updated_at: new Date().toISOString(),
       },
-      { onConflict: 'course_id,student_id' }
+      { onConflict: 'course_id,student_id,formation' }
     );
 
   if (error) throw error;
@@ -237,22 +245,30 @@ export async function deleteKoushuEnrollment(enrollmentId: string): Promise<void
   if (error) throw error;
 }
 
-/** 講習期間のスケジュール済みコマ数を学生ごとに集計 */
+/**
+ * 講習の配置済みコマ数を生徒ごとに集計。
+ * kind='koushu' のみを数える（通常授業を混ぜない）。formation 指定時はその形態だけ。
+ */
 export async function getKoushuScheduledCounts(
   schoolId: string,
   startDate: string,
   endDate: string,
-  studentIds: string[]
+  studentIds: string[],
+  formation?: ScheduleEntryFormation
 ): Promise<Map<string, number>> {
   if (studentIds.length === 0) return new Map();
 
-  const { data, error } = await supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let query = (supabase as any)
     .from('schedule_entries')
     .select('student_id, status')
     .eq('school_id', schoolId)
+    .eq('kind', 'koushu')
     .gte('entry_date', startDate)
     .lte('entry_date', endDate)
     .in('student_id', studentIds);
+  if (formation) query = query.eq('formation', formation);
+  const { data, error } = await query;
 
   if (error) throw error;
 

@@ -15,6 +15,7 @@
 
 import { supabase } from '@/lib/supabase';
 import type { SeasonType } from '@/types/database';
+import type { ScheduleEntryFormation } from '@/types/schedule';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
@@ -73,6 +74,31 @@ export async function getKoushuPeriods(schoolId: string): Promise<KoushuPeriodIn
   }));
 }
 
+/**
+ * 講習期間中に発生する「通常授業の回数」を概算する。
+ * 申込入力で個別コマ数の初期値（＝講習期間中も従来どおり通う想定の最低ライン）として使う。
+ * 算出 = その生徒の有効な個別の通塾日程パターン数（≒週あたりのコマ数）× 期間の週数（端数切り上げ）。
+ * あくまで初期表示用の概算。室長が手で調整する前提。
+ */
+export async function estimateRegularKomaInPeriod(
+  studentId: string,
+  period: KoushuPeriodInfo
+): Promise<number> {
+  const start = new Date(period.schedule_start_date + 'T00:00:00');
+  const end = new Date(period.schedule_end_date + 'T00:00:00');
+  const days = Math.floor((end.getTime() - start.getTime()) / 86_400_000) + 1;
+  const weeks = Math.max(1, Math.ceil(days / 7));
+
+  // 個別の通塾日程パターン数 = 週あたりの個別コマ数。effective 厳密判定はせず概算でよい。
+  const { data } = await db
+    .from('schedule_regular_patterns')
+    .select('id')
+    .eq('student_id', studentId)
+    .eq('formation', 'individual');
+  const weekly = (data ?? []).length;
+  return weekly * weeks;
+}
+
 /** 指定日（既定は今日）に該当する講習期間。複数あれば最新優先 */
 export async function getCurrentKoushuPeriod(
   schoolId: string,
@@ -93,7 +119,8 @@ export async function getCurrentKoushuPeriod(
  * 戻り値: Map<student_id, { enrolled: 申込合計, placed: 配置済み, subject_ids[], student }>
  */
 export async function getKoushuPlacementProgressByPeriod(
-  period: KoushuPeriodInfo
+  period: KoushuPeriodInfo,
+  formation?: ScheduleEntryFormation
 ): Promise<
   Map<
     string,
@@ -116,11 +143,13 @@ export async function getKoushuPlacementProgressByPeriod(
   const courseIds = ((courses || []) as { id: string }[]).map((c) => c.id);
   if (courseIds.length === 0) return new Map();
 
-  // 2. それらの koushu_enrollments を student_id で集約
-  const { data: enrollments } = await db
+  // 2. それらの koushu_enrollments を student_id で集約（formation 指定時はその形態のみ）
+  let enrollQuery = db
     .from('koushu_enrollments')
     .select('student_id, koma_count, subject_ids, student:students(id, last_name, first_name, grade)')
     .in('course_id', courseIds);
+  if (formation) enrollQuery = enrollQuery.eq('formation', formation);
+  const { data: enrollments } = await enrollQuery;
 
   type EnrollmentRow = {
     student_id: string;
@@ -160,7 +189,7 @@ export async function getKoushuPlacementProgressByPeriod(
 
   // 3. 期間内の koushu 配置済みコマ数を student_id 別にカウント
   const studentIds = Array.from(aggregated.keys());
-  const { data: placedEntries } = await db
+  let placedQuery = db
     .from('schedule_entries')
     .select('student_id')
     .eq('school_id', period.school_id)
@@ -169,6 +198,8 @@ export async function getKoushuPlacementProgressByPeriod(
     .gte('entry_date', period.schedule_start_date)
     .lte('entry_date', period.schedule_end_date)
     .in('status', ['scheduled', 'completed', 'transferred_in']);
+  if (formation) placedQuery = placedQuery.eq('formation', formation);
+  const { data: placedEntries } = await placedQuery;
 
   for (const e of (placedEntries || []) as { student_id: string }[]) {
     const agg = aggregated.get(e.student_id);

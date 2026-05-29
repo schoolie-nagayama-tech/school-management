@@ -20,6 +20,7 @@ import {
   getKoushuPlacementProgressByPeriod,
   type KoushuPeriodInfo,
 } from '@/lib/api/koushu-period';
+import type { ScheduleEntryFormation } from '@/types/schedule';
 import { CheckCircle, Target, X } from 'lucide-react';
 
 interface PlacementRow {
@@ -36,6 +37,8 @@ interface Props {
    * 申込集計は seasonal_courses.season = period.season を満たす全コースから合算する。
    */
   period: KoushuPeriodInfo;
+  /** 集計対象の形態。既定は個別（集団レーンは Phase 3 で別パネル） */
+  formation?: ScheduleEntryFormation;
   /** 「配置する」ボタンクリック時：親が「配置モード」に入る */
   onStartPlacement?: (studentId: string, subjectIds: string[]) => void;
   /** 配置モード中の生徒ID（バインド側で管理）。配置1コマ追加するたびに再フェッチさせる用にバージョンキーを持つ */
@@ -54,6 +57,7 @@ function gradeLabel(g: number): string {
 
 export function KoushuPlacementPanel({
   period,
+  formation = 'individual',
   onStartPlacement,
   placingStudentId,
   refreshKey,
@@ -65,7 +69,7 @@ export function KoushuPlacementPanel({
   const load = useCallback(async () => {
     setIsLoading(true);
     try {
-      const map = await getKoushuPlacementProgressByPeriod(period);
+      const map = await getKoushuPlacementProgressByPeriod(period, formation);
       const list: PlacementRow[] = [];
       // Map iteration: Array.from で TS target 互換を確保
       Array.from(map.entries()).forEach(([student_id, v]) => {
@@ -80,7 +84,7 @@ export function KoushuPlacementPanel({
     } finally {
       setIsLoading(false);
     }
-  }, [period]);
+  }, [period, formation]);
 
   useEffect(() => {
     load();
