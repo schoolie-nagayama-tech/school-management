@@ -142,7 +142,10 @@ export async function generateKoushuIndividualProposals(
   const closed = new Set(input.closedDates ?? []);
 
   // --- 入力収集 ---
-  const dates = enumeratePeriodDates(period.schedule_start_date, period.schedule_end_date, closed);
+  // 過去日付には配置しない（配置時の過去日付ガードと整合）。期間開始が過去でも今日以降のみ。
+  const todayJst = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Tokyo' });
+  const effectiveStart = period.schedule_start_date > todayJst ? period.schedule_start_date : todayJst;
+  const dates = enumeratePeriodDates(effectiveStart, period.schedule_end_date, closed);
   const slots = (await getActiveTimeSlots(schoolId, 'individual')).sort(
     (a, b) => a.slot_number - b.slot_number
   );

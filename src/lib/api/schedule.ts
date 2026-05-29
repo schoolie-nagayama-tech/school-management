@@ -319,7 +319,7 @@ export async function checkStudentTimeConflict(
             teacherName,
             subjectName,
           },
-          message: `${specificDate} ${st.slice(0, 5)}-${et.slice(0, 5)}（${teacherName}）と重複しています`,
+          message: `この生徒は ${specificDate} ${st.slice(0, 5)}〜${et.slice(0, 5)} に既に別の授業（担当: ${teacherName}）があるため、同じ時間帯には登録できません`,
         };
       }
     }
@@ -367,7 +367,7 @@ export async function checkStudentTimeConflict(
           teacherName,
           subjectName: '科目',
         },
-        message: `${dayLabel}曜 ${st.slice(0, 5)}-${et.slice(0, 5)}（${teacherName}）と重複しています`,
+        message: `この生徒は毎週${dayLabel}曜 ${st.slice(0, 5)}〜${et.slice(0, 5)} に通常授業（担当: ${teacherName}）があるため、同じ時間帯には登録できません`,
       };
     }
   }
@@ -1114,7 +1114,7 @@ export async function checkTeacherTimeConflict(
           teacherName: studentName,
           subjectName: '',
         },
-        message: `この講師は ${entryDate} の ${slot.start_time?.slice(0, 5)}-${slot.end_time?.slice(0, 5)}（${studentName}）と時間が重複しています`,
+        message: `この講師は ${entryDate} ${slot.start_time?.slice(0, 5)}〜${slot.end_time?.slice(0, 5)} に既に別の授業（${studentName}）があるため、同じ時間帯には登録できません`,
       };
     }
   }
@@ -1129,6 +1129,12 @@ export async function createScheduleEntry(
   form: ScheduleEntryFormData,
   options?: { regular_pattern_id?: string | null; status?: string }
 ): Promise<ScheduleEntry> {
+  // 過去の日付には登録不可。なぜ登録できないかが分かる明示メッセージを返す（JST基準で判定）。
+  const todayJst = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Tokyo' });
+  if (date < todayJst) {
+    throw new Error(`過去の日付（${date}）には授業を登録できません。今日以降の日付を選んでください。`);
+  }
+
   await ensureUserIsTeacher(form.teacher_id);
 
   // 同時刻重複チェック：個別と集団でコマ時間が違っても、時刻範囲が重なれば配置不可
@@ -1143,16 +1149,21 @@ export async function createScheduleEntry(
       { specificDate: date }
     );
     if (studentConflict) {
-      throw new Error(`生徒の時間重複: ${studentConflict.message}`);
+      // メッセージ自体が「なぜ登録できないか」を説明するので接頭辞は付けない
+      throw new Error(studentConflict.message);
     }
-    const teacherConflict = await checkTeacherTimeConflict(
-      form.teacher_id,
-      date,
-      targetSlot.start_time,
-      targetSlot.end_time
-    );
-    if (teacherConflict) {
-      throw new Error(`講師の時間重複: ${teacherConflict.message}`);
+    // 集団は「1講師に複数生徒が同じコマ」が前提なので、講師の時間重複チェックはしない
+    // （個別だけ講師の二重予約を弾く）。生徒側の重複は集団でも引き続きチェックする。
+    if (form.formation !== 'group') {
+      const teacherConflict = await checkTeacherTimeConflict(
+        form.teacher_id,
+        date,
+        targetSlot.start_time,
+        targetSlot.end_time
+      );
+      if (teacherConflict) {
+        throw new Error(teacherConflict.message);
+      }
     }
   }
 
@@ -1182,9 +1193,14 @@ export async function createScheduleEntry(
     console.error('Error creating schedule entry:', error);
     const code = error && typeof error === 'object' && 'code' in error ? String((error as { code: string }).code) : '';
     if (code === '23505') {
-      throw new Error('この日時・講師・生徒の組み合わせで既に授業が登録されています');
+      throw new Error('同じ生徒・講師・コマの組み合わせが既に登録されているため追加できません');
     }
-    throw new Error('授業の追加に失敗しました');
+    // それ以外は DB が返した理由をそのまま見せる（過去日付の制約など、原因が分かるように握りつぶさない）
+    const detail =
+      error && typeof error === 'object' && 'message' in error
+        ? String((error as { message: string }).message)
+        : '';
+    throw new Error(detail ? `授業を追加できませんでした：${detail}` : '授業を追加できませんでした');
   }
   return data as ScheduleEntry;
 }

@@ -46,6 +46,14 @@ const KoushuControlPanel = dynamic(
   () => import('@/components/schedule/KoushuControlPanel').then((m) => m.KoushuControlPanel),
   { ssr: false }
 );
+const GroupLaneGrid = dynamic(
+  () => import('@/components/schedule/GroupLaneGrid').then((m) => m.GroupLaneGrid),
+  { ssr: false }
+);
+const GroupKomaFormModal = dynamic(
+  () => import('@/components/schedule/GroupKomaFormModal').then((m) => m.GroupKomaFormModal),
+  { ssr: false }
+);
 import { fetchWithAuth } from '@/lib/api/auth';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { getStudents } from '@/lib/api/students';
@@ -562,6 +570,36 @@ export default function SchedulePage() {
     [placingKoushuStudent, schoolId, success, refreshEntries, toastError]
   );
 
+  // ---- 集団コマの手動作成（Phase 3） ----
+  const [groupKomaTarget, setGroupKomaTarget] = useState<{ date: string; slotId: string } | null>(null);
+
+  const handleCreateGroupKoma = useCallback((date: string, slotId: string) => {
+    setGroupKomaTarget({ date, slotId });
+  }, []);
+
+  // 集団コマを作成：選択生徒ごとに schedule_entries(kind='koushu', formation='group') を作る
+  const handleSubmitGroupKoma = useCallback(
+    async (data: { teacherId: string; subjectIds: string[]; studentIds: string[] }) => {
+      if (!groupKomaTarget || !schoolId) return;
+      const { createScheduleEntry } = await import('@/lib/api/schedule');
+      for (const studentId of data.studentIds) {
+        await createScheduleEntry(schoolId, groupKomaTarget.date, groupKomaTarget.slotId, {
+          teacher_id: data.teacherId,
+          student_id: studentId,
+          subject_ids: data.subjectIds,
+          seat_label: '',
+          note: '',
+          kind: 'koushu',
+          formation: 'group',
+        });
+      }
+      success('集団コマを作成しました');
+      await refreshEntries();
+      setKoushuPanelRefreshKey((k) => k + 1);
+    },
+    [groupKomaTarget, schoolId, success, refreshEntries]
+  );
+
   const handleRemoveTeacher = useCallback((
     date: string,
     slotId: string,
@@ -787,6 +825,16 @@ export default function SchedulePage() {
     if (!selectedKoushu || koushuEnrollments.size === 0) return entriesWithSubjects;
     return entriesWithSubjects.filter((e) => koushuEnrollments.has(e.student_id));
   }, [entriesWithSubjects, selectedKoushu, koushuEnrollments]);
+
+  // 講習モードの2レーン分割: 個別レーン=既存グリッド、集団レーン=GroupLaneGrid。
+  // formation でコマ時間を分け、個別グリッドには個別コマだけ渡す（集団コマが個別グリッドに混ざらないように）。
+  const individualSlots = useMemo(() => timeSlots.filter((t) => t.formation !== 'group'), [timeSlots]);
+  const groupSlots = useMemo(() => timeSlots.filter((t) => t.formation === 'group'), [timeSlots]);
+  // 集団の講習エントリ（個別申込フィルタとは独立に、期間内の集団コマを全部出す）
+  const groupEntries = useMemo(
+    () => entriesWithSubjects.filter((e) => e.kind === 'koushu' && e.formation === 'group'),
+    [entriesWithSubjects]
+  );
 
   const handleStudentEntryDrop = useCallback(async (
     entryId: string,
@@ -1351,6 +1399,7 @@ export default function SchedulePage() {
             }}
             placingStudentId={placingKoushuStudent?.studentId ?? null}
             refreshKey={koushuPanelRefreshKey}
+            showGroupProgress={groupSlots.length > 0}
             onPublished={() => {
               refreshEntries();
               setKoushuPanelRefreshKey((k) => k + 1);
@@ -1459,7 +1508,7 @@ export default function SchedulePage() {
                     <WeeklyScheduleGrid
                       schoolId={schoolId ?? ''}
                       weekDates={weekDates}
-                      timeSlots={timeSlots}
+                      timeSlots={selectedKoushu ? individualSlots : timeSlots}
                       entries={displayEntries}
                       closedDates={closedDates}
                       teachers={teachers}
@@ -1486,6 +1535,20 @@ export default function SchedulePage() {
                       onTransferCancel={() => setTransferMode(null)}
                       getKoushuInfo={selectedKoushu ? getKoushuInfo : undefined}
                     />
+                    {/* 集団レーン（講習モードかつ集団コマ時間がある場合のみ）。集団は手動編成。 */}
+                    {selectedKoushu && groupSlots.length > 0 && (
+                      <GroupLaneGrid
+                        weekDates={weekDates}
+                        groupSlots={groupSlots}
+                        entries={groupEntries}
+                        maxStudentsPerGroup={capacity.max_students_per_group}
+                        maxConcurrentGroups={capacity.max_concurrent_groups}
+                        closedDates={closedDates}
+                        subjectNameById={new Map(masterSubjects.map((s) => [s.id, s.name]))}
+                        onCreate={handleCreateGroupKoma}
+                        onStudentClick={handleEntryClick}
+                      />
+                    )}
                     </div>
                   )}
                 </CardContent>
@@ -1600,6 +1663,28 @@ export default function SchedulePage() {
           }}
         />
       )}
+
+      {/* 集団コマ作成モーダル（手動編成・Phase 3） */}
+      {groupKomaTarget && (() => {
+        const slot = groupSlots.find((s) => s.id === groupKomaTarget.slotId) ?? null;
+        // 対象日の曜日に出勤可能な講師のみ提示
+        const dow = new Date(groupKomaTarget.date + 'T12:00:00').getDay();
+        const availIds = new Set(shiftByDow.get(dow) ?? []);
+        const availableTeachers = teachers.filter((t) => availIds.has(t.id));
+        return (
+          <GroupKomaFormModal
+            open={!!groupKomaTarget}
+            onClose={() => setGroupKomaTarget(null)}
+            schoolId={schoolId ?? ''}
+            date={groupKomaTarget.date}
+            slot={slot}
+            subjects={masterSubjects}
+            maxStudents={capacity.max_students_per_group}
+            availableTeachers={availableTeachers}
+            onSubmit={handleSubmitGroupKoma}
+          />
+        );
+      })()}
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
 

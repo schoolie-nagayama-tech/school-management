@@ -36,6 +36,8 @@ interface Props {
   placingStudentId?: string | null;
   /** 配置進捗の再フェッチ用キー */
   refreshKey?: number;
+  /** 集団コマ時間がある場合、集団の配置進捗も表示する */
+  showGroupProgress?: boolean;
   /** 公開などで座席表エントリが変わったとき、親に再取得を促す */
   onPublished: () => void;
   /** 講習モード解除 */
@@ -49,6 +51,7 @@ export function KoushuControlPanel({
   onStartPlacement,
   placingStudentId,
   refreshKey,
+  showGroupProgress = false,
   onPublished,
   onClose,
 }: Props) {
@@ -261,6 +264,15 @@ export function KoushuControlPanel({
               placingStudentId={placingStudentId}
               refreshKey={refreshKey}
             />
+
+            {/* 集団の配置進捗（進捗表示のみ。集団は集団レーンのモーダルで手動作成） */}
+            {showGroupProgress && (
+              <KoushuPlacementPanel
+                period={period}
+                formation="group"
+                refreshKey={refreshKey}
+              />
+            )}
           </div>
         )}
       </CardContent>

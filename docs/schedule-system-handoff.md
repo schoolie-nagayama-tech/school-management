@@ -411,6 +411,15 @@ node scripts/verify-phase0-migrations.mjs
 4. `seasonal_courses.start_date/end_date` は未使用 → クリーンアップ候補（今は放置で害なし）
 5. `regular_shift_submissions.user_id` 未設定問題は残る（email マッチで誤魔化し中）
 
+### 講習マッチングのアルゴリズム改善（やってみないと分からないので段階的に。詳細メモ: memory/project_koushu_matching.md）
+`src/lib/api/koushu-match.ts` は現状「**加重和スコア × 貪欲割当**」。決定は2軸（①1マスのスコア付け ②全体の割当戦略）。出力は人がレビューする下書きなので**透明性重視**。
+- **スコア(①)**: 加重和を維持（`MATCH_CONFIG.weights` は暫定値）。0-1正規化はしておくと重みの意味が安定。
+- **割当(②)** を費用対効果順に改善:
+  1. **安価改善（貪欲のまま）**: 生徒の並びを「残コマ多い順」→「**候補講師が少ない順=制約の強い順**」＋**未マッチを後からリペア（入替え）1パス**。
+  2. **最小費用流 / 二部マッチング最適化**: 席数・1講師上限を容量に総スコア最大。外部依存なしで実装可。
+  3. **CP-SAT/ILP（OR-Tools）**: 均等配置・公平性まで厳密最適化。とことんやる場合（依存・実行時間・Vercel実行を要検討）。
+- 安定マッチング(Gale-Shapley)は講師側に選好が無いので不向き。A/B比較用に別関数で用意するのも可。
+
 ## デバッグ Tips（追記）
 - Supabase エラーログ：`mcp__faa90072-..._get_logs` で `service: 'postgres'` → 直近24hのエラー（UNIQUE違反等）
 - 制約確認：`SELECT conname, pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid='schedule_entries'::regclass`
