@@ -283,4 +283,120 @@ node scripts/verify-phase0-migrations.mjs
 
 ---
 
-_最終更新: 2026-05-27 / G-4 完了時点_
+---
+
+# 【セッション2 追記】H〜O ラウンド（2026-05-28）
+
+> G-4 以降に実施した大量の機能追加・UX改善・バグ修正。次の会話はここを最優先で読むこと。
+
+## ★ 最重要：講習の認識（ユーザーと確定済み）
+
+**ここを間違えると全部ズレる。** 講習の本質は以下:
+
+| 要素 | 正 |
+|---|---|
+| 講習期間 | `course_prep_periods`（春/夏/冬 × 年 × 校）。**全生徒統一**。コース個別の期間は無意味 |
+| 生徒の申込 | `koushu_enrollments`（生徒×科目×コマ数）が**唯一の入力源**。座席表はこれだけ見る |
+| コース (`seasonal_courses`) | 「科目×コマ数」の**単なるテンプレ**。使わない生徒もいる/組合せる/適用後カスタムで跡形なく変わる。**無くても講習は成立**。スケジュールに無関係 |
+| 座席表の講習配置 | 申込コマ数を期間内の枠に**消化配置**（残コマ管理）。テンプレ由来かは一切関係ない |
+
+- `/schedule/koushu` は「**講習コース**」にリネーム済（旧「講習管理」）。テンプレ置き場。全体ナビからのみアクセス
+- 座席表「講習」ボタン = 座席表内の講習モード切替。期間未設定時は `/courses/progress`（講習期間設定）へ誘導
+- ユーザー提示の講習モードUI見本: `docs/mockups/schedule-matching-v3.html`（mode-toggle + 個別/集団レーン）
+
+## このセッションで追加した新規テーブル（MCP適用済・リポジトリにマイグレファイル無し）
+
+- `teacher_availability_periods` — 講師の出勤可能期間（期間バージョン管理）。`source` = manual / regular_shift。リード優先順位 manual > regular_shift
+- `schedule_change_logs` — 担当変更履歴ログ（assign/reassign/transfer 等）
+- `teacher_absences` — 講師の欠勤（コマ単位。user×date×time_slot UNIQUE）
+
+## 新規 API ファイル
+
+- `src/lib/api/teacher-availability.ts` — 出勤可能期間。`syncRegularShiftToAvailability` / `getAvailabilityDayMap` / `getEffectiveAvailability` / `upsertManualAvailability` 等
+- `src/lib/api/schedule-change-logs.ts` — 変更履歴の記録/取得
+- `src/lib/api/teacher-absences.ts` — 欠勤の mark/unmark/取得
+- `src/components/lesson-reports/DemoProgressPreview.tsx` — 報告書見本下の進行表イメージ（共通）
+
+## ラウンド別サマリ
+
+### H：通常シフト → 出勤可能期間の自動反映
+- 通常シフト提出 (POST/PUT/DELETE/setting更新) で `teacher_availability_periods` に自動 upsert
+- 「3月に希望取って4月から反映」を期間 (effective_from/until) で管理
+- 講師詳細 `/admin/teachers/[id]` に「出勤可能期間」パネル（現在/今後/過去 + 追加/編集/再同期）
+- 講師編集の保存も manual period を並行 upsert
+- 座席表・マッチングを `getAvailabilityDayMap` 経由に切替（旧 getCurrentTeacherShifts はフォールバック）
+
+### I：座席表D&D + マッチング画面改善
+- 「出勤可能講師カード」「未配置生徒」を講師セルにD&D → floating bar「このコマだけ/毎週このコマ」
+- マッチング画面: AdminLayout化・科目チップ・スコア凡例・「全候補N名」モーダル・/schedule から導線バナー
+- D&D の識別子区切りを `|`→`:` に（`__unassigned__:<entryId>`。teacher-slot ID が3パーツ `date|slot|teacher` のため）
+
+### J
+- 振替の月内回数制限：生徒の通塾日程パターン数（週N回）= 月N回上限。超過は警告 →「もう一度」で実行 (`getMonthlyTransferUsage`)
+- 日次印刷を A4縦・2列レイアウトに刷新（`ScheduleDailyPrintView`）
+
+### K
+- D&D 制約チェック（ハード）：講師の指導可能科目 / 生徒の希望性別 / 除外指定。違反はドロップ拒否 + 赤バッジ。マッチングも同制約で候補除外
+- ドラッグ中ハイライト：可能セル emerald ring、不可セル opacity+grayscale
+- 講師カードのミニラベル（性別 M/F・指導科目チップ）
+- 担当変更履歴ログ `/schedule/change-logs`
+
+### L
+- 1日セルを **1列に戻した**（2列は生徒名が読めず却下）
+- 未配置エントリは **各 DayCell の下部に「未配置」チップ**で表示（セル単位、`unassignedEntries` props）。座席表上部の集約プールは廃止
+
+### M
+- スケジュール機能の権限を**教室長以上 (admin/owner/manager) で統一**。入口は未公開（URL直共有）。`/schedule/koushu` にガード追加
+- 座席表右上に「講習」「報告書見本」ボタン
+- 未配置ありコマは折りたたまない + 時間ラベル下に「未配置N」バッジ
+- 割当を**当日から有効**に（JST today = `toLocaleDateString('en-CA',{timeZone:'Asia/Tokyo'})`）。再割当(A→B)も反映
+- `generateWeeklySchedule` の再生成carry：既存の手動割当 teacher_id を退避して引き継ぎ（「このコマだけ」が消えるバグ修正）
+
+### N
+- **focus/visibilitychange の自動 refreshEntries を撤去**（「定期的に再読み込みで描画が重い」対応）。更新は再取得ボタン/週切替で
+- 講師✕で生徒0人でも emptyTeacherSlots に追加してグレーアウト維持
+- 「毎週このコマ」で A→B 変更時は**期間分割** (`reassignTeacherFromToday`)：旧パターンを前日締め + 新パターンを当日から作成 + 当日以降エントリ付替え。未配置→割当は単純上書き
+- 移動→振替→戻すで生徒2重バグ修正：drift の actual に transferred_out 含む + generateWeeklySchedule で transferred系の枠スキップ
+- 割当確定バーにスプリング登場アニメ（globals.css `assign-bar-enter`）
+
+### O
+- 講師欠勤機能（コマ単位）：講師カード右上の人型トグル、欠勤は赤斜線+「欠勤」バッジ。生徒は自動で動かさない
+- 報告書見本 `/lesson-reports/sample`：3タブ「入力画面（講師）/完成イメージ（室長）/保護者の見え方」
+- `/lesson-reports/demo`：**実フォームをダミーデータで開くモード**（`scheduleEntryId==='demo'`、保存無効）
+- 学校進度を**選択式**（教材カリキュラム単元の select）に。進行表 (schoolProgressUnits) 同期前提
+- 宿題日付を等分配 → **授業翌日から次回授業日まで連番自動**
+- 報告書の下に進行表イメージ（`DemoProgressPreview`）を講師入力画面・室長確認の両方で表示
+- `/lesson-reports/pending` にヘッダー + 座席表へ戻るボタン
+
+## ★ 重要バグ修正：「スケジュールの取得に失敗」
+- 原因：`generateWeeklySchedule` の再生成 INSERT が UNIQUE 制約
+  `(school_id, entry_date, time_slot_id, teacher_id, student_id)` 違反
+- DELETE は `status IN ('scheduled','completed')` のみ消す → 残った **cancelled / transferred系** の行と同キーを INSERT して衝突
+- 修正：生成スキップ対象 (`transferredKeys`) に `transferred_out / transferred_in / cancelled` の (date-slot-student) を全部含める（`src/lib/api/schedule.ts`）
+- **教訓**：generateWeeklySchedule は週全削除→再INSERT。DELETE 対象外ステータスの枠は必ず生成スキップすること
+
+## 残課題（次のラウンドで詰める）
+
+### 最優先
+1. **講習モードの中身を enrollment 基準に**：座席表の講習配置 (`KoushuPlacementPanel`) が「コース基準」になっていないか要確認。本来は「生徒の科目×コマ数（koushu_enrollments）を残コマ消化」モデル。mockup `schedule-matching-v3.html` 参照
+2. **報告書 × 進行表のマージ本実装**：現状はダミーイメージ (`DemoProgressPreview`) のみ。合意済みゴール = 「**入力1つ・ビュー2つ**（講師/室長向け進行表ビュー + 保護者向け報告書ビュー）」。重複項目（学校進度・単元・講師コメント）の一本化が前提。`progress_sessions.report_id` で紐付け基盤あり
+
+### 中期
+3. 学校進度の進行表との**真の双方向同期**：`class_reports` に `school_progress_curriculum_id` 追加 + 進行表 schoolProgressUnits への転記
+4. `seasonal_courses.start_date/end_date` は未使用 → クリーンアップ候補（今は放置で害なし）
+5. `regular_shift_submissions.user_id` 未設定問題は残る（email マッチで誤魔化し中）
+
+## デバッグ Tips（追記）
+- Supabase エラーログ：`mcp__faa90072-..._get_logs` で `service: 'postgres'` → 直近24hのエラー（UNIQUE違反等）
+- 制約確認：`SELECT conname, pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid='schedule_entries'::regclass`
+- 重複検出：`GROUP BY entry_date, time_slot_id, student_id HAVING COUNT(*)>1`
+- JST「今日」：必ず `toLocaleDateString('en-CA',{timeZone:'Asia/Tokyo'})`。`toISOString().slice(0,10)` は UTC でズレる
+
+## Vercel / リポジトリ
+- リモート: `github.com/schoolie-nagayama-tech/school-management` (main)
+- このセッションのコミットは d2feb41 〜 9ba39f1 まで全て push 済み
+- 型チェックは `npx tsc --noEmit`（このプロジェクトは @typescript-eslint/no-unused-vars が error）
+
+---
+
+_最終更新: 2026-05-28 / O ラウンド + 講習認識確定 + 「スケジュール取得失敗」バグ修正完了時点_
