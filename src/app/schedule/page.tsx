@@ -42,8 +42,8 @@ const PendingTransfersBoard = dynamic(
   () => import('@/components/schedule/PendingTransfersBoard').then((m) => m.PendingTransfersBoard),
   { ssr: false }
 );
-const KoushuPlacementPanel = dynamic(
-  () => import('@/components/schedule/KoushuPlacementPanel').then((m) => m.KoushuPlacementPanel),
+const KoushuControlPanel = dynamic(
+  () => import('@/components/schedule/KoushuControlPanel').then((m) => m.KoushuControlPanel),
   { ssr: false }
 );
 import { fetchWithAuth } from '@/lib/api/auth';
@@ -1334,10 +1334,13 @@ export default function SchedulePage() {
           );
         })()}
 
-        {/* 講習選択中は配置パネルを表示。空きセルクリックで講習コマを追加できる「配置モード」を提供 */}
+        {/* 講習選択中はコントロールパネルを表示（マッチング・下書き公開・配置進捗を集約）。
+            空きセルクリックで講習コマを追加できる「配置モード」も内包。 */}
         {selectedKoushu && (
-          <KoushuPlacementPanel
+          <KoushuControlPanel
             period={selectedKoushu}
+            schoolId={schoolId ?? ''}
+            executedBy={profile?.id ?? ''}
             onStartPlacement={(studentId, subjectIds) => {
               // 同じ生徒を再クリックでモード解除
               if (placingKoushuStudent?.studentId === studentId) {
@@ -1348,6 +1351,10 @@ export default function SchedulePage() {
             }}
             placingStudentId={placingKoushuStudent?.studentId ?? null}
             refreshKey={koushuPanelRefreshKey}
+            onPublished={() => {
+              refreshEntries();
+              setKoushuPanelRefreshKey((k) => k + 1);
+            }}
             onClose={() => {
               setPlacingKoushuStudent(null);
               handleKoushuSelect(null);
