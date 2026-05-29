@@ -182,6 +182,20 @@ export async function PATCH(
       const profileUpdates: Record<string, unknown> = {
         updated_at: new Date().toISOString(),
       };
+
+      // デモ教室はデフォルト教室にできない（見本用のため）。
+      // UI 側でも除外しているが、API 単体でも防ぐ。デモ指定なら NULL に丸める。
+      let sanitizedDefaultSchoolId = default_school_id;
+      if (default_school_id) {
+        const { data: defaultSchool } = await supabaseAdmin
+          .from('schools')
+          .select('is_demo')
+          .eq('id', default_school_id)
+          .maybeSingle();
+        if ((defaultSchool as { is_demo?: boolean } | null)?.is_demo) {
+          sanitizedDefaultSchoolId = null;
+        }
+      }
       // 姓名が渡された場合は display_name も連動更新
       if (last_name !== undefined) {
         profileUpdates.last_name = last_name || null;
@@ -193,7 +207,7 @@ export async function PATCH(
       // 自分自身の編集では権限・教室は変更不可。デフォルト教室のみ変更可。
       if (!isEditingSelf) {
         if (role !== undefined) profileUpdates.role = role;
-        if (default_school_id !== undefined) profileUpdates.default_school_id = default_school_id || null;
+        if (default_school_id !== undefined) profileUpdates.default_school_id = sanitizedDefaultSchoolId || null;
       } else if (default_school_id !== undefined) {
         // 自分のデフォルト教室変更時は、自分が所属する教室のいずれかであることを確認
         const { data: mySchools } = await supabaseAdmin
@@ -201,8 +215,8 @@ export async function PATCH(
           .select('school_id')
           .eq('user_id', userId);
         const mySchoolIds = (mySchools || []).map((r: { school_id: string }) => r.school_id);
-        if (mySchoolIds.includes(default_school_id)) {
-          profileUpdates.default_school_id = default_school_id;
+        if (sanitizedDefaultSchoolId && mySchoolIds.includes(sanitizedDefaultSchoolId)) {
+          profileUpdates.default_school_id = sanitizedDefaultSchoolId;
         }
       }
 

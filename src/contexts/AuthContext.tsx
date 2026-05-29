@@ -143,18 +143,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
         
         // 教室IDを取得
         let fetchedSchoolIds: string[] = [];
+        // デモ教室ID（'all'選択時の除外 / デフォルト教室の判定に使う）
+        let demoIds: string[] = [];
         try {
           // システム管理者とオーナーはすべての教室にアクセス可能
           if (userProfile.role === 'admin' || userProfile.role === 'owner') {
             const allSchools = await getSchools();
             fetchedSchoolIds = allSchools.map(school => school.id);
-            // デモ教室IDを記録（'all'選択時に除外するため）
-            setDemoSchoolIds(allSchools.filter(s => s.is_demo).map(s => s.id));
+            demoIds = allSchools.filter(s => s.is_demo).map(s => s.id);
           } else {
             // その他のロールは紐付けられた教室のみ
             const userSchools = await getUserSchools(userId);
             fetchedSchoolIds = userSchools.map(us => us.school_id);
+            // manager 等でもデモ教室を判定できるよう join 済みの school.is_demo を見る
+            demoIds = userSchools
+              .filter(us => (us.school as { is_demo?: boolean } | null)?.is_demo)
+              .map(us => us.school_id);
           }
+          // デモ教室IDを記録（'all'選択時に除外するため）
+          setDemoSchoolIds(demoIds);
         } catch (schoolsErr: unknown) {
           // AbortErrorは無視
           if (isAbortError(schoolsErr)) {
@@ -170,12 +177,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (typeof window !== 'undefined' && fetchedSchoolIds.length > 0) {
           const savedSchoolId = localStorage.getItem('selectedSchoolId');
           const defaultSchoolId = userProfile.default_school_id ?? null;
-          const hasValidDefault = defaultSchoolId && fetchedSchoolIds.includes(defaultSchoolId);
+          const demoSet = new Set(demoIds);
+          // デモ教室はデフォルト/初期選択にしない（デモはあくまで見本用のため）。
+          // 万一 default_school_id がデモを指していても無効扱いにする。
+          const hasValidDefault =
+            !!defaultSchoolId &&
+            fetchedSchoolIds.includes(defaultSchoolId) &&
+            !demoSet.has(defaultSchoolId);
 
           // 保存済みの選択（"all" や手動で選んだ教室）が有効かどうか
           const hasValidSaved =
             !!savedSchoolId &&
             (savedSchoolId === 'all' || fetchedSchoolIds.includes(savedSchoolId));
+
+          // フォールバック先頭はデモ教室を避けて選ぶ（実教室が1つも無いときだけデモを許容）
+          const fallbackSchoolId =
+            fetchedSchoolIds.find(id => !demoSet.has(id)) ?? fetchedSchoolIds[0];
 
           if (fetchedSchoolIds.length === 1) {
             setSelectedSchoolIdState(fetchedSchoolIds[0]);
@@ -186,16 +203,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
             //      これを default より優先しないと、default_school_id があるユーザーは
             //      「すべての教室」を選んでも再読み込みのたびに default に戻され、
             //      教室の絞り込み・全教室表示が効かなくなる（このバグの原因）。
-            //   2. default_school_id（保存値が無い初回ログイン時のみの初期値）
-            //   3. 先頭の教室
+            //   2. default_school_id（保存値が無い初回ログイン時のみの初期値。デモは除外）
+            //   3. デモ以外の先頭教室
             if (hasValidSaved) {
               setSelectedSchoolIdState(savedSchoolId as string | 'all');
             } else if (hasValidDefault) {
               setSelectedSchoolIdState(defaultSchoolId!);
               localStorage.setItem('selectedSchoolId', defaultSchoolId!);
             } else {
-              setSelectedSchoolIdState(fetchedSchoolIds[0]);
-              localStorage.setItem('selectedSchoolId', fetchedSchoolIds[0]);
+              setSelectedSchoolIdState(fallbackSchoolId);
+              localStorage.setItem('selectedSchoolId', fallbackSchoolId);
             }
           }
         }

@@ -50,11 +50,16 @@ export function UserEditModal({
     setEditRole(editingUser.role === 'teacher' ? 'manager' : (editingUser.role || 'manager') as UserRole);
     const ids = editingUser.user_schools?.map(us => us.school_id) || [];
     setEditSchoolIds(ids);
-    const defaultId = editingUser.default_school_id && ids.includes(editingUser.default_school_id)
-      ? editingUser.default_school_id
-      : ids[0] || '';
+    // デモ教室はデフォルトに選ばない。フォールバックもデモ以外の先頭を優先する。
+    const demoIdSet = new Set(schools.filter(s => s.is_demo).map(s => s.id));
+    const firstNonDemo = ids.find(id => !demoIdSet.has(id)) || ids[0] || '';
+    const savedDefault = editingUser.default_school_id;
+    const defaultId =
+      savedDefault && ids.includes(savedDefault) && !demoIdSet.has(savedDefault)
+        ? savedDefault
+        : firstNonDemo;
     setEditDefaultSchoolId(defaultId);
-  }, [editingUser]);
+  }, [editingUser, schools]);
 
   const isEditingSelf = editingUser.id === profileId;
 
@@ -134,7 +139,9 @@ export function UserEditModal({
                         const next = editSchoolIds.filter(id => id !== school.id);
                         setEditSchoolIds(next);
                         if (editDefaultSchoolId === school.id) {
-                          setEditDefaultSchoolId(next[0] || '');
+                          // デフォルトを外したら、デモ以外の先頭教室に付け替える
+                          const demoIdSet = new Set(schools.filter(s => s.is_demo).map(s => s.id));
+                          setEditDefaultSchoolId(next.find(id => !demoIdSet.has(id)) || next[0] || '');
                         }
                       }
                     }}
@@ -157,7 +164,8 @@ export function UserEditModal({
                 onChange={e => setEditDefaultSchoolId(e.target.value)}
                 className="w-full px-3 py-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3b82f6]"
               >
-                {schools.filter(s => editSchoolIds.includes(s.id)).map(school => (
+                {/* デモ教室はデフォルトに選べないようにする（見本用のため） */}
+                {schools.filter(s => editSchoolIds.includes(s.id) && !s.is_demo).map(school => (
                   <option key={school.id} value={school.id}>
                     {school.name}
                   </option>
