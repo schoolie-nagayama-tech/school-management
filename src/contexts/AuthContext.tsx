@@ -172,16 +172,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
           const defaultSchoolId = userProfile.default_school_id ?? null;
           const hasValidDefault = defaultSchoolId && fetchedSchoolIds.includes(defaultSchoolId);
 
+          // 保存済みの選択（"all" や手動で選んだ教室）が有効かどうか
+          const hasValidSaved =
+            !!savedSchoolId &&
+            (savedSchoolId === 'all' || fetchedSchoolIds.includes(savedSchoolId));
+
           if (fetchedSchoolIds.length === 1) {
             setSelectedSchoolIdState(fetchedSchoolIds[0]);
             localStorage.setItem('selectedSchoolId', fetchedSchoolIds[0]);
           } else {
-            // 複数教室：選択画面を出さず、デフォルト教室（または保存値・先頭）に直接設定
-            if (hasValidDefault) {
+            // 複数教室の初期選択の優先順位：
+            //   1. 保存済みの選択（"all" 含む）— ユーザーが最後に選んだものを尊重する。
+            //      これを default より優先しないと、default_school_id があるユーザーは
+            //      「すべての教室」を選んでも再読み込みのたびに default に戻され、
+            //      教室の絞り込み・全教室表示が効かなくなる（このバグの原因）。
+            //   2. default_school_id（保存値が無い初回ログイン時のみの初期値）
+            //   3. 先頭の教室
+            if (hasValidSaved) {
+              setSelectedSchoolIdState(savedSchoolId as string | 'all');
+            } else if (hasValidDefault) {
               setSelectedSchoolIdState(defaultSchoolId!);
               localStorage.setItem('selectedSchoolId', defaultSchoolId!);
-            } else if (savedSchoolId && (savedSchoolId === 'all' || fetchedSchoolIds.includes(savedSchoolId))) {
-              setSelectedSchoolIdState(savedSchoolId as string | 'all');
             } else {
               setSelectedSchoolIdState(fetchedSchoolIds[0]);
               localStorage.setItem('selectedSchoolId', fetchedSchoolIds[0]);
