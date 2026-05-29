@@ -91,10 +91,13 @@ describe('GET /api/admin/users', () => {
   });
 
   it('未認証で401を返す', async () => {
-    const { requireManager } = await import('@/lib/api-auth');
-    vi.mocked(requireManager).mockResolvedValueOnce(
-      NextResponse.json({ error: '認証が必要です' }, { status: 401 })
-    );
+    // 本ルートは requireManager ではなく getApiAuth で認証する（schoolIds による
+    // 教室スコープ絞り込みが必要なため）。未認証 = auth: null を再現する。
+    const { getApiAuth } = await import('@/lib/api-auth');
+    vi.mocked(getApiAuth).mockResolvedValueOnce({
+      auth: null,
+      cookieResponse: NextResponse.next(),
+    });
 
     const { GET } = await import('@/app/api/admin/users/route');
     const req = new NextRequest('http://localhost:3000/api/admin/users');
