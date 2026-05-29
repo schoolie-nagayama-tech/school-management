@@ -86,10 +86,14 @@ export function ScheduleDailyPrintView({
       <div id="schedule-daily-print" className="hidden print:block bg-white text-black">
         {datesToShow.map((dateStr) => {
           const boothMap = boothMapByDate?.get(dateStr) ?? new Map<string, number>();
-          const slotsWithGroups = timeSlots.map((slot) => ({
-            slot,
-            groups: groupByTeacher(entries, dateStr, slot.id),
-          }));
+          // 印刷では中身の無いコマ（配置ゼロ）は省いて紙面を詰める。
+          // groupByTeacher は配置のある entry だけを束ねるので、groups.size > 0 = そのコマに誰か座っている。
+          const slotsWithGroups = timeSlots
+            .map((slot) => ({
+              slot,
+              groups: groupByTeacher(entries, dateStr, slot.id),
+            }))
+            .filter(({ groups }) => groups.size > 0);
 
           return (
             <div
@@ -108,6 +112,12 @@ export function ScheduleDailyPrintView({
               </div>
 
               {/* コマを 2 列で並べる。コマ数 6 でも 3 行で収まり、A4縦1枚に余裕 */}
+              {/* 空コマを省いた結果その日の配置が全く無い場合は、空グリッドで紙面を浪費しないよう一言だけ出す */}
+              {slotsWithGroups.length === 0 && (
+                <div className="text-xs text-gray-400 py-4 text-center">
+                  この日に配置された授業はありません
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-2">
                 {slotsWithGroups.map(({ slot, groups }) => {
                   const sortedGroups = Array.from(groups.entries()).sort(([aId], [bId]) => {

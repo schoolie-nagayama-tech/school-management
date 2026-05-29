@@ -169,7 +169,6 @@ export const DayCell = React.memo(function DayCell({
             transferMode={transferMode}
             onTransferTargetClick={onTransferTargetClick}
             getKoushuInfo={getKoushuInfo}
-            subjectNameById={subjectNameById}
             isAbsent={absenceKeySet?.has(`${date}|${timeSlot.id}|${group.teacher.id}`) ?? false}
             onToggleAbsence={
               onToggleAbsence && !group.teacher.id.startsWith('__unassigned__')

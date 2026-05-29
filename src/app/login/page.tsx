@@ -49,12 +49,29 @@ export default function LoginPage() {
     } catch (err: unknown) {
       setIsLoading(false);
       const message = err instanceof Error ? err.message : '';
-      if (message.includes('Invalid login credentials')) {
+      // Supabase の AuthError はエラーコードと HTTP ステータスを持つので診断用に取り出す
+      const errObj = err as { code?: string; status?: number; name?: string } | null;
+      const code = errObj?.code;
+      const status = errObj?.status;
+      // 画面に出す診断情報（コード / HTTPステータス）。原因切り分け用
+      const diag = [code && `コード: ${code}`, status && `状態: ${status}`]
+        .filter(Boolean)
+        .join(' / ');
+
+      if (code === 'LOGIN_TIMEOUT') {
+        setError(
+          'ログインがタイムアウトしました（15秒以内に応答がありません）。\nネットワーク接続を確認して、もう一度お試しください。'
+        );
+      } else if (message.includes('Invalid login credentials') || code === 'invalid_credentials') {
         setError('メールアドレスまたはパスワードが正しくありません');
-      } else if (message.includes('Email not confirmed')) {
+      } else if (message.includes('Email not confirmed') || code === 'email_not_confirmed') {
         setError('メールアドレスの確認が完了していません。メールをご確認ください');
+      } else if (message.includes('Failed to fetch') || message.includes('NetworkError')) {
+        setError(
+          `サーバーに接続できませんでした。ネットワーク接続を確認してください。${diag ? `\n${diag}` : ''}`
+        );
       } else {
-        setError('ログインに失敗しました');
+        setError(`ログインに失敗しました${diag ? `\n${diag}` : `\n詳細: ${message || '不明なエラー'}`}`);
       }
     }
   };

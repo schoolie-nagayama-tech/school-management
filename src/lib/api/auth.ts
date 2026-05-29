@@ -17,17 +17,47 @@ export async function signUpWithEmail(email: string, password: string) {
   return data;
 }
 
+// ログインがハングしたと判断するまでの待ち時間（ミリ秒）
+// Supabase/ネットワークが無応答のとき、ボタンが「ログイン中...」のまま固まるのを防ぐ
+export const LOGIN_TIMEOUT_MS = 15000;
+
+// タイムアウト時に投げるエラー。呼び出し側でコード判定できるよう code を持たせる
+export class LoginTimeoutError extends Error {
+  code = 'LOGIN_TIMEOUT';
+  constructor(public timeoutMs: number) {
+    super(`ログイン要求が${timeoutMs / 1000}秒以内に完了しませんでした`);
+    this.name = 'LoginTimeoutError';
+  }
+}
+
 // メール+パスワードでログイン
 // `@` を含まない入力は内部ドメインを付加（既存システムのIDをそのまま使えるように）
 // 短いパスワードは内部的に 6 文字にパディング（Supabase の最低6文字制約を透過的に回避）
 export async function signInWithEmail(email: string, password: string) {
   const supabase = createSupabaseBrowserClient();
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: normalizeLoginEmail(email),
-    password: normalizePassword(password),
+
+  // signInWithPassword はタイムアウトを持たないため、Promise.race で上限を設ける
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () => reject(new LoginTimeoutError(LOGIN_TIMEOUT_MS)),
+      LOGIN_TIMEOUT_MS
+    );
   });
-  if (error) throw error;
-  return data;
+
+  try {
+    const { data, error } = await Promise.race([
+      supabase.auth.signInWithPassword({
+        email: normalizeLoginEmail(email),
+        password: normalizePassword(password),
+      }),
+      timeout,
+    ]);
+    if (error) throw error;
+    return data;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 }
 
 // Googleでログイン

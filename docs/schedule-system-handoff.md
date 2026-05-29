@@ -304,6 +304,31 @@ node scripts/verify-phase0-migrations.mjs
 - 座席表「講習」ボタン = 座席表内の講習モード切替。期間未設定時は `/courses/progress`（講習期間設定）へ誘導
 - ユーザー提示の講習モードUI見本: `docs/mockups/schedule-matching-v3.html`（mode-toggle + 個別/集団レーン）
 
+### コース起点の2系統分離（ユーザー確定 2026-05-29「別軸で正しい」）
+
+講習コース (`seasonal_courses`) は「**内容のテンプレ**」。起点から**全く別の2系統**に分岐する。混同するとズレる:
+
+```
+                        ┌─ ①適用 (applyCoursesToStudents)
+                        │     → student_textbooks / 提案書・進行表
+   講習コース           │     = 「何を勉強するか」(内容)
+ (seasonal_courses) ────┤        ※座席表には出ない。現役データ(夏期128名)はこっち
+   = 内容のテンプレ      │
+                        └─ ②申込 (koushu_enrollments・手入力)
+                              → 座席表 schedule_entries(kind=koushu)
+                              = 「何コマ座るか」(コマ数)・現在0件
+```
+
+| 系統 | 入口 | 書込先 | 意味 |
+|---|---|---|---|
+| **①適用＝内容** | `/courses/[courseId]/apply`・`LegacyProgressPage` | `seasonal_course_applications` + `student_textbooks` + 提案書/進行表 | 何を勉強するか（教材・単元）。**座席表に出ない** |
+| **②申込＝コマ数** | `/schedule/koushu` の申込モーダル（手入力） | `koushu_enrollments` → 座席表 `schedule_entries(kind=koushu)` | 何コマ座るか。コマ数は `course.total_koma` とは別の手入力値 |
+
+- 「コース適用128名 vs 申込0件」は**矛盾ではなく別軸**。適用＝内容、申込＝コマ数。
+- 座席表のコマ数は**コースの `total_koma` とは無関係**な手入力値。
+- 申込スコープは season のみで year を見ていない（`seasonal_courses` に year 列なし）。今は夏期2026のみ＋`is_active=true` で実質回避。翌年セットアップ時に旧年度コースを `is_active=false` にする運用が前提（latent な「来年問題」）。
+- 検証データ実態(2026-05-29): `seasonal_courses` 907件 / `seasonal_course_applications` 456件 / `koushu_enrollments` 0件 / `schedule_entries kind=koushu` 0件。
+
 ## このセッションで追加した新規テーブル（MCP適用済・リポジトリにマイグレファイル無し）
 
 - `teacher_availability_periods` — 講師の出勤可能期間（期間バージョン管理）。`source` = manual / regular_shift。リード優先順位 manual > regular_shift

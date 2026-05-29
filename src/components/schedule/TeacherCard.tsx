@@ -92,8 +92,6 @@ export interface TeacherCardProps {
   onTransferTargetClick?: (date: string, slotId: string, teacherId: string) => void;
   /** 講習モード: 生徒IDから申し込み情報を返すコールバック */
   getKoushuInfo?: (studentId: string) => { enrolled: number; scheduled: number } | null;
-  /** 講師ミニラベル（指導科目）表示用の subjectId → 名前 マップ */
-  subjectNameById?: Map<string, string>;
   /** この講師がこのコマで欠勤か */
   isAbsent?: boolean;
   /** 欠勤トグル（未指定なら欠勤ボタンを出さない＝担当未決定セル等） */
@@ -117,7 +115,6 @@ export const TeacherCard = React.memo(function TeacherCard({
   transferMode,
   onTransferTargetClick,
   getKoushuInfo,
-  subjectNameById,
   isAbsent = false,
   onToggleAbsence,
 }: TeacherCardProps) {
@@ -215,19 +212,8 @@ export const TeacherCard = React.memo(function TeacherCard({
   const remaining = maxStudents - activeEntries.length;
   const slotLabel = remaining === 0 ? '満員' : `残${remaining}`;
 
-  // K-3: 講師のミニラベル
-  // 担当未決定や講師未登録は除外（teacher.id が正規IDの時のみ表示）。
-  // 指導科目は最大3つまで頭文字。性別はアイコン。tooltip で全体を見せる。
-  const teachableLabels = (() => {
-    if (isUnassigned) return [] as string[];
-    const ids = teacher.teachable_subject_ids ?? [];
-    if (ids.length === 0 || !subjectNameById) return [] as string[];
-    return ids
-      .map((id) => subjectNameById.get(id))
-      .filter((n): n is string => !!n);
-  })();
-  const teachableTooltip =
-    teachableLabels.length > 0 ? `指導: ${teachableLabels.join('・')}` : '';
+  // 講師の性別ラベル（M/F アイコン用）。
+  // 指導可能科目は D&D 制約チェックには使うが、座席表カード上には表示しない方針。
   const genderLabel =
     teacher.gender === 'male' ? '男' : teacher.gender === 'female' ? '女' : '';
 
@@ -342,7 +328,7 @@ export const TeacherCard = React.memo(function TeacherCard({
       >
         <span className={`min-w-0 truncate flex-1 text-xs font-medium ${isUnassigned ? 'text-warning' : 'text-gray-700'}`}>
           {displayName}
-          {/* 性別アイコン（M/F）。指導可能科目チップは下の行に出す */}
+          {/* 性別アイコン（M/F） */}
           {genderLabel && (
             <span
               className={`ml-1 inline-block text-[9px] font-bold align-middle ${
@@ -388,23 +374,6 @@ export const TeacherCard = React.memo(function TeacherCard({
           ×
         </button>
       </div>
-      {/* 指導可能科目のミニチップ。最大3個、超過分は +N */}
-      {teachableLabels.length > 0 && (
-        <div className="flex gap-0.5 px-1.5 py-0.5 border-b border-gray-100 overflow-hidden" title={teachableTooltip}>
-          {teachableLabels.slice(0, 3).map((label) => (
-            <span
-              key={label}
-              className="inline-block px-1 py-0 rounded text-[9px] leading-tight text-sky-700 bg-sky-50 border border-sky-100 whitespace-nowrap"
-            >
-              {label}
-            </span>
-          ))}
-          {teachableLabels.length > 3 && (
-            <span className="text-[9px] text-gray-400 leading-tight">+{teachableLabels.length - 3}</span>
-          )}
-        </div>
-      )}
-
       <div ref={setNodeRef} className="relative p-1 rounded-b-xl">
         <div className="space-y-1">
           {displayEntries.map((entry) => {
