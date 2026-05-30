@@ -22,6 +22,7 @@ import {
   Save,
   Search,
   Star,
+  Tag,
   Trash2,
 } from 'lucide-react';
 import {
@@ -214,6 +215,9 @@ export default function ProposalEditor() {
   const [pillPos, setPillPos] = useState<{ top: number; left: number } | null>(null);
   // 「まとめる」ピルを出す基準行＝最後にチェック操作した単元。下部バーへ往復せず、今クリックした真横ですぐまとめられるようにする。
   const [pillAnchorId, setPillAnchorId] = useState<number | null>(null);
+  // 指導意図の一括設定メニュー（選択中の単元へまとめて適用。行ごとの個別クリックを無くす）
+  const [intentMenuOpen, setIntentMenuOpen] = useState(false);
+  const intentMenuRef = useRef<HTMLDivElement>(null);
 
   const [studentName, setStudentName] = useState('');
   const [studentSchoolId, setStudentSchoolId] = useState<string | null>(null);
@@ -561,6 +565,38 @@ export default function ProposalEditor() {
       return changed ? next : prev;
     });
   };
+
+  // 選択中の単元すべてに指導意図を一括設定。チェック→1回選ぶだけで済ませ、行ごとの個別クリックを無くす。
+  // バルク編集の慣例にならい選択は維持（続けて別の意図に変えたり、グループ化もできる）。
+  const applyIntentToSelected = (tag: IntentTag | null) => {
+    let count = 0;
+    setUnitDrafts((prev) => {
+      const next = new Map(prev);
+      next.forEach((d, id) => {
+        if (d.selected) {
+          count += 1;
+          if (d.intent_tag !== tag) next.set(id, { ...d, intent_tag: tag });
+        }
+      });
+      return next;
+    });
+    setIntentMenuOpen(false);
+    if (count > 0) {
+      addToast(tag ? `${count}単元に「${tag}」を設定` : `${count}単元の指導意図をクリア`, 'success');
+    }
+  };
+
+  // メニュー外クリックで閉じる
+  useEffect(() => {
+    if (!intentMenuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (intentMenuRef.current && !intentMenuRef.current.contains(e.target as Node)) {
+        setIntentMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [intentMenuOpen]);
 
   const updateUnit = (ciId: number, patch: Partial<UnitDraft>) => {
     setUnitDrafts((prev) => {
@@ -1433,6 +1469,45 @@ export default function ProposalEditor() {
             <span className="text-[11px] font-medium text-text-muted shrink-0">
               {selectionInfo.count}単元 選択中
             </span>
+          )}
+          {/* 選択中の単元へ指導意図を一括設定。行ごとに1つずつ押す手間を無くす。 */}
+          {selectionInfo.count > 0 && (
+            <div className="relative shrink-0" ref={intentMenuRef}>
+              <button
+                type="button"
+                onClick={() => setIntentMenuOpen((o) => !o)}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-text-body border border-border-default rounded-md hover:bg-surface-hover active:scale-95 transition-[background-color,transform] duration-100 ease-out"
+                title="選択中の単元へ指導意図を一括設定"
+              >
+                <Tag className="w-3.5 h-3.5" />
+                指導意図
+                {intentMenuOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
+              </button>
+              {intentMenuOpen && (
+                <div className="absolute bottom-full right-0 mb-2 w-56 p-2 bg-surface-raised border border-border-default rounded-xl shadow-lg origin-bottom-right animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]">
+                  <div className="px-1 pb-1.5 text-[10px] font-bold text-text-faint">
+                    選択中の{selectionInfo.count}単元に設定
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {INTENT_TAGS.map((tag) => (
+                      <button
+                        key={tag}
+                        onClick={() => applyIntentToSelected(tag)}
+                        className={`px-1.5 py-0.5 text-[10px] font-medium border rounded-full bg-white border-current hover:brightness-95 active:scale-95 transition-[transform,filter] duration-100 ease-out ${INTENT_TAG_COLOR[tag]}`}
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => applyIntentToSelected(null)}
+                    className="mt-1.5 w-full text-left px-1.5 py-1 text-[10px] text-text-faint hover:text-text-muted rounded transition-[color] duration-100"
+                  >
+                    指導意図をクリア
+                  </button>
+                </div>
+              )}
+            </div>
           )}
           <Button
             variant="outline"
