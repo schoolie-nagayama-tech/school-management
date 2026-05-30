@@ -266,6 +266,20 @@ export default function CourseProposalsPage() {
     });
   }, [filteredStudents]);
 
+  // ドロップダウン用: 各生徒が「提案書を作成済みか / 合計何コマか」を引けるマップ。
+  // proposals は現在の年度・シーズンフィルタにスコープ済みなので、画面に表示中の一覧と判定が一致する。
+  // これにより新規作成の生徒選択時に「誰が作成済みで誰が未作成か」が一目で分かる。
+  const proposalStatsByStudent = useMemo(() => {
+    const map = new Map<string, { count: number; totalKoma: number }>();
+    for (const p of proposals) {
+      const prev = map.get(p.student_id) ?? { count: 0, totalKoma: 0 };
+      prev.count += 1;
+      prev.totalKoma += calcTotalKoma(p.units);
+      map.set(p.student_id, prev);
+    }
+    return map;
+  }, [proposals]);
+
   const handleSelectStudent = (studentId: string) => {
     setPickerOpen(false);
     const season = getCurrentSeason();
@@ -495,26 +509,46 @@ export default function CourseProposalsPage() {
                     ) : filteredStudents.length === 0 ? (
                       <div className="py-4 text-center text-xs text-text-faint">該当する生徒がいません</div>
                     ) : (
-                      groupedByGrade.map(([grade, list]) => (
+                      groupedByGrade.map(([grade, list]) => {
+                        // この学年でまだ提案書が無い生徒の数（残り作業の目安）
+                        const pendingCount = list.filter((s) => !proposalStatsByStudent.has(s.id)).length;
+                        return (
                         <div key={grade ?? 'unknown'}>
-                          <div className="sticky top-0 px-3 py-1 bg-surface-hover/95 backdrop-blur text-[10px] font-bold text-text-muted border-b border-border-subtle">
-                            {grade != null ? (GRADE_LABELS[grade] ?? `${grade}年`) : '学年未設定'}
-                            <span className="ml-1 font-normal text-text-faint">{list.length}名</span>
+                          <div className="sticky top-0 px-3 py-1 bg-surface-hover/95 backdrop-blur text-[10px] font-bold text-text-muted border-b border-border-subtle flex items-center gap-1">
+                            <span>{grade != null ? (GRADE_LABELS[grade] ?? `${grade}年`) : '学年未設定'}</span>
+                            <span className="font-normal text-text-faint">{list.length}名</span>
+                            {pendingCount > 0 && (
+                              <span className="ml-auto font-normal text-text-faint">未作成 {pendingCount}名</span>
+                            )}
                           </div>
-                          {list.map((s) => (
-                            <button
-                              key={s.id}
-                              onClick={() => handleSelectStudent(s.id)}
-                              className="w-full text-left px-3 py-2 text-sm text-text-body hover:bg-surface-hover transition-[background-color] duration-150 ease-out active:bg-surface-hover flex items-center gap-2"
-                            >
-                              <span className="px-1.5 py-0.5 text-[11px] font-medium rounded bg-gray-100 text-gray-500 shrink-0">
-                                {s.grade != null ? (GRADE_LABELS[s.grade] ?? `${s.grade}年`) : '—'}
-                              </span>
-                              <span className="truncate">{s.last_name} {s.first_name}</span>
-                            </button>
-                          ))}
+                          {list.map((s) => {
+                            // 現在の年度・シーズンでこの生徒が提案書を持っているか
+                            const stats = proposalStatsByStudent.get(s.id);
+                            return (
+                              <button
+                                key={s.id}
+                                onClick={() => handleSelectStudent(s.id)}
+                                className="w-full text-left px-3 py-2 text-sm text-text-body hover:bg-surface-hover transition-[background-color] duration-150 ease-out active:bg-surface-hover flex items-center gap-2"
+                              >
+                                <span className="px-1.5 py-0.5 text-[11px] font-medium rounded bg-gray-100 text-gray-500 shrink-0">
+                                  {s.grade != null ? (GRADE_LABELS[s.grade] ?? `${s.grade}年`) : '—'}
+                                </span>
+                                <span className="truncate flex-1">{s.last_name} {s.first_name}</span>
+                                {stats ? (
+                                  <span className="shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded bg-info-subtle text-info">
+                                    {stats.count}件 · {stats.totalKoma}コマ
+                                  </span>
+                                ) : (
+                                  <span className="shrink-0 px-1.5 py-0.5 text-[10px] font-medium rounded bg-surface-hover text-text-faint">
+                                    未作成
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
                         </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 </div>

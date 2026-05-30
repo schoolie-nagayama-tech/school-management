@@ -212,6 +212,8 @@ export default function ProposalEditor() {
   const draggingRef = useRef(false); // 高速クリック時のリスナ取りこぼしを防ぐため ref でも保持
   const listRef = useRef<HTMLDivElement>(null);
   const [pillPos, setPillPos] = useState<{ top: number; left: number } | null>(null);
+  // 「まとめる」ピルを出す基準行＝最後にチェック操作した単元。下部バーへ往復せず、今クリックした真横ですぐまとめられるようにする。
+  const [pillAnchorId, setPillAnchorId] = useState<number | null>(null);
 
   const [studentName, setStudentName] = useState('');
   const [studentSchoolId, setStudentSchoolId] = useState<string | null>(null);
@@ -480,6 +482,7 @@ export default function ProposalEditor() {
           return next;
         });
         lastToggleIdRef.current = ciId;
+        setPillAnchorId(ciId);
         return;
       }
     }
@@ -487,6 +490,7 @@ export default function ProposalEditor() {
     const newState = prev ? !prev.selected : true;
     lastToggleIdRef.current = ciId;
     lastToggleStateRef.current = newState;
+    setPillAnchorId(ciId);
     setUnitDrafts((p) => {
       const next = new Map(p);
       const d = next.get(ciId);
@@ -530,15 +534,18 @@ export default function ProposalEditor() {
     dragModeRef.current = mode;
     lastToggleIdRef.current = id;
     lastToggleStateRef.current = mode;
+    setPillAnchorId(id);
     draggingRef.current = true;
     setDragging(true);
     applyDragRange(idx, idx, mode);
   };
 
-  // ドラッグ中に別の行へ入ったら範囲を伸縮
+  // ドラッグ中に別の行へ入ったら範囲を伸縮。ピルは指を離した（＝最後になぞった）行の横へ追従させる。
   const onSelectEnter = (idx: number) => {
     if (dragAnchorIdxRef.current == null) return;
     applyDragRange(dragAnchorIdxRef.current, idx, dragModeRef.current);
+    const id = allItems[idx]?.id;
+    if (id != null) setPillAnchorId(id);
   };
 
   const clearSelection = () => {
@@ -732,16 +739,28 @@ export default function ProposalEditor() {
     };
   }, []);
 
-  // フローティング「まとめる」ピルの位置を、選択ブロック先頭行のチェックボックスの真横に合わせる（スクロール追従）。
+  // ピルを出す行のindex。最後に操作した行が選択中ならそこ、無効なら選択ブロック末尾行にフォールバック。
+  const pillAnchorIdx = useMemo(() => {
+    if (pillAnchorId != null) {
+      const d = unitDrafts.get(pillAnchorId);
+      if (d?.selected && d.group_id === 0) {
+        const idx = allItems.findIndex((i) => i.id === pillAnchorId);
+        if (idx >= 0) return idx;
+      }
+    }
+    return selectionInfo.lastIdx;
+  }, [pillAnchorId, unitDrafts, allItems, selectionInfo.lastIdx]);
+
+  // フローティング「まとめる」ピルの位置を、最後にチェックした行のチェックボックスの真横に合わせる（スクロール追従）。
   useEffect(() => {
-    if (selectionInfo.count < 2 || selectionInfo.firstIdx < 0) {
+    if (selectionInfo.count < 2 || pillAnchorIdx < 0) {
       setPillPos(null);
       return;
     }
     const update = () => {
       const cont = listRef.current;
       const el = cont?.querySelector(
-        `[data-unit-idx="${selectionInfo.firstIdx}"]`
+        `[data-unit-idx="${pillAnchorIdx}"]`
       ) as HTMLElement | null;
       if (!cont || !el) {
         setPillPos(null);
@@ -759,7 +778,7 @@ export default function ProposalEditor() {
       window.removeEventListener('scroll', update);
       window.removeEventListener('resize', update);
     };
-  }, [selectionInfo.count, selectionInfo.firstIdx]);
+  }, [selectionInfo.count, pillAnchorIdx]);
 
   // キーボード: G で選択中の隣接単元をまとめる / Esc で選択解除。入力中は無効。
   useEffect(() => {
@@ -1375,7 +1394,7 @@ export default function ProposalEditor() {
 
       </div>
 
-      {/* 選択脇のフローティング「まとめる」ピル。先頭行のチェックボックスの真横（縦中央）に出し、下部バーへの往復をなくす。 */}
+      {/* 選択脇のフローティング「まとめる」ピル。最後にチェックした行のチェックボックスの真横（縦中央）に出し、下部バーへの往復をなくす。 */}
       {/* ドラッグ中はピルがポインタ操作を奪わないよう pointer-events を切る。 */}
       {pillPos && selectionInfo.count >= 2 && (
         <div
@@ -1386,14 +1405,14 @@ export default function ProposalEditor() {
             <button
               type="button"
               onClick={groupSelected}
-              className="flex items-center gap-1.5 rounded-full bg-primary text-white text-xs font-bold pl-3 pr-2.5 py-1.5 shadow-lg ring-1 ring-black/5 hover:bg-primary/90 active:scale-95 transition-[transform,background-color] duration-150"
+              className="flex items-center gap-1.5 rounded-full bg-primary text-white text-xs font-bold pl-3 pr-2.5 py-1.5 shadow-lg ring-1 ring-black/5 hover:bg-primary/90 active:scale-95 transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] origin-left animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]"
             >
               <Link2 className="w-3.5 h-3.5" />
               {selectionInfo.count}単元をまとめる
               <kbd className="ml-0.5 rounded bg-white/20 px-1 text-[10px] font-semibold leading-tight">G</kbd>
             </button>
           ) : (
-            <div className="flex items-center gap-1.5 rounded-full bg-surface-raised text-text-muted text-[11px] font-medium px-3 py-1.5 shadow-lg ring-1 ring-border-default">
+            <div className="flex items-center gap-1.5 rounded-full bg-surface-raised text-text-muted text-[11px] font-medium px-3 py-1.5 shadow-lg ring-1 ring-border-default origin-left animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]">
               隣接する単元のみまとめられます
             </div>
           )}
