@@ -347,6 +347,17 @@ export default function CourseProposalsPage() {
     return map;
   }, [filtered]);
 
+  // 生徒グループを学年順に並べる（小1→…→高3→既卒、学年未設定は末尾）。
+  // 同学年内は氏名で安定ソート。
+  const studentGroups = useMemo(() => {
+    return Array.from(byStudent.values()).sort((a, b) => {
+      const ga = a.grade ?? Infinity;
+      const gb = b.grade ?? Infinity;
+      if (ga !== gb) return ga - gb;
+      return a.name.localeCompare(b.name, 'ja');
+    });
+  }, [byStudent]);
+
   const statusCounts: Record<string, number> = { draft: 0, sent: 0 };
   for (const p of proposals) {
     const key = p.status === 'approved' ? 'sent' : p.status;
@@ -631,7 +642,7 @@ export default function CourseProposalsPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {Array.from(byStudent.values()).map(({ name, studentId, grade, proposals: studentProposals }, groupIndex) => {
+            {studentGroups.map(({ name, studentId, grade, proposals: studentProposals }, groupIndex) => {
               // 生徒の全提案書の合計コマ数（名前横に表示）
               const totalKoma = studentProposals.reduce((sum, p) => sum + calcTotalKoma(p.units), 0);
               return (
