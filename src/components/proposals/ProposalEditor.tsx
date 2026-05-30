@@ -623,29 +623,36 @@ export default function ProposalEditor() {
         return;
       }
 
+      // group_number → 新しい group_id のマッピングを事前に割り当てる
+      // （setUnitDrafts の updater は複数回呼ばれ得るため、採番の副作用を外に出す）。
       let maxGroup = nextGroupId;
-      // group_number → 新しい group_id のマッピング
       const groupRemap = new Map<number, number>();
+      for (const s of settings) {
+        const g = s.group_number;
+        if (g != null && g > 0 && !groupRemap.has(g)) {
+          groupRemap.set(g, maxGroup);
+          maxGroup++;
+        }
+      }
 
       setUnitDrafts((prev) => {
         const next = new Map(prev);
         for (const s of settings) {
-          if (s.proposal_count <= 0) continue;
+          const inGroup = s.group_number != null && s.group_number > 0;
+          // 未グループかつ0コマの単元だけスキップ。グループ内の単元は0コマでも取り込む
+          // ——捨てるとグループの片割れが欠けてグループが崩れる（取り込み時にグループ化が
+          // 効かない不具合の原因だった）。
+          if (s.proposal_count <= 0 && !inGroup) continue;
           const d = next.get(s.curriculum_item_id);
           if (!d) continue;
 
-          let newGroupId = 0;
-          if (s.group_number != null && s.group_number > 0) {
-            if (!groupRemap.has(s.group_number)) {
-              groupRemap.set(s.group_number, maxGroup);
-              maxGroup++;
-            }
-            newGroupId = groupRemap.get(s.group_number)!;
-          }
+          const newGroupId = inGroup ? groupRemap.get(s.group_number!)! : 0;
 
           next.set(s.curriculum_item_id, {
             ...d,
-            koma_count: s.proposal_count,
+            // グループ内は0コマでも1コマ扱いにして有効化（groupSelected と同じ挙動）。
+            // グループ全体は calcTotalKoma で1回だけ計上されるため合計は増えない。
+            koma_count: inGroup ? (s.proposal_count || 1) : s.proposal_count,
             group_id: newGroupId,
             selected: d.selected,
           });
