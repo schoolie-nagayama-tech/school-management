@@ -732,7 +732,7 @@ export default function ProposalEditor() {
     };
   }, []);
 
-  // フローティング「まとめる」ピルの位置を、選択ブロック先頭行の上に合わせる（スクロール追従）。
+  // フローティング「まとめる」ピルの位置を、選択ブロック先頭行のチェックボックスの真横に合わせる（スクロール追従）。
   useEffect(() => {
     if (selectionInfo.count < 2 || selectionInfo.firstIdx < 0) {
       setPillPos(null);
@@ -747,9 +747,10 @@ export default function ProposalEditor() {
         setPillPos(null);
         return;
       }
-      const r = el.getBoundingClientRect();
-      const cr = cont.getBoundingClientRect();
-      setPillPos({ top: r.top - 6, left: cr.left + cr.width / 2 });
+      // 行内の先頭ボタン＝チェックボックス。その右隣・縦中央に出す。
+      const checkbox = el.querySelector('button');
+      const r = (checkbox ?? el).getBoundingClientRect();
+      setPillPos({ top: r.top + r.height / 2, left: r.right + 8 });
     };
     update();
     window.addEventListener('scroll', update, { passive: true });
@@ -1374,10 +1375,11 @@ export default function ProposalEditor() {
 
       </div>
 
-      {/* 選択脇のフローティング「まとめる」ピル。2件以上選択した先頭行の上に浮かせ、下部バーへの往復をなくす。 */}
+      {/* 選択脇のフローティング「まとめる」ピル。先頭行のチェックボックスの真横（縦中央）に出し、下部バーへの往復をなくす。 */}
+      {/* ドラッグ中はピルがポインタ操作を奪わないよう pointer-events を切る。 */}
       {pillPos && selectionInfo.count >= 2 && (
         <div
-          className="fixed z-40 -translate-x-1/2 -translate-y-full print:hidden"
+          className={`fixed z-40 -translate-y-1/2 print:hidden ${dragging ? 'pointer-events-none' : ''}`}
           style={{ top: pillPos.top, left: pillPos.left }}
         >
           {selectionInfo.contiguous ? (
