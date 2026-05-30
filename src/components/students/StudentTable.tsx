@@ -223,6 +223,10 @@ const StudentTableRow = memo(function StudentTableRow({
   onSchedule,
 }: StudentTableRowProps) {
   const schedulePatterns = student.schedulePatterns || [];
+  // 週回数: 同じ曜日×コマ（例: 国/理 のように 2 科目を 1 コマで実施）は週 1 回として数える。
+  const weeklyCount = new Set(
+    schedulePatterns.map((p) => `${p.day_of_week}-${p.time_slot_id}`)
+  ).size;
   return (
     <tr
       className={`transition-colors duration-150 ${
@@ -277,7 +281,7 @@ const StudentTableRow = memo(function StudentTableRow({
                 )}
               </span>
             ))}
-            <span className="text-[10px] text-[#9ca3af]">週{schedulePatterns.length}回</span>
+            <span className="text-[10px] text-[#9ca3af]">週{weeklyCount}回</span>
           </div>
         ) : (
           <span className="text-[#4b5563]/30">-</span>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { requireManager } from '@/lib/api-auth';
+import { getApiAuth, isSchoolInScope } from '@/lib/api-auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,8 +17,14 @@ function getSupabaseAdmin() {
 
 export async function POST(request: NextRequest) {
   try {
-    const authError = await requireManager(request);
-    if (authError) return authError;
+    const { auth } = await getApiAuth(request);
+    if (!auth) {
+      return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
+    }
+    const role = auth.role.toLowerCase();
+    if (role !== 'admin' && role !== 'owner' && role !== 'manager') {
+      return NextResponse.json({ error: '権限がありません' }, { status: 403 });
+    }
 
     const body = await request.json();
     const { type, submissionId } = body as {
@@ -40,6 +46,30 @@ export async function POST(request: NextRequest) {
     }
 
     const supabaseAdmin = getSupabaseAdmin();
+
+    // 対象 submission が呼び出し元の教室スコープ内かを検証する。
+    // service role は RLS を無視するため、ここで school 所属を確認しないと
+    // 他教室の submission の通知（講師宛メール等）を勝手にトリガーできてしまう。
+    // admin/owner は schoolIds に全教室が入るため isSchoolInScope は常に true。
+    const { data: submission, error: subError } = await supabaseAdmin
+      .from('seasonal_shift_submissions')
+      .select('school_id')
+      .eq('id', submissionId)
+      .maybeSingle();
+    if (subError || !submission) {
+      return NextResponse.json({ error: '提出が見つかりません' }, { status: 404 });
+    }
+    if (!isSchoolInScope(String(submission.school_id), auth.schoolIds)) {
+      console.error(JSON.stringify({
+        type: 'SCOPE_VIOLATION',
+        actorId: auth.userId,
+        path: request.nextUrl.pathname,
+        submissionId,
+        timestamp: new Date().toISOString(),
+      }));
+      return NextResponse.json({ error: '提出が見つかりません' }, { status: 404 });
+    }
+
     const { data, error } = await supabaseAdmin.functions.invoke(
       'send-form-notification',
       {

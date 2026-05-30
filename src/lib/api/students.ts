@@ -50,6 +50,7 @@ async function logStudentAction(
 /** 通塾日程サマリ（一覧表示用） */
 export interface SchedulePatternSummary {
   day_of_week: number;
+  time_slot_id: string | null;
   subject_ids: string[];
   subject_names: string[];
 }
@@ -119,6 +120,7 @@ async function enrichStudentsWithRelations(
   type PatternRow = {
     student_id: string;
     day_of_week: number;
+    time_slot_id: string | null;
     subject_ids: string[];
   };
 
@@ -126,7 +128,7 @@ async function enrichStudentsWithRelations(
     supabase.from('student_subjects').select('student_id, subject_id').in('student_id', studentIds),
     supabase
       .from('schedule_regular_patterns')
-      .select('student_id, day_of_week, subject_ids')
+      .select('student_id, day_of_week, time_slot_id, subject_ids')
       .in('student_id', studentIds)
       .eq('period_type', 'regular')
       .eq('is_active', true)
@@ -173,6 +175,7 @@ async function enrichStudentsWithRelations(
     const sIds = p.subject_ids || [];
     patternsMap.get(p.student_id)!.push({
       day_of_week: p.day_of_week,
+      time_slot_id: p.time_slot_id,
       subject_ids: sIds,
       subject_names: sIds
         .map((id: string) => subjectsMap.get(id)?.name)

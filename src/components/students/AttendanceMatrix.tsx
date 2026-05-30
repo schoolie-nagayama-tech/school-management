@@ -54,6 +54,8 @@ export function AttendanceMatrix({ studentId, schoolId, studentGrade, canEdit, o
   const [isLoading, setIsLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
   const [dragOverCell, setDragOverCell] = useState<string | null>(null);
+  // 同一コマへの重ね登録をブロックした際の一時的なお知らせ（数秒で自動消去）
+  const [notice, setNotice] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!schoolId) {
@@ -111,8 +113,16 @@ export function AttendanceMatrix({ studentId, schoolId, studentGrade, canEdit, o
   }, [patterns]);
 
   // 通常期の週回数
+  // 同じ曜日×コマ（例: 国/理 のように 2 科目を 1 コマで実施）は週 1 回として数えるため、
+  // パターン件数ではなく「曜日×コマ」のユニーク数で集計する。
   const weeklyCount = useMemo(() => {
-    return patterns.filter((p) => p.period_type === 'regular').length;
+    const slots = new Set<string>();
+    for (const p of patterns) {
+      if (p.period_type === 'regular') {
+        slots.add(`${p.day_of_week}-${p.time_slot_id}`);
+      }
+    }
+    return slots.size;
   }, [patterns]);
 
   // ドラッグ開始
@@ -144,7 +154,13 @@ export function AttendanceMatrix({ studentId, schoolId, studentGrade, canEdit, o
 
       const key = `${dayOfWeek}-${slotId}`;
       const existing = patternMap.get(key);
-      if (existing) return; // 既にある場合は無視
+      // 1コマには授業を1つだけ。2科目を同時に入れたい場合は「算/国」のような複合科目を使う。
+      // 既に授業が入っているコマには重ねて登録できないようブロックし、その旨を通知する。
+      if (existing) {
+        setNotice('このコマには既に授業が入っています。2科目を1コマで行う場合は「算/国」などの複合科目を選んでください。');
+        window.setTimeout(() => setNotice(null), 4000);
+        return;
+      }
 
       setSaving(key);
       try {
@@ -219,6 +235,13 @@ export function AttendanceMatrix({ studentId, schoolId, studentGrade, canEdit, o
 
   return (
     <div className="space-y-3">
+      {/* 同一コマへの重ね登録ブロック通知 */}
+      {notice && (
+        <div className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1.5">
+          {notice}
+        </div>
+      )}
+
       {/* 科目一覧（ドラッグ元）— 表の上に横並び */}
       {canEdit && (
         <div className="space-y-1.5">

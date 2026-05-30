@@ -75,6 +75,12 @@ export function StudentRegularScheduleList({
   const regularPatterns = patterns.filter((p) => p.period_type === 'regular');
   const kousyuPatterns = patterns.filter((p) => p.period_type !== 'regular');
 
+  // 週回数: 同じ曜日×コマ（例: 国/理 のように 2 科目を 1 コマで実施）は週 1 回として数える。
+  // パターン件数ではなく「曜日×コマ」のユニーク数で集計する。
+  const weeklyCount = new Set(
+    regularPatterns.map((p) => `${p.day_of_week}-${p.time_slot_id}`)
+  ).size;
+
   const fetchData = useCallback(async () => {
     if (!schoolId) return;
     setLoading(true);
@@ -229,7 +235,7 @@ export function StudentRegularScheduleList({
 
       {regularPatterns.length > 0 && (
         <p className="text-xs text-[var(--paragraph-light)]">
-          <Calendar className="inline h-4 w-4 mr-1" />週{regularPatterns.length}回通塾
+          <Calendar className="inline h-4 w-4 mr-1" />週{weeklyCount}回通塾
         </p>
       )}
 

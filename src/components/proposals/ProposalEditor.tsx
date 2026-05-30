@@ -203,6 +203,16 @@ export default function ProposalEditor() {
   const [nextGroupId, setNextGroupId] = useState(1);
   const lastToggleIdRef = useRef<number | null>(null);
 
+  // ── 単元の範囲選択（ドラッグでなぞって選択）＋ 選択脇のフローティング「まとめる」 ──
+  // チェックを1個ずつ付けて下部バーまで往復する手間を減らすためのUI。
+  const [dragging, setDragging] = useState(false);
+  const dragAnchorIdxRef = useRef<number | null>(null); // ドラッグ開始行のindex
+  const dragModeRef = useRef<boolean>(true); // true=選択 / false=解除（開始行の状態で決まる）
+  const dragSnapshotRef = useRef<Set<number>>(new Set()); // ドラッグ開始時点の選択集合（ラバーバンドの基準）
+  const draggingRef = useRef(false); // 高速クリック時のリスナ取りこぼしを防ぐため ref でも保持
+  const listRef = useRef<HTMLDivElement>(null);
+  const [pillPos, setPillPos] = useState<{ top: number; left: number } | null>(null);
+
   const [studentName, setStudentName] = useState('');
   const [studentSchoolId, setStudentSchoolId] = useState<string | null>(null);
   const [textbookName, setTextbookName] = useState('');
@@ -485,6 +495,66 @@ export default function ProposalEditor() {
     });
   };
 
+  // ドラッグ範囲選択: 開始〜現在の連続行を、開始時のスナップショットを基準に塗り替える（ラバーバンド）
+  const applyDragRange = (a: number, b: number, mode: boolean) => {
+    const [lo, hi] = a <= b ? [a, b] : [b, a];
+    const snap = dragSnapshotRef.current;
+    setUnitDrafts((prev) => {
+      const next = new Map(prev);
+      allItems.forEach((it, idx) => {
+        const d = next.get(it.id);
+        if (!d) return;
+        // 範囲内は mode（選択/解除）、範囲外はドラッグ開始時の状態に戻す
+        const sel = idx >= lo && idx <= hi ? mode : snap.has(it.id);
+        if (d.selected !== sel) next.set(it.id, { ...d, selected: sel });
+      });
+      return next;
+    });
+  };
+
+  // チェックボックスを押した瞬間（ドラッグ開始）。Shift同時押しは従来の範囲トグルを維持。
+  const startSelectDrag = (idx: number, shiftKey: boolean) => {
+    const id = allItems[idx]?.id;
+    if (id == null) return;
+    if (shiftKey) {
+      toggleUnit(id, true);
+      return;
+    }
+    const snap = new Set<number>();
+    unitDrafts.forEach((d, did) => {
+      if (d.selected) snap.add(did);
+    });
+    dragSnapshotRef.current = snap;
+    dragAnchorIdxRef.current = idx;
+    const mode = !(unitDrafts.get(id)?.selected ?? false); // 未選択行から始めたら「選択」、選択済みなら「解除」
+    dragModeRef.current = mode;
+    lastToggleIdRef.current = id;
+    lastToggleStateRef.current = mode;
+    draggingRef.current = true;
+    setDragging(true);
+    applyDragRange(idx, idx, mode);
+  };
+
+  // ドラッグ中に別の行へ入ったら範囲を伸縮
+  const onSelectEnter = (idx: number) => {
+    if (dragAnchorIdxRef.current == null) return;
+    applyDragRange(dragAnchorIdxRef.current, idx, dragModeRef.current);
+  };
+
+  const clearSelection = () => {
+    setUnitDrafts((prev) => {
+      const next = new Map(prev);
+      let changed = false;
+      next.forEach((d, id) => {
+        if (d.selected) {
+          next.set(id, { ...d, selected: false });
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+  };
+
   const updateUnit = (ciId: number, patch: Partial<UnitDraft>) => {
     setUnitDrafts((prev) => {
       const next = new Map(prev);
@@ -615,6 +685,97 @@ export default function ProposalEditor() {
     }
     return map;
   }, [activeUnits]);
+
+  // 選択中（未グループ）の単元情報。フローティングボタン表示・隣接判定・Gキーで使う。
+  const selectionInfo = useMemo(() => {
+    const indices: number[] = [];
+    allItems.forEach((it, idx) => {
+      const d = unitDrafts.get(it.id);
+      if (d?.selected && d.group_id === 0) indices.push(idx);
+    });
+    const count = indices.length;
+    let contiguous = count >= 2;
+    for (let i = 1; i < indices.length; i++) {
+      if (indices[i] !== indices[i - 1] + 1) contiguous = false;
+    }
+    return {
+      count,
+      contiguous,
+      firstIdx: indices[0] ?? -1,
+      lastIdx: indices[indices.length - 1] ?? -1,
+    };
+  }, [allItems, unitDrafts]);
+
+  // ドラッグ中: どこで指を離しても選択を確定。ビューポート端では自動スクロール。
+  // リスナは常設し draggingRef でガード（pointerdown直後の高速リリースでも取りこぼさない）。
+  useEffect(() => {
+    const endDrag = () => {
+      if (!draggingRef.current) return;
+      draggingRef.current = false;
+      dragAnchorIdxRef.current = null;
+      setDragging(false);
+    };
+    const onMove = (e: PointerEvent) => {
+      if (!draggingRef.current) return;
+      const margin = 72;
+      const speed = 14;
+      if (e.clientY < margin) window.scrollBy(0, -speed);
+      else if (e.clientY > window.innerHeight - margin) window.scrollBy(0, speed);
+    };
+    window.addEventListener('pointerup', endDrag);
+    window.addEventListener('pointercancel', endDrag);
+    window.addEventListener('pointermove', onMove);
+    return () => {
+      window.removeEventListener('pointerup', endDrag);
+      window.removeEventListener('pointercancel', endDrag);
+      window.removeEventListener('pointermove', onMove);
+    };
+  }, []);
+
+  // フローティング「まとめる」ピルの位置を、選択ブロック先頭行の上に合わせる（スクロール追従）。
+  useEffect(() => {
+    if (selectionInfo.count < 2 || selectionInfo.firstIdx < 0) {
+      setPillPos(null);
+      return;
+    }
+    const update = () => {
+      const cont = listRef.current;
+      const el = cont?.querySelector(
+        `[data-unit-idx="${selectionInfo.firstIdx}"]`
+      ) as HTMLElement | null;
+      if (!cont || !el) {
+        setPillPos(null);
+        return;
+      }
+      const r = el.getBoundingClientRect();
+      const cr = cont.getBoundingClientRect();
+      setPillPos({ top: r.top - 6, left: cr.left + cr.width / 2 });
+    };
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, [selectionInfo.count, selectionInfo.firstIdx]);
+
+  // キーボード: G で選択中の隣接単元をまとめる / Esc で選択解除。入力中は無効。
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      if ((e.key === 'g' || e.key === 'G') && selectionInfo.contiguous) {
+        e.preventDefault();
+        groupSelected();
+      } else if (e.key === 'Escape' && selectionInfo.count > 0) {
+        clearSelection();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // groupSelected/clearSelection は選択変化で作り直されるため selectionInfo を依存に含めれば十分
+  }, [selectionInfo.contiguous, selectionInfo.count]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSave = async () => {
     if (!selectedTextbookId) {
@@ -1170,8 +1331,8 @@ export default function ProposalEditor() {
             </div>
           )}
 
-          <div className="space-y-1">
-            {allItems.map((item) => {
+          <div ref={listRef} className={`space-y-1 ${dragging ? 'select-none' : ''}`}>
+            {allItems.map((item, idx) => {
               const draft = unitDrafts.get(item.id);
               if (!draft) return null;
               const done = isDone(item.id);
@@ -1180,11 +1341,14 @@ export default function ProposalEditor() {
               return (
                 <UnitRow
                   key={item.id}
+                  index={idx}
                   item={item}
                   draft={draft}
                   done={done}
                   groupMembers={groupMembers}
                   onToggle={(shiftKey) => toggleUnit(item.id, shiftKey)}
+                  onSelectStart={(shiftKey) => startSelectDrag(idx, shiftKey)}
+                  onSelectEnter={() => onSelectEnter(idx)}
                   onUpdate={(patch) => updateUnit(item.id, patch)}
                   onUngroup={() => ungroupUnit(item.id)}
                   onUngroupAll={() => draft.group_id > 0 && ungroupAll(draft.group_id)}
@@ -1210,6 +1374,30 @@ export default function ProposalEditor() {
 
       </div>
 
+      {/* 選択脇のフローティング「まとめる」ピル。2件以上選択した先頭行の上に浮かせ、下部バーへの往復をなくす。 */}
+      {pillPos && selectionInfo.count >= 2 && (
+        <div
+          className="fixed z-40 -translate-x-1/2 -translate-y-full print:hidden"
+          style={{ top: pillPos.top, left: pillPos.left }}
+        >
+          {selectionInfo.contiguous ? (
+            <button
+              type="button"
+              onClick={groupSelected}
+              className="flex items-center gap-1.5 rounded-full bg-primary text-white text-xs font-bold pl-3 pr-2.5 py-1.5 shadow-lg ring-1 ring-black/5 hover:bg-primary/90 active:scale-95 transition-[transform,background-color] duration-150"
+            >
+              <Link2 className="w-3.5 h-3.5" />
+              {selectionInfo.count}単元をまとめる
+              <kbd className="ml-0.5 rounded bg-white/20 px-1 text-[10px] font-semibold leading-tight">G</kbd>
+            </button>
+          ) : (
+            <div className="flex items-center gap-1.5 rounded-full bg-surface-raised text-text-muted text-[11px] font-medium px-3 py-1.5 shadow-lg ring-1 ring-border-default">
+              隣接する単元のみまとめられます
+            </div>
+          )}
+        </div>
+      )}
+
       {/* スティッキーボトムバー（コンテンツ幅 max-w-[1600px] に合わせる） */}
       <div className="fixed bottom-0 left-0 right-0 z-30 bg-surface-raised/95 backdrop-blur-sm border-t border-border-default print:hidden">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-2.5 flex items-center gap-3">
@@ -1220,11 +1408,17 @@ export default function ProposalEditor() {
             )}
           </div>
           <div className="flex-1" />
+          {selectionInfo.count > 0 && (
+            <span className="text-[11px] font-medium text-text-muted shrink-0">
+              {selectionInfo.count}単元 選択中
+            </span>
+          )}
           <Button
             variant="outline"
             size="sm"
             onClick={groupSelected}
-            title="選択中の未グループ単元を1コマにまとめる"
+            disabled={!selectionInfo.contiguous}
+            title="選択中の未グループ単元を1コマにまとめる（ショートカット: G）"
           >
             <Link2 className="w-3.5 h-3.5 mr-1" />
             グループ化
@@ -1363,20 +1557,26 @@ export default function ProposalEditor() {
 // ─── 単元行 ───
 
 function UnitRow({
+  index,
   item,
   draft,
   done,
   groupMembers,
   onToggle,
+  onSelectStart,
+  onSelectEnter,
   onUpdate,
   onUngroup,
   onUngroupAll,
 }: {
+  index: number;
   item: CurriculumItem;
   draft: UnitDraft;
   done: boolean;
   groupMembers?: UnitDraft[];
   onToggle: (shiftKey: boolean) => void;
+  onSelectStart: (shiftKey: boolean) => void;
+  onSelectEnter: () => void;
   onUpdate: (patch: Partial<UnitDraft>) => void;
   onUngroup: () => void;
   onUngroupAll: () => void;
@@ -1409,14 +1609,27 @@ function UnitRow({
 
   return (
     <div
+      data-unit-idx={index}
+      onPointerEnter={onSelectEnter}
       className={`rounded-lg transition-[background-color,border-color] duration-150 ease-out ${rowColor} ${
         isGrouped && isActive ? `border-l-4 ${GROUP_COLORS[groupColorIdx]}` : ''
       }`}
     >
       <div className="flex items-center gap-2 px-3 py-2">
+        {/* チェック＝ドラッグハンドルも兼ねる。押した瞬間に選択開始し、そのままなぞると範囲選択。 */}
         <button
-          onClick={(e) => onToggle(e.shiftKey)}
-          className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-[background-color,border-color,color,transform] duration-150 ease-out active:scale-90 ${checkColor}`}
+          onPointerDown={(e) => {
+            if (e.button !== 0) return; // 左ボタンのみ
+            e.preventDefault(); // テキスト選択・フォーカス暴れを防ぐ
+            onSelectStart(e.shiftKey);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === ' ' || e.key === 'Enter') {
+              e.preventDefault();
+              onToggle(e.shiftKey);
+            }
+          }}
+          className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 cursor-pointer touch-none transition-[background-color,border-color,color,transform] duration-150 ease-out active:scale-90 ${checkColor}`}
           aria-label={draft.selected ? `${item.title} を選択解除` : `${item.title} を選択`}
         >
           {draft.selected && <Check className="w-3 h-3" />}

@@ -179,6 +179,27 @@ export async function PATCH(
 
     if (isUserManagementEdit) {
       const { display_name, last_name, first_name, role, default_school_id } = body;
+
+      // 教室紐付けのスコープ安全化:
+      // admin/owner は全教室を扱えるので wantIds をそのまま採用。
+      // manager は「自分のスコープ内の教室」だけを変更でき、スコープ外の
+      // 既存所属は保持する（越境付与・巻き添え削除の防止）。
+      const callerRole = auth.role.toLowerCase();
+      const isGlobalRole = callerRole === 'admin' || callerRole === 'owner';
+      let finalSchoolIds: string[] = wantIds;
+      if (!isGlobalRole && !isEditingSelf) {
+        const scope = new Set(auth.schoolIds);
+        const { data: existingRows } = await supabaseAdmin
+          .from('user_schools')
+          .select('school_id')
+          .eq('user_id', userId);
+        const outOfScopeExisting = (existingRows || [])
+          .map((r: { school_id: string }) => String(r.school_id))
+          .filter((id) => !scope.has(id));
+        const inScopeWanted = wantIds.filter((id) => scope.has(id));
+        finalSchoolIds = Array.from(new Set([...outOfScopeExisting, ...inScopeWanted]));
+      }
+
       const profileUpdates: Record<string, unknown> = {
         updated_at: new Date().toISOString(),
       };
@@ -207,7 +228,14 @@ export async function PATCH(
       // 自分自身の編集では権限・教室は変更不可。デフォルト教室のみ変更可。
       if (!isEditingSelf) {
         if (role !== undefined) profileUpdates.role = role;
-        if (default_school_id !== undefined) profileUpdates.default_school_id = sanitizedDefaultSchoolId || null;
+        if (default_school_id !== undefined) {
+          let v = sanitizedDefaultSchoolId || null;
+          // manager はスコープ外の教室をデフォルトに設定できない（最終的な所属に含まれるもののみ）
+          if (!isGlobalRole && v && !finalSchoolIds.includes(String(v))) {
+            v = null;
+          }
+          profileUpdates.default_school_id = v;
+        }
       } else if (default_school_id !== undefined) {
         // 自分のデフォルト教室変更時は、自分が所属する教室のいずれかであることを確認
         const { data: mySchools } = await supabaseAdmin
@@ -240,8 +268,8 @@ export async function PATCH(
           throw deleteAllError;
         }
 
-        if (wantIds.length > 0) {
-          const rows = wantIds.map((school_id) => ({ user_id: userId, school_id }));
+        if (finalSchoolIds.length > 0) {
+          const rows = finalSchoolIds.map((school_id) => ({ user_id: userId, school_id }));
           const { error: insertError } = await supabaseAdmin
             .from('user_schools')
             .insert(rows);
@@ -252,7 +280,7 @@ export async function PATCH(
           }
         }
 
-        console.log('[PATCH user]', { userId, wantIds });
+        console.log('[PATCH user]', { userId, wantIds, finalSchoolIds });
       }
 
       const { data: afterRows } = await supabaseAdmin
