@@ -262,6 +262,8 @@ export default function ProposalEditor() {
         setStudentSchoolId((student as { school_id: string }).school_id);
         setStudentGrade((student as { grade: number }).grade);
       }
+      // ひな形の絞り込みに使う教室ID。state は非同期で同一実行内では使えないためローカルで保持。
+      const schoolId = student ? (student as { school_id: string }).school_id : null;
 
       let tbId = selectedTextbookId;
       let stbId = studentTextbookId;
@@ -389,11 +391,15 @@ export default function ProposalEditor() {
           .eq('textbook_id', tbId);
         if (courseTextbooks && courseTextbooks.length > 0) {
           const courseIds = (courseTextbooks as { course_id: string }[]).map((ct) => ct.course_id);
-          const { data: courses } = await supabase
+          // 同名のひな形が複数教室に存在するため、この生徒の教室のものだけに絞る。
+          // school_id で絞らないと他教室のコピーが重複表示されてしまう。
+          let q = supabase
             .from('seasonal_courses')
             .select('id, name, season')
             .in('id', courseIds)
             .eq('is_active', true);
+          if (schoolId) q = q.eq('school_id', schoolId);
+          const { data: courses } = await q;
           setAvailableCourses((courses ?? []) as SeasonalCourse[]);
         } else {
           setAvailableCourses([]);
