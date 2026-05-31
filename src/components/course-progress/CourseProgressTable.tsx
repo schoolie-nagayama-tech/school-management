@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import Link from 'next/link';
+import { FileText, User } from 'lucide-react';
 import type { Student, CourseProgressItem, StudentCourseProgress, ApplicationStatus } from '@/types/database';
 import { GRADE_LABELS, PROGRESS_COLUMN_GROUPS } from '@/types/database';
 import type { AutoValues } from '@/lib/api/courseProgress';
@@ -25,6 +27,8 @@ interface CourseProgressTableProps {
   onDateChange: (studentId: string, itemId: string, value: string | null) => void;
   onItemNameChange?: (itemId: string, name: string) => void;
   onItemDeadlineChange?: (itemId: string, deadline: string | null) => void;
+  /** 生徒名クリック時のポップオーバーから「生徒情報」を開く */
+  onShowStudentInfo?: (student: Student) => void;
 }
 
 function nextStatus(current: ApplicationStatus | null | undefined): ApplicationStatus | null {
@@ -159,6 +163,7 @@ export function CourseProgressTable({
   onDateChange,
   onItemNameChange,
   onItemDeadlineChange,
+  onShowStudentInfo,
 }: CourseProgressTableProps) {
   const [editingCell, setEditingCell] = useState<{ studentId: string; itemId: string; type: 'number' | 'date' } | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -167,6 +172,25 @@ export function CourseProgressTable({
   const [editingHeader, setEditingHeader] = useState<{ itemId: string; type: 'item-name' | 'deadline' } | null>(null);
   const [editHeaderValue, setEditHeaderValue] = useState('');
   const [headerEditPosition, setHeaderEditPosition] = useState({ top: 0, left: 0 });
+  // 生徒名クリックで開くポップオーバー（生徒情報 / 提案書一覧への導線）。
+  // テーブルは overflow スクロールするので、クリップされないよう fixed 配置でアンカーする。
+  const [nameMenu, setNameMenu] = useState<{ student: Student; top: number; left: number } | null>(null);
+
+  // ポップオーバーは外側クリック・Esc・スクロールで閉じる（スクロールするとアンカーから外れるため）。
+  useEffect(() => {
+    if (!nameMenu) return;
+    const close = () => setNameMenu(null);
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
+    // capture=true でテーブル内側のスクロールも拾う
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('resize', close);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('scroll', close, true);
+      window.removeEventListener('resize', close);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [nameMenu]);
 
   const progressMap = useMemo(() => {
     const map = new Map<string, StudentCourseProgress>();
@@ -717,9 +741,17 @@ export function CourseProgressTable({
                     className={`sticky z-10 px-1.5 py-0.5 border-b border-gray-100 ${isEven ? 'bg-white' : 'bg-gray-50/80'}`}
                     style={{ left: GRADE_W, width: NAME_W, minWidth: NAME_W }}
                   >
-                    <span className="text-[11px] font-medium text-[#1e3a5f] whitespace-nowrap">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        const r = e.currentTarget.getBoundingClientRect();
+                        setNameMenu({ student, top: r.bottom + 4, left: r.left });
+                      }}
+                      className="text-[11px] font-medium text-[#1e3a5f] whitespace-nowrap hover:underline focus:outline-none focus-visible:underline cursor-pointer"
+                      title="生徒情報・提案書一覧を開く"
+                    >
                       {student.last_name} {student.first_name}
-                    </span>
+                    </button>
                   </td>
                   {/* 進捗バー + グループドット */}
                   <td
@@ -908,6 +940,37 @@ export function CourseProgressTable({
           onCancel={() => setEditingHeader(null)}
           position={headerEditPosition}
         />
+      )}
+
+      {/* 生徒名クリックのポップオーバー: 生徒情報 / 提案書一覧への導線 */}
+      {nameMenu && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setNameMenu(null)} />
+          <div
+            className="fixed z-50 min-w-[160px] py-1 bg-white border border-gray-200 rounded-lg shadow-lg origin-top-left animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]"
+            style={{ top: nameMenu.top, left: nameMenu.left }}
+          >
+            <div className="px-3 py-1 text-[10px] font-bold text-gray-400 truncate max-w-[200px]">
+              {nameMenu.student.last_name} {nameMenu.student.first_name}
+            </div>
+            <button
+              type="button"
+              onClick={() => { onShowStudentInfo?.(nameMenu.student); setNameMenu(null); }}
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-[background-color] duration-100"
+            >
+              <User className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+              生徒情報
+            </button>
+            <Link
+              href={`/students/${nameMenu.student.id}/proposals`}
+              onClick={() => setNameMenu(null)}
+              className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-[background-color] duration-100"
+            >
+              <FileText className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+              提案書一覧
+            </Link>
+          </div>
+        </>
       )}
     </>
   );

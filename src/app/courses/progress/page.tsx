@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/layouts';
 import { Loading, InlineLoading } from '@/components/ui';
+import { StudentDetailModal } from '@/components/students';
 import { ContextHelp } from '@/components/help/ContextHelp';
 
 // 重いテーブル本体・ダッシュボードは初期バンドルに含めず、データ取得と並行して遅延ロード
@@ -85,6 +87,11 @@ export default function CourseProgressPage() {
     setYearRaw(y);
     saveSavedSeasonYear(season, y);
   }, [season]);
+
+  const router = useRouter();
+
+  // 進捗表の生徒名クリックで開く「生徒情報」モーダル
+  const [infoStudent, setInfoStudent] = useState<Student | null>(null);
 
   // データ
   const [students, setStudents] = useState<Student[]>([]);
@@ -1114,9 +1121,18 @@ export default function CourseProgressPage() {
             onDateChange={handleDateChange}
             onItemNameChange={isOwnerOrAbove ? handleItemNameChange : undefined}
             onItemDeadlineChange={isOwnerOrAbove ? handleItemDeadlineChange : undefined}
+            onShowStudentInfo={setInfoStudent}
           />
         )}
       </div>
+
+      {/* 生徒情報モーダル（進捗表の生徒名クリックで開く）。編集は既存機構を再利用し生徒管理ページへ。 */}
+      <StudentDetailModal
+        isOpen={!!infoStudent}
+        student={infoStudent}
+        onClose={() => setInfoStudent(null)}
+        onEdit={(s) => router.push(`/students?edit=${s.id}`)}
+      />
 
       {/* テンプレート適用ダイアログ */}
       {showTemplateDialog && (
