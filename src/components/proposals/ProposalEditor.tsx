@@ -1447,7 +1447,7 @@ export default function ProposalEditor() {
       {/* ドラッグ中はピルがポインタ操作を奪わないよう pointer-events を切る。 */}
       {pillPos && selectionInfo.count >= 2 && (
         <div
-          className={`fixed z-40 -translate-y-1/2 print:hidden ${dragging ? 'pointer-events-none' : ''}`}
+          className={`fixed z-40 -translate-y-1/2 print:hidden flex items-center gap-1.5 ${dragging ? 'pointer-events-none' : ''}`}
           style={{ top: pillPos.top, left: pillPos.left }}
         >
           {selectionInfo.contiguous ? (
@@ -1465,6 +1465,44 @@ export default function ProposalEditor() {
               隣接する単元のみまとめられます
             </div>
           )}
+
+          {/* グループ化ピルの隣に「指導意図」一括設定。選択した場所のすぐ横でまとめて設定できる。 */}
+          <div className="relative" ref={intentMenuRef}>
+            <button
+              type="button"
+              onClick={() => setIntentMenuOpen((o) => !o)}
+              className="flex items-center gap-1 rounded-full bg-surface-raised text-text-body text-xs font-medium pl-2.5 pr-2 py-1.5 shadow-lg ring-1 ring-border-default hover:bg-surface-hover active:scale-95 transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] origin-left animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]"
+              title="選択中の単元へ指導意図を一括設定"
+            >
+              <Tag className="w-3.5 h-3.5" />
+              指導意図
+              {intentMenuOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            </button>
+            {intentMenuOpen && (
+              <div className="absolute top-full left-0 mt-2 w-56 p-2 bg-surface-raised border border-border-default rounded-xl shadow-lg origin-top-left animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]">
+                <div className="px-1 pb-1.5 text-[10px] font-bold text-text-faint">
+                  選択中の{selectionInfo.count}単元に設定
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {INTENT_TAGS.map((tag) => (
+                    <button
+                      key={tag}
+                      onClick={() => applyIntentToSelected(tag)}
+                      className={`px-1.5 py-0.5 text-[10px] font-medium border rounded-full bg-white border-current hover:brightness-95 active:scale-95 transition-[transform,filter] duration-100 ease-out ${INTENT_TAG_COLOR[tag]}`}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => applyIntentToSelected(null)}
+                  className="mt-1.5 w-full text-left px-1.5 py-1 text-[10px] text-text-faint hover:text-text-muted rounded transition-[color] duration-100"
+                >
+                  指導意図をクリア
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -1482,45 +1520,6 @@ export default function ProposalEditor() {
             <span className="text-[11px] font-medium text-text-muted shrink-0">
               {selectionInfo.count}単元 選択中
             </span>
-          )}
-          {/* 選択中の単元へ指導意図を一括設定。行ごとに1つずつ押す手間を無くす。 */}
-          {selectionInfo.count > 0 && (
-            <div className="relative shrink-0" ref={intentMenuRef}>
-              <button
-                type="button"
-                onClick={() => setIntentMenuOpen((o) => !o)}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-text-body border border-border-default rounded-md hover:bg-surface-hover active:scale-95 transition-[background-color,transform] duration-100 ease-out"
-                title="選択中の単元へ指導意図を一括設定"
-              >
-                <Tag className="w-3.5 h-3.5" />
-                指導意図
-                {intentMenuOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
-              </button>
-              {intentMenuOpen && (
-                <div className="absolute bottom-full right-0 mb-2 w-56 p-2 bg-surface-raised border border-border-default rounded-xl shadow-lg origin-bottom-right animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]">
-                  <div className="px-1 pb-1.5 text-[10px] font-bold text-text-faint">
-                    選択中の{selectionInfo.count}単元に設定
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    {INTENT_TAGS.map((tag) => (
-                      <button
-                        key={tag}
-                        onClick={() => applyIntentToSelected(tag)}
-                        className={`px-1.5 py-0.5 text-[10px] font-medium border rounded-full bg-white border-current hover:brightness-95 active:scale-95 transition-[transform,filter] duration-100 ease-out ${INTENT_TAG_COLOR[tag]}`}
-                      >
-                        {tag}
-                      </button>
-                    ))}
-                  </div>
-                  <button
-                    onClick={() => applyIntentToSelected(null)}
-                    className="mt-1.5 w-full text-left px-1.5 py-1 text-[10px] text-text-faint hover:text-text-muted rounded transition-[color] duration-100"
-                  >
-                    指導意図をクリア
-                  </button>
-                </div>
-              )}
-            </div>
           )}
           <Button
             variant="outline"
