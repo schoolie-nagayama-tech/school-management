@@ -471,6 +471,7 @@ export type Database = {
           revision_date: string | null;
           sheet_gid: string | null;
           grade_category: 'elementary' | 'middle' | 'high' | null;
+          is_active: boolean;
           created_at: string | null;
           updated_at: string | null;
         };
@@ -484,6 +485,7 @@ export type Database = {
           revision_date?: string | null;
           sheet_gid?: string | null;
           grade_category?: 'elementary' | 'middle' | 'high' | null;
+          is_active?: boolean;
           created_at?: string | null;
           updated_at?: string | null;
         };
@@ -497,6 +499,7 @@ export type Database = {
           revision_date?: string | null;
           sheet_gid?: string | null;
           grade_category?: 'elementary' | 'middle' | 'high' | null;
+          is_active?: boolean;
           created_at?: string | null;
           updated_at?: string | null;
         };

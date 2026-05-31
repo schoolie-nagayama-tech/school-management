@@ -234,6 +234,8 @@ export default function TestPrepEditor() {
     let query = supabase
       .from('textbooks')
       .select('id, name, subject, publisher, grade, grade_category')
+      // 無効化された教材はピッカーから除外（教材マスタで非表示にしたもの）
+      .eq('is_active', true)
       .order('subject')
       .order('name');
 

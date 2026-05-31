@@ -10,7 +10,7 @@ import { ToastContainer, Loading } from '@/components/ui';
 import AccessDenied from '@/components/AccessDenied';
 import { getTextbooks, createTextbook, updateTextbook, deleteTextbook } from '@/lib/api/textbooks';
 import type { Textbook, TextbookInsert } from '@/types/database';
-import { Plus, Search, Edit2, Trash2, BookOpen, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, BookOpen, ChevronLeft, ChevronRight, FileText, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 const SCHOOL_TYPES = ['小学', '中学', '高校'];
@@ -136,7 +136,8 @@ function TextbookMasterPage() {
   const loadTextbooks = useCallback(async () => {
     try {
       setLoading(true);
-      const data = await getTextbooks();
+      // 教材マスタでは無効化（非表示）教材も含めて全件表示し、トグルで切り替える
+      const data = await getTextbooks(undefined, { includeInactive: true });
       setTextbooks(data);
     } catch (e) {
       toastErrorRef.current(`教材の読み込みに失敗しました: ${e instanceof Error ? e.message : '不明なエラー'}`);
@@ -288,6 +289,20 @@ function TextbookMasterPage() {
     }
   };
 
+  // 有効/無効の切り替え。無効にしても削除せず、教材マスタには残るが各種ピッカーから隠れる。
+  // 楽観更新で即座に反映し、失敗時はリロードで戻す。
+  const handleToggleActive = async (e: React.MouseEvent, id: number, nextActive: boolean) => {
+    e.stopPropagation();
+    setTextbooks((prev) => prev.map((t) => (t.id === id ? { ...t, is_active: nextActive } : t)));
+    try {
+      await updateTextbook(id, { is_active: nextActive });
+      toastSuccess(nextActive ? '教材を有効にしました' : '教材を無効（非表示）にしました');
+    } catch (e) {
+      toastError(`切り替えに失敗しました: ${e instanceof Error ? e.message : '不明なエラー'}`);
+      loadTextbooks();
+    }
+  };
+
   if (!authLoading && !isManager) return <AccessDenied />;
 
   return (
@@ -387,7 +402,8 @@ function TextbookMasterPage() {
                         onClick={() => router.push(`/settings/textbooks/${t.id}/curriculum`)}
                         className={`group flex items-center gap-3 px-4 py-3 bg-surface-raised border rounded-lg cursor-pointer
                           hover:${colors.bg} hover:${colors.border} border-border hover:border-border
-                          hover:shadow-sm transition-[box-shadow,border-color,background-color] duration-150 ease-out`}
+                          hover:shadow-sm transition-[box-shadow,border-color,background-color] duration-150 ease-out
+                          ${t.is_active ? '' : 'opacity-55'}`}
                       >
                         {/* Subject Indicator */}
                         <div className={`flex-shrink-0 w-1 h-8 rounded-full ${colors.dot} opacity-40 group-hover:opacity-100 transition-opacity`} />
@@ -395,7 +411,10 @@ function TextbookMasterPage() {
                         {/* Info */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="font-medium text-sm text-text-heading truncate">{t.name}</span>
+                            <span className={`font-medium text-sm truncate ${t.is_active ? 'text-text-heading' : 'text-text-muted line-through'}`}>{t.name}</span>
+                            {!t.is_active && (
+                              <span className="flex-shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded bg-surface-hover text-text-faint border border-border-default">非表示</span>
+                            )}
                             {t.publisher && (
                               <span className="flex-shrink-0 text-xs text-text-faint">{t.publisher}</span>
                             )}
@@ -408,6 +427,19 @@ function TextbookMasterPage() {
                             {t.grade || '-'}
                           </span>
                         </div>
+
+                        {/* 有効/無効トグル（常時表示。非表示の教材を見つけて戻せるように） */}
+                        <button
+                          onClick={(e) => handleToggleActive(e, t.id, !t.is_active)}
+                          className={`flex-shrink-0 p-1.5 rounded transition-colors duration-150 ${
+                            t.is_active
+                              ? 'text-text-faint hover:text-ink hover:bg-surface-hover'
+                              : 'text-amber-600 hover:bg-amber-50'
+                          }`}
+                          title={t.is_active ? 'この教材を非表示にする（教材マスタには残ります）' : '再表示する'}
+                        >
+                          {t.is_active ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                        </button>
 
                         {/* Actions */}
                         <div className="flex items-center gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-150">

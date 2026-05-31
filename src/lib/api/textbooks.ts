@@ -91,14 +91,22 @@ export async function deleteExamType(id: string): Promise<void> {
 
 /**
  * テキストマスタ一覧を取得
+ * @param opts.includeInactive 無効化（非表示）教材も含める。既定 false（各種ピッカーでは隠す）。
+ *   教材マスタ画面のみ true を渡して全件表示し、トグルで有効/無効を切り替える。
  */
 export async function getTextbooks(
-  gradeCategory?: 'elementary' | 'middle' | 'high'
+  gradeCategory?: 'elementary' | 'middle' | 'high',
+  opts?: { includeInactive?: boolean }
 ): Promise<Textbook[]> {
   let query = supabase.from('textbooks').select('*');
 
   if (gradeCategory) {
     query = query.eq('grade_category', gradeCategory);
+  }
+
+  // 無効化された教材は既定で一覧・ピッカーから除外する（データは消さず非表示にするだけ）。
+  if (!opts?.includeInactive) {
+    query = query.eq('is_active', true);
   }
 
   // 学校種別（小学→中学→高校）→ テキスト名 → 学年 の順でソート
