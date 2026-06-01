@@ -264,7 +264,7 @@ export function BillingTable({
     if (!billingPeriodId || !schoolIds) return;
     const confirmed = await confirm({
       title: 'フォーム回答同期',
-      description: 'フォーム回答から請求データを同期しますか？\n紐付け済みの回答件数が反映されます。',
+      description: 'フォーム回答から請求データを同期しますか？\n紐付け済みの回答件数が反映されます（増コマは申込コマ数）。',
       confirmLabel: '同期する',
       variant: 'default',
     });
