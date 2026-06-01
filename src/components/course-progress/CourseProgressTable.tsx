@@ -311,8 +311,8 @@ export function CourseProgressTable({
       for (const it of g.items) itemToGroup.set(it.id, g.key);
     }
 
-    // check 列のみのリスト & グループ別 check 列数（生徒別合計の分母）
-    const checkItemsAll = items.filter((i) => i.column_type === 'check');
+    // グループ別 check 列数（studentGroupRates を作る対象グループの判定に使用）。
+    // 生徒/グループ/列の分母（total）は対象外セルを除くためループ内で動的加算する。
     const checkCountByGroup: Record<string, number> = {};
     for (const g of columnGroups) {
       checkCountByGroup[g.key] = g.items.filter((i) => i.column_type === 'check').length;
