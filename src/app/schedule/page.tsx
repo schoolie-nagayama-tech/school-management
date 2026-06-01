@@ -1514,6 +1514,8 @@ export default function SchedulePage() {
               }
             }}
             placingStudentId={placingKoushuStudent?.studentId ?? null}
+            placingSubjectId={placingKoushuStudent?.subjectIds?.[0] ?? null}
+            subjectNameById={subjectById}
             refreshKey={koushuPanelRefreshKey}
             showGroupProgress={groupSlots.length > 0}
             onDraftsChange={setKoushuDraftProposals}

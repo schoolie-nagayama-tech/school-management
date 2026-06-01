@@ -150,20 +150,19 @@ export async function getCurrentKoushuPeriod(
  *
  * 戻り値: Map<student_id, { enrolled: 申込合計, placed: 配置済み, subject_ids[], student }>
  */
+export interface KoushuPlacementRow {
+  enrolled: number;
+  placed: number;
+  subject_ids: string[];
+  /** 科目別の申込/配置 { subject_id: { enrolled, placed } } */
+  bySubject: Record<string, { enrolled: number; placed: number }>;
+  student?: { id: string; last_name: string; first_name: string; grade: number };
+}
+
 export async function getKoushuPlacementProgressByPeriod(
   period: KoushuPeriodInfo,
   formation?: ScheduleEntryFormation
-): Promise<
-  Map<
-    string,
-    {
-      enrolled: number;
-      placed: number;
-      subject_ids: string[];
-      student?: { id: string; last_name: string; first_name: string; grade: number };
-    }
-  >
-> {
+): Promise<Map<string, KoushuPlacementRow>> {
   // 1. 該当 season + school_id の seasonal_courses をすべて取得
   const { data: courses } = await db
     .from('seasonal_courses')
@@ -178,7 +177,7 @@ export async function getKoushuPlacementProgressByPeriod(
   // 2. それらの koushu_enrollments を student_id で集約（formation 指定時はその形態のみ）
   let enrollQuery = db
     .from('koushu_enrollments')
-    .select('student_id, koma_count, subject_ids, student:students(id, last_name, first_name, grade)')
+    .select('student_id, koma_count, subject_ids, koma_by_subject, student:students(id, last_name, first_name, grade)')
     .in('course_id', courseIds);
   if (formation) enrollQuery = enrollQuery.eq('formation', formation);
   const { data: enrollments } = await enrollQuery;
@@ -187,33 +186,32 @@ export async function getKoushuPlacementProgressByPeriod(
     student_id: string;
     koma_count: number;
     subject_ids: string[];
+    koma_by_subject?: Record<string, number> | null;
     student?:
       | { id: string; last_name: string; first_name: string; grade: number }
       | Array<{ id: string; last_name: string; first_name: string; grade: number }>;
   };
 
-  type Agg = {
-    enrolled: number;
-    placed: number;
-    subject_ids: string[];
-    student?: { id: string; last_name: string; first_name: string; grade: number };
+  // 申込の科目別コマ数（koma_by_subject 優先。無ければ単一科目に総コマ数を寄せる後方互換）
+  const subjectEnrollOf = (e: EnrollmentRow): Record<string, number> => {
+    if (e.koma_by_subject && Object.keys(e.koma_by_subject).length > 0) return e.koma_by_subject;
+    if ((e.subject_ids ?? []).length === 1) return { [e.subject_ids[0]]: e.koma_count };
+    return {};
   };
-  const aggregated = new Map<string, Agg>();
+
+  const aggregated = new Map<string, KoushuPlacementRow>();
   for (const e of (enrollments || []) as EnrollmentRow[]) {
     const studentObj = Array.isArray(e.student) ? e.student[0] : e.student;
-    const existing = aggregated.get(e.student_id);
-    if (existing) {
-      existing.enrolled += e.koma_count;
-      // subject_ids は union（重複排除）
-      const merged = new Set([...existing.subject_ids, ...(e.subject_ids ?? [])]);
-      existing.subject_ids = Array.from(merged);
-    } else {
-      aggregated.set(e.student_id, {
-        enrolled: e.koma_count,
-        placed: 0,
-        subject_ids: e.subject_ids ?? [],
-        student: studentObj,
-      });
+    let agg = aggregated.get(e.student_id);
+    if (!agg) {
+      agg = { enrolled: 0, placed: 0, subject_ids: [], bySubject: {}, student: studentObj };
+      aggregated.set(e.student_id, agg);
+    }
+    agg.enrolled += e.koma_count;
+    agg.subject_ids = Array.from(new Set([...agg.subject_ids, ...(e.subject_ids ?? [])]));
+    for (const [sid, n] of Object.entries(subjectEnrollOf(e))) {
+      if (!agg.bySubject[sid]) agg.bySubject[sid] = { enrolled: 0, placed: 0 };
+      agg.bySubject[sid].enrolled += n;
     }
   }
 
@@ -223,7 +221,7 @@ export async function getKoushuPlacementProgressByPeriod(
   const studentIds = Array.from(aggregated.keys());
   let placedQuery = db
     .from('schedule_entries')
-    .select('student_id')
+    .select('student_id, subject_ids')
     .eq('school_id', period.school_id)
     .eq('kind', 'koushu')
     .in('student_id', studentIds)
@@ -233,9 +231,15 @@ export async function getKoushuPlacementProgressByPeriod(
   if (formation) placedQuery = placedQuery.eq('formation', formation);
   const { data: placedEntries } = await placedQuery;
 
-  for (const e of (placedEntries || []) as { student_id: string }[]) {
+  for (const e of (placedEntries || []) as { student_id: string; subject_ids: string[] | null }[]) {
     const agg = aggregated.get(e.student_id);
-    if (agg) agg.placed += 1;
+    if (!agg) continue;
+    agg.placed += 1;
+    // 配置済みを科目別にも反映（新しい配置は単一科目。複数科目の旧データは各科目に計上）
+    for (const sid of e.subject_ids ?? []) {
+      if (!agg.bySubject[sid]) agg.bySubject[sid] = { enrolled: 0, placed: 0 };
+      agg.bySubject[sid].placed += 1;
+    }
   }
 
   return aggregated;

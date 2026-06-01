@@ -42,6 +42,8 @@ export interface KoushuEnrollment {
   formation: ScheduleEntryFormation;
   koma_count: number;
   subject_ids: string[];
+  /** 科目別コマ数 { subject_id: コマ数 }。koma_count はこの総和、subject_ids はキー集合。 */
+  koma_by_subject?: Record<string, number>;
   created_at: string | null;
   updated_at: string | null;
   student?: {
@@ -205,17 +207,22 @@ export async function getKoushuEnrollments(courseId: string): Promise<KoushuEnro
 }
 
 /**
- * 申し込みを登録・更新（upsert）。
- * formation 別に1行（UNIQUE: course_id+student_id+formation）。formation 省略時は個別扱い（後方互換）。
+ * 申し込みを登録・更新（upsert）。科目別コマ数（komaBySubject）で受け取り、
+ * koma_count（総和）と subject_ids（キー集合）は自動算出して保存する。
+ * formation 別に1行（UNIQUE: course_id+student_id+formation）。
  */
 export async function upsertKoushuEnrollment(
   courseId: string,
   studentId: string,
-  komaCount: number,
-  subjectIds: string[],
+  komaBySubject: Record<string, number>,
   formation: ScheduleEntryFormation = 'individual'
 ): Promise<void> {
-  // koushu_enrollments は生成型に含まれないため as never でキャスト
+  const entries = Object.entries(komaBySubject).filter(([, n]) => (n ?? 0) > 0);
+  const subjectIds = entries.map(([sid]) => sid);
+  const komaCount = entries.reduce((s, [, n]) => s + n, 0);
+  const komaBySubjectClean = Object.fromEntries(entries);
+
+  // koushu_enrollments は生成型に含まれないため as any でキャスト
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error } = await (supabase as any)
     .from('koushu_enrollments')
@@ -226,6 +233,7 @@ export async function upsertKoushuEnrollment(
         formation,
         koma_count: komaCount,
         subject_ids: subjectIds,
+        koma_by_subject: komaBySubjectClean,
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'course_id,student_id,formation' }

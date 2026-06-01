@@ -172,14 +172,19 @@ export function KoushuPeriodCard({
                               {en.subject_ids.length === 0 ? (
                                 <span className="text-[var(--paragraph)]">—</span>
                               ) : (
-                                en.subject_ids.map((sid) => (
-                                  <span
-                                    key={sid}
-                                    className="text-xs px-1.5 py-0.5 bg-white border border-gray-200 rounded text-[var(--paragraph)]"
-                                  >
-                                    {subjectMap.get(sid) ?? sid}
-                                  </span>
-                                ))
+                                en.subject_ids.map((sid) => {
+                                  // 科目別コマ数があれば「国語 2」のように表示
+                                  const n = en.koma_by_subject?.[sid];
+                                  return (
+                                    <span
+                                      key={sid}
+                                      className="text-xs px-1.5 py-0.5 bg-white border border-gray-200 rounded text-[var(--paragraph)]"
+                                    >
+                                      {subjectMap.get(sid) ?? sid}
+                                      {n != null && <span className="ml-1 font-semibold text-[var(--headline)]">{n}</span>}
+                                    </span>
+                                  );
+                                })
                               )}
                             </div>
                           </td>

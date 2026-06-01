@@ -154,18 +154,23 @@ export async function generateKoushuIndividualProposals(
   const maxPerTeacher = capacity.max_students_per_teacher_individual;
   const totalSeats = capacity.total_individual_seats;
 
-  // 生徒別の個別残コマ（placed=既存の published を尊重）
+  // 生徒×科目別の個別残コマ（placed=既存の published を尊重）。1タスク=（生徒,科目）の残コマ。
   const progress = await getKoushuPlacementProgressByPeriod(period, 'individual');
-  const students = Array.from(progress.entries())
-    .map(([student_id, v]) => ({ student_id, remaining: v.enrolled - v.placed, subject_ids: v.subject_ids, student: v.student }))
-    .filter((s) => s.remaining > 0)
-    .sort((a, b) => b.remaining - a.remaining);
+  const tasks: Array<{ student_id: string; subjectId: string; remaining: number; student?: { id: string; last_name: string; first_name: string; grade: number } }> = [];
+  for (const [student_id, v] of Array.from(progress.entries())) {
+    for (const [subjectId, b] of Object.entries(v.bySubject)) {
+      const rem = b.enrolled - b.placed;
+      if (rem > 0) tasks.push({ student_id, subjectId, remaining: rem, student: v.student });
+    }
+  }
+  // 残コマの多い（生徒,科目）から処理
+  tasks.sort((a, b) => b.remaining - a.remaining);
 
-  if (students.length === 0 || slots.length === 0 || dates.length === 0) {
+  if (tasks.length === 0 || slots.length === 0 || dates.length === 0) {
     return { batchId: null, proposalsCreated: 0, unmatched: [] };
   }
 
-  const studentIds = students.map((s) => s.student_id);
+  const studentIds = Array.from(new Set(tasks.map((t) => t.student_id)));
 
   // 生徒の希望ルール（指名固定/NG/性別）を一括取得
   const { data: studentRows } = await db
@@ -243,30 +248,30 @@ export async function generateKoushuIndividualProposals(
   }> = [];
   const unmatched: KoushuMatchResult['unmatched'] = [];
 
-  for (const stu of students) {
-    const rules = rulesByStudent.get(stu.student_id) ?? { fixed: new Set<string>(), excluded: new Set<string>(), gender: null };
-    const pastSet = pastByStudent.get(stu.student_id) ?? new Set<string>();
-    const subjectIds = stu.subject_ids ?? [];
-    let need = stu.remaining;
+  for (const task of tasks) {
+    const sid = task.student_id;
+    const rules = rulesByStudent.get(sid) ?? { fixed: new Set<string>(), excluded: new Set<string>(), gender: null };
+    const pastSet = pastByStudent.get(sid) ?? new Set<string>();
+    const subjectIds = [task.subjectId]; // この (生徒,科目) タスクは単一科目で配置
+    let need = task.remaining;
 
-    // ラウンド方式：日付を1周しながら1日1コマずつ置く → 期間に均等分散しつつ1日上限を尊重
+    // ラウンド方式：日付を1周しながら1日1コマずつ置く → 期間に均等分散しつつ1日上限を尊重。
+    // studentKomaPerDay / studentSlotsUsed は生徒単位なので、同生徒の他科目の配置も込みで上限を尊重する。
     let progressed = true;
     while (need > 0 && progressed) {
       progressed = false;
       for (const date of dates) {
         if (need <= 0) break;
-        const perDayKey = `${stu.student_id}|${date}`;
+        const perDayKey = `${sid}|${date}`;
         if ((studentKomaPerDay.get(perDayKey) ?? 0) >= maxPerDay) continue;
 
         const dow = dowOf(date);
         const dowTeachers = dayMap.byDayOfWeek.get(dow) ?? [];
         if (dowTeachers.length === 0) continue;
 
-        // この日付で、空き席があり講師も空いているコマを探す
-        let placed = false;
         for (const slot of slots) {
           const cell = `${date}|${slot.id}`;
-          if ((studentSlotsUsed.get(stu.student_id)?.has(cell)) ?? false) continue; // 同生徒同コマ重複回避
+          if ((studentSlotsUsed.get(sid)?.has(cell)) ?? false) continue; // 同生徒同コマ重複回避
           if ((seatsUsed.get(cell) ?? 0) >= totalSeats) continue; // 教室席数
 
           // 候補講師：この曜日に出勤可能 ∩ このコマで担当上限未満
@@ -285,11 +290,11 @@ export async function generateKoushuIndividualProposals(
           const best = scored[0];
 
           proposals.push({
-            student_id: stu.student_id,
+            student_id: sid,
             teacher_id: best.teacherId,
             proposal_date: date,
             time_slot_id: slot.id,
-            subject_ids: subjectIds,
+            subject_ids: subjectIds, // 単一科目
             formation: 'individual',
             kind: 'koushu',
             match_meta: { score: best.score, reasons: best.reasons, conflicts: best.conflicts },
@@ -297,21 +302,19 @@ export async function generateKoushuIndividualProposals(
           // 状態更新
           seatsUsed.set(cell, (seatsUsed.get(cell) ?? 0) + 1);
           teacherOccupancy.set(`${cell}|${best.teacherId}`, (teacherOccupancy.get(`${cell}|${best.teacherId}`) ?? 0) + 1);
-          if (!studentSlotsUsed.has(stu.student_id)) studentSlotsUsed.set(stu.student_id, new Set());
-          studentSlotsUsed.get(stu.student_id)!.add(cell);
+          if (!studentSlotsUsed.has(sid)) studentSlotsUsed.set(sid, new Set());
+          studentSlotsUsed.get(sid)!.add(cell);
           studentKomaPerDay.set(perDayKey, (studentKomaPerDay.get(perDayKey) ?? 0) + 1);
           need -= 1;
-          placed = true;
           progressed = true;
           break; // この日付はこのラウンドでは1コマだけ
         }
-        void placed;
       }
     }
     if (need > 0) {
       unmatched.push({
-        student_id: stu.student_id,
-        student_name: stu.student ? `${stu.student.last_name}${stu.student.first_name}` : undefined,
+        student_id: sid,
+        student_name: task.student ? `${task.student.last_name}${task.student.first_name}` : undefined,
         remaining: need,
         reason: '出勤可能な講師・空きコマが不足',
       });

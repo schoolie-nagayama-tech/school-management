@@ -34,6 +34,10 @@ interface Props {
   /** 配置モード開始（既存 KoushuPlacementPanel 用） */
   onStartPlacement?: (studentId: string, subjectIds: string[]) => void;
   placingStudentId?: string | null;
+  /** 配置モード中の科目ID（科目別配置の終了ラベル判定用） */
+  placingSubjectId?: string | null;
+  /** 科目ID→名前 */
+  subjectNameById?: Map<string, string>;
   /** 配置進捗の再フェッチ用キー */
   refreshKey?: number;
   /** 集団コマ時間がある場合、集団の配置進捗も表示する */
@@ -52,6 +56,8 @@ export function KoushuControlPanel({
   executedBy,
   onStartPlacement,
   placingStudentId,
+  placingSubjectId,
+  subjectNameById,
   refreshKey,
   showGroupProgress = false,
   onPublished,
@@ -281,6 +287,8 @@ export function KoushuControlPanel({
               formation="individual"
               onStartPlacement={onStartPlacement}
               placingStudentId={placingStudentId}
+              placingSubjectId={placingSubjectId}
+              subjectNameById={subjectNameById}
               refreshKey={refreshKey}
             />
 

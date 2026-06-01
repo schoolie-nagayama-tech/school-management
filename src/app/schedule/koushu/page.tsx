@@ -120,7 +120,7 @@ export default function KoushuPage() {
   const handleSaveEnrollment = async (studentId: string, rows: EnrollmentRow[]) => {
     if (!targetCourseId) return;
     for (const r of rows) {
-      await upsertKoushuEnrollment(targetCourseId, studentId, r.komaCount, r.subjectIds, r.formation);
+      await upsertKoushuEnrollment(targetCourseId, studentId, r.komaBySubject, r.formation);
     }
     await loadEnrollments(targetCourseId);
     // enrollment_count を更新するためにコース一覧も再取得
