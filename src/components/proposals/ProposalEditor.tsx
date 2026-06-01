@@ -671,12 +671,14 @@ export default function ProposalEditor() {
   };
 
   const groupSelected = () => {
-    const ungrouped = Array.from(unitDrafts.values()).filter((d) => d.selected && d.group_id === 0);
-    if (ungrouped.length < 2) {
-      addToast('グルーピングには2つ以上の未グループ単元を選択してください', 'error');
+    // グループ化済みの単元も選択していれば対象に含め、新しいグループで「上書き」する。
+    // （一度まとめた範囲を再チェック→まとめ直す運用に対応）
+    const selected = Array.from(unitDrafts.values()).filter((d) => d.selected);
+    if (selected.length < 2) {
+      addToast('グループ化には2つ以上の単元を選択してください', 'error');
       return;
     }
-    const selectedSet = new Set(ungrouped.map((d) => d.curriculum_item_id));
+    const selectedSet = new Set(selected.map((d) => d.curriculum_item_id));
     const indices = allItems
       .map((item, idx) => selectedSet.has(item.id) ? idx : -1)
       .filter((i) => i >= 0);
@@ -690,7 +692,9 @@ export default function ProposalEditor() {
     setNextGroupId(gid + 1);
     setUnitDrafts((prev) => {
       const next = new Map(prev);
-      for (const s of ungrouped) {
+      // 上書き前のグループID（再グループ対象が抜けた後に1件だけ残るグループは解散する）
+      const affectedGroupIds = new Set(selected.map((d) => d.group_id).filter((g) => g > 0));
+      for (const s of selected) {
         const d = next.get(s.curriculum_item_id);
         if (d) next.set(s.curriculum_item_id, {
           ...d,
@@ -698,6 +702,14 @@ export default function ProposalEditor() {
           koma_count: d.koma_count || 1,
           selected: false,
         });
+      }
+      // 上書きで片割れだけ残ったグループ（メンバー1件）は単独グループになってしまうため解散
+      for (const oldGid of Array.from(affectedGroupIds)) {
+        const remaining = Array.from(next.values()).filter((d) => d.group_id === oldGid);
+        if (remaining.length === 1) {
+          const lone = remaining[0];
+          next.set(lone.curriculum_item_id, { ...lone, group_id: 0 });
+        }
       }
       return next;
     });
@@ -742,12 +754,13 @@ export default function ProposalEditor() {
     return map;
   }, [activeUnits]);
 
-  // 選択中（未グループ）の単元情報。フローティングボタン表示・隣接判定・Gキーで使う。
+  // 選択中の単元情報。フローティングボタン表示・隣接判定・Gキーで使う。
+  // グループ化済みの単元も対象に含める（再選択して「まとめ直し」や指導意図の一括設定ができるように）。
   const selectionInfo = useMemo(() => {
     const indices: number[] = [];
     allItems.forEach((it, idx) => {
       const d = unitDrafts.get(it.id);
-      if (d?.selected && d.group_id === 0) indices.push(idx);
+      if (d?.selected) indices.push(idx);
     });
     const count = indices.length;
     let contiguous = count >= 2;
@@ -792,7 +805,7 @@ export default function ProposalEditor() {
   const pillAnchorIdx = useMemo(() => {
     if (pillAnchorId != null) {
       const d = unitDrafts.get(pillAnchorId);
-      if (d?.selected && d.group_id === 0) {
+      if (d?.selected) {
         const idx = allItems.findIndex((i) => i.id === pillAnchorId);
         if (idx >= 0) return idx;
       }
@@ -1526,7 +1539,7 @@ export default function ProposalEditor() {
             size="sm"
             onClick={groupSelected}
             disabled={!selectionInfo.contiguous}
-            title="選択中の未グループ単元を1コマにまとめる（ショートカット: G）"
+            title="選択中の単元を1コマにまとめる（グループ化済みは新しいグループで上書き / ショートカット: G）"
           >
             <Link2 className="w-3.5 h-3.5 mr-1" />
             グループ化

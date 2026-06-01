@@ -231,7 +231,20 @@ export default function CourseProgressPage() {
   }, [students, gradeFilter, debouncedSearchQuery]);
 
   // ステータス変更
-  const handleStatusChange = useCallback(
+  // 「面談申込」「面談未申込対応」項目を名前で特定（テンプレ共通名のため名前マッチ）。
+  // 「面談未申込対応」は“面談を申し込んでいない人”への対応なので、面談申込が付いたら自動で完了にする。
+  const interviewLinkItemIds = useMemo(() => {
+    const applyItem = items.find(
+      (i) => i.column_type === 'check' && i.name.includes('面談申込') && !i.name.includes('未')
+    );
+    const followUpItem = items.find(
+      (i) => i.column_type === 'check' && i.name.includes('未申込')
+    );
+    return { applyItemId: applyItem?.id ?? null, followUpItemId: followUpItem?.id ?? null };
+  }, [items]);
+
+  // 単一項目のステータス更新（ローカル即時反映＋DB保存）
+  const updateSingleStatus = useCallback(
     async (studentId: string, itemId: string, status: ApplicationStatus | null) => {
       // ローカル更新
       setProgressData((prev) => {
@@ -267,6 +280,20 @@ export default function CourseProgressPage() {
       }
     },
     [students, fetchData]
+  );
+
+  const handleStatusChange = useCallback(
+    async (studentId: string, itemId: string, status: ApplicationStatus | null) => {
+      await updateSingleStatus(studentId, itemId, status);
+
+      // 「面談申込」の連動: 申込が完了→「面談未申込対応」を自動完了 / 申込が外れたら未申込対応をクリア
+      const { applyItemId, followUpItemId } = interviewLinkItemIds;
+      if (applyItemId && followUpItemId && itemId === applyItemId) {
+        const linkedStatus: ApplicationStatus | null = status === 'completed' ? 'completed' : null;
+        await updateSingleStatus(studentId, followUpItemId, linkedStatus);
+      }
+    },
+    [updateSingleStatus, interviewLinkItemIds]
   );
 
   // 数値変更

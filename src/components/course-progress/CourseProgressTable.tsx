@@ -269,6 +269,21 @@ export function CourseProgressTable({
     return map;
   }, [columnGroups]);
 
+  // 中3(grade=9)限定のチェック項目（進路調査回収）。
+  // 進路調査は中3のみ対象なので、非中3かつ未入力のセルは「対象外」として扱い、分母から除外する。
+  const grade9OnlyCheckIds = useMemo(() => {
+    return new Set(
+      items.filter((i) => i.column_type === 'check' && i.name.includes('進路調査')).map((i) => i.id)
+    );
+  }, [items]);
+
+  // 非中3かつ明示的な入力が無い場合に「対象外」とみなすか
+  const isGrade9OutOfScope = useCallback(
+    (itemId: string, grade: number | null | undefined, hasRecord: boolean) =>
+      grade9OnlyCheckIds.has(itemId) && (grade ?? 0) !== 9 && !hasRecord,
+    [grade9OnlyCheckIds]
+  );
+
   // ============================================================================
   // 統合集計: items × students の二重ループを1パスで実行
   //
@@ -301,20 +316,21 @@ export function CourseProgressTable({
     const checkCountByGroup: Record<string, number> = {};
     for (const g of columnGroups) {
       checkCountByGroup[g.key] = g.items.filter((i) => i.column_type === 'check').length;
-      groupRates[g.key] = { completed: 0, total: checkCountByGroup[g.key] * students.length };
+      // total は対象外セル（非中3の進路調査など）を分母から除くため、ループ内で動的に加算する
+      groupRates[g.key] = { completed: 0, total: 0 };
     }
 
     // 各 item を初期化
     for (const item of items) {
       columnAgg[item.id] = { completed: 0, total: 0, sum: 0, filled: 0 };
     }
-    // 各生徒を初期化
+    // 各生徒を初期化（total は動的加算）
     for (const s of students) {
-      studentRates[s.id] = { completed: 0, total: checkItemsAll.length };
+      studentRates[s.id] = { completed: 0, total: 0 };
       studentGroupRatesMap[s.id] = {};
       for (const g of columnGroups) {
         if (checkCountByGroup[g.key] > 0) {
-          studentGroupRatesMap[s.id][g.key] = { completed: 0, total: checkCountByGroup[g.key] };
+          studentGroupRatesMap[s.id][g.key] = { completed: 0, total: 0 };
         }
       }
     }
@@ -349,14 +365,26 @@ export function CourseProgressTable({
         } else {
           const d = progressMap.get(`${s.id}:${item.id}`);
           if (isCheck) {
-            if (d?.status !== 'not_applicable') colAgg.total++;
-            if (d?.status === 'completed') {
-              colAgg.completed++;
-              studentRates[s.id].completed++;
+            // 非中3の進路調査など「対象外」セルは分母（生徒/グループ/列）から除外する
+            const outOfScope = isGrade9OutOfScope(item.id, s.grade, !!d);
+            if (!outOfScope) {
+              if (d?.status !== 'not_applicable') colAgg.total++;
+              // 対象内チェック項目を生徒・グループ分母に加算（NA も従来どおり分母に含める）
+              studentRates[s.id].total++;
               if (groupKey) {
-                groupRates[groupKey].completed++;
+                groupRates[groupKey].total++;
                 if (studentGroupRatesMap[s.id][groupKey]) {
-                  studentGroupRatesMap[s.id][groupKey].completed++;
+                  studentGroupRatesMap[s.id][groupKey].total++;
+                }
+              }
+              if (d?.status === 'completed') {
+                colAgg.completed++;
+                studentRates[s.id].completed++;
+                if (groupKey) {
+                  groupRates[groupKey].completed++;
+                  if (studentGroupRatesMap[s.id][groupKey]) {
+                    studentGroupRatesMap[s.id][groupKey].completed++;
+                  }
                 }
               }
             }
@@ -379,7 +407,7 @@ export function CourseProgressTable({
       studentGroupRates: studentGroupRatesMap,
       autoValueMap,
     };
-  }, [items, students, progressMap, autoValues, columnGroups]);
+  }, [items, students, progressMap, autoValues, columnGroups, isGrade9OutOfScope]);
 
   const columnAggregates = tableAggregations.columnAggregates;
   const groupCompletionRates = tableAggregations.groupCompletionRates;
@@ -814,7 +842,10 @@ export function CourseProgressTable({
 
                       // チェック
                       if (item.column_type === 'check') {
-                        const style = getCellStyle(item, d?.status, null, groupColor);
+                        // 非中3の進路調査などは未入力時「対象外」として表示（クリックで上書き可）
+                        const outOfScope = isGrade9OutOfScope(item.id, student.grade, !!d);
+                        const effStatus = outOfScope ? 'not_applicable' : d?.status;
+                        const style = getCellStyle(item, effStatus, null, groupColor);
                         return (
                           <td key={item.id} className="border-b border-gray-100 p-0 text-center">
                             <div
@@ -827,7 +858,7 @@ export function CourseProgressTable({
                               }}
                               onClick={() => handleCheckClick(student.id, item.id)}
                             >
-                              {statusSymbol(d?.status)}
+                              {statusSymbol(effStatus)}
                             </div>
                           </td>
                         );
