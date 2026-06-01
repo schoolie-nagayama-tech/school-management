@@ -255,7 +255,14 @@ export async function GET(request: NextRequest) {
           query = query.eq('template_type', templateType);
         }
         if (season) {
-          query = query.or(`season.eq.${season},season.is.null`);
+          // PostgREST フィルタインジェクション対策: season を .or() 文字列に直接埋め込むため、
+          // 英数字・ハイフン・アンダースコアのみ許可（カンマ/ピリオド/括弧での演算子注入を防ぐ）。
+          // 不正な文字を含む場合は安全な .eq() のみで絞る。
+          if (/^[A-Za-z0-9_-]+$/.test(season)) {
+            query = query.or(`season.eq.${season},season.is.null`);
+          } else {
+            query = query.eq('season', season);
+          }
         }
 
         const { data, error } = await query;
@@ -581,7 +588,7 @@ export async function POST(request: NextRequest) {
       case 'update_student_date':
         return await handleUpdateStudentDate(supabaseAdmin, { ...params, schoolId });
       case 'update_progress_item':
-        return await handleUpdateProgressItem(supabaseAdmin, params);
+        return await handleUpdateProgressItem(supabaseAdmin, schoolId, params);
       case 'batch_reorder_items': {
         // 複数項目の sort_order を一括更新（N回→1回）
         const reorderItems = params.items as { id: string; sort_order: number }[];
@@ -600,13 +607,13 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true });
       }
       case 'hide_progress_item':
-        return await handleHideProgressItem(supabaseAdmin, params);
+        return await handleHideProgressItem(supabaseAdmin, schoolId, params);
       case 'delete_progress_item':
-        return await handleDeleteProgressItem(supabaseAdmin, params);
+        return await handleDeleteProgressItem(supabaseAdmin, schoolId, params);
       case 'create_schedule_task':
         return await handleCreateScheduleTask(supabaseAdmin, schoolId, params);
       case 'update_schedule_task':
-        return await handleUpdateScheduleTask(supabaseAdmin, params);
+        return await handleUpdateScheduleTask(supabaseAdmin, schoolId, params);
       case 'batch_link_schedule_tasks': {
         // 複数タスクのリンク解除＋1件リンク設定を1リクエストで（N+1回→1回）
         const unlinkTaskIds = (params.unlinkTaskIds as string[]) || [];
@@ -651,7 +658,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: true });
       }
       case 'delete_schedule_task':
-        return await handleDeleteScheduleTask(supabaseAdmin, params);
+        return await handleDeleteScheduleTask(supabaseAdmin, schoolId, params);
       case 'save_template':
         return await handleSaveTemplate(supabaseAdmin, schoolId, params);
       case 'delete_template':
@@ -659,9 +666,9 @@ export async function POST(request: NextRequest) {
       case 'delete_all_progress_items':
         return await handleDeleteAllProgressItems(supabaseAdmin, schoolId, params);
       case 'upsert_schedule_marker':
-        return await handleUpsertScheduleMarker(supabaseAdmin, params);
+        return await handleUpsertScheduleMarker(supabaseAdmin, schoolId, params);
       case 'delete_schedule_marker':
-        return await handleDeleteScheduleMarker(supabaseAdmin, params);
+        return await handleDeleteScheduleMarker(supabaseAdmin, schoolId, params);
       case 'upsert_period':
         return await handleUpsertPeriod(supabaseAdmin, schoolId, params);
       default:
@@ -884,6 +891,7 @@ async function handleCreateProgressItem(
 
 async function handleUpdateProgressItem(
   supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
+  schoolId: string,
   params: { itemId: string; updates: Record<string, unknown> }
 ) {
   const allowed = ['name', 'column_type', 'deadline', 'auto_source', 'sort_order', 'column_group'];
@@ -893,10 +901,13 @@ async function handleUpdateProgressItem(
   }
   filtered.updated_at = new Date().toISOString();
 
+  // service role で RLS をバイパスするため、対象 itemId が当該 schoolId のものか
+  // school_id 条件で限定する（他教室の項目IDを渡しての改ざんを防ぐ IDOR 対策）
   const { data, error } = await supabaseAdmin
     .from('course_prep_progress_items')
     .update(filtered)
     .eq('id', params.itemId)
+    .eq('school_id', schoolId)
     .select()
     .single();
 
@@ -930,12 +941,15 @@ async function handleUpdateProgressItem(
 
 async function handleHideProgressItem(
   supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
+  schoolId: string,
   params: { itemId: string; isHidden: boolean }
 ) {
+  // IDOR 対策: 当該 schoolId の項目のみ更新可能にする
   const { error } = await supabaseAdmin
     .from('course_prep_progress_items')
     .update({ is_hidden: params.isHidden })
-    .eq('id', params.itemId);
+    .eq('id', params.itemId)
+    .eq('school_id', schoolId);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -945,12 +959,15 @@ async function handleHideProgressItem(
 
 async function handleDeleteProgressItem(
   supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
+  schoolId: string,
   params: { itemId: string }
 ) {
+  // IDOR 対策: 当該 schoolId の項目のみ削除可能にする
   const { error } = await supabaseAdmin
     .from('course_prep_progress_items')
     .delete()
-    .eq('id', params.itemId);
+    .eq('id', params.itemId)
+    .eq('school_id', schoolId);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -969,6 +986,7 @@ async function handleUpdateStudentProgress(
   const { data: existing } = await supabaseAdmin
     .from('course_prep_student_progress')
     .select('id')
+    .eq('school_id', schoolId)
     .eq('student_id', studentId)
     .eq('item_id', itemId)
     .maybeSingle();
@@ -1023,6 +1041,7 @@ async function handleUpdateStudentNumber(
   const { data: existing } = await supabaseAdmin
     .from('course_prep_student_progress')
     .select('id')
+    .eq('school_id', schoolId)
     .eq('student_id', studentId)
     .eq('item_id', itemId)
     .maybeSingle();
@@ -1052,6 +1071,7 @@ async function handleUpdateStudentDate(
   const { data: existing } = await supabaseAdmin
     .from('course_prep_student_progress')
     .select('id')
+    .eq('school_id', schoolId)
     .eq('student_id', studentId)
     .eq('item_id', itemId)
     .maybeSingle();
@@ -1218,12 +1238,26 @@ async function syncScheduleTaskCompletionFromProgress(
 
 async function handleUpdateScheduleTask(
   supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
+  schoolId: string,
   params: { taskId: string; updates: Record<string, unknown> }
 ) {
+  // IDOR 対策: 対象タスクが当該 schoolId のものか先に検証する。
+  // この後の deadline/monthly_task 同期処理が taskId 起点で他教室データに波及しうるため、
+  // school 不一致なら早期に 404 を返して以降の処理を実行しない。
+  const { data: ownerCheck } = await supabaseAdmin
+    .from('course_prep_schedule_tasks')
+    .select('school_id')
+    .eq('id', params.taskId)
+    .maybeSingle();
+  if (!ownerCheck || String(ownerCheck.school_id) !== String(schoolId)) {
+    return NextResponse.json({ error: 'タスクが見つかりません' }, { status: 404 });
+  }
+
   const { error } = await supabaseAdmin
     .from('course_prep_schedule_tasks')
     .update({ ...params.updates, updated_at: new Date().toISOString() })
-    .eq('id', params.taskId);
+    .eq('id', params.taskId)
+    .eq('school_id', schoolId);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
@@ -1347,12 +1381,15 @@ async function handleUpdateScheduleTask(
 
 async function handleDeleteScheduleTask(
   supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
+  schoolId: string,
   params: { taskId: string }
 ) {
+  // IDOR 対策: 当該 schoolId のタスクのみ削除可能にする
   const { error } = await supabaseAdmin
     .from('course_prep_schedule_tasks')
     .delete()
-    .eq('id', params.taskId);
+    .eq('id', params.taskId)
+    .eq('school_id', schoolId);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true });
@@ -1362,8 +1399,20 @@ async function handleDeleteScheduleTask(
 
 async function handleUpsertScheduleMarker(
   supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
+  schoolId: string,
   params: { taskId: string; markerDate: string; label: string; color?: string }
 ) {
+  // マーカーは school_id を持たず親タスク経由でスコープされるため、
+  // 親タスクが当該 schoolId のものであることを検証する（IDOR 対策）
+  const { data: parentTask } = await supabaseAdmin
+    .from('course_prep_schedule_tasks')
+    .select('school_id')
+    .eq('id', params.taskId)
+    .maybeSingle();
+  if (!parentTask || String(parentTask.school_id) !== String(schoolId)) {
+    return NextResponse.json({ error: 'タスクが見つかりません' }, { status: 404 });
+  }
+
   const { data: existing } = await supabaseAdmin
     .from('course_prep_schedule_markers')
     .select('id')
@@ -1394,8 +1443,19 @@ async function handleUpsertScheduleMarker(
 
 async function handleDeleteScheduleMarker(
   supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
+  schoolId: string,
   params: { taskId: string; markerDate: string }
 ) {
+  // 親タスクが当該 schoolId のものか検証してから削除（IDOR 対策）
+  const { data: parentTask } = await supabaseAdmin
+    .from('course_prep_schedule_tasks')
+    .select('school_id')
+    .eq('id', params.taskId)
+    .maybeSingle();
+  if (!parentTask || String(parentTask.school_id) !== String(schoolId)) {
+    return NextResponse.json({ error: 'タスクが見つかりません' }, { status: 404 });
+  }
+
   const { error } = await supabaseAdmin
     .from('course_prep_schedule_markers')
     .delete()
