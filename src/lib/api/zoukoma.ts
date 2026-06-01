@@ -11,6 +11,7 @@ import {
 } from './form-periods';
 import {
   getFormResponses,
+  getFormResponse,
   createPublicFormResponse,
   updateFormResponseStatus,
 } from './form-responses';
@@ -334,9 +335,9 @@ export async function updateZoukomaResponseStatus(
   responseId: string,
   statusChecks: { charged?: boolean; seated?: boolean }
 ): Promise<ZoukomaResponse> {
-  const response = await getFormResponses(undefined, {
-    formType: 'zoukoma',
-  }).then((responses) => responses.find((r) => r.id === responseId));
+  // ID 指定で直接取得する。getFormResponses 経由だと schoolId 未指定時に
+  // デフォルト校で絞り込まれ、別教室の回答が見つからない不具合になるため。
+  const response = await getFormResponse(responseId);
 
   if (!response) {
     throw new Error('回答が見つかりません');
