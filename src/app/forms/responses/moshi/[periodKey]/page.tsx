@@ -20,7 +20,7 @@ import { getStudents } from '@/lib/api/students';
 import { LinkStudentModal } from '@/components/forms/LinkStudentModal';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
-import { ToastContainer, Loading } from '@/components/ui';
+import { ToastContainer, Loading, Spinner } from '@/components/ui';
 import type { MoshiResponse, MoshiResponseFilters } from '@/types/forms/moshi';
 import type { Student } from '@/types/database';
 import { getDefaultSchoolId } from '@/lib/api/schools';
@@ -458,7 +458,7 @@ export default function MoshiResponsePage() {
                 {archivedCount > 0 && (
                   <span className="ml-1 text-text-body/60">({archivedCount}件)</span>
                 )}
-                {isLoading && <span className="inline-block w-3 h-3 border-2 border-info border-t-transparent rounded-full animate-spin" />}
+                {isLoading && <Spinner size="xs" tone="current" className="inline-block" />}
               </span>
             </label>
           </div>

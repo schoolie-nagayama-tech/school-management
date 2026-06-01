@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Spinner } from '@/components/ui';
 
 function detectInAppBrowser(): boolean {
   if (typeof navigator === 'undefined') return false;
@@ -58,7 +59,7 @@ export function InAppBrowserGuard({ children }: { children: React.ReactNode }) {
   if (status === 'checking') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+        <Spinner size="md" />
       </div>
     );
   }
@@ -67,7 +68,7 @@ export function InAppBrowserGuard({ children }: { children: React.ReactNode }) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 bg-white">
         <div className="text-center space-y-4">
-          <div className="w-8 h-8 mx-auto border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+          <Spinner size="md" className="mx-auto" />
           <p className="text-sm text-gray-600">ブラウザを起動中...</p>
         </div>
       </div>

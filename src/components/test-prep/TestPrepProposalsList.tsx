@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { getTestPrepProposalsWithStudent } from '@/lib/api/test-prep-proposals';
 import type { TestPrepProposal, TestPrepStatus } from '@/types/test-prep';
 import { TEST_PREP_STATUS_LABELS } from '@/types/test-prep';
+import { Spinner } from '@/components/ui';
 import { GRADE_LABELS } from '@/types/database';
 
 type ProposalRow = TestPrepProposal & {
@@ -151,7 +152,7 @@ export default function TestPrepProposalsList() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        <Spinner size="md" />
       </div>
     );
   }

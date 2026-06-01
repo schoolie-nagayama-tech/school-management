@@ -17,7 +17,7 @@
 
 import { useEffect, useState } from 'react';
 import { getScheduleCountsByMonth, type ScheduleCountsByDate } from '@/lib/api/schedule-vs-attendance';
-import { Loader2 } from 'lucide-react';
+import { Spinner } from '@/components/ui';
 
 interface Props {
   schoolId: string;
@@ -62,7 +62,7 @@ export function ScheduleDriftCheckPanel({
   if (isLoading) {
     return (
       <div className="flex items-center gap-2 p-6 text-sm text-text-muted">
-        <Loader2 className="w-4 h-4 animate-spin" />
+        <Spinner size="sm" tone="current" />
         スケジュール側のコマ数を集計中...
       </div>
     );

@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import type { TestPrepProposalWithDetails, TestPrepProposalUnit } from '@/types/test-prep';
 import { SELF_ASSESSMENT_LABELS } from '@/types/test-prep';
 import { getTestPrepProposalByToken } from '@/lib/api/test-prep-proposals';
+import { Spinner } from '@/components/ui';
 
 const ASSESSMENT_STYLES: Record<string, string> = {
   '◎': 'text-blue-600 font-bold',
@@ -44,7 +45,7 @@ export default function TestPrepPublicPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600" />
+        <Spinner size="md" />
       </div>
     );
   }

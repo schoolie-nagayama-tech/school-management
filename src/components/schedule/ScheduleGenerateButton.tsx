@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui';
+import { Button, Spinner } from '@/components/ui';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -12,7 +12,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from '@/components/ui';
-import { Calendar, Loader2 } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { generateWeeklySchedule, hasEntriesForWeek } from '@/lib/api/schedule';
 
 interface ScheduleGenerateButtonProps {
@@ -62,7 +62,7 @@ export function ScheduleGenerateButton({
     <>
       <Button onClick={handleClick} disabled={loading}>
         {loading ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          <Spinner size="sm" tone="current" className="mr-2" />
         ) : (
           <Calendar className="mr-2 h-4 w-4" />
         )}

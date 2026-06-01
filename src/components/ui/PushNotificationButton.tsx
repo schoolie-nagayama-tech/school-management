@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Bell, BellOff, BellRing } from 'lucide-react';
+import { Spinner } from './Spinner';
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? '';
 
@@ -131,7 +132,7 @@ export function PushNotificationButton({ schoolId, compact = false }: Props) {
         className={`inline-flex items-center justify-center w-9 h-9 rounded-lg transition-colors duration-150 ${colorClass} disabled:opacity-50`}
       >
         {isLoading ? (
-          <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+          <Spinner size="sm" tone="current" />
         ) : (
           <Icon className="w-4 h-4" />
         )}
@@ -153,7 +154,7 @@ export function PushNotificationButton({ schoolId, compact = false }: Props) {
       }`}
     >
       {isLoading ? (
-        <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+        <Spinner size="sm" tone="current" />
       ) : (
         <Icon className="w-4 h-4" />
       )}

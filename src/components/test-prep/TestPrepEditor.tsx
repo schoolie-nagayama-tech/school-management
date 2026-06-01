@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Printer, Copy, Check, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
-import { ToastContainer } from '@/components/ui';
+import { ToastContainer, Spinner } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import {
   createTestPrepProposal,
@@ -509,7 +509,7 @@ export default function TestPrepEditor() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        <Spinner size="md" />
       </div>
     );
   }

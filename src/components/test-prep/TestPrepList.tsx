@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { getTestPrepProposalsByStudent } from '@/lib/api/test-prep-proposals';
 import type { TestPrepProposal, TestPrepStatus } from '@/types/test-prep';
 import { TEST_PREP_STATUS_LABELS } from '@/types/test-prep';
+import { Spinner } from '@/components/ui';
 
 const STATUS_STYLES: Record<TestPrepStatus, string> = {
   draft: 'bg-surface-hover text-text-muted',
@@ -38,7 +39,7 @@ export default function TestPrepList() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+        <Spinner size="md" />
       </div>
     );
   }

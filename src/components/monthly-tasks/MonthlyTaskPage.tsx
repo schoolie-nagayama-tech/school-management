@@ -18,6 +18,7 @@ import {
   updateTemplate as updateTemplateApi,
   setGoogleEventId,
 } from '@/lib/api/monthlyTasks';
+import { Spinner } from '@/components/ui';
 import type { MonthlyTaskWithChecks, MonthlyTaskTemplate } from '@/types/database';
 import { useToast } from '@/hooks/useToast';
 import { TaskListPanel } from './TaskListPanel';
@@ -577,7 +578,7 @@ export function MonthlyTaskPage() {
       {/* メインコンテンツ */}
       {isLoading ? (
         <div className="flex-1 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#d32f2f]" />
+          <Spinner size="md" />
         </div>
       ) : (
         <div className="flex-1 flex gap-3 pt-3 min-h-0">

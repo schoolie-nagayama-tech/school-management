@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui';
-import { Button } from '@/components/ui';
+import { Button, Spinner } from '@/components/ui';
 import {
   ScheduleEntryModal,
   TransferModal,
@@ -14,7 +14,7 @@ import {
   DeleteScheduleEntryModal,
 } from '@/components/schedule';
 import { StudentDetailModal } from '@/components/students/StudentDetailModal';
-import { Calendar, Settings, Loader2 } from 'lucide-react';
+import { Calendar, Settings } from 'lucide-react';
 import type { ScheduleEntry, ScheduleEntryFormData, ScheduleTimeSlot } from '@/types/schedule';
 import type { Student } from '@/types/database';
 
@@ -248,7 +248,7 @@ export function ScheduleDialogs({
             <AlertDialogAction onClick={onScheduleGenerateConfirm}>
               {scheduleGenerateLoading ? (
                 <>
-                  <Loader2 className="inline h-4 w-4 animate-spin mr-2" />
+                  <Spinner size="sm" tone="current" className="inline mr-2" />
                   生成中...
                 </>
               ) : (

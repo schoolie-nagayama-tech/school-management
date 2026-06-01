@@ -2,7 +2,8 @@
 
 import { useState, useMemo, useRef, useEffect } from 'react';
 import type { MonthlyTaskWithChecks, MonthlyTaskOverride, School } from '@/types/database';
-import { CheckCircle2, Circle, GripVertical, Plus, ChevronDown, ChevronRight, Trash2, ExternalLink, StickyNote, Link2, Calendar, Loader2 } from 'lucide-react';
+import { CheckCircle2, Circle, GripVertical, Plus, ChevronDown, ChevronRight, Trash2, ExternalLink, StickyNote, Link2, Calendar } from 'lucide-react';
+import { Spinner } from '@/components/ui';
 
 interface TaskListPanelProps {
   tasks: MonthlyTaskWithChecks[];
@@ -551,7 +552,7 @@ export function TaskListPanel({
                             title={task.google_event_id ? 'カレンダー登録済み' : 'Googleカレンダーに登録'}
                           >
                             {syncingTaskId === task.id ? (
-                              <Loader2 className="w-3 h-3 animate-spin" />
+                              <Spinner size="xs" tone="current" />
                             ) : (
                               <Calendar className={`w-3 h-3 ${task.google_event_id ? 'fill-current' : ''}`} />
                             )}

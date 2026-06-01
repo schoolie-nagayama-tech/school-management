@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Button, Input, Modal } from '@/components/ui';
+import { Button, Input, Modal, Spinner } from '@/components/ui';
 import { ChevronDown, ChevronUp, Pencil, Trash2, Plus } from 'lucide-react';
 import {
   getSubjects,
@@ -184,7 +184,7 @@ export function SubjectSettings({ isOpen, onClose }: SubjectSettingsProps) {
           {/* 科目一覧 */}
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="animate-spin h-8 w-8 border-4 border-[#1e3a5f] border-t-transparent rounded-full"></div>
+              <Spinner size="md" />
             </div>
           ) : (
             <div className="space-y-2">

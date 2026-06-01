@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { AdminLayout } from '@/components/layouts';
-import { Loading, InlineLoading } from '@/components/ui';
+import { Loading, InlineLoading, Spinner } from '@/components/ui';
 
 // 重い表示コンポーネントは遅延ロードして初期バンドルを軽くする
 const ScheduleGanttChart = dynamic(
@@ -597,7 +597,7 @@ export default function CourseSchedulePage() {
               >
                 {isExporting ? (
                   <>
-                    <span className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                    <Spinner size="xs" tone="current" />
                     出力中...
                   </>
                 ) : (
@@ -634,7 +634,7 @@ export default function CourseSchedulePage() {
                   >
                     {deployLoading ? (
                       <>
-                        <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <Spinner size="xs" tone="current" />
                         展開中...
                       </>
                     ) : (
