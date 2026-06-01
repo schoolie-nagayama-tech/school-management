@@ -232,7 +232,7 @@ export default function CourseProgressPage() {
 
   // ステータス変更
   // 「面談申込」「面談未申込対応」項目を名前で特定（テンプレ共通名のため名前マッチ）。
-  // 「面談未申込対応」は“面談を申し込んでいない人”への対応なので、面談申込が付いたら自動で完了にする。
+  // 「面談未申込対応」は“面談を申し込んでいない人”への対応なので、面談申込が付いたら自動で「対象外」にする。
   const interviewLinkItemIds = useMemo(() => {
     const applyItem = items.find(
       (i) => i.column_type === 'check' && i.name.includes('面談申込') && !i.name.includes('未')
@@ -286,10 +286,11 @@ export default function CourseProgressPage() {
     async (studentId: string, itemId: string, status: ApplicationStatus | null) => {
       await updateSingleStatus(studentId, itemId, status);
 
-      // 「面談申込」の連動: 申込が完了→「面談未申込対応」を自動完了 / 申込が外れたら未申込対応をクリア
+      // 「面談申込」の連動: 申込が完了→「面談未申込対応」を自動で「対象外」/ 申込が外れたら未申込対応をクリア
+      // （申し込んだ人には“未申込対応”が不要なため、完了ではなく対象外にする）
       const { applyItemId, followUpItemId } = interviewLinkItemIds;
       if (applyItemId && followUpItemId && itemId === applyItemId) {
-        const linkedStatus: ApplicationStatus | null = status === 'completed' ? 'completed' : null;
+        const linkedStatus: ApplicationStatus | null = status === 'completed' ? 'not_applicable' : null;
         await updateSingleStatus(studentId, followUpItemId, linkedStatus);
       }
     },
