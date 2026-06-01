@@ -48,6 +48,34 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'schoolIdが必要です' }, { status: 400 });
     }
 
+    // 教室スコープ検証: service role で他教室のカレンダー連携トークンを使って
+    // 進捗同期を発火できてしまうため、対象 schoolId が呼び出し元の所属教室か確認する。
+    // admin/owner は全教室を扱えるためバイパス。
+    const { data: callerProfile } = await supabaseAdmin
+      .from('user_profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle();
+    const callerRole = String(callerProfile?.role || '').toLowerCase();
+    const isGlobalRole = callerRole === 'admin' || callerRole === 'owner';
+    if (!isGlobalRole) {
+      const { data: callerSchools } = await supabaseAdmin
+        .from('user_schools')
+        .select('school_id')
+        .eq('user_id', user.id);
+      const callerSchoolIds = (callerSchools || []).map((r: { school_id: string }) => String(r.school_id));
+      if (!callerSchoolIds.includes(String(schoolId))) {
+        console.error(JSON.stringify({
+          type: 'SCOPE_VIOLATION',
+          actorId: user.id,
+          path: '/api/courses/progress/sync-calendar',
+          schoolId,
+          timestamp: new Date().toISOString(),
+        }));
+        return NextResponse.json({ error: 'この教室を操作する権限がありません' }, { status: 403 });
+      }
+    }
+
     // 教室のメールアドレスを取得
     const { data: school } = await supabaseAdmin
       .from('schools')
