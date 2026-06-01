@@ -238,6 +238,8 @@ export interface ScheduleEntry {
   time_slot?: ScheduleTimeSlot;
   teacher?: { id: string; display_name: string | null; email: string | null };
   subjects?: { id: string; name: string }[];
+  /** マッチング下書き提案を座席表に重ねるための擬似エントリ印（実DBエントリではない） */
+  isDraft?: boolean;
 }
 
 /** 授業追加・編集フォーム用 */

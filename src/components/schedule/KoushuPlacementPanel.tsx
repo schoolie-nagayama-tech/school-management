@@ -14,14 +14,18 @@
  * 配置完了判定：placed >= enrolled なら緑、未達なら黄、ゼロは赤
  */
 
-import { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui';
 import {
   getKoushuPlacementProgressByPeriod,
+  getStudentRegularSchedule,
   type KoushuPeriodInfo,
 } from '@/lib/api/koushu-period';
 import type { ScheduleEntryFormation } from '@/types/schedule';
 import { CheckCircle, Target, X } from 'lucide-react';
+
+const DOW_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
+type StudentSchedule = Awaited<ReturnType<typeof getStudentRegularSchedule>>;
 
 interface PlacementRow {
   student_id: string;
@@ -65,6 +69,19 @@ export function KoushuPlacementPanel({
 }: Props) {
   const [rows, setRows] = useState<PlacementRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  // 生徒名クリックで開く詳細（申込コマ数 + 通塾日程）
+  const [openStudent, setOpenStudent] = useState<string | null>(null);
+  const [sched, setSched] = useState<StudentSchedule>([]);
+  const [schedLoading, setSchedLoading] = useState(false);
+
+  const toggleDetail = useCallback(async (studentId: string) => {
+    if (openStudent === studentId) { setOpenStudent(null); return; }
+    setOpenStudent(studentId);
+    setSchedLoading(true);
+    try { setSched(await getStudentRegularSchedule(studentId)); }
+    catch { setSched([]); }
+    finally { setSchedLoading(false); }
+  }, [openStudent]);
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -143,15 +160,24 @@ export function KoushuPlacementPanel({
                   const remaining = r.enrolled - r.placed;
                   const isComplete = remaining <= 0;
                   const isPlacing = placingStudentId === r.student_id;
+                  const isOpen = openStudent === r.student_id;
                   return (
-                    <tr key={r.student_id} className="border-t border-border-subtle">
+                    <React.Fragment key={r.student_id}>
+                    <tr className="border-t border-border-subtle">
                       <td className="py-1 px-1">
-                        <span className="font-medium">
-                          {r.student?.last_name} {r.student?.first_name}
-                        </span>
-                        <span className="text-text-muted ml-1">
-                          ({r.student ? gradeLabel(r.student.grade) : ''})
-                        </span>
+                        <button
+                          type="button"
+                          onClick={() => toggleDetail(r.student_id)}
+                          className="text-left hover:underline"
+                          title="クリックで通塾日程・申込コマ数を表示"
+                        >
+                          <span className="font-medium">
+                            {r.student?.last_name} {r.student?.first_name}
+                          </span>
+                          <span className="text-text-muted ml-1">
+                            ({r.student ? gradeLabel(r.student.grade) : ''})
+                          </span>
+                        </button>
                       </td>
                       <td className="py-1 px-1 text-right tabular-nums">
                         {isComplete ? (
@@ -182,6 +208,36 @@ export function KoushuPlacementPanel({
                         )}
                       </td>
                     </tr>
+                    {isOpen && (
+                      <tr className="bg-surface/60">
+                        <td colSpan={3} className="px-2 py-1.5">
+                          <div className="text-[11px] text-text-body">
+                            <div className="mb-1">
+                              <span className="font-semibold">申込:</span> {r.enrolled} コマ
+                              <span className="text-text-muted ml-1">（配置済み {r.placed} / 残 {Math.max(0, r.enrolled - r.placed)}）</span>
+                            </div>
+                            <div>
+                              <span className="font-semibold">通塾日程:</span>{' '}
+                              {schedLoading ? (
+                                <span className="text-text-muted">読み込み中…</span>
+                              ) : sched.length === 0 ? (
+                                <span className="text-text-muted">登録なし</span>
+                              ) : (
+                                <span className="inline-flex flex-wrap gap-1 align-middle">
+                                  {sched.map((s, i) => (
+                                    <span key={i} className="px-1.5 py-0.5 rounded bg-white border border-border-subtle text-[10px]">
+                                      {DOW_LABELS[s.day_of_week]}{s.slot_number}限
+                                      <span className="text-text-muted ml-0.5">{s.start_time?.slice(0, 5)}</span>
+                                    </span>
+                                  ))}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    </React.Fragment>
                   );
                 })}
               </tbody>

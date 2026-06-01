@@ -68,8 +68,8 @@ export function GroupLaneGrid({
   return (
     <div className="mt-6">
       <div className="flex items-center gap-2 mb-2">
-        <h3 className="text-sm font-semibold text-violet-800">集団指導</h3>
-        <span className="text-xs text-violet-500">1コマ最大{maxStudentsPerGroup}名・同時{maxConcurrentGroups}コマ</span>
+        <h3 className="text-sm font-semibold text-accent-ink">集団指導</h3>
+        <span className="text-xs text-accent-ink/70">1コマ最大{maxStudentsPerGroup}名・同時{maxConcurrentGroups}コマ</span>
       </div>
 
       <div className="overflow-x-auto">
@@ -120,7 +120,7 @@ export function GroupLaneGrid({
                       <button
                         type="button"
                         onClick={() => onCreate(date, slot.id)}
-                        className="w-full py-1 text-[10px] text-violet-400 hover:text-violet-700 hover:bg-violet-50 rounded transition-colors"
+                        className="w-full py-1 text-[10px] text-accent-ink/60 hover:text-accent-ink hover:bg-accent-ink-subtle rounded transition-colors"
                       >
                         <Plus className="w-3 h-3 inline -mt-0.5" /> 集団コマ
                       </button>

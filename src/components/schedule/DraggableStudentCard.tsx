@@ -23,6 +23,8 @@ export const DraggableStudentCard = React.memo(function DraggableStudentCard({
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: entry.id,
     data: { type: 'student-entry', entry },
+    // 下書き（擬似エントリ）はドラッグ不可。実エントリではないため移動・振替の対象にしない。
+    disabled: !!entry.isDraft,
   });
 
   return (
@@ -30,7 +32,13 @@ export const DraggableStudentCard = React.memo(function DraggableStudentCard({
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={isDragging ? 'opacity-70 cursor-grabbing' : 'cursor-grab active:cursor-grabbing'}
+      className={
+        entry.isDraft
+          ? ''
+          : isDragging
+            ? 'opacity-70 cursor-grabbing'
+            : 'cursor-grab active:cursor-grabbing'
+      }
     >
       <StudentCard
         entry={entry}

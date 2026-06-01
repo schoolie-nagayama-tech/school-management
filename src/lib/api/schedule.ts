@@ -1205,6 +1205,85 @@ export async function createScheduleEntry(
   return data as ScheduleEntry;
 }
 
+/**
+ * 講習コマを「担当未決定」で1件配置する（手動の落とし込み用）。
+ * 空きセルクリックで生徒を落とし込み、講師は後でマッチング/ドラッグで割り当てる想定。
+ * teacher_id NULL で作成するため createScheduleEntry（講師必須）は使わず直接 INSERT する。
+ * 配置できない場合は「なぜできないか」が分かるメッセージで throw する。
+ */
+export async function createKoushuPlacement(
+  schoolId: string,
+  date: string,
+  slotId: string,
+  studentId: string,
+  subjectIds: string[],
+  teacherId: string | null = null
+): Promise<ScheduleEntry> {
+  // 過去日付ガード
+  const todayJst = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Tokyo' });
+  if (date < todayJst) {
+    throw new Error(`過去の日付（${date}）には配置できません。今日以降の日付を選んでください。`);
+  }
+  // 生徒の時間重複チェック（同じ時間帯に既に別の授業があれば理由つきで弾く）
+  const targetSlot = await getTimeSlotById(slotId);
+  if (targetSlot) {
+    const studentConflict = await checkStudentTimeConflict(
+      studentId,
+      new Date(date + 'T12:00:00').getDay(),
+      targetSlot.start_time,
+      targetSlot.end_time,
+      { specificDate: date }
+    );
+    if (studentConflict) throw new Error(studentConflict.message);
+  }
+
+  // 講師指定ありの場合：その講師がこのコマで人数上限に達していないか確認（個別は1講師N名まで）。
+  // ※個別は同一講師に複数生徒を持てるので、createScheduleEntry の講師時間重複は使わず容量で判定する。
+  if (teacherId) {
+    await ensureUserIsTeacher(teacherId);
+    const { getClassCapacity, DEFAULT_CLASS_CAPACITY } = await import('@/lib/api/school-class-capacity');
+    const cap = (await getClassCapacity(schoolId)) ?? DEFAULT_CLASS_CAPACITY;
+    const { data: sameTeacher } = await db
+      .from('schedule_entries')
+      .select('id')
+      .eq('school_id', schoolId)
+      .eq('entry_date', date)
+      .eq('time_slot_id', slotId)
+      .eq('teacher_id', teacherId)
+      .eq('formation', 'individual')
+      .in('status', ['scheduled', 'completed', 'transferred_in']);
+    if ((sameTeacher?.length ?? 0) >= cap.max_students_per_teacher_individual) {
+      throw new Error(`この講師はこのコマで満員です（1講師あたり最大${cap.max_students_per_teacher_individual}名）`);
+    }
+  }
+
+  const { data, error } = await db
+    .from('schedule_entries')
+    .insert({
+      school_id: schoolId,
+      entry_date: date,
+      time_slot_id: slotId,
+      teacher_id: teacherId, // null=担当未決定 / 指定あり=その講師
+      student_id: studentId,
+      subject_ids: subjectIds || [],
+      status: 'scheduled',
+      kind: 'koushu',
+      formation: 'individual',
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating koushu placement:', error);
+    const detail =
+      error && typeof error === 'object' && 'message' in error
+        ? String((error as { message: string }).message)
+        : '';
+    throw new Error(detail ? `配置できませんでした：${detail}` : '配置できませんでした');
+  }
+  return data as ScheduleEntry;
+}
+
 /** 授業を更新（講師・科目・座席・備考） */
 export async function updateScheduleEntry(
   id: string,

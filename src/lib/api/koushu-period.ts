@@ -99,6 +99,38 @@ export async function estimateRegularKomaInPeriod(
   return weekly * weeks;
 }
 
+/**
+ * 生徒の通塾日程サマリ（個別の有効な通塾日程パターン）を取得。
+ * 講習配置時に「この生徒は普段いつ来ているか」を見て落とし込む判断材料にする。
+ */
+export async function getStudentRegularSchedule(
+  studentId: string
+): Promise<Array<{ day_of_week: number; slot_number: number; start_time: string; end_time: string; subject_ids: string[] }>> {
+  const { data } = await db
+    .from('schedule_regular_patterns')
+    .select('day_of_week, subject_ids, time_slot:schedule_time_slots(slot_number, start_time, end_time)')
+    .eq('student_id', studentId)
+    .eq('is_active', true)
+    .eq('formation', 'individual');
+  type Row = {
+    day_of_week: number;
+    subject_ids: string[] | null;
+    time_slot?: { slot_number: number; start_time: string; end_time: string } | Array<{ slot_number: number; start_time: string; end_time: string }>;
+  };
+  return ((data ?? []) as Row[])
+    .map((r) => {
+      const ts = Array.isArray(r.time_slot) ? r.time_slot[0] : r.time_slot;
+      return {
+        day_of_week: r.day_of_week,
+        slot_number: ts?.slot_number ?? 0,
+        start_time: ts?.start_time ?? '',
+        end_time: ts?.end_time ?? '',
+        subject_ids: r.subject_ids ?? [],
+      };
+    })
+    .sort((a, b) => a.day_of_week - b.day_of_week || a.slot_number - b.slot_number);
+}
+
 /** 指定日（既定は今日）に該当する講習期間。複数あれば最新優先 */
 export async function getCurrentKoushuPeriod(
   schoolId: string,

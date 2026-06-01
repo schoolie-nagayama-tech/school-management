@@ -149,6 +149,14 @@ export interface WeeklyScheduleGridProps {
   absenceKeySet?: Set<string>;
   /** 講師カードの欠勤トグル */
   onToggleAbsence?: (date: string, slotId: string, teacherId: string) => void;
+  /** 講習の手動配置モード中か（true でセルがクリック可能な配置ターゲットになる） */
+  koushuPlacing?: boolean;
+  /** 配置モード中、各セルの配置可否と理由（緑/淡色のハイライト用） */
+  getKoushuPlaceability?: (date: string, slotId: string) => { ok: boolean; reason: string | null };
+  /** 配置モード中にセルをクリックしたとき（担当未決定で落とす） */
+  onKoushuPlace?: (date: string, slotId: string) => void;
+  /** 配置モード中に講師カードをクリックしたとき（その講師で配置） */
+  onKoushuPlaceWithTeacher?: (date: string, slotId: string, teacherId: string) => void;
 }
 
 export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
@@ -180,6 +188,10 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
     subjectNameById,
     absenceKeySet,
     onToggleAbsence,
+    koushuPlacing,
+    getKoushuPlaceability,
+    onKoushuPlace,
+    onKoushuPlaceWithTeacher,
   } = props;
 
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -389,6 +401,10 @@ export function WeeklyScheduleGrid(props: WeeklyScheduleGridProps) {
       subjectNameById={subjectNameById}
       absenceKeySet={absenceKeySet}
       onToggleAbsence={onToggleAbsence}
+      koushuPlacing={koushuPlacing}
+      getKoushuPlaceability={getKoushuPlaceability}
+      onKoushuPlace={onKoushuPlace}
+      onKoushuPlaceWithTeacher={onKoushuPlaceWithTeacher}
     />
   );
 }

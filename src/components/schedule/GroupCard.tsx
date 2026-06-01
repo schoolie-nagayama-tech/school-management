@@ -41,20 +41,20 @@ export function GroupCard({ entries, maxStudents, subjectNameById, onStudentClic
   const isFull = count >= maxStudents;
 
   return (
-    <div className="rounded-lg border border-violet-200 bg-violet-50/60 p-1.5">
+    <div className="rounded-lg border border-accent-ink/20 bg-accent-ink-subtle p-1.5">
       {/* ヘッダー: 講師 + 科目 + 人数 */}
       <div className="flex items-center gap-1 mb-1">
-        <span className="text-[11px] font-semibold text-violet-900 truncate flex-1 min-w-0">
+        <span className="text-[11px] font-semibold text-accent-ink truncate flex-1 min-w-0">
           {teacherName}
         </span>
-        <span className={`text-[10px] tabular-nums ${isFull ? 'text-danger font-semibold' : 'text-violet-500'}`}>
+        <span className={`text-[10px] tabular-nums ${isFull ? 'text-danger font-semibold' : 'text-accent-ink/70'}`}>
           {count}/{maxStudents}
         </span>
       </div>
       {subjectLabels.length > 0 && (
         <div className="flex flex-wrap gap-0.5 mb-1">
           {subjectLabels.map((label) => (
-            <span key={label} className="px-1 py-0 rounded text-[9px] leading-tight text-violet-700 bg-white border border-violet-100">
+            <span key={label} className="px-1 py-0 rounded text-[9px] leading-tight text-accent-ink bg-white border border-accent-ink/15">
               {label}
             </span>
           ))}
@@ -68,7 +68,7 @@ export function GroupCard({ entries, maxStudents, subjectNameById, onStudentClic
           return (
             <span
               key={e.id}
-              className="group/std inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-white border border-violet-100 text-[10px] text-violet-900 cursor-pointer hover:border-violet-300"
+              className="group/std inline-flex items-center gap-0.5 px-1 py-0.5 rounded bg-white border border-accent-ink/15 text-[10px] text-accent-ink cursor-pointer hover:border-accent-ink/40"
               onClick={(ev) => onStudentClick?.(e, ev)}
               title={`${name}（${grade}）`}
             >
@@ -77,7 +77,7 @@ export function GroupCard({ entries, maxStudents, subjectNameById, onStudentClic
                 <button
                   type="button"
                   onClick={(ev) => { ev.stopPropagation(); onRemoveEntry(e); }}
-                  className="opacity-0 group-hover/std:opacity-100 text-violet-300 hover:text-danger transition-opacity"
+                  className="opacity-0 group-hover/std:opacity-100 text-accent-ink/40 hover:text-danger transition-opacity"
                   aria-label="この生徒を外す"
                 >
                   <X className="w-2.5 h-2.5" />

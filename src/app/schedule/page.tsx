@@ -83,7 +83,7 @@ import type { School, Student, Subject } from '@/types/database';
 import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
-import { Clock, BookOpen, GraduationCap, FileText } from 'lucide-react';
+import { Clock, BookOpen, GraduationCap, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 import { SchoolSwitcher } from '@/components/SchoolSwitcher';
 import {
   getKoushuEnrollments,
@@ -91,6 +91,7 @@ import {
   type KoushuEnrollment,
 } from '@/lib/api/seasonalCourses';
 import { getKoushuPeriods, type KoushuPeriodInfo } from '@/lib/api/koushu-period';
+import type { ScheduleMatchProposal } from '@/types/schedule-match';
 
 function getWeekStart(d: Date): Date {
   const day = d.getDay();
@@ -231,6 +232,8 @@ export default function SchedulePage() {
   const [selectedKoushu, setSelectedKoushu] = useState<KoushuPeriodInfo | null>(null);
   const [koushuEnrollments, setKoushuEnrollments] = useState<Map<string, KoushuEnrollment>>(new Map());
   const [koushuScheduledCounts, setKoushuScheduledCounts] = useState<Map<string, number>>(new Map());
+  // マッチングの下書き提案（座席表に★で重ねる用）
+  const [koushuDraftProposals, setKoushuDraftProposals] = useState<ScheduleMatchProposal[]>([]);
 
   const router = useRouter();
 
@@ -437,7 +440,18 @@ export default function SchedulePage() {
     if (!period) {
       setKoushuEnrollments(new Map());
       setKoushuScheduledCounts(new Map());
+      setKoushuDraftProposals([]);
       return;
+    }
+    // 講習モードに入ったら期間内の週へジャンプ（今日が期間内なら今週、そうでなければ期間開始週）。
+    // 通常授業の週（6月など）に居たまま講習配置しようとして「置けない」事故を防ぐ。
+    {
+      const todayJst = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Tokyo' });
+      const jumpStr =
+        todayJst >= period.schedule_start_date && todayJst <= period.schedule_end_date
+          ? todayJst
+          : period.schedule_start_date;
+      setWeekStart(getWeekStart(new Date(jumpStr + 'T12:00:00')));
     }
     // 該当 season + school_id のコースを集めて全部 enrollment を引く
     const { getSchoolKoushu } = await import('@/lib/api/seasonalCourses');
@@ -835,6 +849,108 @@ export default function SchedulePage() {
     () => entriesWithSubjects.filter((e) => e.kind === 'koushu' && e.formation === 'group'),
     [entriesWithSubjects]
   );
+
+  // 下書き提案を「擬似エントリ」に変換して個別グリッドに重ねる（isDraft=true で★/破線表示）。
+  const subjectById = useMemo(() => new Map(masterSubjects.map((s) => [s.id, s.name])), [masterSubjects]);
+  const koushuDraftEntries = useMemo<ScheduleEntry[]>(() => {
+    if (!selectedKoushu) return [];
+    return koushuDraftProposals
+      .filter((p) => p.formation === 'individual')
+      .map((p) => ({
+        id: `draft-${p.id}`,
+        school_id: p.school_id,
+        entry_date: p.proposal_date,
+        time_slot_id: p.time_slot_id,
+        teacher_id: p.teacher_id,
+        student_id: p.student_id,
+        subject_ids: p.subject_ids,
+        seat_label: null,
+        regular_pattern_id: null,
+        kind: 'koushu',
+        formation: 'individual',
+        attendance_status: null,
+        status: 'scheduled',
+        created_at: '',
+        updated_at: '',
+        student: p.student,
+        teacher: p.teacher
+          ? { id: p.teacher.id, display_name: p.teacher.display_name, email: p.teacher.email }
+          : undefined,
+        subjects: (p.subject_ids || [])
+          .map((id) => (subjectById.has(id) ? { id, name: subjectById.get(id)! } : null))
+          .filter((x): x is { id: string; name: string } => !!x),
+        isDraft: true,
+      }));
+  }, [selectedKoushu, koushuDraftProposals, subjectById]);
+
+  // 個別グリッドに渡すエントリ。講習モードでは下書き擬似エントリを重ねる。
+  const individualGridEntries = useMemo(
+    () => (selectedKoushu ? [...displayEntries, ...koushuDraftEntries] : displayEntries),
+    [selectedKoushu, displayEntries, koushuDraftEntries]
+  );
+
+  // 講習の手動配置（落とし込み）：配置モード中、空きセルクリックで担当未決定の講習コマを作成。
+  const handleKoushuPlace = useCallback(
+    async (date: string, slotId: string) => {
+      if (!placingKoushuStudent || !schoolId) return;
+      if (closedDates.includes(date)) { toastError('休講日には配置できません'); return; }
+      try {
+        const { createKoushuPlacement } = await import('@/lib/api/schedule');
+        await createKoushuPlacement(schoolId, date, slotId, placingKoushuStudent.studentId, placingKoushuStudent.subjectIds);
+        success('講習コマを配置しました（担当未決定）');
+        await refreshEntries();
+        setKoushuPanelRefreshKey((k) => k + 1);
+      } catch (e) {
+        // なぜ配置できないかを明示（過去日付・時間重複など）
+        toastError(e instanceof Error ? e.message : '配置できませんでした');
+      }
+    },
+    [placingKoushuStudent, schoolId, closedDates, success, refreshEntries, toastError]
+  );
+
+  // 配置モード中の各セルの配置可否（緑=可 / 淡色=不可）。通塾可能表データが入れば生徒別に絞る余地あり。
+  const getKoushuPlaceability = useCallback(
+    (date: string, slotId: string): { ok: boolean; reason: string | null } => {
+      if (!placingKoushuStudent) return { ok: false, reason: null };
+      if (closedDates.includes(date)) return { ok: false, reason: '休講日' };
+      const todayJst = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Tokyo' });
+      if (date < todayJst) return { ok: false, reason: '過去の日付' };
+      const sid = placingKoushuStudent.studentId;
+      const dup = entriesWithSubjects.some(
+        (e) => e.student_id === sid && e.entry_date === date && e.time_slot_id === slotId
+          && e.status !== 'cancelled' && e.status !== 'transferred_out'
+      );
+      if (dup) return { ok: false, reason: 'この生徒は既にこのコマに配置済み' };
+      return { ok: true, reason: null };
+    },
+    [placingKoushuStudent, closedDates, entriesWithSubjects]
+  );
+
+  // 配置モード中、講師カードをクリック→その講師で講習コマを配置（出勤可能講師カード=生徒0人含む）
+  const handleKoushuPlaceWithTeacher = useCallback(
+    async (date: string, slotId: string, teacherId: string) => {
+      if (!placingKoushuStudent || !schoolId) return;
+      if (closedDates.includes(date)) { toastError('休講日には配置できません'); return; }
+      try {
+        const { createKoushuPlacement } = await import('@/lib/api/schedule');
+        await createKoushuPlacement(schoolId, date, slotId, placingKoushuStudent.studentId, placingKoushuStudent.subjectIds, teacherId);
+        success('講習コマを配置しました');
+        await refreshEntries();
+        setKoushuPanelRefreshKey((k) => k + 1);
+      } catch (e) {
+        toastError(e instanceof Error ? e.message : '配置できませんでした');
+      }
+    },
+    [placingKoushuStudent, schoolId, closedDates, success, refreshEntries, toastError]
+  );
+
+  // 週移動（座席表の左右端の縦長アイコンからも操作できるように）
+  const goPrevWeek = useCallback(() => {
+    setWeekStart((d) => { const n = new Date(d); n.setDate(n.getDate() - 7); return n; });
+  }, []);
+  const goNextWeek = useCallback(() => {
+    setWeekStart((d) => { const n = new Date(d); n.setDate(n.getDate() + 7); return n; });
+  }, []);
 
   const handleStudentEntryDrop = useCallback(async (
     entryId: string,
@@ -1400,6 +1516,7 @@ export default function SchedulePage() {
             placingStudentId={placingKoushuStudent?.studentId ?? null}
             refreshKey={koushuPanelRefreshKey}
             showGroupProgress={groupSlots.length > 0}
+            onDraftsChange={setKoushuDraftProposals}
             onPublished={() => {
               refreshEntries();
               setKoushuPanelRefreshKey((k) => k + 1);
@@ -1504,12 +1621,31 @@ export default function SchedulePage() {
                   {entriesLoading ? (
                     <Loading size="md" />
                   ) : (
-                    <div className="print:hidden">
+                    <div className="print:hidden relative">
+                    {/* 左右端の縦長 週移動アイコン（上の前週/次週ボタン以外でも動かせるように） */}
+                    <button
+                      type="button"
+                      onClick={goPrevWeek}
+                      aria-label="前週へ"
+                      title="前週へ"
+                      className="absolute left-0 top-1/2 -translate-y-1/2 z-30 w-7 h-24 flex items-center justify-center rounded-r-lg bg-white/90 border border-l-0 border-border-default text-text-muted shadow-sm hover:bg-surface hover:text-text-body transition-colors"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={goNextWeek}
+                      aria-label="次週へ"
+                      title="次週へ"
+                      className="absolute right-0 top-1/2 -translate-y-1/2 z-30 w-7 h-24 flex items-center justify-center rounded-l-lg bg-white/90 border border-r-0 border-border-default text-text-muted shadow-sm hover:bg-surface hover:text-text-body transition-colors"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
                     <WeeklyScheduleGrid
                       schoolId={schoolId ?? ''}
                       weekDates={weekDates}
                       timeSlots={selectedKoushu ? individualSlots : timeSlots}
-                      entries={displayEntries}
+                      entries={individualGridEntries}
                       closedDates={closedDates}
                       teachers={teachers}
                       emptyTeacherSlots={emptyTeacherSlots}
@@ -1534,6 +1670,10 @@ export default function SchedulePage() {
                       onBoothAssign={handleBoothAssign}
                       onTransferCancel={() => setTransferMode(null)}
                       getKoushuInfo={selectedKoushu ? getKoushuInfo : undefined}
+                      koushuPlacing={!!placingKoushuStudent}
+                      getKoushuPlaceability={getKoushuPlaceability}
+                      onKoushuPlace={handleKoushuPlace}
+                      onKoushuPlaceWithTeacher={handleKoushuPlaceWithTeacher}
                     />
                     {/* 集団レーン（講習モードかつ集団コマ時間がある場合のみ）。集団は手動編成。 */}
                     {selectedKoushu && groupSlots.length > 0 && (

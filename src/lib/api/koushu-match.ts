@@ -54,7 +54,7 @@ export interface KoushuMatchInput {
 export interface KoushuMatchResult {
   batchId: string | null;
   proposalsCreated: number;
-  unmatched: Array<{ student_id: string; remaining: number; reason: string }>;
+  unmatched: Array<{ student_id: string; student_name?: string; remaining: number; reason: string }>;
 }
 
 interface TeacherProfile {
@@ -157,7 +157,7 @@ export async function generateKoushuIndividualProposals(
   // 生徒別の個別残コマ（placed=既存の published を尊重）
   const progress = await getKoushuPlacementProgressByPeriod(period, 'individual');
   const students = Array.from(progress.entries())
-    .map(([student_id, v]) => ({ student_id, remaining: v.enrolled - v.placed, subject_ids: v.subject_ids }))
+    .map(([student_id, v]) => ({ student_id, remaining: v.enrolled - v.placed, subject_ids: v.subject_ids, student: v.student }))
     .filter((s) => s.remaining > 0)
     .sort((a, b) => b.remaining - a.remaining);
 
@@ -309,7 +309,12 @@ export async function generateKoushuIndividualProposals(
       }
     }
     if (need > 0) {
-      unmatched.push({ student_id: stu.student_id, remaining: need, reason: '空き講師・コマが不足' });
+      unmatched.push({
+        student_id: stu.student_id,
+        student_name: stu.student ? `${stu.student.last_name}${stu.student.first_name}` : undefined,
+        remaining: need,
+        reason: '出勤可能な講師・空きコマが不足',
+      });
     }
   }
 

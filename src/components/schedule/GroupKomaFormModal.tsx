@@ -161,9 +161,9 @@ export function GroupKomaFormModal({
             {students.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {students.map((s) => (
-                  <span key={s.id} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-violet-50 border border-violet-100 text-xs text-violet-900">
+                  <span key={s.id} className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-accent-ink-subtle border border-accent-ink/15 text-xs text-accent-ink">
                     {s.last_name} {s.first_name}
-                    <button type="button" onClick={() => removeStudent(s.id)} className="text-violet-300 hover:text-danger" aria-label="外す">
+                    <button type="button" onClick={() => removeStudent(s.id)} className="text-accent-ink/40 hover:text-danger" aria-label="外す">
                       <X className="w-3 h-3" />
                     </button>
                   </span>

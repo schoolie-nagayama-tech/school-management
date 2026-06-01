@@ -12,10 +12,10 @@
  *  - 配置進捗（KoushuPlacementPanel）を内包
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui';
 import { KoushuPlacementPanel } from './KoushuPlacementPanel';
-import { generateKoushuIndividualProposals } from '@/lib/api/koushu-match';
+import { generateKoushuIndividualProposals, type KoushuMatchResult } from '@/lib/api/koushu-match';
 import {
   getProposalsByBatch,
   publishProposal,
@@ -40,6 +40,8 @@ interface Props {
   showGroupProgress?: boolean;
   /** 公開などで座席表エントリが変わったとき、親に再取得を促す */
   onPublished: () => void;
+  /** 下書き提案が変化したとき親に通知（座席表に★で重ねるため） */
+  onDraftsChange?: (drafts: ScheduleMatchProposal[]) => void;
   /** 講習モード解除 */
   onClose: () => void;
 }
@@ -53,17 +55,23 @@ export function KoushuControlPanel({
   refreshKey,
   showGroupProgress = false,
   onPublished,
+  onDraftsChange,
   onClose,
 }: Props) {
   const [open, setOpen] = useState(true);
   const [running, setRunning] = useState(false);
   const [batchId, setBatchId] = useState<string | null>(null);
   const [proposals, setProposals] = useState<ScheduleMatchProposal[]>([]);
-  const [result, setResult] = useState<{ created: number; unmatched: number } | null>(null);
+  const [result, setResult] = useState<KoushuMatchResult | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const drafts = proposals.filter((p) => p.status === 'draft');
+
+  // 下書きの変化を親へ通知（座席表に★で重ねる）。閉じる時はクリアされるよう空配列も流す。
+  useEffect(() => {
+    onDraftsChange?.(proposals.filter((p) => p.status === 'draft'));
+  }, [proposals, onDraftsChange]);
 
   const reloadProposals = useCallback(async (bid: string) => {
     const list = await getProposalsByBatch(bid);
@@ -76,7 +84,7 @@ export function KoushuControlPanel({
     try {
       const res = await generateKoushuIndividualProposals({ schoolId, period, executedBy });
       setBatchId(res.batchId);
-      setResult({ created: res.proposalsCreated, unmatched: res.unmatched.reduce((s, u) => s + u.remaining, 0) });
+      setResult(res);
       if (res.batchId) await reloadProposals(res.batchId);
       else setProposals([]);
     } catch (e) {
@@ -184,12 +192,23 @@ export function KoushuControlPanel({
               </div>
 
               {result && (
-                <p className="mt-1.5 text-xs text-text-muted">
-                  提案 {result.created} 件を作成
-                  {result.unmatched > 0 && (
-                    <span className="text-warning">／ 未マッチ {result.unmatched} コマ（空き講師・コマ不足）</span>
+                <div className="mt-1.5 text-xs">
+                  <p className="text-text-muted">提案 {result.proposalsCreated} 件を作成</p>
+                  {result.unmatched.length > 0 && (
+                    <div className="mt-1 rounded border border-warning/30 bg-warning-subtle/40 p-1.5">
+                      <p className="text-warning font-semibold mb-0.5">
+                        未マッチ {result.unmatched.reduce((s, u) => s + u.remaining, 0)} コマ（{result.unmatched.length}名）— 出勤講師・空きコマが足りていません
+                      </p>
+                      <ul className="max-h-28 overflow-y-auto space-y-0.5">
+                        {result.unmatched.map((u) => (
+                          <li key={u.student_id} className="text-text-muted">
+                            {u.student_name ?? u.student_id.slice(0, 8)}：残 {u.remaining} コマ（{u.reason}）
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   )}
-                </p>
+                </div>
               )}
 
               {/* 下書き一覧 */}

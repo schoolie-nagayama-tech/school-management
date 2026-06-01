@@ -104,6 +104,10 @@ export interface DayCellProps {
   /** 講師欠勤マップ。キー: `${date}|${timeSlotId}|${userId}` */
   absenceKeySet?: Set<string>;
   onToggleAbsence?: (date: string, slotId: string, teacherId: string) => void;
+  /** 講習の手動配置モード中か */
+  koushuPlacing?: boolean;
+  /** 配置モード中に講師カードをクリック→その講師で配置 */
+  onKoushuPlaceWithTeacher?: (teacherId: string) => void;
 }
 
 export const DayCell = React.memo(function DayCell({
@@ -126,6 +130,8 @@ export const DayCell = React.memo(function DayCell({
   subjectNameById,
   absenceKeySet,
   onToggleAbsence,
+  koushuPlacing,
+  onKoushuPlaceWithTeacher,
 }: DayCellProps) {
   if (isClosed) {
     return (
@@ -173,6 +179,12 @@ export const DayCell = React.memo(function DayCell({
             onToggleAbsence={
               onToggleAbsence && !group.teacher.id.startsWith('__unassigned__')
                 ? () => onToggleAbsence(date, timeSlot.id, group.teacher.id)
+                : undefined
+            }
+            koushuPlacing={koushuPlacing}
+            onKoushuPlaceClick={
+              onKoushuPlaceWithTeacher && !group.teacher.id.startsWith('__unassigned__')
+                ? () => onKoushuPlaceWithTeacher(group.teacher.id)
                 : undefined
             }
           />

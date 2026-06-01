@@ -96,6 +96,10 @@ export interface TeacherCardProps {
   isAbsent?: boolean;
   /** 欠勤トグル（未指定なら欠勤ボタンを出さない＝担当未決定セル等） */
   onToggleAbsence?: () => void;
+  /** 講習の手動配置モード中か（true でカードクリックがその講師への配置になる） */
+  koushuPlacing?: boolean;
+  /** 配置モード中にこのカードをクリック→この講師で配置 */
+  onKoushuPlaceClick?: () => void;
 }
 
 export const TeacherCard = React.memo(function TeacherCard({
@@ -117,6 +121,8 @@ export const TeacherCard = React.memo(function TeacherCard({
   getKoushuInfo,
   isAbsent = false,
   onToggleAbsence,
+  koushuPlacing,
+  onKoushuPlaceClick,
 }: TeacherCardProps) {
   const dropId = getTeacherSlotId(date, timeSlotId, teacher.id);
   const { isOver, setNodeRef } = useDroppable({ id: dropId });
@@ -133,6 +139,7 @@ export const TeacherCard = React.memo(function TeacherCard({
     id: dragId,
     disabled:
       !isAvailableOnly ||
+      !!koushuPlacing || // 配置モード中はドラッグ無効（クリックで配置するため）
       teacher.id === '__unassigned__' ||
       teacher.id.startsWith('__unassigned__:'),
   });
@@ -237,6 +244,12 @@ export const TeacherCard = React.memo(function TeacherCard({
     if (transferMode && onTransferTargetClick) onTransferTargetClick(date, timeSlotId, teacher.id);
   };
 
+  // 講習配置モード：このカードをクリック→この講師で配置（バブリングでセルの担当未決定配置が発火しないよう止める）
+  const handleKoushuPlaceClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onKoushuPlaceClick?.();
+  };
+
   // 出勤可能だが授業なし → コンパクトな1行バッジ表示。
   // ドラッグ可能。担当未決定セル（破線warningの「未定: 生徒名」）にドロップすると割当できる。
   if (isAvailableOnly) {
@@ -261,10 +274,11 @@ export const TeacherCard = React.memo(function TeacherCard({
           ${isOverAndCanDrop ? 'ring-2 ring-green-400 bg-green-50' : ''}
           ${isOverAndCannotDrop ? 'ring-2 ring-red-400 bg-red-50 cursor-not-allowed' : ''}
           ${isDimmedDuringDrag ? 'opacity-30 grayscale' : ''}
+          ${koushuPlacing ? 'cursor-pointer ring-1 ring-info/50 hover:ring-2 hover:ring-info hover:bg-info-subtle' : ''}
         `}
-        onClick={transferMode ? handleTransferClick : undefined}
-        role={transferMode ? 'button' : undefined}
-        title="ドラッグして担当未決定セルに割当できます"
+        onClick={koushuPlacing ? handleKoushuPlaceClick : transferMode ? handleTransferClick : undefined}
+        role={koushuPlacing || transferMode ? 'button' : undefined}
+        title={koushuPlacing ? 'クリックでこの講師に配置する' : 'ドラッグして担当未決定セルに割当できます'}
       >
         <GripVertical className="w-2.5 h-2.5 text-gray-300 flex-shrink-0" />
         <span className="text-[11px] truncate flex-1 min-w-0">{displayName}</span>
@@ -299,10 +313,23 @@ export const TeacherCard = React.memo(function TeacherCard({
         ${isOverAndCanDrop ? 'ring-2 ring-green-400 bg-green-50/50' : ''}
         ${isOverAndCannotDrop ? 'ring-2 ring-red-400 bg-red-50/50 cursor-not-allowed' : ''}
         ${isAbsent ? 'opacity-60 bg-[repeating-linear-gradient(45deg,transparent,transparent_6px,color-mix(in_oklch,var(--danger)_8%,transparent)_6px,color-mix(in_oklch,var(--danger)_8%,transparent)_12px)] border-danger/40' : ''}
+        ${koushuPlacing && onKoushuPlaceClick ? 'cursor-pointer ring-1 ring-info/50 hover:ring-2 hover:ring-info' : ''}
       `}
-      onClick={transferMode && onTransferTargetClick ? handleTransferClick : undefined}
-      role={transferMode && onTransferTargetClick ? 'button' : undefined}
-      title={isOverAndCannotDrop && dropConstraint.reason ? `この講師には割当不可: ${dropConstraint.reason}` : undefined}
+      onClick={
+        koushuPlacing && onKoushuPlaceClick
+          ? handleKoushuPlaceClick
+          : transferMode && onTransferTargetClick
+            ? handleTransferClick
+            : undefined
+      }
+      role={(koushuPlacing && onKoushuPlaceClick) || (transferMode && onTransferTargetClick) ? 'button' : undefined}
+      title={
+        koushuPlacing && onKoushuPlaceClick
+          ? 'クリックでこの講師に配置する'
+          : isOverAndCannotDrop && dropConstraint.reason
+            ? `この講師には割当不可: ${dropConstraint.reason}`
+            : undefined
+      }
     >
       {/* 欠勤バッジ：このコマで欠勤の講師に赤バッジを重ねる */}
       {isAbsent && (

@@ -156,8 +156,8 @@ export function KoushuPeriodCard({
                             <span
                               className={`mr-1.5 inline-block px-1.5 py-0.5 rounded text-[10px] font-medium align-middle ${
                                 en.formation === 'group'
-                                  ? 'bg-violet-50 text-violet-700 border border-violet-100'
-                                  : 'bg-sky-50 text-sky-700 border border-sky-100'
+                                  ? 'bg-accent-ink-subtle text-accent-ink border border-accent-ink/15'
+                                  : 'bg-info-subtle text-info border border-info/20'
                               }`}
                             >
                               {en.formation === 'group' ? '集団' : '個別'}

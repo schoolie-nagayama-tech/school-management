@@ -57,7 +57,8 @@ export const StudentCard = React.memo(function StudentCard({
 
   const isTransferredOut = entry.status === 'transferred_out';
   const isTransferredIn = entry.status === 'transferred_in';
-  const canTransfer = onTransferClick && !isTransferredOut && entry.status !== 'cancelled';
+  const isDraft = !!entry.isDraft;
+  const canTransfer = onTransferClick && !isTransferredOut && entry.status !== 'cancelled' && !isDraft;
 
   return (
     <div
@@ -70,15 +71,24 @@ export const StudentCard = React.memo(function StudentCard({
           onClick(e as unknown as React.MouseEvent);
         }
       }}
+      title={isDraft ? '自動マッチングの仮配置（未公開）。コントロールパネルで公開すると確定します' : undefined}
       className={`
         px-1.5 py-1 rounded-lg border text-left shadow-sm
         cursor-pointer hover:shadow-md transition-[box-shadow,border-color,background-color] duration-150
-        ${colorClass}
+        ${isDraft ? 'border-dashed border-2 border-info bg-info-subtle' : colorClass}
         ${isTransferredOut ? 'opacity-60 line-through' : ''}
       `}
     >
       {/* 1行目: 生徒名 + 学年 + 操作アイコン */}
       <div className="flex items-center gap-1">
+        {isDraft && (
+          <span
+            className="flex-shrink-0 px-1 py-0.5 rounded text-[9px] font-bold bg-info text-white leading-none"
+            title="自動マッチングの仮配置（未公開）"
+          >
+            仮
+          </span>
+        )}
         <p className={`text-sm font-semibold leading-tight truncate flex-1 min-w-0 ${isTransferredOut ? 'text-gray-500' : 'text-gray-900'}`}>
           {studentName}
           {/* 学年は名前のすぐ右に括弧書きでくっつける。

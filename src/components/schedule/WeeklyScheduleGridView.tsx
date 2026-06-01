@@ -72,6 +72,14 @@ export interface WeeklyScheduleGridViewProps {
   subjectNameById?: Map<string, string>;
   absenceKeySet?: Set<string>;
   onToggleAbsence?: (date: string, slotId: string, teacherId: string) => void;
+  /** 講習の手動配置モード中か（true でセルがクリック可能な配置ターゲットになる） */
+  koushuPlacing?: boolean;
+  /** 配置モード中、各セルの配置可否と理由 */
+  getKoushuPlaceability?: (date: string, slotId: string) => { ok: boolean; reason: string | null };
+  /** 配置モード中にセルをクリックしたとき（担当未決定で落とす） */
+  onKoushuPlace?: (date: string, slotId: string) => void;
+  /** 配置モード中に講師カードをクリックしたとき（その講師で配置） */
+  onKoushuPlaceWithTeacher?: (date: string, slotId: string, teacherId: string) => void;
 }
 
 export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
@@ -104,6 +112,10 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
     subjectNameById,
     absenceKeySet,
     onToggleAbsence,
+    koushuPlacing,
+    getKoushuPlaceability,
+    onKoushuPlace,
+    onKoushuPlaceWithTeacher,
   } = props;
 
   const todayLocal = getTodayLocalDateStr();
@@ -221,8 +233,9 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
           const isEmptySlot = slotTotalStudents === 0 && slotUnassignedCount === 0;
           const isExpanded = expandedEmptySlots.has(slot.id);
 
-          // 空コマ × 折りたたみ中 → コンパクトな見出し1行だけ
-          if (isEmptySlot && !isExpanded) {
+          // 空コマ × 折りたたみ中 → コンパクトな見出し1行だけ。
+          // ただし講習の配置モード中は折りたたまない（畳まれたセルには落とし込めないため）。
+          if (isEmptySlot && !isExpanded && !koushuPlacing) {
             return (
               <button
                 key={slot.id}
@@ -290,9 +303,41 @@ export function WeeklyScheduleGridView(props: WeeklyScheduleGridViewProps) {
                 );
                 const cellKey = `${dateStr}-${slot.id}`;
 
+                // 講習の手動配置モード：セルをクリック可能な配置ターゲットにする。
+                // 緑=配置可 / 淡色=不可（理由つき）。セル背景クリック=担当未決定で落とす、
+                // 講師カードクリック=その講師で配置（バブリングは講師カード側で stopPropagation）。
+                const place = koushuPlacing ? getKoushuPlaceability?.(dateStr, slot.id) : undefined;
+
                 return (
-                  <div key={cellKey} className={`min-w-0 ${SLOT_ROW_MIN_H} border-l border-gray-100 pl-2`}>
+                  <div
+                    key={cellKey}
+                    className={`relative min-w-0 ${SLOT_ROW_MIN_H} border-l border-gray-100 pl-2 ${
+                      koushuPlacing ? (place?.ok ? 'cursor-pointer' : 'cursor-not-allowed') : ''
+                    }`}
+                    onClick={koushuPlacing ? () => onKoushuPlace?.(dateStr, slot.id) : undefined}
+                    title={
+                      koushuPlacing
+                        ? place?.ok
+                          ? '背景クリックで担当未決定として落とす／講師カードをクリックするとその講師で配置'
+                          : place?.reason ?? '配置できません'
+                        : undefined
+                    }
+                  >
+                    {koushuPlacing && (
+                      <div
+                        aria-hidden
+                        className={`pointer-events-none absolute inset-0 z-0 rounded-lg ${
+                          place?.ok ? 'ring-2 ring-success bg-success-subtle/20' : 'bg-gray-300/25'
+                        }`}
+                      />
+                    )}
                     <DayCell
+                      koushuPlacing={koushuPlacing}
+                      onKoushuPlaceWithTeacher={
+                        onKoushuPlaceWithTeacher
+                          ? (teacherId) => onKoushuPlaceWithTeacher(dateStr, slot.id, teacherId)
+                          : undefined
+                      }
                       date={dateStr}
                       timeSlot={slot}
                       isClosed={isClosed}
