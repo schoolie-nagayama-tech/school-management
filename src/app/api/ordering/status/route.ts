@@ -54,8 +54,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true, notified: false });
     }
 
+    // 教室スコープで絞り込む: service role で他教室の注文（生徒名・教材）を取得して
+    // Slack へ送出できてしまうため、呼び出し元の所属教室の注文のみを通知対象にする。
+    // admin/owner は auth.schoolIds に全教室が入るため実質全件通る。
+    const callerSchools = new Set(auth.schoolIds);
+    const scopedOrders = orders.filter((o: Record<string, unknown>) =>
+      callerSchools.has(String(o.school_id))
+    );
+    if (scopedOrders.length === 0) {
+      return NextResponse.json({ ok: true, notified: false });
+    }
+
     // 教室名を取得
-    const schoolIds = Array.from(new Set(orders.map((o: Record<string, unknown>) => o.school_id as string)));
+    const schoolIds = Array.from(new Set(scopedOrders.map((o: Record<string, unknown>) => o.school_id as string)));
     const { data: schools } = await supabaseAdmin
       .from('schools')
       .select('id, name')
@@ -68,8 +79,8 @@ export async function POST(request: NextRequest) {
     const notifyFn = newStatus === 'ordered' ? notifyOrderPlaced : notifyOrderDelivered;
     const bulkNotifyFn = newStatus === 'ordered' ? notifyBulkOrderPlaced : notifyBulkOrderDelivered;
 
-    if (orders.length === 1) {
-      const o = orders[0] as Record<string, unknown>;
+    if (scopedOrders.length === 1) {
+      const o = scopedOrders[0] as Record<string, unknown>;
       const material = o.material as { name: string } | null;
       const student = o.student as { last_name: string; first_name: string } | null;
       await notifyFn({
@@ -80,8 +91,8 @@ export async function POST(request: NextRequest) {
       });
     } else {
       // 教室ごとにグループ化して一括通知
-      const grouped: Record<string, typeof orders> = {};
-      for (const o of orders) {
+      const grouped: Record<string, typeof scopedOrders> = {};
+      for (const o of scopedOrders) {
         const sid = (o as Record<string, unknown>).school_id as string;
         if (!grouped[sid]) grouped[sid] = [];
         grouped[sid].push(o);
