@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Input, Select } from '@/components/ui';
+import { fetchClassPeriodsLive, type ClassPeriodItem } from '@/lib/api/class-periods';
 import { ToastContainer } from '@/components/ui/Toast';
 import {
   PortalFormHeader,
@@ -91,6 +92,22 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
   // 設定を取得
   const settings = period.settings;
 
+  // 時限はコマ時間マスタ(schedule_time_slots)をライブ参照する。
+  // 取得できない場合のみ期間設定のスナップショット(available_periods)にフォールバック。
+  const [masterPeriods, setMasterPeriods] = useState<ClassPeriodItem[] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetchClassPeriodsLive(school.id).then((p) => {
+      if (!cancelled) setMasterPeriods(p);
+    });
+    return () => { cancelled = true; };
+  }, [school.id]);
+
+  const periodOptions = useMemo(
+    () => (masterPeriods && masterPeriods.length > 0 ? masterPeriods : settings.available_periods),
+    [masterPeriods, settings.available_periods]
+  );
+
   // ドラフト自動保存
   const { clearDraft } = usePortalFormDraft({
     storageKey: `youbi:${school.id}:${period.period_key}`,
@@ -153,7 +170,8 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
   }, [selectedGrade]);
 
   const getPeriodLabel = (code: string): string => {
-    return settings.available_periods.find((p) => p.code === code)?.label || code;
+    const base = masterPeriods && masterPeriods.length > 0 ? masterPeriods : settings.available_periods;
+    return base.find((p) => p.code === code)?.label || code;
   };
 
   // 学年を数値に変換
@@ -369,7 +387,7 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
             onChange={(e) => updateSlot(slot, setSlot, 'period', e.target.value)}
             options={[
               { value: '', label: '選択' },
-              ...settings.available_periods.map((p) => ({
+              ...periodOptions.map((p) => ({
                 value: p.code,
                 label: p.label,
               })),

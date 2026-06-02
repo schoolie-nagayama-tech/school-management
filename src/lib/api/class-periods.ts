@@ -6,6 +6,7 @@
 
 import { getActiveTimeSlots } from '@/lib/api/schedule';
 import { formatSlotsForPeriods } from '@/lib/utils/timeSlotDefaults';
+import type { ScheduleEntryFormation } from '@/types/schedule';
 
 export interface ClassPeriodItem {
   code: string;
@@ -28,6 +29,24 @@ export function getClassPeriods(schoolId: string | undefined): ClassPeriodItem[]
     const parsed = JSON.parse(raw) as ClassPeriodItem[];
     if (!Array.isArray(parsed) || parsed.length === 0) return [];
     return parsed.filter((p) => p && typeof p.code === 'string' && typeof p.label === 'string');
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * コマ時間マスタ(schedule_time_slots)から毎回取得する（localStorageキャッシュを使わない）。
+ * フォームがマスタをライブ参照するための取得関数。失敗時は空配列。
+ * formation は通塾コマの個別指導枠 'individual' を既定とする。
+ */
+export async function fetchClassPeriodsLive(
+  schoolId: string,
+  formation: ScheduleEntryFormation = 'individual'
+): Promise<ClassPeriodItem[]> {
+  if (!schoolId) return [];
+  try {
+    const slots = await getActiveTimeSlots(schoolId, formation);
+    return formatSlotsForPeriods(slots);
   } catch {
     return [];
   }
