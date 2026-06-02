@@ -1218,7 +1218,9 @@ export async function createKoushuPlacement(
   slotId: string,
   studentId: string,
   subjectIds: string[],
-  teacherId: string | null = null
+  teacherId: string | null = null,
+  // 配置するコマの種別。講習=koushu / テスト対策=test_prep（落とし込みロジックは共通）。
+  kind: 'koushu' | 'test_prep' = 'koushu'
 ): Promise<ScheduleEntry> {
   // 過去日付ガード
   const todayJst = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Tokyo' });
@@ -1268,14 +1270,14 @@ export async function createKoushuPlacement(
       student_id: studentId,
       subject_ids: subjectIds || [],
       status: 'scheduled',
-      kind: 'koushu',
+      kind,
       formation: 'individual',
     })
     .select()
     .single();
 
   if (error) {
-    console.error('Error creating koushu placement:', error);
+    console.error('Error creating manual placement:', error);
     const detail =
       error && typeof error === 'object' && 'message' in error
         ? String((error as { message: string }).message)
@@ -1283,6 +1285,22 @@ export async function createKoushuPlacement(
     throw new Error(detail ? `配置できませんでした：${detail}` : '配置できませんでした');
   }
   return data as ScheduleEntry;
+}
+
+/**
+ * テスト対策コマを1件配置する（増コマ申込の落とし込み用）。
+ * 配置ロジックは講習(createKoushuPlacement)と共通で、kind='test_prep' で作る。
+ * teacher_id NULL=担当未決定（後でドラッグ/講師カードクリックで割当）。
+ */
+export async function createTestPrepPlacement(
+  schoolId: string,
+  date: string,
+  slotId: string,
+  studentId: string,
+  subjectIds: string[],
+  teacherId: string | null = null
+): Promise<ScheduleEntry> {
+  return createKoushuPlacement(schoolId, date, slotId, studentId, subjectIds, teacherId, 'test_prep');
 }
 
 /** 授業を更新（講師・科目・座席・備考） */

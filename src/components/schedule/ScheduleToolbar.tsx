@@ -3,8 +3,9 @@
 import Link from 'next/link';
 import { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui';
-import { Settings, ChevronDown, GraduationCap } from 'lucide-react';
+import { Settings, ChevronDown, GraduationCap, BookPlus } from 'lucide-react';
 import type { KoushuPeriodInfo } from '@/lib/api/koushu-period';
+import type { ZoukomaPlacementPeriod } from '@/lib/api/zoukoma-placement';
 
 const DAY_LABELS: { value: number; label: string }[] = [
   { value: 0, label: '日' },
@@ -52,10 +53,14 @@ interface ScheduleToolbarProps {
   // seasonal_courses は座席表とは独立した「生徒別プラン」のためここでは扱わない。
   koushuList: KoushuPeriodInfo[];
   selectedKoushu: KoushuPeriodInfo | null;
+  // 追加授業（テスト対策）= 増コマ申込期間ベース
+  zoukomaList: ZoukomaPlacementPeriod[];
+  selectedZoukoma: ZoukomaPlacementPeriod | null;
   onWeekChange: (newWeekStart: Date) => void;
   onSettingsOpen: () => void;
   onVisibleDaysChange: (days: number[]) => void;
   onKoushuSelect: (period: KoushuPeriodInfo | null) => void;
+  onZoukomaSelect: (period: ZoukomaPlacementPeriod | null) => void;
 }
 
 export function ScheduleToolbar({
@@ -65,10 +70,13 @@ export function ScheduleToolbar({
   visibleDaysOfWeek,
   koushuList,
   selectedKoushu,
+  zoukomaList,
+  selectedZoukoma,
   onWeekChange,
   onSettingsOpen,
   onVisibleDaysChange,
   onKoushuSelect,
+  onZoukomaSelect,
 }: ScheduleToolbarProps) {
   const [weekPickerOpen, setWeekPickerOpen] = useState(false);
   const weekPickerInputRef = useRef<HTMLInputElement>(null);
@@ -198,6 +206,40 @@ export function ScheduleToolbar({
               講習管理
             </Button>
           </Link>
+          {/* 追加授業（テスト対策）の生徒別 増コマ登録画面への導線。講習管理の隣に置く。 */}
+          <Link href="/schedule/zoukoma">
+            <Button variant="secondary" size="sm" className="flex items-center gap-1">
+              <BookPlus className="h-3.5 w-3.5" />
+              追加授業設定
+            </Button>
+          </Link>
+          {/* 追加授業（テスト対策）モード切替：増コマ申込期間から選択。
+              選ぶと座席表上部に配置パネルが出て、増コマ申込を test_prep コマとして落とし込める。 */}
+          {zoukomaList.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-[var(--paragraph)]">テスト対策:</span>
+              <select
+                value={selectedZoukoma?.id ?? ''}
+                onChange={(e) => {
+                  const period = zoukomaList.find((z) => z.id === e.target.value) ?? null;
+                  onZoukomaSelect(period);
+                }}
+                className="text-xs px-2 py-1 border border-[var(--stroke)] rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+              >
+                <option value="">通常</option>
+                {zoukomaList.map((z) => (
+                  <option key={z.id} value={z.id}>
+                    {z.label}
+                  </option>
+                ))}
+              </select>
+              {selectedZoukoma && (
+                <span className="text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full font-medium">
+                  追加授業モード
+                </span>
+              )}
+            </div>
+          )}
           {/* 講習モード切替（期間ベース）
               course_prep_periods で start/end_date が設定された春期/夏期/冬期から選択。 */}
           {koushuList.length > 0 && (

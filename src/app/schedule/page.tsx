@@ -46,6 +46,10 @@ const KoushuControlPanel = dynamic(
   () => import('@/components/schedule/KoushuControlPanel').then((m) => m.KoushuControlPanel),
   { ssr: false }
 );
+const TestPrepPlacementPanel = dynamic(
+  () => import('@/components/schedule/TestPrepPlacementPanel').then((m) => m.TestPrepPlacementPanel),
+  { ssr: false }
+);
 const GroupLaneGrid = dynamic(
   () => import('@/components/schedule/GroupLaneGrid').then((m) => m.GroupLaneGrid),
   { ssr: false }
@@ -90,6 +94,11 @@ import {
   type KoushuEnrollment,
 } from '@/lib/api/seasonalCourses';
 import { getKoushuPeriods, type KoushuPeriodInfo } from '@/lib/api/koushu-period';
+import {
+  getZoukomaPlacementPeriods,
+  type ZoukomaPlacementPeriod,
+  type ZoukomaAvailableSlot,
+} from '@/lib/api/zoukoma-placement';
 import type { ScheduleMatchProposal } from '@/types/schedule-match';
 
 function getWeekStart(d: Date): Date {
@@ -233,6 +242,22 @@ export default function SchedulePage() {
   const [koushuScheduledCounts, setKoushuScheduledCounts] = useState<Map<string, number>>(new Map());
   // マッチングの下書き提案（座席表に★で重ねる用）
   const [koushuDraftProposals, setKoushuDraftProposals] = useState<ScheduleMatchProposal[]>([]);
+
+  // ---- 追加授業（テスト対策）モード ----
+  // 増コマ(zoukoma)フォーム回答を正典に、座席表へ test_prep コマを落とし込む。
+  // 講習モードと排他（どちらか一方のみアクティブ）。
+  const [zoukomaList, setZoukomaList] = useState<ZoukomaPlacementPeriod[]>([]);
+  const [selectedZoukoma, setSelectedZoukoma] = useState<ZoukomaPlacementPeriod | null>(null);
+  // 配置中の生徒・科目と、その生徒の通塾可能枠（座席表セル強調用）
+  const [placingTestPrep, setPlacingTestPrep] = useState<{
+    studentId: string;
+    subjectId: string;
+    subjectName: string;
+    availableKeys: Set<string>;   // `${date}_${slotId}`（時限がコマに対応付いた枠）
+    datesWithMapping: Set<string>; // 対応付いた枠を持つ日付
+    availableDates: Set<string>;  // 通塾可能日（対応付け不可時の日単位フォールバック）
+  } | null>(null);
+  const [zoukomaPanelRefreshKey, setZoukomaPanelRefreshKey] = useState(0);
 
   const router = useRouter();
 
@@ -424,6 +449,12 @@ export default function SchedulePage() {
     getKoushuPeriods(schoolId).then(setKoushuList).catch(() => setKoushuList([]));
   }, [schoolId]);
 
+  // 追加授業（テスト対策）の増コマ期間リストをロード（schoolId 変更時）
+  useEffect(() => {
+    if (!schoolId) { setZoukomaList([]); return; }
+    getZoukomaPlacementPeriods(schoolId).then(setZoukomaList).catch(() => setZoukomaList([]));
+  }, [schoolId]);
+
   // 授業生徒数設定をロード（schoolId 変更時）。失敗・未設定はデフォルト値で動かす。
   useEffect(() => {
     if (!schoolId) { setCapacity(DEFAULT_CLASS_CAPACITY); return; }
@@ -436,6 +467,11 @@ export default function SchedulePage() {
   // 同生徒が複数コース申込なら koma_count を合算
   const handleKoushuSelect = useCallback(async (period: KoushuPeriodInfo | null) => {
     setSelectedKoushu(period);
+    // 講習と追加授業（テスト対策）は排他。講習を選んだら追加授業モードを解除。
+    if (period) {
+      setSelectedZoukoma(null);
+      setPlacingTestPrep(null);
+    }
     if (!period) {
       setKoushuEnrollments(new Map());
       setKoushuScheduledCounts(new Map());
@@ -925,6 +961,131 @@ export default function SchedulePage() {
     },
     [placingKoushuStudent, schoolId, closedDates, success, refreshEntries, toastError]
   );
+
+  // ===== 追加授業（テスト対策）モード =====
+
+  // 追加授業（増コマ）期間を選択。講習モードと排他。最初の通塾可能日へジャンプ。
+  const handleZoukomaSelect = useCallback(async (period: ZoukomaPlacementPeriod | null) => {
+    setSelectedZoukoma(period);
+    setPlacingTestPrep(null);
+    if (!period) return;
+    // 講習モードは解除
+    setSelectedKoushu(null);
+    setKoushuEnrollments(new Map());
+    setKoushuScheduledCounts(new Map());
+    setKoushuDraftProposals([]);
+    // 申込の最初の通塾可能日へジャンプ（増コマ枠は近接日なので、今日が枠より前なら最初の枠週へ）
+    try {
+      const { getZoukomaPlacementProgress } = await import('@/lib/api/zoukoma-placement');
+      const map = await getZoukomaPlacementProgress(period.school_id, period.period_key, masterSubjects);
+      const dates: string[] = [];
+      Array.from(map.values()).forEach((r) => r.availableSlots.forEach((s) => dates.push(s.date)));
+      if (dates.length > 0) {
+        const todayJst = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Tokyo' });
+        dates.sort();
+        // 今日以降の最初の枠、無ければ最古の枠の週へ
+        const jump = dates.find((d) => d >= todayJst) ?? dates[0];
+        setWeekStart(getWeekStart(new Date(jump + 'T12:00:00')));
+      }
+    } catch {
+      /* ジャンプ失敗は致命的でない */
+    }
+  }, [masterSubjects]);
+
+  // 配置モード開始：生徒の通塾可能枠を座席表コマ(time_slot)に対応付けて強調用セットを作る。
+  const handleStartTestPrepPlacement = useCallback(
+    (studentId: string, subjectId: string, subjectName: string, slots: ZoukomaAvailableSlot[]) => {
+      // 同じ生徒・科目を再クリックでモード解除
+      if (placingTestPrep?.studentId === studentId && placingTestPrep?.subjectId === subjectId) {
+        setPlacingTestPrep(null);
+        return;
+      }
+      // 個別コマの開始時刻(HH:MM)→slotId マップ
+      const timeToSlotId = new Map<string, string>();
+      for (const t of timeSlots) {
+        if (t.formation === 'group') continue;
+        if (t.start_time) timeToSlotId.set(t.start_time.slice(0, 5), t.id);
+      }
+      const availableKeys = new Set<string>();
+      const datesWithMapping = new Set<string>();
+      const availableDates = new Set<string>();
+      for (const s of slots) {
+        availableDates.add(s.date);
+        const slotId = s.startTime ? timeToSlotId.get(s.startTime.slice(0, 5)) : undefined;
+        if (slotId) {
+          availableKeys.add(`${s.date}_${slotId}`);
+          datesWithMapping.add(s.date);
+        }
+      }
+      setPlacingTestPrep({ studentId, subjectId, subjectName, availableKeys, datesWithMapping, availableDates });
+    },
+    [placingTestPrep, timeSlots]
+  );
+
+  // 配置モード中の各セルの配置可否（通塾可能枠か＝強調表示の判定）
+  const getTestPrepPlaceability = useCallback(
+    (date: string, slotId: string): { ok: boolean; reason: string | null } => {
+      if (!placingTestPrep) return { ok: false, reason: null };
+      if (closedDates.includes(date)) return { ok: false, reason: '休講日' };
+      const todayJst = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Tokyo' });
+      if (date < todayJst) return { ok: false, reason: '過去の日付' };
+      // 通塾可能枠か：時限が対応付いた日は枠一致、対応付かない日は日単位で許可
+      const okAvail = placingTestPrep.datesWithMapping.has(date)
+        ? placingTestPrep.availableKeys.has(`${date}_${slotId}`)
+        : placingTestPrep.availableDates.has(date);
+      if (!okAvail) return { ok: false, reason: 'この生徒が通塾できる枠ではありません' };
+      const sid = placingTestPrep.studentId;
+      const dup = entriesWithSubjects.some(
+        (e) => e.student_id === sid && e.entry_date === date && e.time_slot_id === slotId
+          && e.status !== 'cancelled' && e.status !== 'transferred_out'
+      );
+      if (dup) return { ok: false, reason: 'この生徒は既にこのコマに配置済み' };
+      return { ok: true, reason: null };
+    },
+    [placingTestPrep, closedDates, entriesWithSubjects]
+  );
+
+  // 空きセルクリックで test_prep コマを配置（担当未決定）
+  const handleTestPrepPlace = useCallback(
+    async (date: string, slotId: string) => {
+      if (!placingTestPrep || !schoolId) return;
+      if (closedDates.includes(date)) { toastError('休講日には配置できません'); return; }
+      try {
+        const { createTestPrepPlacement } = await import('@/lib/api/schedule');
+        await createTestPrepPlacement(schoolId, date, slotId, placingTestPrep.studentId, [placingTestPrep.subjectId]);
+        success('テスト対策コマを配置しました（担当未決定）');
+        await refreshEntries();
+        setZoukomaPanelRefreshKey((k) => k + 1);
+      } catch (e) {
+        toastError(e instanceof Error ? e.message : '配置できませんでした');
+      }
+    },
+    [placingTestPrep, schoolId, closedDates, success, refreshEntries, toastError]
+  );
+
+  // 講師カードクリックでその講師の test_prep コマを配置
+  const handleTestPrepPlaceWithTeacher = useCallback(
+    async (date: string, slotId: string, teacherId: string) => {
+      if (!placingTestPrep || !schoolId) return;
+      if (closedDates.includes(date)) { toastError('休講日には配置できません'); return; }
+      try {
+        const { createTestPrepPlacement } = await import('@/lib/api/schedule');
+        await createTestPrepPlacement(schoolId, date, slotId, placingTestPrep.studentId, [placingTestPrep.subjectId], teacherId);
+        success('テスト対策コマを配置しました');
+        await refreshEntries();
+        setZoukomaPanelRefreshKey((k) => k + 1);
+      } catch (e) {
+        toastError(e instanceof Error ? e.message : '配置できませんでした');
+      }
+    },
+    [placingTestPrep, schoolId, closedDates, success, refreshEntries, toastError]
+  );
+
+  // 座席表グリッドへ渡す「配置モード」プロップは講習/テスト対策を一本化（排他なのでどちらか有効）
+  const gridPlacing = !!placingKoushuStudent || !!placingTestPrep;
+  const gridGetPlaceability = placingTestPrep ? getTestPrepPlaceability : getKoushuPlaceability;
+  const gridPlace = placingTestPrep ? handleTestPrepPlace : handleKoushuPlace;
+  const gridPlaceWithTeacher = placingTestPrep ? handleTestPrepPlaceWithTeacher : handleKoushuPlaceWithTeacher;
 
   // 週移動（座席表の左右端の縦長アイコンからも操作できるように）
   const goPrevWeek = useCallback(() => {
@@ -1422,10 +1583,13 @@ export default function SchedulePage() {
           visibleDaysOfWeek={visibleDaysOfWeek}
           koushuList={koushuList}
           selectedKoushu={selectedKoushu}
+          zoukomaList={zoukomaList}
+          selectedZoukoma={selectedZoukoma}
           onWeekChange={setWeekStart}
           onSettingsOpen={() => setScheduleSettingsOpen(true)}
           onVisibleDaysChange={setVisibleDaysPersist}
           onKoushuSelect={handleKoushuSelect}
+          onZoukomaSelect={handleZoukomaSelect}
         />
 
         {schoolId && (
@@ -1491,6 +1655,25 @@ export default function SchedulePage() {
             onClose={() => {
               setPlacingKoushuStudent(null);
               handleKoushuSelect(null);
+            }}
+          />
+        )}
+
+        {/* 追加授業（テスト対策）選択中：増コマ申込の配置パネルを上部に表示。
+            生徒の通塾できる枠（増コマフォーム由来）をクリックで test_prep コマを落とし込む。 */}
+        {selectedZoukoma && (
+          <TestPrepPlacementPanel
+            schoolId={schoolId ?? ''}
+            periodKey={selectedZoukoma.period_key}
+            label={selectedZoukoma.label}
+            subjects={masterSubjects}
+            onStartPlacement={handleStartTestPrepPlacement}
+            placingStudentId={placingTestPrep?.studentId ?? null}
+            placingSubjectId={placingTestPrep?.subjectId ?? null}
+            refreshKey={zoukomaPanelRefreshKey}
+            onClose={() => {
+              setPlacingTestPrep(null);
+              handleZoukomaSelect(null);
             }}
           />
         )}
@@ -1637,10 +1820,10 @@ export default function SchedulePage() {
                       onBoothAssign={handleBoothAssign}
                       onTransferCancel={() => setTransferMode(null)}
                       getKoushuInfo={selectedKoushu ? getKoushuInfo : undefined}
-                      koushuPlacing={!!placingKoushuStudent}
-                      getKoushuPlaceability={getKoushuPlaceability}
-                      onKoushuPlace={handleKoushuPlace}
-                      onKoushuPlaceWithTeacher={handleKoushuPlaceWithTeacher}
+                      koushuPlacing={gridPlacing}
+                      getKoushuPlaceability={gridGetPlaceability}
+                      onKoushuPlace={gridPlace}
+                      onKoushuPlaceWithTeacher={gridPlaceWithTeacher}
                     />
                     {/* 集団レーン（講習モードかつ集団コマ時間がある場合のみ）。集団は手動編成。 */}
                     {selectedKoushu && groupSlots.length > 0 && (
