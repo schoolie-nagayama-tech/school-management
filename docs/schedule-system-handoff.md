@@ -434,7 +434,16 @@ node scripts/verify-phase0-migrations.mjs
 - 通塾日程を持たない単発コマ（`regular_pattern_id=NULL`）。`generateWeeklySchedule` のスキップ条件を `kind.eq.koushu`→`kind.neq.regular` に変えて**追加授業も再生成で消えないよう保護**。ドリフト判定は `regular_pattern_id IS NOT NULL` で絞っているので追加授業は対象外（ズレに出ない）。
 - 入力：座席表の講師カード空き枠クリック → `AddStudentToSlotModal` の「この日のみ追加」で**種別セレクト**（追加授業/テスト対策/体験/臨時）→ `createScheduleEntry(form.kind=種別)`。
 - 表示：`StudentCard` に種別バッジ（テスト対策=warning / 追加授業=ink / 体験=success トークン色）。`isExtraLessonKind()` / `EXTRA_LESSON_KINDS`（types/schedule.ts）。
-- **残**：請求(カウント)連動は未実装（フェーズ2）。テスト対策はフォール読取 or 手動、追加授業/体験は手動、と方針決定済み。体験は生徒を先に登録しておく必要あり（既存生徒検索のため）。
+- **残**：単発配置(追加授業/体験)の請求(カウント)連動は未実装。体験は生徒を先に登録しておく必要あり（既存生徒検索のため）。
+
+### テスト対策（増コマ）の座席表落とし込み（2026-06-02）
+講習と同じ要領で、増コマ(zoukoma)フォーム回答を正典に「テスト対策」コマ(kind='test_prep')を座席表へ落とし込む。
+- **データソース**: `form_responses`(form_type='zoukoma', `linked_student_id` 紐付け済み)。専用テーブルは作らない。科目はフォームの**名前キー**→Subjマスタへ**名前一致**。通塾枠は `response_data.selected_slots`（"YYYY-MM-DD_時限コード"）。時限の開始時刻は `form_periods.settings.schedule.periods`。
+- **API** `src/lib/api/zoukoma-placement.ts`: `getZoukomaPlacementPeriods` / `getZoukomaPlacementProgress`（生徒×科目の enrolled/placed＋通塾可能枠）。
+- **配置**: `createTestPrepPlacement`（`createKoushuPlacement` を kind パラメータ化して共通化）。担当未決定で配置→後でドラッグ割当。
+- **座席表**: 追加授業モード（講習と**排他**）。ツールバー「テスト対策」期間セレクト＋「追加授業設定」リンク。上部に `TestPrepPlacementPanel`。配置モードで**通塾可能セルを強調**（時限→time_slot は start_time 一致でマップ、不可なら日単位フォールバック）→クリックで配置。配置プロップは講習/テスト対策を `gridPlacing/gridGetPlaceability/gridPlace/gridPlaceWithTeacher` で一本化。
+- **登録画面** `/schedule/zoukoma`（生徒別 増コマ申込）: 科目×コマ数＋通塾できる枠を登録＝`linked_student_id` 付き form_response を作成/更新（`ZoukomaEnrollmentFormModal`。SubjectInput/SlotTable(available)/StudentSearchInput を再利用）。削除は `archiveResponse`。
+- **残/注意**: 管理者の `createFormResponse` 挿入が RLS で通るか実機要確認（不可なら portal API ルート=service role 経由に切替）。請求計上は増コマ既存フロー（回答一覧の「計上」）を流用。
 
 ## ★ 重要バグ修正：「スケジュールの取得に失敗」
 - 原因：`generateWeeklySchedule` の再生成 INSERT が UNIQUE 制約
