@@ -94,7 +94,9 @@ export function ShukaisuPeriodEditor({
       getApplicationItems(targetIds, true).then(setApplicationItems).catch(console.error);
       // コマ時間マスタから時限リストを非同期で取得して初期化
       const initPeriods = async () => {
-        const masterPeriods = schoolId ? await getClassPeriodsAsync(schoolId) : [];
+        // コマ時間マスタから取得。1・2限（昼の時間帯）は週回数変更では対象外のため除外。
+        const masterPeriodsAll = schoolId ? await getClassPeriodsAsync(schoolId) : [];
+        const masterPeriods = masterPeriodsAll.filter((p) => p.code !== '1' && p.code !== '2');
         const masterText = masterPeriods.length > 0 ? formatPeriodsToText(masterPeriods) : '';
 
         if (period) {

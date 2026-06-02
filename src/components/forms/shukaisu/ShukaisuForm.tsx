@@ -408,10 +408,13 @@ export function ShukaisuForm({ school, period, isPreview }: ShukaisuFormProps) {
               onChange={(e) => updateFn(index, 'period', e.target.value)}
               options={[
                 { value: '', label: '時限' },
-                ...settings.available_periods.map((p) => ({
-                  value: p.code,
-                  label: p.label,
-                })),
+                // 1・2限（昼の時間帯）は週回数変更フォームでは対象外のため非表示
+                ...settings.available_periods
+                  .filter((p) => p.code !== '1' && p.code !== '2')
+                  .map((p) => ({
+                    value: p.code,
+                    label: p.label,
+                  })),
               ]}
               className="text-sm"
             />
