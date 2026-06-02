@@ -149,15 +149,37 @@ export type AttendanceStatusType = 'present' | 'absent' | 'late' | null;
 
 /**
  * 授業種別
- * - regular: 通常授業（通塾日程から自動生成）
- * - koushu : 講習（春期・夏期・冬期講座。通塾日程と独立）
+ * - regular  : 通常授業（通塾日程から自動生成）
+ * - koushu   : 講習（春期・夏期・冬期講座。通塾日程と独立）
+ * - test_prep: テスト対策（追加授業の一種。単発で手動配置）
+ * - additional: 追加授業（単発で手動配置）
+ * - trial    : 体験授業（単発で手動配置）
+ *
+ * test_prep / additional / trial は「追加授業」としてまとめて扱う単発コマ。
+ * 通塾日程を持たず（regular_pattern_id=NULL）、座席表の空きセルから手動配置する。
+ * 週次再生成では削除されない（regular のみ再生成対象のため保護される）。
  */
-export type ScheduleEntryKind = 'regular' | 'koushu';
+export type ScheduleEntryKind = 'regular' | 'koushu' | 'test_prep' | 'additional' | 'trial';
 
 export const SCHEDULE_ENTRY_KIND_LABELS: Record<ScheduleEntryKind, string> = {
   regular: '通常',
   koushu: '講習',
+  test_prep: 'テスト対策',
+  additional: '追加授業',
+  trial: '体験',
 };
+
+/**
+ * 「追加授業」としてまとめて扱う単発コマの種別（regular/koushu 以外）。
+ * 室長が座席表の空きセルから手動で配置する単発授業。
+ */
+export const EXTRA_LESSON_KINDS = ['test_prep', 'additional', 'trial'] as const;
+export type ExtraLessonKind = (typeof EXTRA_LESSON_KINDS)[number];
+
+/** 追加授業（単発コマ）かどうか。表示の出し分けや保護判定に使う。 */
+export function isExtraLessonKind(kind: ScheduleEntryKind): kind is ExtraLessonKind {
+  return (EXTRA_LESSON_KINDS as readonly string[]).includes(kind);
+}
 
 /**
  * 授業形態

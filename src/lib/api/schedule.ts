@@ -804,8 +804,9 @@ export async function generateWeeklySchedule(
   // 再生成スキップ対象の枠 (student-date-slot) を退避。
   // DELETE は kind='regular' かつ status IN ('scheduled','completed') のみ消すので、それ以外は行が残る:
   //  - 通常授業の transferred_out / transferred_in / cancelled（N-4 振替戻し重複対策）
-  //  - 講習コマ (kind='koushu') 全ステータス（DELETE 対象外。残った講習行と同 (school,date,slot,teacher,student)
-  //    を INSERT すると UNIQUE 違反で再生成が丸ごと失敗するため＝講習巻き込み対策）
+  //  - regular 以外の kind（koushu / test_prep / additional / trial）全ステータス
+  //    （DELETE 対象外。残った行と同 (school,date,slot,teacher,student) を INSERT すると
+  //     UNIQUE 違反で再生成が丸ごと失敗するため＝講習・追加授業の巻き込み対策）
   // 残る行と同じ枠を生成すると UNIQUE 違反になるので、これらは生成スキップする。
   const { data: skipRows } = await db
     .from('schedule_entries')
@@ -813,7 +814,7 @@ export async function generateWeeklySchedule(
     .eq('school_id', schoolId)
     .gte('entry_date', fromStr)
     .lte('entry_date', toStr)
-    .or('kind.eq.koushu,status.in.(transferred_out,transferred_in,cancelled)');
+    .or('kind.neq.regular,status.in.(transferred_out,transferred_in,cancelled)');
   const transferredKeys = new Set(
     ((skipRows ?? []) as Array<{ entry_date: string; time_slot_id: string; student_id: string }>).map(
       (e) => `${e.entry_date}-${e.time_slot_id}-${e.student_id}`

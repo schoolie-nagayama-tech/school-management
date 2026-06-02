@@ -18,9 +18,21 @@ import {
   regenerateWeekForDate,
 } from '@/lib/api/schedule';
 import type { ScheduleTimeSlot } from '@/types/schedule';
-import type { ScheduleEntryFormData } from '@/types/schedule';
+import type { ScheduleEntryFormData, ScheduleEntryKind } from '@/types/schedule';
 import type { Subject } from '@/types/database';
 import { DAY_OF_WEEK_LABELS } from '@/types/schedule';
+
+/**
+ * 「この日のみ追加」で選べる授業種別。
+ * regular=臨時/振替の単発、それ以外は追加授業（テスト対策/追加授業/体験）。
+ * いずれも通塾日程を持たない単発コマ（regular_pattern_id=NULL）として登録する。
+ */
+const SINGLE_KIND_OPTIONS: { value: ScheduleEntryKind; label: string }[] = [
+  { value: 'additional', label: '追加授業' },
+  { value: 'test_prep', label: 'テスト対策' },
+  { value: 'trial', label: '体験授業' },
+  { value: 'regular', label: '通常（臨時・振替）' },
+];
 
 export interface AddStudentToSlotModalProps {
   isOpen: boolean;
@@ -56,6 +68,8 @@ export function AddStudentToSlotModal({
   const [selectedStudent, setSelectedStudent] = useState<StudentWithSubjects | null>(null);
   const [subjectId, setSubjectId] = useState<string>('');
   const [registerType, setRegisterType] = useState<RegisterType>('regular');
+  // 「この日のみ追加」のときの授業種別（追加授業/テスト対策/体験/臨時）
+  const [singleKind, setSingleKind] = useState<ScheduleEntryKind>('additional');
   const [saving, setSaving] = useState(false);
   const [conflictError, setConflictError] = useState<string | null>(null);
 
@@ -71,6 +85,7 @@ export function AddStudentToSlotModal({
       setSelectedStudent(null);
       setSubjectId(availableSubjects[0]?.id ?? '');
       setRegisterType('regular');
+      setSingleKind('additional');
       setConflictError(null);
     }
   }, [isOpen, availableSubjects]);
@@ -131,10 +146,15 @@ export function AddStudentToSlotModal({
           setSaving(false);
           return;
         }
-        await createScheduleEntry(schoolId, date, timeSlot.id, form, {
-          regular_pattern_id: null,
-          status: 'scheduled',
-        });
+        // 単発コマは選んだ種別（追加授業/テスト対策/体験/臨時）で登録する。
+        // regular 以外は週次再生成で削除されない（追加授業として保護される）。
+        await createScheduleEntry(
+          schoolId,
+          date,
+          timeSlot.id,
+          { ...form, kind: singleKind },
+          { regular_pattern_id: null, status: 'scheduled' }
+        );
       }
       onSuccess();
       onClose();
@@ -224,9 +244,29 @@ export function AddStudentToSlotModal({
                   onChange={() => setRegisterType('single')}
                   className="text-[#1e3a5f]"
                 />
-                <span className="text-sm">この日のみ追加（振替・臨時など）</span>
+                <span className="text-sm">この日のみ追加（追加授業・テスト対策・体験など）</span>
               </label>
             </div>
+
+            {/* この日のみ追加のとき、授業種別を選ぶ。座席表では種別バッジで区別表示される */}
+            {registerType === 'single' && (
+              <div className="mt-2 pl-6">
+                <label className="block text-xs font-medium text-[var(--paragraph)] mb-1">
+                  種別
+                </label>
+                <select
+                  value={singleKind}
+                  onChange={(e) => setSingleKind(e.target.value as ScheduleEntryKind)}
+                  className="w-full px-3 py-2 border border-[var(--stroke)] rounded-md text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                >
+                  {SINGLE_KIND_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           {conflictError && (

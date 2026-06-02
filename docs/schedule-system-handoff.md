@@ -427,6 +427,15 @@ node scripts/verify-phase0-migrations.mjs
 
 **RLS 是正**：`course_prep_*` 6テーブルの RLS を `check_school_access()` に統一（システム管理者＝全校 admin が `user_schools` 未所属でも参照可、anon はブロック維持）。これで講習モードのリスト取得が空になる回帰を解消
 
+### 追加授業（単発コマ）＋ ズレ自動反映（2026-06-02）
+**ズレ自動反映**：`ScheduleDriftBanner` を「検知したら自動で反映」に変更（`autoResync` 既定 true）。今週から先4週のズレを開いたタイミングで自動再生成。自動中は青バナー、失敗時のみ従来の手動「反映する」にフォールバック。`onResynced=refreshEntries` 配線。
+
+**追加授業**：`schedule_entries.kind` に `test_prep`(テスト対策)/`additional`(追加授業)/`trial`(体験) を追加（マイグレ `20260602_schedule_entries_kind_extra_types.sql`、CHECK 拡張）。
+- 通塾日程を持たない単発コマ（`regular_pattern_id=NULL`）。`generateWeeklySchedule` のスキップ条件を `kind.eq.koushu`→`kind.neq.regular` に変えて**追加授業も再生成で消えないよう保護**。ドリフト判定は `regular_pattern_id IS NOT NULL` で絞っているので追加授業は対象外（ズレに出ない）。
+- 入力：座席表の講師カード空き枠クリック → `AddStudentToSlotModal` の「この日のみ追加」で**種別セレクト**（追加授業/テスト対策/体験/臨時）→ `createScheduleEntry(form.kind=種別)`。
+- 表示：`StudentCard` に種別バッジ（テスト対策=warning / 追加授業=ink / 体験=success トークン色）。`isExtraLessonKind()` / `EXTRA_LESSON_KINDS`（types/schedule.ts）。
+- **残**：請求(カウント)連動は未実装（フェーズ2）。テスト対策はフォール読取 or 手動、追加授業/体験は手動、と方針決定済み。体験は生徒を先に登録しておく必要あり（既存生徒検索のため）。
+
 ## ★ 重要バグ修正：「スケジュールの取得に失敗」
 - 原因：`generateWeeklySchedule` の再生成 INSERT が UNIQUE 制約
   `(school_id, entry_date, time_slot_id, teacher_id, student_id)` 違反
