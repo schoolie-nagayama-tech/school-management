@@ -393,6 +393,40 @@ node scripts/verify-phase0-migrations.mjs
 - 報告書の下に進行表イメージ（`DemoProgressPreview`）を講師入力画面・室長確認の両方で表示
 - `/lesson-reports/pending` にヘッダー + 座席表へ戻るボタン
 
+### P/U/K/M/N：講習（季節講習）モード 本実装ラウンド（2026-05〜06）
+> プラン `sleepy-dazzling-truffle.md`（個別＋集団 / 下書き→公開 / 個別は自動マッチング・集団は手動）に沿って実装。コミット deaa3f5・dee14ba・d172d48・51aa816 ほか。
+
+**P1 データ基盤**
+- `koushu_enrollments` に `formation`(individual/group) 列追加。後に**期間ベース化**（`school_id`+`season` 列追加・`course_id` nullable・UNIQUE を `(school_id,season,student_id,formation)` に）。コース依存を廃止し「春期/夏期/冬期 × 校 × 生徒」で申込を持つ
+- さらに `koma_by_subject`(jsonb) 追加で**科目別コマ数**を保持（M4）
+- capacity ハードコード（1講師2名・12席）を `school_class_capacity` 読込に置換
+- `/settings/time-slots` に個別/集団 formation トグル → 集団コマ時間を別建て設定可能に
+- `generateWeeklySchedule` の週次 DELETE に `.eq('kind','regular')` を追加（**通塾日程の再生成で講習コマが消えるバグを予防**）
+
+**P2 個別の自動マッチング + 下書き公開**
+- 新規 `src/lib/api/koushu-match.ts`：`generateKoushuIndividualProposals`。**加重和スコア × 貪欲割当**（残コマ多い順、同一科目を均等分散、1生徒1日のコマ上限）。重みは `MATCH_CONFIG`（**全て暫定値**、冒頭に集約）。teacher_id NOT NULL のため候補講師ゼロの枠は提案を作らず unmatched に積む
+- (student,subject) 単位でタスク化し、提案は単一科目を持つ
+- 既存 `schedule-match.ts`（batch/proposal/publish）をそのまま再利用。下書き → 個別公開/全公開/却下
+
+**P3 集団レーン + 集団手動配置**
+- 講習モードで entries/timeSlots を formation 分割し**個別レーン（既存グリッド）＋集団レーン（新規 `GroupLaneGrid`）の2段**描画
+- `GroupCard`（1講師＋最大N名）/`GroupKomaFormModal`（日付・集団slot・科目・講師・生徒複数で一括作成）。`createScheduleEntry` は formation='group' 時に講師重複チェックをスキップ（1講師が複数の集団生徒を持つため）
+- 容量ガード（max_students_per_group / max_concurrent_groups）
+
+**U（高優先 polish）**：デザイントークン統一（info/warning/danger/success） / 未マッチを生徒名つきで詳細表示 / 下書きを座席表に★（仮）チップ表示（placed に二重計上しない）
+
+**K（手動落とし込み強化）**：講習モードで**期間の週へ自動ジャンプ** / 空きセルクリックで配置 / 配置モード中はその生徒の**通塾可能セルを色付け** / 落とし込めない時は**理由を明示**（過去日・席満杯・講師上限・生徒重複・対象外科目 等）
+
+**M（操作性）**：M1 週移動の左右縦長アイコン / M2 自動マッチング下書きの色を区別（点線・info） / M3 生徒名クリックで通塾日程＋申込コマ数を展開 / M4 申込を**科目別コマ数**に拡張 / M5 出勤可能講師カードクリックで配置
+
+**N（情報設計の再編）**
+- 座席表ヘッダーの「講習」トグルボタンを**削除**（操作はツールバーの講習期間 select に集約）
+- `/schedule/koushu` を **「講習 申込（生徒別）」画面**に作り替え：期間タブ → 生徒行ごとに科目×個別/集団のコマ数を入力/閲覧、通塾日程の展開、追加/編集/削除。`KoushuEnrollmentFormModal` は科目×個別/集団のマトリクス入力に刷新（個別コマの初期値に「講習期間中の通常授業回数」概算を表示）
+
+**バグ修正（座席への担当割当）**：`updateScheduleEntry` を1回リトライ＋実DBエラーをメッセージに表出。割当確定の catch で `refreshEntries()` し UI を自己修復（DB 側 UPDATE は RLS 下で成功することを SQL インパーソネートで確認済み＝クライアント側の一過性エラーだった）
+
+**RLS 是正**：`course_prep_*` 6テーブルの RLS を `check_school_access()` に統一（システム管理者＝全校 admin が `user_schools` 未所属でも参照可、anon はブロック維持）。これで講習モードのリスト取得が空になる回帰を解消
+
 ## ★ 重要バグ修正：「スケジュールの取得に失敗」
 - 原因：`generateWeeklySchedule` の再生成 INSERT が UNIQUE 制約
   `(school_id, entry_date, time_slot_id, teacher_id, student_id)` 違反
@@ -403,7 +437,7 @@ node scripts/verify-phase0-migrations.mjs
 ## 残課題（次のラウンドで詰める）
 
 ### 最優先
-1. **講習モードの中身を enrollment 基準に**：座席表の講習配置 (`KoushuPlacementPanel`) が「コース基準」になっていないか要確認。本来は「生徒の科目×コマ数（koushu_enrollments）を残コマ消化」モデル。mockup `schedule-matching-v3.html` 参照
+1. ~~**講習モードの中身を enrollment 基準に**~~ → **完了**（P/U/K/M/N ラウンド）。申込は `koushu_enrollments` を「校×season×生徒×formation×科目別コマ」で持ち、座席表は残コマ消化モデル。個別は自動マッチング下書き、集団は手動編成。残作業の候補：実運用しながら `MATCH_CONFIG` の重み調整 / 集団マッチングの軽量自動化
 2. **報告書 × 進行表のマージ本実装**：現状はダミーイメージ (`DemoProgressPreview`) のみ。合意済みゴール = 「**入力1つ・ビュー2つ**（講師/室長向け進行表ビュー + 保護者向け報告書ビュー）」。重複項目（学校進度・単元・講師コメント）の一本化が前提。`progress_sessions.report_id` で紐付け基盤あり
 
 ### 中期
@@ -428,9 +462,9 @@ node scripts/verify-phase0-migrations.mjs
 
 ## Vercel / リポジトリ
 - リモート: `github.com/schoolie-nagayama-tech/school-management` (main)
-- このセッションのコミットは d2feb41 〜 9ba39f1 まで全て push 済み
+- 講習本実装ラウンド（deaa3f5・dee14ba・d172d48・51aa816 ほか）まで全て push 済み
 - 型チェックは `npx tsc --noEmit`（このプロジェクトは @typescript-eslint/no-unused-vars が error）
 
 ---
 
-_最終更新: 2026-05-28 / O ラウンド + 講習認識確定 + 「スケジュール取得失敗」バグ修正完了時点_
+_最終更新: 2026-06-02 / 講習（季節講習）モード本実装（P/U/K/M/N ラウンド）+ 担当割当の耐性化 + course_prep RLS 是正 完了時点。テスト申込データは片付け済み_
