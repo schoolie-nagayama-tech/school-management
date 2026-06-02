@@ -443,7 +443,7 @@ node scripts/verify-phase0-migrations.mjs
 - **配置**: `createTestPrepPlacement`（`createKoushuPlacement` を kind パラメータ化して共通化）。担当未決定で配置→後でドラッグ割当。
 - **座席表**: 追加授業モード（講習と**排他**）。ツールバー「テスト対策」期間セレクト＋「追加授業設定」リンク。上部に `TestPrepPlacementPanel`。配置モードで**通塾可能セルを強調**（時限→time_slot は start_time 一致でマップ、不可なら日単位フォールバック）→クリックで配置。配置プロップは講習/テスト対策を `gridPlacing/gridGetPlaceability/gridPlace/gridPlaceWithTeacher` で一本化。
 - **登録画面** `/schedule/zoukoma`（生徒別 増コマ申込）: 科目×コマ数＋通塾できる枠を登録＝`linked_student_id` 付き form_response を作成/更新（`ZoukomaEnrollmentFormModal`。SubjectInput/SlotTable(available)/StudentSearchInput を再利用）。削除は `archiveResponse`。
-- **残/注意**: 管理者の `createFormResponse` 挿入が RLS で通るか実機要確認（不可なら portal API ルート=service role 経由に切替）。請求計上は増コマ既存フロー（回答一覧の「計上」）を流用。
+- **RLS**: `form_responses` は authenticated に `check_school_access(school_id)` で ALL 許可 → 管理者の作成/紐付け/アーカイブは通ること確認済み。請求計上は増コマ既存フロー（回答一覧の「計上」）を流用。
 
 ## ★ 重要バグ修正：「スケジュールの取得に失敗」
 - 原因：`generateWeeklySchedule` の再生成 INSERT が UNIQUE 制約
