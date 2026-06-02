@@ -1127,6 +1127,10 @@ export default function SchedulePage() {
       refreshEntries();
     } catch (e) {
       toastError((e as Error).message);
+      // 書き込みが実際には成功している場合（一過性の通信エラー等）に備え、画面を実DBと同期させる。
+      // これにより「エラーは出たが座席に入っていない」状態が残らない。
+      setPendingAssignment(null);
+      refreshEntries();
     } finally {
       setIsAssigning(false);
     }
@@ -1177,6 +1181,9 @@ export default function SchedulePage() {
       refreshEntries();
     } catch (e) {
       toastError((e as Error).message);
+      // 書き込みが実際には成功している場合に備え、画面を実DBと同期させる
+      setPendingAssignment(null);
+      refreshEntries();
     } finally {
       setIsAssigning(false);
     }

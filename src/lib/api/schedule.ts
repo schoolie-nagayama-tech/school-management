@@ -1299,16 +1299,22 @@ export async function updateScheduleEntry(
   if (form.seat_label !== undefined) payload.seat_label = form.seat_label || null;
   if (form.note !== undefined) payload.note = form.note || null;
 
-  const { data, error } = await db
-    .from('schedule_entries')
-    .update(payload)
-    .eq('id', id)
-    .select()
-    .single();
+  // teacher_id 等の更新は冪等なので、一過性の通信エラーに備えて1回だけ再試行する。
+  const runUpdate = () =>
+    db.from('schedule_entries').update(payload).eq('id', id).select().single();
+  let { data, error } = await runUpdate();
+  if (error) {
+    ({ data, error } = await runUpdate());
+  }
 
   if (error) {
     console.error('Error updating schedule entry:', error);
-    throw new Error('授業の更新に失敗しました');
+    // DB が返した理由をそのまま見せる（一過性か制約違反かを切り分けられるように握りつぶさない）
+    const detail =
+      error && typeof error === 'object' && 'message' in error
+        ? String((error as { message: string }).message)
+        : '';
+    throw new Error(detail ? `授業の更新に失敗しました：${detail}` : '授業の更新に失敗しました');
   }
   return data as ScheduleEntry;
 }
