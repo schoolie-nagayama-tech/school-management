@@ -103,10 +103,11 @@ export function YoubiForm({ school, period, isPreview }: YoubiFormProps) {
     return () => { cancelled = true; };
   }, [school.id]);
 
-  const periodOptions = useMemo(
-    () => (masterPeriods && masterPeriods.length > 0 ? masterPeriods : settings.available_periods),
-    [masterPeriods, settings.available_periods]
-  );
+  // 1・2限（昼の時間帯）はフォームでは対象外のため除外
+  const periodOptions = useMemo(() => {
+    const base = masterPeriods && masterPeriods.length > 0 ? masterPeriods : settings.available_periods;
+    return base.filter((p) => p.code !== '1' && p.code !== '2');
+  }, [masterPeriods, settings.available_periods]);
 
   // ドラフト自動保存
   const { clearDraft } = usePortalFormDraft({
