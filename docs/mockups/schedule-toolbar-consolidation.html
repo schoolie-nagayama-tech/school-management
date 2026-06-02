@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>座席表ツールバー整理案（P1モック）</title>
+<style>
+  :root{
+    --headline:#1f2937; --paragraph:#4b5563; --muted:#6b7280; --stroke:#e5e7eb;
+    --ink:#1e3a5f; --ink-subtle:#eef2f7; --surface:#f9fafb; --primary:#2563eb;
+    --info:#2563eb; --info-subtle:#eff6ff; --warning:#b45309; --warning-subtle:#fffbeb;
+    --success:#15803d; --success-subtle:#f0fdf4;
+  }
+  *{box-sizing:border-box}
+  body{font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;margin:0;background:#f3f4f6;color:var(--headline);padding:32px;line-height:1.6}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:28px}
+  h2{font-size:14px;color:var(--ink);margin:34px 0 12px;display:flex;align-items:center;gap:8px}
+  h2::before{content:"";width:4px;height:16px;background:var(--ink);border-radius:2px}
+  .panel{background:#fff;border:1px solid var(--stroke);border-radius:12px;padding:16px;margin-bottom:10px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+  .tag{display:inline-block;font-size:11px;padding:1px 8px;border-radius:999px;font-weight:600}
+  .tag.before{background:#fef2f2;color:#b91c1c}
+  .tag.after{background:var(--success-subtle);color:var(--success)}
+  .note{font-size:12px;color:var(--muted);margin:6px 2px 0}
+  /* toolbar */
+  .toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;padding:6px 12px;border:1px solid var(--stroke);
+       border-radius:8px;background:#fff;color:var(--paragraph);cursor:pointer;white-space:nowrap}
+  .btn.weak{background:#fff}
+  .btn .ic{width:14px;height:14px;display:inline-block;opacity:.7}
+  .sel{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:6px 10px;border:1px solid var(--stroke);
+       border-radius:8px;background:#fff;color:var(--paragraph)}
+  .sel b{color:var(--headline);font-weight:600}
+  .chip{font-size:11px;padding:2px 8px;border-radius:999px;font-weight:600}
+  .chip.koushu{background:var(--info-subtle);color:var(--info)}
+  .chip.test{background:var(--warning-subtle);color:var(--warning)}
+  .spacer{flex:1}
+  .daypick{display:flex;gap:4px;align-items:center;font-size:12px;color:var(--muted)}
+  .daypick .d{width:22px;height:22px;border:1px solid var(--stroke);border-radius:6px;display:grid;place-items:center;font-size:11px}
+  .caret{font-size:10px;opacity:.6}
+  /* dropdown */
+  .menu{position:relative;display:inline-block}
+  .dd{margin-top:6px;border:1px solid var(--stroke);border-radius:10px;background:#fff;box-shadow:0 8px 24px rgba(0,0,0,.10);
+      width:230px;overflow:hidden}
+  .dd .group{font-size:10px;letter-spacing:.04em;color:var(--muted);padding:8px 12px 4px;background:var(--surface)}
+  .dd .item{padding:8px 12px;font-size:13px;display:flex;align-items:center;justify-content:space-between;cursor:pointer}
+  .dd .item:hover{background:var(--surface)}
+  .dd .item.active{background:var(--ink);color:#fff}
+  .dd .item .ic{width:14px;height:14px;opacity:.8}
+  .dd .divider{height:1px;background:var(--stroke);margin:4px 0}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:820px){.cols{grid-template-columns:1fr}}
+  .legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .lg{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--paragraph)}
+  .badge{font-size:9px;font-weight:700;color:#fff;border-radius:4px;padding:1px 5px;line-height:1.3}
+  .badge.test{background:var(--warning)} .badge.add{background:var(--ink)} .badge.trial{background:var(--success)} .badge.draft{background:var(--info)}
+  ul.kv{margin:8px 0 0;padding-left:18px;font-size:13px;color:var(--paragraph)}
+  ul.kv li{margin:3px 0}
+  .small{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+  <h1>座席表ツールバー 整理案（P1モック）</h1>
+  <div class="sub">通常／講習／テスト対策の渋滞を、「モード」1つ＋「管理▾」1つに集約。実装前の見た目確認用。</div>
+
+  <!-- BEFORE -->
+  <h2>Before（現状）</h2>
+  <div class="panel">
+    <span class="tag before">現状</span>
+    <div class="toolbar" style="margin-top:10px">
+      <button class="btn weak">‹ 前週</button>
+      <button class="btn weak">2026年6月 8〜14日</button>
+      <button class="btn weak">次週 ›</button>
+      <button class="btn">⚙ 座席表の設定 <span class="caret">▾</span></button>
+      <span class="spacer"></span>
+      <button class="btn">通塾日程</button>
+      <button class="btn">🎓 講習管理</button>
+      <button class="btn">➕ 追加授業設定</button>
+      <span class="sel">講習: <b>通常 ▾</b></span>
+      <span class="sel">テスト対策: <b>通常 ▾</b></span>
+    </div>
+    <div class="note">リンク3＋セレクト2で右側が渋滞。2つのセレクトは排他なのに独立して見える。</div>
+  </div>
+
+  <!-- AFTER -->
+  <h2>After（整理案）</h2>
+  <div class="panel">
+    <span class="tag after">整理案</span>
+    <div class="toolbar" style="margin-top:10px">
+      <button class="btn weak">‹ 前週</button>
+      <button class="btn weak">2026年6月 8〜14日</button>
+      <button class="btn weak">次週 ›</button>
+      <button class="btn">⚙ 座席表の設定 <span class="caret">▾</span></button>
+      <span class="spacer"></span>
+      <span class="sel" style="border-color:var(--ink);color:var(--ink)">モード: <b>通常 ▾</b></span>
+      <button class="btn">管理 <span class="caret">▾</span></button>
+    </div>
+    <div class="note">セレクト2つ→「モード」1つ、リンク3つ→「管理▾」1つ。右側が2要素に。</div>
+  </div>
+
+  <div class="cols">
+    <!-- mode dropdown opened -->
+    <div>
+      <h2>「モード」を開いた状態</h2>
+      <div class="panel">
+        <div class="menu">
+          <span class="sel" style="border-color:var(--ink);color:var(--ink)">モード: <b>通常 ▾</b></span>
+          <div class="dd" style="margin-top:8px">
+            <div class="item active">通常 <span class="ic">✓</span></div>
+            <div class="divider"></div>
+            <div class="group">講習</div>
+            <div class="item">2026 夏期講習 <span class="chip koushu">講習</span></div>
+            <div class="item">2026 冬期講習 <span class="chip koushu">講習</span></div>
+            <div class="divider"></div>
+            <div class="group">テスト対策（増コマ）</div>
+            <div class="item">2026-07 増コマ <span class="chip test">テスト対策</span></div>
+            <div class="item">2026-11 増コマ <span class="chip test">テスト対策</span></div>
+          </div>
+        </div>
+        <div class="note">排他なのが一目で分かる。選ぶと上部に対応する配置パネルが出る（従来どおり）。</div>
+      </div>
+    </div>
+
+    <!-- 管理 menu opened -->
+    <div>
+      <h2>「管理▾」を開いた状態</h2>
+      <div class="panel">
+        <div class="menu">
+          <button class="btn">管理 <span class="caret">▾</span></button>
+          <div class="dd" style="margin-top:8px;width:210px">
+            <div class="item">通塾日程の登録 <span class="ic">›</span></div>
+            <div class="item">講習 申込（生徒別） <span class="ic">›</span></div>
+            <div class="item">テスト対策 申込（生徒別） <span class="ic">›</span></div>
+            <div class="divider"></div>
+            <div class="item">一括マッチング <span class="ic">›</span></div>
+          </div>
+        </div>
+        <div class="note">登録・設定系の遷移を1か所に集約。P2で「講習／テスト対策 申込」はタブ統合も可能。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- single-add modal change -->
+  <h2>空きセル追加モーダルの種別（二重経路の解消）</h2>
+  <div class="panel">
+    <div class="cols">
+      <div>
+        <span class="tag before">現状</span>
+        <ul class="kv">
+          <li>追加授業</li><li>テスト対策 ← 申込パネルと二重</li><li>体験授業</li><li>通常（臨時・振替）</li>
+        </ul>
+      </div>
+      <div>
+        <span class="tag after">整理案</span>
+        <ul class="kv">
+          <li>追加授業</li><li>体験授業</li><li>通常（臨時・振替）</li>
+        </ul>
+        <div class="note">テスト対策は「申込→落とし込み」に一本化（残コマ管理と整合）。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- legend (P3 preview) -->
+  <h2>（参考）グリッドのバッジ凡例</h2>
+  <div class="panel">
+    <div class="legend">
+      <span class="lg"><span class="badge test">テスト対策</span> 申込からの落とし込み</span>
+      <span class="lg"><span class="badge add">追加授業</span> 単発追加</span>
+      <span class="lg"><span class="badge trial">体験</span> 体験授業</span>
+      <span class="lg"><span class="badge draft">仮</span> 自動マッチング下書き</span>
+    </div>
+    <div class="note">種別が一目で分かるよう、座席カードのバッジ色を固定（warning/ink/success/info）。P3で凡例として常設も。</div>
+  </div>
+
+  <p class="small" style="margin-top:28px">※ これは静的モックです。色・文言・配置は実装時に調整します。</p>
+</body>
+</html>
