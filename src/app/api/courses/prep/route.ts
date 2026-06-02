@@ -983,42 +983,25 @@ async function handleUpdateStudentProgress(
 ) {
   const { schoolId, studentId, itemId, status } = params;
 
-  const { data: existing } = await supabaseAdmin
-    .from('course_prep_student_progress')
-    .select('id')
-    .eq('school_id', schoolId)
-    .eq('student_id', studentId)
-    .eq('item_id', itemId)
-    .maybeSingle();
-
   // statusがnullの場合はレコード削除（空欄に戻す）
   if (!status) {
-    if (existing) {
-      const { error } = await supabaseAdmin
-        .from('course_prep_student_progress')
-        .delete()
-        .eq('id', existing.id);
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-    // 進捗クリア時もスケジュールタスクの完了状態を再評価
-    try {
-      await syncScheduleTaskCompletionFromProgress(supabaseAdmin, schoolId, itemId);
-    } catch (syncErr) {
-      console.error('[courses/prep] auto-complete sync error (clear):', syncErr);
-    }
-    return NextResponse.json({ success: true });
-  }
-
-  if (existing) {
     const { error } = await supabaseAdmin
       .from('course_prep_student_progress')
-      .update({ status, updated_at: new Date().toISOString() })
-      .eq('id', existing.id);
+      .delete()
+      .eq('school_id', schoolId)
+      .eq('student_id', studentId)
+      .eq('item_id', itemId);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   } else {
+    // UPSERT で更新する。SELECT→INSERT/UPDATE の非アトミック実装だと、
+    // 同一セルを素早く連打（空欄→完了→対象外）した際に2リクエストが競合し、
+    // (student_id,item_id) のユニーク制約違反（重複キー500）→画面全体の再読込が起きていた。
     const { error } = await supabaseAdmin
       .from('course_prep_student_progress')
-      .insert({ school_id: schoolId, student_id: studentId, item_id: itemId, status });
+      .upsert(
+        { school_id: schoolId, student_id: studentId, item_id: itemId, status, updated_at: new Date().toISOString() },
+        { onConflict: 'student_id,item_id' }
+      );
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
@@ -1038,26 +1021,14 @@ async function handleUpdateStudentNumber(
 ) {
   const { schoolId, studentId, itemId, numberValue } = params;
 
-  const { data: existing } = await supabaseAdmin
+  // UPSERT（連打時の重複キー競合を回避）
+  const { error } = await supabaseAdmin
     .from('course_prep_student_progress')
-    .select('id')
-    .eq('school_id', schoolId)
-    .eq('student_id', studentId)
-    .eq('item_id', itemId)
-    .maybeSingle();
-
-  if (existing) {
-    const { error } = await supabaseAdmin
-      .from('course_prep_student_progress')
-      .update({ number_value: numberValue, updated_at: new Date().toISOString() })
-      .eq('id', existing.id);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  } else {
-    const { error } = await supabaseAdmin
-      .from('course_prep_student_progress')
-      .insert({ school_id: schoolId, student_id: studentId, item_id: itemId, number_value: numberValue });
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+    .upsert(
+      { school_id: schoolId, student_id: studentId, item_id: itemId, number_value: numberValue, updated_at: new Date().toISOString() },
+      { onConflict: 'student_id,item_id' }
+    );
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json({ success: true });
 }
@@ -1068,26 +1039,14 @@ async function handleUpdateStudentDate(
 ) {
   const { schoolId, studentId, itemId, dateValue } = params;
 
-  const { data: existing } = await supabaseAdmin
+  // UPSERT（連打時の重複キー競合を回避）
+  const { error } = await supabaseAdmin
     .from('course_prep_student_progress')
-    .select('id')
-    .eq('school_id', schoolId)
-    .eq('student_id', studentId)
-    .eq('item_id', itemId)
-    .maybeSingle();
-
-  if (existing) {
-    const { error } = await supabaseAdmin
-      .from('course_prep_student_progress')
-      .update({ date_value: dateValue, updated_at: new Date().toISOString() })
-      .eq('id', existing.id);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  } else {
-    const { error } = await supabaseAdmin
-      .from('course_prep_student_progress')
-      .insert({ school_id: schoolId, student_id: studentId, item_id: itemId, date_value: dateValue });
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+    .upsert(
+      { school_id: schoolId, student_id: studentId, item_id: itemId, date_value: dateValue, updated_at: new Date().toISOString() },
+      { onConflict: 'student_id,item_id' }
+    );
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json({ success: true });
 }
