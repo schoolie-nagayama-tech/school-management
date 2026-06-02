@@ -163,22 +163,12 @@ export async function getKoushuPlacementProgressByPeriod(
   period: KoushuPeriodInfo,
   formation?: ScheduleEntryFormation
 ): Promise<Map<string, KoushuPlacementRow>> {
-  // 1. 該当 season + school_id の seasonal_courses をすべて取得
-  const { data: courses } = await db
-    .from('seasonal_courses')
-    .select('id')
-    .eq('school_id', period.school_id)
-    .eq('season', period.season)
-    .eq('is_active', true);
-
-  const courseIds = ((courses || []) as { id: string }[]).map((c) => c.id);
-  if (courseIds.length === 0) return new Map();
-
-  // 2. それらの koushu_enrollments を student_id で集約（formation 指定時はその形態のみ）
+  // 申込は期間(school + season)で直接取得（コース依存を廃止）。formation 指定時はその形態のみ。
   let enrollQuery = db
     .from('koushu_enrollments')
     .select('student_id, koma_count, subject_ids, koma_by_subject, student:students(id, last_name, first_name, grade)')
-    .in('course_id', courseIds);
+    .eq('school_id', period.school_id)
+    .eq('season', period.season);
   if (formation) enrollQuery = enrollQuery.eq('formation', formation);
   const { data: enrollments } = await enrollQuery;
 

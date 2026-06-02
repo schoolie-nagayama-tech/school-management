@@ -83,10 +83,9 @@ import type { School, Student, Subject } from '@/types/database';
 import AccessDenied from '@/components/AccessDenied';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
-import { Clock, BookOpen, GraduationCap, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Clock, BookOpen, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 import { SchoolSwitcher } from '@/components/SchoolSwitcher';
 import {
-  getKoushuEnrollments,
   getKoushuScheduledCounts,
   type KoushuEnrollment,
 } from '@/lib/api/seasonalCourses';
@@ -453,31 +452,14 @@ export default function SchedulePage() {
           : period.schedule_start_date;
       setWeekStart(getWeekStart(new Date(jumpStr + 'T12:00:00')));
     }
-    // 該当 season + school_id のコースを集めて全部 enrollment を引く
-    const { getSchoolKoushu } = await import('@/lib/api/seasonalCourses');
-    const allCourses = await getSchoolKoushu(period.school_id);
-    const matchingCourseIds = allCourses
-      .filter((c) => c.season === period.season)
-      .map((c) => c.id);
-
+    // 申込は期間(school + season)で直接取得（コース依存を廃止）。個別のみ座席表モード対象。
+    const { getKoushuEnrollmentsForPeriod } = await import('@/lib/api/seasonalCourses');
+    const all = await getKoushuEnrollmentsForPeriod(period.school_id, period.season);
     const enrollMap = new Map<string, KoushuEnrollment>();
-    for (const cid of matchingCourseIds) {
-      const enrollments = await getKoushuEnrollments(cid);
-      for (const e of enrollments) {
-        // P1: 座席表の講習モードは個別のみ対象（集団レーンは Phase 3）
-        if (e.formation !== 'individual') continue;
-        const existing = enrollMap.get(e.student_id);
-        if (existing) {
-          // 同一生徒の複数コース申込はコマ数を合算、科目はマージ
-          enrollMap.set(e.student_id, {
-            ...existing,
-            koma_count: existing.koma_count + e.koma_count,
-            subject_ids: Array.from(new Set([...existing.subject_ids, ...e.subject_ids])),
-          });
-        } else {
-          enrollMap.set(e.student_id, e);
-        }
-      }
+    for (const e of all) {
+      if (e.formation !== 'individual') continue;
+      // (school, season, student, formation) は一意なので生徒ごとに1行
+      enrollMap.set(e.student_id, e);
     }
     setKoushuEnrollments(enrollMap);
 
@@ -1367,37 +1349,9 @@ export default function SchedulePage() {
   // 「講習」は座席表内の講習モードを ON/OFF するトグル。
   //  - 講習期間あり: 最初の期間を選択して座席表を講習モードに（選択中なら解除）
   //  - 講習期間なし: 講習管理ページ (/schedule/koushu) へ誘導してまず期間を作ってもらう
-  const isKoushuMode = !!selectedKoushu;
+  // 講習モードはツールバーの「講習:」セレクトから入る（上部のトグルボタンは廃止）。
   const headerActions = (
     <div className="flex items-center gap-2">
-      <button
-        type="button"
-        onClick={() => {
-          if (koushuList.length === 0) {
-            // 講習期間が未設定なら講習期間設定（course_prep_periods）へ誘導。
-            // コース管理(/schedule/koushu)はテンプレ置き場でスケジュールに無関係なので飛ばさない。
-            router.push('/courses/progress');
-            return;
-          }
-          // トグル：選択中なら解除、未選択なら最初の期間で講習モードに入る
-          handleKoushuSelect(isKoushuMode ? null : koushuList[0]);
-        }}
-        className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border rounded-lg transition-colors ${
-          isKoushuMode
-            ? 'border-info bg-info text-white hover:bg-info/90'
-            : 'border-border-default bg-white text-text-body hover:bg-surface hover:border-info/40 hover:text-info'
-        }`}
-        title={
-          koushuList.length === 0
-            ? '講習期間が未設定です。講習期間の設定画面へ移動します'
-            : isKoushuMode
-              ? '講習モードを解除して通常表示に戻す'
-              : '座席表を講習モードに切り替える'
-        }
-      >
-        <GraduationCap className="w-3.5 h-3.5" />
-        {isKoushuMode ? '講習モード中' : '講習'}
-      </button>
       <Link
         href="/lesson-reports/sample"
         className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium border border-border-default rounded-lg bg-white text-text-body hover:bg-surface hover:border-info/40 hover:text-info transition-colors"

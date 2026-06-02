@@ -10,7 +10,6 @@ import {
 } from '@/components/ui';
 import { Button } from '@/components/ui';
 import { StudentSearchInput, type StudentWithSubjects } from './StudentSearchInput';
-import type { KoushuEnrollment } from '@/lib/api/seasonalCourses';
 import { estimateRegularKomaInPeriod, type KoushuPeriodInfo } from '@/lib/api/koushu-period';
 import type { Subject } from '@/types/database';
 import type { ScheduleEntryFormation } from '@/types/schedule';
@@ -32,11 +31,13 @@ interface KoushuEnrollmentFormModalProps {
   onClose: () => void;
   schoolId: string;
   subjects: Subject[];
-  /** 既に登録済みの生徒ID（重複登録防止用） */
+  /** 既に登録済みの生徒ID（新規追加時の重複防止用） */
   existingStudentIds: string[];
-  /** 編集モードの場合は既存データを渡す（その formation 行だけを編集） */
-  initialData?: KoushuEnrollment | null;
-  /** 通常授業回数（個別コマ数の目安）算出用。コースの season に対応する講習期間。 */
+  /** 編集対象の生徒（指定時は検索なしで固定。新規追加時は未指定） */
+  lockedStudent?: { id: string; last_name: string; first_name: string; grade: number } | null;
+  /** 編集時の既存値（個別/集団の科目別コマ数を事前入力） */
+  initialRows?: EnrollmentRow[];
+  /** 通常授業回数（個別コマ数の目安）算出用の講習期間 */
   period?: KoushuPeriodInfo | null;
   onSave: (studentId: string, rows: EnrollmentRow[]) => Promise<void>;
 }
@@ -47,7 +48,8 @@ export function KoushuEnrollmentFormModal({
   schoolId,
   subjects,
   existingStudentIds,
-  initialData,
+  lockedStudent,
+  initialRows,
   period,
   onSave,
 }: KoushuEnrollmentFormModalProps) {
@@ -58,8 +60,7 @@ export function KoushuEnrollmentFormModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isEditMode = !!initialData;
-  const editFormation = initialData?.formation ?? null;
+  const isEditMode = !!lockedStudent;
 
   useEffect(() => {
     if (!open) return;
@@ -67,22 +68,19 @@ export function KoushuEnrollmentFormModal({
     setError(null);
     setRegularHint(null);
     const init: Record<string, { individual: number; group: number }> = {};
-    if (initialData) {
-      // 編集: その formation 行の科目別コマ数を該当列に展開
-      const kbs = initialData.koma_by_subject ?? {};
-      for (const [sid, n] of Object.entries(kbs)) {
-        init[sid] = { individual: 0, group: 0 };
-        if (initialData.formation === 'group') init[sid].group = n;
-        else init[sid].individual = n;
+    for (const row of initialRows ?? []) {
+      for (const [sid, n] of Object.entries(row.komaBySubject)) {
+        if (!init[sid]) init[sid] = { individual: 0, group: 0 };
+        init[sid][row.formation] = n;
       }
     }
     setMatrix(init);
-  }, [open, initialData]);
+  }, [open, initialRows]);
 
   // 新規追加時、生徒を選んだら「通常授業回数」をヒント表示（科目別なので自動入力はせず目安だけ）
   const handleSelectStudent = async (student: StudentWithSubjects | null) => {
     setSelectedStudent(student);
-    if (student && !isEditMode && period) {
+    if (student && period) {
       try {
         setRegularHint(await estimateRegularKomaInPeriod(student.id, period));
       } catch {
@@ -100,11 +98,8 @@ export function KoushuEnrollmentFormModal({
     });
   };
 
-  const showIndividual = !isEditMode || editFormation === 'individual';
-  const showGroup = !isEditMode || editFormation === 'group';
-
   const handleSubmit = async () => {
-    const studentId = isEditMode ? initialData!.student_id : selectedStudent?.id;
+    const studentId = lockedStudent?.id ?? selectedStudent?.id;
     if (!studentId) { setError('生徒を選択してください'); return; }
 
     const indiv: Record<string, number> = {};
@@ -114,15 +109,14 @@ export function KoushuEnrollmentFormModal({
       if (v.group > 0) group[sid] = v.group;
     }
 
-    const rows: EnrollmentRow[] = [];
-    if (isEditMode && editFormation) {
-      const data = editFormation === 'group' ? group : indiv;
-      if (Object.keys(data).length === 0) { setError('コマ数を1以上で入力してください'); return; }
-      rows.push({ formation: editFormation, komaBySubject: data });
-    } else {
-      if (Object.keys(indiv).length > 0) rows.push({ formation: 'individual', komaBySubject: indiv });
-      if (Object.keys(group).length > 0) rows.push({ formation: 'group', komaBySubject: group });
-      if (rows.length === 0) { setError('いずれかの科目にコマ数を1以上で入力してください'); return; }
+    // 個別/集団それぞれ行を作る。空（全0）でも upsert 側で削除扱いになるよう、編集時は両方渡す。
+    const rows: EnrollmentRow[] = [
+      { formation: 'individual', komaBySubject: indiv },
+      { formation: 'group', komaBySubject: group },
+    ];
+    if (!isEditMode && Object.keys(indiv).length === 0 && Object.keys(group).length === 0) {
+      setError('いずれかの科目にコマ数を1以上で入力してください');
+      return;
     }
 
     setSaving(true);
@@ -137,8 +131,8 @@ export function KoushuEnrollmentFormModal({
     }
   };
 
-  const studentLabel = isEditMode && initialData?.student
-    ? `${initialData.student.last_name} ${initialData.student.first_name}（${gradeLabel(initialData.student.grade)}）`
+  const studentLabel = lockedStudent
+    ? `${lockedStudent.last_name} ${lockedStudent.first_name}（${gradeLabel(lockedStudent.grade)}）`
     : null;
 
   const indivTotal = Object.values(matrix).reduce((s, v) => s + (v.individual || 0), 0);
@@ -148,11 +142,7 @@ export function KoushuEnrollmentFormModal({
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>
-            {isEditMode
-              ? `申し込みを編集（${editFormation === 'group' ? '集団' : '個別'}）`
-              : '生徒を追加'}
-          </DialogTitle>
+          <DialogTitle>{isEditMode ? '講習申込を編集' : '生徒を追加'}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-2">
           {/* 生徒選択 */}
@@ -190,7 +180,7 @@ export function KoushuEnrollmentFormModal({
             <div className="flex items-baseline justify-between mb-1">
               <label className="text-sm font-medium text-[var(--headline)]">科目別コマ数</label>
               <span className="text-xs text-[var(--paragraph)]">
-                合計 {showIndividual && `個別${indivTotal}`}{showIndividual && showGroup && ' / '}{showGroup && `集団${groupTotal}`} コマ
+                合計 個別{indivTotal} / 集団{groupTotal} コマ
               </span>
             </div>
             {subjects.length === 0 ? (
@@ -201,8 +191,8 @@ export function KoushuEnrollmentFormModal({
                   <thead className="bg-gray-50 text-xs text-[var(--paragraph)]">
                     <tr>
                       <th className="text-left px-2 py-1.5 font-medium">科目</th>
-                      {showIndividual && <th className="px-2 py-1.5 font-medium w-20">個別</th>}
-                      {showGroup && <th className="px-2 py-1.5 font-medium w-20">集団</th>}
+                      <th className="px-2 py-1.5 font-medium w-20">個別</th>
+                      <th className="px-2 py-1.5 font-medium w-20">集団</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -211,30 +201,26 @@ export function KoushuEnrollmentFormModal({
                       return (
                         <tr key={s.id} className="border-t border-gray-100">
                           <td className="px-2 py-1 text-[var(--headline)]">{s.name}</td>
-                          {showIndividual && (
-                            <td className="px-2 py-1 text-center">
-                              <input
-                                type="number"
-                                min={0}
-                                max={99}
-                                value={cell.individual || 0}
-                                onChange={(e) => setCell(s.id, 'individual', Number(e.target.value))}
-                                className="w-14 px-2 py-1 border border-[var(--stroke)] rounded text-sm text-center focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-                              />
-                            </td>
-                          )}
-                          {showGroup && (
-                            <td className="px-2 py-1 text-center">
-                              <input
-                                type="number"
-                                min={0}
-                                max={99}
-                                value={cell.group || 0}
-                                onChange={(e) => setCell(s.id, 'group', Number(e.target.value))}
-                                className="w-14 px-2 py-1 border border-[var(--stroke)] rounded text-sm text-center focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-                              />
-                            </td>
-                          )}
+                          <td className="px-2 py-1 text-center">
+                            <input
+                              type="number"
+                              min={0}
+                              max={99}
+                              value={cell.individual || 0}
+                              onChange={(e) => setCell(s.id, 'individual', Number(e.target.value))}
+                              className="w-14 px-2 py-1 border border-[var(--stroke)] rounded text-sm text-center focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                            />
+                          </td>
+                          <td className="px-2 py-1 text-center">
+                            <input
+                              type="number"
+                              min={0}
+                              max={99}
+                              value={cell.group || 0}
+                              onChange={(e) => setCell(s.id, 'group', Number(e.target.value))}
+                              className="w-14 px-2 py-1 border border-[var(--stroke)] rounded text-sm text-center focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                            />
+                          </td>
                         </tr>
                       );
                     })}

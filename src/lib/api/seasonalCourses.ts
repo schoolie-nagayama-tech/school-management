@@ -36,7 +36,10 @@ export interface KoushuCourse {
 /** 講習申し込み（座席表連携用: koushu_enrollments テーブル） */
 export interface KoushuEnrollment {
   id: string;
-  course_id: string;
+  /** コース依存を廃止し期間(school+season)ベースに。直接申込は course_id=null */
+  course_id: string | null;
+  school_id?: string | null;
+  season?: string | null;
   student_id: string;
   /** 個別 / 集団。同一生徒でも formation 別に行を持つ（UNIQUE: course_id+student_id+formation） */
   formation: ScheduleEntryFormation;
@@ -207,28 +210,44 @@ export async function getKoushuEnrollments(courseId: string): Promise<KoushuEnro
 }
 
 /**
- * 申し込みを登録・更新（upsert）。科目別コマ数（komaBySubject）で受け取り、
- * koma_count（総和）と subject_ids（キー集合）は自動算出して保存する。
- * formation 別に1行（UNIQUE: course_id+student_id+formation）。
+ * 申し込みを登録・更新（upsert）。期間(school+season)＋生徒＋formation で1行。
+ * 科目別コマ数（komaBySubject）で受け取り、koma_count（総和）と subject_ids（キー集合）は自動算出。
+ * koma_by_subject が空（全0）の場合はその行を削除する（=申込なし）。
  */
 export async function upsertKoushuEnrollment(
-  courseId: string,
+  schoolId: string,
+  season: string,
   studentId: string,
   komaBySubject: Record<string, number>,
   formation: ScheduleEntryFormation = 'individual'
 ): Promise<void> {
   const entries = Object.entries(komaBySubject).filter(([, n]) => (n ?? 0) > 0);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const db2 = supabase as any;
+
+  if (entries.length === 0) {
+    // 全科目0 → 申込なしとして削除
+    await db2
+      .from('koushu_enrollments')
+      .delete()
+      .eq('school_id', schoolId)
+      .eq('season', season)
+      .eq('student_id', studentId)
+      .eq('formation', formation);
+    return;
+  }
+
   const subjectIds = entries.map(([sid]) => sid);
   const komaCount = entries.reduce((s, [, n]) => s + n, 0);
   const komaBySubjectClean = Object.fromEntries(entries);
 
-  // koushu_enrollments は生成型に含まれないため as any でキャスト
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase as any)
+  const { error } = await db2
     .from('koushu_enrollments')
     .upsert(
       {
-        course_id: courseId,
+        school_id: schoolId,
+        season,
+        course_id: null,
         student_id: studentId,
         formation,
         koma_count: komaCount,
@@ -236,10 +255,27 @@ export async function upsertKoushuEnrollment(
         koma_by_subject: komaBySubjectClean,
         updated_at: new Date().toISOString(),
       },
-      { onConflict: 'course_id,student_id,formation' }
+      { onConflict: 'school_id,season,student_id,formation' }
     );
 
   if (error) throw error;
+}
+
+/** 期間(school + season)の全申込を取得（生徒情報付き）。生徒別画面・集計用。 */
+export async function getKoushuEnrollmentsForPeriod(
+  schoolId: string,
+  season: string
+): Promise<KoushuEnrollment[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (supabase as any)
+    .from('koushu_enrollments')
+    .select('*, student:students(id, last_name, first_name, grade)')
+    .eq('school_id', schoolId)
+    .eq('season', season)
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+  return (data || []) as KoushuEnrollment[];
 }
 
 /** 申し込みを削除 */

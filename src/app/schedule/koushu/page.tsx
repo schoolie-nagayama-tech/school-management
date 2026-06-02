@@ -1,340 +1,355 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { ArrowLeft, Plus, Pencil, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
 import { Button, Loading } from '@/components/ui';
-import { KoushuPeriodCard } from '@/components/schedule/KoushuPeriodCard';
-import { KoushuPeriodFormModal } from '@/components/schedule/KoushuPeriodFormModal';
 import { KoushuEnrollmentFormModal, type EnrollmentRow } from '@/components/schedule/KoushuEnrollmentFormModal';
 import {
-  getSchoolKoushu,
-  createKoushu,
-  updateKoushu,
-  deleteKoushu,
-  getKoushuEnrollments,
+  getKoushuEnrollmentsForPeriod,
   upsertKoushuEnrollment,
   deleteKoushuEnrollment,
-  type KoushuCourse,
   type KoushuEnrollment,
 } from '@/lib/api/seasonalCourses';
-import { getKoushuPeriods, type KoushuPeriodInfo } from '@/lib/api/koushu-period';
+import { getKoushuPeriods, getStudentRegularSchedule, type KoushuPeriodInfo } from '@/lib/api/koushu-period';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import AccessDenied from '@/components/AccessDenied';
-import type { Subject } from '@/types/database';
-import { GRADE_LABELS } from '@/types/database';
+
+const DOW_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
+
+function gradeLabel(grade: number): string {
+  if (grade <= 6) return `小${grade}`;
+  if (grade <= 9) return `中${grade - 6}`;
+  return `高${grade - 9}`;
+}
+
+/** 生徒1人分の講習申込（個別/集団） */
+interface StudentRow {
+  student_id: string;
+  student?: { id: string; last_name: string; first_name: string; grade: number };
+  individual?: KoushuEnrollment;
+  group?: KoushuEnrollment;
+}
+
+type StudentSchedule = Awaited<ReturnType<typeof getStudentRegularSchedule>>;
 
 export default function KoushuPage() {
   const { profile, selectedSchoolId } = useAuth();
-  // 教室長以上（admin / owner / manager）のみ閲覧可能。
-  // 入口は未公開だが URL 直アクセス時の権限ガード。
   const isManager =
     profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
-  const { subjects: masterSubjects } = useMasterData();
+  const { subjects } = useMasterData();
   const schoolId = selectedSchoolId ?? '';
 
-  const [courses, setCourses] = useState<KoushuCourse[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  // 設定済みの講習期間（個別コマ数の初期値＝通常授業回数の算出に使う）
-  const [koushuPeriods, setKoushuPeriods] = useState<KoushuPeriodInfo[]>([]);
+  const subjectNameById = useMemo(() => new Map(subjects.map((s) => [s.id, s.name])), [subjects]);
+
+  const [periods, setPeriods] = useState<KoushuPeriodInfo[]>([]);
+  const [selectedPeriod, setSelectedPeriod] = useState<KoushuPeriodInfo | null>(null);
+  const [enrollments, setEnrollments] = useState<KoushuEnrollment[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // 各コースの申し込みデータ（展開時にロード）
-  const [enrollmentsMap, setEnrollmentsMap] = useState<Map<string, KoushuEnrollment[]>>(new Map());
-  const [enrollmentsLoadingSet, setEnrollmentsLoadingSet] = useState<Set<string>>(new Set());
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingStudent, setEditingStudent] = useState<StudentRow | null>(null);
 
-  // 講習フォームモーダル
-  const [periodFormOpen, setPeriodFormOpen] = useState(false);
-  const [editingCourse, setEditingCourse] = useState<KoushuCourse | null>(null);
-
-  // 申し込みフォームモーダル
-  const [enrollmentFormOpen, setEnrollmentFormOpen] = useState(false);
-  const [targetCourseId, setTargetCourseId] = useState<string | null>(null);
-  const [editingEnrollment, setEditingEnrollment] = useState<KoushuEnrollment | null>(null);
-
-  // 学年フィルタ
-  const [filterGrade, setFilterGrade] = useState<number | null>(null);
+  // 通塾日程の展開
+  const [openStudent, setOpenStudent] = useState<string | null>(null);
+  const [sched, setSched] = useState<StudentSchedule>([]);
+  const [schedLoading, setSchedLoading] = useState(false);
 
   // 削除確認
-  const [deletingCourse, setDeletingCourse] = useState<KoushuCourse | null>(null);
-  const [deletingEnrollment, setDeletingEnrollment] = useState<KoushuEnrollment | null>(null);
+  const [deletingStudent, setDeletingStudent] = useState<StudentRow | null>(null);
 
-  const loadCourses = useCallback(async () => {
-    if (!schoolId) return;
+  // 講習期間ロード
+  useEffect(() => {
+    if (!schoolId) { setPeriods([]); setSelectedPeriod(null); return; }
+    getKoushuPeriods(schoolId)
+      .then((p) => {
+        setPeriods(p);
+        setSelectedPeriod((cur) => cur ?? p[0] ?? null);
+      })
+      .catch(() => setPeriods([]));
+  }, [schoolId]);
+
+  const loadEnrollments = useCallback(async () => {
+    if (!schoolId || !selectedPeriod) { setEnrollments([]); return; }
     setLoading(true);
     try {
-      const c = await getSchoolKoushu(schoolId);
-      setCourses(c);
-      setSubjects(masterSubjects);
+      setEnrollments(await getKoushuEnrollmentsForPeriod(schoolId, selectedPeriod.season));
     } finally {
       setLoading(false);
     }
-  }, [schoolId, masterSubjects]);
+  }, [schoolId, selectedPeriod]);
 
-  useEffect(() => { loadCourses(); }, [loadCourses]);
+  useEffect(() => { loadEnrollments(); }, [loadEnrollments]);
 
-  // 講習期間（course_prep_periods）をロード。コースの season に対応する期間を申込モーダルへ渡す。
-  useEffect(() => {
-    if (!schoolId) { setKoushuPeriods([]); return; }
-    getKoushuPeriods(schoolId).then(setKoushuPeriods).catch(() => setKoushuPeriods([]));
-  }, [schoolId]);
-
-  const loadEnrollments = useCallback(async (courseId: string) => {
-    setEnrollmentsLoadingSet((prev) => new Set(prev).add(courseId));
-    try {
-      const list = await getKoushuEnrollments(courseId);
-      setEnrollmentsMap((prev) => new Map(prev).set(courseId, list));
-    } finally {
-      setEnrollmentsLoadingSet((prev) => {
-        const next = new Set(prev);
-        next.delete(courseId);
-        return next;
-      });
+  // 生徒ごとにまとめる（個別/集団）
+  const studentRows = useMemo<StudentRow[]>(() => {
+    const map = new Map<string, StudentRow>();
+    for (const e of enrollments) {
+      const g = map.get(e.student_id) ?? { student_id: e.student_id, student: e.student };
+      if (e.formation === 'group') g.group = e;
+      else g.individual = e;
+      map.set(e.student_id, g);
     }
-  }, []);
+    return Array.from(map.values()).sort(
+      (a, b) => (b.student?.grade ?? 0) - (a.student?.grade ?? 0)
+    );
+  }, [enrollments]);
 
-  // ---- 講習 CRUD ----
-  const handleSaveCourse = async (data: {
-    name: string; season: string;
-    start_date: string | null; end_date: string | null;
-  }) => {
-    if (editingCourse) {
-      await updateKoushu(editingCourse.id, data);
-    } else {
-      await createKoushu(schoolId, data);
-    }
-    await loadCourses();
-  };
+  const existingStudentIds = studentRows.map((r) => r.student_id);
 
-  const handleDeleteCourse = async () => {
-    if (!deletingCourse) return;
-    await deleteKoushu(deletingCourse.id);
-    setDeletingCourse(null);
-    await loadCourses();
-  };
-
-  // ---- 申し込み CRUD ----
-  // 個別/集団それぞれの行を formation 別に upsert する（同一生徒でも formation ごとに1行）。
-  const handleSaveEnrollment = async (studentId: string, rows: EnrollmentRow[]) => {
-    if (!targetCourseId) return;
+  const handleSave = async (studentId: string, rows: EnrollmentRow[]) => {
+    if (!selectedPeriod) return;
     for (const r of rows) {
-      await upsertKoushuEnrollment(targetCourseId, studentId, r.komaBySubject, r.formation);
+      await upsertKoushuEnrollment(schoolId, selectedPeriod.season, studentId, r.komaBySubject, r.formation);
     }
-    await loadEnrollments(targetCourseId);
-    // enrollment_count を更新するためにコース一覧も再取得
-    await loadCourses();
+    await loadEnrollments();
   };
 
-  const handleDeleteEnrollment = async () => {
-    if (!deletingEnrollment || !targetCourseId) return;
-    await deleteKoushuEnrollment(deletingEnrollment.id);
-    setDeletingEnrollment(null);
-    await loadEnrollments(targetCourseId);
-    await loadCourses();
+  const handleDelete = async () => {
+    if (!deletingStudent) return;
+    if (deletingStudent.individual) await deleteKoushuEnrollment(deletingStudent.individual.id);
+    if (deletingStudent.group) await deleteKoushuEnrollment(deletingStudent.group.id);
+    setDeletingStudent(null);
+    await loadEnrollments();
   };
 
-  const openAddEnrollment = (courseId: string) => {
-    setTargetCourseId(courseId);
-    setEditingEnrollment(null);
-    setEnrollmentFormOpen(true);
+  const toggleSchedule = useCallback(async (studentId: string) => {
+    if (openStudent === studentId) { setOpenStudent(null); return; }
+    setOpenStudent(studentId);
+    setSchedLoading(true);
+    try { setSched(await getStudentRegularSchedule(studentId)); }
+    catch { setSched([]); }
+    finally { setSchedLoading(false); }
+  }, [openStudent]);
+
+  // 科目別コマ数を「国語2・数学1」形式で表示
+  const komaSummary = (en?: KoushuEnrollment): string => {
+    if (!en) return '—';
+    const kbs = en.koma_by_subject ?? {};
+    const parts = Object.entries(kbs).map(([sid, n]) => `${subjectNameById.get(sid) ?? sid.slice(0, 4)}${n}`);
+    return parts.length > 0 ? parts.join('・') : `${en.koma_count}コマ`;
   };
 
-  const openEditEnrollment = (courseId: string, en: KoushuEnrollment) => {
-    setTargetCourseId(courseId);
-    setEditingEnrollment(en);
-    setEnrollmentFormOpen(true);
+  const editInitialRows = (r: StudentRow): EnrollmentRow[] => {
+    const rows: EnrollmentRow[] = [];
+    if (r.individual?.koma_by_subject) rows.push({ formation: 'individual', komaBySubject: r.individual.koma_by_subject });
+    if (r.group?.koma_by_subject) rows.push({ formation: 'group', komaBySubject: r.group.koma_by_subject });
+    return rows;
   };
-
-  const existingStudentIds = targetCourseId
-    ? (enrollmentsMap.get(targetCourseId) ?? []).map((e) => e.student_id)
-    : [];
-
-  // 対象コースの season に対応する講習期間（個別コマ数の初期値＝通常授業回数の算出に使う）
-  const targetCourse = courses.find((c) => c.id === targetCourseId);
-  const matchedPeriod = targetCourse
-    ? (koushuPeriods.find((p) => p.season === targetCourse.season) ?? null)
-    : null;
-
-  const availableGrades = Array.from(
-    new Set(courses.flatMap((c) => c.target_grades ?? []))
-  ).sort((a, b) => a - b);
-
-  const filteredCourses = filterGrade
-    ? courses.filter((c) => c.target_grades?.includes(filterGrade))
-    : courses;
 
   if (!isManager) return <AccessDenied />;
 
   return (
-    <AdminLayout headerTitle="講習コース">
+    <AdminLayout headerTitle="講習 申込（生徒別）">
       <div className="space-y-6">
         {/* ヘッダー */}
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
             <Link href="/schedule">
-              <button className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-150">
+              <button className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
                 <ArrowLeft className="w-5 h-5" />
               </button>
             </Link>
-            <h1 className="text-xl font-bold text-[var(--headline)]">講習コース</h1>
+            <h1 className="text-xl font-bold text-[var(--headline)]">講習 申込（生徒別）</h1>
           </div>
-          <Button
-            onClick={() => { setEditingCourse(null); setPeriodFormOpen(true); }}
-            className="flex items-center gap-1"
-          >
-            <Plus className="w-4 h-4" />
-            コースを追加
-          </Button>
+          {selectedPeriod && (
+            <Button onClick={() => { setEditingStudent(null); setFormOpen(true); }} className="flex items-center gap-1">
+              <Plus className="w-4 h-4" />
+              生徒を追加
+            </Button>
+          )}
         </div>
 
-        {/* 教室未選択 */}
         {!schoolId && (
+          <div className="text-center py-12 text-[var(--paragraph)]">教室を選択してください。</div>
+        )}
+
+        {/* 講習期間（season）選択 */}
+        {schoolId && periods.length === 0 && (
           <div className="text-center py-12 text-[var(--paragraph)]">
-            教室を選択してください。
+            <p className="mb-4">講習期間が設定されていません。</p>
+            <Link href="/courses/progress">
+              <Button>講習期間を設定する</Button>
+            </Link>
           </div>
         )}
 
-        {/* 読み込み中 */}
-        {schoolId && loading && (
-          <Loading size="md" />
-        )}
-
-        {/* 学年フィルタ */}
-        {schoolId && !loading && courses.length > 0 && availableGrades.length > 0 && (
+        {schoolId && periods.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs text-[var(--paragraph)] font-medium">学年:</span>
-            <button
-              onClick={() => setFilterGrade(null)}
-              className={`px-2.5 py-1 text-xs rounded-full border transition-colors ${
-                filterGrade === null
-                  ? 'bg-[var(--headline)] text-white border-[var(--headline)]'
-                  : 'bg-white text-[var(--paragraph)] border-[var(--stroke)] hover:bg-gray-50'
-              }`}
-            >
-              すべて
-            </button>
-            {availableGrades.map((g) => (
+            <span className="text-xs text-[var(--paragraph)] font-medium">講習期間:</span>
+            {periods.map((p) => (
               <button
-                key={g}
-                onClick={() => setFilterGrade(filterGrade === g ? null : g)}
-                className={`px-2.5 py-1 text-xs rounded-full border transition-colors ${
-                  filterGrade === g
+                key={p.id}
+                onClick={() => setSelectedPeriod(p)}
+                className={`px-3 py-1 text-xs rounded-full border transition-colors ${
+                  selectedPeriod?.id === p.id
                     ? 'bg-[var(--headline)] text-white border-[var(--headline)]'
                     : 'bg-white text-[var(--paragraph)] border-[var(--stroke)] hover:bg-gray-50'
                 }`}
               >
-                {GRADE_LABELS[g] ?? `G${g}`}
+                {p.label}
               </button>
             ))}
           </div>
         )}
 
-        {/* 講習なし */}
-        {schoolId && !loading && courses.length === 0 && (
-          <div className="text-center py-12 text-[var(--paragraph)]">
-            <p className="mb-4">まだ講習が登録されていません。</p>
-            <Button onClick={() => { setEditingCourse(null); setPeriodFormOpen(true); }}>
-              <Plus className="w-4 h-4 mr-1" />
-              最初のコースを追加
-            </Button>
-          </div>
-        )}
-
-        {/* 講習一覧 */}
-        {schoolId && !loading && courses.length > 0 && (
-          <div className="space-y-3">
-            {filteredCourses.map((course) => (
-              <KoushuPeriodCard
-                key={course.id}
-                course={course}
-                enrollments={enrollmentsMap.get(course.id) ?? []}
-                subjects={subjects}
-                enrollmentsLoading={enrollmentsLoadingSet.has(course.id)}
-                onEdit={(c) => { setEditingCourse(c); setPeriodFormOpen(true); }}
-                onDelete={setDeletingCourse}
-                onAddEnrollment={() => openAddEnrollment(course.id)}
-                onEditEnrollment={(en) => openEditEnrollment(course.id, en)}
-                onDeleteEnrollment={(en) => {
-                  setTargetCourseId(course.id);
-                  setDeletingEnrollment(en);
-                }}
-                onExpand={() => loadEnrollments(course.id)}
-              />
-            ))}
-          </div>
+        {/* 生徒別一覧 */}
+        {schoolId && selectedPeriod && (
+          loading ? (
+            <Loading size="md" />
+          ) : studentRows.length === 0 ? (
+            <div className="text-center py-12 text-[var(--paragraph)]">
+              <p className="mb-4">まだ申込がありません。</p>
+              <Button onClick={() => { setEditingStudent(null); setFormOpen(true); }}>
+                <Plus className="w-4 h-4 mr-1" />
+                最初の生徒を追加
+              </Button>
+            </div>
+          ) : (
+            <div className="border border-[var(--stroke)] rounded-xl overflow-hidden bg-white">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 text-xs text-[var(--paragraph)]">
+                  <tr>
+                    <th className="text-left px-3 py-2 font-medium">生徒</th>
+                    <th className="text-left px-3 py-2 font-medium">学年</th>
+                    <th className="text-left px-3 py-2 font-medium">個別（科目別）</th>
+                    <th className="text-left px-3 py-2 font-medium">集団（科目別）</th>
+                    <th className="px-3 py-2 w-20"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {studentRows.map((r) => {
+                    const isOpen = openStudent === r.student_id;
+                    return (
+                      <FragmentRow
+                        key={r.student_id}
+                        row={r}
+                        isOpen={isOpen}
+                        sched={sched}
+                        schedLoading={schedLoading}
+                        komaSummary={komaSummary}
+                        onToggleSchedule={() => toggleSchedule(r.student_id)}
+                        onEdit={() => { setEditingStudent(r); setFormOpen(true); }}
+                        onDelete={() => setDeletingStudent(r)}
+                      />
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )
         )}
       </div>
 
-      {/* 講習フォームモーダル */}
-      <KoushuPeriodFormModal
-        open={periodFormOpen}
-        onClose={() => setPeriodFormOpen(false)}
-        initialData={editingCourse}
-        onSave={handleSaveCourse}
-      />
-
-      {/* 申し込みフォームモーダル */}
+      {/* 申込フォーム（追加/編集） */}
       <KoushuEnrollmentFormModal
-        open={enrollmentFormOpen}
-        onClose={() => setEnrollmentFormOpen(false)}
+        open={formOpen}
+        onClose={() => { setFormOpen(false); setEditingStudent(null); }}
         schoolId={schoolId}
         subjects={subjects}
-        existingStudentIds={editingEnrollment ? [] : existingStudentIds}
-        initialData={editingEnrollment}
-        period={matchedPeriod}
-        onSave={handleSaveEnrollment}
+        existingStudentIds={editingStudent ? [] : existingStudentIds}
+        lockedStudent={editingStudent?.student ?? null}
+        initialRows={editingStudent ? editInitialRows(editingStudent) : undefined}
+        period={selectedPeriod}
+        onSave={handleSave}
       />
 
-      {/* 講習削除確認 */}
-      {deletingCourse && (
+      {/* 削除確認 */}
+      {deletingStudent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
-            <h3 className="font-bold text-[var(--headline)] mb-2">講習を削除しますか？</h3>
+            <h3 className="font-bold text-[var(--headline)] mb-2">申込を削除しますか？</h3>
             <p className="text-sm text-[var(--paragraph)] mb-4">
-              「{deletingCourse.name}」を削除します。この操作は取り消せません。
-            </p>
-            <div className="flex gap-2 justify-end">
-              <Button variant="secondary" onClick={() => setDeletingCourse(null)}>
-                キャンセル
-              </Button>
-              <Button
-                variant="danger"
-                onClick={handleDeleteCourse}
-              >
-                削除する
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 申し込み削除確認 */}
-      {deletingEnrollment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl p-6 max-w-sm w-full mx-4 shadow-xl">
-            <h3 className="font-bold text-[var(--headline)] mb-2">申し込みを削除しますか？</h3>
-            <p className="text-sm text-[var(--paragraph)] mb-4">
-              {deletingEnrollment.student
-                ? `${deletingEnrollment.student.last_name} ${deletingEnrollment.student.first_name}`
+              {deletingStudent.student
+                ? `${deletingStudent.student.last_name} ${deletingStudent.student.first_name}`
                 : ''}
-              の申し込みを削除します。
+              の講習申込（個別・集団）を削除します。
             </p>
             <div className="flex gap-2 justify-end">
-              <Button variant="secondary" onClick={() => setDeletingEnrollment(null)}>
-                キャンセル
-              </Button>
-              <Button
-                variant="danger"
-                onClick={handleDeleteEnrollment}
-              >
-                削除する
-              </Button>
+              <Button variant="secondary" onClick={() => setDeletingStudent(null)}>キャンセル</Button>
+              <Button variant="danger" onClick={handleDelete}>削除する</Button>
             </div>
           </div>
         </div>
       )}
     </AdminLayout>
+  );
+}
+
+/** 生徒1行（＋通塾日程の展開行） */
+function FragmentRow({
+  row,
+  isOpen,
+  sched,
+  schedLoading,
+  komaSummary,
+  onToggleSchedule,
+  onEdit,
+  onDelete,
+}: {
+  row: StudentRow;
+  isOpen: boolean;
+  sched: StudentSchedule;
+  schedLoading: boolean;
+  komaSummary: (en?: KoushuEnrollment) => string;
+  onToggleSchedule: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <>
+      <tr className="border-t border-gray-100 hover:bg-gray-50/60 transition-colors">
+        <td className="px-3 py-2 font-medium text-[var(--headline)]">
+          <button type="button" onClick={onToggleSchedule} className="inline-flex items-center gap-1 hover:underline" title="通塾日程を表示">
+            {isOpen ? <ChevronDown className="w-3.5 h-3.5 text-gray-400" /> : <ChevronRight className="w-3.5 h-3.5 text-gray-400" />}
+            {row.student ? `${row.student.last_name} ${row.student.first_name}` : '—'}
+          </button>
+        </td>
+        <td className="px-3 py-2 text-[var(--paragraph)]">{row.student ? gradeLabel(row.student.grade) : '—'}</td>
+        <td className="px-3 py-2">
+          <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-info-subtle text-info border border-info/20 mr-1.5">個別</span>
+          <span className="text-[var(--paragraph)]">{komaSummary(row.individual)}</span>
+        </td>
+        <td className="px-3 py-2">
+          <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-accent-ink-subtle text-accent-ink border border-accent-ink/15 mr-1.5">集団</span>
+          <span className="text-[var(--paragraph)]">{komaSummary(row.group)}</span>
+        </td>
+        <td className="px-3 py-2">
+          <div className="flex items-center gap-1 justify-end">
+            <button onClick={onEdit} className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="編集">
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={onDelete} className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded" title="削除">
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </td>
+      </tr>
+      {isOpen && (
+        <tr className="bg-surface/60">
+          <td colSpan={5} className="px-3 py-2">
+            <div className="text-[11px] text-text-body">
+              <span className="font-semibold">通塾日程:</span>{' '}
+              {schedLoading ? (
+                <span className="text-text-muted">読み込み中…</span>
+              ) : sched.length === 0 ? (
+                <span className="text-text-muted">登録なし</span>
+              ) : (
+                <span className="inline-flex flex-wrap gap-1 align-middle">
+                  {sched.map((s, i) => (
+                    <span key={i} className="px-1.5 py-0.5 rounded bg-white border border-border-subtle text-[10px]">
+                      {DOW_LABELS[s.day_of_week]}{s.slot_number}限
+                      <span className="text-text-muted ml-0.5">{s.start_time?.slice(0, 5)}</span>
+                    </span>
+                  ))}
+                </span>
+              )}
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
