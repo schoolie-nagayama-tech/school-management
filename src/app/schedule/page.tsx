@@ -1429,7 +1429,11 @@ export default function SchedulePage() {
         />
 
         {schoolId && (
-          <ScheduleDriftBanner schoolId={schoolId} userId={profile?.id} />
+          <ScheduleDriftBanner
+            schoolId={schoolId}
+            userId={profile?.id}
+            onResynced={refreshEntries}
+          />
         )}
 
         {/* 担当未決定エントリのサマリ：未配置の合計数 + 一括マッチング画面への導線。
