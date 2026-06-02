@@ -1,6 +1,7 @@
 'use client';
 
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface ModalProps {
@@ -28,6 +29,10 @@ export function Modal({
   size = 'md',
   minHeight,
 }: ModalProps) {
+  // ポータル描画はマウント後のみ（SSR/ハイドレーション不一致を避ける）
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -46,9 +51,13 @@ export function Modal({
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
-  return (
+  // document.body 直下へポータル描画する。
+  // 親モーダルのパネル(.modal-panel)は transform を持つため、入れ子モーダルを
+  // パネル内に描画すると fixed の基準が親パネルになり、はみ出し・見切れ・重なりが起きる。
+  // ポータルで body 直下に出すことで、入れ子でもビューポート基準で正しく中央表示される。
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
         className="absolute inset-0 modal-overlay"
@@ -86,6 +95,7 @@ export function Modal({
 
         <div className="px-6 py-6 flex-1 min-h-0 overflow-y-auto">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
