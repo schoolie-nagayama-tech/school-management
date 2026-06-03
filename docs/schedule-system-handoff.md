@@ -445,6 +445,13 @@ node scripts/verify-phase0-migrations.mjs
 - **登録画面** `/schedule/zoukoma`（生徒別 増コマ申込）: 科目×コマ数＋通塾できる枠を登録＝`linked_student_id` 付き form_response を作成/更新（`ZoukomaEnrollmentFormModal`。SubjectInput/SlotTable(available)/StudentSearchInput を再利用）。削除は `archiveResponse`。
 - **RLS**: `form_responses` は authenticated に `check_school_access(school_id)` で ALL 許可 → 管理者の作成/紐付け/アーカイブは通ること確認済み。請求計上は増コマ既存フロー（回答一覧の「計上」）を流用。
 
+### UX整理（2026-06-02）— ツールバー集約＋テスト対策の期間非依存化
+- **モード1本化**：講習/テスト対策の2セレクト→「モード」1セレクト（`<optgroup>` で 通常/講習(期間)/テスト対策）。`ScheduleToolbar` は `selectedKoushu`/`hasTestPrep`/`testPrepActive` ＋ `onKoushuSelect`/`onTestPrepToggle` を受け、内部で `modeValue`('' / `k:<id>` / `t`) を組む。
+- **管理メニュー**：通塾日程・講習管理・追加授業設定の3リンク→「管理▾」ドロップダウン（+一括マッチング）に集約。
+- **テスト対策は期間を意識しない**：`getZoukomaPlacementProgress(schoolId, subjects)` が**全増コマ申込をまとめて**集計（`getFormResponses(formType:'zoukoma')`、時限→時刻は全期間設定をマージ）。座席表は `testPrepActive` のON/OFFのみ。`/schedule/zoukoma` は期間タブ廃止＝全申込一覧（新規は最新期間をテンプレに使用）。`hasZoukomaForm`/`getAllZoukomaResponses` 追加。
+- **二重経路解消**：空きセル追加モーダル(`AddStudentToSlotModal`)の種別から `test_prep` を除外（追加授業/体験/臨時のみ）。テスト対策は必ず申込→落とし込みモード経由。
+- 残UX案：P2=講習/テスト対策の申込画面をタブ統合、P3=配置モードの完全共通化＋グリッド凡例（モック: `docs/mockups/schedule-toolbar-consolidation.html`）。
+
 ## ★ 重要バグ修正：「スケジュールの取得に失敗」
 - 原因：`generateWeeklySchedule` の再生成 INSERT が UNIQUE 制約
   `(school_id, entry_date, time_slot_id, teacher_id, student_id)` 違反
