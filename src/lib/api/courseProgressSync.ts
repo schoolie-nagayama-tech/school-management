@@ -65,8 +65,9 @@ export async function syncCalendarBookingsToProgress(
   let skipped = 0;
   const notFound: string[] = [];
 
+  // 1. イベントからマッチした生徒IDを集約（同一生徒の重複は1件に）
+  const matchedStudentIds = new Set<string>();
   for (const event of calendarEvents) {
-    // イベントのタイトルや説明から生徒名をマッチング
     const text = `${event.summary || ''} ${event.description || ''}`;
     const matched = students.find(
       (s: { id: string; last_name: string; first_name: string }) =>
@@ -75,44 +76,52 @@ export async function syncCalendarBookingsToProgress(
     );
 
     if (!matched) {
-      // 生徒名が見つからない場合は記録してスキップ
       const eventLabel = event.summary || '（タイトルなし）';
-      if (!notFound.includes(eventLabel)) {
-        notFound.push(eventLabel);
-      }
+      if (!notFound.includes(eventLabel)) notFound.push(eventLabel);
       continue;
     }
+    matchedStudentIds.add(matched.id);
+  }
 
-    for (const item of items as Array<{ id: string; name: string }>) {
-      const { data: existing } = await db
-        .from('course_prep_student_progress')
-        .select('id, status')
-        .eq('student_id', matched.id)
-        .eq('item_id', item.id)
-        .maybeSingle();
+  if (matchedStudentIds.size === 0) {
+    return { synced, skipped, notFound };
+  }
 
-      if (existing?.status === 'completed') {
+  const itemList = items as Array<{ id: string; name: string }>;
+  const studentIdList = Array.from(matchedStudentIds);
+  const itemIds = itemList.map((it) => it.id);
+
+  // 2. 既存進捗を一括取得（生徒×項目ごとの select を1クエリにまとめる）
+  const { data: existingRows } = await db
+    .from('course_prep_student_progress')
+    .select('student_id, item_id, status')
+    .in('student_id', studentIdList)
+    .in('item_id', itemIds);
+
+  const statusMap = new Map<string, string>();
+  for (const row of (existingRows || []) as Array<{ student_id: string; item_id: string; status: string }>) {
+    statusMap.set(`${row.student_id}|${row.item_id}`, row.status);
+  }
+
+  // 3. 未完了の (生徒, 項目) のみ完了にするペイロードを構築
+  const payload: Array<{ school_id: string; student_id: string; item_id: string; status: string }> = [];
+  for (const studentId of studentIdList) {
+    for (const item of itemList) {
+      if (statusMap.get(`${studentId}|${item.id}`) === 'completed') {
         skipped++;
         continue;
       }
-
-      if (existing) {
-        await db
-          .from('course_prep_student_progress')
-          .update({ status: 'completed', updated_at: new Date().toISOString() })
-          .eq('id', existing.id);
-      } else {
-        await db
-          .from('course_prep_student_progress')
-          .insert({
-            school_id: schoolId,
-            student_id: matched.id,
-            item_id: item.id,
-            status: 'completed',
-          });
-      }
+      payload.push({ school_id: schoolId, student_id: studentId, item_id: item.id, status: 'completed' });
       synced++;
     }
+  }
+
+  // 4. 1回の upsert でまとめて完了登録（(student_id, item_id) で衝突解決）
+  if (payload.length > 0) {
+    const { error } = await db
+      .from('course_prep_student_progress')
+      .upsert(payload, { onConflict: 'student_id,item_id' });
+    if (error) throw new Error(`進捗の同期に失敗: ${error.message}`);
   }
 
   return { synced, skipped, notFound };

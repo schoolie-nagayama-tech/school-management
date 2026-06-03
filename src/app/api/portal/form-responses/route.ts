@@ -340,68 +340,71 @@ async function autoSyncFormToBilling(
 
   if (!activePeriods || activePeriods.length === 0) return;
 
-  for (const period of activePeriods) {
-    // 3. この期間で linked_form_type が一致する請求項目を検索
-    const { data: billingItems } = await supabaseAdmin
-      .from('billing_items')
-      .select('id')
-      .eq('billing_period_id', period.id)
-      .eq('school_id', schoolId)
-      .eq('linked_form_type', formType);
+  // 3. 全期間の紐付け項目を1クエリで取得
+  const periodIds = activePeriods.map((p) => p.id);
+  const { data: linkedItems } = await supabaseAdmin
+    .from('billing_items')
+    .select('id, billing_period_id')
+    .in('billing_period_id', periodIds)
+    .eq('school_id', schoolId)
+    .eq('linked_form_type', formType);
 
-    if (!billingItems || billingItems.length === 0) continue;
+  if (!linkedItems || linkedItems.length === 0) return;
 
-    // 4. 期間内のこの生徒の回答数をカウント
-    const periodEndPlusOne = (() => {
+  // 4. 回答件数は「期間ごとに同一」なので期間単位で1回だけ並列集計
+  const countByPeriod = new Map<string, number>();
+  await Promise.all(
+    activePeriods.map(async (period) => {
       const d = new Date(period.end_date);
       d.setDate(d.getDate() + 1);
-      return d.toISOString().split('T')[0];
-    })();
+      const periodEndPlusOne = d.toISOString().split('T')[0];
 
-    const { count, error: countError } = await supabaseAdmin
-      .from('form_responses')
-      .select('id', { count: 'exact', head: true })
-      .eq('form_type', formType)
-      .eq('linked_student_id', studentId)
-      .eq('school_id', schoolId)
-      .gte('created_at', `${period.start_date}T00:00:00`)
-      .lt('created_at', `${periodEndPlusOne}T00:00:00`);
+      const { count, error: countError } = await supabaseAdmin
+        .from('form_responses')
+        .select('id', { count: 'exact', head: true })
+        .eq('form_type', formType)
+        .eq('linked_student_id', studentId)
+        .eq('school_id', schoolId)
+        .gte('created_at', `${period.start_date}T00:00:00`)
+        .lt('created_at', `${periodEndPlusOne}T00:00:00`);
 
-    if (countError) {
-      console.warn(`[auto-billing] 回答数カウントに失敗: ${countError.message}`);
-      continue;
-    }
-
-    const responseCount = count || 0;
-    if (responseCount <= 0) continue;
-
-    // 5. 各請求項目に対して student_billings を upsert
-    for (const item of billingItems) {
-      const { data: existing } = await supabaseAdmin
-        .from('student_billings')
-        .select('id')
-        .eq('student_id', studentId)
-        .eq('billing_item_id', item.id)
-        .maybeSingle();
-
-      if (existing) {
-        await supabaseAdmin
-          .from('student_billings')
-          .update({ value_number: responseCount, updated_at: new Date().toISOString() })
-          .eq('id', existing.id);
-      } else {
-        await supabaseAdmin
-          .from('student_billings')
-          .insert({
-            school_id: schoolId,
-            student_id: studentId,
-            billing_item_id: item.id,
-            is_billed: false,
-            value_number: responseCount,
-          });
+      if (countError) {
+        console.warn(`[auto-billing] 回答数カウントに失敗: ${countError.message}`);
+        return;
       }
-    }
+      countByPeriod.set(period.id, count || 0);
+    })
+  );
 
-    console.log(`[auto-billing] 請求自動反映: student=${studentId}, form_type=${formType}, count=${responseCount}`);
+  // 5. 回答数が1件以上ある項目だけを対象に、既存 is_billed を保持してバルク upsert
+  const targetItems = linkedItems.filter((it) => (countByPeriod.get(it.billing_period_id) || 0) > 0);
+  if (targetItems.length === 0) return;
+
+  const itemIds = targetItems.map((it) => it.id);
+  const { data: existingBillings } = await supabaseAdmin
+    .from('student_billings')
+    .select('billing_item_id, is_billed')
+    .eq('student_id', studentId)
+    .in('billing_item_id', itemIds);
+  const billedMap = new Map<string, boolean>(
+    (existingBillings || []).map((r: { billing_item_id: string; is_billed: boolean }) => [r.billing_item_id, r.is_billed])
+  );
+
+  const payload = targetItems.map((item) => ({
+    school_id: schoolId,
+    student_id: studentId,
+    billing_item_id: item.id,
+    is_billed: billedMap.get(item.id) ?? false,
+    value_number: countByPeriod.get(item.billing_period_id) || 0,
+  }));
+
+  const { error: upsertError } = await supabaseAdmin
+    .from('student_billings')
+    .upsert(payload, { onConflict: 'student_id,billing_item_id' });
+  if (upsertError) {
+    console.warn(`[auto-billing] 請求自動反映に失敗: ${upsertError.message}`);
+    return;
   }
+
+  console.log(`[auto-billing] 請求自動反映: student=${studentId}, form_type=${formType}, items=${payload.length}`);
 }

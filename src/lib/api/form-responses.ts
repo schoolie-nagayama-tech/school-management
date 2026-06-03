@@ -339,21 +339,22 @@ export async function linkResponseToStudent(
       .gte('end_date', responseDate);
 
     if (activePeriods && activePeriods.length > 0) {
-      for (const period of activePeriods) {
-        const { data: linkedItems } = await supabase
-          .from('billing_items')
-          .select('id')
-          .eq('billing_period_id', period.id)
-          .eq('linked_form_type', response.form_type);
+      // 1. 全期間の紐付け項目を1クエリで取得
+      const periodIds = activePeriods.map((p) => p.id);
+      const { data: linkedItems } = await supabase
+        .from('billing_items')
+        .select('id, billing_period_id')
+        .in('billing_period_id', periodIds)
+        .eq('linked_form_type', response.form_type);
 
-        if (linkedItems) {
-          for (const item of linkedItems) {
-            // Count total responses for this student+form_type within billing period range
-            const periodEndPlusOne = (() => {
-              const d = new Date(period.end_date);
-              d.setDate(d.getDate() + 1);
-              return d.toISOString().split('T')[0];
-            })();
+      if (linkedItems && linkedItems.length > 0) {
+        // 2. 回答件数は「期間ごとに同一」（項目には依存しない）ため期間単位で1回だけ集計
+        const countByPeriod = new Map<string, number>();
+        await Promise.all(
+          activePeriods.map(async (period) => {
+            const d = new Date(period.end_date);
+            d.setDate(d.getDate() + 1);
+            const periodEndPlusOne = d.toISOString().split('T')[0];
 
             const { count } = await supabase
               .from('form_responses')
@@ -364,32 +365,32 @@ export async function linkResponseToStudent(
               .gte('created_at', `${period.start_date}T00:00:00`)
               .lt('created_at', `${periodEndPlusOne}T00:00:00`);
 
-            // Upsert billing
-            const { data: existing } = await supabase
-              .from('student_billings')
-              .select('id')
-              .eq('student_id', studentId)
-              .eq('billing_item_id', item.id)
-              .maybeSingle();
+            countByPeriod.set(period.id, count || 1);
+          })
+        );
 
-            if (existing) {
-              await supabase
-                .from('student_billings')
-                .update({ value_number: count || 1 })
-                .eq('id', existing.id);
-            } else {
-              await supabase
-                .from('student_billings')
-                .insert({
-                  school_id: response.school_id,
-                  student_id: studentId,
-                  billing_item_id: item.id,
-                  is_billed: false,
-                  value_number: count || 1,
-                });
-            }
-          }
-        }
+        // 3. 既存レコードの is_billed を一括取得（upsert で誤って false に戻さないため保持）
+        const itemIds = linkedItems.map((it) => it.id);
+        const { data: existingBillings } = await supabase
+          .from('student_billings')
+          .select('billing_item_id, is_billed')
+          .eq('student_id', studentId)
+          .in('billing_item_id', itemIds);
+        const billedMap = new Map<string, boolean>(
+          (existingBillings || []).map((r) => [r.billing_item_id, r.is_billed])
+        );
+
+        // 4. 1回の upsert でまとめて反映
+        const payload = linkedItems.map((item) => ({
+          school_id: response.school_id,
+          student_id: studentId,
+          billing_item_id: item.id,
+          is_billed: billedMap.get(item.id) ?? false,
+          value_number: countByPeriod.get(item.billing_period_id) || 1,
+        }));
+        await supabase
+          .from('student_billings')
+          .upsert(payload, { onConflict: 'student_id,billing_item_id' });
       }
     }
   } catch (billingErr) {

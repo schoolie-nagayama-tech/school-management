@@ -74,15 +74,22 @@ async function fetchSubjectProposals(
         // PostgREST のデフォルト 1000 行上限の余裕内に収める。
         // .range() は ORDER BY 無しだとページ間重複が起きうるので使わない。id で dedup。
         const BATCH = 15;
+        const batches: string[][] = [];
         for (let i = 0; i < proposalIds.length; i += BATCH) {
-          const batch = proposalIds.slice(i, i + BATCH);
-          const { data: units } = await supabaseAdmin
-            .from('seasonal_proposal_units')
-            .select('id, proposal_id, koma_count, group_id')
-            .in('proposal_id', batch)
-            .gt('koma_count', 0);
-          const page = (units ?? []) as UnitRow[];
-          for (const u of page) {
+          batches.push(proposalIds.slice(i, i + BATCH));
+        }
+        // バッチ同士は独立なので逐次ではなく並列実行（往復レイテンシを削減）
+        const batchResults = await Promise.all(
+          batches.map((batch) =>
+            supabaseAdmin
+              .from('seasonal_proposal_units')
+              .select('id, proposal_id, koma_count, group_id')
+              .in('proposal_id', batch)
+              .gt('koma_count', 0)
+          )
+        );
+        for (const { data: units } of batchResults) {
+          for (const u of (units ?? []) as UnitRow[]) {
             if (seenUnitIds.has(u.id)) continue;
             seenUnitIds.add(u.id);
             allUnits.push(u);

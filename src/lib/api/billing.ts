@@ -159,32 +159,30 @@ export async function createBillingItem(
     ? schoolId
     : [schoolId || getDefaultSchoolId()];
 
-  // 各教室ごとに最大 sort_order を取得してデータを作成
-  const insertData: BillingItemInsert[] = [];
-  for (const sid of targetSchoolIds) {
-    const { data: existingItems } = await supabase
-      .from('billing_items')
-      .select('sort_order')
-      .eq('billing_period_id', item.billing_period_id)
-      .eq('school_id', sid)
-      .order('sort_order', { ascending: false })
-      .limit(1);
+  // 全教室の既存 sort_order を1クエリで取得し、教室ごとの最大値をメモリで算出
+  // （教室ごとに SELECT していた N+1 を解消）
+  const { data: existingItems } = await supabase
+    .from('billing_items')
+    .select('school_id, sort_order')
+    .eq('billing_period_id', item.billing_period_id)
+    .in('school_id', targetSchoolIds);
 
-    const maxSortOrder = existingItems && existingItems.length > 0
-      ? existingItems[0].sort_order
-      : -1;
-
-    insertData.push({
-      school_id: sid,
-      billing_period_id: item.billing_period_id,
-      name: item.name,
-      source_type: (item.source_type as BillingItem['source_type']) || 'free',
-      value_type: (item.value_type as BillingItem['value_type']) || 'check',
-      linked_form_type: item.linked_form_type ?? null,
-      sort_order: maxSortOrder + 1,
-      is_active: true,
-    });
+  const maxSortBySchool = new Map<string, number>();
+  for (const row of existingItems || []) {
+    const current = maxSortBySchool.get(row.school_id) ?? -1;
+    if (row.sort_order > current) maxSortBySchool.set(row.school_id, row.sort_order);
   }
+
+  const insertData: BillingItemInsert[] = targetSchoolIds.map((sid) => ({
+    school_id: sid,
+    billing_period_id: item.billing_period_id,
+    name: item.name,
+    source_type: (item.source_type as BillingItem['source_type']) || 'free',
+    value_type: (item.value_type as BillingItem['value_type']) || 'check',
+    linked_form_type: item.linked_form_type ?? null,
+    sort_order: (maxSortBySchool.get(sid) ?? -1) + 1,
+    is_active: true,
+  }));
 
   const { data, error } = await supabase
     .from('billing_items')
@@ -402,6 +400,55 @@ export async function toggleStudentBilling(
  * 2. 通塾日程(regular_patterns)からその曜日のコマ数を生徒ごとに計算
  * 3. student_billings にコマ数をupsert
  */
+/**
+ * 全生徒分の5週目コマ数をバルクupsertする。
+ * 1件ずつ select→update/insert していた N+1 を、
+ * 「既存レコード一括取得 → 1回の upsert」に置き換えて高速化する。
+ *
+ * 注意: upsert は指定カラムを全て上書きするため、既存行の is_billed を
+ * 既存値で維持する（請求済みフラグを誤って false に戻さないため）。
+ */
+async function bulkUpsertFifthWeekValues(
+  students: Array<{ id: string; school_id: string }>,
+  billingItemId: string,
+  getQuantity: (studentId: string) => number
+): Promise<number> {
+  if (students.length === 0) return 0;
+
+  // 既存レコードの is_billed を一括取得（この billing_item に紐づく行のみ）
+  const { data: existingRows, error: fetchError } = await supabase
+    .from('student_billings')
+    .select('student_id, is_billed')
+    .eq('billing_item_id', billingItemId);
+  if (fetchError) throw new Error(`既存請求の取得に失敗: ${fetchError.message}`);
+
+  const billedMap = new Map<string, boolean>();
+  for (const row of existingRows || []) {
+    billedMap.set(row.student_id, row.is_billed);
+  }
+
+  const payload = students.map((s) => ({
+    school_id: s.school_id,
+    student_id: s.id,
+    billing_item_id: billingItemId,
+    is_billed: billedMap.get(s.id) ?? false, // 既存の請求済みフラグを保持／新規は false
+    value_number: getQuantity(s.id),
+  }));
+
+  // 大量行でも安全なよう一定件数ごとに分割して upsert
+  const CHUNK = 500;
+  for (let i = 0; i < payload.length; i += CHUNK) {
+    const { error } = await supabase
+      .from('student_billings')
+      .upsert(payload.slice(i, i + CHUNK), {
+        onConflict: 'student_id,billing_item_id',
+      });
+    if (error) throw new Error(`請求コマ数の更新に失敗: ${error.message}`);
+  }
+
+  return students.length;
+}
+
 export async function autoFillFifthWeekBilling(
   billingItemId: string,
   periodStartDate: string,  // 'YYYY-MM-DD' format
@@ -428,33 +475,8 @@ export async function autoFillFifthWeekBilling(
     if (studentsError) throw new Error(`生徒の取得に失敗: ${studentsError.message}`);
     if (!students || students.length === 0) return { updated: 0, skipped: 0 };
 
-    let updated = 0;
-    for (const student of students) {
-      const { data: existing } = await supabase
-        .from('student_billings')
-        .select('id')
-        .eq('student_id', student.id)
-        .eq('billing_item_id', billingItemId)
-        .maybeSingle();
-
-      if (existing) {
-        await supabase
-          .from('student_billings')
-          .update({ value_number: 0, updated_at: new Date().toISOString() })
-          .eq('id', existing.id);
-      } else {
-        await supabase
-          .from('student_billings')
-          .insert({
-            school_id: student.school_id,
-            student_id: student.id,
-            billing_item_id: billingItemId,
-            is_billed: false,
-            value_number: 0,
-          });
-      }
-      updated++;
-    }
+    // 5週目がない月は全生徒0コマをバルクupsert
+    const updated = await bulkUpsertFifthWeekValues(students, billingItemId, () => 0);
     return { updated, skipped: 0 };
   }
 
@@ -485,43 +507,21 @@ export async function autoFillFifthWeekBilling(
   // 5. Calculate slots per student
   const slotMap = calcFifthWeekSlots(patterns || [], fifthWeekDows);
 
-  // 6. Upsert billing records (全生徒に対して)
-  let updated = 0;
-  const skipped = 0;
-
-  for (const student of allStudents) {
-    // 対象月初時点で退塾済みの生徒は0コマ
+  // 6. 全生徒分のコマ数を算出してバルクupsert
+  //    対象月初時点で退塾済み / プログラミング生は0コマ
+  const quantityFor = (student: { id: string; is_programming: boolean | null; withdrawal_date: string | null }) => {
     const withdrawnByMonth = student.withdrawal_date && student.withdrawal_date < targetMonthStart;
-    const quantity = withdrawnByMonth ? 0 : (student.is_programming ? 0 : (slotMap.get(student.id) || 0));
+    return withdrawnByMonth ? 0 : student.is_programming ? 0 : slotMap.get(student.id) || 0;
+  };
+  const quantityMap = new Map(allStudents.map((s) => [s.id, quantityFor(s)]));
 
-    // Check if record exists
-    const { data: existing } = await supabase
-      .from('student_billings')
-      .select('id')
-      .eq('student_id', student.id)
-      .eq('billing_item_id', billingItemId)
-      .maybeSingle();
+  const updated = await bulkUpsertFifthWeekValues(
+    allStudents,
+    billingItemId,
+    (studentId) => quantityMap.get(studentId) || 0
+  );
 
-    if (existing) {
-      await supabase
-        .from('student_billings')
-        .update({ value_number: quantity, updated_at: new Date().toISOString() })
-        .eq('id', existing.id);
-    } else {
-      await supabase
-        .from('student_billings')
-        .insert({
-          school_id: student.school_id,
-          student_id: student.id,
-          billing_item_id: billingItemId,
-          is_billed: false,
-          value_number: quantity,
-        });
-    }
-    updated++;
-  }
-
-  return { updated, skipped };
+  return { updated, skipped: 0 };
 }
 
 // ============================================
@@ -570,41 +570,51 @@ export async function syncApplicationToBilling(
   if (appError) throw new Error(`申込状況の取得に失敗: ${appError.message}`);
   if (!applications) return { synced: 0, total: 0 };
 
-  // 3. Filter to only completed applications
-  const checkedApps = applications.filter(app =>
-    app.status === 'completed'
-  );
+  // 3. Filter to only completed applications（生徒重複は1件に集約）
+  const schoolByStudent = new Map<string, string>();
+  for (const app of applications) {
+    if (app.status === 'completed') schoolByStudent.set(app.student_id, app.school_id);
+  }
+  const checkedStudentIds = Array.from(schoolByStudent.keys());
+  if (checkedStudentIds.length === 0) return { synced: 0, total: 0 };
 
-  // 4. Upsert billing records
-  let synced = 0;
-  for (const app of checkedApps) {
-    const { data: existing } = await supabase
+  // 4. 既存レコードを一括取得し「更新対象」と「新規作成対象」に振り分け
+  //    （1件ずつ select→update/insert していた N+1 を解消）
+  const { data: existingRows, error: existingError } = await supabase
+    .from('student_billings')
+    .select('student_id')
+    .eq('billing_item_id', billingItemId)
+    .in('student_id', checkedStudentIds);
+  if (existingError) throw new Error(`既存請求の取得に失敗: ${existingError.message}`);
+
+  const existingIds = new Set((existingRows || []).map((r) => r.student_id));
+  const newStudentIds = checkedStudentIds.filter((id) => !existingIds.has(id));
+
+  // 5. 既存はまとめて is_billed=true に更新（他フィールドは保持）
+  if (existingIds.size > 0) {
+    const { error: updateError } = await supabase
       .from('student_billings')
-      .select('id')
-      .eq('student_id', app.student_id)
+      .update({ is_billed: true })
       .eq('billing_item_id', billingItemId)
-      .maybeSingle();
-
-    if (existing) {
-      await supabase
-        .from('student_billings')
-        .update({ is_billed: true })
-        .eq('id', existing.id);
-    } else {
-      await supabase
-        .from('student_billings')
-        .insert({
-          school_id: app.school_id,
-          student_id: app.student_id,
-          billing_item_id: billingItemId,
-          is_billed: true,
-          quantity: null,
-        });
-    }
-    synced++;
+      .in('student_id', Array.from(existingIds));
+    if (updateError) throw new Error(`請求の更新に失敗: ${updateError.message}`);
   }
 
-  return { synced, total: checkedApps.length };
+  // 6. 新規はまとめて挿入
+  if (newStudentIds.length > 0) {
+    const { error: insertError } = await supabase.from('student_billings').insert(
+      newStudentIds.map((studentId) => ({
+        school_id: schoolByStudent.get(studentId)!,
+        student_id: studentId,
+        billing_item_id: billingItemId,
+        is_billed: true,
+        quantity: null,
+      }))
+    );
+    if (insertError) throw new Error(`請求の作成に失敗: ${insertError.message}`);
+  }
+
+  return { synced: checkedStudentIds.length, total: checkedStudentIds.length };
 }
 
 /**

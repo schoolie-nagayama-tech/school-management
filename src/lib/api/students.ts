@@ -326,16 +326,32 @@ export async function searchStudents(
   query: string,
   options?: { excludeIds?: string[]; limit?: number }
 ): Promise<(Student & { subjects: Subject[] })[]> {
-  const all = await getStudents(query.trim() || undefined, [schoolId]);
-  let list = all.filter((s) => s.status === 'active');
+  // active 絞り込み・除外ID・件数制限を全て DB 側で適用する。
+  // 旧実装は全生徒を取得してから JS で filter/slice していたため、
+  // 大規模教室では数百件取得→数件返却という無駄が発生していた。
+  let q = buildStudentsBaseQuery(
+    query.trim() || undefined,
+    [schoolId],
+    { activeOnly: true },
+    STUDENT_LIST_COLUMNS
+  );
+
   if (options?.excludeIds?.length) {
-    const set = new Set(options.excludeIds);
-    list = list.filter((s) => !set.has(s.id));
+    // 自前のUUIDのみ。PostgREST の not-in はリストを (a,b,c) 形式で渡す
+    q = q.not('id', 'in', `(${options.excludeIds.join(',')})`);
   }
   if (options?.limit && options.limit > 0) {
-    list = list.slice(0, options.limit);
+    q = q.limit(options.limit);
   }
-  return list;
+
+  const { data: students, error } = await q;
+  if (error) {
+    console.error('Error searching students:', error);
+    throw new Error('生徒の検索に失敗しました');
+  }
+  if (!students || students.length === 0) return [];
+
+  return enrichStudentsWithRelations(students as Student[]);
 }
 
 // 生徒を1件取得（school_idとdeleted_atで絞り込み）
