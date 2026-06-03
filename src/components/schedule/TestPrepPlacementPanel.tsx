@@ -25,8 +25,6 @@ import { CheckCircle, Target, X } from 'lucide-react';
 
 interface Props {
   schoolId: string;
-  periodKey: string;
-  label: string;
   subjects: Subject[];
   /** 「配置」クリック時：親が配置モードに入る */
   onStartPlacement?: (
@@ -54,8 +52,6 @@ function dowLabel(date: string): string {
 
 export function TestPrepPlacementPanel({
   schoolId,
-  periodKey,
-  label,
   subjects,
   onStartPlacement,
   placingStudentId,
@@ -70,7 +66,7 @@ export function TestPrepPlacementPanel({
   const load = useCallback(async () => {
     setIsLoading(true);
     try {
-      const map = await getZoukomaPlacementProgress(schoolId, periodKey, subjects);
+      const map = await getZoukomaPlacementProgress(schoolId, subjects);
       const list = Array.from(map.values());
       // 残コマ多い順 → 申込多い順
       list.sort((a, b) => (b.enrolled - b.placed) - (a.enrolled - a.placed) || b.enrolled - a.enrolled);
@@ -81,7 +77,7 @@ export function TestPrepPlacementPanel({
     } finally {
       setIsLoading(false);
     }
-  }, [schoolId, periodKey, subjects]);
+  }, [schoolId, subjects]);
 
   useEffect(() => {
     load();
@@ -105,7 +101,7 @@ export function TestPrepPlacementPanel({
       <CardContent className="p-3">
         <div className="flex items-center gap-2 mb-2">
           <Target className="w-4 h-4 text-warning" />
-          <span className="font-semibold text-sm">追加授業（テスト対策）: {label}</span>
+          <span className="font-semibold text-sm">追加授業（テスト対策）</span>
           <span className="text-xs text-text-muted ml-auto">
             {totalPlaced} / {totalEnrolled} コマ
             {totalEnrolled > 0 && ` (${Math.round((totalPlaced / totalEnrolled) * 100)}%)`}

@@ -27,9 +27,10 @@ import { DAY_OF_WEEK_LABELS } from '@/types/schedule';
  * regular=臨時/振替の単発、それ以外は追加授業（テスト対策/追加授業/体験）。
  * いずれも通塾日程を持たない単発コマ（regular_pattern_id=NULL）として登録する。
  */
+// テスト対策は「テスト対策モード（増コマ申込の落とし込み）」に一本化したため、
+// ここ（空きセルからの単発追加）には出さない（二重経路の解消）。
 const SINGLE_KIND_OPTIONS: { value: ScheduleEntryKind; label: string }[] = [
   { value: 'additional', label: '追加授業' },
-  { value: 'test_prep', label: 'テスト対策' },
   { value: 'trial', label: '体験授業' },
   { value: 'regular', label: '通常（臨時・振替）' },
 ];

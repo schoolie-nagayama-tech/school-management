@@ -95,8 +95,8 @@ import {
 } from '@/lib/api/seasonalCourses';
 import { getKoushuPeriods, type KoushuPeriodInfo } from '@/lib/api/koushu-period';
 import {
-  getZoukomaPlacementPeriods,
-  type ZoukomaPlacementPeriod,
+  hasZoukomaForm,
+  getZoukomaPlacementProgress,
   type ZoukomaAvailableSlot,
 } from '@/lib/api/zoukoma-placement';
 import type { ScheduleMatchProposal } from '@/types/schedule-match';
@@ -245,9 +245,9 @@ export default function SchedulePage() {
 
   // ---- 追加授業（テスト対策）モード ----
   // 増コマ(zoukoma)フォーム回答を正典に、座席表へ test_prep コマを落とし込む。
-  // 講習モードと排他（どちらか一方のみアクティブ）。
-  const [zoukomaList, setZoukomaList] = useState<ZoukomaPlacementPeriod[]>([]);
-  const [selectedZoukoma, setSelectedZoukoma] = useState<ZoukomaPlacementPeriod | null>(null);
+  // 「期間」は意識せず、全申込を1つの一覧として扱う。講習モードと排他。
+  const [hasTestPrep, setHasTestPrep] = useState(false); // 増コマフォームが設定済みか（モード表示の判定）
+  const [testPrepActive, setTestPrepActive] = useState(false); // テスト対策モードON/OFF
   // 配置中の生徒・科目と、その生徒の通塾可能枠（座席表セル強調用）
   const [placingTestPrep, setPlacingTestPrep] = useState<{
     studentId: string;
@@ -449,10 +449,10 @@ export default function SchedulePage() {
     getKoushuPeriods(schoolId).then(setKoushuList).catch(() => setKoushuList([]));
   }, [schoolId]);
 
-  // 追加授業（テスト対策）の増コマ期間リストをロード（schoolId 変更時）
+  // 追加授業（テスト対策）モードを出すか：増コマフォームが設定済みかで判定（schoolId 変更時）
   useEffect(() => {
-    if (!schoolId) { setZoukomaList([]); return; }
-    getZoukomaPlacementPeriods(schoolId).then(setZoukomaList).catch(() => setZoukomaList([]));
+    if (!schoolId) { setHasTestPrep(false); return; }
+    hasZoukomaForm(schoolId).then(setHasTestPrep).catch(() => setHasTestPrep(false));
   }, [schoolId]);
 
   // 授業生徒数設定をロード（schoolId 変更時）。失敗・未設定はデフォルト値で動かす。
@@ -469,7 +469,7 @@ export default function SchedulePage() {
     setSelectedKoushu(period);
     // 講習と追加授業（テスト対策）は排他。講習を選んだら追加授業モードを解除。
     if (period) {
-      setSelectedZoukoma(null);
+      setTestPrepActive(false);
       setPlacingTestPrep(null);
     }
     if (!period) {
@@ -964,33 +964,31 @@ export default function SchedulePage() {
 
   // ===== 追加授業（テスト対策）モード =====
 
-  // 追加授業（増コマ）期間を選択。講習モードと排他。最初の通塾可能日へジャンプ。
-  const handleZoukomaSelect = useCallback(async (period: ZoukomaPlacementPeriod | null) => {
-    setSelectedZoukoma(period);
+  // 追加授業（テスト対策）モードのON/OFF。講習モードと排他。最初の通塾可能日へジャンプ。
+  const handleTestPrepToggle = useCallback(async (active: boolean) => {
+    setTestPrepActive(active);
     setPlacingTestPrep(null);
-    if (!period) return;
+    if (!active) return;
     // 講習モードは解除
     setSelectedKoushu(null);
     setKoushuEnrollments(new Map());
     setKoushuScheduledCounts(new Map());
     setKoushuDraftProposals([]);
-    // 申込の最初の通塾可能日へジャンプ（増コマ枠は近接日なので、今日が枠より前なら最初の枠週へ）
+    // 申込（全期間）の最初の通塾可能日へジャンプ（今日が枠より前なら最初の枠週へ）
     try {
-      const { getZoukomaPlacementProgress } = await import('@/lib/api/zoukoma-placement');
-      const map = await getZoukomaPlacementProgress(period.school_id, period.period_key, masterSubjects);
+      const map = await getZoukomaPlacementProgress(schoolId, masterSubjects);
       const dates: string[] = [];
       Array.from(map.values()).forEach((r) => r.availableSlots.forEach((s) => dates.push(s.date)));
       if (dates.length > 0) {
         const todayJst = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Tokyo' });
         dates.sort();
-        // 今日以降の最初の枠、無ければ最古の枠の週へ
         const jump = dates.find((d) => d >= todayJst) ?? dates[0];
         setWeekStart(getWeekStart(new Date(jump + 'T12:00:00')));
       }
     } catch {
       /* ジャンプ失敗は致命的でない */
     }
-  }, [masterSubjects]);
+  }, [schoolId, masterSubjects]);
 
   // 配置モード開始：生徒の通塾可能枠を座席表コマ(time_slot)に対応付けて強調用セットを作る。
   const handleStartTestPrepPlacement = useCallback(
@@ -1583,13 +1581,13 @@ export default function SchedulePage() {
           visibleDaysOfWeek={visibleDaysOfWeek}
           koushuList={koushuList}
           selectedKoushu={selectedKoushu}
-          zoukomaList={zoukomaList}
-          selectedZoukoma={selectedZoukoma}
+          hasTestPrep={hasTestPrep}
+          testPrepActive={testPrepActive}
           onWeekChange={setWeekStart}
           onSettingsOpen={() => setScheduleSettingsOpen(true)}
           onVisibleDaysChange={setVisibleDaysPersist}
           onKoushuSelect={handleKoushuSelect}
-          onZoukomaSelect={handleZoukomaSelect}
+          onTestPrepToggle={handleTestPrepToggle}
         />
 
         {schoolId && (
@@ -1659,13 +1657,11 @@ export default function SchedulePage() {
           />
         )}
 
-        {/* 追加授業（テスト対策）選択中：増コマ申込の配置パネルを上部に表示。
+        {/* 追加授業（テスト対策）モード：増コマ申込（全期間まとめて）の配置パネルを上部に表示。
             生徒の通塾できる枠（増コマフォーム由来）をクリックで test_prep コマを落とし込む。 */}
-        {selectedZoukoma && (
+        {testPrepActive && (
           <TestPrepPlacementPanel
             schoolId={schoolId ?? ''}
-            periodKey={selectedZoukoma.period_key}
-            label={selectedZoukoma.label}
             subjects={masterSubjects}
             onStartPlacement={handleStartTestPrepPlacement}
             placingStudentId={placingTestPrep?.studentId ?? null}
@@ -1673,7 +1669,7 @@ export default function SchedulePage() {
             refreshKey={zoukomaPanelRefreshKey}
             onClose={() => {
               setPlacingTestPrep(null);
-              handleZoukomaSelect(null);
+              handleTestPrepToggle(false);
             }}
           />
         )}

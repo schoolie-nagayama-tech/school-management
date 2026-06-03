@@ -293,6 +293,20 @@ export async function getZoukomaResponses(
 }
 
 /**
+ * 増コマ申込回答を「全期間まとめて」取得（生徒別 登録画面・テスト対策モード用）。
+ * 期間を意識しない一覧表示のために form_period で絞らずに取得する。
+ */
+export async function getAllZoukomaResponses(
+  schoolId: string | string[]
+): Promise<ZoukomaResponse[]> {
+  const responses = await getFormResponses(schoolId, { formType: 'zoukoma' });
+  return responses.map((r) => ({
+    ...r,
+    response_data: r.response_data as unknown as ZoukomaResponseData,
+  })) as ZoukomaResponse[];
+}
+
+/**
  * 増コマ申込集計データを取得
  */
 export async function getZoukomaStats(

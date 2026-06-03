@@ -20,19 +20,13 @@
  */
 
 import { supabase } from '@/lib/supabase';
-import { getZoukomaPeriods, getZoukomaResponses, getZoukomaPeriodByKey } from './zoukoma';
+import { getZoukomaPeriods } from './zoukoma';
+import { getFormResponses } from './form-responses';
 import type { Subject } from '@/types/database';
+import type { ZoukomaResponseData } from '@/types/forms/zoukoma';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
-
-export interface ZoukomaPlacementPeriod {
-  /** form_periods.id */
-  id: string;
-  school_id: string;
-  period_key: string;
-  label: string;
-}
 
 export interface ZoukomaAvailableSlot {
   /** YYYY-MM-DD */
@@ -61,40 +55,40 @@ export interface ZoukomaPlacementRow {
   student?: { id: string; last_name: string; first_name: string; grade: number };
 }
 
-/** 学校の増コマ申込期間（座席表ツールバーの「追加授業」セレクト用） */
-export async function getZoukomaPlacementPeriods(
-  schoolId: string
-): Promise<ZoukomaPlacementPeriod[]> {
+/** 学校に増コマ申込フォームの期間が設定されているか（テスト対策モードを出すかの判定用） */
+export async function hasZoukomaForm(schoolId: string): Promise<boolean> {
   const periods = await getZoukomaPeriods(schoolId);
-  return periods.map((p) => ({
-    id: p.id,
-    school_id: p.school_id,
-    period_key: p.period_key,
-    label: p.title?.trim() ? `${p.title}（増コマ）` : `${p.period_key} 増コマ`,
-  }));
+  return periods.length > 0;
 }
 
 /**
- * 期間(period_key)のテスト対策配置進捗を生徒別・科目別に集計する。
+ * テスト対策（増コマ）の配置進捗を生徒別・科目別に集計する。
+ * **期間は意識しない**：学校の増コマ申込（全期間）をまとめて1つの一覧として返す。
  * 戻り値: Map<student_id, ZoukomaPlacementRow>
  */
 export async function getZoukomaPlacementProgress(
   schoolId: string,
-  periodKey: string,
   subjects: Subject[]
 ): Promise<Map<string, ZoukomaPlacementRow>> {
-  const period = await getZoukomaPeriodByKey(schoolId, periodKey);
-  // 時限コード→開始時刻 のマップ（フォーム独自時限）
+  // 時限コード→開始時刻 のマップ（フォーム独自時限）。全期間の設定をマージ（時刻は通常共通）。
+  const periods = await getZoukomaPeriods(schoolId);
   const startTimeByCode = new Map<string, string>();
-  for (const pc of period?.settings?.schedule?.periods ?? []) {
-    if (pc?.code != null) startTimeByCode.set(String(pc.code), pc.start_time);
+  for (const p of periods) {
+    for (const pc of p.settings?.schedule?.periods ?? []) {
+      if (pc?.code != null && !startTimeByCode.has(String(pc.code))) {
+        startTimeByCode.set(String(pc.code), pc.start_time);
+      }
+    }
   }
   // 科目名→マスタ科目
   const subjectByName = new Map(subjects.map((s) => [s.name, s]));
 
-  // 紐付け済みの回答だけ対象（linked_student_id が座席表の生徒と一致する）
-  const responses = await getZoukomaResponses(schoolId, periodKey);
-  const linked = responses.filter((r) => r.linked_student_id);
+  // 増コマ回答を全期間まとめて取得。紐付け済み（linked_student_id）だけ対象。
+  const allResponses = await getFormResponses(schoolId, { formType: 'zoukoma' });
+  const linked = allResponses.filter((r) => r.linked_student_id) as unknown as Array<{
+    linked_student_id: string | null;
+    response_data: ZoukomaResponseData;
+  }>;
 
   const map = new Map<string, ZoukomaPlacementRow>();
   const allDates = new Set<string>();

@@ -6,7 +6,7 @@ import { ArrowLeft, Plus, Pencil, Trash2 } from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
 import { Button, Loading } from '@/components/ui';
 import { ZoukomaEnrollmentFormModal } from '@/components/schedule/ZoukomaEnrollmentFormModal';
-import { getZoukomaPeriods, getZoukomaResponses } from '@/lib/api/zoukoma';
+import { getZoukomaPeriods, getAllZoukomaResponses } from '@/lib/api/zoukoma';
 import { archiveResponse } from '@/lib/api/form-responses';
 import type { ZoukomaPeriod, ZoukomaResponse } from '@/types/forms/zoukoma';
 import { useAuth } from '@/contexts/AuthContext';
@@ -30,7 +30,6 @@ export default function ZoukomaEnrollmentPage() {
   const schoolId = selectedSchoolId ?? '';
 
   const [periods, setPeriods] = useState<ZoukomaPeriod[]>([]);
-  const [selectedPeriod, setSelectedPeriod] = useState<ZoukomaPeriod | null>(null);
   const [responses, setResponses] = useState<ZoukomaResponse[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -38,26 +37,26 @@ export default function ZoukomaEnrollmentPage() {
   const [editing, setEditing] = useState<ZoukomaResponse | null>(null);
   const [deleting, setDeleting] = useState<ZoukomaResponse | null>(null);
 
-  // 増コマ期間ロード
+  // 期間は意識しない。ただし新規登録は何らかのフォーム設定（科目・枠）が必要なので、
+  // 最新の期間を「テンプレート」として使う（タブ選択はしない）。
+  const templatePeriod = periods[0] ?? null;
+
+  // 増コマフォーム設定（テンプレート用）をロード
   useEffect(() => {
-    if (!schoolId) { setPeriods([]); setSelectedPeriod(null); return; }
-    getZoukomaPeriods(schoolId)
-      .then((p) => {
-        setPeriods(p);
-        setSelectedPeriod((cur) => cur ?? p[0] ?? null);
-      })
-      .catch(() => setPeriods([]));
+    if (!schoolId) { setPeriods([]); return; }
+    getZoukomaPeriods(schoolId).then(setPeriods).catch(() => setPeriods([]));
   }, [schoolId]);
 
+  // 申込は全期間まとめて取得
   const loadResponses = useCallback(async () => {
-    if (!schoolId || !selectedPeriod) { setResponses([]); return; }
+    if (!schoolId) { setResponses([]); return; }
     setLoading(true);
     try {
-      setResponses(await getZoukomaResponses(schoolId, selectedPeriod.period_key));
+      setResponses(await getAllZoukomaResponses(schoolId));
     } finally {
       setLoading(false);
     }
-  }, [schoolId, selectedPeriod]);
+  }, [schoolId]);
 
   useEffect(() => { loadResponses(); }, [loadResponses]);
 
@@ -103,7 +102,7 @@ export default function ZoukomaEnrollmentPage() {
             </Link>
             <h1 className="text-xl font-bold text-[var(--headline)]">追加授業（テスト対策）申込（生徒別）</h1>
           </div>
-          {selectedPeriod && (
+          {templatePeriod && (
             <Button onClick={() => { setEditing(null); setFormOpen(true); }} className="flex items-center gap-1">
               <Plus className="w-4 h-4" />
               生徒を追加
@@ -117,35 +116,15 @@ export default function ZoukomaEnrollmentPage() {
 
         {schoolId && periods.length === 0 && (
           <div className="text-center py-12 text-[var(--paragraph)]">
-            <p className="mb-4">増コマ申込期間が設定されていません。</p>
+            <p className="mb-4">増コマ申込フォームが設定されていません。</p>
             <Link href="/forms">
               <Button>フォーム設定へ</Button>
             </Link>
           </div>
         )}
 
-        {/* 期間選択 */}
+        {/* 生徒別一覧（期間は意識せず全申込をまとめて表示） */}
         {schoolId && periods.length > 0 && (
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs text-[var(--paragraph)] font-medium">期間:</span>
-            {periods.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => setSelectedPeriod(p)}
-                className={`px-3 py-1 text-xs rounded-full border transition-colors ${
-                  selectedPeriod?.id === p.id
-                    ? 'bg-[var(--headline)] text-white border-[var(--headline)]'
-                    : 'bg-white text-[var(--paragraph)] border-[var(--stroke)] hover:bg-gray-50'
-                }`}
-              >
-                {p.title?.trim() ? p.title : p.period_key}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* 生徒別一覧 */}
-        {schoolId && selectedPeriod && (
           loading ? (
             <Loading size="md" />
           ) : rows.length === 0 ? (
@@ -204,20 +183,20 @@ export default function ZoukomaEnrollmentPage() {
         )}
 
         {/* 未紐付けの注意書き：紐付かないと座席表の落とし込みパネルに出ない */}
-        {schoolId && selectedPeriod && rows.some((r) => !r.linked_student_id) && (
+        {schoolId && periods.length > 0 && rows.some((r) => !r.linked_student_id) && (
           <p className="text-xs text-[var(--paragraph)]">
             ※「未紐付け」の申込は座席表の落とし込みパネルに出ません。編集で生徒を選び直すと紐付きます。
           </p>
         )}
       </div>
 
-      {/* 追加/編集モーダル */}
-      {selectedPeriod && (
+      {/* 追加/編集モーダル（最新フォーム設定をテンプレートに使用） */}
+      {templatePeriod && (
         <ZoukomaEnrollmentFormModal
           open={formOpen}
           onClose={() => { setFormOpen(false); setEditing(null); }}
           schoolId={schoolId}
-          period={selectedPeriod}
+          period={templatePeriod}
           existingStudentIds={editing ? [] : existingStudentIds}
           editing={editing}
           onSaved={loadResponses}

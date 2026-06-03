@@ -3,9 +3,8 @@
 import Link from 'next/link';
 import { useRef, useEffect, useState } from 'react';
 import { Button } from '@/components/ui';
-import { Settings, ChevronDown, GraduationCap, BookPlus } from 'lucide-react';
+import { Settings, ChevronDown } from 'lucide-react';
 import type { KoushuPeriodInfo } from '@/lib/api/koushu-period';
-import type { ZoukomaPlacementPeriod } from '@/lib/api/zoukoma-placement';
 
 const DAY_LABELS: { value: number; label: string }[] = [
   { value: 0, label: '日' },
@@ -53,14 +52,14 @@ interface ScheduleToolbarProps {
   // seasonal_courses は座席表とは独立した「生徒別プラン」のためここでは扱わない。
   koushuList: KoushuPeriodInfo[];
   selectedKoushu: KoushuPeriodInfo | null;
-  // 追加授業（テスト対策）= 増コマ申込期間ベース
-  zoukomaList: ZoukomaPlacementPeriod[];
-  selectedZoukoma: ZoukomaPlacementPeriod | null;
+  // 追加授業（テスト対策）：期間は意識せず、全申込を1つの一覧で扱う
+  hasTestPrep: boolean;
+  testPrepActive: boolean;
   onWeekChange: (newWeekStart: Date) => void;
   onSettingsOpen: () => void;
   onVisibleDaysChange: (days: number[]) => void;
   onKoushuSelect: (period: KoushuPeriodInfo | null) => void;
-  onZoukomaSelect: (period: ZoukomaPlacementPeriod | null) => void;
+  onTestPrepToggle: (active: boolean) => void;
 }
 
 export function ScheduleToolbar({
@@ -70,16 +69,34 @@ export function ScheduleToolbar({
   visibleDaysOfWeek,
   koushuList,
   selectedKoushu,
-  zoukomaList,
-  selectedZoukoma,
+  hasTestPrep,
+  testPrepActive,
   onWeekChange,
   onSettingsOpen,
   onVisibleDaysChange,
   onKoushuSelect,
-  onZoukomaSelect,
+  onTestPrepToggle,
 }: ScheduleToolbarProps) {
   const [weekPickerOpen, setWeekPickerOpen] = useState(false);
   const weekPickerInputRef = useRef<HTMLInputElement>(null);
+  // 「管理」メニューの開閉
+  const [mgmtOpen, setMgmtOpen] = useState(false);
+
+  // モードセレクトの現在値: '' = 通常 / 'k:<id>' = 講習期間 / 't' = テスト対策
+  const modeValue = selectedKoushu ? `k:${selectedKoushu.id}` : testPrepActive ? 't' : '';
+  const handleModeChange = (value: string) => {
+    if (value === 't') {
+      onKoushuSelect(null);
+      onTestPrepToggle(true);
+    } else if (value.startsWith('k:')) {
+      const period = koushuList.find((k) => k.id === value.slice(2)) ?? null;
+      onTestPrepToggle(false);
+      onKoushuSelect(period);
+    } else {
+      onKoushuSelect(null);
+      onTestPrepToggle(false);
+    }
+  };
 
   useEffect(() => {
     if (weekPickerOpen && weekPickerInputRef.current?.showPicker) {
@@ -195,78 +212,84 @@ export function ScheduleToolbar({
       </div>
       {schoolId && (
         <div className="flex items-center gap-2 flex-wrap">
-          <Link href="/schedule/regular-patterns">
-            <Button variant="secondary" size="sm">
-              通塾日程
-            </Button>
-          </Link>
-          <Link href="/schedule/koushu">
-            <Button variant="secondary" size="sm" className="flex items-center gap-1">
-              <GraduationCap className="h-3.5 w-3.5" />
-              講習管理
-            </Button>
-          </Link>
-          {/* 追加授業（テスト対策）の生徒別 増コマ登録画面への導線。講習管理の隣に置く。 */}
-          <Link href="/schedule/zoukoma">
-            <Button variant="secondary" size="sm" className="flex items-center gap-1">
-              <BookPlus className="h-3.5 w-3.5" />
-              追加授業設定
-            </Button>
-          </Link>
-          {/* 追加授業（テスト対策）モード切替：増コマ申込期間から選択。
-              選ぶと座席表上部に配置パネルが出て、増コマ申込を test_prep コマとして落とし込める。 */}
-          {zoukomaList.length > 0 && (
+          {/* モード切替：通常 / 講習(期間) / テスト対策。排他なので1つのセレクトに集約。 */}
+          {(koushuList.length > 0 || hasTestPrep) && (
             <div className="flex items-center gap-1.5">
-              <span className="text-xs text-[var(--paragraph)]">テスト対策:</span>
+              <span className="text-xs text-[var(--paragraph)]">モード:</span>
               <select
-                value={selectedZoukoma?.id ?? ''}
-                onChange={(e) => {
-                  const period = zoukomaList.find((z) => z.id === e.target.value) ?? null;
-                  onZoukomaSelect(period);
-                }}
+                value={modeValue}
+                onChange={(e) => handleModeChange(e.target.value)}
                 className="text-xs px-2 py-1 border border-[var(--stroke)] rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
               >
                 <option value="">通常</option>
-                {zoukomaList.map((z) => (
-                  <option key={z.id} value={z.id}>
-                    {z.label}
-                  </option>
-                ))}
-              </select>
-              {selectedZoukoma && (
-                <span className="text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full font-medium">
-                  追加授業モード
-                </span>
-              )}
-            </div>
-          )}
-          {/* 講習モード切替（期間ベース）
-              course_prep_periods で start/end_date が設定された春期/夏期/冬期から選択。 */}
-          {koushuList.length > 0 && (
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-[var(--paragraph)]">講習:</span>
-              <select
-                value={selectedKoushu?.id ?? ''}
-                onChange={(e) => {
-                  const period = koushuList.find((k) => k.id === e.target.value) ?? null;
-                  onKoushuSelect(period);
-                }}
-                className="text-xs px-2 py-1 border border-[var(--stroke)] rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-              >
-                <option value="">通常</option>
-                {koushuList.map((k) => (
-                  <option key={k.id} value={k.id}>
-                    {k.label}
-                  </option>
-                ))}
+                {koushuList.length > 0 && (
+                  <optgroup label="講習">
+                    {koushuList.map((k) => (
+                      <option key={k.id} value={`k:${k.id}`}>
+                        {k.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                {hasTestPrep && (
+                  <optgroup label="テスト対策">
+                    <option value="t">テスト対策（増コマ申込）</option>
+                  </optgroup>
+                )}
               </select>
               {selectedKoushu && (
                 <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full font-medium">
                   講習モード
                 </span>
               )}
+              {testPrepActive && (
+                <span className="text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full font-medium">
+                  テスト対策モード
+                </span>
+              )}
             </div>
           )}
+
+          {/* 管理メニュー：登録・設定系の遷移を1か所に集約 */}
+          <div className="relative">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setMgmtOpen((v) => !v)}
+              className="flex items-center gap-1"
+            >
+              管理
+              <ChevronDown className="h-4 w-4 opacity-70" />
+            </Button>
+            {mgmtOpen && (
+              <>
+                {/* 外側クリックで閉じる透明バックドロップ */}
+                <button
+                  type="button"
+                  aria-label="閉じる"
+                  className="fixed inset-0 z-40 cursor-default"
+                  onClick={() => setMgmtOpen(false)}
+                />
+                <div className="absolute right-0 mt-1 z-50 w-52 rounded-lg border border-[var(--stroke)] bg-white shadow-lg overflow-hidden py-1">
+                  {[
+                    { href: '/schedule/regular-patterns', label: '通塾日程の登録' },
+                    { href: '/schedule/koushu', label: '講習 申込（生徒別）' },
+                    { href: '/schedule/zoukoma', label: 'テスト対策 申込（生徒別）' },
+                    { href: '/schedule/regular-patterns/match', label: '一括マッチング' },
+                  ].map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMgmtOpen(false)}
+                      className="block px-3 py-2 text-sm text-[var(--paragraph)] hover:bg-[var(--surface)]"
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>
