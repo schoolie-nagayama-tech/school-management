@@ -485,10 +485,12 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
         });
       }
 
-      // シフト申請の教室IDも収集
-      items.filter((i) => i.type === 'shift' && i.schoolId).forEach((i) => allSchoolIdsToFetch.push(i.schoolId!));
-      // 文字起こしの教室IDも収集
-      items.filter((i) => i.type === 'transcript' && i.schoolId).forEach((i) => allSchoolIdsToFetch.push(i.schoolId!));
+      // シフト申請・文字起こしの教室IDを単一パスで収集
+      for (const i of items) {
+        if ((i.type === 'shift' || i.type === 'transcript') && i.schoolId) {
+          allSchoolIdsToFetch.push(i.schoolId);
+        }
+      }
 
       // 教室名を一括取得
       const uniqueSchoolIds = Array.from(new Set(allSchoolIdsToFetch));
@@ -530,16 +532,15 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
   }, [feedItems, dismissedIds, filter]);
 
   // カウント（確認済み除外、フィルタ前）
+  // type ごとに5回 filter していたのを単一パスの集計に統合
   const counts = useMemo(() => {
-    const undismissed = feedItems.filter((item) => !dismissedIds.has(item.id));
-    return {
-      all: undismissed.length,
-      response: undismissed.filter((i) => i.type === 'response').length,
-      update: undismissed.filter((i) => i.type === 'update').length,
-      shift: undismissed.filter((i) => i.type === 'shift').length,
-      deadline: undismissed.filter((i) => i.type === 'deadline').length,
-      transcript: undismissed.filter((i) => i.type === 'transcript').length,
-    };
+    const result = { all: 0, response: 0, update: 0, shift: 0, deadline: 0, transcript: 0 };
+    for (const item of feedItems) {
+      if (dismissedIds.has(item.id)) continue;
+      result.all++;
+      if (item.type in result) result[item.type as keyof typeof result]++;
+    }
+    return result;
   }, [feedItems, dismissedIds]);
 
   // 教室カラーマップ

@@ -174,6 +174,14 @@ export default function StudentsPage() {
     [masterSchools]
   );
 
+  // TaskProgressWidget へ渡す配列を安定化（毎レンダリングで新規配列を渡すと
+  // 子コンポーネントが不要に再レンダリングされるため）
+  const taskProgressSchoolIds = useMemo(() => getSelectedSchoolIds(), [getSelectedSchoolIds]);
+  const taskProgressSchools = useMemo(
+    () => moveSchoolOptions.map((s) => ({ id: s.id, name: s.name })),
+    [moveSchoolOptions]
+  );
+
   // エラーメッセージ
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -649,7 +657,7 @@ export default function StudentsPage() {
         </div>
 
         {/* 業務進捗ウィジェット（教室長以上のみ） */}
-        {!isTeacher && <TaskProgressWidget schoolIds={getSelectedSchoolIds()} schoolId={selectedSchoolId || undefined} schools={moveSchoolOptions.map(s => ({ id: s.id, name: s.name }))} />}
+        {!isTeacher && <TaskProgressWidget schoolIds={taskProgressSchoolIds} schoolId={selectedSchoolId || undefined} schools={taskProgressSchools} />}
 
         {/* 講師: 連絡掲示板 ↔ アラート を横並び / 管理側: 従来のレイアウト */}
         {isTeacher ? (

@@ -179,8 +179,10 @@ export default function AttendanceManagementPage() {
       setNewTeachers(newResult);
       setAllTeachers(teacherList);
       setAdminUsers(adminList);
-      if (adminList.length > 0 && !selectedAdminId) {
-        setSelectedAdminId(adminList[0].id);
+      // 未選択時のみデフォルト管理者を設定。関数型 setState で現在値を参照することで
+      // selectedAdminId を依存配列から外し、初回ロード時の二重フェッチを防ぐ
+      if (adminList.length > 0) {
+        setSelectedAdminId((prev) => prev || adminList[0].id);
       }
       setSelectedIds(new Set());
     } catch (err) {
@@ -189,7 +191,7 @@ export default function AttendanceManagementPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedSchoolId, yearMonth, userSchoolIds, toastError, selectedAdminId]);
+  }, [selectedSchoolId, yearMonth, userSchoolIds, toastError]);
 
   useEffect(() => {
     fetchData();
