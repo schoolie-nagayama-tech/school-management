@@ -168,6 +168,13 @@ export function ZoukomaPeriodForm({
       setCurrentStep(1);
       return;
     }
+    // 期間キーは回答詳細ページのURL（/forms/responses/zoukoma/[periodKey]）に埋め込まれるため、
+    // / や空白などパスを壊す文字を禁止する（"6/1～7/15" のような値だと開く際に404になる）
+    if (/[/\\?#%\s]/.test(periodKey)) {
+      setError('期間キーに / \\ ? # % や空白は使えません。例: 2026-06。日付の範囲はタイトルに記入してください。');
+      setCurrentStep(1);
+      return;
+    }
     if (!title.trim()) {
       setError('タイトルを入力してください');
       setCurrentStep(1);

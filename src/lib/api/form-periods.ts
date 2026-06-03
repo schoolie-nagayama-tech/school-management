@@ -12,6 +12,25 @@ import { getDefaultSchoolId } from './schools';
 // ============================================
 
 /**
+ * period_key は回答詳細ページのURL動的セグメント（/forms/responses/[type]/[periodKey]）に
+ * そのまま埋め込まれる。`/` や空白などURLパスを壊す文字が混ざると複数セグメントに割れて
+ * 404 になるため（例: "6/1～7/15" → /.../6/1～7/15）、作成時にここで弾く。
+ * 表示用の文言は title 側を使うので、period_key は識別子としてURLセーフに保つ。
+ */
+const UNSAFE_PERIOD_KEY_CHARS = /[/\\?#%\s]/;
+
+function assertValidPeriodKey(periodKey: string): void {
+  if (!periodKey || !periodKey.trim()) {
+    throw new Error('期間キーを入力してください');
+  }
+  if (UNSAFE_PERIOD_KEY_CHARS.test(periodKey)) {
+    throw new Error(
+      '期間キーに / \\ ? # % や空白は使えません（URLが壊れて回答を開けなくなります）。例: 2026-06。日付の範囲はタイトルに記入してください。'
+    );
+  }
+}
+
+/**
  * フォーム公開期間一覧を取得
  * @param orderByCreatedAt true のとき created_at 降順（期間管理ページ用）
  */
@@ -125,6 +144,8 @@ export async function getFormPeriodByKey(
 export async function createFormPeriod(
   data: FormPeriodInsert
 ): Promise<FormPeriod> {
+  assertValidPeriodKey(data.period_key);
+
   const existing = await getFormPeriodByKey(
     data.school_id,
     data.form_type,
