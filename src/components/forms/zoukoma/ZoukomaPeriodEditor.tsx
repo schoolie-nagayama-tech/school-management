@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Modal, Input, Button, Select } from '@/components/ui';
 import { createZoukomaPeriod, updateZoukomaPeriod } from '@/lib/api/zoukoma';
-import { createFormPeriodForSchools, updateFormPeriodForSchools } from '@/lib/api/form-periods';
+import { createFormPeriodForSchools, updateFormPeriodForSchools, generateUniquePeriodKey, getNextPeriodKey } from '@/lib/api/form-periods';
 import { getApplicationItems } from '@/lib/api/applications';
 import type { ZoukomaPeriod, ZoukomaSettings } from '@/types/forms/zoukoma';
 import type { ApplicationItem } from '@/types/database';
@@ -68,8 +68,9 @@ export function ZoukomaPeriodEditor({
         setIsActive(period.is_active);
         setLinkedApplicationItemId(period.linked_application_item_id || '');
       } else {
-        // 新規作成モード
-        setPeriodKey('');
+        // 新規作成モード — 期間キーは自動生成（YYYY-MM、衝突時は連番）
+        setPeriodKey(generateUniquePeriodKey([]));
+        getNextPeriodKey('zoukoma', targetIds ?? []).then(setPeriodKey).catch(() => {});
         setTitle('');
         setPublishStart('');
         setPublishEnd('');
@@ -203,15 +204,19 @@ export function ZoukomaPeriodEditor({
           </div>
         )}
 
-        <Input
-          label="期間キー"
-          type="text"
-          value={periodKey}
-          onChange={(e) => setPeriodKey(e.target.value)}
-          placeholder="例: 2024-10"
-          required
-          disabled={isSubmitting}
-        />
+        <div>
+          <Input
+            label="期間キー"
+            type="text"
+            value={periodKey}
+            readOnly
+            disabled
+            className="bg-[#f3f4f6] cursor-not-allowed"
+          />
+          <p className="text-xs text-[#4b5563]/60 mt-1">
+            ※ 期間キーは自動で割り当てられます（変更不可）。表示名は下の「タイトル」で設定してください。
+          </p>
+        </div>
 
         <Input
           label="タイトル"

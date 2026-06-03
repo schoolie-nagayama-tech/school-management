@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Modal, Input, Button, Select } from '@/components/ui';
 import { createZoukomaPeriod, updateZoukomaPeriod } from '@/lib/api/zoukoma';
+import { generateUniquePeriodKey, getNextPeriodKey } from '@/lib/api/form-periods';
 import { getApplicationItems } from '@/lib/api/applications';
 import type { ZoukomaPeriod, ZoukomaSettings, ScheduleConfig, PeriodConfig } from '@/types/forms/zoukoma';
 import type { ApplicationItem } from '@/types/database';
@@ -125,7 +126,12 @@ export function ZoukomaPeriodForm({
           return `${year}-${month}-${day}T${hours}:${minutes}`;
         };
 
-        setPeriodKey('');
+        // 期間キーは自動生成（YYYY-MM、衝突時は連番）。まず暫定の当月キーを入れ、
+        // 既存キー取得後に重複回避版へ更新する
+        setPeriodKey(generateUniquePeriodKey([]));
+        getNextPeriodKey('zoukoma', schoolId ? [schoolId] : [])
+          .then(setPeriodKey)
+          .catch(() => {});
         setTitle('');
         setDescription('');
         setPublishStart(formatDateTimeLocal(startDate)); // 現在時刻
@@ -148,15 +154,7 @@ export function ZoukomaPeriodForm({
       setCurrentStep(1);
       setError('');
     }
-  }, [isOpen, period]);
-
-  // 期間キー自動生成
-  const handleAutoGeneratePeriodKey = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    setPeriodKey(`${year}-${month}`);
-  };
+  }, [isOpen, period, schoolId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -307,26 +305,18 @@ export function ZoukomaPeriodForm({
         {/* ステップ1: 基本設定 */}
         {currentStep === 1 && (
           <div className="space-y-4">
-            <div className="flex items-end gap-2">
+            <div>
               <Input
                 label="期間キー"
                 type="text"
                 value={periodKey}
-                onChange={(e) => setPeriodKey(e.target.value)}
-                placeholder="例: 2024-10"
-                required
-                disabled={isSubmitting}
-                className="flex-1"
+                readOnly
+                disabled
+                className="bg-[#f3f4f6] cursor-not-allowed"
               />
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={handleAutoGeneratePeriodKey}
-                disabled={isSubmitting}
-              >
-                自動生成
-              </Button>
+              <p className="text-xs text-[#4b5563]/60 mt-1">
+                ※ 期間キーは自動で割り当てられます（変更不可）。表示名は下の「タイトル」で設定してください。
+              </p>
             </div>
 
             <Input

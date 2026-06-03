@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Modal, Input, Button, Select } from '@/components/ui';
 import { createShukaisuPeriod, updateShukaisuPeriod } from '@/lib/api/shukaisu';
-import { createFormPeriodForSchools, updateFormPeriodForSchools } from '@/lib/api/form-periods';
+import { createFormPeriodForSchools, updateFormPeriodForSchools, generateUniquePeriodKey, getNextPeriodKey } from '@/lib/api/form-periods';
 import { getApplicationItems } from '@/lib/api/applications';
 import { getClassPeriodsAsync, formatPeriodsToText } from '@/lib/api/class-periods';
 import type { ShukaisuPeriod, ShukaisuSettings } from '@/types/forms/shukaisu';
@@ -57,13 +57,6 @@ export function ShukaisuPeriodEditor({
   const [linkedApplicationItemId, setLinkedApplicationItemId] = useState<string>('');
   const [applicationItems, setApplicationItems] = useState<ApplicationItem[]>([]);
 
-  // 期間キーの自動生成（YYYY-MM形式）
-  const generatePeriodKey = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    return `${year}-${month}`;
-  };
 
   // テキストをパース
   const parseLines = (text: string): string[] => {
@@ -126,7 +119,9 @@ export function ShukaisuPeriodEditor({
           );
           setLinkedApplicationItemId(period.linked_application_item_id || '');
         } else {
-          setPeriodKey(generatePeriodKey());
+          // 期間キーは自動生成（YYYY-MM、衝突時は連番）
+          setPeriodKey(generateUniquePeriodKey([]));
+          getNextPeriodKey('shukaisu', targetIds ?? []).then(setPeriodKey).catch(() => {});
           setTitle('週回数変更');
           setDescription(DEFAULT_DESCRIPTION);
           setDaysText('月\n火\n水\n木\n金\n土');
@@ -287,16 +282,18 @@ export function ShukaisuPeriodEditor({
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-                期間キー <span className="text-red-500">*</span>
+                期間キー
               </label>
               <Input
                 type="text"
                 value={periodKey}
-                onChange={(e) => setPeriodKey(e.target.value)}
-                placeholder="例: 2026-02"
-                disabled={!!period}
+                readOnly
+                disabled // 自動生成のため常に編集不可
                 className="disabled:bg-gray-100"
               />
+              <p className="text-xs text-[#4b5563]/60 mt-1">
+                ※ 自動で割り当てられます（変更不可）
+              </p>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1 text-[#1f2937]">

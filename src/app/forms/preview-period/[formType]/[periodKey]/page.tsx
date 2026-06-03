@@ -1,14 +1,9 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { getDefaultSchoolId, getSchool } from '@/lib/api/schools';
-import { getZoukomaPeriodByKey } from '@/lib/api/zoukoma';
-import { getMoshiPeriodByKey } from '@/lib/api/moshi';
-import { getMogiPeriodByKey } from '@/lib/api/mogi';
-import { getShukaisuPeriodByKey } from '@/lib/api/shukaisu';
-import { getSoudanPeriodByKey } from '@/lib/api/soudan';
-import { getYoubiPeriodByKey } from '@/lib/api/youbi';
-import type { FormType } from '@/types/database';
+import { getDefaultSchoolId } from '@/lib/api/schools';
+import { createSupabaseServerClient } from '@/lib/supabase-server';
+import type { FormType, FormPeriod } from '@/types/database';
 import { FORM_TYPE_LABELS } from '@/types/database';
 import type { School } from '@/types/database';
 import type { ZoukomaPeriod } from '@/types/forms/zoukoma';
@@ -74,38 +69,36 @@ export default async function FormPeriodPreviewPage({
   }
 
   const schoolId = querySchoolId || getDefaultSchoolId();
-  const school = await getSchool(schoolId);
+
+  // プレビューは管理画面の機能。ログインセッション付きのサーバークライアントで取得することで、
+  // 公開期間外（下書き・終了済み・アーカイブ済み）の期間も RLS の自校スコープで読める。
+  // anon クライアントだと「公開期間内」の期間しか見えず 404 になるため使わない。
+  const supabase = await createSupabaseServerClient();
+
+  const { data: school } = await supabase
+    .from('schools')
+    .select('*')
+    .eq('id', schoolId)
+    .maybeSingle<School>();
   if (!school) {
     notFound();
   }
 
-  let period;
-  switch (formType as FormType) {
-    case 'zoukoma':
-      period = await getZoukomaPeriodByKey(schoolId, periodKey);
-      break;
-    case 'moshi':
-      period = await getMoshiPeriodByKey(schoolId, periodKey);
-      break;
-    case 'mogi':
-      period = await getMogiPeriodByKey(schoolId, periodKey);
-      break;
-    case 'shukaisu':
-      period = await getShukaisuPeriodByKey(schoolId, periodKey);
-      break;
-    case 'soudan':
-      period = await getSoudanPeriodByKey(schoolId, periodKey);
-      break;
-    case 'youbi':
-      period = await getYoubiPeriodByKey(schoolId, periodKey);
-      break;
-    default:
-      notFound();
-  }
+  const { data: periodRow } = await supabase
+    .from('form_periods')
+    .select('*')
+    .eq('school_id', schoolId)
+    .eq('form_type', formType)
+    .eq('period_key', periodKey)
+    .maybeSingle<FormPeriod>();
 
-  if (!period) {
+  if (!periodRow) {
     notFound();
   }
+
+  // 各フォーム種別の Period 型は form_periods 行に settings を型付けしただけなので、
+  // settings を保証して renderPreviewForm 側で種別ごとにキャストする
+  const period = { ...periodRow, settings: periodRow.settings ?? {} };
 
   const formLabel = FORM_TYPE_LABELS[formType as FormType] ?? formType;
   const formNode = await renderPreviewForm(formType, school, period);

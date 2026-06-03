@@ -31,6 +31,43 @@ function assertValidPeriodKey(periodKey: string): void {
 }
 
 /**
+ * 既存キーと重複しない期間キーを生成する（YYYY-MM 形式、衝突時は -2, -3 と連番）。
+ * period_key は回答詳細・プレビューのURLにそのまま使うため、ユーザー入力させず自動生成して
+ * 不正な値（スラッシュ等）の混入を防ぐ。表示用の文言は title 側で設定する。
+ */
+export function generateUniquePeriodKey(
+  existingKeys: string[],
+  baseDate: Date = new Date()
+): string {
+  const base = `${baseDate.getFullYear()}-${String(baseDate.getMonth() + 1).padStart(2, '0')}`;
+  const taken = new Set(existingKeys);
+  if (!taken.has(base)) return base;
+  let n = 2;
+  while (taken.has(`${base}-${n}`)) n += 1;
+  return `${base}-${n}`;
+}
+
+/**
+ * 指定フォーム種別・教室群で次に使う一意な期間キーを取得する（新規作成フォーム用）。
+ * 複数教室に一括作成する場合は全教室の既存キーを集約し、どの教室とも衝突しないキーを選ぶ。
+ * アーカイブ済みの期間もキーを占有しているため衝突回避の対象に含める。
+ */
+export async function getNextPeriodKey(
+  formType: FormType,
+  schoolIds: string[]
+): Promise<string> {
+  const targets = schoolIds.filter(Boolean);
+  if (targets.length === 0) {
+    return generateUniquePeriodKey([]);
+  }
+  const lists = await Promise.all(
+    targets.map((sid) => getFormPeriods(sid, formType, true))
+  );
+  const keys = lists.flat().map((p) => p.period_key);
+  return generateUniquePeriodKey(keys);
+}
+
+/**
  * フォーム公開期間一覧を取得
  * @param orderByCreatedAt true のとき created_at 降順（期間管理ページ用）
  */

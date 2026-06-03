@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Modal, Input, Button, Select } from '@/components/ui';
 import { createSoudanPeriod, updateSoudanPeriod } from '@/lib/api/soudan';
-import { createFormPeriodForSchools, updateFormPeriodForSchools } from '@/lib/api/form-periods';
+import { createFormPeriodForSchools, updateFormPeriodForSchools, generateUniquePeriodKey, getNextPeriodKey } from '@/lib/api/form-periods';
 import { getApplicationItems } from '@/lib/api/applications';
 import type { SoudanPeriod, SoudanSettings } from '@/types/forms/soudan';
 import type { ApplicationItem } from '@/types/database';
@@ -62,13 +62,6 @@ export function SoudanPeriodEditor({
   const [linkedApplicationItemId, setLinkedApplicationItemId] = useState<string>('');
   const [applicationItems, setApplicationItems] = useState<ApplicationItem[]>([]);
 
-  // 期間キーの自動生成（YYYY-MM形式）
-  const generatePeriodKey = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    return `${year}-${month}`;
-  };
 
   // 公開開始日のデフォルト（今の日時・YYYY-MM-DDTHH:mm）
   const getDefaultPublishStart = () => {
@@ -111,7 +104,9 @@ export function SoudanPeriodEditor({
         setLinkedApplicationItemId(period.linked_application_item_id || '');
       } else {
         // 新規作成モード（公開開始日はデフォルトで「今」＝保存後すぐ公開）
-        setPeriodKey(generatePeriodKey());
+        // 期間キーは自動生成（YYYY-MM、衝突時は連番）
+        setPeriodKey(generateUniquePeriodKey([]));
+        getNextPeriodKey('soudan', targetIds ?? []).then(setPeriodKey).catch(() => {});
         setTitle('お客様相談');
         setDescription(DEFAULT_DESCRIPTION);
         setCategoriesText(DEFAULT_CATEGORIES);
@@ -258,16 +253,18 @@ export function SoudanPeriodEditor({
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-                期間キー <span className="text-red-500">*</span>
+                期間キー
               </label>
               <Input
                 type="text"
                 value={periodKey}
-                onChange={(e) => setPeriodKey(e.target.value)}
-                placeholder="例: 2026-01"
-                disabled={!!period}
+                readOnly
+                disabled // 自動生成のため常に編集不可
                 className="disabled:bg-gray-100"
               />
+              <p className="text-xs text-[#4b5563]/60 mt-1">
+                ※ 自動で割り当てられます（変更不可）
+              </p>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1 text-[#1f2937]">

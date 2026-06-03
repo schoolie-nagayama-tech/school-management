@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Modal, Input, Button, Select } from '@/components/ui';
 import { createMoshiPeriod, updateMoshiPeriod } from '@/lib/api/moshi';
-import { createFormPeriodForSchools, updateFormPeriodForSchools } from '@/lib/api/form-periods';
+import { createFormPeriodForSchools, updateFormPeriodForSchools, generateUniquePeriodKey, getNextPeriodKey } from '@/lib/api/form-periods';
 import { getApplicationItems } from '@/lib/api/applications';
 import type { MoshiPeriod, MoshiSettings } from '@/types/forms/moshi';
 import type { ApplicationItem } from '@/types/database';
@@ -55,14 +55,6 @@ export function MoshiPeriodEditor({
   const [linkedApplicationItemId, setLinkedApplicationItemId] = useState<string>('');
   const [applicationItems, setApplicationItems] = useState<ApplicationItem[]>([]);
 
-  // 期間キーの自動生成（YYYY-MM形式）
-  const generatePeriodKey = () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    return `${year}-${month}`;
-  };
-
   // 日付ラベルを生成
   const formatDateLabel = (dateStr: string): string => {
     if (!dateStr) return '';
@@ -106,8 +98,9 @@ export function MoshiPeriodEditor({
         setCompletionMessage(settings.completion_message || 'お申し込みありがとうございます。');
         setLinkedApplicationItemId(period.linked_application_item_id || '');
       } else {
-        // 新規作成モード
-        setPeriodKey(generatePeriodKey());
+        // 新規作成モード — 期間キーは自動生成（YYYY-MM、衝突時は連番）
+        setPeriodKey(generateUniquePeriodKey([]));
+        getNextPeriodKey('moshi', targetIds ?? []).then(setPeriodKey).catch(() => {});
         setTitle('');
         setDescription('');
         setPublishStart('');
@@ -284,16 +277,18 @@ export function MoshiPeriodEditor({
           <div className="grid grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium mb-1 text-[#1f2937]">
-                期間キー <span className="text-red-500">*</span>
+                期間キー
               </label>
               <Input
                 type="text"
                 value={periodKey}
-                onChange={(e) => setPeriodKey(e.target.value)}
-                placeholder="例: 2026-02"
-                disabled={!!period}
+                readOnly
+                disabled // 自動生成のため常に編集不可
                 className="disabled:bg-gray-100"
               />
+              <p className="text-xs text-[#4b5563]/60 mt-1">
+                ※ 自動で割り当てられます（変更不可）
+              </p>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1 text-[#1f2937]">
