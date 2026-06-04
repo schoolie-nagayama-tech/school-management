@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import { Search, AlertTriangle, Package, ShoppingCart, X, Trash2 } from 'lucide-react';
+import { Search, AlertTriangle, Package, ShoppingCart, X, Trash2, Plus, Minus } from 'lucide-react';
 import type { Textbook, Material } from '@/types/database';
 
 interface StudentOption {
@@ -77,22 +77,56 @@ interface TextbookProductCardProps {
 }
 
 function TextbookProductCard({ textbook, students, canEdit, stockQuantity, onAddToCart, onStockAdjust }: TextbookProductCardProps) {
-  const [selectedStudentId, setSelectedStudentId] = useState('');
-  const [quantity, setQuantity] = useState(1);
+  // 冊数分の生徒スロット。1冊=1生徒（または見本）として、冊数を増やすと
+  // その冊数分だけ生徒を割り当てられる。空欄の冊はカートに追加されない。
+  const [studentIds, setStudentIds] = useState<string[]>(['']);
   const [addedSuccess, setAddedSuccess] = useState(false);
 
+  const quantity = studentIds.length;
+
+  // 冊数を変更（生徒スロット配列を伸縮。既存の選択は保持）
+  const changeQuantity = (next: number) => {
+    const q = Math.max(1, Math.min(20, next));
+    setStudentIds((prev) => {
+      if (q === prev.length) return prev;
+      if (q < prev.length) return prev.slice(0, q);
+      return [...prev, ...Array(q - prev.length).fill('')];
+    });
+  };
+
+  const setStudentAt = (index: number, value: string) => {
+    setStudentIds((prev) => {
+      const nextArr = [...prev];
+      nextArr[index] = value;
+      return nextArr;
+    });
+  };
+
+  // 他スロットで選択済みの実生徒は除外（二重発注防止）。見本は重複可。
+  const getAvailableStudents = (currentIndex: number) => {
+    const taken = new Set(
+      studentIds.filter((id, i) => i !== currentIndex && id && id !== SAMPLE_VALUE)
+    );
+    return students.filter((s) => !taken.has(s.id));
+  };
+
+  const filledCount = studentIds.filter(Boolean).length;
+
   const handleAddToCart = () => {
-    if (!selectedStudentId) return;
-    if (selectedStudentId === SAMPLE_VALUE) {
-      onAddToCart(textbook, formatTextbookLabel(textbook), SAMPLE_VALUE, '見本', quantity);
-    } else {
-      const student = students.find((s) => s.id === selectedStudentId);
-      if (!student) return;
-      const studentLabel = `${gradeLabel(student.grade)} ${student.last_name} ${student.first_name}`;
-      onAddToCart(textbook, formatTextbookLabel(textbook), selectedStudentId, studentLabel, quantity);
+    const filled = studentIds.filter(Boolean);
+    if (filled.length === 0) return;
+    // 1冊ごとに1カート項目（= 1発注レコード）として追加する
+    for (const sid of filled) {
+      if (sid === SAMPLE_VALUE) {
+        onAddToCart(textbook, formatTextbookLabel(textbook), SAMPLE_VALUE, '見本', 1);
+      } else {
+        const student = students.find((s) => s.id === sid);
+        if (!student) continue;
+        const studentLabel = `${gradeLabel(student.grade)} ${student.last_name} ${student.first_name}`;
+        onAddToCart(textbook, formatTextbookLabel(textbook), sid, studentLabel, 1);
+      }
     }
-    setSelectedStudentId('');
-    setQuantity(1);
+    setStudentIds(['']);
     setAddedSuccess(true);
     setTimeout(() => setAddedSuccess(false), 1500);
   };
@@ -163,41 +197,79 @@ function TextbookProductCard({ textbook, students, canEdit, stockQuantity, onAdd
       {/* Order Section */}
       {canEdit && (
         <div className="border-t border-gray-100 pt-2 px-3 pb-3 flex-1 flex flex-col gap-1.5">
-          <select
-            value={selectedStudentId}
-            onChange={(e) => setSelectedStudentId(e.target.value)}
-            className="w-full px-2 py-1.5 border border-gray-200 rounded-md text-xs bg-white text-gray-700 focus:ring-1 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f] transition-[background-color,color] duration-150 ease-out"
-          >
-            <option value="">生徒を選択...</option>
-            <option value={SAMPLE_VALUE} className="font-medium text-purple-700">見本（生徒なし）</option>
-            {students.map((s) => (
-              <option key={s.id} value={s.id}>
-                {gradeLabel(s.grade)} {s.last_name} {s.first_name}
-              </option>
-            ))}
-          </select>
+          {/* 冊数ステッパー */}
           <div className="flex items-center gap-1.5">
-            <input
-              type="number"
-              min={1}
-              max={20}
-              value={quantity}
-              onChange={(e) => setQuantity(Math.max(1, Math.min(20, parseInt(e.target.value) || 1)))}
-              className="w-14 text-center px-1 py-1.5 border border-gray-200 rounded-md text-xs"
-            />
-            <span className="text-xs text-gray-400">冊</span>
-            <button
-              onClick={handleAddToCart}
-              disabled={!selectedStudentId}
-              className={`flex-1 py-1.5 rounded-md font-medium text-xs transition-[background-color,color] duration-150 ease-out ${
-                addedSuccess
-                  ? 'bg-green-600 text-white'
-                  : 'bg-[#1e3a5f] text-white hover:bg-[#2d4a6f] disabled:opacity-40 disabled:cursor-not-allowed'
-              }`}
-            >
-              {addedSuccess ? '追加しました' : 'カートに追加'}
-            </button>
+            <span className="text-xs text-gray-500">冊数</span>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => changeQuantity(quantity - 1)}
+                disabled={quantity <= 1}
+                aria-label="冊数を減らす"
+                className="p-1 rounded border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97]"
+              >
+                <Minus className="w-3 h-3" />
+              </button>
+              <input
+                type="number"
+                min={1}
+                max={20}
+                value={quantity}
+                onChange={(e) => changeQuantity(parseInt(e.target.value) || 1)}
+                className="w-12 text-center px-1 py-1 border border-gray-200 rounded-md text-xs"
+              />
+              <button
+                type="button"
+                onClick={() => changeQuantity(quantity + 1)}
+                disabled={quantity >= 20}
+                aria-label="冊数を増やす"
+                className="p-1 rounded border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97]"
+              >
+                <Plus className="w-3 h-3" />
+              </button>
+            </div>
+            <span className="text-[11px] text-gray-400 ml-auto">{filledCount}/{quantity}名</span>
           </div>
+
+          {/* 冊数分の生徒スロット（1冊ごとに1名 or 見本） */}
+          <div className="space-y-1">
+            {studentIds.map((sid, index) => (
+              <div key={index} className="flex items-center gap-1">
+                {quantity > 1 && (
+                  <span className="text-[10px] text-gray-400 w-4 text-right flex-shrink-0">{index + 1}</span>
+                )}
+                <select
+                  value={sid}
+                  onChange={(e) => setStudentAt(index, e.target.value)}
+                  className="flex-1 min-w-0 px-2 py-1.5 border border-gray-200 rounded-md text-xs bg-white text-gray-700 focus:ring-1 focus:ring-[#1e3a5f]/30 focus:border-[#1e3a5f] transition-[background-color,color] duration-150 ease-out"
+                >
+                  <option value="">生徒を選択...</option>
+                  <option value={SAMPLE_VALUE} className="font-medium text-purple-700">見本（生徒なし）</option>
+                  {getAvailableStudents(index).map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {gradeLabel(s.grade)} {s.last_name} {s.first_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ))}
+          </div>
+
+          <button
+            onClick={handleAddToCart}
+            disabled={filledCount === 0}
+            className={`py-1.5 rounded-md font-medium text-xs transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97] ${
+              addedSuccess
+                ? 'bg-green-600 text-white'
+                : 'bg-[#1e3a5f] text-white hover:bg-[#2d4a6f] disabled:opacity-40 disabled:cursor-not-allowed'
+            }`}
+          >
+            {addedSuccess
+              ? '追加しました'
+              : filledCount > 1
+                ? `${filledCount}件をカートに追加`
+                : 'カートに追加'}
+          </button>
         </div>
       )}
     </div>
