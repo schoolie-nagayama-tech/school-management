@@ -10,7 +10,7 @@ import type {
 } from '@/types/database';
 import { getDefaultSchoolId } from './schools';
 import { getFifthWeekDays, calcFifthWeekSlots } from '@/lib/utils/fifthWeek';
-import type { ZoukomaResponseData } from '@/types/forms/zoukoma';
+import { zoukomaKomaCount } from '@/lib/utils/zoukomaKoma';
 
 // ============================================
 // 請求期間 (Billing Periods)
@@ -742,18 +742,10 @@ export async function syncFormToBilling(
     // 増コマは「申込コマ数」を請求数として扱う。それ以外のフォームは1回答=1件。
     const isZoukoma = item.linked_form_type === 'zoukoma';
 
-    // 1回答あたりの計上数。増コマは response_data.total_koma（合計コマ数）を採用し、
-    // 欠損時は subjects のコマ数合計→最低1にフォールバックする。
-    const responseWeight = (resp: { response_data?: unknown }): number => {
-      if (!isZoukoma) return 1;
-      const rd = (resp.response_data || {}) as Partial<ZoukomaResponseData>;
-      if (typeof rd.total_koma === 'number' && rd.total_koma > 0) return rd.total_koma;
-      if (rd.subjects && typeof rd.subjects === 'object') {
-        const sum = Object.values(rd.subjects).reduce((a, b) => a + (Number(b) || 0), 0);
-        if (sum > 0) return sum;
-      }
-      return 1;
-    };
+    // 1回答あたりの計上数。増コマは申込コマ数（zoukomaKomaCount）を採用、
+    // それ以外のフォームは1回答=1件。
+    const responseWeight = (resp: { response_data?: unknown }): number =>
+      isZoukoma ? zoukomaKomaCount(resp.response_data) : 1;
 
     // 4. 生徒ごとに全コマ数・非計上コマ数を集計
     const studentTotalCounts = new Map<string, number>();

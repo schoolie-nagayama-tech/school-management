@@ -3,6 +3,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { portalFormResponseSchema } from '@/lib/validations/schemas';
 import { createFurikaeCalendarEvents } from '@/lib/google-calendar';
 import { FORM_TYPE_LABELS } from '@/types/database';
+import { zoukomaKomaCount } from '@/lib/utils/zoukomaKoma';
 
 export const dynamic = 'force-dynamic';
 
@@ -351,7 +352,11 @@ async function autoSyncFormToBilling(
 
   if (!linkedItems || linkedItems.length === 0) return;
 
-  // 4. 回答件数は「期間ごとに同一」なので期間単位で1回だけ並列集計
+  // 増コマは「申込コマ数」を請求数として扱う（回答件数ではない）。
+  const isZoukoma = formType === 'zoukoma';
+
+  // 4. 請求数は「期間ごとに同一」なので期間単位で1回だけ並列集計。
+  //    通常フォームは回答件数、増コマは申込コマ数の合計を採用する。
   const countByPeriod = new Map<string, number>();
   await Promise.all(
     activePeriods.map(async (period) => {
@@ -359,20 +364,41 @@ async function autoSyncFormToBilling(
       d.setDate(d.getDate() + 1);
       const periodEndPlusOne = d.toISOString().split('T')[0];
 
-      const { count, error: countError } = await supabaseAdmin
-        .from('form_responses')
-        .select('id', { count: 'exact', head: true })
-        .eq('form_type', formType)
-        .eq('linked_student_id', studentId)
-        .eq('school_id', schoolId)
-        .gte('created_at', `${period.start_date}T00:00:00`)
-        .lt('created_at', `${periodEndPlusOne}T00:00:00`);
+      if (isZoukoma) {
+        const { data: rows, error: rowsError } = await supabaseAdmin
+          .from('form_responses')
+          .select('response_data')
+          .eq('form_type', formType)
+          .eq('linked_student_id', studentId)
+          .eq('school_id', schoolId)
+          .gte('created_at', `${period.start_date}T00:00:00`)
+          .lt('created_at', `${periodEndPlusOne}T00:00:00`);
 
-      if (countError) {
-        console.warn(`[auto-billing] 回答数カウントに失敗: ${countError.message}`);
-        return;
+        if (rowsError) {
+          console.warn(`[auto-billing] 増コマ集計に失敗: ${rowsError.message}`);
+          return;
+        }
+        const totalKoma = (rows || []).reduce(
+          (sum: number, r: { response_data?: unknown }) => sum + zoukomaKomaCount(r.response_data),
+          0
+        );
+        countByPeriod.set(period.id, totalKoma);
+      } else {
+        const { count, error: countError } = await supabaseAdmin
+          .from('form_responses')
+          .select('id', { count: 'exact', head: true })
+          .eq('form_type', formType)
+          .eq('linked_student_id', studentId)
+          .eq('school_id', schoolId)
+          .gte('created_at', `${period.start_date}T00:00:00`)
+          .lt('created_at', `${periodEndPlusOne}T00:00:00`);
+
+        if (countError) {
+          console.warn(`[auto-billing] 回答数カウントに失敗: ${countError.message}`);
+          return;
+        }
+        countByPeriod.set(period.id, count || 0);
       }
-      countByPeriod.set(period.id, count || 0);
     })
   );
 

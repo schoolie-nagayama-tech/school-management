@@ -8,6 +8,7 @@ import type {
 } from '@/types/database';
 import { getDefaultSchoolId } from './schools';
 import { withFetchCache } from '@/lib/utils/fetchCache';
+import { zoukomaKomaCount } from '@/lib/utils/zoukomaKoma';
 
 // ============================================
 // フォーム回答関連
@@ -348,7 +349,11 @@ export async function linkResponseToStudent(
         .eq('linked_form_type', response.form_type);
 
       if (linkedItems && linkedItems.length > 0) {
-        // 2. 回答件数は「期間ごとに同一」（項目には依存しない）ため期間単位で1回だけ集計
+        // 増コマは「申込コマ数」を請求数として扱う（回答件数ではない）。
+        const isZoukoma = response.form_type === 'zoukoma';
+
+        // 2. 請求数は「期間ごとに同一」（項目には依存しない）ため期間単位で1回だけ集計。
+        //    通常フォームは回答件数、増コマは申込コマ数の合計を採用する。
         const countByPeriod = new Map<string, number>();
         await Promise.all(
           activePeriods.map(async (period) => {
@@ -356,16 +361,32 @@ export async function linkResponseToStudent(
             d.setDate(d.getDate() + 1);
             const periodEndPlusOne = d.toISOString().split('T')[0];
 
-            const { count } = await supabase
-              .from('form_responses')
-              .select('id', { count: 'exact', head: true })
-              .eq('form_type', response.form_type)
-              .eq('linked_student_id', studentId)
-              .eq('school_id', response.school_id)
-              .gte('created_at', `${period.start_date}T00:00:00`)
-              .lt('created_at', `${periodEndPlusOne}T00:00:00`);
-
-            countByPeriod.set(period.id, count || 1);
+            if (isZoukoma) {
+              // 増コマ: 期間内のこの生徒の回答を取得し、申込コマ数を合算
+              const { data: rows } = await supabase
+                .from('form_responses')
+                .select('response_data')
+                .eq('form_type', response.form_type)
+                .eq('linked_student_id', studentId)
+                .eq('school_id', response.school_id)
+                .gte('created_at', `${period.start_date}T00:00:00`)
+                .lt('created_at', `${periodEndPlusOne}T00:00:00`);
+              const totalKoma = (rows || []).reduce(
+                (sum, r) => sum + zoukomaKomaCount((r as { response_data?: unknown }).response_data),
+                0
+              );
+              countByPeriod.set(period.id, totalKoma || 1);
+            } else {
+              const { count } = await supabase
+                .from('form_responses')
+                .select('id', { count: 'exact', head: true })
+                .eq('form_type', response.form_type)
+                .eq('linked_student_id', studentId)
+                .eq('school_id', response.school_id)
+                .gte('created_at', `${period.start_date}T00:00:00`)
+                .lt('created_at', `${periodEndPlusOne}T00:00:00`);
+              countByPeriod.set(period.id, count || 1);
+            }
           })
         );
 
