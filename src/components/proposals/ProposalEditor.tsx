@@ -861,6 +861,11 @@ export default function ProposalEditor() {
   }, [selectionInfo.contiguous, selectionInfo.count]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSave = async () => {
+    // 保存できない場合は理由を明示してユーザーに知らせる
+    if (!theme.trim()) {
+      addToast('テーマを入力してください', 'error');
+      return;
+    }
     if (!selectedTextbookId) {
       addToast('テキストを選択してください', 'error');
       return;
@@ -912,6 +917,11 @@ export default function ProposalEditor() {
       setSaving(false);
     }
   };
+
+  // 保存できない理由（保存ボタン横に表示してユーザーに知らせる）
+  const saveBlockers: string[] = [];
+  if (!theme.trim()) saveBlockers.push('テーマを入力してください');
+  if (!selectedTextbookId) saveBlockers.push('テキストを選択してください');
 
   const [statusChanging, setStatusChanging] = useState(false);
 
@@ -1349,11 +1359,18 @@ export default function ProposalEditor() {
 
         {/* テーマ */}
         <section className="p-4 bg-surface-raised rounded-xl border border-border-default">
-          <label className="text-sm font-bold text-text-heading block mb-2">講習テーマ</label>
+          <label className="text-sm font-bold text-text-heading block mb-2">
+            講習テーマ
+            <span className="ml-1 text-red-600" aria-hidden="true">*</span>
+            <span className="ml-1.5 align-middle text-[10px] font-bold text-red-600">必須</span>
+          </label>
           <input
             value={theme}
             onChange={(e) => setTheme(e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-border-default rounded-lg bg-surface-raised focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            aria-required="true"
+            className={`w-full px-3 py-2 text-sm border rounded-lg bg-surface-raised focus:ring-2 focus:ring-primary/20 focus:border-primary ${
+              theme.trim() ? 'border-border-default' : 'border-red-300'
+            }`}
             placeholder="例: 英検3級対策 / 1年生の総復習 / 2学期の先取り"
           />
         </section>
@@ -1560,15 +1577,24 @@ export default function ProposalEditor() {
             <Printer className="w-3.5 h-3.5 mr-1" />
             プレビュー
           </Button>
-          <Button
-            size="sm"
-            onClick={handleSave}
-            disabled={saving || !theme.trim() || !selectedTextbookId}
-            isLoading={saving}
-          >
-            <Save className="w-3.5 h-3.5 mr-1" />
-            保存
-          </Button>
+          <div className="flex flex-col items-end gap-1">
+            <Button
+              size="sm"
+              onClick={handleSave}
+              disabled={saving || saveBlockers.length > 0}
+              isLoading={saving}
+              title={saveBlockers.length > 0 ? saveBlockers.join(' / ') : undefined}
+            >
+              <Save className="w-3.5 h-3.5 mr-1" />
+              保存
+            </Button>
+            {/* 保存できない理由を明示（ボタンが disabled でも理由が分かるようにする） */}
+            {saveBlockers.length > 0 && (
+              <p className="text-[11px] font-medium text-red-600 text-right leading-tight">
+                {saveBlockers.join(' / ')}
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
