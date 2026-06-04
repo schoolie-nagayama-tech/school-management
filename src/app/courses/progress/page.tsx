@@ -790,7 +790,7 @@ export default function CourseProgressPage() {
               <>
                 <button
                   onClick={handleOpenTemplateDialog}
-                  className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition-colors duration-150"
+                  className="px-3 py-1.5 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
                 >
                   テンプレート適用
                 </button>
@@ -800,14 +800,14 @@ export default function CourseProgressPage() {
                     setSaveTemplateName(`${seasonLabel}${year} 進捗管理テンプレート`);
                     setShowSaveDialog(true);
                   }}
-                  className="px-3 py-1.5 text-xs border border-green-200 rounded-lg hover:bg-green-50 text-green-600 transition-colors duration-150"
+                  className="px-3 py-1.5 text-xs border border-green-200 rounded-lg hover:bg-green-50 text-green-600 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
                 >
                   テンプレート保存
                 </button>
                 <button
                   onClick={handleSyncCalendar}
                   disabled={syncing}
-                  className="px-3 py-1.5 text-xs border border-blue-200 rounded-lg hover:bg-blue-50 text-blue-600 disabled:opacity-50 transition-colors duration-150"
+                  className="px-3 py-1.5 text-xs border border-blue-200 rounded-lg hover:bg-blue-50 text-blue-600 disabled:opacity-50 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
                   title="Googleカレンダーの面談予約を取得して進捗を同期"
                 >
                   {syncing ? '同期中...' : '面談同期'}
@@ -816,7 +816,7 @@ export default function CourseProgressPage() {
             )}
             <button
               onClick={() => setShowSettings(!showSettings)}
-              className={`px-3 py-1.5 text-xs border rounded-lg ${showSettings ? 'border-ink bg-ink text-white' : 'border-gray-200 hover:bg-gray-50 text-gray-600'}`}
+              className={`px-3 py-1.5 text-xs border rounded-lg transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97] ${showSettings ? 'border-ink bg-ink text-white' : 'border-gray-200 hover:bg-gray-50 text-gray-600'}`}
             >
               設定
             </button>
@@ -1023,7 +1023,7 @@ export default function CourseProgressPage() {
                           onDragEnd={() => setDragItemId(null)}
                           onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
                           onDrop={(e) => { e.preventDefault(); if (dragItemId) handleDropItem(dragItemId, item.id); }}
-                          className={`flex items-center justify-between gap-2 px-2 py-1.5 rounded text-xs transition-[opacity,transform,border-color,background-color] duration-150 ease-out ${
+                          className={`flex items-center justify-between gap-2 px-2 py-1.5 rounded text-xs transition-[opacity,transform,border-color,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] ${
                             item.is_hidden ? 'bg-gray-50 text-gray-400' : ''
                           } ${dragItemId === item.id ? 'opacity-40 scale-95' : ''} ${dragItemId && dragItemId !== item.id ? 'border border-dashed border-blue-300' : 'border border-transparent'}`}
                         >
@@ -1094,13 +1094,13 @@ export default function CourseProgressPage() {
                           <div className="flex items-center gap-1 shrink-0">
                             <button
                               onClick={() => handleToggleHideItem(item.id, item.is_hidden)}
-                              className="text-[10px] text-gray-400 hover:text-gray-600 px-1 transition-colors duration-150"
+                              className="text-[10px] text-gray-400 hover:text-gray-600 px-1 transition-[color,transform] duration-150 ease-out active:scale-[0.97]"
                             >
                               {item.is_hidden ? '表示' : '非表示'}
                             </button>
                             <button
                               onClick={() => handleDeleteItem(item.id)}
-                              className="text-[10px] text-danger hover:text-danger/80 px-1 transition-colors duration-150"
+                              className="text-[10px] text-danger hover:text-danger/80 px-1 transition-[color,transform] duration-150 ease-out active:scale-[0.97]"
                             >
                               削除
                             </button>
@@ -1131,7 +1131,7 @@ export default function CourseProgressPage() {
             {isOwnerOrAbove && (
               <button
                 onClick={handleOpenTemplateDialog}
-                className="px-4 py-2 text-sm bg-ink text-white rounded-lg hover:bg-ink/80 transition-colors duration-150"
+                className="px-4 py-2 text-sm bg-ink text-white rounded-lg hover:bg-ink/80 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
               >
                 テンプレートから作成
               </button>
@@ -1195,14 +1195,14 @@ export default function CourseProgressPage() {
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setShowSaveDialog(false)}
-                className="px-4 py-2 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition-colors duration-150"
+                className="px-4 py-2 text-xs border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
               >
                 キャンセル
               </button>
               <button
                 onClick={handleSaveAsTemplate}
                 disabled={!saveTemplateName.trim() || saving}
-                className="px-4 py-2 text-xs bg-ink text-white rounded-lg hover:bg-ink/80 disabled:opacity-50 transition-colors duration-150"
+                className="px-4 py-2 text-xs bg-ink text-white rounded-lg hover:bg-ink/80 disabled:opacity-50 transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
               >
                 {saving ? '保存中...' : '保存'}
               </button>

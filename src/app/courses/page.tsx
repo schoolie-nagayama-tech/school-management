@@ -606,7 +606,7 @@ export default function CoursesPage() {
           </Link>
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-medium bg-ink text-text-on-primary rounded-lg hover:brightness-[0.85] transition-[filter] duration-150"
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-medium bg-ink text-text-on-primary rounded-lg hover:brightness-[0.85] transition-[filter,transform] duration-150 ease-out active:scale-[0.97]"
           >
             <Plus className="w-3 h-3" />
             新規作成
@@ -617,7 +617,7 @@ export default function CoursesPage() {
       {/* 一括操作バー */}
       {!isLoading && courses.length > 0 && canDeploy && (
         <div
-          className={`mb-2 flex items-center gap-3 px-3 py-1.5 rounded-lg border transition-all duration-200 ${
+          className={`mb-2 flex items-center gap-3 px-3 py-1.5 rounded-lg border transition-[background-color,border-color,box-shadow] duration-200 ease-out ${
             hasSelection
               ? 'bg-info/5 border-info/20 shadow-sm'
               : 'bg-surface-raised border-border-subtle'
@@ -645,7 +645,7 @@ export default function CoursesPage() {
               <button
                 onClick={handleDeploy}
                 disabled={isDeploying}
-                className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold bg-info text-white rounded-lg hover:bg-info/90 active:scale-[0.97] transition-[colors,transform] duration-150 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold bg-info text-white rounded-lg hover:bg-info/90 active:scale-[0.97] transition-[background-color,transform] duration-150 ease-out disabled:opacity-50"
               >
                 {isDeploying ? (
                   <InlineLoading size="sm" label="展開中..." />

@@ -693,7 +693,7 @@ export default function CourseDetailPage() {
                   <button
                     onClick={handleGroup}
                     disabled={isSaving || selectedItems.size < 2}
-                    className="px-2 py-1 text-[11px] bg-surface-hover text-text-muted rounded-md hover:bg-border-default flex items-center gap-1 transition-colors duration-150 disabled:opacity-40"
+                    className="px-2 py-1 text-[11px] bg-surface-hover text-text-muted rounded-md hover:bg-border-default flex items-center gap-1 transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.97] disabled:opacity-40"
                   >
                     <Link2 className="w-3 h-3" />
                     グループ化 ({selectedItems.size})
@@ -701,7 +701,7 @@ export default function CourseDetailPage() {
                   <button
                     onClick={handleUngroup}
                     disabled={isSaving || selectedItems.size === 0}
-                    className="px-2 py-1 text-[11px] text-text-faint hover:text-text-muted rounded-md transition-colors duration-150 disabled:opacity-40 flex items-center gap-1"
+                    className="px-2 py-1 text-[11px] text-text-faint hover:text-text-muted rounded-md transition-[color,transform] duration-150 ease-out active:scale-[0.97] disabled:opacity-40 flex items-center gap-1"
                   >
                     <Unlink className="w-3 h-3" />
                     グループ解除
@@ -709,14 +709,14 @@ export default function CourseDetailPage() {
                   <button
                     onClick={handleSaveProposalCounts}
                     disabled={isSaving || proposalCountValues.size === 0}
-                    className="px-3 py-1.5 text-[11px] font-medium bg-ink text-text-on-primary rounded-lg hover:brightness-[0.85] transition-[filter] duration-150 disabled:opacity-40 flex items-center gap-1"
+                    className="px-3 py-1.5 text-[11px] font-medium bg-ink text-text-on-primary rounded-lg hover:brightness-[0.85] transition-[filter,transform] duration-150 ease-out active:scale-[0.97] disabled:opacity-40 flex items-center gap-1"
                   >
                     <Save className="w-3 h-3" />
                     {isSaving ? '保存中...' : '提案回数を保存'}
                   </button>
                   <Link
                     href={`/courses/${courseId}/apply`}
-                    className="px-3 py-1.5 text-[11px] font-medium text-text-body border border-border-default rounded-lg hover:bg-surface-hover transition-colors duration-150 flex items-center gap-1"
+                    className="px-3 py-1.5 text-[11px] font-medium text-text-body border border-border-default rounded-lg hover:bg-surface-hover transition-[background-color,transform] duration-150 ease-out active:scale-[0.97] flex items-center gap-1"
                     title="生徒ごとに下書きの提案書を作成します"
                   >
                     <Users className="w-3 h-3" />

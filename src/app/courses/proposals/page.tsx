@@ -401,14 +401,14 @@ export default function CourseProposalsPage() {
           <div className="mb-4 flex gap-2 print:hidden">
             <button
               onClick={() => setPrintMode(false)}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border-default text-text-body rounded-lg hover:bg-surface-hover transition-[background-color] duration-150 ease-out active:scale-[0.97]"
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium border border-border-default text-text-body rounded-lg hover:bg-surface-hover transition-[background-color,transform] duration-150 ease-out active:scale-[0.97]"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               一覧に戻る
             </button>
             <button
               onClick={() => window.print()}
-              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-ink text-text-on-primary rounded-lg hover:brightness-[0.85] transition-[filter] duration-150 active:scale-[0.97]"
+              className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-ink text-text-on-primary rounded-lg hover:brightness-[0.85] transition-[filter,transform] duration-150 ease-out active:scale-[0.97]"
             >
               <Printer className="w-3.5 h-3.5" />
               印刷
@@ -657,7 +657,7 @@ export default function CourseProposalsPage() {
             {activeFilterCount > 0 && (
               <button
                 onClick={clearAllFilters}
-                className="inline-flex items-center gap-1 px-2 py-1.5 text-xs text-text-muted hover:text-text-heading hover:underline transition-[color] duration-150 ease-out active:scale-[0.97]"
+                className="inline-flex items-center gap-1 px-2 py-1.5 text-xs text-text-muted hover:text-text-heading hover:underline transition-[color,transform] duration-150 ease-out active:scale-[0.97]"
               >
                 <X className="w-3 h-3" />
                 絞り込み解除
@@ -706,7 +706,7 @@ export default function CourseProposalsPage() {
                     <button
                       onClick={() => handlePrintStudent(studentId, name, studentProposals)}
                       disabled={printLoading === studentId}
-                      className="p-1 text-text-faint hover:text-text-heading transition-[color] duration-150 ease-out active:scale-95 disabled:opacity-50"
+                      className="p-1 text-text-faint hover:text-text-heading transition-[color,transform] duration-150 ease-out active:scale-[0.97] disabled:opacity-50"
                       title="この生徒の提案書を印刷"
                     >
                       {printLoading === studentId ? (
@@ -717,7 +717,7 @@ export default function CourseProposalsPage() {
                     </button>
                     <Link
                       href={`/students/${studentId}/proposals/new?season=${getCurrentSeason()}&year=${currentYear}`}
-                      className="text-text-muted hover:text-text-heading transition-[color] duration-150 ease-out active:scale-95"
+                      className="text-text-muted hover:text-text-heading transition-[color,transform] duration-150 ease-out active:scale-[0.97]"
                       title="この生徒の提案書を作成"
                     >
                       <Plus className="w-3.5 h-3.5" />
@@ -770,7 +770,7 @@ export default function CourseProposalsPage() {
                         <button
                           onClick={() => handleDelete(p.id)}
                           disabled={deletingId === p.id}
-                          className="sm:opacity-0 sm:group-hover:opacity-100 p-1 text-text-faint hover:text-danger transition-[color,opacity] duration-150 ease-out active:scale-95 shrink-0 disabled:opacity-50"
+                          className="sm:opacity-0 sm:group-hover:opacity-100 p-1 text-text-faint hover:text-danger transition-[color,opacity,transform] duration-150 ease-out active:scale-[0.97] shrink-0 disabled:opacity-50"
                           title="削除"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
