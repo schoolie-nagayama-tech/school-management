@@ -125,11 +125,17 @@ export default function ProposalList() {
         return na.localeCompare(nb, 'ja');
       });
 
-      for (const p of sorted) {
-        const { items, progressMap } = await getTextbookUnitsWithProgress(
-          p.student_textbook_id ?? null,
-          p.textbook_id
-        );
+      // 提案書ごとの進捗取得は互いに独立なので並列実行（旧実装は逐次awaitで
+      // 提案書数に比例して待ち時間が増えていた）。整形は取得後に科目順で行う。
+      const progressList = await Promise.all(
+        sorted.map((p) =>
+          getTextbookUnitsWithProgress(p.student_textbook_id ?? null, p.textbook_id)
+        )
+      );
+
+      for (let pi = 0; pi < sorted.length; pi++) {
+        const p = sorted[pi];
+        const { items, progressMap } = progressList[pi];
 
         const activeUnits: PrintUnitDraft[] = p.units
           .filter((u) => u.koma_count > 0)

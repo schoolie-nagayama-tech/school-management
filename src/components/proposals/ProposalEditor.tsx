@@ -252,6 +252,11 @@ export default function ProposalEditor() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
+      // テキスト一覧・お気に入りは student/proposal に依存しないので先に起動し、
+      // 下の student+proposal フェッチと並走させる（直列待ちを削減）。
+      const textbooksPromise = getTextbooks();
+      const favIdsPromise = getFavoriteTextbookIds().catch(() => null);
+
       const { data: student } = await supabase
         .from('students')
         .select('last_name, first_name, school_id, grade')
@@ -324,17 +329,13 @@ export default function ProposalEditor() {
         }
       }
 
-      const textbooks = await getTextbooks();
+      // 先頭で起動済みの並走フェッチを回収
+      const textbooks = await textbooksPromise;
       setAllTextbooks(textbooks);
 
-      // お気に入り集合を取得（テキスト選択画面で上位表示するため）
-      // 失敗しても通常動作はできるので例外でブロックしない
-      try {
-        const favIds = await getFavoriteTextbookIds();
-        setFavoriteTextbookIds(favIds);
-      } catch {
-        // ignore
-      }
+      // お気に入り集合（テキスト選択画面で上位表示用）。失敗しても通常動作は可能なので無視
+      const favIds = await favIdsPromise;
+      if (favIds) setFavoriteTextbookIds(favIds);
 
       if (!tbId) {
         setLoading(false);

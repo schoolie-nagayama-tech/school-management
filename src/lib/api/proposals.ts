@@ -489,30 +489,21 @@ export async function syncProposalToProgress(
     }
   }
 
-  // student_progress を upsert
+  // student_progress を一括 upsert
+  // 旧実装は curriculum_item ごとに select→update/insert していた（40〜50件で80〜100クエリ）。
+  // 複合ユニーク制約 (student_textbook_id, curriculum_item_id) を使い1回の upsert にまとめる。
+  // upsert はペイロードの列のみ更新するため、既存行の application_count 等は保持される。
   const entries = Array.from(unitKomaMap.entries());
-  for (const [ciId, komaCount] of entries) {
-    const { data: existing } = await supabase
+  if (entries.length > 0) {
+    const payload = entries.map(([ciId, komaCount]) => ({
+      student_textbook_id: stbId,
+      curriculum_item_id: ciId,
+      proposal_count: komaCount,
+    }));
+    const { error: upsertError } = await supabase
       .from('student_progress')
-      .select('id')
-      .eq('student_textbook_id', stbId)
-      .eq('curriculum_item_id', ciId)
-      .maybeSingle();
-
-    if (existing) {
-      await supabase
-        .from('student_progress')
-        .update({ proposal_count: komaCount })
-        .eq('id', (existing as { id: string }).id);
-    } else {
-      await supabase
-        .from('student_progress')
-        .insert({
-          student_textbook_id: stbId,
-          curriculum_item_id: ciId,
-          proposal_count: komaCount,
-        });
-    }
+      .upsert(payload, { onConflict: 'student_textbook_id,curriculum_item_id' });
+    if (upsertError) throw new Error(`進行表への反映に失敗しました: ${upsertError.message}`);
   }
 
   return { studentTextbookId: stbId!, textbookCreated };
@@ -529,14 +520,26 @@ export async function syncApplicationToProgress(
     throw new Error('提案書またはテキスト紐付けがありません');
   }
 
+  // unit ごとに個別 UPDATE していたのを、同じコマ数の unit をまとめて
+  // 「値ごとに1回の UPDATE（curriculum_item_id を .in() で指定）」に集約する。
+  // コマ数は小さい整数で種類が少ないため、クエリ数は unit 数ではなく値の種類数に比例。
+  const idsByCount = new Map<number, number[]>();
   for (const u of proposal.units) {
     const count = u.applied_koma ?? u.koma_count;
-    await supabase
-      .from('student_progress')
-      .update({ application_count: count })
-      .eq('student_textbook_id', proposal.student_textbook_id)
-      .eq('curriculum_item_id', u.curriculum_item_id);
+    const arr = idsByCount.get(count);
+    if (arr) arr.push(u.curriculum_item_id);
+    else idsByCount.set(count, [u.curriculum_item_id]);
   }
+
+  await Promise.all(
+    Array.from(idsByCount.entries()).map(([count, ids]) =>
+      supabase
+        .from('student_progress')
+        .update({ application_count: count })
+        .eq('student_textbook_id', proposal.student_textbook_id!)
+        .in('curriculum_item_id', ids)
+    )
+  );
 }
 
 // ============================================

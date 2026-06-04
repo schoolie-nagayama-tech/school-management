@@ -73,20 +73,22 @@ export async function getSchoolKoushu(schoolId: string): Promise<KoushuCourse[]>
   if (error) throw error;
 
   const courses = (data || []) as KoushuCourse[];
+  if (courses.length === 0) return [];
 
-  // 登録人数を集計
-  const withCounts = await Promise.all(
-    courses.map(async (c) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { count } = await (supabase as any)
-        .from('koushu_enrollments')
-        .select('*', { count: 'exact', head: true })
-        .eq('course_id', c.id);
-      return { ...c, enrollment_count: count ?? 0 };
-    })
-  );
+  // 登録人数を集計。講習ごとに count クエリを投げていた（N+1）のを、
+  // 全講習分の enrollment を course_id のみで1クエリ取得し、JS で件数を数える。
+  const courseIds = courses.map((c) => c.id);
+  const countByCourse = new Map<string, number>();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: enrollments } = await (supabase as any)
+    .from('koushu_enrollments')
+    .select('course_id')
+    .in('course_id', courseIds);
+  for (const e of (enrollments || []) as Array<{ course_id: string }>) {
+    countByCourse.set(e.course_id, (countByCourse.get(e.course_id) ?? 0) + 1);
+  }
 
-  return withCounts;
+  return courses.map((c) => ({ ...c, enrollment_count: countByCourse.get(c.id) ?? 0 }));
 }
 
 /** 講習を作成 */
@@ -699,20 +701,21 @@ export async function groupCourseCurriculumItems(
 
   const nextGroupNumber = (existing?.[0]?.group_number ?? 0) + 1;
 
-  // 各単元にグループ番号を設定
-  for (const curriculumItemId of curriculumItemIds) {
-    await supabase
-      .from('seasonal_course_curriculum')
-      .upsert({
+  // 各単元にグループ番号を設定（単元ごとの upsert を1回のバルク upsert に集約）
+  const now = new Date().toISOString();
+  const { error: upsertError } = await supabase
+    .from('seasonal_course_curriculum')
+    .upsert(
+      curriculumItemIds.map((curriculumItemId) => ({
         course_id: courseId,
         textbook_id: textbookId,
         curriculum_item_id: curriculumItemId,
         group_number: nextGroupNumber,
-        updated_at: new Date().toISOString(),
-      }, {
-        onConflict: 'course_id,curriculum_item_id',
-      });
-  }
+        updated_at: now,
+      })),
+      { onConflict: 'course_id,curriculum_item_id' }
+    );
+  if (upsertError) throw upsertError;
 }
 
 // グループ解除

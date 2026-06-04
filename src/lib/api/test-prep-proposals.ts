@@ -120,22 +120,76 @@ export async function getTestPrepProposalWithDetails(
   } as TestPrepProposalWithDetails;
 }
 
+/** 提案書の科目・単元入力データ型 */
+type TestPrepSubjectInput = {
+  subject_name: string;
+  target_score?: number | null;
+  sort_order: number;
+  units: Array<{
+    curriculum_item_id?: number | null;
+    unit_name: string;
+    self_assessment?: string | null;
+    koma_count: number;
+    group_id?: string | null;
+    sort_order: number;
+  }>;
+};
+
+/**
+ * 科目とその単元を一括挿入する。
+ * 旧実装は科目ごとに「科目INSERT→単元INSERT」を逐次 await していた（科目数×2クエリ）。
+ * 科目を1クエリでまとめて挿入して subject_id を取得し、全科目の単元を1クエリで挿入する（計2クエリ）。
+ * PostgREST の一括 INSERT は入力順で行を返すため、index で subject_id を対応付ける。
+ */
+async function insertTestPrepSubjectsWithUnits(
+  proposalId: string,
+  subjects: TestPrepSubjectInput[]
+): Promise<void> {
+  if (subjects.length === 0) return;
+
+  const subjectRows = subjects.map((subj, i) => ({
+    proposal_id: proposalId,
+    subject_name: subj.subject_name,
+    target_score: subj.target_score ?? null,
+    proposed_koma: subj.units.reduce((sum, u) => sum + u.koma_count, 0),
+    sort_order: subj.sort_order ?? i,
+  }));
+
+  const { data: insertedSubjects, error: subjError } = await db()
+    .from('test_prep_proposal_subjects')
+    .insert(subjectRows)
+    .select('id');
+  if (subjError) throw new Error(`Failed to create subjects: ${subjError.message}`);
+
+  const subjIds = (insertedSubjects || []) as Array<{ id: string }>;
+  if (subjIds.length !== subjects.length) {
+    throw new Error('科目の作成結果が入力と一致しません');
+  }
+
+  const allUnitRows = subjects.flatMap((subj, i) =>
+    subj.units.map((u, ui) => ({
+      subject_id: subjIds[i].id,
+      curriculum_item_id: u.curriculum_item_id ?? null,
+      unit_name: u.unit_name,
+      self_assessment: u.self_assessment ?? null,
+      koma_count: u.koma_count,
+      group_id: u.group_id ?? null,
+      sort_order: u.sort_order ?? ui,
+    }))
+  );
+
+  if (allUnitRows.length > 0) {
+    const { error: unitError } = await db()
+      .from('test_prep_proposal_units')
+      .insert(allUnitRows);
+    if (unitError) throw new Error(`Failed to create units: ${unitError.message}`);
+  }
+}
+
 /** 提案書を作成（科目・単元も一括保存） */
 export async function createTestPrepProposal(
   proposal: TestPrepProposalInsert,
-  subjects: Array<{
-    subject_name: string;
-    target_score?: number | null;
-    sort_order: number;
-    units: Array<{
-      curriculum_item_id?: number | null;
-      unit_name: string;
-      self_assessment?: string | null;
-      koma_count: number;
-      group_id?: string | null;
-      sort_order: number;
-    }>;
-  }>
+  subjects: TestPrepSubjectInput[]
 ): Promise<TestPrepProposal> {
   const { data, error } = await db()
     .from('test_prep_proposals')
@@ -145,38 +199,7 @@ export async function createTestPrepProposal(
   if (error) throw new Error(`Failed to create proposal: ${error.message}`);
   const created = data as TestPrepProposal;
 
-  for (let i = 0; i < subjects.length; i++) {
-    const subj = subjects[i];
-    const totalKoma = subj.units.reduce((sum: number, u: { koma_count: number }) => sum + u.koma_count, 0);
-    const { data: subjData, error: subjError } = await db()
-      .from('test_prep_proposal_subjects')
-      .insert({
-        proposal_id: created.id,
-        subject_name: subj.subject_name,
-        target_score: subj.target_score ?? null,
-        proposed_koma: totalKoma,
-        sort_order: subj.sort_order ?? i,
-      })
-      .select('id')
-      .single();
-    if (subjError) throw new Error(`Failed to create subject: ${subjError.message}`);
-
-    if (subj.units.length > 0) {
-      const unitRows = subj.units.map((u: { curriculum_item_id?: number | null; unit_name: string; self_assessment?: string | null; koma_count: number; group_id?: string | null; sort_order: number }, ui: number) => ({
-        subject_id: subjData.id,
-        curriculum_item_id: u.curriculum_item_id ?? null,
-        unit_name: u.unit_name,
-        self_assessment: u.self_assessment ?? null,
-        koma_count: u.koma_count,
-        group_id: u.group_id ?? null,
-        sort_order: u.sort_order ?? ui,
-      }));
-      const { error: unitError } = await db()
-        .from('test_prep_proposal_units')
-        .insert(unitRows);
-      if (unitError) throw new Error(`Failed to create units: ${unitError.message}`);
-    }
-  }
+  await insertTestPrepSubjectsWithUnits(created.id, subjects);
 
   return created;
 }
@@ -210,19 +233,7 @@ export async function deleteTestPrepProposal(id: string): Promise<void> {
 /** 科目を全置き換え（既存削除→再作成） */
 export async function replaceTestPrepSubjects(
   proposalId: string,
-  subjects: Array<{
-    subject_name: string;
-    target_score?: number | null;
-    sort_order: number;
-    units: Array<{
-      curriculum_item_id?: number | null;
-      unit_name: string;
-      self_assessment?: string | null;
-      koma_count: number;
-      group_id?: string | null;
-      sort_order: number;
-    }>;
-  }>
+  subjects: TestPrepSubjectInput[]
 ): Promise<void> {
   const { error: delError } = await db()
     .from('test_prep_proposal_subjects')
@@ -230,38 +241,7 @@ export async function replaceTestPrepSubjects(
     .eq('proposal_id', proposalId);
   if (delError) throw new Error(`Failed to delete subjects: ${delError.message}`);
 
-  for (let i = 0; i < subjects.length; i++) {
-    const subj = subjects[i];
-    const totalKoma = subj.units.reduce((sum: number, u: { koma_count: number }) => sum + u.koma_count, 0);
-    const { data: subjData, error: subjError } = await db()
-      .from('test_prep_proposal_subjects')
-      .insert({
-        proposal_id: proposalId,
-        subject_name: subj.subject_name,
-        target_score: subj.target_score ?? null,
-        proposed_koma: totalKoma,
-        sort_order: subj.sort_order ?? i,
-      })
-      .select('id')
-      .single();
-    if (subjError) throw new Error(`Failed to create subject: ${subjError.message}`);
-
-    if (subj.units.length > 0) {
-      const unitRows = subj.units.map((u: { curriculum_item_id?: number | null; unit_name: string; self_assessment?: string | null; koma_count: number; group_id?: string | null; sort_order: number }, ui: number) => ({
-        subject_id: subjData.id,
-        curriculum_item_id: u.curriculum_item_id ?? null,
-        unit_name: u.unit_name,
-        self_assessment: u.self_assessment ?? null,
-        koma_count: u.koma_count,
-        group_id: u.group_id ?? null,
-        sort_order: u.sort_order ?? ui,
-      }));
-      const { error: unitError } = await db()
-        .from('test_prep_proposal_units')
-        .insert(unitRows);
-      if (unitError) throw new Error(`Failed to create units: ${unitError.message}`);
-    }
-  }
+  await insertTestPrepSubjectsWithUnits(proposalId, subjects);
 }
 
 // ========== 公開取得（service role 経由） ==========
