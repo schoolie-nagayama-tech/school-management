@@ -273,8 +273,7 @@ export function ScheduleToolbar({
                 <div className="absolute right-0 mt-1 z-50 w-52 rounded-lg border border-[var(--stroke)] bg-white shadow-lg overflow-hidden py-1">
                   {[
                     { href: '/schedule/regular-patterns', label: '通塾日程の登録' },
-                    { href: '/schedule/koushu', label: '講習 申込（生徒別）' },
-                    { href: '/schedule/zoukoma', label: 'テスト対策 申込（生徒別）' },
+                    { href: '/schedule/enrollments', label: '申込管理（講習・テスト対策）' },
                     { href: '/schedule/regular-patterns/match', label: '一括マッチング' },
                   ].map((item) => (
                     <Link
