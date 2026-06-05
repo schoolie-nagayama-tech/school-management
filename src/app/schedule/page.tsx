@@ -50,6 +50,10 @@ const TestPrepPlacementPanel = dynamic(
   () => import('@/components/schedule/TestPrepPlacementPanel').then((m) => m.TestPrepPlacementPanel),
   { ssr: false }
 );
+const ScheduleLegend = dynamic(
+  () => import('@/components/schedule/ScheduleLegend').then((m) => m.ScheduleLegend),
+  { ssr: false }
+);
 const GroupLaneGrid = dynamic(
   () => import('@/components/schedule/GroupLaneGrid').then((m) => m.GroupLaneGrid),
   { ssr: false }
@@ -1624,6 +1628,9 @@ export default function SchedulePage() {
             </div>
           );
         })()}
+
+        {/* 座席表の凡例（バッジ・色の意味）。折りたたみ式。 */}
+        <ScheduleLegend />
 
         {/* 講習選択中はコントロールパネルを表示（マッチング・下書き公開・配置進捗を集約）。
             空きセルクリックで講習コマを追加できる「配置モード」も内包。 */}

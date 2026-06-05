@@ -4,13 +4,7 @@ import React from 'react';
 import { ArrowRightLeft } from 'lucide-react';
 import type { ScheduleEntry } from '@/types/schedule';
 import { SCHEDULE_ENTRY_KIND_LABELS, isExtraLessonKind } from '@/types/schedule';
-
-/** 追加授業（単発コマ）の種別バッジ色。座席表で通常授業と一目で区別するため。 */
-const EXTRA_KIND_BADGE: Record<string, string> = {
-  test_prep: 'bg-warning text-white',
-  additional: 'bg-ink text-white',
-  trial: 'bg-success text-white',
-};
+import { extraKindBadgeClass } from './scheduleBadges';
 
 function gradeLabel(grade: number): string {
   if (grade <= 6) return `小${grade}`;
@@ -68,7 +62,7 @@ export const StudentCard = React.memo(function StudentCard({
   const isDraft = !!entry.isDraft;
   // 追加授業（テスト対策/追加授業/体験）は種別バッジで通常授業と区別する
   const isExtra = isExtraLessonKind(entry.kind);
-  const extraBadgeClass = isExtra ? EXTRA_KIND_BADGE[entry.kind] ?? 'bg-ink text-white' : '';
+  const extraBadgeClass = extraKindBadgeClass(entry.kind);
   const canTransfer = onTransferClick && !isTransferredOut && entry.status !== 'cancelled' && !isDraft;
 
   return (
