@@ -451,7 +451,8 @@ node scripts/verify-phase0-migrations.mjs
 - **テスト対策は期間を意識しない**：`getZoukomaPlacementProgress(schoolId, subjects)` が**全増コマ申込をまとめて**集計（`getFormResponses(formType:'zoukoma')`、時限→時刻は全期間設定をマージ）。座席表は `testPrepActive` のON/OFFのみ。`/schedule/zoukoma` は期間タブ廃止＝全申込一覧（新規は最新期間をテンプレに使用）。`hasZoukomaForm`/`getAllZoukomaResponses` 追加。
 - **二重経路解消**：空きセル追加モーダル(`AddStudentToSlotModal`)の種別から `test_prep` を除外（追加授業/体験/臨時のみ）。テスト対策は必ず申込→落とし込みモード経由。
 - **P2 申込画面の統合（2026-06-02 完了）**：`/schedule/enrollments` に講習/テスト対策をタブ切替で統合。本体は `KoushuEnrollmentManager` / `ZoukomaEnrollmentManager` に抽出。旧 `/schedule/koushu`・`/schedule/zoukoma` はサーバーリダイレクト（`redirect()`）。`?tab=testprep` でテスト対策タブ初期表示。管理▾メニューは「申込管理（講習・テスト対策）」1項目に。
-- 残UX案：P3=配置モードの完全共通化＋グリッド凡例（モック: `docs/mockups/schedule-toolbar-consolidation.html`）。
+- **P3 凡例＋バッジ一元化（2026-06-02 完了）**：`ScheduleLegend`（折りたたみ凡例＝出欠/種別/仮/振替/欠勤の意味）を座席表上部に追加。`scheduleBadges.ts` で種別バッジ色を単一ソース化し `StudentCard` と凡例が共有。配置モードの座席表操作は P1 で講習/テスト対策を `gridPlacing/gridGetPlaceability/gridPlace/gridPlaceWithTeacher` に一本化済み（パネルはデータが異なるため専用のまま）。
+- UX整理（P1〜P3）完了。モック: `docs/mockups/schedule-toolbar-consolidation.html`。
 
 ## ★ 重要バグ修正：「スケジュールの取得に失敗」
 - 原因：`generateWeeklySchedule` の再生成 INSERT が UNIQUE 制約
