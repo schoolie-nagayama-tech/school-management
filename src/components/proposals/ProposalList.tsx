@@ -17,6 +17,7 @@ import { ProposalPrintView } from './ProposalPrintView';
 import type { PrintUnitDraft, ProposalPrintData } from './ProposalPrintView';
 import type { SeasonalProposalWithDetails, SeasonType, ProposalStatus } from '@/types/database';
 import { SEASON_LABELS, PROPOSAL_STATUS_LABELS, GRADE_LABELS } from '@/types/database';
+import { getSubjectBadgeColor } from '@/lib/subjectBadge';
 
 const STATUS_BADGE: Record<ProposalStatus, string> = {
   draft: 'bg-surface-hover text-text-muted',
@@ -236,6 +237,20 @@ export default function ProposalList() {
     return a.name.localeCompare(b.name, 'ja');
   });
 
+  // ── 科目別サマリー（上部に「何の科目を何コマ提案しているか」を集約表示） ──
+  // 全提案書を科目で束ね、提案コマ数・申込コマ数を合算する。科目バッジ＋コマ数で一覧性を上げる狙い。
+  const bySubject = new Map<string, { koma: number; appliedKoma: number; count: number }>();
+  for (const p of proposals) {
+    const subject = p.textbook?.subject || 'その他';
+    const entry = bySubject.get(subject) ?? { koma: 0, appliedKoma: 0, count: 0 };
+    entry.koma += calcTotalKoma(p.units);
+    entry.appliedKoma += calcTotalAppliedKoma(p.units) ?? 0;
+    entry.count += 1;
+    bySubject.set(subject, entry);
+  }
+  const subjectSummary = Array.from(bySubject.entries()).sort(([a], [b]) => a.localeCompare(b, 'ja'));
+  const totalKomaAll = subjectSummary.reduce((sum, [, v]) => sum + v.koma, 0);
+
   const hasSelection = selected.size > 0;
 
   return (
@@ -298,6 +313,31 @@ export default function ProposalList() {
           </div>
         </div>
       </div>
+
+      {/* 科目別サマリー */}
+      {!loading && subjectSummary.length > 0 && (
+        <div className="mb-4 flex items-center gap-2 flex-wrap px-3.5 py-2.5 rounded-xl border border-border-subtle bg-surface-raised">
+          <span className="text-[11px] font-medium text-text-faint shrink-0">提案内容</span>
+          {subjectSummary.map(([subject, v]) => {
+            const colors = getSubjectBadgeColor(subject === 'その他' ? null : subject);
+            return (
+              <span
+                key={subject}
+                className="inline-flex items-center gap-1.5 pl-1.5 pr-2 py-1 rounded-lg bg-surface-hover"
+              >
+                <span className={`inline-flex px-1.5 py-0.5 text-[11px] font-bold rounded ${colors.bg} ${colors.text}`}>
+                  {subject}
+                </span>
+                <span className="text-xs font-semibold text-text-heading tabular-nums">{v.koma}コマ</span>
+              </span>
+            );
+          })}
+          <span className="flex-1" />
+          <span className="text-xs text-text-muted shrink-0">
+            合計 <span className="font-bold text-text-heading tabular-nums">{totalKomaAll}</span>コマ
+          </span>
+        </div>
+      )}
 
       {/* 一括公開バー */}
       {!loading && publishable.length > 0 && (
@@ -372,9 +412,16 @@ export default function ProposalList() {
           {sortedTextbooks.map(([tbId, { name, subject, proposals: tbProposals }]) => (
             <div key={tbId} className="bg-surface-raised rounded-xl border border-border-default overflow-hidden">
               <div className="px-4 py-3 border-b border-border-subtle">
-                <div className="font-semibold text-sm text-text-heading">
-                  {subject && <span className="text-text-muted font-normal mr-1.5">{subject}</span>}
-                  {name}
+                <div className="font-semibold text-sm text-text-heading flex items-center gap-1.5">
+                  {subject && (() => {
+                    const colors = getSubjectBadgeColor(subject);
+                    return (
+                      <span className={`inline-flex px-1.5 py-0.5 text-[11px] font-bold rounded shrink-0 ${colors.bg} ${colors.text}`}>
+                        {subject}
+                      </span>
+                    );
+                  })()}
+                  <span className="truncate">{name}</span>
                 </div>
               </div>
 
