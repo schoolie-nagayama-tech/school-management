@@ -67,6 +67,8 @@ function getEditHref(alert: Alert): string | null {
       return `/students/${sid}/progress`;
     case 'course_prep_overdue':
       return `/courses/progress`;
+    case 'schedule_change_unapplied':
+      return `/students/${sid}/schedule`;
     default:
       return null;
   }

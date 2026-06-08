@@ -71,6 +71,7 @@ const ALERT_DESCRIPTIONS: Record<AlertType, string> = {
   homework_not_done: '進行表で「宿題未実施」にチェックした回数で段階表示。',
   tardy: '進行表で「遅刻」にチェックした回数で段階表示。',
   course_prep_overdue: '講習準備の進捗項目で期日超過・間近の未完了生徒を段階表示。',
+  schedule_change_unapplied: '週回数変更・曜日変更フォームの申込があったのに、通塾日程がまだ更新されていない生徒を検出。通塾日程を編集すると自動で消えます。',
 };
 
 export default function AlertsSettingsPage() {

@@ -16,6 +16,7 @@ const ALL_ALERT_TYPES: AlertType[] = [
   'homework_not_done',
   'tardy',
   'course_prep_overdue',
+  'schedule_change_unapplied',
 ];
 
 type AlertSettingRow = {

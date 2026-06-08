@@ -40,8 +40,23 @@ export interface AlertSources {
   coursePrepStudentProgress: Array<{ student_id: string; item_id: string; status: string | null }>;
   /** 行動目標が1件以上存在するテスト設定のIDセット */
   actionGoalExamIds: Set<string>;
+  /** 週回数/曜日変更フォームの「紐付け済み・未アーカイブ」回答 */
+  scheduleChangeResponses: ScheduleChangeResponse[];
+  /** 生徒ごとの通塾日程(regular)の最終更新時刻(epoch ms)。created_at/updated_at の大きい方 */
+  scheduleTouchedByStudent: Map<string, number>;
   /** 設定（教室別の最も厳しい値を採用） */
   settingsBySchool: Map<string, AlertSetting[]>;
+}
+
+/** 週回数(shukaisu)/曜日(youbi)変更フォームの回答（アラート判定に必要な最小情報） */
+export interface ScheduleChangeResponse {
+  id: string;
+  form_type: 'shukaisu' | 'youbi';
+  student_id: string;
+  created_at: string;
+  /** 変更希望日（response_data.change_from）。表示・緊急度に使う */
+  change_from: string | null;
+  change_from_label: string | null;
 }
 
 // ============================================
@@ -90,6 +105,108 @@ async function fetchProgressFlagsByStudent(
 }
 
 /**
+ * 週回数/曜日変更フォームの未反映検出に必要なデータを取得。
+ *
+ * - 対象は form_type が shukaisu / youbi で、生徒に紐付け済み(linked_student_id)・未アーカイブの回答。
+ *   （未紐付けの回答は生徒が特定できず、別途「新着回答」ボードで拾うためここでは扱わない）
+ * - 通塾日程は period_type='regular' の created_at/updated_at の最大値を生徒ごとに集約。
+ *   申込より後にこの値が動いていれば「日程を更新した」とみなす（更新で自動的にアラートが消える）。
+ *
+ * いずれも PostgREST の1000行上限で切り捨てられないよう .range() でページング全件取得する。
+ */
+async function fetchScheduleChangeAlertData(schoolIds: string[]): Promise<{
+  responses: ScheduleChangeResponse[];
+  touchedByStudent: Map<string, number>;
+}> {
+  const empty = { responses: [] as ScheduleChangeResponse[], touchedByStudent: new Map<string, number>() };
+  if (schoolIds.length === 0) return empty;
+
+  const PAGE = 1000;
+
+  // 1. 紐付け済み・未アーカイブの週回数/曜日変更回答
+  const responses: ScheduleChangeResponse[] = [];
+  try {
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await supabase
+        .from('form_responses')
+        .select('id, form_type, linked_student_id, created_at, response_data')
+        .in('school_id', schoolIds)
+        .in('form_type', ['shukaisu', 'youbi'])
+        .eq('is_archived', false)
+        .not('linked_student_id', 'is', null)
+        .order('id', { ascending: true })
+        .range(from, from + PAGE - 1);
+      if (error) {
+        if (error.code === 'PGRST116' || error.message.includes('schema cache')) return empty;
+        console.warn('日程変更回答の取得に失敗:', error);
+        break;
+      }
+      const rows = (data ?? []) as Array<{
+        id: string;
+        form_type: 'shukaisu' | 'youbi';
+        linked_student_id: string | null;
+        created_at: string;
+        response_data: { change_from?: string; change_from_label?: string } | null;
+      }>;
+      for (const r of rows) {
+        if (!r.linked_student_id) continue;
+        responses.push({
+          id: r.id,
+          form_type: r.form_type,
+          student_id: r.linked_student_id,
+          created_at: r.created_at,
+          change_from: r.response_data?.change_from ?? null,
+          change_from_label: r.response_data?.change_from_label ?? null,
+        });
+      }
+      if (rows.length < PAGE) break;
+    }
+  } catch (e) {
+    console.warn('日程変更回答の取得に失敗:', e);
+    return empty;
+  }
+
+  // 回答が無ければ通塾日程を取りに行く必要はない
+  if (responses.length === 0) return { responses, touchedByStudent: new Map() };
+
+  // 2. 通塾日程(regular)の生徒ごと最終更新時刻
+  const touchedByStudent = new Map<string, number>();
+  try {
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await supabase
+        .from('schedule_regular_patterns')
+        .select('id, student_id, created_at, updated_at')
+        .in('school_id', schoolIds)
+        .eq('period_type', 'regular')
+        .order('id', { ascending: true })
+        .range(from, from + PAGE - 1);
+      if (error) {
+        console.warn('通塾日程の取得に失敗:', error);
+        break;
+      }
+      const rows = (data ?? []) as Array<{
+        student_id: string;
+        created_at: string | null;
+        updated_at: string | null;
+      }>;
+      for (const p of rows) {
+        const t = Math.max(
+          p.updated_at ? Date.parse(p.updated_at) : 0,
+          p.created_at ? Date.parse(p.created_at) : 0
+        );
+        const prev = touchedByStudent.get(p.student_id) ?? 0;
+        if (t > prev) touchedByStudent.set(p.student_id, t);
+      }
+      if (rows.length < PAGE) break;
+    }
+  } catch (e) {
+    console.warn('通塾日程の取得に失敗:', e);
+  }
+
+  return { responses, touchedByStudent };
+}
+
+/**
  * アラート計算に必要な全データをバッチ取得
  */
 export async function fetchAlertSources(schoolIds: string[]): Promise<AlertSources> {
@@ -108,6 +225,8 @@ export async function fetchAlertSources(schoolIds: string[]): Promise<AlertSourc
       coursePrepItems: [],
       coursePrepStudentProgress: [],
       actionGoalExamIds: new Set(),
+      scheduleChangeResponses: [],
+      scheduleTouchedByStudent: new Map(),
       settingsBySchool: new Map(),
     };
   }
@@ -122,6 +241,7 @@ export async function fetchAlertSources(schoolIds: string[]): Promise<AlertSourc
     textbooksResult,
     progressFlags,
     coursePrepData,
+    scheduleChangeData,
     settingsBySchool,
   ] = await Promise.all([
     getStudents(undefined, schoolIds),
@@ -133,6 +253,7 @@ export async function fetchAlertSources(schoolIds: string[]): Promise<AlertSourc
     getStudentTextbooksExamsBySchool(schoolIds),
     fetchProgressFlagsByStudent(schoolIds),
     fetchCoursePrepAlertData(schoolIds),
+    fetchScheduleChangeAlertData(schoolIds).catch((e) => { console.warn('日程変更データの取得に失敗しました:', e); return { responses: [], touchedByStudent: new Map<string, number>() }; }),
     getAlertSettingsBySchools(schoolIds).catch(() => new Map<string, AlertSetting[]>()),
   ]);
 
@@ -172,6 +293,8 @@ export async function fetchAlertSources(schoolIds: string[]): Promise<AlertSourc
     coursePrepItems: coursePrepData.items,
     coursePrepStudentProgress: coursePrepData.studentProgress,
     actionGoalExamIds,
+    scheduleChangeResponses: scheduleChangeData.responses,
+    scheduleTouchedByStudent: scheduleChangeData.touchedByStudent,
     settingsBySchool,
   };
 }
@@ -768,6 +891,68 @@ function buildCoursePrepOverdueCandidates(sources: AlertSources): Alert[] {
   return alerts;
 }
 
+function buildScheduleChangeUnappliedCandidates(sources: AlertSources): Alert[] {
+  if (!isAlertEnabled(sources.settingsBySchool, 'schedule_change_unapplied')) return [];
+  if (sources.scheduleChangeResponses.length === 0) return [];
+
+  const alerts: Alert[] = [];
+  const studentMap = new Map(sources.students.map((s) => [s.id, s]));
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  for (const res of sources.scheduleChangeResponses) {
+    // 在籍中(active・非プログラミング)の生徒のみ。退会等で students に居なければスキップ
+    const student = studentMap.get(res.student_id);
+    if (!student) continue;
+
+    // 申込日時より後に通塾日程(regular)が作成/更新されていれば「反映済み」とみなす
+    const touched = sources.scheduleTouchedByStudent.get(res.student_id) ?? 0;
+    const submittedAt = Date.parse(res.created_at);
+    if (touched >= submittedAt) continue;
+
+    const kindLabel = res.form_type === 'shukaisu' ? '週回数変更' : '曜日変更';
+
+    // 変更希望日(change_from)で緊急度を段階化（タイミング自体は申込時点から常に表示）
+    let daysUntil: number | undefined;
+    let severity: AlertSeverity = 'warning';
+    if (res.change_from) {
+      const due = new Date(res.change_from);
+      if (!isNaN(due.getTime())) {
+        due.setHours(0, 0, 0, 0);
+        daysUntil = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        severity = daysUntil < 0 ? 'danger' : daysUntil <= 7 ? 'warning' : 'info';
+      }
+    }
+
+    const fromLabel = res.change_from_label
+      || (res.change_from
+        ? new Date(res.change_from).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' })
+        : '');
+    const message = fromLabel
+      ? `${kindLabel}の申込が通塾日程に未反映（希望日 ${fromLabel}）`
+      : `${kindLabel}の申込が通塾日程に未反映`;
+
+    const alertKey = `schedule_change:${res.id}`;
+    alerts.push({
+      id: `${student.id}:schedule_change_unapplied:${alertKey}`,
+      student_id: student.id,
+      student_name: `${student.last_name} ${student.first_name}`,
+      grade: student.grade,
+      school_id: student.school_id,
+      alert_type: 'schedule_change_unapplied',
+      alert_key: alertKey,
+      message,
+      details: {
+        item_name: kindLabel,
+        due_date: res.change_from ?? undefined,
+        days_until_due: daysUntil,
+      },
+      severity,
+    });
+  }
+  return alerts;
+}
+
 export type AlertLevel = 'warning' | 'info';
 
 /** Phase 3: アラート定義のデータ駆動化（追加・表示制御を一元管理） */
@@ -784,10 +969,11 @@ export const ALERT_DEFINITIONS: Record<
   homework_not_done: { level: 'warning', evaluator: buildHomeworkNotDoneCandidates },
   tardy: { level: 'warning', evaluator: buildTardyCandidates },
   course_prep_overdue: { level: 'warning', evaluator: buildCoursePrepOverdueCandidates },
+  schedule_change_unapplied: { level: 'warning', evaluator: buildScheduleChangeUnappliedCandidates },
 };
 
 /** Light 用の alert types */
-const LIGHT_ALERT_TYPES: AlertType[] = ['interview_overdue', 'application_overdue', 'interview_task'];
+const LIGHT_ALERT_TYPES: AlertType[] = ['interview_overdue', 'application_overdue', 'interview_task', 'schedule_change_unapplied'];
 
 /** Heavy 用の alert types */
 const HEAVY_ALERT_TYPES: AlertType[] = ['score_drop', 'score_missing', 'exam_overdue', 'homework_not_done', 'tardy', 'course_prep_overdue'];
@@ -983,17 +1169,20 @@ async function fetchAlertSourcesLight(schoolIds: string[]): Promise<Partial<Aler
       pendingTasks: [],
       coursePrepItems: [],
       coursePrepStudentProgress: [],
+      scheduleChangeResponses: [],
+      scheduleTouchedByStudent: new Map(),
       settingsBySchool: new Map(),
     };
   }
 
-  const [allStudents, interviewsByStudent, applicationItems, applicationsResult, pendingTasksResult, settingsBySchool] =
+  const [allStudents, interviewsByStudent, applicationItems, applicationsResult, pendingTasksResult, scheduleChangeData, settingsBySchool] =
     await Promise.all([
       getStudents(undefined, schoolIds),
       getInterviewsBySchool(schoolIds),
       getApplicationItems(schoolIds, false),
       getStudentApplications(schoolIds).catch(() => []),
       getPendingTasksBySchools(schoolIds).catch((e) => { console.warn('未完了タスクの取得に失敗しました:', e); return []; }),
+      fetchScheduleChangeAlertData(schoolIds).catch((e) => { console.warn('日程変更データの取得に失敗しました:', e); return { responses: [], touchedByStudent: new Map<string, number>() }; }),
       getAlertSettingsBySchools(schoolIds).catch(() => new Map<string, AlertSetting[]>()),
     ]);
   // プログラミング受講生はアラート対象外
@@ -1005,6 +1194,8 @@ async function fetchAlertSourcesLight(schoolIds: string[]): Promise<Partial<Aler
     applicationItems,
     applications: applicationsResult ?? [],
     pendingTasks: pendingTasksResult ?? [],
+    scheduleChangeResponses: scheduleChangeData.responses,
+    scheduleTouchedByStudent: scheduleChangeData.touchedByStudent,
     settingsBySchool,
   };
 }
@@ -1091,6 +1282,8 @@ function toFullSources(partial: Partial<AlertSources>): AlertSources {
     coursePrepItems: partial.coursePrepItems ?? [],
     coursePrepStudentProgress: partial.coursePrepStudentProgress ?? [],
     actionGoalExamIds: partial.actionGoalExamIds ?? new Set(),
+    scheduleChangeResponses: partial.scheduleChangeResponses ?? [],
+    scheduleTouchedByStudent: partial.scheduleTouchedByStudent ?? new Map(),
     settingsBySchool: partial.settingsBySchool ?? new Map(),
   };
 }

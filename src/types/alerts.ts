@@ -7,7 +7,8 @@ export type AlertType =
   | 'exam_overdue'      // テスト未更新
   | 'homework_not_done' // 宿題未実施
   | 'tardy'             // 遅刻
-  | 'course_prep_overdue'; // 講習準備未完了
+  | 'course_prep_overdue' // 講習準備未完了
+  | 'schedule_change_unapplied'; // 週回数/曜日変更の申込が通塾日程に未反映
 
 export const ALERT_TYPE_LABELS: Record<AlertType, string> = {
   score_drop: '成績低下',
@@ -19,6 +20,7 @@ export const ALERT_TYPE_LABELS: Record<AlertType, string> = {
   homework_not_done: '宿題未実施',
   tardy: '遅刻',
   course_prep_overdue: '講習準備',
+  schedule_change_unapplied: '日程変更未反映',
 };
 
 /** アラートラベル用：明るいトーンに統一 */
@@ -32,6 +34,7 @@ export const ALERT_TYPE_COLORS: Record<AlertType, string> = {
   homework_not_done: 'bg-yellow-100 text-yellow-800',
   tardy: 'bg-orange-100 text-orange-700',
   course_prep_overdue: 'bg-indigo-100 text-indigo-700',
+  schedule_change_unapplied: 'bg-teal-100 text-teal-700',
 };
 
 /** 段階レベル（バッジの色や強調表現に使用） */
@@ -130,6 +133,9 @@ export const DISMISSABLE_ALERT_TYPES: ReadonlySet<AlertType> = new Set<AlertType
   'score_drop',
   'homework_not_done',
   'tardy',
+  // 通塾日程を実際に変更すれば自動で消えるが、「変更不要（申込却下等）」のケースのために
+  // 手動で対応済みにもできるようにする。
+  'schedule_change_unapplied',
 ]);
 
 export const DEFAULT_ALERT_THRESHOLDS: Required<AlertThresholds> = {
