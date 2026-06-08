@@ -673,6 +673,20 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                         すべての設定
                       </Link>
                       <div className="border-t border-border my-1" />
+                      {/* 教室長ダッシュボード（admin のみ・試作。通常ナビにはまだ出さず、ここが唯一の入口） */}
+                      {profile?.role === 'admin' && (
+                        <>
+                          <Link
+                            href="/home-mock"
+                            className="flex items-center gap-2 px-3 py-2 text-xs text-text-heading hover:bg-gray-50 transition-colors"
+                            onClick={() => setShowSettingsDropdown(false)}
+                          >
+                            <LayoutDashboard className="w-3.5 h-3.5" aria-hidden />
+                            教室長ダッシュボード（試作）
+                          </Link>
+                          <div className="border-t border-border my-1" />
+                        </>
+                      )}
                       {/* テーマ切替 */}
                       <div className="px-3 py-2 flex items-center justify-between">
                         <span className="text-xs text-gray-600">テーマ</span>
