@@ -290,21 +290,36 @@ export async function getStudentBillings(
 
   const itemIds = billingItems.map((i) => i.id);
 
-  const { data, error } = await supabase
-    .from('student_billings')
-    .select('*')
-    .in('billing_item_id', itemIds)
-    .in('school_id', targetSchoolIds);
+  // student_billings は (生徒数 × 項目数) のオーダーで増える。PostgREST のデフォルト
+  // 上限（1000行）で頭打ちになると、5週目自動計算などで行数が増えた途端に一部の
+  // 計上（例: 単語練習帳）が取得結果から押し出されて画面から消える。
+  // そのため .range() でページングし、全件を確実に取得する。id 昇順で安定ページング。
+  const PAGE_SIZE = 1000;
+  const allRows: StudentBilling[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from('student_billings')
+      .select('*')
+      .in('billing_item_id', itemIds)
+      .in('school_id', targetSchoolIds)
+      .order('id', { ascending: true })
+      .range(from, from + PAGE_SIZE - 1);
 
-  if (error) {
-    if (error.code === 'PGRST116' || error.code === '42501' || error.message.includes('schema cache')) {
-      console.warn('student_billingsテーブルの取得に失敗しました（無視します）:', error);
-      return [];
+    if (error) {
+      if (error.code === 'PGRST116' || error.code === '42501' || error.message.includes('schema cache')) {
+        console.warn('student_billingsテーブルの取得に失敗しました（無視します）:', error);
+        return [];
+      }
+      throw new Error(`請求状況の取得に失敗しました: ${error.message}`);
     }
-    throw new Error(`請求状況の取得に失敗しました: ${error.message}`);
+
+    const rows = (data || []) as StudentBilling[];
+    allRows.push(...rows);
+    // 1ページ分に満たなければ最終ページ
+    if (rows.length < PAGE_SIZE) break;
   }
 
-  return (data || []) as StudentBilling[];
+  return allRows;
 }
 
 /**
