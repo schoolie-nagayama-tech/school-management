@@ -161,10 +161,16 @@ export function BillingTable({
   // 単語練習帳ワンクリックトグル: 値なし→1(在庫-1), 値あり→クリア(在庫+1)
   const handleVocabToggle = async (studentId: string, itemId: string, currentBilling: StudentBilling | undefined) => {
     if (isTeacher || !onBillingChange) return;
+    const hasValue = currentBilling?.value_number != null && currentBilling.value_number !== 0;
+    // 計上済みは誤って冊数を消さないよう、未計上に戻してからでないとクリアできない。
+    // （消すと計上フラグだけ残り「冊数だけ消えた」状態になるのを防ぐ）
+    if (hasValue && currentBilling?.is_billed) {
+      toastError('計上済みのため消せません。先に「計上」を外して未計上にしてから消してください。');
+      return;
+    }
     const key = `${studentId}-${itemId}`;
     setUpdatingCells((prev) => new Set(prev).add(key));
     try {
-      const hasValue = currentBilling?.value_number != null && currentBilling.value_number !== 0;
       const newValue = hasValue ? null : 1;
       await updateBillingValue(studentId, itemId, { value_number: newValue });
 
@@ -683,7 +689,7 @@ export function BillingTable({
                                 handleVocabToggle(student.id, item.id, billing);
                               }
                             }}
-                            title={hasValue ? '1（クリックでクリア）' : 'クリックで1をセット'}
+                            title={hasValue ? (isBilled ? '計上済み（消すには先に計上を外す）' : '1（クリックでクリア）') : 'クリックで1をセット'}
                           >
                             {isUpdating ? (
                               <span className="text-[#4b5563] text-xs">...</span>
