@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/api-auth';
 import { createClient } from '@supabase/supabase-js';
-import { fetchAllPaged, fetchInChunks } from '@/lib/utils/supabasePaging';
+import { fetchAllPaged, fetchInChunks, fetchAllInChunks } from '@/lib/utils/supabasePaging';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,14 +51,17 @@ export async function GET(request: NextRequest) {
         .in('id', chunk)
   ).catch(() => []);
 
-  // user_schools でどの教室に所属しているか取得（同上、チャンク分割）
-  const userSchools = await fetchInChunks<{ user_id: string; school_id: string; schools: unknown }>(
+  // user_schools は 1 ユーザーに複数教室がありうるため、id チャンク分割＋チャンク内
+  // ページングの fetchAllInChunks で取得する。
+  const userSchools = await fetchAllInChunks<{ user_id: string; school_id: string; schools: unknown }>(
     userIds,
-    (chunk) =>
+    (chunk, from, to) =>
       supabaseAdmin
         .from('user_schools')
-        .select('user_id, school_id, schools(id, name)')
+        .select('user_id, school_id, schools(id, name), id')
         .in('user_id', chunk)
+        .order('id', { ascending: true })
+        .range(from, to)
   ).catch(() => []);
 
   const profileMap = new Map(

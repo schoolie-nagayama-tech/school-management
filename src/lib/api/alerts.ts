@@ -5,7 +5,7 @@ import { getApplicationItems, getStudentApplications } from './applications';
 import { getStudents } from './students';
 import { getStudentTextbooksExamsBySchool } from './progress';
 import { getAlertSettingsBySchools, pickStrictestThreshold } from './alertSettings';
-import { fetchInChunks } from '@/lib/utils/supabasePaging';
+import { fetchAllInChunks } from '@/lib/utils/supabasePaging';
 import type {
   Alert,
   AlertDismissal,
@@ -271,17 +271,19 @@ export async function fetchAlertSources(schoolIds: string[]): Promise<AlertSourc
       for (const exam of st.exams ?? []) allExamIds.push(exam.id);
     }
   });
-  // allExamIds は全生徒×テキスト×試験でスケールし 1000 を超えうる。
-  // .in() は ids が 1000 超だと結果を 1000 行で切り捨てるためチャンク分割で取得する。
+  // allExamIds は全生徒×テキスト×試験でスケールし 1000 を超えうる。1 試験に複数ゴールが
+  // ありうるため、id チャンク分割＋チャンク内ページングの fetchAllInChunks で取得する。
   const actionGoalExamIds = new Set<string>();
   if (allExamIds.length > 0) {
-    const goals = await fetchInChunks<{ student_textbook_exam_id: string }>(
+    const goals = await fetchAllInChunks<{ student_textbook_exam_id: string }>(
       allExamIds,
-      (chunk) =>
+      (chunk, from, to) =>
         supabase
           .from('action_goals')
-          .select('student_textbook_exam_id')
+          .select('student_textbook_exam_id, id')
           .in('student_textbook_exam_id', chunk)
+          .order('id', { ascending: true })
+          .range(from, to)
     ).catch(() => []);
     for (const g of goals) actionGoalExamIds.add(g.student_textbook_exam_id);
   }
@@ -1246,17 +1248,19 @@ async function fetchAlertSourcesHeavy(schoolIds: string[]): Promise<Partial<Aler
       for (const exam of st.exams ?? []) allExamIds.push(exam.id);
     }
   });
-  // allExamIds は全生徒×テキスト×試験でスケールし 1000 を超えうる。
-  // .in() は ids が 1000 超だと結果を 1000 行で切り捨てるためチャンク分割で取得する。
+  // allExamIds は全生徒×テキスト×試験でスケールし 1000 を超えうる。1 試験に複数ゴールが
+  // ありうるため、id チャンク分割＋チャンク内ページングの fetchAllInChunks で取得する。
   const actionGoalExamIds = new Set<string>();
   if (allExamIds.length > 0) {
-    const goals = await fetchInChunks<{ student_textbook_exam_id: string }>(
+    const goals = await fetchAllInChunks<{ student_textbook_exam_id: string }>(
       allExamIds,
-      (chunk) =>
+      (chunk, from, to) =>
         supabase
           .from('action_goals')
-          .select('student_textbook_exam_id')
+          .select('student_textbook_exam_id, id')
           .in('student_textbook_exam_id', chunk)
+          .order('id', { ascending: true })
+          .range(from, to)
     ).catch(() => []);
     for (const g of goals) actionGoalExamIds.add(g.student_textbook_exam_id);
   }

@@ -65,12 +65,15 @@ export async function GET(request: NextRequest) {
         // 教室別オーバーライドを一括取得（同上、全件ページング取得）
         let overrides: Array<Record<string, unknown>> = [];
         if (taskIds.length > 0) {
+          // monthly_task_overrides は複合PK (task_id, school_id) で id 列が無いため、
+          // 安定ページングはこの2列でソートする。
           overrides = await fetchAllPaged<Record<string, unknown>>((from, to) =>
             supabaseAdmin
               .from('monthly_task_overrides')
               .select('*')
               .in('task_id', taskIds)
-              .order('id', { ascending: true })
+              .order('task_id', { ascending: true })
+              .order('school_id', { ascending: true })
               .range(from, to)
           ).catch(() => []);
         }
@@ -148,7 +151,9 @@ export async function GET(request: NextRequest) {
                 .in('task_id', allIds)
                 .in('school_id', sids)
                 .eq('is_hidden', true)
-                .order('id', { ascending: true })
+                // 複合PK (task_id, school_id) で id 列が無いためこの2列でソートする。
+                .order('task_id', { ascending: true })
+                .order('school_id', { ascending: true })
                 .range(from, to)
             ).catch(() => []),
           ]);

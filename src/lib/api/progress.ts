@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { fetchAllPaged, fetchInChunks } from '@/lib/utils/supabasePaging';
+import { fetchAllPaged, fetchAllInChunks } from '@/lib/utils/supabasePaging';
 import type {
   StudentTextbook,
   StudentTextbookInsert,
@@ -62,16 +62,19 @@ export async function getStudentTextbooksExamsBySchool(
   const stList = studentTextbooks;
   if (stList.length === 0) return empty;
 
-  // stIds も教室横断で 1000 を超えうるため .in() はチャンク分割で取得する。
+  // stIds も教室横断で 1000 を超えうる。さらに 1 テキストに複数試験があり .in() の結果が
+  // id 数より増えるため、id チャンク分割＋チャンク内ページングの fetchAllInChunks で取得する。
   const stIds = stList.map((st) => st.id);
-  const exams = await fetchInChunks<StudentTextbookExam>(
+  const exams = await fetchAllInChunks<StudentTextbookExam>(
     stIds,
-    (chunk) =>
+    (chunk, from, to) =>
       supabase
         .from('student_textbook_exams')
         .select('*')
         .in('student_textbook_id', chunk)
         .order('exam_date', { ascending: true })
+        .order('id', { ascending: true })
+        .range(from, to)
   ).catch((e) => {
     throw new Error(`テスト設定の取得に失敗しました: ${e.message}`);
   });
@@ -96,14 +99,17 @@ export async function getStudentTextbooksExamsBySchool(
   }
 
   const settingsByStId = new Map<string, StudentTextbookSetting | null>();
-  // stIds は教室横断で 1000 を超えうるため .in() はチャンク分割で取得する。
-  const settings = await fetchInChunks<StudentTextbookSetting>(
+  // stIds は教室横断で 1000 を超えうる。settings は概ね 1 テキスト 1 件だが、念のため
+  // id チャンク分割＋チャンク内ページングの fetchAllInChunks で安全に取得する。
+  const settings = await fetchAllInChunks<StudentTextbookSetting>(
     stIds,
-    (chunk) =>
+    (chunk, from, to) =>
       supabase
         .from('student_textbook_settings')
         .select('*')
         .in('student_textbook_id', chunk)
+        .order('id', { ascending: true })
+        .range(from, to)
   ).catch(() => []);
   // O(1)ルックアップ用Mapを事前構築してO(n²)→O(n)に改善
   const settingsMap = new Map<string, StudentTextbookSetting>(
