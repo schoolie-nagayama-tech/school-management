@@ -218,21 +218,34 @@ export async function getStudentApplications(
     ? [schoolIds]
     : [getDefaultSchoolId()];
 
-  const { data, error } = await supabase
-    .from('student_applications')
-    .select('*')
-    .in('school_id', targetSchoolIds);
+  // student_applications は (生徒数 × 項目数) でスケールし、複数教室選択時に 1000 行を
+  // 超えうる。PostgREST のデフォルト上限で静かに切り捨てられると申込状況が一部欠落するため、
+  // .order('id').range() で 1000 件ずつ全件ページング取得する。
+  const PAGE_SIZE = 1000;
+  const data: unknown[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data: page, error } = await supabase
+      .from('student_applications')
+      .select('*')
+      .in('school_id', targetSchoolIds)
+      .order('id', { ascending: true })
+      .range(from, from + PAGE_SIZE - 1);
 
-  if (error) {
-    // テーブルが存在しない、またはRLSエラーの場合は空配列を返す
-    if (error.code === 'PGRST116' || error.code === '42501' || error.message.includes('schema cache')) {
-      console.warn('student_applicationsテーブルの取得に失敗しました（無視します）:', error);
-      return [];
+    if (error) {
+      // テーブルが存在しない、またはRLSエラーの場合は空配列を返す
+      if (error.code === 'PGRST116' || error.code === '42501' || error.message.includes('schema cache')) {
+        console.warn('student_applicationsテーブルの取得に失敗しました（無視します）:', error);
+        return [];
+      }
+      throw new Error(`申込状況の取得に失敗しました: ${error.message}`);
     }
-    throw new Error(`申込状況の取得に失敗しました: ${error.message}`);
+
+    const rows = (page || []) as unknown[];
+    data.push(...rows);
+    if (rows.length < PAGE_SIZE) break;
   }
 
-  return (data || []).map((raw) => {
+  return data.map((raw) => {
     const app = raw as StudentApplication;
     return {
       ...app,

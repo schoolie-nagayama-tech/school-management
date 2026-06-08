@@ -201,24 +201,37 @@ export async function getProposalsBySchool(
 ): Promise<SeasonalProposalWithDetails[]> {
   if (schoolIds.length === 0) return [];
 
-  let query = fromProposals()
-    .select(`
-      *,
-      student:students(*),
-      textbook:textbooks(*)
-    `)
-    .in('school_id', schoolIds)
-    .order('updated_at', { ascending: false });
+  // 提案書は (生徒数 × 年度 × 科目) でスケールし、複数教室選択時に 1000 行を超えうる。
+  // PostgREST のデフォルト上限で静かに切り捨てられると一覧から提案書が欠落するため、
+  // .range() で 1000 件ずつ全件ページング取得する。updated_at は一意でなくページ境界で
+  // 行が重複/欠落しうるので、安定化のため id を第2ソートキーに加える。
+  const PAGE_SIZE = 1000;
+  const data: unknown[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    let query = fromProposals()
+      .select(`
+        *,
+        student:students(*),
+        textbook:textbooks(*)
+      `)
+      .in('school_id', schoolIds)
+      .order('updated_at', { ascending: false })
+      .order('id', { ascending: true })
+      .range(from, from + PAGE_SIZE - 1);
 
-  if (season) query = query.eq('season', season);
-  if (year) query = query.eq('year', year);
+    if (season) query = query.eq('season', season);
+    if (year) query = query.eq('year', year);
 
-  const { data, error } = await query;
-  if (error) {
-    throw new Error(`教室の提案書取得に失敗しました: ${error.message}`);
+    const { data: page, error } = await query;
+    if (error) {
+      throw new Error(`教室の提案書取得に失敗しました: ${error.message}`);
+    }
+    const rows = (page ?? []) as unknown[];
+    data.push(...rows);
+    if (rows.length < PAGE_SIZE) break;
   }
 
-  const proposalIds = ((data ?? []) as unknown as { id: string }[]).map((d) => d.id);
+  const proposalIds = (data as { id: string }[]).map((d) => d.id);
   if (proposalIds.length === 0) return [];
 
   const allUnits = await fetchAllUnitsByProposalIds(proposalIds);
@@ -230,7 +243,7 @@ export async function getProposalsBySchool(
     unitsByProposal.set(u.proposal_id, list);
   }
 
-  return ((data ?? []) as unknown as (SeasonalProposal & Record<string, unknown>)[]).map((d) => ({
+  return (data as unknown as (SeasonalProposal & Record<string, unknown>)[]).map((d) => ({
     ...d,
     student: d.student as Student | undefined,
     textbook: d.textbook as Textbook | undefined,

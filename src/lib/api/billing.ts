@@ -12,6 +12,32 @@ import { getDefaultSchoolId } from './schools';
 import { getFifthWeekDays, calcFifthWeekSlots } from '@/lib/utils/fifthWeek';
 import { zoukomaKomaCount } from '@/lib/utils/zoukomaKoma';
 
+/**
+ * PostgREST のデフォルト上限（1000行）対策。
+ * .range() で 1000 件ずつページングし、全件を確実に取得する。
+ *
+ * students / schedule_regular_patterns のようにスケールするテーブルを
+ * .range() なしで .select() すると、行数が 1000 を超えた瞬間に静かに切り捨てられ、
+ * 一部生徒の通塾日程が欠落して 5週目コマ数が誤って計算される（特に複数教室を同時選択時）。
+ *
+ * buildQuery は from/to を受け取り、.order() と .range() を付与済みの
+ * クエリを返すこと（安定ページングのため必ず一意な列で order すること）。
+ */
+async function fetchAllPaged<T>(
+  buildQuery: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string; code?: string } | null }>
+): Promise<T[]> {
+  const PAGE_SIZE = 1000;
+  const all: T[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await buildQuery(from, from + PAGE_SIZE - 1);
+    if (error) throw new Error(error.message);
+    const rows = data || [];
+    all.push(...rows);
+    if (rows.length < PAGE_SIZE) break;
+  }
+  return all;
+}
+
 // ============================================
 // 請求期間 (Billing Periods)
 // ============================================
@@ -1124,15 +1150,19 @@ export async function calcFifthWeekBilling(
 
   // 4. 5週目がない月（4週のみ）→ 全生徒に0を入力
   if (!hasFifthWeek) {
-    // 対象の全生徒を取得
-    const { data: students, error: studentsError } = await supabase
-      .from('students')
-      .select('id, school_id')
-      .in('school_id', targetSchoolIds)
-      .is('deleted_at', null);
-
-    if (studentsError) throw new Error(`生徒の取得に失敗: ${studentsError.message}`);
-    if (!students || students.length === 0) return { updated: 0, skipped: 0 };
+    // 対象の全生徒を取得（1000行上限対策で全件ページング取得）
+    const students = await fetchAllPaged<{ id: string; school_id: string }>((from, to) =>
+      supabase
+        .from('students')
+        .select('id, school_id')
+        .in('school_id', targetSchoolIds)
+        .is('deleted_at', null)
+        .order('id', { ascending: true })
+        .range(from, to)
+    ).catch((e) => {
+      throw new Error(`生徒の取得に失敗: ${e.message}`);
+    });
+    if (students.length === 0) return { updated: 0, skipped: 0 };
 
     let updated = 0;
     for (const item of fifthWeekItems) {
@@ -1170,28 +1200,49 @@ export async function calcFifthWeekBilling(
   // 5. 5週目がある月 → 対象月（翌月）初時点で有効な通塾日程からコマ数を計算
   //    過去月の請求を再計算しても、当時の通塾日程で正しく算出される
   const targetMonthStart = `${targetYear}-${String(targetMonth).padStart(2, '0')}-01`;
-  const { data: patterns, error: patternError } = await supabase
-    .from('schedule_regular_patterns')
-    .select('student_id, day_of_week, is_active, effective_from, effective_until')
-    .in('school_id', targetSchoolIds)
-    .eq('is_active', true)
-    .eq('period_type', 'regular')
-    .lte('effective_from', targetMonthStart)
-    .or(`effective_until.is.null,effective_until.gte.${targetMonthStart}`);
+  // schedule_regular_patterns は (生徒数 × 曜日 × 履歴) で増えるため 1000行を超えやすい。
+  // 切り捨てると一部生徒の通塾日程が欠落し 5週目コマ数が静かに誤るので全件ページング取得する。
+  const patterns = await fetchAllPaged<{
+    student_id: string;
+    day_of_week: number;
+    is_active: boolean;
+    effective_from: string;
+    effective_until: string | null;
+  }>((from, to) =>
+    supabase
+      .from('schedule_regular_patterns')
+      .select('student_id, day_of_week, is_active, effective_from, effective_until')
+      .in('school_id', targetSchoolIds)
+      .eq('is_active', true)
+      .eq('period_type', 'regular')
+      .lte('effective_from', targetMonthStart)
+      .or(`effective_until.is.null,effective_until.gte.${targetMonthStart}`)
+      .order('id', { ascending: true })
+      .range(from, to)
+  ).catch((e) => {
+    throw new Error(`通塾日程の取得に失敗: ${e.message}`);
+  });
 
-  if (patternError) throw new Error(`通塾日程の取得に失敗: ${patternError.message}`);
+  // 通塾日程に含まれる全生徒＋通塾日程がない生徒も0にする（1000行上限対策で全件ページング取得）
+  const allStudents = await fetchAllPaged<{
+    id: string;
+    school_id: string;
+    is_programming: boolean;
+    withdrawal_date: string | null;
+  }>((from, to) =>
+    supabase
+      .from('students')
+      .select('id, school_id, is_programming, withdrawal_date')
+      .in('school_id', targetSchoolIds)
+      .is('deleted_at', null)
+      .order('id', { ascending: true })
+      .range(from, to)
+  ).catch((e) => {
+    throw new Error(`生徒の取得に失敗: ${e.message}`);
+  });
+  if (allStudents.length === 0) return { updated: 0, skipped: 0 };
 
-  // 通塾日程に含まれる全生徒＋通塾日程がない生徒も0にする
-  const { data: allStudents, error: allStudentsError } = await supabase
-    .from('students')
-    .select('id, school_id, is_programming, withdrawal_date')
-    .in('school_id', targetSchoolIds)
-    .is('deleted_at', null);
-
-  if (allStudentsError) throw new Error(`生徒の取得に失敗: ${allStudentsError.message}`);
-  if (!allStudents || allStudents.length === 0) return { updated: 0, skipped: 0 };
-
-  const slotMap = calcFifthWeekSlots(patterns || [], fifthWeekDows);
+  const slotMap = calcFifthWeekSlots(patterns, fifthWeekDows);
 
   // 6. Upsert student_billings with value_number
   let updated = 0;
