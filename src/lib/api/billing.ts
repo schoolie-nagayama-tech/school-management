@@ -943,7 +943,7 @@ export async function syncFormResponseToBilling(responseId: string): Promise<voi
   // 同じ生徒・同 form_type・同期間の全回答を取得
   const { data: siblings } = await supabase
     .from('form_responses')
-    .select('id, status_checks')
+    .select('id, status_checks, response_data')
     .eq('linked_student_id', response.linked_student_id)
     .eq('form_type', response.form_type)
     .gte('created_at', `${period.start_date}T00:00:00`)
@@ -951,14 +951,27 @@ export async function syncFormResponseToBilling(responseId: string): Promise<voi
 
   if (!siblings || siblings.length === 0) return;
 
-  // 全件 charged=true なら計上、非計上件数を value_number に反映
-  let chargedCount = 0;
+  // 計上数は「1回答=1件」ではなく、増コマは申込コマ数（total_koma）を採用する。
+  // 一括同期(syncFormToBilling)と数え方を揃える（揃えないと回答一覧で計上したときだけ
+  // 件数になり、増コマのコマ数がズレる）。
+  const isZoukoma = response.form_type === 'zoukoma';
+  const weightOf = (r: { response_data?: unknown }) =>
+    isZoukoma ? zoukomaKomaCount(r.response_data) : 1;
+
+  let chargedCount = 0;      // 計上済みコマ数（重み付け）
+  let nonChargedCount = 0;   // 未計上コマ数（重み付け）
+  let chargedResponses = 0;  // 全件計上済み判定用の回答件数
   for (const r of siblings) {
     const sc = (r.status_checks || {}) as Record<string, boolean>;
-    if (sc.charged === true) chargedCount++;
+    const w = weightOf(r);
+    if (sc.charged === true) {
+      chargedCount += w;
+      chargedResponses++;
+    } else {
+      nonChargedCount += w;
+    }
   }
-  const allCharged = chargedCount === siblings.length;
-  const nonChargedCount = siblings.length - chargedCount;
+  const allCharged = chargedResponses === siblings.length && chargedCount > 0;
 
   // student_billings の is_billed / value_number(未計上) / quantity(計上済み) を upsert。
   // quantity に計上済み件数を残すことで、請求表セルで「✓計上 N」を維持できる。
