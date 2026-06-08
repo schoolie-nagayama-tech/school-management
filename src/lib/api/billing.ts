@@ -11,32 +11,7 @@ import type {
 import { getDefaultSchoolId } from './schools';
 import { getFifthWeekDays, calcFifthWeekSlots } from '@/lib/utils/fifthWeek';
 import { zoukomaKomaCount } from '@/lib/utils/zoukomaKoma';
-
-/**
- * PostgREST のデフォルト上限（1000行）対策。
- * .range() で 1000 件ずつページングし、全件を確実に取得する。
- *
- * students / schedule_regular_patterns のようにスケールするテーブルを
- * .range() なしで .select() すると、行数が 1000 を超えた瞬間に静かに切り捨てられ、
- * 一部生徒の通塾日程が欠落して 5週目コマ数が誤って計算される（特に複数教室を同時選択時）。
- *
- * buildQuery は from/to を受け取り、.order() と .range() を付与済みの
- * クエリを返すこと（安定ページングのため必ず一意な列で order すること）。
- */
-async function fetchAllPaged<T>(
-  buildQuery: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string; code?: string } | null }>
-): Promise<T[]> {
-  const PAGE_SIZE = 1000;
-  const all: T[] = [];
-  for (let from = 0; ; from += PAGE_SIZE) {
-    const { data, error } = await buildQuery(from, from + PAGE_SIZE - 1);
-    if (error) throw new Error(error.message);
-    const rows = data || [];
-    all.push(...rows);
-    if (rows.length < PAGE_SIZE) break;
-  }
-  return all;
-}
+import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 
 // ============================================
 // 請求期間 (Billing Periods)
@@ -803,8 +778,12 @@ export async function syncFormToBilling(
     }
 
     // 5. Upsert into student_billings
+    //    value_number = 未計上（新規）コマ数、quantity = 計上済みコマ数。
+    //    こうすると同期で計上済み分が消えず、請求表セルで「✓計上 N」を残したまま
+    //    新規分だけ別表示できる（計上済みが0=空欄に潰れて見えなくなる問題の対策）。
     for (const [studentId, total] of Array.from(studentTotalCounts.entries())) {
       const nonCharged = studentNonChargedCounts.get(studentId) || 0;
+      const charged = total - nonCharged;
       const allCharged = nonCharged === 0 && total > 0;
 
       const { data: existing } = await supabase
@@ -819,6 +798,7 @@ export async function syncFormToBilling(
           .from('student_billings')
           .update({
             value_number: nonCharged,
+            quantity: charged,
             is_billed: allCharged,
             updated_at: new Date().toISOString(),
           })
@@ -839,6 +819,7 @@ export async function syncFormToBilling(
               billing_item_id: item.id,
               is_billed: allCharged,
               value_number: nonCharged,
+              quantity: charged,
             });
         }
       }
@@ -979,21 +960,27 @@ export async function syncFormResponseToBilling(responseId: string): Promise<voi
   const allCharged = chargedCount === siblings.length;
   const nonChargedCount = siblings.length - chargedCount;
 
-  // student_billings の is_billed と value_number を upsert
+  // student_billings の is_billed / value_number(未計上) / quantity(計上済み) を upsert。
+  // quantity に計上済み件数を残すことで、請求表セルで「✓計上 N」を維持できる。
   const { data: existing } = await supabase
     .from('student_billings')
-    .select('id, is_billed, value_number')
+    .select('id, is_billed, value_number, quantity')
     .eq('student_id', response.linked_student_id)
     .eq('billing_item_id', itemId)
     .maybeSingle();
 
   if (existing) {
-    if (existing.is_billed !== allCharged || existing.value_number !== nonChargedCount) {
+    if (
+      existing.is_billed !== allCharged ||
+      existing.value_number !== nonChargedCount ||
+      (existing as { quantity?: number | null }).quantity !== chargedCount
+    ) {
       await supabase
         .from('student_billings')
         .update({
           is_billed: allCharged,
           value_number: nonChargedCount,
+          quantity: chargedCount,
           updated_at: new Date().toISOString(),
         })
         .eq('id', existing.id);
@@ -1007,6 +994,7 @@ export async function syncFormResponseToBilling(responseId: string): Promise<voi
         billing_item_id: itemId,
         is_billed: allCharged,
         value_number: nonChargedCount,
+        quantity: chargedCount,
       });
   }
 }
@@ -1019,7 +1007,7 @@ export async function syncFormResponseToBilling(responseId: string): Promise<voi
 export async function updateBillingValue(
   studentId: string,
   billingItemId: string,
-  updates: { is_billed?: boolean; value_number?: number | null; value_text?: string | null },
+  updates: { is_billed?: boolean; value_number?: number | null; value_text?: string | null; quantity?: number | null },
   schoolId?: string
 ): Promise<StudentBilling> {
   // Resolve school_id if not provided
@@ -1066,6 +1054,7 @@ export async function updateBillingValue(
         is_billed: updates.is_billed ?? false,
         value_number: updates.value_number ?? null,
         value_text: updates.value_text ?? null,
+        quantity: updates.quantity ?? null,
       })
       .select()
       .single();

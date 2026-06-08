@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getApiAuth } from '@/lib/api-auth';
+import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 
 export const dynamic = 'force-dynamic';
 
@@ -78,19 +79,24 @@ export async function GET(request: NextRequest) {
         : new Date().toISOString();
 
     // 全ユーザープロファイルを取得（直接 SELECT で確実に全件取得。RPC はレプリケーション遅延等で抜けがある場合がある）
-    const { data: profiles, error: profilesError } = await supabaseAdmin
-      .from('user_profiles')
-      .select('*')
-      // 一覧URLごとに毎回変わる条件を付与し、古いキャッシュ応答を避ける
-      .lte('created_at', queryNowIso)
-      .order('created_at', { ascending: false });
-
-    if (profilesError) {
+    // ユーザー数が 1000 を超えると PostgREST の上限で静かに切り捨てられ一覧から欠落するため、
+    // .range() で全件ページング取得する。created_at は一意でないので id を第2ソートキーに加える。
+    let profileList: Record<string, unknown>[];
+    try {
+      profileList = await fetchAllPaged<Record<string, unknown>>((from, to) =>
+        supabaseAdmin
+          .from('user_profiles')
+          .select('*')
+          // 一覧URLごとに毎回変わる条件を付与し、古いキャッシュ応答を避ける
+          .lte('created_at', queryNowIso)
+          .order('created_at', { ascending: false })
+          .order('id', { ascending: true })
+          .range(from, to)
+      );
+    } catch (profilesError) {
       console.error('Error fetching user profiles:', profilesError);
       throw profilesError;
     }
-
-    const profileList = profiles ?? [];
     // ユーザー権限変更を即時反映するためキャッシュ不可
     const noCacheHeaders = {
       'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
@@ -113,24 +119,36 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ users: [] }, { headers: noCacheHeaders });
     }
 
-    // 全ユーザー分の user_schools を1回で取得（複数教室が1件にまとまらないようにする）
+    // 全ユーザー分の user_schools を取得（複数教室が1件にまとまらないようにする）。
+    // userIds はページング取得した filteredProfiles 由来で 1000 を超えうるうえ、
+    // user_schools は (ユーザー × 教室) でスケールするため、userIds を 500 件ずつに
+    // 分割し、各チャンク内も .range() でページングして全件取得する。
     const userIds = filteredProfiles.map((p: Record<string, unknown>) => String(p.id)).filter(Boolean);
-    const { data: allUserSchools, error: schoolsError } = await supabaseAdmin
-      .from('user_schools')
-      .select('*, school:schools(*)')
-      .in('user_id', userIds)
-      .lte('created_at', queryNowIso)
-      .order('user_id')
-      .order('school_id');
-
-    if (schoolsError) {
+    const allUserSchools: Record<string, unknown>[] = [];
+    const USER_CHUNK = 500;
+    try {
+      for (let i = 0; i < userIds.length; i += USER_CHUNK) {
+        const chunk = userIds.slice(i, i + USER_CHUNK);
+        const rows = await fetchAllPaged<Record<string, unknown>>((from, to) =>
+          supabaseAdmin
+            .from('user_schools')
+            .select('*, school:schools(*)')
+            .in('user_id', chunk)
+            .lte('created_at', queryNowIso)
+            .order('user_id')
+            .order('school_id')
+            .range(from, to)
+        );
+        allUserSchools.push(...rows);
+      }
+    } catch (schoolsError) {
       console.error('Error fetching user_schools:', schoolsError);
       throw schoolsError;
     }
 
     // user_id ごとにグループ化
-    const userSchoolsByUserId: Record<string, typeof allUserSchools> = {};
-    for (const row of allUserSchools || []) {
+    const userSchoolsByUserId: Record<string, Record<string, unknown>[]> = {};
+    for (const row of allUserSchools) {
       const uid = String(row.user_id);
       if (!userSchoolsByUserId[uid]) userSchoolsByUserId[uid] = [];
       userSchoolsByUserId[uid].push(row);

@@ -40,82 +40,102 @@ export async function getFormResponses(
 ): Promise<FormResponseWithStudent[]> {
   const schoolIds = Array.isArray(schoolId) ? schoolId : [schoolId || getDefaultSchoolId()];
 
-  let query = supabase
-    .from('form_responses')
-    .select('*')
-    .in('school_id', schoolIds);
+  // フィルタ適用済みのクエリを from/to 範囲付きで組み立てる。
+  // form_responses は複数教室×複数フォーム種別でスケールし 1000 行を超えうるため、
+  // 1ページ1000件で全件ページング取得する。created_at は一意でなくページ境界で
+  // 行が重複/欠落しうるので、安定化のため id を第2ソートキーに加える。
+  const buildQuery = (from: number, to: number) => {
+    let query = supabase
+      .from('form_responses')
+      .select('*')
+      .in('school_id', schoolIds);
 
-  if (filters?.formType) {
-    query = query.eq('form_type', filters.formType);
+    if (filters?.formType) {
+      query = query.eq('form_type', filters.formType);
+    }
+
+    if (filters?.formPeriod) {
+      query = query.eq('form_period', filters.formPeriod);
+    }
+
+    if (filters?.grade) {
+      query = query.eq('grade', filters.grade);
+    }
+
+    if (filters?.linkedStatus === 'linked') {
+      query = query.not('linked_student_id', 'is', null);
+    } else if (filters?.linkedStatus === 'unlinked') {
+      query = query.is('linked_student_id', null);
+    }
+
+    // アーカイブフィルター
+    if (!filters?.showArchived) {
+      query = query.eq('is_archived', false);
+    }
+
+    // 生徒名検索
+    if (filters?.search) {
+      query = query.ilike('student_name', `%${filters.search}%`);
+    }
+
+    // 計上状態フィルター（JSONB内のフィールド）
+    if (filters?.chargedStatus === 'charged') {
+      query = query.eq('status_checks->>charged', 'true');
+    } else if (filters?.chargedStatus === 'not_charged') {
+      query = query.or('status_checks->>charged.is.null,status_checks->>charged.eq.false');
+    }
+
+    // 申込日フィルター
+    if (filters?.dateFrom) {
+      query = query.gte('created_at', filters.dateFrom + 'T00:00:00');
+    }
+    if (filters?.dateTo) {
+      query = query.lte('created_at', filters.dateTo + 'T23:59:59');
+    }
+
+    return query
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: true })
+      .range(from, to);
+  };
+
+  const PAGE_SIZE = 1000;
+  const responses: FormResponse[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await buildQuery(from, from + PAGE_SIZE - 1);
+    if (error) {
+      throw new Error(`フォーム回答一覧の取得に失敗しました: ${error.message}`);
+    }
+    const rows = (data || []) as FormResponse[];
+    responses.push(...rows);
+    if (rows.length < PAGE_SIZE) break;
   }
-
-  if (filters?.formPeriod) {
-    query = query.eq('form_period', filters.formPeriod);
-  }
-
-  if (filters?.grade) {
-    query = query.eq('grade', filters.grade);
-  }
-
-  if (filters?.linkedStatus === 'linked') {
-    query = query.not('linked_student_id', 'is', null);
-  } else if (filters?.linkedStatus === 'unlinked') {
-    query = query.is('linked_student_id', null);
-  }
-
-  // アーカイブフィルター
-  if (!filters?.showArchived) {
-    query = query.eq('is_archived', false);
-  }
-
-  // 生徒名検索
-  if (filters?.search) {
-    query = query.ilike('student_name', `%${filters.search}%`);
-  }
-
-  // 計上状態フィルター（JSONB内のフィールド）
-  if (filters?.chargedStatus === 'charged') {
-    query = query.eq('status_checks->>charged', 'true');
-  } else if (filters?.chargedStatus === 'not_charged') {
-    query = query.or('status_checks->>charged.is.null,status_checks->>charged.eq.false');
-  }
-
-  // 申込日フィルター
-  if (filters?.dateFrom) {
-    query = query.gte('created_at', filters.dateFrom + 'T00:00:00');
-  }
-  if (filters?.dateTo) {
-    query = query.lte('created_at', filters.dateTo + 'T23:59:59');
-  }
-
-  query = query.order('created_at', { ascending: false });
-
-  const { data, error } = await query;
-
-  if (error) {
-    throw new Error(`フォーム回答一覧の取得に失敗しました: ${error.message}`);
-  }
-
-  const responses = (data || []) as FormResponse[];
 
   // 紐付け済みの生徒IDを取得
   const linkedStudentIds = responses
     .map((r) => r.linked_student_id)
     .filter((id): id is string => id !== null);
 
-  // 紐付き生徒のみをIDで絞り込んで取得（全生徒取得を避ける）
+  // 紐付き生徒のみをIDで絞り込んで取得（全生徒取得を避ける）。
+  // responses が 1000 件超になると linkedStudentIds も 1000 を超えうるが、
+  // .in('id', ...) は PostgREST 上限で結果が 1000 行に切り捨てられるため、
+  // 1000 件ずつのチャンクに分けて取得する。
   const studentsMap = new Map<string, Student>();
   if (linkedStudentIds.length > 0) {
-    try {
-      const { data: studentData } = await supabase
-        .from('students')
-        .select('*')
-        .in('id', linkedStudentIds)
-        .is('deleted_at', null);
-      (studentData || []).forEach((s) => studentsMap.set((s as Student).id, s as Student));
-    } catch (error) {
-      console.error('Error fetching linked students:', error);
-      // エラーが発生しても続行
+    const CHUNK = 1000;
+    for (let i = 0; i < linkedStudentIds.length; i += CHUNK) {
+      const chunk = linkedStudentIds.slice(i, i + CHUNK);
+      try {
+        const { data: studentData } = await supabase
+          .from('students')
+          .select('*')
+          .in('id', chunk)
+          .is('deleted_at', null);
+        (studentData || []).forEach((s) => studentsMap.set((s as Student).id, s as Student));
+      } catch (error) {
+        console.error('Error fetching linked students:', error);
+        // エラーが発生しても続行
+      }
     }
   }
 

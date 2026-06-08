@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Plus, Search } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 import { getTestPrepProposalsWithStudent } from '@/lib/api/test-prep-proposals';
 import type { TestPrepProposal, TestPrepStatus } from '@/types/test-prep';
 import { TEST_PREP_STATUS_LABELS } from '@/types/test-prep';
@@ -81,15 +82,19 @@ export default function TestPrepProposalsList() {
         setStudents([]);
         return;
       }
-      const { data, error } = await supabase
-        .from('students')
-        .select('id, last_name, first_name, last_name_kana, first_name_kana, grade')
-        .in('school_id', ids)
-        .eq('status', 'active')
-        .is('deleted_at', null)
-        .order('last_name_kana', { ascending: true });
-      if (error) throw error;
-      setStudents((data ?? []) as StudentOption[]);
+      // 複数教室選択時は合計が 1000 名を超えうるため全件ページング取得（kana は一意でないので id を加えて安定化）。
+      const data = await fetchAllPaged<StudentOption>((from, to) =>
+        supabase
+          .from('students')
+          .select('id, last_name, first_name, last_name_kana, first_name_kana, grade')
+          .in('school_id', ids)
+          .eq('status', 'active')
+          .is('deleted_at', null)
+          .order('last_name_kana', { ascending: true })
+          .order('id', { ascending: true })
+          .range(from, to)
+      );
+      setStudents(data);
     } catch {
       setStudents([]);
     } finally {

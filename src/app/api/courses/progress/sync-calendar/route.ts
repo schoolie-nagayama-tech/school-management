@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { google } from 'googleapis';
 import { createClient } from '@supabase/supabase-js';
 import { syncCalendarBookingsToProgress } from '@/lib/api/courseProgressSync';
+import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 
 function getSupabaseAdmin() {
   return createClient(
@@ -100,12 +101,18 @@ export async function POST(request: Request) {
       }
     }
 
-    // calendar_emailが教室メールと一致するトークンを検索
-    const { data: allTokens } = await supabaseAdmin
-      .from('google_calendar_tokens')
-      .select('user_id, access_token, refresh_token, token_expiry, calendar_email');
+    // calendar_emailが教室メールと一致するトークンを検索。
+    // 連携ユーザー数が 1000 を超えると一致トークンを取りこぼすため全件ページング取得。
+    type CalToken = { user_id: string; access_token: string; refresh_token: string; token_expiry: string; calendar_email: string | null };
+    const allTokens = await fetchAllPaged<CalToken>((from, to) =>
+      supabaseAdmin
+        .from('google_calendar_tokens')
+        .select('user_id, access_token, refresh_token, token_expiry, calendar_email')
+        .order('user_id', { ascending: true })
+        .range(from, to)
+    ).catch(() => []);
 
-    if (!allTokens || allTokens.length === 0) {
+    if (allTokens.length === 0) {
       return NextResponse.json({
         error: 'Googleカレンダー連携済みのユーザーがいません',
       }, { status: 400 });

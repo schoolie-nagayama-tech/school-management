@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getApiAuth } from '@/lib/api-auth';
+import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,36 +34,45 @@ export async function GET(request: NextRequest) {
           return NextResponse.json({ error: 'year, month は必須です' }, { status: 400 });
         }
 
-        const { data: tasks, error } = await supabaseAdmin
-          .from('monthly_tasks')
-          .select('*')
-          .eq('year', year)
-          .eq('month', month)
-          .order('task_date', { ascending: true })
-          .order('sort_order', { ascending: true });
+        // task_date/sort_order は一意でないので id を最終ソートキーに加えて安定ページング。
+        const tasks = await fetchAllPaged<Record<string, unknown>>((from, to) =>
+          supabaseAdmin
+            .from('monthly_tasks')
+            .select('*')
+            .eq('year', year)
+            .eq('month', month)
+            .order('task_date', { ascending: true })
+            .order('sort_order', { ascending: true })
+            .order('id', { ascending: true })
+            .range(from, to)
+        );
 
-        if (error) throw error;
-
-        // チェック情報を一括取得
-        const taskIds = (tasks || []).map((t: { id: string }) => t.id);
+        // チェック情報を一括取得。(タスク数 × 教室数) でスケールし結果が 1000 行を
+        // 超えうるため .range() で全件ページング取得する（taskIds で .in() しつつページング）。
+        const taskIds = tasks.map((t) => (t as { id: string }).id);
         let checks: Array<Record<string, unknown>> = [];
         if (taskIds.length > 0) {
-          const { data: checkData, error: checkError } = await supabaseAdmin
-            .from('monthly_task_checks')
-            .select('*')
-            .in('task_id', taskIds);
-          if (checkError) throw checkError;
-          checks = checkData || [];
+          checks = await fetchAllPaged<Record<string, unknown>>((from, to) =>
+            supabaseAdmin
+              .from('monthly_task_checks')
+              .select('*')
+              .in('task_id', taskIds)
+              .order('id', { ascending: true })
+              .range(from, to)
+          );
         }
 
-        // 教室別オーバーライドを一括取得
+        // 教室別オーバーライドを一括取得（同上、全件ページング取得）
         let overrides: Array<Record<string, unknown>> = [];
         if (taskIds.length > 0) {
-          const { data: overrideData } = await supabaseAdmin
-            .from('monthly_task_overrides')
-            .select('*')
-            .in('task_id', taskIds);
-          overrides = overrideData || [];
+          overrides = await fetchAllPaged<Record<string, unknown>>((from, to) =>
+            supabaseAdmin
+              .from('monthly_task_overrides')
+              .select('*')
+              .in('task_id', taskIds)
+              .order('id', { ascending: true })
+              .range(from, to)
+          ).catch(() => []);
         }
 
         // タスクにチェック情報とオーバーライドを付与
@@ -100,40 +110,48 @@ export async function GET(request: NextRequest) {
           return NextResponse.json({ data: { allComplete: true, tasks: [], coursePrepTasks: [] } });
         }
 
-        // タスク・チェック・オーバーライドを並列取得
-        const taskQuery = supabaseAdmin
-          .from('monthly_tasks')
-          .select('id, task_date, task_name, category')
-          .eq('year', yr)
-          .eq('month', mo)
-          .order('task_date', { ascending: true })
-          .order('sort_order', { ascending: true });
-
-        const { data: allTasks, error: taskErr } = await taskQuery;
-        if (taskErr) throw taskErr;
-
+        // タスク・チェック・オーバーライドを並列取得（いずれも全件ページング取得）
         type TaskRow = { id: string; task_date: string; task_name: string; category: string };
+        const allTasks = await fetchAllPaged<TaskRow>((from, to) =>
+          supabaseAdmin
+            .from('monthly_tasks')
+            .select('id, task_date, task_name, category')
+            .eq('year', yr)
+            .eq('month', mo)
+            .order('task_date', { ascending: true })
+            .order('sort_order', { ascending: true })
+            .order('id', { ascending: true })
+            .range(from, to)
+        );
+
         const incompleteTasks: (TaskRow & { overdue: boolean; incompleteSchoolIds: string[] })[] = [];
         let allComplete = true;
 
-        if (allTasks && allTasks.length > 0) {
-          const allIds = allTasks.map((t: { id: string }) => t.id);
+        if (allTasks.length > 0) {
+          const allIds = allTasks.map((t) => t.id);
 
-          const [checksResult, overridesResult] = await Promise.all([
-            supabaseAdmin
-              .from('monthly_task_checks')
-              .select('task_id, school_id, is_completed')
-              .in('task_id', allIds)
-              .in('school_id', sids),
-            supabaseAdmin
-              .from('monthly_task_overrides')
-              .select('task_id, school_id, is_hidden')
-              .in('task_id', allIds)
-              .in('school_id', sids)
-              .eq('is_hidden', true),
+          // (タスク数 × 教室数) で 1000 行を超えうるため結果を .range() でページング取得。
+          const [allChecks, hiddenOverrides] = await Promise.all([
+            fetchAllPaged<Record<string, unknown>>((from, to) =>
+              supabaseAdmin
+                .from('monthly_task_checks')
+                .select('task_id, school_id, is_completed')
+                .in('task_id', allIds)
+                .in('school_id', sids)
+                .order('id', { ascending: true })
+                .range(from, to)
+            ).catch(() => []),
+            fetchAllPaged<Record<string, unknown>>((from, to) =>
+              supabaseAdmin
+                .from('monthly_task_overrides')
+                .select('task_id, school_id, is_hidden')
+                .in('task_id', allIds)
+                .in('school_id', sids)
+                .eq('is_hidden', true)
+                .order('id', { ascending: true })
+                .range(from, to)
+            ).catch(() => []),
           ]);
-          const allChecks = checksResult.data || [];
-          const hiddenOverrides = overridesResult.data || [];
 
           const hiddenSet = new Set(
             hiddenOverrides.map((o: Record<string, unknown>) => `${o.task_id}:${o.school_id}`)
@@ -169,16 +187,21 @@ export async function GET(request: NextRequest) {
         futureLimit.setDate(futureLimit.getDate() + 14);
         const futureLimitStr = futureLimit.toISOString().split('T')[0];
 
-        const { data: schedTasks } = await supabaseAdmin
-          .from('course_prep_schedule_tasks')
-          .select('id, name, deadline, start_date, end_date, major_category, is_completed')
-          .in('school_id', sids)
-          .eq('is_completed', false)
-          .not('deadline', 'is', null)
-          .lte('deadline', futureLimitStr)
-          .order('deadline', { ascending: true });
+        // 複数教室の未完了・期限内タスクは件数が増えうるため全件ページング取得。
+        const schedTasks = await fetchAllPaged<{ id: string; name: string; deadline: string | null; start_date: string | null; end_date: string | null; major_category: string }>((from, to) =>
+          supabaseAdmin
+            .from('course_prep_schedule_tasks')
+            .select('id, name, deadline, start_date, end_date, major_category, is_completed')
+            .in('school_id', sids)
+            .eq('is_completed', false)
+            .not('deadline', 'is', null)
+            .lte('deadline', futureLimitStr)
+            .order('deadline', { ascending: true })
+            .order('id', { ascending: true })
+            .range(from, to)
+        ).catch(() => []);
 
-        const coursePrepTasks = (schedTasks || []).map((t: { id: string; name: string; deadline: string | null; start_date: string | null; end_date: string | null; major_category: string }) => ({
+        const coursePrepTasks = schedTasks.map((t) => ({
           id: t.id,
           name: t.name,
           deadline: t.deadline,
@@ -199,28 +222,36 @@ export async function GET(request: NextRequest) {
         const currentYear = new Date().getFullYear();
         const currentMonth = new Date().getMonth() + 1;
 
-        const { data: overdueTasks, error } = await supabaseAdmin
-          .from('monthly_tasks')
-          .select('id, task_date, task_name, category')
-          .eq('year', currentYear)
-          .eq('month', currentMonth)
-          .lt('task_date', today);
+        const overdueTasks = await fetchAllPaged<{ id: string; task_date: string; task_name: string; category: string }>((from, to) =>
+          supabaseAdmin
+            .from('monthly_tasks')
+            .select('id, task_date, task_name, category')
+            .eq('year', currentYear)
+            .eq('month', currentMonth)
+            .lt('task_date', today)
+            .order('id', { ascending: true })
+            .range(from, to)
+        );
 
-        if (error) throw error;
-        if (!overdueTasks || overdueTasks.length === 0) {
+        if (overdueTasks.length === 0) {
           return NextResponse.json({ data: { count: 0, tasks: [] } });
         }
 
-        const taskIds = overdueTasks.map((t: { id: string }) => t.id);
-        const { data: checks } = await supabaseAdmin
-          .from('monthly_task_checks')
-          .select('task_id, school_id, is_completed')
-          .in('task_id', taskIds);
+        // (タスク数 × 教室数) で 1000 行を超えうるため結果を全件ページング取得。
+        const taskIds = overdueTasks.map((t) => t.id);
+        const checks = await fetchAllPaged<Record<string, unknown>>((from, to) =>
+          supabaseAdmin
+            .from('monthly_task_checks')
+            .select('task_id, school_id, is_completed')
+            .in('task_id', taskIds)
+            .order('id', { ascending: true })
+            .range(from, to)
+        ).catch(() => []);
 
         // 全教室で完了済みのタスクを除外
         const schoolIds = auth.schoolIds;
-        const incompleteTasks = overdueTasks.filter((task: { id: string }) => {
-          const taskChecks = (checks || []).filter(
+        const incompleteTasks = overdueTasks.filter((task) => {
+          const taskChecks = checks.filter(
             (c: Record<string, unknown>) => c.task_id === task.id && schoolIds.includes(c.school_id as string)
           );
           // チェックがない、またはいずれかの教室が未完了

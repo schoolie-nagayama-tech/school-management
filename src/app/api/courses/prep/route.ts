@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getApiAuth } from '@/lib/api-auth';
+import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 
 export const dynamic = 'force-dynamic';
 
@@ -353,16 +354,22 @@ export async function GET(request: NextRequest) {
 
         if (targets.includes('students')) {
           promises.push((async () => {
-            const { data } = await supabaseAdmin
-              .from('students')
-              .select('*')
-              .eq('school_id', schoolId)
-              .is('deleted_at', null)
-              .neq('status', 'withdrawn')
-              .order('grade', { ascending: true })
-              .order('last_name_kana', { ascending: true, nullsFirst: false })
-              .order('first_name_kana', { ascending: true, nullsFirst: false });
-            batchResult.students = data || [];
+            // 大型校では 1000 名を超えうるため全件ページング取得。
+            // 並び替えキーが一意でないので id を最終ソートキーに加えて安定化する。
+            const data = await fetchAllPaged<Record<string, unknown>>((from, to) =>
+              supabaseAdmin
+                .from('students')
+                .select('*')
+                .eq('school_id', schoolId)
+                .is('deleted_at', null)
+                .neq('status', 'withdrawn')
+                .order('grade', { ascending: true })
+                .order('last_name_kana', { ascending: true, nullsFirst: false })
+                .order('first_name_kana', { ascending: true, nullsFirst: false })
+                .order('id', { ascending: true })
+                .range(from, to)
+            ).catch(() => []);
+            batchResult.students = data;
           })());
         }
 
@@ -410,13 +417,21 @@ export async function GET(request: NextRequest) {
 
         if (targets.includes('auto_values')) {
           promises.push((async () => {
-            const [{ data: regularPatterns }, { data: seasonalPatterns }, { data: periodForAuto }, subjectProposalMap] = await Promise.all([
-              supabaseAdmin.from('schedule_regular_patterns')
-                .select('student_id, day_of_week')
-                .eq('school_id', schoolId).eq('period_type', 'regular').eq('is_active', true),
-              supabaseAdmin.from('schedule_regular_patterns')
-                .select('student_id, day_of_week')
-                .eq('school_id', schoolId).eq('period_type', season).eq('is_active', true),
+            // 通塾日程は (生徒数 × 曜日) でスケールし単一校でも 1000 行を超えうるため
+            // 全件ページング取得する（切り捨てると一部生徒の自動コマ数計算が欠落する）。
+            const [regularPatterns, seasonalPatterns, { data: periodForAuto }, subjectProposalMap] = await Promise.all([
+              fetchAllPaged<{ student_id: string; day_of_week: number }>((from, to) =>
+                supabaseAdmin.from('schedule_regular_patterns')
+                  .select('student_id, day_of_week, id')
+                  .eq('school_id', schoolId).eq('period_type', 'regular').eq('is_active', true)
+                  .order('id', { ascending: true }).range(from, to)
+              ).catch(() => []),
+              fetchAllPaged<{ student_id: string; day_of_week: number }>((from, to) =>
+                supabaseAdmin.from('schedule_regular_patterns')
+                  .select('student_id, day_of_week, id')
+                  .eq('school_id', schoolId).eq('period_type', season).eq('is_active', true)
+                  .order('id', { ascending: true }).range(from, to)
+              ).catch(() => []),
               supabaseAdmin.from('course_prep_periods')
                 .select('schedule_start_date, schedule_end_date')
                 .eq('school_id', schoolId).eq('season', season).eq('year', year).maybeSingle(),

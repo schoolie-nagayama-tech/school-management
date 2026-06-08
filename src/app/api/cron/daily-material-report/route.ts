@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { notifyDailyReport } from '@/lib/slack';
+import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -46,27 +47,35 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ ok: true, skipped: true, reason: 'no schools' });
     }
 
-    // 未確認の注文を取得
-    const { data: unconfirmedOrders } = await supabaseAdmin
-      .from('material_orders')
-      .select(`
-        id, school_id, created_at,
-        material:materials(name),
-        student:students(last_name, first_name)
-      `)
-      .eq('status', 'unconfirmed');
+    // 未確認の注文を取得（全教室横断で 1000 件を超えうるため全件ページング取得）
+    const unconfirmedOrders = await fetchAllPaged<Record<string, unknown>>((from, to) =>
+      supabaseAdmin
+        .from('material_orders')
+        .select(`
+          id, school_id, created_at,
+          material:materials(name),
+          student:students(last_name, first_name)
+        `)
+        .eq('status', 'unconfirmed')
+        .order('id', { ascending: true })
+        .range(from, to)
+    ).catch(() => []);
 
-    // 発送後7日以上未配布の注文を取得
+    // 発送後7日以上未配布の注文を取得（同上、全件ページング取得）
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const { data: overdueOrders } = await supabaseAdmin
-      .from('material_orders')
-      .select(`
-        id, school_id, delivered_at,
-        material:materials(name),
-        student:students(last_name, first_name)
-      `)
-      .eq('status', 'delivered')
-      .lt('delivered_at', sevenDaysAgo);
+    const overdueOrders = await fetchAllPaged<Record<string, unknown>>((from, to) =>
+      supabaseAdmin
+        .from('material_orders')
+        .select(`
+          id, school_id, delivered_at,
+          material:materials(name),
+          student:students(last_name, first_name)
+        `)
+        .eq('status', 'delivered')
+        .lt('delivered_at', sevenDaysAgo)
+        .order('id', { ascending: true })
+        .range(from, to)
+    ).catch(() => []);
 
     // 教室ごとにグループ化
     const reportSchools = schools.map((school) => {

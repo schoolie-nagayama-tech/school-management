@@ -27,6 +27,7 @@ import { ToastContainer, Loading } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 import type { ClassReportStatus } from '@/types/class-report';
 import { ChevronLeft, ChevronRight, FileText, CheckCircle, AlertCircle, Clock } from 'lucide-react';
 
@@ -90,19 +91,22 @@ export default function TodayPage() {
           ? [selectedSchoolId]
           : getSelectedSchoolIds();
 
-      let query = db
-        .from('schedule_entries')
-        .select(
-          '*, time_slot:schedule_time_slots(slot_number, start_time, end_time), student:students(id, last_name, first_name, grade), teacher:user_profiles!schedule_entries_teacher_id_fkey(id, display_name), report:class_reports(id, status)'
-        )
-        .eq('entry_date', date)
-        .in('status', ['scheduled', 'completed', 'transferred_in']);
+      // 複数教室を同時表示すると 1 日でも合計が 1000 行を超えうるため全件ページング取得。
+      // entry_date は一意でないので id を最終ソートキーに加えて安定化する。
+      const data = await fetchAllPaged<unknown>((from, to) => {
+        let query = db
+          .from('schedule_entries')
+          .select(
+            '*, time_slot:schedule_time_slots(slot_number, start_time, end_time), student:students(id, last_name, first_name, grade), teacher:user_profiles!schedule_entries_teacher_id_fkey(id, display_name), report:class_reports(id, status)'
+          )
+          .eq('entry_date', date)
+          .in('status', ['scheduled', 'completed', 'transferred_in']);
 
-      if (schoolIds.length > 0) query = query.in('school_id', schoolIds);
-      if (isTeacherOnly) query = query.eq('teacher_id', profile.id);
+        if (schoolIds.length > 0) query = query.in('school_id', schoolIds);
+        if (isTeacherOnly) query = query.eq('teacher_id', profile.id);
 
-      const { data, error } = await query;
-      if (error) throw error;
+        return query.order('id', { ascending: true }).range(from, to);
+      });
 
       type Row = TodayEntry & {
         time_slot?: TodayEntry['time_slot'] | TodayEntry['time_slot'][];

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { fetchAllPaged, fetchInChunks } from '@/lib/utils/supabasePaging';
 import type {
   StudentTextbook,
   StudentTextbookInsert,
@@ -41,34 +42,42 @@ export async function getStudentTextbooksExamsBySchool(
   const empty: AlertTextbooksResult = { byStudent: new Map(), examTypeNames: new Map() };
   if (schoolIds.length === 0) return empty;
 
-  const { data: studentTextbooks, error: stError } = await supabase
-    .from('student_textbooks')
-    .select('*, textbook:textbooks(*)')
-    .in('school_id', schoolIds)
-    .eq('is_active', true)
-    .eq('track_progress', true)
-    .order('created_at', { ascending: false });
+  // 教室横断のため (生徒数 × テキスト数) でスケールし 1000 行を超えうる。
+  // PostgREST の上限で切り捨てられると一部生徒のテキストが欠落しアラートが誤るため全件ページング取得。
+  // created_at は一意でなくページ境界で重複/欠落しうるので id を第2ソートキーに加える。
+  const studentTextbooks = await fetchAllPaged<StudentTextbook & { textbook: Textbook }>((from, to) =>
+    supabase
+      .from('student_textbooks')
+      .select('*, textbook:textbooks(*)')
+      .in('school_id', schoolIds)
+      .eq('is_active', true)
+      .eq('track_progress', true)
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: true })
+      .range(from, to)
+  ).catch((e) => {
+    throw new Error(`生徒テキストの取得に失敗しました: ${e.message}`);
+  });
 
-  if (stError) {
-    throw new Error(`生徒テキストの取得に失敗しました: ${stError.message}`);
-  }
-
-  const stList = (studentTextbooks || []) as (StudentTextbook & { textbook: Textbook })[];
+  const stList = studentTextbooks;
   if (stList.length === 0) return empty;
 
+  // stIds も教室横断で 1000 を超えうるため .in() はチャンク分割で取得する。
   const stIds = stList.map((st) => st.id);
-  const { data: exams, error: examsError } = await supabase
-    .from('student_textbook_exams')
-    .select('*')
-    .in('student_textbook_id', stIds)
-    .order('exam_date', { ascending: true });
-
-  if (examsError) {
-    throw new Error(`テスト設定の取得に失敗しました: ${examsError.message}`);
-  }
+  const exams = await fetchInChunks<StudentTextbookExam>(
+    stIds,
+    (chunk) =>
+      supabase
+        .from('student_textbook_exams')
+        .select('*')
+        .in('student_textbook_id', chunk)
+        .order('exam_date', { ascending: true })
+  ).catch((e) => {
+    throw new Error(`テスト設定の取得に失敗しました: ${e.message}`);
+  });
 
   const examTypeNames = new Map<string, string>();
-  const examTypeIds = Array.from(new Set((exams || []).map((e: { exam_type_id?: string }) => e.exam_type_id).filter((id): id is string => Boolean(id))));
+  const examTypeIds = Array.from(new Set(exams.map((e) => e.exam_type_id).filter((id): id is string => Boolean(id))));
   if (examTypeIds.length > 0) {
     const { data: examTypes } = await supabase
       .from('exam_types')
@@ -87,13 +96,18 @@ export async function getStudentTextbooksExamsBySchool(
   }
 
   const settingsByStId = new Map<string, StudentTextbookSetting | null>();
-  const { data: settings } = await supabase
-    .from('student_textbook_settings')
-    .select('*')
-    .in('student_textbook_id', stIds);
+  // stIds は教室横断で 1000 を超えうるため .in() はチャンク分割で取得する。
+  const settings = await fetchInChunks<StudentTextbookSetting>(
+    stIds,
+    (chunk) =>
+      supabase
+        .from('student_textbook_settings')
+        .select('*')
+        .in('student_textbook_id', chunk)
+  ).catch(() => []);
   // O(1)ルックアップ用Mapを事前構築してO(n²)→O(n)に改善
   const settingsMap = new Map<string, StudentTextbookSetting>(
-    ((settings || []) as StudentTextbookSetting[]).map((s) => [s.student_textbook_id, s])
+    settings.map((s) => [s.student_textbook_id, s])
   );
   for (const st of stList) {
     settingsByStId.set(st.id, settingsMap.get(st.id) ?? null);

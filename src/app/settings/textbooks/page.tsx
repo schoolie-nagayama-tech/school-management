@@ -12,6 +12,7 @@ import { getTextbooks, createTextbook, updateTextbook, deleteTextbook } from '@/
 import type { Textbook, TextbookInsert } from '@/types/database';
 import { Plus, Search, Edit2, Trash2, BookOpen, ChevronLeft, ChevronRight, FileText, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 
 const SCHOOL_TYPES = ['小学', '中学', '高校'];
 const GRADES = ['1年', '2年', '3年', '4年', '5年', '6年', '共通'];
@@ -94,13 +95,18 @@ function TextbookMasterPage() {
         ? [selectedSchoolId]
         : schoolIds;
       if (ids.length === 0) { setProposalStudents([]); return; }
-      const { data } = await supabase
-        .from('students')
-        .select('id, last_name, first_name')
-        .in('school_id', ids)
-        .eq('status', 'active')
-        .order('last_name');
-      setProposalStudents((data ?? []) as { id: string; last_name: string; first_name: string }[]);
+      // 複数教室選択時は合計が 1000 名を超えうるため全件ページング取得（last_name は一意でないので id を加えて安定化）。
+      const data = await fetchAllPaged<{ id: string; last_name: string; first_name: string }>((from, to) =>
+        supabase
+          .from('students')
+          .select('id, last_name, first_name')
+          .in('school_id', ids)
+          .eq('status', 'active')
+          .order('last_name')
+          .order('id', { ascending: true })
+          .range(from, to)
+      );
+      setProposalStudents(data);
     } catch { /* ignore */ } finally {
       setProposalStudentsLoading(false);
     }

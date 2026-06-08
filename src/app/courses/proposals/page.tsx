@@ -12,6 +12,7 @@ import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
 import { getProposalsBySchool, getTextbookUnitsWithProgress, calcTotalKoma, calcTotalAppliedKoma, deleteProposal } from '@/lib/api/proposals';
 import { supabase } from '@/lib/supabase';
+import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 import type { SeasonalProposalWithDetails, SeasonType, ProposalStatus } from '@/types/database';
 import { SEASON_LABELS, PROPOSAL_STATUS_LABELS, GRADE_LABELS } from '@/types/database';
 import { useLocalSchoolId } from '@/hooks/useLocalSchoolId';
@@ -196,16 +197,20 @@ export default function CourseProposalsPage() {
         setStudents([]);
         return;
       }
-      // 並び順: ふりがな（last_name_kana）昇順。学年グループ表示の前提として安定ソートを担保するため kana を使う
-      const { data, error } = await supabase
-        .from('students')
-        .select('id, last_name, first_name, last_name_kana, first_name_kana, grade')
-        .in('school_id', ids)
-        .eq('status', 'active')
-        .is('deleted_at', null)
-        .order('last_name_kana', { ascending: true });
-      if (error) throw error;
-      setStudents((data ?? []) as StudentOption[]);
+      // 並び順: ふりがな（last_name_kana）昇順。学年グループ表示の前提として安定ソートを担保するため kana を使う。
+      // 複数教室選択時は合計が 1000 名を超えうるため全件ページング取得（kana は一意でないので id を加えて安定化）。
+      const data = await fetchAllPaged<StudentOption>((from, to) =>
+        supabase
+          .from('students')
+          .select('id, last_name, first_name, last_name_kana, first_name_kana, grade')
+          .in('school_id', ids)
+          .eq('status', 'active')
+          .is('deleted_at', null)
+          .order('last_name_kana', { ascending: true })
+          .order('id', { ascending: true })
+          .range(from, to)
+      );
+      setStudents(data);
     } catch {
       setStudents([]);
     } finally {

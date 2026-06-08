@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getApiAuth } from '@/lib/api-auth';
 import { createClient } from '@supabase/supabase-js';
+import { fetchInChunks } from '@/lib/utils/supabasePaging';
 import {
   notifyOrderPlaced,
   notifyOrderDelivered,
@@ -40,17 +41,25 @@ export async function POST(request: NextRequest) {
 
     const supabaseAdmin = getSupabaseAdmin();
 
-    // 注文詳細を取得
-    const { data: orders, error } = await supabaseAdmin
-      .from('material_orders')
-      .select(`
-        id, quantity, school_id,
-        material:materials(name),
-        student:students(last_name, first_name)
-      `)
-      .in('id', orderIds);
+    // 注文詳細を取得。一括操作で orderIds が 1000 を超えると .in() の結果が
+    // 1000 行で切り捨てられ通知漏れになるため、チャンク分割で全件取得する。
+    let orders: Record<string, unknown>[];
+    try {
+      orders = await fetchInChunks<Record<string, unknown>>(orderIds, (chunk) =>
+        supabaseAdmin
+          .from('material_orders')
+          .select(`
+            id, quantity, school_id,
+            material:materials(name),
+            student:students(last_name, first_name)
+          `)
+          .in('id', chunk)
+      );
+    } catch {
+      return NextResponse.json({ ok: true, notified: false });
+    }
 
-    if (error || !orders || orders.length === 0) {
+    if (orders.length === 0) {
       return NextResponse.json({ ok: true, notified: false });
     }
 

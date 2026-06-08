@@ -268,16 +268,29 @@ export async function getKoushuEnrollmentsForPeriod(
   schoolId: string,
   season: string
 ): Promise<KoushuEnrollment[]> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (supabase as any)
-    .from('koushu_enrollments')
-    .select('*, student:students(id, last_name, first_name, grade)')
-    .eq('school_id', schoolId)
-    .eq('season', season)
-    .order('created_at', { ascending: true });
+  // 講習申込は (生徒数 × 形態) でスケールし、大型講習では 1000 行を超えうる。
+  // PostgREST のデフォルト上限で静かに切り捨てられると配置一覧から申込が欠落するため、
+  // .range() で 1000 件ずつ全件ページング取得する。created_at は一意でなくページ境界で
+  // 行が重複/欠落しうるので、安定化のため id を第2ソートキーに加える。
+  const PAGE_SIZE = 1000;
+  const all: KoushuEnrollment[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await (supabase as any)
+      .from('koushu_enrollments')
+      .select('*, student:students(id, last_name, first_name, grade)')
+      .eq('school_id', schoolId)
+      .eq('season', season)
+      .order('created_at', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, from + PAGE_SIZE - 1);
 
-  if (error) throw error;
-  return (data || []) as KoushuEnrollment[];
+    if (error) throw error;
+    const rows = (data || []) as KoushuEnrollment[];
+    all.push(...rows);
+    if (rows.length < PAGE_SIZE) break;
+  }
+  return all;
 }
 
 /** 申し込みを削除 */

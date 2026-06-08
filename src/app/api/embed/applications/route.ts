@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,17 +43,23 @@ export async function GET(request: NextRequest) {
 
     const schoolId = tokenData.school_id;
 
-    // 生徒取得（退会除外）
-    const { data: students, error: studentsError } = await supabase
-      .from('students')
-      .select('id, last_name, first_name, grade, status')
-      .eq('school_id', schoolId)
-      .is('deleted_at', null)
-      .neq('status', 'withdrawn')
-      .order('grade')
-      .order('last_name_kana');
-
-    if (studentsError) {
+    // 生徒取得（退会除外）。大型校では 1000 名を超えうるため全件ページング取得。
+    // grade/last_name_kana は一意でないので id を最終ソートキーに加えて安定化する。
+    let students: Record<string, unknown>[];
+    try {
+      students = await fetchAllPaged<Record<string, unknown>>((from, to) =>
+        supabase
+          .from('students')
+          .select('id, last_name, first_name, grade, status')
+          .eq('school_id', schoolId)
+          .is('deleted_at', null)
+          .neq('status', 'withdrawn')
+          .order('grade')
+          .order('last_name_kana')
+          .order('id', { ascending: true })
+          .range(from, to)
+      );
+    } catch (studentsError) {
       console.error('Error fetching students:', studentsError);
       return NextResponse.json({ error: '生徒データの取得に失敗しました' }, { status: 500 });
     }
@@ -70,13 +77,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: '申込項目の取得に失敗しました' }, { status: 500 });
     }
 
-    // 申込状況取得
-    const { data: applications, error: appsError } = await supabase
-      .from('student_applications')
-      .select('*')
-      .eq('school_id', schoolId);
-
-    if (appsError) {
+    // 申込状況取得。(生徒数 × 項目数) でスケールし容易に 1000 行を超えるため全件ページング取得。
+    let applications: Record<string, unknown>[];
+    try {
+      applications = await fetchAllPaged<Record<string, unknown>>((from, to) =>
+        supabase
+          .from('student_applications')
+          .select('*')
+          .eq('school_id', schoolId)
+          .order('id', { ascending: true })
+          .range(from, to)
+      );
+    } catch (appsError) {
       console.error('Error fetching applications:', appsError);
       return NextResponse.json({ error: '申込状況の取得に失敗しました' }, { status: 500 });
     }

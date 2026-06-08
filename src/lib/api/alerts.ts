@@ -5,6 +5,7 @@ import { getApplicationItems, getStudentApplications } from './applications';
 import { getStudents } from './students';
 import { getStudentTextbooksExamsBySchool } from './progress';
 import { getAlertSettingsBySchools, pickStrictestThreshold } from './alertSettings';
+import { fetchInChunks } from '@/lib/utils/supabasePaging';
 import type {
   Alert,
   AlertDismissal,
@@ -270,13 +271,19 @@ export async function fetchAlertSources(schoolIds: string[]): Promise<AlertSourc
       for (const exam of st.exams ?? []) allExamIds.push(exam.id);
     }
   });
+  // allExamIds は全生徒×テキスト×試験でスケールし 1000 を超えうる。
+  // .in() は ids が 1000 超だと結果を 1000 行で切り捨てるためチャンク分割で取得する。
   const actionGoalExamIds = new Set<string>();
   if (allExamIds.length > 0) {
-    const { data: goals } = await supabase
-      .from('action_goals')
-      .select('student_textbook_exam_id')
-      .in('student_textbook_exam_id', allExamIds);
-    for (const g of (goals ?? []) as Array<{ student_textbook_exam_id: string }>) actionGoalExamIds.add(g.student_textbook_exam_id);
+    const goals = await fetchInChunks<{ student_textbook_exam_id: string }>(
+      allExamIds,
+      (chunk) =>
+        supabase
+          .from('action_goals')
+          .select('student_textbook_exam_id')
+          .in('student_textbook_exam_id', chunk)
+    ).catch(() => []);
+    for (const g of goals) actionGoalExamIds.add(g.student_textbook_exam_id);
   }
 
   return {
@@ -1239,13 +1246,19 @@ async function fetchAlertSourcesHeavy(schoolIds: string[]): Promise<Partial<Aler
       for (const exam of st.exams ?? []) allExamIds.push(exam.id);
     }
   });
+  // allExamIds は全生徒×テキスト×試験でスケールし 1000 を超えうる。
+  // .in() は ids が 1000 超だと結果を 1000 行で切り捨てるためチャンク分割で取得する。
   const actionGoalExamIds = new Set<string>();
   if (allExamIds.length > 0) {
-    const { data: goals } = await supabase
-      .from('action_goals')
-      .select('student_textbook_exam_id')
-      .in('student_textbook_exam_id', allExamIds);
-    for (const g of (goals ?? []) as Array<{ student_textbook_exam_id: string }>) actionGoalExamIds.add(g.student_textbook_exam_id);
+    const goals = await fetchInChunks<{ student_textbook_exam_id: string }>(
+      allExamIds,
+      (chunk) =>
+        supabase
+          .from('action_goals')
+          .select('student_textbook_exam_id')
+          .in('student_textbook_exam_id', chunk)
+    ).catch(() => []);
+    for (const g of goals) actionGoalExamIds.add(g.student_textbook_exam_id);
   }
 
   if (process.env.NODE_ENV === 'development') {

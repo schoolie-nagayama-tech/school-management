@@ -50,14 +50,26 @@ export async function syncCalendarBookingsToProgress(
     return { synced: 0, skipped: 0, notFound: [] };
   }
 
-  // 該当教室のアクティブな生徒を取得
-  const { data: students } = await supabase
-    .from('students')
-    .select('id, last_name, first_name')
-    .eq('school_id', schoolId)
-    .eq('status', 'active');
+  // 該当教室のアクティブな生徒を取得。大型塾では 1000 名を超えうるため、
+  // PostgREST のデフォルト上限で静かに切り捨てられて同期対象が漏れないよう、
+  // .order('id').range() で 1000 件ずつ全件ページング取得する。
+  const PAGE_SIZE = 1000;
+  const students: { id: string; last_name: string; first_name: string }[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data: page } = await supabase
+      .from('students')
+      .select('id, last_name, first_name')
+      .eq('school_id', schoolId)
+      .eq('status', 'active')
+      .order('id', { ascending: true })
+      .range(from, from + PAGE_SIZE - 1);
 
-  if (!students || students.length === 0) {
+    const rows = (page || []) as { id: string; last_name: string; first_name: string }[];
+    students.push(...rows);
+    if (rows.length < PAGE_SIZE) break;
+  }
+
+  if (students.length === 0) {
     return { synced: 0, skipped: 0, notFound: [] };
   }
 
