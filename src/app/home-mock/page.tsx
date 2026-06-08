@@ -11,7 +11,7 @@
 
 import { useState } from 'react';
 import { AdminLayout } from '@/components/layouts';
-import { Card, CardContent, CardHeader, CardTitle, Badge } from '@/components/ui';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import {
   Inbox, CalendarDays, AlertTriangle, Users,
   FileText, Repeat, Clock, MessageSquare,
@@ -198,7 +198,8 @@ export default function HomeMockPage() {
   const toggleTask = (id: string) =>
     setDoneIds((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   // 期日帯でグルーピングして表示するため、ここでは done 付与のみ。グループ内の並べ替えは描画時に行う
