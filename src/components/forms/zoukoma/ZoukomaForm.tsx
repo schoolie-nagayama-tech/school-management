@@ -15,7 +15,8 @@ import {
 } from '@/types/forms/zoukoma';
 import { SubjectInput } from './SubjectInput';
 import { PriceQuote } from './PriceQuote';
-import { SlotTable, generateAllSlots } from './SlotTable';
+import { SlotTable, generateAllSlots, DEFAULT_WEEKS } from './SlotTable';
+import { Plus, Minus } from 'lucide-react';
 import {
   PortalFormHeader,
   PortalFormSection,
@@ -52,6 +53,8 @@ export function ZoukomaForm({ school, period, isPreview, initialValues }: Zoukom
   );
   // バツ印モード: 出席できない日程を選択
   const [unavailableSlots, setUnavailableSlots] = useState<string[]>([]);
+  // 表示する週数（デフォルト3週間。保護者が1週間単位で増減できる）
+  const [weeks, setWeeks] = useState(DEFAULT_WEEKS);
   const [note, setNote] = useState('');
 
   // バリデーションエラー
@@ -64,13 +67,14 @@ export function ZoukomaForm({ school, period, isPreview, initialValues }: Zoukom
   const { clearDraft } = usePortalFormDraft({
     storageKey: `zoukoma:${school.id}:${period.period_key}`,
     enabled: !isPreview,
-    value: { studentName, selectedGrade, email, subjectValues, selectedSlots: unavailableSlots, note },
+    value: { studentName, selectedGrade, email, subjectValues, selectedSlots: unavailableSlots, weeks, note },
     onRestore: (d) => {
       if (d.studentName) setStudentName(d.studentName);
       if (d.selectedGrade) setSelectedGrade(d.selectedGrade);
       if (d.email) setEmail(d.email);
       if (d.subjectValues) setSubjectValues(d.subjectValues);
       if (d.selectedSlots?.length) setUnavailableSlots(d.selectedSlots);
+      if (typeof d.weeks === 'number') setWeeks(d.weeks);
       if (d.note) setNote(d.note);
     },
   });
@@ -115,6 +119,26 @@ export function ZoukomaForm({ school, period, isPreview, initialValues }: Zoukom
     }));
   };
 
+  // 週数の増減（保護者が1週間単位で日程を追加/削減できる）
+  const MIN_WEEKS = 1;
+  const MAX_WEEKS = 8;
+
+  const handleAddWeek = () => {
+    setWeeks((w) => Math.min(MAX_WEEKS, w + 1));
+  };
+
+  const handleRemoveWeek = () => {
+    setWeeks((w) => {
+      const next = Math.max(MIN_WEEKS, w - 1);
+      if (next < w) {
+        // 削減で範囲外になった日程の✗印は残さない（送信時に無効データを混ぜないため）
+        const remainingIds = new Set(generateAllSlots(settings, next).map((s) => s.id));
+        setUnavailableSlots((prev) => prev.filter((id) => remainingIds.has(id)));
+      }
+      return next;
+    });
+  };
+
   // バリデーション
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -139,7 +163,7 @@ export function ZoukomaForm({ school, period, isPreview, initialValues }: Zoukom
     }
 
     // バツ印モード: 全スロットが出席不可だとエラー
-    const allSlots = generateAllSlots(settings);
+    const allSlots = generateAllSlots(settings, weeks);
     const unavailableSet = new Set(unavailableSlots);
     const availableCount = allSlots.filter(s => !unavailableSet.has(s.id)).length;
     if (availableCount === 0) {
@@ -157,6 +181,7 @@ export function ZoukomaForm({ school, period, isPreview, initialValues }: Zoukom
     setEmail('');
     setSubjectValues({});
     setUnavailableSlots([]);
+    setWeeks(DEFAULT_WEEKS);
     setNote('');
     setErrors({});
     setErrorMessage('');
@@ -212,7 +237,7 @@ export function ZoukomaForm({ school, period, isPreview, initialValues }: Zoukom
       };
 
       // 全スロットから出席不可を除外して出席可能スロットを算出
-      const allSlots = generateAllSlots(settings);
+      const allSlots = generateAllSlots(settings, weeks);
       const unavailableSet = new Set(unavailableSlots);
       const availableSlotIds = allSlots
         .filter(s => !unavailableSet.has(s.id))
@@ -347,7 +372,7 @@ export function ZoukomaForm({ school, period, isPreview, initialValues }: Zoukom
         </PortalFormSection>
 
         <PortalFormSection
-          title="出席できない日程に✗をつけてください（3週間・PS2のみ）"
+          title={`出席できない日程に✗をつけてください（${weeks}週間・PS2のみ）`}
         >
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4 space-y-2">
             <p className="text-sm font-semibold text-[#92400e]">
@@ -356,6 +381,36 @@ export function ZoukomaForm({ school, period, isPreview, initialValues }: Zoukom
             <p className="text-sm text-[#4b5563]">
               ご都合の悪い日程に✗印をおつけください。✗のない日程にお申し込みいただいたコマ数を割り振ってご案内いたします。
             </p>
+          </div>
+
+          {/* 表示する週数の増減（1週間単位で日程を追加/削減できる） */}
+          <div className="flex items-center justify-between gap-3 mb-4 p-3 bg-[#f9fafb] border border-[#e5e7eb] rounded-lg">
+            <p className="text-sm text-[#4b5563]">
+              表示中の日程：
+              <span className="font-semibold text-[#1f2937]">{weeks}週間分</span>
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleRemoveWeek}
+                disabled={isSubmitting || weeks <= MIN_WEEKS}
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-[#4b5563] bg-white border border-[#e5e7eb] rounded-lg hover:bg-[#f3f4f6] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                title="表示する日程を1週間減らす"
+              >
+                <Minus className="w-4 h-4" />
+                1週間減らす
+              </button>
+              <button
+                type="button"
+                onClick={handleAddWeek}
+                disabled={isSubmitting || weeks >= MAX_WEEKS}
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-[color:var(--primary)] rounded-lg hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                title="表示する日程を1週間増やす"
+              >
+                <Plus className="w-4 h-4" />
+                1週間増やす
+              </button>
+            </div>
           </div>
 
           {errors.slots && (
@@ -370,6 +425,7 @@ export function ZoukomaForm({ school, period, isPreview, initialValues }: Zoukom
             onChange={setUnavailableSlots}
             disabled={isSubmitting}
             mode="unavailable"
+            numWeeks={weeks}
           />
           <p className="text-sm text-[#4b5563] mt-4">
             日程が決まりましたら、Growよりご連絡いたします。

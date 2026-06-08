@@ -25,8 +25,15 @@ const DEFAULT_PERIODS_FALLBACK: PeriodConfig[] = [
   { code: '7', start_time: '19:30', end_time: '21:00', available_saturday: false, available_sunday: false, available_weekday: true },
 ];
 
-/** 設定から3週間分の全スロットを生成（SlotTable 外からも利用可能） */
-export function generateAllSlots(settings: ZoukomaSettings): TimeSlot[] {
+/** 増コマフォームで表示する日程のデフォルト週数（保護者側で増減可能） */
+export const DEFAULT_WEEKS = 3;
+
+/** 設定から指定週数分の全スロットを生成（SlotTable 外からも利用可能）。
+ *  numWeeks 未指定時は従来どおり3週間。保護者が「+1週間」した場合は呼び出し側で週数を渡す。 */
+export function generateAllSlots(
+  settings: ZoukomaSettings,
+  numWeeks: number = DEFAULT_WEEKS
+): TimeSlot[] {
   const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -42,7 +49,10 @@ export function generateAllSlots(settings: ZoukomaSettings): TimeSlot[] {
       ? settings.schedule.periods
       : DEFAULT_PERIODS_FALLBACK;
 
-  for (let day = 0; day < 21; day++) {
+  // 表示日数 = 週数 × 7。週数は最低1週間を保証
+  const totalDays = Math.max(1, numWeeks) * 7;
+
+  for (let day = 0; day < totalDays; day++) {
     const date = new Date(startDate);
     date.setDate(startDate.getDate() + day);
     const dayOfWeek = date.getDay();
@@ -92,6 +102,8 @@ interface SlotTableProps {
   disabled?: boolean;
   /** 'available' = 出席可能を選択（従来）, 'unavailable' = 出席できない日にバツ印 */
   mode?: 'available' | 'unavailable';
+  /** 表示する週数（保護者側で増減可能）。未指定時はデフォルト3週間 */
+  numWeeks?: number;
 }
 
 export function SlotTable({
@@ -100,12 +112,13 @@ export function SlotTable({
   onChange,
   disabled = false,
   mode = 'available',
+  numWeeks = DEFAULT_WEEKS,
 }: SlotTableProps) {
   const isUnavailableMode = mode === 'unavailable';
   const selectedSlotSet = useMemo(() => new Set(selectedSlots), [selectedSlots]);
 
-  // 入力日から3週間分の日程スロットを常に生成（期間設定がなくてもデフォルト時限で表示）
-  const slots = useMemo(() => generateAllSlots(settings), [settings]);
+  // 入力日から指定週数分の日程スロットを生成（期間設定がなくてもデフォルト時限で表示）
+  const slots = useMemo(() => generateAllSlots(settings, numWeeks), [settings, numWeeks]);
 
   // 日付ごとにグループ化
   const slotsByDate = useMemo(() => {
