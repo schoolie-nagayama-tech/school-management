@@ -742,34 +742,37 @@ export function BillingTable({
                             ) : total === 0 ? (
                               <span className="text-sm text-gray-300">-</span>
                             ) : (
-                              <div className="flex flex-col items-center gap-0.5">
-                                {/* 計上済み（緑・常に残る） */}
+                              <div className="flex flex-col items-center gap-1">
+                                {/* 計上済み: 数字を上に＋下に緑「✓計上」ピル（計上済みは同期しても残る） */}
                                 {charged > 0 && (
-                                  canEditCell && onBillingChange && pending === 0 ? (
-                                    <button
-                                      className="text-[11px] leading-none rounded-md px-2 py-0.5 font-medium bg-green-500 text-white hover:bg-green-600 transition-[background-color] duration-150 ease-out"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleChargedToggle(student.id, item.id, billing, item);
-                                      }}
-                                      title="計上済（クリックで全件解除）"
-                                    >
-                                      ✓ 計上 {charged}
-                                    </button>
-                                  ) : (
-                                    <span
-                                      className="text-[11px] leading-none rounded-md px-2 py-0.5 font-medium bg-green-100 text-green-700"
-                                      title="計上済みコマ数"
-                                    >
-                                      ✓ 計上 {charged}
-                                    </span>
-                                  )
+                                  <div className="flex flex-col items-center gap-0.5">
+                                    <span className="text-sm font-bold text-green-700">{charged}</span>
+                                    {canEditCell && onBillingChange && pending === 0 ? (
+                                      <button
+                                        className="text-[11px] leading-none rounded-md px-2 py-0.5 font-medium bg-green-500 text-white hover:bg-green-600 transition-[background-color] duration-150 ease-out"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleChargedToggle(student.id, item.id, billing, item);
+                                        }}
+                                        title="計上済（クリックで全件解除）"
+                                      >
+                                        ✓ 計上
+                                      </button>
+                                    ) : (
+                                      <span
+                                        className="text-[11px] leading-none rounded-md px-2 py-0.5 font-medium bg-green-100 text-green-700"
+                                        title="計上済みコマ数"
+                                      >
+                                        ✓ 計上
+                                      </span>
+                                    )}
+                                  </div>
                                 )}
-                                {/* 未計上（新規・黄） */}
+                                {/* 未計上（新規）: 数字を上に＋下にグレー「計上」ピル */}
                                 {pending > 0 && (
-                                  <div className="flex items-center gap-1">
+                                  <div className="flex flex-col items-center gap-0.5">
                                     <span className="text-sm font-bold text-[#1e3a5f]" title="未計上（新規）コマ数">
-                                      新規 {pending}
+                                      {pending}
                                     </span>
                                     {canEditCell && onBillingChange && (
                                       <button
@@ -821,45 +824,30 @@ export function BillingTable({
                               autoFocus
                               className="w-full px-2 py-1 text-sm text-center border-2 border-blue-400 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
                             />
-                          ) : isBilled && hasValue ? (
-                            // 計上済み: フォーム連携セルと同じ「✓計上 N」の緑ピル1つに統一
-                            <div className="flex flex-col items-center gap-0.5">
-                              {canEditCell && onBillingChange ? (
-                                <button
-                                  className="text-[11px] leading-none rounded-md px-2 py-0.5 font-medium bg-green-500 text-white hover:bg-green-600 transition-[background-color] duration-150 ease-out"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleChargedToggle(student.id, item.id, billing, item.linked_form_type ? item : undefined);
-                                  }}
-                                  title="計上済（クリックで解除）"
-                                >
-                                  ✓ 計上 {billing?.value_number}
-                                </button>
-                              ) : (
-                                <span className="text-[11px] leading-none rounded-md px-2 py-0.5 font-medium bg-green-100 text-green-700">
-                                  ✓ 計上 {billing?.value_number}
-                                </span>
-                              )}
-                            </div>
                           ) : (
+                            // 数字を上に大きく＋下に計上ピル（計上済み=緑「✓計上」／未計上=グレー「計上」）
                             <div className="flex flex-col items-center gap-0.5">
                               <span
-                                className={`text-sm font-bold ${hasValue ? 'text-[#1e3a5f]' : 'text-gray-300'}`}
+                                className={`text-sm font-bold ${hasValue ? (isBilled ? 'text-green-700' : 'text-[#1e3a5f]') : 'text-gray-300'}`}
                               >
                                 {hasValue ? billing?.value_number : '-'}
                               </span>
                               {canEditCell && onBillingChange && hasValue && (
                                 <button
-                                  className="text-[11px] leading-none rounded-md px-2 py-0.5 font-medium bg-gray-200 text-gray-500 hover:bg-gray-300 transition-[background-color,color] duration-150 ease-out"
+                                  className={`text-[11px] leading-none rounded-md px-2 py-0.5 font-medium transition-[background-color,color] duration-150 ease-out ${
+                                    isBilled
+                                      ? 'bg-green-500 text-white hover:bg-green-600'
+                                      : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
+                                  }`}
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     // フォーム連携項目なら item を渡して計上済み/未計上の内訳(quantity)も付与し、
                                     // 旧データを新表示へ移行させる。非連携項目は従来どおり is_billed のみ更新。
                                     handleChargedToggle(student.id, item.id, billing, item.linked_form_type ? item : undefined);
                                   }}
-                                  title="未計上（クリックで計上）"
+                                  title={isBilled ? '計上済（クリックで解除）' : '未計上（クリックで計上）'}
                                 >
-                                  計上
+                                  {isBilled ? '✓ 計上' : '計上'}
                                 </button>
                               )}
                             </div>
