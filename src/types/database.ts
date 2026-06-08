@@ -2,6 +2,45 @@
 export type Database = {
   public: {
     Tables: {
+      school_monthly_metrics: {
+        Row: {
+          id: string;
+          school_id: string;
+          year: number;
+          month: number;
+          kind: string;
+          new_count: number;
+          leave_count: number;
+          active_count: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          year: number;
+          month: number;
+          kind?: string;
+          new_count?: number;
+          leave_count?: number;
+          active_count?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          school_id?: string;
+          year?: number;
+          month?: number;
+          kind?: string;
+          new_count?: number;
+          leave_count?: number;
+          active_count?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       schools: {
         Row: {
           id: string;

@@ -9,7 +9,9 @@
  * 検討OKなら本番ルート /home へ昇格し、ダミーを実データ取得に差し替える。
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { getSchoolMonthlyMetrics, type MonthlyMetricPoint } from '@/lib/api/schoolMetrics';
 import { AdminLayout } from '@/components/layouts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import {
@@ -189,6 +191,68 @@ function MiniStat({ label, value, hint, trend, invert }: { label: string; value:
 }
 
 /* ============================================================
+ * 実データ（school_monthly_metrics）→ 経営指標の構築
+ * 在籍トレンド(昨対)・増減ウォーターフォール・予実・退会率を組み立てる。
+ * データが無いブロックは上のダミー定数にフォールバックする。
+ * ========================================================== */
+
+const MONTH_LABELS = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+
+interface BuiltMetrics {
+  trend: { month: string; thisYear: number | null; lastYear: number | null }[];
+  waterfall: { name: string; range: number[]; delta: string; kind: string }[];
+  target: { current: number; target: number };
+  churn: { churnRate: number; retentionRate: number; forecast: number };
+}
+
+function buildMetrics(metrics: MonthlyMetricPoint[], thisYear: number): BuiltMetrics {
+  const actualThis = metrics.filter((m) => m.kind === 'actual' && m.year === thisYear).sort((a, b) => a.month - b.month);
+  const actualPrev = metrics.filter((m) => m.kind === 'actual' && m.year === thisYear - 1);
+  const budgetThis = metrics.filter((m) => m.kind === 'budget' && m.year === thisYear);
+
+  // 在籍トレンド（今年 実績 vs 昨年 実績）。データの無い月は null（線が途切れる）
+  const trend = MONTH_LABELS.map((label, i) => {
+    const mo = i + 1;
+    const c = actualThis.find((m) => m.month === mo);
+    const p = actualPrev.find((m) => m.month === mo);
+    return { month: label, thisYear: c?.activeCount ?? null, lastYear: p?.activeCount ?? null };
+  });
+
+  // 以下は最新の実績月が必要。無ければダミー定数にフォールバック
+  let waterfall: BuiltMetrics['waterfall'] = WATERFALL;
+  let target: BuiltMetrics['target'] = TARGET;
+  let churn: BuiltMetrics['churn'] = CHURN;
+
+  const last = actualThis[actualThis.length - 1];
+  if (last) {
+    // 前月末在籍（無ければ 月末−入会+休会 で逆算）
+    const prevActive =
+      actualThis.length >= 2 ? actualThis[actualThis.length - 2].activeCount : last.activeCount - last.newCount + last.leaveCount;
+    const afterNew = prevActive + last.newCount;
+    const prevMonthLabel = last.month - 1 >= 1 ? `${last.month - 1}月末` : '前月末';
+    waterfall = [
+      { name: prevMonthLabel, range: [0, prevActive], delta: String(prevActive), kind: 'total' },
+      { name: '入会', range: [prevActive, afterNew], delta: `+${last.newCount}`, kind: 'up' },
+      { name: '休会', range: [afterNew - last.leaveCount, afterNew], delta: `−${last.leaveCount}`, kind: 'down' },
+      { name: `${last.month}月末`, range: [0, last.activeCount], delta: String(last.activeCount), kind: 'total' },
+    ];
+
+    // 予実（最新実績月の在籍 vs 同月予算）
+    const b = budgetThis.find((m) => m.month === last.month);
+    target = { current: last.activeCount, target: b?.activeCount ?? last.activeCount };
+
+    // 退会率（最新月の休会 / 前月在籍）＋ 直近3ヶ月の純増ペースで期末を外挿
+    const churnRate = prevActive > 0 ? Math.round((last.leaveCount / prevActive) * 1000) / 10 : 0;
+    const recent = actualThis.slice(-3);
+    const avgNet = recent.reduce((s, m) => s + (m.newCount - m.leaveCount), 0) / recent.length;
+    const forecast = Math.round(last.activeCount + avgNet * (12 - last.month));
+    churn = { churnRate, retentionRate: Math.round((100 - churnRate) * 10) / 10, forecast };
+  }
+
+  return { trend, waterfall, target, churn };
+}
+
+/* ============================================================
  * ページ本体
  * ========================================================== */
 
@@ -206,7 +270,25 @@ export default function HomeMockPage() {
   const tasks = TASKS.map((t) => ({ ...t, done: doneIds.has(t.id) }));
   const openCount = tasks.filter((t) => !t.done).length;
 
-  const targetPct = Math.round((TARGET.current / TARGET.target) * 100);
+  // 経営指標の実データ（school_monthly_metrics）を取得。無ければ下のダミー定数にフォールバック
+  const { getSelectedSchoolIds } = useAuth();
+  const [metrics, setMetrics] = useState<MonthlyMetricPoint[] | null>(null);
+  useEffect(() => {
+    const ids = getSelectedSchoolIds();
+    const y = new Date().getFullYear();
+    getSchoolMonthlyMetrics(ids, [y - 2, y - 1, y])
+      .then(setMetrics)
+      .catch(() => setMetrics([]));
+  }, [getSelectedSchoolIds]);
+
+  const real = metrics && metrics.length > 0 ? buildMetrics(metrics, new Date().getFullYear()) : null;
+  const isRealData = !!real;
+  const trend = real?.trend ?? ENROLLMENT_TREND;
+  const waterfall = real?.waterfall ?? WATERFALL;
+  const target = real?.target ?? TARGET;
+  const churn = real?.churn ?? CHURN;
+
+  const targetPct = Math.round((target.current / target.target) * 100);
   const gradeColor = (cat: string) => (cat === 'elem' ? C.blue : cat === 'mid' ? C.primary : C.ink);
   const maxSchool = Math.max(...SCHOOL_DIST.map((s) => s.count));
 
@@ -346,6 +428,11 @@ export default function HomeMockPage() {
 
       {/* ===== 下段：経営系 ===== */}
       <SectionLabel icon={TrendingUp}>経営指標 — 動き（フロー・昨対・予実）</SectionLabel>
+      {!isRealData && (
+        <p className="-mt-2 mb-3 text-xs text-text-faint">
+          ※ この教室の月次データが未取得のためサンプル表示です（教室で永山校を選択し、月次データのマイグレーションを適用すると実データになります）。
+        </p>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* 在籍数トレンド（昨対比） */}
@@ -354,7 +441,7 @@ export default function HomeMockPage() {
           <CardContent>
             <div className="w-full h-[260px]">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={ENROLLMENT_TREND} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+                <LineChart data={trend} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#4b5563' }} tickLine={false} />
                   <YAxis domain={[90, 130]} tick={{ fontSize: 11, fill: '#4b5563' }} tickLine={false} axisLine={false} width={32} />
@@ -374,13 +461,13 @@ export default function HomeMockPage() {
           <CardContent>
             <div className="w-full h-[260px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={WATERFALL} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+                <BarChart data={waterfall} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
                   <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#4b5563' }} tickLine={false} interval={0} />
                   <YAxis domain={[100, 130]} tick={{ fontSize: 11, fill: '#4b5563' }} tickLine={false} axisLine={false} width={32} />
                   <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 12 }} />
                   <Bar dataKey="range" radius={[4, 4, 4, 4]}>
-                    {WATERFALL.map((w, i) => (
+                    {waterfall.map((w, i) => (
                       <Cell key={i} fill={w.kind === 'up' ? C.green : w.kind === 'down' ? C.red : C.slate} />
                     ))}
                   </Bar>
@@ -388,7 +475,7 @@ export default function HomeMockPage() {
               </ResponsiveContainer>
             </div>
             <div className="flex justify-between px-2 -mt-2 text-xs">
-              {WATERFALL.map((w) => (
+              {waterfall.map((w) => (
                 <span key={w.name} className={w.kind === 'up' ? 'text-success' : w.kind === 'down' ? 'text-danger' : 'text-text-muted'}>
                   {w.delta}
                 </span>
@@ -404,8 +491,8 @@ export default function HomeMockPage() {
         <Card>
           <CardContent className="py-5">
             <div className="flex gap-4">
-              <MiniStat label="今月の退会率" value={`${CHURN.churnRate}%`} hint="前月 3.4%" trend="up" invert />
-              <MiniStat label="継続率" value={`${CHURN.retentionRate}%`} />
+              <MiniStat label="今月の退会率" value={`${churn.churnRate}%`} />
+              <MiniStat label="継続率" value={`${churn.retentionRate}%`} />
             </div>
           </CardContent>
         </Card>
@@ -416,7 +503,7 @@ export default function HomeMockPage() {
             <div className="flex items-center gap-2 text-xs text-text-muted">
               <Target className="w-4 h-4" />期末の着地見込み
             </div>
-            <div className="mt-1 text-3xl font-bold text-text-heading">{CHURN.forecast}<span className="text-sm font-normal text-text-muted ml-1">名</span></div>
+            <div className="mt-1 text-3xl font-bold text-text-heading">{churn.forecast}<span className="text-sm font-normal text-text-muted ml-1">名</span></div>
             <div className="text-xs text-text-faint mt-0.5">直近の純増ペースから外挿</div>
           </CardContent>
         </Card>
@@ -426,7 +513,7 @@ export default function HomeMockPage() {
           <CardContent className="py-5">
             <div className="flex items-center justify-between text-xs text-text-muted">
               <span>在籍目標の達成</span>
-              <span>{TARGET.current} / {TARGET.target} 名</span>
+              <span>{target.current} / {target.target} 名</span>
             </div>
             <div className="mt-2 text-3xl font-bold text-text-heading">{targetPct}%</div>
             <div className="mt-2 h-2.5 w-full rounded-full bg-surface-hover overflow-hidden">
