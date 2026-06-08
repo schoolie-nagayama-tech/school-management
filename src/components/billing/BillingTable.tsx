@@ -90,9 +90,13 @@ export function BillingTable({
 
       if (valueType === 'number') {
         if (billing?.is_billed) numberBilledCount++;
-        if (billing?.value_number != null && billing.value_number !== 0) {
+        // フォーム連携項目は計上済みコマ数を quantity に持つため、value_number が0でも
+        // quantity>0 なら「値あり」に数える（計上済み生徒が集計から漏れないように）
+        const vn = billing?.value_number ?? 0;
+        const q = billing?.quantity ?? 0;
+        if (vn !== 0 || q > 0) {
           numberHasValueCount++;
-          numberSum += billing.value_number;
+          numberSum += vn + q;
         }
       } else if (valueType === 'text') {
         if (billing?.is_billed) textBilledCount++;
@@ -240,14 +244,37 @@ export function BillingTable({
   };
 
   // Charged toggle for number/text cells
-  const handleChargedToggle = async (studentId: string, itemId: string, currentBilling: StudentBilling | undefined) => {
+  // item を渡すと、フォーム連携項目では計上済み(quantity)/未計上(value_number)の内訳も
+  // 付け替える（計上=全件計上済みに、解除=全件未計上に）。これにより同期後も「✓計上 N」が
+  // 残り、計上済みが空欄に潰れて見えなくなる問題を防ぐ。
+  const handleChargedToggle = async (
+    studentId: string,
+    itemId: string,
+    currentBilling: StudentBilling | undefined,
+    item?: BillingItem
+  ) => {
     if (isTeacher || !onBillingChange) return;
     const key = `${studentId}-${itemId}`;
     setUpdatingCells((prev) => new Set(prev).add(key));
     try {
       const newIsBilled = !currentBilling?.is_billed;
-      await updateBillingValue(studentId, itemId, { is_billed: newIsBilled });
-      onBillingChange(studentId, itemId, newIsBilled);
+      if (item?.linked_form_type) {
+        // 計上済み + 未計上 = 総コマ数。計上で全部 quantity 側へ、解除で全部 value_number 側へ。
+        const total = (currentBilling?.value_number ?? 0) + (currentBilling?.quantity ?? 0);
+        await updateBillingValue(
+          studentId,
+          itemId,
+          newIsBilled
+            ? { is_billed: true, value_number: 0, quantity: total }
+            : { is_billed: false, value_number: total, quantity: 0 }
+        );
+        onBillingChange(studentId, itemId, newIsBilled);
+        // 内訳(quantity/value_number)の表示を最新化するため再取得
+        onItemsChange?.();
+      } else {
+        await updateBillingValue(studentId, itemId, { is_billed: newIsBilled });
+        onBillingChange(studentId, itemId, newIsBilled);
+      }
     } catch (err) {
       toastError(err instanceof Error ? err.message : '計上の更新に失敗しました');
     } finally {
@@ -687,6 +714,83 @@ export function BillingTable({
                         );
                       }
 
+                      // フォーム連携の number セル: 計上済み(quantity)と未計上/新規(value_number)を分けて表示。
+                      // 同期しても計上済み(✓計上 N・緑)は残り、新規分だけ別に出るので「計上済みが消えて分からなくなる」を防ぐ。
+                      // quantity が未設定(=新ロジックで未同期の旧データ)の行は従来表示にフォールバックし、
+                      // 同期 or 計上で quantity が入った後に内訳表示へ切り替わる（旧計上済みが新規に化けるのを防ぐ）。
+                      if (item.linked_form_type && billing?.quantity != null) {
+                        const charged = billing?.quantity ?? 0;
+                        const pending = billing?.value_number ?? 0;
+                        const total = charged + pending;
+                        const fullyCharged = pending === 0 && charged > 0;
+                        const cellBg = total === 0
+                          ? ''
+                          : fullyCharged
+                          ? 'bg-green-100'
+                          : charged > 0
+                          ? 'bg-lime-50'
+                          : 'bg-yellow-50';
+                        return (
+                          <td
+                            key={item.id}
+                            className={`px-1 py-1 text-center border-r border-[#e5e7eb] transition-[background-color] duration-150 ease-out ${cellBg} ${
+                              isUpdating ? 'opacity-50' : ''
+                            }`}
+                          >
+                            {isUpdating ? (
+                              <span className="text-[#4b5563] text-xs">...</span>
+                            ) : total === 0 ? (
+                              <span className="text-sm text-gray-300">-</span>
+                            ) : (
+                              <div className="flex flex-col items-center gap-0.5">
+                                {/* 計上済み（緑・常に残る） */}
+                                {charged > 0 && (
+                                  canEditCell && onBillingChange && pending === 0 ? (
+                                    <button
+                                      className="text-[11px] leading-none rounded-md px-2 py-0.5 font-medium bg-green-500 text-white hover:bg-green-600 transition-[background-color] duration-150 ease-out"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleChargedToggle(student.id, item.id, billing, item);
+                                      }}
+                                      title="計上済（クリックで全件解除）"
+                                    >
+                                      ✓ 計上 {charged}
+                                    </button>
+                                  ) : (
+                                    <span
+                                      className="text-[11px] leading-none rounded-md px-2 py-0.5 font-medium bg-green-100 text-green-700"
+                                      title="計上済みコマ数"
+                                    >
+                                      ✓ 計上 {charged}
+                                    </span>
+                                  )
+                                )}
+                                {/* 未計上（新規・黄） */}
+                                {pending > 0 && (
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-sm font-bold text-[#1e3a5f]" title="未計上（新規）コマ数">
+                                      新規 {pending}
+                                    </span>
+                                    {canEditCell && onBillingChange && (
+                                      <button
+                                        className="text-[11px] leading-none rounded-md px-2 py-0.5 font-medium bg-gray-200 text-gray-600 hover:bg-gray-300 transition-[background-color] duration-150 ease-out"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleChargedToggle(student.id, item.id, billing, item);
+                                        }}
+                                        title="未計上を計上する"
+                                      >
+                                        計上
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </td>
+                        );
+                      }
+
                       // 通常の number セル
                       return (
                         <td
@@ -735,7 +839,9 @@ export function BillingTable({
                                   }`}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    handleChargedToggle(student.id, item.id, billing);
+                                    // フォーム連携項目なら item を渡して計上済み/未計上の内訳(quantity)も付与し、
+                                    // 旧データを新表示へ移行させる。非連携項目は従来どおり is_billed のみ更新。
+                                    handleChargedToggle(student.id, item.id, billing, item.linked_form_type ? item : undefined);
                                   }}
                                   title={isBilled ? '計上済（クリックで解除）' : '未計上（クリックで計上）'}
                                 >
@@ -806,7 +912,9 @@ export function BillingTable({
                                   }`}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    handleChargedToggle(student.id, item.id, billing);
+                                    // フォーム連携項目なら item を渡して計上済み/未計上の内訳(quantity)も付与し、
+                                    // 旧データを新表示へ移行させる。非連携項目は従来どおり is_billed のみ更新。
+                                    handleChargedToggle(student.id, item.id, billing, item.linked_form_type ? item : undefined);
                                   }}
                                   title={isBilled ? '計上済（クリックで解除）' : '未計上（クリックで計上）'}
                                 >
