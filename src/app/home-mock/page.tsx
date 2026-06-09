@@ -19,6 +19,7 @@ import { getRecentUnprocessedResponses } from '@/lib/api/form-responses';
 import { getBulletinPosts } from '@/lib/api/bulletin';
 import type { BulletinPost } from '@/types/bulletin';
 import { getScheduleEntries } from '@/lib/api/schedule';
+import { getFormParticipation, type FormParticipation } from '@/lib/api/dashboardForms';
 import { GRADE_LABELS } from '@/types/database';
 import { AdminLayout } from '@/components/layouts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
@@ -529,6 +530,20 @@ export default function HomeMockPage() {
     };
   }, [getSelectedSchoolIds]);
 
+  // フォーム参加率（模試/Vもぎ/増コマ の直近回。紐付き生徒/対象学年在籍）
+  const [participation, setParticipation] = useState<FormParticipation[] | null>(null);
+  useEffect(() => {
+    const ids = getSelectedSchoolIds();
+    if (ids.length === 0) return;
+    let active = true;
+    getFormParticipation(ids)
+      .then((p) => active && setParticipation(p))
+      .catch(() => setParticipation([]));
+    return () => {
+      active = false;
+    };
+  }, [getSelectedSchoolIds]);
+
   return (
     <AdminLayout headerTitle="ホーム" title="サンプル教室 ダッシュボード">
       {/* モック明示バナー */}
@@ -926,6 +941,32 @@ export default function HomeMockPage() {
             <div className="text-xs text-text-faint mt-1">CSV/Excel 一括取り込みで整備予定</div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* フォーム参加率（受験率・取得率） */}
+      <SectionLabel icon={ClipboardList}>フォーム参加率（受験率・取得率）</SectionLabel>
+      <p className="-mt-2 mb-3 text-xs text-text-faint">
+        紐付け済みの回答で集計（各フォームの直近の回が対象。分母は対象学年の在籍数）。
+      </p>
+      <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {participation === null ? (
+          <div className="py-3 text-sm text-text-muted">読み込み中…</div>
+        ) : participation.length === 0 ? (
+          <div className="py-3 text-sm text-text-muted">対象のフォーム期間がありません</div>
+        ) : (
+          participation.map((p) => (
+            <Card key={p.formType}>
+              <CardContent className="py-4">
+                <div className="text-sm text-text-muted">{p.label}</div>
+                <div className="mt-1 flex items-baseline gap-2">
+                  <span className="text-3xl font-bold text-text-heading">{p.rate}%</span>
+                  <span className="text-xs text-text-faint">{p.numerator} / {p.denominator} 名</span>
+                </div>
+                <div className="mt-1 truncate text-xs text-text-faint">{p.periodTitle || '—'}</div>
+              </CardContent>
+            </Card>
+          ))
+        )}
       </div>
     </AdminLayout>
   );
