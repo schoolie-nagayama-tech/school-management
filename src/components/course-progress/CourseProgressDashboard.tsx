@@ -300,16 +300,19 @@ export function CourseProgressDashboard({
       const catProposedCount = catStudents.filter((s) => (studentProposedKoma[s.id] ?? 0) > 0).length;
       const catDecidedCount = catStudents.filter((s) => (studentDecidedKoma[s.id] ?? 0) > 0).length;
 
-      const gradeBreakdown: { grade: number; label: string; count: number; proposed: number; decided: number }[] = [];
+      const gradeBreakdown: { grade: number; label: string; count: number; proposed: number; decided: number; avgProposed: number }[] = [];
       const gradeSet = Array.from(new Set(catStudents.map((s) => s.grade))).sort((a, b) => a - b);
       for (const grade of gradeSet) {
         const gs = catStudents.filter((s) => s.grade === grade);
+        const gProposed = gs.reduce((sum, s) => sum + (studentProposedKoma[s.id] ?? 0), 0);
         gradeBreakdown.push({
           grade,
           label: GRADE_LABELS[grade] || `${grade}`,
           count: gs.length,
-          proposed: gs.reduce((sum, s) => sum + (studentProposedKoma[s.id] ?? 0), 0),
+          proposed: gProposed,
           decided: gs.reduce((sum, s) => sum + (studentDecidedKoma[s.id] ?? 0), 0),
+          // 提案増コマ平均（その学年の在籍1人あたりの提案コマ数）
+          avgProposed: gs.length > 0 ? gProposed / gs.length : 0,
         });
       }
 
@@ -657,10 +660,11 @@ export function CourseProgressDashboard({
                     <div className="mt-2 space-y-0.5">
                       {cat.gradeBreakdown.map((g) => (
                         <div key={g.grade} className="flex items-center justify-between text-[10px]">
-                          <span className="text-gray-500 w-8">{g.label}</span>
-                          <span className="text-gray-400">{g.count}名</span>
-                          <span className="text-gray-500">提案{g.proposed}</span>
-                          <span className={`font-medium ${cat.colors.text}`}>決定{g.decided}</span>
+                          <span className="text-gray-500 w-7">{g.label}</span>
+                          <span className="text-gray-400 w-8 text-right">{g.count}名</span>
+                          <span className="text-gray-500 w-12 text-right">提案{g.proposed}</span>
+                          <span className="text-gray-400 w-14 text-right" title="提案増コマ平均（提案コマ÷人数）">平均{g.avgProposed.toFixed(1)}</span>
+                          <span className={`font-medium w-12 text-right ${cat.colors.text}`}>決定{g.decided}</span>
                         </div>
                       ))}
                     </div>
