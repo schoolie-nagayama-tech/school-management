@@ -12,6 +12,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getSchoolMonthlyMetrics, type MonthlyMetricPoint } from '@/lib/api/schoolMetrics';
+import { getAlertsLight, getAlertsHeavy, mergeStudentAlerts } from '@/lib/api/alerts';
+import { ALERT_TYPE_LABELS, type Alert, type StudentAlerts } from '@/types/alerts';
 import { AdminLayout } from '@/components/layouts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import {
@@ -198,6 +200,12 @@ function MiniStat({ label, value, hint, trend, invert }: { label: string; value:
 
 const MONTH_LABELS = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
 
+// アラートの重要度ソート順と色（danger > warning > info）
+const SEVERITY_RANK: Record<string, number> = { danger: 0, warning: 1, info: 2 };
+function alertTone(sev?: string): 'danger' | 'warning' | 'info' {
+  return sev === 'danger' ? 'danger' : sev === 'warning' ? 'warning' : 'info';
+}
+
 interface BuiltMetrics {
   trend: { month: string; thisYear: number | null; lastYear: number | null }[];
   waterfall: { name: string; range: number[]; delta: string; kind: string }[];
@@ -289,6 +297,36 @@ export default function HomeMockPage() {
   const churn = real?.churn ?? CHURN;
 
   const targetPct = Math.round((target.current / target.target) * 100);
+
+  // アラート（生徒モニタリング）の実データ。light を先に表示し、heavy(成績低下等)は背後でマージ
+  const [alertData, setAlertData] = useState<StudentAlerts[] | null>(null);
+  useEffect(() => {
+    const ids = getSelectedSchoolIds();
+    if (ids.length === 0) return;
+    let active = true;
+    getAlertsLight(ids)
+      .then((light) => {
+        if (!active) return;
+        setAlertData(light);
+        getAlertsHeavy(ids)
+          .then((heavy) => {
+            if (active) setAlertData((prev) => mergeStudentAlerts(prev ?? [], heavy));
+          })
+          .catch(() => {});
+      })
+      .catch(() => setAlertData([]));
+    return () => {
+      active = false;
+    };
+  }, [getSelectedSchoolIds]);
+
+  // 全生徒のアラートを 1 件ずつに展開し、重要度順に並べる
+  const allAlerts: Alert[] = (alertData ?? []).flatMap((s) => s.alerts);
+  const sortedAlerts = [...allAlerts].sort(
+    (a, b) => (SEVERITY_RANK[a.severity ?? 'info'] ?? 2) - (SEVERITY_RANK[b.severity ?? 'info'] ?? 2),
+  );
+  const alertCount = allAlerts.length;
+  const hasRealAlerts = alertData !== null && alertData.length > 0;
   const gradeColor = (cat: string) => (cat === 'elem' ? C.blue : cat === 'mid' ? C.primary : C.ink);
   const maxSchool = Math.max(...SCHOOL_DIST.map((s) => s.count));
 
@@ -381,6 +419,8 @@ export default function HomeMockPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {KPIS.map((k) => {
           const t = TONE[k.tone];
+          // 要対応アラートの件数だけ実データで上書き（他はダミーのまま）
+          const value = k.key === 'alert' && hasRealAlerts ? alertCount : k.value;
           return (
             <Card key={k.key} className="cursor-pointer hover:bg-surface-hover transition-colors">
               <CardContent className="py-4">
@@ -391,7 +431,7 @@ export default function HomeMockPage() {
                   <ChevronRight className="w-4 h-4 text-text-faint" />
                 </div>
                 <div className="mt-3 flex items-baseline gap-1">
-                  <span className="text-3xl font-bold text-text-heading">{k.value}</span>
+                  <span className="text-3xl font-bold text-text-heading">{value}</span>
                   <span className="text-sm text-text-muted">{k.unit}</span>
                 </div>
                 <div className="mt-0.5 text-sm text-text-body">{k.label}</div>
@@ -415,13 +455,35 @@ export default function HomeMockPage() {
           </CardContent>
         </Card>
         <Card>
-          <CardHeader><CardTitle>アラート</CardTitle></CardHeader>
-          <CardContent className="text-sm text-text-muted">
-            既存 AlertBoard（軽量）を配置予定。
-            <div className="mt-2 space-y-2">
-              <div className="flex items-center gap-2 text-text-body"><AlertTriangle className="w-4 h-4 text-warning" />田中：模試偏差値が前回比 −6</div>
-              <div className="flex items-center gap-2 text-text-body"><AlertTriangle className="w-4 h-4 text-warning" />佐藤：面談が2ヶ月未実施</div>
-            </div>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>アラート</CardTitle>
+            {hasRealAlerts && <span className="text-xs text-text-muted">{alertCount}件</span>}
+          </CardHeader>
+          <CardContent className="py-2">
+            {!hasRealAlerts ? (
+              <div className="py-2 text-sm text-text-muted">
+                {alertData === null ? '読み込み中…' : '現在アラートはありません'}
+              </div>
+            ) : (
+              <>
+                {sortedAlerts.slice(0, 6).map((a) => {
+                  const tn = TONE[alertTone(a.severity)];
+                  return (
+                    <div key={a.id} className="flex items-start gap-2.5 py-2 border-b border-border-subtle last:border-0">
+                      <AlertTriangle className={`w-4 h-4 mt-0.5 shrink-0 ${tn.text}`} />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm text-text-body truncate">{a.student_name}</div>
+                        <div className="text-xs text-text-faint truncate">{a.message}</div>
+                      </div>
+                      <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${tn.bg} ${tn.text}`}>
+                        {ALERT_TYPE_LABELS[a.alert_type]}
+                      </span>
+                    </div>
+                  );
+                })}
+                {alertCount > 6 && <div className="pt-2 text-xs text-text-muted">ほか {alertCount - 6} 件</div>}
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
