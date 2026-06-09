@@ -13,7 +13,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getSchoolMonthlyMetrics, type MonthlyMetricPoint } from '@/lib/api/schoolMetrics';
 import { getAlertsLight, getAlertsHeavy, mergeStudentAlerts } from '@/lib/api/alerts';
-import { ALERT_TYPE_LABELS, type Alert, type StudentAlerts } from '@/types/alerts';
+import { ALERT_TYPE_LABELS, type Alert, type StudentAlerts, type AlertType } from '@/types/alerts';
 import { AdminLayout } from '@/components/layouts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import {
@@ -202,9 +202,19 @@ const MONTH_LABELS = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8
 
 // アラートの重要度ソート順と色（danger > warning > info）
 const SEVERITY_RANK: Record<string, number> = { danger: 0, warning: 1, info: 2 };
-function alertTone(sev?: string): 'danger' | 'warning' | 'info' {
-  return sev === 'danger' ? 'danger' : sev === 'warning' ? 'warning' : 'info';
-}
+// アラート種別の表示優先度（小さいほど重要。成績低下を最優先、講習準備など定型大量系は最後）
+const TYPE_PRIORITY: Record<string, number> = {
+  score_drop: 0,
+  schedule_change_unapplied: 1,
+  interview_overdue: 2,
+  application_overdue: 3,
+  exam_overdue: 4,
+  homework_not_done: 5,
+  tardy: 6,
+  interview_task: 7,
+  score_missing: 8,
+  course_prep_overdue: 9,
+};
 
 interface BuiltMetrics {
   trend: { month: string; thisYear: number | null; lastYear: number | null }[];
@@ -300,6 +310,7 @@ export default function HomeMockPage() {
 
   // アラート（生徒モニタリング）の実データ。light を先に表示し、heavy(成績低下等)は背後でマージ
   const [alertData, setAlertData] = useState<StudentAlerts[] | null>(null);
+  const [filterType, setFilterType] = useState<AlertType | null>(null);
   useEffect(() => {
     const ids = getSelectedSchoolIds();
     if (ids.length === 0) return;
@@ -320,13 +331,30 @@ export default function HomeMockPage() {
     };
   }, [getSelectedSchoolIds]);
 
-  // 全生徒のアラートを 1 件ずつに展開し、重要度順に並べる
   const allAlerts: Alert[] = (alertData ?? []).flatMap((s) => s.alerts);
-  const sortedAlerts = [...allAlerts].sort(
-    (a, b) => (SEVERITY_RANK[a.severity ?? 'info'] ?? 2) - (SEVERITY_RANK[b.severity ?? 'info'] ?? 2),
-  );
   const alertCount = allAlerts.length;
   const hasRealAlerts = alertData !== null && alertData.length > 0;
+
+  // 種別ごと件数（重要度順）。クリックでこの種別に絞り込む
+  const typeCountMap = new Map<AlertType, number>();
+  allAlerts.forEach((a) => typeCountMap.set(a.alert_type, (typeCountMap.get(a.alert_type) ?? 0) + 1));
+  const typeSummary = Array.from(typeCountMap.entries())
+    .map(([type, count]) => ({ type, count }))
+    .sort((a, b) => (TYPE_PRIORITY[a.type] ?? 99) - (TYPE_PRIORITY[b.type] ?? 99));
+
+  // 生徒ごとに集約し、最重要種別→最重要severity の順で並べる
+  const studentsSorted = (alertData ?? [])
+    .map((s) => ({
+      data: s,
+      topPriority: Math.min(...s.alerts.map((a) => TYPE_PRIORITY[a.alert_type] ?? 99)),
+      topSeverity: Math.min(...s.alerts.map((a) => SEVERITY_RANK[a.severity ?? 'info'] ?? 2)),
+    }))
+    .sort((a, b) => a.topPriority - b.topPriority || a.topSeverity - b.topSeverity);
+
+  // 種別フィルタ適用後の生徒
+  const visibleStudents = filterType
+    ? studentsSorted.filter((s) => s.data.alerts.some((a) => a.alert_type === filterType))
+    : studentsSorted;
   const gradeColor = (cat: string) => (cat === 'elem' ? C.blue : cat === 'mid' ? C.primary : C.ink);
   const maxSchool = Math.max(...SCHOOL_DIST.map((s) => s.count));
 
@@ -466,22 +494,51 @@ export default function HomeMockPage() {
               </div>
             ) : (
               <>
-                {sortedAlerts.slice(0, 6).map((a) => {
-                  const tn = TONE[alertTone(a.severity)];
+                {/* 種別サマリ（重要度順）。クリックでその種別だけに絞り込み */}
+                <div className="flex flex-wrap gap-1.5 pb-2 mb-2 border-b border-border-subtle">
+                  {typeSummary.map(({ type, count }) => {
+                    const activeF = filterType === type;
+                    return (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => setFilterType(activeF ? null : type)}
+                        className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
+                          activeF ? 'bg-ink text-text-on-primary' : 'bg-surface-hover text-text-body hover:bg-surface-raised'
+                        }`}
+                      >
+                        {ALERT_TYPE_LABELS[type]} {count}
+                      </button>
+                    );
+                  })}
+                </div>
+                {/* 生徒ごと集約（最重要順・上位8名）。各生徒の種別を件数チップで */}
+                {visibleStudents.slice(0, 8).map(({ data: s, topSeverity }) => {
+                  const sevTone = topSeverity === 0 ? 'danger' : topSeverity === 1 ? 'warning' : 'info';
+                  const byType = new Map<AlertType, number>();
+                  s.alerts
+                    .filter((a) => !filterType || a.alert_type === filterType)
+                    .forEach((a) => byType.set(a.alert_type, (byType.get(a.alert_type) ?? 0) + 1));
+                  const chips = Array.from(byType.entries()).sort(
+                    (a, b) => (TYPE_PRIORITY[a[0]] ?? 99) - (TYPE_PRIORITY[b[0]] ?? 99),
+                  );
                   return (
-                    <div key={a.id} className="flex items-start gap-2.5 py-2 border-b border-border-subtle last:border-0">
-                      <AlertTriangle className={`w-4 h-4 mt-0.5 shrink-0 ${tn.text}`} />
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm text-text-body truncate">{a.student_name}</div>
-                        <div className="text-xs text-text-faint truncate">{a.message}</div>
+                    <div key={s.student_id} className="flex items-center gap-2 py-2 border-b border-border-subtle last:border-0">
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${TONE[sevTone].bar}`} />
+                      <span className="text-sm text-text-body shrink-0">{s.student_name}</span>
+                      <div className="flex flex-wrap gap-1 justify-end flex-1">
+                        {chips.map(([type, cnt]) => (
+                          <span key={type} className="px-1.5 py-0.5 rounded text-xs bg-surface-hover text-text-muted">
+                            {ALERT_TYPE_LABELS[type]}{cnt > 1 ? ` ${cnt}` : ''}
+                          </span>
+                        ))}
                       </div>
-                      <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${tn.bg} ${tn.text}`}>
-                        {ALERT_TYPE_LABELS[a.alert_type]}
-                      </span>
                     </div>
                   );
                 })}
-                {alertCount > 6 && <div className="pt-2 text-xs text-text-muted">ほか {alertCount - 6} 件</div>}
+                {visibleStudents.length > 8 && (
+                  <div className="pt-2 text-xs text-text-muted">ほか {visibleStudents.length - 8} 名</div>
+                )}
               </>
             )}
           </CardContent>
