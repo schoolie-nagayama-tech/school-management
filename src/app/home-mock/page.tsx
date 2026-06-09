@@ -14,6 +14,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getSchoolMonthlyMetrics, type MonthlyMetricPoint } from '@/lib/api/schoolMetrics';
 import { getAlertsLight, getAlertsHeavy, mergeStudentAlerts } from '@/lib/api/alerts';
 import { ALERT_TYPE_LABELS, type Alert, type StudentAlerts, type AlertType } from '@/types/alerts';
+import { getStudents, type EnrichedStudent } from '@/lib/api/students';
+import { getRecentUnprocessedResponses } from '@/lib/api/form-responses';
+import { GRADE_LABELS } from '@/types/database';
 import { AdminLayout } from '@/components/layouts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
 import {
@@ -271,6 +274,57 @@ function buildMetrics(metrics: MonthlyMetricPoint[], thisYear: number): BuiltMet
 }
 
 /* ============================================================
+ * 実データ（getStudents）→ 経営スナップショット（学年/通学校/週回数）
+ * 在籍中の生徒のみを対象に集計。データが無いブロックはダミー定数にフォールバック。
+ * ========================================================== */
+
+// 学年(1-13) → 小中高の区分（students.ts の getGradeCategory は private なので再実装）
+function gradeCategory(grade: number): 'elem' | 'mid' | 'high' {
+  if (grade <= 6) return 'elem';
+  if (grade <= 9) return 'mid';
+  return 'high';
+}
+
+// 学年構成（学年順・小中高で色分け）
+function buildGradeDist(students: EnrichedStudent[]) {
+  const counts = new Map<number, number>();
+  students.forEach((s) => counts.set(s.grade, (counts.get(s.grade) ?? 0) + 1));
+  return Array.from(counts.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map(([grade, count]) => ({ grade: GRADE_LABELS[grade] ?? `${grade}`, count, cat: gradeCategory(grade) }));
+}
+
+// 通学校別の生徒数（上位5校）
+function buildSchoolDist(students: EnrichedStudent[]) {
+  const counts = new Map<string, number>();
+  students.forEach((s) => {
+    if (s.school_name) counts.set(s.school_name, (counts.get(s.school_name) ?? 0) + 1);
+  });
+  return Array.from(counts.entries())
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+}
+
+// 週回数の分布（distinct 曜日数）と平均。通塾パターンが無い生徒は除外
+function buildWeeklyDist(students: EnrichedStudent[]) {
+  const buckets: Record<string, number> = { 週1: 0, 週2: 0, 週3: 0, 週4: 0, '週5+': 0 };
+  let total = 0;
+  let n = 0;
+  students.forEach((s) => {
+    const w = new Set(s.schedulePatterns.map((p) => p.day_of_week)).size;
+    if (w === 0) return;
+    total += w;
+    n += 1;
+    const key = w >= 5 ? '週5+' : `週${w}`;
+    buckets[key] = (buckets[key] ?? 0) + 1;
+  });
+  const dist = Object.entries(buckets).map(([times, count]) => ({ times, count }));
+  const avg = n > 0 ? Math.round((total / n) * 10) / 10 : 0;
+  return { dist, avg };
+}
+
+/* ============================================================
  * ページ本体
  * ========================================================== */
 
@@ -356,7 +410,31 @@ export default function HomeMockPage() {
     ? studentsSorted.filter((s) => s.data.alerts.some((a) => a.alert_type === filterType))
     : studentsSorted;
   const gradeColor = (cat: string) => (cat === 'elem' ? C.blue : cat === 'mid' ? C.primary : C.ink);
-  const maxSchool = Math.max(...SCHOOL_DIST.map((s) => s.count));
+
+  // 生徒データ（経営スナップショット集計用）と未処理申込件数の実データ
+  const [students, setStudents] = useState<EnrichedStudent[] | null>(null);
+  const [unprocessedCount, setUnprocessedCount] = useState<number | null>(null);
+  useEffect(() => {
+    const ids = getSelectedSchoolIds();
+    if (ids.length === 0) return;
+    let active = true;
+    getStudents(undefined, ids)
+      .then((s) => active && setStudents(s))
+      .catch(() => setStudents([]));
+    getRecentUnprocessedResponses(ids, 30, 100)
+      .then((r) => active && setUnprocessedCount(r.length))
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [getSelectedSchoolIds]);
+
+  const activeStudents = (students ?? []).filter((s) => s.status === 'active');
+  const hasStudents = students !== null && activeStudents.length > 0;
+  const gradeDist = hasStudents ? buildGradeDist(activeStudents) : GRADE_DIST;
+  const schoolDist = hasStudents ? buildSchoolDist(activeStudents) : SCHOOL_DIST;
+  const weekly = hasStudents ? buildWeeklyDist(activeStudents) : { dist: WEEKLY_DIST, avg: 2.4 };
+  const maxSchool = Math.max(...schoolDist.map((s) => s.count), 1);
 
   return (
     <AdminLayout headerTitle="ホーム" title="サンプル教室 ダッシュボード">
@@ -448,7 +526,14 @@ export default function HomeMockPage() {
         {KPIS.map((k) => {
           const t = TONE[k.tone];
           // 要対応アラートの件数だけ実データで上書き（他はダミーのまま）
-          const value = k.key === 'alert' && hasRealAlerts ? alertCount : k.value;
+          const value =
+            k.key === 'alert' && hasRealAlerts
+              ? alertCount
+              : k.key === 'students' && hasStudents
+                ? activeStudents.length
+                : k.key === 'pending' && unprocessedCount !== null
+                  ? unprocessedCount
+                  : k.value;
           return (
             <Card key={k.key} className="cursor-pointer hover:bg-surface-hover transition-colors">
               <CardContent className="py-4">
@@ -652,13 +737,13 @@ export default function HomeMockPage() {
           <CardContent>
             <div className="w-full h-[240px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={GRADE_DIST} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+                <BarChart data={gradeDist} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
                   <XAxis dataKey="grade" tick={{ fontSize: 11, fill: '#4b5563' }} tickLine={false} interval={0} />
                   <YAxis tick={{ fontSize: 11, fill: '#4b5563' }} tickLine={false} axisLine={false} width={28} />
                   <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: 8, fontSize: 12 }} />
                   <Bar dataKey="count" name="人数" radius={[4, 4, 0, 0]}>
-                    {GRADE_DIST.map((g, i) => <Cell key={i} fill={gradeColor(g.cat)} />)}
+                    {gradeDist.map((g, i) => <Cell key={i} fill={gradeColor(g.cat)} />)}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -675,12 +760,12 @@ export default function HomeMockPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>週回数の分布</CardTitle>
-            <span className="text-sm text-text-muted">平均 <span className="font-bold text-text-heading">2.4</span> 回</span>
+            <span className="text-sm text-text-muted">平均 <span className="font-bold text-text-heading">{weekly.avg}</span> 回</span>
           </CardHeader>
           <CardContent>
             <div className="w-full h-[240px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={WEEKLY_DIST} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
+                <BarChart data={weekly.dist} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
                   <XAxis dataKey="times" tick={{ fontSize: 11, fill: '#4b5563' }} tickLine={false} interval={0} />
                   <YAxis tick={{ fontSize: 11, fill: '#4b5563' }} tickLine={false} axisLine={false} width={28} />
@@ -701,7 +786,7 @@ export default function HomeMockPage() {
             <CardTitle>通学校別の生徒数（上位）</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 py-4">
-            {SCHOOL_DIST.map((s) => (
+            {schoolDist.map((s) => (
               <div key={s.name} className="flex items-center gap-3">
                 <div className="w-28 shrink-0 text-sm text-text-body truncate">{s.name}</div>
                 <div className="flex-1 h-5 rounded-md bg-surface-hover overflow-hidden">
