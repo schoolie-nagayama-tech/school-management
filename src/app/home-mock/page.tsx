@@ -328,6 +328,73 @@ function buildWeeklyDist(students: EnrichedStudent[]) {
 }
 
 /* ============================================================
+ * アラートの期日系 → 要対応・期日一覧（期日帯タスク）
+ * 期日を持つアラート(申込/面談/講習準備/日程変更/目標未設定)を、
+ * 期限超過/今週/来週/それ以降 に振り分ける。期日の無い種別は一覧に出さない。
+ * ========================================================== */
+
+interface DueTask {
+  id: string;
+  title: string;
+  type: string;
+  meta: string;
+  group: string;
+  dueText: string;
+  done: boolean;
+}
+
+// 期日を持つアラート種別 → タスク種別バッジ（TASK_TYPES のキー）
+const DUE_ALERT_TO_TYPE: Record<string, string> = {
+  application_overdue: 'apply',
+  course_prep_overdue: 'koushu',
+  schedule_change_unapplied: 'transfer',
+  interview_overdue: 'interview',
+  interview_task: 'interview',
+  exam_overdue: 'procedure',
+};
+
+function fmtDate(d?: string): string {
+  if (!d) return '';
+  const parts = d.split('-');
+  return parts.length >= 3 ? `${+parts[1]}/${+parts[2]}` : d;
+}
+
+function buildDueTasks(alertData: StudentAlerts[]): DueTask[] {
+  const tasks: DueTask[] = [];
+  for (const s of alertData) {
+    for (const a of s.alerts) {
+      const type = DUE_ALERT_TO_TYPE[a.alert_type];
+      if (!type) continue; // 成績低下/宿題/遅刻など期日の無い種別はアラートカード側のみ
+      const d = a.details ?? {};
+      const overdue = d.days_overdue;
+      const until = d.days_until_due;
+      let group: string;
+      let dueText: string;
+      if (overdue != null && overdue > 0) {
+        group = 'overdue';
+        dueText = d.due_date ? `${fmtDate(d.due_date)} 超過` : `${overdue}日超過`;
+      } else if (until != null) {
+        group = until < 0 ? 'overdue' : until <= 6 ? 'thisWeek' : until <= 13 ? 'nextWeek' : 'later';
+        dueText = d.due_date ? fmtDate(d.due_date) : until < 0 ? `${-until}日超過` : `あと${until}日`;
+      } else {
+        group = 'overdue';
+        dueText = '要対応';
+      }
+      tasks.push({
+        id: a.id,
+        title: `${s.student_name}：${a.message}`,
+        type,
+        meta: ALERT_TYPE_LABELS[a.alert_type],
+        group,
+        dueText,
+        done: false,
+      });
+    }
+  }
+  return tasks;
+}
+
+/* ============================================================
  * ページ本体
  * ========================================================== */
 
@@ -341,9 +408,6 @@ export default function HomeMockPage() {
       else next.add(id);
       return next;
     });
-  // 期日帯でグルーピングして表示するため、ここでは done 付与のみ。グループ内の並べ替えは描画時に行う
-  const tasks = TASKS.map((t) => ({ ...t, done: doneIds.has(t.id) }));
-  const openCount = tasks.filter((t) => !t.done).length;
 
   // 経営指標の実データ（school_monthly_metrics）を取得。無ければ下のダミー定数にフォールバック
   const { getSelectedSchoolIds } = useAuth();
@@ -412,6 +476,12 @@ export default function HomeMockPage() {
   const visibleStudents = filterType
     ? studentsSorted.filter((s) => s.data.alerts.some((a) => a.alert_type === filterType))
     : studentsSorted;
+
+  // 要対応・期日一覧：アラートの期日系をタスク化（無ければダミーにフォールバック）。done 付与は描画前にここで
+  const dueTasks = alertData ? buildDueTasks(alertData) : [];
+  const tasksSource: DueTask[] = dueTasks.length > 0 ? dueTasks : TASKS.map((t) => ({ ...t }));
+  const tasks = tasksSource.map((t) => ({ ...t, done: doneIds.has(t.id) }));
+  const openCount = tasks.filter((t) => !t.done).length;
   const gradeColor = (cat: string) => (cat === 'elem' ? C.blue : cat === 'mid' ? C.primary : C.ink);
 
   // 生徒データ（経営スナップショット集計用）と未処理申込件数の実データ
