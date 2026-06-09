@@ -16,6 +16,9 @@ import { getAlertsLight, getAlertsHeavy, mergeStudentAlerts } from '@/lib/api/al
 import { ALERT_TYPE_LABELS, type Alert, type StudentAlerts, type AlertType } from '@/types/alerts';
 import { getStudents, type EnrichedStudent } from '@/lib/api/students';
 import { getRecentUnprocessedResponses } from '@/lib/api/form-responses';
+import { getBulletinPosts } from '@/lib/api/bulletin';
+import type { BulletinPost } from '@/types/bulletin';
+import { getScheduleEntries } from '@/lib/api/schedule';
 import { GRADE_LABELS } from '@/types/database';
 import { AdminLayout } from '@/components/layouts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
@@ -23,7 +26,7 @@ import {
   Inbox, CalendarDays, AlertTriangle, Users,
   FileText, Repeat, Clock, MessageSquare,
   TrendingUp, TrendingDown, Target, GraduationCap,
-  School, CheckCircle2, ChevronRight, Flag, Circle, CalendarPlus, ClipboardList,
+  School, CheckCircle2, ChevronRight, Flag, Circle, CalendarPlus, ClipboardList, Pin,
 } from 'lucide-react';
 import {
   ResponsiveContainer, LineChart, Line, BarChart, Bar,
@@ -436,6 +439,32 @@ export default function HomeMockPage() {
   const weekly = hasStudents ? buildWeeklyDist(activeStudents) : { dist: WEEKLY_DIST, avg: 2.4 };
   const maxSchool = Math.max(...schoolDist.map((s) => s.count), 1);
 
+  // 掲示板と本日の授業（単一校APIのため、複数選択時は先頭校を対象）
+  const [bulletins, setBulletins] = useState<BulletinPost[] | null>(null);
+  const [todayClasses, setTodayClasses] = useState<{ total: number; unrecorded: number } | null>(null);
+  useEffect(() => {
+    const ids = getSelectedSchoolIds();
+    if (ids.length === 0) return;
+    const sid = ids[0];
+    let active = true;
+    getBulletinPosts(sid)
+      .then((b) => active && setBulletins(b))
+      .catch(() => setBulletins([]));
+    const today = new Date().toISOString().split('T')[0];
+    getScheduleEntries(sid, today, today)
+      .then((entries) => {
+        if (!active) return;
+        setTodayClasses({
+          total: entries.length,
+          unrecorded: entries.filter((e) => !e.attendance_status).length,
+        });
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [getSelectedSchoolIds]);
+
   return (
     <AdminLayout headerTitle="ホーム" title="サンプル教室 ダッシュボード">
       {/* モック明示バナー */}
@@ -533,7 +562,9 @@ export default function HomeMockPage() {
                 ? activeStudents.length
                 : k.key === 'pending' && unprocessedCount !== null
                   ? unprocessedCount
-                  : k.value;
+                  : k.key === 'today' && todayClasses
+                    ? todayClasses.total
+                    : k.value;
           return (
             <Card key={k.key} className="cursor-pointer hover:bg-surface-hover transition-colors">
               <CardContent className="py-4">
@@ -548,7 +579,9 @@ export default function HomeMockPage() {
                   <span className="text-sm text-text-muted">{k.unit}</span>
                 </div>
                 <div className="mt-0.5 text-sm text-text-body">{k.label}</div>
-                <div className="text-xs text-text-faint">{k.sub}</div>
+                <div className="text-xs text-text-faint">
+                  {k.key === 'today' && todayClasses ? `出欠未入力 ${todayClasses.unrecorded}` : k.sub}
+                </div>
               </CardContent>
             </Card>
           );
@@ -559,12 +592,20 @@ export default function HomeMockPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-2">
         <Card>
           <CardHeader><CardTitle>連絡掲示板</CardTitle></CardHeader>
-          <CardContent className="text-sm text-text-muted">
-            既存 BulletinBoard を配置予定。
-            <div className="mt-2 space-y-2">
-              <div className="rounded-lg bg-surface-hover px-3 py-2 text-text-body">夏期講習の申込集計を金曜までに確認</div>
-              <div className="rounded-lg bg-surface-hover px-3 py-2 text-text-body">面談週間スタート（〜6/20）</div>
-            </div>
+          <CardContent className="py-2">
+            {bulletins === null ? (
+              <div className="py-2 text-sm text-text-muted">読み込み中…</div>
+            ) : bulletins.length === 0 ? (
+              <div className="py-2 text-sm text-text-muted">連絡はありません</div>
+            ) : (
+              bulletins.slice(0, 4).map((b) => (
+                <div key={b.id} className="flex items-center gap-2 py-2 border-b border-border-subtle last:border-0">
+                  {b.is_pinned && <Pin className="w-3.5 h-3.5 text-warning shrink-0" />}
+                  <span className="flex-1 truncate text-sm text-text-body">{b.title}</span>
+                  <span className="shrink-0 text-xs text-text-faint">{(b.created_at ?? '').slice(5, 10).replace('-', '/')}</span>
+                </div>
+              ))
+            )}
           </CardContent>
         </Card>
         <Card>
