@@ -37,30 +37,6 @@ import {
  * ダミーデータ（本番では API 取得に差し替え）
  * ========================================================== */
 
-// [★] 要対応・期日一覧：今日やることではなく、期日が来るもの・アラート予兆を「網羅的」に列挙。
-// 教室長はこれを見て「いつ Google カレンダーに入れるか」を判断する。期日帯(group)でグルーピング表示。
-const TASKS = [
-  // 期限超過
-  { id: 't1', title: 'V模擬（6月実施分）の申込を確定', type: 'apply', meta: '未処理 5件', group: 'overdue', dueText: '6/5 期限切れ', done: false },
-  { id: 't2', title: '佐藤美咲の定期面談（前回4/8・2ヶ月超）', type: 'interview', meta: '面談遅延', group: 'overdue', dueText: '5/31 目安', done: false },
-  { id: 't3', title: '鈴木健太の退会予兆フォロー（連続欠席3回）', type: 'alert', meta: '要連絡', group: 'overdue', dueText: '至急', done: false },
-  // 今週
-  { id: 't4', title: '外部模試の申込を取りまとめ', type: 'apply', meta: '8名予定', group: 'thisWeek', dueText: '6/13', done: false },
-  { id: 't5', title: '未消化の振替3件を消化期限内に調整', type: 'transfer', meta: '振替待機 3件', group: 'thisWeek', dueText: '6/13', done: false },
-  { id: 't6', title: '田中翔太の模試下降フォロー面談', type: 'interview', meta: '偏差値 −6', group: 'thisWeek', dueText: '今週中', done: false },
-  { id: 't7', title: '6月分の請求を確定', type: 'procedure', meta: '請求締切', group: 'thisWeek', dueText: '6/15', done: false },
-  // 来週
-  { id: 't8', title: '夏期講習の申込受付を案内', type: 'koushu', meta: '全生徒', group: 'nextWeek', dueText: '6/20', done: false },
-  { id: 't9', title: '高3保護者面談の日程を調整', type: 'interview', meta: '5件', group: 'nextWeek', dueText: '6/20', done: false },
-  { id: 't10', title: 'テキストの追加発注', type: 'procedure', meta: '発注締切', group: 'nextWeek', dueText: '6/18', done: false },
-  // それ以降
-  { id: 't11', title: '8月模試の申込開始準備', type: 'koushu', meta: '要項作成', group: 'later', dueText: '6/25', done: false },
-  { id: 't12', title: '高3の継続意思確認（7月更新）', type: 'alert', meta: '9名', group: 'later', dueText: '6/30', done: false },
-  { id: 't13', title: '中3 三者面談シーズンの準備', type: 'interview', meta: '日程枠の確保', group: 'later', dueText: '7/1', done: false },
-  // 対応済み（チェックで畳まれる例）
-  { id: 't14', title: '申込期限が近い講習の確認', type: 'koushu', meta: '2件', group: 'thisWeek', dueText: '6/10', done: true },
-] as const;
-
 // タスク種別 → ラベル・アイコン・色（tone は TONE マップのキー）
 const TASK_TYPES: Record<string, { label: string; icon: React.ElementType; tone: 'danger' | 'warning' | 'info' | 'primary' | 'neutral' }> = {
   apply: { label: '申込', icon: FileText, tone: 'danger' },
@@ -333,14 +309,13 @@ function buildWeeklyDist(students: EnrichedStudent[]) {
  * 期限超過/今週/来週/それ以降 に振り分ける。期日の無い種別は一覧に出さない。
  * ========================================================== */
 
-interface DueTask {
-  id: string;
-  title: string;
-  type: string;
-  meta: string;
-  group: string;
-  dueText: string;
-  done: boolean;
+interface DueStudentRow {
+  studentId: string;
+  studentName: string;
+  group: string; // 最も緊急な期日帯
+  types: { type: string; count: number }[]; // 種別ごと件数
+  soonestText: string; // 最も近い/古い期日の表示
+  total: number; // この生徒の期日タスク総数
 }
 
 // 期日を持つアラート種別 → タスク種別バッジ（TASK_TYPES のキー）
@@ -353,15 +328,20 @@ const DUE_ALERT_TO_TYPE: Record<string, string> = {
   exam_overdue: 'procedure',
 };
 
+const GROUP_RANK: Record<string, number> = { overdue: 0, thisWeek: 1, nextWeek: 2, later: 3 };
+const TASK_TYPE_RANK: Record<string, number> = { apply: 0, transfer: 1, interview: 2, koushu: 3, procedure: 4 };
+
 function fmtDate(d?: string): string {
   if (!d) return '';
   const parts = d.split('-');
   return parts.length >= 3 ? `${+parts[1]}/${+parts[2]}` : d;
 }
 
-function buildDueTasks(alertData: StudentAlerts[]): DueTask[] {
-  const tasks: DueTask[] = [];
+// アラートの期日系を生徒ごとに集約。各生徒は最も緊急な期日帯に置き、種別を件数チップ化する
+function buildDueStudents(alertData: StudentAlerts[]): DueStudentRow[] {
+  const rows: DueStudentRow[] = [];
   for (const s of alertData) {
+    const items: { type: string; group: string; dueText: string; sortKey: number }[] = [];
     for (const a of s.alerts) {
       const type = DUE_ALERT_TO_TYPE[a.alert_type];
       if (!type) continue; // 成績低下/宿題/遅刻など期日の無い種別はアラートカード側のみ
@@ -370,28 +350,43 @@ function buildDueTasks(alertData: StudentAlerts[]): DueTask[] {
       const until = d.days_until_due;
       let group: string;
       let dueText: string;
+      let sortKey: number;
       if (overdue != null && overdue > 0) {
         group = 'overdue';
-        dueText = d.due_date ? `${fmtDate(d.due_date)} 超過` : `${overdue}日超過`;
+        dueText = d.due_date ? fmtDate(d.due_date) : `${overdue}日超過`;
+        sortKey = -overdue;
       } else if (until != null) {
         group = until < 0 ? 'overdue' : until <= 6 ? 'thisWeek' : until <= 13 ? 'nextWeek' : 'later';
         dueText = d.due_date ? fmtDate(d.due_date) : until < 0 ? `${-until}日超過` : `あと${until}日`;
+        sortKey = until;
       } else {
         group = 'overdue';
         dueText = '要対応';
+        sortKey = -9999;
       }
-      tasks.push({
-        id: a.id,
-        title: `${s.student_name}：${a.message}`,
-        type,
-        meta: ALERT_TYPE_LABELS[a.alert_type],
-        group,
-        dueText,
-        done: false,
-      });
+      items.push({ type, group, dueText, sortKey });
     }
+    if (items.length === 0) continue;
+    // 最緊急（期日帯→期日の近さ）を先頭に
+    items.sort((a, b) => GROUP_RANK[a.group] - GROUP_RANK[b.group] || a.sortKey - b.sortKey);
+    const soonest = items[0];
+    const typeMap = new Map<string, number>();
+    items.forEach((it) => typeMap.set(it.type, (typeMap.get(it.type) ?? 0) + 1));
+    const types = Array.from(typeMap.entries())
+      .map(([type, count]) => ({ type, count }))
+      .sort((a, b) => (TASK_TYPE_RANK[a.type] ?? 99) - (TASK_TYPE_RANK[b.type] ?? 99));
+    rows.push({
+      studentId: s.student_id,
+      studentName: s.student_name,
+      group: soonest.group,
+      types,
+      soonestText: soonest.dueText,
+      total: items.length,
+    });
   }
-  return tasks;
+  // 期日帯→件数の多い順
+  rows.sort((a, b) => GROUP_RANK[a.group] - GROUP_RANK[b.group] || b.total - a.total);
+  return rows;
 }
 
 /* ============================================================
@@ -400,7 +395,8 @@ function buildDueTasks(alertData: StudentAlerts[]): DueTask[] {
 
 export default function HomeMockPage() {
   // タスクの完了状態をローカルで管理（チェックで完了/未完をトグル）
-  const [doneIds, setDoneIds] = useState<Set<string>>(() => new Set(TASKS.filter((t) => t.done).map((t) => t.id)));
+  // 要対応・期日一覧の「対応済み」チェック（生徒IDを保持）
+  const [doneIds, setDoneIds] = useState<Set<string>>(() => new Set<string>());
   const toggleTask = (id: string) =>
     setDoneIds((prev) => {
       const next = new Set(prev);
@@ -477,11 +473,9 @@ export default function HomeMockPage() {
     ? studentsSorted.filter((s) => s.data.alerts.some((a) => a.alert_type === filterType))
     : studentsSorted;
 
-  // 要対応・期日一覧：アラートの期日系をタスク化（無ければダミーにフォールバック）。done 付与は描画前にここで
-  const dueTasks = alertData ? buildDueTasks(alertData) : [];
-  const tasksSource: DueTask[] = dueTasks.length > 0 ? dueTasks : TASKS.map((t) => ({ ...t }));
-  const tasks = tasksSource.map((t) => ({ ...t, done: doneIds.has(t.id) }));
-  const openCount = tasks.filter((t) => !t.done).length;
+  // 要対応・期日一覧：アラートの期日系を生徒ごとに集約。未対応 = 未チェックの生徒数
+  const dueStudents = alertData ? buildDueStudents(alertData) : [];
+  const openCount = dueStudents.filter((s) => !doneIds.has(s.studentId)).length;
   const gradeColor = (cat: string) => (cat === 'elem' ? C.blue : cat === 'mid' ? C.primary : C.ink);
 
   // 生徒データ（経営スナップショット集計用）と未処理申込件数の実データ
@@ -555,68 +549,82 @@ export default function HomeMockPage() {
           <span className="text-sm text-text-muted shrink-0">未対応 <span className="font-bold text-text-heading">{openCount}</span> 件</span>
         </CardHeader>
         <CardContent className="py-2">
-          {DUE_GROUPS.map((g) => {
-            // このグループの項目（未完を上、完了を下）
-            const items = tasks
-              .filter((t) => t.group === g.key)
-              .sort((a, b) => Number(a.done) - Number(b.done));
-            if (items.length === 0) return null;
-            const gt = TONE[g.tone];
-            return (
-              <div key={g.key} className="py-2">
-                {/* グループ見出し（期日帯） */}
-                <div className="flex items-center gap-2 mb-1">
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${gt.bg} ${gt.text}`}>{g.label}</span>
-                  <span className="text-xs text-text-faint">{g.range}・{items.length}件</span>
-                </div>
-                {items.map((t) => {
-                  const def = TASK_TYPES[t.type];
-                  const tn = TONE[def.tone];
-                  const overdue = t.group === 'overdue' && !t.done;
-                  return (
-                    <div
-                      key={t.id}
-                      onClick={() => toggleTask(t.id)}
-                      className="flex items-center gap-3 py-2.5 border-b border-border-subtle last:border-0 cursor-pointer hover:bg-surface-hover -mx-2 px-2 rounded-lg transition-colors"
-                    >
-                      {/* チェック（対応済みにする） */}
-                      {t.done ? (
-                        <CheckCircle2 className="w-5 h-5 text-success shrink-0" />
-                      ) : (
-                        <Circle className="w-5 h-5 text-text-faint shrink-0" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className={`text-sm font-medium ${t.done ? 'line-through text-text-faint' : 'text-text-body'}`}>
-                          {t.title}
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-text-faint mt-0.5">
-                          <span className={`flex items-center gap-1 ${overdue ? 'text-danger font-medium' : ''}`}>
-                            <Clock className="w-3 h-3" />{t.dueText}
+          {dueStudents.length === 0 ? (
+            <div className="py-3 text-sm text-text-muted">
+              {alertData === null ? '読み込み中…' : '対応が必要な期日はありません'}
+            </div>
+          ) : (
+            DUE_GROUPS.map((g) => {
+              // この期日帯の生徒（未対応を上、対応済みを下）
+              const inGroup = dueStudents
+                .filter((s) => s.group === g.key)
+                .sort((a, b) => Number(doneIds.has(a.studentId)) - Number(doneIds.has(b.studentId)));
+              if (inGroup.length === 0) return null;
+              const gt = TONE[g.tone];
+              return (
+                <div key={g.key} className="py-2">
+                  {/* グループ見出し（期日帯） */}
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${gt.bg} ${gt.text}`}>{g.label}</span>
+                    <span className="text-xs text-text-faint">{g.range}・{inGroup.length}名</span>
+                  </div>
+                  {inGroup.map((s) => {
+                    const done = doneIds.has(s.studentId);
+                    const overdue = g.key === 'overdue' && !done;
+                    return (
+                      <div
+                        key={s.studentId}
+                        onClick={() => toggleTask(s.studentId)}
+                        className="flex items-center gap-3 py-2.5 border-b border-border-subtle last:border-0 cursor-pointer hover:bg-surface-hover -mx-2 px-2 rounded-lg transition-colors"
+                      >
+                        {/* チェック（対応済みにする） */}
+                        {done ? (
+                          <CheckCircle2 className="w-5 h-5 text-success shrink-0" />
+                        ) : (
+                          <Circle className="w-5 h-5 text-text-faint shrink-0" />
+                        )}
+                        {/* 生徒名 + 最緊急の期日 */}
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className={`text-sm font-medium ${done ? 'line-through text-text-faint' : 'text-text-body'}`}>
+                            {s.studentName}
                           </span>
-                          <span>・{t.meta}</span>
+                          <span className={`flex items-center gap-1 text-xs ${overdue ? 'text-danger font-medium' : 'text-text-faint'}`}>
+                            <Clock className="w-3 h-3" />{s.soonestText}
+                          </span>
                         </div>
+                        {/* 種別チップ群（件数つき） */}
+                        <div className="hidden flex-1 flex-wrap justify-end gap-1 sm:flex">
+                          {s.types.map((ty) => {
+                            const def = TASK_TYPES[ty.type];
+                            const tn = TONE[def.tone];
+                            return (
+                              <span
+                                key={ty.type}
+                                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs font-medium ${tn.bg} ${tn.text}`}
+                              >
+                                <def.icon className="w-3 h-3" />{def.label}{ty.count > 1 ? ` ${ty.count}` : ''}
+                              </span>
+                            );
+                          })}
+                        </div>
+                        {/* カレンダー登録（将来 Google カレンダー連携の入口。今は見た目のみ） */}
+                        {!done && (
+                          <button
+                            type="button"
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex items-center gap-1 text-xs px-2 py-1 rounded-md border border-border text-text-muted hover:bg-surface-hover hover:text-primary transition-colors shrink-0"
+                          >
+                            <CalendarPlus className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">予定に追加</span>
+                          </button>
+                        )}
                       </div>
-                      {/* 種別バッジ */}
-                      <span className={`hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${tn.bg} ${tn.text}`}>
-                        <def.icon className="w-3 h-3" />{def.label}
-                      </span>
-                      {/* カレンダー登録（将来 Google カレンダー連携の入口。今は見た目のみ） */}
-                      {!t.done && (
-                        <button
-                          type="button"
-                          onClick={(e) => e.stopPropagation()}
-                          className="flex items-center gap-1 text-xs px-2 py-1 rounded-md border border-border text-text-muted hover:bg-surface-hover hover:text-primary transition-colors shrink-0"
-                        >
-                          <CalendarPlus className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">予定に追加</span>
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
+                    );
+                  })}
+                </div>
+              );
+            })
+          )}
         </CardContent>
       </Card>
 
