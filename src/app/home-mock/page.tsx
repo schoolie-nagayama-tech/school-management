@@ -1084,11 +1084,16 @@ function OverviewView() {
 
       {/* 全社サマリー */}
       {data && (
-        <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-3">
           <SummaryStat label="総在籍" value={`${data.totalActive}`} unit="名" />
-          <SummaryStat label="全社の予実達成（平均）" value={fmtPct(data.overallTargetRate)} />
+          <SummaryStat label="今月入会" value={`${data.totalNew}`} unit="名" />
+          <SummaryStat label="今月退会(休会)" value={`${data.totalLeave}`} unit="名" />
+          <SummaryStat label="予実達成（平均）" value={fmtPct(data.overallTargetRate)} />
           <SummaryStat label="平均退会率" value={fmtPct(data.avgChurn)} />
           <SummaryStat label="要対応 合計" value={`${data.totalAlerts}`} unit="件" />
+          <SummaryStat label="Vもぎ受験率（全社）" value={fmtPct(data.mogiRate)} />
+          <SummaryStat label="増コマ取得率（全社）" value={fmtPct(data.zoukomaRate)} />
+          <SummaryStat label="提案取得率（全社）" value={fmtPct(data.proposalRate)} />
         </div>
       )}
 
@@ -1101,15 +1106,21 @@ function OverviewView() {
           ) : data.rows.length === 0 ? (
             <div className="py-4 text-sm text-text-muted">対象の教室がありません</div>
           ) : (
-            <table className="w-full text-sm">
+            <table className="w-full whitespace-nowrap text-sm">
               <thead>
                 <tr className="border-b border-border text-xs text-text-muted">
                   <th className="px-2 py-2 text-left">校舎</th>
                   <th className="px-2 py-2 text-right">在籍</th>
                   <th className="px-2 py-2 text-right">前月純増</th>
+                  <th className="px-2 py-2 text-right">入会</th>
+                  <th className="px-2 py-2 text-right">退会</th>
                   <th className="px-2 py-2 text-right">予実達成</th>
                   <th className="px-2 py-2 text-right">退会率</th>
                   <th className="px-2 py-2 text-right">要対応</th>
+                  <th className="px-2 py-2 text-right">模試</th>
+                  <th className="px-2 py-2 text-right">Vもぎ</th>
+                  <th className="px-2 py-2 text-right">増コマ</th>
+                  <th className="px-2 py-2 text-right">提案</th>
                 </tr>
               </thead>
               <tbody>
@@ -1132,6 +1143,8 @@ function OverviewView() {
                     >
                       {fmtNet(r.netChange)}
                     </td>
+                    <td className="px-2 py-2.5 text-right text-text-body">{r.newCount ?? '—'}</td>
+                    <td className="px-2 py-2.5 text-right text-text-body">{r.leaveCount ?? '—'}</td>
                     <td
                       className={`px-2 py-2.5 text-right ${
                         r.targetRate != null && r.targetRate >= 100
@@ -1155,16 +1168,26 @@ function OverviewView() {
                     >
                       {r.alertCount}
                     </td>
+                    <td className="px-2 py-2.5 text-right text-text-body">{fmtPct(r.moshiRate)}</td>
+                    <td className="px-2 py-2.5 text-right text-text-body">{fmtPct(r.mogiRate)}</td>
+                    <td className="px-2 py-2.5 text-right text-text-body">{fmtPct(r.zoukomaRate)}</td>
+                    <td className="px-2 py-2.5 text-right text-text-body">{fmtPct(r.proposalRate)}</td>
                   </tr>
                 ))}
-                {/* 合計行 */}
+                {/* 合計/全社行 */}
                 <tr className="border-t-2 border-border font-bold">
-                  <td className="px-2 py-2.5 text-text-heading">合計</td>
+                  <td className="px-2 py-2.5 text-text-heading">合計 / 全社</td>
                   <td className="px-2 py-2.5 text-right text-text-heading">{data.totalActive}</td>
                   <td className="px-2 py-2.5 text-right text-text-faint">—</td>
+                  <td className="px-2 py-2.5 text-right text-text-body">{data.totalNew}</td>
+                  <td className="px-2 py-2.5 text-right text-text-body">{data.totalLeave}</td>
                   <td className="px-2 py-2.5 text-right text-text-body">{fmtPct(data.overallTargetRate)}</td>
                   <td className="px-2 py-2.5 text-right text-text-body">{fmtPct(data.avgChurn)}</td>
                   <td className="px-2 py-2.5 text-right text-text-heading">{data.totalAlerts}</td>
+                  <td className="px-2 py-2.5 text-right text-text-body">{fmtPct(data.moshiRate)}</td>
+                  <td className="px-2 py-2.5 text-right text-text-body">{fmtPct(data.mogiRate)}</td>
+                  <td className="px-2 py-2.5 text-right text-text-body">{fmtPct(data.zoukomaRate)}</td>
+                  <td className="px-2 py-2.5 text-right text-text-body">{fmtPct(data.proposalRate)}</td>
                 </tr>
               </tbody>
             </table>
