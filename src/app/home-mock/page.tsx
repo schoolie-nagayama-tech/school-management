@@ -19,7 +19,7 @@ import { getRecentUnprocessedResponses } from '@/lib/api/form-responses';
 import { getBulletinPosts } from '@/lib/api/bulletin';
 import type { BulletinPost } from '@/types/bulletin';
 import { getScheduleEntries } from '@/lib/api/schedule';
-import { getFormParticipation, type FormParticipation } from '@/lib/api/dashboardForms';
+import { getFormParticipation, getProposalFunnel, type FormParticipation, type ProposalFunnel } from '@/lib/api/dashboardForms';
 import { GRADE_LABELS } from '@/types/database';
 import { AdminLayout } from '@/components/layouts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui';
@@ -544,6 +544,20 @@ export default function HomeMockPage() {
     };
   }, [getSelectedSchoolIds]);
 
+  // テスト対策 提案→取得ファネル（7月運用開始予定。現状は提案0件で「データなし」表示）
+  const [funnel, setFunnel] = useState<ProposalFunnel | null>(null);
+  useEffect(() => {
+    const ids = getSelectedSchoolIds();
+    if (ids.length === 0) return;
+    let active = true;
+    getProposalFunnel(ids)
+      .then((f) => active && setFunnel(f))
+      .catch(() => setFunnel(null));
+    return () => {
+      active = false;
+    };
+  }, [getSelectedSchoolIds]);
+
   return (
     <AdminLayout headerTitle="ホーム" title="サンプル教室 ダッシュボード">
       {/* モック明示バナー */}
@@ -968,6 +982,46 @@ export default function HomeMockPage() {
           ))
         )}
       </div>
+
+      {/* テスト対策 提案→取得ファネル（7月運用開始予定） */}
+      <SectionLabel icon={ClipboardList}>テスト対策 提案→取得ファネル</SectionLabel>
+      {funnel === null ? (
+        <div className="mb-4 py-3 text-sm text-text-muted">読み込み中…</div>
+      ) : funnel.proposalCount === 0 ? (
+        <Card className="mb-4">
+          <CardContent className="py-5 text-sm text-text-muted">
+            提案データはまだありません（テスト対策提案書は7月運用開始予定）。提案が入ると、提案数・提案人数・取得率と学年別の内訳が自動で表示されます。
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="mb-4">
+          <CardContent className="py-4">
+            {/* 全体ファネル */}
+            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+              <span className="text-sm text-text-muted">提案 <b className="text-text-heading">{funnel.proposalCount}</b> 件</span>
+              <span className="text-sm text-text-muted">提案人数 <b className="text-text-heading">{funnel.proposedStudents}</b> 名</span>
+              <ChevronRight className="w-4 h-4 text-text-faint" />
+              <span className="text-sm text-text-muted">取得 <b className="text-text-heading">{funnel.acquiredStudents}</b> 名</span>
+              <span className="ml-auto text-2xl font-bold text-primary">{funnel.rate}%</span>
+            </div>
+            {/* 学年別の取得率 */}
+            {funnel.byGrade.length > 0 && (
+              <div className="mt-4 space-y-2">
+                <div className="text-xs font-medium text-text-muted">学年別の取得率</div>
+                {funnel.byGrade.map((g) => (
+                  <div key={g.grade} className="flex items-center gap-3">
+                    <div className="w-10 shrink-0 text-sm text-text-body">{GRADE_LABELS[g.grade] ?? g.grade}</div>
+                    <div className="h-5 flex-1 overflow-hidden rounded-md bg-surface-hover">
+                      <div className="h-full rounded-md bg-primary" style={{ width: `${g.rate}%` }} />
+                    </div>
+                    <div className="w-28 text-right text-xs text-text-faint">{g.acquired}/{g.proposed} 名（{g.rate}%）</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </AdminLayout>
   );
 }

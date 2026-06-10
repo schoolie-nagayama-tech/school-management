@@ -1,5 +1,6 @@
 import { supabase } from '../supabase';
 import { GRADE_LABELS } from '@/types/database';
+import { getTestPrepProposalsWithStudent } from './test-prep-proposals';
 
 /**
  * 教室長ダッシュボード用：フォーム参加率（模試/Vもぎ/増コマ）の集計。
@@ -113,4 +114,109 @@ export async function getFormParticipation(schoolIds: string[]): Promise<FormPar
   }
 
   return results;
+}
+
+/* ============================================================
+ * テスト対策 提案→取得ファネル（7月運用開始予定）
+ * 提案(test_prep_proposals, status=sent/published)を起点に、
+ * 提案を受けた生徒が増コマ(zoukoma)を取得したかを突合して取得率を出す。
+ * 取得判定: 提案の zoukoma_period_id に対応する period で、その生徒の
+ *           zoukoma 回答が total_koma>0 か。学年別にも集計する。
+ * ========================================================== */
+
+export interface ProposalGradeStat {
+  grade: number;
+  proposed: number; // 提案を受けた生徒数
+  acquired: number; // 増コマ取得した生徒数
+  rate: number; // %
+}
+
+export interface ProposalFunnel {
+  proposalCount: number; // 提案件数(1生徒×1試験で複数あり得る)
+  proposedStudents: number; // 提案を受けた生徒数(重複排除)
+  acquiredStudents: number; // 増コマ取得した生徒数
+  rate: number; // 取得率 %
+  byGrade: ProposalGradeStat[];
+}
+
+const EMPTY_FUNNEL: ProposalFunnel = {
+  proposalCount: 0,
+  proposedStudents: 0,
+  acquiredStudents: 0,
+  rate: 0,
+  byGrade: [],
+};
+
+export async function getProposalFunnel(schoolIds: string[]): Promise<ProposalFunnel> {
+  if (schoolIds.length === 0) return EMPTY_FUNNEL;
+
+  // 提案中/公開中のみ（下書きは除外）
+  const proposals = (await getTestPrepProposalsWithStudent(schoolIds)).filter(
+    (p) => p.status === 'sent' || p.status === 'published',
+  );
+  if (proposals.length === 0) return EMPTY_FUNNEL;
+
+  // zoukoma_period_id → period_key の対応
+  const periodIds = Array.from(new Set(proposals.map((p) => p.zoukoma_period_id).filter(Boolean))) as string[];
+  const periodKeyById = new Map<string, string>();
+  if (periodIds.length > 0) {
+    const { data: periods } = await supabase.from('form_periods').select('id, period_key').in('id', periodIds);
+    for (const p of periods ?? []) periodKeyById.set(p.id, p.period_key);
+  }
+
+  // 増コマ取得集合: `${student_id}|${period_key}`（total_koma>0 の紐付き回答）
+  const { data: responses } = await supabase
+    .from('form_responses')
+    .select('linked_student_id, form_period, response_data')
+    .in('school_id', schoolIds)
+    .eq('form_type', 'zoukoma')
+    .not('linked_student_id', 'is', null);
+  const acquiredSet = new Set<string>();
+  for (const r of responses ?? []) {
+    const koma = (r.response_data as Record<string, unknown> | null)?.total_koma;
+    if (r.linked_student_id && typeof koma === 'number' && koma > 0) {
+      acquiredSet.add(`${r.linked_student_id}|${r.form_period}`);
+    }
+  }
+
+  // 提案を生徒単位に畳む（同一生徒の複数提案はどれか取得で「取得」とみなす）
+  const byStudent = new Map<string, { grade: number; acquired: boolean }>();
+  for (const p of proposals) {
+    const sid = p.student_id;
+    if (!sid) continue;
+    const grade = p.student?.grade ?? 0;
+    const pk = p.zoukoma_period_id ? periodKeyById.get(p.zoukoma_period_id) : undefined;
+    const acquired = pk ? acquiredSet.has(`${sid}|${pk}`) : false;
+    const cur = byStudent.get(sid);
+    if (!cur) byStudent.set(sid, { grade, acquired });
+    else cur.acquired = cur.acquired || acquired;
+  }
+
+  const proposedStudents = byStudent.size;
+  const acquiredStudents = Array.from(byStudent.values()).filter((v) => v.acquired).length;
+
+  // 学年別
+  const gradeMap = new Map<number, { proposed: number; acquired: number }>();
+  for (const v of Array.from(byStudent.values())) {
+    const g = gradeMap.get(v.grade) ?? { proposed: 0, acquired: 0 };
+    g.proposed += 1;
+    if (v.acquired) g.acquired += 1;
+    gradeMap.set(v.grade, g);
+  }
+  const byGrade: ProposalGradeStat[] = Array.from(gradeMap.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map(([grade, g]) => ({
+      grade,
+      proposed: g.proposed,
+      acquired: g.acquired,
+      rate: g.proposed > 0 ? Math.round((g.acquired / g.proposed) * 1000) / 10 : 0,
+    }));
+
+  return {
+    proposalCount: proposals.length,
+    proposedStudents,
+    acquiredStudents,
+    rate: proposedStudents > 0 ? Math.round((acquiredStudents / proposedStudents) * 1000) / 10 : 0,
+    byGrade,
+  };
 }
