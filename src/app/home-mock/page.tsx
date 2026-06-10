@@ -11,6 +11,8 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMasterData } from '@/contexts/MasterDataContext';
+import { getOverview, type Overview } from '@/lib/api/overview';
 import { getSchoolMonthlyMetrics, type MonthlyMetricPoint } from '@/lib/api/schoolMetrics';
 import { getAlertsLight, getAlertsHeavy, mergeStudentAlerts } from '@/lib/api/alerts';
 import { ALERT_TYPE_LABELS, type Alert, type StudentAlerts, type AlertType } from '@/types/alerts';
@@ -394,7 +396,7 @@ function buildDueStudents(alertData: StudentAlerts[]): DueStudentRow[] {
  * ページ本体
  * ========================================================== */
 
-export default function HomeMockPage() {
+function DetailView() {
   // タスクの完了状態をローカルで管理（チェックで完了/未完をトグル）
   // 要対応・期日一覧の「対応済み」チェック（生徒IDを保持）
   const [doneIds, setDoneIds] = useState<Set<string>>(() => new Set<string>());
@@ -1024,4 +1026,150 @@ export default function HomeMockPage() {
       )}
     </AdminLayout>
   );
+}
+
+/* ============================================================
+ * 全教室 俯瞰ビュー（「すべての教室」選択時）
+ * 校舎別の主要KPIを比較テーブル＋合計行で表示。行クリックで詳細へ切り替え。
+ * 月次系(前月純増/予実/退会率)は school_monthly_metrics 投入済み校のみ数字、他は「—」。
+ * ========================================================== */
+
+function SummaryStat({ label, value, unit }: { label: string; value: string; unit?: string }) {
+  return (
+    <Card>
+      <CardContent className="py-4">
+        <div className="text-xs text-text-muted">{label}</div>
+        <div className="mt-1">
+          <span className="text-2xl font-bold text-text-heading">{value}</span>
+          {unit && <span className="ml-1 text-sm text-text-muted">{unit}</span>}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function OverviewView() {
+  const { getSelectedSchoolIds, setSelectedSchoolId } = useAuth();
+  const { schools } = useMasterData();
+  const [data, setData] = useState<Overview | null>(null);
+
+  useEffect(() => {
+    const ids = new Set(getSelectedSchoolIds());
+    const target = schools.filter((s) => ids.has(s.id)).map((s) => ({ id: s.id, name: s.name }));
+    let active = true;
+    getOverview(target)
+      .then((d) => active && setData(d))
+      .catch(() => active && setData(null));
+    return () => {
+      active = false;
+    };
+  }, [getSelectedSchoolIds, schools]);
+
+  const fmtNet = (n: number | null) => (n == null ? '—' : n > 0 ? `+${n}` : `${n}`);
+  const fmtPct = (n: number | null) => (n == null ? '—' : `${n}%`);
+
+  return (
+    <AdminLayout headerTitle="ホーム" title="全教室 ダッシュボード">
+      <div className="mb-6 flex items-center gap-2 rounded-lg border border-warning bg-warning-subtle px-4 py-2 text-sm text-warning">
+        <Flag className="w-4 h-4 shrink-0" />
+        全教室の俯瞰ビュー（マネージャー以上）。校舎の行をクリックすると、その校舎の詳細に切り替わります。
+      </div>
+
+      {/* 全社サマリー */}
+      {data && (
+        <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <SummaryStat label="総在籍" value={`${data.totalActive}`} unit="名" />
+          <SummaryStat label="全社の予実達成（平均）" value={fmtPct(data.overallTargetRate)} />
+          <SummaryStat label="平均退会率" value={fmtPct(data.avgChurn)} />
+          <SummaryStat label="要対応 合計" value={`${data.totalAlerts}`} unit="件" />
+        </div>
+      )}
+
+      {/* 校舎別 比較テーブル */}
+      <Card>
+        <CardHeader><CardTitle>校舎別 比較</CardTitle></CardHeader>
+        <CardContent className="overflow-x-auto py-2">
+          {data === null ? (
+            <div className="py-4 text-sm text-text-muted">読み込み中…</div>
+          ) : data.rows.length === 0 ? (
+            <div className="py-4 text-sm text-text-muted">対象の教室がありません</div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-xs text-text-muted">
+                  <th className="px-2 py-2 text-left">校舎</th>
+                  <th className="px-2 py-2 text-right">在籍</th>
+                  <th className="px-2 py-2 text-right">前月純増</th>
+                  <th className="px-2 py-2 text-right">予実達成</th>
+                  <th className="px-2 py-2 text-right">退会率</th>
+                  <th className="px-2 py-2 text-right">要対応</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.rows.map((r) => (
+                  <tr
+                    key={r.schoolId}
+                    onClick={() => setSelectedSchoolId(r.schoolId)}
+                    className="cursor-pointer border-b border-border-subtle hover:bg-surface-hover"
+                  >
+                    <td className="px-2 py-2.5 font-medium text-text-body">{r.schoolName}</td>
+                    <td className="px-2 py-2.5 text-right text-text-heading">{r.activeCount}</td>
+                    <td
+                      className={`px-2 py-2.5 text-right ${
+                        r.netChange != null && r.netChange > 0
+                          ? 'text-success'
+                          : r.netChange != null && r.netChange < 0
+                            ? 'text-danger'
+                            : 'text-text-faint'
+                      }`}
+                    >
+                      {fmtNet(r.netChange)}
+                    </td>
+                    <td
+                      className={`px-2 py-2.5 text-right ${
+                        r.targetRate != null && r.targetRate >= 100
+                          ? 'font-medium text-success'
+                          : r.targetRate != null && r.targetRate < 90
+                            ? 'text-danger'
+                            : 'text-text-body'
+                      }`}
+                    >
+                      {fmtPct(r.targetRate)}
+                    </td>
+                    <td
+                      className={`px-2 py-2.5 text-right ${
+                        r.churnRate != null && r.churnRate > 5 ? 'font-medium text-danger' : 'text-text-body'
+                      }`}
+                    >
+                      {fmtPct(r.churnRate)}
+                    </td>
+                    <td
+                      className={`px-2 py-2.5 text-right ${r.alertCount > 10 ? 'font-medium text-danger' : 'text-text-body'}`}
+                    >
+                      {r.alertCount}
+                    </td>
+                  </tr>
+                ))}
+                {/* 合計行 */}
+                <tr className="border-t-2 border-border font-bold">
+                  <td className="px-2 py-2.5 text-text-heading">合計</td>
+                  <td className="px-2 py-2.5 text-right text-text-heading">{data.totalActive}</td>
+                  <td className="px-2 py-2.5 text-right text-text-faint">—</td>
+                  <td className="px-2 py-2.5 text-right text-text-body">{fmtPct(data.overallTargetRate)}</td>
+                  <td className="px-2 py-2.5 text-right text-text-body">{fmtPct(data.avgChurn)}</td>
+                  <td className="px-2 py-2.5 text-right text-text-heading">{data.totalAlerts}</td>
+                </tr>
+              </tbody>
+            </table>
+          )}
+        </CardContent>
+      </Card>
+    </AdminLayout>
+  );
+}
+
+/* 分岐: すべての教室 → 俯瞰ビュー、個別校舎 → 詳細ビュー */
+export default function HomeMockPage() {
+  const { selectedSchoolId } = useAuth();
+  return selectedSchoolId === 'all' ? <OverviewView /> : <DetailView />;
 }
