@@ -158,28 +158,97 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Insert submission
-    const { data: submission, error: submissionError } = await supabaseAdmin
+    // 同一設定・同一メール（または同一アカウント）の既存提出を探す。
+    // 修正許可（差し戻し）後に講師が修正用URLではなく提出フォームから
+    // 再送信した場合でも、新規行を作らず既存提出を上書きして
+    // 「同じ講師が2行に分裂する」のを防ぐ。
+    // ilike のワイルドカード（% _）をエスケープして完全一致（大文字小文字無視）にする
+    const emailPattern = teacherEmail.replace(/[\\%_]/g, (m) => `\\${m}`);
+    const { data: existingByEmail, error: existingError } = await supabaseAdmin
       .from('regular_shift_submissions')
-      .insert({
-        setting_id: settingId,
-        school_id: schoolId,
-        teacher_name: teacherName,
-        teacher_email: teacherEmail,
-        notes,
-        user_id: linkedUserId,
-      })
-      .select('*')
-      .single();
+      .select('id, user_id')
+      .eq('setting_id', settingId)
+      .ilike('teacher_email', emailPattern)
+      .order('submitted_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (existingError) {
+      throw existingError;
+    }
 
-    if (submissionError) {
-      if (submissionError.code === '23505') {
-        return NextResponse.json(
-          { error: 'This teacher has already submitted' },
-          { status: 409 }
-        );
+    let existing = existingByEmail ?? null;
+    if (!existing && linkedUserId) {
+      // メール変更などで一致しない場合でも、紐づけ済みアカウントが同じなら同一講師とみなす
+      const { data: existingByUser, error: existingUserError } = await supabaseAdmin
+        .from('regular_shift_submissions')
+        .select('id, user_id')
+        .eq('setting_id', settingId)
+        .eq('user_id', linkedUserId)
+        .maybeSingle();
+      if (existingUserError) {
+        throw existingUserError;
       }
-      throw submissionError;
+      existing = existingByUser ?? null;
+    }
+
+    let submission;
+    if (existing) {
+      // 再提出: 既存行を上書き
+      const { data: updated, error: updateError } = await supabaseAdmin
+        .from('regular_shift_submissions')
+        .update({
+          teacher_name: teacherName,
+          teacher_email: teacherEmail,
+          notes,
+          user_id: existing.user_id ?? linkedUserId, // 手動紐づけ済みのアカウントは維持
+          allow_edit: false, // 再提出により修正依頼は完了扱い
+          seat_chart_entered: false, // 内容が変わったため座席表は再入力が必要
+          submitted_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existing.id)
+        .select('*')
+        .single();
+
+      if (updateError) {
+        throw updateError;
+      }
+      submission = updated;
+
+      // スロットは全入れ替え（古い内容を残さない）
+      const { error: deleteError } = await supabaseAdmin
+        .from('regular_shift_submission_slots')
+        .delete()
+        .eq('submission_id', existing.id);
+
+      if (deleteError) {
+        throw deleteError;
+      }
+    } else {
+      // Insert submission
+      const { data: inserted, error: submissionError } = await supabaseAdmin
+        .from('regular_shift_submissions')
+        .insert({
+          setting_id: settingId,
+          school_id: schoolId,
+          teacher_name: teacherName,
+          teacher_email: teacherEmail,
+          notes,
+          user_id: linkedUserId,
+        })
+        .select('*')
+        .single();
+
+      if (submissionError) {
+        if (submissionError.code === '23505') {
+          return NextResponse.json(
+            { error: 'This teacher has already submitted' },
+            { status: 409 }
+          );
+        }
+        throw submissionError;
+      }
+      submission = inserted;
     }
 
     // Insert slots
