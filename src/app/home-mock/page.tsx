@@ -1006,6 +1006,13 @@ function DetailView() {
               <span className="text-sm text-text-muted">取得 <b className="text-text-heading">{funnel.acquiredStudents}</b> 名</span>
               <span className="ml-auto text-2xl font-bold text-primary">{funnel.rate}%</span>
             </div>
+            {/* 科目ベースの取得率 */}
+            <div className="mt-2 text-sm text-text-muted">
+              科目：提案 <b className="text-text-heading">{funnel.proposedSubjects}</b> 科目
+              <ChevronRight className="mx-1 inline h-3 w-3 text-text-faint" />
+              取得 <b className="text-text-heading">{funnel.acquiredSubjects}</b> 科目
+              <span className="ml-2 font-bold text-primary">{funnel.subjectRate}%</span>
+            </div>
             {/* 学年別の取得率 */}
             {funnel.byGrade.length > 0 && (
               <div className="mt-4 space-y-2">

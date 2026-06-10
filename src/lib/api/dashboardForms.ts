@@ -135,7 +135,10 @@ export interface ProposalFunnel {
   proposalCount: number; // 提案件数(1生徒×1試験で複数あり得る)
   proposedStudents: number; // 提案を受けた生徒数(重複排除)
   acquiredStudents: number; // 増コマ取得した生徒数
-  rate: number; // 取得率 %
+  rate: number; // 取得率(生徒ベース) %
+  proposedSubjects: number; // 提案した科目数(生徒×科目, proposed_koma>0)
+  acquiredSubjects: number; // 提案科目のうち実際に取得された科目数
+  subjectRate: number; // 科目取得率 %
   byGrade: ProposalGradeStat[];
 }
 
@@ -144,6 +147,9 @@ const EMPTY_FUNNEL: ProposalFunnel = {
   proposedStudents: 0,
   acquiredStudents: 0,
   rate: 0,
+  proposedSubjects: 0,
+  acquiredSubjects: 0,
+  subjectRate: 0,
   byGrade: [],
 };
 
@@ -171,11 +177,21 @@ export async function getProposalFunnel(schoolIds: string[]): Promise<ProposalFu
     .in('school_id', schoolIds)
     .eq('form_type', 'zoukoma')
     .not('linked_student_id', 'is', null);
-  const acquiredSet = new Set<string>();
+  const acquiredSet = new Set<string>(); // `${student}|${period_key}`（増コマ取得した生徒×期間）
+  const acquiredSubjectSet = new Set<string>(); // `${student}|${period_key}|${科目名}`（取得した科目）
   for (const r of responses ?? []) {
-    const koma = (r.response_data as Record<string, unknown> | null)?.total_koma;
+    const rd = (r.response_data as Record<string, unknown> | null) ?? {};
+    const koma = rd.total_koma;
     if (r.linked_student_id && typeof koma === 'number' && koma > 0) {
       acquiredSet.add(`${r.linked_student_id}|${r.form_period}`);
+    }
+    const subs = rd.subjects;
+    if (r.linked_student_id && subs && typeof subs === 'object') {
+      for (const [name, k] of Object.entries(subs as Record<string, unknown>)) {
+        if (typeof k === 'number' && k > 0) {
+          acquiredSubjectSet.add(`${r.linked_student_id}|${r.form_period}|${name}`);
+        }
+      }
     }
   }
 
@@ -212,11 +228,45 @@ export async function getProposalFunnel(schoolIds: string[]): Promise<ProposalFu
       rate: g.proposed > 0 ? Math.round((g.acquired / g.proposed) * 1000) / 10 : 0,
     }));
 
+  // 科目ベース: 提案科目(test_prep_proposal_subjects, proposed_koma>0) のうち取得された科目
+  const proposalInfo = new Map<string, { student: string; pk: string | undefined }>();
+  for (const p of proposals) {
+    proposalInfo.set(p.id, {
+      student: p.student_id,
+      pk: p.zoukoma_period_id ? periodKeyById.get(p.zoukoma_period_id) : undefined,
+    });
+  }
+  let proposedSubjects = 0;
+  let acquiredSubjects = 0;
+  const proposalIds = proposals.map((p) => p.id);
+  if (proposalIds.length > 0) {
+    // test_prep_proposal_subjects は DB 型未登録のため any 経由でアクセス
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: subjectRows } = await (supabase as any)
+      .from('test_prep_proposal_subjects')
+      .select('proposal_id, subject_name, proposed_koma')
+      .in('proposal_id', proposalIds);
+    const rows = (subjectRows ?? []) as { proposal_id: string; subject_name: string; proposed_koma: number | null }[];
+    for (const s of rows) {
+      if (!s.proposed_koma || s.proposed_koma <= 0) continue;
+      const info = proposalInfo.get(s.proposal_id);
+      if (!info) continue;
+      proposedSubjects += 1;
+      if (info.pk && acquiredSubjectSet.has(`${info.student}|${info.pk}|${s.subject_name}`)) {
+        acquiredSubjects += 1;
+      }
+    }
+  }
+  const subjectRate = proposedSubjects > 0 ? Math.round((acquiredSubjects / proposedSubjects) * 1000) / 10 : 0;
+
   return {
     proposalCount: proposals.length,
     proposedStudents,
     acquiredStudents,
     rate: proposedStudents > 0 ? Math.round((acquiredStudents / proposedStudents) * 1000) / 10 : 0,
+    proposedSubjects,
+    acquiredSubjects,
+    subjectRate,
     byGrade,
   };
 }
