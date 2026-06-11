@@ -4,8 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import {
   getSeasonalShiftSubmissionByEditToken,
-  getSeasonalShiftSetting,
-  getSeasonalShiftSlotSettings,
+  getPublishedSeasonalShiftSettingPublic,
   updateSeasonalShiftSubmissionByToken,
 } from '@/lib/api/seasonal-shift';
 import type { SeasonalShiftSetting } from '@/types/seasonal-shift';
@@ -61,17 +60,15 @@ export default function SeasonalShiftEditPage() {
         setIsLoading(false);
         return;
       }
-      const [s, slots] = await Promise.all([
-        getSeasonalShiftSetting(settingId),
-        getSeasonalShiftSlotSettings(settingId),
-      ]);
-      if (!s) {
+      // 公開APIで取得（未ログインの講師がアクセスするためRLSを回避）
+      const result = await getPublishedSeasonalShiftSettingPublic(settingId);
+      if (!result) {
         setInvalidToken(true);
         setIsLoading(false);
         return;
       }
-      setSetting(s);
-      setSlotSettings(slots.map((r) => ({ slot_date: r.slot_date, time_slot: r.time_slot, is_open: r.is_open })));
+      setSetting(result.setting);
+      setSlotSettings(result.slotSettings.map((r) => ({ slot_date: r.slot_date, time_slot: r.time_slot, is_open: r.is_open })));
       setTeacherName(submission.teacher_name ?? '');
       setTeacherEmail(submission.teacher_email ?? '');
       setNotes(submission.notes ?? '');
