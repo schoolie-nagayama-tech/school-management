@@ -14,10 +14,12 @@ import type {
   InquiryStatus,
   InquiryContact,
   InquiryContactInsert,
+  InquiryMailLogInsert,
 } from '@/types/database';
 import { getSchools } from './schools';
 import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 import type { ParsedInquiryRow } from '@/lib/utils/inquiryCsv';
+import type { MigrationRow } from '@/lib/utils/inquiryMigration';
 
 // ============================================================
 // 型定義
@@ -360,6 +362,231 @@ export async function importInquiries(rows: ParsedInquiryRow[]): Promise<Inquiry
       continue;
     }
     result.created += batch.length;
+  }
+
+  return result;
+}
+
+// ============================================================
+// スプレッドシート移行取込 (初回のみ)
+// ============================================================
+
+export interface MigrationImportResult {
+  /** 新規 insert 成功件数 */
+  created: number;
+  /** 重複ガードによるスキップ件数 */
+  skipped: number;
+  /** エラー行（学校名解決失敗・DB エラー等）の詳細 */
+  errors: { school: string; name: string; message: string }[];
+}
+
+/**
+ * 旧スプレッドシート移行用の一括 insert 関数。
+ *
+ * 処理順:
+ * 1. getSchools() で全校を取得し「末尾「校」を除いた name === schoolNameShort」で解決。
+ * 2. 対象 school_id の既存 inquiries を fetchAllPaged で全件取得。
+ *    「inquired_at の日付(YYYY-MM-DD)が同じ かつ (phone一致 or student_name一致 or guardian_name一致)」
+ *    に該当する行は重複とみなしてスキップ。
+ * 3. 新規行を 500 件バッチで insert。.select('id') で返った id を行順に対応付ける。
+ * 4. contacts / mailLogs を inquiry_id 付きでバッチ insert。
+ *
+ * @param rows parseMigrationXlsx() で得た MigrationRow[]
+ */
+export async function importMigrationRows(rows: MigrationRow[]): Promise<MigrationImportResult> {
+  const result: MigrationImportResult = { created: 0, skipped: 0, errors: [] };
+
+  if (rows.length === 0) return result;
+
+  // ---- 1. schools マップ（末尾「校」除去名 → id）を構築 ----
+  const schools = await getSchools();
+  // "永山校" → "永山" にして Map 登録。schoolNameShort は既に "校" を除去済み
+  const shortNameToId = new Map<string, string>(
+    schools.map((s) => [s.name.replace(/校$/, ''), s.id])
+  );
+
+  // ---- 2. 各行の school_id を解決 ----
+  type Resolvable = { schoolId: string; schoolName: string; row: MigrationRow };
+  const resolvable: Resolvable[] = [];
+
+  for (const row of rows) {
+    const schoolId = shortNameToId.get(row.schoolNameShort);
+    if (!schoolId) {
+      result.errors.push({
+        school: row.schoolNameShort,
+        name: row.data.student_name ?? '（不明）',
+        message: `教室名 "${row.schoolNameShort}" が schools テーブルに見つかりません`,
+      });
+      continue;
+    }
+    // schools.name (末尾「校」あり) を保持（エラー表示用）
+    const schoolName = schools.find((s) => s.id === schoolId)?.name ?? row.schoolNameShort;
+    resolvable.push({ schoolId, schoolName, row });
+  }
+
+  if (resolvable.length === 0) return result;
+
+  // ---- 3. 取込対象の school_id 一覧を収集し、既存 inquiries を取得して重複判定用 Set を構築 ----
+  const targetSchoolIds = Array.from(new Set(resolvable.map((r) => r.schoolId)));
+
+  // 重複判定キー: "YYYY-MM-DD|phone|<値>" / "YYYY-MM-DD|sname|<値>" / "YYYY-MM-DD|gname|<値>"
+  // schoolId → Set<key> の Map
+  const existingKeyMap = new Map<string, Set<string>>();
+
+  await Promise.all(
+    targetSchoolIds.map(async (sid) => {
+      const existing = await fetchAllPaged<{
+        inquired_at: string;
+        phone: string | null;
+        student_name: string | null;
+        guardian_name: string | null;
+      }>((from, to) =>
+        supabase
+          .from('inquiries')
+          .select('inquired_at,phone,student_name,guardian_name')
+          .eq('school_id', sid)
+          .is('deleted_at', null)
+          .order('id', { ascending: true })
+          .range(from, to)
+      );
+
+      const keySet = new Set<string>();
+      for (const e of existing) {
+        // inquired_at の日付部分 (YYYY-MM-DD) を取り出す
+        const day = e.inquired_at.slice(0, 10);
+        if (e.phone) keySet.add(`${day}|phone|${e.phone}`);
+        if (e.student_name) keySet.add(`${day}|sname|${e.student_name}`);
+        if (e.guardian_name) keySet.add(`${day}|gname|${e.guardian_name}`);
+      }
+      existingKeyMap.set(sid, keySet);
+    })
+  );
+
+  /**
+   * 重複チェック: inquired_at 日付が同じ かつ phone/student_name/guardian_name のいずれか一致
+   */
+  const isDuplicate = (schoolId: string, row: MigrationRow): boolean => {
+    const keySet = existingKeyMap.get(schoolId);
+    if (!keySet) return false;
+    const day = row.data.inquired_at.slice(0, 10); // ISO の先頭10文字
+    const { phone, student_name, guardian_name } = row.data;
+    if (phone && keySet.has(`${day}|phone|${phone}`)) return true;
+    if (student_name && keySet.has(`${day}|sname|${student_name}`)) return true;
+    if (guardian_name && keySet.has(`${day}|gname|${guardian_name}`)) return true;
+    return false;
+  };
+
+  // ---- 4. 重複チェックと新規行の抽出 ----
+  // 新規行とそのメタデータ（contacts/mailLogs/schoolId）を一緒に保持
+  type NewEntry = {
+    insert: InquiryInsert;
+    contacts: MigrationRow['contacts'];
+    mailLogs: MigrationRow['mailLogs'];
+    schoolId: string;
+  };
+  const newEntries: NewEntry[] = [];
+
+  for (const { schoolId, row } of resolvable) {
+    if (isDuplicate(schoolId, row)) {
+      result.skipped++;
+      continue;
+    }
+    newEntries.push({
+      insert: { ...row.data, school_id: schoolId },
+      contacts: row.contacts,
+      mailLogs: row.mailLogs,
+      schoolId,
+    });
+  }
+
+  if (newEntries.length === 0) return result;
+
+  // ---- 5. 500 件バッチで inquiries を insert し、返った id で contacts/mailLogs を紐付け ----
+  const BATCH_SIZE = 500;
+
+  for (let i = 0; i < newEntries.length; i += BATCH_SIZE) {
+    const batch = newEntries.slice(i, i + BATCH_SIZE);
+    const inserts = batch.map((e) => e.insert);
+
+    const { data: insertedRows, error: insertError } = await supabase
+      .from('inquiries')
+      .insert(inserts)
+      .select('id');
+
+    if (insertError) {
+      result.errors.push({
+        school: '',
+        name: `バッチ ${Math.floor(i / BATCH_SIZE) + 1}（${batch.length} 件）`,
+        message: `INSERT に失敗しました: ${insertError.message}`,
+      });
+      continue;
+    }
+
+    const insertedIds: string[] = (insertedRows ?? []).map((r: { id: string }) => r.id);
+    result.created += insertedIds.length;
+
+    // Supabase は insert 入力順で id を返す前提で inquiry_id を対応付ける
+    const contactsBatch: InquiryContactInsert[] = [];
+    const mailLogsBatch: InquiryMailLogInsert[] = [];
+
+    for (let j = 0; j < insertedIds.length; j++) {
+      const inquiryId = insertedIds[j];
+      const entry = batch[j];
+      if (!inquiryId || !entry) continue;
+
+      // contacts の組み立て
+      for (const c of entry.contacts) {
+        contactsBatch.push({
+          inquiry_id: inquiryId,
+          school_id: entry.schoolId,
+          contacted_at: c.contacted_at,
+          method: c.method,
+          direction: c.direction,
+          note: c.note,
+        });
+      }
+
+      // mailLogs の組み立て（inquiry_mail_logs テーブル）
+      for (const ml of entry.mailLogs) {
+        mailLogsBatch.push({
+          inquiry_id: inquiryId,
+          school_id: entry.schoolId,
+          method: ml.method,
+          sent_at: ml.sent_at,
+          status: 'sent' as const,
+          subject: null,
+          template_id: null,
+        });
+      }
+    }
+
+    // contacts バッチ insert（エラーは記録するが全体を止めない）
+    if (contactsBatch.length > 0) {
+      const { error: contactsError } = await supabase
+        .from('inquiry_contacts')
+        .insert(contactsBatch);
+      if (contactsError) {
+        result.errors.push({
+          school: '',
+          name: `コンタクトバッチ ${Math.floor(i / BATCH_SIZE) + 1}`,
+          message: `inquiry_contacts INSERT に失敗しました: ${contactsError.message}`,
+        });
+      }
+    }
+
+    // mailLogs バッチ insert（エラーは記録するが全体を止めない）
+    if (mailLogsBatch.length > 0) {
+      const { error: mailLogsError } = await supabase
+        .from('inquiry_mail_logs')
+        .insert(mailLogsBatch);
+      if (mailLogsError) {
+        result.errors.push({
+          school: '',
+          name: `メールログバッチ ${Math.floor(i / BATCH_SIZE) + 1}`,
+          message: `inquiry_mail_logs INSERT に失敗しました: ${mailLogsError.message}`,
+        });
+      }
+    }
   }
 
   return result;

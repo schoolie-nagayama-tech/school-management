@@ -1,13 +1,15 @@
 'use client';
 
 /**
- * 問合せ管理 — CSV取込ページ。
+ * 問合せ管理 — 取込ページ。
  * admin / owner のみアクセス可。
  *
- * フロー:
- * 1. ファイル選択 → parseInquiryCsvFile(file) でプレビュー表示
- * 2. 各行のチェックボックスで取込対象を絞り込み
- * 3. 「取込実行」→ importInquiries(selectedRows) → 結果表示
+ * セクション1: CSVファイル取込 (HPエクスポート CSV、既存フロー)
+ *   select → preview(チェックボックス絞り込み) → done
+ *
+ * セクション2: スプレッドシート移行(初回のみ)
+ *   .xlsx ファイル選択 → parseMigrationXlsx → プレビュー → importMigrationRows → 結果表示
+ *   再実行しても同一とみなせる行はスキップされる。
  */
 
 import { useState, useRef } from 'react';
@@ -17,16 +19,21 @@ import { Loading } from '@/components/ui';
 import { Button } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
 import AccessDenied from '@/components/AccessDenied';
-import { importInquiries } from '@/lib/api/inquiries';
+import { importInquiries, importMigrationRows } from '@/lib/api/inquiries';
 import { parseInquiryCsvFile } from '@/lib/utils/inquiryCsv';
 import type { ParsedInquiryRow } from '@/lib/utils/inquiryCsv';
-import type { InquiryImportResult } from '@/lib/api/inquiries';
+import type { InquiryImportResult, MigrationImportResult } from '@/lib/api/inquiries';
+import { parseMigrationXlsx } from '@/lib/utils/inquiryMigration';
+import type { MigrationRow } from '@/lib/utils/inquiryMigration';
 import { STATUS_CONFIG, formatDate } from '../inquiryConstants';
-import { AlertTriangle, CheckCircle, Upload, ChevronLeft, Info } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Upload, ChevronLeft, Info, FileSpreadsheet } from 'lucide-react';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
 /** CSV取込の3ステップ */
 type Step = 'select' | 'preview' | 'done';
+
+/** スプレッドシート移行の3ステップ */
+type MigStep = 'select' | 'preview' | 'done';
 
 export default function InquiriesImportPage() {
   const { profile } = useAuth();
@@ -34,6 +41,7 @@ export default function InquiriesImportPage() {
   // ロールガード: admin / owner のみ
   const isAdmin = profile?.role === 'admin' || profile?.role === 'owner';
 
+  // ---- CSV取込の状態 ----
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState<Step>('select');
@@ -46,6 +54,19 @@ export default function InquiriesImportPage() {
   const [isImporting, setIsImporting] = useState(false);
   const [importResult, setImportResult] = useState<InquiryImportResult | null>(null);
   const [importError, setImportError] = useState('');
+
+  // ---- スプレッドシート移行の状態(CSV取込と独立) ----
+  const migFileInputRef = useRef<HTMLInputElement>(null);
+
+  const [migStep, setMigStep] = useState<MigStep>('select');
+  const [isMigParsing, setIsMigParsing] = useState(false);
+  const [migParseError, setMigParseError] = useState('');
+  const [migRows, setMigRows] = useState<MigrationRow[]>([]);
+  const [migSkippedNoDate, setMigSkippedNoDate] = useState(0);
+
+  const [isMigImporting, setIsMigImporting] = useState(false);
+  const [migImportResult, setMigImportResult] = useState<MigrationImportResult | null>(null);
+  const [migImportError, setMigImportError] = useState('');
 
   // ---- ファイル選択 → パース ----
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -99,7 +120,7 @@ export default function InquiriesImportPage() {
     }
   };
 
-  // ---- リセット（最初から） ----
+  // ---- CSV リセット（最初から） ----
   const handleReset = () => {
     setStep('select');
     setParsedRows([]);
@@ -107,6 +128,60 @@ export default function InquiriesImportPage() {
     setImportResult(null);
     setImportError('');
     setParseError('');
+  };
+
+  // ---- スプレッドシート移行: ファイル選択 → パース ----
+  const handleMigFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsMigParsing(true);
+    setMigParseError('');
+    setMigRows([]);
+    setMigSkippedNoDate(0);
+    setMigImportResult(null);
+
+    try {
+      const { rows, skipped } = await parseMigrationXlsx(file);
+      setMigRows(rows);
+      setMigSkippedNoDate(skipped);
+      setMigStep('preview');
+    } catch (err) {
+      setMigParseError(getUserErrorMessage(err, 'Excelのパースに失敗しました。ファイル形式を確認してください。'));
+    } finally {
+      setIsMigParsing(false);
+      if (migFileInputRef.current) migFileInputRef.current.value = '';
+    }
+  };
+
+  // ---- スプレッドシート移行: 実行 ----
+  const handleMigImport = async () => {
+    if (migRows.length === 0) {
+      setMigImportError('取込対象の行がありません');
+      return;
+    }
+
+    setIsMigImporting(true);
+    setMigImportError('');
+    try {
+      const result = await importMigrationRows(migRows);
+      setMigImportResult(result);
+      setMigStep('done');
+    } catch (err) {
+      setMigImportError(getUserErrorMessage(err, '移行に失敗しました'));
+    } finally {
+      setIsMigImporting(false);
+    }
+  };
+
+  // ---- スプレッドシート移行: リセット ----
+  const handleMigReset = () => {
+    setMigStep('select');
+    setMigRows([]);
+    setMigSkippedNoDate(0);
+    setMigImportResult(null);
+    setMigImportError('');
+    setMigParseError('');
   };
 
   // ---- ローディング / 権限 ----
@@ -127,6 +202,25 @@ export default function InquiriesImportPage() {
 
   const selectedCount = checkedRows.filter(Boolean).length;
   const warningRowCount = parsedRows.filter((r) => r.warnings.length > 0).length;
+
+  // ---- 移行セクション用集計 ----
+  // 教室別件数の集計
+  const migSchoolCount = migRows.reduce<Record<string, number>>((acc, r) => {
+    acc[r.schoolNameShort] = (acc[r.schoolNameShort] ?? 0) + 1;
+    return acc;
+  }, {});
+  // ステータス内訳の集計
+  const migStatusCount = migRows.reduce<Record<string, number>>((acc, r) => {
+    const s = r.data.status ?? 'in_progress';
+    acc[s] = (acc[s] ?? 0) + 1;
+    return acc;
+  }, {});
+  // 警告ありの行を上位10件抽出
+  const migWarningRows = migRows
+    .flatMap((r, i) => r.warnings.map((w) => ({ rowNo: i + 2, warning: w })))
+    .slice(0, 10);
+  // プレビュー先頭10行
+  const migPreviewRows = migRows.slice(0, 10);
 
   return (
     <AdminLayout headerTitle="問合せ取込">
@@ -353,6 +447,250 @@ export default function InquiriesImportPage() {
             </div>
           </div>
         )}
+
+        {/* ── スプレッドシート移行セクション ── */}
+        <div className="mt-10 pt-8 border-t border-border">
+          <div className="flex items-center gap-2 mb-4">
+            <FileSpreadsheet className="w-5 h-5 text-text-muted" />
+            <h2 className="text-base font-bold text-text-heading">
+              旧スプレッドシートからの移行（初回のみ）
+            </h2>
+          </div>
+
+          {/* 注意書き */}
+          <div className="mb-5 p-4 bg-amber-50 border border-amber-200 rounded-lg flex gap-3">
+            <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <div className="text-sm text-amber-800 space-y-1">
+              <p>問合せ管理表.xlsxをアップロードしてください。シート名「問合せ管理」を読み込みます。</p>
+              <p>再実行しても同一とみなせる行（同日・同電話番号または同名）はスキップされます。</p>
+            </div>
+          </div>
+
+          {/* ── 移行 STEP 1: ファイル選択 ── */}
+          {migStep === 'select' && (
+            <div className="bg-surface-raised border border-border rounded-xl p-8 text-center">
+              <Upload className="w-10 h-10 text-text-muted mx-auto mb-4" />
+              <p className="text-sm text-text-muted mb-4">.xlsx ファイルをアップロード</p>
+              {isMigParsing ? (
+                <Loading size="sm" />
+              ) : (
+                <>
+                  <label className="cursor-pointer">
+                    <span className="px-4 py-2 bg-ink text-white rounded-lg text-sm hover:bg-ink/80 transition-colors duration-150 inline-block">
+                      Excelファイルを選択
+                    </span>
+                    <input
+                      ref={migFileInputRef}
+                      type="file"
+                      accept=".xlsx,.xls"
+                      onChange={handleMigFileChange}
+                      className="sr-only"
+                    />
+                  </label>
+                  {migParseError && (
+                    <p className="mt-3 text-sm text-danger">{migParseError}</p>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* ── 移行 STEP 2: プレビュー確認 ── */}
+          {migStep === 'preview' && (
+            <div className="space-y-4">
+              {/* サマリー行 */}
+              <div className="flex flex-wrap items-center gap-4 p-4 bg-surface-raised border border-border rounded-xl">
+                <div className="text-sm text-text-body">
+                  パース結果: <span className="font-semibold text-text-heading">{migRows.length}</span>件
+                </div>
+                {migSkippedNoDate > 0 && (
+                  <div className="flex items-center gap-1.5 text-sm text-orange-700">
+                    <AlertTriangle className="w-4 h-4" />
+                    <span>問合日なしスキップ: {migSkippedNoDate}件</span>
+                  </div>
+                )}
+                <div className="ml-auto flex gap-2">
+                  <Button variant="ghost" size="sm" onClick={handleMigReset}>
+                    やり直す
+                  </Button>
+                  <Button
+                    size="sm"
+                    isLoading={isMigImporting}
+                    disabled={migRows.length === 0}
+                    onClick={handleMigImport}
+                  >
+                    {migRows.length}件を移行実行
+                  </Button>
+                </div>
+              </div>
+
+              {migImportError && (
+                <div className="p-4 bg-danger/20 border border-danger rounded-lg">
+                  <p className="text-sm text-danger">{migImportError}</p>
+                </div>
+              )}
+
+              {/* 教室別件数 & ステータス内訳 */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-surface-raised border border-border rounded-xl p-4">
+                  <h3 className="text-xs font-semibold text-text-heading mb-2">教室別件数</h3>
+                  <div className="space-y-1">
+                    {Object.entries(migSchoolCount).map(([name, cnt]) => (
+                      <div key={name} className="flex justify-between text-xs">
+                        <span className="text-text-body">{name}</span>
+                        <span className="font-medium text-text-heading">{String(cnt)}件</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="bg-surface-raised border border-border rounded-xl p-4">
+                  <h3 className="text-xs font-semibold text-text-heading mb-2">ステータス内訳</h3>
+                  <div className="space-y-1">
+                    {Object.entries(migStatusCount).map(([status, cnt]) => {
+                      const sc = STATUS_CONFIG[status as keyof typeof STATUS_CONFIG];
+                      return (
+                        <div key={status} className="flex justify-between text-xs">
+                          <span className={`px-1.5 py-0.5 rounded-full font-medium ${sc?.className ?? ''}`}>
+                            {sc?.label ?? status}
+                          </span>
+                          <span className="font-medium text-text-heading">{String(cnt)}件</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* 警告上位10件 */}
+              {migWarningRows.length > 0 && (
+                <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
+                  <h3 className="text-xs font-semibold text-orange-800 mb-2 flex items-center gap-1">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    警告（上位10件）
+                  </h3>
+                  <div className="space-y-1">
+                    {migWarningRows.map((w, i) => (
+                      <p key={i} className="text-xs text-orange-700">
+                        行{w.rowNo}: {w.warning}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 先頭10行プレビューテーブル */}
+              <div className="bg-surface-raised border border-border rounded-xl overflow-x-auto">
+                <p className="text-xs text-text-muted px-3 pt-3 pb-1">先頭10件のプレビュー</p>
+                <table className="w-full text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-surface-hover">
+                      <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">問合日</th>
+                      <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">教室</th>
+                      <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">生徒名</th>
+                      <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">保護者名</th>
+                      <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">学年</th>
+                      <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">媒体</th>
+                      <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">電話</th>
+                      <th className="border border-border px-3 py-2 text-center font-medium text-text-heading whitespace-nowrap">ステータス</th>
+                      <th className="border border-border px-3 py-2 text-left font-medium text-text-heading">警告</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {migPreviewRows.map((row, i) => {
+                      const hasWarning = row.warnings.length > 0;
+                      const status = row.data.status ?? 'in_progress';
+                      const sc = STATUS_CONFIG[status];
+                      return (
+                        <tr key={i} className={hasWarning ? 'bg-orange-50/60' : ''}>
+                          <td className="border border-border px-3 py-1.5 whitespace-nowrap text-text-body">
+                            {row.data.inquired_at ? formatDate(row.data.inquired_at) : '—'}
+                          </td>
+                          <td className="border border-border px-3 py-1.5 text-text-body">{row.schoolNameShort}</td>
+                          <td className="border border-border px-3 py-1.5 font-medium text-text-heading">{row.data.student_name ?? '—'}</td>
+                          <td className="border border-border px-3 py-1.5 text-text-body">{row.data.guardian_name ?? '—'}</td>
+                          <td className="border border-border px-3 py-1.5 text-text-body">{row.data.grade ?? '—'}</td>
+                          <td className="border border-border px-3 py-1.5 text-text-body">{row.data.media ?? '—'}</td>
+                          <td className="border border-border px-3 py-1.5 text-text-body whitespace-nowrap">{row.data.phone ?? '—'}</td>
+                          <td className="border border-border px-3 py-1.5 text-center">
+                            <span className={`px-1.5 py-0.5 rounded-full font-medium ${sc.className}`}>
+                              {sc.label}
+                            </span>
+                          </td>
+                          <td className="border border-border px-3 py-1.5">
+                            {hasWarning ? (
+                              <div className="flex items-start gap-1">
+                                <AlertTriangle className="w-3.5 h-3.5 text-orange-600 shrink-0 mt-0.5" />
+                                <span className="text-orange-700 text-xs">
+                                  {row.warnings.join(' / ')}
+                                </span>
+                              </div>
+                            ) : (
+                              <span className="text-text-faint">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* ── 移行 STEP 3: 完了 ── */}
+          {migStep === 'done' && migImportResult && (
+            <div className="bg-surface-raised border border-border rounded-xl p-8">
+              <div className="flex items-center gap-2 mb-6">
+                <CheckCircle className="w-6 h-6 text-green-600" />
+                <h3 className="text-lg font-bold text-text-heading">移行完了</h3>
+              </div>
+
+              {/* 結果サマリー */}
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-center">
+                  <p className="text-xs text-green-700 mb-1">新規登録</p>
+                  <p className="text-2xl font-bold text-green-700">{migImportResult.created}</p>
+                </div>
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-center">
+                  <p className="text-xs text-gray-600 mb-1">スキップ（重複）</p>
+                  <p className="text-2xl font-bold text-gray-600">{migImportResult.skipped}</p>
+                </div>
+                <div className={`p-4 border rounded-lg text-center ${migImportResult.errors.length > 0 ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200'}`}>
+                  <p className={`text-xs mb-1 ${migImportResult.errors.length > 0 ? 'text-red-700' : 'text-gray-600'}`}>エラー</p>
+                  <p className={`text-2xl font-bold ${migImportResult.errors.length > 0 ? 'text-red-700' : 'text-gray-600'}`}>
+                    {migImportResult.errors.length}
+                  </p>
+                </div>
+              </div>
+
+              {/* エラー詳細 */}
+              {migImportResult.errors.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium text-text-heading mb-2">エラー詳細</h3>
+                  <div className="space-y-1">
+                    {migImportResult.errors.map((e, i) => (
+                      <div key={i} className="flex gap-2 text-xs p-2 bg-red-50 border border-red-200 rounded">
+                        <AlertTriangle className="w-3.5 h-3.5 text-red-600 shrink-0 mt-0.5" />
+                        <span className="text-red-800">
+                          【{e.school || '不明'} / {e.name || '不明'}】{e.message}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <Link href="/admin/inquiries">
+                  <Button size="sm">一覧へ</Button>
+                </Link>
+                <Button variant="secondary" size="sm" onClick={handleMigReset}>
+                  もう一度実行
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </AdminLayout>
   );

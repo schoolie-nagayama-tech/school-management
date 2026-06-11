@@ -295,3 +295,89 @@ export async function notifyDailyReport(params: {
     `📋 デイリーレポート: 未確認${totalUnconfirmed}件 / 未配布${totalOverdue}件`
   );
 }
+
+// ============================================
+// 問合せ管理通知（デイリーサマリー・対応遅延・週次）
+// ============================================
+
+// 問合せ通知用Webhook。専用URLが未設定なら教材用と同じチャンネルに送る
+const WEBHOOK_INQUIRIES = process.env.SLACK_WEBHOOK_INQUIRIES || WEBHOOK_MATERIALS;
+
+export interface InquirySchoolReport {
+  schoolName: string;
+  slackMentionId: string | null;
+  /** 進捗サマリー */
+  summary: {
+    inProgress: number;      // 対応中（体験・入面予定なし）
+    trialPlanned: number;    // 対応中のうち体験予定あり
+    interviewPlanned: number; // 対応中のうち入面予定あり
+    unreachable: number;     // 連絡不通
+    monthInquiries: number;  // 今月の問合せ
+    monthEnrolled: number;   // 今月の入会
+  };
+  /** 対応遅延（3/5/7/10/14/21/30日経過）*/
+  delays: { name: string; days: number; inquiredAt: string }[];
+  /** 週次レポート（月曜のみ非null）*/
+  weekly: { newInquiries: number; trials: number; enrolled: number; enrollRate: number } | null;
+}
+
+/**
+ * 問合せ管理のデイリーレポートをSlackへ送信する。
+ * 教室ごとにサマリー＋遅延案件（メンション付き）を1メッセージにまとめる。
+ */
+export async function notifyInquiryReport(params: { date: string; schools: InquirySchoolReport[] }): Promise<boolean> {
+  if (!WEBHOOK_INQUIRIES) {
+    console.warn('[slack] SLACK_WEBHOOK_INQUIRIES / SLACK_WEBHOOK_MATERIALS が未設定のためスキップ');
+    return false;
+  }
+
+  const blocks: SlackBlock[] = [
+    {
+      type: 'header',
+      text: { type: 'plain_text', text: `問合せデイリーレポート（${params.date}）`, emoji: true },
+    },
+  ];
+
+  let totalDelays = 0;
+
+  for (const school of params.schools) {
+    const s = school.summary;
+    const mention = school.slackMentionId ? ` <@${school.slackMentionId}>` : '';
+
+    const summaryLine =
+      `対応中 ${s.inProgress} / 体験予定 ${s.trialPlanned} / 入面予定 ${s.interviewPlanned} / ` +
+      `連絡不通 ${s.unreachable} / 今月問合せ ${s.monthInquiries}・入会 ${s.monthEnrolled}`;
+
+    const lines: string[] = [summaryLine];
+
+    if (school.delays.length > 0) {
+      totalDelays += school.delays.length;
+      lines.push(`*対応遅延*${mention}`);
+      // 日数の大きい順に最大10件
+      for (const d of school.delays.slice(0, 10)) {
+        lines.push(`　• ${d.name} さん（${d.inquiredAt}問合せ）— ${d.days}日経過。次のアクションを実行してください`);
+      }
+      if (school.delays.length > 10) {
+        lines.push(`　…他 ${school.delays.length - 10} 件`);
+      }
+    }
+
+    if (school.weekly) {
+      const w = school.weekly;
+      lines.push(
+        `*週次（直近7日）* 新規 ${w.newInquiries} / 体験 ${w.trials} / 入会 ${w.enrolled} / 入会率 ${w.enrollRate}%`
+      );
+    }
+
+    blocks.push(
+      { type: 'divider' } as SlackBlock,
+      { type: 'section', text: { type: 'mrkdwn', text: `*${school.schoolName}*\n${lines.join('\n')}` } }
+    );
+  }
+
+  return sendWebhook(
+    WEBHOOK_INQUIRIES,
+    blocks,
+    `問合せデイリーレポート: 対応遅延${totalDelays}件`
+  );
+}

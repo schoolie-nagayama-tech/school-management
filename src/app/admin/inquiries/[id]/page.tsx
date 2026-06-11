@@ -53,6 +53,7 @@ import {
   CONTACT_METHOD_LABELS,
   CONTACT_DIRECTION_LABELS,
   formatDate,
+  formatDateTime,
 } from '../inquiryConstants';
 import {
   ChevronLeft,
