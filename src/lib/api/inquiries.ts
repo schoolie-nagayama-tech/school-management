@@ -224,6 +224,35 @@ export async function addInquiryContact(data: InquiryContactInsert): Promise<Inq
 }
 
 // ============================================================
+// リマインド用ヘルパー
+// ============================================================
+
+/**
+ * 指定教室群でコンタクト履歴が 1 件以上ある inquiry_id の集合を返す。
+ * リマインドの「初回未接触判定」用。fetchAllPaged でページング済み。
+ *
+ * @param schoolId 単一または複数の school_id
+ */
+export async function getContactedInquiryIds(
+  schoolId: string | string[]
+): Promise<Set<string>> {
+  const schoolIds = Array.isArray(schoolId) ? schoolId : [schoolId];
+
+  // inquiry_contacts は school_id を持つため .in() で一括取得する
+  const rows = await fetchAllPaged<{ inquiry_id: string }>((from, to) =>
+    supabase
+      .from('inquiry_contacts')
+      .select('inquiry_id')
+      .in('school_id', schoolIds)
+      .order('inquiry_id', { ascending: true })
+      .range(from, to)
+  );
+
+  // Set 化（重複は自動排除）
+  return new Set(rows.map((r) => r.inquiry_id));
+}
+
+// ============================================================
 // CSV一括取込
 // ============================================================
 

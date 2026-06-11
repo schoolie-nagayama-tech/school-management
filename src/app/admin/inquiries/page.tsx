@@ -24,8 +24,9 @@ import {
   STATUS_OPTIONS,
   formatDate,
 } from './inquiryConstants';
-import { Search, X, Upload, SlidersHorizontal } from 'lucide-react';
+import { Search, X, Upload, SlidersHorizontal, BarChart3 } from 'lucide-react';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
+import { InquiryReminders } from '@/components/inquiries/InquiryReminders';
 
 export default function InquiriesPage() {
   const { profile, getSelectedSchoolIds, selectedSchoolId } = useAuth();
@@ -139,12 +140,21 @@ export default function InquiriesPage() {
     <AdminLayout
       headerTitle="問合せ管理"
       actions={
-        <Link href="/admin/inquiries/import">
-          <Button variant="secondary" size="sm">
-            <Upload className="w-4 h-4 mr-1.5" />
-            CSV取込
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          {/* 分析ページへのリンク（ページ本体は別担当が実装） */}
+          <Link href="/admin/inquiries/analytics">
+            <Button variant="outline" size="sm">
+              <BarChart3 className="w-4 h-4 mr-1.5" />
+              分析
+            </Button>
+          </Link>
+          <Link href="/admin/inquiries/import">
+            <Button variant="secondary" size="sm">
+              <Upload className="w-4 h-4 mr-1.5" />
+              CSV取込
+            </Button>
+          </Link>
+        </div>
       }
     >
       <div>
@@ -153,6 +163,9 @@ export default function InquiriesPage() {
             <p className="text-sm text-danger">{errorMessage}</p>
           </div>
         )}
+
+        {/* リマインドボード（要対応アラート）— リマインドがなければ何も表示しない */}
+        <InquiryReminders schoolIds={schoolIds} />
 
         {/* サマリーカード */}
         <div className="grid grid-cols-3 gap-4 mb-6">

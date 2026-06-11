@@ -5,6 +5,7 @@
  * admin / owner のみアクセス可。
  * - ステータス変更（enrolled 時に enrolled_at / weekly_count を表示）
  * - コンタクト履歴の閲覧・追加
+ * - メール送信（テンプレート選択 or 手書き）と送信履歴
  * - tel: / mailto: リンク
  * - HP 原文（raw_source）折りたたみ
  * - 生徒として登録（氏名・学年をクエリパラメータでプリフィル）
@@ -26,8 +27,25 @@ import {
   getInquiryContacts,
   addInquiryContact,
 } from '@/lib/api/inquiries';
+import {
+  getMailTemplates,
+  getInquirySchoolSettings,
+  buildMailVars,
+  renderTemplate,
+  sendInquiryMail,
+  getMailLogs,
+} from '@/lib/api/inquiryMail';
+import { getSchool } from '@/lib/api/schools';
 import { createStudent } from '@/lib/api/students';
-import type { Inquiry, InquiryStatus, InquiryContact, StudentInsert } from '@/types/database';
+import type {
+  Inquiry,
+  InquiryStatus,
+  InquiryContact,
+  InquiryMailTemplate,
+  InquiryMailLog,
+  InquirySchoolSettings,
+  StudentInsert,
+} from '@/types/database';
 import { GRADE_LABELS } from '@/types/database';
 import {
   STATUS_CONFIG,
@@ -45,6 +63,7 @@ import {
   ChevronUp,
   Trash2,
   UserPlus,
+  Send,
 } from 'lucide-react';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 
@@ -92,6 +111,17 @@ export default function InquiryDetailPage() {
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [enrollError, setEnrollError] = useState('');
 
+  // ---- メール送信 ----
+  const [mailTemplates, setMailTemplates] = useState<InquiryMailTemplate[]>([]);
+  const [mailSettings, setMailSettings] = useState<InquirySchoolSettings | null>(null);
+  const [schoolName, setSchoolName] = useState('');
+  const [selectedTemplateId, setSelectedTemplateId] = useState(''); // '' = テンプレ未選択
+  const [mailSubject, setMailSubject] = useState('');
+  const [mailBody, setMailBody] = useState('');
+  const [isSendingMail, setIsSendingMail] = useState(false);
+  const [mailSendMessage, setMailSendMessage] = useState('');
+  const [mailLogs, setMailLogs] = useState<InquiryMailLog[]>([]);
+
   // ---- データ取得 ----
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -115,6 +145,18 @@ export default function InquiryDetailPage() {
       setEditWeeklyCount(inq.weekly_count != null ? String(inq.weekly_count) : '');
       setEditTrialAt(inq.trial_at ? inq.trial_at.slice(0, 10) : '');
       setEditNote(inq.note ?? '');
+
+      // メール関連データを並行取得
+      const [templates, settings, school, logs] = await Promise.all([
+        getMailTemplates(inq.school_id),
+        getInquirySchoolSettings(inq.school_id),
+        getSchool(inq.school_id),
+        getMailLogs(id),
+      ]);
+      setMailTemplates(templates);
+      setMailSettings(settings);
+      setSchoolName(school?.name ?? '');
+      setMailLogs(logs);
     } catch (err) {
       setErrorMessage(getUserErrorMessage(err, 'データの取得に失敗しました'));
     } finally {
@@ -125,6 +167,46 @@ export default function InquiryDetailPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // ---- テンプレート選択時: 変数置換して subject/body をセット ----
+  const handleTemplateSelect = (templateId: string) => {
+    setSelectedTemplateId(templateId);
+    setMailSendMessage('');
+    if (!templateId || !inquiry) {
+      // テンプレ選択解除時はフィールドをクリア
+      setMailSubject('');
+      setMailBody('');
+      return;
+    }
+    const tpl = mailTemplates.find((t) => t.id === templateId);
+    if (!tpl) return;
+    const vars = buildMailVars(inquiry, schoolName, mailSettings);
+    setMailSubject(renderTemplate(tpl.subject, vars));
+    setMailBody(renderTemplate(tpl.body, vars));
+  };
+
+  // ---- メール送信 ----
+  const handleSendMail = async () => {
+    if (!inquiry) return;
+    setIsSendingMail(true);
+    setMailSendMessage('');
+    try {
+      await sendInquiryMail({
+        inquiry,
+        subject: mailSubject,
+        body: mailBody,
+        templateId: selectedTemplateId || null,
+      });
+      setMailSendMessage('送信しました');
+      // 送信履歴を再取得
+      const logs = await getMailLogs(id);
+      setMailLogs(logs);
+    } catch (err) {
+      setMailSendMessage(getUserErrorMessage(err, '送信に失敗しました'));
+    } finally {
+      setIsSendingMail(false);
+    }
+  };
 
   // ---- ステータス保存 ----
   const handleSave = async () => {
@@ -549,6 +631,105 @@ export default function InquiryDetailPage() {
                   追加
                 </Button>
               </div>
+            </section>
+
+            {/* ── メール送信 ── */}
+            <section className="bg-surface-raised border border-border rounded-xl p-6">
+              <h2 className="text-lg font-bold text-text-heading mb-4">メール送信</h2>
+
+              {!inquiry.email ? (
+                // メールアドレス未登録時はフォームを出さない
+                <p className="text-sm text-text-muted">メールアドレスが登録されていません</p>
+              ) : (
+                <div className="space-y-4">
+                  {/* 宛先表示 */}
+                  <p className="text-sm text-text-muted">
+                    宛先:{' '}
+                    <a href={`mailto:${inquiry.email}`} className="text-blue-700 hover:underline">
+                      {inquiry.email}
+                    </a>
+                  </p>
+
+                  {/* テンプレート選択 */}
+                  <div>
+                    <label className="block text-xs font-medium text-text-heading mb-1">
+                      テンプレート（任意）
+                    </label>
+                    <select
+                      value={selectedTemplateId}
+                      onChange={(e) => handleTemplateSelect(e.target.value)}
+                      className="w-full sm:w-80 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      <option value="">— テンプレートを選択 —</option>
+                      {mailTemplates.map((t) => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* 件名 */}
+                  <div>
+                    <label className="block text-xs font-medium text-text-heading mb-1">件名</label>
+                    <input
+                      type="text"
+                      value={mailSubject}
+                      onChange={(e) => setMailSubject(e.target.value)}
+                      placeholder="件名を入力"
+                      className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+
+                  {/* 本文 */}
+                  <div>
+                    <label className="block text-xs font-medium text-text-heading mb-1">本文</label>
+                    <textarea
+                      value={mailBody}
+                      onChange={(e) => setMailBody(e.target.value)}
+                      rows={6}
+                      placeholder="本文を入力"
+                      className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                    />
+                  </div>
+
+                  {/* 送信ボタン */}
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <Button
+                      onClick={handleSendMail}
+                      isLoading={isSendingMail}
+                      disabled={isSendingMail || !mailSubject.trim() || !mailBody.trim()}
+                      size="sm"
+                    >
+                      <Send className="w-4 h-4 mr-1.5" />
+                      送信
+                    </Button>
+                    {mailSendMessage && (
+                      <span className={`text-sm ${mailSendMessage.includes('失敗') || mailSendMessage.includes('エラー') ? 'text-danger' : 'text-text-muted'}`}>
+                        {mailSendMessage}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* 送信履歴 */}
+              {mailLogs.length > 0 && (
+                <div className="mt-6 border-t border-border pt-4">
+                  <h3 className="text-sm font-medium text-text-heading mb-3">送信履歴</h3>
+                  <div className="space-y-2">
+                    {mailLogs.map((log) => (
+                      <div key={log.id} className="flex items-center gap-3 text-xs text-text-muted">
+                        <span>{formatDateTime(log.sent_at)}</span>
+                        <span className={`px-1.5 py-0.5 rounded-full font-medium ${log.status === 'sent' ? 'bg-green-100 text-green-800' : 'bg-danger/20 text-danger'}`}>
+                          {log.status === 'sent' ? '送信済み' : '失敗'}
+                        </span>
+                        {log.subject && (
+                          <span className="truncate max-w-xs text-text-body">{log.subject}</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </section>
 
             {/* ── HP原文（raw_source）折りたたみ ── */}
