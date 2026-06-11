@@ -1,0 +1,359 @@
+'use client';
+
+/**
+ * 問合せ管理 — CSV取込ページ。
+ * admin / owner のみアクセス可。
+ *
+ * フロー:
+ * 1. ファイル選択 → parseInquiryCsvFile(file) でプレビュー表示
+ * 2. 各行のチェックボックスで取込対象を絞り込み
+ * 3. 「取込実行」→ importInquiries(selectedRows) → 結果表示
+ */
+
+import { useState, useRef } from 'react';
+import Link from 'next/link';
+import { AdminLayout } from '@/components/layouts';
+import { Loading } from '@/components/ui';
+import { Button } from '@/components/ui';
+import { useAuth } from '@/contexts/AuthContext';
+import AccessDenied from '@/components/AccessDenied';
+import { importInquiries } from '@/lib/api/inquiries';
+import { parseInquiryCsvFile } from '@/lib/utils/inquiryCsv';
+import type { ParsedInquiryRow } from '@/lib/utils/inquiryCsv';
+import type { InquiryImportResult } from '@/lib/api/inquiries';
+import { STATUS_CONFIG, formatDate } from '../inquiryConstants';
+import { AlertTriangle, CheckCircle, Upload, ChevronLeft, Info } from 'lucide-react';
+import { getUserErrorMessage } from '@/lib/utils/errorMessages';
+
+/** CSV取込の3ステップ */
+type Step = 'select' | 'preview' | 'done';
+
+export default function InquiriesImportPage() {
+  const { profile } = useAuth();
+
+  // ロールガード: admin / owner のみ
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'owner';
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [step, setStep] = useState<Step>('select');
+  const [isParsing, setIsParsing] = useState(false);
+  const [parseError, setParseError] = useState('');
+  const [parsedRows, setParsedRows] = useState<ParsedInquiryRow[]>([]);
+  // 各行の取込対象チェック状態（インデックス → boolean）
+  const [checkedRows, setCheckedRows] = useState<boolean[]>([]);
+
+  const [isImporting, setIsImporting] = useState(false);
+  const [importResult, setImportResult] = useState<InquiryImportResult | null>(null);
+  const [importError, setImportError] = useState('');
+
+  // ---- ファイル選択 → パース ----
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsParsing(true);
+    setParseError('');
+    setParsedRows([]);
+    setCheckedRows([]);
+    setImportResult(null);
+
+    try {
+      const rows = await parseInquiryCsvFile(file);
+      setParsedRows(rows);
+      // 初期は全行チェック状態にする
+      setCheckedRows(rows.map(() => true));
+      setStep('preview');
+    } catch (err) {
+      setParseError(getUserErrorMessage(err, 'CSVのパースに失敗しました。文字コードや形式を確認してください。'));
+    } finally {
+      setIsParsing(false);
+      // ファイル入力をリセット（同じファイルを再選択できるよう）
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  // ---- 全選択/全解除 ----
+  const handleCheckAll = (checked: boolean) => {
+    setCheckedRows(parsedRows.map(() => checked));
+  };
+
+  // ---- 取込実行 ----
+  const handleImport = async () => {
+    const selectedRows = parsedRows.filter((_, i) => checkedRows[i]);
+    if (selectedRows.length === 0) {
+      setImportError('取込対象の行がありません');
+      return;
+    }
+
+    setIsImporting(true);
+    setImportError('');
+    try {
+      const result = await importInquiries(selectedRows);
+      setImportResult(result);
+      setStep('done');
+    } catch (err) {
+      setImportError(getUserErrorMessage(err, '取込に失敗しました'));
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  // ---- リセット（最初から） ----
+  const handleReset = () => {
+    setStep('select');
+    setParsedRows([]);
+    setCheckedRows([]);
+    setImportResult(null);
+    setImportError('');
+    setParseError('');
+  };
+
+  // ---- ローディング / 権限 ----
+  if (profile === null) {
+    return (
+      <AdminLayout headerTitle="問合せ取込">
+        <Loading className="min-h-[60vh]" />
+      </AdminLayout>
+    );
+  }
+  if (!isAdmin) {
+    return (
+      <AdminLayout>
+        <AccessDenied message="問合せ管理は管理者のみ利用できます" />
+      </AdminLayout>
+    );
+  }
+
+  const selectedCount = checkedRows.filter(Boolean).length;
+  const warningRowCount = parsedRows.filter((r) => r.warnings.length > 0).length;
+
+  return (
+    <AdminLayout headerTitle="問合せ取込">
+      <div className="max-w-5xl">
+        {/* 戻るリンク */}
+        <Link
+          href="/admin/inquiries"
+          className="inline-flex items-center gap-1 text-sm text-text-muted hover:text-text-heading mb-6 transition-colors duration-150"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          問合せ一覧に戻る
+        </Link>
+
+        {/* 注意書き */}
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex gap-3">
+          <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+          <p className="text-sm text-blue-700">
+            HPシステムからエクスポートした <code className="font-mono">boshu_applicant_*.csv</code>（教室別）をアップロードしてください。問合せNOで重複は自動スキップされます。
+          </p>
+        </div>
+
+        {/* ── STEP 1: ファイル選択 ── */}
+        {step === 'select' && (
+          <div className="bg-surface-raised border border-border rounded-xl p-8 text-center">
+            <Upload className="w-10 h-10 text-text-muted mx-auto mb-4" />
+            <p className="text-sm text-text-muted mb-4">
+              Shift_JIS形式のCSVファイルをアップロード
+            </p>
+            {isParsing ? (
+              <Loading size="sm" />
+            ) : (
+              <>
+                <label className="cursor-pointer">
+                  <span className="px-4 py-2 bg-ink text-white rounded-lg text-sm hover:bg-ink/80 transition-colors duration-150 inline-block">
+                    ファイルを選択
+                  </span>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv"
+                    onChange={handleFileChange}
+                    className="sr-only"
+                  />
+                </label>
+                {parseError && (
+                  <p className="mt-3 text-sm text-danger">{parseError}</p>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ── STEP 2: プレビュー確認 ── */}
+        {step === 'preview' && (
+          <div className="space-y-4">
+            {/* プレビューサマリー */}
+            <div className="flex flex-wrap items-center gap-4 p-4 bg-surface-raised border border-border rounded-xl">
+              <div className="text-sm text-text-body">
+                <span className="font-semibold text-text-heading">{parsedRows.length}</span>件をパース
+              </div>
+              {warningRowCount > 0 && (
+                <div className="flex items-center gap-1.5 text-sm text-orange-700">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span>警告あり: {warningRowCount}件</span>
+                </div>
+              )}
+              <div className="text-sm text-text-muted">
+                取込対象: <span className="font-semibold text-text-heading">{selectedCount}</span>件
+              </div>
+              <div className="ml-auto flex gap-2">
+                <Button variant="ghost" size="sm" onClick={handleReset}>
+                  やり直す
+                </Button>
+                <Button
+                  size="sm"
+                  isLoading={isImporting}
+                  disabled={selectedCount === 0}
+                  onClick={handleImport}
+                >
+                  {selectedCount}件を取込実行
+                </Button>
+              </div>
+            </div>
+
+            {importError && (
+              <div className="p-4 bg-danger/20 border border-danger rounded-lg">
+                <p className="text-sm text-danger">{importError}</p>
+              </div>
+            )}
+
+            {/* プレビューテーブル */}
+            <div className="bg-surface-raised border border-border rounded-xl overflow-x-auto">
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr className="bg-surface-hover">
+                    <th className="border border-border px-2 py-2 text-center w-10">
+                      <input
+                        type="checkbox"
+                        checked={checkedRows.every(Boolean) && parsedRows.length > 0}
+                        onChange={(e) => handleCheckAll(e.target.checked)}
+                        className="cursor-pointer"
+                      />
+                    </th>
+                    <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">受付日</th>
+                    <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">教室名</th>
+                    <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">生徒名</th>
+                    <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">保護者名</th>
+                    <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">学年</th>
+                    <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">媒体</th>
+                    <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">申込内容</th>
+                    <th className="border border-border px-3 py-2 text-left font-medium text-text-heading whitespace-nowrap">電話</th>
+                    <th className="border border-border px-3 py-2 text-center font-medium text-text-heading whitespace-nowrap">ステータス</th>
+                    <th className="border border-border px-3 py-2 text-left font-medium text-text-heading">警告</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {parsedRows.map((row, i) => {
+                    const hasWarning = row.warnings.length > 0;
+                    const status = row.data.status ?? 'in_progress';
+                    const sc = STATUS_CONFIG[status];
+                    return (
+                      <tr
+                        key={i}
+                        className={`${hasWarning ? 'bg-orange-50/60' : ''} ${!checkedRows[i] ? 'opacity-40' : ''}`}
+                      >
+                        <td className="border border-border px-2 py-1.5 text-center">
+                          <input
+                            type="checkbox"
+                            checked={checkedRows[i] ?? false}
+                            onChange={(e) => {
+                              const next = [...checkedRows];
+                              next[i] = e.target.checked;
+                              setCheckedRows(next);
+                            }}
+                            className="cursor-pointer"
+                          />
+                        </td>
+                        <td className="border border-border px-3 py-1.5 whitespace-nowrap text-text-body">
+                          {row.data.inquired_at ? formatDate(row.data.inquired_at) : '—'}
+                        </td>
+                        <td className="border border-border px-3 py-1.5 text-text-body">{row.schoolName}</td>
+                        <td className="border border-border px-3 py-1.5 font-medium text-text-heading">{row.data.student_name ?? '—'}</td>
+                        <td className="border border-border px-3 py-1.5 text-text-body">{row.data.guardian_name ?? '—'}</td>
+                        <td className="border border-border px-3 py-1.5 text-text-body">{row.data.grade ?? '—'}</td>
+                        <td className="border border-border px-3 py-1.5 text-text-body">{row.data.media ?? '—'}</td>
+                        <td className="border border-border px-3 py-1.5 text-text-body">{row.data.request_type ?? '—'}</td>
+                        <td className="border border-border px-3 py-1.5 text-text-body whitespace-nowrap">{row.data.phone ?? '—'}</td>
+                        <td className="border border-border px-3 py-1.5 text-center">
+                          <span className={`px-1.5 py-0.5 rounded-full font-medium ${sc.className}`}>
+                            {sc.label}
+                          </span>
+                        </td>
+                        <td className="border border-border px-3 py-1.5">
+                          {hasWarning ? (
+                            <div className="flex items-start gap-1">
+                              <AlertTriangle className="w-3.5 h-3.5 text-orange-600 shrink-0 mt-0.5" />
+                              <span className="text-orange-700 text-xs">
+                                {row.warnings.join(' / ')}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-text-faint">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ── STEP 3: 完了 ── */}
+        {step === 'done' && importResult && (
+          <div className="bg-surface-raised border border-border rounded-xl p-8">
+            <div className="flex items-center gap-2 mb-6">
+              <CheckCircle className="w-6 h-6 text-green-600" />
+              <h2 className="text-lg font-bold text-text-heading">取込完了</h2>
+            </div>
+
+            {/* 結果サマリー */}
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-center">
+                <p className="text-xs text-green-700 mb-1">新規登録</p>
+                <p className="text-2xl font-bold text-green-700">{importResult.created}</p>
+              </div>
+              <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-center">
+                <p className="text-xs text-gray-600 mb-1">スキップ（重複）</p>
+                <p className="text-2xl font-bold text-gray-600">{importResult.skipped}</p>
+              </div>
+              <div className={`p-4 border rounded-lg text-center ${importResult.errors.length > 0 ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200'}`}>
+                <p className={`text-xs mb-1 ${importResult.errors.length > 0 ? 'text-red-700' : 'text-gray-600'}`}>エラー</p>
+                <p className={`text-2xl font-bold ${importResult.errors.length > 0 ? 'text-red-700' : 'text-gray-600'}`}>
+                  {importResult.errors.length}
+                </p>
+              </div>
+            </div>
+
+            {/* エラー詳細 */}
+            {importResult.errors.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-text-heading mb-2">エラー詳細</h3>
+                <div className="space-y-1">
+                  {importResult.errors.map((e, i) => (
+                    <div key={i} className="flex gap-2 text-xs p-2 bg-red-50 border border-red-200 rounded">
+                      <AlertTriangle className="w-3.5 h-3.5 text-red-600 shrink-0 mt-0.5" />
+                      <span className="text-red-800">
+                        【{e.schoolName || '不明'} / NO: {e.hpNo || '不明'}】{e.message}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <Link href="/admin/inquiries">
+                <Button size="sm">一覧へ</Button>
+              </Link>
+              <Button variant="secondary" size="sm" onClick={handleReset}>
+                続けて取込む
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </AdminLayout>
+  );
+}

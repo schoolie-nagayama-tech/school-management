@@ -41,6 +41,217 @@ export type Database = {
         };
         Relationships: [];
       };
+      // ============================================
+      // 問合せ管理（ベータ）。正典: docs/inquiry-management-requirements.md
+      // ============================================
+      inquiries: {
+        Row: {
+          id: string;
+          school_id: string;
+          hp_inquiry_no: string | null;
+          inquired_at: string;
+          student_name: string | null;
+          student_name_kana: string | null;
+          guardian_name: string | null;
+          guardian_name_kana: string | null;
+          relationship: string | null;
+          grade: string | null;
+          gender: string | null;
+          phone: string | null;
+          email: string | null;
+          postal_code: string | null;
+          address_pref: string | null;
+          address_detail: string | null;
+          address_building: string | null;
+          school_name: string | null;
+          media: string | null;
+          channel: string | null;
+          request_type: string | null;
+          device: string | null;
+          initial_message: string | null;
+          purpose: string | null;
+          preferred_subjects: string | null;
+          juku_experience: string | null;
+          status: 'in_progress' | 'enrolled' | 'unreachable' | 'lost' | 'trial_lost';
+          material_sent_at: string | null;
+          trial_at: string | null;
+          trial_teacher: string | null;
+          interview_at: string | null;
+          enrolled_at: string | null;
+          weekly_count: number | null;
+          linked_student_id: string | null;
+          referrer_inquiry_note: string | null;
+          raw_source: Record<string, unknown> | null;
+          note: string | null;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+          deleted_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          school_id: string;
+          hp_inquiry_no?: string | null;
+          inquired_at: string;
+          student_name?: string | null;
+          student_name_kana?: string | null;
+          guardian_name?: string | null;
+          guardian_name_kana?: string | null;
+          relationship?: string | null;
+          grade?: string | null;
+          gender?: string | null;
+          phone?: string | null;
+          email?: string | null;
+          postal_code?: string | null;
+          address_pref?: string | null;
+          address_detail?: string | null;
+          address_building?: string | null;
+          school_name?: string | null;
+          media?: string | null;
+          channel?: string | null;
+          request_type?: string | null;
+          device?: string | null;
+          initial_message?: string | null;
+          purpose?: string | null;
+          preferred_subjects?: string | null;
+          juku_experience?: string | null;
+          status?: 'in_progress' | 'enrolled' | 'unreachable' | 'lost' | 'trial_lost';
+          material_sent_at?: string | null;
+          trial_at?: string | null;
+          trial_teacher?: string | null;
+          interview_at?: string | null;
+          enrolled_at?: string | null;
+          weekly_count?: number | null;
+          linked_student_id?: string | null;
+          referrer_inquiry_note?: string | null;
+          raw_source?: Record<string, unknown> | null;
+          note?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
+        };
+        Update: Partial<Database['public']['Tables']['inquiries']['Insert']>;
+        Relationships: [];
+      };
+      inquiry_contacts: {
+        Row: {
+          id: string;
+          inquiry_id: string;
+          school_id: string;
+          contacted_at: string;
+          method: 'tel' | 'email' | 'sms' | 'visit' | 'other';
+          direction: 'outbound' | 'inbound' | null;
+          result: string | null;
+          note: string | null;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          inquiry_id: string;
+          school_id: string;
+          contacted_at?: string;
+          method?: 'tel' | 'email' | 'sms' | 'visit' | 'other';
+          direction?: 'outbound' | 'inbound' | null;
+          result?: string | null;
+          note?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['inquiry_contacts']['Insert']>;
+        Relationships: [];
+      };
+      inquiry_school_settings: {
+        Row: {
+          school_id: string;
+          hp_school_code: string | null;
+          mail_signature: string | null;
+          mail_reply_to: string | null;
+          yamato_customer_code: string | null;
+          yamato_fare_code: string | null;
+          sender_tel: string | null;
+          sender_zip: string | null;
+          sender_address: string | null;
+          sender_name: string | null;
+          slack_mention_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          school_id: string;
+          hp_school_code?: string | null;
+          mail_signature?: string | null;
+          mail_reply_to?: string | null;
+          yamato_customer_code?: string | null;
+          yamato_fare_code?: string | null;
+          sender_tel?: string | null;
+          sender_zip?: string | null;
+          sender_address?: string | null;
+          sender_name?: string | null;
+          slack_mention_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['inquiry_school_settings']['Insert']>;
+        Relationships: [];
+      };
+      inquiry_mail_templates: {
+        Row: {
+          id: string;
+          school_id: string | null;
+          name: string;
+          subject: string;
+          body: string;
+          trigger_days: number | null;
+          is_active: boolean;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          school_id?: string | null;
+          name: string;
+          subject?: string;
+          body?: string;
+          trigger_days?: number | null;
+          is_active?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['inquiry_mail_templates']['Insert']>;
+        Relationships: [];
+      };
+      inquiry_mail_logs: {
+        Row: {
+          id: string;
+          inquiry_id: string;
+          school_id: string;
+          template_id: string | null;
+          method: 'email' | 'sms';
+          subject: string | null;
+          status: 'sent' | 'failed';
+          sent_at: string;
+          sent_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          inquiry_id: string;
+          school_id: string;
+          template_id?: string | null;
+          method?: 'email' | 'sms';
+          subject?: string | null;
+          status?: 'sent' | 'failed';
+          sent_at?: string;
+          sent_by?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['inquiry_mail_logs']['Insert']>;
+        Relationships: [];
+      };
       schools: {
         Row: {
           id: string;
@@ -2776,6 +2987,27 @@ export type Database = {
 };
 
 // 便利な型エイリアス
+// 問合せ管理（ベータ）
+export type Inquiry = Database['public']['Tables']['inquiries']['Row'];
+export type InquiryInsert = Database['public']['Tables']['inquiries']['Insert'];
+export type InquiryUpdate = Database['public']['Tables']['inquiries']['Update'];
+export type InquiryStatus = Inquiry['status'];
+
+export type InquiryContact = Database['public']['Tables']['inquiry_contacts']['Row'];
+export type InquiryContactInsert = Database['public']['Tables']['inquiry_contacts']['Insert'];
+export type InquiryContactUpdate = Database['public']['Tables']['inquiry_contacts']['Update'];
+
+export type InquirySchoolSettings = Database['public']['Tables']['inquiry_school_settings']['Row'];
+export type InquirySchoolSettingsInsert = Database['public']['Tables']['inquiry_school_settings']['Insert'];
+export type InquirySchoolSettingsUpdate = Database['public']['Tables']['inquiry_school_settings']['Update'];
+
+export type InquiryMailTemplate = Database['public']['Tables']['inquiry_mail_templates']['Row'];
+export type InquiryMailTemplateInsert = Database['public']['Tables']['inquiry_mail_templates']['Insert'];
+export type InquiryMailTemplateUpdate = Database['public']['Tables']['inquiry_mail_templates']['Update'];
+
+export type InquiryMailLog = Database['public']['Tables']['inquiry_mail_logs']['Row'];
+export type InquiryMailLogInsert = Database['public']['Tables']['inquiry_mail_logs']['Insert'];
+
 export type School = Database['public']['Tables']['schools']['Row'];
 export type SchoolInsert = Database['public']['Tables']['schools']['Insert'];
 export type SchoolUpdate = Database['public']['Tables']['schools']['Update'];

@@ -21,6 +21,7 @@ import {
   ListChecks,
   ClipboardList,
   Link as LinkIcon,
+  MessageSquare,
 } from 'lucide-react';
 
 interface SettingsItem {
@@ -146,6 +147,20 @@ const settingsGroups: SettingsGroup[] = [
         label: 'フォーム期間設定',
         description: '模試・模擬・集回数・曜日・相談・増コマの受付期間',
         requiresManager: true,
+      },
+    ],
+  },
+  {
+    // ベータ版機能。アドミン（admin/owner）のみに表示する。
+    // 入り口は設定のみ・ナビには出さない（ダッシュボード機能と同じ方針）。
+    title: '問合せ管理（ベータ）',
+    items: [
+      {
+        href: '/admin/inquiries',
+        icon: <MessageSquare className="w-5 h-5" />,
+        label: '問合せ管理',
+        description: 'HPからの問合せを取り込み・追客・分析・発送まで一元管理',
+        requiresAdmin: true,
       },
     ],
   },
