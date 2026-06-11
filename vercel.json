@@ -4,6 +4,10 @@
     {
       "path": "/api/cron/daily-material-report",
       "schedule": "0 4 * * 1-5"
+    },
+    {
+      "path": "/api/cron/inquiry-slack-report",
+      "schedule": "0 4 * * 1-5"
     }
   ]
 }

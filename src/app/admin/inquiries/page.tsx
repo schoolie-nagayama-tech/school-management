@@ -24,7 +24,7 @@ import {
   STATUS_OPTIONS,
   formatDate,
 } from './inquiryConstants';
-import { Search, X, Upload, SlidersHorizontal, BarChart3 } from 'lucide-react';
+import { Search, X, Upload, SlidersHorizontal, BarChart3, Send, Truck } from 'lucide-react';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { InquiryReminders } from '@/components/inquiries/InquiryReminders';
 
@@ -141,11 +141,24 @@ export default function InquiriesPage() {
       headerTitle="問合せ管理"
       actions={
         <div className="flex items-center gap-2">
-          {/* 分析ページへのリンク（ページ本体は別担当が実装） */}
           <Link href="/admin/inquiries/analytics">
             <Button variant="outline" size="sm">
               <BarChart3 className="w-4 h-4 mr-1.5" />
               分析
+            </Button>
+          </Link>
+          {/* 追客メール（本日の送信候補・一括送信） */}
+          <Link href="/admin/inquiries/mail">
+            <Button variant="outline" size="sm">
+              <Send className="w-4 h-4 mr-1.5" />
+              追客メール
+            </Button>
+          </Link>
+          {/* 資料発送（ネコポスCSV出力・教室別発送設定） */}
+          <Link href="/admin/inquiries/shipping">
+            <Button variant="outline" size="sm">
+              <Truck className="w-4 h-4 mr-1.5" />
+              資料発送
             </Button>
           </Link>
           <Link href="/admin/inquiries/import">

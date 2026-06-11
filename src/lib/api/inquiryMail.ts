@@ -16,6 +16,7 @@ import type {
   InquirySchoolSettings,
   Inquiry,
 } from '@/types/database';
+import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 
 // ============================================================
 // テンプレート CRUD
@@ -259,4 +260,22 @@ export async function getMailLogs(inquiryId: string): Promise<InquiryMailLog[]> 
   }
 
   return (data || []) as InquiryMailLog[];
+}
+
+/**
+ * 指定教室群の送信記録を全件取得する（送信候補の既送判定用）。
+ * 1000 件を超えるケースに備えて fetchAllPaged でページングする。
+ *
+ * @param schoolIds 対象の school_id 配列
+ */
+export async function getMailLogsBySchool(schoolIds: string[]): Promise<InquiryMailLog[]> {
+  return fetchAllPaged<InquiryMailLog>((from, to) =>
+    supabase
+      .from('inquiry_mail_logs')
+      .select('*')
+      .in('school_id', schoolIds)
+      .order('sent_at', { ascending: false })
+      .order('id', { ascending: true })
+      .range(from, to)
+  );
 }
