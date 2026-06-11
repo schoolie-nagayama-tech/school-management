@@ -55,6 +55,27 @@ export interface LeadTimeStat {
   n: number;
 }
 
+/** 郵便番号エリア別集計（前3桁でグループ化）。count 降順上位15。 */
+export interface PostalStat {
+  postal: string;   // 例: "206-"
+  count: number;
+  enrolled: number;
+}
+
+/** 在籍学校名別集計。count 降順上位15。 */
+export interface SchoolNameStat {
+  schoolName: string;
+  count: number;
+  enrolled: number;
+  enrollRate: number;
+}
+
+/** 失注理由別集計。lost / trial_lost のみ対象。count 降順。 */
+export interface LostReasonStat {
+  reason: string;  // lost_reason null/空 → '未記録'
+  count: number;
+}
+
 /** computeInquiryAnalytics の戻り値。 */
 export interface InquiryAnalytics {
   total: number;
@@ -69,6 +90,12 @@ export interface InquiryAnalytics {
     /** 体験日 → 入会日 */
     trialToEnroll: LeadTimeStat;
   };
+  /** 郵便番号エリア別（前3桁グループ、上位15） */
+  byPostal: PostalStat[];
+  /** 在籍学校名別（上位15） */
+  bySchoolName: SchoolNameStat[];
+  /** 失注理由別内訳（lost / trial_lost のみ） */
+  lostReasons: LostReasonStat[];
 }
 
 // ============================================================
@@ -276,5 +303,66 @@ export function computeInquiryAnalytics(inquiries: Inquiry[]): InquiryAnalytics 
     },
   };
 
-  return { total, statusCounts, funnel, monthly, byMedia, leadTime };
+  // ---- 6. 郵便番号エリア別集計 ----
+  // postal_code の数字のみ抽出 → 先頭3桁でグループ化。"206-" 形式で表示キーを作る。
+  type PostalAccum = { count: number; enrolled: number };
+  const postalMap = new Map<string, PostalAccum>();
+
+  for (const inq of inquiries) {
+    if (!inq.postal_code) continue;
+    // ハイフン等の非数字を除去して先頭3桁を取る
+    const digits = inq.postal_code.replace(/\D/g, '');
+    if (digits.length < 3) continue;
+    const key = digits.slice(0, 3) + '-';
+    if (!postalMap.has(key)) postalMap.set(key, { count: 0, enrolled: 0 });
+    const acc = postalMap.get(key)!;
+    acc.count++;
+    if (inq.status === 'enrolled') acc.enrolled++;
+  }
+
+  const byPostal: PostalStat[] = Array.from(postalMap.entries())
+    .sort(([, a], [, b]) => b.count - a.count)
+    .slice(0, 15)
+    .map(([postal, acc]) => ({ postal, count: acc.count, enrolled: acc.enrolled }));
+
+  // ---- 7. 在籍学校名別集計 ----
+  // school_name が null / 空の行は除外する。count 降順上位15。
+  type SchoolAccum = { count: number; enrolled: number };
+  const schoolMap = new Map<string, SchoolAccum>();
+
+  for (const inq of inquiries) {
+    const name = inq.school_name && inq.school_name.trim() ? inq.school_name.trim() : null;
+    if (!name) continue;
+    if (!schoolMap.has(name)) schoolMap.set(name, { count: 0, enrolled: 0 });
+    const acc = schoolMap.get(name)!;
+    acc.count++;
+    if (inq.status === 'enrolled') acc.enrolled++;
+  }
+
+  const bySchoolName: SchoolNameStat[] = Array.from(schoolMap.entries())
+    .sort(([, a], [, b]) => b.count - a.count)
+    .slice(0, 15)
+    .map(([schoolName, acc]) => ({
+      schoolName,
+      count: acc.count,
+      enrolled: acc.enrolled,
+      enrollRate: acc.count > 0 ? Math.round((acc.enrolled / acc.count) * 1000) / 10 : 0,
+    }));
+
+  // ---- 8. 失注理由別集計 ----
+  // lost / trial_lost のみ対象。lost_reason null / 空 → '未記録'。count 降順。
+  const lostReasonMap = new Map<string, number>();
+
+  for (const inq of inquiries) {
+    if (inq.status !== 'lost' && inq.status !== 'trial_lost') continue;
+    const reason =
+      inq.lost_reason && inq.lost_reason.trim() ? inq.lost_reason.trim() : '未記録';
+    lostReasonMap.set(reason, (lostReasonMap.get(reason) ?? 0) + 1);
+  }
+
+  const lostReasons: LostReasonStat[] = Array.from(lostReasonMap.entries())
+    .sort(([, a], [, b]) => b - a)
+    .map(([reason, count]) => ({ reason, count }));
+
+  return { total, statusCounts, funnel, monthly, byMedia, leadTime, byPostal, bySchoolName, lostReasons };
 }

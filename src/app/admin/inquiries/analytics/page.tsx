@@ -16,7 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import AccessDenied from '@/components/AccessDenied';
 import { getInquiries } from '@/lib/api/inquiries';
 import { computeInquiryAnalytics, type InquiryAnalytics } from '@/lib/utils/inquiryAnalytics';
-import { ArrowLeft, TrendingUp, Users, UserCheck, Clock, Activity } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Users, UserCheck, Clock, Activity, MapPin, XCircle } from 'lucide-react';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import {
   ResponsiveContainer,
@@ -59,6 +59,9 @@ const STATUS_COLORS: Record<string, string> = {
 
 /** ファネル棒グラフの色（段階が進むほど濃いブルー系） */
 const FUNNEL_COLORS = ['#93c5fd', '#60a5fa', '#3b82f6', '#1d4ed8'];
+
+/** 失注理由ドーナツの色（グレー〜オレンジ系で没感を表現） */
+const LOST_REASON_COLORS = ['#94a3b8', '#f97316', '#f59e0b', '#6b7280', '#a78bfa'];
 
 /** 共通ツールチップスタイル（home-mock に準拠） */
 const TOOLTIP_STYLE = {
@@ -617,6 +620,170 @@ export default function InquiryAnalyticsPage() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* == 7. 商圏分析 == */}
+            {(analytics.byPostal.length > 0 || analytics.bySchoolName.length > 0) && (
+              <>
+                <SectionTitle icon={MapPin}>商圏分析</SectionTitle>
+                <p className="text-xs text-text-faint mb-3">
+                  チラシ配布エリアや重点校選定の参考に使えます
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                  {/* 郵便番号別（前3桁グループ、上位15） */}
+                  {analytics.byPostal.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-sm">郵便番号別（上位15）</CardTitle>
+                      </CardHeader>
+                      <CardContent className="py-3">
+                        <table className="w-full text-xs text-text-body border-collapse">
+                          <thead>
+                            <tr className="border-b border-border-subtle">
+                              <th className="text-left py-1.5 pr-4 font-medium text-text-muted">エリア</th>
+                              <th className="text-right py-1.5 pr-4 font-medium text-text-muted">問合せ</th>
+                              <th className="text-right py-1.5 pr-4 font-medium text-text-muted">入会</th>
+                              <th className="text-right py-1.5 font-medium text-text-muted">入会率</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {analytics.byPostal.map((row) => {
+                              // 入会率を計算して表示（純粋集計でカラムを持たないため、ここで算出）
+                              const enrollRate = row.count > 0
+                                ? Math.round((row.enrolled / row.count) * 1000) / 10
+                                : 0;
+                              return (
+                                <tr key={row.postal} className="border-b border-border-subtle last:border-0">
+                                  <td className="py-1.5 pr-4 font-medium">{row.postal}</td>
+                                  <td className="text-right py-1.5 pr-4">{row.count.toLocaleString()}</td>
+                                  <td className="text-right py-1.5 pr-4">{row.enrolled.toLocaleString()}</td>
+                                  <td className="text-right py-1.5">{enrollRate}%</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* 在籍学校名別（上位15） */}
+                  {analytics.bySchoolName.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-sm">在籍学校別（上位15）</CardTitle>
+                      </CardHeader>
+                      <CardContent className="py-3">
+                        <table className="w-full text-xs text-text-body border-collapse">
+                          <thead>
+                            <tr className="border-b border-border-subtle">
+                              <th className="text-left py-1.5 pr-4 font-medium text-text-muted">学校名</th>
+                              <th className="text-right py-1.5 pr-4 font-medium text-text-muted">問合せ</th>
+                              <th className="text-right py-1.5 pr-4 font-medium text-text-muted">入会</th>
+                              <th className="text-right py-1.5 font-medium text-text-muted">入会率</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {analytics.bySchoolName.map((row) => (
+                              <tr key={row.schoolName} className="border-b border-border-subtle last:border-0">
+                                <td className="py-1.5 pr-4 font-medium">{row.schoolName}</td>
+                                <td className="text-right py-1.5 pr-4">{row.count.toLocaleString()}</td>
+                                <td className="text-right py-1.5 pr-4">{row.enrolled.toLocaleString()}</td>
+                                <td className="text-right py-1.5">{row.enrollRate}%</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* == 8. 失注理由 == */}
+            {analytics.lostReasons.length > 0 && (
+              <>
+                <SectionTitle icon={XCircle}>失注理由</SectionTitle>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                  {/* ドーナツグラフ */}
+                  <Card>
+                    <CardContent className="py-4">
+                      <ResponsiveContainer width="100%" height={240}>
+                        <PieChart>
+                          <Pie
+                            data={analytics.lostReasons}
+                            dataKey="count"
+                            nameKey="reason"
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={90}
+                            paddingAngle={2}
+                            labelLine={false}
+                            label={(props) => (
+                              <PieLabel
+                                cx={props.cx as number}
+                                cy={props.cy as number}
+                                midAngle={props.midAngle as number}
+                                outerRadius={props.outerRadius as number}
+                                percent={props.percent as number}
+                                name={props.name as string}
+                              />
+                            )}
+                          >
+                            {analytics.lostReasons.map((entry, i) => (
+                              <Cell
+                                key={entry.reason}
+                                fill={LOST_REASON_COLORS[i % LOST_REASON_COLORS.length]}
+                              />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            contentStyle={TOOLTIP_STYLE}
+                            formatter={(value) => [`${value} 件`]}
+                          />
+                          <Legend
+                            wrapperStyle={{ fontSize: 12 }}
+                            iconType="circle"
+                            iconSize={8}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+
+                  {/* 件数リスト */}
+                  <Card>
+                    <CardContent className="py-4">
+                      <table className="w-full text-xs text-text-body border-collapse">
+                        <thead>
+                          <tr className="border-b border-border-subtle">
+                            <th className="text-left py-1.5 pr-4 font-medium text-text-muted">理由</th>
+                            <th className="text-right py-1.5 font-medium text-text-muted">件数</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {analytics.lostReasons.map((row, i) => (
+                            <tr key={row.reason} className="border-b border-border-subtle last:border-0">
+                              <td className="py-1.5 pr-4">
+                                <span
+                                  className="inline-block w-2 h-2 rounded-full mr-2 shrink-0"
+                                  style={{ backgroundColor: LOST_REASON_COLORS[i % LOST_REASON_COLORS.length] }}
+                                />
+                                {row.reason}
+                              </td>
+                              <td className="text-right py-1.5 font-medium">{row.count.toLocaleString()}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </CardContent>
+                  </Card>
+                </div>
+              </>
+            )}
 
           </>
         )}

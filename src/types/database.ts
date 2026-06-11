@@ -81,6 +81,8 @@ export type Database = {
           weekly_count: number | null;
           linked_student_id: string | null;
           referrer_inquiry_note: string | null;
+          /** 失注理由（没/体験没時に記録。料金/他塾に決定/時期が合わない/連絡不通のまま/その他） */
+          lost_reason: string | null;
           raw_source: Record<string, unknown> | null;
           note: string | null;
           created_by: string | null;
@@ -124,6 +126,7 @@ export type Database = {
           weekly_count?: number | null;
           linked_student_id?: string | null;
           referrer_inquiry_note?: string | null;
+          lost_reason?: string | null;
           raw_source?: Record<string, unknown> | null;
           note?: string | null;
           created_by?: string | null;
@@ -235,6 +238,12 @@ export type Database = {
           status: 'sent' | 'failed';
           sent_at: string;
           sent_by: string | null;
+          /** Resend のメールID。Webhook(開封/クリック)との突合キー */
+          resend_email_id: string | null;
+          /** 開封日時（Resend Webhook email.opened で記録） */
+          opened_at: string | null;
+          /** リンククリック日時（Resend Webhook email.clicked で記録） */
+          clicked_at: string | null;
           created_at: string;
         };
         Insert: {
@@ -247,6 +256,9 @@ export type Database = {
           status?: 'sent' | 'failed';
           sent_at?: string;
           sent_by?: string | null;
+          resend_email_id?: string | null;
+          opened_at?: string | null;
+          clicked_at?: string | null;
           created_at?: string;
         };
         Update: Partial<Database['public']['Tables']['inquiry_mail_logs']['Insert']>;

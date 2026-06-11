@@ -52,6 +52,7 @@ import {
   STATUS_OPTIONS,
   CONTACT_METHOD_LABELS,
   CONTACT_DIRECTION_LABELS,
+  LOST_REASONS,
   formatDate,
   formatDateTime,
 } from '../inquiryConstants';
@@ -87,6 +88,8 @@ export default function InquiryDetailPage() {
   const [editEnrolledAt, setEditEnrolledAt] = useState('');
   const [editWeeklyCount, setEditWeeklyCount] = useState('');
   const [editTrialAt, setEditTrialAt] = useState('');
+  /** 失注理由。lost / trial_lost のときのみ保存・表示する */
+  const [editLostReason, setEditLostReason] = useState('');
   const [editNote, setEditNote] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -144,6 +147,7 @@ export default function InquiryDetailPage() {
       setEditEnrolledAt(inq.enrolled_at ? inq.enrolled_at.slice(0, 10) : '');
       setEditWeeklyCount(inq.weekly_count != null ? String(inq.weekly_count) : '');
       setEditTrialAt(inq.trial_at ? inq.trial_at.slice(0, 10) : '');
+      setEditLostReason(inq.lost_reason ?? '');
       setEditNote(inq.note ?? '');
 
       // メール関連データを並行取得
@@ -226,6 +230,12 @@ export default function InquiryDetailPage() {
       // 体験没・入会時は trial_at も保存
       if (editStatus === 'trial_lost' || editStatus === 'enrolled') {
         update.trial_at = editTrialAt || null;
+      }
+      // 失注理由: lost / trial_lost のときのみ保存。それ以外は null に戻す
+      if (editStatus === 'lost' || editStatus === 'trial_lost') {
+        update.lost_reason = editLostReason || null;
+      } else {
+        update.lost_reason = null;
       }
       const updated = await updateInquiry(id, update);
       setInquiry(updated);
@@ -392,6 +402,11 @@ export default function InquiryDetailPage() {
                 <InfoRow label="在籍校" value={inquiry.school_name} />
                 <InfoRow label="塾経験" value={inquiry.juku_experience} />
 
+                {/* 失注理由: lost / trial_lost かつ値がある場合のみ表示 */}
+                {(inquiry.status === 'lost' || inquiry.status === 'trial_lost') && inquiry.lost_reason && (
+                  <InfoRow label="失注理由" value={inquiry.lost_reason} />
+                )}
+
                 {/* 電話: tel: リンク */}
                 <div>
                   <dt className="text-xs text-text-muted mb-0.5">電話</dt>
@@ -505,6 +520,23 @@ export default function InquiryDetailPage() {
                       onChange={(e) => setEditTrialAt(e.target.value)}
                       className="w-full sm:w-48 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
                     />
+                  </div>
+                )}
+
+                {/* 没 / 体験没: 失注理由 */}
+                {(editStatus === 'lost' || editStatus === 'trial_lost') && (
+                  <div>
+                    <label className="block text-xs font-medium text-text-heading mb-1">失注理由</label>
+                    <select
+                      value={editLostReason}
+                      onChange={(e) => setEditLostReason(e.target.value)}
+                      className="w-full sm:w-56 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      <option value="">— 未選択 —</option>
+                      {LOST_REASONS.map((r) => (
+                        <option key={r} value={r}>{r}</option>
+                      ))}
+                    </select>
                   </div>
                 )}
 
@@ -717,17 +749,37 @@ export default function InquiryDetailPage() {
                   <h3 className="text-sm font-medium text-text-heading mb-3">送信履歴</h3>
                   <div className="space-y-2">
                     {mailLogs.map((log) => (
-                      <div key={log.id} className="flex items-center gap-3 text-xs text-text-muted">
+                      <div key={log.id} className="flex items-center gap-3 flex-wrap text-xs text-text-muted">
                         <span>{formatDateTime(log.sent_at)}</span>
+                        {/* 送信ステータスバッジ */}
                         <span className={`px-1.5 py-0.5 rounded-full font-medium ${log.status === 'sent' ? 'bg-green-100 text-green-800' : 'bg-danger/20 text-danger'}`}>
                           {log.status === 'sent' ? '送信済み' : '失敗'}
                         </span>
+                        {/* 開封バッジ: opened_at / clicked_at があれば表示。どちらも無く sent なら「未開封」 */}
+                        {log.opened_at ? (
+                          <span className="px-1.5 py-0.5 rounded-full font-medium bg-teal-100 text-teal-800">
+                            開封済み {formatDateTime(log.opened_at).replace(/^\d{4}\//, '').slice(0, 11)}
+                          </span>
+                        ) : log.status === 'sent' ? (
+                          <span className="px-1.5 py-0.5 rounded-full font-medium bg-gray-100 text-gray-500">
+                            未開封
+                          </span>
+                        ) : null}
+                        {log.clicked_at && (
+                          <span className="px-1.5 py-0.5 rounded-full font-medium bg-blue-100 text-blue-800">
+                            リンククリック
+                          </span>
+                        )}
                         {log.subject && (
                           <span className="truncate max-w-xs text-text-body">{log.subject}</span>
                         )}
                       </div>
                     ))}
                   </div>
+                  {/* Webhook 設定が必要な旨の注記 */}
+                  <p className="text-xs text-text-faint mt-3">
+                    開封情報は Resend Webhook 設定後に記録されます
+                  </p>
                 </div>
               )}
             </section>

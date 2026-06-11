@@ -233,6 +233,8 @@ export async function sendInquiryMail(p: SendInquiryMailParams): Promise<void> {
     status: failed ? 'failed' : 'sent',
     sent_at: new Date().toISOString(),
     sent_by: null, // 必要であればクライアントで auth.uid を渡して記録可能
+    // Resend が返す email ID を保存（Webhook での開封/クリック突合キー）
+    resend_email_id: !failed && data && data.id ? (data.id as string) : null,
   };
 
   await supabase.from('inquiry_mail_logs').insert(logRow);

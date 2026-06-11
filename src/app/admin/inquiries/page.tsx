@@ -24,7 +24,7 @@ import {
   STATUS_OPTIONS,
   formatDate,
 } from './inquiryConstants';
-import { Search, X, Upload, SlidersHorizontal, BarChart3, Send, Truck } from 'lucide-react';
+import { Search, X, Upload, SlidersHorizontal, BarChart3, Send, Truck, ClipboardPaste, QrCode } from 'lucide-react';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { InquiryReminders } from '@/components/inquiries/InquiryReminders';
 
@@ -141,6 +141,13 @@ export default function InquiriesPage() {
       headerTitle="問合せ管理"
       actions={
         <div className="flex items-center gap-2">
+          {/* 貼り付けて追加 — 目玉機能につき primary で先頭配置 */}
+          <Link href="/admin/inquiries/paste">
+            <Button variant="primary" size="sm">
+              <ClipboardPaste className="w-4 h-4 mr-1.5" />
+              貼り付けて追加
+            </Button>
+          </Link>
           <Link href="/admin/inquiries/analytics">
             <Button variant="outline" size="sm">
               <BarChart3 className="w-4 h-4 mr-1.5" />
@@ -159,6 +166,13 @@ export default function InquiriesPage() {
             <Button variant="outline" size="sm">
               <Truck className="w-4 h-4 mr-1.5" />
               資料発送
+            </Button>
+          </Link>
+          {/* 公開問合せフォーム（URL・QRコードの管理） */}
+          <Link href="/admin/inquiries/form">
+            <Button variant="outline" size="sm">
+              <QrCode className="w-4 h-4 mr-1.5" />
+              公開フォーム
             </Button>
           </Link>
           <Link href="/admin/inquiries/import">

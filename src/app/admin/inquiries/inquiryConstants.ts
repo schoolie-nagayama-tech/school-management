@@ -44,6 +44,9 @@ export const CONTACT_DIRECTION_LABELS: Record<string, string> = {
   inbound:  '着信・受信',
 };
 
+/** 失注理由の選択肢（没 / 体験没 時に記録） */
+export const LOST_REASONS = ['料金', '他塾に決定', '時期が合わない', '連絡不通のまま', 'その他'] as const;
+
 /** YYYY/MM/DD 形式にフォーマットする */
 export function formatDate(iso: string | null | undefined): string {
   if (!iso) return '—';
