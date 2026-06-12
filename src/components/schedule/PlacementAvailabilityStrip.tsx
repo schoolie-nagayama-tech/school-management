@@ -120,6 +120,18 @@ export function PlacementAvailabilityStrip({
   const { dates, slots, statusByKey, source, startDate, endDate } = data;
   if (dates.length === 0 || slots.length === 0) return null;
 
+  // 出席可能コマ(黄/緑/赤)が全期間で1つも無い時限の行は非表示にする
+  // （座席表で生徒がいない1・2限が折りたたまれるのと同じ思想）。
+  // statusByKey のキー = `${date}_${slotId}` から「状態を持つ slotId」を集める。
+  const slotsWithStatus = new Set<string>();
+  for (const key of Array.from(statusByKey.keys())) {
+    const us = key.indexOf('_');
+    if (us >= 0) slotsWithStatus.add(key.slice(us + 1));
+  }
+  const visibleSlots = slots.filter((s) => slotsWithStatus.has(s.id));
+  // 表示できる時限が1つも無ければストリップ自体を出さない
+  if (visibleSlots.length === 0) return null;
+
   const today = getTodayJST();
   // 表示中の週の範囲（weekStartStr から +6日）
   const weekEndDate = (() => {
@@ -242,8 +254,8 @@ export function PlacementAvailabilityStrip({
           );
         })}
 
-        {/* 時限行 */}
-        {slots.map((slot) => (
+        {/* 時限行（可能枠のある時限のみ） */}
+        {visibleSlots.map((slot) => (
           <Fragment key={slot.id}>
             {/* 行頭の時限ラベル */}
             <div

@@ -1870,13 +1870,15 @@ export default function SchedulePage() {
                     <Loading size="md" />
                   ) : (
                     <div className="print:hidden relative">
-                    {/* 左右端の縦長 週移動アイコン（上の前週/次週ボタン以外でも動かせるように） */}
+                    {/* 左右端の縦長 週移動アイコン。
+                        fixed で画面（ビューポート）の縦中央に固定し、スクロールしても
+                        常に同じ位置に追従する（長い座席表でもどこからでも週を変えられる）。 */}
                     <button
                       type="button"
                       onClick={goPrevWeek}
                       aria-label="前週へ"
                       title="前週へ"
-                      className="absolute left-0 top-1/2 -translate-y-1/2 z-30 w-7 h-24 flex items-center justify-center rounded-r-lg bg-white/90 border border-l-0 border-border-default text-text-muted shadow-sm hover:bg-surface hover:text-text-body transition-colors"
+                      className="fixed left-1 top-1/2 -translate-y-1/2 z-40 w-7 h-24 flex items-center justify-center rounded-lg bg-white/95 border border-border-default text-text-muted shadow-md hover:bg-surface hover:text-text-body transition-colors print:hidden"
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
@@ -1885,7 +1887,7 @@ export default function SchedulePage() {
                       onClick={goNextWeek}
                       aria-label="次週へ"
                       title="次週へ"
-                      className="absolute right-0 top-1/2 -translate-y-1/2 z-30 w-7 h-24 flex items-center justify-center rounded-l-lg bg-white/90 border border-r-0 border-border-default text-text-muted shadow-sm hover:bg-surface hover:text-text-body transition-colors"
+                      className="fixed right-1 top-1/2 -translate-y-1/2 z-40 w-7 h-24 flex items-center justify-center rounded-lg bg-white/95 border border-border-default text-text-muted shadow-md hover:bg-surface hover:text-text-body transition-colors print:hidden"
                     >
                       <ChevronRight className="w-5 h-5" />
                     </button>
