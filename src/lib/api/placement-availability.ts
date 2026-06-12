@@ -367,17 +367,11 @@ export async function buildTestPrepPlacementStrip(
   const availableKeys = new Set<string>();
 
   for (const slot of availableSlots) {
-    if (slot.startTime === null) {
-      // 時限なし → その日付の全コマを可
-      for (const s of slots) {
-        availableKeys.add(`${slot.date}_${s.id}`);
-      }
-    } else {
-      // startTime 先頭5文字で slotId に解決
-      const timeKey = (slot.startTime ?? '').slice(0, 5);
-      const slotId = timeToSlot.get(timeKey);
-      if (slotId) availableKeys.add(`${slot.date}_${slotId}`);
-    }
+    // 開始時刻(HH:MM)で座席表コマに解決する。フォームに無い時限（座席表1限など）を
+    // 点灯させないため、解決できない枠は無視する（以前の「全コマを可」フォールバックは廃止）。
+    if (!slot.startTime) continue;
+    const slotId = timeToSlot.get(slot.startTime.slice(0, 5));
+    if (slotId) availableKeys.add(`${slot.date}_${slotId}`);
   }
 
   // ---- 2) 配置済み(緑) ----

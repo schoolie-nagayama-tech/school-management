@@ -1878,7 +1878,7 @@ export default function SchedulePage() {
                       onClick={goPrevWeek}
                       aria-label="前週へ"
                       title="前週へ"
-                      className="fixed left-1 top-1/2 -translate-y-1/2 z-40 w-7 h-24 flex items-center justify-center rounded-lg bg-white/95 border border-border-default text-text-muted shadow-md hover:bg-surface hover:text-text-body transition-colors print:hidden"
+                      className="fixed left-1 top-1/2 -translate-y-1/2 z-40 w-7 hover:w-12 h-40 flex items-center justify-center rounded-lg bg-white/90 hover:bg-white border border-border-default text-text-muted shadow-md hover:shadow-lg hover:text-text-body transition-all duration-150 print:hidden"
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
@@ -1887,7 +1887,7 @@ export default function SchedulePage() {
                       onClick={goNextWeek}
                       aria-label="次週へ"
                       title="次週へ"
-                      className="fixed right-1 top-1/2 -translate-y-1/2 z-40 w-7 h-24 flex items-center justify-center rounded-lg bg-white/95 border border-border-default text-text-muted shadow-md hover:bg-surface hover:text-text-body transition-colors print:hidden"
+                      className="fixed right-1 top-1/2 -translate-y-1/2 z-40 w-7 hover:w-12 h-40 flex items-center justify-center rounded-lg bg-white/90 hover:bg-white border border-border-default text-text-muted shadow-md hover:shadow-lg hover:text-text-body transition-all duration-150 print:hidden"
                     >
                       <ChevronRight className="w-5 h-5" />
                     </button>

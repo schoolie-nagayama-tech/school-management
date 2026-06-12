@@ -28,6 +28,19 @@ import type { ZoukomaResponseData } from '@/types/forms/zoukoma';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
 
+/**
+ * 増コマフォームの既定時限（時限コード→開始時刻 "HH:MM"）。
+ * form_periods.settings.schedule.periods が未設定（null）の期間でも時限を解決できるようにする保険。
+ * フォーム入力UI（SlotTable の DEFAULT_PERIODS_FALLBACK = 5,6,7限）に code4 を足した 4〜7限分。
+ * ※1・2限は増コマに存在しない（座席表で点灯させないため、ここに含めない）。
+ */
+const DEFAULT_ZOUKOMA_PERIOD_TIMES: Record<string, string> = {
+  '4': '14:25',
+  '5': '16:20',
+  '6': '17:55',
+  '7': '19:30',
+};
+
 export interface ZoukomaAvailableSlot {
   /** YYYY-MM-DD */
   date: string;
@@ -79,6 +92,12 @@ export async function getZoukomaPlacementProgress(
         startTimeByCode.set(String(pc.code), pc.start_time);
       }
     }
+  }
+  // periods 未設定（settings.schedule.periods が null）の期間でも時限→時刻を解決できるよう、
+  // フォーム既定の増コマ時限（SlotTable の DEFAULT_PERIODS_FALLBACK と同じ 4〜7限）で補完する。
+  // これが無いと startTime=null になり、座席表側で「全コマ可」誤判定（1限まで点灯）が起きる。
+  for (const [code, t] of Object.entries(DEFAULT_ZOUKOMA_PERIOD_TIMES)) {
+    if (!startTimeByCode.has(code)) startTimeByCode.set(code, t);
   }
   // 科目名→マスタ科目
   const subjectByName = new Map(subjects.map((s) => [s.name, s]));
