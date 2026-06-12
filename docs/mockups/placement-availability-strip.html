@@ -527,6 +527,247 @@
   .c-good { color: var(--success); font-weight: 600; }
   .c-warn { color: var(--warning); font-weight: 600; }
   .c-bad  { color: var(--danger);  font-weight: 600; }
+
+  /* ========================
+     案D: 全期間マップ共通
+     ======================== */
+
+  /* データ源バッジ: success系 */
+  .source-badge.success {
+    background: var(--success-subtle);
+    color: var(--success);
+    border: 1px solid #bbf7d0;
+  }
+
+  /* 全期間マップ テーブル共通 */
+  .full-map-wrap {
+    overflow-x: auto;
+  }
+  .full-map-wrap::-webkit-scrollbar { height: 4px; }
+  .full-map-wrap::-webkit-scrollbar-thumb { background: var(--stroke); border-radius: 2px; }
+
+  .full-map {
+    border-collapse: collapse;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  .full-map th, .full-map td {
+    border: 1px solid var(--stroke);
+    text-align: center;
+    vertical-align: middle;
+  }
+  .full-map th {
+    background: var(--surface);
+    font-weight: 600;
+    color: var(--muted);
+    font-size: 10px;
+    padding: 4px 6px;
+  }
+  .full-map td {
+    padding: 3px 5px;
+    height: 28px;
+    min-width: 54px;
+  }
+  /* 行ヘッダ */
+  .full-map .rh {
+    font-weight: 600;
+    color: var(--muted);
+    background: var(--surface);
+    font-size: 10px;
+    cursor: default;
+    padding: 4px 8px;
+    min-width: 52px;
+  }
+
+  /* 時限チップ（小） */
+  .period-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 700;
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    border: 1px solid #d1d5db;
+    background: #fef3c7;
+    color: var(--warning);
+    flex-shrink: 0;
+  }
+  /* 配置済みチップ */
+  .period-chip.placed {
+    background: var(--success-subtle);
+    color: var(--success);
+    border-color: #86efac;
+    position: relative;
+  }
+  /* フォールバック（参考）チップ */
+  .period-chip.fallback {
+    background: #f3f4f6;
+    color: #9ca3af;
+    border-color: #e5e7eb;
+    font-style: italic;
+  }
+
+  /* セル内チップ群 */
+  .cell-chips {
+    display: flex;
+    gap: 2px;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: nowrap;
+  }
+
+  /* 空セル */
+  .cell-empty {
+    color: #e5e7eb;
+    font-size: 10px;
+  }
+
+  /* 今日ドット（セル内） */
+  .today-cell-dot {
+    display: block;
+    width: 4px;
+    height: 4px;
+    background: var(--info);
+    border-radius: 50%;
+    margin: 0 auto 2px;
+  }
+
+  /* D1: 表示中週の行ハイライト */
+  .full-map tr.cur-week-row td,
+  .full-map tr.cur-week-row th {
+    background: var(--info-subtle);
+  }
+  .full-map tr.cur-week-row .rh {
+    background: var(--info-subtle);
+    border-left: 3px solid var(--info);
+    color: var(--info);
+  }
+
+  /* D1: 0枠週行のグレーアウト */
+  .full-map tr.no-avail-row td,
+  .full-map tr.no-avail-row th {
+    background: #f9fafb;
+    color: #d1d5db;
+  }
+  .full-map tr.no-avail-row .rh {
+    color: #d1d5db;
+  }
+
+  /* D2: 表示中週の列ハイライト */
+  .full-map td.cur-week-col,
+  .full-map th.cur-week-col {
+    background: var(--info-subtle);
+  }
+  .full-map th.cur-week-col {
+    color: var(--info);
+  }
+
+  /* D2: 0枠週列のグレーアウト */
+  .full-map td.no-avail-col,
+  .full-map th.no-avail-col {
+    background: #f9fafb;
+    color: #d1d5db;
+  }
+
+  /* 週サマリバッジ（行末 / 行下） */
+  .week-summary-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+    border: 1px solid #bbf7d0;
+    background: var(--success-subtle);
+    color: var(--success);
+  }
+  .week-summary-badge.zero {
+    background: #f3f4f6;
+    color: #9ca3af;
+    border-color: #e5e7eb;
+  }
+
+  /* D1: 行末サマリセル */
+  .full-map td.summary-cell {
+    background: var(--surface);
+    min-width: 52px;
+    padding: 3px 6px;
+  }
+
+  /* D2: 最下行サマリ行 */
+  .full-map tr.summary-row td,
+  .full-map tr.summary-row th {
+    background: var(--surface);
+    padding: 4px 5px;
+    border-top: 2px solid #d1d5db;
+  }
+
+  /* 「表示中」小タグ（行ヘッダ内） */
+  .cur-tag-inline {
+    font-size: 8px;
+    background: var(--info);
+    color: #fff;
+    border-radius: 3px;
+    padding: 1px 4px;
+    font-weight: 600;
+    white-space: nowrap;
+    vertical-align: middle;
+    margin-left: 3px;
+  }
+
+  /* 凡例行 */
+  .map-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 7px;
+    align-items: center;
+  }
+  .map-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .legend-dot-today {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: var(--info);
+    border-radius: 50%;
+  }
+  .legend-cur-band {
+    display: inline-block;
+    width: 14px;
+    height: 10px;
+    background: var(--info-subtle);
+    border: 1px solid #bfdbfe;
+    border-radius: 2px;
+  }
+  .legend-gray-band {
+    display: inline-block;
+    width: 14px;
+    height: 10px;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 2px;
+  }
+
+  /* D1 行hover */
+  .full-map.d1-map tbody tr:not(.no-avail-row):not(.cur-week-row):hover td {
+    background: #f9fafb;
+    cursor: pointer;
+  }
+  .full-map.d1-map tbody tr.cur-week-row:hover td {
+    background: #dbeafe;
+    cursor: pointer;
+  }
+
+  /* D2 列hover — JS不要な擬似ハイライトはCSSでは難しいため注記のみ */
 </style>
 </head>
 <body>
@@ -980,10 +1221,529 @@
 
 
 <!-- ============================================================
+     案D: 全期間マップ（B×C ハイブリッド）
+     ============================================================ -->
+<div class="plan-header" id="plan-d">
+  <h2>案D — 全期間マップ（B×C ハイブリッド）</h2>
+</div>
+<p class="page-desc" style="margin-bottom:20px;">8週間の講習全体を1画面で俯瞰し、配分の偏りを見ながら配置するための全期間ビュー。</p>
+
+<!-- ============================================================
+     D1: カレンダー型（行=週、列=曜日）
+     ============================================================ -->
+<div class="plan-header" id="plan-d1" style="margin-top:24px;">
+  <h2>バリアント D1 — カレンダー型（行=週 / 列=曜日）</h2>
+</div>
+
+<!-- D1-1: 提出済み（通常表示） -->
+<p class="state-label">状態1: 講習可能表 提出済み</p>
+<div class="strip-panel">
+  <!-- 共通ヘッダ行 -->
+  <div class="strip-header">
+    <span class="strip-student">宮永 心那（中3）</span>
+    <span class="pill koushu">講習</span>
+    <span class="strip-subject">国語 残2コマ</span>
+    <span class="source-badge success">講習可能表</span>
+    <button class="close-btn">× 終了</button>
+  </div>
+
+  <div class="full-map-wrap">
+    <table class="full-map d1-map">
+      <thead>
+        <tr>
+          <!-- 行ヘッダ列 -->
+          <th class="rh" style="min-width:72px;">週</th>
+          <th>月</th>
+          <th>火</th>
+          <th>水</th>
+          <th>木</th>
+          <th>金</th>
+          <th>土</th>
+          <th>日</th>
+          <!-- 行末サマリ列 -->
+          <th style="background:var(--surface); font-size:10px; color:var(--muted); min-width:52px;">配置/可能</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- 7/20週: ✓0/3 -->
+        <tr>
+          <td class="rh">7/20週</td>
+          <!-- 月7/20: 2限可能 -->
+          <td><div class="cell-chips"><span class="period-chip">2</span></div></td>
+          <!-- 火7/21: なし -->
+          <td class="cell-empty">—</td>
+          <!-- 水7/22: 5限配置済み -->
+          <td><div class="cell-chips"><span class="period-chip placed" title="7/22 5限 配置済み">✓5</span></div></td>
+          <!-- 木7/23: 3限可能 -->
+          <td><div class="cell-chips"><span class="period-chip">3</span></div></td>
+          <!-- 金7/24: なし -->
+          <td class="cell-empty">—</td>
+          <!-- 土: なし -->
+          <td class="cell-empty">—</td>
+          <!-- 日: なし -->
+          <td class="cell-empty">—</td>
+          <td class="summary-cell"><span class="week-summary-badge">✓1/3</span></td>
+        </tr>
+        <!-- 7/27週: ✓1/4 -->
+        <tr>
+          <td class="rh">7/27週</td>
+          <!-- 月7/27: 2・3限可能 -->
+          <td><div class="cell-chips"><span class="period-chip">2</span><span class="period-chip">3</span></div></td>
+          <!-- 火7/28: なし -->
+          <td class="cell-empty">—</td>
+          <!-- 水7/29: 5限配置済み -->
+          <td><div class="cell-chips"><span class="period-chip placed" title="7/29 5限 配置済み">✓5</span></div></td>
+          <!-- 木7/30: 6限可能 -->
+          <td><div class="cell-chips"><span class="period-chip">6</span></div></td>
+          <!-- 金7/31: なし -->
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td class="summary-cell"><span class="week-summary-badge">✓1/4</span></td>
+        </tr>
+        <!-- 8/3週（表示中）: ✓1/3 -->
+        <tr class="cur-week-row">
+          <td class="rh">8/3週<span class="cur-tag-inline">表示中</span></td>
+          <!-- 月8/3: なし -->
+          <td class="cell-empty">—</td>
+          <!-- 火8/4: 今日・5限可能 -->
+          <td>
+            <span class="today-cell-dot"></span>
+            <div class="cell-chips"><span class="period-chip">5</span></div>
+          </td>
+          <!-- 水8/5: 6限配置済み -->
+          <td><div class="cell-chips"><span class="period-chip placed" title="8/5 6限 配置済み">✓6</span></div></td>
+          <!-- 木8/6: 2・3限可能 -->
+          <td><div class="cell-chips"><span class="period-chip">2</span><span class="period-chip">3</span></div></td>
+          <!-- 金8/7: なし -->
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td class="summary-cell"><span class="week-summary-badge">✓1/4</span></td>
+        </tr>
+        <!-- 8/10週（お盆）: 0枠 -->
+        <tr class="no-avail-row">
+          <td class="rh">8/10週</td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td class="summary-cell"><span class="week-summary-badge zero">0枠</span></td>
+        </tr>
+        <!-- 8/17週: ✓0/4 -->
+        <tr>
+          <td class="rh">8/17週</td>
+          <!-- 月8/17: 5・6限 -->
+          <td><div class="cell-chips"><span class="period-chip">5</span><span class="period-chip">6</span></div></td>
+          <td class="cell-empty">—</td>
+          <!-- 水8/19: 3限 -->
+          <td><div class="cell-chips"><span class="period-chip">3</span></div></td>
+          <td class="cell-empty">—</td>
+          <!-- 金8/21: 6限 -->
+          <td><div class="cell-chips"><span class="period-chip">6</span></div></td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td class="summary-cell"><span class="week-summary-badge">✓0/4</span></td>
+        </tr>
+        <!-- 8/24週: ✓0/3 -->
+        <tr>
+          <td class="rh">8/24週</td>
+          <td class="cell-empty">—</td>
+          <!-- 火8/25: 2・5限 -->
+          <td><div class="cell-chips"><span class="period-chip">2</span><span class="period-chip">5</span></div></td>
+          <td class="cell-empty">—</td>
+          <!-- 木8/27: 3限 -->
+          <td><div class="cell-chips"><span class="period-chip">3</span></div></td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td class="summary-cell"><span class="week-summary-badge">✓0/3</span></td>
+        </tr>
+        <!-- 8/31週: ✓0/5 -->
+        <tr>
+          <td class="rh">8/31週</td>
+          <!-- 月8/31: 5限 -->
+          <td><div class="cell-chips"><span class="period-chip">5</span></div></td>
+          <!-- 火9/1: 2限 -->
+          <td><div class="cell-chips"><span class="period-chip">2</span></div></td>
+          <!-- 水9/2: 6限 -->
+          <td><div class="cell-chips"><span class="period-chip">6</span></div></td>
+          <td class="cell-empty">—</td>
+          <!-- 金9/4: 3・5限 -->
+          <td><div class="cell-chips"><span class="period-chip">3</span><span class="period-chip">5</span></div></td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td class="summary-cell"><span class="week-summary-badge">✓0/5</span></td>
+        </tr>
+        <!-- 9/7週: ✓0/2 -->
+        <tr>
+          <td class="rh">9/7週</td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <!-- 水9/9: 5限 -->
+          <td><div class="cell-chips"><span class="period-chip">5</span></div></td>
+          <!-- 木9/10: 6限 -->
+          <td><div class="cell-chips"><span class="period-chip">6</span></div></td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td class="summary-cell"><span class="week-summary-badge">✓0/2</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 凡例 -->
+  <div class="map-legend">
+    <span class="map-legend-item"><span class="period-chip" style="font-size:9px;width:16px;height:16px;">5</span> = 可能枠（時限番号）</span>
+    <span class="map-legend-item"><span class="period-chip placed" style="font-size:9px;width:18px;height:16px;">✓5</span> = 配置済み</span>
+    <span class="map-legend-item"><span class="legend-dot-today"></span> = 今日（8/4）</span>
+    <span class="map-legend-item"><span class="legend-cur-band"></span> = 表示中の週</span>
+    <span class="map-legend-item"><span class="legend-gray-band"></span> = 可能枠なし</span>
+  </div>
+  <p class="strip-note">週の行をクリックで座席表がその週へ移動</p>
+</div>
+
+<!-- D1-2: フォールバック（可能表 未提出） -->
+<p class="state-label">状態2: 講習（可能表 未提出 → 通塾日程フォールバック）</p>
+<div class="strip-panel">
+  <div class="strip-header">
+    <span class="strip-student">宮永 心那（中3）</span>
+    <span class="pill koushu">講習</span>
+    <span class="strip-subject">国語 残2コマ</span>
+    <span class="source-badge gray">通塾日程（毎週）※講習可能表 未提出</span>
+    <button class="close-btn">× 終了</button>
+  </div>
+
+  <div class="full-map-wrap">
+    <table class="full-map d1-map">
+      <thead>
+        <tr>
+          <th class="rh" style="min-width:72px;">週</th>
+          <th>月</th>
+          <th>火</th>
+          <th>水</th>
+          <th>木</th>
+          <th>金</th>
+          <th>土</th>
+          <th>日</th>
+          <th style="background:var(--surface); font-size:10px; color:var(--muted); min-width:52px;">参考</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- 7/20週 -->
+        <tr>
+          <td class="rh">7/20週</td>
+          <td class="cell-empty">—</td>
+          <!-- 火5限（参考） -->
+          <td><div class="cell-chips"><span class="period-chip fallback">5</span></div></td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <!-- 金6限（参考） -->
+          <td><div class="cell-chips"><span class="period-chip fallback">6</span></div></td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td class="summary-cell"><span class="week-summary-badge zero" style="font-size:9px; color:#9ca3af;">参考2</span></td>
+        </tr>
+        <!-- 7/27週 -->
+        <tr>
+          <td class="rh">7/27週</td>
+          <td class="cell-empty">—</td>
+          <td><div class="cell-chips"><span class="period-chip fallback">5</span></div></td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td><div class="cell-chips"><span class="period-chip fallback">6</span></div></td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td class="summary-cell"><span class="week-summary-badge zero" style="font-size:9px; color:#9ca3af;">参考2</span></td>
+        </tr>
+        <!-- 8/3週（表示中） -->
+        <tr class="cur-week-row">
+          <td class="rh">8/3週<span class="cur-tag-inline">表示中</span></td>
+          <td class="cell-empty">—</td>
+          <td>
+            <span class="today-cell-dot"></span>
+            <div class="cell-chips"><span class="period-chip fallback">5</span></div>
+          </td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td><div class="cell-chips"><span class="period-chip fallback">6</span></div></td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td class="summary-cell"><span class="week-summary-badge zero" style="font-size:9px; color:#9ca3af;">参考2</span></td>
+        </tr>
+        <!-- 8/10週（お盆） -->
+        <tr class="no-avail-row">
+          <td class="rh">8/10週</td>
+          <td class="cell-empty">—</td>
+          <td><div class="cell-chips"><span class="period-chip fallback" style="opacity:.4;">5</span></div></td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td><div class="cell-chips"><span class="period-chip fallback" style="opacity:.4;">6</span></div></td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td class="summary-cell"><span class="week-summary-badge zero">参考2</span></td>
+        </tr>
+        <!-- 8/17週 -->
+        <tr>
+          <td class="rh">8/17週</td>
+          <td class="cell-empty">—</td>
+          <td><div class="cell-chips"><span class="period-chip fallback">5</span></div></td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td><div class="cell-chips"><span class="period-chip fallback">6</span></div></td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td class="summary-cell"><span class="week-summary-badge zero" style="font-size:9px; color:#9ca3af;">参考2</span></td>
+        </tr>
+        <!-- 8/24週 -->
+        <tr>
+          <td class="rh">8/24週</td>
+          <td class="cell-empty">—</td>
+          <td><div class="cell-chips"><span class="period-chip fallback">5</span></div></td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td><div class="cell-chips"><span class="period-chip fallback">6</span></div></td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td class="summary-cell"><span class="week-summary-badge zero" style="font-size:9px; color:#9ca3af;">参考2</span></td>
+        </tr>
+        <!-- 8/31週 -->
+        <tr>
+          <td class="rh">8/31週</td>
+          <td class="cell-empty">—</td>
+          <td><div class="cell-chips"><span class="period-chip fallback">5</span></div></td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td><div class="cell-chips"><span class="period-chip fallback">6</span></div></td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td class="summary-cell"><span class="week-summary-badge zero" style="font-size:9px; color:#9ca3af;">参考2</span></td>
+        </tr>
+        <!-- 9/7週 -->
+        <tr>
+          <td class="rh">9/7週</td>
+          <td class="cell-empty">—</td>
+          <td><div class="cell-chips"><span class="period-chip fallback">5</span></div></td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td><div class="cell-chips"><span class="period-chip fallback">6</span></div></td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td class="summary-cell"><span class="week-summary-badge zero" style="font-size:9px; color:#9ca3af;">参考2</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="map-legend">
+    <span class="map-legend-item"><span class="period-chip fallback" style="font-size:9px;width:16px;height:16px;">5</span> = 参考枠（通塾日程の毎週パターンを展開）</span>
+    <span class="map-legend-item"><span class="legend-dot-today"></span> = 今日（8/4）</span>
+    <span class="map-legend-item"><span class="legend-cur-band"></span> = 表示中の週</span>
+  </div>
+  <p class="strip-note">通塾日程を参考に表示。講習可能表が提出されると正確な枠に切り替わります。</p>
+</div>
+
+
+<!-- ============================================================
+     D2: タイムライン型（列=週、行=曜日）
+     ============================================================ -->
+<div class="plan-header" id="plan-d2" style="margin-top:32px;">
+  <h2>バリアント D2 — タイムライン型（列=週 / 行=曜日）</h2>
+</div>
+
+<!-- D2-1: 提出済み -->
+<p class="state-label">状態1: 講習可能表 提出済み</p>
+<div class="strip-panel">
+  <div class="strip-header">
+    <span class="strip-student">宮永 心那（中3）</span>
+    <span class="pill koushu">講習</span>
+    <span class="strip-subject">国語 残2コマ</span>
+    <span class="source-badge success">講習可能表</span>
+    <button class="close-btn">× 終了</button>
+  </div>
+
+  <p class="grid-note" style="margin-bottom:5px;">列ヘッダをクリックでその週へジャンプ</p>
+  <div class="full-map-wrap">
+    <table class="full-map">
+      <thead>
+        <tr>
+          <!-- 行ヘッダ列 -->
+          <th class="rh" style="min-width:36px;">曜日</th>
+          <!-- 8週分ヘッダ -->
+          <th title="7/20週へジャンプ" style="min-width:60px; cursor:pointer;">7/20週</th>
+          <th title="7/27週へジャンプ" style="min-width:60px; cursor:pointer;">7/27週</th>
+          <th class="cur-week-col" title="8/3週へジャンプ（表示中）" style="min-width:60px; cursor:pointer; font-weight:700;">8/3週<br><span style="font-size:8px; font-weight:600; color:var(--info);">表示中</span></th>
+          <th class="no-avail-col" title="8/10週（お盆・0枠）" style="min-width:60px;">8/10週</th>
+          <th title="8/17週へジャンプ" style="min-width:60px; cursor:pointer;">8/17週</th>
+          <th title="8/24週へジャンプ" style="min-width:60px; cursor:pointer;">8/24週</th>
+          <th title="8/31週へジャンプ" style="min-width:60px; cursor:pointer;">8/31週</th>
+          <th title="9/7週へジャンプ" style="min-width:60px; cursor:pointer;">9/7週</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- 月曜行 -->
+        <tr>
+          <td class="rh">月</td>
+          <!-- 7/20(月): 2限 -->
+          <td><div class="cell-chips"><span class="period-chip">2</span></div></td>
+          <!-- 7/27(月): 2・3限 -->
+          <td><div class="cell-chips"><span class="period-chip">2</span><span class="period-chip">3</span></div></td>
+          <!-- 8/3(月): なし（表示中列） -->
+          <td class="cur-week-col cell-empty">—</td>
+          <!-- 8/10(月): 0枠列 -->
+          <td class="no-avail-col cell-empty">—</td>
+          <!-- 8/17(月): 5・6限 -->
+          <td><div class="cell-chips"><span class="period-chip">5</span><span class="period-chip">6</span></div></td>
+          <!-- 8/24(月): なし -->
+          <td class="cell-empty">—</td>
+          <!-- 8/31(月): 5限 -->
+          <td><div class="cell-chips"><span class="period-chip">5</span></div></td>
+          <!-- 9/7(月): なし -->
+          <td class="cell-empty">—</td>
+        </tr>
+        <!-- 火曜行 -->
+        <tr>
+          <td class="rh">火</td>
+          <!-- 7/21: なし -->
+          <td class="cell-empty">—</td>
+          <!-- 7/28: なし -->
+          <td class="cell-empty">—</td>
+          <!-- 8/4(火): 今日・5限（表示中列） -->
+          <td class="cur-week-col">
+            <span class="today-cell-dot"></span>
+            <div class="cell-chips"><span class="period-chip">5</span></div>
+          </td>
+          <!-- 8/11: 0枠列 -->
+          <td class="no-avail-col cell-empty">—</td>
+          <!-- 8/18: なし -->
+          <td class="cell-empty">—</td>
+          <!-- 8/25: 2・5限 -->
+          <td><div class="cell-chips"><span class="period-chip">2</span><span class="period-chip">5</span></div></td>
+          <!-- 9/1: 2限 -->
+          <td><div class="cell-chips"><span class="period-chip">2</span></div></td>
+          <!-- 9/8: なし -->
+          <td class="cell-empty">—</td>
+        </tr>
+        <!-- 水曜行 -->
+        <tr>
+          <td class="rh">水</td>
+          <!-- 7/22(水): 5限 配置済み -->
+          <td><div class="cell-chips"><span class="period-chip placed" title="7/22 5限 配置済み">✓5</span></div></td>
+          <!-- 7/29(水): 5限 配置済み -->
+          <td><div class="cell-chips"><span class="period-chip placed" title="7/29 5限 配置済み">✓5</span></div></td>
+          <!-- 8/5(水): 6限 配置済み（表示中列） -->
+          <td class="cur-week-col"><div class="cell-chips"><span class="period-chip placed" title="8/5 6限 配置済み">✓6</span></div></td>
+          <!-- 8/12: 0枠列 -->
+          <td class="no-avail-col cell-empty">—</td>
+          <!-- 8/19: 3限 -->
+          <td><div class="cell-chips"><span class="period-chip">3</span></div></td>
+          <!-- 8/26: なし -->
+          <td class="cell-empty">—</td>
+          <!-- 9/2: 6限 -->
+          <td><div class="cell-chips"><span class="period-chip">6</span></div></td>
+          <!-- 9/9: 5限 -->
+          <td><div class="cell-chips"><span class="period-chip">5</span></div></td>
+        </tr>
+        <!-- 木曜行 -->
+        <tr>
+          <td class="rh">木</td>
+          <!-- 7/23: 3限 -->
+          <td><div class="cell-chips"><span class="period-chip">3</span></div></td>
+          <!-- 7/30: 6限 -->
+          <td><div class="cell-chips"><span class="period-chip">6</span></div></td>
+          <!-- 8/6: 2・3限（表示中列） -->
+          <td class="cur-week-col"><div class="cell-chips"><span class="period-chip">2</span><span class="period-chip">3</span></div></td>
+          <!-- 8/13: 0枠列 -->
+          <td class="no-avail-col cell-empty">—</td>
+          <!-- 8/20: なし -->
+          <td class="cell-empty">—</td>
+          <!-- 8/27: 3限 -->
+          <td><div class="cell-chips"><span class="period-chip">3</span></div></td>
+          <!-- 9/3: なし -->
+          <td class="cell-empty">—</td>
+          <!-- 9/10: 6限 -->
+          <td><div class="cell-chips"><span class="period-chip">6</span></div></td>
+        </tr>
+        <!-- 金曜行 -->
+        <tr>
+          <td class="rh">金</td>
+          <!-- 7/24: なし -->
+          <td class="cell-empty">—</td>
+          <!-- 7/31: なし -->
+          <td class="cell-empty">—</td>
+          <!-- 8/7: なし（表示中列） -->
+          <td class="cur-week-col cell-empty">—</td>
+          <!-- 8/14: 0枠列 -->
+          <td class="no-avail-col cell-empty">—</td>
+          <!-- 8/21: 6限 -->
+          <td><div class="cell-chips"><span class="period-chip">6</span></div></td>
+          <!-- 8/28: なし -->
+          <td class="cell-empty">—</td>
+          <!-- 9/4: 3・5限 -->
+          <td><div class="cell-chips"><span class="period-chip">3</span><span class="period-chip">5</span></div></td>
+          <!-- 9/11: なし -->
+          <td class="cell-empty">—</td>
+        </tr>
+        <!-- 土曜行 -->
+        <tr>
+          <td class="rh">土</td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td class="cur-week-col cell-empty">—</td>
+          <td class="no-avail-col cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+        </tr>
+        <!-- 日曜行 -->
+        <tr>
+          <td class="rh">日</td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td class="cur-week-col cell-empty">—</td>
+          <td class="no-avail-col cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+          <td class="cell-empty">—</td>
+        </tr>
+        <!-- 週サマリ行（最下行） -->
+        <tr class="summary-row">
+          <td class="rh" style="font-size:10px; color:var(--muted);">配置/可能</td>
+          <td><span class="week-summary-badge">✓1/3</span></td>
+          <td><span class="week-summary-badge">✓1/4</span></td>
+          <td class="cur-week-col"><span class="week-summary-badge">✓1/4</span></td>
+          <td class="no-avail-col"><span class="week-summary-badge zero">0枠</span></td>
+          <td><span class="week-summary-badge">✓0/4</span></td>
+          <td><span class="week-summary-badge">✓0/3</span></td>
+          <td><span class="week-summary-badge">✓0/5</span></td>
+          <td><span class="week-summary-badge">✓0/2</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="map-legend">
+    <span class="map-legend-item"><span class="period-chip" style="font-size:9px;width:16px;height:16px;">5</span> = 可能枠（時限番号）</span>
+    <span class="map-legend-item"><span class="period-chip placed" style="font-size:9px;width:18px;height:16px;">✓5</span> = 配置済み</span>
+    <span class="map-legend-item"><span class="legend-dot-today"></span> = 今日（8/4）</span>
+    <span class="map-legend-item"><span class="legend-cur-band"></span> = 表示中の週</span>
+    <span class="map-legend-item"><span class="legend-gray-band"></span> = 可能枠なし（お盆）</span>
+  </div>
+  <p class="strip-note">最下行の配置/可能バッジで配分の偏りを横断的に確認。列ヘッダをクリックでその週へ移動。<br>※フォールバック表示はD1と同様（全週の火・金セルにグレーチップ）。</p>
+</div>
+
+
+<!-- ============================================================
      比較表
      ============================================================ -->
 <div class="compare-section" id="compare">
-  <h2>3案 比較</h2>
+  <h2>5案 比較</h2>
   <table class="compare-table">
     <thead>
       <tr>
@@ -991,6 +1751,8 @@
         <th>案A チップ</th>
         <th>案B グリッド</th>
         <th>案C 週カード</th>
+        <th style="background:var(--info-subtle); color:var(--info);">案D1 カレンダー型</th>
+        <th style="background:var(--info-subtle); color:var(--info);">案D2 タイムライン型</th>
       </tr>
     </thead>
     <tbody>
@@ -999,34 +1761,44 @@
         <td class="c-good">高 — 日付・時限を明示</td>
         <td class="c-good">高 — 全枠を一覧できる</td>
         <td class="c-warn">中 — 曜日のみ（時限は省略）</td>
+        <td class="c-good">高 — 8週×7曜日・時限チップ</td>
+        <td class="c-good">高 — 曜日×8週・時限チップ＋週サマリ行</td>
       </tr>
       <tr>
         <td>高さ（省スペース）</td>
         <td class="c-good">低 60〜80px</td>
         <td class="c-warn">中 120〜150px</td>
         <td class="c-good">低 70px</td>
+        <td class="c-bad">高 約290px（8行＋ヘッダ）</td>
+        <td class="c-warn">中 約270px（7曜日＋サマリ行＋ヘッダ）</td>
       </tr>
       <tr>
         <td>一覧性（週をまたぐ把握）</td>
         <td class="c-warn">中 — 週区切り線で補う</td>
         <td class="c-good">高 — 空白パターンが直感的</td>
         <td class="c-warn">中 — カード単位の比較が容易</td>
+        <td class="c-good">高 — 行末バッジで週ごとの配分を即確認</td>
+        <td class="c-good">高 — 最下サマリ行で8週の偏りを横断比較</td>
       </tr>
       <tr>
         <td>実装コスト</td>
         <td class="c-good">低 — CSSのみ</td>
         <td class="c-warn">中 — テーブル生成ロジック</td>
         <td class="c-good">低 — CSSのみ</td>
+        <td class="c-warn">中 — 期間展開ロジック＋テーブル生成</td>
+        <td class="c-warn">中 — 同左（列方向への転置が必要）</td>
       </tr>
       <tr>
         <td>フォールバック表現</td>
         <td class="c-good">自然（毎週チップ2個）</td>
         <td class="c-warn">曜日グリッドに切替が必要</td>
         <td class="c-good">自然（毎週カード1枚）</td>
+        <td class="c-good">自然 — 同じ表に薄グレーチップで展開</td>
+        <td class="c-good">自然 — D1と同形式（火・金列に薄チップ）</td>
       </tr>
     </tbody>
   </table>
-  <p class="final-note">※静的モック。色・文言は実装時に調整。</p>
+  <p class="final-note">※静的モック。色・文言は実装時に調整。D1・D2は8週分の講習全期間向け。テスト対策など短期（2週以下）は案A/Cが軽量で適切。</p>
 </div>
 
 </body>
