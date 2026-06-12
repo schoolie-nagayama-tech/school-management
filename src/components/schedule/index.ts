@@ -33,3 +33,4 @@ export { ScheduleDailyPrintView } from './ScheduleDailyPrintView';
 export { ScheduleToolbar } from './ScheduleToolbar';
 export { ScheduleDialogs } from './ScheduleDialogs';
 export { UnassignedEntriesPool } from './UnassignedEntriesPool';
+export { PlacementAvailabilityStrip } from './PlacementAvailabilityStrip';

@@ -54,6 +54,10 @@ const ScheduleLegend = dynamic(
   () => import('@/components/schedule/ScheduleLegend').then((m) => m.ScheduleLegend),
   { ssr: false }
 );
+const PlacementAvailabilityStrip = dynamic(
+  () => import('@/components/schedule/PlacementAvailabilityStrip').then((m) => m.PlacementAvailabilityStrip),
+  { ssr: false }
+);
 const GroupLaneGrid = dynamic(
   () => import('@/components/schedule/GroupLaneGrid').then((m) => m.GroupLaneGrid),
   { ssr: false }
@@ -260,8 +264,15 @@ export default function SchedulePage() {
     availableKeys: Set<string>;   // `${date}_${slotId}`（時限がコマに対応付いた枠）
     datesWithMapping: Set<string>; // 対応付いた枠を持つ日付
     availableDates: Set<string>;  // 通塾可能日（対応付け不可時の日単位フォールバック）
+    /** ストリップ構築に使う生の利用可能スロット（buildTestPrepPlacementStrip に渡す） */
+    rawSlots: import('@/lib/api/zoukoma-placement').ZoukomaAvailableSlot[];
   } | null>(null);
   const [zoukomaPanelRefreshKey, setZoukomaPanelRefreshKey] = useState(0);
+
+  // ---- 配置ストリップ（出席可能日程ドットマトリクス） ----
+  // 配置モード中（講習 / テスト対策）に生徒の出席可能日程をストリップ表示するためのデータ
+  const [stripData, setStripData] = useState<import('@/lib/api/placement-availability').PlacementStripData | null>(null);
+  const [stripLoading, setStripLoading] = useState(false);
 
   const router = useRouter();
 
@@ -531,6 +542,67 @@ export default function SchedulePage() {
   useEffect(() => {
     refreshEntries();
   }, [refreshEntries]);
+
+  // 配置ストリップデータの構築。配置モード切り替え・refreshKey 変更時に再取得。
+  // 失敗しても座席表本体に影響しないよう、エラーは warn + null で飲み込む。
+  useEffect(() => {
+    if (!schoolId) { setStripData(null); return; }
+
+    // 個別コマのスロット一覧（formation !== 'group'）。useMemo の individualSlots は
+    // この useEffect より後で宣言されているため、timeSlots からインラインでフィルタする。
+    const indivSlotList = timeSlots
+      .filter((s) => s.formation !== 'group')
+      .map((s) => ({
+        id: s.id,
+        slot_number: s.slot_number,
+        start_time: s.start_time ?? '',
+      }));
+
+    // 講習配置モード
+    if (placingKoushuStudent && selectedKoushu) {
+      let cancelled = false;
+      setStripLoading(true);
+      import('@/lib/api/placement-availability').then(({ buildKoushuPlacementStrip }) =>
+        buildKoushuPlacementStrip(
+          schoolId,
+          placingKoushuStudent.studentId,
+          { schedule_start_date: selectedKoushu.schedule_start_date, schedule_end_date: selectedKoushu.schedule_end_date },
+          indivSlotList
+        )
+      ).then((data) => {
+        if (!cancelled) { setStripData(data); setStripLoading(false); }
+      }).catch((e) => {
+        console.warn('PlacementStrip build failed (koushu):', e);
+        if (!cancelled) { setStripData(null); setStripLoading(false); }
+      });
+      return () => { cancelled = true; };
+    }
+
+    // テスト対策配置モード
+    if (placingTestPrep) {
+      let cancelled = false;
+      setStripLoading(true);
+      import('@/lib/api/placement-availability').then(({ buildTestPrepPlacementStrip }) =>
+        buildTestPrepPlacementStrip(
+          schoolId,
+          placingTestPrep.studentId,
+          placingTestPrep.rawSlots,
+          indivSlotList
+        )
+      ).then((data) => {
+        if (!cancelled) { setStripData(data); setStripLoading(false); }
+      }).catch((e) => {
+        console.warn('PlacementStrip build failed (test_prep):', e);
+        if (!cancelled) { setStripData(null); setStripLoading(false); }
+      });
+      return () => { cancelled = true; };
+    }
+
+    // どちらでもなければ非表示
+    setStripData(null);
+  // koushuPanelRefreshKey / zoukomaPanelRefreshKey を依存に含め、配置成功後に再構築
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schoolId, placingKoushuStudent, placingTestPrep, selectedKoushu, timeSlots, koushuPanelRefreshKey, zoukomaPanelRefreshKey]);
 
   // NOTE: 以前は window focus / visibilitychange で自動 refreshEntries していたが、
   // 「定期的に再読み込みが入って描画が重い」というフィードバックを受けて撤去。
@@ -1019,7 +1091,7 @@ export default function SchedulePage() {
           datesWithMapping.add(s.date);
         }
       }
-      setPlacingTestPrep({ studentId, subjectId, subjectName, availableKeys, datesWithMapping, availableDates });
+      setPlacingTestPrep({ studentId, subjectId, subjectName, availableKeys, datesWithMapping, availableDates, rawSlots: slots });
     },
     [placingTestPrep, timeSlots]
   );
@@ -1678,6 +1750,29 @@ export default function SchedulePage() {
               setPlacingTestPrep(null);
               handleTestPrepToggle(false);
             }}
+          />
+        )}
+
+        {/* 配置モード中: 生徒の出席可能日程をドットマトリクスで表示。
+            日付クリックで座席表をその週へジャンプ。講習/テスト対策の両モードに対応。 */}
+        {(placingKoushuStudent || placingTestPrep) && (
+          <PlacementAvailabilityStrip
+            data={stripData}
+            loading={stripLoading}
+            studentName={(() => {
+              const sid = placingKoushuStudent?.studentId ?? placingTestPrep?.studentId ?? '';
+              const s = students.find((st) => st.id === sid);
+              return s ? `${s.last_name ?? ''} ${s.first_name ?? ''}`.trim() : '';
+            })()}
+            subjectName={(() => {
+              if (placingKoushuStudent) {
+                const subId = placingKoushuStudent.subjectIds?.[0];
+                return subId ? (subjectById.get(subId) ?? '') : '';
+              }
+              return placingTestPrep?.subjectName ?? '';
+            })()}
+            weekStartStr={weekStartStr}
+            onDayClick={(date) => setWeekStart(getWeekStart(new Date(date + 'T12:00:00')))}
           />
         )}
 
