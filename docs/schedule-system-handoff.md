@@ -454,6 +454,14 @@ node scripts/verify-phase0-migrations.mjs
 - **P3 凡例＋バッジ一元化（2026-06-02 完了）**：`ScheduleLegend`（折りたたみ凡例＝出欠/種別/仮/振替/欠勤の意味）を座席表上部に追加。`scheduleBadges.ts` で種別バッジ色を単一ソース化し `StudentCard` と凡例が共有。配置モードの座席表操作は P1 で講習/テスト対策を `gridPlacing/gridGetPlaceability/gridPlace/gridPlaceWithTeacher` に一本化済み（パネルはデータが異なるため専用のまま）。
 - UX整理（P1〜P3）完了。モック: `docs/mockups/schedule-toolbar-consolidation.html`。
 
+### 出席可能日程ストリップ（2026-06-12）
+配置モード（講習/テスト対策）で「配置」を押すと、配置パネルと座席表の間に**期間全日×時限のドットマトリクス**を表示（モック=`docs/mockups/placement-availability-strip.html` 案E が最終形。A〜D は検討過程）。
+- **色**: グレー=不可 / 黄=可 / 緑=配置済み / **赤=満席**。満席の定義=「その日×コマに出勤できる講師が全員、1講師あたり個別上限まで埋まっている」（出勤講師0人も満席扱い）
+- **軸**: 横=期間の全日付（週は間隔＋左枠線で区切り、週ラベルなし・日付数字を全列表示）/ 縦=個別コマの時限。今日=青ドット、表示中の週=薄青帯。粒ホバーで日付・時限・状態。日付クリックで週ジャンプ
+- **データ源**: 講習=`seasonal_shift_student_submissions` を school+student で直接クエリし期間内 available=true を抽出（time_slot "HH:MM-" の先頭5文字→slot.start_time で解決）。未提出は `getStudentRegularSchedule` を期間展開（薄黄＋注記）。テスト対策=増コマ申込の枠（ZoukomaAvailableSlot）
+- **実装**: `src/lib/api/placement-availability.ts`（buildKoushuPlacementStrip / buildTestPrepPlacementStrip / computeFullKeys）+ `PlacementAvailabilityStrip.tsx`。満席判定=週ごとの `getAvailabilityDayMap.byDayAndSlotNumber` × 既存エントリの講師別集計 × `max_students_per_teacher_individual`。配置成功で refreshKey 経由再計算
+- 注意: ユーザー要件「**週単位ではなく全期間を俯瞰して配分を組む**」「サマリ数字は不要、粒の密度で読む」
+
 ## ★ 重要バグ修正：「スケジュールの取得に失敗」
 - 原因：`generateWeeklySchedule` の再生成 INSERT が UNIQUE 制約
   `(school_id, entry_date, time_slot_id, teacher_id, student_id)` 違反
