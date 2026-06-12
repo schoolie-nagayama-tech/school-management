@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>配置モード 出席可能日程ストリップ（モック3案）</title>
+<style>
+  :root {
+    --headline: #1f2937;
+    --paragraph: #4b5563;
+    --muted: #6b7280;
+    --stroke: #e5e7eb;
+    --ink: #1e3a5f;
+    --surface: #f9fafb;
+    --info: #2563eb;
+    --info-subtle: #eff6ff;
+    --warning: #b45309;
+    --warning-bg: #f59e0b;
+    --warning-subtle: #fffbeb;
+    --success: #15803d;
+    --success-subtle: #f0fdf4;
+    --danger: #b91c1c;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+    margin: 0;
+    background: #f3f4f6;
+    color: var(--headline);
+    padding: 32px;
+    line-height: 1.6;
+  }
+
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  .page-desc { color: var(--muted); font-size: 13px; margin-bottom: 36px; }
+
+  /* セクションヘッダ */
+  .plan-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 40px 0 14px;
+  }
+  .plan-header h2 {
+    font-size: 15px;
+    color: var(--ink);
+    margin: 0;
+    font-weight: 600;
+  }
+  .plan-header::before {
+    content: "";
+    width: 4px;
+    height: 18px;
+    background: var(--ink);
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* 状態ラベル */
+  .state-label {
+    font-size: 11px;
+    color: var(--muted);
+    margin: 0 0 6px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: none;
+  }
+
+  /* ストリップ共通パネル */
+  .strip-panel {
+    background: #fff;
+    border: 1px solid var(--stroke);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 10px;
+  }
+
+  /* 共通ヘッダ行 */
+  .strip-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--stroke);
+    flex-wrap: wrap;
+  }
+  .strip-student {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--headline);
+  }
+  .strip-subject {
+    font-size: 12px;
+    color: var(--paragraph);
+  }
+
+  /* ピルバッジ */
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .pill.test {
+    background: var(--warning-subtle);
+    color: var(--warning);
+    border: 1px solid #fde68a;
+  }
+  .pill.koushu {
+    background: var(--info-subtle);
+    color: var(--info);
+    border: 1px solid #bfdbfe;
+  }
+
+  /* データ源バッジ */
+  .source-badge {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .source-badge.warning {
+    background: var(--warning-subtle);
+    color: var(--warning);
+    border: 1px solid #fde68a;
+  }
+  .source-badge.gray {
+    background: #f3f4f6;
+    color: var(--muted);
+    border: 1px solid var(--stroke);
+  }
+
+  /* 終了ボタン */
+  .close-btn {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--muted);
+    border: 1px solid var(--stroke);
+    border-radius: 6px;
+    padding: 2px 8px;
+    cursor: pointer;
+    background: none;
+    white-space: nowrap;
+  }
+  .close-btn:hover { background: #f3f4f6; }
+
+  /* 注記テキスト */
+  .strip-note {
+    font-size: 11px;
+    color: var(--muted);
+    margin: 8px 2px 0;
+  }
+
+  /* ========================
+     案A: 日付チップ・タイムライン
+     ======================== */
+
+  .chip-row {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0;
+    overflow-x: auto;
+    align-items: center;
+    padding-bottom: 2px;
+    min-height: 48px;
+  }
+  .chip-row::-webkit-scrollbar { height: 4px; }
+  .chip-row::-webkit-scrollbar-thumb { background: var(--stroke); border-radius: 2px; }
+
+  /* 週グループラッパー */
+  .week-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .week-group + .week-group {
+    margin-left: 6px;
+    padding-left: 6px;
+    border-left: 1.5px solid var(--stroke);
+  }
+  .week-label {
+    font-size: 10px;
+    color: var(--muted);
+    font-weight: 600;
+    white-space: nowrap;
+    padding-left: 2px;
+  }
+  .week-chips {
+    display: flex;
+    gap: 5px;
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+
+  /* 表示中週のハイライト帯 */
+  .week-group.current-week {
+    background: var(--info-subtle);
+    border: 1px solid var(--info);
+    border-radius: 8px;
+    padding: 4px 6px;
+    position: relative;
+  }
+  .week-group.current-week .week-label {
+    color: var(--info);
+  }
+  .current-week-tag {
+    font-size: 9px;
+    background: var(--info);
+    color: #fff;
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .week-label-row {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  /* 日付チップ */
+  .date-chip {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 9px 4px;
+    border-radius: 8px;
+    border: 1px solid var(--stroke);
+    background: #fff;
+    color: var(--paragraph);
+    cursor: pointer;
+    transition: box-shadow .12s, transform .12s;
+    white-space: nowrap;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .date-chip:hover {
+    box-shadow: 0 3px 8px rgba(0,0,0,.12);
+    transform: translateY(-2px);
+  }
+  .date-chip .date-text {
+    font-size: 11px;
+    color: var(--paragraph);
+    font-weight: 600;
+  }
+  .date-chip .period-text {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 1px;
+  }
+
+  /* 今日ドット */
+  .today-dot {
+    display: block;
+    width: 5px;
+    height: 5px;
+    background: var(--info);
+    border-radius: 50%;
+    position: absolute;
+    top: 3px;
+    right: 4px;
+  }
+
+  /* 配置済み時限 */
+  .period-placed {
+    color: var(--success);
+    font-weight: 700;
+  }
+
+  /* フォールバック用リピートチップ */
+  .repeat-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 11px;
+    border-radius: 8px;
+    border: 1px solid var(--stroke);
+    background: #f9fafb;
+    color: var(--muted);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .repeat-prefix {
+    font-size: 10px;
+    background: var(--stroke);
+    color: var(--muted);
+    border-radius: 3px;
+    padding: 1px 4px;
+    font-weight: 700;
+  }
+
+  /* ========================
+     案B: ミニグリッド（ヒートマップ）
+     ======================== */
+
+  .grid-scroll {
+    overflow-x: auto;
+  }
+  .grid-scroll::-webkit-scrollbar { height: 4px; }
+  .grid-scroll::-webkit-scrollbar-thumb { background: var(--stroke); border-radius: 2px; }
+
+  .mini-grid {
+    border-collapse: collapse;
+    font-size: 11px;
+    white-space: nowrap;
+    min-width: 100%;
+  }
+  .mini-grid th, .mini-grid td {
+    border: 1px solid var(--stroke);
+    padding: 5px 7px;
+    text-align: center;
+    vertical-align: middle;
+  }
+  .mini-grid th {
+    background: var(--surface);
+    font-weight: 600;
+    color: var(--muted);
+    font-size: 10px;
+    cursor: pointer;
+  }
+  .mini-grid th:hover { background: #e9ebee; }
+  .mini-grid th.today-col {
+    color: var(--info);
+    position: relative;
+  }
+  .mini-grid th.today-col::after {
+    content: "•";
+    font-size: 10px;
+    color: var(--info);
+    display: block;
+    line-height: .8;
+    margin-top: 1px;
+  }
+  .mini-grid .row-header {
+    font-weight: 600;
+    color: var(--muted);
+    background: var(--surface);
+    font-size: 10px;
+    cursor: default;
+  }
+
+  /* 週区切りセル左余白 */
+  .mini-grid td.week-sep, .mini-grid th.week-sep {
+    border-left: 2px solid #d1d5db;
+  }
+
+  /* 現在週のヘッダ列背景 */
+  .mini-grid th.cur-week {
+    background: var(--info-subtle);
+    color: var(--info);
+  }
+
+  /* セル状態 */
+  .cell-avail {
+    background: #fef3c7;
+    color: var(--warning);
+    font-weight: 600;
+    font-size: 12px;
+  }
+  .cell-placed {
+    background: var(--success-subtle);
+    color: var(--success);
+    font-weight: 700;
+    font-size: 13px;
+  }
+  .cell-none {
+    background: #fff;
+    color: #d1d5db;
+    font-size: 11px;
+  }
+  .grid-note {
+    font-size: 11px;
+    color: var(--muted);
+    margin: 0 0 6px;
+  }
+
+  /* ========================
+     案C: 週サマリ・ストリップ
+     ======================== */
+
+  .week-cards {
+    display: flex;
+    gap: 8px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+  .week-cards::-webkit-scrollbar { height: 4px; }
+  .week-cards::-webkit-scrollbar-thumb { background: var(--stroke); border-radius: 2px; }
+
+  .week-card {
+    border: 1px solid var(--stroke);
+    border-radius: 10px;
+    padding: 8px 12px;
+    min-width: 110px;
+    background: #fff;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: box-shadow .12s, transform .12s;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .week-card:hover {
+    box-shadow: 0 3px 8px rgba(0,0,0,.10);
+    transform: translateY(-2px);
+  }
+  .week-card.current {
+    border: 1.5px solid var(--info);
+    background: var(--info-subtle);
+  }
+
+  .week-card-top {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .week-card-name {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--headline);
+  }
+  .week-card.current .week-card-name { color: var(--info); }
+
+  .avail-badge {
+    font-size: 10px;
+    background: #fef3c7;
+    color: var(--warning);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-weight: 700;
+    border: 1px solid #fde68a;
+  }
+  .current-tag {
+    font-size: 9px;
+    background: var(--info);
+    color: #fff;
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-weight: 600;
+  }
+
+  /* 曜日ドット行 */
+  .day-dots {
+    display: flex;
+    gap: 3px;
+    align-items: center;
+  }
+  .day-dot-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+  .day-dot-label {
+    font-size: 8px;
+    color: var(--muted);
+  }
+  .day-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--stroke);
+  }
+  .day-dot.avail { background: #fcd34d; }
+  .day-dot.placed { background: var(--success); }
+
+  .week-card-sub {
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  /* 比較表 */
+  .compare-section {
+    margin-top: 48px;
+  }
+  .compare-section h2 {
+    font-size: 14px;
+    color: var(--ink);
+    margin: 0 0 10px;
+    font-weight: 600;
+  }
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .compare-table th, .compare-table td {
+    border: 1px solid var(--stroke);
+    padding: 7px 10px;
+    text-align: center;
+    vertical-align: middle;
+  }
+  .compare-table th {
+    background: var(--surface);
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .compare-table td:first-child {
+    text-align: left;
+    font-weight: 600;
+    background: var(--surface);
+    color: var(--paragraph);
+  }
+  .compare-table tr:hover td { background: #f9fafb; }
+  .compare-table tr:hover td:first-child { background: #f3f4f6; }
+  .final-note {
+    font-size: 11px;
+    color: var(--muted);
+    margin: 10px 0 0;
+  }
+
+  /* good/bad評価マーク */
+  .c-good { color: var(--success); font-weight: 600; }
+  .c-warn { color: var(--warning); font-weight: 600; }
+  .c-bad  { color: var(--danger);  font-weight: 600; }
+</style>
+</head>
+<body>
+
+<h1>配置モード 出席可能日程ストリップ（モック3案）</h1>
+<p class="page-desc">配置ボタンを押すと配置パネルと座席表の間に表示。日付クリックで座席表がその週へジャンプ。</p>
+
+<!-- ============================================================
+     案A: 日付チップ・タイムライン
+     ============================================================ -->
+<div class="plan-header" id="plan-a">
+  <h2>案A — 日付チップ・タイムライン（横帯・1〜2行）</h2>
+</div>
+
+<!-- A-1: テスト対策 -->
+<p class="state-label">状態1: テスト対策（増コマ申込の具体日×時限）</p>
+<div class="strip-panel">
+  <!-- 共通ヘッダ行 -->
+  <div class="strip-header">
+    <span class="strip-student">宮永 心那（中3）</span>
+    <span class="pill test">テスト対策</span>
+    <span class="strip-subject">国語 残2コマ</span>
+    <span class="source-badge warning">増コマ申込の枠</span>
+    <button class="close-btn">× 終了</button>
+  </div>
+
+  <!-- チップ行 -->
+  <div class="chip-row">
+    <!-- 6/8週（表示中） -->
+    <div class="week-group current-week">
+      <div class="week-label-row">
+        <span class="week-label">6/8週</span>
+        <span class="current-week-tag">表示中</span>
+      </div>
+      <div class="week-chips">
+        <!-- 6/8(月) 5限は配置済み、6限は可能 -->
+        <div class="date-chip" title="座席表を6/8週へ移動">
+          <span class="date-text">6/8(月)</span>
+          <span class="period-text"><span class="period-placed">✓5</span>・6限</span>
+        </div>
+        <!-- 6/9(火) 今日 -->
+        <div class="date-chip" title="座席表を6/8週へ移動" style="position:relative;">
+          <span class="today-dot"></span>
+          <span class="date-text">6/9(火)</span>
+          <span class="period-text">6限</span>
+        </div>
+        <!-- 6/11(木) -->
+        <div class="date-chip" title="座席表を6/8週へ移動">
+          <span class="date-text">6/11(木)</span>
+          <span class="period-text">5限</span>
+        </div>
+        <!-- 6/12(金) -->
+        <div class="date-chip" title="座席表を6/8週へ移動">
+          <span class="date-text">6/12(金)</span>
+          <span class="period-text">6・7限</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6/15週 -->
+    <div class="week-group">
+      <div class="week-label-row">
+        <span class="week-label">6/15週</span>
+      </div>
+      <div class="week-chips">
+        <!-- 6/15(月) -->
+        <div class="date-chip" title="座席表を6/15週へ移動">
+          <span class="date-text">6/15(月)</span>
+          <span class="period-text">5限</span>
+        </div>
+        <!-- 6/17(水) -->
+        <div class="date-chip" title="座席表を6/15週へ移動">
+          <span class="date-text">6/17(水)</span>
+          <span class="period-text">6限</span>
+        </div>
+        <!-- 6/19(金) -->
+        <div class="date-chip" title="座席表を6/15週へ移動">
+          <span class="date-text">6/19(金)</span>
+          <span class="period-text">5限</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="strip-note">チップをクリックで座席表がその週へ移動 ／ <span class="period-placed">✓5</span> = 配置済み</p>
+</div>
+
+<!-- A-2: 講習フォールバック -->
+<p class="state-label">状態2: 講習（可能表 未提出 → 通塾日程フォールバック）</p>
+<div class="strip-panel">
+  <div class="strip-header">
+    <span class="strip-student">宮永 心那（中3）</span>
+    <span class="pill koushu">講習</span>
+    <span class="strip-subject">国語 残2コマ</span>
+    <span class="source-badge gray">通塾日程（毎週）※講習可能表 未提出</span>
+    <button class="close-btn">× 終了</button>
+  </div>
+  <div class="chip-row">
+    <div class="repeat-chip" title="毎週この曜日・時限に在席可能">
+      <span class="repeat-prefix">毎週</span>
+      火5限 17:00
+    </div>
+    <div class="repeat-chip" title="毎週この曜日・時限に在席可能">
+      <span class="repeat-prefix">毎週</span>
+      金6限 18:40
+    </div>
+  </div>
+  <p class="strip-note">通塾日程を参考に表示。講習可能表が提出されると正確な枠に切り替わります。</p>
+</div>
+
+
+<!-- ============================================================
+     案B: ミニグリッド（ヒートマップ）
+     ============================================================ -->
+<div class="plan-header" id="plan-b">
+  <h2>案B — ミニグリッド（時限×日付のヒートマップ）</h2>
+</div>
+
+<!-- B-1: テスト対策 -->
+<p class="state-label">状態1: テスト対策（増コマ申込の具体日×時限）</p>
+<div class="strip-panel">
+  <div class="strip-header">
+    <span class="strip-student">宮永 心那（中3）</span>
+    <span class="pill test">テスト対策</span>
+    <span class="strip-subject">国語 残2コマ</span>
+    <span class="source-badge warning">増コマ申込の枠</span>
+    <button class="close-btn">× 終了</button>
+  </div>
+  <p class="grid-note">列ヘッダをクリックでその週へジャンプ</p>
+  <div class="grid-scroll">
+    <table class="mini-grid">
+      <thead>
+        <tr>
+          <!-- 行ヘッダ用の空セル -->
+          <th class="row-header" style="min-width:36px;">時限</th>
+          <!-- 6/8週 -->
+          <th class="cur-week" title="6/8週へジャンプ" style="min-width:40px;">8(月)</th>
+          <th class="cur-week today-col" title="6/8週へジャンプ" style="min-width:40px;">9(火)</th>
+          <th class="cur-week" title="6/8週へジャンプ" style="min-width:40px;">10(水)</th>
+          <th class="cur-week" title="6/8週へジャンプ" style="min-width:40px;">11(木)</th>
+          <th class="cur-week" title="6/8週へジャンプ" style="min-width:40px;">12(金)</th>
+          <th class="cur-week" title="6/8週へジャンプ" style="min-width:40px;">14(土)</th>
+          <!-- 6/15週 区切り -->
+          <th class="week-sep" title="6/15週へジャンプ" style="min-width:40px;">15(月)</th>
+          <th title="6/15週へジャンプ" style="min-width:40px;">16(火)</th>
+          <th title="6/15週へジャンプ" style="min-width:40px;">17(水)</th>
+          <th title="6/15週へジャンプ" style="min-width:40px;">18(木)</th>
+          <th title="6/15週へジャンプ" style="min-width:40px;">19(金)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- 5限 -->
+        <tr>
+          <td class="row-header">5限</td>
+          <!-- 6/8 5限: 配置済み -->
+          <td class="cell-placed">✓</td>
+          <!-- 6/9 5限: 不可 -->
+          <td class="cell-none">—</td>
+          <!-- 6/10 5限: 不可 -->
+          <td class="cell-none">—</td>
+          <!-- 6/11 5限: 可能 -->
+          <td class="cell-avail">○</td>
+          <!-- 6/12 5限: 不可 -->
+          <td class="cell-none">—</td>
+          <!-- 6/14 5限: 不可 -->
+          <td class="cell-none">—</td>
+          <!-- 6/15 5限: 可能（区切り） -->
+          <td class="cell-avail week-sep">○</td>
+          <!-- 6/16 5限: 不可 -->
+          <td class="cell-none">—</td>
+          <!-- 6/17 5限: 不可 -->
+          <td class="cell-none">—</td>
+          <!-- 6/18 5限: 不可 -->
+          <td class="cell-none">—</td>
+          <!-- 6/19 5限: 可能 -->
+          <td class="cell-avail">○</td>
+        </tr>
+        <!-- 6限 -->
+        <tr>
+          <td class="row-header">6限</td>
+          <!-- 6/8 6限: 可能 -->
+          <td class="cell-avail">○</td>
+          <!-- 6/9 6限: 可能 -->
+          <td class="cell-avail">○</td>
+          <!-- 6/10 6限: 不可 -->
+          <td class="cell-none">—</td>
+          <!-- 6/11 6限: 不可 -->
+          <td class="cell-none">—</td>
+          <!-- 6/12 6限: 可能 -->
+          <td class="cell-avail">○</td>
+          <!-- 6/14 6限: 不可 -->
+          <td class="cell-none">—</td>
+          <!-- 6/15 6限: 不可（区切り） -->
+          <td class="cell-none week-sep">—</td>
+          <!-- 6/16 6限: 不可 -->
+          <td class="cell-none">—</td>
+          <!-- 6/17 6限: 可能 -->
+          <td class="cell-avail">○</td>
+          <!-- 6/18 6限: 不可 -->
+          <td class="cell-none">—</td>
+          <!-- 6/19 6限: 不可 -->
+          <td class="cell-none">—</td>
+        </tr>
+        <!-- 7限 -->
+        <tr>
+          <td class="row-header">7限</td>
+          <td class="cell-none">—</td>
+          <td class="cell-none">—</td>
+          <td class="cell-none">—</td>
+          <td class="cell-none">—</td>
+          <!-- 6/12 7限: 可能 -->
+          <td class="cell-avail">○</td>
+          <td class="cell-none">—</td>
+          <!-- 6/15以降7限: すべて不可（区切り） -->
+          <td class="cell-none week-sep">—</td>
+          <td class="cell-none">—</td>
+          <td class="cell-none">—</td>
+          <td class="cell-none">—</td>
+          <td class="cell-none">—</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="strip-note">
+    <span style="display:inline-block;width:10px;height:10px;background:#fcd34d;border-radius:2px;vertical-align:middle;margin-right:3px;"></span>可能 &ensp;
+    <span style="display:inline-block;width:10px;height:10px;background:var(--success-subtle);border:1px solid var(--success);border-radius:2px;vertical-align:middle;margin-right:3px;"></span>配置済み &ensp;
+    薄い帯=表示中の週（6/8週）
+  </p>
+</div>
+
+<!-- B-2: 講習フォールバック -->
+<p class="state-label">状態2: 講習（可能表 未提出 → 通塾日程フォールバック）</p>
+<div class="strip-panel">
+  <div class="strip-header">
+    <span class="strip-student">宮永 心那（中3）</span>
+    <span class="pill koushu">講習</span>
+    <span class="strip-subject">国語 残2コマ</span>
+    <span class="source-badge gray">通塾日程（毎週）※講習可能表 未提出</span>
+    <button class="close-btn">× 終了</button>
+  </div>
+  <p class="grid-note">毎週の通塾曜日×コマ（参考表示）</p>
+  <div class="grid-scroll">
+    <table class="mini-grid">
+      <thead>
+        <tr>
+          <th class="row-header">時限</th>
+          <th>月</th>
+          <th>火</th>
+          <th>水</th>
+          <th>木</th>
+          <th>金</th>
+          <th>土</th>
+          <th>日</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="row-header">5限</td>
+          <td class="cell-none">—</td>
+          <!-- 火5限: 通塾あり -->
+          <td class="cell-avail">○</td>
+          <td class="cell-none">—</td>
+          <td class="cell-none">—</td>
+          <td class="cell-none">—</td>
+          <td class="cell-none">—</td>
+          <td class="cell-none">—</td>
+        </tr>
+        <tr>
+          <td class="row-header">6限</td>
+          <td class="cell-none">—</td>
+          <td class="cell-none">—</td>
+          <td class="cell-none">—</td>
+          <td class="cell-none">—</td>
+          <!-- 金6限: 通塾あり -->
+          <td class="cell-avail">○</td>
+          <td class="cell-none">—</td>
+          <td class="cell-none">—</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="strip-note">通塾日程を参考に表示。講習可能表が提出されると正確な枠に切り替わります。</p>
+</div>
+
+
+<!-- ============================================================
+     案C: 週サマリ・ストリップ（最小・週カード）
+     ============================================================ -->
+<div class="plan-header" id="plan-c">
+  <h2>案C — 週サマリ・ストリップ（最小・週カード）</h2>
+</div>
+
+<!-- C-1: テスト対策 -->
+<p class="state-label">状態1: テスト対策（増コマ申込の具体日×時限）</p>
+<div class="strip-panel">
+  <div class="strip-header">
+    <span class="strip-student">宮永 心那（中3）</span>
+    <span class="pill test">テスト対策</span>
+    <span class="strip-subject">国語 残2コマ</span>
+    <span class="source-badge warning">増コマ申込の枠</span>
+    <button class="close-btn">× 終了</button>
+  </div>
+
+  <div class="week-cards">
+    <!-- 6/8週（表示中） -->
+    <div class="week-card current" title="6/8週へ移動">
+      <div class="week-card-top">
+        <span class="week-card-name">6/8週</span>
+        <span class="avail-badge">4枠</span>
+        <span class="current-tag">表示中</span>
+      </div>
+      <!-- 月・火・水・木・金・土・日 -->
+      <div class="day-dots">
+        <!-- 月: 配置済み含む可能 -->
+        <div class="day-dot-wrap">
+          <span class="day-dot-label">月</span>
+          <div class="day-dot placed" title="6/8(月) 5限配置済み・6限可能"></div>
+        </div>
+        <!-- 火: 今日・可能 -->
+        <div class="day-dot-wrap">
+          <span class="day-dot-label">火</span>
+          <div class="day-dot avail" title="6/9(火) 6限可能（今日）" style="border:2px solid var(--info);"></div>
+        </div>
+        <!-- 水: 不可 -->
+        <div class="day-dot-wrap">
+          <span class="day-dot-label">水</span>
+          <div class="day-dot"></div>
+        </div>
+        <!-- 木: 可能 -->
+        <div class="day-dot-wrap">
+          <span class="day-dot-label">木</span>
+          <div class="day-dot avail" title="6/11(木) 5限可能"></div>
+        </div>
+        <!-- 金: 可能 -->
+        <div class="day-dot-wrap">
+          <span class="day-dot-label">金</span>
+          <div class="day-dot avail" title="6/12(金) 6・7限可能"></div>
+        </div>
+        <!-- 土: 不可 -->
+        <div class="day-dot-wrap">
+          <span class="day-dot-label">土</span>
+          <div class="day-dot"></div>
+        </div>
+        <!-- 日: 不可 -->
+        <div class="day-dot-wrap">
+          <span class="day-dot-label">日</span>
+          <div class="day-dot"></div>
+        </div>
+      </div>
+      <span class="week-card-sub">月・火・木・金</span>
+    </div>
+
+    <!-- 6/15週 -->
+    <div class="week-card" title="6/15週へ移動">
+      <div class="week-card-top">
+        <span class="week-card-name">6/15週</span>
+        <span class="avail-badge">3枠</span>
+      </div>
+      <div class="day-dots">
+        <!-- 月: 可能 -->
+        <div class="day-dot-wrap">
+          <span class="day-dot-label">月</span>
+          <div class="day-dot avail" title="6/15(月) 5限可能"></div>
+        </div>
+        <div class="day-dot-wrap">
+          <span class="day-dot-label">火</span>
+          <div class="day-dot"></div>
+        </div>
+        <!-- 水: 可能 -->
+        <div class="day-dot-wrap">
+          <span class="day-dot-label">水</span>
+          <div class="day-dot avail" title="6/17(水) 6限可能"></div>
+        </div>
+        <div class="day-dot-wrap">
+          <span class="day-dot-label">木</span>
+          <div class="day-dot"></div>
+        </div>
+        <!-- 金: 可能 -->
+        <div class="day-dot-wrap">
+          <span class="day-dot-label">金</span>
+          <div class="day-dot avail" title="6/19(金) 5限可能"></div>
+        </div>
+        <div class="day-dot-wrap">
+          <span class="day-dot-label">土</span>
+          <div class="day-dot"></div>
+        </div>
+        <div class="day-dot-wrap">
+          <span class="day-dot-label">日</span>
+          <div class="day-dot"></div>
+        </div>
+      </div>
+      <span class="week-card-sub">月・水・金</span>
+    </div>
+  </div>
+  <p class="strip-note">カードをクリックでその週へ移動 ／ 黄=可能枠あり ／ 緑=配置済みあり ／ 点線輪郭=今日の曜日</p>
+</div>
+
+<!-- C-2: 講習フォールバック -->
+<p class="state-label">状態2: 講習（可能表 未提出 → 通塾日程フォールバック）</p>
+<div class="strip-panel">
+  <div class="strip-header">
+    <span class="strip-student">宮永 心那（中3）</span>
+    <span class="pill koushu">講習</span>
+    <span class="strip-subject">国語 残2コマ</span>
+    <span class="source-badge gray">通塾日程（毎週）※講習可能表 未提出</span>
+    <button class="close-btn">× 終了</button>
+  </div>
+
+  <div class="week-cards">
+    <!-- 毎週カード（フォールバック） -->
+    <div class="week-card" style="background:#f9fafb; border-color:#d1d5db; cursor:default;">
+      <div class="week-card-top">
+        <span class="week-card-name" style="color:var(--muted);">毎週</span>
+      </div>
+      <div class="day-dots">
+        <div class="day-dot-wrap">
+          <span class="day-dot-label">月</span>
+          <div class="day-dot"></div>
+        </div>
+        <!-- 火: 通塾 -->
+        <div class="day-dot-wrap">
+          <span class="day-dot-label">火</span>
+          <div class="day-dot avail" title="毎週火曜5限 17:00"></div>
+        </div>
+        <div class="day-dot-wrap">
+          <span class="day-dot-label">水</span>
+          <div class="day-dot"></div>
+        </div>
+        <div class="day-dot-wrap">
+          <span class="day-dot-label">木</span>
+          <div class="day-dot"></div>
+        </div>
+        <!-- 金: 通塾 -->
+        <div class="day-dot-wrap">
+          <span class="day-dot-label">金</span>
+          <div class="day-dot avail" title="毎週金曜6限 18:40"></div>
+        </div>
+        <div class="day-dot-wrap">
+          <span class="day-dot-label">土</span>
+          <div class="day-dot"></div>
+        </div>
+        <div class="day-dot-wrap">
+          <span class="day-dot-label">日</span>
+          <div class="day-dot"></div>
+        </div>
+      </div>
+      <span class="week-card-sub">火5限 17:00・金6限 18:40</span>
+    </div>
+  </div>
+  <p class="strip-note">通塾日程を参考に表示。講習可能表が提出されると正確な枠に切り替わります。</p>
+</div>
+
+
+<!-- ============================================================
+     比較表
+     ============================================================ -->
+<div class="compare-section" id="compare">
+  <h2>3案 比較</h2>
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th>評価軸</th>
+        <th>案A チップ</th>
+        <th>案B グリッド</th>
+        <th>案C 週カード</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>情報量（枠の詳細）</td>
+        <td class="c-good">高 — 日付・時限を明示</td>
+        <td class="c-good">高 — 全枠を一覧できる</td>
+        <td class="c-warn">中 — 曜日のみ（時限は省略）</td>
+      </tr>
+      <tr>
+        <td>高さ（省スペース）</td>
+        <td class="c-good">低 60〜80px</td>
+        <td class="c-warn">中 120〜150px</td>
+        <td class="c-good">低 70px</td>
+      </tr>
+      <tr>
+        <td>一覧性（週をまたぐ把握）</td>
+        <td class="c-warn">中 — 週区切り線で補う</td>
+        <td class="c-good">高 — 空白パターンが直感的</td>
+        <td class="c-warn">中 — カード単位の比較が容易</td>
+      </tr>
+      <tr>
+        <td>実装コスト</td>
+        <td class="c-good">低 — CSSのみ</td>
+        <td class="c-warn">中 — テーブル生成ロジック</td>
+        <td class="c-good">低 — CSSのみ</td>
+      </tr>
+      <tr>
+        <td>フォールバック表現</td>
+        <td class="c-good">自然（毎週チップ2個）</td>
+        <td class="c-warn">曜日グリッドに切替が必要</td>
+        <td class="c-good">自然（毎週カード1枚）</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="final-note">※静的モック。色・文言は実装時に調整。</p>
+</div>
+
+</body>
+</html>
