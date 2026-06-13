@@ -65,8 +65,12 @@ import {
   Trash2,
   UserPlus,
   Send,
+  CalendarDays,
+  Copy,
+  X,
 } from 'lucide-react';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
+import { supabase } from '@/lib/supabase';
 
 export default function InquiryDetailPage() {
   const params = useParams();
@@ -113,6 +117,14 @@ export default function InquiryDetailPage() {
   // ---- 生徒として登録 ----
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [enrollError, setEnrollError] = useState('');
+
+  // ---- 面談予約 ----
+  /** POST /api/inquiries/[id]/booking-token の結果 URL */
+  const [bookingUrl, setBookingUrl] = useState('');
+  const [isFetchingBooking, setIsFetchingBooking] = useState(false);
+  const [bookingError, setBookingError] = useState('');
+  const [isCancellingBooking, setIsCancellingBooking] = useState(false);
+  const [bookingCopied, setBookingCopied] = useState(false);
 
   // ---- メール送信 ----
   const [mailTemplates, setMailTemplates] = useState<InquiryMailTemplate[]>([]);
@@ -171,6 +183,75 @@ export default function InquiryDetailPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // ---- 面談予約リンク発行 ----
+  const handleIssueBookingLink = async () => {
+    if (!inquiry) return;
+    setIsFetchingBooking(true);
+    setBookingError('');
+    try {
+      // 認証付き API のため Bearer トークンを付与（このアプリの既定パターン）
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/inquiries/${id}/booking-token`, {
+        method: 'POST',
+        headers: session ? { Authorization: `Bearer ${session.access_token}` } : {},
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error((body as { error?: string }).error ?? '発行に失敗しました');
+      }
+      const data = await res.json() as { token: string; url: string };
+      setBookingUrl(data.url);
+    } catch (err) {
+      setBookingError(getUserErrorMessage(err, '予約リンクの発行に失敗しました'));
+    } finally {
+      setIsFetchingBooking(false);
+    }
+  };
+
+  // ---- 面談予約取消 ----
+  const handleCancelBooking = async () => {
+    if (!inquiry || !window.confirm('面談の予約を取り消しますか？カレンダーの予定も更新されます。')) return;
+    setIsCancellingBooking(true);
+    setBookingError('');
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/inquiries/${id}/booking-token`, {
+        method: 'DELETE',
+        headers: session ? { Authorization: `Bearer ${session.access_token}` } : {},
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error((body as { error?: string }).error ?? '取消に失敗しました');
+      }
+      setBookingUrl('');
+      await fetchData();
+    } catch (err) {
+      setBookingError(getUserErrorMessage(err, '予約の取消に失敗しました'));
+    } finally {
+      setIsCancellingBooking(false);
+    }
+  };
+
+  // ---- 予約URLをクリップボードにコピー ----
+  const handleCopyBookingUrl = async () => {
+    if (!bookingUrl) return;
+    try {
+      await navigator.clipboard.writeText(bookingUrl);
+      setBookingCopied(true);
+      setTimeout(() => setBookingCopied(false), 2000);
+    } catch {
+      // フォールバック: テキストエリアを一時的に使ってコピー
+      const el = document.createElement('textarea');
+      el.value = bookingUrl;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      setBookingCopied(true);
+      setTimeout(() => setBookingCopied(false), 2000);
+    }
+  };
 
   // ---- テンプレート選択時: 変数置換して subject/body をセット ----
   const handleTemplateSelect = (templateId: string) => {
@@ -562,6 +643,79 @@ export default function InquiryDetailPage() {
                   </Button>
                 </div>
               </div>
+            </section>
+
+            {/* ── 面談予約 ── */}
+            <section className="bg-surface-raised border border-border rounded-xl p-6">
+              <h2 className="text-lg font-bold text-text-heading mb-4 flex items-center gap-2">
+                <CalendarDays className="w-5 h-5 text-text-muted" />
+                面談予約
+              </h2>
+
+              {bookingError && (
+                <p className="text-sm text-danger mb-3">{bookingError}</p>
+              )}
+
+              {/* 予約済みのケース */}
+              {inquiry.interview_at ? (
+                <div className="space-y-3">
+                  <p className="text-sm text-text-body">
+                    予約済み:{' '}
+                    <span className="font-semibold text-text-heading">
+                      {formatDateTime(inquiry.interview_at)}
+                    </span>
+                  </p>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={handleCancelBooking}
+                    isLoading={isCancellingBooking}
+                    disabled={isCancellingBooking}
+                  >
+                    <X className="w-4 h-4 mr-1.5" />
+                    予約を取消
+                  </Button>
+                </div>
+              ) : bookingUrl ? (
+                /* リンク発行済み・URLを表示 */
+                <div className="space-y-3">
+                  <p className="text-xs text-text-muted">このURLを保護者に送ってください</p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={bookingUrl}
+                      className="flex-1 min-w-0 px-2 py-1.5 border border-border rounded-lg text-xs bg-surface-hover text-text-body focus:outline-none"
+                      onClick={(e) => (e.target as HTMLInputElement).select()}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCopyBookingUrl}
+                    >
+                      <Copy className="w-4 h-4 mr-1" />
+                      {bookingCopied ? 'コピー済み' : 'コピー'}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                /* 未発行 */
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleIssueBookingLink}
+                    isLoading={isFetchingBooking}
+                    disabled={isFetchingBooking}
+                  >
+                    <CalendarDays className="w-4 h-4 mr-1.5" />
+                    面談予約リンクを発行
+                  </Button>
+                  <p className="text-xs text-text-muted">
+                    発行したURLを保護者にお送りください。14日間有効です。
+                  </p>
+                </div>
+              )}
             </section>
 
             {/* ── コンタクト履歴 ── */}

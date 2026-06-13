@@ -83,6 +83,10 @@ export type Database = {
           referrer_inquiry_note: string | null;
           /** 失注理由（没/体験没時に記録。料金/他塾に決定/時期が合わない/連絡不通のまま/その他） */
           lost_reason: string | null;
+          /** 面談予約で作成した Google カレンダーイベントID（変更・取消用） */
+          interview_event_id: string | null;
+          /** 体験予約で作成した Google カレンダーイベントID（Phase 2） */
+          trial_event_id: string | null;
           raw_source: Record<string, unknown> | null;
           note: string | null;
           created_by: string | null;
@@ -127,6 +131,8 @@ export type Database = {
           linked_student_id?: string | null;
           referrer_inquiry_note?: string | null;
           lost_reason?: string | null;
+          interview_event_id?: string | null;
+          trial_event_id?: string | null;
           raw_source?: Record<string, unknown> | null;
           note?: string | null;
           created_by?: string | null;
@@ -178,6 +184,8 @@ export type Database = {
           sender_address: string | null;
           sender_name: string | null;
           slack_mention_id: string | null;
+          /** 予約設定（受付曜日・時間帯・カレンダーアカウント等）。docs/inquiry-booking-requirements.md */
+          booking_config: Record<string, unknown> | null;
           created_at: string;
           updated_at: string;
         };
@@ -193,10 +201,35 @@ export type Database = {
           sender_address?: string | null;
           sender_name?: string | null;
           slack_mention_id?: string | null;
+          booking_config?: Record<string, unknown> | null;
           created_at?: string;
           updated_at?: string;
         };
         Update: Partial<Database['public']['Tables']['inquiry_school_settings']['Insert']>;
+        Relationships: [];
+      };
+      inquiry_booking_tokens: {
+        Row: {
+          id: string;
+          token: string;
+          inquiry_id: string;
+          school_id: string;
+          purpose: 'interview' | 'trial';
+          expires_at: string;
+          used_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          token: string;
+          inquiry_id: string;
+          school_id: string;
+          purpose?: 'interview' | 'trial';
+          expires_at: string;
+          used_at?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['inquiry_booking_tokens']['Insert']>;
         Relationships: [];
       };
       inquiry_mail_templates: {
@@ -3019,6 +3052,9 @@ export type InquiryMailTemplateUpdate = Database['public']['Tables']['inquiry_ma
 
 export type InquiryMailLog = Database['public']['Tables']['inquiry_mail_logs']['Row'];
 export type InquiryMailLogInsert = Database['public']['Tables']['inquiry_mail_logs']['Insert'];
+
+export type InquiryBookingToken = Database['public']['Tables']['inquiry_booking_tokens']['Row'];
+export type InquiryBookingTokenInsert = Database['public']['Tables']['inquiry_booking_tokens']['Insert'];
 
 export type School = Database['public']['Tables']['schools']['Row'];
 export type SchoolInsert = Database['public']['Tables']['schools']['Insert'];

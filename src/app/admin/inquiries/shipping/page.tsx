@@ -26,11 +26,15 @@ import { generateNekoposCsv, downloadCsvNoBom } from '@/lib/utils/yamatoB2';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { updateInquiry } from '@/lib/api/inquiries';
 import type { Inquiry, InquirySchoolSettings, InquirySchoolSettingsInsert } from '@/types/database';
-import { ArrowLeft, Truck, Save, AlertTriangle } from 'lucide-react';
+import { resolveBookingConfig } from '@/lib/utils/bookingConfig';
+import { ArrowLeft, Truck, Save, AlertTriangle, CalendarDays } from 'lucide-react';
 
 // ────────────────────────────────────────────────────────
 // 型定義
 // ────────────────────────────────────────────────────────
+
+/** 曜日名（0=日〜6=土）の表示用配列 */
+const DOW_LABELS = ['日', '月', '火', '水', '木', '金', '土'] as const;
 
 /** セクション2: 教室設定フォームの状態（school_id ごとに管理） */
 interface SettingFormState {
@@ -44,6 +48,21 @@ interface SettingFormState {
   mail_signature: string;
   mail_reply_to: string;
   slack_mention_id: string;
+  // ── 予約設定（面談） ──
+  /** 空き判定・イベント作成に使う教室長のGoogleアカウント */
+  booking_calendar_email: string;
+  /** 面談受付の曜日（0=日〜6=土）。チェック状態を boolean[] で持つ */
+  booking_interview_days: boolean[];
+  /** 面談受付の開始時刻 HH:mm */
+  booking_interview_start: string;
+  /** 面談受付の終了時刻 HH:mm */
+  booking_interview_end: string;
+  /** 1枠の分数 */
+  booking_interview_duration_min: string;
+  /** 何時間先から予約可 */
+  booking_lead_hours: string;
+  /** 何日先まで */
+  booking_window_days: string;
 }
 
 /** 住所/宛名の欠損チェック結果 */
@@ -89,6 +108,10 @@ function getTimestampString(date: Date): string {
 
 /** InquirySchoolSettings → SettingFormState に変換 */
 function settingsToFormState(s: InquirySchoolSettings): SettingFormState {
+  // booking_config を resolveBookingConfig でデフォルトマージして取り出す
+  const bc = resolveBookingConfig(s.booking_config ?? null);
+  // interview_days（数値配列）を boolean[] に変換（インデックス 0-6 が曜日）
+  const dowChecked = [0, 1, 2, 3, 4, 5, 6].map((d) => bc.interview_days.includes(d));
   return {
     hp_school_code:       s.hp_school_code ?? '',
     yamato_customer_code: s.yamato_customer_code ?? '',
@@ -100,11 +123,20 @@ function settingsToFormState(s: InquirySchoolSettings): SettingFormState {
     mail_signature:       s.mail_signature ?? '',
     mail_reply_to:        s.mail_reply_to ?? '',
     slack_mention_id:     s.slack_mention_id ?? '',
+    booking_calendar_email:           bc.calendar_email ?? '',
+    booking_interview_days:           dowChecked,
+    booking_interview_start:          bc.interview_start,
+    booking_interview_end:            bc.interview_end,
+    booking_interview_duration_min:   String(bc.interview_duration_min),
+    booking_lead_hours:               String(bc.lead_hours),
+    booking_window_days:              String(bc.window_days),
   };
 }
 
-/** 空のフォーム状態（設定未登録の教室向け） */
+/** 空のフォーム状態（設定未登録の教室向け）。予約設定はデフォルト値を使用する */
 function emptyFormState(): SettingFormState {
+  const bc = resolveBookingConfig(null);
+  const dowChecked = [0, 1, 2, 3, 4, 5, 6].map((d) => bc.interview_days.includes(d));
   return {
     hp_school_code: '',
     yamato_customer_code: '',
@@ -116,6 +148,13 @@ function emptyFormState(): SettingFormState {
     mail_signature: '',
     mail_reply_to: '',
     slack_mention_id: '',
+    booking_calendar_email:           '',
+    booking_interview_days:           dowChecked,
+    booking_interview_start:          bc.interview_start,
+    booking_interview_end:            bc.interview_end,
+    booking_interview_duration_min:   String(bc.interview_duration_min),
+    booking_lead_hours:               String(bc.lead_hours),
+    booking_window_days:              String(bc.window_days),
   };
 }
 
@@ -305,6 +344,7 @@ export default function ShippingPage() {
 
   // ── 設定フォーム更新ハンドラ ──
 
+  /** テキスト・number フィールドの汎用変更ハンドラ */
   const handleFormChange = useCallback(
     (schoolId: string, field: keyof SettingFormState, value: string) => {
       setFormStates((prev) => ({
@@ -315,12 +355,41 @@ export default function ShippingPage() {
     []
   );
 
+  /** 面談受付曜日チェックボックスの変更ハンドラ（dow: 0=日〜6=土） */
+  const handleDowChange = useCallback(
+    (schoolId: string, dow: number, checked: boolean) => {
+      setFormStates((prev) => {
+        const prev_days = (prev[schoolId]?.booking_interview_days ?? [false, false, false, false, false, false, false]).slice();
+        prev_days[dow] = checked;
+        return {
+          ...prev,
+          [schoolId]: { ...prev[schoolId], booking_interview_days: prev_days },
+        };
+      });
+    },
+    []
+  );
+
   const handleSaveSettings = useCallback(
     async (schoolId: string) => {
       setSavingIds((prev) => new Set(prev).add(schoolId));
       try {
         const form = formStates[schoolId];
         if (!form) return;
+        // 曜日チェック（boolean[]）を数値配列に変換して booking_config を組み立てる
+        const interviewDays = form.booking_interview_days
+          .map((on, i) => (on ? i : -1))
+          .filter((v) => v >= 0);
+        const bookingConfig = {
+          calendar_email:           form.booking_calendar_email || null,
+          interview_days:           interviewDays,
+          interview_start:          form.booking_interview_start,
+          interview_end:            form.booking_interview_end,
+          interview_duration_min:   parseInt(form.booking_interview_duration_min, 10) || 60,
+          lead_hours:               parseInt(form.booking_lead_hours, 10) || 24,
+          window_days:              parseInt(form.booking_window_days, 10) || 14,
+        };
+
         const payload: InquirySchoolSettingsInsert = {
           school_id:            schoolId,
           hp_school_code:       form.hp_school_code || null,
@@ -333,6 +402,7 @@ export default function ShippingPage() {
           mail_signature:       form.mail_signature || null,
           mail_reply_to:        form.mail_reply_to || null,
           slack_mention_id:     form.slack_mention_id || null,
+          booking_config:       bookingConfig,
         };
         await upsertInquirySchoolSettings(payload);
         setSavedIds((prev) => new Set(prev).add(schoolId));
@@ -752,6 +822,113 @@ export default function ShippingPage() {
                             rows={4}
                             placeholder="例: ─────────────&#10;〇〇学習塾 △△教室&#10;TEL: 03-xxxx-xxxx"
                             helpText="自動送信メールの末尾に付加される署名"
+                          />
+                        </div>
+                      </div>
+
+                      {/* ── 予約設定（面談） ── */}
+                      <div className="mt-6 pt-5 border-t border-border">
+                        <h3 className="text-sm font-semibold text-text-heading mb-1 flex items-center gap-1.5">
+                          <CalendarDays className="w-4 h-4 text-text-muted" />
+                          予約設定（面談）
+                        </h3>
+                        <p className="text-xs text-text-muted mb-4">
+                          Googleカレンダー未連携でも、設定した受付枠で予約は受け付けられます（空き判定はカレンダー連携時のみ）。
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                          <div className="sm:col-span-2 lg:col-span-3">
+                            <Input
+                              label="カレンダーアカウント（Googleメール）"
+                              value={form.booking_calendar_email}
+                              onChange={(e) =>
+                                handleFormChange(schoolId, 'booking_calendar_email', e.target.value)
+                              }
+                              placeholder="例: manager@example.com"
+                              helpText="面談の空き判定・予定作成に使う教室長のGoogleアカウント。空なら教室メールで自動照合"
+                            />
+                          </div>
+
+                          {/* 面談受付曜日 */}
+                          <div className="sm:col-span-2 lg:col-span-3">
+                            <label className="block text-sm font-medium text-text-heading mb-2">
+                              面談受付曜日
+                            </label>
+                            <div className="flex flex-wrap gap-2">
+                              {DOW_LABELS.map((label, dow) => {
+                                const checked = form.booking_interview_days[dow] ?? false;
+                                return (
+                                  <label
+                                    key={dow}
+                                    className={`
+                                      flex items-center justify-center w-10 h-10 rounded-lg border cursor-pointer text-sm font-medium transition-colors duration-150 select-none
+                                      ${checked
+                                        ? 'bg-[#1a1a1a] text-white border-[#1a1a1a]'
+                                        : 'bg-white text-text-body border-border hover:border-[#1a1a1a]'
+                                      }
+                                    `}
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      className="sr-only"
+                                      checked={checked}
+                                      onChange={(e) =>
+                                        handleDowChange(schoolId, dow, e.target.checked)
+                                      }
+                                    />
+                                    {label}
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          <Input
+                            label="受付開始時刻"
+                            type="time"
+                            value={form.booking_interview_start}
+                            onChange={(e) =>
+                              handleFormChange(schoolId, 'booking_interview_start', e.target.value)
+                            }
+                            helpText="面談受付の開始時刻（例: 14:00）"
+                          />
+                          <Input
+                            label="受付終了時刻"
+                            type="time"
+                            value={form.booking_interview_end}
+                            onChange={(e) =>
+                              handleFormChange(schoolId, 'booking_interview_end', e.target.value)
+                            }
+                            helpText="枠の終了がこの時刻を超えない（例: 21:00）"
+                          />
+                          <Input
+                            label="1枠の分数"
+                            type="number"
+                            value={form.booking_interview_duration_min}
+                            onChange={(e) =>
+                              handleFormChange(schoolId, 'booking_interview_duration_min', e.target.value)
+                            }
+                            placeholder="例: 60"
+                            helpText="1回の面談の長さ（分）"
+                          />
+                          <Input
+                            label="受付開始リードタイム（時間）"
+                            type="number"
+                            value={form.booking_lead_hours}
+                            onChange={(e) =>
+                              handleFormChange(schoolId, 'booking_lead_hours', e.target.value)
+                            }
+                            placeholder="例: 24"
+                            helpText="今から何時間後以降の枠から受け付けるか"
+                          />
+                          <Input
+                            label="受付窓口日数"
+                            type="number"
+                            value={form.booking_window_days}
+                            onChange={(e) =>
+                              handleFormChange(schoolId, 'booking_window_days', e.target.value)
+                            }
+                            placeholder="例: 14"
+                            helpText="今日から何日先までの枠を表示するか"
                           />
                         </div>
                       </div>

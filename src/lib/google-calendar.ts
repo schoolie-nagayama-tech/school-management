@@ -234,6 +234,35 @@ export async function updateCalendarEvent(
 }
 
 // ============================================
+// カレンダーイベント削除（予約取消時に使用）
+// ============================================
+
+export async function deleteCalendarEvent(
+  userId: string,
+  eventId: string
+): Promise<{ success: boolean; error?: string }> {
+  const oauth2Client = await getAuthenticatedClient(userId);
+  if (!oauth2Client) {
+    return { success: false, error: 'Google Calendar未連携' };
+  }
+
+  const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+
+  try {
+    await calendar.events.delete({ calendarId: 'primary', eventId });
+    return { success: true };
+  } catch (error) {
+    // 既に削除済み(410)などは成功扱いにする
+    const code = (error as { code?: number })?.code;
+    if (code === 404 || code === 410) {
+      return { success: true };
+    }
+    console.error('[google-calendar] イベント削除失敗:', error);
+    return { success: false, error: 'カレンダーイベントの削除に失敗しました' };
+  }
+}
+
+// ============================================
 // カレンダーイベント取得
 // ============================================
 
