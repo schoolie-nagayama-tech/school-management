@@ -139,8 +139,10 @@ export function computeInquiryReminders(
     }
 
     // ---- 3. material_unsent ----
-    // 条件: request_type === '資料請求' かつ material_sent_at === null かつ daysSince >= 3
+    // 条件: status === 'in_progress'（決着済みには資料催促しない）かつ
+    //        request_type === '資料請求' かつ material_sent_at === null かつ daysSince >= 3
     if (
+      inquiry.status === 'in_progress' &&
       inquiry.request_type === '資料請求' &&
       !inquiry.material_sent_at &&
       daysSince >= 3
