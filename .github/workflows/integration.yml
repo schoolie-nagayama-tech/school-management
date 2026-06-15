@@ -1,0 +1,68 @@
+name: Integration Tests (RLS)
+
+# RLS 回帰テストをローカル Supabase 環境で実行する。
+# push/PR のたびに「講師は自教室のみ / 教室長は全件 / 匿名は不可」を自動検証する。
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  integration:
+    name: RLS Integration Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Supabase CLI をセットアップ
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # ローカル Supabase を起動（supabase/migrations を自動適用してDBを初期化）
+      # ubuntu-latest は Docker が利用可能なため supabase start が動く
+      - name: Start Supabase
+        run: supabase start
+
+      # supabase status -o env の出力を .env.test に書き出す
+      # キー名を .env.test の規約（NEXT_PUBLIC_SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY）に合わせる
+      - name: Generate .env.test from supabase status
+        run: |
+          # supabase status -o env の出力例:
+          #   ANON_KEY=eyJ...
+          #   SERVICE_ROLE_KEY=eyJ...
+          #   API_URL=http://127.0.0.1:54321
+          #   DB_URL=postgresql://postgres:postgres@127.0.0.1:54322/postgres
+          eval "$(supabase status -o env)"
+          cat > .env.test <<EOF
+          # 自動生成 — supabase status -o env より
+          NEXT_PUBLIC_SUPABASE_URL=${API_URL}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON_KEY}
+          SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}
+          DATABASE_URL=${DB_URL}
+          EOF
+          echo ".env.test を生成しました"
+          # URL のみ確認（機密キーはログに出さない）
+          grep NEXT_PUBLIC_SUPABASE_URL .env.test
+
+      # 統合テストを実行（RLS 回帰テストを含む）
+      - name: Run integration tests
+        run: npm run test:integration
+
+      # 後処理: 成功・失敗にかかわらず Supabase を停止
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop
