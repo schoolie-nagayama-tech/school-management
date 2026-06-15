@@ -10,11 +10,13 @@ import {
 } from '@/lib/api/zoukoma';
 import {
   unlinkResponseFromStudent,
+  deleteFormResponse,
 } from '@/lib/api/form-responses';
 import { getStudents } from '@/lib/api/students';
 import { LinkStudentModal } from '@/components/forms/LinkStudentModal';
 import { ZoukomaResponseDetailModal } from '@/components/forms/zoukoma';
 import { useToast } from '@/hooks/useToast';
+import { useConfirm } from '@/hooks/useConfirm';
 import { ToastContainer, Loading } from '@/components/ui';
 import type { ZoukomaResponse, ZoukomaResponseFilters } from '@/types/forms/zoukoma';
 import type { Student } from '@/types/database';
@@ -28,7 +30,7 @@ export default function ZoukomaResponsePage() {
   const searchParams = useSearchParams();
   const schoolIdParam = searchParams.get('schoolId');
   const periodKey = (params?.periodKey as string) || '';
-  const { getSelectedSchoolIds } = useAuth();
+  const { getSelectedSchoolIds, permissions } = useAuth();
   const [responses, setResponses] = useState<ZoukomaResponse[]>([]);
   const [stats, setStats] = useState({
     total_responses: 0,
@@ -45,7 +47,9 @@ export default function ZoukomaResponsePage() {
   const [linkingResponse, setLinkingResponse] = useState<ZoukomaResponse | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoadingStudents, setIsLoadingStudents] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const { toasts, removeToast, success, error } = useToast();
+  const { confirm, ConfirmDialog } = useConfirm();
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
@@ -131,6 +135,25 @@ export default function ZoukomaResponsePage() {
     await fetchData();
     setLinkingResponse(null);
     success('生徒に紐付けました');
+  };
+
+  // 回答を完全削除（マネージャー以上のみ）。アーカイブと違い物理削除で復元不可。
+  const handleDelete = async (id: string) => {
+    if (!permissions?.canDeleteFormResponses) return;
+    if (!(await confirm({ title: '回答削除', description: 'この回答を完全に削除しますか？この操作は取り消せません。', confirmLabel: '削除', variant: 'danger' }))) {
+      return;
+    }
+    setIsProcessing(true);
+    try {
+      await deleteFormResponse(id);
+      await fetchData();
+      success('回答を削除しました');
+    } catch (err) {
+      console.error('Error deleting response:', err);
+      error(getUserErrorMessage(err, '削除に失敗しました'));
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   // 紐付けを解除
@@ -353,6 +376,15 @@ export default function ZoukomaResponsePage() {
                               紐付け
                             </button>
                           )}
+                          {permissions?.canDeleteFormResponses && (
+                            <button
+                              className="px-3 py-1 text-xs bg-surface-hover text-[#ef4444] rounded hover:bg-[#ef4444]/10 transition-colors duration-150"
+                              onClick={() => handleDelete(response.id)}
+                              disabled={isProcessing}
+                            >
+                              削除
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -400,6 +432,7 @@ export default function ZoukomaResponsePage() {
           onSuccess={handleLinkSuccess}
         />
       )}
+      {ConfirmDialog}
       </AdminLayout>
     </>
   );

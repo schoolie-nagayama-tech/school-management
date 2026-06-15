@@ -14,6 +14,8 @@ import {
   archiveResponse,
   unarchiveResponse,
   archiveResponses,
+  deleteFormResponse,
+  deleteResponses,
 } from '@/lib/api/form-responses';
 import { getStudents } from '@/lib/api/students';
 import { LinkStudentModal } from '@/components/forms/LinkStudentModal';
@@ -34,7 +36,7 @@ export default function ShukaisuResponsePage() {
   const searchParams = useSearchParams();
   const schoolIdParam = searchParams.get('schoolId');
   const periodKey = (params?.periodKey as string) || '';
-  const { getSelectedSchoolIds } = useAuth();
+  const { getSelectedSchoolIds, permissions } = useAuth();
   const [responses, setResponses] = useState<ShukaisuResponse[]>([]);
   const [stats, setStats] = useState({
     total_responses: 0,
@@ -228,6 +230,50 @@ export default function ShukaisuResponsePage() {
     }
   };
 
+  // 回答を完全削除（マネージャー以上のみ）。アーカイブと違い物理削除で復元不可。
+  const handleDelete = async (id: string) => {
+    if (!permissions?.canDeleteFormResponses) return;
+    if (!(await confirm({ title: '回答削除', description: 'この回答を完全に削除しますか？この操作は取り消せません。', confirmLabel: '削除', variant: 'danger' }))) {
+      return;
+    }
+    setIsProcessing(true);
+    try {
+      await deleteFormResponse(id);
+      await fetchData();
+      success('回答を削除しました');
+    } catch (err) {
+      console.error('Error deleting response:', err);
+      error(getUserErrorMessage(err, '削除に失敗しました'));
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // 選択した回答を一括で完全削除（マネージャー以上のみ）
+  const handleBulkDelete = async () => {
+    if (!permissions?.canDeleteFormResponses) return;
+    if (selectedIds.size === 0) {
+      error('削除する回答を選択してください');
+      return;
+    }
+    if (!(await confirm({ title: '一括削除確認', description: `${selectedIds.size}件の回答を完全に削除しますか？この操作は取り消せません。`, confirmLabel: '削除', variant: 'danger' }))) {
+      return;
+    }
+    setIsProcessing(true);
+    try {
+      const count = selectedIds.size;
+      await deleteResponses(Array.from(selectedIds));
+      setSelectedIds(new Set());
+      await fetchData();
+      success(`${count}件を削除しました`);
+    } catch (err) {
+      console.error('Error bulk deleting:', err);
+      error(getUserErrorMessage(err, '削除に失敗しました'));
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
       const activeResponses = responses.filter(r => !r.is_archived);
@@ -372,6 +418,15 @@ export default function ShukaisuResponsePage() {
               >
                 一括アーカイブ
               </button>
+              {permissions?.canDeleteFormResponses && (
+                <button
+                  onClick={handleBulkDelete}
+                  disabled={isProcessing}
+                  className="px-3 py-1 bg-[#ef4444] text-white text-sm rounded hover:bg-[#dc2626] disabled:opacity-50 transition-colors duration-150"
+                >
+                  一括削除
+                </button>
+              )}
               <button
                 onClick={() => setSelectedIds(new Set())}
                 className="px-3 py-1 text-gray-600 text-sm hover:underline transition-colors duration-150"
@@ -506,6 +561,15 @@ export default function ShukaisuResponsePage() {
                               >
                                 戻す
                               </button>
+                              {permissions?.canDeleteFormResponses && (
+                                <button
+                                  className="px-3 py-1 text-xs bg-surface-hover text-[#ef4444] rounded hover:bg-[#ef4444]/10 transition-colors duration-150"
+                                  onClick={() => handleDelete(response.id)}
+                                  disabled={isProcessing}
+                                >
+                                  削除
+                                </button>
+                              )}
                             </>
                           ) : (
                             <>
@@ -537,6 +601,15 @@ export default function ShukaisuResponsePage() {
                               >
                                 アーカイブ
                               </button>
+                              {permissions?.canDeleteFormResponses && (
+                                <button
+                                  className="px-3 py-1 text-xs bg-surface-hover text-[#ef4444] rounded hover:bg-[#ef4444]/10 transition-colors duration-150"
+                                  onClick={() => handleDelete(response.id)}
+                                  disabled={isProcessing}
+                                >
+                                  削除
+                                </button>
+                              )}
                             </>
                           )}
                         </div>

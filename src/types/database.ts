@@ -4030,6 +4030,8 @@ export interface Permission {
   canEditOrdering: boolean;
   canAccessTeacherBadges: boolean;
   canEditTeacherBadges: boolean;
+  // フォーム回答の物理削除（マネージャー以上のみ）
+  canDeleteFormResponses: boolean;
 }
 
 // 権限定義
@@ -4061,6 +4063,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission> = {
     canEditOrdering: true,
     canAccessTeacherBadges: true,
     canEditTeacherBadges: true,
+    canDeleteFormResponses: true,
   },
   owner: {
     canAccessStudents: true,
@@ -4089,6 +4092,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission> = {
     canEditOrdering: true,
     canAccessTeacherBadges: true,
     canEditTeacherBadges: true,
+    canDeleteFormResponses: true,
   },
   manager: {
     canAccessStudents: true,
@@ -4117,6 +4121,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission> = {
     canEditOrdering: true,
     canAccessTeacherBadges: true,
     canEditTeacherBadges: true,
+    canDeleteFormResponses: true,
   },
   teacher: {
     canAccessStudents: true,
@@ -4145,6 +4150,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission> = {
     canEditOrdering: false,
     canAccessTeacherBadges: true,
     canEditTeacherBadges: false,
+    canDeleteFormResponses: false,
   },
   parent: {
     canAccessStudents: false,
@@ -4173,6 +4179,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission> = {
     canEditOrdering: false,
     canAccessTeacherBadges: false,
     canEditTeacherBadges: false,
+    canDeleteFormResponses: false,
   },
 };
 
