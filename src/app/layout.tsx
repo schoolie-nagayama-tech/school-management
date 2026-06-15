@@ -8,6 +8,7 @@ import { ThemeProvider, themeInitScript } from '@/contexts/ThemeContext';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ImpersonationBanner } from '@/components/ImpersonationBanner';
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Toaster } from 'sonner';
 
 const notoSansJP = Noto_Sans_JP({
   subsets: ["latin"],
@@ -71,6 +72,8 @@ export default function RootLayout({
               <MasterDataProvider>
                 <ImpersonationBanner />
                 {children}
+                {/* アプリ全体のトースト通知（ボタン操作のフィードバック用） */}
+                <Toaster richColors position="top-center" />
                 <SpeedInsights />
               </MasterDataProvider>
             </AuthProvider>

@@ -3,18 +3,20 @@
 /**
  * 問合せ管理 — 詳細ページ。
  * admin / owner のみアクセス可。
- * - ステータス変更（enrolled 時に enrolled_at / weekly_count を表示）
- * - コンタクト履歴の閲覧・追加
- * - メール送信（テンプレート選択 or 手書き）と送信履歴
- * - tel: / mailto: リンク
- * - HP 原文（raw_source）折りたたみ
- * - 生徒として登録（氏名・学年をクエリパラメータでプリフィル）
- * - 論理削除（確認ダイアログ付き）
+ *
+ * レイアウト（3層情報設計）:
+ *   1. 顧客サマリーヘッダー（全幅）
+ *   2. lg:grid-cols-3 の2カラム
+ *      左（col-span-2）: ステータス・コンタクト・メール
+ *      右（col-span-1）: 顧客詳細・面談予約・関連問合せ・HP原文・操作
+ *
+ * 操作の成功/失敗は sonner トーストで通知する。
  */
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { AdminLayout } from '@/components/layouts';
 import { Loading, Modal } from '@/components/ui';
 import { Button } from '@/components/ui';
@@ -96,7 +98,6 @@ export default function InquiryDetailPage() {
   const [editLostReason, setEditLostReason] = useState('');
   const [editNote, setEditNote] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState('');
 
   // ---- コンタクト追加フォーム ----
   const [contactMethod, setContactMethod] = useState<'tel' | 'email' | 'sms' | 'visit' | 'other'>('tel');
@@ -105,7 +106,6 @@ export default function InquiryDetailPage() {
   const [contactResult, setContactResult] = useState('');
   const [contactNote, setContactNote] = useState('');
   const [isAddingContact, setIsAddingContact] = useState(false);
-  const [contactError, setContactError] = useState('');
 
   // ---- HP原文の開閉 ----
   const [rawSourceOpen, setRawSourceOpen] = useState(false);
@@ -116,13 +116,11 @@ export default function InquiryDetailPage() {
 
   // ---- 生徒として登録 ----
   const [isEnrolling, setIsEnrolling] = useState(false);
-  const [enrollError, setEnrollError] = useState('');
 
   // ---- 面談予約 ----
   /** POST /api/inquiries/[id]/booking-token の結果 URL */
   const [bookingUrl, setBookingUrl] = useState('');
   const [isFetchingBooking, setIsFetchingBooking] = useState(false);
-  const [bookingError, setBookingError] = useState('');
   const [isCancellingBooking, setIsCancellingBooking] = useState(false);
   const [bookingCopied, setBookingCopied] = useState(false);
 
@@ -134,7 +132,6 @@ export default function InquiryDetailPage() {
   const [mailSubject, setMailSubject] = useState('');
   const [mailBody, setMailBody] = useState('');
   const [isSendingMail, setIsSendingMail] = useState(false);
-  const [mailSendMessage, setMailSendMessage] = useState('');
   const [mailLogs, setMailLogs] = useState<InquiryMailLog[]>([]);
 
   // ---- データ取得 ----
@@ -188,7 +185,6 @@ export default function InquiryDetailPage() {
   const handleIssueBookingLink = async () => {
     if (!inquiry) return;
     setIsFetchingBooking(true);
-    setBookingError('');
     try {
       // 認証付き API のため Bearer トークンを付与（このアプリの既定パターン）
       const { data: { session } } = await supabase.auth.getSession();
@@ -202,8 +198,9 @@ export default function InquiryDetailPage() {
       }
       const data = await res.json() as { token: string; url: string };
       setBookingUrl(data.url);
+      toast.success('予約リンクを発行しました');
     } catch (err) {
-      setBookingError(getUserErrorMessage(err, '予約リンクの発行に失敗しました'));
+      toast.error(getUserErrorMessage(err, '予約リンクの発行に失敗しました'));
     } finally {
       setIsFetchingBooking(false);
     }
@@ -213,7 +210,6 @@ export default function InquiryDetailPage() {
   const handleCancelBooking = async () => {
     if (!inquiry || !window.confirm('面談の予約を取り消しますか？カレンダーの予定も更新されます。')) return;
     setIsCancellingBooking(true);
-    setBookingError('');
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch(`/api/inquiries/${id}/booking-token`, {
@@ -226,8 +222,9 @@ export default function InquiryDetailPage() {
       }
       setBookingUrl('');
       await fetchData();
+      toast.success('予約を取り消しました');
     } catch (err) {
-      setBookingError(getUserErrorMessage(err, '予約の取消に失敗しました'));
+      toast.error(getUserErrorMessage(err, '予約の取消に失敗しました'));
     } finally {
       setIsCancellingBooking(false);
     }
@@ -256,7 +253,6 @@ export default function InquiryDetailPage() {
   // ---- テンプレート選択時: 変数置換して subject/body をセット ----
   const handleTemplateSelect = (templateId: string) => {
     setSelectedTemplateId(templateId);
-    setMailSendMessage('');
     if (!templateId || !inquiry) {
       // テンプレ選択解除時はフィールドをクリア
       setMailSubject('');
@@ -274,7 +270,6 @@ export default function InquiryDetailPage() {
   const handleSendMail = async () => {
     if (!inquiry) return;
     setIsSendingMail(true);
-    setMailSendMessage('');
     try {
       await sendInquiryMail({
         inquiry,
@@ -282,12 +277,12 @@ export default function InquiryDetailPage() {
         body: mailBody,
         templateId: selectedTemplateId || null,
       });
-      setMailSendMessage('送信しました');
+      toast.success('メールを送信しました');
       // 送信履歴を再取得
       const logs = await getMailLogs(id);
       setMailLogs(logs);
     } catch (err) {
-      setMailSendMessage(getUserErrorMessage(err, '送信に失敗しました'));
+      toast.error(getUserErrorMessage(err, '送信に失敗しました'));
     } finally {
       setIsSendingMail(false);
     }
@@ -297,7 +292,6 @@ export default function InquiryDetailPage() {
   const handleSave = async () => {
     if (!inquiry) return;
     setIsSaving(true);
-    setSaveError('');
     try {
       const update: Parameters<typeof updateInquiry>[1] = {
         status: editStatus,
@@ -320,8 +314,9 @@ export default function InquiryDetailPage() {
       }
       const updated = await updateInquiry(id, update);
       setInquiry(updated);
+      toast.success('保存しました');
     } catch (err) {
-      setSaveError(getUserErrorMessage(err, '保存に失敗しました'));
+      toast.error(getUserErrorMessage(err, '保存に失敗しました'));
     } finally {
       setIsSaving(false);
     }
@@ -331,7 +326,6 @@ export default function InquiryDetailPage() {
   const handleAddContact = async () => {
     if (!inquiry) return;
     setIsAddingContact(true);
-    setContactError('');
     try {
       const contact = await addInquiryContact({
         inquiry_id: inquiry.id,
@@ -346,8 +340,9 @@ export default function InquiryDetailPage() {
       setContacts((prev) => [contact, ...prev]);
       setContactResult('');
       setContactNote('');
+      toast.success('コンタクトを追加しました');
     } catch (err) {
-      setContactError(getUserErrorMessage(err, 'コンタクトの追加に失敗しました'));
+      toast.error(getUserErrorMessage(err, 'コンタクトの追加に失敗しました'));
     } finally {
       setIsAddingContact(false);
     }
@@ -359,6 +354,7 @@ export default function InquiryDetailPage() {
     try {
       await softDeleteInquiry(id);
       setDeleteModalOpen(false);
+      toast.success('問合せを削除しました');
       router.push('/admin/inquiries');
     } catch (err) {
       setErrorMessage(getUserErrorMessage(err, '削除に失敗しました'));
@@ -375,7 +371,6 @@ export default function InquiryDetailPage() {
   const handleEnrollAsStudent = useCallback(async () => {
     if (!inquiry) return;
     setIsEnrolling(true);
-    setEnrollError('');
     try {
       // 学年テキスト → 数値（GRADE_LABELS は number→label なので逆引き）
       const gradeNum = inquiry.grade
@@ -414,10 +409,11 @@ export default function InquiryDetailPage() {
       });
       setInquiry(updated);
       setEditStatus(updated.status);
+      toast.success('生徒として登録しました');
       // 作成した生徒の詳細へ
       router.push(`/students/${created.id}`);
     } catch (err) {
-      setEnrollError(getUserErrorMessage(err, '生徒登録に失敗しました'));
+      toast.error(getUserErrorMessage(err, '生徒登録に失敗しました'));
     } finally {
       setIsEnrolling(false);
     }
@@ -441,7 +437,8 @@ export default function InquiryDetailPage() {
 
   return (
     <AdminLayout headerTitle="問合せ詳細">
-      <div className="max-w-4xl">
+      <div className="max-w-6xl">
+
         {/* 戻るリンク */}
         <Link
           href="/admin/inquiries"
@@ -462,557 +459,602 @@ export default function InquiryDetailPage() {
         ) : !inquiry ? null : (
           <div className="space-y-6">
 
-            {/* ── 基本情報 ── */}
+            {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                1. 顧客サマリーヘッダー（全幅）
+                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
             <section className="bg-surface-raised border border-border rounded-xl p-6">
-              <div className="flex items-start justify-between mb-4">
-                <h2 className="text-lg font-bold text-text-heading">基本情報</h2>
-                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_CONFIG[inquiry.status].className}`}>
+
+              {/* 氏名 + ステータス + 学年 */}
+              <div className="flex items-start gap-3 flex-wrap mb-4">
+                <h1 className="text-xl font-bold text-text-heading">
+                  {inquiry.student_name || inquiry.guardian_name || '（氏名未登録）'}
+                </h1>
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium shrink-0 ${STATUS_CONFIG[inquiry.status].className}`}>
                   {STATUS_CONFIG[inquiry.status].label}
+                </span>
+                {inquiry.grade && (
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-surface-hover text-text-muted border border-border shrink-0">
+                    {inquiry.grade}
+                  </span>
+                )}
+              </div>
+
+              {/* 連絡先ボタン */}
+              {(inquiry.phone || inquiry.email) && (
+                <div className="flex gap-2 flex-wrap mb-4">
+                  {inquiry.phone && (
+                    <a href={`tel:${inquiry.phone}`}>
+                      <Button variant="outline" size="sm">
+                        <Phone className="w-4 h-4 mr-1.5" />
+                        {inquiry.phone}
+                      </Button>
+                    </a>
+                  )}
+                  {inquiry.email && (
+                    <a href={`mailto:${inquiry.email}`}>
+                      <Button variant="outline" size="sm">
+                        <Mail className="w-4 h-4 mr-1.5" />
+                        {inquiry.email}
+                      </Button>
+                    </a>
+                  )}
+                </div>
+              )}
+
+              {/* メタ情報チップ列 */}
+              <div className="flex flex-wrap gap-2 text-xs text-text-muted mb-4">
+                {inquiry.media && (
+                  <span className="px-2 py-0.5 bg-surface-hover border border-border rounded-full">
+                    {inquiry.media}
+                  </span>
+                )}
+                {inquiry.request_type && (
+                  <span className="px-2 py-0.5 bg-surface-hover border border-border rounded-full">
+                    {inquiry.request_type}
+                  </span>
+                )}
+                <span className="px-2 py-0.5 bg-surface-hover border border-border rounded-full">
+                  受付: {formatDate(inquiry.inquired_at)}
                 </span>
               </div>
 
-              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
-                <InfoRow label="受付日" value={formatDate(inquiry.inquired_at)} />
-                <InfoRow label="HP問合せNO" value={inquiry.hp_inquiry_no} />
-                <InfoRow label="生徒氏名" value={inquiry.student_name} />
-                <InfoRow label="生徒氏名(カナ)" value={inquiry.student_name_kana} />
-                <InfoRow label="保護者氏名" value={inquiry.guardian_name} />
-                <InfoRow label="続柄" value={inquiry.relationship} />
-                <InfoRow label="学年" value={inquiry.grade} />
-                <InfoRow label="性別" value={inquiry.gender} />
-                <InfoRow label="在籍校" value={inquiry.school_name} />
-                <InfoRow label="塾経験" value={inquiry.juku_experience} />
+              {/* 問合せ内容（要望）引用表示 */}
+              {inquiry.initial_message && (
+                <blockquote className="border-l-4 border-border pl-4 text-sm text-text-body italic line-clamp-3">
+                  {inquiry.initial_message}
+                </blockquote>
+              )}
 
-                {/* 失注理由: lost / trial_lost かつ値がある場合のみ表示 */}
-                {(inquiry.status === 'lost' || inquiry.status === 'trial_lost') && inquiry.lost_reason && (
-                  <InfoRow label="失注理由" value={inquiry.lost_reason} />
-                )}
-
-                {/* 電話: tel: リンク */}
-                <div>
-                  <dt className="text-xs text-text-muted mb-0.5">電話</dt>
-                  <dd className="text-text-heading">
-                    {inquiry.phone ? (
-                      <a href={`tel:${inquiry.phone}`} className="inline-flex items-center gap-1 text-blue-700 hover:underline">
-                        <Phone className="w-3.5 h-3.5" />
-                        {inquiry.phone}
-                      </a>
-                    ) : '—'}
-                  </dd>
-                </div>
-
-                {/* メール: mailto: リンク */}
-                <div>
-                  <dt className="text-xs text-text-muted mb-0.5">メール</dt>
-                  <dd className="text-text-heading">
-                    {inquiry.email ? (
-                      <a href={`mailto:${inquiry.email}`} className="inline-flex items-center gap-1 text-blue-700 hover:underline">
-                        <Mail className="w-3.5 h-3.5" />
-                        {inquiry.email}
-                      </a>
-                    ) : '—'}
-                  </dd>
-                </div>
-
-                {/* 住所 */}
-                <div className="sm:col-span-2">
-                  <dt className="text-xs text-text-muted mb-0.5">住所</dt>
-                  <dd className="text-text-heading">
-                    {[
-                      inquiry.postal_code ? `〒${inquiry.postal_code}` : null,
-                      inquiry.address_pref,
-                      inquiry.address_detail,
-                      inquiry.address_building,
-                    ].filter(Boolean).join(' ') || '—'}
-                  </dd>
-                </div>
-
-                <InfoRow label="媒体" value={inquiry.media} />
-                <InfoRow label="問合せ経路" value={inquiry.channel} />
-                <InfoRow label="申込内容" value={inquiry.request_type} />
-                <InfoRow label="希望科目" value={inquiry.preferred_subjects} />
-                <InfoRow label="通塾目的" value={inquiry.purpose} />
-                <InfoRow label="デバイス" value={inquiry.device} />
-
-                {/* 問合せ原文（初回メッセージ） */}
-                {inquiry.initial_message && (
-                  <div className="sm:col-span-2">
-                    <dt className="text-xs text-text-muted mb-0.5">問合せ内容</dt>
-                    <dd className="text-text-body bg-surface-hover rounded-lg p-3 whitespace-pre-wrap">
-                      {inquiry.initial_message}
-                    </dd>
-                  </div>
-                )}
-              </dl>
+              {/* 失注理由 */}
+              {(inquiry.status === 'lost' || inquiry.status === 'trial_lost') && inquiry.lost_reason && (
+                <p className="mt-3 text-xs text-text-muted">
+                  失注理由: {inquiry.lost_reason}
+                </p>
+              )}
             </section>
 
-            {/* ── ステータス変更・追客情報 ── */}
-            <section className="bg-surface-raised border border-border rounded-xl p-6">
-              <h2 className="text-lg font-bold text-text-heading mb-4">ステータス・追客情報</h2>
-              <div className="space-y-4">
-                {/* ステータス選択 */}
-                <div>
-                  <label className="block text-xs font-medium text-text-heading mb-1">ステータス</label>
-                  <select
-                    value={editStatus}
-                    onChange={(e) => setEditStatus(e.target.value as InquiryStatus)}
-                    className="w-full sm:w-48 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
-                  >
-                    {STATUS_OPTIONS.filter((o) => o.value !== 'all').map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
-                </div>
+            {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                2 & 3. 2カラムグリッド
+                左(col-span-2): やること
+                右(col-span-1): 参照
+                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-                {/* 入会時: 入会日・週回数 */}
-                {(editStatus === 'enrolled') && (
-                  <div className="grid grid-cols-2 gap-4">
+              {/* ────────────────────────────────
+                  左カラム: ステータス・コンタクト・メール
+                  ──────────────────────────────── */}
+              <div className="lg:col-span-2 space-y-6">
+
+                {/* ── ステータス・追客情報 ── */}
+                <section className="bg-surface-raised border border-border rounded-xl p-6">
+                  <h2 className="text-base font-bold text-text-heading mb-4">ステータス・追客情報</h2>
+                  <div className="space-y-4">
+
+                    {/* ステータス選択 */}
                     <div>
-                      <label className="block text-xs font-medium text-text-heading mb-1">入会日</label>
-                      <input
-                        type="date"
-                        value={editEnrolledAt}
-                        onChange={(e) => setEditEnrolledAt(e.target.value)}
-                        className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-text-heading mb-1">週回数</label>
-                      <input
-                        type="number"
-                        min={1}
-                        max={10}
-                        value={editWeeklyCount}
-                        onChange={(e) => setEditWeeklyCount(e.target.value)}
-                        placeholder="例: 2"
-                        className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* 体験没 / 入会: 体験日 */}
-                {(editStatus === 'trial_lost' || editStatus === 'enrolled') && (
-                  <div>
-                    <label className="block text-xs font-medium text-text-heading mb-1">体験日</label>
-                    <input
-                      type="date"
-                      value={editTrialAt}
-                      onChange={(e) => setEditTrialAt(e.target.value)}
-                      className="w-full sm:w-48 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-                )}
-
-                {/* 没 / 体験没: 失注理由 */}
-                {(editStatus === 'lost' || editStatus === 'trial_lost') && (
-                  <div>
-                    <label className="block text-xs font-medium text-text-heading mb-1">失注理由</label>
-                    <select
-                      value={editLostReason}
-                      onChange={(e) => setEditLostReason(e.target.value)}
-                      className="w-full sm:w-56 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
-                    >
-                      <option value="">— 未選択 —</option>
-                      {LOST_REASONS.map((r) => (
-                        <option key={r} value={r}>{r}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                {/* メモ */}
-                <div>
-                  <label className="block text-xs font-medium text-text-heading mb-1">メモ</label>
-                  <textarea
-                    value={editNote}
-                    onChange={(e) => setEditNote(e.target.value)}
-                    rows={3}
-                    className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-                    placeholder="内部メモ（保護者には見えません）"
-                  />
-                </div>
-
-                {saveError && (
-                  <p className="text-sm text-danger">{saveError}</p>
-                )}
-
-                <div className="flex gap-2">
-                  <Button onClick={handleSave} isLoading={isSaving} size="sm">
-                    保存
-                  </Button>
-                </div>
-              </div>
-            </section>
-
-            {/* ── 面談予約 ── */}
-            <section className="bg-surface-raised border border-border rounded-xl p-6">
-              <h2 className="text-lg font-bold text-text-heading mb-4 flex items-center gap-2">
-                <CalendarDays className="w-5 h-5 text-text-muted" />
-                面談予約
-              </h2>
-
-              {bookingError && (
-                <p className="text-sm text-danger mb-3">{bookingError}</p>
-              )}
-
-              {/* 予約済みのケース */}
-              {inquiry.interview_at ? (
-                <div className="space-y-3">
-                  <p className="text-sm text-text-body">
-                    予約済み:{' '}
-                    <span className="font-semibold text-text-heading">
-                      {formatDateTime(inquiry.interview_at)}
-                    </span>
-                  </p>
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={handleCancelBooking}
-                    isLoading={isCancellingBooking}
-                    disabled={isCancellingBooking}
-                  >
-                    <X className="w-4 h-4 mr-1.5" />
-                    予約を取消
-                  </Button>
-                </div>
-              ) : bookingUrl ? (
-                /* リンク発行済み・URLを表示 */
-                <div className="space-y-3">
-                  <p className="text-xs text-text-muted">このURLを保護者に送ってください</p>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      readOnly
-                      value={bookingUrl}
-                      className="flex-1 min-w-0 px-2 py-1.5 border border-border rounded-lg text-xs bg-surface-hover text-text-body focus:outline-none"
-                      onClick={(e) => (e.target as HTMLInputElement).select()}
-                    />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleCopyBookingUrl}
-                    >
-                      <Copy className="w-4 h-4 mr-1" />
-                      {bookingCopied ? 'コピー済み' : 'コピー'}
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                /* 未発行 */
-                <div className="space-y-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleIssueBookingLink}
-                    isLoading={isFetchingBooking}
-                    disabled={isFetchingBooking}
-                  >
-                    <CalendarDays className="w-4 h-4 mr-1.5" />
-                    面談予約リンクを発行
-                  </Button>
-                  <p className="text-xs text-text-muted">
-                    発行したURLを保護者にお送りください。14日間有効です。
-                  </p>
-                </div>
-              )}
-            </section>
-
-            {/* ── コンタクト履歴 ── */}
-            <section className="bg-surface-raised border border-border rounded-xl p-6">
-              <h2 className="text-lg font-bold text-text-heading mb-4">コンタクト履歴</h2>
-
-              {/* 履歴タイムライン */}
-              {contacts.length === 0 ? (
-                <p className="text-sm text-text-muted mb-4">コンタクト履歴はありません</p>
-              ) : (
-                <div className="space-y-3 mb-6">
-                  {contacts.map((c) => (
-                    <div key={c.id} className="flex gap-3">
-                      {/* タイムライン縦線 */}
-                      <div className="flex flex-col items-center">
-                        <div className="w-2.5 h-2.5 rounded-full bg-primary mt-1 shrink-0" />
-                        <div className="flex-1 w-px bg-border" />
-                      </div>
-                      <div className="pb-3 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap text-xs text-text-muted mb-0.5">
-                          <span>{formatDate(c.contacted_at)}</span>
-                          <span className="font-medium text-text-body">{CONTACT_METHOD_LABELS[c.method] ?? c.method}</span>
-                          {c.direction && (
-                            <span>{CONTACT_DIRECTION_LABELS[c.direction] ?? c.direction}</span>
-                          )}
-                          {c.result && (
-                            <span className="px-1.5 py-0.5 bg-surface-hover rounded text-text-body">{c.result}</span>
-                          )}
-                        </div>
-                        {c.note && (
-                          <p className="text-sm text-text-body whitespace-pre-wrap">{c.note}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* コンタクト追加フォーム */}
-              <div className="border border-border rounded-lg p-4 bg-surface-hover">
-                <h3 className="text-sm font-medium text-text-heading mb-3">コンタクトを追加</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
-                  <div>
-                    <label className="block text-xs text-text-muted mb-1">方法</label>
-                    <select
-                      value={contactMethod}
-                      onChange={(e) => setContactMethod(e.target.value as typeof contactMethod)}
-                      className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
-                    >
-                      {Object.entries(CONTACT_METHOD_LABELS).map(([k, v]) => (
-                        <option key={k} value={k}>{v}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs text-text-muted mb-1">方向</label>
-                    <select
-                      value={contactDirection}
-                      onChange={(e) => setContactDirection(e.target.value as typeof contactDirection)}
-                      className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
-                    >
-                      <option value="outbound">発信</option>
-                      <option value="inbound">着信・受信</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs text-text-muted mb-1">日付</label>
-                    <input
-                      type="date"
-                      value={contactDate}
-                      onChange={(e) => setContactDate(e.target.value)}
-                      className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-text-muted mb-1">結果</label>
-                    <input
-                      type="text"
-                      value={contactResult}
-                      onChange={(e) => setContactResult(e.target.value)}
-                      placeholder="例: 折り返し待ち"
-                      className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-                </div>
-                <div className="mb-3">
-                  <label className="block text-xs text-text-muted mb-1">メモ</label>
-                  <textarea
-                    value={contactNote}
-                    onChange={(e) => setContactNote(e.target.value)}
-                    rows={2}
-                    className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-                  />
-                </div>
-                {contactError && (
-                  <p className="text-sm text-danger mb-2">{contactError}</p>
-                )}
-                <Button onClick={handleAddContact} isLoading={isAddingContact} size="sm" variant="secondary">
-                  追加
-                </Button>
-              </div>
-            </section>
-
-            {/* ── メール送信 ── */}
-            <section className="bg-surface-raised border border-border rounded-xl p-6">
-              <h2 className="text-lg font-bold text-text-heading mb-4">メール送信</h2>
-
-              {!inquiry.email ? (
-                // メールアドレス未登録時はフォームを出さない
-                <p className="text-sm text-text-muted">メールアドレスが登録されていません</p>
-              ) : (
-                <div className="space-y-4">
-                  {/* 宛先表示 */}
-                  <p className="text-sm text-text-muted">
-                    宛先:{' '}
-                    <a href={`mailto:${inquiry.email}`} className="text-blue-700 hover:underline">
-                      {inquiry.email}
-                    </a>
-                  </p>
-
-                  {/* テンプレート選択 */}
-                  <div>
-                    <label className="block text-xs font-medium text-text-heading mb-1">
-                      テンプレート（任意）
-                    </label>
-                    <select
-                      value={selectedTemplateId}
-                      onChange={(e) => handleTemplateSelect(e.target.value)}
-                      className="w-full sm:w-80 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
-                    >
-                      <option value="">— テンプレートを選択 —</option>
-                      {mailTemplates.map((t) => (
-                        <option key={t.id} value={t.id}>{t.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* 件名 */}
-                  <div>
-                    <label className="block text-xs font-medium text-text-heading mb-1">件名</label>
-                    <input
-                      type="text"
-                      value={mailSubject}
-                      onChange={(e) => setMailSubject(e.target.value)}
-                      placeholder="件名を入力"
-                      className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-
-                  {/* 本文 */}
-                  <div>
-                    <label className="block text-xs font-medium text-text-heading mb-1">本文</label>
-                    <textarea
-                      value={mailBody}
-                      onChange={(e) => setMailBody(e.target.value)}
-                      rows={6}
-                      placeholder="本文を入力"
-                      className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-                    />
-                  </div>
-
-                  {/* 送信ボタン */}
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <Button
-                      onClick={handleSendMail}
-                      isLoading={isSendingMail}
-                      disabled={isSendingMail || !mailSubject.trim() || !mailBody.trim()}
-                      size="sm"
-                    >
-                      <Send className="w-4 h-4 mr-1.5" />
-                      送信
-                    </Button>
-                    {mailSendMessage && (
-                      <span className={`text-sm ${mailSendMessage.includes('失敗') || mailSendMessage.includes('エラー') ? 'text-danger' : 'text-text-muted'}`}>
-                        {mailSendMessage}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* 送信履歴 */}
-              {mailLogs.length > 0 && (
-                <div className="mt-6 border-t border-border pt-4">
-                  <h3 className="text-sm font-medium text-text-heading mb-3">送信履歴</h3>
-                  <div className="space-y-2">
-                    {mailLogs.map((log) => (
-                      <div key={log.id} className="flex items-center gap-3 flex-wrap text-xs text-text-muted">
-                        <span>{formatDateTime(log.sent_at)}</span>
-                        {/* 送信ステータスバッジ */}
-                        <span className={`px-1.5 py-0.5 rounded-full font-medium ${log.status === 'sent' ? 'bg-green-100 text-green-800' : 'bg-danger/20 text-danger'}`}>
-                          {log.status === 'sent' ? '送信済み' : '失敗'}
-                        </span>
-                        {/* 開封バッジ: opened_at / clicked_at があれば表示。どちらも無く sent なら「未開封」 */}
-                        {log.opened_at ? (
-                          <span className="px-1.5 py-0.5 rounded-full font-medium bg-teal-100 text-teal-800">
-                            開封済み {formatDateTime(log.opened_at).replace(/^\d{4}\//, '').slice(0, 11)}
-                          </span>
-                        ) : log.status === 'sent' ? (
-                          <span className="px-1.5 py-0.5 rounded-full font-medium bg-gray-100 text-gray-500">
-                            未開封
-                          </span>
-                        ) : null}
-                        {log.clicked_at && (
-                          <span className="px-1.5 py-0.5 rounded-full font-medium bg-blue-100 text-blue-800">
-                            リンククリック
-                          </span>
-                        )}
-                        {log.subject && (
-                          <span className="truncate max-w-xs text-text-body">{log.subject}</span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                  {/* Webhook 設定が必要な旨の注記 */}
-                  <p className="text-xs text-text-faint mt-3">
-                    開封情報は Resend Webhook 設定後に記録されます
-                  </p>
-                </div>
-              )}
-            </section>
-
-            {/* ── HP原文（raw_source）折りたたみ ── */}
-            {inquiry.raw_source && Object.keys(inquiry.raw_source).length > 0 && (
-              <section className="bg-surface-raised border border-border rounded-xl overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => setRawSourceOpen((v) => !v)}
-                  className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-surface-hover transition-colors duration-150"
-                >
-                  <span className="text-sm font-medium text-text-heading">HP原文（全項目）</span>
-                  {rawSourceOpen ? (
-                    <ChevronUp className="w-4 h-4 text-text-muted" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-text-muted" />
-                  )}
-                </button>
-                {rawSourceOpen && (
-                  <div className="px-6 pb-6 overflow-x-auto">
-                    <table className="w-full text-xs border-collapse border border-border">
-                      <thead>
-                        <tr className="bg-surface-hover">
-                          <th className="border border-border px-3 py-2 text-left font-medium text-text-heading w-1/3">項目</th>
-                          <th className="border border-border px-3 py-2 text-left font-medium text-text-heading">値</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {Object.entries(inquiry.raw_source).map(([k, v]) => (
-                          <tr key={k} className="even:bg-surface-hover/50">
-                            <td className="border border-border px-3 py-1.5 text-text-muted">{k}</td>
-                            <td className="border border-border px-3 py-1.5 text-text-body break-all">
-                              {String(v ?? '')}
-                            </td>
-                          </tr>
+                      <label className="block text-xs font-medium text-text-heading mb-1">ステータス</label>
+                      <select
+                        value={editStatus}
+                        onChange={(e) => setEditStatus(e.target.value as InquiryStatus)}
+                        className="w-full sm:w-48 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
+                      >
+                        {STATUS_OPTIONS.filter((o) => o.value !== 'all').map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
                         ))}
-                      </tbody>
-                    </table>
+                      </select>
+                    </div>
+
+                    {/* 入会時: 入会日・週回数 */}
+                    {(editStatus === 'enrolled') && (
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-medium text-text-heading mb-1">入会日</label>
+                          <input
+                            type="date"
+                            value={editEnrolledAt}
+                            onChange={(e) => setEditEnrolledAt(e.target.value)}
+                            className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-text-heading mb-1">週回数</label>
+                          <input
+                            type="number"
+                            min={1}
+                            max={10}
+                            value={editWeeklyCount}
+                            onChange={(e) => setEditWeeklyCount(e.target.value)}
+                            placeholder="例: 2"
+                            className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 体験没 / 入会: 体験日 */}
+                    {(editStatus === 'trial_lost' || editStatus === 'enrolled') && (
+                      <div>
+                        <label className="block text-xs font-medium text-text-heading mb-1">体験日</label>
+                        <input
+                          type="date"
+                          value={editTrialAt}
+                          onChange={(e) => setEditTrialAt(e.target.value)}
+                          className="w-full sm:w-48 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                      </div>
+                    )}
+
+                    {/* 没 / 体験没: 失注理由 */}
+                    {(editStatus === 'lost' || editStatus === 'trial_lost') && (
+                      <div>
+                        <label className="block text-xs font-medium text-text-heading mb-1">失注理由</label>
+                        <select
+                          value={editLostReason}
+                          onChange={(e) => setEditLostReason(e.target.value)}
+                          className="w-full sm:w-56 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                          <option value="">— 未選択 —</option>
+                          {LOST_REASONS.map((r) => (
+                            <option key={r} value={r}>{r}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* メモ */}
+                    <div>
+                      <label className="block text-xs font-medium text-text-heading mb-1">メモ</label>
+                      <textarea
+                        value={editNote}
+                        onChange={(e) => setEditNote(e.target.value)}
+                        rows={3}
+                        className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                        placeholder="内部メモ（保護者には見えません）"
+                      />
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button onClick={handleSave} isLoading={isSaving} size="sm">
+                        保存
+                      </Button>
+                    </div>
                   </div>
+                </section>
+
+                {/* ── コンタクト履歴 ── */}
+                <section className="bg-surface-raised border border-border rounded-xl p-6">
+                  <h2 className="text-base font-bold text-text-heading mb-4">コンタクト履歴</h2>
+
+                  {/* 履歴タイムライン */}
+                  {contacts.length === 0 ? (
+                    <p className="text-sm text-text-muted mb-4">コンタクト履歴はありません</p>
+                  ) : (
+                    <div className="space-y-3 mb-6">
+                      {contacts.map((c) => (
+                        <div key={c.id} className="flex gap-3">
+                          {/* タイムライン縦線 */}
+                          <div className="flex flex-col items-center">
+                            <div className="w-2.5 h-2.5 rounded-full bg-primary mt-1 shrink-0" />
+                            <div className="flex-1 w-px bg-border" />
+                          </div>
+                          <div className="pb-3 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap text-xs text-text-muted mb-0.5">
+                              <span>{formatDate(c.contacted_at)}</span>
+                              <span className="font-medium text-text-body">{CONTACT_METHOD_LABELS[c.method] ?? c.method}</span>
+                              {c.direction && (
+                                <span>{CONTACT_DIRECTION_LABELS[c.direction] ?? c.direction}</span>
+                              )}
+                              {c.result && (
+                                <span className="px-1.5 py-0.5 bg-surface-hover rounded text-text-body">{c.result}</span>
+                              )}
+                            </div>
+                            {c.note && (
+                              <p className="text-sm text-text-body whitespace-pre-wrap">{c.note}</p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* コンタクト追加フォーム */}
+                  <div className="border border-border rounded-lg p-4 bg-surface-hover">
+                    <h3 className="text-sm font-medium text-text-heading mb-3">コンタクトを追加</h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+                      <div>
+                        <label className="block text-xs text-text-muted mb-1">方法</label>
+                        <select
+                          value={contactMethod}
+                          onChange={(e) => setContactMethod(e.target.value as typeof contactMethod)}
+                          className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                          {Object.entries(CONTACT_METHOD_LABELS).map(([k, v]) => (
+                            <option key={k} value={k}>{v}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-text-muted mb-1">方向</label>
+                        <select
+                          value={contactDirection}
+                          onChange={(e) => setContactDirection(e.target.value as typeof contactDirection)}
+                          className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                          <option value="outbound">発信</option>
+                          <option value="inbound">着信・受信</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-text-muted mb-1">日付</label>
+                        <input
+                          type="date"
+                          value={contactDate}
+                          onChange={(e) => setContactDate(e.target.value)}
+                          className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-text-muted mb-1">結果</label>
+                        <input
+                          type="text"
+                          value={contactResult}
+                          onChange={(e) => setContactResult(e.target.value)}
+                          placeholder="例: 折り返し待ち"
+                          className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                      </div>
+                    </div>
+                    <div className="mb-3">
+                      <label className="block text-xs text-text-muted mb-1">メモ</label>
+                      <textarea
+                        value={contactNote}
+                        onChange={(e) => setContactNote(e.target.value)}
+                        rows={2}
+                        className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                      />
+                    </div>
+                    <Button onClick={handleAddContact} isLoading={isAddingContact} size="sm" variant="secondary">
+                      追加
+                    </Button>
+                  </div>
+                </section>
+
+                {/* ── メール送信 ── */}
+                <section className="bg-surface-raised border border-border rounded-xl p-6">
+                  <h2 className="text-base font-bold text-text-heading mb-4">メール送信</h2>
+
+                  {!inquiry.email ? (
+                    // メールアドレス未登録時はフォームを出さない
+                    <p className="text-sm text-text-muted">メールアドレスが登録されていません</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* 宛先表示 */}
+                      <p className="text-sm text-text-muted">
+                        宛先:{' '}
+                        <a href={`mailto:${inquiry.email}`} className="text-blue-700 hover:underline">
+                          {inquiry.email}
+                        </a>
+                      </p>
+
+                      {/* テンプレート選択 */}
+                      <div>
+                        <label className="block text-xs font-medium text-text-heading mb-1">
+                          テンプレート（任意）
+                        </label>
+                        <select
+                          value={selectedTemplateId}
+                          onChange={(e) => handleTemplateSelect(e.target.value)}
+                          className="w-full sm:w-80 px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
+                          <option value="">— テンプレートを選択 —</option>
+                          {mailTemplates.map((t) => (
+                            <option key={t.id} value={t.id}>{t.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* 件名 */}
+                      <div>
+                        <label className="block text-xs font-medium text-text-heading mb-1">件名</label>
+                        <input
+                          type="text"
+                          value={mailSubject}
+                          onChange={(e) => setMailSubject(e.target.value)}
+                          placeholder="件名を入力"
+                          className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
+                        />
+                      </div>
+
+                      {/* 本文 */}
+                      <div>
+                        <label className="block text-xs font-medium text-text-heading mb-1">本文</label>
+                        <textarea
+                          value={mailBody}
+                          onChange={(e) => setMailBody(e.target.value)}
+                          rows={6}
+                          placeholder="本文を入力"
+                          className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                        />
+                      </div>
+
+                      {/* 送信ボタン */}
+                      <Button
+                        onClick={handleSendMail}
+                        isLoading={isSendingMail}
+                        disabled={isSendingMail || !mailSubject.trim() || !mailBody.trim()}
+                        size="sm"
+                      >
+                        <Send className="w-4 h-4 mr-1.5" />
+                        送信
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* 送信履歴 */}
+                  {mailLogs.length > 0 && (
+                    <div className="mt-6 border-t border-border pt-4">
+                      <h3 className="text-sm font-medium text-text-heading mb-3">送信履歴</h3>
+                      <div className="space-y-2">
+                        {mailLogs.map((log) => (
+                          <div key={log.id} className="flex items-center gap-3 flex-wrap text-xs text-text-muted">
+                            <span>{formatDateTime(log.sent_at)}</span>
+                            {/* 送信ステータスバッジ */}
+                            <span className={`px-1.5 py-0.5 rounded-full font-medium ${log.status === 'sent' ? 'bg-green-100 text-green-800' : 'bg-danger/20 text-danger'}`}>
+                              {log.status === 'sent' ? '送信済み' : '失敗'}
+                            </span>
+                            {/* 開封バッジ: opened_at / clicked_at があれば表示。どちらも無く sent なら「未開封」 */}
+                            {log.opened_at ? (
+                              <span className="px-1.5 py-0.5 rounded-full font-medium bg-teal-100 text-teal-800">
+                                開封済み {formatDateTime(log.opened_at).replace(/^\d{4}\//, '').slice(0, 11)}
+                              </span>
+                            ) : log.status === 'sent' ? (
+                              <span className="px-1.5 py-0.5 rounded-full font-medium bg-gray-100 text-gray-500">
+                                未開封
+                              </span>
+                            ) : null}
+                            {log.clicked_at && (
+                              <span className="px-1.5 py-0.5 rounded-full font-medium bg-blue-100 text-blue-800">
+                                リンククリック
+                              </span>
+                            )}
+                            {log.subject && (
+                              <span className="truncate max-w-xs text-text-body">{log.subject}</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      {/* Webhook 設定が必要な旨の注記 */}
+                      <p className="text-xs text-text-faint mt-3">
+                        開封情報は Resend Webhook 設定後に記録されます
+                      </p>
+                    </div>
+                  )}
+                </section>
+
+              </div>{/* /左カラム */}
+
+              {/* ────────────────────────────────
+                  右カラム: 参照情報
+                  ──────────────────────────────── */}
+              <div className="lg:col-span-1 space-y-6">
+
+                {/* ── 顧客情報 ── */}
+                <section className="bg-surface-raised border border-border rounded-xl p-5">
+                  <h2 className="text-base font-bold text-text-heading mb-3">顧客情報</h2>
+                  <dl className="space-y-2 text-sm">
+                    <DetailRow label="保護者氏名" value={inquiry.guardian_name} />
+                    <DetailRow label="保護者カナ" value={inquiry.guardian_name_kana ?? null} />
+                    <DetailRow label="生徒カナ" value={inquiry.student_name_kana} />
+                    <DetailRow label="続柄" value={inquiry.relationship} />
+                    <DetailRow label="性別" value={inquiry.gender} />
+
+                    {/* 住所（複数フィールドを連結して表示） */}
+                    <div>
+                      <dt className="text-xs text-text-muted">住所</dt>
+                      <dd className="text-text-heading break-all">
+                        {[
+                          inquiry.postal_code ? `〒${inquiry.postal_code}` : null,
+                          inquiry.address_pref,
+                          inquiry.address_detail,
+                          inquiry.address_building,
+                        ].filter(Boolean).join(' ') || '—'}
+                      </dd>
+                    </div>
+
+                    <DetailRow label="在籍校" value={inquiry.school_name} />
+                    <DetailRow label="通塾目的" value={inquiry.purpose} />
+                    <DetailRow label="希望科目" value={inquiry.preferred_subjects} />
+                    <DetailRow label="通塾経験" value={inquiry.juku_experience} />
+                    <DetailRow label="デバイス" value={inquiry.device} />
+
+                    {/* 電話（テキスト表示） */}
+                    <div>
+                      <dt className="text-xs text-text-muted">電話</dt>
+                      <dd className="text-text-heading">{inquiry.phone || '—'}</dd>
+                    </div>
+
+                    {/* メール（テキスト表示） */}
+                    <div>
+                      <dt className="text-xs text-text-muted">メールアドレス</dt>
+                      <dd className="text-text-heading break-all">{inquiry.email || '—'}</dd>
+                    </div>
+
+                    <DetailRow label="問合せ経路" value={inquiry.channel} />
+                    <DetailRow label="HP問合せNO" value={inquiry.hp_inquiry_no} />
+                  </dl>
+                </section>
+
+                {/* ── 面談予約 ── */}
+                <section className="bg-surface-raised border border-border rounded-xl p-5">
+                  <h2 className="text-base font-bold text-text-heading mb-3 flex items-center gap-2">
+                    <CalendarDays className="w-4 h-4 text-text-muted" />
+                    面談予約
+                  </h2>
+
+                  {/* 予約済みのケース */}
+                  {inquiry.interview_at ? (
+                    <div className="space-y-3">
+                      <p className="text-sm text-text-body">
+                        予約済み:{' '}
+                        <span className="font-semibold text-text-heading">
+                          {formatDateTime(inquiry.interview_at)}
+                        </span>
+                      </p>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={handleCancelBooking}
+                        isLoading={isCancellingBooking}
+                        disabled={isCancellingBooking}
+                      >
+                        <X className="w-4 h-4 mr-1.5" />
+                        予約を取消
+                      </Button>
+                    </div>
+                  ) : bookingUrl ? (
+                    /* リンク発行済み・URLを表示 */
+                    <div className="space-y-3">
+                      <p className="text-xs text-text-muted">このURLを保護者に送ってください</p>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          readOnly
+                          value={bookingUrl}
+                          className="flex-1 min-w-0 px-2 py-1.5 border border-border rounded-lg text-xs bg-surface-hover text-text-body focus:outline-none"
+                          onClick={(e) => (e.target as HTMLInputElement).select()}
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleCopyBookingUrl}
+                        >
+                          <Copy className="w-4 h-4 mr-1" />
+                          {bookingCopied ? 'コピー済み' : 'コピー'}
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    /* 未発行 */
+                    <div className="space-y-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleIssueBookingLink}
+                        isLoading={isFetchingBooking}
+                        disabled={isFetchingBooking}
+                      >
+                        <CalendarDays className="w-4 h-4 mr-1.5" />
+                        面談予約リンクを発行
+                      </Button>
+                      <p className="text-xs text-text-muted">
+                        発行したURLを保護者にお送りください。14日間有効です。
+                      </p>
+                    </div>
+                  )}
+                </section>
+
+                {/* ── HP原文（raw_source）折りたたみ ── */}
+                {inquiry.raw_source && Object.keys(inquiry.raw_source).length > 0 && (
+                  <section className="bg-surface-raised border border-border rounded-xl overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setRawSourceOpen((v) => !v)}
+                      className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-surface-hover transition-colors duration-150"
+                    >
+                      <span className="text-sm font-medium text-text-heading">HP原文（全項目）</span>
+                      {rawSourceOpen ? (
+                        <ChevronUp className="w-4 h-4 text-text-muted" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-text-muted" />
+                      )}
+                    </button>
+                    {rawSourceOpen && (
+                      <div className="px-5 pb-5 overflow-x-auto">
+                        <table className="w-full text-xs border-collapse border border-border">
+                          <thead>
+                            <tr className="bg-surface-hover">
+                              <th className="border border-border px-3 py-2 text-left font-medium text-text-heading w-1/3">項目</th>
+                              <th className="border border-border px-3 py-2 text-left font-medium text-text-heading">値</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {Object.entries(inquiry.raw_source).map(([k, v]) => (
+                              <tr key={k} className="even:bg-surface-hover/50">
+                                <td className="border border-border px-3 py-1.5 text-text-muted">{k}</td>
+                                <td className="border border-border px-3 py-1.5 text-text-body break-all">
+                                  {String(v ?? '')}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </section>
                 )}
-              </section>
-            )}
 
-            {/* ── アクション（生徒登録・削除） ── */}
-            <section className="flex flex-wrap items-center gap-3 pt-2">
-              {/* 生徒として登録（紐付け済みなら生徒詳細へのリンクを出す） */}
-              {inquiry.linked_student_id ? (
-                <Link href={`/students/${inquiry.linked_student_id}`}>
-                  <Button variant="outline" size="sm">
-                    <UserPlus className="w-4 h-4 mr-1.5" />
-                    紐付け済みの生徒を開く
-                  </Button>
-                </Link>
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleEnrollAsStudent}
-                  disabled={isEnrolling}
-                >
-                  <UserPlus className="w-4 h-4 mr-1.5" />
-                  {isEnrolling ? '登録中...' : '生徒として登録'}
-                </Button>
-              )}
-              {enrollError && (
-                <p className="w-full text-sm text-danger">{enrollError}</p>
-              )}
+                {/* ── 操作カード（生徒登録・削除） ── */}
+                <section className="bg-surface-raised border border-border rounded-xl p-5">
+                  <h2 className="text-base font-bold text-text-heading mb-3">操作</h2>
+                  <div className="space-y-2">
 
-              {/* 論理削除 */}
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={() => setDeleteModalOpen(true)}
-              >
-                <Trash2 className="w-4 h-4 mr-1.5" />
-                削除
-              </Button>
-            </section>
+                    {/* 生徒として登録（紐付け済みなら生徒詳細へのリンクを出す） */}
+                    {inquiry.linked_student_id ? (
+                      <Link href={`/students/${inquiry.linked_student_id}`}>
+                        <Button variant="outline" size="sm" className="w-full justify-start">
+                          <UserPlus className="w-4 h-4 mr-1.5" />
+                          紐付け済みの生徒を開く
+                        </Button>
+                      </Link>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleEnrollAsStudent}
+                        disabled={isEnrolling}
+                        className="w-full justify-start"
+                      >
+                        <UserPlus className="w-4 h-4 mr-1.5" />
+                        {isEnrolling ? '登録中...' : '生徒として登録'}
+                      </Button>
+                    )}
+
+                    {/* 論理削除 */}
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => setDeleteModalOpen(true)}
+                      className="w-full justify-start"
+                    >
+                      <Trash2 className="w-4 h-4 mr-1.5" />
+                      削除
+                    </Button>
+                  </div>
+                </section>
+
+              </div>{/* /右カラム */}
+            </div>{/* /grid */}
+
           </div>
         )}
       </div>
@@ -1040,12 +1082,13 @@ export default function InquiryDetailPage() {
   );
 }
 
-/** ラベル/値のペアを表示するヘルパーコンポーネント */
-function InfoRow({ label, value }: { label: string; value: string | null | undefined }) {
+/** キー:値ペアをコンパクトに表示するヘルパー（右カラムの顧客情報用） */
+function DetailRow({ label, value }: { label: string; value: string | null | undefined }) {
+  if (!value) return null;
   return (
     <div>
-      <dt className="text-xs text-text-muted mb-0.5">{label}</dt>
-      <dd className="text-text-heading">{value || '—'}</dd>
+      <dt className="text-xs text-text-muted">{label}</dt>
+      <dd className="text-text-heading">{value}</dd>
     </div>
   );
 }

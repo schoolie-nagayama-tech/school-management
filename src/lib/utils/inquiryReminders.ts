@@ -37,6 +37,14 @@ export interface InquiryReminder {
 /** response_delay を発火させる経過日数のセット（GAS 互換） */
 const DELAY_MILESTONES = new Set([3, 5, 7, 10, 14, 21, 30]);
 
+/**
+ * リマインドの対象とする「問合せからの経過日数」の上限。
+ * HPから過去問合せ（数年分）を一括取込すると、古い未決着案件が大量に
+ * 「初回コンタクト未実施」等を出してノイズになるため、直近 N 日以内に限定する。
+ * これより古い問合せは行動対象ではない（実質終了）とみなしリマインドしない。
+ */
+const REMINDER_WINDOW_DAYS = 60;
+
 /** severity の重み（ソート用） */
 const SEVERITY_ORDER: Record<InquiryReminder['severity'], number> = {
   danger: 0,
@@ -97,9 +105,14 @@ export function computeInquiryReminders(
     const name = displayName(inquiry);
     const daysSince = daysDiff(inquiredAt, now);
 
+    // 直近 N 日より古い問合せはリマインド対象外（過去データ一括取込のノイズ防止）。
+    // ただし trial_followup は体験日基準なので、このガード後に体験日で別途判定する。
+    const withinWindow = daysSince <= REMINDER_WINDOW_DAYS;
+
     // ---- 1. first_contact_overdue ----
-    // 条件: status === 'in_progress' かつ contactedIds に無い かつ daysSince >= 1
+    // 条件: status === 'in_progress' かつ contactedIds に無い かつ 1 <= daysSince <= 上限
     if (
+      withinWindow &&
       inquiry.status === 'in_progress' &&
       !contactedIds.has(inquiry.id) &&
       daysSince >= 1
@@ -142,6 +155,7 @@ export function computeInquiryReminders(
     // 条件: status === 'in_progress'（決着済みには資料催促しない）かつ
     //        request_type === '資料請求' かつ material_sent_at === null かつ daysSince >= 3
     if (
+      withinWindow &&
       inquiry.status === 'in_progress' &&
       inquiry.request_type === '資料請求' &&
       !inquiry.material_sent_at &&
@@ -164,8 +178,9 @@ export function computeInquiryReminders(
     const trialAt = parseDate(inquiry.trial_at);
     if (trialAt && inquiry.status === 'in_progress') {
       const oneDayBefore = new Date(now.getTime() - MS_PER_DAY);
-      if (trialAt < oneDayBefore) {
-        const trialDays = daysDiff(trialAt, now);
+      const trialDays = daysDiff(trialAt, now);
+      // 体験日が直近 N 日以内のものだけ（古い体験はフォロー対象外）
+      if (trialAt < oneDayBefore && trialDays <= REMINDER_WINDOW_DAYS) {
         reminders.push({
           inquiryId: inquiry.id,
           schoolId: inquiry.school_id,

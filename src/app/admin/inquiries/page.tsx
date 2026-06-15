@@ -24,9 +24,10 @@ import {
   STATUS_OPTIONS,
   formatDate,
 } from './inquiryConstants';
-import { Search, X, Upload, SlidersHorizontal, BarChart3, Send, Truck, ClipboardPaste, QrCode, Bookmark } from 'lucide-react';
+import { Search, X, Upload, SlidersHorizontal, BarChart3, Send, Truck, ClipboardPaste, QrCode, Bookmark, UserPlus } from 'lucide-react';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { InquiryReminders } from '@/components/inquiries/InquiryReminders';
+import { InquiryManualAddModal } from '@/components/inquiries/InquiryManualAddModal';
 
 export default function InquiriesPage() {
   const { profile, getSelectedSchoolIds, selectedSchoolId } = useAuth();
@@ -55,6 +56,9 @@ export default function InquiriesPage() {
   // 複数教室表示時のみ「教室」列を表示するか判定
   const schoolIds = getSelectedSchoolIds();
   const isMultiSchool = schoolIds.length > 1;
+
+  // 手入力モーダルの開閉状態
+  const [isManualAddOpen, setIsManualAddOpen] = useState(false);
 
   // ---- データ取得 ----
   const fetchData = useCallback(async () => {
@@ -148,6 +152,15 @@ export default function InquiriesPage() {
               貼り付けて追加
             </Button>
           </Link>
+          {/* 手入力で追加 — 電話・直来など HP に元データが無い問合せを直接登録する */}
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setIsManualAddOpen(true)}
+          >
+            <UserPlus className="w-4 h-4 mr-1.5" />
+            手入力で追加
+          </Button>
           <Link href="/admin/inquiries/analytics">
             <Button variant="outline" size="sm">
               <BarChart3 className="w-4 h-4 mr-1.5" />
@@ -423,6 +436,17 @@ export default function InquiriesPage() {
           )}
         </div>
       </div>
+      {/* 手入力で追加モーダル */}
+      <InquiryManualAddModal
+        isOpen={isManualAddOpen}
+        onClose={() => setIsManualAddOpen(false)}
+        schools={masterSchools}
+        defaultSchoolId={selectedSchoolId !== 'all' ? selectedSchoolId ?? undefined : undefined}
+        onCreated={() => {
+          setIsManualAddOpen(false);
+          fetchData();
+        }}
+      />
     </AdminLayout>
   );
 }
