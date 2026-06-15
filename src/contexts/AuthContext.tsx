@@ -4,9 +4,9 @@ import { createContext, useContext, useEffect, useState, useCallback, useRef, Re
 import { useRouter, usePathname } from 'next/navigation';
 import { createSupabaseBrowserClient } from '@/lib/supabase';
 import { User } from '@supabase/supabase-js';
-import type { UserProfile, Permission, UserRole } from '@/types/database';
+import type { UserProfile, Permission } from '@/types/database';
 import { getPermissions } from '@/types/database';
-import { getUserProfile, createUserProfile, updateLastLogin, getUserSchools, addUserToSchool } from '@/lib/api/auth';
+import { getUserProfile, updateLastLogin, getUserSchools } from '@/lib/api/auth';
 import { getSchools } from '@/lib/api/schools';
 import { Loading } from '@/components/ui';
 import { clearAllFetchCache } from '@/lib/utils/fetchCache';
@@ -78,62 +78,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // プロファイルを取得
   const fetchProfile = useCallback(async (userId: string, authUser?: User | null, isMounted?: () => boolean) => {
     try {
-      let userProfile = await getUserProfile(userId);
+      const userProfile = await getUserProfile(userId);
       
-      // プロファイルが存在しない場合は作成（初回ログイン時）
+      // 未登録ユーザー（プロフィール無し）は自動作成しない。
+      // 以前はここでログインしただけのユーザーに teacher/admin プロフィールを
+      // 自動生成していたが、関係ない Google アカウントでもログインするだけで
+      // アカウントが作られてしまう穴（さらにパスワード設定で講師として侵入できる）
+      // があったため廃止。未登録ユーザーはサインアウトしてログイン画面へ戻す。
+      // アカウントは管理者が事前に作成する運用とする。
       if (!userProfile && authUser) {
         if (isMounted && !isMounted()) return null;
-        
-        const supabase = createSupabaseBrowserClient();
-        // 既存のユーザーが0人の場合は管理者として作成
-        let count: number | null = null;
         try {
-          const result = await supabase
-            .from('user_profiles')
-            .select('*', { count: 'exact', head: true });
-          count = result.count;
-        } catch (countErr: unknown) {
-          // AbortErrorは無視
-          if (isAbortError(countErr)) {
-            return null;
-          }
-          throw countErr;
+          const supabase = createSupabaseBrowserClient();
+          await supabase.auth.signOut({ scope: 'local' });
+        } catch {
+          // サインアウト失敗は無視（この後どのみちログイン画面へ送る）
         }
-        
-        if (isMounted && !isMounted()) return null;
-        
-        const role: UserRole = count === 0 ? 'admin' : 'teacher';
-        
-        try {
-          userProfile = await createUserProfile(
-            userId,
-            authUser.email!,
-            role,
-            authUser.user_metadata?.full_name
-          );
-        } catch (createErr: unknown) {
-          // AbortErrorは無視
-          if (isAbortError(createErr)) {
-            return null;
-          }
-          throw createErr;
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login?error=not_registered';
         }
-        
-        // デフォルト教室に紐付け（teacherの場合）
-        if (role === 'teacher' && process.env.NEXT_PUBLIC_DEFAULT_SCHOOL_ID) {
-          try {
-            await addUserToSchool(userId, process.env.NEXT_PUBLIC_DEFAULT_SCHOOL_ID);
-          } catch (schoolErr: unknown) {
-            // AbortErrorは無視
-            if (isAbortError(schoolErr)) {
-              return null;
-            }
-            // 教室紐付けのエラーは致命的ではないので、ログに記録するだけ
-            console.error('Error adding user to school:', schoolErr);
-          }
-        }
+        return null;
       }
-      
+
       if (isMounted && !isMounted()) return null;
       
       if (userProfile) {
