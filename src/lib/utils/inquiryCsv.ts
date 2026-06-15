@@ -166,16 +166,24 @@ function mapRequestType(requestType: string, inquiryContent: string): string {
 
 /**
  * HPシステムの問合せCSVファイル（Shift_JIS, 57列）をパースして ParsedInquiryRow[] を返す。
- *
- * - 問合せNOが空の行はスキップする。
- * - 受付日時がパース不能な行はスキップする（ログ出力あり）。
- * - papaparse の header:true でカラム名をキーにした Record<string,string> として読み込む。
+ * Shift_JIS をデコードしてから parseInquiryCsvText に委譲する。
  */
 export async function parseInquiryCsvFile(file: File): Promise<ParsedInquiryRow[]> {
   // Shift_JIS(cp932) として読み込む
   const buf = await file.arrayBuffer();
   const text = new TextDecoder('shift-jis').decode(buf);
+  return parseInquiryCsvText(text);
+}
 
+/**
+ * デコード済み（UTF-8）の問合せCSV文字列をパースして ParsedInquiryRow[] を返す。
+ * ブックマークレット取込（サーバー側）でも再利用するため、デコードと分離している。
+ *
+ * - 問合せNOが空の行はスキップする。
+ * - 受付日時がパース不能な行はスキップする（ログ出力あり）。
+ * - papaparse の header:true でカラム名をキーにした Record<string,string> として読み込む。
+ */
+export function parseInquiryCsvText(text: string): ParsedInquiryRow[] {
   const parsed = Papa.parse<Record<string, string>>(text, {
     header: true,
     skipEmptyLines: true,

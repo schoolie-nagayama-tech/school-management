@@ -24,7 +24,7 @@ import {
   STATUS_OPTIONS,
   formatDate,
 } from './inquiryConstants';
-import { Search, X, Upload, SlidersHorizontal, BarChart3, Send, Truck, ClipboardPaste, QrCode } from 'lucide-react';
+import { Search, X, Upload, SlidersHorizontal, BarChart3, Send, Truck, ClipboardPaste, QrCode, Bookmark } from 'lucide-react';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { InquiryReminders } from '@/components/inquiries/InquiryReminders';
 
@@ -179,6 +179,13 @@ export default function InquiriesPage() {
             <Button variant="secondary" size="sm">
               <Upload className="w-4 h-4 mr-1.5" />
               CSV取込
+            </Button>
+          </Link>
+          {/* 本部HP ブックマークレット取込設定 */}
+          <Link href="/admin/inquiries/connect">
+            <Button variant="outline" size="sm">
+              <Bookmark className="w-4 h-4 mr-1.5" />
+              HP取込設定
             </Button>
           </Link>
         </div>

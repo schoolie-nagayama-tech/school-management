@@ -232,6 +232,28 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['inquiry_booking_tokens']['Insert']>;
         Relationships: [];
       };
+      inquiry_import_tokens: {
+        Row: {
+          id: string;
+          token: string;
+          label: string | null;
+          created_by: string | null;
+          revoked: boolean;
+          last_used_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          token: string;
+          label?: string | null;
+          created_by?: string | null;
+          revoked?: boolean;
+          last_used_at?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['inquiry_import_tokens']['Insert']>;
+        Relationships: [];
+      };
       inquiry_mail_templates: {
         Row: {
           id: string;
@@ -3055,6 +3077,9 @@ export type InquiryMailLogInsert = Database['public']['Tables']['inquiry_mail_lo
 
 export type InquiryBookingToken = Database['public']['Tables']['inquiry_booking_tokens']['Row'];
 export type InquiryBookingTokenInsert = Database['public']['Tables']['inquiry_booking_tokens']['Insert'];
+
+export type InquiryImportToken = Database['public']['Tables']['inquiry_import_tokens']['Row'];
+export type InquiryImportTokenInsert = Database['public']['Tables']['inquiry_import_tokens']['Insert'];
 
 export type School = Database['public']['Tables']['schools']['Row'];
 export type SchoolInsert = Database['public']['Tables']['schools']['Insert'];
