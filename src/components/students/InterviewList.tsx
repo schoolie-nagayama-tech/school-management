@@ -121,13 +121,16 @@ export function InterviewList({ studentId, schoolId }: InterviewListProps) {
       {/* ヘッダー */}
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold text-[#1f2937]">面談記録</h3>
-        <div className="flex items-center gap-2">
-          <Button onClick={() => setIsNottaModalOpen(true)} size="sm" variant="secondary">
-            <Mic className="w-3.5 h-3.5 mr-1 inline" />
-            Nottaから取り込み
-          </Button>
-          <Button onClick={handleAdd} size="sm">+ 記録を追加</Button>
-        </div>
+        {/* 面談記録の追加は編集権限(canEditInterviews)を持つロールのみ。講師には出さない */}
+        {canEdit && (
+          <div className="flex items-center gap-2">
+            <Button onClick={() => setIsNottaModalOpen(true)} size="sm" variant="secondary">
+              <Mic className="w-3.5 h-3.5 mr-1 inline" />
+              Nottaから取り込み
+            </Button>
+            <Button onClick={handleAdd} size="sm">+ 記録を追加</Button>
+          </div>
+        )}
       </div>
 
       {/* フィルター */}
@@ -150,7 +153,7 @@ export function InterviewList({ studentId, schoolId }: InterviewListProps) {
       {filteredInterviews.length === 0 ? (
         <div className="text-center py-12 bg-[#f3f4f6] rounded-lg border border-[#e5e7eb]">
           <p className="text-[#4b5563] mb-4">まだ面談記録がありません</p>
-          <Button onClick={handleAdd}>+ 最初の記録を追加</Button>
+          {canEdit && <Button onClick={handleAdd}>+ 最初の記録を追加</Button>}
         </div>
       ) : (
         <div className="space-y-6">
@@ -178,6 +181,7 @@ export function InterviewList({ studentId, schoolId }: InterviewListProps) {
                             <input
                               type="checkbox"
                               checked={interview.is_completed || false}
+                              disabled={!canEdit}
                               onChange={async (e) => {
                                 try {
                                   if (e.target.checked) {
@@ -199,7 +203,7 @@ export function InterviewList({ studentId, schoolId }: InterviewListProps) {
                                   toastError('更新に失敗しました');
                                 }
                               }}
-                              className="w-5 h-5 rounded border-[#e5e7eb] text-[#3b82f6] focus:ring-[#3b82f6] cursor-pointer"
+                              className="w-5 h-5 rounded border-[#e5e7eb] text-[#3b82f6] focus:ring-[#3b82f6] cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
                             />
                           )}
                           <span

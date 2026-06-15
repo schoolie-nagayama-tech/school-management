@@ -81,7 +81,7 @@ function convertToChartData(assessments: AssessmentWithScores[]): ChartDataPoint
 export default function StudentScoresPage() {
   const params = useParams();
   const studentId = params.studentId as string;
-  const { hasPermission, isLoading: permissionLoading } = useRequirePermission((p) => p.canAccessStudents);
+  const { hasPermission, isLoading: permissionLoading } = useRequirePermission((p) => p.canAccessScores);
   const { permissions, getSelectedSchoolIds } = useAuth();
   const canEditScores = !!permissions?.canEditScores;
   const { toasts, removeToast, success, error: toastError } = useToast();

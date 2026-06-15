@@ -39,6 +39,7 @@ import {
   Loading,
 } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   getProposal,
   getTextbookUnitsWithProgress,
@@ -168,6 +169,12 @@ export default function ProposalEditor() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { toasts, addToast, removeToast } = useToast();
+  const { profile } = useAuth();
+  // 公開・削除・講習登録は教室長以上(manager/owner/admin)のみ許可
+  const isManagerOrAbove =
+    profile?.role === 'manager' ||
+    profile?.role === 'owner' ||
+    profile?.role === 'admin';
 
   const studentId = params?.studentId as string;
   const proposalId = params?.proposalId as string;
@@ -928,6 +935,12 @@ export default function ProposalEditor() {
   const handleStatusChange = async (newStatus: ProposalStatus) => {
     if (isNew || !proposalId || statusChanging) return;
 
+    // 公開(approved)は教室長以上のみ許可。講師が直接呼び出した場合も弾く
+    if (newStatus === 'approved' && !isManagerOrAbove) {
+      addToast('公開は教室長以上のみ可能です', 'error');
+      return;
+    }
+
     // 公開は確認ダイアログ
     if (newStatus === 'approved') {
       if (!window.confirm('提案書を公開しますか？\n\n以下が実行されます:\n・申込コマ数が生徒の進行表に反映されます\n・テキストが進行表に表示されるようになります\n・講師ビューに公開されます')) return;
@@ -1010,6 +1023,8 @@ export default function ProposalEditor() {
 
   const handleDelete = async () => {
     if (isNew || !proposalId) return;
+    // 削除は教室長以上のみ許可
+    if (!isManagerOrAbove) return;
     try {
       await deleteProposal(proposalId);
       addToast('提案書を削除しました', 'success');
@@ -1280,11 +1295,14 @@ export default function ProposalEditor() {
                 <span className="pl-2 pr-1 text-[10px] font-medium text-text-faint">状態</span>
                 {STATUS_FLOW.map((s) => {
                   const isCurrent = currentStatus === s;
+                  // approved への変更は教室長以上のみ操作可能
+                  const isApprovedRestricted = s === 'approved' && !isManagerOrAbove;
                   return (
                     <button
                       key={s}
                       onClick={() => handleStatusChange(s)}
-                      disabled={statusChanging}
+                      disabled={statusChanging || isApprovedRestricted}
+                      title={isApprovedRestricted ? '公開は教室長以上のみ可能です' : undefined}
                       aria-pressed={isCurrent}
                       className={`inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-full active:scale-95 transition-[background-color,color,box-shadow,transform] duration-150 ease-out disabled:opacity-40 disabled:cursor-not-allowed ${
                         isCurrent ? STATUS_COLORS[s].active : STATUS_INACTIVE
@@ -1296,13 +1314,16 @@ export default function ProposalEditor() {
                   );
                 })}
               </div>
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="p-1.5 text-text-faint hover:text-danger rounded-lg hover:bg-surface-hover transition-[background-color,color] duration-150 ease-out"
-                title="削除"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              {/* 削除ボタン: 教室長以上のみ表示 */}
+              {isManagerOrAbove && (
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="p-1.5 text-text-faint hover:text-danger rounded-lg hover:bg-surface-hover transition-[background-color,color] duration-150 ease-out"
+                  title="削除"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -1562,7 +1583,8 @@ export default function ProposalEditor() {
             <Link2 className="w-3.5 h-3.5 mr-1" />
             グループ化
           </Button>
-          {!isNew && proposal && (
+          {/* 講習に登録ボタン: 教室長以上のみ表示 */}
+          {!isNew && proposal && isManagerOrAbove && (
             <Button
               variant="outline"
               size="sm"
@@ -1657,6 +1679,8 @@ export default function ProposalEditor() {
             <AlertDialogAction
               disabled={promoting}
               onClick={async () => {
+                // 講習登録は教室長以上のみ許可
+                if (!isManagerOrAbove) return;
                 setPromoting(true);
                 try {
                   await handleSave();

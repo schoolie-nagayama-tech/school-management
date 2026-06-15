@@ -9,12 +9,16 @@ import { getDefaultSchoolId } from '@/lib/api/schools';
 import { Button, Loading } from '@/components/ui';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRequirePermission } from '@/hooks/usePermissions';
+import AccessDenied from '@/components/AccessDenied';
 import type { Student } from '@/types/database';
 
 export default function StudentInterviewsPage() {
   const params = useParams();
   const router = useRouter();
   const { getSelectedSchoolIds } = useAuth();
+  // 面談記録の閲覧権限ガード（保護者等の直リンク流入を防ぐ。講師は canAccessInterviews=true で通過）
+  const { hasPermission, isLoading: permissionLoading } = useRequirePermission((p) => p.canAccessInterviews);
   const studentId = params.studentId as string;
   const [student, setStudent] = useState<Student | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,6 +40,22 @@ export default function StudentInterviewsPage() {
       fetchStudent();
     }
   }, [studentId, getSelectedSchoolIds]);
+
+  if (permissionLoading) {
+    return (
+      <AdminLayout headerTitle="面談記録">
+        <Loading className="min-h-[60vh]" />
+      </AdminLayout>
+    );
+  }
+
+  if (!hasPermission) {
+    return (
+      <AdminLayout headerTitle="面談記録">
+        <AccessDenied message="面談記録の閲覧権限がありません" />
+      </AdminLayout>
+    );
+  }
 
   if (isLoading) {
     return (

@@ -295,6 +295,11 @@ export default function StudentsPage() {
       handledEditIdRef.current = null;
       return;
     }
+    // 講師は生徒情報を編集できないため、?edit= で編集モーダルを開かせない（URL直打ち対策）
+    if (isTeacher) {
+      router.replace('/students', { scroll: false });
+      return;
+    }
     if (handledEditIdRef.current === editId) return;
     handledEditIdRef.current = editId;
 
@@ -306,7 +311,7 @@ export default function StudentsPage() {
         router.replace('/students', { scroll: false });
       }
     })();
-  }, [searchParams, router, getSelectedSchoolIds]);
+  }, [searchParams, router, getSelectedSchoolIds, isTeacher]);
 
   // 成績タブ用（クライアント側で在籍・学年フィルタ）
   const filteredStudents = useMemo(() => {

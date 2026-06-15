@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 import { ArrowLeft, Check, FileText, Plus, Printer, User } from 'lucide-react';
 import { Loading, InlineLoading } from '@/components/ui';
@@ -28,6 +29,12 @@ const STATUS_BADGE: Record<ProposalStatus, string> = {
 export default function ProposalList() {
   const params = useParams();
   const studentId = params?.studentId as string;
+  const { profile } = useAuth();
+  // 一括公開は教室長以上(manager/owner/admin)のみ許可
+  const isManagerOrAbove =
+    profile?.role === 'manager' ||
+    profile?.role === 'owner' ||
+    profile?.role === 'admin';
 
   const [loading, setLoading] = useState(true);
   const [studentName, setStudentName] = useState('');
@@ -89,6 +96,8 @@ export default function ProposalList() {
   const clearSelection = () => setSelected(new Set());
 
   const handleBulkPublish = async () => {
+    // 一括公開は教室長以上のみ許可
+    if (!isManagerOrAbove) return;
     const ids = Array.from(selected).filter((id) => publishable.some((p) => p.id === id));
     if (ids.length === 0) return;
     if (!window.confirm(
@@ -339,8 +348,8 @@ export default function ProposalList() {
         </div>
       )}
 
-      {/* 一括公開バー */}
-      {!loading && publishable.length > 0 && (
+      {/* 一括公開バー: 教室長以上のみ表示 */}
+      {!loading && isManagerOrAbove && publishable.length > 0 && (
         <div
           className={`mb-4 flex items-center gap-3 px-3.5 py-2 rounded-xl border transition-all duration-200 ${
             hasSelection
