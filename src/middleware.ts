@@ -146,7 +146,6 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/portal/') ||
     pathname.startsWith('/seasonal-shift/') ||
     pathname.startsWith('/regular-shift/') ||
-    pathname.startsWith('/attendance/') ||
     pathname.startsWith('/login') ||
     pathname.startsWith('/forgot-password') ||
     pathname.startsWith('/auth/') ||
