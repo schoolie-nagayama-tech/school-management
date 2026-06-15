@@ -32,7 +32,21 @@ jobs:
         with:
           version: latest
 
-      # ローカル Supabase を起動（supabase/migrations を自動適用してDBを初期化）
+      # クリーンビルドは base_schema のみを適用する。
+      # 理由: migrations/ には無日付(xxx_)と日付(2026xxxx)が混在し、ファイル名順では
+      # 依存テーブルのCREATEより先にALTERが走るためゼロからのクリーン適用が通らない。
+      # base_schema は `npm run db:dump` で本番から再生成した現行スキーマ(全テーブル+適用済みRLS)
+      # なので、これ一本で現行prod相当のDBが組める。増分SQLは一時退避して supabase start から除外する。
+      # （supabase はサブディレクトリを読まないため _archived_for_local_dev も対象外）
+      - name: Use base_schema only for clean build
+        run: |
+          mkdir -p /tmp/mig_excluded
+          cd supabase/migrations
+          find . -maxdepth 1 -name '*.sql' ! -name '00000000000000_base_schema.sql' \
+            -exec mv {} /tmp/mig_excluded/ \;
+          echo "適用するマイグレーション:" && ls *.sql
+
+      # ローカル Supabase を起動（base_schema を適用してDBを初期化）
       # ubuntu-latest は Docker が利用可能なため supabase start が動く
       - name: Start Supabase
         run: supabase start
