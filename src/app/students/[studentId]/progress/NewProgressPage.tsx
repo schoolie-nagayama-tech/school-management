@@ -1649,7 +1649,7 @@ function TableView({
           <div className="bg-amber-50 border-2 border-amber-400 rounded-lg px-4 py-3 flex items-center justify-between">
             <div>
               <div className="text-sm font-bold text-amber-800">目標が設定されていません</div>
-              <div className="text-[11px] text-amber-600 mt-0.5">目標を設定すると進捗の記録ができるようになります</div>
+              <div className="text-[11px] text-amber-600 mt-0.5">目標を設定しないと進捗の入力・記録ができません。先に目標を設定してください。</div>
             </div>
             {!isMeeting && (
               <button
