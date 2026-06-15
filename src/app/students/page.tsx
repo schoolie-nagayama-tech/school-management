@@ -606,14 +606,6 @@ export default function StudentsPage() {
           </div>
         )}
 
-        {/* 閲覧専用バッジ（講師向け） */}
-        {isTeacher && (
-          <div className="mb-4 flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg w-fit">
-            <Eye className="w-4 h-4 text-blue-500" />
-            <span className="text-xs font-medium text-blue-600">閲覧専用モード</span>
-          </div>
-        )}
-
         {/* 出勤簿未提出アラート（講師向け） */}
         {isTeacher && <AttendanceUnsubmittedAlert />}
 
