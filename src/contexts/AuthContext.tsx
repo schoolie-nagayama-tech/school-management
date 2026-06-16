@@ -75,6 +75,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return [];
   }, [selectedSchoolId, schoolIds, demoSchoolIds]);
 
+  // 教室選択を cookie にミラーする（Server Component が初期描画時に現在の選択を読めるようにするための土台）。
+  // localStorage は引き続きクライアントの正典。selectedSchoolId(state) を唯一の監視点にすることで、
+  // setter・初期化のどの経路で変わっても確実に同期される。
+  // 注: cookie 値は信頼の根拠にしない。サーバー側の利用者は必ずユーザーの実アクセス権（schoolIds）で
+  // 検証すること（教室選択はUI設定で機微情報ではないが、ブラウザ共有時の陳腐化に備える）。
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    if (!selectedSchoolId) return; // 未選択(null)のときは書かない（初期化中の一時的な null を避ける）
+    document.cookie = `selectedSchoolId=${encodeURIComponent(selectedSchoolId)}; path=/; max-age=31536000; SameSite=Lax`;
+  }, [selectedSchoolId]);
+
   // プロファイルを取得
   const fetchProfile = useCallback(async (userId: string, authUser?: User | null, isMounted?: () => boolean) => {
     try {
