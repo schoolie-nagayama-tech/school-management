@@ -390,9 +390,15 @@ export default function ApplicationsPage() {
         ) : tableItems.length === 0 ? (
           <div className="bg-surface-raised rounded-xl border border-border p-8 text-center">
             <p className="text-text-body">申込項目がありません。</p>
-            {canEdit && isManagerOrAbove && (
+            {canEdit && isManagerOrAbove ? (
+              // 教室長以上: 項目管理で追加するよう案内
               <p className="text-text-body/80 text-sm mt-2">
                 上部の「項目管理」から新しい項目を追加してください。
+              </p>
+            ) : !isManagerOrAbove && (
+              // 講師: 項目管理にアクセスできないため、教室長への依頼を促す
+              <p className="text-text-body/80 text-sm mt-2">
+                申込項目がありません。教室長に項目の追加を依頼してください。
               </p>
             )}
         </div>

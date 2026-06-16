@@ -42,6 +42,7 @@ export default function TestPrepProposalsList() {
   const router = useRouter();
   const { schoolIds, selectedSchoolId, getSelectedSchoolIds } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [proposals, setProposals] = useState<ProposalRow[]>([]);
   const [filter, setFilter] = useState<TestPrepStatus | 'all'>('all');
 
@@ -60,8 +61,10 @@ export default function TestPrepProposalsList() {
         schoolIds.length === 1 ? schoolIds[0] : schoolIds
       );
       setProposals(data);
-    } catch {
-      // handled by empty state
+      setLoadError(false);
+    } catch (e) {
+      console.error(e);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -158,6 +161,14 @@ export default function TestPrepProposalsList() {
     return (
       <div className="flex items-center justify-center py-12">
         <Spinner size="md" />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <p className="text-sm text-red-600">読み込みに失敗しました</p>
       </div>
     );
   }

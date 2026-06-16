@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Trophy, Star } from 'lucide-react';
 import type { TeacherBadge, TeacherBadgeAssignment, BadgeRank, TeacherTraining } from '@/types/database';
 import { BADGE_RANK_CONFIG } from '@/types/database';
@@ -13,14 +14,25 @@ import { BadgeProgress } from '@/components/teacher-badges/BadgeProgress';
 import { BadgeFlowerField } from '@/components/badges/HiddenFlower';
 import { MY_BADGES_FLOWERS } from '@/components/badges/flowerPlacements';
 import { getTier, getNextTier } from '@/lib/teacher-tier';
+import { useAuth } from '@/contexts/AuthContext';
 
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 export default function MyBadgesPage() {
+  const router = useRouter();
+  const { profile, isLoading: authLoading } = useAuth();
   const [badges, setBadges] = useState<TeacherBadge[]>([]);
   const [assignments, setAssignments] = useState<TeacherBadgeAssignment[]>([]);
   const [trainings, setTrainings] = useState<TeacherTraining[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // このページは講師専用。profile 取得後にロールが teacher でなければ生徒管理へリダイレクト
+  useEffect(() => {
+    if (authLoading) return; // profile 未取得の間は判定しない
+    if (profile && profile.role !== 'teacher') {
+      router.replace('/students');
+    }
+  }, [authLoading, profile, router]);
 
   useEffect(() => {
     const load = async () => {
@@ -55,6 +67,11 @@ export default function MyBadgesPage() {
   const tier = getTier(assignments.length);
   const nextTier = getNextTier(assignments.length);
   const remaining = nextTier ? nextTier.threshold - assignments.length : 0;
+
+  // profile 未取得中 or 非講師ユーザー（リダイレクト処理中）はコンテンツを描画しない
+  if (authLoading || !profile || profile.role !== 'teacher') {
+    return <Loading className="min-h-screen" />;
+  }
 
   return (
     <div

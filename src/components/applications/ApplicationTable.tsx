@@ -552,6 +552,12 @@ export function ApplicationTable({
                             value={editingValue}
                             onChange={(e) => setEditingValue(e.target.value)}
                             onBlur={async () => {
+                              // onBlur 時点でも canEdit を再チェック。権限が無い場合は保存せずキャンセル
+                              if (!canEdit) {
+                                setEditingCell(null);
+                                setEditingValue('');
+                                return;
+                              }
                               const numValue = editingValue.trim() === '' ? null : Number(editingValue);
                               setUpdatingCells((prev) => new Set(prev).add(key));
                               try {
@@ -617,6 +623,12 @@ export function ApplicationTable({
                             value={editingValue}
                             onChange={(e) => setEditingValue(e.target.value)}
                             onBlur={async () => {
+                              // onBlur 時点でも canEdit を再チェック。権限が無い場合は保存せずキャンセル
+                              if (!canEdit) {
+                                setEditingCell(null);
+                                setEditingValue('');
+                                return;
+                              }
                               const dateVal = editingValue.trim() === '' ? null : editingValue;
                               setUpdatingCells((prev) => new Set(prev).add(key));
                               try {

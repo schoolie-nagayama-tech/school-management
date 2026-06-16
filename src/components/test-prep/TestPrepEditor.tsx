@@ -362,8 +362,9 @@ export default function TestPrepEditor() {
           success('保存しました');
         }
       }
-    } catch {
-      showError('保存に失敗しました');
+    } catch (e) {
+      console.error(e);
+      showError(e instanceof Error ? e.message : '保存に失敗しました');
     } finally {
       setSaving(false);
     }
@@ -376,8 +377,9 @@ export default function TestPrepEditor() {
       await deleteTestPrepProposal(proposalId);
       success('削除しました');
       router.replace('/test-prep-proposals');
-    } catch {
-      showError('削除に失敗しました');
+    } catch (e) {
+      console.error(e);
+      showError(e instanceof Error ? e.message : '削除に失敗しました');
     }
   };
 

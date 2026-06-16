@@ -317,6 +317,8 @@ interface StudentTableProps {
   isLoading?: boolean;
   selectedIds?: Set<string>;
   onSelectionChange?: (ids: Set<string>) => void;
+  /** 講師ロールの場合は true。空状態の案内文を中立的な表現に切り替える */
+  isTeacher?: boolean;
 }
 
 export function StudentTable({
@@ -331,6 +333,7 @@ export function StudentTable({
   isLoading = false,
   selectedIds,
   onSelectionChange,
+  isTeacher = false,
 }: StudentTableProps) {
   const selectable = !!selectedIds && !!onSelectionChange;
 
@@ -378,10 +381,17 @@ export function StudentTable({
       <div className="bg-[#f8f8f8] rounded-xl border border-gray-200 p-8">
         <div className="text-center">
           <Users className="mx-auto h-12 w-12 text-gray-300" />
-          <p className="mt-4 text-gray-600">生徒が登録されていません</p>
-          <p className="text-sm text-gray-400">
-            「新規登録」ボタンから生徒を追加してください
-          </p>
+          {isTeacher ? (
+            // 講師は登録・追加操作ができないため、ボタン名を案内しない中立的な文言にする
+            <p className="mt-4 text-gray-600">表示できる生徒がいません</p>
+          ) : (
+            <>
+              <p className="mt-4 text-gray-600">生徒が登録されていません</p>
+              <p className="text-sm text-gray-400">
+                「新規登録」ボタンから生徒を追加してください
+              </p>
+            </>
+          )}
         </div>
       </div>
     );

@@ -5,11 +5,12 @@ import { AdminLayout } from '@/components/layouts';
 import { Button, Card, CardHeader, CardTitle, CardContent, Loading } from '@/components/ui';
 import Link from 'next/link';
 import { createSupabaseBrowserClient } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { ToastContainer } from '@/components/ui';
-import { Mail, ChevronLeft } from 'lucide-react';
+import { Mail, ChevronLeft, KeyRound } from 'lucide-react';
 
 // Google認証を許可するロール
 const GOOGLE_AUTH_ALLOWED_ROLES = ['admin', 'owner', 'manager'];
@@ -20,6 +21,15 @@ export default function AccountSettingsPage() {
   const { confirm, ConfirmDialog } = useConfirm();
   const [linkedProviders, setLinkedProviders] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // パスワード変更フォームの状態
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [passwordError, setPasswordError] = useState('');
+  const [isPasswordSubmitting, setIsPasswordSubmitting] = useState(false);
 
   // Google Calendar連携状態
   const [calendarStatus, setCalendarStatus] = useState<{
@@ -96,6 +106,68 @@ export default function AccountSettingsPage() {
         success('Googleアカウントの紐付けを解除しました');
         setLinkedProviders(prev => prev.filter(p => p !== 'google'));
       }
+    }
+  };
+
+  /**
+   * パスワード変更ハンドラ
+   * 一時クライアントで現在のパスワードを検証してからメインセッションで更新する。
+   * 一時クライアントを使う理由: signInWithPassword をそのまま呼ぶとメインセッションが
+   * 上書きされてしまうため、persistSession:false の独立したインスタンスで確認する。
+   */
+  const handlePasswordChange = async () => {
+    setPasswordError('');
+
+    // バリデーション: 新パスワードは8文字以上かつ確認と一致
+    if (passwordForm.newPassword.length < 8) {
+      setPasswordError('新しいパスワードは8文字以上で入力してください');
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError('新しいパスワードと確認用パスワードが一致しません');
+      return;
+    }
+
+    const email = user?.email;
+    if (!email) {
+      setPasswordError('ユーザー情報が取得できません。再ログインしてください');
+      return;
+    }
+
+    setIsPasswordSubmitting(true);
+    try {
+      // 現在のパスワードを一時クライアントで検証（メインセッションを汚染しない）
+      const tmp = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { auth: { persistSession: false, autoRefreshToken: false } }
+      );
+      const { error: signInErr } = await tmp.auth.signInWithPassword({
+        email,
+        password: passwordForm.currentPassword,
+      });
+      if (signInErr) {
+        setPasswordError('現在のパスワードが正しくありません');
+        return;
+      }
+
+      // 検証OKならメインのブラウザクライアントでパスワードを更新
+      const supabase = createSupabaseBrowserClient();
+      const { error: updateErr } = await supabase.auth.updateUser({
+        password: passwordForm.newPassword,
+      });
+      if (updateErr) {
+        setPasswordError(`パスワードの更新に失敗しました: ${updateErr.message}`);
+        return;
+      }
+
+      success('パスワードを変更しました');
+      // 成功後フォームをクリア
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch {
+      setPasswordError('予期しないエラーが発生しました。再度お試しください');
+    } finally {
+      setIsPasswordSubmitting(false);
     }
   };
 
@@ -251,6 +323,89 @@ export default function AccountSettingsPage() {
                   </p>
                 </div>
               )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* パスワード変更 */}
+        <Card>
+          <CardHeader>
+            <CardTitle>パスワード変更</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {/* 現在のパスワード */}
+              <div>
+                <label className="block text-sm font-medium text-text-heading mb-1">
+                  現在のパスワード
+                </label>
+                <div className="relative">
+                  <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                  <input
+                    type="password"
+                    value={passwordForm.currentPassword}
+                    onChange={(e) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
+                    className="w-full pl-10 pr-3 py-2 border border-border rounded-md text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    placeholder="現在のパスワードを入力"
+                    autoComplete="current-password"
+                  />
+                </div>
+              </div>
+
+              {/* 新しいパスワード */}
+              <div>
+                <label className="block text-sm font-medium text-text-heading mb-1">
+                  新しいパスワード
+                </label>
+                <div className="relative">
+                  <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                  <input
+                    type="password"
+                    value={passwordForm.newPassword}
+                    onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
+                    className="w-full pl-10 pr-3 py-2 border border-border rounded-md text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    placeholder="8文字以上で入力"
+                    autoComplete="new-password"
+                  />
+                </div>
+              </div>
+
+              {/* 新しいパスワード（確認） */}
+              <div>
+                <label className="block text-sm font-medium text-text-heading mb-1">
+                  新しいパスワード（確認）
+                </label>
+                <div className="relative">
+                  <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+                  <input
+                    type="password"
+                    value={passwordForm.confirmPassword}
+                    onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                    className="w-full pl-10 pr-3 py-2 border border-border rounded-md text-sm bg-surface focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    placeholder="新しいパスワードを再入力"
+                    autoComplete="new-password"
+                  />
+                </div>
+              </div>
+
+              {/* インラインエラー表示 */}
+              {passwordError && (
+                <p className="text-sm text-red-600">{passwordError}</p>
+              )}
+
+              <div className="flex justify-end">
+                <Button
+                  onClick={handlePasswordChange}
+                  disabled={
+                    isPasswordSubmitting ||
+                    !passwordForm.currentPassword ||
+                    !passwordForm.newPassword ||
+                    !passwordForm.confirmPassword
+                  }
+                >
+                  {isPasswordSubmitting ? '変更中...' : 'パスワードを変更'}
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

@@ -940,6 +940,7 @@ export default function StudentsPage() {
           isLoading={isLoading}
           selectedIds={!isTeacher ? selectedIds : undefined}
           onSelectionChange={!isTeacher ? setSelectedIds : undefined}
+          isTeacher={isTeacher}
         />
 
         {/* ページネーション */}

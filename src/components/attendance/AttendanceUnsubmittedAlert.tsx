@@ -28,6 +28,8 @@ export function AttendanceUnsubmittedAlert() {
         if (school?.code) {
           setAttendanceLink(`/attendance/${school.code}/${profile.id}?ym=${prevMonth}`);
         }
+        // school.code が未設定の場合は attendanceLink を null のままにする。
+        // バナーは表示するがリンクの代わりに案内文を出す（下記参照）。
       }
     };
 
@@ -46,7 +48,7 @@ export function AttendanceUnsubmittedAlert() {
         <p className="text-xs text-amber-800 mt-1">
           月末を過ぎています。確認して提出してください。
         </p>
-        {attendanceLink && (
+        {attendanceLink ? (
           <div className="mt-2">
             <Button
               size="sm"
@@ -56,6 +58,11 @@ export function AttendanceUnsubmittedAlert() {
               出勤簿を開く
             </Button>
           </div>
+        ) : (
+          /* school.code が未設定の場合はリンクURLを生成できないため、操作案内の代わりに管理者への連絡を促す */
+          <p className="text-xs text-amber-700 mt-2">
+            教室コードが未設定のため出勤簿を開けません。教室長にご連絡ください。
+          </p>
         )}
       </div>
     </div>
