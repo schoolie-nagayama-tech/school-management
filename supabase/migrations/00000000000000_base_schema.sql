@@ -3,7 +3,7 @@
 -- ============================================================
 -- supabase db dump --linked --schema public で生成。
 -- 本番環境には push しないこと（本番に既に適用済み）。
--- 再生成: supabase db dump --linked --schema public -f <ここ>
+-- 再生成: npm run db:dump
 -- ============================================================
 
 
@@ -68,17 +68,14 @@ CREATE OR REPLACE FUNCTION "public"."check_student_access"("student_school_id" "
 DECLARE
   user_role TEXT;
 BEGIN
-  -- セキュリティ定義関数内ではRLSをバイパスして直接取得
   SELECT role INTO user_role
   FROM user_profiles
   WHERE id = auth.uid();
-  
-  -- adminは全アクセス可
-  IF user_role = 'admin' THEN
+
+  IF user_role IN ('admin', 'owner', 'manager') THEN
     RETURN TRUE;
   END IF;
-  
-  -- それ以外は自分の教室の生徒のみ
+
   RETURN EXISTS (
     SELECT 1 FROM user_schools us
     WHERE us.user_id = auth.uid()
@@ -114,6 +111,7 @@ ALTER FUNCTION "public"."check_user_role"("required_roles" "text"[]) OWNER TO "p
 
 CREATE OR REPLACE FUNCTION "public"."handle_new_user"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
     AS $$
 DECLARE
   user_count INT;
@@ -140,8 +138,75 @@ $$;
 ALTER FUNCTION "public"."handle_new_user"() OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."reassign_slot_numbers"("p_school_id" "uuid") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+  SET CONSTRAINTS schedule_time_slots_school_id_slot_number_key DEFERRED;
+
+  UPDATE public.schedule_time_slots t
+  SET slot_number = sub.rn::integer,
+      updated_at = now()
+  FROM (
+    SELECT id, ROW_NUMBER() OVER (ORDER BY start_time ASC) AS rn
+    FROM public.schedule_time_slots
+    WHERE school_id = p_school_id
+  ) sub
+  WHERE t.id = sub.id
+    AND t.slot_number IS DISTINCT FROM sub.rn::integer;
+
+  SET CONSTRAINTS schedule_time_slots_school_id_slot_number_key IMMEDIATE;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."reassign_slot_numbers"("p_school_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."reorder_time_slots"("p_school_id" "uuid", "p_ordered_ids" "uuid"[]) RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+  SET CONSTRAINTS schedule_time_slots_school_id_slot_number_key DEFERRED;
+
+  UPDATE public.schedule_time_slots t
+  SET slot_number = sub.new_number::integer,
+      updated_at = now()
+  FROM (
+    SELECT id, ordinality AS new_number
+    FROM unnest(p_ordered_ids) WITH ORDINALITY AS u(id, ordinality)
+  ) sub
+  WHERE t.id = sub.id
+    AND t.school_id = p_school_id
+    AND t.slot_number IS DISTINCT FROM sub.new_number::integer;
+
+  SET CONSTRAINTS schedule_time_slots_school_id_slot_number_key IMMEDIATE;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."reorder_time_slots"("p_school_id" "uuid", "p_ordered_ids" "uuid"[]) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."set_updated_at_teacher_availability_periods"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."set_updated_at_teacher_availability_periods"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."update_attendance_updated_at"() RETURNS "trigger"
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public', 'pg_temp'
     AS $$
 BEGIN
   NEW.updated_at = NOW();
@@ -155,6 +220,7 @@ ALTER FUNCTION "public"."update_attendance_updated_at"() OWNER TO "postgres";
 
 CREATE OR REPLACE FUNCTION "public"."update_google_calendar_tokens_updated_at"() RETURNS "trigger"
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public', 'pg_temp'
     AS $$
 BEGIN
   NEW.updated_at = now();
@@ -168,6 +234,7 @@ ALTER FUNCTION "public"."update_google_calendar_tokens_updated_at"() OWNER TO "p
 
 CREATE OR REPLACE FUNCTION "public"."update_schools_updated_at_column"() RETURNS "trigger"
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public', 'pg_temp'
     AS $$
 BEGIN
   NEW.updated_at = NOW();
@@ -181,6 +248,7 @@ ALTER FUNCTION "public"."update_schools_updated_at_column"() OWNER TO "postgres"
 
 CREATE OR REPLACE FUNCTION "public"."update_updated_at_column"() RETURNS "trigger"
     LANGUAGE "plpgsql"
+    SET "search_path" TO 'public', 'pg_temp'
     AS $$
 BEGIN
   NEW.updated_at = NOW();
@@ -194,6 +262,23 @@ ALTER FUNCTION "public"."update_updated_at_column"() OWNER TO "postgres";
 SET default_tablespace = '';
 
 SET default_table_access_method = "heap";
+
+
+CREATE TABLE IF NOT EXISTS "public"."action_goals" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "student_textbook_exam_id" "uuid" NOT NULL,
+    "title" "text" NOT NULL,
+    "counter_target" integer,
+    "counter_current" integer DEFAULT 0,
+    "achieved" boolean DEFAULT false,
+    "achieved_at" timestamp with time zone,
+    "sort_order" integer DEFAULT 0,
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."action_goals" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."admin_audit_logs" (
@@ -226,6 +311,20 @@ CREATE TABLE IF NOT EXISTS "public"."alert_dismissals" (
 
 
 ALTER TABLE "public"."alert_dismissals" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."alert_settings" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "school_id" "uuid" NOT NULL,
+    "alert_type" "text" NOT NULL,
+    "enabled" boolean DEFAULT true NOT NULL,
+    "thresholds" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."alert_settings" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."application_items" (
@@ -263,6 +362,28 @@ CREATE TABLE IF NOT EXISTS "public"."assessment_scores" (
 
 
 ALTER TABLE "public"."assessment_scores" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."assessment_subjects" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "school_id" "uuid",
+    "code" "text" NOT NULL,
+    "name" "text" NOT NULL,
+    "short_name" "text",
+    "school_type" "text" NOT NULL,
+    "applicable_grades" integer[] DEFAULT '{}'::integer[] NOT NULL,
+    "category" "text" NOT NULL,
+    "is_required" boolean DEFAULT false NOT NULL,
+    "is_system" boolean DEFAULT false NOT NULL,
+    "sort_order" integer DEFAULT 0 NOT NULL,
+    "is_active" boolean DEFAULT true NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "assessment_subjects_school_type_check" CHECK (("school_type" = ANY (ARRAY['小学'::"text", '中学'::"text", '高校'::"text", '共通'::"text"])))
+);
+
+
+ALTER TABLE "public"."assessment_subjects" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."assessments" (
@@ -327,7 +448,15 @@ CREATE TABLE IF NOT EXISTS "public"."attendance_sheets" (
     "rejection_reason" "text",
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
-    CONSTRAINT "attendance_sheets_status_check" CHECK ((("status")::"text" = ANY ((ARRAY['draft'::character varying, 'submitted'::character varying, 'approved'::character varying, 'rejected'::character varying])::"text"[])))
+    "transport_cost" integer DEFAULT 0 NOT NULL,
+    "admin_note" "text",
+    "is_koma_changing" boolean DEFAULT false NOT NULL,
+    "reviewed_at" timestamp with time zone,
+    "reviewed_by" "uuid",
+    "submitted_to" "uuid",
+    "koma_change_from" integer,
+    "koma_change_to" integer,
+    CONSTRAINT "attendance_sheets_status_check" CHECK ((("status")::"text" = ANY ((ARRAY['draft'::character varying, 'submitted'::character varying, 'reviewed'::character varying, 'approved'::character varying, 'rejected'::character varying])::"text"[])))
 );
 
 
@@ -344,6 +473,7 @@ CREATE TABLE IF NOT EXISTS "public"."attendance_types" (
     "is_active" boolean DEFAULT true NOT NULL,
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
+    "is_class_type" boolean DEFAULT true NOT NULL,
     CONSTRAINT "attendance_types_unit_check" CHECK ((("unit")::"text" = ANY ((ARRAY['count'::character varying, 'hours'::character varying])::"text"[])))
 );
 
@@ -423,7 +553,8 @@ CREATE TABLE IF NOT EXISTS "public"."bulletin_posts" (
     "created_by" "uuid",
     "updated_by" "uuid",
     "created_at" timestamp with time zone DEFAULT "now"(),
-    "updated_at" timestamp with time zone DEFAULT "now"()
+    "updated_at" timestamp with time zone DEFAULT "now"(),
+    "link_url" "text"
 );
 
 
@@ -439,6 +570,52 @@ CREATE TABLE IF NOT EXISTS "public"."bulletin_reads" (
 
 
 ALTER TABLE "public"."bulletin_reads" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."class_reports" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "school_id" "uuid" NOT NULL,
+    "schedule_entry_id" "uuid" NOT NULL,
+    "student_id" "uuid" NOT NULL,
+    "teacher_id" "uuid" NOT NULL,
+    "lesson_date" "date" NOT NULL,
+    "short_term_goal" "text",
+    "mid_term_goal_snapshot" "text",
+    "mid_action_goal_snapshot" "text",
+    "school_progress" "text",
+    "homework_completion_pct" integer,
+    "homework_correct_pct" integer,
+    "today_correct_pct" integer,
+    "vocab_test_score" integer,
+    "vocab_test_total" integer,
+    "vocab_test_passed" boolean,
+    "check_test_score" integer,
+    "check_test_total" integer,
+    "check_test_passed" boolean,
+    "review_comment" "text",
+    "homework_assignments" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
+    "subject_specific" "jsonb",
+    "status" "text" DEFAULT 'draft'::"text" NOT NULL,
+    "submitted_at" timestamp with time zone,
+    "approved_at" timestamp with time zone,
+    "approved_by" "uuid",
+    "rejected_at" timestamp with time zone,
+    "rejected_by" "uuid",
+    "rejection_reason" "text",
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"(),
+    CONSTRAINT "class_reports_homework_completion_pct_check" CHECK ((("homework_completion_pct" IS NULL) OR (("homework_completion_pct" >= 0) AND ("homework_completion_pct" <= 100)))),
+    CONSTRAINT "class_reports_homework_correct_pct_check" CHECK ((("homework_correct_pct" IS NULL) OR (("homework_correct_pct" >= 0) AND ("homework_correct_pct" <= 100)))),
+    CONSTRAINT "class_reports_status_check" CHECK (("status" = ANY (ARRAY['draft'::"text", 'submitted'::"text", 'approved'::"text", 'rejected'::"text"]))),
+    CONSTRAINT "class_reports_today_correct_pct_check" CHECK ((("today_correct_pct" IS NULL) OR (("today_correct_pct" >= 0) AND ("today_correct_pct" <= 100))))
+);
+
+
+ALTER TABLE "public"."class_reports" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."class_reports" IS '授業報告書。1コマ×1生徒 = 1レコード。schedule_entry_id でスケジュールと紐付き、ワークフローで「下書き→提出→承認→公開」を管理。';
+
 
 
 CREATE TABLE IF NOT EXISTS "public"."course_prep_periods" (
@@ -475,7 +652,7 @@ CREATE TABLE IF NOT EXISTS "public"."course_prep_progress_items" (
     "updated_at" timestamp with time zone DEFAULT "now"(),
     "deadline" "date",
     "auto_source" "text",
-    CONSTRAINT "course_prep_progress_items_auto_source_check" CHECK (("auto_source" = ANY (ARRAY['regular_weekly'::"text", 'course_sessions'::"text", 'proposed_extra'::"text", 'subject_proposal'::"text"]))),
+    CONSTRAINT "course_prep_progress_items_auto_source_check" CHECK (("auto_source" = ANY (ARRAY['regular_weekly'::"text", 'course_sessions'::"text", 'proposed_extra'::"text", 'subject_proposal'::"text", 'applied_extra'::"text"]))),
     CONSTRAINT "course_prep_progress_items_column_type_check" CHECK (("column_type" = ANY (ARRAY['check'::"text", 'number'::"text", 'date'::"text"]))),
     CONSTRAINT "course_prep_progress_items_season_check" CHECK (("season" = ANY (ARRAY['spring'::"text", 'summer'::"text", 'winter'::"text"])))
 );
@@ -752,25 +929,216 @@ CREATE TABLE IF NOT EXISTS "public"."google_calendar_tokens" (
 ALTER TABLE "public"."google_calendar_tokens" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."inquiries" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "school_id" "uuid" NOT NULL,
+    "hp_inquiry_no" "text",
+    "inquired_at" timestamp with time zone NOT NULL,
+    "student_name" "text",
+    "student_name_kana" "text",
+    "guardian_name" "text",
+    "guardian_name_kana" "text",
+    "relationship" "text",
+    "grade" "text",
+    "gender" "text",
+    "phone" "text",
+    "email" "text",
+    "postal_code" "text",
+    "address_pref" "text",
+    "address_detail" "text",
+    "address_building" "text",
+    "school_name" "text",
+    "media" "text",
+    "channel" "text",
+    "request_type" "text",
+    "device" "text",
+    "initial_message" "text",
+    "purpose" "text",
+    "preferred_subjects" "text",
+    "juku_experience" "text",
+    "status" "text" DEFAULT 'in_progress'::"text" NOT NULL,
+    "material_sent_at" "date",
+    "trial_at" timestamp with time zone,
+    "trial_teacher" "text",
+    "interview_at" timestamp with time zone,
+    "enrolled_at" "date",
+    "weekly_count" integer,
+    "linked_student_id" "uuid",
+    "referrer_inquiry_note" "text",
+    "raw_source" "jsonb",
+    "note" "text",
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "deleted_at" timestamp with time zone,
+    "lost_reason" "text",
+    "interview_event_id" "text",
+    "trial_event_id" "text",
+    CONSTRAINT "inquiries_status_check" CHECK (("status" = ANY (ARRAY['in_progress'::"text", 'enrolled'::"text", 'unreachable'::"text", 'lost'::"text", 'trial_lost'::"text"])))
+);
+
+
+ALTER TABLE "public"."inquiries" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."inquiry_booking_tokens" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "token" "text" NOT NULL,
+    "inquiry_id" "uuid" NOT NULL,
+    "school_id" "uuid" NOT NULL,
+    "purpose" "text" DEFAULT 'interview'::"text" NOT NULL,
+    "expires_at" timestamp with time zone NOT NULL,
+    "used_at" timestamp with time zone,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "inquiry_booking_tokens_purpose_check" CHECK (("purpose" = ANY (ARRAY['interview'::"text", 'trial'::"text"])))
+);
+
+
+ALTER TABLE "public"."inquiry_booking_tokens" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."inquiry_contacts" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "inquiry_id" "uuid" NOT NULL,
+    "school_id" "uuid" NOT NULL,
+    "contacted_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "method" "text" DEFAULT 'tel'::"text" NOT NULL,
+    "direction" "text",
+    "result" "text",
+    "note" "text",
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "inquiry_contacts_direction_check" CHECK (("direction" = ANY (ARRAY['outbound'::"text", 'inbound'::"text"]))),
+    CONSTRAINT "inquiry_contacts_method_check" CHECK (("method" = ANY (ARRAY['tel'::"text", 'email'::"text", 'sms'::"text", 'visit'::"text", 'other'::"text"])))
+);
+
+
+ALTER TABLE "public"."inquiry_contacts" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."inquiry_import_tokens" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "token" "text" NOT NULL,
+    "label" "text",
+    "created_by" "uuid",
+    "revoked" boolean DEFAULT false NOT NULL,
+    "last_used_at" timestamp with time zone,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."inquiry_import_tokens" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."inquiry_mail_logs" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "inquiry_id" "uuid" NOT NULL,
+    "school_id" "uuid" NOT NULL,
+    "template_id" "uuid",
+    "method" "text" DEFAULT 'email'::"text" NOT NULL,
+    "subject" "text",
+    "status" "text" DEFAULT 'sent'::"text" NOT NULL,
+    "sent_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "sent_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "resend_email_id" "text",
+    "opened_at" timestamp with time zone,
+    "clicked_at" timestamp with time zone,
+    CONSTRAINT "inquiry_mail_logs_method_check" CHECK (("method" = ANY (ARRAY['email'::"text", 'sms'::"text"]))),
+    CONSTRAINT "inquiry_mail_logs_status_check" CHECK (("status" = ANY (ARRAY['sent'::"text", 'failed'::"text"])))
+);
+
+
+ALTER TABLE "public"."inquiry_mail_logs" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."inquiry_mail_templates" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "school_id" "uuid",
+    "name" "text" NOT NULL,
+    "subject" "text" DEFAULT ''::"text" NOT NULL,
+    "body" "text" DEFAULT ''::"text" NOT NULL,
+    "trigger_days" integer,
+    "is_active" boolean DEFAULT true NOT NULL,
+    "sort_order" integer DEFAULT 0 NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."inquiry_mail_templates" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."inquiry_school_settings" (
+    "school_id" "uuid" NOT NULL,
+    "hp_school_code" "text",
+    "mail_signature" "text",
+    "mail_reply_to" "text",
+    "yamato_customer_code" "text",
+    "yamato_fare_code" "text" DEFAULT '01'::"text",
+    "sender_tel" "text",
+    "sender_zip" "text",
+    "sender_address" "text",
+    "sender_name" "text",
+    "slack_mention_id" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "booking_config" "jsonb"
+);
+
+
+ALTER TABLE "public"."inquiry_school_settings" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."koushu_enrollments" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "course_id" "uuid" NOT NULL,
+    "course_id" "uuid",
     "student_id" "uuid" NOT NULL,
     "koma_count" integer DEFAULT 0 NOT NULL,
     "subject_ids" "uuid"[] DEFAULT '{}'::"uuid"[] NOT NULL,
     "created_at" timestamp with time zone DEFAULT "now"(),
-    "updated_at" timestamp with time zone DEFAULT "now"()
+    "updated_at" timestamp with time zone DEFAULT "now"(),
+    "formation" "text" DEFAULT 'individual'::"text" NOT NULL,
+    "koma_by_subject" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "school_id" "uuid",
+    "season" "text",
+    CONSTRAINT "koushu_enrollments_formation_check" CHECK (("formation" = ANY (ARRAY['individual'::"text", 'group'::"text"])))
 );
 
 
 ALTER TABLE "public"."koushu_enrollments" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."lesson_report_units" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "report_id" "uuid" NOT NULL,
+    "student_textbook_id" "uuid" NOT NULL,
+    "is_main" boolean DEFAULT false NOT NULL,
+    "curriculum_item_ids" integer[] DEFAULT '{}'::integer[] NOT NULL,
+    "page_start" integer,
+    "page_end" integer,
+    "display_order" integer DEFAULT 0 NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."lesson_report_units" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."lesson_report_units" IS '授業報告書の「単元×教材セット」。1報告書につきメイン1 + サブN を持つ。保存時に進行表 (student_progress_lessons) へ転記される。';
+
+
+
+COMMENT ON COLUMN "public"."lesson_report_units"."curriculum_item_ids" IS '今回の授業で扱った単元IDの配列（curriculum_items.id）。複数単元を1セットで扱える。';
+
+
+
 CREATE TABLE IF NOT EXISTS "public"."material_orders" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "school_id" "uuid" NOT NULL,
     "material_id" "uuid" NOT NULL,
-    "student_id" "uuid" NOT NULL,
+    "student_id" "uuid",
     "quantity" integer DEFAULT 1 NOT NULL,
     "status" "text" DEFAULT 'unconfirmed'::"text" NOT NULL,
     "ordered_at" timestamp with time zone,
@@ -780,6 +1148,8 @@ CREATE TABLE IF NOT EXISTS "public"."material_orders" (
     "created_by" "text",
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "is_sample" boolean DEFAULT false NOT NULL,
+    CONSTRAINT "chk_sample_or_student" CHECK ((("is_sample" = true) OR ("student_id" IS NOT NULL))),
     CONSTRAINT "material_orders_status_check" CHECK (("status" = ANY (ARRAY['unconfirmed'::"text", 'pending'::"text", 'ordered'::"text", 'delivered'::"text", 'distributed'::"text", 'cancelled'::"text"])))
 );
 
@@ -894,6 +1264,30 @@ CREATE TABLE IF NOT EXISTS "public"."monthly_tasks" (
 ALTER TABLE "public"."monthly_tasks" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."notta_transcripts" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "school_id" "uuid" NOT NULL,
+    "title" "text",
+    "recorded_at" timestamp with time zone,
+    "duration_seconds" integer,
+    "transcript" "text" NOT NULL,
+    "audio_url" "text",
+    "speakers" "jsonb",
+    "raw_payload" "jsonb",
+    "external_id" "text",
+    "linked_student_id" "uuid",
+    "linked_interview_id" "uuid",
+    "linked_at" timestamp with time zone,
+    "is_archived" boolean DEFAULT false,
+    "archived_at" timestamp with time zone,
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."notta_transcripts" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."portal_menu" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "school_id" "uuid" NOT NULL,
@@ -914,6 +1308,45 @@ CREATE TABLE IF NOT EXISTS "public"."portal_menu" (
 ALTER TABLE "public"."portal_menu" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."progress_sessions" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "student_textbook_id" "uuid" NOT NULL,
+    "session_date" "date" NOT NULL,
+    "teacher_id" "uuid",
+    "teacher_name" "text",
+    "handover" "text",
+    "homework_not_done" boolean DEFAULT false NOT NULL,
+    "tardy" boolean DEFAULT false NOT NULL,
+    "schedule_entry_id" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"(),
+    "confirmed_at" timestamp with time zone,
+    "confirmed_by" "uuid",
+    "report_id" "uuid"
+);
+
+
+ALTER TABLE "public"."progress_sessions" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."progress_sessions"."report_id" IS '対応する授業報告書 ID。報告書を保存すると自動で紐付けされる（NULL = 報告書未作成）。';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."push_subscriptions" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "school_id" "uuid" NOT NULL,
+    "endpoint" "text" NOT NULL,
+    "p256dh" "text" NOT NULL,
+    "auth" "text" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."push_subscriptions" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."regular_shift_settings" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "school_id" "uuid" NOT NULL,
@@ -925,11 +1358,22 @@ CREATE TABLE IF NOT EXISTS "public"."regular_shift_settings" (
     "status" "text" DEFAULT 'draft'::"text" NOT NULL,
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
+    "effective_from" "date",
+    "effective_until" "date",
+    CONSTRAINT "regular_shift_settings_effective_range_check" CHECK ((("effective_until" IS NULL) OR ("effective_from" IS NULL) OR ("effective_until" >= "effective_from"))),
     CONSTRAINT "regular_shift_settings_status_check" CHECK (("status" = ANY (ARRAY['draft'::"text", 'published'::"text"])))
 );
 
 
 ALTER TABLE "public"."regular_shift_settings" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."regular_shift_settings"."effective_from" IS '通常シフト募集の有効開始日。NULL は「常に有効（過去互換）」として扱う。';
+
+
+
+COMMENT ON COLUMN "public"."regular_shift_settings"."effective_until" IS '通常シフト募集の有効終了日。NULL は「無期限」として扱う。';
+
 
 
 CREATE TABLE IF NOT EXISTS "public"."regular_shift_slot_settings" (
@@ -972,11 +1416,36 @@ CREATE TABLE IF NOT EXISTS "public"."regular_shift_submissions" (
     "edit_token" "uuid" DEFAULT "gen_random_uuid"(),
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
-    "seat_chart_entered" boolean DEFAULT false NOT NULL
+    "seat_chart_entered" boolean DEFAULT false NOT NULL,
+    "user_id" "uuid"
 );
 
 
 ALTER TABLE "public"."regular_shift_submissions" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."schedule_change_logs" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "school_id" "uuid" NOT NULL,
+    "actor_user_id" "uuid",
+    "action_type" "text" NOT NULL,
+    "pattern_id" "uuid",
+    "entry_id" "uuid",
+    "student_id" "uuid",
+    "before_teacher_id" "uuid",
+    "after_teacher_id" "uuid",
+    "description" "text",
+    "affected_date" "date",
+    "affected_slot_id" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."schedule_change_logs" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."schedule_change_logs" IS '担当変更履歴ログ。割当・変更・振替・削除を時系列で記録し、監査・問合せ対応に使う。';
+
 
 
 CREATE TABLE IF NOT EXISTS "public"."schedule_closed_days" (
@@ -992,12 +1461,35 @@ CREATE TABLE IF NOT EXISTS "public"."schedule_closed_days" (
 ALTER TABLE "public"."schedule_closed_days" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."schedule_daily_booth_assignments" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "school_id" "uuid" NOT NULL,
+    "assignment_date" "date" NOT NULL,
+    "teacher_id" "uuid" NOT NULL,
+    "booth_no" integer NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"(),
+    CONSTRAINT "schedule_daily_booth_assignments_booth_no_check" CHECK ((("booth_no" >= 1) AND ("booth_no" <= 100)))
+);
+
+
+ALTER TABLE "public"."schedule_daily_booth_assignments" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."schedule_daily_booth_assignments" IS '日次の講師ブース番号割当。座席表印刷時に講師名の隣に表示される番号を管理。';
+
+
+
+COMMENT ON COLUMN "public"."schedule_daily_booth_assignments"."booth_no" IS 'ブース番号（1始まり）。同日内で同じ番号は1講師しか取れない。';
+
+
+
 CREATE TABLE IF NOT EXISTS "public"."schedule_entries" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "school_id" "uuid" NOT NULL,
     "entry_date" "date" NOT NULL,
     "time_slot_id" "uuid" NOT NULL,
-    "teacher_id" "uuid" NOT NULL,
+    "teacher_id" "uuid",
     "student_id" "uuid" NOT NULL,
     "subject_ids" "uuid"[] DEFAULT '{}'::"uuid"[] NOT NULL,
     "seat_label" "text",
@@ -1011,12 +1503,33 @@ CREATE TABLE IF NOT EXISTS "public"."schedule_entries" (
     "note" "text",
     "transfer_from_id" "uuid",
     "transfer_to_id" "uuid",
+    "kind" "text" DEFAULT 'regular'::"text" NOT NULL,
+    "formation" "text" DEFAULT 'individual'::"text" NOT NULL,
+    "transfer_deadline" "date",
     CONSTRAINT "schedule_entries_attendance_status_check" CHECK ((("attendance_status" IS NULL) OR ("attendance_status" = ANY (ARRAY['present'::"text", 'absent'::"text", 'late'::"text"])))),
+    CONSTRAINT "schedule_entries_formation_check" CHECK (("formation" = ANY (ARRAY['individual'::"text", 'group'::"text"]))),
+    CONSTRAINT "schedule_entries_kind_check" CHECK (("kind" = ANY (ARRAY['regular'::"text", 'koushu'::"text", 'test_prep'::"text", 'additional'::"text", 'trial'::"text"]))),
     CONSTRAINT "schedule_entries_status_check" CHECK (("status" = ANY (ARRAY['scheduled'::"text", 'completed'::"text", 'cancelled'::"text", 'transferred_out'::"text", 'transferred_in'::"text"])))
 );
 
 
 ALTER TABLE "public"."schedule_entries" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."schedule_entries"."teacher_id" IS '担当講師 ID。NULL は「担当未決定」状態（生徒は登録済みだが講師がまだアサインされていない）。';
+
+
+
+COMMENT ON COLUMN "public"."schedule_entries"."kind" IS '授業種別。regular=通常授業（通塾日程から自動生成）、koushu=講習（季節講座、通塾日程と独立）。';
+
+
+
+COMMENT ON COLUMN "public"."schedule_entries"."formation" IS '授業形態。individual=個別指導（1講師あたり数名、座席ブース）、group=集団指導（1講師あたり多人数、教室まるごと）。';
+
+
+
+COMMENT ON COLUMN "public"."schedule_entries"."transfer_deadline" IS '振替期限。transferred_out のエントリで使用し、元授業日の翌月末日を自動セット。transferred_in が確定すれば実質的に期限消化済みとなる。';
+
 
 
 CREATE TABLE IF NOT EXISTS "public"."schedule_generation_logs" (
@@ -1032,6 +1545,58 @@ CREATE TABLE IF NOT EXISTS "public"."schedule_generation_logs" (
 ALTER TABLE "public"."schedule_generation_logs" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."schedule_match_batches" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "school_id" "uuid" NOT NULL,
+    "setting_id" "uuid",
+    "executed_by" "uuid",
+    "executed_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "mode" "text" DEFAULT 'diff'::"text" NOT NULL,
+    "notes" "text",
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"(),
+    CONSTRAINT "schedule_match_batches_mode_check" CHECK (("mode" = ANY (ARRAY['overwrite'::"text", 'diff'::"text", 'partial'::"text"])))
+);
+
+
+ALTER TABLE "public"."schedule_match_batches" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."schedule_match_batches" IS 'マッチング実行1回ぶんのバッチ。1バッチ＝N件の提案。';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."schedule_match_proposals" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "batch_id" "uuid" NOT NULL,
+    "school_id" "uuid" NOT NULL,
+    "student_id" "uuid" NOT NULL,
+    "teacher_id" "uuid" NOT NULL,
+    "proposal_date" "date" NOT NULL,
+    "time_slot_id" "uuid" NOT NULL,
+    "subject_ids" "uuid"[] DEFAULT '{}'::"uuid"[] NOT NULL,
+    "formation" "text" DEFAULT 'individual'::"text" NOT NULL,
+    "kind" "text" DEFAULT 'koushu'::"text" NOT NULL,
+    "status" "text" DEFAULT 'draft'::"text" NOT NULL,
+    "schedule_entry_id" "uuid",
+    "published_at" timestamp with time zone,
+    "published_by" "uuid",
+    "match_meta" "jsonb",
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"(),
+    CONSTRAINT "schedule_match_proposals_formation_check" CHECK (("formation" = ANY (ARRAY['individual'::"text", 'group'::"text"]))),
+    CONSTRAINT "schedule_match_proposals_kind_check" CHECK (("kind" = ANY (ARRAY['regular'::"text", 'koushu'::"text"]))),
+    CONSTRAINT "schedule_match_proposals_status_check" CHECK (("status" = ANY (ARRAY['draft'::"text", 'published'::"text", 'dismissed'::"text"])))
+);
+
+
+ALTER TABLE "public"."schedule_match_proposals" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."schedule_match_proposals" IS 'マッチングが出した提案。draft 状態は室長のみ可視。published で schedule_entries に反映。';
+
+
+
 CREATE TABLE IF NOT EXISTS "public"."schedule_regular_patterns" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "school_id" "uuid" NOT NULL,
@@ -1045,12 +1610,29 @@ CREATE TABLE IF NOT EXISTS "public"."schedule_regular_patterns" (
     "is_active" boolean DEFAULT true NOT NULL,
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
+    "effective_from" "date" DEFAULT '2020-01-01'::"date" NOT NULL,
+    "effective_until" "date",
+    "formation" "text" DEFAULT 'individual'::"text" NOT NULL,
     CONSTRAINT "schedule_regular_patterns_day_of_week_check" CHECK ((("day_of_week" >= 0) AND ("day_of_week" <= 6))),
+    CONSTRAINT "schedule_regular_patterns_effective_range_check" CHECK ((("effective_until" IS NULL) OR ("effective_until" >= "effective_from"))),
+    CONSTRAINT "schedule_regular_patterns_formation_check" CHECK (("formation" = ANY (ARRAY['individual'::"text", 'group'::"text"]))),
     CONSTRAINT "schedule_regular_patterns_period_type_check" CHECK (("period_type" = ANY (ARRAY['regular'::"text", 'spring'::"text", 'summer'::"text", 'winter'::"text"])))
 );
 
 
 ALTER TABLE "public"."schedule_regular_patterns" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."schedule_regular_patterns"."effective_from" IS '通塾日程の適用開始日。この日以降のスケジュール生成・5週目計算で参照される。';
+
+
+
+COMMENT ON COLUMN "public"."schedule_regular_patterns"."effective_until" IS '通塾日程の適用終了日（含む）。NULL の場合は無期限。退塾や曜日変更時に旧パターンへセットする。';
+
+
+
+COMMENT ON COLUMN "public"."schedule_regular_patterns"."formation" IS '授業形態。individual=個別、group=集団。スケジュール自動生成時に schedule_entries.formation へ引き継がれる。';
+
 
 
 CREATE TABLE IF NOT EXISTS "public"."schedule_time_slots" (
@@ -1063,11 +1645,75 @@ CREATE TABLE IF NOT EXISTS "public"."schedule_time_slots" (
     "display_order" integer DEFAULT 0 NOT NULL,
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
+    "formation" "text" DEFAULT 'individual'::"text" NOT NULL,
+    CONSTRAINT "schedule_time_slots_formation_check" CHECK (("formation" = ANY (ARRAY['individual'::"text", 'group'::"text"]))),
     CONSTRAINT "schedule_time_slots_slot_number_check" CHECK ((("slot_number" >= 1) AND ("slot_number" <= 7)))
 );
 
 
 ALTER TABLE "public"."schedule_time_slots" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."schedule_time_slots"."formation" IS 'コマ時間の対象形態。individual=個別用の時間枠、group=集団用の時間枠。';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."school_class_capacity" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "school_id" "uuid" NOT NULL,
+    "max_students_per_teacher_individual" integer DEFAULT 2 NOT NULL,
+    "total_individual_seats" integer DEFAULT 12 NOT NULL,
+    "max_students_per_group" integer DEFAULT 8 NOT NULL,
+    "max_concurrent_groups" integer DEFAULT 1 NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"(),
+    CONSTRAINT "school_class_capacity_max_concurrent_groups_check" CHECK ((("max_concurrent_groups" >= 1) AND ("max_concurrent_groups" <= 20))),
+    CONSTRAINT "school_class_capacity_max_students_per_group_check" CHECK ((("max_students_per_group" >= 1) AND ("max_students_per_group" <= 100))),
+    CONSTRAINT "school_class_capacity_max_students_per_teacher_individual_check" CHECK ((("max_students_per_teacher_individual" >= 1) AND ("max_students_per_teacher_individual" <= 10))),
+    CONSTRAINT "school_class_capacity_total_individual_seats_check" CHECK ((("total_individual_seats" >= 1) AND ("total_individual_seats" <= 100)))
+);
+
+
+ALTER TABLE "public"."school_class_capacity" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."school_class_capacity" IS '学校ごとの授業生徒数上限設定。スケジュール作成・マッチング時のバリデーションに使用。';
+
+
+
+COMMENT ON COLUMN "public"."school_class_capacity"."max_students_per_teacher_individual" IS '個別指導：1講師あたりの生徒上限（デフォルト2 = 1対2まで）。';
+
+
+
+COMMENT ON COLUMN "public"."school_class_capacity"."total_individual_seats" IS '個別指導：教室全体の同時席数（デフォルト12）。';
+
+
+
+COMMENT ON COLUMN "public"."school_class_capacity"."max_students_per_group" IS '集団指導：1コマあたりの生徒上限（デフォルト8）。';
+
+
+
+COMMENT ON COLUMN "public"."school_class_capacity"."max_concurrent_groups" IS '集団指導：同時に開催できる集団コマ数（デフォルト1 = 1室のみ）。';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."school_monthly_metrics" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "school_id" "uuid" NOT NULL,
+    "year" integer NOT NULL,
+    "month" integer NOT NULL,
+    "kind" "text" DEFAULT 'actual'::"text" NOT NULL,
+    "new_count" integer DEFAULT 0 NOT NULL,
+    "leave_count" integer DEFAULT 0 NOT NULL,
+    "active_count" integer DEFAULT 0 NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "school_monthly_metrics_kind_check" CHECK (("kind" = ANY (ARRAY['actual'::"text", 'budget'::"text"]))),
+    CONSTRAINT "school_monthly_metrics_month_check" CHECK ((("month" >= 1) AND ("month" <= 12)))
+);
+
+
+ALTER TABLE "public"."school_monthly_metrics" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."schools" (
@@ -1080,7 +1726,8 @@ CREATE TABLE IF NOT EXISTS "public"."schools" (
     "is_demo" boolean DEFAULT false NOT NULL,
     "notification_emails" "text"[] DEFAULT '{}'::"text"[] NOT NULL,
     "logo_url" "text",
-    "slack_mention_id" "text"
+    "slack_mention_id" "text",
+    "slack_channel_id" "text"
 );
 
 
@@ -1160,6 +1807,46 @@ CREATE TABLE IF NOT EXISTS "public"."seasonal_courses" (
 ALTER TABLE "public"."seasonal_courses" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."seasonal_proposal_units" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "proposal_id" "uuid" NOT NULL,
+    "curriculum_item_id" integer NOT NULL,
+    "koma_count" integer DEFAULT 1 NOT NULL,
+    "reason" "text" DEFAULT ''::"text" NOT NULL,
+    "sort_order" integer DEFAULT 0 NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "group_id" integer DEFAULT 0 NOT NULL,
+    "applied_koma" integer,
+    "intent_tag" "text",
+    "applied_group_id" integer DEFAULT 0 NOT NULL
+);
+
+
+ALTER TABLE "public"."seasonal_proposal_units" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."seasonal_proposals" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "student_textbook_id" "uuid",
+    "season" "text" NOT NULL,
+    "year" integer DEFAULT EXTRACT(year FROM "now"()) NOT NULL,
+    "theme" "text" DEFAULT ''::"text" NOT NULL,
+    "status" "text" DEFAULT 'draft'::"text" NOT NULL,
+    "notes" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "student_id" "uuid",
+    "textbook_id" integer,
+    "applied_koma" integer,
+    "school_id" "uuid",
+    CONSTRAINT "seasonal_proposals_season_check" CHECK (("season" = ANY (ARRAY['spring'::"text", 'summer'::"text", 'winter'::"text"]))),
+    CONSTRAINT "seasonal_proposals_status_check" CHECK (("status" = ANY (ARRAY['draft'::"text", 'sent'::"text", 'approved'::"text"])))
+);
+
+
+ALTER TABLE "public"."seasonal_proposals" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."seasonal_shift_settings" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "school_id" "uuid" NOT NULL,
@@ -1193,6 +1880,47 @@ CREATE TABLE IF NOT EXISTS "public"."seasonal_shift_slot_settings" (
 ALTER TABLE "public"."seasonal_shift_slot_settings" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."seasonal_shift_student_submission_slots" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "submission_id" "uuid" NOT NULL,
+    "shift_date" "date" NOT NULL,
+    "time_slot" "text" NOT NULL,
+    "available" boolean DEFAULT true NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."seasonal_shift_student_submission_slots" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."seasonal_shift_student_submission_slots" IS '生徒の通塾可能スロット（日付×時間帯）。available=true が「この日時に通える」。';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."seasonal_shift_student_submissions" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "setting_id" "uuid" NOT NULL,
+    "school_id" "uuid" NOT NULL,
+    "student_id" "uuid" NOT NULL,
+    "submitter_email" "text",
+    "submitter_name" "text",
+    "submitted_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "notes" "text",
+    "allow_edit" boolean DEFAULT false NOT NULL,
+    "edit_token" "text",
+    "matching_consumed" boolean DEFAULT false NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."seasonal_shift_student_submissions" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."seasonal_shift_student_submissions" IS '講習期間中の生徒の通塾可能表（提出ヘッダ）。setting は seasonal_shift_settings を講師版と共通流用。';
+
+
+
 CREATE TABLE IF NOT EXISTS "public"."seasonal_shift_submission_slots" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "submission_id" "uuid" NOT NULL,
@@ -1218,7 +1946,8 @@ CREATE TABLE IF NOT EXISTS "public"."seasonal_shift_submissions" (
     "edit_token" "uuid" DEFAULT "gen_random_uuid"(),
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
-    "seat_chart_entered" boolean DEFAULT false NOT NULL
+    "seat_chart_entered" boolean DEFAULT false NOT NULL,
+    "user_id" "uuid"
 );
 
 
@@ -1283,6 +2012,7 @@ CREATE TABLE IF NOT EXISTS "public"."student_interviews" (
     "updated_at" timestamp with time zone DEFAULT "now"(),
     "is_completed" boolean DEFAULT false,
     "completed_at" timestamp with time zone,
+    "title" "text",
     CONSTRAINT "student_interviews_interview_type_check" CHECK (("interview_type" = ANY (ARRAY['parent_interview'::"text", 'phone'::"text", 'student_interview'::"text", 'casual'::"text", 'enrollment'::"text", 'other'::"text", 'task'::"text"])))
 );
 
@@ -1317,11 +2047,18 @@ CREATE TABLE IF NOT EXISTS "public"."student_progress" (
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
     "group_number" integer,
-    "teacher_name" "text"
+    "teacher_name" "text",
+    "intent_tag" "text",
+    "homework_not_done" boolean DEFAULT false NOT NULL,
+    "tardy" boolean DEFAULT false NOT NULL
 );
 
 
 ALTER TABLE "public"."student_progress" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."student_progress"."intent_tag" IS '意図タグ: 苦手補強 / 既習の定着 / 未習の先取り / 学校進度に合わせる / 直前演習 / 応用発展';
+
 
 
 CREATE TABLE IF NOT EXISTS "public"."student_progress_lessons" (
@@ -1331,6 +2068,7 @@ CREATE TABLE IF NOT EXISTS "public"."student_progress_lessons" (
     "lesson_date" "date",
     "teacher_name" "text",
     "created_at" timestamp with time zone DEFAULT "now"(),
+    "session_id" "uuid",
     CONSTRAINT "student_progress_lessons_lesson_number_check" CHECK ((("lesson_number" >= 1) AND ("lesson_number" <= 3)))
 );
 
@@ -1347,6 +2085,21 @@ CREATE TABLE IF NOT EXISTS "public"."student_subjects" (
 
 
 ALTER TABLE "public"."student_subjects" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."student_textbook_exam_ranges" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "student_textbook_id" "uuid" NOT NULL,
+    "exam_type_id" "uuid" NOT NULL,
+    "range_start_item_number" integer NOT NULL,
+    "range_end_item_number" integer NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"(),
+    CONSTRAINT "student_textbook_exam_ranges_check" CHECK (("range_start_item_number" <= "range_end_item_number"))
+);
+
+
+ALTER TABLE "public"."student_textbook_exam_ranges" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."student_textbook_exams" (
@@ -1392,6 +2145,7 @@ CREATE TABLE IF NOT EXISTS "public"."student_textbooks" (
     "season" character varying(10),
     "sort_order" integer DEFAULT 0,
     "is_draft" boolean DEFAULT false NOT NULL,
+    "track_progress" boolean DEFAULT false NOT NULL,
     CONSTRAINT "student_textbooks_season_check" CHECK ((("season" IS NULL) OR (("season")::"text" = ANY ((ARRAY['spring'::character varying, 'summer'::character varying, 'winter'::character varying])::"text"[]))))
 );
 
@@ -1416,12 +2170,39 @@ CREATE TABLE IF NOT EXISTS "public"."students" (
     "subject_other" character varying(100),
     "school_id" "uuid" NOT NULL,
     "deleted_at" timestamp with time zone,
+    "is_programming" boolean DEFAULT false NOT NULL,
+    "is_sibling" boolean DEFAULT false NOT NULL,
+    "withdrawal_date" "date",
+    "preferred_teacher_gender" "text",
+    "fixed_teacher_ids" "uuid"[] DEFAULT '{}'::"uuid"[] NOT NULL,
+    "excluded_teacher_ids" "uuid"[] DEFAULT '{}'::"uuid"[] NOT NULL,
     CONSTRAINT "students_grade_check" CHECK ((("grade" >= 1) AND ("grade" <= 13))),
+    CONSTRAINT "students_preferred_teacher_gender_check" CHECK ((("preferred_teacher_gender" IS NULL) OR ("preferred_teacher_gender" = ANY (ARRAY['male'::"text", 'female'::"text"])))),
     CONSTRAINT "students_status_check" CHECK ((("status")::"text" = ANY ((ARRAY['active'::character varying, 'inactive'::character varying, 'withdrawn'::character varying])::"text"[])))
 );
 
 
 ALTER TABLE "public"."students" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."students"."is_sibling" IS '兄弟・姉妹がいる場合 true';
+
+
+
+COMMENT ON COLUMN "public"."students"."withdrawal_date" IS '退塾予定日。この日以降のスケジュール生成・5週目計算から除外される。NULLは在籍中。';
+
+
+
+COMMENT ON COLUMN "public"."students"."preferred_teacher_gender" IS '希望講師性別。NULL=指定なし、male=男性のみ、female=女性のみ。';
+
+
+
+COMMENT ON COLUMN "public"."students"."fixed_teacher_ids" IS '担当固定講師ID配列。マッチングではこの中の講師を優先（または強制）。';
+
+
+
+COMMENT ON COLUMN "public"."students"."excluded_teacher_ids" IS '指名NG講師ID配列。マッチングでこの講師は割り当てない。';
+
 
 
 CREATE TABLE IF NOT EXISTS "public"."subjects" (
@@ -1457,6 +2238,147 @@ CREATE TABLE IF NOT EXISTS "public"."system_settings" (
 ALTER TABLE "public"."system_settings" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."teacher_absences" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "school_id" "uuid" NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "absence_date" "date" NOT NULL,
+    "time_slot_id" "uuid" NOT NULL,
+    "reason" "text",
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."teacher_absences" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."teacher_absences" IS '講師の欠勤（コマ単位）。座席表で講師カードを欠勤表示にするフラグ。生徒の再配置は行わない。';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."teacher_availability_periods" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "school_id" "uuid" NOT NULL,
+    "effective_from" "date" NOT NULL,
+    "effective_until" "date",
+    "available_days_of_week" integer[] DEFAULT '{}'::integer[] NOT NULL,
+    "available_slot_numbers_by_day" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "available_time_slots_by_day" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "source" "text" DEFAULT 'manual'::"text" NOT NULL,
+    "source_submission_id" "uuid",
+    "notes" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "teacher_availability_periods_source_check" CHECK (("source" = ANY (ARRAY['regular_shift'::"text", 'manual'::"text"])))
+);
+
+
+ALTER TABLE "public"."teacher_availability_periods" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."teacher_availability_periods" IS '講師の出勤可能期間。effective_from/until で期間バージョン管理。source=regular_shift はシフト提出由来（自動反映）、manual は手動編集。';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."teacher_badge_assignments" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "teacher_id" "uuid" NOT NULL,
+    "badge_id" "uuid" NOT NULL,
+    "completed_at" "date",
+    "note" "text",
+    "assigned_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."teacher_badge_assignments" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."teacher_badges" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "name" "text" NOT NULL,
+    "category" "text" DEFAULT 'training'::"text" NOT NULL,
+    "rank" "text" DEFAULT 'bronze'::"text" NOT NULL,
+    "icon" "text" DEFAULT 'star'::"text" NOT NULL,
+    "description" "text",
+    "sort_order" integer DEFAULT 0 NOT NULL,
+    "is_active" boolean DEFAULT true NOT NULL,
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."teacher_badges" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."teacher_trainings" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "teacher_id" "uuid" NOT NULL,
+    "title" "text" NOT NULL,
+    "period_label" "text",
+    "attended_on" "date",
+    "note" "text",
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "training_master_id" "uuid"
+);
+
+
+ALTER TABLE "public"."teacher_trainings" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."test_prep_proposal_subjects" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "proposal_id" "uuid" NOT NULL,
+    "subject_name" "text" NOT NULL,
+    "target_score" integer,
+    "proposed_koma" integer DEFAULT 0 NOT NULL,
+    "sort_order" integer DEFAULT 0 NOT NULL
+);
+
+
+ALTER TABLE "public"."test_prep_proposal_subjects" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."test_prep_proposal_units" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "subject_id" "uuid" NOT NULL,
+    "curriculum_item_id" integer,
+    "unit_name" "text" NOT NULL,
+    "self_assessment" "text",
+    "koma_count" integer DEFAULT 1 NOT NULL,
+    "sort_order" integer DEFAULT 0 NOT NULL,
+    "group_id" "text",
+    CONSTRAINT "test_prep_proposal_units_self_assessment_check" CHECK ((("self_assessment" IS NULL) OR ("self_assessment" = ANY (ARRAY['◎'::"text", '○'::"text", '△'::"text", '×'::"text"]))))
+);
+
+
+ALTER TABLE "public"."test_prep_proposal_units" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."test_prep_proposals" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "school_id" "uuid" NOT NULL,
+    "student_id" "uuid" NOT NULL,
+    "exam_type_id" "uuid",
+    "teacher_user_id" "uuid",
+    "title" "text" DEFAULT ''::"text" NOT NULL,
+    "status" "text" DEFAULT 'draft'::"text" NOT NULL,
+    "token" "text" DEFAULT "encode"("extensions"."gen_random_bytes"(12), 'hex'::"text") NOT NULL,
+    "zoukoma_period_id" "uuid",
+    "notes" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "test_prep_proposals_status_check" CHECK (("status" = ANY (ARRAY['draft'::"text", 'sent'::"text", 'published'::"text"])))
+);
+
+
+ALTER TABLE "public"."test_prep_proposals" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."textbooks" (
     "id" integer NOT NULL,
     "name" "text" NOT NULL,
@@ -1469,6 +2391,8 @@ CREATE TABLE IF NOT EXISTS "public"."textbooks" (
     "created_at" timestamp with time zone DEFAULT "now"(),
     "grade_category" character varying(20),
     "updated_at" timestamp with time zone DEFAULT "now"(),
+    "is_active" boolean DEFAULT true NOT NULL,
+    "material_id" "uuid",
     CONSTRAINT "textbooks_grade_category_check" CHECK ((("grade_category" IS NULL) OR (("grade_category")::"text" = ANY ((ARRAY['elementary'::character varying, 'middle'::character varying, 'high'::character varying])::"text"[]))))
 );
 
@@ -1489,6 +2413,50 @@ ALTER SEQUENCE "public"."textbooks_id_seq" OWNER TO "postgres";
 
 
 ALTER SEQUENCE "public"."textbooks_id_seq" OWNED BY "public"."textbooks"."id";
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."training_masters" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "name" "text" NOT NULL,
+    "period_label" "text",
+    "description" "text",
+    "sort_order" integer DEFAULT 0 NOT NULL,
+    "is_active" boolean DEFAULT true NOT NULL,
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."training_masters" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."transfer_notifications" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "school_id" "uuid" NOT NULL,
+    "student_id" "uuid" NOT NULL,
+    "from_entry_id" "uuid",
+    "to_entry_id" "uuid",
+    "from_date" "date" NOT NULL,
+    "to_date" "date" NOT NULL,
+    "from_time_slot_label" "text",
+    "to_time_slot_label" "text",
+    "delivery_status" "text" DEFAULT 'pending'::"text" NOT NULL,
+    "delivery_method" "text",
+    "sent_at" timestamp with time zone,
+    "sent_to" "text",
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"(),
+    CONSTRAINT "transfer_notifications_delivery_status_check" CHECK (("delivery_status" = ANY (ARRAY['pending'::"text", 'sent'::"text", 'failed'::"text", 'skipped'::"text"])))
+);
+
+
+ALTER TABLE "public"."transfer_notifications" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."transfer_notifications" IS '振替確定時の通知レコード。createTransferEntry でINSERT、将来 Edge Function が pending 状態のものを送信する。';
 
 
 
@@ -1524,6 +2492,11 @@ CREATE TABLE IF NOT EXISTS "public"."user_profiles" (
     "available_days_of_week" integer[] DEFAULT '{1,2,3,4,5,6}'::integer[],
     "default_school_id" "uuid",
     "available_slot_numbers_by_day" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "exit_date" "date",
+    "last_name" "text",
+    "first_name" "text",
+    "gender" "text",
+    CONSTRAINT "user_profiles_gender_check" CHECK ((("gender" IS NULL) OR ("gender" = ANY (ARRAY['male'::"text", 'female'::"text", 'other'::"text"])))),
     CONSTRAINT "user_profiles_role_check" CHECK (("role" = ANY (ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text", 'teacher'::"text", 'parent'::"text"])))
 );
 
@@ -1547,6 +2520,10 @@ COMMENT ON COLUMN "public"."user_profiles"."available_slot_numbers_by_day" IS '�
 
 
 
+COMMENT ON COLUMN "public"."user_profiles"."gender" IS '性別。NULL=未設定、male=男性、female=女性、other=その他。生徒の「女性講師希望」マッチングで使用。';
+
+
+
 CREATE TABLE IF NOT EXISTS "public"."user_schools" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid",
@@ -1558,11 +2535,30 @@ CREATE TABLE IF NOT EXISTS "public"."user_schools" (
 ALTER TABLE "public"."user_schools" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."user_textbook_favorites" (
+    "user_id" "uuid" NOT NULL,
+    "textbook_id" integer NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."user_textbook_favorites" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."user_textbook_favorites" IS 'ユーザーごとのテキストお気に入り。テキスト選択画面で上位表示する用。';
+
+
+
 ALTER TABLE ONLY "public"."curriculum_items" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."curriculum_items_id_seq"'::"regclass");
 
 
 
 ALTER TABLE ONLY "public"."textbooks" ALTER COLUMN "id" SET DEFAULT "nextval"('"public"."textbooks_id_seq"'::"regclass");
+
+
+
+ALTER TABLE ONLY "public"."action_goals"
+    ADD CONSTRAINT "action_goals_pkey" PRIMARY KEY ("id");
 
 
 
@@ -1581,6 +2577,16 @@ ALTER TABLE ONLY "public"."alert_dismissals"
 
 
 
+ALTER TABLE ONLY "public"."alert_settings"
+    ADD CONSTRAINT "alert_settings_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."alert_settings"
+    ADD CONSTRAINT "alert_settings_school_id_alert_type_key" UNIQUE ("school_id", "alert_type");
+
+
+
 ALTER TABLE ONLY "public"."application_items"
     ADD CONSTRAINT "application_items_pkey" PRIMARY KEY ("id");
 
@@ -1593,6 +2599,16 @@ ALTER TABLE ONLY "public"."assessment_scores"
 
 ALTER TABLE ONLY "public"."assessment_scores"
     ADD CONSTRAINT "assessment_scores_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."assessment_subjects"
+    ADD CONSTRAINT "assessment_subjects_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."assessment_subjects"
+    ADD CONSTRAINT "assessment_subjects_school_id_code_key" UNIQUE ("school_id", "code");
 
 
 
@@ -1668,6 +2684,16 @@ ALTER TABLE ONLY "public"."bulletin_reads"
 
 ALTER TABLE ONLY "public"."bulletin_reads"
     ADD CONSTRAINT "bulletin_reads_post_id_user_id_key" UNIQUE ("post_id", "user_id");
+
+
+
+ALTER TABLE ONLY "public"."class_reports"
+    ADD CONSTRAINT "class_reports_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."class_reports"
+    ADD CONSTRAINT "class_reports_schedule_entry_id_key" UNIQUE ("schedule_entry_id");
 
 
 
@@ -1786,13 +2812,63 @@ ALTER TABLE ONLY "public"."google_calendar_tokens"
 
 
 
-ALTER TABLE ONLY "public"."koushu_enrollments"
-    ADD CONSTRAINT "koushu_enrollments_course_id_student_id_key" UNIQUE ("course_id", "student_id");
+ALTER TABLE ONLY "public"."inquiries"
+    ADD CONSTRAINT "inquiries_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."inquiry_booking_tokens"
+    ADD CONSTRAINT "inquiry_booking_tokens_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."inquiry_booking_tokens"
+    ADD CONSTRAINT "inquiry_booking_tokens_token_key" UNIQUE ("token");
+
+
+
+ALTER TABLE ONLY "public"."inquiry_contacts"
+    ADD CONSTRAINT "inquiry_contacts_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."inquiry_import_tokens"
+    ADD CONSTRAINT "inquiry_import_tokens_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."inquiry_import_tokens"
+    ADD CONSTRAINT "inquiry_import_tokens_token_key" UNIQUE ("token");
+
+
+
+ALTER TABLE ONLY "public"."inquiry_mail_logs"
+    ADD CONSTRAINT "inquiry_mail_logs_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."inquiry_mail_templates"
+    ADD CONSTRAINT "inquiry_mail_templates_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."inquiry_school_settings"
+    ADD CONSTRAINT "inquiry_school_settings_pkey" PRIMARY KEY ("school_id");
 
 
 
 ALTER TABLE ONLY "public"."koushu_enrollments"
     ADD CONSTRAINT "koushu_enrollments_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."koushu_enrollments"
+    ADD CONSTRAINT "koushu_enrollments_school_season_student_formation_key" UNIQUE ("school_id", "season", "student_id", "formation");
+
+
+
+ALTER TABLE ONLY "public"."lesson_report_units"
+    ADD CONSTRAINT "lesson_report_units_pkey" PRIMARY KEY ("id");
 
 
 
@@ -1836,6 +2912,16 @@ ALTER TABLE ONLY "public"."monthly_tasks"
 
 
 
+ALTER TABLE ONLY "public"."notta_transcripts"
+    ADD CONSTRAINT "notta_transcripts_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."notta_transcripts"
+    ADD CONSTRAINT "notta_transcripts_school_id_external_id_key" UNIQUE ("school_id", "external_id");
+
+
+
 ALTER TABLE ONLY "public"."portal_menu"
     ADD CONSTRAINT "portal_menu_pkey" PRIMARY KEY ("id");
 
@@ -1843,6 +2929,21 @@ ALTER TABLE ONLY "public"."portal_menu"
 
 ALTER TABLE ONLY "public"."portal_menu"
     ADD CONSTRAINT "portal_menu_school_id_menu_key_key" UNIQUE ("school_id", "menu_key");
+
+
+
+ALTER TABLE ONLY "public"."progress_sessions"
+    ADD CONSTRAINT "progress_sessions_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."push_subscriptions"
+    ADD CONSTRAINT "push_subscriptions_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."push_subscriptions"
+    ADD CONSTRAINT "push_subscriptions_user_id_endpoint_key" UNIQUE ("user_id", "endpoint");
 
 
 
@@ -1876,8 +2977,28 @@ ALTER TABLE ONLY "public"."regular_shift_submissions"
 
 
 
+ALTER TABLE ONLY "public"."schedule_change_logs"
+    ADD CONSTRAINT "schedule_change_logs_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."schedule_closed_days"
     ADD CONSTRAINT "schedule_closed_days_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."schedule_daily_booth_assignments"
+    ADD CONSTRAINT "schedule_daily_booth_assignme_school_id_assignment_date_boo_key" UNIQUE ("school_id", "assignment_date", "booth_no");
+
+
+
+ALTER TABLE ONLY "public"."schedule_daily_booth_assignments"
+    ADD CONSTRAINT "schedule_daily_booth_assignme_school_id_assignment_date_tea_key" UNIQUE ("school_id", "assignment_date", "teacher_id");
+
+
+
+ALTER TABLE ONLY "public"."schedule_daily_booth_assignments"
+    ADD CONSTRAINT "schedule_daily_booth_assignments_pkey" PRIMARY KEY ("id");
 
 
 
@@ -1896,6 +3017,21 @@ ALTER TABLE ONLY "public"."schedule_generation_logs"
 
 
 
+ALTER TABLE ONLY "public"."schedule_match_batches"
+    ADD CONSTRAINT "schedule_match_batches_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."schedule_match_proposals"
+    ADD CONSTRAINT "schedule_match_proposals_batch_id_student_id_proposal_date__key" UNIQUE ("batch_id", "student_id", "proposal_date", "time_slot_id");
+
+
+
+ALTER TABLE ONLY "public"."schedule_match_proposals"
+    ADD CONSTRAINT "schedule_match_proposals_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."schedule_regular_patterns"
     ADD CONSTRAINT "schedule_regular_patterns_pkey" PRIMARY KEY ("id");
 
@@ -1907,7 +3043,27 @@ ALTER TABLE ONLY "public"."schedule_time_slots"
 
 
 ALTER TABLE ONLY "public"."schedule_time_slots"
-    ADD CONSTRAINT "schedule_time_slots_school_id_slot_number_key" UNIQUE ("school_id", "slot_number");
+    ADD CONSTRAINT "schedule_time_slots_school_formation_slot_unique" UNIQUE ("school_id", "formation", "slot_number");
+
+
+
+ALTER TABLE ONLY "public"."school_class_capacity"
+    ADD CONSTRAINT "school_class_capacity_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."school_class_capacity"
+    ADD CONSTRAINT "school_class_capacity_school_id_key" UNIQUE ("school_id");
+
+
+
+ALTER TABLE ONLY "public"."school_monthly_metrics"
+    ADD CONSTRAINT "school_monthly_metrics_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."school_monthly_metrics"
+    ADD CONSTRAINT "school_monthly_metrics_school_id_year_month_kind_key" UNIQUE ("school_id", "year", "month", "kind");
 
 
 
@@ -1951,6 +3107,26 @@ ALTER TABLE ONLY "public"."seasonal_courses"
 
 
 
+ALTER TABLE ONLY "public"."seasonal_proposal_units"
+    ADD CONSTRAINT "seasonal_proposal_units_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."seasonal_proposal_units"
+    ADD CONSTRAINT "seasonal_proposal_units_proposal_id_curriculum_item_id_key" UNIQUE ("proposal_id", "curriculum_item_id");
+
+
+
+ALTER TABLE ONLY "public"."seasonal_proposals"
+    ADD CONSTRAINT "seasonal_proposals_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."seasonal_proposals"
+    ADD CONSTRAINT "seasonal_proposals_student_textbook_season_year_key" UNIQUE ("student_id", "textbook_id", "season", "year");
+
+
+
 ALTER TABLE ONLY "public"."seasonal_shift_settings"
     ADD CONSTRAINT "seasonal_shift_settings_pkey" PRIMARY KEY ("id");
 
@@ -1963,6 +3139,31 @@ ALTER TABLE ONLY "public"."seasonal_shift_slot_settings"
 
 ALTER TABLE ONLY "public"."seasonal_shift_slot_settings"
     ADD CONSTRAINT "seasonal_shift_slot_settings_setting_id_slot_date_time_slot_key" UNIQUE ("setting_id", "slot_date", "time_slot");
+
+
+
+ALTER TABLE ONLY "public"."seasonal_shift_student_submission_slots"
+    ADD CONSTRAINT "seasonal_shift_student_submis_submission_id_shift_date_time_key" UNIQUE ("submission_id", "shift_date", "time_slot");
+
+
+
+ALTER TABLE ONLY "public"."seasonal_shift_student_submission_slots"
+    ADD CONSTRAINT "seasonal_shift_student_submission_slots_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."seasonal_shift_student_submissions"
+    ADD CONSTRAINT "seasonal_shift_student_submissions_edit_token_key" UNIQUE ("edit_token");
+
+
+
+ALTER TABLE ONLY "public"."seasonal_shift_student_submissions"
+    ADD CONSTRAINT "seasonal_shift_student_submissions_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."seasonal_shift_student_submissions"
+    ADD CONSTRAINT "seasonal_shift_student_submissions_setting_id_student_id_key" UNIQUE ("setting_id", "student_id");
 
 
 
@@ -2041,6 +3242,11 @@ ALTER TABLE ONLY "public"."student_subjects"
 
 
 
+ALTER TABLE ONLY "public"."student_textbook_exam_ranges"
+    ADD CONSTRAINT "student_textbook_exam_ranges_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."student_textbook_exams"
     ADD CONSTRAINT "student_textbook_exams_pkey" PRIMARY KEY ("id");
 
@@ -2091,8 +3297,78 @@ ALTER TABLE ONLY "public"."system_settings"
 
 
 
+ALTER TABLE ONLY "public"."teacher_absences"
+    ADD CONSTRAINT "teacher_absences_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."teacher_absences"
+    ADD CONSTRAINT "teacher_absences_user_id_absence_date_time_slot_id_key" UNIQUE ("user_id", "absence_date", "time_slot_id");
+
+
+
+ALTER TABLE ONLY "public"."teacher_availability_periods"
+    ADD CONSTRAINT "teacher_availability_periods_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."teacher_badge_assignments"
+    ADD CONSTRAINT "teacher_badge_assignments_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."teacher_badge_assignments"
+    ADD CONSTRAINT "teacher_badge_assignments_teacher_id_badge_id_key" UNIQUE ("teacher_id", "badge_id");
+
+
+
+ALTER TABLE ONLY "public"."teacher_badges"
+    ADD CONSTRAINT "teacher_badges_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."teacher_trainings"
+    ADD CONSTRAINT "teacher_trainings_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."test_prep_proposal_subjects"
+    ADD CONSTRAINT "test_prep_proposal_subjects_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."test_prep_proposal_units"
+    ADD CONSTRAINT "test_prep_proposal_units_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."test_prep_proposals"
+    ADD CONSTRAINT "test_prep_proposals_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."test_prep_proposals"
+    ADD CONSTRAINT "test_prep_proposals_token_key" UNIQUE ("token");
+
+
+
 ALTER TABLE ONLY "public"."textbooks"
     ADD CONSTRAINT "textbooks_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."training_masters"
+    ADD CONSTRAINT "training_masters_name_key" UNIQUE ("name");
+
+
+
+ALTER TABLE ONLY "public"."training_masters"
+    ADD CONSTRAINT "training_masters_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."transfer_notifications"
+    ADD CONSTRAINT "transfer_notifications_pkey" PRIMARY KEY ("id");
 
 
 
@@ -2121,6 +3397,19 @@ ALTER TABLE ONLY "public"."user_schools"
 
 
 
+ALTER TABLE ONLY "public"."user_textbook_favorites"
+    ADD CONSTRAINT "user_textbook_favorites_pkey" PRIMARY KEY ("user_id", "textbook_id");
+
+
+
+CREATE INDEX "idx_action_goals_exam_id" ON "public"."action_goals" USING "btree" ("student_textbook_exam_id");
+
+
+
+CREATE INDEX "idx_action_goals_sort" ON "public"."action_goals" USING "btree" ("student_textbook_exam_id", "sort_order");
+
+
+
 CREATE INDEX "idx_admin_audit_logs_action" ON "public"."admin_audit_logs" USING "btree" ("action", "created_at" DESC);
 
 
@@ -2137,6 +3426,10 @@ CREATE INDEX "idx_alert_dismissals_school_student" ON "public"."alert_dismissals
 
 
 
+CREATE INDEX "idx_alert_settings_school" ON "public"."alert_settings" USING "btree" ("school_id");
+
+
+
 CREATE INDEX "idx_application_items_is_hidden" ON "public"."application_items" USING "btree" ("is_hidden");
 
 
@@ -2146,6 +3439,18 @@ CREATE INDEX "idx_application_items_school_id" ON "public"."application_items" U
 
 
 CREATE INDEX "idx_assessment_scores_assessment_id" ON "public"."assessment_scores" USING "btree" ("assessment_id");
+
+
+
+CREATE INDEX "idx_assessment_subjects_category" ON "public"."assessment_subjects" USING "btree" ("category");
+
+
+
+CREATE INDEX "idx_assessment_subjects_school" ON "public"."assessment_subjects" USING "btree" ("school_id");
+
+
+
+CREATE INDEX "idx_assessment_subjects_school_type" ON "public"."assessment_subjects" USING "btree" ("school_type");
 
 
 
@@ -2226,6 +3531,22 @@ CREATE INDEX "idx_bulletin_reads_post" ON "public"."bulletin_reads" USING "btree
 
 
 CREATE INDEX "idx_bulletin_reads_user" ON "public"."bulletin_reads" USING "btree" ("user_id");
+
+
+
+CREATE INDEX "idx_class_reports_pending" ON "public"."class_reports" USING "btree" ("school_id", "status") WHERE ("status" = 'submitted'::"text");
+
+
+
+CREATE INDEX "idx_class_reports_school_lesson_date" ON "public"."class_reports" USING "btree" ("school_id", "lesson_date");
+
+
+
+CREATE INDEX "idx_class_reports_student_date" ON "public"."class_reports" USING "btree" ("student_id", "lesson_date" DESC);
+
+
+
+CREATE INDEX "idx_class_reports_teacher_status" ON "public"."class_reports" USING "btree" ("teacher_id", "status");
 
 
 
@@ -2337,11 +3658,55 @@ CREATE INDEX "idx_forms_status" ON "public"."forms" USING "btree" ("status");
 
 
 
+CREATE INDEX "idx_inquiries_email" ON "public"."inquiries" USING "btree" ("email") WHERE ("email" IS NOT NULL);
+
+
+
+CREATE INDEX "idx_inquiries_phone" ON "public"."inquiries" USING "btree" ("phone") WHERE ("phone" IS NOT NULL);
+
+
+
+CREATE INDEX "idx_inquiries_school_inquired" ON "public"."inquiries" USING "btree" ("school_id", "inquired_at" DESC) WHERE ("deleted_at" IS NULL);
+
+
+
+CREATE INDEX "idx_inquiries_status" ON "public"."inquiries" USING "btree" ("status") WHERE ("deleted_at" IS NULL);
+
+
+
+CREATE INDEX "idx_inquiry_booking_tokens_inquiry" ON "public"."inquiry_booking_tokens" USING "btree" ("inquiry_id");
+
+
+
+CREATE INDEX "idx_inquiry_contacts_inquiry" ON "public"."inquiry_contacts" USING "btree" ("inquiry_id", "contacted_at" DESC);
+
+
+
+CREATE INDEX "idx_inquiry_mail_logs_inquiry" ON "public"."inquiry_mail_logs" USING "btree" ("inquiry_id", "sent_at" DESC);
+
+
+
+CREATE INDEX "idx_inquiry_mail_logs_resend_id" ON "public"."inquiry_mail_logs" USING "btree" ("resend_email_id") WHERE ("resend_email_id" IS NOT NULL);
+
+
+
+CREATE INDEX "idx_inquiry_mail_templates_school" ON "public"."inquiry_mail_templates" USING "btree" ("school_id", "sort_order");
+
+
+
 CREATE INDEX "idx_koushu_enrollments_course" ON "public"."koushu_enrollments" USING "btree" ("course_id");
 
 
 
+CREATE INDEX "idx_koushu_enrollments_school_season" ON "public"."koushu_enrollments" USING "btree" ("school_id", "season");
+
+
+
 CREATE INDEX "idx_koushu_enrollments_student" ON "public"."koushu_enrollments" USING "btree" ("student_id");
+
+
+
+CREATE INDEX "idx_lesson_report_units_report" ON "public"."lesson_report_units" USING "btree" ("report_id", "display_order");
 
 
 
@@ -2366,6 +3731,22 @@ CREATE INDEX "idx_monthly_tasks_linked" ON "public"."monthly_tasks" USING "btree
 
 
 CREATE INDEX "idx_monthly_tasks_period" ON "public"."monthly_tasks" USING "btree" ("year", "month", "task_date", "sort_order");
+
+
+
+CREATE INDEX "idx_notta_school_unlinked" ON "public"."notta_transcripts" USING "btree" ("school_id", "created_at" DESC) WHERE (("linked_student_id" IS NULL) AND ("is_archived" = false));
+
+
+
+CREATE INDEX "idx_notta_transcripts_linked_student" ON "public"."notta_transcripts" USING "btree" ("linked_student_id") WHERE ("linked_student_id" IS NOT NULL);
+
+
+
+CREATE INDEX "idx_notta_transcripts_school_created" ON "public"."notta_transcripts" USING "btree" ("school_id", "created_at" DESC);
+
+
+
+CREATE INDEX "idx_notta_transcripts_school_unlinked" ON "public"."notta_transcripts" USING "btree" ("school_id", "created_at" DESC) WHERE (("linked_student_id" IS NULL) AND ("is_archived" = false));
 
 
 
@@ -2425,6 +3806,38 @@ CREATE INDEX "idx_prep_tasks_scope" ON "public"."course_prep_schedule_tasks" USI
 
 
 
+CREATE INDEX "idx_progress_lessons_session_id" ON "public"."student_progress_lessons" USING "btree" ("session_id") WHERE ("session_id" IS NOT NULL);
+
+
+
+CREATE INDEX "idx_progress_sessions_confirmed" ON "public"."progress_sessions" USING "btree" ("confirmed_at") WHERE ("confirmed_at" IS NOT NULL);
+
+
+
+CREATE INDEX "idx_progress_sessions_report" ON "public"."progress_sessions" USING "btree" ("report_id") WHERE ("report_id" IS NOT NULL);
+
+
+
+CREATE INDEX "idx_progress_sessions_schedule_entry_id" ON "public"."progress_sessions" USING "btree" ("schedule_entry_id") WHERE ("schedule_entry_id" IS NOT NULL);
+
+
+
+CREATE INDEX "idx_progress_sessions_session_date" ON "public"."progress_sessions" USING "btree" ("session_date" DESC);
+
+
+
+CREATE INDEX "idx_progress_sessions_student_textbook_id" ON "public"."progress_sessions" USING "btree" ("student_textbook_id", "session_date" DESC);
+
+
+
+CREATE INDEX "idx_progress_sessions_teacher_id" ON "public"."progress_sessions" USING "btree" ("teacher_id");
+
+
+
+CREATE INDEX "idx_regular_shift_settings_effective" ON "public"."regular_shift_settings" USING "btree" ("school_id", "effective_from", "effective_until") WHERE ("status" = 'published'::"text");
+
+
+
 CREATE INDEX "idx_regular_shift_settings_school_id" ON "public"."regular_shift_settings" USING "btree" ("school_id");
 
 
@@ -2457,6 +3870,14 @@ CREATE INDEX "idx_regular_shift_submissions_setting_id" ON "public"."regular_shi
 
 
 
+CREATE INDEX "idx_regular_shift_submissions_user_id" ON "public"."regular_shift_submissions" USING "btree" ("user_id");
+
+
+
+CREATE UNIQUE INDEX "idx_regular_shift_submissions_user_setting" ON "public"."regular_shift_submissions" USING "btree" ("setting_id", "user_id") WHERE ("user_id" IS NOT NULL);
+
+
+
 CREATE INDEX "idx_schedule_closed_days_date" ON "public"."schedule_closed_days" USING "btree" ("closed_date");
 
 
@@ -2470,6 +3891,18 @@ CREATE INDEX "idx_schedule_closed_days_school" ON "public"."schedule_closed_days
 
 
 CREATE UNIQUE INDEX "idx_schedule_closed_days_school_date" ON "public"."schedule_closed_days" USING "btree" ("school_id", "closed_date") WHERE ("school_id" IS NOT NULL);
+
+
+
+CREATE INDEX "idx_schedule_daily_booth_assignments_date" ON "public"."schedule_daily_booth_assignments" USING "btree" ("school_id", "assignment_date");
+
+
+
+CREATE INDEX "idx_schedule_entries_formation" ON "public"."schedule_entries" USING "btree" ("school_id", "entry_date", "formation");
+
+
+
+CREATE INDEX "idx_schedule_entries_kind" ON "public"."schedule_entries" USING "btree" ("school_id", "entry_date", "kind");
 
 
 
@@ -2489,11 +3922,43 @@ CREATE INDEX "idx_schedule_entries_transfer" ON "public"."schedule_entries" USIN
 
 
 
+CREATE INDEX "idx_schedule_entries_transfer_deadline" ON "public"."schedule_entries" USING "btree" ("school_id", "transfer_deadline") WHERE (("status" = 'transferred_out'::"text") AND ("transfer_to_id" IS NULL));
+
+
+
+CREATE UNIQUE INDEX "idx_schedule_entries_unique_unassigned" ON "public"."schedule_entries" USING "btree" ("school_id", "entry_date", "time_slot_id", "student_id") WHERE ("teacher_id" IS NULL);
+
+
+
 CREATE INDEX "idx_schedule_generation_logs_school" ON "public"."schedule_generation_logs" USING "btree" ("school_id", "week_start_date");
 
 
 
+CREATE INDEX "idx_schedule_match_batches_school_executed" ON "public"."schedule_match_batches" USING "btree" ("school_id", "executed_at" DESC);
+
+
+
+CREATE INDEX "idx_schedule_match_proposals_batch_status" ON "public"."schedule_match_proposals" USING "btree" ("batch_id", "status");
+
+
+
+CREATE INDEX "idx_schedule_match_proposals_school_date" ON "public"."schedule_match_proposals" USING "btree" ("school_id", "proposal_date");
+
+
+
+CREATE INDEX "idx_schedule_match_proposals_student" ON "public"."schedule_match_proposals" USING "btree" ("student_id", "proposal_date");
+
+
+
 CREATE INDEX "idx_schedule_regular_patterns_day_slot" ON "public"."schedule_regular_patterns" USING "btree" ("school_id", "day_of_week", "time_slot_id", "is_active");
+
+
+
+CREATE INDEX "idx_schedule_regular_patterns_effective" ON "public"."schedule_regular_patterns" USING "btree" ("school_id", "effective_from", "effective_until") WHERE ("is_active" = true);
+
+
+
+CREATE INDEX "idx_schedule_regular_patterns_formation" ON "public"."schedule_regular_patterns" USING "btree" ("school_id", "formation") WHERE ("is_active" = true);
 
 
 
@@ -2509,7 +3974,19 @@ CREATE INDEX "idx_schedule_regular_patterns_teacher" ON "public"."schedule_regul
 
 
 
+CREATE INDEX "idx_schedule_time_slots_formation" ON "public"."schedule_time_slots" USING "btree" ("school_id", "formation", "is_active", "display_order");
+
+
+
 CREATE INDEX "idx_schedule_time_slots_school" ON "public"."schedule_time_slots" USING "btree" ("school_id", "is_active", "display_order");
+
+
+
+CREATE INDEX "idx_school_monthly_metrics_school_year" ON "public"."school_monthly_metrics" USING "btree" ("school_id", "year");
+
+
+
+CREATE UNIQUE INDEX "idx_schools_slack_channel_id" ON "public"."schools" USING "btree" ("slack_channel_id") WHERE ("slack_channel_id" IS NOT NULL);
 
 
 
@@ -2537,6 +4014,26 @@ CREATE INDEX "idx_seasonal_courses_season" ON "public"."seasonal_courses" USING 
 
 
 
+CREATE INDEX "idx_seasonal_proposal_units_proposal" ON "public"."seasonal_proposal_units" USING "btree" ("proposal_id");
+
+
+
+CREATE INDEX "idx_seasonal_proposals_school" ON "public"."seasonal_proposals" USING "btree" ("school_id");
+
+
+
+CREATE INDEX "idx_seasonal_proposals_st" ON "public"."seasonal_proposals" USING "btree" ("student_textbook_id");
+
+
+
+CREATE INDEX "idx_seasonal_proposals_student" ON "public"."seasonal_proposals" USING "btree" ("student_id");
+
+
+
+CREATE INDEX "idx_seasonal_proposals_textbook" ON "public"."seasonal_proposals" USING "btree" ("textbook_id");
+
+
+
 CREATE INDEX "idx_seasonal_shift_settings_school_id" ON "public"."seasonal_shift_settings" USING "btree" ("school_id");
 
 
@@ -2557,6 +4054,22 @@ CREATE UNIQUE INDEX "idx_seasonal_shift_slots_unique" ON "public"."seasonal_shif
 
 
 
+CREATE INDEX "idx_seasonal_shift_student_sub_slots_date_time" ON "public"."seasonal_shift_student_submission_slots" USING "btree" ("shift_date", "time_slot") WHERE ("available" = true);
+
+
+
+CREATE INDEX "idx_seasonal_shift_student_sub_slots_submission" ON "public"."seasonal_shift_student_submission_slots" USING "btree" ("submission_id");
+
+
+
+CREATE INDEX "idx_seasonal_shift_student_subs_setting" ON "public"."seasonal_shift_student_submissions" USING "btree" ("setting_id", "submitted_at" DESC);
+
+
+
+CREATE INDEX "idx_seasonal_shift_student_subs_student" ON "public"."seasonal_shift_student_submissions" USING "btree" ("student_id", "submitted_at" DESC);
+
+
+
 CREATE INDEX "idx_seasonal_shift_submissions_edit_token" ON "public"."seasonal_shift_submissions" USING "btree" ("edit_token");
 
 
@@ -2566,6 +4079,14 @@ CREATE INDEX "idx_seasonal_shift_submissions_school_id" ON "public"."seasonal_sh
 
 
 CREATE INDEX "idx_seasonal_shift_submissions_setting_id" ON "public"."seasonal_shift_submissions" USING "btree" ("setting_id");
+
+
+
+CREATE INDEX "idx_seasonal_shift_submissions_user_id" ON "public"."seasonal_shift_submissions" USING "btree" ("user_id");
+
+
+
+CREATE UNIQUE INDEX "idx_seasonal_shift_submissions_user_setting" ON "public"."seasonal_shift_submissions" USING "btree" ("setting_id", "user_id") WHERE ("user_id" IS NOT NULL);
 
 
 
@@ -2657,6 +4178,14 @@ CREATE INDEX "idx_student_subjects_subject_id" ON "public"."student_subjects" US
 
 
 
+CREATE INDEX "idx_student_textbook_exam_ranges_exam_type" ON "public"."student_textbook_exam_ranges" USING "btree" ("exam_type_id");
+
+
+
+CREATE INDEX "idx_student_textbook_exam_ranges_textbook" ON "public"."student_textbook_exam_ranges" USING "btree" ("student_textbook_id");
+
+
+
 CREATE INDEX "idx_student_textbook_exams_exam_date" ON "public"."student_textbook_exams" USING "btree" ("exam_date");
 
 
@@ -2690,6 +4219,10 @@ CREATE INDEX "idx_student_textbooks_textbook_id" ON "public"."student_textbooks"
 
 
 CREATE INDEX "idx_students_grade" ON "public"."students" USING "btree" ("grade");
+
+
+
+CREATE INDEX "idx_students_is_programming" ON "public"."students" USING "btree" ("is_programming") WHERE ("is_programming" = true);
 
 
 
@@ -2737,6 +4270,54 @@ CREATE INDEX "idx_system_settings_key" ON "public"."system_settings" USING "btre
 
 
 
+CREATE INDEX "idx_teacher_badge_assignments_badge" ON "public"."teacher_badge_assignments" USING "btree" ("badge_id");
+
+
+
+CREATE INDEX "idx_teacher_badge_assignments_teacher" ON "public"."teacher_badge_assignments" USING "btree" ("teacher_id");
+
+
+
+CREATE INDEX "idx_teacher_badges_active" ON "public"."teacher_badges" USING "btree" ("is_active", "sort_order");
+
+
+
+CREATE INDEX "idx_teacher_badges_category" ON "public"."teacher_badges" USING "btree" ("category");
+
+
+
+CREATE INDEX "idx_teacher_trainings_attended_on" ON "public"."teacher_trainings" USING "btree" ("attended_on" DESC);
+
+
+
+CREATE INDEX "idx_teacher_trainings_master" ON "public"."teacher_trainings" USING "btree" ("training_master_id");
+
+
+
+CREATE INDEX "idx_teacher_trainings_teacher" ON "public"."teacher_trainings" USING "btree" ("teacher_id");
+
+
+
+CREATE INDEX "idx_test_prep_proposal_subjects_proposal" ON "public"."test_prep_proposal_subjects" USING "btree" ("proposal_id");
+
+
+
+CREATE INDEX "idx_test_prep_proposal_units_subject" ON "public"."test_prep_proposal_units" USING "btree" ("subject_id");
+
+
+
+CREATE INDEX "idx_test_prep_proposals_school" ON "public"."test_prep_proposals" USING "btree" ("school_id");
+
+
+
+CREATE INDEX "idx_test_prep_proposals_student" ON "public"."test_prep_proposals" USING "btree" ("student_id");
+
+
+
+CREATE INDEX "idx_test_prep_proposals_token" ON "public"."test_prep_proposals" USING "btree" ("token");
+
+
+
 CREATE INDEX "idx_textbooks_grade" ON "public"."textbooks" USING "btree" ("grade");
 
 
@@ -2746,6 +4327,18 @@ CREATE INDEX "idx_textbooks_grade_category" ON "public"."textbooks" USING "btree
 
 
 CREATE INDEX "idx_textbooks_subject" ON "public"."textbooks" USING "btree" ("subject");
+
+
+
+CREATE INDEX "idx_training_masters_active_sort" ON "public"."training_masters" USING "btree" ("is_active", "sort_order");
+
+
+
+CREATE INDEX "idx_transfer_notifications_school_status" ON "public"."transfer_notifications" USING "btree" ("school_id", "delivery_status", "created_at" DESC);
+
+
+
+CREATE INDEX "idx_transfer_notifications_student" ON "public"."transfer_notifications" USING "btree" ("student_id", "created_at" DESC);
 
 
 
@@ -2773,11 +4366,71 @@ CREATE INDEX "idx_user_schools_user" ON "public"."user_schools" USING "btree" ("
 
 
 
+CREATE INDEX "schedule_change_logs_entry_idx" ON "public"."schedule_change_logs" USING "btree" ("entry_id") WHERE ("entry_id" IS NOT NULL);
+
+
+
+CREATE INDEX "schedule_change_logs_pattern_idx" ON "public"."schedule_change_logs" USING "btree" ("pattern_id") WHERE ("pattern_id" IS NOT NULL);
+
+
+
+CREATE INDEX "schedule_change_logs_school_created_idx" ON "public"."schedule_change_logs" USING "btree" ("school_id", "created_at" DESC);
+
+
+
+CREATE INDEX "schedule_change_logs_student_idx" ON "public"."schedule_change_logs" USING "btree" ("student_id") WHERE ("student_id" IS NOT NULL);
+
+
+
+CREATE INDEX "teacher_absences_school_date_idx" ON "public"."teacher_absences" USING "btree" ("school_id", "absence_date");
+
+
+
+CREATE INDEX "teacher_absences_user_idx" ON "public"."teacher_absences" USING "btree" ("user_id", "absence_date");
+
+
+
+CREATE INDEX "teacher_availability_periods_school_idx" ON "public"."teacher_availability_periods" USING "btree" ("school_id", "effective_from" DESC);
+
+
+
+CREATE UNIQUE INDEX "teacher_availability_periods_submission_unique_idx" ON "public"."teacher_availability_periods" USING "btree" ("source_submission_id") WHERE (("source" = 'regular_shift'::"text") AND ("source_submission_id" IS NOT NULL));
+
+
+
+CREATE INDEX "teacher_availability_periods_user_school_idx" ON "public"."teacher_availability_periods" USING "btree" ("user_id", "school_id", "effective_from" DESC);
+
+
+
+CREATE UNIQUE INDEX "uq_inquiries_school_hp_no" ON "public"."inquiries" USING "btree" ("school_id", "hp_inquiry_no") WHERE ("hp_inquiry_no" IS NOT NULL);
+
+
+
+CREATE INDEX "user_textbook_favorites_user_id_idx" ON "public"."user_textbook_favorites" USING "btree" ("user_id");
+
+
+
 CREATE OR REPLACE TRIGGER "send-form-notification" AFTER INSERT ON "public"."form_responses" FOR EACH ROW EXECUTE FUNCTION "supabase_functions"."http_request"('https://mzxysqkuuxcfffwlfsvj.supabase.co/functions/v1/send-form-notification', 'POST', '{"Content-type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16eHlzcWt1dXhjZmZmd2xmc3ZqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2Nzc4NDkwMiwiZXhwIjoyMDgzMzYwOTAyfQ.n46O2j60kj475qyh55WDmPFcx0mygIbKSvzYa2fFoAE"}', '{}', '5000');
 
 
 
+CREATE OR REPLACE TRIGGER "set_updated_at_seasonal_proposals" BEFORE UPDATE ON "public"."seasonal_proposals" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
+CREATE OR REPLACE TRIGGER "set_updated_at_test_prep_proposals" BEFORE UPDATE ON "public"."test_prep_proposals" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_teacher_availability_periods_updated_at" BEFORE UPDATE ON "public"."teacher_availability_periods" FOR EACH ROW EXECUTE FUNCTION "public"."set_updated_at_teacher_availability_periods"();
+
+
+
 CREATE OR REPLACE TRIGGER "trigger_update_google_calendar_tokens_updated_at" BEFORE UPDATE ON "public"."google_calendar_tokens" FOR EACH ROW EXECUTE FUNCTION "public"."update_google_calendar_tokens_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "update_action_goals_updated_at" BEFORE UPDATE ON "public"."action_goals" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
 
 
 
@@ -2821,6 +4474,10 @@ CREATE OR REPLACE TRIGGER "update_bulletin_posts_updated_at" BEFORE UPDATE ON "p
 
 
 
+CREATE OR REPLACE TRIGGER "update_class_reports_updated_at" BEFORE UPDATE ON "public"."class_reports" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
 CREATE OR REPLACE TRIGGER "update_embed_tokens_updated_at" BEFORE UPDATE ON "public"."embed_tokens" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
 
 
@@ -2845,6 +4502,22 @@ CREATE OR REPLACE TRIGGER "update_forms_updated_at" BEFORE UPDATE ON "public"."f
 
 
 
+CREATE OR REPLACE TRIGGER "update_inquiries_updated_at" BEFORE UPDATE ON "public"."inquiries" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
+CREATE OR REPLACE TRIGGER "update_inquiry_mail_templates_updated_at" BEFORE UPDATE ON "public"."inquiry_mail_templates" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
+CREATE OR REPLACE TRIGGER "update_inquiry_school_settings_updated_at" BEFORE UPDATE ON "public"."inquiry_school_settings" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
+CREATE OR REPLACE TRIGGER "update_lesson_report_units_updated_at" BEFORE UPDATE ON "public"."lesson_report_units" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
 CREATE OR REPLACE TRIGGER "update_material_orders_updated_at" BEFORE UPDATE ON "public"."material_orders" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
 
 
@@ -2857,6 +4530,10 @@ CREATE OR REPLACE TRIGGER "update_portal_menu_updated_at" BEFORE UPDATE ON "publ
 
 
 
+CREATE OR REPLACE TRIGGER "update_progress_sessions_updated_at" BEFORE UPDATE ON "public"."progress_sessions" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
 CREATE OR REPLACE TRIGGER "update_regular_shift_settings_updated_at" BEFORE UPDATE ON "public"."regular_shift_settings" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
 
 
@@ -2865,7 +4542,19 @@ CREATE OR REPLACE TRIGGER "update_regular_shift_submissions_updated_at" BEFORE U
 
 
 
+CREATE OR REPLACE TRIGGER "update_schedule_daily_booth_assignments_updated_at" BEFORE UPDATE ON "public"."schedule_daily_booth_assignments" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
 CREATE OR REPLACE TRIGGER "update_schedule_entries_updated_at" BEFORE UPDATE ON "public"."schedule_entries" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
+CREATE OR REPLACE TRIGGER "update_schedule_match_batches_updated_at" BEFORE UPDATE ON "public"."schedule_match_batches" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
+CREATE OR REPLACE TRIGGER "update_schedule_match_proposals_updated_at" BEFORE UPDATE ON "public"."schedule_match_proposals" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
 
 
 
@@ -2877,11 +4566,19 @@ CREATE OR REPLACE TRIGGER "update_schedule_time_slots_updated_at" BEFORE UPDATE 
 
 
 
+CREATE OR REPLACE TRIGGER "update_school_class_capacity_updated_at" BEFORE UPDATE ON "public"."school_class_capacity" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
 CREATE OR REPLACE TRIGGER "update_schools_updated_at" BEFORE UPDATE ON "public"."schools" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
 
 
 
 CREATE OR REPLACE TRIGGER "update_seasonal_shift_settings_updated_at" BEFORE UPDATE ON "public"."seasonal_shift_settings" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
+CREATE OR REPLACE TRIGGER "update_seasonal_shift_student_subs_updated_at" BEFORE UPDATE ON "public"."seasonal_shift_student_submissions" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
 
 
 
@@ -2901,6 +4598,10 @@ CREATE OR REPLACE TRIGGER "update_student_progress_updated_at" BEFORE UPDATE ON 
 
 
 
+CREATE OR REPLACE TRIGGER "update_student_textbook_exam_ranges_updated_at" BEFORE UPDATE ON "public"."student_textbook_exam_ranges" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
 CREATE OR REPLACE TRIGGER "update_student_textbook_exams_updated_at" BEFORE UPDATE ON "public"."student_textbook_exams" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
 
 
@@ -2917,11 +4618,24 @@ CREATE OR REPLACE TRIGGER "update_students_updated_at" BEFORE UPDATE ON "public"
 
 
 
+CREATE OR REPLACE TRIGGER "update_teacher_badges_updated_at" BEFORE UPDATE ON "public"."teacher_badges" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
 CREATE OR REPLACE TRIGGER "update_textbooks_updated_at" BEFORE UPDATE ON "public"."textbooks" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
 
 
 
+CREATE OR REPLACE TRIGGER "update_transfer_notifications_updated_at" BEFORE UPDATE ON "public"."transfer_notifications" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
 CREATE OR REPLACE TRIGGER "update_user_profiles_updated_at" BEFORE UPDATE ON "public"."user_profiles" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
+ALTER TABLE ONLY "public"."action_goals"
+    ADD CONSTRAINT "action_goals_student_textbook_exam_id_fkey" FOREIGN KEY ("student_textbook_exam_id") REFERENCES "public"."student_textbook_exams"("id") ON DELETE CASCADE;
 
 
 
@@ -2940,6 +4654,11 @@ ALTER TABLE ONLY "public"."alert_dismissals"
 
 
 
+ALTER TABLE ONLY "public"."alert_settings"
+    ADD CONSTRAINT "alert_settings_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "public"."schools"("id") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."application_items"
     ADD CONSTRAINT "application_items_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "public"."schools"("id") ON DELETE RESTRICT;
 
@@ -2947,6 +4666,11 @@ ALTER TABLE ONLY "public"."application_items"
 
 ALTER TABLE ONLY "public"."assessment_scores"
     ADD CONSTRAINT "assessment_scores_assessment_id_fkey" FOREIGN KEY ("assessment_id") REFERENCES "public"."assessments"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."assessment_subjects"
+    ADD CONSTRAINT "assessment_subjects_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "public"."schools"("id") ON DELETE CASCADE;
 
 
 
@@ -3047,6 +4771,36 @@ ALTER TABLE ONLY "public"."bulletin_reads"
 
 ALTER TABLE ONLY "public"."bulletin_reads"
     ADD CONSTRAINT "bulletin_reads_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."user_profiles"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."class_reports"
+    ADD CONSTRAINT "class_reports_approved_by_fkey" FOREIGN KEY ("approved_by") REFERENCES "public"."user_profiles"("id");
+
+
+
+ALTER TABLE ONLY "public"."class_reports"
+    ADD CONSTRAINT "class_reports_rejected_by_fkey" FOREIGN KEY ("rejected_by") REFERENCES "public"."user_profiles"("id");
+
+
+
+ALTER TABLE ONLY "public"."class_reports"
+    ADD CONSTRAINT "class_reports_schedule_entry_id_fkey" FOREIGN KEY ("schedule_entry_id") REFERENCES "public"."schedule_entries"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."class_reports"
+    ADD CONSTRAINT "class_reports_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "public"."schools"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."class_reports"
+    ADD CONSTRAINT "class_reports_student_id_fkey" FOREIGN KEY ("student_id") REFERENCES "public"."students"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."class_reports"
+    ADD CONSTRAINT "class_reports_teacher_id_fkey" FOREIGN KEY ("teacher_id") REFERENCES "public"."user_profiles"("id") ON DELETE RESTRICT;
 
 
 
@@ -3170,13 +4924,103 @@ ALTER TABLE ONLY "public"."google_calendar_tokens"
 
 
 
+ALTER TABLE ONLY "public"."inquiries"
+    ADD CONSTRAINT "inquiries_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."inquiries"
+    ADD CONSTRAINT "inquiries_linked_student_id_fkey" FOREIGN KEY ("linked_student_id") REFERENCES "public"."students"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."inquiries"
+    ADD CONSTRAINT "inquiries_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "public"."schools"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."inquiry_booking_tokens"
+    ADD CONSTRAINT "inquiry_booking_tokens_inquiry_id_fkey" FOREIGN KEY ("inquiry_id") REFERENCES "public"."inquiries"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."inquiry_booking_tokens"
+    ADD CONSTRAINT "inquiry_booking_tokens_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "public"."schools"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."inquiry_contacts"
+    ADD CONSTRAINT "inquiry_contacts_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."inquiry_contacts"
+    ADD CONSTRAINT "inquiry_contacts_inquiry_id_fkey" FOREIGN KEY ("inquiry_id") REFERENCES "public"."inquiries"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."inquiry_contacts"
+    ADD CONSTRAINT "inquiry_contacts_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "public"."schools"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."inquiry_import_tokens"
+    ADD CONSTRAINT "inquiry_import_tokens_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."inquiry_mail_logs"
+    ADD CONSTRAINT "inquiry_mail_logs_inquiry_id_fkey" FOREIGN KEY ("inquiry_id") REFERENCES "public"."inquiries"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."inquiry_mail_logs"
+    ADD CONSTRAINT "inquiry_mail_logs_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "public"."schools"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."inquiry_mail_logs"
+    ADD CONSTRAINT "inquiry_mail_logs_sent_by_fkey" FOREIGN KEY ("sent_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."inquiry_mail_logs"
+    ADD CONSTRAINT "inquiry_mail_logs_template_id_fkey" FOREIGN KEY ("template_id") REFERENCES "public"."inquiry_mail_templates"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."inquiry_mail_templates"
+    ADD CONSTRAINT "inquiry_mail_templates_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "public"."schools"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."inquiry_school_settings"
+    ADD CONSTRAINT "inquiry_school_settings_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "public"."schools"("id") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."koushu_enrollments"
     ADD CONSTRAINT "koushu_enrollments_course_id_fkey" FOREIGN KEY ("course_id") REFERENCES "public"."seasonal_courses"("id") ON DELETE CASCADE;
 
 
 
 ALTER TABLE ONLY "public"."koushu_enrollments"
+    ADD CONSTRAINT "koushu_enrollments_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "public"."schools"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."koushu_enrollments"
     ADD CONSTRAINT "koushu_enrollments_student_id_fkey" FOREIGN KEY ("student_id") REFERENCES "public"."students"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."lesson_report_units"
+    ADD CONSTRAINT "lesson_report_units_report_id_fkey" FOREIGN KEY ("report_id") REFERENCES "public"."class_reports"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."lesson_report_units"
+    ADD CONSTRAINT "lesson_report_units_student_textbook_id_fkey" FOREIGN KEY ("student_textbook_id") REFERENCES "public"."student_textbooks"("id") ON DELETE CASCADE;
 
 
 
@@ -3245,8 +5089,58 @@ ALTER TABLE ONLY "public"."monthly_tasks"
 
 
 
+ALTER TABLE ONLY "public"."notta_transcripts"
+    ADD CONSTRAINT "notta_transcripts_linked_interview_id_fkey" FOREIGN KEY ("linked_interview_id") REFERENCES "public"."student_interviews"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."notta_transcripts"
+    ADD CONSTRAINT "notta_transcripts_linked_student_id_fkey" FOREIGN KEY ("linked_student_id") REFERENCES "public"."students"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."notta_transcripts"
+    ADD CONSTRAINT "notta_transcripts_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "public"."schools"("id") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."portal_menu"
     ADD CONSTRAINT "portal_menu_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "public"."schools"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."progress_sessions"
+    ADD CONSTRAINT "progress_sessions_confirmed_by_fkey" FOREIGN KEY ("confirmed_by") REFERENCES "public"."user_profiles"("id");
+
+
+
+ALTER TABLE ONLY "public"."progress_sessions"
+    ADD CONSTRAINT "progress_sessions_report_id_fkey" FOREIGN KEY ("report_id") REFERENCES "public"."class_reports"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."progress_sessions"
+    ADD CONSTRAINT "progress_sessions_schedule_entry_id_fkey" FOREIGN KEY ("schedule_entry_id") REFERENCES "public"."schedule_entries"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."progress_sessions"
+    ADD CONSTRAINT "progress_sessions_student_textbook_id_fkey" FOREIGN KEY ("student_textbook_id") REFERENCES "public"."student_textbooks"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."progress_sessions"
+    ADD CONSTRAINT "progress_sessions_teacher_id_fkey" FOREIGN KEY ("teacher_id") REFERENCES "public"."user_profiles"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."push_subscriptions"
+    ADD CONSTRAINT "push_subscriptions_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "public"."schools"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."push_subscriptions"
+    ADD CONSTRAINT "push_subscriptions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
 
 
@@ -3275,8 +5169,33 @@ ALTER TABLE ONLY "public"."regular_shift_submissions"
 
 
 
+ALTER TABLE ONLY "public"."regular_shift_submissions"
+    ADD CONSTRAINT "regular_shift_submissions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."schedule_change_logs"
+    ADD CONSTRAINT "schedule_change_logs_actor_user_id_fkey" FOREIGN KEY ("actor_user_id") REFERENCES "public"."user_profiles"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."schedule_change_logs"
+    ADD CONSTRAINT "schedule_change_logs_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "public"."schools"("id") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."schedule_closed_days"
     ADD CONSTRAINT "schedule_closed_days_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "public"."schools"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."schedule_daily_booth_assignments"
+    ADD CONSTRAINT "schedule_daily_booth_assignments_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "public"."schools"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."schedule_daily_booth_assignments"
+    ADD CONSTRAINT "schedule_daily_booth_assignments_teacher_id_fkey" FOREIGN KEY ("teacher_id") REFERENCES "public"."user_profiles"("id") ON DELETE CASCADE;
 
 
 
@@ -3330,6 +5249,56 @@ ALTER TABLE ONLY "public"."schedule_generation_logs"
 
 
 
+ALTER TABLE ONLY "public"."schedule_match_batches"
+    ADD CONSTRAINT "schedule_match_batches_executed_by_fkey" FOREIGN KEY ("executed_by") REFERENCES "public"."user_profiles"("id");
+
+
+
+ALTER TABLE ONLY "public"."schedule_match_batches"
+    ADD CONSTRAINT "schedule_match_batches_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "public"."schools"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."schedule_match_batches"
+    ADD CONSTRAINT "schedule_match_batches_setting_id_fkey" FOREIGN KEY ("setting_id") REFERENCES "public"."seasonal_shift_settings"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."schedule_match_proposals"
+    ADD CONSTRAINT "schedule_match_proposals_batch_id_fkey" FOREIGN KEY ("batch_id") REFERENCES "public"."schedule_match_batches"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."schedule_match_proposals"
+    ADD CONSTRAINT "schedule_match_proposals_published_by_fkey" FOREIGN KEY ("published_by") REFERENCES "public"."user_profiles"("id");
+
+
+
+ALTER TABLE ONLY "public"."schedule_match_proposals"
+    ADD CONSTRAINT "schedule_match_proposals_schedule_entry_id_fkey" FOREIGN KEY ("schedule_entry_id") REFERENCES "public"."schedule_entries"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."schedule_match_proposals"
+    ADD CONSTRAINT "schedule_match_proposals_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "public"."schools"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."schedule_match_proposals"
+    ADD CONSTRAINT "schedule_match_proposals_student_id_fkey" FOREIGN KEY ("student_id") REFERENCES "public"."students"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."schedule_match_proposals"
+    ADD CONSTRAINT "schedule_match_proposals_teacher_id_fkey" FOREIGN KEY ("teacher_id") REFERENCES "public"."user_profiles"("id") ON DELETE RESTRICT;
+
+
+
+ALTER TABLE ONLY "public"."schedule_match_proposals"
+    ADD CONSTRAINT "schedule_match_proposals_time_slot_id_fkey" FOREIGN KEY ("time_slot_id") REFERENCES "public"."schedule_time_slots"("id") ON DELETE RESTRICT;
+
+
+
 ALTER TABLE ONLY "public"."schedule_regular_patterns"
     ADD CONSTRAINT "schedule_regular_patterns_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "public"."schools"("id") ON DELETE CASCADE;
 
@@ -3352,6 +5321,16 @@ ALTER TABLE ONLY "public"."schedule_regular_patterns"
 
 ALTER TABLE ONLY "public"."schedule_time_slots"
     ADD CONSTRAINT "schedule_time_slots_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "public"."schools"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."school_class_capacity"
+    ADD CONSTRAINT "school_class_capacity_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "public"."schools"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."school_monthly_metrics"
+    ADD CONSTRAINT "school_monthly_metrics_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "public"."schools"("id") ON DELETE CASCADE;
 
 
 
@@ -3395,6 +5374,36 @@ ALTER TABLE ONLY "public"."seasonal_courses"
 
 
 
+ALTER TABLE ONLY "public"."seasonal_proposal_units"
+    ADD CONSTRAINT "seasonal_proposal_units_curriculum_item_id_fkey" FOREIGN KEY ("curriculum_item_id") REFERENCES "public"."curriculum_items"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."seasonal_proposal_units"
+    ADD CONSTRAINT "seasonal_proposal_units_proposal_id_fkey" FOREIGN KEY ("proposal_id") REFERENCES "public"."seasonal_proposals"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."seasonal_proposals"
+    ADD CONSTRAINT "seasonal_proposals_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "public"."schools"("id");
+
+
+
+ALTER TABLE ONLY "public"."seasonal_proposals"
+    ADD CONSTRAINT "seasonal_proposals_student_id_fkey" FOREIGN KEY ("student_id") REFERENCES "public"."students"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."seasonal_proposals"
+    ADD CONSTRAINT "seasonal_proposals_student_textbook_id_fkey" FOREIGN KEY ("student_textbook_id") REFERENCES "public"."student_textbooks"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."seasonal_proposals"
+    ADD CONSTRAINT "seasonal_proposals_textbook_id_fkey" FOREIGN KEY ("textbook_id") REFERENCES "public"."textbooks"("id");
+
+
+
 ALTER TABLE ONLY "public"."seasonal_shift_settings"
     ADD CONSTRAINT "seasonal_shift_settings_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "public"."schools"("id") ON DELETE CASCADE;
 
@@ -3402,6 +5411,26 @@ ALTER TABLE ONLY "public"."seasonal_shift_settings"
 
 ALTER TABLE ONLY "public"."seasonal_shift_slot_settings"
     ADD CONSTRAINT "seasonal_shift_slot_settings_setting_id_fkey" FOREIGN KEY ("setting_id") REFERENCES "public"."seasonal_shift_settings"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."seasonal_shift_student_submission_slots"
+    ADD CONSTRAINT "seasonal_shift_student_submission_slots_submission_id_fkey" FOREIGN KEY ("submission_id") REFERENCES "public"."seasonal_shift_student_submissions"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."seasonal_shift_student_submissions"
+    ADD CONSTRAINT "seasonal_shift_student_submissions_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "public"."schools"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."seasonal_shift_student_submissions"
+    ADD CONSTRAINT "seasonal_shift_student_submissions_setting_id_fkey" FOREIGN KEY ("setting_id") REFERENCES "public"."seasonal_shift_settings"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."seasonal_shift_student_submissions"
+    ADD CONSTRAINT "seasonal_shift_student_submissions_student_id_fkey" FOREIGN KEY ("student_id") REFERENCES "public"."students"("id") ON DELETE CASCADE;
 
 
 
@@ -3417,6 +5446,11 @@ ALTER TABLE ONLY "public"."seasonal_shift_submissions"
 
 ALTER TABLE ONLY "public"."seasonal_shift_submissions"
     ADD CONSTRAINT "seasonal_shift_submissions_setting_id_fkey" FOREIGN KEY ("setting_id") REFERENCES "public"."seasonal_shift_settings"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."seasonal_shift_submissions"
+    ADD CONSTRAINT "seasonal_shift_submissions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
 
 
 
@@ -3481,6 +5515,11 @@ ALTER TABLE ONLY "public"."student_progress"
 
 
 ALTER TABLE ONLY "public"."student_progress_lessons"
+    ADD CONSTRAINT "student_progress_lessons_session_id_fkey" FOREIGN KEY ("session_id") REFERENCES "public"."progress_sessions"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."student_progress_lessons"
     ADD CONSTRAINT "student_progress_lessons_student_progress_id_fkey" FOREIGN KEY ("student_progress_id") REFERENCES "public"."student_progress"("id") ON DELETE CASCADE;
 
 
@@ -3497,6 +5536,16 @@ ALTER TABLE ONLY "public"."student_subjects"
 
 ALTER TABLE ONLY "public"."student_subjects"
     ADD CONSTRAINT "student_subjects_subject_id_fkey" FOREIGN KEY ("subject_id") REFERENCES "public"."subjects"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."student_textbook_exam_ranges"
+    ADD CONSTRAINT "student_textbook_exam_ranges_exam_type_id_fkey" FOREIGN KEY ("exam_type_id") REFERENCES "public"."exam_types"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."student_textbook_exam_ranges"
+    ADD CONSTRAINT "student_textbook_exam_ranges_student_textbook_id_fkey" FOREIGN KEY ("student_textbook_id") REFERENCES "public"."student_textbooks"("id") ON DELETE CASCADE;
 
 
 
@@ -3535,6 +5584,141 @@ ALTER TABLE ONLY "public"."students"
 
 
 
+ALTER TABLE ONLY "public"."teacher_absences"
+    ADD CONSTRAINT "teacher_absences_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."user_profiles"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."teacher_absences"
+    ADD CONSTRAINT "teacher_absences_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "public"."schools"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."teacher_absences"
+    ADD CONSTRAINT "teacher_absences_time_slot_id_fkey" FOREIGN KEY ("time_slot_id") REFERENCES "public"."schedule_time_slots"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."teacher_absences"
+    ADD CONSTRAINT "teacher_absences_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."user_profiles"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."teacher_availability_periods"
+    ADD CONSTRAINT "teacher_availability_periods_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "public"."schools"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."teacher_availability_periods"
+    ADD CONSTRAINT "teacher_availability_periods_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."user_profiles"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."teacher_badge_assignments"
+    ADD CONSTRAINT "teacher_badge_assignments_assigned_by_fkey" FOREIGN KEY ("assigned_by") REFERENCES "public"."user_profiles"("id");
+
+
+
+ALTER TABLE ONLY "public"."teacher_badge_assignments"
+    ADD CONSTRAINT "teacher_badge_assignments_badge_id_fkey" FOREIGN KEY ("badge_id") REFERENCES "public"."teacher_badges"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."teacher_badge_assignments"
+    ADD CONSTRAINT "teacher_badge_assignments_teacher_id_fkey" FOREIGN KEY ("teacher_id") REFERENCES "public"."user_profiles"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."teacher_badges"
+    ADD CONSTRAINT "teacher_badges_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."user_profiles"("id");
+
+
+
+ALTER TABLE ONLY "public"."teacher_trainings"
+    ADD CONSTRAINT "teacher_trainings_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."user_profiles"("id");
+
+
+
+ALTER TABLE ONLY "public"."teacher_trainings"
+    ADD CONSTRAINT "teacher_trainings_teacher_id_fkey" FOREIGN KEY ("teacher_id") REFERENCES "public"."user_profiles"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."teacher_trainings"
+    ADD CONSTRAINT "teacher_trainings_training_master_id_fkey" FOREIGN KEY ("training_master_id") REFERENCES "public"."training_masters"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."test_prep_proposal_subjects"
+    ADD CONSTRAINT "test_prep_proposal_subjects_proposal_id_fkey" FOREIGN KEY ("proposal_id") REFERENCES "public"."test_prep_proposals"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."test_prep_proposal_units"
+    ADD CONSTRAINT "test_prep_proposal_units_curriculum_item_id_fkey" FOREIGN KEY ("curriculum_item_id") REFERENCES "public"."curriculum_items"("id");
+
+
+
+ALTER TABLE ONLY "public"."test_prep_proposal_units"
+    ADD CONSTRAINT "test_prep_proposal_units_subject_id_fkey" FOREIGN KEY ("subject_id") REFERENCES "public"."test_prep_proposal_subjects"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."test_prep_proposals"
+    ADD CONSTRAINT "test_prep_proposals_exam_type_id_fkey" FOREIGN KEY ("exam_type_id") REFERENCES "public"."exam_types"("id");
+
+
+
+ALTER TABLE ONLY "public"."test_prep_proposals"
+    ADD CONSTRAINT "test_prep_proposals_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "public"."schools"("id");
+
+
+
+ALTER TABLE ONLY "public"."test_prep_proposals"
+    ADD CONSTRAINT "test_prep_proposals_student_id_fkey" FOREIGN KEY ("student_id") REFERENCES "public"."students"("id");
+
+
+
+ALTER TABLE ONLY "public"."test_prep_proposals"
+    ADD CONSTRAINT "test_prep_proposals_teacher_user_id_fkey" FOREIGN KEY ("teacher_user_id") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."test_prep_proposals"
+    ADD CONSTRAINT "test_prep_proposals_zoukoma_period_id_fkey" FOREIGN KEY ("zoukoma_period_id") REFERENCES "public"."form_periods"("id");
+
+
+
+ALTER TABLE ONLY "public"."textbooks"
+    ADD CONSTRAINT "textbooks_material_id_fkey" FOREIGN KEY ("material_id") REFERENCES "public"."materials"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."training_masters"
+    ADD CONSTRAINT "training_masters_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."user_profiles"("id");
+
+
+
+ALTER TABLE ONLY "public"."transfer_notifications"
+    ADD CONSTRAINT "transfer_notifications_from_entry_id_fkey" FOREIGN KEY ("from_entry_id") REFERENCES "public"."schedule_entries"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."transfer_notifications"
+    ADD CONSTRAINT "transfer_notifications_school_id_fkey" FOREIGN KEY ("school_id") REFERENCES "public"."schools"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."transfer_notifications"
+    ADD CONSTRAINT "transfer_notifications_student_id_fkey" FOREIGN KEY ("student_id") REFERENCES "public"."students"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."transfer_notifications"
+    ADD CONSTRAINT "transfer_notifications_to_entry_id_fkey" FOREIGN KEY ("to_entry_id") REFERENCES "public"."schedule_entries"("id") ON DELETE SET NULL;
+
+
+
 ALTER TABLE ONLY "public"."user_invitations"
     ADD CONSTRAINT "user_invitations_invited_by_fkey" FOREIGN KEY ("invited_by") REFERENCES "auth"."users"("id");
 
@@ -3565,6 +5749,16 @@ ALTER TABLE ONLY "public"."user_schools"
 
 
 
+ALTER TABLE ONLY "public"."user_textbook_favorites"
+    ADD CONSTRAINT "user_textbook_favorites_textbook_id_fkey" FOREIGN KEY ("textbook_id") REFERENCES "public"."textbooks"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."user_textbook_favorites"
+    ADD CONSTRAINT "user_textbook_favorites_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
 CREATE POLICY "Admins can insert profiles" ON "public"."user_profiles" FOR INSERT WITH CHECK (("public"."check_user_role"(ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text"]) OR (NOT (EXISTS ( SELECT 1
    FROM "public"."user_profiles" "user_profiles_1")))));
 
@@ -3586,115 +5780,11 @@ CREATE POLICY "Admins can view all profiles" ON "public"."user_profiles" FOR SEL
 
 
 
-CREATE POLICY "Allow all for anon" ON "public"."assessment_scores" TO "anon" USING (true) WITH CHECK (true);
-
-
-
-CREATE POLICY "Allow all for anon" ON "public"."assessments" TO "anon" USING (true) WITH CHECK (true);
-
-
-
-CREATE POLICY "Allow all for anon" ON "public"."schools" TO "anon" USING (true) WITH CHECK (true);
-
-
-
-CREATE POLICY "Allow all for anon" ON "public"."student_logs" TO "anon" USING (true) WITH CHECK (true);
-
-
-
-CREATE POLICY "Allow all for anon" ON "public"."student_subjects" TO "anon" USING (true) WITH CHECK (true);
-
-
-
-CREATE POLICY "Allow all for anon" ON "public"."students" TO "anon" USING (true) WITH CHECK (true);
-
-
-
-CREATE POLICY "Allow all for anon" ON "public"."subjects" TO "anon" USING (true) WITH CHECK (true);
-
-
-
-CREATE POLICY "Allow all for attendance_notes" ON "public"."attendance_notes" USING (true) WITH CHECK (true);
-
-
-
-CREATE POLICY "Allow all for attendance_records" ON "public"."attendance_records" USING (true) WITH CHECK (true);
-
-
-
-CREATE POLICY "Allow all for attendance_sheets" ON "public"."attendance_sheets" USING (true) WITH CHECK (true);
-
-
-
-CREATE POLICY "Allow all for attendance_types" ON "public"."attendance_types" USING (true) WITH CHECK (true);
-
-
-
-CREATE POLICY "Allow all for authenticated users" ON "public"."assessment_scores" TO "authenticated" USING (true) WITH CHECK (true);
-
-
-
-CREATE POLICY "Allow all for authenticated users" ON "public"."assessments" TO "authenticated" USING (true) WITH CHECK (true);
-
-
-
-CREATE POLICY "Allow all for authenticated users" ON "public"."schools" TO "authenticated" USING (true) WITH CHECK (true);
-
-
-
-CREATE POLICY "Allow all for authenticated users" ON "public"."student_logs" TO "authenticated" USING (true) WITH CHECK (true);
-
-
-
-CREATE POLICY "Allow all for authenticated users" ON "public"."student_subjects" TO "authenticated" USING (true) WITH CHECK (true);
-
-
-
-CREATE POLICY "Allow all for authenticated users" ON "public"."students" TO "authenticated" USING (true) WITH CHECK (true);
-
-
-
 CREATE POLICY "Allow all for authenticated users" ON "public"."subjects" TO "authenticated" USING (true) WITH CHECK (true);
 
 
 
 CREATE POLICY "Anyone can view active teachers for attendance portal" ON "public"."user_profiles" FOR SELECT USING ((("role" = 'teacher'::"text") AND ("is_active" = true)));
-
-
-
-CREATE POLICY "Anyone can view invitations by token" ON "public"."user_invitations" FOR SELECT USING (true);
-
-
-
-CREATE POLICY "Anyone can view user_schools for attendance portal" ON "public"."user_schools" FOR SELECT USING (true);
-
-
-
-CREATE POLICY "Enable all access for all users" ON "public"."student_interviews" USING (true) WITH CHECK (true);
-
-
-
-CREATE POLICY "Enable all for seasonal_course_applications" ON "public"."seasonal_course_applications" USING (true);
-
-
-
-CREATE POLICY "Enable all for seasonal_course_curriculum" ON "public"."seasonal_course_curriculum" USING (true);
-
-
-
-CREATE POLICY "Enable all for seasonal_course_textbooks" ON "public"."seasonal_course_textbooks" USING (true);
-
-
-
-CREATE POLICY "Enable all for seasonal_courses" ON "public"."seasonal_courses" USING (true);
-
-
-
-CREATE POLICY "Users can access students in their schools" ON "public"."students" USING ("public"."check_student_access"("school_id"));
-
-
-
-CREATE POLICY "Users can access their schools" ON "public"."schools" USING ("public"."check_school_access"("id"));
 
 
 
@@ -3726,105 +5816,203 @@ CREATE POLICY "Users can view own tokens" ON "public"."google_calendar_tokens" F
 
 
 
+ALTER TABLE "public"."action_goals" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "action_goals_school_scope_auth" ON "public"."action_goals" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM ("public"."student_textbook_exams" "e"
+     JOIN "public"."student_textbooks" "st" ON (("st"."id" = "e"."student_textbook_id")))
+  WHERE (("e"."id" = "action_goals"."student_textbook_exam_id") AND "public"."check_school_access"("st"."school_id"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM ("public"."student_textbook_exams" "e"
+     JOIN "public"."student_textbooks" "st" ON (("st"."id" = "e"."student_textbook_id")))
+  WHERE (("e"."id" = "action_goals"."student_textbook_exam_id") AND "public"."check_school_access"("st"."school_id")))));
+
+
+
 ALTER TABLE "public"."admin_audit_logs" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "admin_audit_logs_auth_insert" ON "public"."admin_audit_logs" FOR INSERT TO "authenticated" WITH CHECK (true);
-
-
-
-CREATE POLICY "admin_audit_logs_auth_select" ON "public"."admin_audit_logs" FOR SELECT TO "authenticated" USING (true);
+CREATE POLICY "admin_audit_logs_manager_all" ON "public"."admin_audit_logs" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."user_profiles" "up"
+  WHERE (("up"."id" = "auth"."uid"()) AND ("up"."role" = ANY (ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text"])))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."user_profiles" "up"
+  WHERE (("up"."id" = "auth"."uid"()) AND ("up"."role" = ANY (ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text"]))))));
 
 
 
 ALTER TABLE "public"."alert_dismissals" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "alert_dismissals_allow_all_auth" ON "public"."alert_dismissals" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "alert_dismissals_school_scope_auth" ON "public"."alert_dismissals" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
-CREATE POLICY "allow_anon_select" ON "public"."curriculum_items" FOR SELECT TO "anon" USING (true);
+ALTER TABLE "public"."alert_settings" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "alert_settings_school_member_modify" ON "public"."alert_settings" USING (("auth"."role"() = 'authenticated'::"text")) WITH CHECK (("auth"."role"() = 'authenticated'::"text"));
 
 
 
-CREATE POLICY "allow_anon_select" ON "public"."textbooks" FOR SELECT TO "anon" USING (true);
+CREATE POLICY "alert_settings_school_member_select" ON "public"."alert_settings" FOR SELECT USING (("auth"."role"() = 'authenticated'::"text"));
 
 
 
 ALTER TABLE "public"."application_items" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "application_items_allow_all_auth" ON "public"."application_items" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "application_items_school_scope_auth" ON "public"."application_items" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
 ALTER TABLE "public"."assessment_scores" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "assessment_scores_allow_all_auth" ON "public"."assessment_scores" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "assessment_scores_school_scope_auth" ON "public"."assessment_scores" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."assessments" "a"
+  WHERE (("a"."id" = "assessment_scores"."assessment_id") AND "public"."check_school_access"("a"."school_id"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."assessments" "a"
+  WHERE (("a"."id" = "assessment_scores"."assessment_id") AND "public"."check_school_access"("a"."school_id")))));
+
+
+
+ALTER TABLE "public"."assessment_subjects" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "assessment_subjects_modify" ON "public"."assessment_subjects" USING (("auth"."role"() = 'authenticated'::"text")) WITH CHECK (("auth"."role"() = 'authenticated'::"text"));
+
+
+
+CREATE POLICY "assessment_subjects_select" ON "public"."assessment_subjects" FOR SELECT USING (("auth"."role"() = 'authenticated'::"text"));
 
 
 
 ALTER TABLE "public"."assessments" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "assessments_allow_all_auth" ON "public"."assessments" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "assessments_school_scope_auth" ON "public"."assessments" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
 ALTER TABLE "public"."attendance_notes" ENABLE ROW LEVEL SECURITY;
 
 
+CREATE POLICY "attendance_notes_manager_all" ON "public"."attendance_notes" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."user_profiles" "up"
+  WHERE (("up"."id" = "auth"."uid"()) AND ("up"."role" = ANY (ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text"])))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."user_profiles" "up"
+  WHERE (("up"."id" = "auth"."uid"()) AND ("up"."role" = ANY (ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text"]))))));
+
+
+
+CREATE POLICY "attendance_notes_school_restrict" ON "public"."attendance_notes" AS RESTRICTIVE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."attendance_sheets" "s"
+  WHERE (("s"."id" = "attendance_notes"."sheet_id") AND "public"."check_school_access"("s"."school_id"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."attendance_sheets" "s"
+  WHERE (("s"."id" = "attendance_notes"."sheet_id") AND "public"."check_school_access"("s"."school_id")))));
+
+
+
+CREATE POLICY "attendance_notes_teacher_own" ON "public"."attendance_notes" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."attendance_sheets" "s"
+  WHERE (("s"."id" = "attendance_notes"."sheet_id") AND ("s"."teacher_id" = "auth"."uid"()))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."attendance_sheets" "s"
+  WHERE (("s"."id" = "attendance_notes"."sheet_id") AND ("s"."teacher_id" = "auth"."uid"())))));
+
+
+
 ALTER TABLE "public"."attendance_records" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "attendance_records_manager_all" ON "public"."attendance_records" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."user_profiles" "up"
+  WHERE (("up"."id" = "auth"."uid"()) AND ("up"."role" = ANY (ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text"])))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."user_profiles" "up"
+  WHERE (("up"."id" = "auth"."uid"()) AND ("up"."role" = ANY (ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text"]))))));
+
+
+
+CREATE POLICY "attendance_records_school_restrict" ON "public"."attendance_records" AS RESTRICTIVE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."attendance_sheets" "s"
+  WHERE (("s"."id" = "attendance_records"."sheet_id") AND "public"."check_school_access"("s"."school_id"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."attendance_sheets" "s"
+  WHERE (("s"."id" = "attendance_records"."sheet_id") AND "public"."check_school_access"("s"."school_id")))));
+
+
+
+CREATE POLICY "attendance_records_teacher_own" ON "public"."attendance_records" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."attendance_sheets" "s"
+  WHERE (("s"."id" = "attendance_records"."sheet_id") AND ("s"."teacher_id" = "auth"."uid"()))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."attendance_sheets" "s"
+  WHERE (("s"."id" = "attendance_records"."sheet_id") AND ("s"."teacher_id" = "auth"."uid"())))));
+
 
 
 ALTER TABLE "public"."attendance_sheets" ENABLE ROW LEVEL SECURITY;
 
 
+CREATE POLICY "attendance_sheets_manager_all" ON "public"."attendance_sheets" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."user_profiles" "up"
+  WHERE (("up"."id" = "auth"."uid"()) AND ("up"."role" = ANY (ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text"])))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."user_profiles" "up"
+  WHERE (("up"."id" = "auth"."uid"()) AND ("up"."role" = ANY (ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text"]))))));
+
+
+
+CREATE POLICY "attendance_sheets_school_restrict" ON "public"."attendance_sheets" AS RESTRICTIVE TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
+
+
+
+CREATE POLICY "attendance_sheets_teacher_own" ON "public"."attendance_sheets" TO "authenticated" USING (("teacher_id" = "auth"."uid"())) WITH CHECK (("teacher_id" = "auth"."uid"()));
+
+
+
 ALTER TABLE "public"."attendance_types" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "authenticated users can manage koushu_enrollments" ON "public"."koushu_enrollments" TO "authenticated" USING (true) WITH CHECK (true);
-
-
-
-CREATE POLICY "authenticated users can manage overrides" ON "public"."monthly_task_overrides" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "attendance_types_school_scope_auth" ON "public"."attendance_types" TO "authenticated" USING ((("school_id" IS NULL) OR "public"."check_school_access"("school_id"))) WITH CHECK ((("school_id" IS NULL) OR "public"."check_school_access"("school_id")));
 
 
 
 ALTER TABLE "public"."billing_items" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "billing_items_allow_all_auth" ON "public"."billing_items" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "billing_items_school_scope_auth" ON "public"."billing_items" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
 ALTER TABLE "public"."billing_periods" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "billing_periods_allow_all_auth" ON "public"."billing_periods" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "billing_periods_school_scope_auth" ON "public"."billing_periods" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
 ALTER TABLE "public"."bulletin_labels" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "bulletin_labels_allow_all_auth" ON "public"."bulletin_labels" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "bulletin_labels_school_scope_auth" ON "public"."bulletin_labels" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
 ALTER TABLE "public"."bulletin_posts" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "bulletin_posts_allow_all_auth" ON "public"."bulletin_posts" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "bulletin_posts_school_scope_auth" ON "public"."bulletin_posts" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
 ALTER TABLE "public"."bulletin_reads" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "bulletin_reads_allow_all_auth" ON "public"."bulletin_reads" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "bulletin_reads_own" ON "public"."bulletin_reads" TO "authenticated" USING (("user_id" = "auth"."uid"())) WITH CHECK (("user_id" = "auth"."uid"()));
+
+
+
+ALTER TABLE "public"."class_reports" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "class_reports_school_scope_auth" ON "public"."class_reports" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
@@ -3856,130 +6044,178 @@ CREATE POLICY "curriculum_items_allow_all_auth" ON "public"."curriculum_items" T
 ALTER TABLE "public"."embed_tokens" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "embed_tokens_delete" ON "public"."embed_tokens" FOR DELETE TO "authenticated" USING (true);
-
-
-
-CREATE POLICY "embed_tokens_insert" ON "public"."embed_tokens" FOR INSERT TO "authenticated" WITH CHECK (true);
-
-
-
-CREATE POLICY "embed_tokens_select" ON "public"."embed_tokens" FOR SELECT TO "authenticated" USING (true);
-
-
-
-CREATE POLICY "embed_tokens_update" ON "public"."embed_tokens" FOR UPDATE TO "authenticated" USING (true);
+CREATE POLICY "embed_tokens_school_scope_auth" ON "public"."embed_tokens" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
 ALTER TABLE "public"."exam_types" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "exam_types_allow_all_auth" ON "public"."exam_types" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "exam_types_school_scope_auth" ON "public"."exam_types" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
 ALTER TABLE "public"."form_fields" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "form_fields_allow_all_anon" ON "public"."form_fields" TO "anon" USING (true) WITH CHECK (true);
+CREATE POLICY "form_fields_anon_select" ON "public"."form_fields" FOR SELECT TO "anon" USING (true);
 
 
 
-CREATE POLICY "form_fields_allow_all_auth" ON "public"."form_fields" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "form_fields_school_scope_auth" ON "public"."form_fields" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."forms" "f"
+  WHERE (("f"."id" = "form_fields"."form_id") AND "public"."check_school_access"("f"."school_id"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."forms" "f"
+  WHERE (("f"."id" = "form_fields"."form_id") AND "public"."check_school_access"("f"."school_id")))));
 
 
 
 ALTER TABLE "public"."form_periods" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "form_periods_allow_all_auth" ON "public"."form_periods" TO "authenticated" USING (true) WITH CHECK (true);
-
-
-
 CREATE POLICY "form_periods_allow_select_anon" ON "public"."form_periods" FOR SELECT TO "anon" USING (((("is_archived" IS NULL) OR ("is_archived" = false)) AND (("publish_start" IS NULL) OR ("publish_start" <= "now"())) AND (("publish_end" IS NULL) OR ("publish_end" >= "now"()))));
+
+
+
+CREATE POLICY "form_periods_school_scope_auth" ON "public"."form_periods" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
 ALTER TABLE "public"."form_responses" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "form_responses_allow_all_auth" ON "public"."form_responses" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "form_responses_school_scope_auth" ON "public"."form_responses" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
 ALTER TABLE "public"."form_template_fields" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "form_template_fields_allow_all_anon" ON "public"."form_template_fields" TO "anon" USING (true) WITH CHECK (true);
-
-
-
-CREATE POLICY "form_template_fields_allow_all_auth" ON "public"."form_template_fields" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "form_template_fields_school_scope_auth" ON "public"."form_template_fields" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."form_templates" "t"
+  WHERE (("t"."id" = "form_template_fields"."template_id") AND "public"."check_school_access"("t"."school_id"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."form_templates" "t"
+  WHERE (("t"."id" = "form_template_fields"."template_id") AND "public"."check_school_access"("t"."school_id")))));
 
 
 
 ALTER TABLE "public"."form_templates" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "form_templates_allow_all_anon" ON "public"."form_templates" TO "anon" USING (true) WITH CHECK (true);
-
-
-
-CREATE POLICY "form_templates_allow_all_auth" ON "public"."form_templates" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "form_templates_school_scope_auth" ON "public"."form_templates" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
 ALTER TABLE "public"."forms" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "forms_allow_all_anon" ON "public"."forms" TO "anon" USING (true) WITH CHECK (true);
+CREATE POLICY "forms_anon_select_published" ON "public"."forms" FOR SELECT TO "anon" USING ((("status" = 'published'::"text") AND ("is_archived" = false)));
 
 
 
-CREATE POLICY "forms_allow_all_auth" ON "public"."forms" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "forms_school_scope_auth" ON "public"."forms" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
 ALTER TABLE "public"."google_calendar_tokens" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."inquiries" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "inquiries_school_scope_auth" ON "public"."inquiries" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
+
+
+
+ALTER TABLE "public"."inquiry_booking_tokens" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "inquiry_booking_tokens_school_scope_auth" ON "public"."inquiry_booking_tokens" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
+
+
+
+ALTER TABLE "public"."inquiry_contacts" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "inquiry_contacts_school_scope_auth" ON "public"."inquiry_contacts" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
+
+
+
+ALTER TABLE "public"."inquiry_import_tokens" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."inquiry_mail_logs" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "inquiry_mail_logs_school_scope_auth" ON "public"."inquiry_mail_logs" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
+
+
+
+ALTER TABLE "public"."inquiry_mail_templates" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "inquiry_mail_templates_scope_auth" ON "public"."inquiry_mail_templates" TO "authenticated" USING ((("school_id" IS NULL) OR "public"."check_school_access"("school_id"))) WITH CHECK ((("school_id" IS NULL) OR "public"."check_school_access"("school_id")));
+
+
+
+ALTER TABLE "public"."inquiry_school_settings" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "inquiry_school_settings_school_scope_auth" ON "public"."inquiry_school_settings" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
+
+
+
 ALTER TABLE "public"."koushu_enrollments" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "koushu_enrollments_school_scope_auth" ON "public"."koushu_enrollments" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
+
+
+
+ALTER TABLE "public"."lesson_report_units" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "lesson_report_units_school_scope_auth" ON "public"."lesson_report_units" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."class_reports" "cr"
+  WHERE (("cr"."id" = "lesson_report_units"."report_id") AND "public"."check_school_access"("cr"."school_id"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."class_reports" "cr"
+  WHERE (("cr"."id" = "lesson_report_units"."report_id") AND "public"."check_school_access"("cr"."school_id")))));
+
 
 
 ALTER TABLE "public"."material_orders" ENABLE ROW LEVEL SECURITY;
 
 
+CREATE POLICY "material_orders_school_scope_auth" ON "public"."material_orders" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
+
+
+
 ALTER TABLE "public"."material_stock_transactions" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "material_stock_txns_school_scope_auth" ON "public"."material_stock_transactions" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
+
 
 
 ALTER TABLE "public"."materials" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "materials_allow_all_auth" ON "public"."materials" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "materials_school_scope_auth" ON "public"."materials" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
 ALTER TABLE "public"."monthly_task_checks" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "monthly_task_checks_delete" ON "public"."monthly_task_checks" FOR DELETE USING (("auth"."uid"() IS NOT NULL));
-
-
-
-CREATE POLICY "monthly_task_checks_insert" ON "public"."monthly_task_checks" FOR INSERT WITH CHECK (("auth"."uid"() IS NOT NULL));
-
-
-
-CREATE POLICY "monthly_task_checks_select" ON "public"."monthly_task_checks" FOR SELECT USING (("auth"."uid"() IS NOT NULL));
-
-
-
-CREATE POLICY "monthly_task_checks_update" ON "public"."monthly_task_checks" FOR UPDATE USING (("auth"."uid"() IS NOT NULL));
+CREATE POLICY "monthly_task_checks_school_scope_auth" ON "public"."monthly_task_checks" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
 ALTER TABLE "public"."monthly_task_overrides" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "monthly_task_overrides_school_scope_auth" ON "public"."monthly_task_overrides" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
+
 
 
 ALTER TABLE "public"."monthly_task_templates" ENABLE ROW LEVEL SECURITY;
@@ -4020,170 +6256,145 @@ CREATE POLICY "monthly_templates_update" ON "public"."monthly_task_templates" FO
 
 
 
-CREATE POLICY "orders_allow_all_auth" ON "public"."material_orders" TO "authenticated" USING (true) WITH CHECK (true);
+ALTER TABLE "public"."notta_transcripts" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "notta_transcripts_school_scope_auth" ON "public"."notta_transcripts" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
 ALTER TABLE "public"."portal_menu" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "portal_menu_allow_all_auth" ON "public"."portal_menu" TO "authenticated" USING (true) WITH CHECK (true);
-
-
-
 CREATE POLICY "portal_menu_anon_select" ON "public"."portal_menu" FOR SELECT TO "anon" USING (("is_visible" = true));
 
 
 
-CREATE POLICY "prep_items_delete" ON "public"."course_prep_progress_items" FOR DELETE USING (("school_id" IN ( SELECT "user_schools"."school_id"
-   FROM "public"."user_schools"
-  WHERE ("user_schools"."user_id" = "auth"."uid"()))));
+CREATE POLICY "portal_menu_school_scope_auth" ON "public"."portal_menu" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
-CREATE POLICY "prep_items_insert" ON "public"."course_prep_progress_items" FOR INSERT WITH CHECK (("school_id" IN ( SELECT "user_schools"."school_id"
-   FROM "public"."user_schools"
-  WHERE ("user_schools"."user_id" = "auth"."uid"()))));
+CREATE POLICY "prep_items_delete" ON "public"."course_prep_progress_items" FOR DELETE USING ("public"."check_school_access"("school_id"));
 
 
 
-CREATE POLICY "prep_items_select" ON "public"."course_prep_progress_items" FOR SELECT USING (("school_id" IN ( SELECT "user_schools"."school_id"
-   FROM "public"."user_schools"
-  WHERE ("user_schools"."user_id" = "auth"."uid"()))));
+CREATE POLICY "prep_items_insert" ON "public"."course_prep_progress_items" FOR INSERT WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
-CREATE POLICY "prep_items_update" ON "public"."course_prep_progress_items" FOR UPDATE USING (("school_id" IN ( SELECT "user_schools"."school_id"
-   FROM "public"."user_schools"
-  WHERE ("user_schools"."user_id" = "auth"."uid"()))));
+CREATE POLICY "prep_items_select" ON "public"."course_prep_progress_items" FOR SELECT USING ("public"."check_school_access"("school_id"));
 
 
 
-CREATE POLICY "prep_markers_delete" ON "public"."course_prep_schedule_markers" FOR DELETE USING (("task_id" IN ( SELECT "course_prep_schedule_tasks"."id"
-   FROM "public"."course_prep_schedule_tasks"
-  WHERE ("course_prep_schedule_tasks"."school_id" IN ( SELECT "user_schools"."school_id"
-           FROM "public"."user_schools"
-          WHERE ("user_schools"."user_id" = "auth"."uid"()))))));
+CREATE POLICY "prep_items_update" ON "public"."course_prep_progress_items" FOR UPDATE USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
-CREATE POLICY "prep_markers_insert" ON "public"."course_prep_schedule_markers" FOR INSERT WITH CHECK (("task_id" IN ( SELECT "course_prep_schedule_tasks"."id"
-   FROM "public"."course_prep_schedule_tasks"
-  WHERE ("course_prep_schedule_tasks"."school_id" IN ( SELECT "user_schools"."school_id"
-           FROM "public"."user_schools"
-          WHERE ("user_schools"."user_id" = "auth"."uid"()))))));
+CREATE POLICY "prep_markers_delete" ON "public"."course_prep_schedule_markers" FOR DELETE USING (("task_id" IN ( SELECT "t"."id"
+   FROM "public"."course_prep_schedule_tasks" "t"
+  WHERE "public"."check_school_access"("t"."school_id"))));
 
 
 
-CREATE POLICY "prep_markers_select" ON "public"."course_prep_schedule_markers" FOR SELECT USING (("task_id" IN ( SELECT "course_prep_schedule_tasks"."id"
-   FROM "public"."course_prep_schedule_tasks"
-  WHERE ("course_prep_schedule_tasks"."school_id" IN ( SELECT "user_schools"."school_id"
-           FROM "public"."user_schools"
-          WHERE ("user_schools"."user_id" = "auth"."uid"()))))));
+CREATE POLICY "prep_markers_insert" ON "public"."course_prep_schedule_markers" FOR INSERT WITH CHECK (("task_id" IN ( SELECT "t"."id"
+   FROM "public"."course_prep_schedule_tasks" "t"
+  WHERE "public"."check_school_access"("t"."school_id"))));
 
 
 
-CREATE POLICY "prep_markers_update" ON "public"."course_prep_schedule_markers" FOR UPDATE USING (("task_id" IN ( SELECT "course_prep_schedule_tasks"."id"
-   FROM "public"."course_prep_schedule_tasks"
-  WHERE ("course_prep_schedule_tasks"."school_id" IN ( SELECT "user_schools"."school_id"
-           FROM "public"."user_schools"
-          WHERE ("user_schools"."user_id" = "auth"."uid"()))))));
+CREATE POLICY "prep_markers_select" ON "public"."course_prep_schedule_markers" FOR SELECT USING (("task_id" IN ( SELECT "t"."id"
+   FROM "public"."course_prep_schedule_tasks" "t"
+  WHERE "public"."check_school_access"("t"."school_id"))));
 
 
 
-CREATE POLICY "prep_periods_delete" ON "public"."course_prep_periods" FOR DELETE USING (("school_id" IN ( SELECT "user_schools"."school_id"
-   FROM "public"."user_schools"
-  WHERE ("user_schools"."user_id" = "auth"."uid"()))));
+CREATE POLICY "prep_markers_update" ON "public"."course_prep_schedule_markers" FOR UPDATE USING (("task_id" IN ( SELECT "t"."id"
+   FROM "public"."course_prep_schedule_tasks" "t"
+  WHERE "public"."check_school_access"("t"."school_id")))) WITH CHECK (("task_id" IN ( SELECT "t"."id"
+   FROM "public"."course_prep_schedule_tasks" "t"
+  WHERE "public"."check_school_access"("t"."school_id"))));
 
 
 
-CREATE POLICY "prep_periods_insert" ON "public"."course_prep_periods" FOR INSERT WITH CHECK (("school_id" IN ( SELECT "user_schools"."school_id"
-   FROM "public"."user_schools"
-  WHERE ("user_schools"."user_id" = "auth"."uid"()))));
+CREATE POLICY "prep_periods_delete" ON "public"."course_prep_periods" FOR DELETE USING ("public"."check_school_access"("school_id"));
 
 
 
-CREATE POLICY "prep_periods_select" ON "public"."course_prep_periods" FOR SELECT USING (("school_id" IN ( SELECT "user_schools"."school_id"
-   FROM "public"."user_schools"
-  WHERE ("user_schools"."user_id" = "auth"."uid"()))));
+CREATE POLICY "prep_periods_insert" ON "public"."course_prep_periods" FOR INSERT WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
-CREATE POLICY "prep_periods_update" ON "public"."course_prep_periods" FOR UPDATE USING (("school_id" IN ( SELECT "user_schools"."school_id"
-   FROM "public"."user_schools"
-  WHERE ("user_schools"."user_id" = "auth"."uid"()))));
+CREATE POLICY "prep_periods_select" ON "public"."course_prep_periods" FOR SELECT USING ("public"."check_school_access"("school_id"));
 
 
 
-CREATE POLICY "prep_student_delete" ON "public"."course_prep_student_progress" FOR DELETE USING (("school_id" IN ( SELECT "user_schools"."school_id"
-   FROM "public"."user_schools"
-  WHERE ("user_schools"."user_id" = "auth"."uid"()))));
+CREATE POLICY "prep_periods_update" ON "public"."course_prep_periods" FOR UPDATE USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
-CREATE POLICY "prep_student_insert" ON "public"."course_prep_student_progress" FOR INSERT WITH CHECK (("school_id" IN ( SELECT "user_schools"."school_id"
-   FROM "public"."user_schools"
-  WHERE ("user_schools"."user_id" = "auth"."uid"()))));
+CREATE POLICY "prep_student_delete" ON "public"."course_prep_student_progress" FOR DELETE USING ("public"."check_school_access"("school_id"));
 
 
 
-CREATE POLICY "prep_student_select" ON "public"."course_prep_student_progress" FOR SELECT USING (("school_id" IN ( SELECT "user_schools"."school_id"
-   FROM "public"."user_schools"
-  WHERE ("user_schools"."user_id" = "auth"."uid"()))));
+CREATE POLICY "prep_student_insert" ON "public"."course_prep_student_progress" FOR INSERT WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
-CREATE POLICY "prep_student_update" ON "public"."course_prep_student_progress" FOR UPDATE USING (("school_id" IN ( SELECT "user_schools"."school_id"
-   FROM "public"."user_schools"
-  WHERE ("user_schools"."user_id" = "auth"."uid"()))));
+CREATE POLICY "prep_student_select" ON "public"."course_prep_student_progress" FOR SELECT USING ("public"."check_school_access"("school_id"));
 
 
 
-CREATE POLICY "prep_tasks_delete" ON "public"."course_prep_schedule_tasks" FOR DELETE USING (("school_id" IN ( SELECT "user_schools"."school_id"
-   FROM "public"."user_schools"
-  WHERE ("user_schools"."user_id" = "auth"."uid"()))));
+CREATE POLICY "prep_student_update" ON "public"."course_prep_student_progress" FOR UPDATE USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
-CREATE POLICY "prep_tasks_insert" ON "public"."course_prep_schedule_tasks" FOR INSERT WITH CHECK (("school_id" IN ( SELECT "user_schools"."school_id"
-   FROM "public"."user_schools"
-  WHERE ("user_schools"."user_id" = "auth"."uid"()))));
+CREATE POLICY "prep_tasks_delete" ON "public"."course_prep_schedule_tasks" FOR DELETE USING ("public"."check_school_access"("school_id"));
 
 
 
-CREATE POLICY "prep_tasks_select" ON "public"."course_prep_schedule_tasks" FOR SELECT USING (("school_id" IN ( SELECT "user_schools"."school_id"
-   FROM "public"."user_schools"
-  WHERE ("user_schools"."user_id" = "auth"."uid"()))));
+CREATE POLICY "prep_tasks_insert" ON "public"."course_prep_schedule_tasks" FOR INSERT WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
-CREATE POLICY "prep_tasks_update" ON "public"."course_prep_schedule_tasks" FOR UPDATE USING (("school_id" IN ( SELECT "user_schools"."school_id"
-   FROM "public"."user_schools"
-  WHERE ("user_schools"."user_id" = "auth"."uid"()))));
+CREATE POLICY "prep_tasks_select" ON "public"."course_prep_schedule_tasks" FOR SELECT USING ("public"."check_school_access"("school_id"));
 
 
 
-CREATE POLICY "prep_templates_delete" ON "public"."course_prep_templates" FOR DELETE USING ((("school_id" IS NULL) OR ("school_id" IN ( SELECT "user_schools"."school_id"
-   FROM "public"."user_schools"
-  WHERE ("user_schools"."user_id" = "auth"."uid"())))));
+CREATE POLICY "prep_tasks_update" ON "public"."course_prep_schedule_tasks" FOR UPDATE USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
-CREATE POLICY "prep_templates_insert" ON "public"."course_prep_templates" FOR INSERT WITH CHECK ((("school_id" IS NULL) OR ("school_id" IN ( SELECT "user_schools"."school_id"
-   FROM "public"."user_schools"
-  WHERE ("user_schools"."user_id" = "auth"."uid"())))));
+CREATE POLICY "prep_templates_delete" ON "public"."course_prep_templates" FOR DELETE USING ((("school_id" IS NULL) OR "public"."check_school_access"("school_id")));
 
 
 
-CREATE POLICY "prep_templates_select" ON "public"."course_prep_templates" FOR SELECT USING ((("school_id" IS NULL) OR ("school_id" IN ( SELECT "user_schools"."school_id"
-   FROM "public"."user_schools"
-  WHERE ("user_schools"."user_id" = "auth"."uid"())))));
+CREATE POLICY "prep_templates_insert" ON "public"."course_prep_templates" FOR INSERT WITH CHECK ((("school_id" IS NULL) OR "public"."check_school_access"("school_id")));
 
 
 
-CREATE POLICY "prep_templates_update" ON "public"."course_prep_templates" FOR UPDATE USING ((("school_id" IS NULL) OR ("school_id" IN ( SELECT "user_schools"."school_id"
-   FROM "public"."user_schools"
-  WHERE ("user_schools"."user_id" = "auth"."uid"())))));
+CREATE POLICY "prep_templates_select" ON "public"."course_prep_templates" FOR SELECT USING ((("school_id" IS NULL) OR "public"."check_school_access"("school_id")));
+
+
+
+CREATE POLICY "prep_templates_update" ON "public"."course_prep_templates" FOR UPDATE USING ((("school_id" IS NULL) OR "public"."check_school_access"("school_id"))) WITH CHECK ((("school_id" IS NULL) OR "public"."check_school_access"("school_id")));
+
+
+
+ALTER TABLE "public"."progress_sessions" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "progress_sessions_school_scope_auth" ON "public"."progress_sessions" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."student_textbooks" "st"
+  WHERE (("st"."id" = "progress_sessions"."student_textbook_id") AND "public"."check_school_access"("st"."school_id"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."student_textbooks" "st"
+  WHERE (("st"."id" = "progress_sessions"."student_textbook_id") AND "public"."check_school_access"("st"."school_id")))));
+
+
+
+ALTER TABLE "public"."push_subscriptions" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "push_subscriptions_self" ON "public"."push_subscriptions" USING (("auth"."uid"() = "user_id"));
 
 
 
@@ -4194,119 +6405,199 @@ CREATE POLICY "regular_shift_settings_anon_select_published" ON "public"."regula
 
 
 
-CREATE POLICY "regular_shift_settings_auth" ON "public"."regular_shift_settings" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "regular_shift_settings_school_scope_auth" ON "public"."regular_shift_settings" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
 ALTER TABLE "public"."regular_shift_slot_settings" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "regular_shift_slot_settings_anon_select" ON "public"."regular_shift_slot_settings" FOR SELECT TO "anon" USING (true);
-
-
-
-CREATE POLICY "regular_shift_slot_settings_auth" ON "public"."regular_shift_slot_settings" TO "authenticated" USING (true) WITH CHECK (true);
-
-
-
-CREATE POLICY "regular_shift_slots_anon_delete" ON "public"."regular_shift_submission_slots" FOR DELETE TO "anon" USING (true);
-
-
-
-CREATE POLICY "regular_shift_slots_anon_insert" ON "public"."regular_shift_submission_slots" FOR INSERT TO "anon" WITH CHECK (true);
-
-
-
-CREATE POLICY "regular_shift_slots_anon_select" ON "public"."regular_shift_submission_slots" FOR SELECT TO "anon" USING (true);
-
-
-
-CREATE POLICY "regular_shift_slots_anon_update" ON "public"."regular_shift_submission_slots" FOR UPDATE TO "anon" USING (true) WITH CHECK (true);
-
-
-
-CREATE POLICY "regular_shift_slots_auth" ON "public"."regular_shift_submission_slots" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "regular_shift_slot_settings_school_scope_auth" ON "public"."regular_shift_slot_settings" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."regular_shift_settings" "s"
+  WHERE (("s"."id" = "regular_shift_slot_settings"."setting_id") AND "public"."check_school_access"("s"."school_id"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."regular_shift_settings" "s"
+  WHERE (("s"."id" = "regular_shift_slot_settings"."setting_id") AND "public"."check_school_access"("s"."school_id")))));
 
 
 
 ALTER TABLE "public"."regular_shift_submission_slots" ENABLE ROW LEVEL SECURITY;
 
 
+CREATE POLICY "regular_shift_submission_slots_school_scope_auth" ON "public"."regular_shift_submission_slots" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."regular_shift_submissions" "p"
+  WHERE (("p"."id" = "regular_shift_submission_slots"."submission_id") AND "public"."check_school_access"("p"."school_id"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."regular_shift_submissions" "p"
+  WHERE (("p"."id" = "regular_shift_submission_slots"."submission_id") AND "public"."check_school_access"("p"."school_id")))));
+
+
+
 ALTER TABLE "public"."regular_shift_submissions" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "regular_shift_submissions_anon_insert" ON "public"."regular_shift_submissions" FOR INSERT TO "anon" WITH CHECK (true);
+CREATE POLICY "regular_shift_submissions_manager_all" ON "public"."regular_shift_submissions" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."user_profiles"
+  WHERE (("user_profiles"."id" = "auth"."uid"()) AND ("user_profiles"."role" = ANY (ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text"])))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."user_profiles"
+  WHERE (("user_profiles"."id" = "auth"."uid"()) AND ("user_profiles"."role" = ANY (ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text"]))))));
 
 
 
-CREATE POLICY "regular_shift_submissions_anon_select" ON "public"."regular_shift_submissions" FOR SELECT TO "anon" USING (true);
+CREATE POLICY "regular_shift_submissions_school_scope_auth" ON "public"."regular_shift_submissions" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
-CREATE POLICY "regular_shift_submissions_anon_update" ON "public"."regular_shift_submissions" FOR UPDATE TO "anon" USING (true) WITH CHECK (true);
+CREATE POLICY "regular_shift_submissions_teacher_own" ON "public"."regular_shift_submissions" TO "authenticated" USING (("user_id" = "auth"."uid"())) WITH CHECK (("user_id" = "auth"."uid"()));
 
 
 
-CREATE POLICY "regular_shift_submissions_auth" ON "public"."regular_shift_submissions" TO "authenticated" USING (true) WITH CHECK (true);
+ALTER TABLE "public"."schedule_change_logs" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "schedule_change_logs_school_scope_auth" ON "public"."schedule_change_logs" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
 ALTER TABLE "public"."schedule_closed_days" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "schedule_closed_days_allow_all_auth" ON "public"."schedule_closed_days" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "schedule_closed_days_school_scope_auth" ON "public"."schedule_closed_days" TO "authenticated" USING ((("school_id" IS NULL) OR "public"."check_school_access"("school_id"))) WITH CHECK ((("school_id" IS NULL) OR "public"."check_school_access"("school_id")));
+
+
+
+ALTER TABLE "public"."schedule_daily_booth_assignments" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "schedule_daily_booth_assignments_school_scope_auth" ON "public"."schedule_daily_booth_assignments" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
 ALTER TABLE "public"."schedule_entries" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "schedule_entries_allow_all_auth" ON "public"."schedule_entries" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "schedule_entries_school_scope_auth" ON "public"."schedule_entries" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
 ALTER TABLE "public"."schedule_generation_logs" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "schedule_generation_logs_allow_all_auth" ON "public"."schedule_generation_logs" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "schedule_generation_logs_school_scope_auth" ON "public"."schedule_generation_logs" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
+
+
+
+ALTER TABLE "public"."schedule_match_batches" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "schedule_match_batches_school_scope_auth" ON "public"."schedule_match_batches" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
+
+
+
+ALTER TABLE "public"."schedule_match_proposals" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "schedule_match_proposals_school_scope_auth" ON "public"."schedule_match_proposals" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
 ALTER TABLE "public"."schedule_regular_patterns" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "schedule_regular_patterns_allow_all_auth" ON "public"."schedule_regular_patterns" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "schedule_regular_patterns_school_scope_auth" ON "public"."schedule_regular_patterns" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
 ALTER TABLE "public"."schedule_time_slots" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "schedule_time_slots_allow_all_auth" ON "public"."schedule_time_slots" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "schedule_time_slots_anon_select" ON "public"."schedule_time_slots" FOR SELECT TO "anon" USING (("is_active" = true));
+
+
+
+CREATE POLICY "schedule_time_slots_school_scope_auth" ON "public"."schedule_time_slots" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
+
+
+
+ALTER TABLE "public"."school_class_capacity" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "school_class_capacity_school_scope_auth" ON "public"."school_class_capacity" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
+
+
+
+ALTER TABLE "public"."school_monthly_metrics" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "school_monthly_metrics_school_scope_auth" ON "public"."school_monthly_metrics" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
 ALTER TABLE "public"."schools" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "schools_allow_all_auth" ON "public"."schools" TO "authenticated" USING (true) WITH CHECK (true);
-
-
-
 CREATE POLICY "schools_anon_select" ON "public"."schools" FOR SELECT TO "anon" USING (true);
+
+
+
+CREATE POLICY "schools_school_scope_auth" ON "public"."schools" TO "authenticated" USING ("public"."check_school_access"("id")) WITH CHECK ("public"."check_school_access"("id"));
 
 
 
 ALTER TABLE "public"."seasonal_course_applications" ENABLE ROW LEVEL SECURITY;
 
 
+CREATE POLICY "seasonal_course_applications_school_scope_auth" ON "public"."seasonal_course_applications" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."seasonal_courses" "c"
+  WHERE (("c"."id" = "seasonal_course_applications"."course_id") AND "public"."check_school_access"("c"."school_id"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."seasonal_courses" "c"
+  WHERE (("c"."id" = "seasonal_course_applications"."course_id") AND "public"."check_school_access"("c"."school_id")))));
+
+
+
 ALTER TABLE "public"."seasonal_course_curriculum" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "seasonal_course_curriculum_school_scope_auth" ON "public"."seasonal_course_curriculum" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."seasonal_courses" "c"
+  WHERE (("c"."id" = "seasonal_course_curriculum"."course_id") AND "public"."check_school_access"("c"."school_id"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."seasonal_courses" "c"
+  WHERE (("c"."id" = "seasonal_course_curriculum"."course_id") AND "public"."check_school_access"("c"."school_id")))));
+
 
 
 ALTER TABLE "public"."seasonal_course_textbooks" ENABLE ROW LEVEL SECURITY;
 
 
+CREATE POLICY "seasonal_course_textbooks_school_scope_auth" ON "public"."seasonal_course_textbooks" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."seasonal_courses" "c"
+  WHERE (("c"."id" = "seasonal_course_textbooks"."course_id") AND "public"."check_school_access"("c"."school_id"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."seasonal_courses" "c"
+  WHERE (("c"."id" = "seasonal_course_textbooks"."course_id") AND "public"."check_school_access"("c"."school_id")))));
+
+
+
 ALTER TABLE "public"."seasonal_courses" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "seasonal_courses_school_scope_auth" ON "public"."seasonal_courses" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
+
+
+
+ALTER TABLE "public"."seasonal_proposal_units" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "seasonal_proposal_units_school_scope_auth" ON "public"."seasonal_proposal_units" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."seasonal_proposals" "p"
+  WHERE (("p"."id" = "seasonal_proposal_units"."proposal_id") AND "public"."check_school_access"("p"."school_id"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."seasonal_proposals" "p"
+  WHERE (("p"."id" = "seasonal_proposal_units"."proposal_id") AND "public"."check_school_access"("p"."school_id")))));
+
+
+
+ALTER TABLE "public"."seasonal_proposals" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "seasonal_proposals_school_scope_auth" ON "public"."seasonal_proposals" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
+
 
 
 ALTER TABLE "public"."seasonal_shift_settings" ENABLE ROW LEVEL SECURITY;
@@ -4316,117 +6607,176 @@ CREATE POLICY "seasonal_shift_settings_anon_select_published" ON "public"."seaso
 
 
 
-CREATE POLICY "seasonal_shift_settings_auth" ON "public"."seasonal_shift_settings" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "seasonal_shift_settings_school_scope_auth" ON "public"."seasonal_shift_settings" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
 ALTER TABLE "public"."seasonal_shift_slot_settings" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "seasonal_shift_slot_settings_anon_select" ON "public"."seasonal_shift_slot_settings" FOR SELECT TO "anon" USING (true);
+CREATE POLICY "seasonal_shift_slot_settings_school_scope_auth" ON "public"."seasonal_shift_slot_settings" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."seasonal_shift_settings" "s"
+  WHERE (("s"."id" = "seasonal_shift_slot_settings"."setting_id") AND "public"."check_school_access"("s"."school_id"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."seasonal_shift_settings" "s"
+  WHERE (("s"."id" = "seasonal_shift_slot_settings"."setting_id") AND "public"."check_school_access"("s"."school_id")))));
 
 
 
-CREATE POLICY "seasonal_shift_slot_settings_auth" ON "public"."seasonal_shift_slot_settings" TO "authenticated" USING (true) WITH CHECK (true);
+ALTER TABLE "public"."seasonal_shift_student_submission_slots" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "seasonal_shift_student_submission_slots_school_scope_auth" ON "public"."seasonal_shift_student_submission_slots" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."seasonal_shift_student_submissions" "p"
+  WHERE (("p"."id" = "seasonal_shift_student_submission_slots"."submission_id") AND "public"."check_school_access"("p"."school_id"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."seasonal_shift_student_submissions" "p"
+  WHERE (("p"."id" = "seasonal_shift_student_submission_slots"."submission_id") AND "public"."check_school_access"("p"."school_id")))));
 
 
 
-CREATE POLICY "seasonal_shift_slots_auth" ON "public"."seasonal_shift_submission_slots" TO "authenticated" USING (true) WITH CHECK (true);
+ALTER TABLE "public"."seasonal_shift_student_submissions" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "seasonal_shift_student_submissions_school_scope_auth" ON "public"."seasonal_shift_student_submissions" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
 ALTER TABLE "public"."seasonal_shift_submission_slots" ENABLE ROW LEVEL SECURITY;
 
 
+CREATE POLICY "seasonal_shift_submission_slots_school_scope_auth" ON "public"."seasonal_shift_submission_slots" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."seasonal_shift_submissions" "p"
+  WHERE (("p"."id" = "seasonal_shift_submission_slots"."submission_id") AND "public"."check_school_access"("p"."school_id"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."seasonal_shift_submissions" "p"
+  WHERE (("p"."id" = "seasonal_shift_submission_slots"."submission_id") AND "public"."check_school_access"("p"."school_id")))));
+
+
+
 ALTER TABLE "public"."seasonal_shift_submissions" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "seasonal_shift_submissions_auth" ON "public"."seasonal_shift_submissions" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "seasonal_shift_submissions_manager_all" ON "public"."seasonal_shift_submissions" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."user_profiles" "up"
+  WHERE (("up"."id" = "auth"."uid"()) AND ("up"."role" = ANY (ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text"])))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."user_profiles" "up"
+  WHERE (("up"."id" = "auth"."uid"()) AND ("up"."role" = ANY (ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text"]))))));
 
 
 
-CREATE POLICY "stock_txns_allow_all_auth" ON "public"."material_stock_transactions" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "seasonal_shift_submissions_school_restrict" ON "public"."seasonal_shift_submissions" AS RESTRICTIVE TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
+
+
+
+CREATE POLICY "seasonal_shift_submissions_teacher_own" ON "public"."seasonal_shift_submissions" TO "authenticated" USING (("user_id" = "auth"."uid"())) WITH CHECK (("user_id" = "auth"."uid"()));
 
 
 
 ALTER TABLE "public"."student_applications" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "student_applications_allow_all_auth" ON "public"."student_applications" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "student_applications_school_scope_auth" ON "public"."student_applications" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
 ALTER TABLE "public"."student_billings" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "student_billings_allow_all_auth" ON "public"."student_billings" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "student_billings_school_scope_auth" ON "public"."student_billings" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
 ALTER TABLE "public"."student_interviews" ENABLE ROW LEVEL SECURITY;
 
 
+CREATE POLICY "student_interviews_school_scope_auth" ON "public"."student_interviews" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
+
+
+
 ALTER TABLE "public"."student_logs" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "student_logs_allow_all_auth" ON "public"."student_logs" TO "authenticated" USING (true) WITH CHECK (true);
-
-
-
-CREATE POLICY "student_logs_insert_authenticated" ON "public"."student_logs" FOR INSERT TO "authenticated" WITH CHECK (true);
-
-
-
-CREATE POLICY "student_logs_select_authenticated" ON "public"."student_logs" FOR SELECT TO "authenticated" USING (true);
+CREATE POLICY "student_logs_school_scope_auth" ON "public"."student_logs" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
 ALTER TABLE "public"."student_progress" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "student_progress_allow_all_auth" ON "public"."student_progress" TO "authenticated" USING (true) WITH CHECK (true);
-
-
-
 ALTER TABLE "public"."student_progress_lessons" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "student_progress_lessons_allow_all_auth" ON "public"."student_progress_lessons" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "student_progress_lessons_school_scope_auth" ON "public"."student_progress_lessons" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM ("public"."student_progress" "sp"
+     JOIN "public"."student_textbooks" "st" ON (("st"."id" = "sp"."student_textbook_id")))
+  WHERE (("sp"."id" = "student_progress_lessons"."student_progress_id") AND "public"."check_school_access"("st"."school_id"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM ("public"."student_progress" "sp"
+     JOIN "public"."student_textbooks" "st" ON (("st"."id" = "sp"."student_textbook_id")))
+  WHERE (("sp"."id" = "student_progress_lessons"."student_progress_id") AND "public"."check_school_access"("st"."school_id")))));
+
+
+
+CREATE POLICY "student_progress_school_scope_auth" ON "public"."student_progress" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."student_textbooks" "st"
+  WHERE (("st"."id" = "student_progress"."student_textbook_id") AND "public"."check_school_access"("st"."school_id"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."student_textbooks" "st"
+  WHERE (("st"."id" = "student_progress"."student_textbook_id") AND "public"."check_school_access"("st"."school_id")))));
 
 
 
 ALTER TABLE "public"."student_subjects" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "student_subjects_allow_all_auth" ON "public"."student_subjects" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "student_subjects_school_scope_auth" ON "public"."student_subjects" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."students" "s"
+  WHERE (("s"."id" = "student_subjects"."student_id") AND "public"."check_school_access"("s"."school_id"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."students" "s"
+  WHERE (("s"."id" = "student_subjects"."student_id") AND "public"."check_school_access"("s"."school_id")))));
+
+
+
+ALTER TABLE "public"."student_textbook_exam_ranges" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "student_textbook_exam_ranges_school_scope_auth" ON "public"."student_textbook_exam_ranges" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."student_textbooks" "st"
+  WHERE (("st"."id" = "student_textbook_exam_ranges"."student_textbook_id") AND "public"."check_school_access"("st"."school_id"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."student_textbooks" "st"
+  WHERE (("st"."id" = "student_textbook_exam_ranges"."student_textbook_id") AND "public"."check_school_access"("st"."school_id")))));
 
 
 
 ALTER TABLE "public"."student_textbook_exams" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "student_textbook_exams_allow_all_auth" ON "public"."student_textbook_exams" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "student_textbook_exams_school_scope_auth" ON "public"."student_textbook_exams" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."student_textbooks" "st"
+  WHERE (("st"."id" = "student_textbook_exams"."student_textbook_id") AND "public"."check_school_access"("st"."school_id"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."student_textbooks" "st"
+  WHERE (("st"."id" = "student_textbook_exams"."student_textbook_id") AND "public"."check_school_access"("st"."school_id")))));
 
 
 
 ALTER TABLE "public"."student_textbook_settings" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "student_textbook_settings_allow_all_auth" ON "public"."student_textbook_settings" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "student_textbook_settings_school_scope_auth" ON "public"."student_textbook_settings" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."student_textbooks" "st"
+  WHERE (("st"."id" = "student_textbook_settings"."student_textbook_id") AND "public"."check_school_access"("st"."school_id"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."student_textbooks" "st"
+  WHERE (("st"."id" = "student_textbook_settings"."student_textbook_id") AND "public"."check_school_access"("st"."school_id")))));
 
 
 
 ALTER TABLE "public"."student_textbooks" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "student_textbooks_allow_all_auth" ON "public"."student_textbooks" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "student_textbooks_school_scope_auth" ON "public"."student_textbooks" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
 ALTER TABLE "public"."students" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "students_allow_all_auth" ON "public"."students" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "students_school_scope_auth" ON "public"."students" TO "authenticated" USING ("public"."check_student_access"("school_id")) WITH CHECK ("public"."check_student_access"("school_id"));
 
 
 
@@ -4444,15 +6794,149 @@ CREATE POLICY "subjects_anon_select" ON "public"."subjects" FOR SELECT TO "anon"
 ALTER TABLE "public"."system_settings" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "system_settings_allow_all_anon" ON "public"."system_settings" TO "anon" USING (true) WITH CHECK (true);
+CREATE POLICY "system_settings_select_auth" ON "public"."system_settings" FOR SELECT TO "authenticated" USING (true);
 
 
 
-CREATE POLICY "system_settings_allow_all_auth" ON "public"."system_settings" TO "authenticated" USING (true) WITH CHECK (true);
+CREATE POLICY "system_settings_write_manager" ON "public"."system_settings" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."user_profiles" "up"
+  WHERE (("up"."id" = "auth"."uid"()) AND ("up"."role" = ANY (ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text"])))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."user_profiles" "up"
+  WHERE (("up"."id" = "auth"."uid"()) AND ("up"."role" = ANY (ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text"]))))));
 
 
 
-CREATE POLICY "system_settings_anon_select" ON "public"."system_settings" FOR SELECT TO "anon" USING (true);
+ALTER TABLE "public"."teacher_absences" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "teacher_absences_manager_all" ON "public"."teacher_absences" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."user_profiles" "up"
+  WHERE (("up"."id" = "auth"."uid"()) AND ("up"."role" = ANY (ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text"])))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."user_profiles" "up"
+  WHERE (("up"."id" = "auth"."uid"()) AND ("up"."role" = ANY (ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text"]))))));
+
+
+
+CREATE POLICY "teacher_absences_own" ON "public"."teacher_absences" TO "authenticated" USING (("user_id" = "auth"."uid"())) WITH CHECK (("user_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "teacher_absences_school_restrict" ON "public"."teacher_absences" AS RESTRICTIVE TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
+
+
+
+ALTER TABLE "public"."teacher_availability_periods" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "teacher_availability_periods_manager_all" ON "public"."teacher_availability_periods" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."user_profiles" "up"
+  WHERE (("up"."id" = "auth"."uid"()) AND ("up"."role" = ANY (ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text"])))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."user_profiles" "up"
+  WHERE (("up"."id" = "auth"."uid"()) AND ("up"."role" = ANY (ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text"]))))));
+
+
+
+CREATE POLICY "teacher_availability_periods_own" ON "public"."teacher_availability_periods" TO "authenticated" USING (("user_id" = "auth"."uid"())) WITH CHECK (("user_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "teacher_availability_periods_school_restrict" ON "public"."teacher_availability_periods" AS RESTRICTIVE TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
+
+
+
+ALTER TABLE "public"."teacher_badge_assignments" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "teacher_badge_assignments_delete" ON "public"."teacher_badge_assignments" FOR DELETE TO "authenticated" USING ("public"."check_user_role"(ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text"]));
+
+
+
+CREATE POLICY "teacher_badge_assignments_manager_all" ON "public"."teacher_badge_assignments" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."user_profiles" "up"
+  WHERE (("up"."id" = "auth"."uid"()) AND ("up"."role" = ANY (ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text"])))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."user_profiles" "up"
+  WHERE (("up"."id" = "auth"."uid"()) AND ("up"."role" = ANY (ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text"]))))));
+
+
+
+CREATE POLICY "teacher_badge_assignments_own_read" ON "public"."teacher_badge_assignments" FOR SELECT TO "authenticated" USING (("teacher_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "teacher_badge_assignments_update" ON "public"."teacher_badge_assignments" FOR UPDATE TO "authenticated" USING ("public"."check_user_role"(ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text"]));
+
+
+
+ALTER TABLE "public"."teacher_badges" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "teacher_badges_delete" ON "public"."teacher_badges" FOR DELETE TO "authenticated" USING ("public"."check_user_role"(ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text"]));
+
+
+
+CREATE POLICY "teacher_badges_insert" ON "public"."teacher_badges" FOR INSERT TO "authenticated" WITH CHECK ("public"."check_user_role"(ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text"]));
+
+
+
+CREATE POLICY "teacher_badges_select" ON "public"."teacher_badges" FOR SELECT TO "authenticated" USING (true);
+
+
+
+CREATE POLICY "teacher_badges_update" ON "public"."teacher_badges" FOR UPDATE TO "authenticated" USING ("public"."check_user_role"(ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text"]));
+
+
+
+ALTER TABLE "public"."teacher_trainings" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "teacher_trainings_delete" ON "public"."teacher_trainings" FOR DELETE TO "authenticated" USING ("public"."check_user_role"(ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text"]));
+
+
+
+CREATE POLICY "teacher_trainings_manager_all" ON "public"."teacher_trainings" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."user_profiles" "up"
+  WHERE (("up"."id" = "auth"."uid"()) AND ("up"."role" = ANY (ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text"])))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."user_profiles" "up"
+  WHERE (("up"."id" = "auth"."uid"()) AND ("up"."role" = ANY (ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text"]))))));
+
+
+
+CREATE POLICY "teacher_trainings_own_read" ON "public"."teacher_trainings" FOR SELECT TO "authenticated" USING (("teacher_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "teacher_trainings_update" ON "public"."teacher_trainings" FOR UPDATE TO "authenticated" USING ("public"."check_user_role"(ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text"]));
+
+
+
+ALTER TABLE "public"."test_prep_proposal_subjects" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "test_prep_proposal_subjects_school_scope_auth" ON "public"."test_prep_proposal_subjects" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."test_prep_proposals" "p"
+  WHERE (("p"."id" = "test_prep_proposal_subjects"."proposal_id") AND "public"."check_school_access"("p"."school_id"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."test_prep_proposals" "p"
+  WHERE (("p"."id" = "test_prep_proposal_subjects"."proposal_id") AND "public"."check_school_access"("p"."school_id")))));
+
+
+
+ALTER TABLE "public"."test_prep_proposal_units" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "test_prep_proposal_units_school_scope_auth" ON "public"."test_prep_proposal_units" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM ("public"."test_prep_proposal_subjects" "s"
+     JOIN "public"."test_prep_proposals" "p" ON (("p"."id" = "s"."proposal_id")))
+  WHERE (("s"."id" = "test_prep_proposal_units"."subject_id") AND "public"."check_school_access"("p"."school_id"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM ("public"."test_prep_proposal_subjects" "s"
+     JOIN "public"."test_prep_proposals" "p" ON (("p"."id" = "s"."proposal_id")))
+  WHERE (("s"."id" = "test_prep_proposal_units"."subject_id") AND "public"."check_school_access"("p"."school_id")))));
+
+
+
+ALTER TABLE "public"."test_prep_proposals" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "test_prep_proposals_school_scope_auth" ON "public"."test_prep_proposals" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
 
 
 
@@ -4463,6 +6947,32 @@ CREATE POLICY "textbooks_allow_all_auth" ON "public"."textbooks" TO "authenticat
 
 
 
+ALTER TABLE "public"."training_masters" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "training_masters_delete" ON "public"."training_masters" FOR DELETE TO "authenticated" USING ("public"."check_user_role"(ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text"]));
+
+
+
+CREATE POLICY "training_masters_insert" ON "public"."training_masters" FOR INSERT TO "authenticated" WITH CHECK ("public"."check_user_role"(ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text"]));
+
+
+
+CREATE POLICY "training_masters_select" ON "public"."training_masters" FOR SELECT TO "authenticated" USING (true);
+
+
+
+CREATE POLICY "training_masters_update" ON "public"."training_masters" FOR UPDATE TO "authenticated" USING ("public"."check_user_role"(ARRAY['admin'::"text", 'owner'::"text", 'manager'::"text"]));
+
+
+
+ALTER TABLE "public"."transfer_notifications" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "transfer_notifications_school_scope_auth" ON "public"."transfer_notifications" TO "authenticated" USING ("public"."check_school_access"("school_id")) WITH CHECK ("public"."check_school_access"("school_id"));
+
+
+
 ALTER TABLE "public"."user_invitations" ENABLE ROW LEVEL SECURITY;
 
 
@@ -4470,6 +6980,13 @@ ALTER TABLE "public"."user_profiles" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."user_schools" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."user_textbook_favorites" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "user_textbook_favorites_self" ON "public"."user_textbook_favorites" USING (("auth"."uid"() = "user_id")) WITH CHECK (("auth"."uid"() = "user_id"));
+
 
 
 GRANT USAGE ON SCHEMA "public" TO "postgres";
@@ -4503,6 +7020,24 @@ GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "service_role";
 
 
 
+GRANT ALL ON FUNCTION "public"."reassign_slot_numbers"("p_school_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."reassign_slot_numbers"("p_school_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."reassign_slot_numbers"("p_school_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."reorder_time_slots"("p_school_id" "uuid", "p_ordered_ids" "uuid"[]) TO "anon";
+GRANT ALL ON FUNCTION "public"."reorder_time_slots"("p_school_id" "uuid", "p_ordered_ids" "uuid"[]) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."reorder_time_slots"("p_school_id" "uuid", "p_ordered_ids" "uuid"[]) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."set_updated_at_teacher_availability_periods"() TO "anon";
+GRANT ALL ON FUNCTION "public"."set_updated_at_teacher_availability_periods"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."set_updated_at_teacher_availability_periods"() TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."update_attendance_updated_at"() TO "anon";
 GRANT ALL ON FUNCTION "public"."update_attendance_updated_at"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."update_attendance_updated_at"() TO "service_role";
@@ -4527,6 +7062,12 @@ GRANT ALL ON FUNCTION "public"."update_updated_at_column"() TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."action_goals" TO "anon";
+GRANT ALL ON TABLE "public"."action_goals" TO "authenticated";
+GRANT ALL ON TABLE "public"."action_goals" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."admin_audit_logs" TO "anon";
 GRANT ALL ON TABLE "public"."admin_audit_logs" TO "authenticated";
 GRANT ALL ON TABLE "public"."admin_audit_logs" TO "service_role";
@@ -4539,6 +7080,12 @@ GRANT ALL ON TABLE "public"."alert_dismissals" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."alert_settings" TO "anon";
+GRANT ALL ON TABLE "public"."alert_settings" TO "authenticated";
+GRANT ALL ON TABLE "public"."alert_settings" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."application_items" TO "anon";
 GRANT ALL ON TABLE "public"."application_items" TO "authenticated";
 GRANT ALL ON TABLE "public"."application_items" TO "service_role";
@@ -4548,6 +7095,12 @@ GRANT ALL ON TABLE "public"."application_items" TO "service_role";
 GRANT ALL ON TABLE "public"."assessment_scores" TO "anon";
 GRANT ALL ON TABLE "public"."assessment_scores" TO "authenticated";
 GRANT ALL ON TABLE "public"."assessment_scores" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."assessment_subjects" TO "anon";
+GRANT ALL ON TABLE "public"."assessment_subjects" TO "authenticated";
+GRANT ALL ON TABLE "public"."assessment_subjects" TO "service_role";
 
 
 
@@ -4608,6 +7161,12 @@ GRANT ALL ON TABLE "public"."bulletin_posts" TO "service_role";
 GRANT ALL ON TABLE "public"."bulletin_reads" TO "anon";
 GRANT ALL ON TABLE "public"."bulletin_reads" TO "authenticated";
 GRANT ALL ON TABLE "public"."bulletin_reads" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."class_reports" TO "anon";
+GRANT ALL ON TABLE "public"."class_reports" TO "authenticated";
+GRANT ALL ON TABLE "public"."class_reports" TO "service_role";
 
 
 
@@ -4713,9 +7272,57 @@ GRANT ALL ON TABLE "public"."google_calendar_tokens" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."inquiries" TO "anon";
+GRANT ALL ON TABLE "public"."inquiries" TO "authenticated";
+GRANT ALL ON TABLE "public"."inquiries" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."inquiry_booking_tokens" TO "anon";
+GRANT ALL ON TABLE "public"."inquiry_booking_tokens" TO "authenticated";
+GRANT ALL ON TABLE "public"."inquiry_booking_tokens" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."inquiry_contacts" TO "anon";
+GRANT ALL ON TABLE "public"."inquiry_contacts" TO "authenticated";
+GRANT ALL ON TABLE "public"."inquiry_contacts" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."inquiry_import_tokens" TO "anon";
+GRANT ALL ON TABLE "public"."inquiry_import_tokens" TO "authenticated";
+GRANT ALL ON TABLE "public"."inquiry_import_tokens" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."inquiry_mail_logs" TO "anon";
+GRANT ALL ON TABLE "public"."inquiry_mail_logs" TO "authenticated";
+GRANT ALL ON TABLE "public"."inquiry_mail_logs" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."inquiry_mail_templates" TO "anon";
+GRANT ALL ON TABLE "public"."inquiry_mail_templates" TO "authenticated";
+GRANT ALL ON TABLE "public"."inquiry_mail_templates" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."inquiry_school_settings" TO "anon";
+GRANT ALL ON TABLE "public"."inquiry_school_settings" TO "authenticated";
+GRANT ALL ON TABLE "public"."inquiry_school_settings" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."koushu_enrollments" TO "anon";
 GRANT ALL ON TABLE "public"."koushu_enrollments" TO "authenticated";
 GRANT ALL ON TABLE "public"."koushu_enrollments" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."lesson_report_units" TO "anon";
+GRANT ALL ON TABLE "public"."lesson_report_units" TO "authenticated";
+GRANT ALL ON TABLE "public"."lesson_report_units" TO "service_role";
 
 
 
@@ -4761,9 +7368,27 @@ GRANT ALL ON TABLE "public"."monthly_tasks" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."notta_transcripts" TO "anon";
+GRANT ALL ON TABLE "public"."notta_transcripts" TO "authenticated";
+GRANT ALL ON TABLE "public"."notta_transcripts" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."portal_menu" TO "anon";
 GRANT ALL ON TABLE "public"."portal_menu" TO "authenticated";
 GRANT ALL ON TABLE "public"."portal_menu" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."progress_sessions" TO "anon";
+GRANT ALL ON TABLE "public"."progress_sessions" TO "authenticated";
+GRANT ALL ON TABLE "public"."progress_sessions" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."push_subscriptions" TO "anon";
+GRANT ALL ON TABLE "public"."push_subscriptions" TO "authenticated";
+GRANT ALL ON TABLE "public"."push_subscriptions" TO "service_role";
 
 
 
@@ -4791,9 +7416,21 @@ GRANT ALL ON TABLE "public"."regular_shift_submissions" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."schedule_change_logs" TO "anon";
+GRANT ALL ON TABLE "public"."schedule_change_logs" TO "authenticated";
+GRANT ALL ON TABLE "public"."schedule_change_logs" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."schedule_closed_days" TO "anon";
 GRANT ALL ON TABLE "public"."schedule_closed_days" TO "authenticated";
 GRANT ALL ON TABLE "public"."schedule_closed_days" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."schedule_daily_booth_assignments" TO "anon";
+GRANT ALL ON TABLE "public"."schedule_daily_booth_assignments" TO "authenticated";
+GRANT ALL ON TABLE "public"."schedule_daily_booth_assignments" TO "service_role";
 
 
 
@@ -4809,6 +7446,18 @@ GRANT ALL ON TABLE "public"."schedule_generation_logs" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."schedule_match_batches" TO "anon";
+GRANT ALL ON TABLE "public"."schedule_match_batches" TO "authenticated";
+GRANT ALL ON TABLE "public"."schedule_match_batches" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."schedule_match_proposals" TO "anon";
+GRANT ALL ON TABLE "public"."schedule_match_proposals" TO "authenticated";
+GRANT ALL ON TABLE "public"."schedule_match_proposals" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."schedule_regular_patterns" TO "anon";
 GRANT ALL ON TABLE "public"."schedule_regular_patterns" TO "authenticated";
 GRANT ALL ON TABLE "public"."schedule_regular_patterns" TO "service_role";
@@ -4818,6 +7467,18 @@ GRANT ALL ON TABLE "public"."schedule_regular_patterns" TO "service_role";
 GRANT ALL ON TABLE "public"."schedule_time_slots" TO "anon";
 GRANT ALL ON TABLE "public"."schedule_time_slots" TO "authenticated";
 GRANT ALL ON TABLE "public"."schedule_time_slots" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."school_class_capacity" TO "anon";
+GRANT ALL ON TABLE "public"."school_class_capacity" TO "authenticated";
+GRANT ALL ON TABLE "public"."school_class_capacity" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."school_monthly_metrics" TO "anon";
+GRANT ALL ON TABLE "public"."school_monthly_metrics" TO "authenticated";
+GRANT ALL ON TABLE "public"."school_monthly_metrics" TO "service_role";
 
 
 
@@ -4851,6 +7512,18 @@ GRANT ALL ON TABLE "public"."seasonal_courses" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."seasonal_proposal_units" TO "anon";
+GRANT ALL ON TABLE "public"."seasonal_proposal_units" TO "authenticated";
+GRANT ALL ON TABLE "public"."seasonal_proposal_units" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."seasonal_proposals" TO "anon";
+GRANT ALL ON TABLE "public"."seasonal_proposals" TO "authenticated";
+GRANT ALL ON TABLE "public"."seasonal_proposals" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."seasonal_shift_settings" TO "anon";
 GRANT ALL ON TABLE "public"."seasonal_shift_settings" TO "authenticated";
 GRANT ALL ON TABLE "public"."seasonal_shift_settings" TO "service_role";
@@ -4860,6 +7533,18 @@ GRANT ALL ON TABLE "public"."seasonal_shift_settings" TO "service_role";
 GRANT ALL ON TABLE "public"."seasonal_shift_slot_settings" TO "anon";
 GRANT ALL ON TABLE "public"."seasonal_shift_slot_settings" TO "authenticated";
 GRANT ALL ON TABLE "public"."seasonal_shift_slot_settings" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."seasonal_shift_student_submission_slots" TO "anon";
+GRANT ALL ON TABLE "public"."seasonal_shift_student_submission_slots" TO "authenticated";
+GRANT ALL ON TABLE "public"."seasonal_shift_student_submission_slots" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."seasonal_shift_student_submissions" TO "anon";
+GRANT ALL ON TABLE "public"."seasonal_shift_student_submissions" TO "authenticated";
+GRANT ALL ON TABLE "public"."seasonal_shift_student_submissions" TO "service_role";
 
 
 
@@ -4917,6 +7602,12 @@ GRANT ALL ON TABLE "public"."student_subjects" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."student_textbook_exam_ranges" TO "anon";
+GRANT ALL ON TABLE "public"."student_textbook_exam_ranges" TO "authenticated";
+GRANT ALL ON TABLE "public"."student_textbook_exam_ranges" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."student_textbook_exams" TO "anon";
 GRANT ALL ON TABLE "public"."student_textbook_exams" TO "authenticated";
 GRANT ALL ON TABLE "public"."student_textbook_exams" TO "service_role";
@@ -4953,6 +7644,54 @@ GRANT ALL ON TABLE "public"."system_settings" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."teacher_absences" TO "anon";
+GRANT ALL ON TABLE "public"."teacher_absences" TO "authenticated";
+GRANT ALL ON TABLE "public"."teacher_absences" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."teacher_availability_periods" TO "anon";
+GRANT ALL ON TABLE "public"."teacher_availability_periods" TO "authenticated";
+GRANT ALL ON TABLE "public"."teacher_availability_periods" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."teacher_badge_assignments" TO "anon";
+GRANT ALL ON TABLE "public"."teacher_badge_assignments" TO "authenticated";
+GRANT ALL ON TABLE "public"."teacher_badge_assignments" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."teacher_badges" TO "anon";
+GRANT ALL ON TABLE "public"."teacher_badges" TO "authenticated";
+GRANT ALL ON TABLE "public"."teacher_badges" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."teacher_trainings" TO "anon";
+GRANT ALL ON TABLE "public"."teacher_trainings" TO "authenticated";
+GRANT ALL ON TABLE "public"."teacher_trainings" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."test_prep_proposal_subjects" TO "anon";
+GRANT ALL ON TABLE "public"."test_prep_proposal_subjects" TO "authenticated";
+GRANT ALL ON TABLE "public"."test_prep_proposal_subjects" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."test_prep_proposal_units" TO "anon";
+GRANT ALL ON TABLE "public"."test_prep_proposal_units" TO "authenticated";
+GRANT ALL ON TABLE "public"."test_prep_proposal_units" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."test_prep_proposals" TO "anon";
+GRANT ALL ON TABLE "public"."test_prep_proposals" TO "authenticated";
+GRANT ALL ON TABLE "public"."test_prep_proposals" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."textbooks" TO "anon";
 GRANT ALL ON TABLE "public"."textbooks" TO "authenticated";
 GRANT ALL ON TABLE "public"."textbooks" TO "service_role";
@@ -4962,6 +7701,18 @@ GRANT ALL ON TABLE "public"."textbooks" TO "service_role";
 GRANT ALL ON SEQUENCE "public"."textbooks_id_seq" TO "anon";
 GRANT ALL ON SEQUENCE "public"."textbooks_id_seq" TO "authenticated";
 GRANT ALL ON SEQUENCE "public"."textbooks_id_seq" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."training_masters" TO "anon";
+GRANT ALL ON TABLE "public"."training_masters" TO "authenticated";
+GRANT ALL ON TABLE "public"."training_masters" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."transfer_notifications" TO "anon";
+GRANT ALL ON TABLE "public"."transfer_notifications" TO "authenticated";
+GRANT ALL ON TABLE "public"."transfer_notifications" TO "service_role";
 
 
 
@@ -4980,6 +7731,12 @@ GRANT ALL ON TABLE "public"."user_profiles" TO "service_role";
 GRANT ALL ON TABLE "public"."user_schools" TO "anon";
 GRANT ALL ON TABLE "public"."user_schools" TO "authenticated";
 GRANT ALL ON TABLE "public"."user_schools" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."user_textbook_favorites" TO "anon";
+GRANT ALL ON TABLE "public"."user_textbook_favorites" TO "authenticated";
+GRANT ALL ON TABLE "public"."user_textbook_favorites" TO "service_role";
 
 
 
