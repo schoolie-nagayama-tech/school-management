@@ -16,8 +16,10 @@ import { useMasterData } from '@/contexts/MasterDataContext';
 import AccessDenied from '@/components/AccessDenied';
 import {
   getInquiries,
+  updateInquiry,
   type InquiryFilters,
 } from '@/lib/api/inquiries';
+import { toast } from 'sonner';
 import type { Inquiry, InquiryStatus } from '@/types/database';
 import {
   STATUS_CONFIG,
@@ -39,6 +41,35 @@ export default function InquiriesPage() {
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
+  // インラインでステータス更新中の問合せID（連打防止・disabled用）
+  const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null);
+
+  // ---- 一覧でステータスをその場で切り替える ----
+  // 行クリックの遷移とは独立。楽観更新し、失敗時は元に戻してトースト表示する。
+  const handleInlineStatusChange = useCallback(
+    async (inquiry: Inquiry, newStatus: InquiryStatus) => {
+      if (newStatus === inquiry.status) return;
+      const prevStatus = inquiry.status;
+      // 楽観更新
+      setInquiries((list) =>
+        list.map((q) => (q.id === inquiry.id ? { ...q, status: newStatus } : q))
+      );
+      setStatusUpdatingId(inquiry.id);
+      try {
+        await updateInquiry(inquiry.id, { status: newStatus });
+        toast.success(`「${STATUS_CONFIG[newStatus].label}」に変更しました`);
+      } catch (err) {
+        // 失敗したら元のステータスに戻す
+        setInquiries((list) =>
+          list.map((q) => (q.id === inquiry.id ? { ...q, status: prevStatus } : q))
+        );
+        toast.error(getUserErrorMessage(err, 'ステータスの変更に失敗しました'));
+      } finally {
+        setStatusUpdatingId(null);
+      }
+    },
+    []
+  );
 
   // ---- フィルタ状態 ----
   const [filterStatus, setFilterStatus] = useState<InquiryStatus | 'all'>('all');
@@ -422,10 +453,27 @@ export default function InquiriesPage() {
                         <td className="border border-border px-3 py-2.5 text-text-body">
                           {inquiry.request_type ?? '—'}
                         </td>
-                        <td className="border border-border px-3 py-2.5 text-center">
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${sc.className}`}>
-                            {sc.label}
-                          </span>
+                        {/* ステータスはその場でプルダウン切替（行クリックの遷移は止める） */}
+                        <td
+                          className="border border-border px-3 py-2.5 text-center"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <select
+                            value={inquiry.status}
+                            disabled={statusUpdatingId === inquiry.id}
+                            onClick={(e) => e.stopPropagation()}
+                            onChange={(e) =>
+                              handleInlineStatusChange(inquiry, e.target.value as InquiryStatus)
+                            }
+                            className={`px-2 py-1 rounded-full text-xs font-medium border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-60 ${sc.className}`}
+                            aria-label="ステータスを変更"
+                          >
+                            {(Object.keys(STATUS_CONFIG) as InquiryStatus[]).map((s) => (
+                              <option key={s} value={s}>
+                                {STATUS_CONFIG[s].label}
+                              </option>
+                            ))}
+                          </select>
                         </td>
                       </tr>
                     );
