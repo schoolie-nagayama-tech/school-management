@@ -197,7 +197,21 @@ export async function getStudentTextbooks(
 export async function createStudentTextbook(
   studentTextbook: StudentTextbookInsert
 ): Promise<StudentTextbook> {
-  const schoolId = getDefaultSchoolId();
+  // 呼び出し側が渡した school_id（＝生徒の所属校）を尊重する。
+  // 以前は常に getDefaultSchoolId()（デフォルト教室）で上書きしており、
+  // 別校所属の生徒の所持教材が「デフォルト教室」の school_id で作られ、
+  // 講師は user_schools に無いデフォルト教室を check_school_access で弾かれて
+  // 所持教材が見えなくなっていた。未指定時のみ生徒レコードから所属校を引き、
+  // それも取れなければ最終フォールバックでデフォルト教室にする。
+  let schoolId = studentTextbook.school_id;
+  if (!schoolId) {
+    const { data: student } = await supabase
+      .from('students')
+      .select('school_id')
+      .eq('id', studentTextbook.student_id)
+      .single();
+    schoolId = (student as { school_id: string } | null)?.school_id ?? getDefaultSchoolId();
+  }
   const { data, error } = await supabase
     .from('student_textbooks')
     .insert({ ...studentTextbook, school_id: schoolId })
