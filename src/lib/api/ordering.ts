@@ -8,7 +8,7 @@ import type {
 import { getDefaultSchoolId } from './schools';
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { createBillingItem } from '@/lib/api/billing';
-import { createStockTransaction } from '@/lib/api/inventory';
+import { createStockTransaction, createMaterial } from '@/lib/api/inventory';
 
 interface OrderFilters {
   status?: string;
@@ -189,23 +189,33 @@ export async function getProposalOrderCandidates(
     }
   }
 
-  // テキスト → 発注教材の解決（material_id 優先、無ければ「名前 | 学年 | 科目」で照合）
-  const resolveMaterialId = (textbookId: number, fallback: string | null): string | null => {
+  // テキスト → 発注教材ラベル。発注ページの formatTextbookLabel と同形式
+  // （名前 | [出版社 |] 学年 | 科目）。既存 material が無くても、このラベルで
+  // 発注時に material を作成して発注できる（発注ページと同じ挙動）。
+  const labelOf = (textbookId: number): string | null => {
+    const tb = tbDetail.get(textbookId);
+    if (!tb || !tb.name) return null;
+    const parts: string[] = [tb.name];
+    if (tb.publisher) parts.push(tb.publisher);
+    if (tb.grade) parts.push(tb.grade);
+    if (tb.subject) parts.push(tb.subject);
+    return parts.join(' | ');
+  };
+  // 既存 material の解決（material_id 優先、無ければラベル名で照合）。無ければ null（発注時に作成）。
+  const resolveExistingMaterialId = (textbookId: number, fallback: string | null): string | null => {
     const tb = tbDetail.get(textbookId);
     if (tb?.material_id) return tb.material_id;
-    if (!tb || !tb.grade || !tb.subject) return fallback;
-    const base = `${tb.name} | ${tb.grade} | ${tb.subject}`;
-    if (matIdByName.has(base)) return matIdByName.get(base)!;
-    if (tb.publisher) {
-      const withPub = `${tb.name} | ${tb.publisher} | ${tb.grade} | ${tb.subject}`;
-      if (matIdByName.has(withPub)) return matIdByName.get(withPub)!;
-    }
+    const label = labelOf(textbookId);
+    if (label && matIdByName.has(label)) return matIdByName.get(label)!;
     return fallback;
   };
 
-  // input ごとに発注教材を解決
-  const resolvedByInput = inputs.map((i) => resolveMaterialId(i.textbookId, i.materialId));
-  const materialIds = Array.from(new Set(resolvedByInput.filter((m): m is string => !!m)));
+  // input ごとに「既存material / ラベル」を解決
+  const perInput = inputs.map((i) => ({
+    existingId: resolveExistingMaterialId(i.textbookId, i.materialId),
+    label: labelOf(i.textbookId),
+  }));
+  const materialIds = Array.from(new Set(perInput.map((p) => p.existingId).filter((m): m is string => !!m)));
 
   // 物理所持テキストのみを「所持」とみなす（発注/手動登録由来 = track_progress=false）。
   // 提案書公開由来(track_progress=true)は進捗管理用で物理的な所持ではないため発注対象に含める
@@ -239,14 +249,18 @@ export async function getProposalOrderCandidates(
   }
 
   return inputs.map((i, idx) => {
-    const materialId = resolvedByInput[idx];
+    const { existingId, label } = perInput[idx];
     const alreadyOwned = ownedSet.has(`${i.studentId}:${i.textbookId}`);
-    const hasOrder = !!materialId && orderedSet.has(`${i.studentId}:${materialId}`);
-    const needsOrder = !!materialId && !alreadyOwned && !hasOrder;
+    const hasOrder = !!existingId && orderedSet.has(`${i.studentId}:${existingId}`);
+    // 発注教材ラベルが作れる（=テキスト名がある）なら、material が無くても発注可能（発注時に作成）。
+    // 未所持(物理) かつ 既存発注なし のものを発注対象とする。
+    const needsOrder = !!label && !alreadyOwned && !hasOrder;
     return {
       ...i,
-      materialId,
-      materialName: materialId ? matNameById.get(materialId) ?? null : null,
+      // 既存があればその id、無ければ null（発注時に label から作成）
+      materialId: existingId,
+      // 表示・作成に使う教材名（既存があればその名、無ければラベル）
+      materialName: existingId ? matNameById.get(existingId) ?? label : label,
       alreadyOwned,
       hasOrder,
       needsOrder,
@@ -256,10 +270,11 @@ export async function getProposalOrderCandidates(
 
 /**
  * 発注候補から material_orders を作成し、そのまま「発注済(ordered)」まで進める。
- * 公開ダイアログでユーザーが明示的に選んだ確定発注なので要確認(unconfirmed)で止めず、
+ * 発注ページと同じく、対応する material が無ければ materialName(ラベル)で material を作成してから発注する
+ * （提案書のテキストはすべて発注できる）。
  * updateOrderStatus('ordered') を呼んで ordered_at と所持教材登録(registerStudentTextbook)まで実行する。
  * （発注→所持教材の流れを維持。請求連携は配布時のみなのでここでは発生しない）
- * 各候補は materialId と schoolId が必須。失敗は件数で返す。
+ * schoolId と materialName が必須。失敗は件数で返す。
  */
 export async function createOrdersForCandidates(
   candidates: OrderCandidate[]
@@ -267,14 +282,35 @@ export async function createOrdersForCandidates(
   let success = 0;
   let failed = 0;
   for (const c of candidates) {
-    if (!c.materialId || !c.schoolId) {
+    if (!c.schoolId || !c.materialName) {
       failed++;
       continue;
     }
     try {
+      // 発注教材を解決。既存があればそれ、無ければラベル名で作成（発注ページと同じ get-or-create）。
+      let materialId = c.materialId;
+      if (!materialId) {
+        const { data: existing } = await supabase
+          .from('materials')
+          .select('id')
+          .eq('name', c.materialName)
+          .eq('school_id', c.schoolId)
+          .limit(1)
+          .maybeSingle();
+        if (existing) {
+          materialId = (existing as { id: string }).id;
+        } else {
+          const created = await createMaterial(
+            { name: c.materialName, category: 'テキスト', unit: '冊' },
+            c.schoolId
+          );
+          materialId = created.id;
+        }
+      }
+
       const created = await createOrder(
         {
-          material_id: c.materialId,
+          material_id: materialId,
           student_id: c.studentId,
           quantity: 1,
           notes: `提案書公開による発注（${c.textbookName}）`,
@@ -283,12 +319,12 @@ export async function createOrdersForCandidates(
       );
       // 確認済みとして即「発注済」に進める（所持教材にも登録される）
       await updateOrderStatus(created.id, 'ordered');
-      // 名前照合で解決した発注教材をテキストに永続紐付け（次回から即マッチ・自動候補に）。
+      // 発注に使った教材をテキストに永続紐付け（次回から即マッチ・自動候補に）。
       // 既に紐付け済み(material_id 非null)は触らない。リンク保存失敗は致命的でないので無視。
       try {
         await supabase
           .from('textbooks')
-          .update({ material_id: c.materialId })
+          .update({ material_id: materialId })
           .eq('id', c.textbookId)
           .is('material_id', null);
       } catch (linkErr) {
@@ -589,12 +625,15 @@ export interface StudentTextbook {
   orderedAt: string | null;
 }
 
-export async function getStudentTextbooks(studentId: string): Promise<StudentTextbook[]> {
+export async function getStudentTextbooks(
+  studentId: string,
+  statuses: OrderStatus[] = ['distributed']
+): Promise<StudentTextbook[]> {
   const { data, error } = await supabase
     .from('material_orders')
     .select('id, quantity, status, ordered_at, materials(name)')
     .eq('student_id', studentId)
-    .eq('status', 'distributed')
+    .in('status', statuses)
     .order('created_at', { ascending: false });
 
   if (error) {

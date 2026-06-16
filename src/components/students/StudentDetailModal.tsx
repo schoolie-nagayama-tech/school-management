@@ -93,7 +93,8 @@ export function StudentDetailModal({
     const [rows, masters, distributed] = await Promise.all([
       getStudentTextbooksForProgress(studentId).catch(() => []),
       getTextbooks().catch(() => []),
-      getDistributedMaterials(studentId).catch(() => []),
+      // 発注したら所持教材に出す。配布済だけでなく発注済・発送済も含める。
+      getDistributedMaterials(studentId, ['ordered', 'delivered', 'distributed']).catch(() => []),
     ]);
     setTextbooks(rows);
     setAvailableTextbooks(masters);
@@ -242,6 +243,90 @@ export function StudentDetailModal({
     }
   };
 
+  // 所持教材リストの1行レンダリング（所持教材・進行表セクションで共用）
+  const renderTextbookRow = (tb: typeof textbooks[number]) => {
+    const tracked = (tb as { track_progress?: boolean }).track_progress ?? false;
+    return (
+      <div
+        key={tb.id}
+        className="flex items-center justify-between px-3 py-1.5 bg-white rounded-lg border border-[#e5e7eb]"
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-sm text-[#1f2937] truncate">
+            {tb.textbook
+              ? [tb.textbook.school_type, tb.textbook.grade, tb.textbook.subject, tb.textbook.name, tb.textbook.publisher].filter(Boolean).join(' / ')
+              : '（不明な教材）'}
+          </span>
+          {tb.season && (
+            <span className="text-[10px] text-[#4b5563] bg-gray-100 px-1.5 py-0.5 rounded">
+              {tb.season === 'spring' ? '春期' : tb.season === 'summer' ? '夏期' : '冬期'}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {!isTeacher && (
+            <label
+              className="flex items-center gap-1 text-[11px] text-[#4b5563] cursor-pointer select-none"
+              title="進行表ページに表示するか"
+            >
+              <input
+                type="checkbox"
+                checked={tracked}
+                onChange={async (e) => {
+                  const next = e.target.checked;
+                  setTextbooks((prev) =>
+                    prev.map((row) =>
+                      row.id === tb.id ? { ...row, track_progress: next } as typeof row : row
+                    )
+                  );
+                  try {
+                    await updateStudentTextbook(tb.id, { track_progress: next });
+                  } catch (err) {
+                    console.error('track_progress 更新失敗:', err);
+                    if (student) await loadTextbooks(student.id);
+                  }
+                }}
+                className="w-3.5 h-3.5 accent-[#1e3a5f]"
+              />
+              進行表で管理
+            </label>
+          )}
+          {!isTeacher && (
+            <button
+              type="button"
+              onClick={() => handleRemoveTextbook(tb)}
+              className="p-1 text-gray-400 hover:text-red-500 rounded transition-colors"
+              aria-label="教材を削除"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // 所持教材 = 発注由来(material_orders) ＋ 手動登録(track_progress=false の st)。
+  // 進行表管理中 = 公開提案書由来(track_progress=true)。同じ student_textbooks でも意味が違うので表示を分ける。
+  const progressTextbooks = textbooks.filter((tb) => (tb as { track_progress?: boolean }).track_progress);
+
+  // 発注由来の所持（発注済〜配布済）。distributedMaterials がこれにあたる。
+  const orderedNames = new Set(distributedMaterials.map((dm) => dm.textbookName));
+  // 発注ページの formatTextbookLabel と同形式（名前 | [出版社 |] 学年 | 科目）でラベル化し、発注と突き合わせる
+  const stLabel = (tb: typeof textbooks[number]): string => {
+    const t = tb.textbook;
+    if (!t) return '';
+    return [t.name, t.publisher, t.grade, t.subject].filter(Boolean).join(' | ');
+  };
+  // 手動登録の所持（track_progress=false）。発注由来と重複するものは発注側で表示するので除外。
+  const ownedTextbooks = textbooks.filter(
+    (tb) => !((tb as { track_progress?: boolean }).track_progress) && !orderedNames.has(stLabel(tb))
+  );
+
+  const ORDER_STATUS_LABEL: Record<string, string> = {
+    ordered: '発注済', delivered: '発送済', distributed: '配布済',
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="生徒詳細" size="2xl">
       <div className="space-y-6">
@@ -375,114 +460,59 @@ export function StudentDetailModal({
                 </div>
               )}
 
+              <p className="text-[11px] text-[#6b7280] mb-2">
+                発注した教材と手動追加した教材です。発注すると（発注済〜配布済）ここに表示されます。「進行表で管理」を ON にすると下の「進行表で管理中」へ移り、進行表ページに進捗欄が出ます。
+              </p>
               {isLoading ? (
                 <Loading size="md" />
-              ) : textbooks.length > 0 ? (
-                <>
-                  <p className="text-[11px] text-[#6b7280] mb-2">
-                    「進行表で管理」を ON にすると、進行表ページにこの教材の進捗欄が表示されます。授業で使わない教材は OFF にしておけます。
-                  </p>
-                  <div className="space-y-1.5">
-                    {textbooks.map((tb) => {
-                      const tracked = (tb as { track_progress?: boolean }).track_progress ?? false;
-                      return (
-                        <div
-                          key={tb.id}
-                          className="flex items-center justify-between px-3 py-1.5 bg-white rounded-lg border border-[#e5e7eb]"
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="text-sm text-[#1f2937] truncate">
-                              {tb.textbook
-                                ? [tb.textbook.school_type, tb.textbook.grade, tb.textbook.subject, tb.textbook.name, tb.textbook.publisher].filter(Boolean).join(' / ')
-                                : '（不明な教材）'}
-                            </span>
-                            {tb.season && (
-                              <span className="text-[10px] text-[#4b5563] bg-gray-100 px-1.5 py-0.5 rounded">
-                                {tb.season === 'spring' ? '春期' : tb.season === 'summer' ? '夏期' : '冬期'}
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            {!isTeacher && (
-                              <label
-                                className="flex items-center gap-1 text-[11px] text-[#4b5563] cursor-pointer select-none"
-                                title="進行表ページに表示するか"
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={tracked}
-                                  onChange={async (e) => {
-                                    const next = e.target.checked;
-                                    setTextbooks((prev) =>
-                                      prev.map((row) =>
-                                        row.id === tb.id ? { ...row, track_progress: next } as typeof row : row
-                                      )
-                                    );
-                                    try {
-                                      await updateStudentTextbook(tb.id, { track_progress: next });
-                                    } catch (err) {
-                                      console.error('track_progress 更新失敗:', err);
-                                      // 失敗時は再読み込みでロールバック
-                                      if (student) await loadTextbooks(student.id);
-                                    }
-                                  }}
-                                  className="w-3.5 h-3.5 accent-[#1e3a5f]"
-                                />
-                                進行表で管理
-                              </label>
-                            )}
-                            {!isTeacher && (
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveTextbook(tb)}
-                                className="p-1 text-gray-400 hover:text-red-500 rounded transition-colors"
-                                aria-label="教材を削除"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              ) : distributedMaterials.length === 0 ? (
-                <p className="text-sm text-[#4b5563]/60">登録された教材はありません</p>
-              ) : null}
-
-              {/* 配布済み教材（発注管理から） */}
-              {distributedMaterials.length > 0 && (
-                <div className="mt-3">
-                  <p className="text-[11px] text-[#6b7280] mb-1.5">発注配布済み</p>
-                  <div className="space-y-1">
-                    {distributedMaterials.map((dm) => (
-                      <div
-                        key={dm.orderId}
-                        className="flex items-center justify-between px-3 py-1.5 bg-gray-50 rounded-lg border border-[#e5e7eb]"
-                      >
-                        <span className="text-sm text-[#1f2937]">
-                          {dm.textbookName}
-                          {dm.quantity > 1 && <span className="text-xs text-[#4b5563] ml-1">x{dm.quantity}</span>}
+              ) : (distributedMaterials.length === 0 && ownedTextbooks.length === 0) ? (
+                <p className="text-sm text-[#4b5563]/60">所持教材はありません</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {/* 発注由来（発注済〜配布済） */}
+                  {distributedMaterials.map((dm) => (
+                    <div
+                      key={dm.orderId}
+                      className="flex items-center justify-between px-3 py-1.5 bg-white rounded-lg border border-[#e5e7eb]"
+                    >
+                      <span className="text-sm text-[#1f2937] min-w-0 truncate">
+                        {dm.textbookName}
+                        {dm.quantity > 1 && <span className="text-xs text-[#4b5563] ml-1">x{dm.quantity}</span>}
+                      </span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[10px] text-[#4b5563] bg-gray-100 px-1.5 py-0.5 rounded">
+                          {ORDER_STATUS_LABEL[dm.status] ?? '発注'}
                         </span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] text-[#9ca3af]">配布済</span>
-                          {!isTeacher && (
-                            <button
-                              onClick={() => handleRemoveDistributed(dm)}
-                              className="p-0.5 text-gray-300 hover:text-red-500 transition-colors"
-                              title="削除（使い終わった教材を外す）"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                        </div>
+                        {!isTeacher && (
+                          <button
+                            onClick={() => handleRemoveDistributed(dm)}
+                            className="p-0.5 text-gray-300 hover:text-red-500 transition-colors"
+                            title="削除（使い終わった教材を外す）"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
+                  {/* 手動追加（発注に紐づかない所持） */}
+                  {ownedTextbooks.map(renderTextbookRow)}
                 </div>
               )}
             </div>
+
+            {/* 進行表で管理中（公開した提案書由来。物理所持ではなく学習管理対象） */}
+            {!isLoading && progressTextbooks.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-[#1f2937] mb-1.5">進行表で管理中</h3>
+                <p className="text-[11px] text-[#6b7280] mb-2">
+                  公開した提案書の教材です（進行表に進捗欄が出ます）。「進行表で管理」を OFF にすると所持教材に移ります。
+                </p>
+                <div className="space-y-1.5">
+                  {progressTextbooks.map(renderTextbookRow)}
+                </div>
+              </div>
+            )}
 
             {/* 登録・更新日時 */}
             <div>

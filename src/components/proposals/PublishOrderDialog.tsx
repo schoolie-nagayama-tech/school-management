@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Package, X, Check, ExternalLink, Loader2 } from 'lucide-react';
+import { Package, X, Check, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { createOrdersForCandidates, type OrderCandidate } from '@/lib/api/ordering';
 
@@ -9,8 +9,8 @@ import { createOrdersForCandidates, type OrderCandidate } from '@/lib/api/orderi
  * 提案書公開後に表示する発注ダイアログ。
  * 「発注する」ボタンを押したタイミングで、その場で発注（発注済(ordered)＋所持教材登録）する。
  * ページ遷移や自動発注はしない。押すまでは発注されない（チェックで取捨選択可）。
- * - 紐付けあり & 未所持 & 既存発注なし（needsOrder）: ボタンで一括発注の対象
- * - 教材未紐付け（materialId=null）: 自動発注できないため手動発注画面へ誘導
+ * - needsOrder（未所持 & 既存発注なし）: ボタンで一括発注の対象。
+ *   対応 material が無いテキストも、発注時にラベル名で material を作成して発注する（発注ページと同じ）。
  * - 既に発注あり / 所持済み: スキップ（情報表示のみ）
  *
  * 所持判定は公開「前」のスナップショットである必要があるため、candidates は
@@ -27,12 +27,9 @@ export function PublishOrderDialog({
 }) {
   const ownedCount = candidates.filter((c) => c.alreadyOwned).length;
   const autoCandidates = useMemo(() => candidates.filter((c) => c.needsOrder), [candidates]);
+  // 既に未キャンセルの発注がある分（重複防止でスキップ）
   const duplicateCandidates = useMemo(
-    () => candidates.filter((c) => !c.alreadyOwned && c.materialId && c.hasOrder),
-    [candidates]
-  );
-  const manualCandidates = useMemo(
-    () => candidates.filter((c) => !c.alreadyOwned && !c.materialId),
+    () => candidates.filter((c) => !c.alreadyOwned && c.hasOrder),
     [candidates]
   );
 
@@ -155,32 +152,7 @@ export function PublishOrderDialog({
               )}
             </div>
           ) : (
-            !done && <div className="text-sm text-text-muted py-2">自動で発注できる教材はありません。</div>
-          )}
-
-          {/* 教材未紐付け → 手動発注へ誘導 */}
-          {manualCandidates.length > 0 && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
-              <div className="text-[11px] font-bold text-amber-700 mb-1">
-                手動で発注が必要（発注教材が未設定のテキスト）
-              </div>
-              <ul className="text-xs text-amber-800 space-y-0.5 mb-1.5">
-                {manualCandidates.map((c) => (
-                  <li key={c.proposalId} className="truncate">
-                    {c.studentName} / {c.textbookName}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href="/ordering"
-                className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 hover:text-amber-900 underline"
-              >
-                発注画面を開く <ExternalLink className="w-3 h-3" />
-              </Link>
-              <p className="text-[10px] text-amber-700/80 mt-1">
-                ※ 教材マスタでテキストに発注教材を紐付けると、次回からこの一覧で発注できます
-              </p>
-            </div>
+            !done && <div className="text-sm text-text-muted py-2">発注が必要な教材はありません。</div>
           )}
 
           {/* 既に発注あり / 所持済み */}
