@@ -604,6 +604,54 @@ export async function bulkPublishProposals(proposalIds: string[]): Promise<{ suc
   return { success, failed };
 }
 
+/**
+ * 提案書を「提案済み(sent)」にする。
+ * ProposalEditor の sent 遷移と同じロジック:
+ * - applied_koma を提案コマ(koma_count)で初期化（申込コマの入力起点をつくる）
+ * - 申込結合(applied_group_id)が未設定なら提案結合(group_id)に合わせる（申込合計の二重計上防止）
+ * - 進行表へは反映しない（反映は公開=approved 時のみ）
+ * draft からの遷移を想定。すでに申込を手入力した sent を上書きしないよう、呼び出し側で draft に限定すること。
+ */
+export async function markProposalSent(proposalId: string): Promise<void> {
+  const proposal = await getProposal(proposalId);
+  if (!proposal) throw new Error('提案書が見つかりません');
+
+  const unitInputs: ProposalUnitInput[] = (proposal.units ?? [])
+    .filter((u) => u.koma_count > 0 || (u.applied_koma ?? 0) > 0)
+    .map((u) => ({
+      curriculum_item_id: u.curriculum_item_id,
+      koma_count: u.koma_count,
+      // 提案コマがあれば申込はそれで初期化。提案0・申込ありの単元は申込値を維持。
+      applied_koma: u.koma_count > 0 ? u.koma_count : ((u.applied_koma ?? 0) > 0 ? u.applied_koma : null),
+      reason: u.reason,
+      group_id: u.group_id,
+      applied_group_id: u.applied_group_id > 0 ? u.applied_group_id : u.group_id,
+      intent_tag: u.intent_tag,
+    }));
+
+  await saveProposalUnits(proposalId, unitInputs);
+  const totalApplied = calcTotalAppliedKoma(unitInputs);
+  await updateProposal(proposalId, { status: 'sent', applied_koma: totalApplied });
+}
+
+/**
+ * 複数の提案書を一括で「提案済み」にする（draft → sent）。
+ */
+export async function bulkMarkProposalsSent(proposalIds: string[]): Promise<{ success: number; failed: number }> {
+  let success = 0;
+  let failed = 0;
+  for (const id of proposalIds) {
+    try {
+      await markProposalSent(id);
+      success++;
+    } catch (e) {
+      console.error(`提案書 ${id} の提案済み化に失敗:`, e);
+      failed++;
+    }
+  }
+  return { success, failed };
+}
+
 // ============================================
 // コマ数集計ヘルパー
 // ============================================

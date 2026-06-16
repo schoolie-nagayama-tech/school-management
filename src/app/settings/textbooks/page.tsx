@@ -9,7 +9,8 @@ import { useToast } from '@/hooks/useToast';
 import { ToastContainer, Loading } from '@/components/ui';
 import AccessDenied from '@/components/AccessDenied';
 import { getTextbooks, createTextbook, updateTextbook, deleteTextbook } from '@/lib/api/textbooks';
-import type { Textbook, TextbookInsert } from '@/types/database';
+import { getMaterials } from '@/lib/api/inventory';
+import type { Textbook, TextbookInsert, Material } from '@/types/database';
 import { Plus, Search, Edit2, Trash2, BookOpen, ChevronLeft, ChevronRight, FileText, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { fetchAllPaged } from '@/lib/utils/supabasePaging';
@@ -36,6 +37,8 @@ interface TextbookForm {
   grade: string;
   subject: string;
   revision_date: string;
+  // 対応する発注教材(materials.id)。空文字=未紐付け。提案書公開時の自動発注に使う。
+  material_id: string;
 }
 
 const emptyForm: TextbookForm = {
@@ -45,6 +48,7 @@ const emptyForm: TextbookForm = {
   grade: '',
   subject: '',
   revision_date: '',
+  material_id: '',
 };
 
 export default function TextbookMasterPageWrapper() {
@@ -63,6 +67,7 @@ function TextbookMasterPage() {
   const isManager = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
 
   const [textbooks, setTextbooks] = useState<Textbook[]>([]);
+  const [materials, setMaterials] = useState<Material[]>([]);
   const [loading, setLoading] = useState(true);
 
   // フィルタ状態をURLクエリパラメータから初期化（戻るボタンで復元される）
@@ -145,12 +150,17 @@ function TextbookMasterPage() {
       // 教材マスタでは無効化（非表示）教材も含めて全件表示し、トグルで切り替える
       const data = await getTextbooks(undefined, { includeInactive: true });
       setTextbooks(data);
+      // 発注教材の紐付け候補（materials）。失敗しても教材一覧は表示したいので握りつぶす。
+      try {
+        const ids = selectedSchoolId && selectedSchoolId !== 'all' ? [selectedSchoolId] : schoolIds;
+        if (ids.length > 0) setMaterials(await getMaterials(ids));
+      } catch { /* ignore */ }
     } catch (e) {
       toastErrorRef.current(`教材の読み込みに失敗しました: ${e instanceof Error ? e.message : '不明なエラー'}`);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [schoolIds, selectedSchoolId]);
 
   const loadedRef = useRef(false);
   useEffect(() => {
@@ -242,6 +252,7 @@ function TextbookMasterPage() {
       grade: t.grade || '',
       subject: t.subject || '',
       revision_date: t.revision_date || '',
+      material_id: t.material_id || '',
     });
     setShowModal(true);
   };
@@ -266,6 +277,7 @@ function TextbookMasterPage() {
         subject: form.subject || null,
         revision_date: form.revision_date || null,
         grade_category: gradeCategory || null,
+        material_id: form.material_id || null,
       };
       if (editingId) {
         await updateTextbook(editingId, data);
@@ -599,6 +611,19 @@ function TextbookMasterPage() {
                     className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:ring-ink focus:ring-ink/30 focus:border-ink"
                     placeholder="例: 20250401"
                   />
+                </div>
+                {/* 発注教材の紐付け: 提案書公開時に自動発注の候補として使う */}
+                <div>
+                  <label className="block text-sm font-medium text-text-heading mb-1">発注教材（任意）</label>
+                  <select
+                    value={form.material_id}
+                    onChange={e => setForm({ ...form, material_id: e.target.value })}
+                    className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface-raised"
+                  >
+                    <option value="">紐付けなし（発注は手動）</option>
+                    {materials.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                  </select>
+                  <p className="text-[11px] text-text-faint mt-1">提案書を公開したとき、この教材の発注候補が自動で出ます。未設定なら手動発注になります。</p>
                 </div>
               </div>
               <div className="flex justify-end gap-2 mt-6">

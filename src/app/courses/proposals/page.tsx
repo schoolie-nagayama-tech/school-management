@@ -3,14 +3,16 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, FileText, Filter, Plus, Printer, Search, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Check, FileText, Filter, Plus, Printer, Search, Trash2, X } from 'lucide-react';
 import { ContextHelp } from '@/components/help/ContextHelp';
 import { AdminLayout } from '@/components/layouts';
 import { InlineLoading, Loading } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRequirePermission } from '@/hooks/usePermissions';
 import AccessDenied from '@/components/AccessDenied';
-import { getProposalsBySchool, getTextbookUnitsWithProgress, calcTotalKoma, calcTotalAppliedKoma, deleteProposal } from '@/lib/api/proposals';
+import { getProposalsBySchool, getTextbookUnitsWithProgress, calcTotalKoma, calcTotalAppliedKoma, deleteProposal, bulkPublishProposals, bulkMarkProposalsSent } from '@/lib/api/proposals';
+import { getProposalOrderCandidates, type OrderCandidate, type ProposalOrderInput } from '@/lib/api/ordering';
+import { PublishOrderDialog } from '@/components/proposals/PublishOrderDialog';
 import { supabase } from '@/lib/supabase';
 import { fetchAllPaged } from '@/lib/utils/supabasePaging';
 import type { SeasonalProposalWithDetails, SeasonType, ProposalStatus } from '@/types/database';
@@ -55,16 +57,40 @@ function getCurrentSeason(): SeasonType {
   return 'winter';
 }
 
+// 提案書 → 発注候補判定の入力に変換
+function toOrderInputs(proposals: SeasonalProposalWithDetails[]): ProposalOrderInput[] {
+  return proposals.map((p) => ({
+    proposalId: p.id,
+    studentId: p.student_id,
+    studentName: p.student ? `${p.student.last_name} ${p.student.first_name}` : '不明',
+    schoolId: p.school_id ?? null,
+    textbookId: p.textbook_id,
+    textbookName: p.textbook?.subject ? `${p.textbook.subject} ${p.textbook.name}` : (p.textbook?.name ?? '不明'),
+    materialId: p.textbook?.material_id ?? null,
+  }));
+}
+
 export default function CourseProposalsPage() {
   const router = useRouter();
   const { hasPermission, isLoading: permissionLoading } = useRequirePermission(
     (p) => p.canAccessCourses
   );
-  const { schoolIds, selectedSchoolId, getSelectedSchoolIds } = useAuth();
+  const { schoolIds, selectedSchoolId, getSelectedSchoolIds, profile } = useAuth();
   const { localSchoolId, setLocalSchoolId, isAllSelected, availableSchools } = useLocalSchoolId();
+
+  // 一括公開は教室長以上(manager/owner/admin)のみ。提案済み化は全スタッフ可。
+  const isManagerOrAbove =
+    profile?.role === 'manager' || profile?.role === 'owner' || profile?.role === 'admin';
 
   const [proposals, setProposals] = useState<SeasonalProposalWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // 一括選択（公開 / 提案済み）
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [publishing, setPublishing] = useState(false);
+  const [sending, setSending] = useState(false);
+  // 公開後の教材発注ダイアログ（公開前に算出した候補スナップショット）
+  const [orderDialog, setOrderDialog] = useState<OrderCandidate[] | null>(null);
 
   const currentYear = new Date().getFullYear();
   const [filterYear, setFilterYear] = useState<number>(currentYear);
@@ -176,6 +202,7 @@ export default function CourseProposalsPage() {
         filterYear || undefined
       );
       setProposals(data);
+      setSelected(new Set());
     } catch {
       // load error — empty state shown
     } finally {
@@ -341,6 +368,78 @@ export default function CourseProposalsPage() {
     }
     return result;
   }, [proposals, filterStatus, filterSubject, filterGrade, filterPublisher, searchQuery]);
+
+  // ── 一括選択（公開 / 提案済み） ──
+  // 選択対象は表示中(filtered)の未公開(draft/sent)。提案済み化は draft のみ対象。
+  const selectable = useMemo(() => filtered.filter((p) => p.status !== 'approved'), [filtered]);
+  const selectedCount = Array.from(selected).filter((id) => selectable.some((p) => p.id === id)).length;
+  const selectedDraftCount = Array.from(selected).filter((id) =>
+    filtered.some((p) => p.id === id && p.status === 'draft')
+  ).length;
+  const hasSelection = selectedCount > 0;
+
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const selectAllSelectable = () => setSelected(new Set(selectable.map((p) => p.id)));
+  const clearSelection = () => setSelected(new Set());
+
+  const handleBulkPublish = async () => {
+    if (!isManagerOrAbove) return;
+    const ids = Array.from(selected).filter((id) => selectable.some((p) => p.id === id));
+    if (ids.length === 0) return;
+    if (!window.confirm(
+      `${ids.length}件の提案書を公開しますか？\n\n申込コマ数が進行表に反映され、講師に公開されます。`
+    )) return;
+    setPublishing(true);
+    try {
+      // 公開前に発注候補をスナップショット（所持判定は is_draft=false 化の前に取る必要がある）
+      const targets = proposals.filter((p) => ids.includes(p.id));
+      let candidates: OrderCandidate[] = [];
+      try {
+        candidates = await getProposalOrderCandidates(toOrderInputs(targets));
+      } catch (e) {
+        console.error('発注候補の取得に失敗:', e);
+      }
+
+      const { success, failed } = await bulkPublishProposals(ids);
+      if (failed > 0) alert(`${success}件を公開、${failed}件が失敗しました`);
+      await load();
+
+      // 発注が要りそうな候補（自動対象 or 手動誘導）があればダイアログを開く
+      const relevant = candidates.filter((c) => c.needsOrder || (!c.alreadyOwned && !c.materialId));
+      if (relevant.length > 0) setOrderDialog(candidates);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setPublishing(false);
+    }
+  };
+
+  const handleBulkSent = async () => {
+    const ids = Array.from(selected).filter((id) =>
+      filtered.some((p) => p.id === id && p.status === 'draft')
+    );
+    if (ids.length === 0) return;
+    if (!window.confirm(
+      `${ids.length}件の提案書を「提案済み」にしますか？\n\n申込コマ数を入力できる状態になります（進行表への反映は公開時）。`
+    )) return;
+    setSending(true);
+    try {
+      const { success, failed } = await bulkMarkProposalsSent(ids);
+      if (failed > 0) alert(`${success}件を提案済みに、${failed}件が失敗しました`);
+      await load();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSending(false);
+    }
+  };
 
   const byStudent = useMemo(() => {
     const map = new Map<string, { name: string; studentId: string; grade: number | null; proposals: SeasonalProposalWithDetails[] }>();
@@ -672,6 +771,77 @@ export default function CourseProposalsPage() {
           </div>
         ) : (
           <div className="space-y-4">
+            {/* 一括バー: 提案済みは全スタッフ可、公開は教室長以上のみ。選択は表示中の未公開が対象。 */}
+            {selectable.length > 0 && (
+              <div
+                className={`sticky top-0 z-20 flex items-center gap-3 px-3.5 py-2 rounded-xl border transition-[background-color,border-color] duration-200 ${
+                  hasSelection
+                    ? 'bg-emerald-50 border-emerald-200 shadow-sm'
+                    : 'bg-surface-raised border-border-subtle'
+                }`}
+              >
+                <button
+                  onClick={() => hasSelection ? clearSelection() : selectAllSelectable()}
+                  className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors duration-150 ${
+                    hasSelection
+                      ? 'bg-emerald-600 border-emerald-600 text-white'
+                      : 'border-border-default hover:border-text-muted'
+                  }`}
+                  title={hasSelection ? '選択解除' : 'すべて選択'}
+                >
+                  {hasSelection && <Check className="w-2.5 h-2.5" />}
+                </button>
+
+                {hasSelection ? (
+                  <>
+                    <span className="text-xs font-medium text-emerald-800">{selectedCount}件選択</span>
+                    <button
+                      onClick={clearSelection}
+                      className="text-[11px] text-emerald-600 hover:text-emerald-800 transition-colors"
+                    >
+                      解除
+                    </button>
+                    <div className="flex-1" />
+                    <button
+                      onClick={handleBulkSent}
+                      disabled={sending || publishing || selectedDraftCount === 0}
+                      title={selectedDraftCount === 0 ? '下書きの提案書を選択してください' : `${selectedDraftCount}件を提案済みにする`}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold bg-info text-white rounded-lg hover:brightness-95 active:scale-[0.97] transition-[filter,transform] duration-150 disabled:opacity-50"
+                    >
+                      {sending ? (
+                        <InlineLoading size="sm" label="変更中..." />
+                      ) : (
+                        `提案済みにする${selectedDraftCount > 0 ? ` (${selectedDraftCount})` : ''}`
+                      )}
+                    </button>
+                    {isManagerOrAbove && (
+                      <button
+                        onClick={handleBulkPublish}
+                        disabled={publishing || sending || selectedCount === 0}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 active:scale-[0.97] transition-[colors,transform] duration-150 disabled:opacity-50"
+                      >
+                        {publishing ? (
+                          <InlineLoading size="sm" label="公開中..." />
+                        ) : (
+                          `公開する`
+                        )}
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <span className="text-xs text-text-faint">未公開 {selectable.length}件</span>
+                    <div className="flex-1" />
+                    <button
+                      onClick={selectAllSelectable}
+                      className="text-[11px] text-text-faint hover:text-text-muted transition-colors"
+                    >
+                      すべて選択
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
             {studentGroups.map(({ name, studentId, grade, proposals: studentProposals }, groupIndex) => {
               // 生徒の全提案書の合計コマ数（名前横に表示）
               const totalKoma = studentProposals.reduce((sum, p) => sum + calcTotalKoma(p.units), 0);
@@ -724,11 +894,33 @@ export default function CourseProposalsPage() {
                   {studentProposals.map((p) => {
                     const koma = calcTotalKoma(p.units);
                     const appliedKoma = calcTotalAppliedKoma(p.units);
+                    const isApproved = p.status === 'approved';
+                    const isChecked = selected.has(p.id);
                     return (
                       <div
                         key={p.id}
-                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-surface-hover transition-[background-color] duration-100 ease-out group"
+                        className={`flex items-center gap-3 px-4 py-2.5 transition-[background-color] duration-100 ease-out group ${
+                          isChecked ? 'bg-emerald-50/60' : 'hover:bg-surface-hover'
+                        }`}
                       >
+                        {/* 一括選択チェックボックス（公開済みは選択不可、チェック表示のみ） */}
+                        {!isApproved ? (
+                          <button
+                            onClick={() => toggleSelect(p.id)}
+                            className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors duration-150 ${
+                              isChecked
+                                ? 'bg-emerald-600 border-emerald-600 text-white'
+                                : 'border-border-default hover:border-text-muted'
+                            }`}
+                            title={isChecked ? '選択解除' : '選択'}
+                          >
+                            {isChecked && <Check className="w-2.5 h-2.5" />}
+                          </button>
+                        ) : (
+                          <div className="w-4 h-4 shrink-0 flex items-center justify-center" title="公開済み">
+                            <Check className="w-3 h-3 text-emerald-500" />
+                          </div>
+                        )}
                         <Link href={`/students/${studentId}/proposals/${p.id}`} className="flex items-center gap-3 flex-1 min-w-0">
                           <FileText className="w-4 h-4 text-text-faint shrink-0" />
                           <div className="flex-1 min-w-0">
@@ -781,6 +973,14 @@ export default function CourseProposalsPage() {
           </div>
         )}
       </div>
+
+      {/* 公開後の教材発注ダイアログ */}
+      {orderDialog && (
+        <PublishOrderDialog
+          candidates={orderDialog}
+          onClose={() => setOrderDialog(null)}
+        />
+      )}
     </AdminLayout>
   );
 }

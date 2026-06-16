@@ -789,6 +789,8 @@ export type Database = {
           sheet_gid: string | null;
           grade_category: 'elementary' | 'middle' | 'high' | null;
           is_active: boolean;
+          // 対応する発注教材(materials.id)。提案書公開時の自動発注に使う。未紐付けは null。
+          material_id: string | null;
           created_at: string | null;
           updated_at: string | null;
         };
@@ -803,6 +805,7 @@ export type Database = {
           sheet_gid?: string | null;
           grade_category?: 'elementary' | 'middle' | 'high' | null;
           is_active?: boolean;
+          material_id?: string | null;
           created_at?: string | null;
           updated_at?: string | null;
         };
@@ -817,6 +820,7 @@ export type Database = {
           sheet_gid?: string | null;
           grade_category?: 'elementary' | 'middle' | 'high' | null;
           is_active?: boolean;
+          material_id?: string | null;
           created_at?: string | null;
           updated_at?: string | null;
         };

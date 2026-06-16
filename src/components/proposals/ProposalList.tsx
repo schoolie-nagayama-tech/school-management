@@ -11,10 +11,13 @@ import {
   getProposalsByStudent,
   getTextbookUnitsWithProgress,
   bulkPublishProposals,
+  bulkMarkProposalsSent,
   calcTotalKoma,
   calcTotalAppliedKoma,
 } from '@/lib/api/proposals';
+import { getProposalOrderCandidates, type OrderCandidate } from '@/lib/api/ordering';
 import { ProposalPrintView } from './ProposalPrintView';
+import { PublishOrderDialog } from './PublishOrderDialog';
 import type { PrintUnitDraft, ProposalPrintData } from './ProposalPrintView';
 import type { SeasonalProposalWithDetails, SeasonType, ProposalStatus } from '@/types/database';
 import { SEASON_LABELS, PROPOSAL_STATUS_LABELS, GRADE_LABELS } from '@/types/database';
@@ -44,9 +47,12 @@ export default function ProposalList() {
   const [printLoading, setPrintLoading] = useState(false);
   const [printData, setPrintData] = useState<ProposalPrintData[]>([]);
 
-  // 一括公開
+  // 一括公開 / 一括提案済み
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [publishing, setPublishing] = useState(false);
+  const [sending, setSending] = useState(false);
+  // 公開後の教材発注ダイアログ（公開前に算出した候補スナップショット）
+  const [orderDialog, setOrderDialog] = useState<OrderCandidate[] | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -91,6 +97,10 @@ export default function ProposalList() {
   const selectedCount = Array.from(selected).filter((id) =>
     publishable.some((p) => p.id === id)
   ).length;
+  // 「提案済みにする」は下書き(draft)のみ対象（sentの再初期化で手入力の申込を上書きしないため）
+  const selectedDraftCount = Array.from(selected).filter((id) =>
+    proposals.some((p) => p.id === id && p.status === 'draft')
+  ).length;
 
   const selectAllPublishable = () => setSelected(new Set(publishable.map((p) => p.id)));
   const clearSelection = () => setSelected(new Set());
@@ -105,16 +115,62 @@ export default function ProposalList() {
     )) return;
     setPublishing(true);
     try {
+      // 公開前に発注候補をスナップショット（所持判定は is_draft=false 化の前に取る必要がある）
+      const targets = proposals.filter((p) => ids.includes(p.id));
+      let candidates: OrderCandidate[] = [];
+      try {
+        candidates = await getProposalOrderCandidates(
+          targets.map((p) => ({
+            proposalId: p.id,
+            studentId: p.student_id,
+            studentName,
+            schoolId: p.school_id ?? null,
+            textbookId: p.textbook_id,
+            textbookName: p.textbook?.subject ? `${p.textbook.subject} ${p.textbook.name}` : (p.textbook?.name ?? '不明'),
+            materialId: p.textbook?.material_id ?? null,
+          }))
+        );
+      } catch (e) {
+        console.error('発注候補の取得に失敗:', e);
+      }
+
       const { success, failed } = await bulkPublishProposals(ids);
       if (failed > 0) {
         alert(`${success}件を公開、${failed}件が失敗しました`);
       }
       clearSelection();
       await load();
+
+      const relevant = candidates.filter((c) => c.needsOrder || (!c.alreadyOwned && !c.materialId));
+      if (relevant.length > 0) setOrderDialog(candidates);
     } catch (e) {
       console.error(e);
     } finally {
       setPublishing(false);
+    }
+  };
+
+  // ── 一括提案済み（draft → sent。公開と違い進行表へは反映しない） ──
+  const handleBulkSent = async () => {
+    const ids = Array.from(selected).filter((id) =>
+      proposals.some((p) => p.id === id && p.status === 'draft')
+    );
+    if (ids.length === 0) return;
+    if (!window.confirm(
+      `${ids.length}件の提案書を「提案済み」にしますか？\n\n申込コマ数を入力できる状態になります（進行表への反映は公開時）。`
+    )) return;
+    setSending(true);
+    try {
+      const { success, failed } = await bulkMarkProposalsSent(ids);
+      if (failed > 0) {
+        alert(`${success}件を提案済みに、${failed}件が失敗しました`);
+      }
+      clearSelection();
+      await load();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSending(false);
     }
   };
 
@@ -348,8 +404,8 @@ export default function ProposalList() {
         </div>
       )}
 
-      {/* 一括公開バー: 教室長以上のみ表示 */}
-      {!loading && isManagerOrAbove && publishable.length > 0 && (
+      {/* 一括バー: 提案済みは全スタッフ可、公開は教室長以上のみ */}
+      {!loading && publishable.length > 0 && (
         <div
           className={`mb-4 flex items-center gap-3 px-3.5 py-2 rounded-xl border transition-all duration-200 ${
             hasSelection
@@ -380,17 +436,33 @@ export default function ProposalList() {
                 解除
               </button>
               <div className="flex-1" />
+              {/* 提案済み: 下書きのみ対象。全スタッフ可 */}
               <button
-                onClick={handleBulkPublish}
-                disabled={publishing || selectedCount === 0}
-                className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 active:scale-[0.97] transition-[colors,transform] duration-150 disabled:opacity-50"
+                onClick={handleBulkSent}
+                disabled={sending || publishing || selectedDraftCount === 0}
+                title={selectedDraftCount === 0 ? '下書きの提案書を選択してください' : `${selectedDraftCount}件を提案済みにする`}
+                className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold bg-info text-white rounded-lg hover:brightness-95 active:scale-[0.97] transition-[filter,transform] duration-150 disabled:opacity-50"
               >
-                {publishing ? (
-                  <InlineLoading size="sm" label="公開中..." />
+                {sending ? (
+                  <InlineLoading size="sm" label="変更中..." />
                 ) : (
-                  `公開する`
+                  `提案済みにする${selectedDraftCount > 0 ? ` (${selectedDraftCount})` : ''}`
                 )}
               </button>
+              {/* 公開: 教室長以上のみ */}
+              {isManagerOrAbove && (
+                <button
+                  onClick={handleBulkPublish}
+                  disabled={publishing || sending || selectedCount === 0}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 active:scale-[0.97] transition-[colors,transform] duration-150 disabled:opacity-50"
+                >
+                  {publishing ? (
+                    <InlineLoading size="sm" label="公開中..." />
+                  ) : (
+                    `公開する`
+                  )}
+                </button>
+              )}
             </>
           ) : (
             <>
@@ -496,6 +568,14 @@ export default function ProposalList() {
             </div>
           ))}
         </div>
+      )}
+
+      {/* 公開後の教材発注ダイアログ */}
+      {orderDialog && (
+        <PublishOrderDialog
+          candidates={orderDialog}
+          onClose={() => setOrderDialog(null)}
+        />
       )}
     </div>
   );

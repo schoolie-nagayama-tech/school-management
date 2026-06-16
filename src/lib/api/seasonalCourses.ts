@@ -764,47 +764,10 @@ export async function applyCoursesToStudents(
 
   if (studentIds.length === 0) return;
 
-  const textbookIds = course.textbooks.map((ct) => ct.textbook_id);
-  const stMap = new Map<string, string>();
-
-  // Step 1: 既存 student_textbooks を一括取得
-  const { data: existingStList } = await supabase
-    .from('student_textbooks')
-    .select('id, student_id, textbook_id')
-    .in('student_id', studentIds)
-    .in('textbook_id', textbookIds);
-
-  for (const st of (existingStList || []) as { id: string; student_id: string; textbook_id: number }[]) {
-    stMap.set(`${st.student_id}:${st.textbook_id}`, st.id);
-  }
-
-  // Step 2: 不足分の student_textbooks を一括INSERT
-  const missingRows = [];
-  for (const studentId of studentIds) {
-    for (const ct of course.textbooks) {
-      if (!stMap.has(`${studentId}:${ct.textbook_id}`)) {
-        missingRows.push({
-          school_id: course.school_id,
-          student_id: studentId,
-          textbook_id: ct.textbook_id,
-          is_active: true,
-          season: course.season,
-          // 下書き登録なので講師には公開しない。publishProposal が is_draft=false にして公開する。
-          is_draft: true,
-        });
-      }
-    }
-  }
-  if (missingRows.length > 0) {
-    const { data: newSts, error: stError } = await supabase
-      .from('student_textbooks')
-      .insert(missingRows as never)
-      .select('id, student_id, textbook_id');
-    if (stError) throw stError;
-    for (const st of (newSts || []) as { id: string; student_id: string; textbook_id: number }[]) {
-      stMap.set(`${st.student_id}:${st.textbook_id}`, st.id);
-    }
-  }
+  // 下書き作成では student_textbooks（所持教材）を作らない。
+  // 提案書を公開(publishProposal → syncProposalToProgress)したタイミングで初めて
+  // student_textbook を作成/有効化する。こうすることで「実際には申し込まれていない下書き」が
+  // 生徒の所持教材一覧に混入しないようにする（発注→所持教材の流れは ordering 側で維持）。
 
   const curriculumByTextbook = new Map<number, { curriculum_item_id: number; proposal_count: number; group_number: number | null }[]>();
   for (const ct of course.textbooks) {
@@ -828,13 +791,12 @@ export async function applyCoursesToStudents(
   const fromProposalUnits = () => supabase.from('seasonal_proposal_units' as any);
 
   const year = new Date().getFullYear();
-  type ProposalRow = { student_id: string; textbook_id: number; student_textbook_id: string; school_id: string | null; season: string; year: number; theme: string; status: string; applied_koma: number };
+  // 下書きでは student_textbook を紐付けない（null）。公開時に作成・紐付けされる。
+  type ProposalRow = { student_id: string; textbook_id: number; student_textbook_id: string | null; school_id: string | null; season: string; year: number; theme: string; status: string; applied_koma: number };
   const proposalInserts: ProposalRow[] = [];
 
   for (const studentId of studentIds) {
     for (const ct of course.textbooks) {
-      const stId = stMap.get(`${studentId}:${ct.textbook_id}`);
-      if (!stId) continue;
       const settings = (curriculumByTextbook.get(ct.textbook_id) || []).filter((s) => s.proposal_count > 0);
       const hasCurriculum = !textbooksWithoutCurriculum.has(ct.textbook_id);
 
@@ -843,7 +805,7 @@ export async function applyCoursesToStudents(
       proposalInserts.push({
         student_id: studentId,
         textbook_id: ct.textbook_id,
-        student_textbook_id: stId,
+        student_textbook_id: null,
         school_id: course.school_id,
         season: course.season,
         year,

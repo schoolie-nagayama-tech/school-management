@@ -119,6 +119,136 @@ export async function createOrder(
   return data as MaterialOrder;
 }
 
+// ============================================
+// 提案書公開時の発注候補（ハイブリッド自動発注）
+// ============================================
+
+/** 公開しようとする提案書の発注判定に必要な最小情報 */
+export interface ProposalOrderInput {
+  proposalId: string;
+  studentId: string;
+  studentName: string;
+  schoolId: string | null;
+  textbookId: number;
+  textbookName: string;
+  /** textbooks.material_id（発注教材の紐付け。未紐付けは null） */
+  materialId: string | null;
+}
+
+export interface OrderCandidate extends ProposalOrderInput {
+  materialName: string | null;
+  /** 既にその生徒がこのテキストを所持しているか（student_textbooks に有効化済み行あり） */
+  alreadyOwned: boolean;
+  /** 既に未キャンセルの発注があるか（生徒×教材） */
+  hasOrder: boolean;
+  /** 自動発注の対象か（紐付けあり & 未所持 & 既存発注なし） */
+  needsOrder: boolean;
+}
+
+/**
+ * 提案書公開に伴う発注候補を算出する。
+ * 重要: student_textbooks の所持判定は「公開で is_draft=false になる前」の状態を見る必要があるため、
+ * 必ず publishProposal を呼ぶ「前」に実行すること（公開後だと当該テキストが所持済み扱いになる）。
+ * - alreadyOwned: 同生徒・同テキストの有効化済み(student_textbooks.is_draft=false)があれば所持とみなし発注しない
+ * - hasOrder: 同生徒・同教材の未キャンセル発注があれば重複作成しない
+ * - needsOrder: 教材紐付けあり & 未所持 & 既存発注なし → 自動発注の対象
+ */
+export async function getProposalOrderCandidates(
+  inputs: ProposalOrderInput[]
+): Promise<OrderCandidate[]> {
+  if (inputs.length === 0) return [];
+
+  const studentIds = Array.from(new Set(inputs.map((i) => i.studentId)));
+  const textbookIds = Array.from(new Set(inputs.map((i) => i.textbookId)));
+  const materialIds = Array.from(new Set(inputs.map((i) => i.materialId).filter((m): m is string => !!m)));
+
+  // 所持テキスト（有効化済み = is_draft=false）。下書き作成だけの行は所持扱いしない。
+  const ownedSet = new Set<string>();
+  if (studentIds.length > 0 && textbookIds.length > 0) {
+    const { data } = await supabase
+      .from('student_textbooks')
+      .select('student_id, textbook_id')
+      .in('student_id', studentIds)
+      .in('textbook_id', textbookIds)
+      .eq('is_draft', false);
+    for (const r of (data ?? []) as { student_id: string; textbook_id: number }[]) {
+      ownedSet.add(`${r.student_id}:${r.textbook_id}`);
+    }
+  }
+
+  // 既存の未キャンセル発注（生徒×教材）→ 重複発注防止
+  const orderedSet = new Set<string>();
+  const materialNameMap = new Map<string, string>();
+  if (materialIds.length > 0) {
+    const [{ data: orders }, { data: materials }] = await Promise.all([
+      supabase
+        .from('material_orders')
+        .select('student_id, material_id, status')
+        .in('student_id', studentIds)
+        .in('material_id', materialIds)
+        .neq('status', 'cancelled'),
+      supabase.from('materials').select('id, name').in('id', materialIds),
+    ]);
+    for (const r of (orders ?? []) as { student_id: string | null; material_id: string }[]) {
+      if (r.student_id) orderedSet.add(`${r.student_id}:${r.material_id}`);
+    }
+    for (const m of (materials ?? []) as { id: string; name: string }[]) {
+      materialNameMap.set(m.id, m.name);
+    }
+  }
+
+  return inputs.map((i) => {
+    const alreadyOwned = ownedSet.has(`${i.studentId}:${i.textbookId}`);
+    const hasOrder = !!i.materialId && orderedSet.has(`${i.studentId}:${i.materialId}`);
+    const needsOrder = !!i.materialId && !alreadyOwned && !hasOrder;
+    return {
+      ...i,
+      materialName: i.materialId ? materialNameMap.get(i.materialId) ?? null : null,
+      alreadyOwned,
+      hasOrder,
+      needsOrder,
+    };
+  });
+}
+
+/**
+ * 発注候補から material_orders を作成し、そのまま「発注済(ordered)」まで進める。
+ * 公開ダイアログでユーザーが明示的に選んだ確定発注なので要確認(unconfirmed)で止めず、
+ * updateOrderStatus('ordered') を呼んで ordered_at と所持教材登録(registerStudentTextbook)まで実行する。
+ * （発注→所持教材の流れを維持。請求連携は配布時のみなのでここでは発生しない）
+ * 各候補は materialId と schoolId が必須。失敗は件数で返す。
+ */
+export async function createOrdersForCandidates(
+  candidates: OrderCandidate[]
+): Promise<{ success: number; failed: number }> {
+  let success = 0;
+  let failed = 0;
+  for (const c of candidates) {
+    if (!c.materialId || !c.schoolId) {
+      failed++;
+      continue;
+    }
+    try {
+      const created = await createOrder(
+        {
+          material_id: c.materialId,
+          student_id: c.studentId,
+          quantity: 1,
+          notes: `提案書公開による発注（${c.textbookName}）`,
+        },
+        c.schoolId
+      );
+      // 確認済みとして即「発注済」に進める（所持教材にも登録される）
+      await updateOrderStatus(created.id, 'ordered');
+      success++;
+    } catch (e) {
+      console.error('発注候補からの発注作成に失敗:', e);
+      failed++;
+    }
+  }
+  return { success, failed };
+}
+
 /**
  * 発注を作成し、「教材発注」請求項目の生徒セルに教材名を自動反映する
  */

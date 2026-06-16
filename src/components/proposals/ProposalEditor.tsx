@@ -53,6 +53,8 @@ import {
   promoteProposalToCourse,
 } from '@/lib/api/proposals';
 import type { ProposalUnitInput } from '@/lib/api/proposals';
+import { getProposalOrderCandidates, type OrderCandidate } from '@/lib/api/ordering';
+import { PublishOrderDialog } from './PublishOrderDialog';
 import { getTextbooks } from '@/lib/api/textbooks';
 import {
   addFavoriteTextbook,
@@ -1017,6 +1019,8 @@ export default function ProposalEditor() {
   if (!selectedTextbookId) saveBlockers.push('テキストを選択してください');
 
   const [statusChanging, setStatusChanging] = useState(false);
+  // 公開後の教材発注ダイアログ（公開前に算出した候補スナップショット）
+  const [orderDialog, setOrderDialog] = useState<OrderCandidate[] | null>(null);
 
   const handleStatusChange = async (newStatus: ProposalStatus) => {
     if (isNew || !proposalId || statusChanging) return;
@@ -1080,7 +1084,31 @@ export default function ProposalEditor() {
             intent_tag: u.intent_tag,
           }));
         await saveProposalUnits(proposalId, unitInputs);
+
+        // 公開前に発注候補をスナップショット（所持判定は is_draft=false 化の前に取る必要がある）
+        let candidates: OrderCandidate[] = [];
+        if (selectedTextbookId) {
+          const tb = allTextbooks.find((t) => t.id === selectedTextbookId);
+          try {
+            candidates = await getProposalOrderCandidates([{
+              proposalId,
+              studentId,
+              studentName,
+              schoolId: studentSchoolId,
+              textbookId: selectedTextbookId,
+              textbookName: [textbookSubject, textbookName].filter(Boolean).join(' ') || textbookName,
+              materialId: tb?.material_id ?? null,
+            }]);
+          } catch (e) {
+            console.error('発注候補の取得に失敗:', e);
+          }
+        }
+
         await publishProposal(proposalId);
+
+        // 発注が要りそうな候補があればダイアログを開く
+        const relevant = candidates.filter((c) => c.needsOrder || (!c.alreadyOwned && !c.materialId));
+        if (relevant.length > 0) setOrderDialog(candidates);
       } else if (newStatus === 'draft') {
         // 下書きに戻す: 申込コマ数は未確定に戻す（提案済で入れた申込を0クリア）。
         // 提案回数(koma_count)は保持し、再度提案済にした時に申込が再初期化される。
@@ -1849,6 +1877,14 @@ export default function ProposalEditor() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* 公開後の教材発注ダイアログ */}
+      {orderDialog && (
+        <PublishOrderDialog
+          candidates={orderDialog}
+          onClose={() => setOrderDialog(null)}
+        />
+      )}
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
