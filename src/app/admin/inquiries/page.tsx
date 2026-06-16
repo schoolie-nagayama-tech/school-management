@@ -30,6 +30,8 @@ import { Search, X, Upload, SlidersHorizontal, BarChart3, Send, Truck, Clipboard
 import { getUserErrorMessage } from '@/lib/utils/errorMessages';
 import { InquiryReminders } from '@/components/inquiries/InquiryReminders';
 import { InquiryManualAddModal } from '@/components/inquiries/InquiryManualAddModal';
+import { InquiryPeriodPicker } from '@/components/inquiries/InquiryPeriodPicker';
+import { resolvePeriod, type PeriodPreset } from '@/lib/utils/inquiryPeriod';
 
 export default function InquiriesPage() {
   const { profile, getSelectedSchoolIds, selectedSchoolId } = useAuth();
@@ -75,11 +77,34 @@ export default function InquiriesPage() {
   const [filterStatus, setFilterStatus] = useState<InquiryStatus | 'all'>('all');
   const [filterGrade, setFilterGrade] = useState('');
   const [filterMedia, setFilterMedia] = useState('');
+  // 期間ピッカーの状態。一覧のデフォルトは全期間。
+  const [filterPreset, setFilterPreset] = useState<PeriodPreset>('all_time');
+  const [filterCustomFrom, setFilterCustomFrom] = useState('');
+  const [filterCustomTo, setFilterCustomTo] = useState('');
+  // 解決済み日付フィルタ（fetchData の依存に使う）
   const [filterDateFrom, setFilterDateFrom] = useState('');
   const [filterDateTo, setFilterDateTo] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+
+  /**
+   * 期間ピッカーの onChange ハンドラ。
+   * プリセット変更時に resolvePeriod で日付境界を解決し、
+   * filterDateFrom / filterDateTo に流してデータ再取得をトリガーする。
+   */
+  const handlePeriodChange = (
+    preset: PeriodPreset,
+    customFrom: string,
+    customTo: string
+  ) => {
+    setFilterPreset(preset);
+    setFilterCustomFrom(customFrom);
+    setFilterCustomTo(customTo);
+    const { dateFrom, dateTo } = resolvePeriod(preset, customFrom, customTo);
+    setFilterDateFrom(dateFrom);
+    setFilterDateTo(dateTo);
+  };
 
   // 教室名マップ（school_id → name）
   const [schoolsMap, setSchoolsMap] = useState<Record<string, string>>({});
@@ -349,24 +374,16 @@ export default function InquiriesPage() {
                 />
               </div>
 
-              {/* 受付日 */}
-              <div className="col-span-2 sm:col-span-2 lg:col-span-1">
+              {/* 受付日 — プリセット付きピッカー */}
+              <div className="col-span-2 sm:col-span-3 lg:col-span-4">
                 <label className="block text-xs font-medium text-text-heading mb-1">受付日</label>
-                <div className="flex items-center gap-1">
-                  <input
-                    type="date"
-                    value={filterDateFrom}
-                    onChange={(e) => setFilterDateFrom(e.target.value)}
-                    className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                  <span className="text-xs text-gray-400 shrink-0">〜</span>
-                  <input
-                    type="date"
-                    value={filterDateTo}
-                    onChange={(e) => setFilterDateTo(e.target.value)}
-                    className="w-full px-2 py-1.5 border border-border rounded-lg text-sm bg-surface-raised text-text-body focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
+                <InquiryPeriodPicker
+                  preset={filterPreset}
+                  customFrom={filterCustomFrom}
+                  customTo={filterCustomTo}
+                  onChange={handlePeriodChange}
+                  showCompare={false}
+                />
               </div>
             </div>
             <div className="mt-3 flex items-center justify-between">
@@ -377,6 +394,10 @@ export default function InquiriesPage() {
                   setFilterStatus('all');
                   setFilterGrade('');
                   setFilterMedia('');
+                  // 期間ピッカーも全期間にリセットする
+                  setFilterPreset('all_time');
+                  setFilterCustomFrom('');
+                  setFilterCustomTo('');
                   setFilterDateFrom('');
                   setFilterDateTo('');
                   setSearchInput('');
