@@ -83,6 +83,39 @@ export async function getBulletinLabels(schoolId: string): Promise<BulletinLabel
 }
 
 /**
+ * 複数教室のラベル一覧を一括取得（school_id IN で1クエリ）
+ * 教室ごとに getBulletinLabels を M 回叩いていたのを1本に畳む。
+ */
+export async function getBulletinLabelsBatch(
+  schoolIds: string[]
+): Promise<Record<string, BulletinLabel[]>> {
+  const grouped: Record<string, BulletinLabel[]> = {};
+  for (const schoolId of schoolIds) grouped[schoolId] = [];
+  if (schoolIds.length === 0) return grouped;
+
+  const { data, error } = await supabase
+    .from('bulletin_labels')
+    .select('*')
+    .in('school_id', schoolIds)
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    // テーブル未作成（マイグレーション未実行）は空で返す
+    if (error.code === 'PGRST116' || error.message.includes('schema cache')) {
+      console.warn('bulletin_labelsテーブルが見つかりません。マイグレーションを実行してください:', error);
+      return grouped;
+    }
+    throw new Error(`ラベルの取得に失敗しました: ${error.message}`);
+  }
+
+  for (const label of (data || []) as BulletinLabel[]) {
+    (grouped[label.school_id] ||= []).push(label);
+  }
+  return grouped;
+}
+
+/**
  * ラベルを作成
  */
 export async function createBulletinLabel(
@@ -244,6 +277,127 @@ export async function getBulletinPosts(
     is_read: false,
     read_count: 0,
   })) as BulletinPost[];
+}
+
+/**
+ * 複数教室の投稿一覧を一括取得（N+1解消版）
+ *
+ * 旧 getBulletinPosts は教室ごとに「投稿→自分の既読→講師IDリスト→講師既読数」を
+ * 直列で叩いていたため、教室数 M に対して O(M) 本のクエリが発生していた。
+ * （特に「role=teacher の user_profiles 取得」は教室に依らず毎回同じ結果なのに M 回実行されていた）
+ *
+ * 本関数は教室数に依らず固定本数のクエリで完結する:
+ *   1. bulletin_posts を school_id IN (...) で一括取得
+ *   2. 自分の既読 / 講師IDリスト を並列取得
+ *   3. 講師の既読（read_count 用）を一括取得（post_id はチャンク分割でURL長制限回避）
+ * 結果は schoolId ごとにグループ化して返す。
+ */
+export async function getBulletinPostsBatch(
+  schoolIds: string[],
+  options?: {
+    includeArchived?: boolean;
+    userId?: string;
+  }
+): Promise<Record<string, BulletinPost[]>> {
+  if (schoolIds.length === 0) return {};
+
+  let query = supabase
+    .from('bulletin_posts')
+    .select(`
+      *,
+      label:bulletin_labels(*),
+      creator:user_profiles!bulletin_posts_created_by_fkey(display_name, email)
+    `)
+    .in('school_id', schoolIds)
+    .order('is_pinned', { ascending: false })
+    .order('created_at', { ascending: false });
+
+  if (!options?.includeArchived) {
+    query = query.eq('is_archived', false);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    // テーブル未作成（マイグレーション未実行）は空で返す
+    if (error.code === 'PGRST116' || error.message.includes('schema cache')) {
+      console.warn('bulletin_postsテーブルが見つかりません。マイグレーションを実行してください:', error);
+      return {};
+    }
+    throw new Error(`投稿の取得に失敗しました: ${error.message}`);
+  }
+
+  const posts = (data || []) as any[];
+  const postIds = posts.map((p) => p.id);
+  const userId = options?.userId;
+
+  // 既読情報（read系）は全教室分まとめて算出する
+  let readPostIds = new Set<string>();
+  const readCountMap = new Map<string, number>();
+
+  if (userId && postIds.length > 0) {
+    // post_id の IN 句がURL長制限（約8KB）を超えないようチャンク分割する
+    const CHUNK_SIZE = 200;
+    const chunks: string[][] = [];
+    for (let i = 0; i < postIds.length; i += CHUNK_SIZE) {
+      chunks.push(postIds.slice(i, i + CHUNK_SIZE));
+    }
+
+    // 自分の既読と講師IDリストは互いに独立なので並列取得
+    const [myReadChunks, teacherProfilesResult] = await Promise.all([
+      Promise.all(
+        chunks.map((chunk) =>
+          supabase
+            .from('bulletin_reads')
+            .select('post_id')
+            .eq('user_id', userId)
+            .in('post_id', chunk)
+            .then((r) => r.data || [])
+        )
+      ),
+      supabase.from('user_profiles').select('id').eq('role', 'teacher'),
+    ]);
+
+    readPostIds = new Set(myReadChunks.flat().map((r) => r.post_id));
+
+    const teacherIds = teacherProfilesResult.data
+      ? teacherProfilesResult.data.map((p) => p.id)
+      : [];
+
+    // 講師の既読数（read_count）— teacherIds に依存するため上記の後で一括取得
+    if (teacherIds.length > 0) {
+      const teacherReadChunks = await Promise.all(
+        chunks.map((chunk) =>
+          supabase
+            .from('bulletin_reads')
+            .select('post_id')
+            .in('post_id', chunk)
+            .in('user_id', teacherIds)
+            .then((r) => r.data || [])
+        )
+      );
+      teacherReadChunks.flat().forEach((r) => {
+        readCountMap.set(r.post_id, (readCountMap.get(r.post_id) || 0) + 1);
+      });
+    }
+  }
+
+  // schoolId ごとにグループ化しつつ既読情報を付与
+  const grouped: Record<string, BulletinPost[]> = {};
+  for (const schoolId of schoolIds) grouped[schoolId] = [];
+
+  for (const post of posts) {
+    const enriched = {
+      ...post,
+      label: post.label || null,
+      creator: post.creator || null,
+      is_read: userId ? readPostIds.has(post.id) : false,
+      read_count: readCountMap.get(post.id) || 0,
+    } as BulletinPost;
+    (grouped[post.school_id] ||= []).push(enriched);
+  }
+
+  return grouped;
 }
 
 /**

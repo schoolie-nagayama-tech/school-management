@@ -5,11 +5,10 @@ import { BulletinPostCard } from './BulletinPostCard';
 import { BulletinPostModal } from './BulletinPostModal';
 import { BulletinReadersModal } from './BulletinReadersModal';
 import {
-  getBulletinPosts,
-  getBulletinLabels,
+  getBulletinPostsBatch,
+  getBulletinLabelsBatch,
   markAsRead,
   deleteBulletinPost,
-  getUnreadCount,
 } from '@/lib/api/bulletin';
 import { getSchools } from '@/lib/api/schools';
 import type { BulletinPost, BulletinLabel } from '@/types/bulletin';
@@ -85,31 +84,22 @@ export function BulletinBoard({ className = '' }: BulletinBoardProps) {
       const schoolIdSet = new Set(schoolIds);
 
       try {
-        const [allSchoolsData, ...postsAndLabelsPerSchool] = await Promise.all([
+        // 投稿・ラベルとも全教室まとめてバッチ取得（教室数に依らず固定本数のクエリ）。
+        const [allSchoolsData, postsBySchool, labelsBySchoolMap] = await Promise.all([
           getSchools(),
-          ...schoolIds.map(async (schoolId) => {
-            const [postsData, labelsData] = await Promise.all([
-              getBulletinPosts(schoolId, {
-                includeArchived: false,
-                userId: userId,
-              }),
-              getBulletinLabels(schoolId),
-            ]);
-            return { schoolId, posts: postsData, labels: labelsData };
-          }),
+          getBulletinPostsBatch(schoolIds, { includeArchived: false, userId }),
+          getBulletinLabelsBatch(schoolIds),
         ]);
 
         const schoolsList = (allSchoolsData || []).filter((s) => schoolIdSet.has(s.id));
         setSchools(schoolsList);
 
         const schoolNameById = Object.fromEntries(schoolsList.map((s) => [s.id, s.name]));
-        const labelsBySchoolMap: Record<string, BulletinLabel[]> = {};
         const allPosts: BulletinPost[] = [];
 
-        for (const { schoolId, posts: postsData, labels: labelsData } of postsAndLabelsPerSchool) {
-          labelsBySchoolMap[schoolId] = labelsData;
+        for (const schoolId of schoolIds) {
           const name = schoolNameById[schoolId] ?? null;
-          for (const post of postsData) {
+          for (const post of postsBySchool[schoolId] || []) {
             allPosts.push({ ...post, school_name: name });
           }
         }
@@ -121,6 +111,13 @@ export function BulletinBoard({ className = '' }: BulletinBoardProps) {
 
         setLabelsBySchool(labelsBySchoolMap);
         setPosts(allPosts);
+
+        // 未読数は取得済みの is_read から算出（getUnreadCount の追加クエリを撤去）
+        if (userId && canRead) {
+          setUnreadCount(allPosts.filter((p) => !p.is_read).length);
+        } else {
+          setUnreadCount(0);
+        }
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : '';
         if (message.includes('schema cache') || message.includes('not found')) {
@@ -130,16 +127,6 @@ export function BulletinBoard({ className = '' }: BulletinBoardProps) {
           return;
         }
         throw error;
-      }
-
-      if (userId && canRead) {
-        // 複数教室の未読数を並列取得（シーケンシャル await → Promise.all で N回 → 1ラウンドトリップに削減）
-        const counts = await Promise.all(
-          schoolIds.map((schoolId) => getUnreadCount(schoolId, userId))
-        );
-        setUnreadCount(counts.reduce((sum, n) => sum + n, 0));
-      } else {
-        setUnreadCount(0);
       }
 
       setPostingSchoolIds((prev) => {
