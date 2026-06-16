@@ -8,7 +8,7 @@ import { FORM_TYPE_LABELS, GRADE_LABELS, STATUS_LABELS } from '@/types/database'
 import { useAuth } from '@/contexts/AuthContext';
 import { ChevronDown, ChevronUp, Check, CheckCheck, AlertTriangle } from 'lucide-react';
 import { InlineLoading } from '@/components/ui';
-import { getSchool } from '@/lib/api/schools';
+import { useMasterData } from '@/contexts/MasterDataContext';
 import { useConfirm } from '@/hooks/useConfirm';
 import { supabase } from '@/lib/supabase';
 import { toggleCheck as toggleMonthlyTaskCheckApi } from '@/lib/api/monthlyTasks';
@@ -225,12 +225,18 @@ interface NotificationFeedProps {
 export function NotificationFeed({ className = '', onStudentClick }: NotificationFeedProps) {
   const { getSelectedSchoolIds, selectedSchoolId, user } = useAuth();
   const { confirm, ConfirmDialog } = useConfirm();
+  // 教室名はアプリ起動時にロード済みの MasterData から引く（旧: フィード取得後に
+  // getSchool を教室数分だけ追加で叩く2段目のラウンドトリップが発生していた）
+  const { schools } = useMasterData();
+  const schoolNames = useMemo(
+    () => Object.fromEntries(schools.map((s) => [s.id, s.name])) as Record<string, string>,
+    [schools]
+  );
 
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isExpanded, setIsExpanded] = useState(true);
   const [filter, setFilter] = useState<FilterType>('all');
-  const [schoolNames, setSchoolNames] = useState<Record<string, string>>({});
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
 
   // ユーザーIDが変わったら確認済みIDをロード
@@ -315,7 +321,6 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
       ]);
 
       const items: FeedItem[] = [];
-      const allSchoolIdsToFetch: string[] = [];
 
       // 回答データ → FeedItem
       if (responsesResult.status === 'fulfilled') {
@@ -334,10 +339,6 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
             gradeLabel: GRADE_LABELS[r.grade] ?? `学年${r.grade}`,
           });
         });
-
-        // 教室名を取得（後でシフト分も追加）
-        const responseSchoolIds = responses.map((r) => r.school_id);
-        allSchoolIdsToFetch.push(...responseSchoolIds);
       }
 
       // 更新ログ → FeedItem
@@ -485,27 +486,7 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
         });
       }
 
-      // シフト申請・文字起こしの教室IDを単一パスで収集
-      for (const i of items) {
-        if ((i.type === 'shift' || i.type === 'transcript') && i.schoolId) {
-          allSchoolIdsToFetch.push(i.schoolId);
-        }
-      }
-
-      // 教室名を一括取得
-      const uniqueSchoolIds = Array.from(new Set(allSchoolIdsToFetch));
-      if (uniqueSchoolIds.length > 0) {
-        const nameMap: Record<string, string> = {};
-        await Promise.all(
-          uniqueSchoolIds.map(async (sid) => {
-            try {
-              const school = await getSchool(sid);
-              if (school) nameMap[sid] = school.name;
-            } catch { /* ignore */ }
-          })
-        );
-        setSchoolNames(nameMap);
-      }
+      // 教室名は MasterData 由来の schoolNames（useMemo）で解決するため、ここでの追加取得は不要
 
       // 時系列ソート（新しい順）
       items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
