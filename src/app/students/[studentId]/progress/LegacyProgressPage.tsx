@@ -341,9 +341,9 @@ export default function LegacyProgressPage() {
         ? SEASON_LABELS[currentSeason as 'spring' | 'summer' | 'winter']
         : currentSeason;
 
-      // html2canvas と jspdf を動的インポート
+      // html2canvas-pro と jspdf を動的インポート（oklch等のモダンCSS色対応の後継フォーク）
       const [html2canvasModule, jsPDFModule] = await Promise.all([
-        import('html2canvas'),
+        import('html2canvas-pro'),
         import('jspdf'),
       ]);
       

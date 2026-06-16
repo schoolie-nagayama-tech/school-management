@@ -12,9 +12,11 @@ export async function exportProgressToPDF(
 ): Promise<void> {
   const { fitToPage = false, orientation = 'portrait', expandScrollable = false, pageSize = 'a4' } = options || {};
 
-  // html2canvas と jspdf を動的インポート
+  // html2canvas-pro と jspdf を動的インポート
+  // html2canvas-pro は oklch() / lab() などモダンなCSS色関数に対応した後継フォーク。
+  // 旧 html2canvas(1.4.1) は oklch を解釈できず「unsupported color function "oklch"」で失敗していた。
   const [html2canvasModule, jsPDFModule] = await Promise.all([
-    import('html2canvas'),
+    import('html2canvas-pro'),
     import('jspdf'),
   ]);
   
