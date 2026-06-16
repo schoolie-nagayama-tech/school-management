@@ -64,6 +64,24 @@ describe('POST /api/admin/users/create', () => {
     expect(body.user).toBeDefined();
   });
 
+  // 回帰防止: 講師追加フォームは displayName ではなく lastName/firstName を送る。
+  // 以前はサーバー検証が displayName 必須で「全部入力しても必須エラー」になっていた。
+  it('lastName/firstName のみ（displayName 未指定・講師追加フォーム形式）で作成できる', async () => {
+    const { POST } = await import('@/app/api/admin/users/create/route');
+    const req = makeCreateRequest({
+      password: 'TestPass123',
+      lastName: 'テスト',
+      firstName: 'テスト',
+      role: 'teacher',
+      schoolId: 'test-school-id',
+    });
+    const res = await POST(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.success).toBe(true);
+  });
+
   it('未認証で401を返す', async () => {
     const { requireManager } = await import('@/lib/api-auth');
     vi.mocked(requireManager).mockResolvedValueOnce(

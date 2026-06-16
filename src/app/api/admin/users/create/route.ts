@@ -67,7 +67,10 @@ export async function POST(request: NextRequest) {
       : (displayName || null);
 
     // バリデーション
-    if (!password || !displayName || !role || !schoolId) {
+    // 表示名は displayName 直接指定 か lastName/firstName からの生成(effectiveDisplayName)の
+    // どちらでもよい。講師追加フォームは lastName/firstName を送る（displayName は送らない）ため、
+    // displayName 必須にすると「全部入力しても必須エラー」になるバグがあった。
+    if (!password || !effectiveDisplayName || !role || !schoolId) {
       return NextResponse.json(
         { error: '必須項目が入力されていません' },
         { status: 400 }
