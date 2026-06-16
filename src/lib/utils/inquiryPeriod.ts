@@ -43,18 +43,6 @@ export const PRESET_LABELS: Record<PeriodPreset, string> = {
 // ============================================================
 
 /**
- * UTC の Date を JST に変換して YYYY-MM-DD 文字列を返す。
- * JST = UTC + 9h。
- */
-function toJstDateString(d: Date): string {
-  const jst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
-  const y = jst.getUTCFullYear();
-  const m = String(jst.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(jst.getUTCDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
-/**
  * now の JST 年・月・日を返す。
  */
 function jstParts(now: Date): { year: number; month: number; day: number } {
