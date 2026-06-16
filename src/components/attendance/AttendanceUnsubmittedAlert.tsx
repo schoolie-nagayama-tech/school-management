@@ -8,6 +8,11 @@ import { useMasterData } from '@/contexts/MasterDataContext';
 import { findAttendanceSheet } from '@/lib/api/attendance';
 import { getCurrentYearMonth, getPrevMonth, formatYearMonth } from '@/lib/utils/date';
 
+// 前月分の未提出アラートを出す猶予日数（当月の何日までか）。
+// これを過ぎたら前月の未提出アラートは表示しない。
+// 月初の提出期限まわりだけ促し、月の途中ずっと「先月が未提出」と出し続けないようにするため。
+const SUBMIT_GRACE_DAYS = 10;
+
 export function AttendanceUnsubmittedAlert() {
   const { profile, schoolIds } = useAuth();
   const { schools } = useMasterData();
@@ -18,6 +23,9 @@ export function AttendanceUnsubmittedAlert() {
     if (profile?.role !== 'teacher' || schoolIds.length === 0) return;
 
     const checkUnsubmitted = async () => {
+      // 当月の猶予日数を過ぎたら前月分のアラートは出さない（月中ずっと出続けるのを防ぐ）
+      if (new Date().getDate() > SUBMIT_GRACE_DAYS) return;
+
       const prevMonth = getPrevMonth(getCurrentYearMonth());
       const schoolId = schoolIds[0];
 
