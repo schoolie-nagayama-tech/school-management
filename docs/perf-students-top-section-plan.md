@@ -109,12 +109,20 @@ Performance Resource Timing API で全リクエストの開始・終了・本数
 > getApiAuth は API リクエストごとに getUser→profile→schools の約3往復を払う（全 API ルート共通）。
 
 ### Phase 3: 構造の作り直し（フル再設計の本丸）
-- [ ] **P3-a Server Component 化＋ストリーミング**: `students/page.tsx` の初期データ
-  （critical ボード分）をサーバーで事前取得し、Suspense でストリーミング。
-  ハイドレーション後にしか fetch が始まらない現状の直列を解消。
-- [ ] **P3-b or React Query 共有キャッシュ**: クライアント fetch を維持する場合の代替。
-  各ボードの取得を共有キャッシュ・重複排除・prefetch でまとめる。
-  - P3-a と P3-b は二者択一。Phase 1-2 の効果を測ってから判断。
+**前提制約の発見**: `selectedSchoolId` は localStorage 保存（AuthContext）でサーバーから読めない。
+また app 配下に Server Component でのデータ事前取得パターンは皆無、React Query も未導入＝どちらも新規導入。
+`students/page.tsx` は1203行の `'use client'`。→ P3-a は最重要ページの大改造でリスク高、段階的に進める。
+
+- [x] **P3-a 土台: 教室選択を cookie にミラー**（実装済・push済 6ba974c）: AuthContext に
+  `selectedSchoolId` を監視する useEffect を追加し、選択を cookie に同期（localStorage は正典のまま）。
+  Server Component が初期描画時に現在の選択を読めるようにする土台。cookie 値は信頼せず、
+  サーバー側利用者は必ずユーザーの実アクセス権で検証すること。dev で一致・追従を確認済。
+- [ ] **P3-a 本体: Server Component 化＋ストリーミング**（未着手・次セッション判断）:
+  薄い Server Component で critical 3ボードの初期データを cookie の選択校分だけ事前取得し、
+  `initialData` として各ボードへ渡す（boards は initialData があれば初回 client fetch をスキップ）。
+  ハイドレーション後にしか fetch が始まらない現状を解消。最重要ページの分割を伴うため高リスク・多段階。
+- [ ] **P3-b or React Query 共有キャッシュ**（代替案）: first-load の本質は解決せず、主に再訪・遷移を高速化。
+  - P3-a 本体 と P3-b は二者択一。土台(cookie)出荷済みなので P3-a 本体に進める状態。
 
 ---
 
