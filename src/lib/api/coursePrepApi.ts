@@ -71,11 +71,24 @@ const BATCH_CACHE_TTL_MS = 30_000;
 const batchCache = new Map<string, { data: Record<string, unknown>; expiresAt: number }>();
 const batchInflight = new Map<string, Promise<Record<string, unknown>>>();
 
+// 複数校バッチ（batch_get_multi）専用のキャッシュ。キーが schoolIds 結合のため
+// 単一校キャッシュとは別の Map で持ち、無効化時は安全側に倒して全クリアする（後述）。
+const batchMultiCache = new Map<string, { data: Record<string, Record<string, unknown>>; expiresAt: number }>();
+const batchMultiInflight = new Map<string, Promise<Record<string, Record<string, unknown>>>>();
+
 function batchCacheKey(params: Record<string, string | undefined>, targets: string[]): string {
   return `${params.schoolId}:${params.season}:${params.year}:${targets.sort().join(',')}`;
 }
 
+// 複数校キャッシュキー: schoolIds をソートして結合し、順序に依存しないようにする。
+function batchMultiCacheKey(params: { schoolIds: string[]; season: string; year: string }, targets: string[]): string {
+  return `${params.schoolIds.slice().sort().join('|')}:${params.season}:${params.year}:${targets.slice().sort().join(',')}`;
+}
+
 export function invalidateCoursePrepCache(schoolId?: string): void {
+  // multi キャッシュは複数校が混在しキーから特定 schoolId を部分削除できないため、
+  // 書き込み無効化時は schoolId 指定の有無に関わらず全クリアする（古いデータ混入を防ぐ安全側）。
+  batchMultiCache.clear();
   if (!schoolId) { batchCache.clear(); return; }
   Array.from(batchCache.keys()).forEach((key) => {
     if (key.startsWith(`${schoolId}:`)) batchCache.delete(key);
@@ -116,5 +129,51 @@ export async function batchFetchCoursePrepApi(
     return await promise;
   } finally {
     batchInflight.delete(key);
+  }
+}
+
+/**
+ * 複数校バッチ取得: 複数校分を1リクエスト（action=batch_get_multi）で取得する。
+ * 教室別に4本の HTTP を投げていた構成を1本に統合し、認証往復・リクエスト本数を削減する。
+ * 30秒キャッシュ + inflight dedup は単一校版と同じ仕組みを multi 専用 Map で踏襲する。
+ * 返り値は schoolId -> batchResult のマップ。
+ */
+export async function batchFetchCoursePrepApiMulti(
+  params: { schoolIds: string[]; season: string; year: string; includeHidden?: string },
+  targets: string[]
+): Promise<Record<string, Record<string, unknown>>> {
+  const key = batchMultiCacheKey(params, targets);
+
+  const cached = batchMultiCache.get(key);
+  if (cached && cached.expiresAt > Date.now()) return cached.data;
+
+  const existing = batchMultiInflight.get(key);
+  if (existing) return existing;
+
+  const promise = (async () => {
+    const token = await getAccessToken();
+    const searchParams = new URLSearchParams({
+      action: 'batch_get_multi',
+      schoolIds: params.schoolIds.join(','),
+      season: params.season,
+      year: params.year,
+      ...(params.includeHidden !== undefined ? { includeHidden: params.includeHidden } : {}),
+      targets: targets.join(','),
+    });
+    const res = await fetch(`/api/courses/prep?${searchParams.toString()}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '取得に失敗しました');
+    const result = data.data as Record<string, Record<string, unknown>>;
+    batchMultiCache.set(key, { data: result, expiresAt: Date.now() + BATCH_CACHE_TTL_MS });
+    return result;
+  })();
+
+  batchMultiInflight.set(key, promise);
+  try {
+    return await promise;
+  } finally {
+    batchMultiInflight.delete(key);
   }
 }

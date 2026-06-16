@@ -8,8 +8,9 @@ import {
   type ProgressWidgetTask,
   type CoursePrepWidgetTask,
 } from '@/lib/api/monthlyTasks';
-import { batchFetchCoursePrepApi } from '@/lib/api/coursePrepApi';
+import { batchFetchCoursePrepApiMulti } from '@/lib/api/coursePrepApi';
 import { loadSavedSeasonYear } from '@/lib/utils/coursePrepStorage';
+import { whenNetworkIdle } from '@/lib/utils/networkIdle';
 import type {
   Student,
   CourseProgressItem,
@@ -224,35 +225,36 @@ export function TaskProgressWidget({ schoolIds, schoolId, schools: schoolsProp }
     if (targetSchoolIds.length === 0) return;
     setCpLoading(true);
     try {
-      const results = await Promise.all(
-        targetSchoolIds.map(async (sid) => {
-          const result = await batchFetchCoursePrepApi(
-            { schoolId: sid, season, year: String(year), includeHidden: 'false' },
-            ['students', 'progress_items', 'student_progress', 'auto_values']
-          );
-          const rawItems = (result.progress_items as Record<string, unknown>[]) || [];
-          const rawProgress = (result.student_progress as Record<string, unknown>[]) || [];
-          return {
-            schoolId: sid,
-            schoolName: schoolNameMap[sid] || sid,
-            students: ((result.students as Record<string, unknown>[]) || []) as Student[],
-            items: rawItems.map((item) => ({
-              ...item,
-              column_type: (item.column_type as string) || 'check',
-              manager_only: item.manager_only === true,
-              is_hidden: item.is_hidden === true,
-              deadline: (item.deadline as string) || null,
-              auto_source: (item.auto_source as string) || null,
-            })) as CourseProgressItem[],
-            progress: rawProgress.map((d) => ({
-              ...d,
-              number_value: d.number_value ?? null,
-              date_value: d.date_value ?? null,
-            })) as StudentCourseProgress[],
-            autoValues: (result.auto_values || {}) as AutoValues,
-          } as PerSchoolCourseData;
-        })
+      // 教室別の4本HTTPを1本（batch_get_multi）に統合。返り値は schoolId -> batchResult のマップ。
+      const multi = await batchFetchCoursePrepApiMulti(
+        { schoolIds: targetSchoolIds, season, year: String(year), includeHidden: 'false' },
+        ['students', 'progress_items', 'student_progress', 'auto_values']
       );
+      // 各 schoolId のエントリが従来の単一 result に相当するため、同じ形で組み立てる。
+      const results = targetSchoolIds.map((sid) => {
+        const result = (multi[sid] || {}) as Record<string, unknown>;
+        const rawItems = (result.progress_items as Record<string, unknown>[]) || [];
+        const rawProgress = (result.student_progress as Record<string, unknown>[]) || [];
+        return {
+          schoolId: sid,
+          schoolName: schoolNameMap[sid] || sid,
+          students: ((result.students as Record<string, unknown>[]) || []) as Student[],
+          items: rawItems.map((item) => ({
+            ...item,
+            column_type: (item.column_type as string) || 'check',
+            manager_only: item.manager_only === true,
+            is_hidden: item.is_hidden === true,
+            deadline: (item.deadline as string) || null,
+            auto_source: (item.auto_source as string) || null,
+          })) as CourseProgressItem[],
+          progress: rawProgress.map((d) => ({
+            ...d,
+            number_value: d.number_value ?? null,
+            date_value: d.date_value ?? null,
+          })) as StudentCourseProgress[],
+          autoValues: (result.auto_values || {}) as AutoValues,
+        } as PerSchoolCourseData;
+      });
       setPerSchoolData(results.filter((r) => r.items.length > 0));
     } catch {
       // non-critical
@@ -261,8 +263,14 @@ export function TaskProgressWidget({ schoolIds, schoolId, schools: schoolsProp }
     }
   }, [targetSchoolIds, season, year, schoolNameMap]);
 
+  // 講習進捗は (教室数 × /api/courses/prep) で初期ロードの「DBリクエスト殺到」の主因。
+  // 実測(2026-06-16): 単発なら 271ms のルートが、殺到時の接続プーラー競合で約9秒に膨張していた。
+  // クリティカルな取得（Lightアラート/通知/掲示板）の群れが捌けてから取得を始めることで
+  // ピーク同時実行数を下げ、結果的に全体を速くする。表示は自動ロードのまま（一段遅れて出る）。
   useEffect(() => {
-    fetchCourseProgress();
+    let cancelled = false;
+    whenNetworkIdle().then(() => { if (!cancelled) fetchCourseProgress(); });
+    return () => { cancelled = true; };
   }, [fetchCourseProgress]);
 
   const handleComplete = useCallback((completed: ProgressWidgetTask) => {

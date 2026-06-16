@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { AlertItem, SENSITIVE_ALERT_ICONS, MASKED_ALERT_LABEL_OVERRIDES } from './AlertItem';
 import { getAlertsLight, getAlertsHeavy, mergeStudentAlerts, invalidateAlertCache } from '@/lib/api/alerts';
 import type { StudentAlerts, Alert } from '@/types/alerts';
@@ -14,6 +14,7 @@ import { supabase } from '@/lib/supabase';
 import { dismissAlert } from '@/lib/api/alerts';
 import { ALERT_TYPE_LABELS, ALERT_TYPE_COLORS, DISMISSABLE_ALERT_TYPES, SENSITIVE_ALERT_TYPES } from '@/types/alerts';
 import type { AlertType } from '@/types/alerts';
+import { whenNetworkIdle } from '@/lib/utils/networkIdle';
 
 interface AlertBoardProps {
   className?: string;
@@ -40,6 +41,9 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
   const [showInfoPopup, setShowInfoPopup] = useState(false);
   /** Heavy アラート（成績・テスト）の取得状態 */
   const [heavyLoadState, setHeavyLoadState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
+  // 遅延発火する Heavy 取得が「古い教室選択」のまま resolve してマージされるのを防ぐトークン。
+  // fetchAlerts 呼び出しごとに加算し、deferred 実行・resolve 時に一致を確認する。
+  const heavyRunRef = useRef(0);
 
   // 対応済み操作はmanager以上のみ
   const canDismiss = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
@@ -70,6 +74,7 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
   const fetchAlerts = useCallback(async (skipCache = false) => {
     setIsLoading(true);
     setHeavyLoadState('idle');
+    const runToken = ++heavyRunRef.current;
     try {
       const schoolIds = getSelectedSchoolIds();
       if (schoolIds.length === 0) {
@@ -84,18 +89,28 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
       setStudentAlerts(lightAlerts);
       setIsLoading(false);
 
-      // Heavy を非同期で取得してマージ
-      setHeavyLoadState('loading');
-      getAlertsHeavy(schoolIds, { skipCache })
-        .then((heavyAlerts) => {
-          setStudentAlerts((prev) => mergeStudentAlerts(prev, heavyAlerts));
-          setHeavyLoadState('done');
-        })
-        .catch((err) => {
-          console.error('Error fetching heavy alerts:', err);
-          setHeavyLoadState('error');
-          toastError('成績・テスト関連のアラートの取得に失敗しました');
-        });
+      // Heavy（成績・テスト系: assessments→textbooks→exams→assessment_scores の重い連鎖）は
+      // 初期ロードの「DBリクエスト殺到」を増幅する。critical な Light 表示を優先するため、
+      // ブラウザがアイドルになってから取得する。発火・resolve 時に runToken を照合し、
+      // 教室切替などで古くなった結果はマージしない。
+      const startHeavy = () => {
+        if (runToken !== heavyRunRef.current) return; // 既に新しい取得が始まっている
+        setHeavyLoadState('loading');
+        getAlertsHeavy(schoolIds, { skipCache })
+          .then((heavyAlerts) => {
+            if (runToken !== heavyRunRef.current) return; // resolve 時点で陳腐化
+            setStudentAlerts((prev) => mergeStudentAlerts(prev, heavyAlerts));
+            setHeavyLoadState('done');
+          })
+          .catch((err) => {
+            if (runToken !== heavyRunRef.current) return;
+            console.error('Error fetching heavy alerts:', err);
+            setHeavyLoadState('error');
+            toastError('成績・テスト関連のアラートの取得に失敗しました');
+          });
+      };
+      // クリティカル取得の群れが捌けてから Heavy を開始（ピーク同時実行数を下げる）
+      void whenNetworkIdle().then(startHeavy);
     } catch (error) {
       console.error('Error fetching alerts:', error);
       toastError('アラートの取得に失敗しました');

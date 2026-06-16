@@ -196,6 +196,293 @@ async function authenticateAndAuthorize(request: NextRequest, schoolId: string) 
 }
 
 /**
+ * 1教室分の batch_get ロジック本体。
+ * 既存の case 'batch_get' から per-school ロジックをそのまま抽出した関数で、
+ * 単一校（batch_get）と複数校（batch_get_multi）の両方から呼び出される。
+ * targets ごとに並列クエリを発行し、{ students, progress_items, ... } のマップを返す。
+ */
+async function runBatchForSchool(
+  supabaseAdmin: ReturnType<typeof getSupabaseAdmin>,
+  schoolId: string,
+  season: string,
+  year: number,
+  includeHidden: boolean,
+  targets: string[]
+): Promise<Record<string, unknown>> {
+  const batchResult: Record<string, unknown> = {};
+  const promises: Promise<void>[] = [];
+
+  if (targets.includes('students')) {
+    promises.push((async () => {
+      // 大型校では 1000 名を超えうるため全件ページング取得。
+      // 並び替えキーが一意でないので id を最終ソートキーに加えて安定化する。
+      const data = await fetchAllPaged<Record<string, unknown>>((from, to) =>
+        supabaseAdmin
+          .from('students')
+          .select('*')
+          .eq('school_id', schoolId)
+          .is('deleted_at', null)
+          .neq('status', 'withdrawn')
+          .order('grade', { ascending: true })
+          .order('last_name_kana', { ascending: true, nullsFirst: false })
+          .order('first_name_kana', { ascending: true, nullsFirst: false })
+          .order('id', { ascending: true })
+          .range(from, to)
+      ).catch(() => []);
+      batchResult.students = data;
+    })());
+  }
+
+  if (targets.includes('progress_items')) {
+    promises.push((async () => {
+      let query = supabaseAdmin
+        .from('course_prep_progress_items')
+        .select('*')
+        .eq('school_id', schoolId)
+        .eq('season', season)
+        .eq('year', year)
+        .order('sort_order', { ascending: true });
+      if (!includeHidden) {
+        query = query.or('is_hidden.eq.false,is_hidden.is.null');
+      }
+      const { data } = await query;
+      batchResult.progress_items = data || [];
+    })());
+  }
+
+  if (targets.includes('student_progress')) {
+    promises.push((async () => {
+      const { data } = await supabaseAdmin
+        .from('course_prep_student_progress')
+        .select('*, item:course_prep_progress_items!inner(school_id, season, year)')
+        .eq('item.school_id', schoolId)
+        .eq('item.season', season)
+        .eq('item.year', year);
+      batchResult.student_progress = (data || []).map(({ item: _item, ...rest }: { item: unknown; [key: string]: unknown }) => rest);
+    })());
+  }
+
+  if (targets.includes('period')) {
+    promises.push((async () => {
+      const { data } = await supabaseAdmin
+        .from('course_prep_periods')
+        .select('*')
+        .eq('school_id', schoolId)
+        .eq('season', season)
+        .eq('year', year)
+        .maybeSingle();
+      batchResult.period = data;
+    })());
+  }
+
+  if (targets.includes('auto_values')) {
+    promises.push((async () => {
+      // 通塾日程は (生徒数 × 曜日) でスケールし単一校でも 1000 行を超えうるため
+      // 全件ページング取得する（切り捨てると一部生徒の自動コマ数計算が欠落する）。
+      const [regularPatterns, seasonalPatterns, { data: periodForAuto }, proposalMaps] = await Promise.all([
+        fetchAllPaged<{ student_id: string; day_of_week: number }>((from, to) =>
+          supabaseAdmin.from('schedule_regular_patterns')
+            .select('student_id, day_of_week, id')
+            .eq('school_id', schoolId).eq('period_type', 'regular').eq('is_active', true)
+            .order('id', { ascending: true }).range(from, to)
+        ).catch(() => []),
+        fetchAllPaged<{ student_id: string; day_of_week: number }>((from, to) =>
+          supabaseAdmin.from('schedule_regular_patterns')
+            .select('student_id, day_of_week, id')
+            .eq('school_id', schoolId).eq('period_type', season).eq('is_active', true)
+            .order('id', { ascending: true }).range(from, to)
+        ).catch(() => []),
+        supabaseAdmin.from('course_prep_periods')
+          .select('schedule_start_date, schedule_end_date')
+          .eq('school_id', schoolId).eq('season', season).eq('year', year).maybeSingle(),
+        fetchSubjectProposals(supabaseAdmin, schoolId, season, year),
+      ]);
+      const regularWeeklyMap: Record<string, number> = {};
+      const regularDayMap: Record<string, Record<number, number>> = {};
+      for (const p of (regularPatterns || []) as { student_id: string; day_of_week: number }[]) {
+        regularWeeklyMap[p.student_id] = (regularWeeklyMap[p.student_id] || 0) + 1;
+        if (!regularDayMap[p.student_id]) regularDayMap[p.student_id] = {};
+        regularDayMap[p.student_id][p.day_of_week] = (regularDayMap[p.student_id][p.day_of_week] || 0) + 1;
+      }
+      const seasonalDayMap: Record<string, Record<number, number>> = {};
+      for (const p of (seasonalPatterns || []) as { student_id: string; day_of_week: number }[]) {
+        if (!seasonalDayMap[p.student_id]) seasonalDayMap[p.student_id] = {};
+        seasonalDayMap[p.student_id][p.day_of_week] = (seasonalDayMap[p.student_id][p.day_of_week] || 0) + 1;
+      }
+      let dayCounts: Record<number, number> | null = null;
+      if (periodForAuto?.schedule_start_date && periodForAuto?.schedule_end_date) {
+        dayCounts = countDayOccurrences(periodForAuto.schedule_start_date, periodForAuto.schedule_end_date);
+      }
+      const autoResult: Record<string, { regular_weekly: number; course_sessions: number; proposal_total?: number; subject_proposals?: Record<string, number>; applied_total?: number; subject_applied?: Record<string, number> }> = {};
+      const allIds = Array.from(new Set([...Object.keys(regularWeeklyMap), ...Object.keys(seasonalDayMap)]));
+      for (const sid of allIds) {
+        const weeklyCount = regularWeeklyMap[sid] || 0;
+        const dayMap = Object.keys(seasonalDayMap[sid] || {}).length > 0
+          ? seasonalDayMap[sid]
+          : regularDayMap[sid] || {};
+        let sessions = 0;
+        if (dayCounts) {
+          for (const [day, patternCount] of Object.entries(dayMap)) {
+            sessions += patternCount * (dayCounts[Number(day)] || 0);
+          }
+        } else {
+          sessions = Object.values(dayMap).reduce((s, c) => s + c, 0);
+        }
+        autoResult[sid] = {
+          regular_weekly: weeklyCount,
+          course_sessions: sessions,
+        };
+      }
+      const proposalSids = Array.from(new Set([
+        ...Object.keys(proposalMaps.proposed),
+        ...Object.keys(proposalMaps.applied),
+      ]));
+      for (const sid of proposalSids) {
+        if (!autoResult[sid]) {
+          autoResult[sid] = { regular_weekly: 0, course_sessions: 0 };
+        }
+        const propSubjects = proposalMaps.proposed[sid];
+        if (propSubjects) {
+          autoResult[sid].subject_proposals = propSubjects;
+          autoResult[sid].proposal_total = Object.values(propSubjects).reduce((a, b) => a + b, 0);
+        }
+        const appliedSubjects = proposalMaps.applied[sid];
+        if (appliedSubjects) {
+          autoResult[sid].subject_applied = appliedSubjects;
+          autoResult[sid].applied_total = Object.values(appliedSubjects).reduce((a, b) => a + b, 0);
+        }
+      }
+      batchResult.auto_values = autoResult;
+    })());
+  }
+
+  if (targets.includes('schedule_tasks')) {
+    promises.push((async () => {
+      const { data: tasks } = await supabaseAdmin
+        .from('course_prep_schedule_tasks')
+        .select('*')
+        .eq('school_id', schoolId)
+        .eq('season', season)
+        .eq('year', year)
+        .order('sort_order', { ascending: true });
+      if (!tasks || tasks.length === 0) { batchResult.schedule_tasks = []; return; }
+      const taskIds = tasks.map((t: { id: string }) => t.id);
+      const linkedItemIds = tasks
+        .map((t: { linked_progress_item_id: string | null }) => t.linked_progress_item_id)
+        .filter((id: string | null): id is string => !!id);
+      const uniqueLinkedIds = Array.from(new Set(linkedItemIds));
+
+      const [{ data: markers }, studentCount, progressData] = await Promise.all([
+        supabaseAdmin
+          .from('course_prep_schedule_markers')
+          .select('*')
+          .in('task_id', taskIds)
+          .order('marker_date', { ascending: true }),
+        uniqueLinkedIds.length > 0
+          ? supabaseAdmin
+              .from('students')
+              .select('id', { count: 'exact', head: true })
+              .eq('school_id', schoolId)
+              .is('deleted_at', null)
+              .neq('status', 'withdrawn')
+              .then(({ count }) => count || 0)
+          : Promise.resolve(0),
+        uniqueLinkedIds.length > 0
+          ? supabaseAdmin
+              .from('course_prep_student_progress')
+              .select('item_id, status')
+              .in('item_id', uniqueLinkedIds)
+              .then(({ data }) => data || [])
+          : Promise.resolve([]),
+      ]);
+
+      const markersByTask = new Map<string, unknown[]>();
+      for (const m of (markers || [])) {
+        const tid = (m as { task_id: string }).task_id;
+        if (!markersByTask.has(tid)) markersByTask.set(tid, []);
+        markersByTask.get(tid)!.push(m);
+      }
+      const progressRateMap: Record<string, { total: number; completed: number }> = {};
+      for (const itemId of uniqueLinkedIds) {
+        const related = (progressData as { item_id: string; status: string }[]).filter((p) => p.item_id === itemId);
+        const completed = related.filter((p) => p.status === 'completed').length;
+        progressRateMap[itemId] = { total: studentCount as number, completed };
+      }
+      batchResult.schedule_tasks = tasks.map((t: { id: string; linked_progress_item_id: string | null }) => ({
+        ...t,
+        markers: markersByTask.get(t.id) || [],
+        linked_progress_rate: t.linked_progress_item_id ? progressRateMap[t.linked_progress_item_id] || null : null,
+      }));
+    })());
+  }
+
+  await Promise.all(promises);
+  return batchResult;
+}
+
+/**
+ * batch_get_multi: 複数校分の batch_get を1リクエストで処理する。
+ *
+ * 目的: 教室別に4本の HTTP リクエストを投げる構成を1本に統合し、
+ * リクエスト本数と認証往復（getApiAuth の getUser→user_profiles→schools）を削減する。
+ *
+ * security: サービスロールで RLS をバイパスするため、認可をここで厳密に行う。
+ * 要求された schoolIds のうち1つでもアクセス不可が混じっていたら 403 を返す
+ * （既存の単一校 batch_get が権限無しを 403 にしているのと整合させ、黙って落とさない）。
+ */
+async function handleBatchGetMulti(request: NextRequest, url: URL) {
+  try {
+    // schoolIds はカンマ区切り。空要素は除去する。
+    const schoolIds = (url.searchParams.get('schoolIds') || '').split(',').filter(Boolean);
+    if (schoolIds.length === 0) {
+      return NextResponse.json({ error: 'schoolIds が必要です' }, { status: 400 });
+    }
+
+    // 認証は getApiAuth を1回だけ呼ぶ（複数校でも認証往復は1回で済ませる）。
+    const { auth } = await getApiAuth(request);
+    if (!auth) {
+      return NextResponse.json({ error: '認証が必要です' }, { status: 401 });
+    }
+
+    // 認可: admin/owner は auth.schoolIds に全校が入っている。
+    // 要求校に1つでもアクセス不可が混じっていたら 403（部分許可で黙って落とさない）。
+    const unauthorized = schoolIds.filter((sid) => !auth.schoolIds.includes(sid));
+    if (unauthorized.length > 0) {
+      return NextResponse.json({ error: 'アクセス権のない教室が含まれています' }, { status: 403 });
+    }
+
+    // パース方法は GET 本体と同一に揃える。
+    const season = url.searchParams.get('season') || '';
+    const year = parseInt(url.searchParams.get('year') || '0', 10);
+    const includeHidden = url.searchParams.get('includeHidden') === 'true';
+    const targets = (url.searchParams.get('targets') || '').split(',').filter(Boolean);
+
+    // service role クライアントは1回だけ生成し、全校を並列実行する。
+    const supabaseAdmin = getSupabaseAdmin();
+    const entries = await Promise.all(
+      schoolIds.map((sid) =>
+        runBatchForSchool(supabaseAdmin, sid, season, year, includeHidden, targets).then(
+          (r) => [sid, r] as [string, Record<string, unknown>]
+        )
+      )
+    );
+
+    // schoolId → batchResult のマップで返す。
+    const result: Record<string, Record<string, unknown>> = {};
+    for (const [sid, r] of entries) {
+      result[sid] = r;
+    }
+    return NextResponse.json({ data: result });
+  } catch (error) {
+    console.error('[courses/prep batch_get_multi] Error:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : '取得に失敗しました' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
  * GET /api/courses/prep?action=...&schoolId=...&season=...&year=...
  *
  * サービスロールキーで RLS をバイパスして講習準備データを読み取る
@@ -205,6 +492,12 @@ export async function GET(request: NextRequest) {
     const url = new URL(request.url);
     const action = url.searchParams.get('action');
     const schoolId = url.searchParams.get('schoolId');
+
+    // 複数校バッチは単一 schoolId を持たないため、単一必須チェックの「前」に分岐する。
+    // 認証・認可は handleBatchGetMulti 内で複数校向けに別途行う。
+    if (action === 'batch_get_multi') {
+      return await handleBatchGetMulti(request, url);
+    }
 
     if (!action || !schoolId) {
       return NextResponse.json({ error: 'action と schoolId が必要です' }, { status: 400 });
@@ -373,215 +666,9 @@ export async function GET(request: NextRequest) {
       // ===== バッチ取得: 複数データを1リクエストで取得 =====
       // 旧 'get_auto_values' は削除済み。同等のロジックは 'batch_get' の 'auto_values' ターゲットに統合されている。
       case 'batch_get': {
+        // per-school ロジックは runBatchForSchool に抽出済み（挙動同一）。
         const targets = (url.searchParams.get('targets') || '').split(',').filter(Boolean);
-        const batchResult: Record<string, unknown> = {};
-        const promises: Promise<void>[] = [];
-
-        if (targets.includes('students')) {
-          promises.push((async () => {
-            // 大型校では 1000 名を超えうるため全件ページング取得。
-            // 並び替えキーが一意でないので id を最終ソートキーに加えて安定化する。
-            const data = await fetchAllPaged<Record<string, unknown>>((from, to) =>
-              supabaseAdmin
-                .from('students')
-                .select('*')
-                .eq('school_id', schoolId)
-                .is('deleted_at', null)
-                .neq('status', 'withdrawn')
-                .order('grade', { ascending: true })
-                .order('last_name_kana', { ascending: true, nullsFirst: false })
-                .order('first_name_kana', { ascending: true, nullsFirst: false })
-                .order('id', { ascending: true })
-                .range(from, to)
-            ).catch(() => []);
-            batchResult.students = data;
-          })());
-        }
-
-        if (targets.includes('progress_items')) {
-          promises.push((async () => {
-            let query = supabaseAdmin
-              .from('course_prep_progress_items')
-              .select('*')
-              .eq('school_id', schoolId)
-              .eq('season', season)
-              .eq('year', year)
-              .order('sort_order', { ascending: true });
-            if (!includeHidden) {
-              query = query.or('is_hidden.eq.false,is_hidden.is.null');
-            }
-            const { data } = await query;
-            batchResult.progress_items = data || [];
-          })());
-        }
-
-        if (targets.includes('student_progress')) {
-          promises.push((async () => {
-            const { data } = await supabaseAdmin
-              .from('course_prep_student_progress')
-              .select('*, item:course_prep_progress_items!inner(school_id, season, year)')
-              .eq('item.school_id', schoolId)
-              .eq('item.season', season)
-              .eq('item.year', year);
-            batchResult.student_progress = (data || []).map(({ item: _item, ...rest }: { item: unknown; [key: string]: unknown }) => rest);
-          })());
-        }
-
-        if (targets.includes('period')) {
-          promises.push((async () => {
-            const { data } = await supabaseAdmin
-              .from('course_prep_periods')
-              .select('*')
-              .eq('school_id', schoolId)
-              .eq('season', season)
-              .eq('year', year)
-              .maybeSingle();
-            batchResult.period = data;
-          })());
-        }
-
-        if (targets.includes('auto_values')) {
-          promises.push((async () => {
-            // 通塾日程は (生徒数 × 曜日) でスケールし単一校でも 1000 行を超えうるため
-            // 全件ページング取得する（切り捨てると一部生徒の自動コマ数計算が欠落する）。
-            const [regularPatterns, seasonalPatterns, { data: periodForAuto }, proposalMaps] = await Promise.all([
-              fetchAllPaged<{ student_id: string; day_of_week: number }>((from, to) =>
-                supabaseAdmin.from('schedule_regular_patterns')
-                  .select('student_id, day_of_week, id')
-                  .eq('school_id', schoolId).eq('period_type', 'regular').eq('is_active', true)
-                  .order('id', { ascending: true }).range(from, to)
-              ).catch(() => []),
-              fetchAllPaged<{ student_id: string; day_of_week: number }>((from, to) =>
-                supabaseAdmin.from('schedule_regular_patterns')
-                  .select('student_id, day_of_week, id')
-                  .eq('school_id', schoolId).eq('period_type', season).eq('is_active', true)
-                  .order('id', { ascending: true }).range(from, to)
-              ).catch(() => []),
-              supabaseAdmin.from('course_prep_periods')
-                .select('schedule_start_date, schedule_end_date')
-                .eq('school_id', schoolId).eq('season', season).eq('year', year).maybeSingle(),
-              fetchSubjectProposals(supabaseAdmin, schoolId, season, year),
-            ]);
-            const regularWeeklyMap: Record<string, number> = {};
-            const regularDayMap: Record<string, Record<number, number>> = {};
-            for (const p of (regularPatterns || []) as { student_id: string; day_of_week: number }[]) {
-              regularWeeklyMap[p.student_id] = (regularWeeklyMap[p.student_id] || 0) + 1;
-              if (!regularDayMap[p.student_id]) regularDayMap[p.student_id] = {};
-              regularDayMap[p.student_id][p.day_of_week] = (regularDayMap[p.student_id][p.day_of_week] || 0) + 1;
-            }
-            const seasonalDayMap: Record<string, Record<number, number>> = {};
-            for (const p of (seasonalPatterns || []) as { student_id: string; day_of_week: number }[]) {
-              if (!seasonalDayMap[p.student_id]) seasonalDayMap[p.student_id] = {};
-              seasonalDayMap[p.student_id][p.day_of_week] = (seasonalDayMap[p.student_id][p.day_of_week] || 0) + 1;
-            }
-            let dayCounts: Record<number, number> | null = null;
-            if (periodForAuto?.schedule_start_date && periodForAuto?.schedule_end_date) {
-              dayCounts = countDayOccurrences(periodForAuto.schedule_start_date, periodForAuto.schedule_end_date);
-            }
-            const autoResult: Record<string, { regular_weekly: number; course_sessions: number; proposal_total?: number; subject_proposals?: Record<string, number>; applied_total?: number; subject_applied?: Record<string, number> }> = {};
-            const allIds = Array.from(new Set([...Object.keys(regularWeeklyMap), ...Object.keys(seasonalDayMap)]));
-            for (const sid of allIds) {
-              const weeklyCount = regularWeeklyMap[sid] || 0;
-              const dayMap = Object.keys(seasonalDayMap[sid] || {}).length > 0
-                ? seasonalDayMap[sid]
-                : regularDayMap[sid] || {};
-              let sessions = 0;
-              if (dayCounts) {
-                for (const [day, patternCount] of Object.entries(dayMap)) {
-                  sessions += patternCount * (dayCounts[Number(day)] || 0);
-                }
-              } else {
-                sessions = Object.values(dayMap).reduce((s, c) => s + c, 0);
-              }
-              autoResult[sid] = {
-                regular_weekly: weeklyCount,
-                course_sessions: sessions,
-              };
-            }
-            const proposalSids = Array.from(new Set([
-              ...Object.keys(proposalMaps.proposed),
-              ...Object.keys(proposalMaps.applied),
-            ]));
-            for (const sid of proposalSids) {
-              if (!autoResult[sid]) {
-                autoResult[sid] = { regular_weekly: 0, course_sessions: 0 };
-              }
-              const propSubjects = proposalMaps.proposed[sid];
-              if (propSubjects) {
-                autoResult[sid].subject_proposals = propSubjects;
-                autoResult[sid].proposal_total = Object.values(propSubjects).reduce((a, b) => a + b, 0);
-              }
-              const appliedSubjects = proposalMaps.applied[sid];
-              if (appliedSubjects) {
-                autoResult[sid].subject_applied = appliedSubjects;
-                autoResult[sid].applied_total = Object.values(appliedSubjects).reduce((a, b) => a + b, 0);
-              }
-            }
-            batchResult.auto_values = autoResult;
-          })());
-        }
-
-        if (targets.includes('schedule_tasks')) {
-          promises.push((async () => {
-            const { data: tasks } = await supabaseAdmin
-              .from('course_prep_schedule_tasks')
-              .select('*')
-              .eq('school_id', schoolId)
-              .eq('season', season)
-              .eq('year', year)
-              .order('sort_order', { ascending: true });
-            if (!tasks || tasks.length === 0) { batchResult.schedule_tasks = []; return; }
-            const taskIds = tasks.map((t: { id: string }) => t.id);
-            const linkedItemIds = tasks
-              .map((t: { linked_progress_item_id: string | null }) => t.linked_progress_item_id)
-              .filter((id: string | null): id is string => !!id);
-            const uniqueLinkedIds = Array.from(new Set(linkedItemIds));
-
-            const [{ data: markers }, studentCount, progressData] = await Promise.all([
-              supabaseAdmin
-                .from('course_prep_schedule_markers')
-                .select('*')
-                .in('task_id', taskIds)
-                .order('marker_date', { ascending: true }),
-              uniqueLinkedIds.length > 0
-                ? supabaseAdmin
-                    .from('students')
-                    .select('id', { count: 'exact', head: true })
-                    .eq('school_id', schoolId)
-                    .is('deleted_at', null)
-                    .neq('status', 'withdrawn')
-                    .then(({ count }) => count || 0)
-                : Promise.resolve(0),
-              uniqueLinkedIds.length > 0
-                ? supabaseAdmin
-                    .from('course_prep_student_progress')
-                    .select('item_id, status')
-                    .in('item_id', uniqueLinkedIds)
-                    .then(({ data }) => data || [])
-                : Promise.resolve([]),
-            ]);
-
-            const markersByTask = new Map<string, unknown[]>();
-            for (const m of (markers || [])) {
-              const tid = (m as { task_id: string }).task_id;
-              if (!markersByTask.has(tid)) markersByTask.set(tid, []);
-              markersByTask.get(tid)!.push(m);
-            }
-            const progressRateMap: Record<string, { total: number; completed: number }> = {};
-            for (const itemId of uniqueLinkedIds) {
-              const related = (progressData as { item_id: string; status: string }[]).filter((p) => p.item_id === itemId);
-              const completed = related.filter((p) => p.status === 'completed').length;
-              progressRateMap[itemId] = { total: studentCount as number, completed };
-            }
-            batchResult.schedule_tasks = tasks.map((t: { id: string; linked_progress_item_id: string | null }) => ({
-              ...t,
-              markers: markersByTask.get(t.id) || [],
-              linked_progress_rate: t.linked_progress_item_id ? progressRateMap[t.linked_progress_item_id] || null : null,
-            }));
-          })());
-        }
-
-        await Promise.all(promises);
+        const batchResult = await runBatchForSchool(supabaseAdmin, schoolId, season, year, includeHidden, targets);
         return NextResponse.json({ data: batchResult });
       }
 
