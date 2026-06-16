@@ -68,12 +68,16 @@ beforeAll(async () => {
   const uniqueA = Math.random().toString(36).slice(2, 8);
   const uniqueB = Math.random().toString(36).slice(2, 8);
 
+  // students は student_code / last_name_kana / first_name_kana も NOT NULL のため必ず埋める
   const { data: studentA, error: errA } = await adminClient
     .from('students')
     .insert({
       school_id: schoolAId,
+      student_code: `RLSA_${uniqueA}`,
       last_name: `RLS姓A${uniqueA}`,
       first_name: `RLS名A${uniqueA}`,
+      last_name_kana: 'アールエルエスエー',
+      first_name_kana: 'テスト',
       grade: 1,
       status: 'active',
     })
@@ -86,8 +90,11 @@ beforeAll(async () => {
     .from('students')
     .insert({
       school_id: schoolBId,
+      student_code: `RLSB_${uniqueB}`,
       last_name: `RLS姓B${uniqueB}`,
       first_name: `RLS名B${uniqueB}`,
+      last_name_kana: 'アールエルエスビー',
+      first_name_kana: 'テスト',
       grade: 1,
       status: 'active',
     })

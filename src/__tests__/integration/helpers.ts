@@ -53,10 +53,14 @@ export async function createTestStudent(
   overrides: Record<string, unknown> = {}
 ): Promise<{ id: string; last_name: string; first_name: string }> {
   const uniqueId = Math.random().toString(36).slice(2, 10);
+  // students は student_code / last_name_kana / first_name_kana も NOT NULL のため必ず埋める
   const defaults = {
     school_id: schoolId,
+    student_code: `TS_${uniqueId}`,
     last_name: `姓${uniqueId}`,
     first_name: `名${uniqueId}`,
+    last_name_kana: 'セイ',
+    first_name_kana: 'メイ',
     grade: 3,
     status: 'active',
     ...overrides,
