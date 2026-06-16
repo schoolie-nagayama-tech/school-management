@@ -74,6 +74,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '受付期間が終了しました' }, { status: 400 });
     }
 
+    // 連続申込（重複送信）対策:
+    // 同一(教室・種別・期間)の既存回答と、氏名・メールを正規化して突き合わせ、
+    // 一致すれば二重申込として拒否する。
+    // DBユニーク制約にしない理由: 既存の重複データや「申込内容の訂正のための再送」を
+    // 壊すため、アプリ側で柔軟にチェックする（NULLメールも空文字に正規化して同一視できる）。
+    const { data: existingResponses } = await supabaseAdmin
+      .from('form_responses')
+      .select('student_name, email')
+      .eq('school_id', school_id)
+      .eq('form_type', form_type)
+      .eq('form_period', form_period);
+
+    const normName = normalizeName(student_name);
+    const normEmail = (email ?? '').trim().toLowerCase();
+    const isDuplicate = (existingResponses ?? []).some(
+      (r: { student_name: string | null; email: string | null }) =>
+        normalizeName(r.student_name ?? '') === normName &&
+        (r.email ?? '').trim().toLowerCase() === normEmail
+    );
+    if (isDuplicate) {
+      return NextResponse.json(
+        { error: 'この生徒の申込は既に受け付けています。変更が必要な場合は教室までご連絡ください。' },
+        { status: 409 }
+      );
+    }
+
     const { data: created, error } = await supabaseAdmin
       .from('form_responses')
       .insert({

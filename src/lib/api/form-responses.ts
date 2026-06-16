@@ -224,7 +224,10 @@ export async function createPublicFormResponse(
 
   if (!res.ok) {
     if (res.status === 409) {
-      throw new Error('この内容は既に送信されています。');
+      // サーバーの具体的メッセージ（例: 「この生徒の申込は既に受け付けています…」）を優先表示
+      throw new Error(
+        (json as { error?: string }).error || 'この内容は既に送信されています。'
+      );
     }
     throw new Error(
       (json as { error?: string }).error ||
