@@ -1,4 +1,6 @@
 import { supabase } from '../supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/types/database';
 import { listAssessmentsBySchool } from './assessments';
 import { getInterviewsBySchool, getPendingTasksBySchools } from './interviews';
 import { getApplicationItems, getStudentApplications } from './applications';
@@ -114,8 +116,14 @@ async function fetchProgressFlagsByStudent(
  *   申込より後にこの値が動いていれば「日程を更新した」とみなす（更新で自動的にアラートが消える）。
  *
  * いずれも PostgREST の1000行上限で切り捨てられないよう .range() でページング全件取得する。
+ *
+ * @param client - RLS 認証済みのサーバークライアント（省略時はブラウザシングルトン）
+ *                 サーバー prefetch 経路で正しいデータを取れるよう DI する
  */
-async function fetchScheduleChangeAlertData(schoolIds: string[]): Promise<{
+async function fetchScheduleChangeAlertData(
+  schoolIds: string[],
+  client: SupabaseClient<Database> = supabase
+): Promise<{
   responses: ScheduleChangeResponse[];
   touchedByStudent: Map<string, number>;
 }> {
@@ -128,7 +136,7 @@ async function fetchScheduleChangeAlertData(schoolIds: string[]): Promise<{
   const responses: ScheduleChangeResponse[] = [];
   try {
     for (let from = 0; ; from += PAGE) {
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('form_responses')
         .select('id, form_type, linked_student_id, created_at, response_data')
         .in('school_id', schoolIds)
@@ -174,7 +182,7 @@ async function fetchScheduleChangeAlertData(schoolIds: string[]): Promise<{
   const touchedByStudent = new Map<string, number>();
   try {
     for (let from = 0; ; from += PAGE) {
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('schedule_regular_patterns')
         .select('id, student_id, created_at, updated_at')
         .in('school_id', schoolIds)
@@ -1090,9 +1098,17 @@ export function applyDismissAndSort(
 
 /**
  * 対応済み記録を取得
+ *
+ * @param client - RLS 認証済みのサーバークライアントを渡せる（省略時はブラウザ用シングルトン）。
+ *                 サーバー実行時は createSupabaseServerClient() の戻り値を渡すこと。
  */
-export async function getAlertDismissals(schoolIds: string[]): Promise<AlertDismissal[]> {
-  const { data, error } = await supabase
+export async function getAlertDismissals(
+  schoolIds: string[],
+  // DI: サーバーコンポーネントから RLS 認証済みクライアントを注入できるようにする
+  // （省略時はブラウザ用シングルトン。既存のクライアント呼び出しと完全互換）
+  client: SupabaseClient<Database> = supabase
+): Promise<AlertDismissal[]> {
+  const { data, error } = await client
     .from('alert_dismissals')
     .select('*')
     .in('school_id', schoolIds)
@@ -1167,8 +1183,16 @@ export async function undismissAlert(
 
 /**
  * Light アラート用ソースのみ取得（interview, application, task）
+ *
+ * @param client - RLS 認証済みのサーバークライアント（省略時はブラウザシングルトン）。
+ *                 サーバー実行時は createSupabaseServerClient() の戻り値を渡すこと。
+ *                 渡した client は全下位関数（getStudents / getInterviewsBySchool 等）に
+ *                 糸通しされ、サーバー側 RLS 認証が全取得経路に適用される。
  */
-async function fetchAlertSourcesLight(schoolIds: string[]): Promise<Partial<AlertSources>> {
+async function fetchAlertSourcesLight(
+  schoolIds: string[],
+  client: SupabaseClient<Database> = supabase
+): Promise<Partial<AlertSources>> {
   if (schoolIds.length === 0) {
     return {
       students: [],
@@ -1184,15 +1208,16 @@ async function fetchAlertSourcesLight(schoolIds: string[]): Promise<Partial<Aler
     };
   }
 
+  // 全下位関数に client を渡してサーバー RLS 認証を適用する
   const [allStudents, interviewsByStudent, applicationItems, applicationsResult, pendingTasksResult, scheduleChangeData, settingsBySchool] =
     await Promise.all([
-      getStudents(undefined, schoolIds),
-      getInterviewsBySchool(schoolIds),
-      getApplicationItems(schoolIds, false),
-      getStudentApplications(schoolIds).catch(() => []),
-      getPendingTasksBySchools(schoolIds).catch((e) => { console.warn('未完了タスクの取得に失敗しました:', e); return []; }),
-      fetchScheduleChangeAlertData(schoolIds).catch((e) => { console.warn('日程変更データの取得に失敗しました:', e); return { responses: [], touchedByStudent: new Map<string, number>() }; }),
-      getAlertSettingsBySchools(schoolIds).catch(() => new Map<string, AlertSetting[]>()),
+      getStudents(undefined, schoolIds, client),
+      getInterviewsBySchool(schoolIds, client),
+      getApplicationItems(schoolIds, false, client),
+      getStudentApplications(schoolIds, client).catch(() => []),
+      getPendingTasksBySchools(schoolIds, client).catch((e) => { console.warn('未完了タスクの取得に失敗しました:', e); return []; }),
+      fetchScheduleChangeAlertData(schoolIds, client).catch((e) => { console.warn('日程変更データの取得に失敗しました:', e); return { responses: [], touchedByStudent: new Map<string, number>() }; }),
+      getAlertSettingsBySchools(schoolIds, client).catch(() => new Map<string, AlertSetting[]>()),
     ]);
   // プログラミング受講生はアラート対象外
   const students = allStudents.filter((s) => s.status === 'active' && !s.is_programming);
@@ -1326,25 +1351,46 @@ export interface GetAlertsOptions {
 
 /**
  * Light アラートのみ取得（速い：interview_overdue, application_overdue, interview_task）
+ *
+ * @param client - RLS 認証済みのサーバークライアント（省略時はブラウザ用シングルトン）。
+ *                 サーバー実行時は createSupabaseServerClient() の戻り値を渡すこと。
+ *
+ * セキュリティ: サーバー実行（client 引数あり）の場合はモジュールレベルの in-memory キャッシュを
+ * 一切読み書きしない。サーバーはプロセスを跨いでリクエストを処理するため、キャッシュを読み書きすると
+ * 別ユーザーのアラートデータが混ざる危険がある。client が渡された＝サーバー実行と判断してスキップする。
  */
 export async function getAlertsLight(
   schoolIds: string[],
-  opts: GetAlertsOptions = {}
+  opts: GetAlertsOptions = {},
+  // DI: サーバーコンポーネントから RLS 認証済みクライアントを注入できるようにする
+  // （省略時はブラウザ用シングルトン。既存のクライアント呼び出しと完全互換）
+  client?: SupabaseClient<Database>
 ): Promise<StudentAlerts[]> {
+  // サーバー実行（client 明示）の場合は in-memory キャッシュを使わない
+  // （複数ユーザーのデータが混在するリスクを避けるため）
+  const isServerExecution = client !== undefined;
   const key = cacheKey(schoolIds);
-  if (!opts.skipCache) {
+
+  if (!isServerExecution && !opts.skipCache) {
     const cached = getCached(cacheLight, key);
     if (cached) return cached;
   }
 
+  // 全下位関数に client を渡して Light 経路全体にサーバー RLS 認証を適用する
+  const resolvedClient = client ?? supabase;
   const [sources, dismissals] = await Promise.all([
-    fetchAlertSourcesLight(schoolIds),
-    getAlertDismissals(schoolIds),
+    fetchAlertSourcesLight(schoolIds, resolvedClient),
+    getAlertDismissals(schoolIds, resolvedClient),
   ]);
   const dismissedSet = new Set(dismissals.map((d) => `${d.student_id}:${d.alert_type}:${d.alert_key}`));
   const candidates = buildAlertCandidatesLight(sources);
   const result = applyDismissAndSort(candidates, dismissedSet);
-  setCached(cacheLight, key, result);
+
+  // サーバー実行時はキャッシュに書き込まない（ユーザー間データ混在を防ぐ）
+  if (!isServerExecution) {
+    setCached(cacheLight, key, result);
+  }
+
   return result;
 }
 

@@ -1,4 +1,6 @@
 import { supabase } from '../supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/types/database';
 import type {
   ApplicationItem,
   ApplicationItemInsert,
@@ -11,10 +13,14 @@ import { getDefaultSchoolId } from './schools';
 
 /**
  * 申込項目一覧を取得
+ *
+ * @param client - RLS 認証済みのサーバークライアント（省略時はブラウザシングルトン）
+ *                 サーバー prefetch 経路で正しいデータを取れるよう DI する
  */
 export async function getApplicationItems(
   schoolIds?: string | string[], // 単一のIDまたは複数のID
-  includeHidden: boolean = false
+  includeHidden: boolean = false,
+  client: SupabaseClient<Database> = supabase
 ): Promise<ApplicationItem[]> {
   // schoolIdsが配列の場合は複数教室、文字列の場合は単一教室、未指定の場合はデフォルト教室
   const targetSchoolIds = Array.isArray(schoolIds)
@@ -22,8 +28,8 @@ export async function getApplicationItems(
     : schoolIds
     ? [schoolIds]
     : [getDefaultSchoolId()];
-  
-  let query = supabase
+
+  let query = client
     .from('application_items')
     .select('*')
     .in('school_id', targetSchoolIds)
@@ -208,8 +214,13 @@ export async function updateApplicationItemSortOrder(
 /**
  * 全生徒の申込状況を取得
  */
+/**
+ * @param client - RLS 認証済みのサーバークライアント（省略時はブラウザシングルトン）
+ *                 サーバー prefetch 経路で正しいデータを取れるよう DI する
+ */
 export async function getStudentApplications(
-  schoolIds?: string | string[] // 単一のIDまたは複数のID
+  schoolIds?: string | string[], // 単一のIDまたは複数のID
+  client: SupabaseClient<Database> = supabase
 ): Promise<StudentApplication[]> {
   // schoolIdsが配列の場合は複数教室、文字列の場合は単一教室、未指定の場合はデフォルト教室
   const targetSchoolIds = Array.isArray(schoolIds)
@@ -224,7 +235,7 @@ export async function getStudentApplications(
   const PAGE_SIZE = 1000;
   const data: unknown[] = [];
   for (let from = 0; ; from += PAGE_SIZE) {
-    const { data: page, error } = await supabase
+    const { data: page, error } = await client
       .from('student_applications')
       .select('*')
       .in('school_id', targetSchoolIds)

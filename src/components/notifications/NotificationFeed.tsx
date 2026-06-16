@@ -1,16 +1,15 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Link from 'next/link';
-import { getRecentUnprocessedResponses } from '@/lib/api/form-responses';
-import type { FormResponseWithStudent } from '@/lib/api/form-responses';
-import { FORM_TYPE_LABELS, GRADE_LABELS, STATUS_LABELS } from '@/types/database';
+import { loadNotificationFeed } from '@/lib/api/notifications';
+import type { FeedItem, NotificationInitialData } from '@/lib/api/notifications';
+// FORM_TYPE_LABELS / GRADE_LABELS / STATUS_LABELS の変換ロジックは notifications.ts に移動済み
 import { useAuth } from '@/contexts/AuthContext';
 import { ChevronDown, ChevronUp, Check, CheckCheck, AlertTriangle } from 'lucide-react';
 import { InlineLoading } from '@/components/ui';
 import { useMasterData } from '@/contexts/MasterDataContext';
 import { useConfirm } from '@/hooks/useConfirm';
-import { supabase } from '@/lib/supabase';
 import { toggleCheck as toggleMonthlyTaskCheckApi } from '@/lib/api/monthlyTasks';
 
 // ── 定数 ──
@@ -54,117 +53,17 @@ const ACTION_LABELS: Record<string, { label: string; className: string }> = {
   restored:       { label: '復元',       className: 'bg-purple-100 text-purple-700' },
 };
 
-const FIELD_LABELS: Record<string, string> = {
-  last_name: '姓',
-  first_name: '名',
-  last_name_kana: 'セイ',
-  first_name_kana: 'メイ',
-  grade: '学年',
-  status: '在籍状況',
-  school_name: '学校名',
-  class_name: 'クラス',
-  club: '部活',
-  student_code: '生徒コード',
-  subject_other: 'その他科目',
-  is_programming: 'プログラミング受講',
-};
+// ── ユーティリティ（描画専用） ──
+// FIELD_LABELS / getMeaningfulChanges / buildChangeSummary / hasMeaningfulChanges は
+// notifications.ts に移動済み（共有純関数化）
 
-// ── ユーティリティ ──
-
+/** タイムスタンプを「M/D H:MM」形式に整形する（描画のみで使用） */
 function formatDateTime(date: string): string {
   const d = new Date(date);
   return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
-function formatValue(key: string, value: unknown): string {
-  if (value === null || value === undefined || value === '') return '(なし)';
-  if (key === 'grade' && typeof value === 'number') return GRADE_LABELS[value] ?? String(value);
-  if (key === 'status' && typeof value === 'string') return STATUS_LABELS[value as keyof typeof STATUS_LABELS] ?? value;
-  if (key === 'is_programming') return value === true ? '受講中' : '未受講';
-  if (typeof value === 'boolean') return value ? 'あり' : 'なし';
-  return String(value);
-}
-
-function getMeaningfulChanges(diff: Record<string, { old: unknown; new: unknown }> | null): Array<{ label: string; old: string; new: string }> {
-  if (!diff) return [];
-  const changes: Array<{ label: string; old: string; new: string }> = [];
-  for (const [key, val] of Object.entries(diff)) {
-    if (key === 'updated_at' || key === 'created_at') continue;
-    if (!val) continue;
-    const oldDisplay = formatValue(key, val.old);
-    const newDisplay = formatValue(key, val.new);
-    if (oldDisplay === newDisplay) continue;
-    const label = FIELD_LABELS[key] ?? key;
-    changes.push({ label, old: oldDisplay, new: newDisplay });
-  }
-  return changes;
-}
-
-function buildChangeSummary(action: string, diff: Record<string, { old: unknown; new: unknown }> | null): string {
-  if (action === 'created') return '新規登録';
-  if (action === 'soft_deleted') return '削除';
-  if (action === 'restored') return '復元';
-  const changes = getMeaningfulChanges(diff);
-  if (changes.length === 0) return '';
-  return changes.map((c) => `${c.label}: ${c.old}→${c.new}`).join(', ');
-}
-
-function hasMeaningfulChanges(log: StudentLogEntry): boolean {
-  if (log.action === 'created' || log.action === 'soft_deleted' || log.action === 'restored') return true;
-  const changes = getMeaningfulChanges(log.diff as Record<string, { old: unknown; new: unknown }> | null);
-  return changes.length > 0;
-}
-
-// ── 型定義 ──
-
-type FeedItemType = 'response' | 'update' | 'shift' | 'deadline' | 'transcript';
-
-interface FeedItem {
-  id: string;
-  type: FeedItemType;
-  timestamp: string;
-  // response 系
-  formType?: string;
-  formLabel?: string;
-  formPeriod?: string;
-  schoolId?: string;
-  // update 系
-  action?: string;
-  changeSummary?: string;
-  studentId?: string;
-  // shift 系
-  shiftType?: 'seasonal' | 'regular';
-  shiftSettingId?: string;
-  shiftSettingName?: string;
-  teacherEmail?: string;
-  // deadline 系
-  deadlineType?: 'overdue' | 'upcoming';
-  deadlineSource?: 'monthly' | 'schedule';
-  deadlineDate?: string;
-  deadlineHref?: string;
-  incompleteSchoolIds?: string[];
-  // transcript 系
-  transcriptId?: string;
-  transcriptTitle?: string;
-  // 共通
-  studentName: string;
-  gradeLabel?: string;
-}
-
-interface StudentLogEntry {
-  id: string;
-  student_id: string;
-  school_id: string;
-  action: string;
-  diff: Record<string, { old: unknown; new: unknown }> | null;
-  created_at: string;
-  student: {
-    last_name: string;
-    first_name: string;
-    grade: number;
-    status: string;
-  } | null;
-}
+// ── 型定義（フィルタ型はコンポーネントローカル） ──
 
 type FilterType = 'all' | 'response' | 'update' | 'shift' | 'deadline' | 'transcript';
 
@@ -220,9 +119,16 @@ interface StudentClickInfo {
 interface NotificationFeedProps {
   className?: string;
   onStudentClick?: (info: StudentClickInfo) => void;
+  /**
+   * サーバーコンポーネントで事前取得した初期データ（Phase3: SSRストリーミング）。
+   * 渡された場合は初回のクライアント fetch をスキップし、ハイドレーション後の
+   * 「fetchが始まるまでの空白」を無くす。教室切替などの再取得は従来通り動作する。
+   * 未指定なら従来どおりマウント時にクライアントで取得する（既存呼び出しと完全互換）。
+   */
+  initialData?: NotificationInitialData;
 }
 
-export function NotificationFeed({ className = '', onStudentClick }: NotificationFeedProps) {
+export function NotificationFeed({ className = '', onStudentClick, initialData }: NotificationFeedProps) {
   const { getSelectedSchoolIds, selectedSchoolId, user } = useAuth();
   const { confirm, ConfirmDialog } = useConfirm();
   // 教室名はアプリ起動時にロード済みの MasterData から引く（旧: フィード取得後に
@@ -233,11 +139,15 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
     [schools]
   );
 
-  const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // 初期データがあれば seed として使い、ローディングは非表示にする
+  const [feedItems, setFeedItems] = useState<FeedItem[]>(initialData?.feedItems ?? []);
+  const [isLoading, setIsLoading] = useState(!initialData);
   const [isExpanded, setIsExpanded] = useState(true);
   const [filter, setFilter] = useState<FilterType>('all');
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+
+  // 初期データ（SSR事前取得）を消費したかどうか。マウント直後の1回だけ fetch をスキップするためのフラグ。
+  const skipInitialFetchRef = useRef<boolean>(!!initialData);
 
   // ユーザーIDが変わったら確認済みIDをロード
   useEffect(() => {
@@ -247,6 +157,11 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
   }, [user?.id]);
 
   const fetchData = useCallback(async () => {
+    // 初回のみ: SSR 事前取得データがあればクライアント fetch をスキップ
+    if (skipInitialFetchRef.current) {
+      skipInitialFetchRef.current = false;
+      return;
+    }
     setIsLoading(true);
     try {
       const schoolIds = getSelectedSchoolIds();
@@ -254,242 +169,8 @@ export function NotificationFeed({ className = '', onStudentClick }: Notificatio
         setFeedItems([]);
         return;
       }
-
-      const since = new Date();
-      since.setDate(since.getDate() - 7);
-
-      // 期日計算用
-      const todayStr = new Date().toISOString().split('T')[0];
-      const upcomingDate = new Date();
-      upcomingDate.setDate(upcomingDate.getDate() + 3); // 3日以内
-      const upcomingStr = upcomingDate.toISOString().split('T')[0];
-      const currentYear = new Date().getFullYear();
-      const currentMonth = new Date().getMonth() + 1;
-
-      // 並行取得
-      const [responsesResult, logsResult, seasonalShiftResult, regularShiftResult, monthlyTasksResult, scheduleTasksResult, transcriptsResult] = await Promise.allSettled([
-        getRecentUnprocessedResponses(schoolIds, 7, 20),
-        supabase
-          .from('student_logs')
-          .select('id, student_id, school_id, action, diff, created_at, student:students!student_logs_student_id_fkey(last_name, first_name, grade, status)')
-          .in('school_id', schoolIds)
-          .in('action', ['updated', 'status_changed'])
-          .gte('created_at', since.toISOString())
-          .order('created_at', { ascending: false })
-          .limit(20),
-        supabase
-          .from('seasonal_shift_submissions')
-          .select('id, setting_id, school_id, teacher_name, teacher_email, submitted_at, created_at, setting:seasonal_shift_settings!seasonal_shift_submissions_setting_id_fkey(name)')
-          .in('school_id', schoolIds)
-          .gte('created_at', since.toISOString())
-          .order('created_at', { ascending: false })
-          .limit(20),
-        supabase
-          .from('regular_shift_submissions')
-          .select('id, setting_id, school_id, teacher_name, teacher_email, submitted_at, created_at, setting:regular_shift_settings!regular_shift_submissions_setting_id_fkey(name)')
-          .in('school_id', schoolIds)
-          .gte('created_at', since.toISOString())
-          .order('created_at', { ascending: false })
-          .limit(20),
-        // 業務進捗: 超過 + 3日以内の期日タスク
-        (async () => {
-          const { data: tasks } = await supabase
-            .from('monthly_tasks')
-            .select('id, task_date, task_name, category, checks:monthly_task_checks(task_id, school_id, is_completed)')
-            .eq('year', currentYear)
-            .eq('month', currentMonth)
-            .lte('task_date', upcomingStr);
-          return tasks || [];
-        })(),
-        // 講習準備スケジュール: 期日超過 + 3日以内
-        (async () => {
-          const { data: tasks } = await supabase
-            .from('course_prep_schedule_tasks')
-            .select('id, name, deadline, end_date, is_completed, school_id')
-            .in('school_id', schoolIds)
-            .eq('is_completed', false);
-          return tasks || [];
-        })(),
-        supabase
-          .from('notta_transcripts')
-          .select('id, title, school_id, linked_student_id, linked_at, student:students!notta_transcripts_linked_student_id_fkey(last_name, first_name, grade)')
-          .in('school_id', schoolIds)
-          .not('linked_at', 'is', null)
-          .gte('linked_at', since.toISOString())
-          .order('linked_at', { ascending: false })
-          .limit(20),
-      ]);
-
-      const items: FeedItem[] = [];
-
-      // 回答データ → FeedItem
-      if (responsesResult.status === 'fulfilled') {
-        const responses: FormResponseWithStudent[] = responsesResult.value;
-        responses.forEach((r) => {
-          items.push({
-            id: `response_${r.id}`,
-            type: 'response',
-            timestamp: r.created_at,
-            formType: r.form_type,
-            formLabel: FORM_TYPE_LABELS[r.form_type] ?? r.form_type,
-            formPeriod: r.form_period,
-            schoolId: r.school_id,
-            studentId: r.linked_student_id ?? undefined,
-            studentName: r.student_name,
-            gradeLabel: GRADE_LABELS[r.grade] ?? `学年${r.grade}`,
-          });
-        });
-      }
-
-      // 更新ログ → FeedItem
-      if (logsResult.status === 'fulfilled' && !logsResult.value.error) {
-        const logs = (logsResult.value.data || []) as unknown as StudentLogEntry[];
-        logs
-          .filter((l) => hasMeaningfulChanges(l))
-          .forEach((l) => {
-            const student = l.student;
-            const summary = buildChangeSummary(l.action, l.diff as Record<string, { old: unknown; new: unknown }> | null);
-            items.push({
-              id: `update_${l.id}`,
-              type: 'update',
-              timestamp: l.created_at,
-              action: l.action,
-              changeSummary: summary,
-              studentId: l.student_id,
-              schoolId: l.school_id,
-              studentName: student ? `${student.last_name} ${student.first_name}` : '(不明)',
-            });
-          });
-      }
-
-      // シフト申請 → FeedItem
-      const processShiftResult = (
-        result: PromiseSettledResult<{ data: unknown[] | null; error: unknown }>,
-        shiftType: 'seasonal' | 'regular',
-      ) => {
-        if (result.status !== 'fulfilled' || result.value.error) return;
-        const submissions = (result.value.data || []) as Array<{
-          id: string;
-          setting_id: string;
-          school_id: string;
-          teacher_name: string;
-          teacher_email: string;
-          submitted_at: string;
-          created_at: string;
-          setting: { name: string } | null;
-        }>;
-        submissions.forEach((s) => {
-          items.push({
-            id: `shift_${shiftType}_${s.id}`,
-            type: 'shift',
-            timestamp: s.created_at,
-            shiftType,
-            shiftSettingId: s.setting_id,
-            shiftSettingName: s.setting?.name ?? '',
-            teacherEmail: s.teacher_email,
-            schoolId: s.school_id,
-            studentName: s.teacher_name, // 講師名を共通フィールドで表示
-          });
-        });
-      };
-      processShiftResult(seasonalShiftResult, 'seasonal');
-      processShiftResult(regularShiftResult, 'regular');
-
-      // 業務進捗: 超過 + 期日3日以内の未完了タスク
-      if (monthlyTasksResult.status === 'fulfilled') {
-        const tasks = monthlyTasksResult.value as Array<{
-          id: string; task_date: string; task_name: string; category: string;
-          checks: Array<{ task_id: string; school_id: string; is_completed: boolean }>;
-        }>;
-        tasks.forEach((task) => {
-          // 対象教室のうち未完了の school_id を収集
-          const incompleteSchoolIds = schoolIds.filter((sid) => {
-            const check = task.checks?.find((c) => c.school_id === sid);
-            return !check || !check.is_completed;
-          });
-          if (incompleteSchoolIds.length === 0) return;
-
-          const isOverdue = task.task_date < todayStr;
-          const isUpcoming = !isOverdue && task.task_date <= upcomingStr;
-          if (!isOverdue && !isUpcoming) return;
-
-          items.push({
-            id: `deadline_monthly_${task.id}`,
-            type: 'deadline',
-            timestamp: task.task_date + 'T00:00:00',
-            deadlineType: isOverdue ? 'overdue' : 'upcoming',
-            deadlineSource: 'monthly',
-            deadlineDate: task.task_date,
-            deadlineHref: '/tasks',
-            studentName: task.task_name,
-            incompleteSchoolIds,
-          });
-        });
-      }
-
-      // 講習準備スケジュール: 期日超過 + 期日3日以内の未完了タスク
-      if (scheduleTasksResult.status === 'fulfilled') {
-        const tasks = scheduleTasksResult.value as Array<{
-          id: string; name: string; deadline: string | null; end_date: string | null;
-          is_completed: boolean; school_id: string;
-        }>;
-        // タスク名でグループ化（同名タスクは1つに集約）
-        const seenNames = new Set<string>();
-        tasks.forEach((task) => {
-          if (task.is_completed) return;
-          const dueDate = task.deadline || task.end_date;
-          if (!dueDate) return;
-          if (seenNames.has(task.name)) return;
-
-          const isOverdue = dueDate < todayStr;
-          const isUpcoming = !isOverdue && dueDate <= upcomingStr;
-          if (!isOverdue && !isUpcoming) return;
-
-          seenNames.add(task.name);
-          items.push({
-            id: `deadline_schedule_${task.id}`,
-            type: 'deadline',
-            timestamp: dueDate + 'T00:00:00',
-            deadlineType: isOverdue ? 'overdue' : 'upcoming',
-            deadlineSource: 'schedule',
-            deadlineDate: dueDate,
-            deadlineHref: '/courses/schedule',
-            schoolId: task.school_id,
-            studentName: task.name,
-          });
-        });
-      }
-
-      // 文字起こし紐付け → FeedItem
-      if (transcriptsResult.status === 'fulfilled' && !transcriptsResult.value.error) {
-        const transcripts = (transcriptsResult.value.data || []) as unknown as Array<{
-          id: string;
-          title: string | null;
-          school_id: string;
-          linked_student_id: string | null;
-          linked_at: string;
-          student: { last_name: string; first_name: string; grade: number } | null;
-        }>;
-        transcripts.forEach((t) => {
-          if (!t.student) return;
-          items.push({
-            id: `transcript_${t.id}`,
-            type: 'transcript',
-            timestamp: t.linked_at,
-            transcriptId: t.id,
-            transcriptTitle: t.title ?? '(無題)',
-            studentId: t.linked_student_id ?? undefined,
-            schoolId: t.school_id,
-            studentName: `${t.student.last_name} ${t.student.first_name}`,
-            gradeLabel: GRADE_LABELS[t.student.grade] ?? `学年${t.student.grade}`,
-          });
-        });
-      }
-
-      // 教室名は MasterData 由来の schoolNames（useMemo）で解決するため、ここでの追加取得は不要
-
-      // 時系列ソート（新しい順）
-      items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      // 取得・変換は共有関数に委譲（notifications.ts）
+      const items = await loadNotificationFeed(schoolIds);
       setFeedItems(items);
     } catch (error) {
       console.error('Error fetching notification feed:', error);

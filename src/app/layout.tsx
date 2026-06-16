@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import { Noto_Sans_JP } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from '@/contexts/AuthContext';
+import { resolveServerAuth } from '@/lib/auth/resolveServerAuth';
 import { MasterDataProvider } from '@/contexts/MasterDataContext';
 import { ThemeProvider, themeInitScript } from '@/contexts/ThemeContext';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -50,11 +51,16 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // サーバーで認証を解決し AuthProvider にシードする（Phase3 Pillar A）。
+  // 未ログイン/失敗時は null を返し、クライアント側の従来フローにフォールバックする。
+  // （getUser の1往復が全リクエストに乗るが、認証済みページの初回描画が根本的に速くなる）
+  const initialAuth = await resolveServerAuth();
+
   return (
     <html
       lang="ja"
@@ -68,7 +74,7 @@ export default function RootLayout({
       <body className="antialiased">
         <ErrorBoundary>
           <ThemeProvider>
-            <AuthProvider>
+            <AuthProvider initialAuth={initialAuth}>
               <MasterDataProvider>
                 <ImpersonationBanner />
                 {children}

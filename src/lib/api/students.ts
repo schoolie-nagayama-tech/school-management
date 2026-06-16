@@ -1,4 +1,6 @@
 import { supabase } from '@/lib/supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/types/database';
 import type {
   Student,
   StudentInsert,
@@ -69,13 +71,15 @@ function buildStudentsBaseQuery(
   searchQuery: string | undefined,
   targetSchoolIds: string[],
   listFilters: StudentListFilterOptions,
-  selectClause: string | { count: 'exact' }
+  selectClause: string | { count: 'exact' },
+  // サーバー RLS 認証のため client を DI できるようにする（省略時はブラウザシングルトン）
+  client: SupabaseClient<Database> = supabase
 ) {
   // count 付き select は文字列 + 第2引数
   let query =
     typeof selectClause === 'string'
-      ? supabase.from('students').select(selectClause)
-      : supabase.from('students').select(STUDENT_LIST_COLUMNS, selectClause);
+      ? client.from('students').select(selectClause)
+      : client.from('students').select(STUDENT_LIST_COLUMNS, selectClause);
 
   query = query.in('school_id', targetSchoolIds).is('deleted_at', null);
 
@@ -105,7 +109,9 @@ function buildStudentsBaseQuery(
 }
 
 async function enrichStudentsWithRelations(
-  studentsTyped: Student[]
+  studentsTyped: Student[],
+  // サーバー RLS 認証のため client を DI できるようにする（省略時はブラウザシングルトン）
+  client: SupabaseClient<Database> = supabase
 ): Promise<EnrichedStudent[]> {
   if (studentsTyped.length === 0) return [];
 
@@ -125,8 +131,8 @@ async function enrichStudentsWithRelations(
   };
 
   const [ssResult, patternsResult] = await Promise.all([
-    supabase.from('student_subjects').select('student_id, subject_id').in('student_id', studentIds),
-    supabase
+    client.from('student_subjects').select('student_id, subject_id').in('student_id', studentIds),
+    client
       .from('schedule_regular_patterns')
       .select('student_id, day_of_week, time_slot_id, subject_ids')
       .in('student_id', studentIds)
@@ -154,7 +160,7 @@ async function enrichStudentsWithRelations(
   const allSubjectIds = Array.from(allSubjectIdSet);
   const subjectsMap = new Map<string, Subject>();
   if (allSubjectIds.length > 0) {
-    const { data: subjects } = await supabase
+    const { data: subjects } = await client
       .from('subjects')
       .select(SUBJECT_LIST_COLUMNS)
       .in('id', allSubjectIds);
@@ -293,12 +299,15 @@ export async function countNonActiveStudents(
 
 export async function getStudents(
   searchQuery?: string,
-  schoolIds?: string[] // 複数教室IDを指定可能（未指定の場合はデフォルト教室）
+  schoolIds?: string[], // 複数教室IDを指定可能（未指定の場合はデフォルト教室）
+  // サーバー RLS 認証のため client を DI できるようにする（省略時はブラウザシングルトン）
+  // 広く使われる関数のため末尾 optional で後方互換を維持する
+  client: SupabaseClient<Database> = supabase
 ): Promise<EnrichedStudent[]> {
   const targetSchoolIds =
     schoolIds && schoolIds.length > 0 ? schoolIds : [getDefaultSchoolId()];
 
-  const query = buildStudentsBaseQuery(searchQuery, targetSchoolIds, {}, STUDENT_LIST_COLUMNS);
+  const query = buildStudentsBaseQuery(searchQuery, targetSchoolIds, {}, STUDENT_LIST_COLUMNS, client);
   const { data: students, error } = await query;
 
   if (error) {
@@ -308,7 +317,7 @@ export async function getStudents(
 
   if (!students || students.length === 0) return [];
 
-  return enrichStudentsWithRelations(students as Student[]);
+  return enrichStudentsWithRelations(students as Student[], client);
 }
 
 /** 30秒TTLのキャッシュ付き getStudents。読み取り専用ページ向け。 */

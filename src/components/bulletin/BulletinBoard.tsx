@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { BulletinPostCard } from './BulletinPostCard';
 import { BulletinPostModal } from './BulletinPostModal';
 import { BulletinReadersModal } from './BulletinReadersModal';
@@ -24,24 +24,39 @@ const UPDATES_LAST_SEEN_KEY = 'updatesBoard_lastSeenDate';
 
 interface BulletinBoardProps {
   className?: string;
+  /**
+   * サーバーコンポーネントで事前取得した初期データ（Phase3: SSRストリーミング）。
+   * 渡された場合は初回のクライアント fetch をスキップし、ハイドレーション後の
+   * 「fetchが始まるまでの空白」を無くす。教室切替・既読操作などの再取得は従来通り。
+   * 未指定なら従来どおりマウント時にクライアントで取得する（既存呼び出しと完全互換）。
+   */
+  initialData?: {
+    posts: BulletinPost[];
+    labelsBySchool: Record<string, BulletinLabel[]>;
+    schools: School[];
+    unreadCount: number;
+  };
 }
 
-export function BulletinBoard({ className = '' }: BulletinBoardProps) {
+export function BulletinBoard({ className = '', initialData }: BulletinBoardProps) {
   const { getSelectedSchoolIds, profile } = useAuth();
   const { success, error: toastError } = useToast();
   const { confirm, ConfirmDialog } = useConfirm();
-  const [posts, setPosts] = useState<BulletinPost[]>([]);
+  const [posts, setPosts] = useState<BulletinPost[]>(initialData?.posts ?? []);
   /** 教室IDごとのラベル一覧（複数教室対応） */
-  const [labelsBySchool, setLabelsBySchool] = useState<Record<string, BulletinLabel[]>>({});
-  const [schools, setSchools] = useState<School[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [labelsBySchool, setLabelsBySchool] = useState<Record<string, BulletinLabel[]>>(initialData?.labelsBySchool ?? {});
+  const [schools, setSchools] = useState<School[]>(initialData?.schools ?? []);
+  // 初期データがあれば最初からローディング非表示（即時に内容を出す）
+  const [isLoading, setIsLoading] = useState(!initialData);
   const [isExpanded, setIsExpanded] = useState(true);
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<BulletinPost | null>(null);
   const [readersModalPost, setReadersModalPost] = useState<BulletinPost | null>(null);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(initialData?.unreadCount ?? 0);
   /** 新規投稿で選択中の教室ID（複数選択可） */
   const [postingSchoolIds, setPostingSchoolIds] = useState<string[]>([]);
+  // 初期データ（SSR事前取得）を消費したかどうか。マウント直後の1回だけ fetch をスキップするためのフラグ。
+  const skipInitialFetchRef = useRef<boolean>(!!initialData);
 
   // 編集権限はmanager以上のみ
   const canEdit = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
@@ -143,6 +158,12 @@ export function BulletinBoard({ className = '' }: BulletinBoardProps) {
   }, [getSelectedSchoolIds, userId, toastError, canRead]);
 
   useEffect(() => {
+    // SSR で初期データを受け取っている場合、マウント直後の1回だけ取得をスキップする
+    // （サーバー事前取得分をそのまま表示）。教室切替などで fetchData が変わった2回目以降は通常取得する。
+    if (skipInitialFetchRef.current) {
+      skipInitialFetchRef.current = false;
+      return;
+    }
     fetchData();
   }, [fetchData]);
 

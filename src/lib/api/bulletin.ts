@@ -87,13 +87,15 @@ export async function getBulletinLabels(schoolId: string): Promise<BulletinLabel
  * 教室ごとに getBulletinLabels を M 回叩いていたのを1本に畳む。
  */
 export async function getBulletinLabelsBatch(
-  schoolIds: string[]
+  schoolIds: string[],
+  // DI: サーバーコンポーネントから RLS 認証済みクライアントを渡せる（省略時はブラウザ用、既存互換）
+  client: typeof supabase = supabase
 ): Promise<Record<string, BulletinLabel[]>> {
   const grouped: Record<string, BulletinLabel[]> = {};
   for (const schoolId of schoolIds) grouped[schoolId] = [];
   if (schoolIds.length === 0) return grouped;
 
-  const { data, error } = await supabase
+  const { data, error } = await client
     .from('bulletin_labels')
     .select('*')
     .in('school_id', schoolIds)
@@ -297,11 +299,14 @@ export async function getBulletinPostsBatch(
   options?: {
     includeArchived?: boolean;
     userId?: string;
-  }
+  },
+  // DI: サーバーコンポーネントから RLS 認証済みのサーバークライアントを渡せるようにする
+  // （省略時はブラウザ用クライアント。既存のクライアント呼び出しと完全互換）。
+  client: typeof supabase = supabase
 ): Promise<Record<string, BulletinPost[]>> {
   if (schoolIds.length === 0) return {};
 
-  let query = supabase
+  let query = client
     .from('bulletin_posts')
     .select(`
       *,
@@ -347,7 +352,7 @@ export async function getBulletinPostsBatch(
     const [myReadChunks, teacherProfilesResult] = await Promise.all([
       Promise.all(
         chunks.map((chunk) =>
-          supabase
+          client
             .from('bulletin_reads')
             .select('post_id')
             .eq('user_id', userId)
@@ -355,7 +360,7 @@ export async function getBulletinPostsBatch(
             .then((r) => r.data || [])
         )
       ),
-      supabase.from('user_profiles').select('id').eq('role', 'teacher'),
+      client.from('user_profiles').select('id').eq('role', 'teacher'),
     ]);
 
     readPostIds = new Set(myReadChunks.flat().map((r) => r.post_id));
@@ -368,7 +373,7 @@ export async function getBulletinPostsBatch(
     if (teacherIds.length > 0) {
       const teacherReadChunks = await Promise.all(
         chunks.map((chunk) =>
-          supabase
+          client
             .from('bulletin_reads')
             .select('post_id')
             .in('post_id', chunk)

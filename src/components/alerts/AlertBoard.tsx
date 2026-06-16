@@ -16,8 +16,19 @@ import { ALERT_TYPE_LABELS, ALERT_TYPE_COLORS, DISMISSABLE_ALERT_TYPES, SENSITIV
 import type { AlertType } from '@/types/alerts';
 import { whenNetworkIdle } from '@/lib/utils/networkIdle';
 
+import type { AlertInitialData } from '@/lib/api/alert-server';
+
 interface AlertBoardProps {
   className?: string;
+  /**
+   * サーバーコンポーネントで事前取得した初期データ（Phase3: SSRストリーミング）。
+   * 渡された場合は初回のクライアント fetch をスキップし、ハイドレーション後の
+   * 「fetchが始まるまでの空白」を無くす。Light アラートのみ事前取得済みで、
+   * Heavy アラートは引き続きクライアント側で whenNetworkIdle() 後に遅延取得される。
+   * 教室切替・対応済み操作などの再取得は従来通り。
+   * 未指定なら従来どおりマウント時にクライアントで取得する（既存呼び出しと完全互換）。
+   */
+  initialData?: AlertInitialData;
 }
 
 const SCHOOL_COLORS = [
@@ -31,12 +42,14 @@ const SCHOOL_COLORS = [
   { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-200' },
 ] as const;
 
-export function AlertBoard({ className = '' }: AlertBoardProps) {
+export function AlertBoard({ className = '', initialData }: AlertBoardProps) {
   const { getSelectedSchoolIds, selectedSchoolId, profile } = useAuth();
   const { schools } = useMasterData();
   const { success, error: toastError } = useToast();
-  const [studentAlerts, setStudentAlerts] = useState<StudentAlerts[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // 初期データがあれば SSR 事前取得済みの Light アラートをそのまま表示する
+  const [studentAlerts, setStudentAlerts] = useState<StudentAlerts[]>(initialData?.studentAlerts ?? []);
+  // 初期データがあれば最初からローディング非表示（即時に内容を出す）
+  const [isLoading, setIsLoading] = useState(!initialData);
   const [isExpanded, setIsExpanded] = useState(true);
   const [showInfoPopup, setShowInfoPopup] = useState(false);
   /** Heavy アラート（成績・テスト）の取得状態 */
@@ -44,6 +57,10 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
   // 遅延発火する Heavy 取得が「古い教室選択」のまま resolve してマージされるのを防ぐトークン。
   // fetchAlerts 呼び出しごとに加算し、deferred 実行・resolve 時に一致を確認する。
   const heavyRunRef = useRef(0);
+  // 初期データ（SSR事前取得）を消費したかどうか。マウント直後の1回だけ fetch をスキップするためのフラグ。
+  // Heavy アラートは引き続き whenNetworkIdle() 後にクライアントで取得されるため、
+  // このスキップは Light fetch のみに効く（Heavy のタイミング制御は fetchAlerts 内で行う）。
+  const skipInitialFetchRef = useRef<boolean>(!!initialData);
 
   // 対応済み操作はmanager以上のみ
   const canDismiss = profile?.role === 'admin' || profile?.role === 'owner' || profile?.role === 'manager';
@@ -119,6 +136,33 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
     }
   }, [getSelectedSchoolIds, toastError]);
 
+  // Heavy アラート（成績・テスト系）だけを遅延取得してマージする。
+  // SSR で Light を初期表示済みのとき（initialData あり）に、Light の初回取得はスキップしつつ
+  // Heavy だけは従来どおりクライアントで whenNetworkIdle 後に取得するために使う。
+  // fetchAlerts 内の startHeavy と同じトークン照合・マージ規則。
+  const loadHeavyAlerts = useCallback(() => {
+    const schoolIds = getSelectedSchoolIds();
+    if (schoolIds.length === 0) return;
+    const runToken = ++heavyRunRef.current;
+    const startHeavy = () => {
+      if (runToken !== heavyRunRef.current) return;
+      setHeavyLoadState('loading');
+      getAlertsHeavy(schoolIds, {})
+        .then((heavyAlerts) => {
+          if (runToken !== heavyRunRef.current) return;
+          setStudentAlerts((prev) => mergeStudentAlerts(prev, heavyAlerts));
+          setHeavyLoadState('done');
+        })
+        .catch((err) => {
+          if (runToken !== heavyRunRef.current) return;
+          console.error('Error fetching heavy alerts:', err);
+          setHeavyLoadState('error');
+          toastError('成績・テスト関連のアラートの取得に失敗しました');
+        });
+    };
+    void whenNetworkIdle().then(startHeavy);
+  }, [getSelectedSchoolIds, toastError]);
+
   const HEAVY_ALERT_TYPES = ['score_drop', 'score_missing', 'exam_overdue'] as const;
 
   /** Heavy アラートのみ再取得（成績・テスト関連） */
@@ -145,8 +189,18 @@ export function AlertBoard({ className = '' }: AlertBoardProps) {
   }, [getSelectedSchoolIds, toastError]);
 
   useEffect(() => {
+    // SSR で初期データを受け取っている場合（initialData あり）、マウント直後の1回だけ
+    // Light 取得をスキップする（サーバー事前取得の Light アラートをそのまま表示）。
+    // ただし Heavy アラート（成績・テスト系）は SSR 対象外で初期データに含まれないため、
+    // Light をスキップしても Heavy だけは従来どおりクライアントで遅延取得してマージする。
+    // 教室切替などで fetchAlerts が変わった2回目以降は通常通り Light+Heavy を取得する。
+    if (skipInitialFetchRef.current) {
+      skipInitialFetchRef.current = false;
+      loadHeavyAlerts();
+      return;
+    }
     fetchAlerts();
-  }, [fetchAlerts]);
+  }, [fetchAlerts, loadHeavyAlerts]);
 
   const handleDismiss = useCallback(async (alert: Alert) => {
     if (!canDismiss) return;

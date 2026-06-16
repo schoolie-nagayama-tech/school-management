@@ -1,4 +1,6 @@
 import { supabase } from '../supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/types/database';
 import {
   type AlertSetting,
   type AlertThresholds,
@@ -52,12 +54,18 @@ export async function getAlertSettings(schoolId: string): Promise<AlertSetting[]
   return ALL_ALERT_TYPES.map((t) => map.get(t) ?? buildDefault(schoolId, t));
 }
 
-/** 複数教室の設定を一括取得（教室ごとにマージ済み配列を返す） */
+/**
+ * 複数教室の設定を一括取得（教室ごとにマージ済み配列を返す）
+ *
+ * @param client - RLS 認証済みのサーバークライアント（省略時はブラウザシングルトン）
+ *                 サーバー prefetch 経路で正しいデータを取れるよう DI する
+ */
 export async function getAlertSettingsBySchools(
-  schoolIds: string[]
+  schoolIds: string[],
+  client: SupabaseClient<Database> = supabase
 ): Promise<Map<string, AlertSetting[]>> {
   if (schoolIds.length === 0) return new Map();
-  const { data, error } = await (supabase
+  const { data, error } = await (client
     .from('alert_settings' as never) as any)
     .select('school_id, alert_type, enabled, thresholds')
     .in('school_id', schoolIds);
