@@ -32,9 +32,11 @@ async function fetchSubjectProposals(
   schoolId: string,
   season: string,
   year?: number
-): Promise<Record<string, Record<string, number>>> {
+): Promise<{ proposed: Record<string, Record<string, number>>; applied: Record<string, Record<string, number>> }> {
+  // proposed: 提案コマ（koma_count）の生徒×科目合計 / applied: 申込コマ（applied_koma）の生徒×科目合計
+  const proposed: Record<string, Record<string, number>> = {};
+  const applied: Record<string, Record<string, number>> = {};
   try {
-    const result: Record<string, Record<string, number>> = {};
 
     // ========== 1. 提案書ベース（seasonal_proposals + seasonal_proposal_units） ==========
     {
@@ -68,7 +70,7 @@ async function fetchSubjectProposals(
 
         const proposalIds = (proposals as { id: string }[]).map((p) => p.id);
 
-        type UnitRow = { id: string; proposal_id: string; koma_count: number; group_id: number };
+        type UnitRow = { id: string; proposal_id: string; koma_count: number; group_id: number; applied_koma: number | null; applied_group_id: number };
         const allUnits: UnitRow[] = [];
         const seenUnitIds = new Set<string>();
         // 1 提案書あたり最大 ~55 ユニット。15 提案書/バッチで 1 クエリ最大 825 行に抑え、
@@ -84,9 +86,10 @@ async function fetchSubjectProposals(
           batches.map((batch) =>
             supabaseAdmin
               .from('seasonal_proposal_units')
-              .select('id, proposal_id, koma_count, group_id')
+              .select('id, proposal_id, koma_count, group_id, applied_koma, applied_group_id')
               .in('proposal_id', batch)
-              .gt('koma_count', 0)
+              // 提案コマ・申込コマのどちらかが1以上の単元を取得（提案0・申込1の単元も拾う）
+              .or('koma_count.gt.0,applied_koma.gt.0')
           )
         );
         for (const { data: units } of batchResults) {
@@ -109,34 +112,56 @@ async function fetchSubjectProposals(
           if (!subject) continue;
 
           const units = unitsByProposal.get(proposal.id) || [];
+
+          // 提案コマ合計（group_id で1コマにまとめる）
           const seenGroups = new Set<number>();
-          let total = 0;
+          let proposedTotal = 0;
+          // 申込コマ合計（applied_group_id で1コマにまとめる。提案結合とは別系統）
+          const seenAppliedGroups = new Set<number>();
+          let appliedTotal = 0;
 
           for (const u of units) {
-            if (u.group_id > 0) {
-              if (!seenGroups.has(u.group_id)) {
-                seenGroups.add(u.group_id);
-                total += u.koma_count;
+            if (u.koma_count > 0) {
+              if (u.group_id > 0) {
+                if (!seenGroups.has(u.group_id)) {
+                  seenGroups.add(u.group_id);
+                  proposedTotal += u.koma_count;
+                }
+              } else {
+                proposedTotal += u.koma_count;
               }
-            } else {
-              total += u.koma_count;
+            }
+            const ak = u.applied_koma ?? 0;
+            if (ak > 0) {
+              if (u.applied_group_id > 0) {
+                if (!seenAppliedGroups.has(u.applied_group_id)) {
+                  seenAppliedGroups.add(u.applied_group_id);
+                  appliedTotal += ak;
+                }
+              } else {
+                appliedTotal += ak;
+              }
             }
           }
 
-          if (total > 0) {
-            if (!result[proposal.student_id]) result[proposal.student_id] = {};
-            result[proposal.student_id][subject] =
-              (result[proposal.student_id][subject] || 0) + total;
-
+          if (proposedTotal > 0) {
+            if (!proposed[proposal.student_id]) proposed[proposal.student_id] = {};
+            proposed[proposal.student_id][subject] =
+              (proposed[proposal.student_id][subject] || 0) + proposedTotal;
+          }
+          if (appliedTotal > 0) {
+            if (!applied[proposal.student_id]) applied[proposal.student_id] = {};
+            applied[proposal.student_id][subject] =
+              (applied[proposal.student_id][subject] || 0) + appliedTotal;
           }
         }
       }
     }
 
-    return result;
+    return { proposed, applied };
   } catch (err) {
     console.error('[fetchSubjectProposals] unexpected error:', err);
-    return {};
+    return { proposed, applied };
   }
 }
 
@@ -419,7 +444,7 @@ export async function GET(request: NextRequest) {
           promises.push((async () => {
             // 通塾日程は (生徒数 × 曜日) でスケールし単一校でも 1000 行を超えうるため
             // 全件ページング取得する（切り捨てると一部生徒の自動コマ数計算が欠落する）。
-            const [regularPatterns, seasonalPatterns, { data: periodForAuto }, subjectProposalMap] = await Promise.all([
+            const [regularPatterns, seasonalPatterns, { data: periodForAuto }, proposalMaps] = await Promise.all([
               fetchAllPaged<{ student_id: string; day_of_week: number }>((from, to) =>
                 supabaseAdmin.from('schedule_regular_patterns')
                   .select('student_id, day_of_week, id')
@@ -453,7 +478,7 @@ export async function GET(request: NextRequest) {
             if (periodForAuto?.schedule_start_date && periodForAuto?.schedule_end_date) {
               dayCounts = countDayOccurrences(periodForAuto.schedule_start_date, periodForAuto.schedule_end_date);
             }
-            const autoResult: Record<string, { regular_weekly: number; course_sessions: number; proposal_total?: number; subject_proposals?: Record<string, number> }> = {};
+            const autoResult: Record<string, { regular_weekly: number; course_sessions: number; proposal_total?: number; subject_proposals?: Record<string, number>; applied_total?: number; subject_applied?: Record<string, number> }> = {};
             const allIds = Array.from(new Set([...Object.keys(regularWeeklyMap), ...Object.keys(seasonalDayMap)]));
             for (const sid of allIds) {
               const weeklyCount = regularWeeklyMap[sid] || 0;
@@ -473,12 +498,24 @@ export async function GET(request: NextRequest) {
                 course_sessions: sessions,
               };
             }
-            for (const sid of Object.keys(subjectProposalMap)) {
+            const proposalSids = Array.from(new Set([
+              ...Object.keys(proposalMaps.proposed),
+              ...Object.keys(proposalMaps.applied),
+            ]));
+            for (const sid of proposalSids) {
               if (!autoResult[sid]) {
                 autoResult[sid] = { regular_weekly: 0, course_sessions: 0 };
               }
-              autoResult[sid].subject_proposals = subjectProposalMap[sid];
-              autoResult[sid].proposal_total = Object.values(subjectProposalMap[sid]).reduce((a, b) => a + b, 0);
+              const propSubjects = proposalMaps.proposed[sid];
+              if (propSubjects) {
+                autoResult[sid].subject_proposals = propSubjects;
+                autoResult[sid].proposal_total = Object.values(propSubjects).reduce((a, b) => a + b, 0);
+              }
+              const appliedSubjects = proposalMaps.applied[sid];
+              if (appliedSubjects) {
+                autoResult[sid].subject_applied = appliedSubjects;
+                autoResult[sid].applied_total = Object.values(appliedSubjects).reduce((a, b) => a + b, 0);
+              }
             }
             batchResult.auto_values = autoResult;
           })());

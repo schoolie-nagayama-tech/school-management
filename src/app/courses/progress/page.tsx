@@ -998,7 +998,8 @@ export default function CourseProgressPage() {
                         <option value="">手動入力</option>
                         <option value="regular_weekly">通塾回数/週</option>
                         <option value="course_sessions">講習期間通常回数</option>
-                        <option value="proposed_extra">提示増コマ (教科別計-通常回数)</option>
+                        <option value="proposed_extra">提示増コマ (提案コマ計-通常回数)</option>
+                        <option value="applied_extra">申込増コマ (申込コマ計-通常回数)</option>
                         <option value="subject_proposal">進行表コマ数 (科目別)</option>
                       </select>
                     </div>
@@ -1066,6 +1067,7 @@ export default function CourseProgressPage() {
                                 {item.auto_source === 'regular_weekly' ? '通塾回数' :
                                  item.auto_source === 'course_sessions' ? '通常回数' :
                                  item.auto_source === 'proposed_extra' ? '提示増コマ' :
+                                 item.auto_source === 'applied_extra' ? '申込増コマ' :
                                  item.auto_source === 'subject_proposal' ? '進行表コマ' : '自動'}
                               </span>
                             )}

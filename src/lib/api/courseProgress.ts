@@ -191,5 +191,5 @@ export async function updateStudentProgressDate(
 // 自動計算値（通常週回数・講習回数）
 // =============================================
 
-export type AutoValues = Record<string, { regular_weekly: number; course_sessions: number; proposal_total?: number; subject_proposals?: Record<string, number> }>;
+export type AutoValues = Record<string, { regular_weekly: number; course_sessions: number; proposal_total?: number; subject_proposals?: Record<string, number>; applied_total?: number; subject_applied?: Record<string, number> }>;
 // 単独取得関数 getAutoValues は廃止。batchFetchCoursePrepApi で 'auto_values' ターゲットを使うこと。

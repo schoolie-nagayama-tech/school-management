@@ -12,7 +12,8 @@ import { Tooltip } from '@/components/ui/Tooltip';
 const AUTO_SOURCE_LABELS: Record<string, { label: string; desc: string }> = {
   regular_weekly: { label: '通塾回数/週', desc: '通塾パターンから自動計算' },
   course_sessions: { label: '講習期間通常回数', desc: '講習期間中の通塾回数を自動計算' },
-  proposed_extra: { label: '提示増コマ', desc: '下書き提案コマ合計 - 通常回数' },
+  proposed_extra: { label: '提示増コマ', desc: '提案コマ合計 - 通常回数' },
+  applied_extra: { label: '申込増コマ', desc: '提案書の申込コマ合計 - 通常回数' },
   subject_proposal: { label: '進行表コマ数', desc: '進行表の提案コマ数を科目名で自動集計' },
 };
 
@@ -354,6 +355,9 @@ export function CourseProgressTable({
             else if (item.auto_source === 'proposed_extra') {
               const pt = sv.proposal_total ?? 0;
               v = Math.max(0, pt - (sv.course_sessions ?? 0));
+            } else if (item.auto_source === 'applied_extra') {
+              const at = sv.applied_total ?? 0;
+              v = Math.max(0, at - (sv.course_sessions ?? 0));
             } else if (item.auto_source === 'subject_proposal') {
               v = getSubjectProposalValue(sv.subject_proposals, item.name);
             }

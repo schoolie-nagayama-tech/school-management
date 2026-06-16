@@ -3917,6 +3917,8 @@ export interface SeasonalProposalUnit {
   reason: string;
   sort_order: number;
   group_id: number;
+  // 申込専用の結合グループ。提案グループ(group_id)とは独立に「申込時に複数単元で1コマ」をまとめる。
+  applied_group_id: number;
   intent_tag: string | null;
   created_at: string;
   // JOIN
@@ -3932,6 +3934,7 @@ export interface SeasonalProposalUnitInsert {
   reason?: string;
   sort_order?: number;
   group_id?: number;
+  applied_group_id?: number;
   intent_tag?: string | null;
 }
 
@@ -4383,7 +4386,7 @@ export interface CourseProgressItem {
   manager_only: boolean;
   column_group: string | null;
   deadline: string | null;
-  auto_source: 'regular_weekly' | 'course_sessions' | 'proposed_extra' | 'subject_proposal' | null;
+  auto_source: 'regular_weekly' | 'course_sessions' | 'proposed_extra' | 'subject_proposal' | 'applied_extra' | null;
   created_at: string;
   updated_at: string;
 }

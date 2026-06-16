@@ -261,6 +261,8 @@ export interface ProposalUnitInput {
   applied_koma: number | null;
   reason: string;
   group_id: number;
+  // 申込専用の結合グループ（提案グループ group_id とは独立）
+  applied_group_id: number;
   intent_tag: string | null;
 }
 
@@ -285,6 +287,7 @@ export async function saveProposalUnits(
     applied_koma: u.applied_koma,
     reason: u.reason,
     group_id: u.group_id,
+    applied_group_id: u.applied_group_id,
     intent_tag: u.intent_tag,
     sort_order: i,
   }));
@@ -623,16 +626,18 @@ export function calcTotalKoma(units: { group_id: number; koma_count: number }[])
   return total;
 }
 
-export function calcTotalAppliedKoma(units: { group_id: number; applied_koma: number | null }[]): number | null {
+// 申込コマ合計。申込結合(applied_group_id)が同じ単元は1コマとしてまとめてカウントする。
+// 提案結合(group_id)とは別グループなので、申込側の結合だけで dedup する。
+export function calcTotalAppliedKoma(units: { applied_group_id: number; applied_koma: number | null }[]): number | null {
   const withApplied = units.filter((u) => u.applied_koma != null && u.applied_koma > 0);
   if (withApplied.length === 0) return null;
   let total = 0;
   const seen = new Set<number>();
   for (const u of withApplied) {
-    if (u.group_id === 0) {
+    if (u.applied_group_id === 0) {
       total += u.applied_koma!;
-    } else if (!seen.has(u.group_id)) {
-      seen.add(u.group_id);
+    } else if (!seen.has(u.applied_group_id)) {
+      seen.add(u.applied_group_id);
       total += u.applied_koma!;
     }
   }

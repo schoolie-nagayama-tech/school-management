@@ -145,6 +145,10 @@ export function CourseProgressDashboard({
   }, [items]);
 
   const decidedKomaItem = useMemo(() => {
+    // 申込増コマ自動列（提案書の applied_koma 合計 - 通常回数）があれば最優先で採用。
+    // これにより「提案済みにして入力した申込コマ」が決定コマ＝取得率に直結する。
+    const byAutoSource = items.find((i) => i.id !== proposedKomaItem?.id && i.auto_source === 'applied_extra');
+    if (byAutoSource) return byAutoSource;
     return items.find(
       (i) => i.id !== proposedKomaItem?.id && i.column_type === 'number' &&
         (i.name.includes('増コマ回数') || i.name === '増コマ回数決定')
@@ -249,14 +253,39 @@ export function CourseProgressDashboard({
     const vals: Record<string, number> = {};
     for (const s of students) {
       if (decidedKomaItem) {
-        const d = progressData.find((p) => p.student_id === s.id && p.item_id === decidedKomaItem.id);
-        vals[s.id] = d?.number_value ?? 0;
+        if (decidedKomaItem.auto_source === 'applied_extra') {
+          // 申込増コマ = 提案書の申込コマ合計 - 講習期間の通常回数
+          const sv = autoValues?.[s.id];
+          const appliedTotal = sv?.applied_total ?? 0;
+          const courseSessions = sv?.course_sessions ?? 0;
+          vals[s.id] = Math.max(0, appliedTotal - courseSessions);
+        } else {
+          const d = progressData.find((p) => p.student_id === s.id && p.item_id === decidedKomaItem.id);
+          vals[s.id] = d?.number_value ?? 0;
+        }
       } else {
         vals[s.id] = 0;
       }
     }
     return vals;
-  }, [students, decidedKomaItem, progressData]);
+  }, [students, decidedKomaItem, progressData, autoValues]);
+
+  // --- 生徒ごと「決定コマの記録があるか」 ---
+  // 申込件数(申込済)のカウント用。手入力列は 0 を明示入力した生徒も「申込済(コマ0で確定)」として数えるため、
+  // number_value が記録されていれば（0でも）true。自動列は明示的な0入力の概念がないので値>0を記録ありとみなす。
+  const studentDecidedHasValue = useMemo(() => {
+    const vals: Record<string, boolean> = {};
+    for (const s of students) {
+      if (!decidedKomaItem) { vals[s.id] = false; continue; }
+      if (decidedKomaItem.auto_source) {
+        vals[s.id] = (studentDecidedKoma[s.id] ?? 0) > 0;
+      } else {
+        const d = progressData.find((p) => p.student_id === s.id && p.item_id === decidedKomaItem.id);
+        vals[s.id] = d?.number_value != null;
+      }
+    }
+    return vals;
+  }, [students, decidedKomaItem, progressData, studentDecidedKoma]);
 
   // --- 集計 ---
   const totalProposed = Object.values(studentProposedKoma).reduce((a, b) => a + b, 0);
@@ -270,7 +299,9 @@ export function CourseProgressDashboard({
   const budgetRate = budgetKoma > 0 ? totalDecided / budgetKoma : 0;
   const targetRate = targetKoma > 0 ? totalDecided / targetKoma : 0;
   const proposedStudentCount = Object.values(studentProposedKoma).filter((v) => v > 0).length;
-  const decidedStudentCount = Object.values(studentDecidedKoma).filter((v) => v > 0).length;
+  // 申込済件数: 決定コマの記録がある生徒数（手入力0コマも申込済として数える）。
+  // テーブル列フッターの「入力済み(number_value!=null)」と数え方を統一する。
+  const decidedStudentCount = Object.values(studentDecidedHasValue).filter(Boolean).length;
 
   // --- 期日超過タスク ---
   const today = new Date().toISOString().slice(0, 10);
@@ -298,21 +329,25 @@ export function CourseProgressDashboard({
       const catDecided = catStudents.reduce((sum, s) => sum + (studentDecidedKoma[s.id] ?? 0), 0);
       const catRate = catProposed > 0 ? catDecided / catProposed : 0;
       const catProposedCount = catStudents.filter((s) => (studentProposedKoma[s.id] ?? 0) > 0).length;
-      const catDecidedCount = catStudents.filter((s) => (studentDecidedKoma[s.id] ?? 0) > 0).length;
+      // 申込済件数は「決定コマの記録あり」で数える（0コマ確定も申込済に含める）
+      const catDecidedCount = catStudents.filter((s) => studentDecidedHasValue[s.id]).length;
 
-      const gradeBreakdown: { grade: number; label: string; count: number; proposed: number; decided: number; avgProposed: number }[] = [];
+      const gradeBreakdown: { grade: number; label: string; count: number; proposed: number; decided: number; avgProposed: number; avgDecided: number }[] = [];
       const gradeSet = Array.from(new Set(catStudents.map((s) => s.grade))).sort((a, b) => a - b);
       for (const grade of gradeSet) {
         const gs = catStudents.filter((s) => s.grade === grade);
         const gProposed = gs.reduce((sum, s) => sum + (studentProposedKoma[s.id] ?? 0), 0);
+        const gDecided = gs.reduce((sum, s) => sum + (studentDecidedKoma[s.id] ?? 0), 0);
         gradeBreakdown.push({
           grade,
           label: GRADE_LABELS[grade] || `${grade}`,
           count: gs.length,
           proposed: gProposed,
-          decided: gs.reduce((sum, s) => sum + (studentDecidedKoma[s.id] ?? 0), 0),
+          decided: gDecided,
           // 提案増コマ平均（その学年の在籍1人あたりの提案コマ数）
           avgProposed: gs.length > 0 ? gProposed / gs.length : 0,
+          // 取得増コマ平均（その学年の在籍1人あたりの決定コマ数）
+          avgDecided: gs.length > 0 ? gDecided / gs.length : 0,
         });
       }
 
@@ -321,10 +356,12 @@ export function CourseProgressDashboard({
         studentCount: catStudents.length, proposedCount: catProposedCount, decidedCount: catDecidedCount,
         totalProposed: catProposed, totalDecided: catDecided, acquisitionRate: catRate,
         avgProposed: catStudents.length > 0 ? catProposed / catStudents.length : 0,
+        // 平均取得増コマ数（在籍1人あたりの決定コマ数）
+        avgDecided: catStudents.length > 0 ? catDecided / catStudents.length : 0,
         gradeBreakdown,
       };
     }).filter((x): x is Exclude<typeof x, null> => x !== null);
-  }, [students, studentProposedKoma, studentDecidedKoma]);
+  }, [students, studentProposedKoma, studentDecidedKoma, studentDecidedHasValue]);
 
   const hasScheduleDates = period?.schedule_start_date && period?.schedule_end_date;
 
@@ -496,7 +533,7 @@ export function CourseProgressDashboard({
         <div className="bg-white rounded-xl border border-gray-200 p-4">
           <div className="text-xs text-gray-500 mb-2 flex items-center gap-1">
             進捗状況
-            <HelpTooltip text={"作成済: 提示増コマが1以上の生徒数\n生徒面談: 生徒面談実施チェック済みの生徒数\n父母面談: 父母面談実施チェック済みの生徒数\n申込済: 増コマ決定が1以上の生徒数"} size={10} />
+            <HelpTooltip text={"作成済: 提示増コマが1以上の生徒数\n生徒面談: 生徒面談実施チェック済みの生徒数\n父母面談: 父母面談実施チェック済みの生徒数\n申込済: 増コマ決定が記録済みの生徒数（0コマ確定も含む）"} size={10} />
           </div>
           <div className="space-y-2">
             {/* 作成済み */}
@@ -634,7 +671,7 @@ export function CourseProgressDashboard({
                     <span className={`text-xs font-medium ${cat.colors.text}`}>取得率 {Math.round(cat.acquisitionRate * 100)}%</span>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2 mb-3">
+                  <div className="grid grid-cols-4 gap-2 mb-3">
                     <div className="text-center">
                       <div className="text-[10px] text-gray-500">提案</div>
                       <div className={`text-sm font-bold ${cat.colors.text}`}>{cat.totalProposed}</div>
@@ -646,8 +683,13 @@ export function CourseProgressDashboard({
                       <div className="text-[10px] text-gray-400">{cat.decidedCount}名</div>
                     </div>
                     <div className="text-center">
-                      <div className="text-[10px] text-gray-500">平均</div>
+                      <div className="text-[10px] text-gray-500" title="在籍1人あたりの提案コマ数">平均提案</div>
                       <div className={`text-sm font-bold ${cat.colors.text}`}>{cat.avgProposed.toFixed(1)}</div>
+                      <div className="text-[10px] text-gray-400">コマ/人</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-[10px] text-gray-500" title="在籍1人あたりの取得（決定）増コマ数">平均取得</div>
+                      <div className={`text-sm font-bold ${cat.colors.text}`}>{cat.avgDecided.toFixed(1)}</div>
                       <div className="text-[10px] text-gray-400">コマ/人</div>
                     </div>
                   </div>
@@ -663,8 +705,9 @@ export function CourseProgressDashboard({
                           <span className="text-gray-500 w-7">{g.label}</span>
                           <span className="text-gray-400 w-8 text-right">{g.count}名</span>
                           <span className="text-gray-500 w-12 text-right">提案{g.proposed}</span>
-                          <span className="text-gray-400 w-14 text-right" title="提案増コマ平均（提案コマ÷人数）">平均{g.avgProposed.toFixed(1)}</span>
+                          <span className="text-gray-400 w-12 text-right" title="提案増コマ平均（提案コマ÷人数）">提{g.avgProposed.toFixed(1)}</span>
                           <span className={`font-medium w-12 text-right ${cat.colors.text}`}>決定{g.decided}</span>
+                          <span className="text-gray-400 w-12 text-right" title="取得増コマ平均（決定コマ÷人数）">取{g.avgDecided.toFixed(1)}</span>
                         </div>
                       ))}
                     </div>

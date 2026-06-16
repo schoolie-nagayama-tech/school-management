@@ -325,9 +325,10 @@ export function TaskProgressWidget({ schoolIds, schoolId, schools: schoolsProp }
 
     // Koma stats
     const proposedKomaItem = sd.items.find((i) => i.auto_source === 'proposed_extra') || findItemByKeywords(sd.items, ['提案増コマ', '提示増コマ']);
-    const decidedKomaItem = sd.items.find(
-      (i) => i.id !== proposedKomaItem?.id && i.column_type === 'number' && (i.name.includes('増コマ回数') || i.name === '増コマ回数決定')
-    ) || findItemByKeywords(sd.items.filter((i) => i.id !== proposedKomaItem?.id), ['増コマ回数決定', '増コマ決定', '決定コマ', '増コマ回数']);
+    const decidedKomaItem = sd.items.find((i) => i.id !== proposedKomaItem?.id && i.auto_source === 'applied_extra')
+      || sd.items.find(
+        (i) => i.id !== proposedKomaItem?.id && i.column_type === 'number' && (i.name.includes('増コマ回数') || i.name === '増コマ回数決定')
+      ) || findItemByKeywords(sd.items.filter((i) => i.id !== proposedKomaItem?.id), ['増コマ回数決定', '増コマ決定', '決定コマ', '増コマ回数']);
 
     let totalProposed = 0, totalDecided = 0;
     for (const s of sd.students) {
@@ -343,8 +344,15 @@ export function TaskProgressWidget({ schoolIds, schoolId, schools: schoolsProp }
         }
       }
       if (decidedKomaItem) {
-        const d = sd.progress.find((p) => p.student_id === s.id && p.item_id === decidedKomaItem.id);
-        totalDecided += d?.number_value ?? 0;
+        if (decidedKomaItem.auto_source === 'applied_extra') {
+          const sv = sd.autoValues[s.id];
+          const appliedTotal = sv?.applied_total ?? 0;
+          const courseSessions = sv?.course_sessions ?? 0;
+          totalDecided += Math.max(0, appliedTotal - courseSessions);
+        } else {
+          const d = sd.progress.find((p) => p.student_id === s.id && p.item_id === decidedKomaItem.id);
+          totalDecided += d?.number_value ?? 0;
+        }
       }
     }
 

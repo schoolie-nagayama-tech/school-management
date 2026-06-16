@@ -80,6 +80,8 @@ interface UnitDraft {
   reason: string;
   selected: boolean;
   group_id: number;
+  // 申込専用の結合グループ（提案結合 group_id とは独立）
+  applied_group_id: number;
   intent_tag: string | null;
 }
 
@@ -209,6 +211,8 @@ export default function ProposalEditor() {
   const [progressMap, setProgressMap] = useState<Map<number, StudentProgress>>(new Map());
   const [unitDrafts, setUnitDrafts] = useState<Map<number, UnitDraft>>(new Map());
   const [nextGroupId, setNextGroupId] = useState(1);
+  // 申込結合グループの採番（提案結合 nextGroupId とは独立）
+  const [nextAppliedGroupId, setNextAppliedGroupId] = useState(1);
   const lastToggleIdRef = useRef<number | null>(null);
 
   // ── 単元の範囲選択（ドラッグでなぞって選択）＋ 選択脇のフローティング「まとめる」 ──
@@ -356,6 +360,7 @@ export default function ProposalEditor() {
 
       const drafts = new Map<number, UnitDraft>();
       let maxGroup = 0;
+      let maxAppliedGroup = 0;
       for (const item of items) {
         drafts.set(item.id, {
           curriculum_item_id: item.id,
@@ -364,6 +369,7 @@ export default function ProposalEditor() {
           reason: '',
           selected: false,
           group_id: 0,
+          applied_group_id: 0,
           intent_tag: null,
         });
       }
@@ -381,8 +387,10 @@ export default function ProposalEditor() {
             d.applied_koma = u.applied_koma ?? 0;
             d.reason = u.reason;
             d.group_id = u.group_id;
+            d.applied_group_id = u.applied_group_id ?? 0;
             d.intent_tag = u.intent_tag ?? null;
             if (u.group_id > maxGroup) maxGroup = u.group_id;
+            if ((u.applied_group_id ?? 0) > maxAppliedGroup) maxAppliedGroup = u.applied_group_id ?? 0;
           }
         }
       }
@@ -390,6 +398,7 @@ export default function ProposalEditor() {
 
       setUnitDrafts(drafts);
       setNextGroupId(maxGroup + 1);
+      setNextAppliedGroupId(maxAppliedGroup + 1);
 
       // このテキストを含む講習コースを取得
       try {
@@ -475,6 +484,7 @@ export default function ProposalEditor() {
         reason: '',
         selected: false,
         group_id: 0,
+        applied_group_id: 0,
         intent_tag: null,
       });
     }
@@ -739,8 +749,71 @@ export default function ProposalEditor() {
     });
   };
 
+  // 申込結合: 選択中の隣接単元を applied_group_id でまとめる（申込コマは合計表示で1コマ扱い）。
+  // 提案結合(groupSelected)と同じ操作系だが、申込側の結合だけを更新する。
+  const groupAppliedSelected = () => {
+    const selected = Array.from(unitDrafts.values()).filter((d) => d.selected);
+    if (selected.length < 2) {
+      addToast('申込結合には2つ以上の単元を選択してください', 'error');
+      return;
+    }
+    const selectedSet = new Set(selected.map((d) => d.curriculum_item_id));
+    const indices = allItems
+      .map((item, idx) => selectedSet.has(item.id) ? idx : -1)
+      .filter((i) => i >= 0);
+    for (let i = 1; i < indices.length; i++) {
+      if (indices[i] !== indices[i - 1] + 1) {
+        addToast('隣接する単元のみ結合できます', 'error');
+        return;
+      }
+    }
+    const gid = nextAppliedGroupId;
+    setNextAppliedGroupId(gid + 1);
+    setUnitDrafts((prev) => {
+      const next = new Map(prev);
+      const affectedGroupIds = new Set(selected.map((d) => d.applied_group_id).filter((g) => g > 0));
+      for (const s of selected) {
+        const d = next.get(s.curriculum_item_id);
+        // 申込コマが未入力の単元も結合対象なら申込1で有効化（合計は head 1件のみ計上）
+        if (d) next.set(s.curriculum_item_id, {
+          ...d,
+          applied_group_id: gid,
+          applied_koma: d.applied_koma || 1,
+          selected: false,
+        });
+      }
+      // 片割れ1件だけ残った申込グループは解散
+      for (const oldGid of Array.from(affectedGroupIds)) {
+        const remaining = Array.from(next.values()).filter((d) => d.applied_group_id === oldGid);
+        if (remaining.length === 1) {
+          const lone = remaining[0];
+          next.set(lone.curriculum_item_id, { ...lone, applied_group_id: 0 });
+        }
+      }
+      return next;
+    });
+  };
+
+  const ungroupAppliedUnit = (ciId: number) => {
+    updateUnit(ciId, { applied_group_id: 0 });
+  };
+
+  const ungroupAllApplied = (groupId: number) => {
+    setUnitDrafts((prev) => {
+      const next = new Map(prev);
+      Array.from(next.entries()).forEach(([key, d]) => {
+        if (d.applied_group_id === groupId) {
+          next.set(key, { ...d, applied_group_id: 0 });
+        }
+      });
+      return next;
+    });
+  };
+
+  // 提案コマ・申込コマのどちらかが入っていれば「有効な単元」。
+  // 提案0でも申込のある単元（提案していないが取ったコマ）を保存・表示対象に含める。
   const activeUnits = useMemo(() => {
-    return Array.from(unitDrafts.values()).filter((d) => d.koma_count > 0);
+    return Array.from(unitDrafts.values()).filter((d) => d.koma_count > 0 || d.applied_koma > 0);
   }, [unitDrafts]);
 
   const totalKoma = useMemo(() => {
@@ -758,6 +831,18 @@ export default function ProposalEditor() {
       const list = map.get(u.group_id) ?? [];
       list.push(u);
       map.set(u.group_id, list);
+    }
+    return map;
+  }, [activeUnits]);
+
+  // 申込結合グループ（applied_group_id ごと）。申込コマのある単元のみ対象。
+  const appliedGroupMap = useMemo(() => {
+    const map = new Map<number, UnitDraft[]>();
+    for (const u of activeUnits) {
+      if (u.applied_group_id === 0 || u.applied_koma <= 0) continue;
+      const list = map.get(u.applied_group_id) ?? [];
+      list.push(u);
+      map.set(u.applied_group_id, list);
     }
     return map;
   }, [activeUnits]);
@@ -885,6 +970,7 @@ export default function ProposalEditor() {
         applied_koma: u.applied_koma > 0 ? u.applied_koma : null,
         reason: u.reason,
         group_id: u.group_id,
+        applied_group_id: u.applied_group_id,
         intent_tag: u.intent_tag,
       }));
 
@@ -949,23 +1035,30 @@ export default function ProposalEditor() {
     setStatusChanging(true);
     try {
       if (newStatus === 'sent') {
-        // 提案済み: applied_koma を koma_count で初期化
+        // 提案済み: applied_koma を koma_count で初期化。
+        // 申込結合(applied_group_id)は未設定なら提案結合(group_id)に合わせる
+        // ——そうしないとグループ単元の申込コマが per-unit で二重計上され、申込>提案になる。
         const updated = new Map(unitDrafts);
         Array.from(updated.entries()).forEach(([, d]) => {
           if (d.koma_count > 0) {
-            updated.set(d.curriculum_item_id, { ...d, applied_koma: d.koma_count });
+            updated.set(d.curriculum_item_id, {
+              ...d,
+              applied_koma: d.koma_count,
+              applied_group_id: d.applied_group_id > 0 ? d.applied_group_id : d.group_id,
+            });
           }
         });
         setUnitDrafts(updated);
 
         const unitInputs = Array.from(updated.values())
-          .filter((d) => d.koma_count > 0)
+          .filter((d) => d.koma_count > 0 || d.applied_koma > 0)
           .map((u) => ({
             curriculum_item_id: u.curriculum_item_id,
             koma_count: u.koma_count,
-            applied_koma: u.koma_count,
+            applied_koma: u.koma_count > 0 ? u.koma_count : u.applied_koma,
             reason: u.reason,
             group_id: u.group_id,
+            applied_group_id: u.applied_group_id > 0 ? u.applied_group_id : u.group_id,
             intent_tag: u.intent_tag,
           }));
         await saveProposalUnits(proposalId, unitInputs);
@@ -976,13 +1069,14 @@ export default function ProposalEditor() {
         // 公開: 未保存の申込コマ数を先に保存してから公開
         // 下書きから直接公開した場合、申込が未確定(0)なら提案回数(koma_count)で初期化する
         const unitInputs = Array.from(unitDrafts.values())
-          .filter((d) => d.koma_count > 0)
+          .filter((d) => d.koma_count > 0 || d.applied_koma > 0)
           .map((u) => ({
             curriculum_item_id: u.curriculum_item_id,
             koma_count: u.koma_count,
             applied_koma: u.applied_koma > 0 ? u.applied_koma : u.koma_count,
             reason: u.reason,
             group_id: u.group_id,
+            applied_group_id: u.applied_group_id > 0 ? u.applied_group_id : u.group_id,
             intent_tag: u.intent_tag,
           }));
         await saveProposalUnits(proposalId, unitInputs);
@@ -1004,6 +1098,7 @@ export default function ProposalEditor() {
             applied_koma: 0,
             reason: u.reason,
             group_id: u.group_id,
+            applied_group_id: u.applied_group_id,
             intent_tag: u.intent_tag,
           }));
         await saveProposalUnits(proposalId, unitInputs);
@@ -1044,6 +1139,9 @@ export default function ProposalEditor() {
   }
 
   const currentStatus = proposal?.status ?? 'draft';
+  // 申込編集フェーズ: 提案済み/公開済みでは、行クリックで申込コマを足せるようにする
+  // （提案していないが取ったコマを後から記録できる）。下書き中は従来どおり提案コマを足す。
+  const appliedMode = currentStatus === 'sent' || currentStatus === 'approved';
   const seasonLabel = SEASON_LABELS[season] ?? season;
 
   // ════════════════════════════════════════
@@ -1458,6 +1556,7 @@ export default function ProposalEditor() {
               if (!draft) return null;
               const done = isDone(item.id);
               const groupMembers = draft.group_id > 0 ? groupMap.get(draft.group_id) : undefined;
+              const appliedGroupMembers = draft.applied_group_id > 0 ? appliedGroupMap.get(draft.applied_group_id) : undefined;
 
               return (
                 <UnitRow
@@ -1466,13 +1565,17 @@ export default function ProposalEditor() {
                   item={item}
                   draft={draft}
                   done={done}
+                  appliedMode={appliedMode}
                   groupMembers={groupMembers}
+                  appliedGroupMembers={appliedGroupMembers}
                   onToggle={(shiftKey) => toggleUnit(item.id, shiftKey)}
                   onSelectStart={(shiftKey) => startSelectDrag(idx, shiftKey)}
                   onSelectEnter={() => onSelectEnter(idx)}
                   onUpdate={(patch) => updateUnit(item.id, patch)}
                   onUngroup={() => ungroupUnit(item.id)}
                   onUngroupAll={() => draft.group_id > 0 && ungroupAll(draft.group_id)}
+                  onUngroupApplied={() => ungroupAppliedUnit(item.id)}
+                  onUngroupAllApplied={() => draft.applied_group_id > 0 && ungroupAllApplied(draft.applied_group_id)}
                 />
               );
             })}
@@ -1516,6 +1619,19 @@ export default function ProposalEditor() {
             <div className="flex items-center gap-1.5 rounded-full bg-surface-raised text-text-muted text-[11px] font-medium px-3 py-1.5 shadow-lg ring-1 ring-border-default origin-left animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]">
               隣接する単元のみまとめられます
             </div>
+          )}
+
+          {/* 申込編集フェーズ（提案済み/公開済み）では「申込結合」も提示。提案結合とは別系統で申込コマを1コマにまとめる。 */}
+          {appliedMode && selectionInfo.contiguous && (
+            <button
+              type="button"
+              onClick={groupAppliedSelected}
+              className="flex items-center gap-1.5 rounded-full bg-success text-white text-xs font-bold pl-3 pr-3 py-1.5 shadow-lg ring-1 ring-black/5 hover:bg-success/90 active:scale-95 transition-[transform,background-color] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] origin-left animate-[popover-enter_150ms_cubic-bezier(0.23,1,0.32,1)]"
+              title="選択中の単元を申込1コマにまとめる（提案結合とは別）"
+            >
+              <Link2 className="w-3.5 h-3.5" />
+              申込結合
+            </button>
           )}
 
           {/* グループ化ピルの隣に「指導意図」一括設定。選択した場所のすぐ横でまとめて設定できる。 */}
@@ -1583,6 +1699,19 @@ export default function ProposalEditor() {
             <Link2 className="w-3.5 h-3.5 mr-1" />
             グループ化
           </Button>
+          {/* 申込編集フェーズでは申込専用の結合も可能（提案結合とは別系統） */}
+          {appliedMode && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={groupAppliedSelected}
+              disabled={!selectionInfo.contiguous}
+              title="選択中の単元を申込1コマにまとめる（提案結合とは独立）"
+            >
+              <Link2 className="w-3.5 h-3.5 mr-1 text-success" />
+              申込結合
+            </Button>
+          )}
           {/* 講習に登録ボタン: 教室長以上のみ表示 */}
           {!isNew && proposal && isManagerOrAbove && (
             <Button
@@ -1733,34 +1862,52 @@ function UnitRow({
   item,
   draft,
   done,
+  appliedMode,
   groupMembers,
+  appliedGroupMembers,
   onToggle,
   onSelectStart,
   onSelectEnter,
   onUpdate,
   onUngroup,
   onUngroupAll,
+  onUngroupApplied,
+  onUngroupAllApplied,
 }: {
   index: number;
   item: CurriculumItem;
   draft: UnitDraft;
   done: boolean;
+  appliedMode: boolean;
   groupMembers?: UnitDraft[];
+  appliedGroupMembers?: UnitDraft[];
   onToggle: (shiftKey: boolean) => void;
   onSelectStart: (shiftKey: boolean) => void;
   onSelectEnter: () => void;
   onUpdate: (patch: Partial<UnitDraft>) => void;
   onUngroup: () => void;
   onUngroupAll: () => void;
+  onUngroupApplied: () => void;
+  onUngroupAllApplied: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const isGrouped = draft.group_id > 0;
   const isGroupHead = groupMembers && groupMembers[0]?.curriculum_item_id === draft.curriculum_item_id;
   const hasApplied = draft.applied_koma > 0;
-  const isActive = draft.koma_count > 0;
+  // 提案コマ・申込コマのどちらかが入っていれば有効（提案0・申込1の単元も操作可能に）
+  const isActive = draft.koma_count > 0 || draft.applied_koma > 0;
+  // 申込結合: applied_group_id でまとめた単元。head のみ申込±を出し、合計も head 1件で計上。
+  const isAppliedGrouped = draft.applied_group_id > 0 && hasApplied;
+  const isAppliedGroupHead = appliedGroupMembers && appliedGroupMembers[0]?.curriculum_item_id === draft.curriculum_item_id;
 
   const handleCardClick = () => {
-    onUpdate({ koma_count: draft.koma_count + 1 });
+    // 申込編集フェーズ（提案済み/公開済み）では行クリックで申込コマを足す。
+    // 下書き中は従来どおり提案コマを足す。
+    if (appliedMode) {
+      onUpdate({ applied_koma: draft.applied_koma + 1 });
+    } else {
+      onUpdate({ koma_count: draft.koma_count + 1 });
+    }
   };
 
   const groupColorIdx = isGrouped ? (draft.group_id - 1) % GROUP_COLORS.length : 0;
@@ -1831,6 +1978,11 @@ function UnitRow({
               {GROUP_CIRCLE_NUMS[(draft.group_id - 1) % GROUP_CIRCLE_NUMS.length]}
             </span>
           )}
+          {isAppliedGrouped && (
+            <span className="ml-1.5 text-[10px] font-bold text-success" title="申込結合">
+              申{GROUP_CIRCLE_NUMS[(draft.applied_group_id - 1) % GROUP_CIRCLE_NUMS.length]}
+            </span>
+          )}
           {isActive && draft.intent_tag && (
             <span
               className={`ml-1.5 inline-block px-1.5 py-0 border rounded-full text-[9px] font-medium ${INTENT_TAG_COLOR[draft.intent_tag as IntentTag] ?? 'text-text-muted border-border-default'}`}
@@ -1840,52 +1992,62 @@ function UnitRow({
           )}
         </button>
 
-        {isActive && (!isGrouped || isGroupHead) && (
+        {isActive && (
           <div className="flex items-center gap-2 shrink-0">
-            <div className="flex items-center gap-0.5">
-              <button
-                onClick={() => onUpdate({ koma_count: Math.max(0, draft.koma_count - 1) })}
-                className="w-5 h-5 flex items-center justify-center text-text-faint hover:text-text-body rounded hover:bg-surface-hover active:bg-border-default transition-[background-color,color] duration-100 ease-out"
-                aria-label="提案コマ数を減らす"
-              >
-                <Minus className="w-3 h-3" />
-              </button>
-              <span className="w-6 text-center text-sm font-bold text-accent-ink">
-                {draft.koma_count}
-              </span>
-              <button
-                onClick={() => onUpdate({ koma_count: draft.koma_count + 1 })}
-                className="w-5 h-5 flex items-center justify-center text-text-faint hover:text-text-body rounded hover:bg-surface-hover active:bg-border-default transition-[background-color,color] duration-100 ease-out"
-                aria-label="提案コマ数を増やす"
-              >
-                <Plus className="w-3 h-3" />
-              </button>
-            </div>
+            {/* 提案コマ ±（提案結合はheadのみ表示。合計はhead1件で計上） */}
+            {(!isGrouped || isGroupHead) && (
+              <div className="flex items-center gap-0.5" title="提案コマ">
+                <button
+                  onClick={() => onUpdate({ koma_count: Math.max(0, draft.koma_count - 1) })}
+                  className="w-5 h-5 flex items-center justify-center text-text-faint hover:text-text-body rounded hover:bg-surface-hover active:bg-border-default transition-[background-color,color] duration-100 ease-out"
+                  aria-label="提案コマ数を減らす"
+                >
+                  <Minus className="w-3 h-3" />
+                </button>
+                <span className="w-6 text-center text-sm font-bold text-accent-ink">
+                  {draft.koma_count}
+                </span>
+                <button
+                  onClick={() => onUpdate({ koma_count: draft.koma_count + 1 })}
+                  className="w-5 h-5 flex items-center justify-center text-text-faint hover:text-text-body rounded hover:bg-surface-hover active:bg-border-default transition-[background-color,color] duration-100 ease-out"
+                  aria-label="提案コマ数を増やす"
+                >
+                  <Plus className="w-3 h-3" />
+                </button>
+              </div>
+            )}
 
-            <div className="w-px h-4 bg-border-default" />
+            {/* 提案±と申込±が両方出るときだけ区切り */}
+            {(!isGrouped || isGroupHead) && (!isAppliedGrouped || isAppliedGroupHead) && (
+              <div className="w-px h-4 bg-border-default" />
+            )}
 
-            <div className="flex items-center gap-0.5">
-              <button
-                onClick={() => onUpdate({ applied_koma: Math.max(0, draft.applied_koma - 1) })}
-                className="w-5 h-5 flex items-center justify-center text-text-faint hover:text-text-body rounded hover:bg-surface-hover active:bg-border-default transition-[background-color,color] duration-100 ease-out"
-                aria-label="申込コマ数を減らす"
-              >
-                <Minus className="w-3 h-3" />
-              </button>
-              <span className={`w-6 text-center text-sm font-bold ${hasApplied ? 'text-success' : 'text-text-faint'}`}>
-                {draft.applied_koma}
-              </span>
-              <button
-                onClick={() => onUpdate({ applied_koma: draft.applied_koma + 1 })}
-                className="w-5 h-5 flex items-center justify-center text-text-faint hover:text-text-body rounded hover:bg-surface-hover active:bg-border-default transition-[background-color,color] duration-100 ease-out"
-                aria-label="申込コマ数を増やす"
-              >
-                <Plus className="w-3 h-3" />
-              </button>
-            </div>
+            {/* 申込コマ ±（申込結合はheadのみ表示。合計はhead1件で計上） */}
+            {(!isAppliedGrouped || isAppliedGroupHead) && (
+              <div className="flex items-center gap-0.5" title="申込コマ">
+                <button
+                  onClick={() => onUpdate({ applied_koma: Math.max(0, draft.applied_koma - 1) })}
+                  className="w-5 h-5 flex items-center justify-center text-text-faint hover:text-text-body rounded hover:bg-surface-hover active:bg-border-default transition-[background-color,color] duration-100 ease-out"
+                  aria-label="申込コマ数を減らす"
+                >
+                  <Minus className="w-3 h-3" />
+                </button>
+                <span className={`w-6 text-center text-sm font-bold ${hasApplied ? 'text-success' : 'text-text-faint'}`}>
+                  {draft.applied_koma}
+                </span>
+                <button
+                  onClick={() => onUpdate({ applied_koma: draft.applied_koma + 1 })}
+                  className="w-5 h-5 flex items-center justify-center text-text-faint hover:text-text-body rounded hover:bg-surface-hover active:bg-border-default transition-[background-color,color] duration-100 ease-out"
+                  aria-label="申込コマ数を増やす"
+                >
+                  <Plus className="w-3 h-3" />
+                </button>
+              </div>
+            )}
           </div>
         )}
 
+        {/* 提案結合の解除 */}
         {isGrouped && isActive && !isGroupHead && (
           <button
             onClick={onUngroup}
@@ -1901,6 +2063,27 @@ function UnitRow({
             onClick={onUngroupAll}
             className="p-0.5 text-text-faint hover:text-danger rounded hover:bg-surface-hover active:scale-95 transition-[background-color,color,transform] duration-100 shrink-0"
             title="グループ解除"
+          >
+            <Unlink className="w-3.5 h-3.5" />
+          </button>
+        )}
+
+        {/* 申込結合の解除（success色で提案結合と区別） */}
+        {isAppliedGrouped && !isAppliedGroupHead && (
+          <button
+            onClick={onUngroupApplied}
+            className="p-0.5 text-success/70 hover:text-success rounded hover:bg-surface-hover active:scale-95 transition-[background-color,color,transform] duration-100 shrink-0"
+            title="申込結合から外す"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+
+        {isAppliedGrouped && isAppliedGroupHead && (
+          <button
+            onClick={onUngroupAllApplied}
+            className="p-0.5 text-success/70 hover:text-success rounded hover:bg-surface-hover active:scale-95 transition-[background-color,color,transform] duration-100 shrink-0"
+            title="申込結合を解除"
           >
             <Unlink className="w-3.5 h-3.5" />
           </button>

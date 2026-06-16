@@ -189,6 +189,8 @@ export function CourseProgressWidget({ schoolId }: CourseProgressWidgetProps) {
   }, [items]);
 
   const decidedKomaItem = useMemo(() => {
+    const byAutoSource = items.find((i) => i.id !== proposedKomaItem?.id && i.auto_source === 'applied_extra');
+    if (byAutoSource) return byAutoSource;
     return items.find(
       (i) => i.id !== proposedKomaItem?.id && i.column_type === 'number' &&
         (i.name.includes('増コマ回数') || i.name === '増コマ回数決定')
@@ -216,8 +218,15 @@ export function CourseProgressWidget({ schoolId }: CourseProgressWidgetProps) {
       }
       // 決定コマ
       if (decidedKomaItem) {
-        const d = progressData.find((p) => p.student_id === s.id && p.item_id === decidedKomaItem.id);
-        totalDecided += d?.number_value ?? 0;
+        if (decidedKomaItem.auto_source === 'applied_extra') {
+          const sv = autoValues[s.id];
+          const appliedTotal = sv?.applied_total ?? 0;
+          const courseSessions = sv?.course_sessions ?? 0;
+          totalDecided += Math.max(0, appliedTotal - courseSessions);
+        } else {
+          const d = progressData.find((p) => p.student_id === s.id && p.item_id === decidedKomaItem.id);
+          totalDecided += d?.number_value ?? 0;
+        }
       }
     }
     return { proposed: totalProposed, decided: totalDecided };
