@@ -10,6 +10,10 @@ import { getUserProfile, updateLastLogin, getUserSchools } from '@/lib/api/auth'
 import { getSchools } from '@/lib/api/schools';
 import { Loading } from '@/components/ui';
 import { clearAllFetchCache } from '@/lib/utils/fetchCache';
+import { resolveSelectedSchoolId } from '@/lib/auth/selectedSchool';
+// 型のみの import。resolveServerAuth は 'server-only' だが import type は
+// コンパイル時に消えるためクライアントバンドルには入らない（実行時 import なし）。
+import type { InitialAuth } from '@/lib/auth/resolveServerAuth';
 
 function isAbortError(err: unknown): boolean {
   if (!(err instanceof Error)) return false;
@@ -40,20 +44,33 @@ const INVITE_PATH = '/invite';
 
 interface AuthProviderProps {
   children: ReactNode;
+  /**
+   * サーバー(layout)で先に解決した認証情報（Phase3 Pillar A）。
+   * 渡された場合は初期 state にそのまま採用し、isLoading=false で開始する。
+   * これにより初回描画から profile/権限/対象校が使え、認証待ちギャップと
+   * 「auth 確定後の再 fetch」が無くなる。未指定なら従来どおりクライアントで解決する。
+   */
+  initialAuth?: InitialAuth | null;
 }
 
-export function AuthProvider({ children }: AuthProviderProps) {
+export function AuthProvider({ children, initialAuth }: AuthProviderProps) {
   const router = useRouter();
   const pathname = usePathname();
 
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [permissions, setPermissions] = useState<Permission | null>(null);
-  const [schoolIds, setSchoolIds] = useState<string[]>([]);
-  const [demoSchoolIds, setDemoSchoolIds] = useState<string[]>([]);
-  const [selectedSchoolId, setSelectedSchoolIdState] = useState<string | 'all' | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const lastUserIdRef = useRef<string | null>(null);
+  // initialAuth はクライアントのライフタイム中は不変（layout のサーバー描画で1度だけ確定）。
+  // 認証監視 useEffect の再購読を避けるため ref に固定して参照する。
+  const initialAuthRef = useRef<InitialAuth | null>(initialAuth ?? null);
+
+  // サーバー解決済みの initialAuth があれば初期 state に採用（無ければ従来どおり空で開始）。
+  const [user, setUser] = useState<User | null>(initialAuth?.user ?? null);
+  const [profile, setProfile] = useState<UserProfile | null>(initialAuth?.profile ?? null);
+  const [permissions, setPermissions] = useState<Permission | null>(initialAuth?.permissions ?? null);
+  const [schoolIds, setSchoolIds] = useState<string[]>(initialAuth?.schoolIds ?? []);
+  const [demoSchoolIds, setDemoSchoolIds] = useState<string[]>(initialAuth?.demoSchoolIds ?? []);
+  const [selectedSchoolId, setSelectedSchoolIdState] = useState<string | 'all' | null>(initialAuth?.selectedSchoolId ?? null);
+  // initialAuth があれば最初からローディング非表示（認証待ちギャップを消す）
+  const [isLoading, setIsLoading] = useState(!initialAuth);
+  const lastUserIdRef = useRef<string | null>(initialAuth?.user.id ?? null);
 
   // 選択された教室IDを設定（localStorageにも保存）
   const setSelectedSchoolId = useCallback((schoolId: string | 'all') => {
@@ -150,47 +167,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (isMounted && !isMounted()) return null;
         setSchoolIds(fetchedSchoolIds);
 
-        // 教室選択の初期化（複数教室のときは default_school_id を優先）
+        // 教室選択の初期化。決定ロジックは resolveSelectedSchoolId に集約し、
+        // サーバー(resolveServerAuth)と共有して挙動ズレを防ぐ。
+        // 保存済みの選択はクライアントでは localStorage を出所にする。
         if (typeof window !== 'undefined' && fetchedSchoolIds.length > 0) {
           const savedSchoolId = localStorage.getItem('selectedSchoolId');
-          const defaultSchoolId = userProfile.default_school_id ?? null;
-          const demoSet = new Set(demoIds);
-          // デモ教室はデフォルト/初期選択にしない（デモはあくまで見本用のため）。
-          // 万一 default_school_id がデモを指していても無効扱いにする。
-          const hasValidDefault =
-            !!defaultSchoolId &&
-            fetchedSchoolIds.includes(defaultSchoolId) &&
-            !demoSet.has(defaultSchoolId);
-
-          // 保存済みの選択（"all" や手動で選んだ教室）が有効かどうか
-          const hasValidSaved =
-            !!savedSchoolId &&
-            (savedSchoolId === 'all' || fetchedSchoolIds.includes(savedSchoolId));
-
-          // フォールバック先頭はデモ教室を避けて選ぶ（実教室が1つも無いときだけデモを許容）
-          const fallbackSchoolId =
-            fetchedSchoolIds.find(id => !demoSet.has(id)) ?? fetchedSchoolIds[0];
-
-          if (fetchedSchoolIds.length === 1) {
-            setSelectedSchoolIdState(fetchedSchoolIds[0]);
-            localStorage.setItem('selectedSchoolId', fetchedSchoolIds[0]);
-          } else {
-            // 複数教室の初期選択の優先順位：
-            //   1. 保存済みの選択（"all" 含む）— ユーザーが最後に選んだものを尊重する。
-            //      これを default より優先しないと、default_school_id があるユーザーは
-            //      「すべての教室」を選んでも再読み込みのたびに default に戻され、
-            //      教室の絞り込み・全教室表示が効かなくなる（このバグの原因）。
-            //   2. default_school_id（保存値が無い初回ログイン時のみの初期値。デモは除外）
-            //   3. デモ以外の先頭教室
-            if (hasValidSaved) {
-              setSelectedSchoolIdState(savedSchoolId as string | 'all');
-            } else if (hasValidDefault) {
-              setSelectedSchoolIdState(defaultSchoolId!);
-              localStorage.setItem('selectedSchoolId', defaultSchoolId!);
-            } else {
-              setSelectedSchoolIdState(fallbackSchoolId);
-              localStorage.setItem('selectedSchoolId', fallbackSchoolId);
-            }
+          const resolved = resolveSelectedSchoolId(
+            fetchedSchoolIds,
+            demoIds,
+            savedSchoolId,
+            userProfile.default_school_id ?? null,
+          );
+          if (resolved) {
+            setSelectedSchoolIdState(resolved);
+            // 解決した選択を localStorage に永続化（次回以降の初期選択に使う）
+            localStorage.setItem('selectedSchoolId', resolved);
           }
         }
 
@@ -272,7 +263,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
             setUser(session.user);
             lastUserIdRef.current = session.user.id;
           }
-          await fetchProfile(session.user.id, session.user, () => mounted);
+          // サーバーで initialAuth をシード済みで同一ユーザーなら、profile/権限/対象校は
+          // 既に初期 state に入っている。ここで再 fetch すると新しい配列 identity になり
+          // getSelectedSchoolIds の参照が変わって各ボードが再取得してしまうため、スキップする
+          // （Pillar A の肝。セッション監視 onAuthStateChange は維持され、ユーザー変更・
+          //   サインアウトは引き続き検知する）。
+          const seeded = initialAuthRef.current;
+          if (seeded && seeded.user.id === session.user.id) {
+            // 再取得はしないが、最終ログインだけは従来同様に更新する
+            // （DB 書き込みのみで setState を伴わないため、ボードの再取得は誘発しない）。
+            void updateLastLogin(session.user.id).catch(() => {});
+          } else {
+            await fetchProfile(session.user.id, session.user, () => mounted);
+          }
         } else {
           if (mounted) {
             lastUserIdRef.current = null;

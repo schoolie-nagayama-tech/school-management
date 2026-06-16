@@ -1,17 +1,22 @@
 import { supabase } from '../supabase';
-import type { StudentInterview, StudentInterviewInput } from '@/types/database';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database, StudentInterview, StudentInterviewInput } from '@/types/database';
 import { dismissAlert, invalidateAlertCache } from './alerts';
 
 /**
  * 教室単位で面談記録をバッチ取得（アラート用）
  * student_id でグルーピングした Map を返す（各生徒の最新順）
+ *
+ * @param client - RLS 認証済みのサーバークライアント（省略時はブラウザシングルトン）
+ *                 サーバー prefetch 経路で正しいデータを取れるよう DI する
  */
 export async function getInterviewsBySchool(
-  schoolIds: string[]
+  schoolIds: string[],
+  client: SupabaseClient<Database> = supabase
 ): Promise<Map<string, StudentInterview[]>> {
   if (schoolIds.length === 0) return new Map();
 
-  const { data, error } = await supabase
+  const { data, error } = await client
     .from('student_interviews')
     .select('*')
     .in('school_id', schoolIds)
@@ -230,12 +235,17 @@ export async function getPendingTasks(
 /**
  * 複数教室の未完了タスクを一括取得（1クエリ）
  */
+/**
+ * @param client - RLS 認証済みのサーバークライアント（省略時はブラウザシングルトン）
+ *                 サーバー prefetch 経路で正しいデータを取れるよう DI する
+ */
 export async function getPendingTasksBySchools(
-  schoolIds: string[]
+  schoolIds: string[],
+  client: SupabaseClient<Database> = supabase
 ): Promise<(StudentInterview & { student: { last_name: string; first_name: string } })[]> {
   if (schoolIds.length === 0) return [];
 
-  const { data, error } = await supabase
+  const { data, error } = await client
     .from('student_interviews')
     .select(`
       *,

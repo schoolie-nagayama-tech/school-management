@@ -159,18 +159,20 @@ export const getCachedFormResponses = withFetchCache(getFormResponses, {
  * @param schoolIds 対象教室IDの配列
  * @param limitDays 何日以内の申込を取得するか（デフォルト: 7日）
  * @param limit 最大取得件数（デフォルト: 10件）
+ * @param client DI用クライアント（省略時はブラウザクライアント。SSR事前取得時に認証済みサーバークライアントを渡す）
  */
 export async function getRecentUnprocessedResponses(
   schoolIds: string[],
   limitDays: number = 7,
-  limit: number = 10
+  limit: number = 10,
+  client: typeof supabase = supabase
 ): Promise<FormResponseWithStudent[]> {
   if (schoolIds.length === 0) return [];
 
   const since = new Date();
   since.setDate(since.getDate() - limitDays);
 
-  const { data, error } = await supabase
+  const { data, error } = await client
     .from('form_responses')
     .select('*')
     .in('school_id', schoolIds)

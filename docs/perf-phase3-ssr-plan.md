@@ -9,6 +9,23 @@
 
 ---
 
+## ★実装状況 (2026-06-17 更新)
+
+**Pillar A（認証サーバーシード）+ Pillar B（bulletin / notification / alert の SSR 事前取得）を実装済み・本番ビルド green（exit 0、`/students` は ƒ=Dynamic）。未コミット。**
+
+実装内容:
+- **Pillar A**: `src/lib/auth/resolveServerAuth.ts`（新規, server-only）でサーバー認証解決 → `layout.tsx`(async化)で `AuthProvider initialAuth=` に渡す。`AuthContext` は initialAuth があれば初期 state に採用し `isLoading=false` 開始、初回 `initializeAuth` で同一ユーザーなら fetchProfile をスキップ（再 fetch 抑制の肝。last_login だけは setState 無しで更新）。教室選択の決定ロジックは `src/lib/auth/selectedSchool.ts`（新規）に純関数 `resolveSelectedSchoolId` として切り出しクライアント/サーバーで共有。
+- **bulletin**: 既存足場（prefetchBulletinInitial / initialData / DI）を `page.tsx` の Suspense スロットで配線済み。
+- **notification**: 取得+変換を `src/lib/api/notifications.ts`（新規）の純関数 `loadNotificationFeed(schoolIds, client)` に抽出（クライアント/サーバー共有）。`getRecentUnprocessedResponses` を DI 化。`notification-server.ts` の `prefetchNotificationInitial`（teacher は早期 return）で先取りし、**onStudentClick がクライアントクロージャのため slot 化不可** → シリアライズ可能な `notificationInitialData` prop を page.tsx(async) → StudentsPageClient → NotificationFeed に渡す。
+- **alert**: `getAlertsLight` に client 引数 + サーバー実行時 in-memory キャッシュ skip（ユーザー間データ混在防止）。Light 経路の取得関数群（getStudents/getInterviewsBySchool/getApplicationItems/getStudentApplications/getPendingTasksBySchools/fetchScheduleChangeAlertData/getAlertSettingsBySchools/getAlertDismissals）に optional `client` を**フル DI**（サーバーで anon 空データになる罠を回避）。`alert-server.ts` の `prefetchAlertInitial` を `page.tsx` の Suspense スロットで配線。**Heavy は SSR 対象外**：initialData 時も AlertBoard が `loadHeavyAlerts()` で従来どおり whenNetworkIdle 後に遅延取得（初回スキップで Heavy まで跳ばさないよう修正済み）。
+
+**未了の検証（要・実環境での手動確認）**:
+- [ ] `createSupabaseServerClient` の cookieOptions.name 修正による **form_periods プレビュー回帰確認**（下書き/終了済み期間プレビューが authed で見えるか）。
+- [ ] 本番ビルドのブラウザ確認：認証待ち Loading が消えるか / 各ボードが re-fetch せず初期表示されるか（ネットワークタブで重複取得が無いこと）/ 複数ロール（admin/owner/manager/teacher）で権限描画と対象校が正しいか / ハイドレーション警告が出ないこと。
+- [ ] 投稿/アラートのある教室で初期表示が正しいか（空教室では見た目確認不可）。
+
+---
+
 ## 0. ゴールと、なぜ Phase 3 が「本丸」か
 
 生徒管理ページ上部（アラート/通知/掲示板/進捗）の初期表示を速くする。
