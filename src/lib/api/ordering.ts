@@ -614,6 +614,12 @@ export async function deleteDistributedMaterial(orderId: string, studentId: stri
 /**
  * 発注時: 所持教材に自動登録
  * textbooks テーブルに同名の教材があれば student_textbooks に追加（track_progress=false）
+ *
+ * 注意: 引数の schoolId は「発注（在庫/請求）の教室」であり、生徒の所属校とは限らない
+ * （他校の生徒に発注する場合や、操作中の選択校が先頭校に倒れる場合がある）。
+ * 所持教材(student_textbooks)は RLS の可視性が school_id に依存し、講師は user_schools の
+ * 自校しか見られないため、必ず「生徒の所属校」を school_id に入れる。発注校を入れると
+ * 別校の student_textbook ができ、その生徒の担当講師から所持教材が見えなくなる。
  */
 async function registerStudentTextbook(
   materialId: string,
@@ -643,10 +649,19 @@ async function registerStudentTextbook(
       .maybeSingle();
 
     if (!existingSt) {
+      // 生徒の所属校を引いて student_textbooks の school_id に使う（発注校 schoolId は使わない）。
+      // 取得できない場合のみ発注校をフォールバックにする。
+      const { data: student } = await supabase
+        .from('students')
+        .select('school_id')
+        .eq('id', studentId)
+        .maybeSingle();
+      const stSchoolId = (student as { school_id: string } | null)?.school_id ?? schoolId;
+
       await supabase
         .from('student_textbooks')
         .insert({
-          school_id: schoolId,
+          school_id: stSchoolId,
           student_id: studentId,
           textbook_id: textbook.id,
           is_active: true,
