@@ -149,9 +149,11 @@ export interface OrderCandidate extends ProposalOrderInput {
  * 提案書公開に伴う発注候補を算出する。
  * 重要: student_textbooks の所持判定は「公開で is_draft=false になる前」の状態を見る必要があるため、
  * 必ず publishProposal を呼ぶ「前」に実行すること（公開後だと当該テキストが所持済み扱いになる）。
+ * - 発注教材の解決: textbooks.material_id を最優先。未設定なら、教材(materials)は textbooks と同源データで
+ *   名前が「テキスト名 | 学年 | 科目」(出版社ありは間に出版社)の形なので、その名前で照合して解決する。
  * - alreadyOwned: 同生徒・同テキストの有効化済み(student_textbooks.is_draft=false)があれば所持とみなし発注しない
  * - hasOrder: 同生徒・同教材の未キャンセル発注があれば重複作成しない
- * - needsOrder: 教材紐付けあり & 未所持 & 既存発注なし → 自動発注の対象
+ * - needsOrder: 発注教材が解決でき & 未所持 & 既存発注なし → 発注対象
  */
 export async function getProposalOrderCandidates(
   inputs: ProposalOrderInput[]
@@ -160,9 +162,54 @@ export async function getProposalOrderCandidates(
 
   const studentIds = Array.from(new Set(inputs.map((i) => i.studentId)));
   const textbookIds = Array.from(new Set(inputs.map((i) => i.textbookId)));
-  const materialIds = Array.from(new Set(inputs.map((i) => i.materialId).filter((m): m is string => !!m)));
+  const inputSchoolIds = Array.from(new Set(inputs.map((i) => i.schoolId).filter((s): s is string => !!s)));
 
-  // 所持テキスト（有効化済み = is_draft=false）。下書き作成だけの行は所持扱いしない。
+  // テキスト詳細（material_id + 名前/学年/科目/出版社）。発注教材の名前照合に使う。
+  const tbDetail = new Map<number, { material_id: string | null; name: string; grade: string | null; subject: string | null; publisher: string | null }>();
+  {
+    const { data } = await supabase
+      .from('textbooks')
+      .select('id, name, grade, subject, publisher, material_id')
+      .in('id', textbookIds);
+    for (const t of (data ?? []) as { id: number; name: string; grade: string | null; subject: string | null; publisher: string | null; material_id: string | null }[]) {
+      tbDetail.set(t.id, { material_id: t.material_id, name: t.name, grade: t.grade, subject: t.subject, publisher: t.publisher });
+    }
+  }
+
+  // 教材カタログ（名前→id / id→名前）。textbooks と同源データのため名前で照合できる。
+  const matIdByName = new Map<string, string>();
+  const matNameById = new Map<string, string>();
+  {
+    let q = supabase.from('materials').select('id, name, school_id').eq('is_active', true);
+    if (inputSchoolIds.length > 0) q = q.in('school_id', inputSchoolIds);
+    const { data } = await q;
+    for (const m of (data ?? []) as { id: string; name: string }[]) {
+      if (!matIdByName.has(m.name)) matIdByName.set(m.name, m.id);
+      matNameById.set(m.id, m.name);
+    }
+  }
+
+  // テキスト → 発注教材の解決（material_id 優先、無ければ「名前 | 学年 | 科目」で照合）
+  const resolveMaterialId = (textbookId: number, fallback: string | null): string | null => {
+    const tb = tbDetail.get(textbookId);
+    if (tb?.material_id) return tb.material_id;
+    if (!tb || !tb.grade || !tb.subject) return fallback;
+    const base = `${tb.name} | ${tb.grade} | ${tb.subject}`;
+    if (matIdByName.has(base)) return matIdByName.get(base)!;
+    if (tb.publisher) {
+      const withPub = `${tb.name} | ${tb.publisher} | ${tb.grade} | ${tb.subject}`;
+      if (matIdByName.has(withPub)) return matIdByName.get(withPub)!;
+    }
+    return fallback;
+  };
+
+  // input ごとに発注教材を解決
+  const resolvedByInput = inputs.map((i) => resolveMaterialId(i.textbookId, i.materialId));
+  const materialIds = Array.from(new Set(resolvedByInput.filter((m): m is string => !!m)));
+
+  // 物理所持テキストのみを「所持」とみなす（発注/手動登録由来 = track_progress=false）。
+  // 提案書公開由来(track_progress=true)は進捗管理用で物理的な所持ではないため発注対象に含める
+  // （＝公開しただけのテキストでも発注候補に出す。重複は hasOrder で防ぐ）。
   const ownedSet = new Set<string>();
   if (studentIds.length > 0 && textbookIds.length > 0) {
     const { data } = await supabase
@@ -170,7 +217,8 @@ export async function getProposalOrderCandidates(
       .select('student_id, textbook_id')
       .in('student_id', studentIds)
       .in('textbook_id', textbookIds)
-      .eq('is_draft', false);
+      .eq('is_draft', false)
+      .eq('track_progress', false);
     for (const r of (data ?? []) as { student_id: string; textbook_id: number }[]) {
       ownedSet.add(`${r.student_id}:${r.textbook_id}`);
     }
@@ -178,32 +226,27 @@ export async function getProposalOrderCandidates(
 
   // 既存の未キャンセル発注（生徒×教材）→ 重複発注防止
   const orderedSet = new Set<string>();
-  const materialNameMap = new Map<string, string>();
   if (materialIds.length > 0) {
-    const [{ data: orders }, { data: materials }] = await Promise.all([
-      supabase
-        .from('material_orders')
-        .select('student_id, material_id, status')
-        .in('student_id', studentIds)
-        .in('material_id', materialIds)
-        .neq('status', 'cancelled'),
-      supabase.from('materials').select('id, name').in('id', materialIds),
-    ]);
+    const { data: orders } = await supabase
+      .from('material_orders')
+      .select('student_id, material_id, status')
+      .in('student_id', studentIds)
+      .in('material_id', materialIds)
+      .neq('status', 'cancelled');
     for (const r of (orders ?? []) as { student_id: string | null; material_id: string }[]) {
       if (r.student_id) orderedSet.add(`${r.student_id}:${r.material_id}`);
     }
-    for (const m of (materials ?? []) as { id: string; name: string }[]) {
-      materialNameMap.set(m.id, m.name);
-    }
   }
 
-  return inputs.map((i) => {
+  return inputs.map((i, idx) => {
+    const materialId = resolvedByInput[idx];
     const alreadyOwned = ownedSet.has(`${i.studentId}:${i.textbookId}`);
-    const hasOrder = !!i.materialId && orderedSet.has(`${i.studentId}:${i.materialId}`);
-    const needsOrder = !!i.materialId && !alreadyOwned && !hasOrder;
+    const hasOrder = !!materialId && orderedSet.has(`${i.studentId}:${materialId}`);
+    const needsOrder = !!materialId && !alreadyOwned && !hasOrder;
     return {
       ...i,
-      materialName: i.materialId ? materialNameMap.get(i.materialId) ?? null : null,
+      materialId,
+      materialName: materialId ? matNameById.get(materialId) ?? null : null,
       alreadyOwned,
       hasOrder,
       needsOrder,
@@ -240,6 +283,17 @@ export async function createOrdersForCandidates(
       );
       // 確認済みとして即「発注済」に進める（所持教材にも登録される）
       await updateOrderStatus(created.id, 'ordered');
+      // 名前照合で解決した発注教材をテキストに永続紐付け（次回から即マッチ・自動候補に）。
+      // 既に紐付け済み(material_id 非null)は触らない。リンク保存失敗は致命的でないので無視。
+      try {
+        await supabase
+          .from('textbooks')
+          .update({ material_id: c.materialId })
+          .eq('id', c.textbookId)
+          .is('material_id', null);
+      } catch (linkErr) {
+        console.error('テキストへの発注教材リンク保存に失敗:', linkErr);
+      }
       success++;
     } catch (e) {
       console.error('発注候補からの発注作成に失敗:', e);
