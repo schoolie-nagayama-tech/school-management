@@ -1043,27 +1043,38 @@ export default function ProposalEditor() {
     setStatusChanging(true);
     try {
       if (newStatus === 'sent') {
-        // 提案済み: applied_koma を koma_count で初期化。
+        // 提案済みへ移行。
+        // 下書き(draft)からの初回移行のみ、申込コマが未確定なので提案回数(koma_count)で初期化する。
+        // 公開済み(approved)から提案済みに戻す場合は、ユーザーが確定した申込コマ数(0=申込なしを含む)を
+        // そのまま保持する（初期化すると編集した申込コマが提案回数へ巻き戻ってしまうため）。
         // 申込結合(applied_group_id)は未設定なら提案結合(group_id)に合わせる
         // ——そうしないとグループ単元の申込コマが per-unit で二重計上され、申込>提案になる。
-        const updated = new Map(unitDrafts);
-        Array.from(updated.entries()).forEach(([, d]) => {
-          if (d.koma_count > 0) {
-            updated.set(d.curriculum_item_id, {
-              ...d,
-              applied_koma: d.koma_count,
-              applied_group_id: d.applied_group_id > 0 ? d.applied_group_id : d.group_id,
-            });
-          }
-        });
-        setUnitDrafts(updated);
+        const initializeApplied = proposal?.status !== 'approved';
 
-        const unitInputs = Array.from(updated.values())
+        let working = unitDrafts;
+        if (initializeApplied) {
+          const updated = new Map(unitDrafts);
+          Array.from(updated.entries()).forEach(([, d]) => {
+            if (d.koma_count > 0) {
+              updated.set(d.curriculum_item_id, {
+                ...d,
+                applied_koma: d.koma_count,
+                applied_group_id: d.applied_group_id > 0 ? d.applied_group_id : d.group_id,
+              });
+            }
+          });
+          setUnitDrafts(updated);
+          working = updated;
+        }
+
+        const unitInputs = Array.from(working.values())
           .filter((d) => d.koma_count > 0 || d.applied_koma > 0)
           .map((u) => ({
             curriculum_item_id: u.curriculum_item_id,
             koma_count: u.koma_count,
-            applied_koma: u.koma_count > 0 ? u.koma_count : u.applied_koma,
+            applied_koma: initializeApplied
+              ? (u.koma_count > 0 ? u.koma_count : u.applied_koma)
+              : u.applied_koma, // 公開済み→提案済み: 確定値(0含む)を保持
             reason: u.reason,
             group_id: u.group_id,
             applied_group_id: u.applied_group_id > 0 ? u.applied_group_id : u.group_id,
