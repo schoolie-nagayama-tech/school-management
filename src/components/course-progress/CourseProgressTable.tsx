@@ -53,27 +53,36 @@ const SUBJECT_ALIASES: Record<string, string[]> = {
   '算数': ['数学'],
 };
 
-/** 科目名マッチング: auto_source='subject_proposal' の列に対して、科目名→コマ数を返す */
+/** 科目名マッチング: auto_source='subject_proposal' の列に対して、科目名→コマ数を返す。
+ * 1つの列に複数科目が対応しうる（例: 列「数学」に教科書「数学」と「算数」の両方）。
+ * 中1など算数と数学の提案を両方持つ生徒で算数分が欠落しないよう、最初の一致で打ち切らず
+ * 列にマップされる全科目（完全/部分一致＋エイリアス）を合算する。重複加算は Set で防ぐ。 */
 function getSubjectProposalValue(
   subjectProposals: Record<string, number> | undefined,
   itemName: string
 ): number {
   if (!subjectProposals) return 0;
-  // 完全一致
-  if (subjectProposals[itemName] !== undefined) return subjectProposals[itemName];
-  // 列名に科目名が含まれるか（例: "提示コマ(英語)" に "英語" が含まれる）
+  let total = 0;
+  const counted = new Set<string>();
+  // 完全一致 / 列名に科目名が含まれる（例: "提示コマ(英語)" に "英語" が含まれる）
   for (const [subject, count] of Object.entries(subjectProposals)) {
-    if (itemName.includes(subject)) return count;
+    if (itemName.includes(subject)) {
+      total += count;
+      counted.add(subject);
+    }
   }
-  // 科目エイリアスで再マッチ（例: カラム「数学」に教科書の「算数」を対応させる）
+  // 科目エイリアスで合算（例: カラム「数学」に教科書の「算数」を対応させる）
   for (const [alias, equivalents] of Object.entries(SUBJECT_ALIASES)) {
     if (itemName.includes(alias)) {
       for (const eq of equivalents) {
-        if (subjectProposals[eq] !== undefined) return subjectProposals[eq];
+        if (subjectProposals[eq] !== undefined && !counted.has(eq)) {
+          total += subjectProposals[eq];
+          counted.add(eq);
+        }
       }
     }
   }
-  return 0;
+  return total;
 }
 
 // ヒートマップセルの色を返す
