@@ -10,7 +10,7 @@ import {
   updateStudentTextbook,
 } from '@/lib/api/progress';
 import { getTextbooks } from '@/lib/api/textbooks';
-import { getStudentTextbooks as getDistributedMaterials, deleteDistributedMaterial } from '@/lib/api/ordering';
+import { getStudentTextbooks as getDistributedMaterials, deleteDistributedMaterial, setOrderedTextbookProgress } from '@/lib/api/ordering';
 import type { StudentTextbook as DistributedMaterial } from '@/lib/api/ordering';
 import { listAssessments } from '@/lib/api/assessments';
 import type { Student, Textbook, AssessmentWithScores } from '@/types/database';
@@ -327,6 +327,20 @@ export function StudentDetailModal({
     ordered: '発注済', delivered: '発送済', distributed: '配布済',
   };
 
+  // 進行表で管理中(track_progress=true)のテキストのラベル集合。発注由来行のトグル状態判定に使う。
+  const progressLabelSet = new Set(progressTextbooks.map(stLabel));
+
+  // 発注由来の行の「進行表で管理」トグル。対応テキストの st を作成/更新して track_progress を切り替える。
+  const handleOrderTrackToggle = async (dm: DistributedMaterial, next: boolean) => {
+    if (!student) return;
+    try {
+      await setOrderedTextbookProgress(student.id, dm.materialId, dm.textbookName, next, student.school_id);
+      await loadTextbooks(student.id);
+    } catch (e) {
+      toastError(e instanceof Error ? e.message : '進行表の切り替えに失敗しました');
+    }
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="生徒詳細" size="2xl">
       <div className="space-y-6">
@@ -483,6 +497,20 @@ export function StudentDetailModal({
                         <span className="text-[10px] text-[#4b5563] bg-gray-100 px-1.5 py-0.5 rounded">
                           {ORDER_STATUS_LABEL[dm.status] ?? '発注'}
                         </span>
+                        {!isTeacher && (
+                          <label
+                            className="flex items-center gap-1 text-[11px] text-[#4b5563] cursor-pointer select-none"
+                            title="進行表ページに表示するか"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={progressLabelSet.has(dm.textbookName)}
+                              onChange={(e) => handleOrderTrackToggle(dm, e.target.checked)}
+                              className="w-3.5 h-3.5 accent-[#1e3a5f]"
+                            />
+                            進行表で管理
+                          </label>
+                        )}
                         {!isTeacher && (
                           <button
                             onClick={() => handleRemoveDistributed(dm)}

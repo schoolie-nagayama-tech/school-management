@@ -619,6 +619,7 @@ export async function createBulkOrders(
  */
 export interface StudentTextbook {
   orderId: string;
+  materialId: string;
   textbookName: string;
   quantity: number;
   status: OrderStatus;
@@ -631,7 +632,7 @@ export async function getStudentTextbooks(
 ): Promise<StudentTextbook[]> {
   const { data, error } = await supabase
     .from('material_orders')
-    .select('id, quantity, status, ordered_at, materials(name)')
+    .select('id, material_id, quantity, status, ordered_at, materials(name)')
     .eq('student_id', studentId)
     .in('status', statuses)
     .order('created_at', { ascending: false });
@@ -644,12 +645,97 @@ export async function getStudentTextbooks(
     const mat = row.materials as Record<string, unknown> | null;
     return {
       orderId: row.id as string,
+      materialId: row.material_id as string,
       textbookName: mat?.name ? String(mat.name) : '不明',
       quantity: row.quantity as number,
       status: row.status as OrderStatus,
       orderedAt: row.ordered_at as string | null,
     };
   });
+}
+
+/**
+ * 発注由来の教材を「進行表で管理」ON/OFF する。
+ * 発注(material)に対応するテキストを解決して student_textbooks の track_progress を切り替える
+ * （発注由来は registerStudentTextbook の名前不一致で st が無いことが多いため、ここで作成/更新する）。
+ * テキスト解決: textbooks.material_id 優先、無ければ material 名のラベル(名前 | [出版社 |] 学年 | 科目)を
+ * 分解して name/grade/subject で照合する。
+ */
+export async function setOrderedTextbookProgress(
+  studentId: string,
+  materialId: string,
+  materialName: string,
+  track: boolean,
+  fallbackSchoolId: string
+): Promise<void> {
+  // 1) テキストを解決
+  let textbookId: number | null = null;
+  {
+    const { data: linked } = await supabase
+      .from('textbooks')
+      .select('id')
+      .eq('material_id', materialId)
+      .limit(1)
+      .maybeSingle();
+    if (linked) textbookId = (linked as { id: number }).id;
+  }
+  if (textbookId == null) {
+    // ラベルを分解: 末尾=科目、その前=学年、先頭=名前（出版社は無視）
+    const parts = materialName.split(' | ').map((s) => s.trim()).filter(Boolean);
+    if (parts.length >= 1) {
+      const name = parts[0];
+      const subject = parts.length >= 2 ? parts[parts.length - 1] : null;
+      const grade = parts.length >= 3 ? parts[parts.length - 2] : null;
+      let q = supabase.from('textbooks').select('id').eq('name', name);
+      if (subject) q = q.eq('subject', subject);
+      if (grade) q = q.eq('grade', grade);
+      const { data: matched } = await q.limit(1).maybeSingle();
+      if (matched) textbookId = (matched as { id: number }).id;
+    }
+  }
+  if (textbookId == null) {
+    throw new Error('対応するテキストが見つかりません（教材マスタの名称をご確認ください）');
+  }
+
+  // 2) 生徒の所属校（student_textbooks.school_id 用）
+  const { data: student } = await supabase
+    .from('students')
+    .select('school_id')
+    .eq('id', studentId)
+    .maybeSingle();
+  const stSchoolId = (student as { school_id: string } | null)?.school_id ?? fallbackSchoolId;
+
+  // 3) st を upsert（あれば track_progress 更新、無ければ作成）
+  const { data: existing } = await supabase
+    .from('student_textbooks')
+    .select('id')
+    .eq('student_id', studentId)
+    .eq('textbook_id', textbookId)
+    .maybeSingle();
+
+  if (existing) {
+    await supabase
+      .from('student_textbooks')
+      .update({ track_progress: track })
+      .eq('id', (existing as { id: string }).id);
+  } else {
+    await supabase.from('student_textbooks').insert({
+      school_id: stSchoolId,
+      student_id: studentId,
+      textbook_id: textbookId,
+      is_active: true,
+      track_progress: track,
+    });
+  }
+
+  // 4) テキストに発注教材リンクを保存（次回以降の解決を確実に）
+  try {
+    await supabase
+      .from('textbooks')
+      .update({ material_id: materialId })
+      .eq('id', textbookId)
+      .is('material_id', null);
+  } catch { /* リンク保存失敗は無視 */ }
 }
 
 /**
