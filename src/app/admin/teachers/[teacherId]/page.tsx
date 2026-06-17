@@ -616,11 +616,15 @@ export default function TeacherDetailPage() {
             {earnedBadges.length === 0 ? (
               <EmptyText>まだバッジがありません</EmptyText>
             ) : (
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 {earnedBadges.slice(0, 12).map((b) => {
                   const cfg = BADGE_RANK_CONFIG[b.rank];
                   return (
-                    <div key={b.id} className="flex flex-col items-center text-center" title={b.name}>
+                    <div
+                      key={b.id}
+                      className="flex flex-col items-center text-center"
+                      title={b.description ? `${b.name}\n${b.description}` : b.name}
+                    >
                       <div
                         className="w-10 h-10 rounded-lg flex items-center justify-center text-white shadow-sm"
                         style={{ background: `linear-gradient(135deg, ${cfg.color}, ${cfg.color}88)` }}
@@ -628,6 +632,12 @@ export default function TeacherDetailPage() {
                         <BadgeIcon icon={b.icon} size={18} />
                       </div>
                       <div className="text-[11px] text-gray-600 mt-1 truncate w-full">{b.name}</div>
+                      {/* 説明文（設定されている場合のみ。獲得バッジの内容を講師詳細でも確認できるように） */}
+                      {b.description && (
+                        <div className="text-[10px] text-gray-400 mt-0.5 leading-snug line-clamp-2 w-full">
+                          {b.description}
+                        </div>
+                      )}
                     </div>
                   );
                 })}

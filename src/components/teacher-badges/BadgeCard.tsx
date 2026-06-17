@@ -94,6 +94,13 @@ export function BadgeCard({ badge, earned, earnedDate, onClick, interactive = fa
         {badge.name}
       </span>
 
+      {/* 説明文（獲得条件・内容の説明。設定されている場合のみ表示） */}
+      {badge.description && (
+        <span className={`text-[11px] text-center leading-snug line-clamp-3 ${earned ? 'text-gray-500' : 'text-gray-400'}`}>
+          {badge.description}
+        </span>
+      )}
+
       {/* 獲得日 or 未獲得 */}
       {earned && earnedDate ? (
         <span className="text-[11px] text-gray-500">{earnedDate}</span>
