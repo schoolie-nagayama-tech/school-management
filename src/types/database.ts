@@ -1215,6 +1215,10 @@ export type Database = {
           exit_date?: string | null;
           /** 性別。NULL=未設定。生徒の「女性講師希望」マッチングなどで参照する */
           gender?: 'male' | 'female' | 'other' | null;
+          /** 講師の社員番号。並び順制御に使用 */
+          employee_no?: string | null;
+          /** true=時給講師として扱い、出勤簿等に含める（owner/admin兼任向け） */
+          is_teaching_staff?: boolean;
         };
         Insert: {
           id?: string;
@@ -1233,6 +1237,10 @@ export type Database = {
           default_school_id?: string | null;
           exit_date?: string | null;
           gender?: 'male' | 'female' | 'other' | null;
+          /** 講師の社員番号。並び順制御に使用 */
+          employee_no?: string | null;
+          /** true=時給講師として扱い、出勤簿等に含める（owner/admin兼任向け） */
+          is_teaching_staff?: boolean;
         };
         Update: {
           id?: string;
@@ -1251,6 +1259,10 @@ export type Database = {
           default_school_id?: string | null;
           exit_date?: string | null;
           gender?: 'male' | 'female' | 'other' | null;
+          /** 講師の社員番号。並び順制御に使用 */
+          employee_no?: string | null;
+          /** true=時給講師として扱い、出勤簿等に含める（owner/admin兼任向け） */
+          is_teaching_staff?: boolean;
         };
         Relationships: [];
       };
@@ -4001,6 +4013,10 @@ export interface UserProfile {
   available_slot_numbers_by_day?: Record<string, number[]> | null;
   /** 複数教室権限があるときのデフォルト教室ID（ログイン時の初期選択） */
   default_school_id?: string | null;
+  /** 講師の社員番号。並び順制御に使用 */
+  employee_no?: string | null;
+  /** true=時給講師として扱い、出勤簿等に含める（owner/admin兼任向け） */
+  is_teaching_staff?: boolean;
 }
 
 // ユーザーと教室の紐付け

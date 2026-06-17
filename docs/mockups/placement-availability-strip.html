@@ -768,6 +768,198 @@
   }
 
   /* D2 列hover — JS不要な擬似ハイライトはCSSでは難しいため注記のみ */
+
+  /* ========================
+     案E: ドットマトリクス
+     ======================== */
+
+  /* マトリクス全体ラッパー */
+  .dot-matrix-wrap {
+    /* overflow なし — 1画面幅に収める */
+    overflow-x: visible;
+  }
+
+  /* マトリクス本体（flex縦積み） */
+  .dot-matrix {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  /* ヘッダ行（週ラベル + 今日マーカー） */
+  .dot-matrix-header {
+    display: flex;
+    align-items: flex-end;
+    margin-bottom: 2px;
+    /* 行頭ラベル幅分インデント */
+    padding-left: 34px;
+  }
+
+  /* 1行分（行ラベル + ドット列） */
+  .dot-matrix-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+
+  /* 行ラベル（1限〜7限） */
+  .dot-row-label {
+    font-size: 9px;
+    color: var(--muted);
+    font-weight: 600;
+    width: 32px;
+    flex-shrink: 0;
+    text-align: right;
+    padding-right: 4px;
+  }
+
+  /* 週グループ（7日分のドットをまとめるラッパー） */
+  .dot-week-group {
+    display: flex;
+    gap: 2px;
+    /* 週の境目だけ左マージンを広げる（最初の週以外） */
+    margin-left: 6px;
+  }
+  .dot-week-group:first-child {
+    margin-left: 0;
+  }
+
+  /* 現在週の薄青背景帯（縦帯）— inline style で各ドットに付与 */
+  .dot-week-group.current-week-band > .dot-cell {
+    background-color: #dbeafe !important; /* info-subtle より少し濃く視認性を確保 */
+  }
+  /* ただし色ドットは上書きしない */
+  .dot-week-group.current-week-band > .dot-cell.avail,
+  .dot-week-group.current-week-band > .dot-cell.placed,
+  .dot-week-group.current-week-band > .dot-cell.full,
+  .dot-week-group.current-week-band > .dot-cell.unavail {
+    background-color: inherit;
+  }
+
+  /* 各ドットセル（10×10 角丸2px） */
+  .dot-cell {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    cursor: default;
+    position: relative;
+  }
+  .dot-cell:hover { opacity: .8; }
+
+  /* 状態別カラー */
+  .dot-cell.unavail { background: #e5e7eb; }           /* 不可: グレー */
+  .dot-cell.avail   { background: #f59e0b; }           /* 可: 黄 */
+  .dot-cell.placed  { background: #15803d; }           /* 配置済み: 緑 */
+  .dot-cell.full    { background: #dc2626; }           /* 満席: 赤 */
+
+  /* フォールバック用: 薄黄 */
+  .dot-cell.fallback-avail { background: #fcd34d; }
+
+  /* ヘッダ行内の週ラベルセル */
+  .dot-header-week-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-left: 6px;
+  }
+  .dot-header-week-group:first-child {
+    margin-left: 0;
+  }
+
+  /* 週ラベルテキスト */
+  .dot-week-label {
+    font-size: 9px;
+    color: var(--muted);
+    font-weight: 600;
+    white-space: nowrap;
+    line-height: 1;
+    /* 7日分のドット幅(10px*7 + gap*6=12px) = 82px に対して左寄せ */
+    width: 82px;
+  }
+
+  /* 今日マーカー（週ラベル行に小三角▼） */
+  .dot-today-marker {
+    display: flex;
+    width: 82px; /* 7日分の幅 */
+    position: relative;
+    height: 8px;
+    margin-top: 2px;
+  }
+  .dot-today-tri {
+    font-size: 7px;
+    color: var(--info);
+    line-height: 1;
+    position: absolute;
+    /* 今日が週の何番目かを inline style で left 指定 */
+  }
+
+  /* 凡例（ドット見本） */
+  .dot-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 8px;
+    align-items: center;
+  }
+  .dot-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .dot-legend-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    display: inline-block;
+  }
+
+  /* 週別サマリオプション行（点線枠） */
+  .dot-weekly-summary-opt {
+    border: 1px dashed #d1d5db;
+    border-radius: 6px;
+    padding: 5px 10px;
+    margin-top: 8px;
+    font-size: 9px;
+    color: var(--muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+  .dot-weekly-summary-opt::before {
+    content: "オプション：週別サマリ";
+    font-weight: 600;
+    color: #9ca3af;
+    font-size: 9px;
+    margin-right: 4px;
+  }
+  .dot-wsum-item {
+    white-space: nowrap;
+  }
+  .dot-wsum-placed { color: var(--success); font-weight: 600; }
+
+  /* 採用予定列の強調（比較表内） */
+  .compare-table th.adopt,
+  .compare-table td.adopt {
+    background: var(--success-subtle);
+  }
+  .compare-table th.adopt {
+    color: var(--success);
+  }
+  .adopt-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    background: var(--success);
+    color: #fff;
+    border-radius: 3px;
+    padding: 1px 6px;
+    margin-top: 3px;
+  }
 </style>
 </head>
 <body>
@@ -1740,10 +1932,805 @@
 
 
 <!-- ============================================================
+     案E: ドットマトリクス（最終案）
+     ============================================================ -->
+<div class="plan-header" id="plan-e" style="margin-top:48px;">
+  <h2>案E — ドットマトリクス（最終案）</h2>
+</div>
+<p class="page-desc" style="margin-bottom:20px;">決定版：期間全日×時限の色ドットだけで俯瞰。不可=グレー / 可=黄 / 配置済み=緑 / 満席=赤。</p>
+
+<!-- E-1: 提出済み（通常表示） -->
+<p class="state-label">状態1: 講習可能表 提出済み</p>
+<div class="strip-panel">
+  <!-- 共通ヘッダ行 -->
+  <div class="strip-header">
+    <span class="strip-student">宮永 心那（中3）</span>
+    <span class="pill koushu">講習</span>
+    <span class="strip-subject">国語 残2コマ</span>
+    <span class="source-badge success">講習可能表</span>
+    <button class="close-btn">× 終了</button>
+  </div>
+
+  <div class="dot-matrix-wrap">
+    <!--
+      期間: 7/20(月)〜9/13(日) = 56日 = 8週
+      列順: 7/20(月)=0 … 9/13(日)=55
+      行: 1限〜7限
+
+      サンプルデータ（決定値）:
+        可（黄）: 各週3〜6ドット、時限2/3/5/6を中心。8/10週（お盆）は全グレー
+        配置済み（緑）: 7/22(水)5限, 7/29(水)5限, 8/5(水)6限
+        満席（赤）: 7/30(木)6限, 8/18(火)5限, 8/26(水)3限
+        今日: 8/4(火) = 列インデックス15
+        現在週: 8/3〜8/9 = 列14〜20
+    -->
+
+    <!-- 週ラベル行（各週月曜の上にだけ表示） -->
+    <div class="dot-matrix-header">
+      <!-- 7/20週 -->
+      <div class="dot-header-week-group">
+        <span class="dot-week-label">7/20</span>
+        <!-- 今日マーカーなし -->
+        <div class="dot-today-marker"></div>
+      </div>
+      <!-- 7/27週 -->
+      <div class="dot-header-week-group">
+        <span class="dot-week-label">7/27</span>
+        <div class="dot-today-marker"></div>
+      </div>
+      <!-- 8/3週（現在週） — 今日8/4は週の2日目(火)=インデックス1 -->
+      <div class="dot-header-week-group">
+        <span class="dot-week-label" style="color:var(--info); font-weight:700;">8/3</span>
+        <!-- 今日 8/4(火) は月曜から1つ右 → left: 12px（10px+2px） -->
+        <div class="dot-today-marker">
+          <span class="dot-today-tri" style="left:12px;" title="今日(8/4)">▼</span>
+        </div>
+      </div>
+      <!-- 8/10週 -->
+      <div class="dot-header-week-group">
+        <span class="dot-week-label">8/10</span>
+        <div class="dot-today-marker"></div>
+      </div>
+      <!-- 8/17週 -->
+      <div class="dot-header-week-group">
+        <span class="dot-week-label">8/17</span>
+        <div class="dot-today-marker"></div>
+      </div>
+      <!-- 8/24週 -->
+      <div class="dot-header-week-group">
+        <span class="dot-week-label">8/24</span>
+        <div class="dot-today-marker"></div>
+      </div>
+      <!-- 8/31週 -->
+      <div class="dot-header-week-group">
+        <span class="dot-week-label">8/31</span>
+        <div class="dot-today-marker"></div>
+      </div>
+      <!-- 9/7週 -->
+      <div class="dot-header-week-group">
+        <span class="dot-week-label">9/7</span>
+        <div class="dot-today-marker"></div>
+      </div>
+    </div>
+
+    <div class="dot-matrix">
+
+      <!-- 1限行 -->
+      <div class="dot-matrix-row">
+        <span class="dot-row-label">1限</span>
+        <!-- 7/20週 (7/20月〜7/26日) -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="7/20(月) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="7/21(火) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="7/22(水) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="7/23(木) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="7/24(金) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="7/25(土) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="7/26(日) 1限 出席不可"></div>
+        </div>
+        <!-- 7/27週 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="7/27(月) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="7/28(火) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="7/29(水) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="7/30(木) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="7/31(金) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/1(土) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/2(日) 1限 出席不可"></div>
+        </div>
+        <!-- 8/3週（現在週・薄青帯） -->
+        <div class="dot-week-group current-week-band">
+          <div class="dot-cell unavail" title="8/3(月) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/4(火) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/5(水) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/6(木) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/7(金) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/8(土) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/9(日) 1限 出席不可"></div>
+        </div>
+        <!-- 8/10週（お盆・全グレー） -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="8/10(月) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/11(火) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/12(水) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/13(木) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/14(金) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/15(土) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/16(日) 1限 出席不可"></div>
+        </div>
+        <!-- 8/17週 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="8/17(月) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/18(火) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/19(水) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/20(木) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/21(金) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/22(土) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/23(日) 1限 出席不可"></div>
+        </div>
+        <!-- 8/24週 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="8/24(月) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/25(火) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/26(水) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/27(木) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/28(金) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/29(土) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/30(日) 1限 出席不可"></div>
+        </div>
+        <!-- 8/31週 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="8/31(月) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/1(火) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/2(水) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/3(木) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/4(金) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/5(土) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/6(日) 1限 出席不可"></div>
+        </div>
+        <!-- 9/7週 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="9/7(月) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/8(火) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/9(水) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/10(木) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/11(金) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/12(土) 1限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/13(日) 1限 出席不可"></div>
+        </div>
+      </div><!-- /1限行 -->
+
+      <!-- 2限行 -->
+      <div class="dot-matrix-row">
+        <span class="dot-row-label">2限</span>
+        <!-- 7/20週: 7/20(月)2限=可, 7/23(木)2限=可 -->
+        <div class="dot-week-group">
+          <div class="dot-cell avail"   title="7/20(月) 2限 可"></div>
+          <div class="dot-cell unavail" title="7/21(火) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="7/22(水) 2限 出席不可"></div>
+          <div class="dot-cell avail"   title="7/23(木) 2限 可"></div>
+          <div class="dot-cell unavail" title="7/24(金) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="7/25(土) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="7/26(日) 2限 出席不可"></div>
+        </div>
+        <!-- 7/27週: 7/27(月)2限=可, 7/28(火)2限=可 -->
+        <div class="dot-week-group">
+          <div class="dot-cell avail"   title="7/27(月) 2限 可"></div>
+          <div class="dot-cell avail"   title="7/28(火) 2限 可"></div>
+          <div class="dot-cell unavail" title="7/29(水) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="7/30(木) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="7/31(金) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/1(土) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/2(日) 2限 出席不可"></div>
+        </div>
+        <!-- 8/3週（現在週）: 8/6(木)2限=可 -->
+        <div class="dot-week-group current-week-band">
+          <div class="dot-cell unavail" title="8/3(月) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/4(火) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/5(水) 2限 出席不可"></div>
+          <div class="dot-cell avail"   title="8/6(木) 2限 可"></div>
+          <div class="dot-cell unavail" title="8/7(金) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/8(土) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/9(日) 2限 出席不可"></div>
+        </div>
+        <!-- 8/10週（お盆・全グレー） -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="8/10(月) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/11(火) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/12(水) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/13(木) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/14(金) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/15(土) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/16(日) 2限 出席不可"></div>
+        </div>
+        <!-- 8/17週: 8/17(月)2限=可, 8/25(火)2限=可 ※8/25は8/24週 -->
+        <div class="dot-week-group">
+          <div class="dot-cell avail"   title="8/17(月) 2限 可"></div>
+          <div class="dot-cell unavail" title="8/18(火) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/19(水) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/20(木) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/21(金) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/22(土) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/23(日) 2限 出席不可"></div>
+        </div>
+        <!-- 8/24週: 8/25(火)2限=可 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="8/24(月) 2限 出席不可"></div>
+          <div class="dot-cell avail"   title="8/25(火) 2限 可"></div>
+          <div class="dot-cell unavail" title="8/26(水) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/27(木) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/28(金) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/29(土) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/30(日) 2限 出席不可"></div>
+        </div>
+        <!-- 8/31週: 9/1(火)2限=可 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="8/31(月) 2限 出席不可"></div>
+          <div class="dot-cell avail"   title="9/1(火) 2限 可"></div>
+          <div class="dot-cell unavail" title="9/2(水) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/3(木) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/4(金) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/5(土) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/6(日) 2限 出席不可"></div>
+        </div>
+        <!-- 9/7週: 9/8(火)2限=可 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="9/7(月) 2限 出席不可"></div>
+          <div class="dot-cell avail"   title="9/8(火) 2限 可"></div>
+          <div class="dot-cell unavail" title="9/9(水) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/10(木) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/11(金) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/12(土) 2限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/13(日) 2限 出席不可"></div>
+        </div>
+      </div><!-- /2限行 -->
+
+      <!-- 3限行 -->
+      <div class="dot-matrix-row">
+        <span class="dot-row-label">3限</span>
+        <!-- 7/20週: 7/23(木)3限=可 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="7/20(月) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="7/21(火) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="7/22(水) 3限 出席不可"></div>
+          <div class="dot-cell avail"   title="7/23(木) 3限 可"></div>
+          <div class="dot-cell unavail" title="7/24(金) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="7/25(土) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="7/26(日) 3限 出席不可"></div>
+        </div>
+        <!-- 7/27週: 7/27(月)3限=可 -->
+        <div class="dot-week-group">
+          <div class="dot-cell avail"   title="7/27(月) 3限 可"></div>
+          <div class="dot-cell unavail" title="7/28(火) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="7/29(水) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="7/30(木) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="7/31(金) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/1(土) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/2(日) 3限 出席不可"></div>
+        </div>
+        <!-- 8/3週（現在週）: 8/6(木)3限=可 -->
+        <div class="dot-week-group current-week-band">
+          <div class="dot-cell unavail" title="8/3(月) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/4(火) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/5(水) 3限 出席不可"></div>
+          <div class="dot-cell avail"   title="8/6(木) 3限 可"></div>
+          <div class="dot-cell unavail" title="8/7(金) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/8(土) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/9(日) 3限 出席不可"></div>
+        </div>
+        <!-- 8/10週（お盆・全グレー） -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="8/10(月) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/11(火) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/12(水) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/13(木) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/14(金) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/15(土) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/16(日) 3限 出席不可"></div>
+        </div>
+        <!-- 8/17週: 8/19(水)3限=可 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="8/17(月) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/18(火) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/19(水) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/20(木) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/21(金) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/22(土) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/23(日) 3限 出席不可"></div>
+        </div>
+        <!-- 8/24週: 8/26(水)3限=満席, 8/27(木)3限=可 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="8/24(月) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/25(火) 3限 出席不可"></div>
+          <div class="dot-cell full"    title="8/26(水) 3限 満席（座席が埋まっている）"></div>
+          <div class="dot-cell avail"   title="8/27(木) 3限 可"></div>
+          <div class="dot-cell unavail" title="8/28(金) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/29(土) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/30(日) 3限 出席不可"></div>
+        </div>
+        <!-- 8/31週: 9/4(金)3限=可 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="8/31(月) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/1(火) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/2(水) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/3(木) 3限 出席不可"></div>
+          <div class="dot-cell avail"   title="9/4(金) 3限 可"></div>
+          <div class="dot-cell unavail" title="9/5(土) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/6(日) 3限 出席不可"></div>
+        </div>
+        <!-- 9/7週 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="9/7(月) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/8(火) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/9(水) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/10(木) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/11(金) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/12(土) 3限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/13(日) 3限 出席不可"></div>
+        </div>
+      </div><!-- /3限行 -->
+
+      <!-- 4限行（全グレー） -->
+      <div class="dot-matrix-row">
+        <span class="dot-row-label">4限</span>
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="7/20(月) 4限 出席不可"></div><div class="dot-cell unavail" title="7/21(火) 4限 出席不可"></div><div class="dot-cell unavail" title="7/22(水) 4限 出席不可"></div><div class="dot-cell unavail" title="7/23(木) 4限 出席不可"></div><div class="dot-cell unavail" title="7/24(金) 4限 出席不可"></div><div class="dot-cell unavail" title="7/25(土) 4限 出席不可"></div><div class="dot-cell unavail" title="7/26(日) 4限 出席不可"></div>
+        </div>
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="7/27(月) 4限 出席不可"></div><div class="dot-cell unavail" title="7/28(火) 4限 出席不可"></div><div class="dot-cell unavail" title="7/29(水) 4限 出席不可"></div><div class="dot-cell unavail" title="7/30(木) 4限 出席不可"></div><div class="dot-cell unavail" title="7/31(金) 4限 出席不可"></div><div class="dot-cell unavail" title="8/1(土) 4限 出席不可"></div><div class="dot-cell unavail" title="8/2(日) 4限 出席不可"></div>
+        </div>
+        <div class="dot-week-group current-week-band">
+          <div class="dot-cell unavail" title="8/3(月) 4限 出席不可"></div><div class="dot-cell unavail" title="8/4(火) 4限 出席不可"></div><div class="dot-cell unavail" title="8/5(水) 4限 出席不可"></div><div class="dot-cell unavail" title="8/6(木) 4限 出席不可"></div><div class="dot-cell unavail" title="8/7(金) 4限 出席不可"></div><div class="dot-cell unavail" title="8/8(土) 4限 出席不可"></div><div class="dot-cell unavail" title="8/9(日) 4限 出席不可"></div>
+        </div>
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="8/10(月) 4限 出席不可"></div><div class="dot-cell unavail" title="8/11(火) 4限 出席不可"></div><div class="dot-cell unavail" title="8/12(水) 4限 出席不可"></div><div class="dot-cell unavail" title="8/13(木) 4限 出席不可"></div><div class="dot-cell unavail" title="8/14(金) 4限 出席不可"></div><div class="dot-cell unavail" title="8/15(土) 4限 出席不可"></div><div class="dot-cell unavail" title="8/16(日) 4限 出席不可"></div>
+        </div>
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="8/17(月) 4限 出席不可"></div><div class="dot-cell unavail" title="8/18(火) 4限 出席不可"></div><div class="dot-cell unavail" title="8/19(水) 4限 出席不可"></div><div class="dot-cell unavail" title="8/20(木) 4限 出席不可"></div><div class="dot-cell unavail" title="8/21(金) 4限 出席不可"></div><div class="dot-cell unavail" title="8/22(土) 4限 出席不可"></div><div class="dot-cell unavail" title="8/23(日) 4限 出席不可"></div>
+        </div>
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="8/24(月) 4限 出席不可"></div><div class="dot-cell unavail" title="8/25(火) 4限 出席不可"></div><div class="dot-cell unavail" title="8/26(水) 4限 出席不可"></div><div class="dot-cell unavail" title="8/27(木) 4限 出席不可"></div><div class="dot-cell unavail" title="8/28(金) 4限 出席不可"></div><div class="dot-cell unavail" title="8/29(土) 4限 出席不可"></div><div class="dot-cell unavail" title="8/30(日) 4限 出席不可"></div>
+        </div>
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="8/31(月) 4限 出席不可"></div><div class="dot-cell unavail" title="9/1(火) 4限 出席不可"></div><div class="dot-cell unavail" title="9/2(水) 4限 出席不可"></div><div class="dot-cell unavail" title="9/3(木) 4限 出席不可"></div><div class="dot-cell unavail" title="9/4(金) 4限 出席不可"></div><div class="dot-cell unavail" title="9/5(土) 4限 出席不可"></div><div class="dot-cell unavail" title="9/6(日) 4限 出席不可"></div>
+        </div>
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="9/7(月) 4限 出席不可"></div><div class="dot-cell unavail" title="9/8(火) 4限 出席不可"></div><div class="dot-cell unavail" title="9/9(水) 4限 出席不可"></div><div class="dot-cell unavail" title="9/10(木) 4限 出席不可"></div><div class="dot-cell unavail" title="9/11(金) 4限 出席不可"></div><div class="dot-cell unavail" title="9/12(土) 4限 出席不可"></div><div class="dot-cell unavail" title="9/13(日) 4限 出席不可"></div>
+        </div>
+      </div><!-- /4限行 -->
+
+      <!-- 5限行 -->
+      <div class="dot-matrix-row">
+        <span class="dot-row-label">5限</span>
+        <!-- 7/20週: 7/22(水)5限=配置済み -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="7/20(月) 5限 出席不可"></div>
+          <div class="dot-cell unavail" title="7/21(火) 5限 出席不可"></div>
+          <div class="dot-cell placed"  title="7/22(水) 5限 配置済み"></div>
+          <div class="dot-cell avail"   title="7/23(木) 5限 可"></div>
+          <div class="dot-cell unavail" title="7/24(金) 5限 出席不可"></div>
+          <div class="dot-cell unavail" title="7/25(土) 5限 出席不可"></div>
+          <div class="dot-cell unavail" title="7/26(日) 5限 出席不可"></div>
+        </div>
+        <!-- 7/27週: 7/29(水)5限=配置済み, 7/31(金)5限=可 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="7/27(月) 5限 出席不可"></div>
+          <div class="dot-cell unavail" title="7/28(火) 5限 出席不可"></div>
+          <div class="dot-cell placed"  title="7/29(水) 5限 配置済み"></div>
+          <div class="dot-cell unavail" title="7/30(木) 5限 出席不可"></div>
+          <div class="dot-cell avail"   title="7/31(金) 5限 可"></div>
+          <div class="dot-cell unavail" title="8/1(土) 5限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/2(日) 5限 出席不可"></div>
+        </div>
+        <!-- 8/3週（現在週）: 8/4(火)5限=可 -->
+        <div class="dot-week-group current-week-band">
+          <div class="dot-cell unavail" title="8/3(月) 5限 出席不可"></div>
+          <div class="dot-cell avail"   title="8/4(火) 5限 可"></div>
+          <div class="dot-cell unavail" title="8/5(水) 5限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/6(木) 5限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/7(金) 5限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/8(土) 5限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/9(日) 5限 出席不可"></div>
+        </div>
+        <!-- 8/10週（お盆・全グレー） -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="8/10(月) 5限 出席不可"></div><div class="dot-cell unavail" title="8/11(火) 5限 出席不可"></div><div class="dot-cell unavail" title="8/12(水) 5限 出席不可"></div><div class="dot-cell unavail" title="8/13(木) 5限 出席不可"></div><div class="dot-cell unavail" title="8/14(金) 5限 出席不可"></div><div class="dot-cell unavail" title="8/15(土) 5限 出席不可"></div><div class="dot-cell unavail" title="8/16(日) 5限 出席不可"></div>
+        </div>
+        <!-- 8/17週: 8/17(月)5限=可, 8/18(火)5限=満席 -->
+        <div class="dot-week-group">
+          <div class="dot-cell avail"   title="8/17(月) 5限 可"></div>
+          <div class="dot-cell full"    title="8/18(火) 5限 満席（座席が埋まっている）"></div>
+          <div class="dot-cell unavail" title="8/19(水) 5限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/20(木) 5限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/21(金) 5限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/22(土) 5限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/23(日) 5限 出席不可"></div>
+        </div>
+        <!-- 8/24週: 8/25(火)5限=可 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="8/24(月) 5限 出席不可"></div>
+          <div class="dot-cell avail"   title="8/25(火) 5限 可"></div>
+          <div class="dot-cell unavail" title="8/26(水) 5限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/27(木) 5限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/28(金) 5限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/29(土) 5限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/30(日) 5限 出席不可"></div>
+        </div>
+        <!-- 8/31週: 8/31(月)5限=可, 9/4(金)5限=可 -->
+        <div class="dot-week-group">
+          <div class="dot-cell avail"   title="8/31(月) 5限 可"></div>
+          <div class="dot-cell unavail" title="9/1(火) 5限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/2(水) 5限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/3(木) 5限 出席不可"></div>
+          <div class="dot-cell avail"   title="9/4(金) 5限 可"></div>
+          <div class="dot-cell unavail" title="9/5(土) 5限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/6(日) 5限 出席不可"></div>
+        </div>
+        <!-- 9/7週: 9/9(水)5限=可 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="9/7(月) 5限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/8(火) 5限 出席不可"></div>
+          <div class="dot-cell avail"   title="9/9(水) 5限 可"></div>
+          <div class="dot-cell unavail" title="9/10(木) 5限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/11(金) 5限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/12(土) 5限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/13(日) 5限 出席不可"></div>
+        </div>
+      </div><!-- /5限行 -->
+
+      <!-- 6限行 -->
+      <div class="dot-matrix-row">
+        <span class="dot-row-label">6限</span>
+        <!-- 7/20週: 7/20(月)6限=可 -->
+        <div class="dot-week-group">
+          <div class="dot-cell avail"   title="7/20(月) 6限 可"></div>
+          <div class="dot-cell unavail" title="7/21(火) 6限 出席不可"></div>
+          <div class="dot-cell unavail" title="7/22(水) 6限 出席不可"></div>
+          <div class="dot-cell unavail" title="7/23(木) 6限 出席不可"></div>
+          <div class="dot-cell avail"   title="7/24(金) 6限 可"></div>
+          <div class="dot-cell unavail" title="7/25(土) 6限 出席不可"></div>
+          <div class="dot-cell unavail" title="7/26(日) 6限 出席不可"></div>
+        </div>
+        <!-- 7/27週: 7/28(火)6限=可, 7/30(木)6限=満席 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="7/27(月) 6限 出席不可"></div>
+          <div class="dot-cell avail"   title="7/28(火) 6限 可"></div>
+          <div class="dot-cell unavail" title="7/29(水) 6限 出席不可"></div>
+          <div class="dot-cell full"    title="7/30(木) 6限 満席（座席が埋まっている）"></div>
+          <div class="dot-cell unavail" title="7/31(金) 6限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/1(土) 6限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/2(日) 6限 出席不可"></div>
+        </div>
+        <!-- 8/3週（現在週）: 8/5(水)6限=配置済み -->
+        <div class="dot-week-group current-week-band">
+          <div class="dot-cell unavail" title="8/3(月) 6限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/4(火) 6限 出席不可"></div>
+          <div class="dot-cell placed"  title="8/5(水) 6限 配置済み"></div>
+          <div class="dot-cell unavail" title="8/6(木) 6限 出席不可"></div>
+          <div class="dot-cell avail"   title="8/7(金) 6限 可"></div>
+          <div class="dot-cell unavail" title="8/8(土) 6限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/9(日) 6限 出席不可"></div>
+        </div>
+        <!-- 8/10週（お盆・全グレー） -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="8/10(月) 6限 出席不可"></div><div class="dot-cell unavail" title="8/11(火) 6限 出席不可"></div><div class="dot-cell unavail" title="8/12(水) 6限 出席不可"></div><div class="dot-cell unavail" title="8/13(木) 6限 出席不可"></div><div class="dot-cell unavail" title="8/14(金) 6限 出席不可"></div><div class="dot-cell unavail" title="8/15(土) 6限 出席不可"></div><div class="dot-cell unavail" title="8/16(日) 6限 出席不可"></div>
+        </div>
+        <!-- 8/17週: 8/17(月)6限=可, 8/21(金)6限=可 -->
+        <div class="dot-week-group">
+          <div class="dot-cell avail"   title="8/17(月) 6限 可"></div>
+          <div class="dot-cell unavail" title="8/18(火) 6限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/19(水) 6限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/20(木) 6限 出席不可"></div>
+          <div class="dot-cell avail"   title="8/21(金) 6限 可"></div>
+          <div class="dot-cell unavail" title="8/22(土) 6限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/23(日) 6限 出席不可"></div>
+        </div>
+        <!-- 8/24週 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="8/24(月) 6限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/25(火) 6限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/26(水) 6限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/27(木) 6限 出席不可"></div>
+          <div class="dot-cell avail"   title="8/28(金) 6限 可"></div>
+          <div class="dot-cell unavail" title="8/29(土) 6限 出席不可"></div>
+          <div class="dot-cell unavail" title="8/30(日) 6限 出席不可"></div>
+        </div>
+        <!-- 8/31週: 9/2(水)6限=可 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="8/31(月) 6限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/1(火) 6限 出席不可"></div>
+          <div class="dot-cell avail"   title="9/2(水) 6限 可"></div>
+          <div class="dot-cell unavail" title="9/3(木) 6限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/4(金) 6限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/5(土) 6限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/6(日) 6限 出席不可"></div>
+        </div>
+        <!-- 9/7週: 9/10(木)6限=可 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="9/7(月) 6限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/8(火) 6限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/9(水) 6限 出席不可"></div>
+          <div class="dot-cell avail"   title="9/10(木) 6限 可"></div>
+          <div class="dot-cell unavail" title="9/11(金) 6限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/12(土) 6限 出席不可"></div>
+          <div class="dot-cell unavail" title="9/13(日) 6限 出席不可"></div>
+        </div>
+      </div><!-- /6限行 -->
+
+      <!-- 7限行 -->
+      <div class="dot-matrix-row">
+        <span class="dot-row-label">7限</span>
+        <!-- 7/20週 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="7/20(月) 7限 出席不可"></div><div class="dot-cell unavail" title="7/21(火) 7限 出席不可"></div><div class="dot-cell unavail" title="7/22(水) 7限 出席不可"></div><div class="dot-cell unavail" title="7/23(木) 7限 出席不可"></div><div class="dot-cell unavail" title="7/24(金) 7限 出席不可"></div><div class="dot-cell unavail" title="7/25(土) 7限 出席不可"></div><div class="dot-cell unavail" title="7/26(日) 7限 出席不可"></div>
+        </div>
+        <!-- 7/27週 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="7/27(月) 7限 出席不可"></div><div class="dot-cell unavail" title="7/28(火) 7限 出席不可"></div><div class="dot-cell unavail" title="7/29(水) 7限 出席不可"></div><div class="dot-cell unavail" title="7/30(木) 7限 出席不可"></div><div class="dot-cell unavail" title="7/31(金) 7限 出席不可"></div><div class="dot-cell unavail" title="8/1(土) 7限 出席不可"></div><div class="dot-cell unavail" title="8/2(日) 7限 出席不可"></div>
+        </div>
+        <!-- 8/3週（現在週） -->
+        <div class="dot-week-group current-week-band">
+          <div class="dot-cell unavail" title="8/3(月) 7限 出席不可"></div><div class="dot-cell unavail" title="8/4(火) 7限 出席不可"></div><div class="dot-cell unavail" title="8/5(水) 7限 出席不可"></div><div class="dot-cell unavail" title="8/6(木) 7限 出席不可"></div><div class="dot-cell unavail" title="8/7(金) 7限 出席不可"></div><div class="dot-cell unavail" title="8/8(土) 7限 出席不可"></div><div class="dot-cell unavail" title="8/9(日) 7限 出席不可"></div>
+        </div>
+        <!-- 8/10週（お盆） -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="8/10(月) 7限 出席不可"></div><div class="dot-cell unavail" title="8/11(火) 7限 出席不可"></div><div class="dot-cell unavail" title="8/12(水) 7限 出席不可"></div><div class="dot-cell unavail" title="8/13(木) 7限 出席不可"></div><div class="dot-cell unavail" title="8/14(金) 7限 出席不可"></div><div class="dot-cell unavail" title="8/15(土) 7限 出席不可"></div><div class="dot-cell unavail" title="8/16(日) 7限 出席不可"></div>
+        </div>
+        <!-- 8/17週 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="8/17(月) 7限 出席不可"></div><div class="dot-cell unavail" title="8/18(火) 7限 出席不可"></div><div class="dot-cell unavail" title="8/19(水) 7限 出席不可"></div><div class="dot-cell unavail" title="8/20(木) 7限 出席不可"></div><div class="dot-cell unavail" title="8/21(金) 7限 出席不可"></div><div class="dot-cell unavail" title="8/22(土) 7限 出席不可"></div><div class="dot-cell unavail" title="8/23(日) 7限 出席不可"></div>
+        </div>
+        <!-- 8/24週 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="8/24(月) 7限 出席不可"></div><div class="dot-cell unavail" title="8/25(火) 7限 出席不可"></div><div class="dot-cell unavail" title="8/26(水) 7限 出席不可"></div><div class="dot-cell unavail" title="8/27(木) 7限 出席不可"></div><div class="dot-cell unavail" title="8/28(金) 7限 出席不可"></div><div class="dot-cell unavail" title="8/29(土) 7限 出席不可"></div><div class="dot-cell unavail" title="8/30(日) 7限 出席不可"></div>
+        </div>
+        <!-- 8/31週 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="8/31(月) 7限 出席不可"></div><div class="dot-cell unavail" title="9/1(火) 7限 出席不可"></div><div class="dot-cell unavail" title="9/2(水) 7限 出席不可"></div><div class="dot-cell unavail" title="9/3(木) 7限 出席不可"></div><div class="dot-cell unavail" title="9/4(金) 7限 出席不可"></div><div class="dot-cell unavail" title="9/5(土) 7限 出席不可"></div><div class="dot-cell unavail" title="9/6(日) 7限 出席不可"></div>
+        </div>
+        <!-- 9/7週 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="9/7(月) 7限 出席不可"></div><div class="dot-cell unavail" title="9/8(火) 7限 出席不可"></div><div class="dot-cell unavail" title="9/9(水) 7限 出席不可"></div><div class="dot-cell unavail" title="9/10(木) 7限 出席不可"></div><div class="dot-cell unavail" title="9/11(金) 7限 出席不可"></div><div class="dot-cell unavail" title="9/12(土) 7限 出席不可"></div><div class="dot-cell unavail" title="9/13(日) 7限 出席不可"></div>
+        </div>
+      </div><!-- /7限行 -->
+
+    </div><!-- /dot-matrix -->
+  </div><!-- /dot-matrix-wrap -->
+
+  <!-- 凡例 -->
+  <div class="dot-legend">
+    <span class="dot-legend-item"><span class="dot-legend-swatch" style="background:#e5e7eb;"></span>出席不可</span>
+    <span class="dot-legend-item"><span class="dot-legend-swatch" style="background:#f59e0b;"></span>出席可</span>
+    <span class="dot-legend-item"><span class="dot-legend-swatch" style="background:#15803d;"></span>配置済み</span>
+    <span class="dot-legend-item"><span class="dot-legend-swatch" style="background:#dc2626;"></span>満席（座席が埋まっている）</span>
+    <span class="dot-legend-item"><span style="font-size:9px; color:var(--info);">▼</span>&thinsp;今日(8/4)</span>
+    <span class="dot-legend-item"><span class="dot-legend-swatch" style="background:#dbeafe; border:1px solid #bfdbfe;"></span>表示中の週(8/3週)</span>
+  </div>
+
+  <!-- 操作注記 -->
+  <p class="strip-note">日（列）をクリックで座席表がその週へ移動 / ドットにマウスを乗せると日付・時限を表示</p>
+
+  <!-- 週別サマリ（オプション） -->
+  <div class="dot-weekly-summary-opt">
+    <span class="dot-wsum-item">7/20週 <span class="dot-wsum-placed">✓1</span>/3可</span>
+    <span class="dot-wsum-item">7/27週 <span class="dot-wsum-placed">✓1</span>/4可</span>
+    <span class="dot-wsum-item">8/3週 <span class="dot-wsum-placed">✓1</span>/3可</span>
+    <span class="dot-wsum-item">8/10週 —</span>
+    <span class="dot-wsum-item">8/17週 <span class="dot-wsum-placed">✓0</span>/3可</span>
+    <span class="dot-wsum-item">8/24週 <span class="dot-wsum-placed">✓0</span>/3可</span>
+    <span class="dot-wsum-item">8/31週 <span class="dot-wsum-placed">✓0</span>/4可</span>
+    <span class="dot-wsum-item">9/7週 <span class="dot-wsum-placed">✓0</span>/2可</span>
+  </div>
+</div><!-- /E-1 strip-panel -->
+
+<!-- E-2: フォールバック（可能表 未提出） -->
+<p class="state-label">状態2: 講習（可能表 未提出 → 通塾日程フォールバック）</p>
+<div class="strip-panel">
+  <div class="strip-header">
+    <span class="strip-student">宮永 心那（中3）</span>
+    <span class="pill koushu">講習</span>
+    <span class="strip-subject">国語 残2コマ</span>
+    <span class="source-badge gray">通塾日程（毎週）※講習可能表 未提出</span>
+    <button class="close-btn">× 終了</button>
+  </div>
+
+  <div class="dot-matrix-wrap">
+    <!--
+      フォールバック: 全週の 火5限・金6限 のみ薄黄(#fcd34d)、それ以外グレー
+      8/10週（お盆）は毎週パターンも薄く（opacity .4）
+    -->
+
+    <!-- 週ラベル行 -->
+    <div class="dot-matrix-header">
+      <div class="dot-header-week-group"><span class="dot-week-label">7/20</span><div class="dot-today-marker"></div></div>
+      <div class="dot-header-week-group"><span class="dot-week-label">7/27</span><div class="dot-today-marker"></div></div>
+      <div class="dot-header-week-group"><span class="dot-week-label" style="color:var(--info); font-weight:700;">8/3</span><div class="dot-today-marker"><span class="dot-today-tri" style="left:12px;" title="今日(8/4)">▼</span></div></div>
+      <div class="dot-header-week-group"><span class="dot-week-label">8/10</span><div class="dot-today-marker"></div></div>
+      <div class="dot-header-week-group"><span class="dot-week-label">8/17</span><div class="dot-today-marker"></div></div>
+      <div class="dot-header-week-group"><span class="dot-week-label">8/24</span><div class="dot-today-marker"></div></div>
+      <div class="dot-header-week-group"><span class="dot-week-label">8/31</span><div class="dot-today-marker"></div></div>
+      <div class="dot-header-week-group"><span class="dot-week-label">9/7</span><div class="dot-today-marker"></div></div>
+    </div>
+
+    <div class="dot-matrix">
+      <!-- 1限: 全グレー -->
+      <div class="dot-matrix-row">
+        <span class="dot-row-label">1限</span>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group current-week-band"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+      </div>
+      <!-- 2限: 全グレー -->
+      <div class="dot-matrix-row">
+        <span class="dot-row-label">2限</span>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group current-week-band"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+      </div>
+      <!-- 3限: 全グレー -->
+      <div class="dot-matrix-row">
+        <span class="dot-row-label">3限</span>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group current-week-band"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+      </div>
+      <!-- 4限: 全グレー -->
+      <div class="dot-matrix-row">
+        <span class="dot-row-label">4限</span>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group current-week-band"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+      </div>
+      <!-- 5限行: 毎週火曜(曜日インデックス1)のみ薄黄 -->
+      <div class="dot-matrix-row">
+        <span class="dot-row-label">5限</span>
+        <!-- 7/20週: 7/21(火)=薄黄 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail" title="7/20(月) 5限"></div>
+          <div class="dot-cell fallback-avail" title="7/21(火) 5限 参考（通塾日程）"></div>
+          <div class="dot-cell unavail" title="7/22(水) 5限"></div><div class="dot-cell unavail" title="7/23(木) 5限"></div><div class="dot-cell unavail" title="7/24(金) 5限"></div><div class="dot-cell unavail" title="7/25(土) 5限"></div><div class="dot-cell unavail" title="7/26(日) 5限"></div>
+        </div>
+        <!-- 7/27週 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail"></div>
+          <div class="dot-cell fallback-avail" title="7/28(火) 5限 参考（通塾日程）"></div>
+          <div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div>
+        </div>
+        <!-- 8/3週（現在週） -->
+        <div class="dot-week-group current-week-band">
+          <div class="dot-cell unavail"></div>
+          <div class="dot-cell fallback-avail" title="8/4(火) 5限 参考（通塾日程）・今日"></div>
+          <div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div>
+        </div>
+        <!-- 8/10週（お盆）: 薄さを下げて表現 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail"></div>
+          <div class="dot-cell fallback-avail" style="opacity:.4;" title="8/11(火) 5限 参考（通塾日程）お盆期間"></div>
+          <div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div>
+        </div>
+        <!-- 8/17週 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail"></div>
+          <div class="dot-cell fallback-avail" title="8/18(火) 5限 参考（通塾日程）"></div>
+          <div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div>
+        </div>
+        <!-- 8/24週 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail"></div>
+          <div class="dot-cell fallback-avail" title="8/25(火) 5限 参考（通塾日程）"></div>
+          <div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div>
+        </div>
+        <!-- 8/31週 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail"></div>
+          <div class="dot-cell fallback-avail" title="9/1(火) 5限 参考（通塾日程）"></div>
+          <div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div>
+        </div>
+        <!-- 9/7週 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail"></div>
+          <div class="dot-cell fallback-avail" title="9/8(火) 5限 参考（通塾日程）"></div>
+          <div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div>
+        </div>
+      </div><!-- /5限行フォールバック -->
+
+      <!-- 6限行: 毎週金曜(曜日インデックス4)のみ薄黄 -->
+      <div class="dot-matrix-row">
+        <span class="dot-row-label">6限</span>
+        <!-- 7/20週: 7/24(金)=薄黄 -->
+        <div class="dot-week-group">
+          <div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div>
+          <div class="dot-cell fallback-avail" title="7/24(金) 6限 参考（通塾日程）"></div>
+          <div class="dot-cell unavail"></div><div class="dot-cell unavail"></div>
+        </div>
+        <div class="dot-week-group">
+          <div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div>
+          <div class="dot-cell fallback-avail" title="7/31(金) 6限 参考（通塾日程）"></div>
+          <div class="dot-cell unavail"></div><div class="dot-cell unavail"></div>
+        </div>
+        <div class="dot-week-group current-week-band">
+          <div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div>
+          <div class="dot-cell fallback-avail" title="8/7(金) 6限 参考（通塾日程）"></div>
+          <div class="dot-cell unavail"></div><div class="dot-cell unavail"></div>
+        </div>
+        <div class="dot-week-group">
+          <div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div>
+          <div class="dot-cell fallback-avail" style="opacity:.4;" title="8/14(金) 6限 参考（通塾日程）お盆期間"></div>
+          <div class="dot-cell unavail"></div><div class="dot-cell unavail"></div>
+        </div>
+        <div class="dot-week-group">
+          <div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div>
+          <div class="dot-cell fallback-avail" title="8/21(金) 6限 参考（通塾日程）"></div>
+          <div class="dot-cell unavail"></div><div class="dot-cell unavail"></div>
+        </div>
+        <div class="dot-week-group">
+          <div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div>
+          <div class="dot-cell fallback-avail" title="8/28(金) 6限 参考（通塾日程）"></div>
+          <div class="dot-cell unavail"></div><div class="dot-cell unavail"></div>
+        </div>
+        <div class="dot-week-group">
+          <div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div>
+          <div class="dot-cell fallback-avail" title="9/4(金) 6限 参考（通塾日程）"></div>
+          <div class="dot-cell unavail"></div><div class="dot-cell unavail"></div>
+        </div>
+        <div class="dot-week-group">
+          <div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div>
+          <div class="dot-cell fallback-avail" title="9/11(金) 6限 参考（通塾日程）"></div>
+          <div class="dot-cell unavail"></div><div class="dot-cell unavail"></div>
+        </div>
+      </div><!-- /6限行フォールバック -->
+
+      <!-- 7限: 全グレー -->
+      <div class="dot-matrix-row">
+        <span class="dot-row-label">7限</span>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group current-week-band"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+        <div class="dot-week-group"><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div><div class="dot-cell unavail"></div></div>
+      </div>
+    </div><!-- /dot-matrix フォールバック -->
+  </div><!-- /dot-matrix-wrap -->
+
+  <!-- 凡例 -->
+  <div class="dot-legend">
+    <span class="dot-legend-item"><span class="dot-legend-swatch" style="background:#e5e7eb;"></span>出席不可</span>
+    <span class="dot-legend-item"><span class="dot-legend-swatch" style="background:#fcd34d;"></span>参考（通塾日程の毎週パターンを展開）</span>
+    <span class="dot-legend-item"><span style="font-size:9px; color:var(--info);">▼</span>&thinsp;今日(8/4)</span>
+    <span class="dot-legend-item"><span class="dot-legend-swatch" style="background:#dbeafe; border:1px solid #bfdbfe;"></span>表示中の週(8/3週)</span>
+  </div>
+  <p class="strip-note">通塾日程を参考に表示。講習可能表が提出されると正確な枠に切り替わります。</p>
+</div><!-- /E-2 strip-panel -->
+
+
+<!-- ============================================================
      比較表
      ============================================================ -->
 <div class="compare-section" id="compare">
-  <h2>5案 比較</h2>
+  <h2>6案 比較</h2>
   <table class="compare-table">
     <thead>
       <tr>
@@ -1753,6 +2740,7 @@
         <th>案C 週カード</th>
         <th style="background:var(--info-subtle); color:var(--info);">案D1 カレンダー型</th>
         <th style="background:var(--info-subtle); color:var(--info);">案D2 タイムライン型</th>
+        <th class="adopt">案E ドットマトリクス<br><span class="adopt-tag">採用予定</span></th>
       </tr>
     </thead>
     <tbody>
@@ -1763,6 +2751,7 @@
         <td class="c-warn">中 — 曜日のみ（時限は省略）</td>
         <td class="c-good">高 — 8週×7曜日・時限チップ</td>
         <td class="c-good">高 — 曜日×8週・時限チップ＋週サマリ行</td>
+        <td class="adopt c-good">高 — 56日×7限の全セルをドット色で表現</td>
       </tr>
       <tr>
         <td>高さ（省スペース）</td>
@@ -1771,6 +2760,7 @@
         <td class="c-good">低 70px</td>
         <td class="c-bad">高 約290px（8行＋ヘッダ）</td>
         <td class="c-warn">中 約270px（7曜日＋サマリ行＋ヘッダ）</td>
+        <td class="adopt c-good">極低 約100px（7行×12px＋ヘッダ）</td>
       </tr>
       <tr>
         <td>一覧性（週をまたぐ把握）</td>
@@ -1779,6 +2769,7 @@
         <td class="c-warn">中 — カード単位の比較が容易</td>
         <td class="c-good">高 — 行末バッジで週ごとの配分を即確認</td>
         <td class="c-good">高 — 最下サマリ行で8週の偏りを横断比較</td>
+        <td class="adopt c-good">最高 — 色の疎密で全期間の分布を瞬時に把握</td>
       </tr>
       <tr>
         <td>実装コスト</td>
@@ -1787,6 +2778,7 @@
         <td class="c-good">低 — CSSのみ</td>
         <td class="c-warn">中 — 期間展開ロジック＋テーブル生成</td>
         <td class="c-warn">中 — 同左（列方向への転置が必要）</td>
+        <td class="adopt c-warn">中 — 56日×7限の配列をdivで描画（Canvas不要）</td>
       </tr>
       <tr>
         <td>フォールバック表現</td>
@@ -1795,10 +2787,20 @@
         <td class="c-good">自然（毎週カード1枚）</td>
         <td class="c-good">自然 — 同じ表に薄グレーチップで展開</td>
         <td class="c-good">自然 — D1と同形式（火・金列に薄チップ）</td>
+        <td class="adopt c-good">自然 — 同じマトリクスに薄黄ドットで展開</td>
+      </tr>
+      <tr>
+        <td>満席状態の表現</td>
+        <td class="c-bad">なし（記号拡張が必要）</td>
+        <td class="c-warn">セル色で対応可（記号が必要）</td>
+        <td class="c-bad">なし（ドットを赤にしても伝わりにくい）</td>
+        <td class="c-warn">チップ色変更で対応可</td>
+        <td class="c-warn">チップ色変更で対応可</td>
+        <td class="adopt c-good">自然 — 赤ドット1色で即判別</td>
       </tr>
     </tbody>
   </table>
-  <p class="final-note">※静的モック。色・文言は実装時に調整。D1・D2は8週分の講習全期間向け。テスト対策など短期（2週以下）は案A/Cが軽量で適切。</p>
+  <p class="final-note">※静的モック。色・文言は実装時に調整。D1・D2は8週分の講習全期間向け。テスト対策など短期（2週以下）は案A/Cが軽量で適切。案Eは講習配置の決定版として採用予定。</p>
 </div>
 
 </body>

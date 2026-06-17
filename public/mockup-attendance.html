@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<!--
+  これは src/app/admin/attendance/page.tsx の現状再現モック（課題出し用）。
+  実装コードではない。ダミーデータで現状UIを忠実に再現している。
+  目的: 教室長（室長）が現状の使い勝手の課題を洗い出す叩き台。
+-->
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>出勤簿管理 — 現状再現モック</title>
+<style>
+  :root {
+    --headline: #1f2937;
+    --paragraph: #4b5563;
+    --muted: #6b7280;
+    --stroke: #e5e7eb;
+    --surface: #f9fafb;
+    --surface-raised: #ffffff;
+    --ink: #1e3a5f;
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --danger: #dc2626;
+    --danger-subtle: #fef2f2;
+    --success: #16a34a;
+    --amber-border: #fcd34d;
+    --amber-bg: #fffbeb;
+    --amber-text: #92400e;
+    --amber-text-dark: #78350f;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Noto Sans JP', sans-serif;
+    background: #f3f4f6;
+    color: var(--headline);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* ===== レイアウト ===== */
+  .app-layout {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* サイドバー（簡略） */
+  .sidebar {
+    width: 220px;
+    background: #1e293b;
+    color: #cbd5e1;
+    flex-shrink: 0;
+    padding: 20px 0;
+    font-size: 13px;
+  }
+  .sidebar-logo {
+    padding: 0 20px 20px;
+    color: #fff;
+    font-weight: 700;
+    font-size: 15px;
+    border-bottom: 1px solid #334155;
+    margin-bottom: 16px;
+  }
+  .sidebar-item {
+    padding: 8px 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .sidebar-item.active {
+    background: #334155;
+    color: #fff;
+  }
+
+  /* メインコンテンツ */
+  .main-content {
+    flex: 1;
+    padding: 24px 28px;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  /* ===== ユーティリティ ===== */
+  .space-y-6 > * + * { margin-top: 24px; }
+  .space-y-4 > * + * { margin-top: 16px; }
+  .space-y-2 > * + * { margin-top: 8px; }
+
+  .flex { display: flex; }
+  .flex-wrap { flex-wrap: wrap; }
+  .items-center { align-items: center; }
+  .items-start { align-items: flex-start; }
+  .justify-between { justify-content: space-between; }
+  .gap-1 { gap: 4px; }
+  .gap-2 { gap: 8px; }
+  .gap-3 { gap: 12px; }
+  .gap-4 { gap: 16px; }
+  .flex-1 { flex: 1; }
+  .flex-shrink-0 { flex-shrink: 0; }
+  .min-w-0 { min-width: 0; }
+
+  .text-2xl { font-size: 22px; font-weight: 700; }
+  .text-base { font-size: 14px; }
+  .text-sm { font-size: 13px; }
+  .text-xs { font-size: 11px; }
+  .font-bold { font-weight: 700; }
+  .font-semibold { font-weight: 600; }
+  .font-medium { font-weight: 500; }
+  .text-right { text-align: right; }
+  .text-center { text-align: center; }
+  .break-all { word-break: break-all; }
+
+  .text-muted { color: var(--muted); }
+  .text-body { color: var(--paragraph); }
+  .text-red { color: #dc2626; }
+  .text-green { color: #15803d; }
+  .text-amber-900 { color: var(--amber-text-dark); }
+  .text-amber-800 { color: var(--amber-text); }
+
+  .mt-1 { margin-top: 4px; }
+  .mt-2 { margin-top: 8px; }
+  .ml-1 { margin-left: 4px; }
+  .ml-2 { margin-left: 8px; }
+  .mb-1 { margin-bottom: 4px; }
+  .mb-4 { margin-bottom: 16px; }
+
+  /* ===== カード ===== */
+  .card {
+    background: #fff;
+    border: 1px solid var(--stroke);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--stroke);
+  }
+  .card-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--headline);
+  }
+  .card-content {
+    padding: 16px 20px;
+  }
+
+  /* ===== アラートバー ===== */
+  .alert-amber {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    border: 1px solid var(--amber-border);
+    background: var(--amber-bg);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .alert-icon {
+    color: #d97706;
+    flex-shrink: 0;
+    margin-top: 1px;
+    font-size: 16px;
+  }
+
+  /* ===== ボタン ===== */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    white-space: nowrap;
+  }
+  .btn-sm {
+    padding: 4px 10px;
+    font-size: 12px;
+  }
+  .btn-xs {
+    padding: 3px 8px;
+    font-size: 11px;
+  }
+  .btn-primary {
+    background: var(--primary);
+    color: #fff;
+  }
+  .btn-primary:hover { background: var(--primary-hover); }
+  .btn-secondary {
+    background: #fff;
+    color: var(--headline);
+    border: 1px solid var(--stroke);
+  }
+  .btn-secondary:hover { background: var(--surface); }
+  .btn-secondary.active {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--headline);
+    border: none;
+    padding: 6px 8px;
+  }
+  .btn-ghost:hover { background: var(--surface); }
+  .btn-danger {
+    background: var(--danger-subtle);
+    color: var(--danger);
+    border: 1px solid #fecaca;
+  }
+  .btn-danger:hover { background: #fee2e2; }
+  .btn-approve {
+    background: #f0fdf4;
+    color: var(--success);
+    border: 1px solid #bbf7d0;
+  }
+  .btn-approve:hover { background: #dcfce7; }
+  .btn-disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  /* ===== セレクト ===== */
+  select {
+    padding: 6px 10px;
+    border: 1px solid var(--stroke);
+    border-radius: 6px;
+    font-size: 13px;
+    background: #fff;
+    color: var(--headline);
+    cursor: pointer;
+    height: 34px;
+  }
+  select:focus { outline: 2px solid var(--primary); }
+
+  /* ===== インプット ===== */
+  input[type="text"],
+  input[type="number"] {
+    padding: 3px 8px;
+    border: 1px solid var(--stroke);
+    border-radius: 5px;
+    font-size: 12px;
+    color: var(--headline);
+    background: #fff;
+    height: 28px;
+  }
+  input[type="text"]:focus,
+  input[type="number"]:focus { outline: 2px solid var(--primary); }
+  input[type="number"].text-right { text-align: right; }
+
+  /* ===== チェックボックス ===== */
+  input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+    accent-color: var(--primary);
+  }
+
+  /* ===== バッジ ===== */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .badge-draft  { background: #f3f4f6; color: #374151; }
+  .badge-submitted { background: #fef9c3; color: #854d0e; }
+  .badge-reviewed  { background: #dbeafe; color: #1d40af; }
+  .badge-approved  { background: #dcfce7; color: #15532c; }
+  .badge-rejected  { background: #fee2e2; color: #991b1b; }
+  .badge-purple {
+    background: #7c3aed;
+    color: #fff;
+    border-radius: 4px;
+    font-size: 10px;
+    padding: 1px 5px;
+  }
+  .badge-red    { background: #dc2626; color: #fff; }
+  .badge-blue   { background: #2563eb; color: #fff; }
+  .badge-orange { background: #f97316; color: #fff; }
+
+  /* ===== テーブル ===== */
+  .table-wrap { overflow-x: auto; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  thead th {
+    padding: 9px 10px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    border-bottom: 1px solid var(--stroke);
+    white-space: nowrap;
+    background: #f9fafb;
+  }
+  thead th.text-center { text-align: center; }
+  thead th.text-right  { text-align: right;  }
+  tbody td {
+    padding: 9px 10px;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: middle;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: #fafafa; }
+  tbody td.text-center { text-align: center; }
+  tbody td.text-right  { text-align: right;  }
+  tbody tr.total-row td {
+    background: #f3f4f6;
+    font-weight: 600;
+    border-top: 1px solid var(--stroke);
+  }
+  tbody tr.total-row { border-top: 1px solid #d1d5db; }
+
+  /* 転置テーブル: 行見出し sticky */
+  .transposed th.sticky,
+  .transposed td.sticky {
+    position: sticky;
+    left: 0;
+    background: #f9fafb;
+    z-index: 2;
+    border-right: 1px solid var(--stroke);
+  }
+  .transposed tbody tr.subtotal-row td { background: #f3f4f6; font-weight: 600; }
+
+  /* ===== タブ ===== */
+  .tab-bar {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--stroke);
+    margin-bottom: 20px;
+  }
+  .tab {
+    padding: 10px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: var(--muted);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+  }
+  .tab.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+  }
+
+  /* ===== 一括操作バー ===== */
+  .bulk-bar {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 7px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  /* ===== 人事カード ===== */
+  .info-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .info-card-red {
+    border: 1px solid #fecaca;
+    background: #fff5f5;
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .info-card-blue {
+    border: 1px solid #bfdbfe;
+    background: #eff6ff;
+    border-radius: 8px;
+    padding: 12px 14px;
+  }
+  .info-card-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  /* 退職・コマ給カード */
+  .admin-tools-card .card-content { padding-bottom: 20px; }
+  .admin-tools-section { padding: 14px 0; border-bottom: 1px solid var(--stroke); }
+  .admin-tools-section:last-child { border-bottom: none; padding-bottom: 0; }
+  .label-sm {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+
+  /* 遅刻早退 */
+  .late-table td.late-type { color: #dc2626; font-weight: 500; }
+
+  /* 月切替エリア */
+  .month-nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .month-label {
+    font-weight: 600;
+    min-width: 100px;
+    text-align: center;
+    font-size: 14px;
+  }
+
+  /* ビューメモ（モック専用注記） */
+  .view-note {
+    background: #fefce8;
+    border: 1px dashed #facc15;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: #854d0e;
+    margin-bottom: 12px;
+  }
+
+  /* 転置ビューの操作列 */
+  .transposed-ops {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: stretch;
+    min-width: 72px;
+  }
+
+  /* コマ給バッジ（紫） */
+  .koma-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    background: #7c3aed;
+    color: #fff;
+    font-size: 10px;
+    border-radius: 4px;
+    padding: 1px 5px;
+    margin-left: 4px;
+  }
+
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .info-cards { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="app-layout">
+  <!-- サイドバー（簡略再現） -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">塾管理システム</div>
+    <div class="sidebar-item">ホーム</div>
+    <div class="sidebar-item">生徒管理</div>
+    <div class="sidebar-item active">講師勤怠</div>
+    <div class="sidebar-item">フォーム</div>
+    <div class="sidebar-item">提案書</div>
+    <div class="sidebar-item">設定</div>
+  </nav>
+
+  <!-- メイン -->
+  <main class="main-content">
+    <div class="space-y-6">
+
+      <!-- 未提出アラート（前月の未提出警告） -->
+      <div class="alert-amber">
+        <span class="alert-icon">&#9651;</span>
+        <div class="flex-1 min-w-0">
+          <p class="font-semibold text-sm text-amber-900">
+            前月（2026年5月）の出勤簿が未提出の講師が2名います
+          </p>
+          <p class="text-xs text-amber-800 mt-1 break-all">
+            田中 花子、高橋 誠
+          </p>
+          <div class="mt-2">
+            <button class="btn btn-secondary btn-sm">前月を表示</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ページタイトル + 右上ボタン群 -->
+      <div class="flex items-center justify-between">
+        <h1 class="text-2xl">出勤簿管理</h1>
+        <div class="flex items-center gap-2">
+          <button class="btn btn-secondary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            CSVエクスポート
+          </button>
+          <button class="btn btn-secondary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            勤怠ポータルを開く
+          </button>
+        </div>
+      </div>
+
+      <!-- 人事情報カード（管理者向け） -->
+      <div class="info-cards">
+        <div class="info-card-red">
+          <div class="info-card-label" style="color:#b91c1c;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+            先月退職
+          </div>
+          <div class="flex flex-wrap gap-1">
+            <span class="badge badge-red">山本 隆</span>
+          </div>
+        </div>
+        <div class="info-card-blue">
+          <div class="info-card-label" style="color:#1d4ed8;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+            入社3ヶ月
+          </div>
+          <div class="flex flex-wrap gap-1">
+            <span class="badge badge-blue">岡本 さくら</span>
+            <span class="badge badge-blue">西村 大輝</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- メインテーブルカード -->
+      <div class="card">
+        <div class="card-header">
+          <div class="flex items-center justify-between flex-wrap gap-4">
+            <span class="card-title">出勤簿一覧</span>
+            <div class="flex items-center gap-4 flex-wrap">
+              <!-- 管理者: 振込表示トグル / 並べ替え -->
+              <div class="flex items-center gap-2">
+                <button class="btn btn-secondary btn-sm" id="toggle-view-btn" onclick="toggleView()">振込表示</button>
+                <button class="btn btn-secondary btn-sm" id="sort-btn" style="display:none;" onclick="cycleSortOrder()">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="5 12 12 5 19 12"/></svg>
+                  名前 昇順
+                </button>
+              </div>
+              <!-- 教室選択 -->
+              <select style="min-width:140px;">
+                <option value="all">全教室</option>
+                <option value="s1" selected>みなみ校</option>
+                <option value="s2">きた校</option>
+                <option value="s3">ひがし校</option>
+              </select>
+              <!-- 月切替 -->
+              <div class="month-nav">
+                <button class="btn btn-ghost">&#8249;</button>
+                <span class="month-label">2026年6月</span>
+                <button class="btn btn-ghost">&#8250;</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-content">
+
+          <!-- 一括操作バー（提出済み3件あり） -->
+          <div class="bulk-bar">
+            <span class="text-sm text-body">承認待ち: 3件</span>
+            <label class="flex items-center gap-2 text-sm">
+              <input type="checkbox" id="select-all-cb" onclick="toggleSelectAll()">
+              全件選択
+            </label>
+            <button class="btn btn-primary btn-sm" id="bulk-approve-btn" onclick="handleBulkApprove()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              選択した0件を一括承認
+            </button>
+          </div>
+
+          <!-- ===== 通常テーブル ===== -->
+          <div id="normal-view">
+            <div class="view-note">通常テーブル（講師ごとの行表示）</div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width:40px;"></th>
+                    <th>教室</th>
+                    <th>講師名</th>
+                    <th class="text-center">ステータス</th>
+                    <th class="text-center">通常授業</th>
+                    <th class="text-center">講習</th>
+                    <th class="text-center">自習監督</th>
+                    <th class="text-center">合計</th>
+                    <th class="text-right">金額</th>
+                    <th class="text-center">準備給日数</th>
+                    <th class="text-center">勤務日数</th>
+                    <th class="text-center">交通費</th>
+                    <th style="min-width:110px;">備考</th>
+                    <th style="min-width:180px;">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="normal-tbody">
+                  <!-- 行データは JS で描画 -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ===== 転置ビュー ===== -->
+          <div id="transposed-view" style="display:none;">
+            <div class="view-note">振込表示（コマ種別を行、講師を列）</div>
+            <div class="table-wrap">
+              <table class="transposed" id="transposed-table">
+                <!-- JS で描画 -->
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- 退職予定・コマ給変更カード（管理者専用） -->
+      <div class="card admin-tools-card">
+        <div class="card-header" style="padding:12px 20px;">
+          <span class="card-title text-base">退職予定・コマ給変更</span>
+        </div>
+        <div class="card-content">
+          <div class="admin-tools-section">
+            <span class="label-sm">今月末退職の講師を登録</span>
+            <div class="flex flex-wrap items-center gap-2">
+              <select style="width:200px;"><option>講師を選択</option><option>田中 花子</option><option>佐藤 一郎</option></select>
+              <input type="text" value="2026-06-30" style="width:140px;">
+              <button class="btn btn-secondary btn-sm btn-disabled" disabled>登録</button>
+            </div>
+          </div>
+          <div class="admin-tools-section" style="padding-top:14px;">
+            <span class="label-sm">コマ給変更の講師を登録</span>
+            <div class="flex flex-wrap items-center gap-2">
+              <select style="width:200px;"><option>講師を選択</option><option>田中 花子</option><option>佐藤 一郎</option></select>
+              <div class="flex items-center gap-1">
+                <span class="text-sm text-muted">¥</span>
+                <input type="number" placeholder="旧" style="width:80px; text-align:right;">
+                <span class="text-sm text-muted"> → ¥</span>
+                <input type="number" placeholder="新" style="width:80px; text-align:right;">
+              </div>
+              <button class="btn btn-secondary btn-sm btn-disabled" disabled>登録</button>
+            </div>
+            <!-- 既に登録済みのコマ給変更 -->
+            <div class="mt-2">
+              <span style="display:inline-flex;align-items:center;gap:4px;background:#7c3aed;color:#fff;border-radius:5px;padding:3px 8px;font-size:12px;">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                <span class="font-medium">中村 美咲</span>
+                <span>¥1,500→¥1,700</span>
+                <button style="background:none;border:none;color:#fff;cursor:pointer;font-size:13px;margin-left:2px;">×</button>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 遅刻・早退一覧カード -->
+      <div class="card">
+        <div class="card-header">
+          <div class="flex items-center justify-between">
+            <span class="card-title">
+              遅刻・早退一覧
+              <span class="text-body font-medium text-sm ml-2">（5件）</span>
+            </span>
+            <button class="btn btn-secondary btn-sm">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              CSVエクスポート
+            </button>
+          </div>
+        </div>
+        <div class="card-content">
+          <div class="table-wrap">
+            <table class="late-table">
+              <thead>
+                <tr>
+                  <th>日付</th>
+                  <th>教室</th>
+                  <th>講師名</th>
+                  <th>遅刻早退</th>
+                  <th>備考</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>6/3(水)</td>
+                  <td>みなみ校</td>
+                  <td class="font-medium">田中 花子</td>
+                  <td class="late-type">遅刻</td>
+                  <td class="text-muted">電車遅延のため15分遅刻</td>
+                </tr>
+                <tr>
+                  <td>6/5(金)</td>
+                  <td>みなみ校</td>
+                  <td class="font-medium">佐藤 一郎</td>
+                  <td class="late-type">早退</td>
+                  <td class="text-muted">体調不良</td>
+                </tr>
+                <tr>
+                  <td>6/10(水)</td>
+                  <td>みなみ校</td>
+                  <td class="font-medium">鈴木 陽介</td>
+                  <td class="late-type">遅刻</td>
+                  <td class="text-muted">-</td>
+                </tr>
+                <tr>
+                  <td>6/12(金)</td>
+                  <td>みなみ校</td>
+                  <td class="font-medium">伊藤 麻衣</td>
+                  <td class="late-type">遅刻</td>
+                  <td class="text-muted">体調不良 30分遅刻</td>
+                </tr>
+                <tr>
+                  <td>6/17(火)</td>
+                  <td>みなみ校</td>
+                  <td class="font-medium">中村 美咲</td>
+                  <td class="late-type">早退</td>
+                  <td class="text-muted">-</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /space-y-6 -->
+  </main>
+</div>
+
+<script>
+/* ===== ダミーデータ ===== */
+// コマ種別
+const types = ['通常授業', '講習', '自習監督'];
+const typeUnit = { '通常授業': 'koma', '講習': 'koma', '自習監督': 'hours' };
+
+// ステータス設定
+const STATUS = {
+  draft:     { label: '入力中',    cls: 'badge-draft'     },
+  submitted: { label: '提出済み',  cls: 'badge-submitted' },
+  reviewed:  { label: '確認済み',  cls: 'badge-reviewed'  },
+  approved:  { label: '承認済み',  cls: 'badge-approved'  },
+  rejected:  { label: '修正',      cls: 'badge-rejected'  },
+};
+
+// 講師データ
+const sheets = [
+  {
+    id: '1', school: 'みなみ校', teacher: '田中 花子', status: 'submitted',
+    types: { '通常授業': 18, '講習': 4, '自習監督': 6 },
+    grandTotal: 22, totalAmount: 44000, prepDays: 2, workDays: 14,
+    transport: 3200, note: '', komaChange: null,
+    checkable: true,
+  },
+  {
+    id: '2', school: 'みなみ校', teacher: '佐藤 一郎', status: 'reviewed',
+    types: { '通常授業': 20, '講習': 6, '自習監督': 4 },
+    grandTotal: 26, totalAmount: 49400, prepDays: 3, workDays: 16,
+    transport: 4800, note: '', komaChange: null,
+    checkable: true,
+  },
+  {
+    id: '3', school: 'みなみ校', teacher: '鈴木 陽介', status: 'approved',
+    types: { '通常授業': 15, '講習': 0, '自習監督': 8 },
+    grandTotal: 15, totalAmount: 30000, prepDays: 1, workDays: 12,
+    transport: 2400, note: '担当変更あり', komaChange: null,
+    checkable: false,
+  },
+  {
+    id: '4', school: 'みなみ校', teacher: '伊藤 麻衣', status: 'draft',
+    types: { '通常授業': 10, '講習': 2, '自習監督': 3 },
+    grandTotal: 12, totalAmount: 25200, prepDays: 0, workDays: 8,
+    transport: 0, note: '', komaChange: null,
+    checkable: false,
+  },
+  {
+    id: '5', school: 'みなみ校', teacher: '中村 美咲', status: 'submitted',
+    types: { '通常授業': 22, '講習': 8, '自習監督': 0 },
+    grandTotal: 30, totalAmount: 58500, prepDays: 4, workDays: 17,
+    transport: 5600, note: 'コマ給変更月',
+    komaChange: { from: 1500, to: 1700 },
+    checkable: true,
+  },
+  {
+    id: '6', school: 'みなみ校', teacher: '加藤 健太', status: 'rejected',
+    types: { '通常授業': 14, '講習': 3, '自習監督': 2 },
+    grandTotal: 17, totalAmount: 33150, prepDays: 1, workDays: 11,
+    transport: 1800, note: '交通費要確認', komaChange: null,
+    checkable: false,
+  },
+  {
+    id: '7', school: 'みなみ校', teacher: '小林 奈緒', status: 'approved',
+    types: { '通常授業': 16, '講習': 5, '自習監督': 5 },
+    grandTotal: 21, totalAmount: 42000, prepDays: 2, workDays: 14,
+    transport: 3000, note: '', komaChange: null,
+    checkable: false,
+  },
+  {
+    id: '8', school: 'みなみ校', teacher: '岡本 さくら', status: 'draft',
+    types: { '通常授業': 8, '講習': 0, '自習監督': 4 },
+    grandTotal: 8, totalAmount: 16000, prepDays: 0, workDays: 6,
+    transport: 0, note: '新人・入社3ヶ月', komaChange: null,
+    checkable: false,
+  },
+  {
+    id: '9', school: 'みなみ校', teacher: '西村 大輝', status: 'submitted',
+    types: { '通常授業': 12, '講習': 4, '自習監督': 2 },
+    grandTotal: 16, totalAmount: 31200, prepDays: 1, workDays: 10,
+    transport: 2100, note: '', komaChange: null,
+    checkable: true,
+  },
+];
+
+// 選択中のID管理
+const selected = new Set();
+
+/* ===== 通常テーブル描画 ===== */
+function renderNormal() {
+  const tbody = document.getElementById('normal-tbody');
+  let html = '';
+
+  sheets.forEach(s => {
+    const st = STATUS[s.status];
+    const typesCells = types.map(t => {
+      const v = s.types[t] || 0;
+      const suffix = typeUnit[t] === 'hours' ? 'h' : '';
+      return `<td class="text-center">${v}${suffix}</td>`;
+    }).join('');
+
+    const komaBadge = s.komaChange
+      ? `<span class="koma-badge">¥${s.komaChange.from.toLocaleString()}→¥${s.komaChange.to.toLocaleString()}</span>`
+      : '';
+
+    // 操作ボタン群
+    let ops = `<button class="btn btn-secondary btn-sm">詳細</button>`;
+    if (s.status === 'reviewed') {
+      ops += ` <button class="btn btn-approve btn-sm" onclick="approveSheet('${s.id}')">承認</button>`;
+      ops += ` <button class="btn btn-danger btn-sm">差戻</button>`;
+    } else if (s.status === 'submitted') {
+      ops += ` <button class="btn btn-approve btn-sm" onclick="approveSheet('${s.id}')">承認</button>`;
+    } else if (s.status === 'approved') {
+      ops += ` <button class="btn btn-secondary btn-sm">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>取消
+      </button>`;
+    }
+
+    const isChecked = selected.has(s.id);
+    const checkDisabled = !s.checkable ? 'disabled' : '';
+
+    html += `
+      <tr>
+        <td><input type="checkbox" ${checkDisabled} ${isChecked ? 'checked' : ''} onchange="toggleSelect('${s.id}', this)"></td>
+        <td>${s.school}</td>
+        <td class="font-medium">${s.teacher}${komaBadge}</td>
+        <td class="text-center"><span class="badge ${st.cls}">${st.label}</span></td>
+        ${typesCells}
+        <td class="text-center font-medium">${s.grandTotal}</td>
+        <td class="text-right">¥${s.totalAmount.toLocaleString()}</td>
+        <td class="text-center">${s.prepDays}日</td>
+        <td class="text-center">${s.workDays}日</td>
+        <td><input type="number" class="text-right" value="${s.transport || ''}" placeholder="0" style="width:72px;"></td>
+        <td><input type="text" value="${s.note}" placeholder="備考" style="width:100px;"></td>
+        <td><div class="flex gap-1 flex-wrap">${ops}</div></td>
+      </tr>`;
+  });
+
+  // 合計行
+  const typeSums = types.map(t => {
+    const sum = sheets.reduce((acc, s) => acc + (s.types[t] || 0), 0);
+    const suffix = typeUnit[t] === 'hours' ? 'h' : '';
+    return `<td class="text-center">${sum}${suffix}</td>`;
+  }).join('');
+  const grandSum = sheets.reduce((a, s) => a + s.grandTotal, 0);
+  const amountSum = sheets.reduce((a, s) => a + s.totalAmount, 0);
+  const prepSum  = sheets.reduce((a, s) => a + s.prepDays, 0);
+  const workSum  = sheets.reduce((a, s) => a + s.workDays, 0);
+  const transSum = sheets.reduce((a, s) => a + s.transport, 0);
+  html += `
+    <tr class="total-row">
+      <td colspan="4">合計</td>
+      ${typeSums}
+      <td class="text-center">${grandSum}</td>
+      <td class="text-right">¥${amountSum.toLocaleString()}</td>
+      <td class="text-center">${prepSum}日</td>
+      <td class="text-center">${workSum}日</td>
+      <td class="text-right">¥${transSum.toLocaleString()}</td>
+      <td></td>
+      <td></td>
+    </tr>`;
+
+  tbody.innerHTML = html;
+  updateBulkBtn();
+}
+
+/* ===== 転置テーブル描画 ===== */
+function renderTransposed() {
+  const table = document.getElementById('transposed-table');
+  let html = '<thead><tr><th class="sticky" style="min-width:120px;">項目</th>';
+
+  sheets.forEach(s => {
+    const st = STATUS[s.status];
+    const komaHint = s.komaChange
+      ? `<span class="badge badge-purple" style="margin-top:2px;">¥${s.komaChange.from.toLocaleString()}→¥${s.komaChange.to.toLocaleString()}</span><br>`
+      : '';
+    html += `<th class="text-center" style="min-width:90px;">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+        <span class="font-medium" style="font-size:12px;">${s.teacher}</span>
+        ${komaHint}
+        <span class="badge ${st.cls}">${st.label}</span>
+      </div>
+    </th>`;
+  });
+  html += '<th class="text-center font-bold" style="min-width:70px;">合計</th></tr></thead><tbody>';
+
+  // コマ種別行
+  types.forEach(t => {
+    const suffix = typeUnit[t] === 'hours' ? 'h' : '';
+    const rowSum = sheets.reduce((a, s) => a + (s.types[t] || 0), 0);
+    html += `<tr><td class="sticky font-medium">${t}</td>`;
+    sheets.forEach(s => {
+      const v = s.types[t] || 0;
+      html += `<td class="text-center">${v}${suffix}</td>`;
+    });
+    html += `<td class="text-center font-medium">${rowSum}${suffix}</td></tr>`;
+  });
+
+  // 金額合計行
+  const totalAmountSum = sheets.reduce((a, s) => a + s.totalAmount, 0);
+  html += `<tr class="subtotal-row"><td class="sticky">金額合計</td>`;
+  sheets.forEach(s => { html += `<td class="text-right">¥${s.totalAmount.toLocaleString()}</td>`; });
+  html += `<td class="text-right font-bold">¥${totalAmountSum.toLocaleString()}</td></tr>`;
+
+  // 準備給日数
+  const prepSum = sheets.reduce((a, s) => a + s.prepDays, 0);
+  html += `<tr><td class="sticky font-medium">準備給日数</td>`;
+  sheets.forEach(s => { html += `<td class="text-center">${s.prepDays}日</td>`; });
+  html += `<td class="text-center font-medium">${prepSum}日</td></tr>`;
+
+  // 勤務日数
+  const workSum = sheets.reduce((a, s) => a + s.workDays, 0);
+  html += `<tr><td class="sticky font-medium">勤務日数</td>`;
+  sheets.forEach(s => { html += `<td class="text-center">${s.workDays}日</td>`; });
+  html += `<td class="text-center font-medium">${workSum}日</td></tr>`;
+
+  // 交通費（編集可）
+  const transSum = sheets.reduce((a, s) => a + s.transport, 0);
+  html += `<tr><td class="sticky font-medium">交通費</td>`;
+  sheets.forEach(s => {
+    html += `<td><input type="number" class="text-right" value="${s.transport || ''}" placeholder="0" style="width:72px;display:block;margin:auto;"></td>`;
+  });
+  html += `<td class="text-right font-medium">¥${transSum.toLocaleString()}</td></tr>`;
+
+  // 備考（編集可）
+  html += `<tr><td class="sticky font-medium">備考</td>`;
+  sheets.forEach(s => {
+    html += `<td><input type="text" value="${s.note}" placeholder="備考" style="width:80px;display:block;margin:auto;"></td>`;
+  });
+  html += `<td></td></tr>`;
+
+  // 操作行
+  html += `<tr style="background:#f9fafb;"><td class="sticky font-medium">操作</td>`;
+  sheets.forEach(s => {
+    let ops = `<button class="btn btn-secondary btn-xs" style="width:100%;margin-bottom:3px;">詳細</button>`;
+    if (s.status === 'reviewed') {
+      ops += `<button class="btn btn-approve btn-xs" style="width:100%;margin-bottom:3px;" onclick="approveSheet('${s.id}')">承認</button>`;
+      ops += `<button class="btn btn-danger btn-xs" style="width:100%;">差戻</button>`;
+    } else if (s.status === 'submitted') {
+      ops += `<button class="btn btn-approve btn-xs" style="width:100%;" onclick="approveSheet('${s.id}')">承認</button>`;
+    } else if (s.status === 'approved') {
+      ops += `<button class="btn btn-secondary btn-xs" style="width:100%;">取消</button>`;
+    }
+    html += `<td><div style="min-width:72px;">${ops}</div></td>`;
+  });
+  html += `<td></td></tr>`;
+
+  html += '</tbody>';
+  table.innerHTML = html;
+}
+
+/* ===== チェックボックス・一括承認 ===== */
+function toggleSelect(id, cb) {
+  if (cb.checked) selected.add(id);
+  else selected.delete(id);
+  updateBulkBtn();
+}
+
+function toggleSelectAll() {
+  const allCb = document.getElementById('select-all-cb');
+  const checkable = sheets.filter(s => s.checkable);
+  if (allCb.checked) {
+    checkable.forEach(s => selected.add(s.id));
+  } else {
+    checkable.forEach(s => selected.delete(s.id));
+  }
+  renderNormal();
+}
+
+function updateBulkBtn() {
+  const btn = document.getElementById('bulk-approve-btn');
+  if (btn) btn.textContent = `選択した${selected.size}件を一括承認`;
+}
+
+function approveSheet(id) {
+  const s = sheets.find(s => s.id === id);
+  if (s) {
+    s.status = 'approved';
+    s.checkable = false;
+    selected.delete(id);
+    if (isTransposed) renderTransposed(); else renderNormal();
+  }
+}
+
+function handleBulkApprove() {
+  if (selected.size === 0) return;
+  selected.forEach(id => {
+    const s = sheets.find(s => s.id === id);
+    if (s) { s.status = 'approved'; s.checkable = false; }
+  });
+  selected.clear();
+  if (isTransposed) renderTransposed(); else renderNormal();
+}
+
+/* ===== 表示切替 ===== */
+let isTransposed = false;
+
+function toggleView() {
+  isTransposed = !isTransposed;
+  const btn = document.getElementById('toggle-view-btn');
+  const sortBtn = document.getElementById('sort-btn');
+  const normalView = document.getElementById('normal-view');
+  const transposedView = document.getElementById('transposed-view');
+
+  if (isTransposed) {
+    btn.textContent = '通常表示';
+    btn.classList.add('active');
+    sortBtn.style.display = '';
+    normalView.style.display = 'none';
+    transposedView.style.display = '';
+    renderTransposed();
+  } else {
+    btn.textContent = '振込表示';
+    btn.classList.remove('active');
+    sortBtn.style.display = 'none';
+    normalView.style.display = '';
+    transposedView.style.display = 'none';
+    renderNormal();
+  }
+}
+
+/* ===== 並べ替え ===== */
+const sortOrders = ['name-asc', 'name-desc', 'amount-desc'];
+const sortLabels = { 'name-asc': '名前 昇順', 'name-desc': '名前 降順', 'amount-desc': '金額 降順' };
+let sortIdx = 0;
+
+function cycleSortOrder() {
+  sortIdx = (sortIdx + 1) % sortOrders.length;
+  const order = sortOrders[sortIdx];
+  document.getElementById('sort-btn').innerHTML = `
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="5 12 12 5 19 12"/></svg>
+    ${sortLabels[order]}`;
+
+  if (order === 'name-asc') {
+    sheets.sort((a, b) => a.teacher.localeCompare(b.teacher, 'ja'));
+  } else if (order === 'name-desc') {
+    sheets.sort((a, b) => b.teacher.localeCompare(a.teacher, 'ja'));
+  } else {
+    sheets.sort((a, b) => b.totalAmount - a.totalAmount);
+  }
+  renderTransposed();
+}
+
+/* ===== 初期描画 ===== */
+renderNormal();
+</script>
+</body>
+</html>

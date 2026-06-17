@@ -17,6 +17,7 @@ import {
   getLateEarlyList,
   updateAttendanceSheetMeta,
   updateTeacherExitDate,
+  updateTeacherEmployeeNo,
   getRecentlyRetiredTeachers,
   getNewTeachers,
   getActiveTeacherProfiles,
@@ -56,7 +57,8 @@ interface LateEarlyRecord {
 interface SummaryRow {
   id: string;
   school: { id: string; name: string; code?: string | null } | null;
-  teacher: { id: string; name: string } | null;
+  /** teacher.employee_no は出勤簿一覧の並び順（社員番号順）に使用。exit_date は退職状態バッジ表示に使用 */
+  teacher: { id: string; name: string; employee_no?: string | null; exit_date?: string | null } | null;
   teacher_id?: string;
   status: string;
   type_totals: Record<string, {
@@ -84,7 +86,40 @@ interface TeacherProfile {
   created_at: string;
 }
 
-type SortOrder = 'name-asc' | 'name-desc' | 'amount-desc';
+type SortOrder = 'employee' | 'name-asc' | 'name-desc' | 'amount-desc';
+
+// exit_date(YYYY-MM-DD)から退職状態を返すヘルパー。
+// - null/未設定   → null（表示なし）
+// - 今日より前   → 'retired'（退職済み）
+// - 今日以降     → 'leaving'（退職予定）
+// ローカル日付で比較するため new Date(`${d}T00:00:00`) を使う
+function getExitStatus(exitDate: string | null | undefined): 'retired' | 'leaving' | null {
+  if (!exitDate) return null;
+  const exitLocal = new Date(`${exitDate}T00:00:00`);
+  const todayLocal = new Date();
+  todayLocal.setHours(0, 0, 0, 0);
+  return exitLocal < todayLocal ? 'retired' : 'leaving';
+}
+
+// exit_date の月/日を "M/D" 形式で返す（退職予定バッジの日付表示用）
+function formatExitMonthDay(exitDate: string): string {
+  const d = new Date(`${exitDate}T00:00:00`);
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+// 社員番号での並び替え。数値化できれば数値順、できなければ文字列順、未設定は末尾、最後に姓でフォールバック
+function compareByEmployeeNo(a: SummaryRow, b: SummaryRow): number {
+  const ea = (a.teacher?.employee_no ?? '').trim();
+  const eb = (b.teacher?.employee_no ?? '').trim();
+  if (!ea && !eb) return (a.teacher?.name ?? '').localeCompare(b.teacher?.name ?? '', 'ja');
+  if (!ea) return 1;
+  if (!eb) return -1;
+  const na = Number(ea), nb = Number(eb);
+  const bothNum = Number.isFinite(na) && Number.isFinite(nb) && ea !== '' && eb !== '';
+  if (bothNum && na !== nb) return na - nb;
+  if (bothNum) return (a.teacher?.name ?? '').localeCompare(b.teacher?.name ?? '', 'ja');
+  return ea.localeCompare(eb, 'ja');
+}
 
 export default function AttendanceManagementPage() {
   const router = useRouter();
@@ -129,7 +164,8 @@ export default function AttendanceManagementPage() {
 
   // 管理者: 転置ビュー・並べ替え
   const [isTransposedView, setIsTransposedView] = useState(false);
-  const [sortOrder, setSortOrder] = useState<SortOrder>('name-asc');
+  // デフォルトは社員番号順（出勤簿一覧の標準並び順）
+  const [sortOrder, setSortOrder] = useState<SortOrder>('employee');
 
   const { schools: masterSchools } = useMasterData();
 
@@ -348,6 +384,29 @@ export default function AttendanceManagementPage() {
     }, 800);
   };
 
+  // 社員番号のインライン編集（フォーカスを外したタイミングで保存）。
+  // 入力中の並び替え（社員番号順ソート）を避けるため、保存は onBlur で行う。
+  const handleEmployeeNoBlur = async (sheet: SummaryRow, raw: string) => {
+    const teacherId = sheet.teacher?.id || sheet.teacher_id;
+    if (!teacherId) return;
+    // 全角数字を半角へ正規化
+    const normalized = raw.replace(/[０-９]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xfee0)).trim();
+    const current = sheet.teacher?.employee_no ?? '';
+    if (normalized === current) return; // 変更なしなら何もしない
+    try {
+      await updateTeacherEmployeeNo(teacherId, normalized || null);
+      // 同じ講師の全シート行（全校舎表示時など）に反映 → 社員番号順ソートも更新される
+      setSheets((prev) => prev.map((s) =>
+        (s.teacher?.id || s.teacher_id) === teacherId && s.teacher
+          ? { ...s, teacher: { ...s.teacher, employee_no: normalized || null } }
+          : s
+      ));
+      success('社員番号を更新しました');
+    } catch {
+      toastError('社員番号の保存に失敗しました');
+    }
+  };
+
   // 退職日の設定
   const handleSetExitDate = async () => {
     if (!retiringTeacherId || !retiringExitDate) return;
@@ -360,6 +419,17 @@ export default function AttendanceManagementPage() {
       await fetchData();
     } catch {
       toastError('退職日の設定に失敗しました');
+    }
+  };
+
+  // 退職日の解除（exit_date を null にクリアする）
+  const handleClearExitDate = async (teacherId: string) => {
+    try {
+      await updateTeacherExitDate(teacherId, null);
+      success('退職日を解除しました');
+      await fetchData();
+    } catch {
+      toastError('退職日の解除に失敗しました');
     }
   };
 
@@ -408,6 +478,9 @@ export default function AttendanceManagementPage() {
   const sortedSheets = useMemo(() => {
     const copy = [...sheets];
     switch (sortOrder) {
+      case 'employee':
+        // 社員番号順（数値優先・NULL末尾・姓フォールバック）
+        return copy.sort(compareByEmployeeNo);
       case 'name-asc':
         return copy.sort((a, b) => (a.teacher?.name ?? '').localeCompare(b.teacher?.name ?? '', 'ja'));
       case 'name-desc':
@@ -420,14 +493,19 @@ export default function AttendanceManagementPage() {
   }, [sheets, sortOrder]);
 
   const cycleSortOrder = () => {
+    // employee → name-asc → name-desc → amount-desc → employee の順で循環
     setSortOrder((prev) => {
+      if (prev === 'employee') return 'name-asc';
       if (prev === 'name-asc') return 'name-desc';
       if (prev === 'name-desc') return 'amount-desc';
-      return 'name-asc';
+      return 'employee';
     });
   };
 
-  const sortLabel = sortOrder === 'name-asc' ? '名前 昇順' : sortOrder === 'name-desc' ? '名前 降順' : '金額 降順';
+  const sortLabel =
+    sortOrder === 'employee' ? '社員番号順' :
+    sortOrder === 'name-asc' ? '名前 昇順' :
+    sortOrder === 'name-desc' ? '名前 降順' : '金額 降順';
 
   // CSVエクスポート
   const handleExportCSV = () => {
@@ -727,13 +805,31 @@ export default function AttendanceManagementPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="min-w-[120px] sticky left-0 bg-surface-raised z-10">項目</TableHead>
-                      {sortedSheets.map((sheet) => (
+                      {sortedSheets.map((sheet) => {
+                        // 転置ビューでも退職状態バッジを表示する
+                        const exitStatusT = getExitStatus(sheet.teacher?.exit_date);
+                        return (
                         <TableHead key={sheet.id} className="text-center min-w-[100px]">
                           <div className="flex flex-col items-center gap-1">
                             <span className="font-medium text-xs">{sheet.teacher?.name ?? '不明'}</span>
+                            {/* 社員番号を講師名の下に小さく表示 */}
+                            {sheet.teacher?.employee_no && (
+                              <span className="text-[10px] text-gray-400 tabular-nums">{sheet.teacher.employee_no}</span>
+                            )}
                             {sheet.is_koma_changing && (
                               <Badge className="bg-purple-600 text-white text-[9px] px-1">
                                 コマ¥{(sheet.koma_change_from ?? 0).toLocaleString()}→¥{(sheet.koma_change_to ?? 0).toLocaleString()}
+                              </Badge>
+                            )}
+                            {/* 退職状態バッジ（転置ビュー用） */}
+                            {exitStatusT === 'leaving' && sheet.teacher?.exit_date && (
+                              <Badge className="bg-orange-500 text-white text-[9px] px-1">
+                                退職予定 {formatExitMonthDay(sheet.teacher.exit_date)}
+                              </Badge>
+                            )}
+                            {exitStatusT === 'retired' && (
+                              <Badge className="bg-gray-400 text-white text-[9px] px-1">
+                                退職
                               </Badge>
                             )}
                             <Badge className={`text-[10px] ${ATTENDANCE_STATUS_COLORS[sheet.status as AttendanceSheetStatus]}`}>
@@ -741,7 +837,8 @@ export default function AttendanceManagementPage() {
                             </Badge>
                           </div>
                         </TableHead>
-                      ))}
+                        );
+                      })}
                       <TableHead className="text-center font-bold min-w-[80px]">合計</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -883,6 +980,7 @@ export default function AttendanceManagementPage() {
                         />
                       </TableHead>
                       {showSchoolColumn && <TableHead>教室</TableHead>}
+                      <TableHead className="min-w-[60px]">社員番号</TableHead>
                       <TableHead>講師名</TableHead>
                       <TableHead className="text-center">ステータス</TableHead>
                       {displayTypes.map((type) => (
@@ -898,8 +996,11 @@ export default function AttendanceManagementPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {sheets.map((sheet) => (
-                      <TableRow key={sheet.id}>
+                    {sheets.map((sheet) => {
+                      // 退職状態を計算してグレーアウトや退職バッジの表示に使う
+                      const exitStatus = getExitStatus(sheet.teacher?.exit_date);
+                      return (
+                      <TableRow key={sheet.id} className={exitStatus === 'retired' ? 'opacity-60' : undefined}>
                         <TableCell>
                           <Checkbox
                             checked={selectedIds.has(sheet.id)}
@@ -908,11 +1009,39 @@ export default function AttendanceManagementPage() {
                           />
                         </TableCell>
                         {showSchoolColumn && <TableCell>{sheet.school?.name ?? ''}</TableCell>}
+                        <TableCell className="text-sm text-gray-500 tabular-nums">
+                          {isAdmin ? (
+                            // 社員番号インライン編集（admin/owner のみ）。Enterで確定（blur）。
+                            <Input
+                              key={`emp-${sheet.id}-${sheet.teacher?.employee_no ?? ''}`}
+                              defaultValue={sheet.teacher?.employee_no ?? ''}
+                              onBlur={(e) => handleEmployeeNoBlur(sheet, e.target.value)}
+                              onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                              disabled={!sheet.teacher?.id && !sheet.teacher_id}
+                              placeholder="—"
+                              inputMode="numeric"
+                              className="w-16 h-7 text-center mx-auto"
+                            />
+                          ) : (
+                            sheet.teacher?.employee_no ?? '—'
+                          )}
+                        </TableCell>
                         <TableCell className="font-medium">
                           <span>{sheet.teacher?.name ?? '不明'}</span>
                           {sheet.is_koma_changing && (
                             <Badge className="ml-1 bg-purple-600 text-white text-[10px] px-1">
                               ¥{(sheet.koma_change_from ?? 0).toLocaleString()}→¥{(sheet.koma_change_to ?? 0).toLocaleString()}
+                            </Badge>
+                          )}
+                          {/* 退職状態バッジ: 退職予定はオレンジ、退職済みはグレー */}
+                          {exitStatus === 'leaving' && sheet.teacher?.exit_date && (
+                            <Badge className="ml-1 bg-orange-500 text-white text-[10px] px-1">
+                              退職予定 {formatExitMonthDay(sheet.teacher.exit_date)}
+                            </Badge>
+                          )}
+                          {exitStatus === 'retired' && (
+                            <Badge className="ml-1 bg-gray-400 text-white text-[10px] px-1">
+                              退職
                             </Badge>
                           )}
                         </TableCell>
@@ -992,7 +1121,8 @@ export default function AttendanceManagementPage() {
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))}
+                      );
+                    })}
                     {/* 合計行 */}
                     <TableRow className="bg-gray-100 font-medium">
                       <TableCell colSpan={showSchoolColumn ? 4 : 3}>合計</TableCell>
@@ -1058,14 +1188,25 @@ export default function AttendanceManagementPage() {
                   />
                   <Button size="sm" onClick={handleSetExitDate} disabled={!retiringTeacherId}>登録</Button>
                 </div>
-                {allTeachers.some((t) => t.exit_date && t.exit_date.startsWith(yearMonth)) && (
+                {/* exit_date が設定されている全講師を表示（当月限定をやめ、未来月の退職日も確認できるようにする） */}
+                {allTeachers.some((t) => !!t.exit_date) && (
                   <div className="flex flex-wrap gap-1 mt-1">
                     {allTeachers
-                      .filter((t) => t.exit_date && t.exit_date.startsWith(yearMonth))
+                      .filter((t) => !!t.exit_date)
                       .map((t) => (
-                        <Badge key={t.id} className="bg-orange-500 text-white">
-                          {t.name}（{t.exit_date}）
-                        </Badge>
+                        <div key={t.id} className="inline-flex items-center gap-1 bg-orange-500 text-white rounded-md px-2 py-1 text-xs">
+                          <span className="font-medium">{t.name}</span>
+                          <span>（{t.exit_date}）</span>
+                          {/* 解除ボタン: コマ給変更の解除ボタンと同じ作法 */}
+                          <button
+                            type="button"
+                            onClick={() => handleClearExitDate(t.id)}
+                            className="ml-1 hover:bg-orange-600 rounded px-1"
+                            aria-label="退職日を解除"
+                          >
+                            ×
+                          </button>
+                        </div>
                       ))}
                   </div>
                 )}

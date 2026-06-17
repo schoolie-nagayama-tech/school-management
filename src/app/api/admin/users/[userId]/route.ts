@@ -178,7 +178,7 @@ export async function PATCH(
     const isUserManagementEdit = 'school_ids' in body && (Array.isArray(rawSchoolIds) || typeof rawSchoolIds === 'string');
 
     if (isUserManagementEdit) {
-      const { display_name, last_name, first_name, role, default_school_id } = body;
+      const { display_name, last_name, first_name, role, default_school_id, employee_no, is_teaching_staff } = body;
 
       // 教室紐付けのスコープ安全化:
       // admin/owner は全教室を扱えるので wantIds をそのまま採用。
@@ -224,6 +224,14 @@ export async function PATCH(
         profileUpdates.display_name = [last_name, first_name].filter(Boolean).join(' ') || null;
       } else if (display_name !== undefined) {
         profileUpdates.display_name = display_name;
+      }
+      // 社員番号（オーナー/管理者が割り振るグローバルな番号。出勤簿一覧の並び順に使用）
+      if (employee_no !== undefined) {
+        profileUpdates.employee_no = employee_no || null;
+      }
+      // 時給講師フラグ（teacher ロール以外でも出勤簿に含める場合に true。授業兼任 owner/admin 向け）
+      if (is_teaching_staff !== undefined) {
+        profileUpdates.is_teaching_staff = is_teaching_staff;
       }
       // 自分自身の編集では権限・教室は変更不可。デフォルト教室のみ変更可。
       if (!isEditingSelf) {

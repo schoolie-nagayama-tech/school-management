@@ -131,12 +131,14 @@ export async function getTeachersWithAttendance(
   if (teacherIds.length === 0) return [];
 
   // user_profiles と attendance_sheets は互いに独立 → 並列化
+  // role='teacher' に加え、is_teaching_staff=true のユーザーも出勤簿対象とする
+  // （owner/admin などロール兼任でも授業を持つ場合に対応）
   const [profilesRes, sheetsRes] = await Promise.all([
     supabase
       .from('user_profiles')
-      .select('id, display_name, email, role, is_active')
+      .select('id, display_name, email, role, is_active, is_teaching_staff')
       .in('id', teacherIds)
-      .eq('role', 'teacher')
+      .or('role.eq.teacher,is_teaching_staff.eq.true')
       .eq('is_active', true),
     supabase
       .from('attendance_sheets')
@@ -472,13 +474,13 @@ export async function getAttendanceSheetList(
   }
 
   const sheets = (data || []) as AttendanceSheet[];
-  // 講師情報をまとめて取得
+  // 講師情報をまとめて取得（exit_date は退職状態表示に使用）
   const teacherIds = Array.from(new Set(sheets.map((s) => s.teacher_id).filter(Boolean)));
-  let teacherMap: Record<string, { id: string; name: string }> = {};
+  let teacherMap: Record<string, { id: string; name: string; employee_no: string | null; exit_date: string | null }> = {};
   if (teacherIds.length > 0) {
     const { data: teacherData, error: teacherError } = await supabase
       .from('user_profiles')
-      .select('id, display_name, email')
+      .select('id, display_name, email, employee_no, exit_date')
       .in('id', teacherIds);
     if (teacherError) {
       console.error('Error fetching teachers:', teacherError);
@@ -486,7 +488,7 @@ export async function getAttendanceSheetList(
       teacherMap = Object.fromEntries(
         (teacherData || []).map((t) => [
           t.id,
-          { id: t.id, name: t.display_name || t.email || '未設定' },
+          { id: t.id, name: t.display_name || t.email || '未設定', employee_no: t.employee_no ?? null, exit_date: t.exit_date ?? null },
         ])
       );
     }
@@ -774,13 +776,13 @@ export async function getAttendanceSummary(
   }
   const sheets = (sheetsData || []) as AttendanceSheet[];
 
-  // 講師情報をまとめて取得
+  // 講師情報をまとめて取得（employee_no は出勤簿一覧の並び順に、exit_date は退職状態表示に使用）
   const teacherIds = Array.from(new Set(sheets.map((s) => s.teacher_id).filter(Boolean)));
-  let teacherMap: Record<string, { id: string; name: string }> = {};
+  let teacherMap: Record<string, { id: string; name: string; employee_no: string | null; exit_date: string | null }> = {};
   if (teacherIds.length > 0) {
     const { data: teacherData, error: teacherError } = await supabase
       .from('user_profiles')
-      .select('id, display_name, email')
+      .select('id, display_name, email, employee_no, exit_date')
       .in('id', teacherIds);
     if (teacherError) {
       console.error('Error fetching teachers:', teacherError);
@@ -788,7 +790,7 @@ export async function getAttendanceSummary(
       teacherMap = Object.fromEntries(
         (teacherData || []).map((t) => [
           t.id,
-          { id: t.id, name: t.display_name || t.email || '未設定' },
+          { id: t.id, name: t.display_name || t.email || '未設定', employee_no: t.employee_no ?? null, exit_date: t.exit_date ?? null },
         ])
       );
     }
@@ -1081,6 +1083,20 @@ export async function updateTeacherExitDate(teacherId: string, exitDate: string 
   }
 }
 
+// 講師の社員番号を更新（出勤簿一覧からのインライン編集用）。空文字は NULL に正規化。
+export async function updateTeacherEmployeeNo(teacherId: string, employeeNo: string | null) {
+  const value = employeeNo && employeeNo.trim() !== '' ? employeeNo.trim() : null;
+  const { error } = await supabase
+    .from('user_profiles')
+    .update({ employee_no: value })
+    .eq('id', teacherId);
+
+  if (error) {
+    console.error('Error updating employee_no:', error);
+    throw new Error('社員番号の更新に失敗しました');
+  }
+}
+
 // 先月退職した講師を取得
 export async function getRecentlyRetiredTeachers(
   schoolIds: string[],
@@ -1180,7 +1196,8 @@ export async function getActiveTeacherProfiles(schoolIds: string[]) {
     .from('user_profiles')
     .select('id, display_name, email, exit_date, created_at')
     .in('id', teacherIds)
-    .eq('role', 'teacher')
+    // 出勤簿管理の講師ドロップダウン。role='teacher' に加え時給講師(is_teaching_staff)も対象にする
+    .or('role.eq.teacher,is_teaching_staff.eq.true')
     .eq('is_active', true)
     .order('display_name');
 

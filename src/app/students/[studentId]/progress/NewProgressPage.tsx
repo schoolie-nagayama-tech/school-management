@@ -1744,7 +1744,12 @@ function TableView({
           curriculumItems={progress}
           onSessionSaved={handleSessionSaved}
           onSelectionChange={setSessionSelection}
-          canEditSaved={role === 'manager'}
+          canEditSaved={true}
+          onComplete={() => {
+            // 全セッションが保存済みになったら授業記録モードを終了しセレクションをクリア
+            setSessionMode(false);
+            setSessionSelection(null);
+          }}
         />
       )}
 
@@ -1823,10 +1828,6 @@ function TableView({
             })()}
           </tbody>
         </table>
-      </div>
-
-      <div className="mt-4 p-3 bg-white border border-dashed border-[#e5e7eb] rounded-lg text-xs text-[#6b7280]">
-        UI を刷新中。問題があれば URL に <code className="px-1 bg-[#f3f4f6] rounded">?v=legacy</code> を付けて旧UIに戻せます。
       </div>
 
       {/* 目標設定 編集/新規モーダル */}

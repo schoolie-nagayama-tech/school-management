@@ -218,8 +218,8 @@ export default function UsersPage() {
     }
   };
 
-  // ユーザー編集を保存
-  const handleSaveUser = async (lastName: string, firstName: string, role: UserRole, schoolIds: string[], defaultSchoolId: string) => {
+  // ユーザー編集を保存（employeeNo: 社員番号。isTeachingStaff: 時給講師フラグ）
+  const handleSaveUser = async (lastName: string, firstName: string, role: UserRole, schoolIds: string[], defaultSchoolId: string, employeeNo: string | null, isTeachingStaff: boolean) => {
     if (!editingUser) return;
 
     setIsSaving(true);
@@ -237,6 +237,8 @@ export default function UsersPage() {
           role: role,
           default_school_id: resolvedDefaultSchoolId,
           school_ids: schoolIds,
+          employee_no: employeeNo,
+          is_teaching_staff: isTeachingStaff,
         }),
       });
 
@@ -260,6 +262,8 @@ export default function UsersPage() {
         first_name: firstName || null,
         display_name: displayName,
         default_school_id: resolvedDefaultSchoolId,
+        employee_no: employeeNo,
+        is_teaching_staff: isTeachingStaff,
         ...(isEditingSelf
           ? {}
           : {

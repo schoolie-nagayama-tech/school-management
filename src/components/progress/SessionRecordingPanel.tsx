@@ -33,11 +33,17 @@ export interface SessionDraft {
   date: string;
   teacherName: string;
   handover: string;
+  /** 宿題未提出フラグ（授業記録パネルで入力する主フィールド） */
+  homeworkNotDone: boolean;
+  /** 遅刻フラグ（授業記録パネルで入力する主フィールド） */
+  tardy: boolean;
   /** unitId → lesson column (lesson_number) */
   unitActions: Record<number, 1 | 2 | 3>;
   /** 学校進度としてマークした単元ID */
   schoolUnits: Set<number>;
   saved: boolean;
+  /** 保存済みセッションの ID（再保存時に既存セッションを上書きするために保持） */
+  savedSessionId: string | null;
 }
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
@@ -48,9 +54,12 @@ function createDraft(teacherName = ''): SessionDraft {
     date: todayIso(),
     teacherName,
     handover: '',
+    homeworkNotDone: false,
+    tardy: false,
     unitActions: {},
     schoolUnits: new Set(),
     saved: false,
+    savedSessionId: null,
   };
 }
 
@@ -71,9 +80,11 @@ interface Props {
   curriculumItems: CurriculumItem[];
   /** セッション保存後に呼ばれる（進行表データを再取得するため） */
   onSessionSaved: () => void;
+  /** 全セッションが保存済みになったときに呼ばれる（授業記録モードを自動終了するため） */
+  onComplete?: () => void;
   /** 選択状態が変わるたびに呼ばれる（テーブル行ハイライト用） */
   onSelectionChange?: (sel: SessionSelection) => void;
-  /** 教室長以上: 保存済みセッションを再編集可能にする */
+  /** 保存済みセッションを再編集可能にするか（現在は常に編集可能だが prop は後方互換で残す） */
   canEditSaved?: boolean;
 }
 
@@ -87,8 +98,9 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
   textbookName: _textbookName,
   curriculumItems,
   onSessionSaved,
+  onComplete,
   onSelectionChange,
-  canEditSaved = false,
+  canEditSaved: _canEditSaved = false,
 }, ref) {
   const { profile } = useAuth();
   // 講師は苗字のみ表示（個人情報保護）
@@ -135,10 +147,11 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
    * 進行表の日付セルがクリックされたとき呼ばれる
    * - lesson列クリック: unitActions に追加/削除
    * - school列クリック: schoolUnits に追加/削除
+   * 保存済みでも常に再編集可能（二重作成は savedSessionId で防ぐ）
    */
   const handleCellToggle = useCallback(
     (curriculumItemId: number, column: 'school' | 1 | 2 | 3) => {
-      if (!activeSession || (activeSession.saved && !canEditSaved)) return;
+      if (!activeSession) return;
 
       setSessions(prev => prev.map((s, i) => {
         if (i !== activeIdx) return s;
@@ -161,7 +174,7 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
         }
       }));
     },
-    [activeIdx, activeSession, canEditSaved]
+    [activeIdx, activeSession]
   );
 
   // Expose handleCellToggle to parent via ref
@@ -188,7 +201,7 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
   const saveSession = useCallback(
     async (idx: number) => {
       const s = sessions[idx];
-      if (!s || (s.saved && !canEditSaved)) return;
+      if (!s) return;
 
       // バリデーション
       if (!s.date || !s.teacherName || !s.handover) {
@@ -205,20 +218,49 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
           })
         );
 
-        await recordSession({
+        // primaryCurriculumItemId の算出:
+        // 指導単元と学校進度単元の集合の中から、curriculumItems（カリキュラム順）での
+        // インデックスが最大の単元を「一番下の行」として引継ぎ・フラグの書き込み先にする
+        const touchedIds = new Set([
+          ...Object.keys(s.unitActions).map(Number),
+          ...Array.from(s.schoolUnits),
+        ]);
+        let primaryCurriculumItemId: number | null = null;
+        let maxIdx = -1;
+        for (let ci = 0; ci < curriculumItems.length; ci++) {
+          const item = curriculumItems[ci];
+          if (touchedIds.has(item.id) && ci > maxIdx) {
+            maxIdx = ci;
+            primaryCurriculumItemId = item.id;
+          }
+        }
+
+        // セッション保存（savedSessionId があれば既存セッションを上書き更新して二重作成を防ぐ）
+        const session = await recordSession({
           studentTextbookId,
           sessionDate: s.date,
           teacherId: profile?.id,
           teacherName: s.teacherName,
           handover: s.handover,
-          homeworkNotDone: false,
-          tardy: false,
+          homeworkNotDone: s.homeworkNotDone,
+          tardy: s.tardy,
           unitActions,
           schoolProgressUnits: Array.from(s.schoolUnits),
+          sessionId: s.savedSessionId,
+          primaryCurriculumItemId,
         });
 
-        setSessions(prev => prev.map((ss, i) => (i === idx ? { ...ss, saved: true } : ss)));
+        // 保存成功後、savedSessionId を記憶して再保存時の上書き更新に使う
+        const next = sessions.map((ss, i) =>
+          i === idx ? { ...ss, saved: true, savedSessionId: session.id } : ss
+        );
+        setSessions(next);
         onSessionSaved();
+
+        // 全セッションが保存済みになったら親へ通知して授業記録モードを自動終了する
+        if (next.every(ss => ss.saved)) {
+          onComplete?.();
+        }
       } catch (e) {
         console.error(e);
         alert('保存に失敗しました');
@@ -226,7 +268,7 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
         setSaving(false);
       }
     },
-    [sessions, studentTextbookId, profile?.id, onSessionSaved, canEditSaved]
+    [sessions, studentTextbookId, profile?.id, curriculumItems, onSessionSaved, onComplete]
   );
 
   // ─── ヘルパー ───
@@ -266,18 +308,14 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
           const schoolItems = schoolUnitsForSession(session);
           const lessonItems = lessonUnitsForSession(session);
           const isFilled = session.teacherName && schoolItems.length > 0 && session.handover;
-          // 教室長以上は保存済みでも再編集可能
-          const isLocked = session.saved && !canEditSaved;
 
           return (
             <div
               key={session.id}
               className={`rounded-xl border overflow-hidden transition-colors ${
-                isLocked
-                  ? 'border-gray-200 bg-gray-50 opacity-75'
-                  : isActive
-                    ? 'border-[#1e3a5f] ring-1 ring-[#1e3a5f]/20 bg-white'
-                    : 'border-gray-200 bg-white'
+                isActive
+                  ? 'border-[#1e3a5f] ring-1 ring-[#1e3a5f]/20 bg-white'
+                  : 'border-gray-200 bg-white'
               }`}
             >
               {/* アコーディオンヘッダー */}
@@ -290,14 +328,15 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
               >
                 <div
                   className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${
-                    isLocked
+                    session.saved
                       ? 'bg-green-100 text-green-700'
                       : isActive
                         ? 'bg-[#1e3a5f] text-white'
                         : 'bg-gray-100 text-gray-600'
                   }`}
                 >
-                  {isLocked ? <Check className="w-4 h-4" /> : idx + 1}
+                  {/* 保存済みはチェックアイコン。展開で再編集可能 */}
+                  {session.saved ? <Check className="w-4 h-4" /> : idx + 1}
                 </div>
                 <div className="flex-1 text-left">
                   <div className="text-sm font-medium">
@@ -306,8 +345,8 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
                       <span className="ml-2 text-gray-500">{isTeacher ? toSurnameOnly(session.teacherName) : session.teacherName}</span>
                     )}
                     {session.saved && (
-                      <span className={`ml-2 text-xs font-medium ${isLocked ? 'text-green-600' : 'text-blue-600'}`}>
-                        {isLocked ? '保存済' : '保存済（編集中）'}
+                      <span className="ml-2 text-xs font-medium text-green-600">
+                        保存済
                       </span>
                     )}
                   </div>
@@ -344,7 +383,7 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
                         type="date"
                         value={session.date}
                         onChange={e => updateField(idx, { date: e.target.value })}
-                        disabled={isLocked}
+                        disabled={false}
                         className="mt-1 w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg disabled:bg-gray-100"
                       />
                     </div>
@@ -357,12 +396,12 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
                           value={session.teacherName}
                           onChange={e => updateField(idx, { teacherName: e.target.value })}
                           placeholder="講師名"
-                          disabled={isLocked}
+                          disabled={false}
                           className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded-lg disabled:bg-gray-100"
                         />
                         <button
                           onClick={() => updateField(idx, { teacherName: myName })}
-                          disabled={isLocked}
+                          disabled={false}
                           className="px-3 py-1.5 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg border border-gray-200 whitespace-nowrap disabled:opacity-50"
                         >
                           自分
@@ -438,27 +477,48 @@ const SessionRecordingPanel = forwardRef<SessionRecordingPanelHandle, Props>(fun
                       value={session.handover}
                       onChange={e => updateField(idx, { handover: e.target.value })}
                       placeholder="次の講師への引継ぎを入力..."
-                      disabled={isLocked}
+                      disabled={false}
                       rows={2}
                       className="mt-1 w-full px-2 py-1.5 text-sm border border-gray-200 rounded-lg resize-none disabled:bg-gray-100"
                     />
                   </div>
 
-                  {/* 宿題未提出・遅刻は進行表の各行で個別にチェック */}
-                  <p className="text-[10px] text-gray-400">
-                    宿題未提出・遅刻は下の進行表で行ごとにチェックできます
-                  </p>
+                  {/* 宿題未提出・遅刻チェックボックス（授業記録パネルで主入力） */}
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={session.homeworkNotDone}
+                        onChange={e => updateField(idx, { homeworkNotDone: e.target.checked })}
+                        className="w-4 h-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                      />
+                      <span className="text-sm text-gray-700 flex items-center gap-1">
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                        宿題未提出
+                      </span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={session.tardy}
+                        onChange={e => updateField(idx, { tardy: e.target.checked })}
+                        className="w-4 h-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                      />
+                      <span className="text-sm text-gray-700 flex items-center gap-1">
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                        遅刻
+                      </span>
+                    </label>
+                  </div>
 
-                  {/* 保存ボタン */}
-                  {!isLocked && (
-                    <button
-                      onClick={() => saveSession(idx)}
-                      disabled={saving}
-                      className="w-full py-2 bg-[#1e3a5f] text-white text-sm font-medium rounded-lg hover:bg-[#2a4a6f] disabled:opacity-50 transition-colors"
-                    >
-                      {saving ? '保存中...' : session.saved ? '修正を保存' : 'セッションを保存'}
-                    </button>
-                  )}
+                  {/* 保存ボタン（保存済み・未保存とも「記入完了」で統一。保存中は「保存中...」） */}
+                  <button
+                    onClick={() => saveSession(idx)}
+                    disabled={saving}
+                    className="w-full py-2 bg-[#1e3a5f] text-white text-sm font-medium rounded-lg hover:bg-[#2a4a6f] disabled:opacity-50 transition-colors"
+                  >
+                    {saving ? '保存中...' : '記入完了'}
+                  </button>
                 </div>
               )}
             </div>

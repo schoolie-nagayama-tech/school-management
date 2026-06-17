@@ -203,7 +203,7 @@ export function SlotTable({
             <th className="border border-[#e5e7eb] px-3 py-2 text-left sticky left-0 z-10 bg-[#f3f4f6]">
               日付
             </th>
-            {[4, 5, 6, 7].map((period) => {
+            {[5, 6, 7].map((period) => {
               const periodState = getPeriodSelectionState(period);
               const hasSlots = slots.some((s) => s.period === period);
               
@@ -272,7 +272,7 @@ export function SlotTable({
                     {allDateSelected && (isUnavailableMode ? ' ✗' : ' ✓')}
                   </button>
                 </td>
-                {[4, 5, 6, 7].map((period) => {
+                {[5, 6, 7].map((period) => {
                   const slot = dateSlots.find((s) => s.period === period);
                   if (!slot) {
                     return (

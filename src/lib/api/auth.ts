@@ -210,7 +210,7 @@ export async function createUserProfile(
 // プロファイルを更新
 export async function updateUserProfile(
   userId: string,
-  updates: Partial<Pick<UserProfile, 'display_name' | 'last_name' | 'first_name' | 'role' | 'is_active' | 'teachable_subject_ids' | 'available_days_of_week' | 'default_school_id'>>
+  updates: Partial<Pick<UserProfile, 'display_name' | 'last_name' | 'first_name' | 'role' | 'is_active' | 'teachable_subject_ids' | 'available_days_of_week' | 'default_school_id' | 'employee_no' | 'is_teaching_staff'>>
 ): Promise<UserProfile> {
   const supabase = createSupabaseBrowserClient();
   const { data, error } = await supabase

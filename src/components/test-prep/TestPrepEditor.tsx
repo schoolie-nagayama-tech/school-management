@@ -950,6 +950,7 @@ function SubjectEditor({
                         setSelectedUnitIds(next);
                       }}
                       className="w-3.5 h-3.5 rounded border-gray-300 text-primary accent-primary"
+                      title="複数の単元にチェックを付けて「まとめる」と、1コマで複数単元を扱う提案にできます"
                     />
                   )}
                 </td>
@@ -1054,16 +1055,23 @@ function SubjectEditor({
         </table>
       </div>
 
-      {/* まとめるバー（2件以上選択時に表示） */}
+      {/* まとめるバー（2件以上選択時に表示）
+          「まとめる」が何をするのか分かりにくかったため、操作の結果を1行で説明する。 */}
       {selectedUnitIds.size >= 2 && (
-        <div className="px-4 py-2 bg-blue-50 border-t border-blue-100 flex items-center justify-between print:hidden">
-          <span className="text-xs text-blue-700">{selectedUnitIds.size}件の単元を選択中</span>
-          <button
-            onClick={handleGroup}
-            className="px-3 py-1 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-[colors,transform] active:scale-[0.97]"
-          >
-            まとめる
-          </button>
+        <div className="px-4 py-2.5 bg-blue-50 border-t border-blue-100 print:hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-blue-700">{selectedUnitIds.size}件の単元を選択中</span>
+            <button
+              onClick={handleGroup}
+              className="px-3 py-1 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-[colors,transform] active:scale-[0.97]"
+            >
+              まとめる
+            </button>
+          </div>
+          <p className="text-[11px] text-blue-600/80 mt-1 leading-relaxed">
+            選択した単元を1つの枠にまとめ、まとめて<span className="font-medium">1コマ分のコマ数</span>として扱います。
+            1コマで複数単元を一緒に対策するときに使います（提案書・保護者ページでは1枠にまとまって表示されます）。解除は各行から行えます。
+          </p>
         </div>
       )}
 

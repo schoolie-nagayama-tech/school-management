@@ -211,7 +211,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
                       : 'text-white/90 hover:bg-white/10 hover:text-white'
                   }`}
                 >
-                  進行フィード
+                  進行表確認
                 </Link>
               )}
               {(showAllLinks || permissions?.canAccessApplications) && (
@@ -759,7 +759,7 @@ export function AppHeader({ title: _title, onSettingsClick, settingsLabel, onBul
               { href: '/forms/responses', label: 'フォーム回答', show: showAllLinks || permissions?.canAccessPortal },
               { href: '/settings/portal', label: 'ポータル設定', show: showAllLinks || permissions?.canAccessPortal },
               { href: '/transcriptions', label: '面談記録追加', show: showAllLinks || permissions?.canAccessPortal },
-              { href: '/progress-feed', label: '進行フィード', show: showAllLinks || (permissions?.canAccessStudents && profile?.role !== 'teacher') },
+              { href: '/progress-feed', label: '進行表確認', show: showAllLinks || (permissions?.canAccessStudents && profile?.role !== 'teacher') },
               { href: '/courses', label: '講習一覧', show: showAllLinks || permissions?.canAccessPortal },
               { href: '/courses/progress', label: '講習進行', show: showAllLinks || permissions?.canAccessPortal },
               { href: '/courses/schedule', label: '講習日程', show: showAllLinks || permissions?.canAccessPortal },

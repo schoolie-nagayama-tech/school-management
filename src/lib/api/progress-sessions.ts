@@ -208,10 +208,12 @@ export interface SessionUnitAction {
 
 /**
  * セッション一括保存
- * 1. progress_sessions を作成
+ * 1. progress_sessions を作成（または sessionId 指定時は更新）
  * 2. 各単元の student_progress を upsert（なければ作成）
+ *    - primaryCurriculumItemId に一致する行のみ handover/homework_not_done/tardy も書く
  * 3. student_progress_lessons を upsert（session_id 付き）
  * 4. 学校進度を更新
+ * 5. primaryCurriculumItemId が unitActions に含まれない場合も、その行に引継ぎ等を書く
  */
 export async function recordSession(params: {
   studentTextbookId: string;
@@ -224,6 +226,10 @@ export async function recordSession(params: {
   unitActions: SessionUnitAction[];
   schoolProgressUnits: number[]; // curriculum_item_ids with school dates
   scheduleEntryId?: string | null;
+  /** 引継ぎ・遅刻・宿題を書き込む「一番下の行」の単元ID（カリキュラム順で最後の指導単元） */
+  primaryCurriculumItemId?: number | null;
+  /** 既存セッションの上書き更新用。指定時は新規作成せず更新する（編集時の二重作成防止） */
+  sessionId?: string | null;
 }): Promise<ProgressSession> {
   const {
     studentTextbookId,
@@ -236,32 +242,51 @@ export async function recordSession(params: {
     unitActions,
     schoolProgressUnits,
     scheduleEntryId,
+    primaryCurriculumItemId,
+    sessionId,
   } = params;
 
-  // 1. セッション作成
-  const session = await createProgressSession({
-    student_textbook_id: studentTextbookId,
-    session_date: sessionDate,
-    teacher_id: teacherId,
-    teacher_name: teacherName,
-    handover,
-    homework_not_done: homeworkNotDone,
-    tardy,
-    schedule_entry_id: scheduleEntryId,
-  });
+  // 1. セッション作成 or 更新（sessionId がある場合は既存セッションを上書きして二重作成を防ぐ）
+  let session: ProgressSession;
+  if (sessionId) {
+    // 編集モード: 既存セッションをフィールド更新（日付・講師・引継ぎ・フラグを最新値で上書き）
+    session = await updateProgressSession(sessionId, {
+      session_date: sessionDate,
+      teacher_id: teacherId,
+      teacher_name: teacherName,
+      handover,
+      homework_not_done: homeworkNotDone,
+      tardy,
+    });
+  } else {
+    // 新規モード: セッションを作成
+    session = await createProgressSession({
+      student_textbook_id: studentTextbookId,
+      session_date: sessionDate,
+      teacher_id: teacherId,
+      teacher_name: teacherName,
+      handover,
+      homework_not_done: homeworkNotDone,
+      tardy,
+      schedule_entry_id: scheduleEntryId,
+    });
+  }
 
   // 2. 各単元の student_progress を upsert + lesson 記録
+  // primaryCurriculumItemId の行にだけ引継ぎ・遅刻・宿題も書く（授業記録パネルが主入力源）
+  const touchedCurriculumItemIds = new Set<number>();
   for (const action of unitActions) {
-    // student_progress upsert（なければ作成）
-    // 宿題未提出・遅刻は行単位で個別管理するため、セッション保存時は上書きしない
+    touchedCurriculumItemIds.add(action.curriculumItemId);
+    // primaryCurriculumItemId に一致する場合は引継ぎ・フラグも含めて upsert
+    const isPrimary = action.curriculumItemId === primaryCurriculumItemId;
+    const progressFields = isPrimary
+      ? { student_textbook_id: studentTextbookId, curriculum_item_id: action.curriculumItemId, teacher_name: teacherName, handover, homework_not_done: homeworkNotDone, tardy }
+      : { student_textbook_id: studentTextbookId, curriculum_item_id: action.curriculumItemId, teacher_name: teacherName };
+
     const { data: progress, error: progressError } = await supabase
       .from('student_progress')
       .upsert(
-        {
-          student_textbook_id: studentTextbookId,
-          curriculum_item_id: action.curriculumItemId,
-          teacher_name: teacherName,
-        },
+        progressFields,
         { onConflict: 'student_textbook_id,curriculum_item_id' }
       )
       .select('id')
@@ -272,7 +297,7 @@ export async function recordSession(params: {
       continue;
     }
 
-    // student_progress_lessons upsert
+    // student_progress_lessons upsert（session_id を紐付け）
     const lessonInsert: StudentProgressLessonInsert = {
       student_progress_id: progress.id,
       lesson_number: action.lessonNumber,
@@ -307,6 +332,28 @@ export async function recordSession(params: {
 
     if (schoolError) {
       console.error('school progress upsert error:', schoolError);
+    }
+  }
+
+  // 4. primaryCurriculumItemId が unitActions に含まれていない場合も、
+  //    その単元の行に引継ぎ・遅刻・宿題を書き込む（学校進度のみ触れた場合など）
+  if (primaryCurriculumItemId != null && !touchedCurriculumItemIds.has(primaryCurriculumItemId)) {
+    const { error: primaryError } = await supabase
+      .from('student_progress')
+      .upsert(
+        {
+          student_textbook_id: studentTextbookId,
+          curriculum_item_id: primaryCurriculumItemId,
+          teacher_name: teacherName,
+          handover,
+          homework_not_done: homeworkNotDone,
+          tardy,
+        },
+        { onConflict: 'student_textbook_id,curriculum_item_id' }
+      );
+
+    if (primaryError) {
+      console.error('primary row upsert error:', primaryError);
     }
   }
 
@@ -387,8 +434,8 @@ export async function submitDirectInput(params: {
 // ============================================
 
 /** セッション共有フィールド: student_progress と progress_sessions の両方に存在 */
-// 宿題未提出・遅刻・引継ぎは行単位で個別管理するため、セッション↔進行表の同期対象から外す
-const SESSION_SHARED_FIELDS = ['teacher_name'] as const;
+// 引継ぎ・遅刻・宿題もセッション↔行で双方向同期する（授業記録パネルが主入力源）
+const SESSION_SHARED_FIELDS = ['teacher_name', 'handover', 'homework_not_done', 'tardy'] as const;
 
 /**
  * 進行表で直接編集された内容を、紐付く progress_sessions にも同期する。

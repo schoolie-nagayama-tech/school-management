@@ -5,7 +5,9 @@ import { useParams } from 'next/navigation';
 import type { TestPrepProposalWithDetails, TestPrepProposalUnit } from '@/types/test-prep';
 import { SELF_ASSESSMENT_LABELS } from '@/types/test-prep';
 import { getTestPrepProposalByToken } from '@/lib/api/test-prep-proposals';
+import { toSurnameOnly } from '@/lib/utils/teacherName';
 import { Spinner } from '@/components/ui';
+import { ArrowRight } from 'lucide-react';
 
 const ASSESSMENT_STYLES: Record<string, string> = {
   '◎': 'text-blue-600 font-bold',
@@ -70,7 +72,8 @@ export default function TestPrepPublicPage() {
   const schoolObj = (proposal as unknown as Record<string, unknown>).school as { name: string; code: string | null } | undefined;
   const schoolName = schoolObj?.name || '';
   const schoolCode = schoolObj?.code || null;
-  const teacherName = proposal.teacher?.display_name || '';
+  // 保護者向けの書面では講師は姓のみ表示（個人情報配慮・社内の慣習に合わせる）
+  const teacherName = toSurnameOnly(proposal.teacher?.display_name) || '';
   const examName = proposal.exam_type?.name || '';
 
   const totalKoma = proposal.subjects.reduce(
@@ -87,15 +90,17 @@ export default function TestPrepPublicPage() {
       <div className="max-w-3xl mx-auto px-4 py-8 print:px-0 print:py-0 print:max-w-none">
         {/* 提案書本体 */}
         <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden print:rounded-none print:border-none">
-          {/* ヘッダー */}
-          <div className="bg-gradient-to-r from-red-600 to-red-500 px-6 py-5 print:py-4">
+          {/* ヘッダー
+              画面・カラー印刷では赤のグラデーション。白黒印刷だと赤ベタが真っ黒に潰れるため、
+              print: では背景を白に落とし、赤は下線（細線）だけ残して文字を黒系にする。 */}
+          <div className="bg-gradient-to-r from-red-600 to-red-500 px-6 py-5 print:py-4 print:bg-none print:bg-white print:border-b-4 print:border-red-600">
             <div className="flex items-center justify-between">
               <div>
-                {schoolName && <p className="text-red-100 text-sm">{schoolName}</p>}
-                <h1 className="text-xl font-bold text-white mt-0.5">{proposal.title}</h1>
+                {schoolName && <p className="text-red-100 text-sm print:text-gray-500">{schoolName}</p>}
+                <h1 className="text-xl font-bold text-white mt-0.5 print:text-gray-900">{proposal.title}</h1>
               </div>
               {teacherName && (
-                <div className="text-right text-sm text-red-100">
+                <div className="text-right text-sm text-red-100 print:text-gray-600">
                   <p>担当: {teacherName}</p>
                 </div>
               )}
@@ -122,11 +127,23 @@ export default function TestPrepPublicPage() {
             </div>
             <div className="text-right">
               <span className="text-xs text-gray-400">提案コマ数合計</span>
-              <p className="text-2xl font-bold text-red-600">
+              <p className="text-2xl font-bold text-red-600 print:text-gray-900">
                 {totalKoma}
                 <span className="text-sm font-normal text-gray-500 ml-1">コマ</span>
               </p>
             </div>
+          </div>
+
+          {/* 保護者向けの案内（この書面が何かの説明＋増コマ受講のおすすめ）。
+              テスト対策の提案書が保護者にとって唐突／不親切だったため、目的を明記する。 */}
+          <div className="mx-6 mt-4 p-3.5 rounded-lg bg-amber-50 border border-amber-100 print:bg-white print:border-gray-300 text-sm text-gray-700 leading-relaxed">
+            <p className="font-bold text-gray-900 mb-1">保護者の皆様へ — テスト対策のご提案</p>
+            <p>
+              本書は、次回の定期テストに向けて、担当講師がお子様の現在の到達状況をもとに作成した対策プランです。
+              下記の科目・単元ごとに、目標点の達成に必要と考えられる対策コマ数の目安をまとめています。
+              テストでの得点アップに向けて、ぜひ追加の対策コマ（増コマ）の受講をご検討ください。
+              お申し込みは{schoolCode ? 'ページ下部（印刷の場合はQRコード）の' : '末尾の'}増コマ申込フォームから承ります。
+            </p>
           </div>
 
           {/* 自己評価の凡例 */}
@@ -291,7 +308,7 @@ function SubjectBlock({
           <tr className="border-t-2 border-gray-200 bg-gray-50 font-bold">
             <td className="px-2 py-1.5 text-gray-600">合計</td>
             <td />
-            <td className="text-center text-red-600">{totalKoma}</td>
+            <td className="text-center text-red-600 print:text-gray-900">{totalKoma}</td>
           </tr>
         </tfoot>
       </table>
@@ -360,15 +377,18 @@ function ZoukomaSection({
           ))}
         </div>
 
-        {/* 増コマフォームへのリンク */}
+        {/* 増コマフォームへのリンク
+            「申し込む」だと、この場で申込確定するように見えてしまう。実際は申込フォームへ遷移するだけなので、
+            文言・矢印アイコン・補足テキストで「フォームに移動する」ことを明示する。 */}
         <a
           href={zoukomaUrl}
-          className="block w-full py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-[colors,transform] active:scale-[0.97] text-sm text-center"
+          className="flex items-center justify-center gap-1.5 w-full py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-[colors,transform] active:scale-[0.97] text-sm text-center"
         >
-          増コマを申し込む
+          増コマ申込フォームへ進む
+          <ArrowRight className="w-4 h-4" />
         </a>
-        <p className="text-xs text-gray-400 mt-2 text-center">
-          増コマ申込フォームに移動します
+        <p className="text-xs text-gray-500 mt-2 text-center">
+          ボタンを押すと、お申し込みフォームに移動します。日時の選択・送信はフォーム上で行います。
         </p>
       </div>
     </div>
