@@ -12,7 +12,7 @@ import { ChevronDown, ChevronUp, Info, AlertTriangle, X } from 'lucide-react';
 import { InlineLoading } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 import { dismissAlert } from '@/lib/api/alerts';
-import { ALERT_TYPE_LABELS, ALERT_TYPE_COLORS, DISMISSABLE_ALERT_TYPES, SENSITIVE_ALERT_TYPES } from '@/types/alerts';
+import { ALERT_TYPE_LABELS, ALERT_TYPE_COLORS, DISMISSABLE_ALERT_TYPES, SENSITIVE_ALERT_TYPES, TEACHER_HIDDEN_ALERT_TYPES } from '@/types/alerts';
 import type { AlertType } from '@/types/alerts';
 import { whenNetworkIdle } from '@/lib/utils/networkIdle';
 
@@ -243,9 +243,21 @@ export function AlertBoard({ className = '', initialData }: AlertBoardProps) {
     }
   }, [canDismiss, getSelectedSchoolIds, profile?.id, success, toastError, fetchAlerts]);
 
+  // 講師には講習関連など担当外のアラートを表示しない（行ごと除外）。
+  // 取得・dismiss は raw な studentAlerts を使い、表示系のみこの絞り込みビューを参照する。
+  const visibleStudentAlerts = useMemo(() => {
+    if (!isTeacher) return studentAlerts;
+    return studentAlerts
+      .map((sa) => ({
+        ...sa,
+        alerts: sa.alerts.filter((a) => !TEACHER_HIDDEN_ALERT_TYPES.has(a.alert_type)),
+      }))
+      .filter((sa) => sa.alerts.length > 0);
+  }, [studentAlerts, isTeacher]);
+
   const totalAlerts = useMemo(
-    () => studentAlerts.reduce((sum, sa) => sum + sa.alerts.length, 0),
-    [studentAlerts]
+    () => visibleStudentAlerts.reduce((sum, sa) => sum + sa.alerts.length, 0),
+    [visibleStudentAlerts]
   );
 
   const isMultiSchool = selectedSchoolId === 'all';
@@ -257,17 +269,17 @@ export function AlertBoard({ className = '', initialData }: AlertBoardProps) {
   }, [schools]);
 
   const schoolColorMap = useMemo(() => {
-    const ids = Array.from(new Set(studentAlerts.map((sa) => sa.school_id).filter(Boolean) as string[]));
+    const ids = Array.from(new Set(visibleStudentAlerts.map((sa) => sa.school_id).filter(Boolean) as string[]));
     const map: Record<string, typeof SCHOOL_COLORS[number]> = {};
     ids.forEach((id, i) => { map[id] = SCHOOL_COLORS[i % SCHOOL_COLORS.length]; });
     return map;
-  }, [studentAlerts]);
+  }, [visibleStudentAlerts]);
 
   // 教室別にグルーピング（マルチ校時のみ）
   const alertsBySchool = useMemo(() => {
     if (!isMultiSchool) return null;
     const map = new Map<string, { name: string; alerts: StudentAlerts[]; count: number }>();
-    for (const sa of studentAlerts) {
+    for (const sa of visibleStudentAlerts) {
       const sid = sa.school_id || 'unknown';
       if (!map.has(sid)) {
         map.set(sid, { name: schoolNameMap[sid] || '不明', alerts: [], count: 0 });
@@ -277,7 +289,7 @@ export function AlertBoard({ className = '', initialData }: AlertBoardProps) {
       entry.count += sa.alerts.length;
     }
     return Array.from(map.entries()).sort((a, b) => b[1].count - a[1].count);
-  }, [isMultiSchool, studentAlerts, schoolNameMap]);
+  }, [isMultiSchool, visibleStudentAlerts, schoolNameMap]);
 
   if (isLoading) {
     return (
@@ -357,6 +369,8 @@ export function AlertBoard({ className = '', initialData }: AlertBoardProps) {
             <div className="space-y-2">
               {Object.entries(ALERT_TYPE_LABELS).map(([type, label]) => {
                 const alertType = type as AlertType;
+                // 講師には非表示のアラートタイプ（講習関連など）は説明一覧からも除外
+                if (isTeacher && TEACHER_HIDDEN_ALERT_TYPES.has(alertType)) return null;
                 const isSensitiveType = SENSITIVE_ALERT_TYPES.has(alertType);
                 const Icon = isTeacher && isSensitiveType ? SENSITIVE_ALERT_ICONS[alertType] : null;
                 const displayLabel = isTeacher && isSensitiveType
@@ -439,7 +453,7 @@ export function AlertBoard({ className = '', initialData }: AlertBoardProps) {
               );
             })
           ) : (
-            studentAlerts.map((studentAlert) => (
+            visibleStudentAlerts.map((studentAlert) => (
               <StudentAlertCard
                 key={studentAlert.student_id}
                 studentAlert={studentAlert}

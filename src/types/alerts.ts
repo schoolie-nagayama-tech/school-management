@@ -126,6 +126,15 @@ export const SENSITIVE_ALERT_TYPES: ReadonlySet<AlertType> = new Set<AlertType>(
 ]);
 
 /**
+ * 講師画面には一切表示しないアラートタイプ。
+ * SENSITIVE_ALERT_TYPES が「マスク（伏字で表示）」なのに対し、こちらは行ごと非表示にする。
+ * 講習運営（講習準備など）は講師の担当業務外のため出さない。
+ */
+export const TEACHER_HIDDEN_ALERT_TYPES: ReadonlySet<AlertType> = new Set<AlertType>([
+  'course_prep_overdue', // 講習準備
+]);
+
+/**
  * 対応済みボタンで手動 dismiss できるアラートタイプ。
  * これ以外は実績入力（面談記録・成績入力など）で自動的に消える。
  */
