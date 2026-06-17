@@ -966,10 +966,14 @@ export default function ProposalEditor() {
     }
     setSaving(true);
     try {
+      // 申込コマの 0 の扱い: 提案済み/公開済みでは 0（＝申込なし）を確定値として保存する。
+      // 下書き中のみ「未確定」を表す null にして、直接公開時に提案回数で初期化できるようにする。
+      // （null のまま保存すると一括公開などで提案回数に巻き戻るため）
+      const appliedFallback = isNew || proposal?.status === 'draft' ? null : 0;
       const unitInputs: ProposalUnitInput[] = activeUnits.map((u) => ({
         curriculum_item_id: u.curriculum_item_id,
         koma_count: u.koma_count,
-        applied_koma: u.applied_koma > 0 ? u.applied_koma : null,
+        applied_koma: u.applied_koma > 0 ? u.applied_koma : appliedFallback,
         reason: u.reason,
         group_id: u.group_id,
         applied_group_id: u.applied_group_id,
@@ -1070,20 +1074,30 @@ export default function ProposalEditor() {
         const totalApplied = calcTotalAppliedKoma(unitInputs);
         await updateProposal(proposalId, { status: newStatus, applied_koma: totalApplied });
       } else if (newStatus === 'approved') {
-        // 公開: 未保存の申込コマ数を先に保存してから公開
-        // 下書きから直接公開した場合、申込が未確定(0)なら提案回数(koma_count)で初期化する
+        // 公開: 未保存の申込コマ数を先に保存してから公開。
+        // 提案済み(sent)からの公開では、ユーザーが確定した申込コマ数（0＝申込なしを含む）を
+        // そのまま保存する。以前は applied_koma>0 でない単元を提案回数(koma_count)に戻していたため、
+        // 申込を0や減らした単元が公開時に提案回数へ巻き戻る不具合があった。
+        // 下書き(draft)から直接公開する場合のみ、申込が未確定なので提案回数で初期化する（従来どおり）。
+        const publishingFromSent = proposal?.status === 'sent';
         const unitInputs = Array.from(unitDrafts.values())
           .filter((d) => d.koma_count > 0 || d.applied_koma > 0)
           .map((u) => ({
             curriculum_item_id: u.curriculum_item_id,
             koma_count: u.koma_count,
-            applied_koma: u.applied_koma > 0 ? u.applied_koma : u.koma_count,
+            applied_koma: publishingFromSent
+              ? u.applied_koma
+              : (u.applied_koma > 0 ? u.applied_koma : u.koma_count),
             reason: u.reason,
             group_id: u.group_id,
             applied_group_id: u.applied_group_id > 0 ? u.applied_group_id : u.group_id,
             intent_tag: u.intent_tag,
           }));
         await saveProposalUnits(proposalId, unitInputs);
+
+        // 提案レベルの申込コマ合計も更新する。保存(handleSave)を経由せず編集後に直接公開した場合でも
+        // 一覧などに表示される合計が古い値のまま（＝ロールバックして見える）にならないようにする。
+        await updateProposal(proposalId, { applied_koma: calcTotalAppliedKoma(unitInputs) });
 
         // 公開前に発注候補をスナップショット（所持判定は is_draft=false 化の前に取る必要がある）
         let candidates: OrderCandidate[] = [];
