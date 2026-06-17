@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { RegularShiftSetting, RegularShiftSlotSetting } from '@/types/regular-shift';
+import { TeacherWorkloadPanel } from '@/components/shift/TeacherWorkloadPanel';
 
 const DAY_LABELS: Record<number, string> = {
   1: '月',
@@ -224,26 +225,7 @@ export function RegularOperationsDashboard({
               </tbody>
             </table>
           </div>
-          {teacherSlotCounts.length > 0 && (
-            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-              <div className="border border-slate-200 rounded-lg p-3 bg-slate-50">
-                <div className="font-medium text-slate-700 mb-2">コマ数が多い講師（上位3名）</div>
-                <ul className="space-y-1 text-xs text-slate-600">
-                  {teacherSlotCounts.slice(0, 3).map((t, i) => (
-                    <li key={`top-${i}`}>{t.teacher_name} … {t.count}コマ</li>
-                  ))}
-                </ul>
-              </div>
-              <div className="border border-slate-200 rounded-lg p-3 bg-slate-50">
-                <div className="font-medium text-slate-700 mb-2">コマ数が少ない講師（下位3名）</div>
-                <ul className="space-y-1 text-xs text-slate-600">
-                  {teacherSlotCounts.slice(-3).reverse().map((t, i) => (
-                    <li key={`bottom-${i}`}>{t.teacher_name} … {t.count}コマ</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
+          <TeacherWorkloadPanel teachers={teacherSlotCounts} />
         </div>
       )}
     </div>
