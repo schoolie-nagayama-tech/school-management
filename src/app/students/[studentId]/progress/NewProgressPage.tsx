@@ -26,7 +26,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { CornerDownRight, Eye, EyeOff, FileText, Plus, RefreshCw, Send, Settings2, Trash2 } from 'lucide-react';
+import { ArrowUp, Eye, EyeOff, FileText, Plus, RefreshCw, Send, Settings2, Trash2 } from 'lucide-react';
 import { AdminLayout } from '@/components/layouts';
 import { Button, Modal, Select, ToastContainer, Loading } from '@/components/ui';
 import { useToast } from '@/hooks/useToast';
@@ -2212,16 +2212,18 @@ function ProgressRow({
   const p = row.progress;
   const lessonDate = (n: 1 | 2 | 3) =>
     (p?.lessons || []).find((l) => l.lesson_number === n)?.lesson_date ?? '';
-  const groupBadge = p?.group_number ? `G${p.group_number}` : '';
   // 結合グループの2行目以降は数値を出さず「まとめ表示」にする（合計は先頭行のみ。提案書と同じ見せ方）。
   // 提案結合(group_number)と申込結合(applied_group_number)は別系統なので列ごとに判定する。
   const isProposalGroupMember = p?.group_number != null && !groupStart;
   const isAppliedGroupMember = p?.applied_group_number != null && !appliedGroupStart;
   const isGroupedRow = p?.group_number != null || p?.applied_group_number != null;
-  // まとめ表示セル（先頭行に合計をまとめている旨を示す控えめなマーク）
+  // まとめ表示セル: 数字の代わりに「↑まとめ」と明示し、合計は先頭行にあることを一目で分かるようにする
   const mergedCell = (
-    <span className="inline-flex items-center text-[#cbd5e1]" title="上の行にまとめて計上（結合）">
-      <CornerDownRight className="w-3.5 h-3.5" />
+    <span
+      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-[#eef2f7] text-[#94a3b8] text-[10px] whitespace-nowrap"
+      title="先頭行に合計をまとめています（結合）"
+    >
+      <ArrowUp className="w-3 h-3" />まとめ
     </span>
   );
   const examRangeName = examTypes.find((et) => et.id === p?.exam_range_exam_type_id)?.name ?? '';
@@ -2261,7 +2263,6 @@ function ProgressRow({
       <td className={`px-3 py-2.5 text-[#6b7280] text-xs ${isGroupedRow ? 'border-l-2 border-l-[#cbd5e1]' : ''}`}>{row.item_number ?? ''}</td>
       <td className="px-3 py-2.5 text-[#1f2937]">
         <div className="flex items-center gap-1.5 flex-wrap">
-          {groupBadge && <span className="inline-block px-1.5 py-0.5 bg-[#eff6ff] text-[#1e40af] text-[11px] rounded">{groupBadge}</span>}
           <span>{row.title}</span>
           {/* 指導意図: 先頭行は編集可 / 継承行は薄く表示 */}
           {groupStart ? (
